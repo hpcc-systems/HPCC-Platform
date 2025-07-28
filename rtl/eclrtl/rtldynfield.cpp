@@ -985,7 +985,10 @@ extern ECLRTL_API int getFieldNum(const char *fieldName, IOutputMetaData &  meta
     const RtlRecord r = metaVal.queryRecordAccessor(true);
     return r.getFieldNum(fieldName);
 }
-enum FieldMatchType {
+
+//The values in this enumeration are never persisted, so they can
+enum FieldMatchType : unsigned
+{
     // On a field, exactly one of the below is set, but translator returns a bitmap indicating
     // which were required (and we can restrict translation to allow some types but not others)
     match_perfect     = 0x00,    // exact type match - use memcpy
@@ -998,14 +1001,16 @@ enum FieldMatchType {
     match_none        = 0x40,    // No matching field in source - use null value
     match_recurse     = 0x80,    // Use recursive translator for child records/datasets
     match_fail        = 0x100,   // no translation possible
-    match_keychange   = 0x200,   // at least one affected field not marked as payload (set on translator)
-    match_virtual     = 0x800,   // at least one affected field is a virtual field (set on translator)
+    match_payloadaskeyed = 0x200,  // A source payload field is used as a keyed field in the destination
+    match_keyedaspayload= 0x400,   // A source keyed field is used as a payload field in the destination (should be safe)
+    match_keyedchange = 0x800,   // A keyed field has changed type, or moved location
+    match_virtual     = 0x1000,  // at least one affected field is a virtual field (set on translator)
 
     // This flag may be set in conjunction with the others
-    match_inifblock   = 0x400,   // matching to a field in an ifblock - may not be present
-    match_deblob      = 0x1000,  // source needs fetching from a blob prior to translation
-    match_dynamic     = 0x2000,  // source needs fetching from dynamic source (callback)
-    match_filepos     = 0x4000,  // type moving in or out of filepos field - cast required
+    match_inifblock   = 0x1000000,   // matching to a field in an ifblock - may not be present
+    match_deblob      = 0x2000000,  // source needs fetching from a blob prior to translation
+    match_dynamic     = 0x4000000,  // source needs fetching from dynamic source (callback)
+    match_filepos     = 0x8000000,  // type moving in or out of filepos field - cast required
 };
 
 StringBuffer &describeFlags(StringBuffer &out, FieldMatchType flags)
@@ -1022,7 +1027,9 @@ StringBuffer &describeFlags(StringBuffer &out, FieldMatchType flags)
     if (flags & match_none) out.append("|none");
     if (flags & match_recurse) out.append("|recurse");
     if (flags & match_inifblock) out.append("|ifblock");
-    if (flags & match_keychange) out.append("|keychange");
+    if (flags & match_payloadaskeyed) out.append("|payloadaskeyed");
+    if (flags & match_keyedaspayload) out.append("|keyedaspayload");
+    if (flags & match_keyedchange) out.append("|keyedchange");
     if (flags & match_fail) out.append("|fail");
     if (flags & match_virtual) out.append("|virtual");
     if (flags & match_deblob) out.append("|blob");
@@ -1082,15 +1089,19 @@ public:
     }
     virtual bool needsNonVirtualTranslate() const override
     {
-        return (matchFlags & ~(match_link|match_virtual|match_keychange|match_inifblock)) != 0;
+        return (matchFlags & ~(match_link|match_virtual|match_payloadaskeyed|match_keyedchange|match_inifblock)) != 0;
     }
     virtual bool keyedTranslated() const override
     {
-        return (matchFlags & match_keychange) != 0;
+        return (matchFlags & match_payloadaskeyed) != 0;
     }
     virtual bool hasNewFields() const override
     {
         return (matchFlags & match_none) != 0;
+    }
+    virtual const RtlRecord & querySourceMeta() const override
+    {
+        return sourceRecInfo;
     }
 private:
     void doDescribe(unsigned indent) const
@@ -1620,7 +1631,7 @@ private:
 #endif
                 }
                 if ((field->flags & RFTMispayloadfield) == 0)
-                    matchFlags |= match_keychange;
+                    matchFlags |= match_keyedchange;    // A field that is expected to be keyed is not in the source
                 defaulted++;
                 // If dest field is in a nested record, we need to check that there's no "non-record" field in source matching current nested record name
                 if (name)
@@ -1725,7 +1736,7 @@ private:
                                 info.matchType = binarySource ? match_recurse : (match_recurse|match_dynamic);
                                 unsigned childFlags = info.subTrans->matchFlags;
                                 //Ignore differences in the keyed flag for child structures (it will be set later if this field is keyed)
-                                matchFlags |= (FieldMatchType)(childFlags & ~match_keychange);
+                                matchFlags |= (FieldMatchType)(childFlags & ~(match_keyedchange|match_payloadaskeyed|match_keyedaspayload));
                             }
                             else
                                 info.matchType = match_fail;
@@ -1799,10 +1810,16 @@ private:
 
                 //Whether this field is in an ifblock, or needs to be copied by linking it do not count as changes
                 FieldMatchType maskedType = (FieldMatchType)(info.matchType & ~(match_link|match_inifblock));
-                if (((maskedType != match_perfect) || (idx != info.matchIdx)) && ((field->flags & RFTMispayloadfield) == 0 || (sourceFlags & RFTMispayloadfield) == 0))
-                    matchFlags |= match_keychange;
-                else if ((field->flags & RFTMispayloadfield) != (sourceFlags & RFTMispayloadfield))
-                    matchFlags |= match_keychange;
+                if (((maskedType != match_perfect) || (idx != info.matchIdx)) && ((field->flags & RFTMispayloadfield) == 0))
+                    matchFlags |= match_keyedchange;    // The destination treats this field as keyed, and the type or position of this field is different
+
+                if ((field->flags & RFTMispayloadfield) != (sourceFlags & RFTMispayloadfield))
+                {
+                    if (sourceFlags & RFTMispayloadfield)
+                        matchFlags |= match_payloadaskeyed;   // Source is not keyed, but the ecl is expecting it to be
+                    else
+                        matchFlags |= match_keyedaspayload;   // Source is keyed but ecl is not expecting it to be
+                }
             }
             matchFlags |= info.matchType;
         }
@@ -1817,7 +1834,7 @@ private:
                 {
                     // unmatched field
                     if ((field->flags & RFTMispayloadfield) == 0)
-                        matchFlags |= match_keychange;
+                        matchFlags |= match_keyedaspayload;   // A keyed field is treated as non keyed (and ignored)
                     if (!destRecInfo.getFixedSize())
                     {
                         const RtlTypeInfo *type = field->type;
@@ -1959,6 +1976,10 @@ public:
     virtual bool hasNewFields() const override
     {
         return false;
+    }
+    virtual const RtlRecord & querySourceMeta() const override
+    {
+        return sourceMeta.queryRecordAccessor(true);
     }
 private:
     void doDescribe(unsigned indent) const

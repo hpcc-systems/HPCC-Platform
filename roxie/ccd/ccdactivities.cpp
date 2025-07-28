@@ -2521,7 +2521,8 @@ protected:
                 IKeyIndex *k = kib->queryPart(lastPartNo.fileNo);
                 if (filechanged || !tlk)
                 {
-                    tlk.setown(createLocalKeyManager(*keyRecInfo, k, &logctx, hasNewSegmentMonitors(), !logctx.isBlind()));
+                    const IDynamicTransform * trans = translators->queryTranslator(lastPartNo.fileNo);
+                    tlk.setown(createLocalKeyManager(trans->querySourceMeta(), k, &logctx, hasNewSegmentMonitors(), !logctx.isBlind()));
                     createSegmentMonitorsPending = true;
                 }
                 else
