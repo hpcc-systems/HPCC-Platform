@@ -22,6 +22,10 @@ on:
   schedule:
     - cron: "0 7 * * 1"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   pre_job:
     runs-on: ubuntu-latest
