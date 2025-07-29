@@ -5457,8 +5457,87 @@ inline void ClientImpl::set_logger(Logger logger) {
  * SSL Implementation
  */
 #ifdef CPPHTTPLIB_OPENSSL_SUPPORT
-namespace detail {
 
+enum SSLMethod { SSL_ACCEPT_METHOD, SSL_CONNECT_METHOD };
+
+inline int SSL_handleWait(SSL *ssl, socket_t sock, int errCode, int *sslErr, unsigned remainingMs)
+{
+    int retCode;
+    unsigned secs = remainingMs / 1000;
+    unsigned usecs = (remainingMs % 1000) * 1000;
+    *sslErr = SSL_get_error(ssl, errCode);
+    switch (*sslErr)
+    {
+        case SSL_ERROR_WANT_READ:
+        {
+            retCode = detail::select_read(sock, secs, usecs);
+            break;
+        }
+        case SSL_ERROR_WANT_WRITE:
+        {
+            retCode = detail::select_write(sock, secs, usecs);
+            break;
+        }
+        default:
+        {
+            retCode = -1;
+            break;
+        }
+    }
+
+    return retCode;
+}
+
+inline int SSL_timedAcceptorConnect(SSL *ssl, socket_t sock, SSLMethod method)
+{
+    unsigned timeoutMs = 60*1000;
+    unsigned remainingMs;
+    CCycleTimer timer;
+    int retCode;
+    int result;
+    int sslErr;
+    while (true)
+    {
+        ERR_clear_error();
+
+        switch (method)
+        {
+            case SSL_ACCEPT_METHOD:
+                retCode = SSL_accept(ssl);
+                break;
+            case SSL_CONNECT_METHOD:
+                retCode = SSL_connect(ssl);
+                break;
+            default:
+                OERRLOG("HTTPLIB Error : invalid method (%d)", (int)method);
+                return -1;
+        }
+
+        if (retCode > 0)
+            return 1;
+
+        remainingMs = timer.remainingMs(timeoutMs);
+
+        result = SSL_handleWait(ssl, sock, retCode, &sslErr, remainingMs);
+        if (result == 0)
+        {
+            OERRLOG("HTTPLIB Error : %s timed out", (method == SSL_ACCEPT_METHOD ? "SSL_accept" : "SSL_connect"));
+            break;
+        }
+        else if (result < 0)
+        {
+            char errbuf[512];
+            ERR_error_string_n(ERR_get_error(), errbuf, 512);
+            VStringBuffer errmsg("%s %d - %s", (method == SSL_ACCEPT_METHOD ? "SSL_accept" : "SSL_connect"), sslErr, errbuf);
+            OERRLOG("HTTPLIB Error : %s", errmsg.str());
+            break;
+        }
+    }
+
+    return result;
+}
+
+namespace detail {
 template <typename U, typename V>
 inline SSL *ssl_new(socket_t sock, SSL_CTX *ctx, std::mutex &ctx_mutex,
                     U SSL_connect_or_accept, V setup) {
@@ -5469,10 +5548,19 @@ inline SSL *ssl_new(socket_t sock, SSL_CTX *ctx, std::mutex &ctx_mutex,
   }
 
   if (ssl) {
+    set_nonblocking(static_cast<int>(sock), true);
     auto bio = BIO_new_socket(static_cast<int>(sock), BIO_NOCLOSE);
     SSL_set_bio(ssl, bio, bio);
 
-    if (!setup(ssl) || SSL_connect_or_accept(ssl) != 1) {
+    int retCode;
+    bool setupResult = setup(ssl);
+
+    if (setupResult)
+      retCode = SSL_connect_or_accept(ssl);
+
+    set_nonblocking(static_cast<int>(sock), false);
+
+    if (!setupResult || retCode != 1) {
       SSL_shutdown(ssl);
       {
         std::lock_guard<std::mutex> guard(ctx_mutex);
@@ -5704,8 +5792,11 @@ inline SSLServer::~SSLServer() {
 inline bool SSLServer::is_valid() const { return ctx_; }
 
 inline bool SSLServer::process_and_close_socket(socket_t sock) {
-  auto ssl = detail::ssl_new(sock, ctx_, ctx_mutex_, SSL_accept,
-                             [](SSL * /*ssl*/) { return true; });
+  auto ssl = detail::ssl_new(sock, ctx_, ctx_mutex_,
+      [&](SSL *ssl) {
+        return SSL_timedAcceptorConnect(ssl, sock, SSL_ACCEPT_METHOD);
+      },
+      [](SSL * /*ssl*/) { return true; });
 
   if (ssl) {
     auto ret = detail::process_server_socket_ssl(
@@ -5895,7 +5986,7 @@ inline bool SSLClient::initialize_ssl(Socket &socket) {
           SSL_set_verify(ssl, SSL_VERIFY_NONE, nullptr);
         }
 
-        if (SSL_connect(ssl) != 1) {
+        if (SSL_timedAcceptorConnect(ssl, socket.sock, SSL_CONNECT_METHOD) != 1) {
           OERRLOG("HTTPLIB Error connecting ssl");
           error_ = Error::SSLConnection;
           return false;
