@@ -277,6 +277,11 @@ public:
         }
     }
 
+    virtual bool isRunning()
+    {
+        return running;
+    }
+
     virtual void runOnce(const char *query);
 
     void cleanupSocket(ISocket *sock) const
@@ -331,7 +336,21 @@ public:
     virtual int run()
     {
         DBGLOG("ProtocolSocketListener (%d threads) listening to socket on port %d", sink->getPoolSize(), port);
-        socket.setown(ISocket::create(port, listenQueue));
+
+        try
+        {
+            socket.setown(ISocket::create(port, listenQueue));
+        }
+        catch (IException *e)
+        {
+            started.signal();
+            StringBuffer s;
+            e->errorMessage(s);
+            OERRLOG("%s", s.str());
+            e->Release();
+            return 0;
+        }
+
         running = true;
         started.signal();
         while (running)
