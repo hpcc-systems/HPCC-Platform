@@ -146,6 +146,7 @@ interface jlib_decl IPropertyTree : extends serializable
     virtual unsigned getAttributeCount() const = 0;
 
     virtual void serializeToStream(IBufferedSerialOutputStream &out) const = 0;
+    virtual void deserializeFromStream(IBufferedSerialInputStream &in) = 0;
 
 private:
     void setProp(const char *, int); // dummy to catch accidental use of setProp when setPropInt() intended
@@ -237,6 +238,8 @@ jlib_decl bool areMatchingPTrees(const IPropertyTree * left, const IPropertyTree
 jlib_decl void addPTreeItem(IPropertyTree *ptree, const char * name, const char * value);
 
 jlib_decl IPropertyTree *createPTree(MemoryBuffer &src, byte flags=ipt_none);
+jlib_decl IPropertyTree *createPTreeFromBinary(IBufferedSerialInputStream &src, byte flags=ipt_none);
+jlib_decl IPropertyTree *createPTreeFromBinary(IBufferedSerialInputStream &src, IPTreeNodeCreator *nodeCreator=nullptr);
 
 jlib_decl IPropertyTree *createPTree(byte flags=ipt_none);
 jlib_decl IPropertyTree *createPTree(const char *name, byte flags=ipt_none);
