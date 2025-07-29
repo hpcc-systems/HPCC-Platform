@@ -166,7 +166,12 @@ static void sighandler(int signum, siginfo_t *info, void *extra)
     else
     {
         enableMemLeakChecking(false);
+
+#ifdef _COVERAGE
+        exit(2);
+#else
         _exit(2);
+#endif
     }
 }
 
@@ -634,6 +639,7 @@ int main(int argc, const char *argv[])
         exitCode = 2;
     }
 
+#ifndef _COVERAGE
     if (!optReleaseAllMemory)
     {
         //In release mode exit without calling all the clean up code.
@@ -641,6 +647,7 @@ int main(int argc, const char *argv[])
         fflush(NULL);
         _exit(exitCode);
     }
+#endif
 
     configuration.clear();
     releaseAtoms();
