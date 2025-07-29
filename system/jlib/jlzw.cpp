@@ -2312,6 +2312,9 @@ public:
                 }
             }
         }
+
+        // Preallocate the target for the expanded chunks - this should always be big enough
+        expandedBuffer.ensureCapacity(trailer.blockSize);
     }
 
     virtual ~CCompressedFileReader()
