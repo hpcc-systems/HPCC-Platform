@@ -12,6 +12,10 @@ on:
       - "!candidate-7.0.*"
       - "!candidate-6.*"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   pre_job:
      # continue-on-error: true # Uncomment once integration is finished

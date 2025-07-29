@@ -32,6 +32,9 @@
         "planes": {
           "$ref": "#/definitions/storagePlanes"
         },
+        "defaults": {
+          "$ref": "#/definitions/storagePlane"
+        },
         "remote": {
           "$ref": "#/definitions/remoteStorage"
         },
@@ -762,6 +765,10 @@
             "secret": {
               "description": "Secret id",
               "type": "string"
+            },
+            "managed": {
+              "description": "Use managed identity for authentication",
+              "type": "boolean"
             },
             "containers": {
               "type": "array",
