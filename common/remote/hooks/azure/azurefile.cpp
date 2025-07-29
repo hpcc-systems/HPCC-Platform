@@ -30,11 +30,6 @@
 #include "jplane.hpp"
 #include "azurefile.hpp"
 
-#include <chrono>
-#include <azure/core.hpp>
-#include <azure/storage/blobs.hpp>
-#include <azure/storage/files/shares.hpp>
-
 using namespace Azure::Storage;
 using namespace Azure::Storage::Blobs;
 using namespace Azure::Storage::Files;
@@ -50,6 +45,13 @@ using namespace std::chrono;
  */
 constexpr const char * azureFilePrefix = "azure:";
 constexpr const char * azureBlobPrefix = "azureblob:";  // Syntax azureblob:storageplane[/device]/apth
+
+static bool areManagedIdentitiesEnabled()
+{
+    //Use a local static to avoid re-evaluation.  Performance is not critical - so once overhead is acceptable.
+    static bool enabled = std::getenv("MSI_ENDPOINT") || std::getenv("IDENTITY_ENDPOINT");
+    return enabled;
+}
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -245,7 +247,7 @@ public:
     void appendToBlockBlob(size32_t len, const void * data);
 
 protected:
-    std::shared_ptr<StorageSharedKeyCredential> getCredentials() const;
+    std::shared_ptr<StorageSharedKeyCredential> getSharedKeyCredentials() const;
     std::string getBlobUrl() const;
     std::shared_ptr<BlobContainerClient> getBlobContainerClient() const;
     template<typename T> std::shared_ptr<T> getClient() const;
@@ -268,6 +270,7 @@ protected:
     bool haveMeta = false;
     bool isDir = false;
     bool fileExists = false;
+    bool useManagedIdentity = false;
     time_t lastModified = 0;
     time_t createdOn = 0;
     std::string blobUrl;
@@ -455,6 +458,11 @@ AzureFile::AzureFile(const char *_azureFileName) : fullName(_azureFileName)
         if (!strieq(api, azureBlobAPI.str()))
             throw makeStringExceptionV(99, "Storage api for plane %s is not azureblob", planeName.str());
 
+        useManagedIdentity = storageapi->getPropBool("@managed", false);
+        //MORE: We could allow the managed identity/secret to be supplied in the configuration
+        if (useManagedIdentity && !areManagedIdentitiesEnabled())
+            throw makeStringExceptionV(99, "Managed identity is not enabled for this environment");
+
         unsigned numDevices = plane->getPropInt("@numDevices", 1);
         if (numDevices != 1)
         {
@@ -492,8 +500,11 @@ AzureFile::AzureFile(const char *_azureFileName) : fullName(_azureFileName)
             filename = slash+1;
         }
 
-        if (isEmptyString(accountName) || isEmptyString(secretName))
-            throw makeStringExceptionV(99, "Missing container or secret name for plane %s", planeName.str());
+        if (isEmptyString(accountName))
+            throw makeStringExceptionV(99, "Missing account name for plane %s", planeName.str());
+
+        if (!useManagedIdentity && isEmptyString(secretName))
+            throw makeStringExceptionV(99, "Missing secret name for plane %s", planeName.str());
 
         //I am not at all sure we need to split this apart, only to join in back together again.
         slash = strchr(filename, '/');
@@ -559,7 +570,7 @@ AzureFile::AzureFile(const char *_azureFileName) : fullName(_azureFileName)
     blobUrl = ::getBlobUrl(accountName, containerName, blobName);
 }
 
-std::shared_ptr<StorageSharedKeyCredential> AzureFile::getCredentials() const
+std::shared_ptr<StorageSharedKeyCredential> AzureFile::getSharedKeyCredentials() const
 {
     StringBuffer key;
     getSecretValue(key, "storage", secretName, "key", true);
@@ -593,16 +604,44 @@ std::string AzureFile::getBlobUrl() const
 
 std::shared_ptr<BlobContainerClient> AzureFile::getBlobContainerClient() const
 {
-    auto cred = getCredentials();
     std::string blobContainerUrl = getContainerUrl(accountName, containerName);
-    return std::make_shared<BlobContainerClient>(blobContainerUrl, cred);
+
+    if (useManagedIdentity)
+    {
+        // For managed identity, create client without credentials
+        // The Azure SDK will automatically use managed identity when no explicit credentials are provided
+        // and the application is running in an Azure environment (VM, App Service, etc.)
+        try
+        {
+            return std::make_shared<BlobContainerClient>(blobContainerUrl);
+        }
+        catch (const Azure::Core::RequestFailedException& e)
+        {
+            throw makeStringExceptionV(-1, "Azure access error: Failed to authenticate using Managed Identity. Reason: %s (%d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+        }
+    }
+    else
+    {
+        auto cred = getSharedKeyCredentials();
+        return std::make_shared<BlobContainerClient>(blobContainerUrl, cred);
+    }
 }
 
 template<typename T>
 std::shared_ptr<T> AzureFile::getClient() const
 {
-    auto cred = getCredentials();
-    return std::make_shared<T>(getBlobUrl(), cred);
+    if (useManagedIdentity)
+    {
+        // For managed identity, create client without credentials
+        // The Azure SDK will automatically use managed identity when no explicit credentials are provided
+        // and the application is running in an Azure environment (VM, App Service, etc.)
+        return std::make_shared<T>(getBlobUrl());
+    }
+    else
+    {
+        auto cred = getSharedKeyCredentials();
+        return std::make_shared<T>(getBlobUrl(), cred);
+    }
 }
 
 bool AzureFile::createDirectory()
@@ -810,7 +849,7 @@ void AzureFile::setProperties(int64_t _blobSize, Azure::DateTime _lastModified, 
     fileSize = _blobSize;
     lastModified = system_clock::to_time_t(system_clock::time_point(_lastModified));
     createdOn = system_clock::to_time_t(system_clock::time_point(_createdOn));
-};
+}
 
 //---------------------------------------------------------------------------------------------------------------------
 
