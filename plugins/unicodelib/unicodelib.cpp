@@ -147,6 +147,19 @@ UNICODELIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 static void unicodeEnsureIsNormalized(unsigned inLen, UChar * in)
 {
     UErrorCode err = U_ZERO_ERROR;
+#if U_ICU_VERSION_MAJOR_NUM >= 56
+    const UNormalizer2 * norm2 = unorm2_getNFCInstance(&err);
+    if (!unorm2_isNormalized(norm2, in, inLen, &err))
+    {
+        UChar * buff = (UChar *)malloc(inLen * 2);
+        unsigned len = unorm2_normalize(norm2, in, inLen, buff, inLen, &err);
+        if (len > inLen)
+            len = inLen;
+        memcpy(in, buff, len*sizeof(UChar));
+        while (len < inLen) in[len++] = 0x0020;
+        free(buff);
+    }
+#else
     if (!unorm_isNormalized(in, inLen, UNORM_NFC, &err))
     {
         UChar * buff = (UChar *)malloc(inLen * 2);
@@ -157,6 +170,7 @@ static void unicodeEnsureIsNormalized(unsigned inLen, UChar * in)
         while (len < inLen) in[len++] = 0x0020;
         free(buff);
     }
+#endif
 }
 
 
