@@ -361,7 +361,10 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
         storagePlaneMap.clear();
 
         Owned<IPropertyTree> storage = getGlobalConfigSP()->getPropTree("storage");
-        assertex(storage);
+        // This may be null if running standalone (e.g. eclcc), or in a component that does not have access to the configuration.
+        if (!storage)
+            return;
+
         Owned<IPropertyTree> defaults = storage->getPropTree("defaults");
         if (!defaults)
             defaults.setown(createPTree("defaults"));

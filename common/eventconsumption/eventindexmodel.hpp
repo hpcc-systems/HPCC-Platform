@@ -37,6 +37,11 @@
 //       plane: name of place in which the file resides, if different from the default
 //       branchPlane: name of place in which index branches reside, if different from the default
 //       leafPlane: name of place in which index leaves reside, if different from the default
+//   expansion:
+//     node:
+//     - kind: node kind
+//       sizeFactor: floating point multiplier for estimated node size
+//       sizeToTimeFactor: floating point multiplier for estimated node expansion time
 //
 // - `kind` is optional; as the first model the value is implied.
 // - `cache-read` is optional; if zero, empty, or omitted, the cache is disabled.
@@ -52,6 +57,15 @@
 //   the file's default storage plane.
 // - `file/leafPlane` is optional; omission, or empty, implies the file's index leaves reside in the
 //   file's default storage plane.
+// - `expansion` is optional; omission prevents any expansion modeling.
+// - `expansion/node` is optional; omission prevents estimating algorithm performance. If present,
+//   one instance for each type of index node is required.
+// - `expansion/node/kind` is a required choice of `branch` or `leaf`.
+// - `expansion/node/sizeFactor` is a required positive floating point multiplier for algorithm
+//   performance estimation. The on disk page size is multiplied by this value.
+// - `expansion/node/sizeToTimeFactor` is a required positive floating point multiplier for
+//   algorithm performance estimation. The estimated size is multipled by this factor to estimate
+//   the expansion time.
 
 // Encapsulation of all modeled information about given file page. Note that the file path is not
 // included as the model does not retain that information.
@@ -61,6 +75,9 @@ struct ModeledPage
     __uint64 offset{0};
     __uint64 nodeKind{1};
     __uint64 readTime{0};
+    __uint64 expandedSize{0};
+    __uint64 expansionTime{0};
+    bool expansionIsEstimated{false};
 };
 
 // Encapsulation of the configuration's `storage` element.
@@ -193,4 +210,24 @@ private:
     const Plane* defaultPlane{nullptr};
     Files configuredFiles;
     ObservedFiles observedFiles;
+};
+
+// Encapsulation of the configuration's `expansion` element.
+class Expansion
+{
+public:
+    static constexpr size_t NumKinds = 2;
+    struct Estimate
+    {
+        __uint64 size{0};
+        __uint64 time{0};
+    };
+
+public:
+    void configure(const IPropertyTree& config);
+    void describePage(const CEvent& event, ModeledPage& page) const;
+
+public:
+    Estimate estimates[NumKinds];
+    bool estimating{false};
 };

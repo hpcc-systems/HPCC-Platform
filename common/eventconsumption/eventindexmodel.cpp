@@ -32,8 +32,17 @@ public: // IEventModel
         case MetaFileInformation:
             propagate = onMetaFileInformation(event);
             break;
+        case EventIndexLookup:
+            propagate = onIndexLookup(event);
+            break;
         case EventIndexLoad:
             propagate = onIndexLoad(event);
+            break;
+        case EventIndexEviction:
+            propagate = onIndexEviction(event);
+            break;
+        case EventIndexPayload:
+            propagate = onIndexPayload(event);
             break;
         default:
             break;
@@ -48,6 +57,9 @@ public:
         if (!node)
             return false;
         storage.configure(*node);
+        node = config.queryBranch("expansion");
+        if (node)
+            expansion.configure(*node);
         return true;
     }
 
@@ -58,16 +70,45 @@ protected:
         return true;
     }
 
+    bool onIndexLookup(CEvent& event)
+    {
+        ModeledPage page;
+        expansion.describePage(event, page);
+        event.setValue(EvAttrExpandedSize, page.expandedSize);
+        return true;
+    }
+
     bool onIndexLoad(CEvent& event)
     {
         ModeledPage page;
         storage.useAndDescribePage(event.queryNumericValue(EvAttrFileId), event.queryNumericValue(EvAttrFileOffset), event.queryNumericValue(EvAttrNodeKind), page);
+        expansion.describePage(event, page);
         event.setValue(EvAttrReadTime, page.readTime);
+        event.setValue(EvAttrExpandedSize, page.expandedSize);
+        event.setValue(EvAttrExpandTime, page.expansionTime);
+        return true;
+    }
+
+    bool onIndexEviction(CEvent& event)
+    {
+        ModeledPage page;
+        expansion.describePage(event, page);
+        event.setValue(EvAttrExpandedSize, page.expandedSize);
+        return true;
+    }
+
+    bool onIndexPayload(CEvent& event)
+    {
+        ModeledPage page;
+        expansion.describePage(event, page);
+        event.setValue(EvAttrExpandedSize, page.expandedSize);
+        event.setValue(EvAttrExpandTime, page.expansionTime);
         return true;
     }
 
 protected:
     Storage storage;
+    Expansion expansion;
 };
 
 IEventModel* createIndexEventModel(const IPropertyTree& config)
@@ -92,6 +133,7 @@ class IndexEventModelTests : public CppUnit::TestFixture
     CPPUNIT_TEST(testExplicitNoPageCache);
     CPPUNIT_TEST(testPageCacheEviction);
     CPPUNIT_TEST(testNoPageCacheEviction);
+    CPPUNIT_TEST(testExpansionEstimation);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -308,6 +350,50 @@ expect:
                     <event type="IndexLoad" FileId="1" FileOffset="8192" NodeKind="0" ExpandedSize="0" ExpandTime="0" ReadTime="100"/>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="0" ExpandedSize="0" ExpandTime="0" ReadTime="100"/>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="0" ExpandedSize="0" ExpandTime="0" ReadTime="100"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData);
+    }
+
+    void testExpansionEstimation()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link type="index-events">
+                    <storage>
+                        <plane name="a" readTime="500"/>
+                    </storage>
+                    <expansion>
+                        <node kind="0" sizeFactor="1.5" sizeToTimeFactor="0.25"/>
+                        <node kind="1" sizeFactor="2.0" sizeToTimeFactor="0.75"/>
+                    </expansion>
+                </link>
+                <input>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="0" InCache="true" ExpandedSize="20000"/>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" ExpandedSize="30000"/>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" ExpandedSize="0"/>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="0" ExpandedSize="20000" ExpandTime="1000" ReadTime="0"/>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" ExpandedSize="30000" ExpandTime="2000" ReadTime="0"/>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="0" ExpandedSize="0" ExpandTime="0" ReadTime="0"/>
+                    <event type="IndexPayload" FileId="1" FileOffset="0" ExpandTime="2000" ExpandedSize="30000"/>
+                    <event type="IndexPayload" FileId="1" FileOffset="0" ExpandTime="0" ExpandedSize="0"/>
+                    <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="0" ExpandedSize="20000"/>
+                    <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" ExpandedSize="30000"/>
+                    <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="0" ExpandedSize="0"/>
+                </input>
+                <expect>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="0" InCache="true" ExpandedSize="12288"/>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" ExpandedSize="16384"/>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" ExpandedSize="16384"/>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="0" ExpandedSize="12288" ExpandTime="3072" ReadTime="500"/>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" ExpandedSize="16384" ExpandTime="12288" ReadTime="500"/>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="0" ExpandedSize="12288" ExpandTime="3072" ReadTime="500"/>
+                    <event type="IndexPayload" FileId="1" FileOffset="0" ExpandTime="12288" ExpandedSize="16384"/>
+                    <event type="IndexPayload" FileId="1" FileOffset="0" ExpandTime="12288" ExpandedSize="16384"/>
+                    <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="0" ExpandedSize="12288"/>
+                    <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" ExpandedSize="16384"/>
+                    <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="0" ExpandedSize="12288"/>
                 </expect>
             </test>
         )!!!";
