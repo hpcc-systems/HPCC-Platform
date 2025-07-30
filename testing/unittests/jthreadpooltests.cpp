@@ -632,7 +632,128 @@ public:
 
     void testTableDrivenTightlyBoundThreadPool()
     {
+        // Create thread pool with max 2 threads, testing start with and an infinite start delay
+        pool.setown(createThreadPool("TightlyBoundTestPool", factory, true, nullptr, 2, INFINITE));
 
+            // Test Thread Pool start delay
+
+			// Two new threads should start immediately
+
+			// Thread3 should not start until one of the two running threads completes.
+
+			// Wait for the running count to be 1
+
+			// Start Thread4 which should start immediately as the pool has capacity
+
+			// Thread5 should not start as 2 threads are running and it's
+			// 100 millisecond start timer should timeout, expect exception
+
+		// Test Thread start delay
+
+			// Thread6 should start as one of the two threads will complete within it's
+			// 250 millisecond start timer, no exception
+
+		// Test Thread startNoBlock
+
+			// Start Thread7 to ensure pool at capacity
+
+			// Pool is at capacity, Thread8 startNoBlock should throw exception immediately
+
+			// Wait for the running count to be less than 2
+
+			// Thread8 should start immediately as the pool has capacity
+
+        // Define test scenarios using the table-driven framework
+        std::vector<PoolTestScenario> scenarios = {
+            // Test Thread Pool start delay
+            {
+                "Test Thread Pool start delay",
+                2,    // maxThreads
+                1000, // throttleDelayMs (0=infinite)
+                {
+                    // Thread name, runtimeMs, expectedStartDelayMs, startTimeoutMs, startExpectation, startFunction
+                    {"Thread1", 300, 0, INFINITE, ThreadStartExpectation::ShouldSucceed, StartFunctionToUse::StartFunction},   // Fill pool slot 1
+                    {"Thread2", 300, 0, INFINITE, ThreadStartExpectation::ShouldSucceed, StartFunctionToUse::StartFunction},   // Fill pool slot 2
+                    {"Thread3", 200, 300, INFINITE, ThreadStartExpectation::ShouldSucceed, StartFunctionToUse::StartFunction}, // Wait ~300ms for Thread1/2 to complete
+                    {"Thread4", 200, 0, INFINITE, ThreadStartExpectation::ShouldSucceed, StartFunctionToUse::StartFunction},   // Start immediately (slot available after Thread3 blocks)
+                },
+                50,  // durationWiggleMs
+                ValidationPolicy::ValidateCounts // validationPolicy
+            },
+
+            // True throttling behavior - threads start after throttle delay expires
+            {
+                "TrueThrottlingBehavior",
+                2,   // maxThreads
+                400, // throttleDelayMs
+                {
+                    // Thread name, runtimeMs, expectedStartDelayMs, startTimeoutMs, startExpectation, startFunction
+                    {"LongThread1", 1000, 0, INFINITE, ThreadStartExpectation::ShouldSucceed, StartFunctionToUse::StartFunction},      // Long-running, won't complete during test
+                    {"LongThread2", 1000, 0, INFINITE, ThreadStartExpectation::ShouldSucceed, StartFunctionToUse::StartFunction},      // Long-running, won't complete during test
+                    {"ThrottledThread", 200, 400, INFINITE, ThreadStartExpectation::ShouldSucceed, StartFunctionToUse::StartFunction}, // Wait full 400ms throttle, then start anyway
+                },
+                50,  // durationWiggleMs
+                ValidationPolicy::ValidateCounts // validationPolicy
+            },
+
+            // Timeout before throttling completes - demonstrates true throttling timeout
+            {
+                "TimeoutBeforeThrottle",
+                2,   // maxThreads
+                600, // throttleDelayMs - threads wait this long when pool is full
+                {
+                    // Thread name, runtimeMs, expectedStartDelayMs, startTimeoutMs, startExpectation, startFunction
+                    {"Blocker1", 1200, 0, INFINITE, ThreadStartExpectation::ShouldSucceed, StartFunctionToUse::StartFunction},         // Long-running blocker (1200ms)
+                    {"Blocker2", 1200, 0, INFINITE, ThreadStartExpectation::ShouldSucceed, StartFunctionToUse::StartFunction},         // Long-running blocker (1200ms)
+                    {"ThrottledThread", 200, 600, INFINITE, ThreadStartExpectation::ShouldSucceed, StartFunctionToUse::StartFunction}, // Wait full 600ms throttle, then start
+                    {"TimeoutThread", 200, 0, 300, ThreadStartExpectation::ShouldThrowException, StartFunctionToUse::StartFunction},           // Timeout after 300ms (< 600ms throttle), never starts
+                    {"StartNoBlockFail", 200, 0, INFINITE, ThreadStartExpectation::ShouldThrowException, StartFunctionToUse::StartNoBlockFunction},    // startNoBlock should fail immediately
+                },
+                50,   // durationWiggleMs
+                ValidationPolicy::SkipValidation // validationPolicy (timeout doesn't start thread)
+            },
+
+            // Mixed: slot availability + throttling + timeouts
+            {
+                "MixedBehaviors",
+                2,   // maxThreads
+                300, // throttleDelayMs
+                {
+                    // Thread name, runtimeMs, expectedStartDelayMs, startTimeoutMs, startExpectation, startFunction
+                    {"Quick1", 100, 0, INFINITE, ThreadStartExpectation::ShouldSucceed, StartFunctionToUse::StartFunction},        // Fill pool, complete quickly
+                    {"Quick2", 100, 0, INFINITE, ThreadStartExpectation::ShouldSucceed, StartFunctionToUse::StartFunction},        // Fill pool, complete quickly
+                    {"WaitForSlot", 200, 100, INFINITE, ThreadStartExpectation::ShouldSucceed, StartFunctionToUse::StartFunction}, // Wait ~100ms for Quick1/2 to complete
+                    {"LongRunner", 1000, 0, INFINITE, ThreadStartExpectation::ShouldSucceed, StartFunctionToUse::StartFunction},   // Start immediately, run long
+                    {"Throttled", 200, 200, INFINITE, ThreadStartExpectation::ShouldSucceed, StartFunctionToUse::StartFunction},   // Pool full, wait full 300ms throttle
+                    {"FastTimeout", 200, 0, 50, ThreadStartExpectation::ShouldThrowException, StartFunctionToUse::StartFunction},          // Timeout before throttle expires
+                },
+                30,   // durationWiggleMs
+                ValidationPolicy::SkipValidation // validationPolicy (has timeout)
+            },
+
+            // Concurrent starts - test true concurrent blocking behavior
+            {
+                "ConcurrentThrottling",
+                2,   // maxThreads
+                500, // throttleDelayMs
+                {
+                    // Thread name, runtimeMs, expectedStartDelayMs, startTimeoutMs, startExpectation, startFunction
+                    {"Blocker1", 2000, 0, INFINITE, ThreadStartExpectation::ShouldSucceed, StartFunctionToUse::StartFunction}, // Long-running, holds slot
+                    {"Blocker2", 2000, 0, INFINITE, ThreadStartExpectation::ShouldSucceed, StartFunctionToUse::StartFunction}, // Long-running, holds slot
+                    // These will be started concurrently to test true concurrent blocking/throttling
+                    {"Concurrent1", 200, 500, INFINITE, ThreadStartExpectation::ShouldSucceed, StartFunctionToUse::StartFunction}, // Should wait 500ms throttle
+                    {"Concurrent2", 200, 500, INFINITE, ThreadStartExpectation::ShouldSucceed, StartFunctionToUse::StartFunction}, // Should wait 500ms throttle
+                    {"Concurrent3", 200, 500, INFINITE, ThreadStartExpectation::ShouldSucceed, StartFunctionToUse::StartFunction}, // Should wait 500ms throttle
+                },
+                50,   // durationWiggleMs
+                ValidationPolicy::ValidateCounts, // validationPolicy
+                ConcurrencyMode::Concurrent  // concurrencyMode
+            }};
+
+        for (const auto &scenario : scenarios)
+        {
+            runTableDrivenScenario(scenario);
+        }
     }
 
     void testTableDrivenThrottledThreadPoolWithDefaultDelay()
