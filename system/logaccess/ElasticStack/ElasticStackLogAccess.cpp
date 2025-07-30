@@ -60,6 +60,8 @@ static constexpr const char * LOGMAP_TIMESTAMPCOL_ATT = "@timeStampColumn";
 
 static constexpr const char * DEFAULT_SCROLL_TIMEOUT = "1m"; //Elastic Time Units (i.e. 1m = 1 minute).
 static constexpr std::size_t  DEFAULT_MAX_RECORDS_PER_FETCH = 100;
+static constexpr int DEFAULT_CONN_TIMEOUT_MS = 2000;
+static constexpr int DEFAULT_HTTP_REQ_TIMEOUT_MS = 3000;
 
 void ElasticStackLogAccess::getMinReturnColumns(std::string & columns)
 {
@@ -84,6 +86,46 @@ ElasticStackLogAccess::ElasticStackLogAccess(const std::vector<std::string> &hos
         m_esConnectionStr.set(hostUrlList.at(0).c_str());
 
     m_pluginCfg.set(&logAccessPluginConfig);
+
+    //Client::TimeoutOption - HTTP request timeout in ms.
+    m_reqTimeOutMs = m_pluginCfg->getPropInt("connection/@httpReqTimeoutMs", DEFAULT_HTTP_REQ_TIMEOUT_MS);
+    if (m_reqTimeOutMs >= 0)
+        m_esClient.setClientOption(elasticlient::Client::TimeoutOption{m_reqTimeOutMs});
+
+    //Client::ConnectTimeoutOption - Connect timeout in ms.
+    m_connTimeOutMs = m_pluginCfg->getPropInt("connection/@connTimeoutMs", DEFAULT_CONN_TIMEOUT_MS);
+    if (m_connTimeOutMs >= 0)
+        m_esClient.setClientOption(elasticlient::Client::ConnectTimeoutOption{m_connTimeOutMs});
+
+    //is worth it to verify m_esConnectionStr targets https?
+    if (m_pluginCfg->hasProp("connection/ssl"))
+    {
+        //Client::SSLOption::CertFile - path to the SSL certificate file.
+        m_sCertFile.set(m_pluginCfg->queryProp("connection/ssl/@certFilePath"));
+
+        //Client::SSLOption::KeyFile - path to the SSL certificate key file.
+        m_skeyFile.set(m_pluginCfg->queryProp("connection/ssl/@keyFilePath"));
+
+        //Client::SSLOption::CaInfo - path to the CA bundle if custom CA is used.
+        m_caInfo.set(m_pluginCfg->queryProp("connection/ssl/@caInfoPath"));
+
+        //Client::SSLOption::VerifyHost - verify the certificate's name against host.
+        m_bVerifyHost = m_pluginCfg->getPropBool("connection/ssl/@verifyHost", true);
+
+        //Client::SSLOption::VerifyPeer - verify the peer's SSL certificate.
+        m_bVerifyPeer = m_pluginCfg->getPropBool("connection/ssl/@verifyPeer", true);
+
+        elasticlient::Client::SSLOption sslOptions
+        {
+            elasticlient::Client::SSLOption::VerifyHost{m_bVerifyHost},
+            elasticlient::Client::SSLOption::VerifyPeer{m_bVerifyPeer},
+            elasticlient::Client::SSLOption::CaInfo{m_caInfo.str()},
+            elasticlient::Client::SSLOption::CertFile{m_sCertFile.str()},
+            elasticlient::Client::SSLOption::KeyFile{m_skeyFile.str()}
+        };
+
+        m_esClient.setClientOption(sslOptions);
+    }
 
     m_globalIndexTimestampField.set(DEFAULT_TS_NAME);
     m_globalIndexSearchPattern.set(DEFAULT_INDEX_PATTERN);
@@ -212,15 +254,131 @@ ElasticStackLogAccess::ElasticStackLogAccess(const std::vector<std::string> &hos
 
 }
 
+static size_t captureIncomingCURLReply(void* contents, size_t size, size_t nmemb, void* userp)
+{
+    size_t          incomingDataSize = size * nmemb;
+    MemoryBuffer*   mem = static_cast<MemoryBuffer*>(userp);
+    static constexpr size_t MAX_BUFFER_SIZE = 4194304; // 2^22
+
+    if ((mem->length() + incomingDataSize) < MAX_BUFFER_SIZE)
+    {
+        mem->append(incomingDataSize, contents);
+    }
+    else
+    {
+        // Signals an error to libcurl
+        incomingDataSize = 0;
+        WARNLOG("%s::captureIncomingCURLReply exceeded buffer size %zu", COMPONENT_NAME, MAX_BUFFER_SIZE);
+    }
+
+    return incomingDataSize;
+}
+
+static void curlPingURL(StringBuffer & resp, const char * targetURL, const char * certFile, const char * caCertFile, bool verifyHost, bool verifyPeer)
+{
+    if (isEmptyString(targetURL))
+        throw makeStringExceptionV(-1, "%s Curl ping: targetURL required!", COMPONENT_NAME);
+
+    OwnedPtrCustomFree<CURL, curl_easy_cleanup> curlHandle = curl_easy_init();
+    if (curlHandle)
+    {
+        CURLcode                curlResponseCode;
+        static constexpr size_t initialBufferSize = 32768; // 2^15
+        MemoryBuffer            captureBuffer(initialBufferSize);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_URL, targetURL) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s: Curl Ping: Could not set 'CURLOPT_URL' (%s)!", COMPONENT_NAME,  targetURL);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_NOPROGRESS, 1) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s: Curl Ping: Could not disable 'CURLOPT_NOPROGRESS' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_WRITEFUNCTION, captureIncomingCURLReply) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s: Curl Ping: Could not set 'CURLOPT_WRITEFUNCTION' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_WRITEDATA, static_cast<void*>(&captureBuffer)) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s: Curl Ping: Could not set 'CURLOPT_WRITEDATA' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_USERAGENT, "HPCC Systems Log Access client") != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s: Curl Ping: Could not set 'CURLOPT_USERAGENT' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_FAILONERROR, 0L) != CURLE_OK) // Do not treat non-ok HTTP codes as an error
+            throw makeStringExceptionV(-1, "%s: Curl Ping: Could not set 'CURLOPT_FAILONERROR' option!", COMPONENT_NAME);
+
+        if (!isEmptyString(certFile))
+        {
+            /* set the cert for client authentication */
+            if (curl_easy_setopt(curlHandle, CURLOPT_SSLCERT, certFile) != CURLE_OK)
+                throw makeStringExceptionV(-1, "%s: Curl Ping: Could not set 'CURLOPT_SSLCERT' option!", COMPONENT_NAME);
+        }
+
+        if (!isEmptyString(caCertFile))
+        {
+            /* set the file with the certs validating the server */
+            if (curl_easy_setopt(curlHandle, CURLOPT_CAINFO, caCertFile) != CURLE_OK)
+                throw makeStringExceptionV(-1, "%s: Curl Ping: Could not set 'CURLOPT_CAINFO' option!", COMPONENT_NAME);
+        }
+
+        /* disconnect if we cannot validate server's cert */
+        if (curl_easy_setopt(curlHandle, CURLOPT_SSL_VERIFYPEER, verifyPeer ? 1L : 0L) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s: Curl Ping: Could not set 'CURLOPT_SSL_VERIFYPEER' option!", COMPONENT_NAME);
+
+        /* disconnect if we cannot validate server's hostname */
+        if (curl_easy_setopt(curlHandle, CURLOPT_SSL_VERIFYHOST, verifyHost ? 1L : 0L) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s: Curl Ping: Could not set 'CURLOPT_SSL_VERIFYHOST' option!", COMPONENT_NAME);
+
+        try
+        {
+            curlResponseCode = curl_easy_perform(curlHandle);
+        }
+        catch (...)
+        {
+            throw makeStringExceptionV(-1, "%s: Curl Ping: Unknown error!", COMPONENT_NAME);
+        }
+
+        if (captureBuffer.length() > 0)
+        {
+            resp.append(captureBuffer.length(), (const char *)captureBuffer.toByteArray());
+        }
+
+        if (curlResponseCode == CURLE_OK) // this is not the same as http success
+        {
+            long httpResponseCode;
+            curl_easy_getinfo(curlHandle, CURLINFO_RESPONSE_CODE, &httpResponseCode);
+
+            if(httpResponseCode == 200L) // HTTP OK
+            {
+                resp.set("Success");
+            }
+            else
+            {
+                if (resp.isEmpty())
+                    resp.set("Unknown error");
+
+                resp.appendf(" (HTTP %ld)", httpResponseCode);
+            }
+        }
+        else
+        {
+            throw makeStringExceptionV(-1, "%s: Curl Ping: CURL ACTION FAILED! '%s'", COMPONENT_NAME, curl_easy_strerror(curlResponseCode));
+        }
+    }
+}
+
 const IPropertyTree * ElasticStackLogAccess::performAndLogESRequest(Client::HTTPMethod httpmethod, const char * url, const char * reqbody, const char * logmessageprefix, LogMsgCategory reqloglevel = MCdebugProgress, LogMsgCategory resploglevel = MCdebugProgress)
 {
     try
     {
         LOG(reqloglevel,"ESLogAccess: Requesting '%s'... ", logmessageprefix );
         cpr::Response esREsponse = m_esClient.performRequest(httpmethod,url,reqbody);
+        if (esREsponse.status_code / 100 != 2)
+        {
+            WARNLOG("ESLogAccess request failed: HTTP code: (%ld), reason: '%s', status: '%s', raw header: '%s', response: '%s'", esREsponse.status_code, esREsponse.reason.c_str(), esREsponse.status_line.c_str(), esREsponse.raw_header.c_str(), esREsponse.text.c_str());
+        }
+        else
+        {
+            LOG(resploglevel,"ESLogAccess: '%s' HTTP code: (%ld), status: '%s', responseText: '%s'", logmessageprefix, esREsponse.status_code, esREsponse.status_line.c_str(), esREsponse.text.c_str());
+        }
         Owned<IPropertyTree> response = createPTreeFromJSONString(esREsponse.text.c_str());
-        LOG(resploglevel,"ESLogAccess: '%s' response: '%s'", logmessageprefix, esREsponse.text.c_str());
-
         return response.getClear();
     }
     catch (ConnectionException & ce)//std::runtime_error
@@ -292,6 +450,15 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
             StringBuffer debugReport;
             debugReport.set("{ \"ConnectionInfo\": {");
             appendJSONStringValue(debugReport, "ConnectionString", m_esConnectionStr.str(), true);
+            appendJSONValue(debugReport, "httpReqTimeoutMs", m_reqTimeOutMs);
+            appendJSONValue(debugReport, "connTimeoutMs", m_connTimeOutMs);
+            debugReport.appendf(", \"ssl\": {");
+            appendJSONStringValue(debugReport, "CertFile", m_sCertFile.str(), true);
+            appendJSONStringValue(debugReport, "KeyFile", m_skeyFile.str(), true);
+            appendJSONStringValue(debugReport, "CaInfo", m_caInfo.str(), true);
+            appendJSONValue(debugReport, "VerifyHost", m_bVerifyHost);
+            appendJSONValue(debugReport, "VerifyPeer", m_bVerifyPeer);
+            debugReport.append(" }"); //close ssl
             debugReport.append( "}"); //close conninfo
 
             debugReport.appendf(", \"LogMaps\": {");
@@ -342,6 +509,30 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
 
             if (options.IncludeDebugReport)
                 report.DebugReport.PluginDebugReport.set(debugReport);
+
+            debugReport.append("{ \"CurlPing\": ");
+            try
+            {
+                StringBuffer resp;
+                curlPingURL(resp, m_esConnectionStr.str(), m_sCertFile.str(), m_caInfo.str(), m_bVerifyHost, m_bVerifyPeer);
+                debugReport.appendf("\"%s\"", resp.str());
+            }
+            catch(IException * e)
+            {
+                VStringBuffer description("Exception pinging ES server (%d) - ", e->errorCode());
+                e->errorMessage(description);
+                debugReport.appendf("\"%s\"", description.str());
+                status.appendMessage(description.str());
+                e->Release();
+                status.escalateStatusCode(LOGACCESS_STATUS_fail);
+            }
+            catch(...)
+            {
+                debugReport.append("\"Unknown exception while pinging ES server\"");
+                status.appendMessage("Unknown exception while pinging ES server");
+                status.escalateStatusCode(LOGACCESS_STATUS_fail);
+            }
+            debugReport.append(" } "); //close CurlPing
 
             debugReport.set("{ \"AvailableIndices\": "); //start server debugreport and availableindices
             try

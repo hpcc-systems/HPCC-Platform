@@ -1,0 +1,27 @@
+global:
+  logAccess:
+      name: "Elastic4HPCCObservability"
+      type: "elasticstack"
+      connection:
+          protocol: "https"
+          host: "elasticsearch-es-http.default.svc.cluster.local"
+          port: 9200
+          connTimeoutMs: 2000
+          httpReqTimeoutMs: 3000
+          ssl:
+            certFilePath: "/certs/cert.crt"
+            keyFilePath: "/certs/secret.key"
+            caInfoPath: "/certs/ca.crt"
+            verifyHost: true
+            verifyPeer: true
+      logMaps:
+        - type: "global"                             #These settings apply to all log mappings
+          storeName: "filebeat*"                     #Logs are expected to be housed in ES indexes prefixed 'filebeat-'
+          searchColumn: "message"                    #The 'message' field is to be targeted for wilcard text searches
+          timeStampColumn: "@timestamp"              #The '@timestamp' field contains time log entry timestamp
+          columnMode: "ALL"
+          columnType: "string"
+        - type: "pod"
+          searchColumn: "kubernetes.pod.name"
+          columnMode: "DEFAULT"
+          columnType: "string"
