@@ -67,7 +67,7 @@ struct SpanError
  * and flags indicating whether the span failed and whether the exception escaped the span's scope.
  */
 {
-    const char * errorMessage = NO_STATUS_MESSAGE; /**< The error message associated with the error. */
+    StringBuffer errorMessage; /**< The error message associated with the error. */
     int errorCode = UNKNOWN_ERROR_CODE; /**< The error code associated with the error. */
     bool spanFailed = true; /**< Flag indicating whether the span failed. */
     bool escapeScope = false; /**< Flag indicating whether the exception escaped the scope of the span. */
@@ -164,6 +164,7 @@ interface ISpan : extends IInterface
 
     virtual ISpan * createClientSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp = nullptr)  = 0;
     virtual ISpan * createInternalSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp = nullptr) = 0;
+    virtual ISpan * createConditionalInternalSpan(const char * name, stat_type thresholdMs) = 0;
 
 //Old-style global/caller/local id interface functions
     virtual const char* queryGlobalId() const = 0;
@@ -273,8 +274,10 @@ interface ITraceManager : extends IInterface
     virtual bool isTracingEnabled() const = 0;
  };
 
- //Create an internal span that has now completed, but which started in the past.
- extern jlib_decl ISpan * createBackdatedInternalSpan(const char * name, stat_type elapsedNs);
+//Create an internal span that has now completed, but which started in the past.
+extern jlib_decl ISpan * createBackdatedInternalSpan(const char * name, stat_type elapsedNs);
+//Create an internal span which only records if the elapsed time is greater than the threshold
+extern jlib_decl ISpan * createConditionalInternalSpan(const char * name, stat_type thresholdNs);
 
 extern jlib_decl ISpan * queryNullSpan();
 extern jlib_decl ISpan * getNullSpan();

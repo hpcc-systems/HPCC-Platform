@@ -808,8 +808,9 @@ public:
 
     ISpan * createClientSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp = nullptr) override;
     ISpan * createInternalSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp = nullptr) override;
+    ISpan * createConditionalInternalSpan(const char * name, stat_type thresholdMs) override;
 
-    virtual void endSpan() final override
+    virtual void endSpan() override
     {
         //It is legal to call endSpan multiple times, but only the first call will have any effect
         if (span != nullptr)
@@ -1022,7 +1023,7 @@ public:
         if (span != nullptr)
         {
             if (error.spanFailed)
-                span->SetStatus(opentelemetry::trace::StatusCode::kError, error.errorMessage);
+                span->SetStatus(opentelemetry::trace::StatusCode::kError, error.errorMessage.str());
 
             //https://opentelemetry.io/docs/specs/semconv/exceptions/exceptions-spans/
             //The event name MUST be "exception".
@@ -1034,9 +1035,9 @@ public:
             //exception.type	string	The type of the exception (its fully-qualified class name, if applicable). The dynamic type of the exception should be preferred over the static type in languages that support it.	java.net.ConnectException; OSError	See below
 
             if (error.errorCode != 0 && error.errorCode != -1)
-                span->AddEvent("Exception", {{"message", error.errorMessage}, {"escaped", error.escapeScope}, {"code", error.errorCode}});
+                span->AddEvent("Exception", {{"message", error.errorMessage.str()}, {"escaped", error.escapeScope}, {"code", error.errorCode}});
             else
-                span->AddEvent("Exception", {{"message", error.errorMessage}, {"escaped", error.escapeScope}});
+                span->AddEvent("Exception", {{"message", error.errorMessage.str()}, {"escaped", error.escapeScope}});
         }
     }
 
@@ -1142,7 +1143,6 @@ protected:
 
     opentelemetry::trace::StartSpanOptions opts;
     nostd::shared_ptr<opentelemetry::trace::Span> span;
-
 };
 
 class CNullSpan final : public CInterfaceOf<ISpan>
@@ -1178,12 +1178,12 @@ public:
 
     virtual ISpan * createClientSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp = nullptr) override { return getNullSpan(); }
     virtual ISpan * createInternalSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp = nullptr) override { return getNullSpan(); }
+    virtual ISpan * createConditionalInternalSpan(const char * name, stat_type thresholdMs) override { return getNullSpan(); }
 
 private:
     CNullSpan(const CNullSpan&) = delete;
     CNullSpan& operator=(const CNullSpan&) = delete;
 };
-
 
 class CChildSpan : public CSpan
 {
@@ -1244,6 +1244,253 @@ protected:
     CSpan * localParentSpan = nullptr;
 };
 
+class CConditionalChildSpan : public CChildSpan
+{
+public:
+    CConditionalChildSpan(const char * spanName, CSpan * parent, stat_type thresholdMs, opentelemetry::trace::SpanKind kind)
+        : CChildSpan(spanName, parent)
+        , thresholdDurationMS(thresholdMs)
+    {
+        startTP = std::chrono::high_resolution_clock::now();
+        if (kind == opentelemetry::trace::SpanKind::kInternal)
+            opts.kind = opentelemetry::trace::SpanKind::kInternal;
+        else
+            opts.kind = opentelemetry::trace::SpanKind::kClient;
+    }
+
+    struct EventInfo
+    {
+        std::string name;
+        std::chrono::high_resolution_clock::time_point timestamp;
+        std::map<std::string, std::string> attributes;
+
+        EventInfo(const std::string &eventName, const std::chrono::high_resolution_clock::time_point &ts)
+            : name(eventName), timestamp(ts) {}
+
+        EventInfo(const std::string &eventName, const std::chrono::high_resolution_clock::time_point &ts, const std::map<std::string, std::string> &atts)
+            : name(eventName), timestamp(ts), attributes(atts) {}
+    };
+
+    struct ExceptionInfo
+    {
+        Linked<IException> exception;
+        bool spanFailed;
+        bool escapedScope;
+        ExceptionInfo(IException *e, bool failed, bool escaped)
+            : exception(e), spanFailed(failed), escapedScope(escaped) {}
+    };
+
+    virtual void endSpan() override
+    {
+        if (!hasEnded) //if this is the first End call, record duration
+        {
+            hasEnded = true;
+            auto endTP = std::chrono::high_resolution_clock::now();
+            totalDurationMS = std::chrono::duration_cast<std::chrono::milliseconds>(endTP - startTP).count();
+
+            if (totalDurationMS >= thresholdDurationMS)
+            {
+                // Only initialize the span if threshold is exceeded
+                init(SpanFlags::None);
+                storeSpanContext();
+
+                if (span)
+                {
+                    flushAttributesToSpan();
+                    flushExceptionsToEvents();
+                    flushEventsInfoToSpan();
+
+                    span->SetStatus(spanStatusCode, statusMessage.str());
+                    span->End();
+                }
+            }
+        }
+    }
+
+    bool isThresholdMet() const
+    {
+        return totalDurationMS >= thresholdDurationMS;
+    }
+
+    void toString(StringBuffer & out, bool isLeaf) const override
+    {
+        out.appendf("\"Type\":\"%s\"", opts.kind == opentelemetry::trace::SpanKind::kInternal ? "Internal" : "Client");
+        out.appendf("\"ThresholdMet\":\"%s\"", isThresholdMet() ? "True" : "False");
+
+        CChildSpan::toString(out, isLeaf);
+    }
+
+    virtual bool isRecording() const override
+    {
+        return isThresholdMet();
+    }
+
+    virtual bool isValid() const override
+    {
+        return isThresholdMet() && span && span->GetContext().IsValid();
+    }
+
+    void setSpanAttributes(const IProperties * attributes) override
+    {
+        if (!attributes)
+            return;
+
+        Owned<IPropertyIterator> iter = attributes->getIterator();
+        ForEach(*iter)
+        {
+            const char * key = iter->getPropKey();
+            const char * value = iter->queryPropValue();
+            if (!isEmptyString(key) && !isEmptyString(value))
+                pendingStringAttributes.emplace_back(key, value);
+        }
+    }
+
+    void setSpanAttribute(const char * key, const char * val) override
+    {
+        pendingStringAttributes.emplace_back(key, val);
+    }
+
+    void setSpanAttribute(const char *name, __uint64 value) override
+    {
+        pendingIntAttributes.emplace_back(name, value);
+    }
+
+    void addSpanEvent(const char * eventName) override
+    {
+        if (!isEmptyString(eventName))
+        {
+            auto now = std::chrono::high_resolution_clock::now();
+            eventInfos.emplace_back(eventName, now);
+        }
+    }
+
+    void addSpanEvent(const char * eventName, IProperties * attributes) override
+    {
+        if (!isEmptyString(eventName))
+        {
+            auto now = std::chrono::high_resolution_clock::now();
+            std::map<std::string, std::string> atts;
+            if (attributes)
+            {
+                Owned<IPropertyIterator> iter = attributes->getIterator();
+                ForEach(*iter)
+                {
+                    const char * key = iter->getPropKey();
+                    const char * value = iter->queryPropValue();
+                    if (!isEmptyString(key) && !isEmptyString(value))
+                        atts[key] = value;
+                }
+            }
+            eventInfos.emplace_back(eventName, now, atts);
+        }
+    }
+
+    virtual void setSpanStatusSuccess(bool spanSucceeded, const char * statusMessage)
+    {
+        // Store status in members regardless of whether span is available yet
+        spanStatusCode = spanSucceeded ? opentelemetry::trace::StatusCode::kOk : opentelemetry::trace::StatusCode::kError;
+
+        if (!isEmptyString(statusMessage))
+            this->statusMessage.append(statusMessage);
+    }
+
+    virtual void recordError(const SpanError & error)
+    {
+        Owned<IProperties> atts = createProperties(true);
+        atts->setProp("message", error.errorMessage.str());
+        if (error.errorCode != 0 && error.errorCode != -1)
+            atts->setProp("code", std::to_string(error.errorCode).c_str());
+
+        // Add the Exception event with attributes and current timestamp
+        addSpanEvent("Exception", atts);
+    }
+
+    virtual void recordException(IException * exception, bool spanFailed, bool escapedScope_)
+    {
+        if (!exception)
+            return;
+
+        // Store the exception in a vector for multiple exception support
+        exceptions.emplace_back(LINK(exception), spanFailed, escapedScope_);
+
+        // Update status code and escapedScope if needed
+        if (spanFailed)
+            spanStatusCode = opentelemetry::trace::StatusCode::kError;
+        escapedScope = escapedScope_;
+    };
+
+protected:
+    void flushExceptionsToEvents()
+    {
+        // Emit all stored exceptions as events
+        for (const auto &ex : exceptions)
+        {
+            StringBuffer msg;
+            if (ex.exception)
+                ex.exception->errorMessage(msg);
+
+            Owned<IProperties> atts = createProperties(true);
+            atts->setProp("message", msg.str());
+            atts->setProp("spanFailed", ex.spanFailed ? "true" : "false");
+            atts->setProp("escapedScope", ex.escapedScope ? "true" : "false");
+            addSpanEvent("Exception", atts);
+        }
+
+        exceptions.clear();
+    }
+
+    void flushAttributesToSpan()
+    {
+        if (span && !pendingStringAttributes.empty())
+        {
+            for (const auto &kv : pendingStringAttributes)
+                span->SetAttribute(kv.first.c_str(), kv.second.c_str());
+            pendingStringAttributes.clear();
+        }
+
+        if (span && !pendingIntAttributes.empty())
+        {
+            for (const auto &kv : pendingIntAttributes)
+                span->SetAttribute(kv.first.c_str(), kv.second);
+
+            pendingIntAttributes.clear();
+        }
+    }
+
+    void flushEventsInfoToSpan()
+    {
+        if (span && !eventInfos.empty())
+        {
+            for (const auto &evt : eventInfos)
+            {
+                if (evt.attributes.empty())
+                {
+                    span->AddEvent(evt.name.c_str(), std::chrono::time_point_cast<std::chrono::nanoseconds>(evt.timestamp));
+                }
+                else
+                {
+                    span->AddEvent(evt.name.c_str(), std::chrono::time_point_cast<std::chrono::nanoseconds>(evt.timestamp), evt.attributes);
+                }
+            }
+            eventInfos.clear();
+        }
+    }
+
+    int64_t thresholdDurationMS = 0;
+    int64_t totalDurationMS = 0;
+    bool hasEnded = false;
+    std::chrono::high_resolution_clock::time_point startTP;
+
+    std::vector<std::pair<std::string, std::string>> pendingStringAttributes;
+    std::vector<std::pair<std::string, int64_t>> pendingIntAttributes;
+
+    opentelemetry::trace::StatusCode spanStatusCode = opentelemetry::trace::StatusCode::kUnset;
+    bool escapedScope = false;
+    StringBuffer statusMessage;
+    std::vector<EventInfo> eventInfos;
+    std::vector<ExceptionInfo> exceptions;
+};
+
 class CInternalSpan : public CChildSpan
 {
 public:
@@ -1286,6 +1533,11 @@ ISpan * CSpan::createClientSpan(const char * name, const SpanTimeStamp * spanSta
 ISpan * CSpan::createInternalSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp)
 {
     return new CInternalSpan(name, this, spanStartTimeStamp);
+}
+
+ISpan * CSpan::createConditionalInternalSpan(const char * name, stat_type thresholdMs)
+{
+    return new CConditionalChildSpan(name, this, thresholdMs, opentelemetry::trace::SpanKind::kInternal);
 }
 
 class CServerSpan : public CSpan
@@ -1863,6 +2115,11 @@ ISpan * createBackdatedInternalSpan(const char * name, stat_type elapsedNs)
     spanStartTimeStamp.setNow();
     spanStartTimeStamp.adjust(std::chrono::nanoseconds(-elapsedNs));
     return queryThreadedActiveSpan()->createInternalSpan(name, &spanStartTimeStamp);
+}
+
+ISpan * createActiveConditionalInternalSpan(const char * name, stat_type thresholdNs)
+{
+    return queryThreadedActiveSpan()->createConditionalInternalSpan(name, thresholdNs);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
