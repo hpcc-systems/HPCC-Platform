@@ -71,6 +71,63 @@ namespace opentel_trace = opentelemetry::trace;
 
 using namespace ln_uid;
 
+/*
+class ThresholdDurationSampler : public opentelemetry::sdk::trace::Sampler
+{
+public:
+    explicit ThresholdDurationSampler(uint64_t thresholdMs)
+        : durationThresholdMs(thresholdMs)
+    {
+    }
+
+    opentelemetry::sdk::trace::SamplingResult ShouldSample(
+      const opentelemetry::trace::SpanContext &parent_context,
+      opentelemetry::trace::TraceId trace_id,
+      nostd::string_view name,
+      opentelemetry::trace::SpanKind span_kind,
+      const opentelemetry::common::KeyValueIterable &attributes,
+      const opentelemetry::trace::SpanContextKeyValueIterable &links) noexcept override
+    {
+        if (attributes.size() == 0)
+            return {opentelemetry::sdk::trace::Decision::RECORD_AND_SAMPLE, nullptr, {}};
+
+
+    attributes.ForEachKeyValue(
+    [](nostd::string_view key, opentelemetry::common::AttributeValue value) -> bool
+    {
+        // Example: test for a specific attribute
+        if (key == "thresholdms_met")
+        {
+            // AttributeValue is a variant; extract as needed
+            if (nostd::holds_alternative<int64_t>(value))
+            {
+                int64_t durationMs = nostd::get<int64_t>(value);
+                // Test the value
+                if (durationMs > 1000)
+                {
+                    // Found an attribute with duration > 1000ms
+                    // You can return false to abort iteration early
+                    return false;
+                }
+            }
+        }
+        // Continue iteration
+        return true;
+    }
+);
+        return {opentelemetry::sdk::trace::Decision::RECORD_AND_SAMPLE, nullptr, {}};
+    }
+
+    nostd::string_view GetDescription() const noexcept override
+    {
+        return "ThresholdDurationSampler: drops spans longer than " + std::to_string(durationThresholdMs) + " ms";
+    }
+
+private:
+    uint64_t durationThresholdMs;
+};
+*/
+
 /**
  * @class JTraceRandomGenerator
  * @brief A random number generator class for generating random data using the xorshift128p algorithm.
@@ -808,8 +865,11 @@ public:
 
     ISpan * createClientSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp = nullptr) override;
     ISpan * createInternalSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp = nullptr) override;
+    ISpan * createConditionalInternalSpan(const char * name, stat_type thresholdMs) override;
+    ISpan * createConditionalClientSpan(const char * name, stat_type thresholdMs) override;
 
-    virtual void endSpan() final override
+    //virtual void endSpan() final override
+    virtual void endSpan() override
     {
         //It is legal to call endSpan multiple times, but only the first call will have any effect
         if (span != nullptr)
@@ -916,8 +976,9 @@ public:
         //The localid is passed as the callerid for the client request....
         clientHeaders->setNonEmptyProp(kCallerIdHttpHeaderName, queryLocalId());
 
-        if (span == nullptr)
-            return;
+        //for conditional spans, we can't rely on having an actual span object
+        //if (span == nullptr)
+        //    return;
 
         if (isEmptyString(traceID.get()) || isEmptyString(spanID.get()) || isEmptyString(traceFlags.get()))
             return;
@@ -1178,13 +1239,15 @@ public:
 
     virtual ISpan * createClientSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp = nullptr) override { return getNullSpan(); }
     virtual ISpan * createInternalSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp = nullptr) override { return getNullSpan(); }
+    virtual ISpan * createConditionalInternalSpan(const char * name, stat_type thresholdMs) override { return getNullSpan(); }
+    virtual ISpan * createConditionalClientSpan(const char * name, stat_type thresholdMs) override { return getNullSpan(); }
 
 private:
     CNullSpan(const CNullSpan&) = delete;
     CNullSpan& operator=(const CNullSpan&) = delete;
 };
 
-
+enum class TernaryBool { Uninitialized, True, False };
 class CChildSpan : public CSpan
 {
 protected:
@@ -1199,11 +1262,45 @@ protected:
         injectlocalParentSpan(localParentSpan);
     }
 
+   /* CChildSpan(const char * spanName, CSpan * parent, stat_type thresholdMs)
+    : CSpan(spanName), localParentSpan(parent)
+    {
+        if (thresholdMs > 0)
+        {
+            //rawStartTimeStamp.setNow();
+            startTP = static_cast<std::chrono::system_clock::time_point>(std::chrono::high_resolution_clock::now());
+            thresholdDurationMS = std::chrono::duration<long int, std::ratio<1, 1000>>(thresholdMs).count();
+        }
+
+        injectlocalParentSpan(localParentSpan);
+    }
+*/
     void injectlocalParentSpan(CSpan * localParentSpan)
     {
         auto localParentSpanCtx = localParentSpan->querySpanContext();
         if (localParentSpanCtx.IsValid())
             opts.parent = localParentSpanCtx;
+    }
+
+   /* bool isThresholdMet(std::chrono::_V2::system_clock::time_point endTime)
+    {
+        if (thresholdDurationMS == 0)
+            return true;
+
+        setSpanAttribute("thresholdms_met", thresholdDurationMS);
+        if (thresholdMet != TernaryBool::Uninitialized)
+            return thresholdMet == TernaryBool::True ? true : false;
+
+        //auto startTP = static_cast<std::chrono::system_clock::time_point>(rawStartTimeStamp.systemClockTime);
+        auto durationMS = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTP).count();
+        thresholdMet = (durationMS >= thresholdDurationMS) ? TernaryBool::True : TernaryBool::False;
+        return thresholdMet == TernaryBool::True ? true : false;
+    }*/
+
+    virtual void endSpan() override
+    {
+       // if (isThresholdMet(std::chrono::high_resolution_clock::now()))
+            CSpan::endSpan();
     }
 
 public:
@@ -1242,6 +1339,68 @@ public:
 
 protected:
     CSpan * localParentSpan = nullptr;
+    //int64_t thresholdDurationMS = 0;
+    //SpanTimeStamp rawStartTimeStamp;
+    //std::chrono::system_clock::time_point startTP;
+    //TernaryBool thresholdMet = TernaryBool::Uninitialized;
+};
+
+class CConditionalChildSpan : public CChildSpan
+{
+public:
+    CConditionalChildSpan(const char * spanName, CSpan * parent, stat_type thresholdMs, opentelemetry::trace::SpanKind kind)
+        : CChildSpan(spanName, parent)
+        , thresholdDurationMS(thresholdMs)
+    {
+        startTP = std::chrono::high_resolution_clock::now();
+        if (kind == opentelemetry::trace::SpanKind::kInternal)
+            opts.kind = opentelemetry::trace::SpanKind::kInternal;
+        else
+            opts.kind = opentelemetry::trace::SpanKind::kClient;
+    }
+
+    virtual void endSpan() override
+    {
+        if (thresholdMet != TernaryBool::Uninitialized)
+            return;
+
+        auto endTP = std::chrono::high_resolution_clock::now();
+        auto durationMS = std::chrono::duration_cast<std::chrono::milliseconds>(endTP - startTP).count();
+
+        if (durationMS >= thresholdDurationMS)
+        {
+            // Only initialize the span if threshold is exceeded
+            init(SpanFlags::None);
+            storeSpanContext();
+            thresholdMet = TernaryBool::True;
+        }
+        else
+            thresholdMet = TernaryBool::False;
+
+        if (thresholdMet == TernaryBool::True && span)
+            span->End();
+    }
+
+    void toString(StringBuffer & out, bool isLeaf) const override
+    {
+        out.appendf("\"Type\":\"%s\"", opts.kind == opentelemetry::trace::SpanKind::kInternal ? "Internal" : "Client");
+        CChildSpan::toString(out, isLeaf);
+    }
+
+    virtual bool isRecording() const override
+    {
+        return thresholdMet == TernaryBool::True && span && span->IsRecording();
+    }
+
+    virtual bool isValid() const override
+    {
+        return thresholdMet == TernaryBool::True && span && span->GetContext().IsValid();
+    }
+
+protected:
+    int64_t thresholdDurationMS = 0;
+    std::chrono::high_resolution_clock::time_point startTP;
+    TernaryBool thresholdMet = TernaryBool::Uninitialized;
 };
 
 class CInternalSpan : public CChildSpan
@@ -1253,6 +1412,13 @@ public:
         opts.kind = opentelemetry::trace::SpanKind::kInternal;
         init(SpanFlags::None);
     }
+
+    /*CInternalSpan(const char * spanName, CSpan * parent, stat_type thresholdMs)
+    : CChildSpan(spanName, parent, thresholdMs)
+    {
+        opts.kind = opentelemetry::trace::SpanKind::kInternal;
+        init(SpanFlags::None);
+    }*/
 
     void toString(StringBuffer & out, bool isLeaf) const override
     {
@@ -1286,6 +1452,16 @@ ISpan * CSpan::createClientSpan(const char * name, const SpanTimeStamp * spanSta
 ISpan * CSpan::createInternalSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp)
 {
     return new CInternalSpan(name, this, spanStartTimeStamp);
+}
+
+ISpan * CSpan::createConditionalInternalSpan(const char * name, stat_type thresholdMs)
+{
+    return new CConditionalChildSpan(name, this, thresholdMs, opentelemetry::trace::SpanKind::kInternal);
+}
+
+ISpan * CSpan::createConditionalClientSpan(const char * name, stat_type thresholdMs)
+{
+    return new CConditionalChildSpan(name, this, thresholdMs, opentelemetry::trace::SpanKind::kClient);
 }
 
 class CServerSpan : public CSpan
@@ -1630,6 +1806,18 @@ static std::unique_ptr<opentelemetry::sdk::trace::Sampler> createSampler(IProper
                     OERRLOG("JTrace invalid ratio sampling configuration. Ratio must be between 0.0 and 1.0");
                 }
             }
+            else if (streq(samplerType, "DurationThreshold"))
+            {
+                auto thresholdMs = samplerTree->getPropInt64("@thresholdMs", -1);
+                if (thresholdMs >= 0)
+                {
+                    sampler.reset(new ThresholdDurationSampler(thresholdMs));
+                }
+                else
+                {
+                    OERRLOG("JTrace invalid duration threshold sampling configuration. Threshold must be greater than or equal to 0");
+                }
+            }
             else
             {
                 WARNLOG("JTrace initialization: Invalid sampling type configured: '%s'", samplerType);
@@ -1776,6 +1964,9 @@ void CTraceManager::initTracer(const IPropertyTree * traceConfig)
       logEvents: true
       logLinks: true
       logResources: true
+//    sampling:
+//      thresholdMs: 1
+//      type: DurationThreshold
 )!!";
             testTree.setown(createPTreeFromYAMLString(simulatedGlobalYaml, ipt_none, ptr_ignoreWhiteSpace, nullptr));
             traceConfig = testTree->queryPropTree("global/tracing");
@@ -1857,8 +2048,21 @@ ISpan * CTraceManager::createServerSpan(const char * name, const IProperties * h
     return new CServerSpan(name, httpHeaders, flags, spanStartTimeStamp);
 }
 
-ISpan * createBackdatedInternalSpan(const char * name, stat_type elapsedNs)
+ISpan * createActiveConditionalInternalSpan(const char * name, stat_type thresholdNs)
 {
+    return queryThreadedActiveSpan()->createConditionalInternalSpan(name, thresholdNs);
+}
+
+ISpan * createActiveConditionalClientSpan(const char * name, stat_type thresholdNs)
+{
+    return queryThreadedActiveSpan()->createConditionalClientSpan(name, thresholdNs);
+}
+
+ISpan * createBackdatedInternalSpan(const char * name, stat_type elapsedNs, stat_type thresholdNs)
+{
+    if (thresholdNs > 0 && elapsedNs >= thresholdNs)
+        return queryNullSpan();
+
     SpanTimeStamp spanStartTimeStamp;
     spanStartTimeStamp.setNow();
     spanStartTimeStamp.adjust(std::chrono::nanoseconds(-elapsedNs));

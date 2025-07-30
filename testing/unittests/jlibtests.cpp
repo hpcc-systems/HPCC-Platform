@@ -72,6 +72,7 @@ public:
         CPPUNIT_TEST(testActiveSpans);
         CPPUNIT_TEST(testSpanFetchMethods);
         CPPUNIT_TEST(testSpanIsValid);
+        CPPUNIT_TEST(manualTestConditionalInternalSpan);
         //CPPUNIT_TEST(testJTraceJLOGExporterprintResources);
         //CPPUNIT_TEST(testJTraceJLOGExporterprintAttributes);
         CPPUNIT_TEST(manualTestsDeclaredSpanStartTime);
@@ -397,6 +398,58 @@ protected:
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty SpanID detected", false, isEmptyString(retrievedSpanCtxAttributes->queryProp("spanID")));
     }
 
+    void manualTestConditionalInternalSpan()
+    {
+        // Create a server span as the parent
+        Owned<IProperties> mockHTTPHeaders = createProperties();
+        createMockHTTPHeaders(mockHTTPHeaders, true);
+        OwnedActiveSpanScope serverSpan = queryTraceManager().createServerSpan("REPORTTHISSERVERSPAN", mockHTTPHeaders);
+
+        // Set a threshold in milliseconds (e.g., 50ms)
+        constexpr stat_type thresholdMs = 500;
+        {
+            // Create a ConditionalInternalSpan with the threshold
+            OwnedActiveSpanScope conditionalInternalSpan = serverSpan->createConditionalInternalSpan("DONOTREPORT", thresholdMs);
+            // Sleep less than the threshold, span should not be recorded
+            MilliSleep(10);
+        }
+        //manually ensure the above span (name=DONOTREPORT) was not exported
+
+        {
+            // Create another ConditionalInternalSpan and exceed the threshold
+            Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
+            OwnedActiveSpanScope conditionalInternalSpan = serverSpan->createConditionalInternalSpan("REPORTTHIS3", thresholdMs);
+            MilliSleep(600);
+            conditionalInternalSpan->getSpanContext(retrievedSpanCtxAttributes);
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing localParentSpanID detected", true,
+              retrievedSpanCtxAttributes->hasProp("localParentSpanID"));
+        }
+        //manually ensure the above span (name=REPORTTHIS3) was exported
+        
+        {
+            // Create a ConditionalClientSpan with the threshold
+            OwnedActiveSpanScope conditionalClientSpan = serverSpan->createConditionalClientSpan("DONOTREPORTCLIENTSPAN", thresholdMs);
+
+            // Sleep less than the threshold, span should not be recorded
+            MilliSleep(10);
+        }
+        //manually ensure the above span (name=DONOTREPORTCLIENTSPAN) was not exported
+        {
+            Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
+            // Create another ConditionalClientSpan and exceed the threshold
+            OwnedActiveSpanScope conditionalClientSpan = serverSpan->createConditionalClientSpan("REPORTTHISCLIENTSPAN", thresholdMs);
+            Owned<IProperties> retrievedClientHeaders = createProperties();
+            conditionalClientSpan->getClientHeaders(retrievedClientHeaders.get());
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("getClientHeaders failed to produce traceParent!", true, retrievedClientHeaders->hasProp("traceparent"));
+            MilliSleep(600);
+            conditionalClientSpan->getSpanContext(retrievedSpanCtxAttributes);
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing localParentSpanID detected", true,
+              retrievedSpanCtxAttributes->hasProp("localParentSpanID"));
+        }
+    }
+
+    //createBackdatedInternalSpan
+
     void testSpanIsValid()
     {
         OwnedActiveSpanScope nullSpan = getNullSpan();
@@ -680,6 +733,11 @@ protected:
         //Now = 1747317725729197367
         //{ "type": "span", "name": "internalSpan", "trace_id": "c15305e4d2a6c20a87a49bd20449d996", "span_id": "4d2d7e5de8d008f5", "start": 1747317724729151340, "duration": 1000059222, "parent_span_id": "bfb21030afbf51ac" }
         //NOTE: The start time should be 1,000,000,000ns before now, and the duration should be at least 1,000,000,000
+
+        {
+            OwnedActiveSpanScope internalConditionalSpan = createBackdatedInternalSpan("internalSpan", 1'000'000'000, 500'000'000);
+            DBGLOG("Now = %llu", (__uint64)std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+        }
     }
 
 
