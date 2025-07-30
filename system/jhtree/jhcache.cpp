@@ -32,6 +32,24 @@
 #include "jhinplace.hpp"
 #include "jstats.h"
 #include "jptree.hpp"
+#include "jhcache.hpp"
+
+byte * CCachedIndexRead::getBufferForUpdate(offset_t offset, size32_t writeSize)
+{
+    baseOffset = offset;
+    size = writeSize;
+    void * base = data.ensure(writeSize);
+    return static_cast<byte *>(base);
+}
+
+const byte * CCachedIndexRead::queryBuffer(offset_t offset, size32_t readSize) const
+{
+    if ((offset < baseOffset) || (offset + readSize > baseOffset + size))
+        return nullptr;
+    return static_cast<const byte *>(data.get()) + (offset - baseOffset);
+}
+
+//--------------------------------------------------------------------------------------------------------------------
 
 void initDiskNodeCache(const IPropertyTree *config)
 {
