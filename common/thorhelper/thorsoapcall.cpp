@@ -1022,7 +1022,9 @@ public:
                const IContextLogger &_logctx, IRoxieAbortMonitor *_roxieAbortMonitor, WSCType _wscType)
         : clientCert(_clientCert), roxieAbortMonitor(_roxieAbortMonitor), outputAllocator(_outputAllocator), logctx(_logctx)
     {
-        activitySpanScope.setown(logctx.queryActiveSpan()->createInternalSpan(_wscType == STsoap ? "SoapCall Activity": "HTTPCall Activity"));
+        VStringBuffer activityName(_wscType == STsoap ? "SoapCall Activity": "HTTPCall Activity");
+        activityName.append(" - ").append(_rowProvider->queryActivityId());
+        activitySpanScope.setown(logctx.queryActiveSpan()->createInternalSpan(activityName));
         activitySpanScope->setSpanAttribute("activity_id", _rowProvider->queryActivityId());
         wscMode = _wscMode;
         wscType = _wscType;
@@ -1043,6 +1045,8 @@ public:
         else
             maxRetries = helper->numRetries();
 
+        activitySpanScope->setSpanAttribute("max_retries", maxRetries);
+
         //Allow all of these options to be specified separately.  Possibly useful, and the code is cleaner.
         logMin = (flags & SOAPFlogmin) != 0;
         logXML = (flags & SOAPFlog) != 0;
@@ -1056,6 +1060,8 @@ public:
             timeoutMS = WAIT_FOREVER;
         else
             timeoutMS = (unsigned)(dval * 1000);
+
+        activitySpanScope->setSpanAttribute("timeout_ms", timeoutMS);
 
         dval = helper->getTimeLimit();
         if (dval <= 0.0)
@@ -1080,6 +1086,8 @@ public:
             }
             else
                 persistEnabled = true;
+            activitySpanScope->setSpanAttribute("persist_enabled", persistEnabled);
+            activitySpanScope->setSpanAttribute("persist_max_requests", persistMaxRequests);
         }
 
         if (flags & SOAPFhttpheaders)
@@ -1140,6 +1148,8 @@ public:
         service.set(s.setown(helper->getService()));
         service.trim();
 
+        activitySpanScope->setSpanAttribute("target_service", service.str());
+
         if (wscType == SThttp)
         {
             service.toUpperCase();  //GET/PUT/POST
@@ -1164,15 +1174,20 @@ public:
 
         if (isEmptyString(hosts))
             throw MakeStringException(0, "%s specified no URLs", getWsCallTypeName(wscType));
+
+        activitySpanScope->setSpanAttribute("hosts", hosts);
+
         if (0==strncmp(hosts, "mtls:", 5))
         {
             clientCertIssuer.set("local");
             hosts += 5;
+            activitySpanScope->setSpanAttribute("client_cert_issuer", "local");
         }
         else if (0==strncmp(hosts, "remote-mtls:", 12))
         {
             clientCertIssuer.set("remote");
             hosts += 12;
+            activitySpanScope->setSpanAttribute("client_cert_issuer", "remote");
         }
         if (0==strncmp(hosts, "secret:", 7))
         {
@@ -1190,7 +1205,12 @@ public:
             }
             StringBuffer secretName("http-connect-");
             secretName.append(finger);
-            loadConnectSecret(vaultId, secretName, urlArray, issuer, proxyAddress, persistEnabled, persistMaxRequests, true, wscType);
+
+            {
+                VStringBuffer spanName("ConnectSecretLoad %s:%s", vaultId.str(), secretName.str());
+                OwnedActiveSpanScope connectSecretLoad = activitySpanScope->createClientSpan(spanName.str());
+                loadConnectSecret(vaultId, secretName, urlArray, issuer, proxyAddress, persistEnabled, persistMaxRequests, true, wscType);
+            }
         }
         else
         {
@@ -1233,6 +1253,8 @@ public:
             if (0 == proxyUrlListParser.getUrls(proxyUrlArray))
                 throw MakeStringException(0, "%s proxy address specified no URLs", getWsCallTypeName(wscType));
         }
+
+        activitySpanScope->setSpanAttribute("proxy_urls", proxyAddress.str());
 
         if (wscMode == SCrow)
         {
