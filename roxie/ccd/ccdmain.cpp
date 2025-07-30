@@ -1734,6 +1734,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                     socketListeners.append(*roxieServer.getLink());
                     time(&startupTime);
                     roxieServer->start();
+                    if (!roxieServer->isRunning())
+                        throw MakeStringException(ROXIE_INTERNAL_ERROR, "Roxie Exception starting server");
                 }
 
                 if (!topology->getPropBool("@disableCachePrewarming", false))

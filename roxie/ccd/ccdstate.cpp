@@ -187,7 +187,7 @@ public:
             {
                 DelayedReleaseQueueItem &goer = queue.item(idx);
                 unsigned timeRemaining = goer.remaining();
-                if (!timeRemaining)
+                if (closing || !timeRemaining)
                     queue.remove(idx);
                 else if (timeRemaining < nextTimeout)
                     nextTimeout = timeRemaining;

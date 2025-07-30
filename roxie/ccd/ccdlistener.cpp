@@ -1120,6 +1120,11 @@ public:
         }
     }
 
+    virtual bool isRunning()
+    {
+        return running;
+    }
+
     virtual int run()
     {
         running = true;
