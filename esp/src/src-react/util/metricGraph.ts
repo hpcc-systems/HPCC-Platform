@@ -114,6 +114,10 @@ export class MetricGraph extends Graph2<IScopeEx, IScopeEdge, IScopeEx> {
         return scopeName;
     }
 
+    childCount(scopeName: string) {
+        return this.allVertices().filter(v => v.name.startsWith(scopeName)).length;
+    }
+
     protected ensureLineage(_scope: IScopeEx): IScopeEx {
         let scope = this._index[_scope.name];
         if (!scope) {
@@ -167,7 +171,6 @@ export class MetricGraph extends Graph2<IScopeEx, IScopeEdge, IScopeEx> {
     load(data: IScopeEx[]): this {
         this.clear();
 
-        //  Index all items  ---
         data.forEach((scope: IScopeEx) => {
             this.ensureLineage(scope);
         });
@@ -262,16 +265,27 @@ export class MetricGraph extends Graph2<IScopeEx, IScopeEdge, IScopeEx> {
     }
 
     protected _dedupVertices: { [scopeName: string]: boolean } = {};
-    vertexTpl(v: IScopeEx, options: MetricsView): string {
+
+    private _buildVertexTemplate(v: IScopeEx, options: MetricsView, isHidden: boolean = false): string {
         if (this._dedupVertices[v.id] === true) return "";
         this._dedupVertices[v.id] = true;
-        return `"${v.id}" [id="${encodeID(v.name)}" label="${encodeLabel(this.vertexLabel(v, options))}" shape="${shape(v)}" class="${this.vertexClass(v)}"]`;
+
+        const encodedId = encodeID(v.name);
+        const encodedLabel = encodeLabel(this.vertexLabel(v, options));
+        const vertexShape = shape(v);
+        const vertexClass = this.vertexClass(v);
+
+        const rankAttr = isHidden ? " rank=\"min\"" : "";
+
+        return `"${v.id}" [id="${encodedId}" label="${encodedLabel}" shape="${vertexShape}" class="${vertexClass}"${rankAttr}]`;
+    }
+
+    vertexTpl(v: IScopeEx, options: MetricsView): string {
+        return this._buildVertexTemplate(v, options, false);
     }
 
     hiddenTpl(v: IScopeEx, options: MetricsView): string {
-        if (this._dedupVertices[v.id] === true) return "";
-        this._dedupVertices[v.id] = true;
-        return `"${v.id}" [id="${encodeID(v.name)}" label="${encodeLabel(this.vertexLabel(v, options))}" shape="${shape(v)}" class="${this.vertexClass(v)}" rank="min"]`;
+        return this._buildVertexTemplate(v, options, true);
     }
 
     findFirstVertex(scopeName: string) {
@@ -304,12 +318,36 @@ export class MetricGraph extends Graph2<IScopeEx, IScopeEdge, IScopeEx> {
     edgeTpl(e: IScopeEdge, options: MetricsView) {
         if (this._dedupEdges[e.id] === true) return "";
         this._dedupEdges[e.id] = true;
-        if (options.ignoreGlobalStoreOutEdges && this.vertex(this._activityIndex[e.IdSource]).Kind === "22") {
-            return "";
+
+        const sourceVertexName = this._activityIndex[e.IdSource];
+        const targetVertexName = this._activityIndex[e.IdTarget];
+
+        if (options.ignoreGlobalStoreOutEdges && sourceVertexName) {
+            const sourceVertex = this.vertex(sourceVertexName);
+            if (sourceVertex.Kind === "22") {
+                return "";
+            }
         }
+
         const ltail = this.subgraphExists(this._sourceFunc(e)) ? `ltail=cluster_${e.IdSource}` : "";
         const lhead = this.subgraphExists(this._targetFunc(e)) ? `lhead=cluster_${e.IdTarget}` : "";
-        return `"${e.IdSource}" -> "${e.IdTarget}" [id="${encodeID(e.name)}" label="${encodeLabel(format(options.edgeTpl, { ...e, ...e.__formattedProps }))}" style="${this.vertexParent(this._activityIndex[e.IdSource]) === this.vertexParent(this._activityIndex[e.IdTarget]) ? "solid" : "dashed"}" class="${this.edgeStatus(e)}" ${ltail} ${lhead}]`;
+
+        let edgeStyle = "solid";
+        if (sourceVertexName && targetVertexName) {
+            const sourceParent = this.vertexParent(sourceVertexName);
+            const targetParent = this.vertexParent(targetVertexName);
+            edgeStyle = sourceParent === targetParent ? "solid" : "dashed";
+        }
+
+        const formatData = e.__formattedProps ?
+            Object.assign({}, e, e.__formattedProps) :
+            e;
+
+        const encodedName = encodeID(e.name);
+        const encodedLabel = encodeLabel(format(options.edgeTpl, formatData));
+        const edgeClass = this.edgeStatus(e);
+
+        return `"${e.IdSource}" -> "${e.IdTarget}" [id="${encodedName}" label="${encodedLabel}" style="${edgeStyle}" class="${edgeClass}" ${ltail} ${lhead}]`;
     }
 
     subgraphStatus(sg: IScopeEx): ScopeStatus {
@@ -337,28 +375,46 @@ export class MetricGraph extends Graph2<IScopeEx, IScopeEdge, IScopeEx> {
 
     protected _dedupSubgraphs: { [scopeName: string]: boolean } = {};
     subgraphTpl(sg: IScopeEx, options: MetricsView): string {
-        if (this._dedupSubgraphs[sg.id] === true) return "";
+        if (this._dedupSubgraphs[sg.id]) return "";
         this._dedupSubgraphs[sg.id] = true;
+
+        const encodedId = encodeID(sg.id);
+        const encodedName = encodeID(sg.name);
+        const sgType = sg.type;
+        const isChild = sgType === "child";
+
         const childTpls: string[] = [];
-        this.subgraphSubgraphs(sg.name).forEach(child => {
-            childTpls.push(this.subgraphTpl(child, options));
-        });
-        if (this.vertexExists(this.id(sg))) {
-            childTpls.push(this.hiddenTpl(this.vertex(this.id(sg)), options));
+
+        const subgraphs = this.subgraphSubgraphs(sg.name);
+        for (const child of subgraphs) {
+            const childTpl = this.subgraphTpl(child, options);
+            if (childTpl) childTpls.push(childTpl);
         }
-        this.subgraphVertices(sg.name).forEach(child => {
+
+        const sgId = this.id(sg);
+        if (this.vertexExists(sgId)) {
+            childTpls.push(this.hiddenTpl(this.vertex(sgId), options));
+        }
+
+        const vertices = this.subgraphVertices(sg.name);
+        for (const child of vertices) {
             childTpls.push(this.vertexTpl(child, options));
-        });
-        this.subgraphEdges(sg.name).forEach(child => {
+        }
+
+        const edges = this.subgraphEdges(sg.name);
+        for (const child of edges) {
             childTpls.push(this.edgeTpl(child, options));
-        });
+        }
+
+        const label = isChild ? "" : encodeLabel(format(sgType === "activity" ? options.activityTpl : options.subgraphTpl, sg));
+
         return `\
-subgraph cluster_${encodeID(sg.id)} {
+subgraph cluster_${encodedId} {
     color="black";
     fillcolor="white";
-    style="${sg.type === "child" ? "dashed" : "filled"}";
-    id="${encodeID(sg.name)}";
-    label="${sg.type === "child" ? "" : encodeLabel(format(sg.type === "activity" ? options.activityTpl : options.subgraphTpl, sg))}";
+    style="${isChild ? "dashed" : "filled"}";
+    id="${encodedName}";
+    label="${label}";
     class="${this.subgraphStatus(sg)}";
 
     ${childTpls.join("\n")}
@@ -371,39 +427,57 @@ subgraph cluster_${encodeID(sg.id)} {
         this._dedupVertices = {};
         this._dedupEdges = {};
         const childTpls: string[] = [];
+
         if (ids?.length) {
-            ids.map(id => {
+            const idSet = new Set(ids);
+
+            for (const id of ids) {
+                let subgraph: IScopeEx | undefined;
+
                 if (this.subgraphExists(id)) {
-                    return this.subgraph(id);
+                    subgraph = this.subgraph(id);
                 } else {
                     const item = this.item(id);
-                    if (item?.__parentName && this.subgraphExists(item?.__parentName)) {
-                        return this.subgraph(item.__parentName);
+                    if (item?.__parentName && this.subgraphExists(item.__parentName)) {
+                        subgraph = this.subgraph(item.__parentName);
                     }
                 }
-            }).filter(subgraph => {
-                return !!subgraph;
-            }).forEach(subgraph => {
-                childTpls.push(this.subgraphTpl(subgraph, options));
-            });
-            this.allEdges().filter(e => {
-                const sV = this.vertex(this._activityIndex[e.IdSource]);
-                const tV = this.vertex(this._activityIndex[e.IdTarget]);
-                return sV.__parentID !== tV.__parentID && ids.indexOf(sV.__parentID) >= 0 && ids.indexOf(tV.__parentID) >= 0;
-            }).forEach(e => {
-                childTpls.push(this.edgeTpl(e, options));
-            });
+
+                if (subgraph) {
+                    childTpls.push(this.subgraphTpl(subgraph, options));
+                }
+            }
+
+            const activityIndex = this._activityIndex;
+            for (const edge of this.allEdges()) {
+                const sourceVertexName = activityIndex[edge.IdSource];
+                const targetVertexName = activityIndex[edge.IdTarget];
+
+                if (sourceVertexName && targetVertexName) {
+                    const sourceVertex = this.vertex(sourceVertexName);
+                    const targetVertex = this.vertex(targetVertexName);
+                    const sourceParentId = sourceVertex.__parentID;
+                    const targetParentId = targetVertex.__parentID;
+
+                    if (sourceParentId !== targetParentId &&
+                        idSet.has(sourceParentId) &&
+                        idSet.has(targetParentId)) {
+                        childTpls.push(this.edgeTpl(edge, options));
+                    }
+                }
+            }
         } else {
-            this.subgraphs().forEach(child => {
+            for (const child of this.subgraphs()) {
                 childTpls.push(this.subgraphTpl(child, options));
-            });
-            this.vertices().forEach(child => {
+            }
+            for (const child of this.vertices()) {
                 childTpls.push(this.vertexTpl(child, options));
-            });
-            this.edges().forEach(child => {
+            }
+            for (const child of this.edges()) {
                 childTpls.push(this.edgeTpl(child, options));
-            });
+            }
         }
+
         return `\
 digraph G {
     compound=true;
@@ -468,8 +542,12 @@ interface GraphvizWorker {
 export enum LayoutStatus {
     UNKNOWN,
     STARTED,
+    LONG_RUNNING,
     COMPLETED,
     FAILED
+}
+export function isLayoutComplete(status: LayoutStatus) {
+    return status === LayoutStatus.COMPLETED || status === LayoutStatus.FAILED;
 }
 
 class LayoutCache {
@@ -508,15 +586,9 @@ class LayoutCache {
     }
 
     isComplete(dot: string): boolean {
-        switch (this.status(dot)) {
-            case LayoutStatus.COMPLETED:
-            case LayoutStatus.FAILED:
-                return true;
-        }
-        return false;
+        return isLayoutComplete(this.status(dot));
     }
 }
-
 export const layoutCache = new LayoutCache();
 
 export class MetricGraphWidget extends SVGZoomWidget {
