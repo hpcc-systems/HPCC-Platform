@@ -27,38 +27,74 @@ class DBStoreEx extends DBStore {
 
 export class ScopesTable extends Table {
 
+    protected _regexCache = new Map<string, RegExp>();
+
     constructor() {
         super();
         this._store = new DBStoreEx(this, this._db);
     }
 
-    scopeFilterFunc(row: IScope, scopeFilter: string, matchCase: boolean): boolean {
-        const filter = scopeFilter.trim();
-        if (filter) {
-            let field = "";
-            const colonIdx = filter.indexOf(":");
-            if (colonIdx > 0) {
-                field = filter.substring(0, colonIdx);
-            }
-            if (field) {
-                const rawValue: string = !matchCase ? row[field]?.toString().toLowerCase() : row[field]?.toString();
-                const formattedValue: string = !matchCase ? row.__formattedProps[field]?.toString().toLowerCase() : row.__formattedProps[field]?.toString();
-                const filterValue: string = !matchCase ? filter.toLowerCase() : filter;
-                return (rawValue?.indexOf(filterValue.substring(colonIdx + 1)) >= 0 || formattedValue?.indexOf(filterValue.substring(colonIdx + 1)) >= 0) ?? false;
-            }
-            for (const field in row) {
-                const rawValue: string = !matchCase ? row[field]?.toString().toLowerCase() : row[field]?.toString();
-                const formattedValue: string = !matchCase ? row.__formattedProps[field]?.toString().toLowerCase() : row.__formattedProps[field]?.toString();
-                const filterValue: string = !matchCase ? filter.toLowerCase() : filter;
-                return (rawValue?.indexOf(filterValue) >= 0 || formattedValue?.indexOf(filterValue) >= 0) ?? false;
-            }
-            return false;
+    clearRegexCache(): void {
+        this._regexCache.clear();
+    }
+
+    protected getOrCreateRegex(searchTerm: string, matchCase: boolean): RegExp {
+        const cacheKey = `${searchTerm}_${matchCase}`;
+        let regex = this._regexCache.get(cacheKey);
+        if (!regex) {
+            const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            regex = new RegExp(`\\b${escapedTerm}\\b`, matchCase ? "" : "i");
+            this._regexCache.set(cacheKey, regex);
         }
-        return true;
+        return regex;
+    }
+
+    scopeFilterFunc(row: IScope, scopeFilter: string, matchCase: boolean, matchWholeWord: boolean): boolean {
+        const filter = scopeFilter.trim();
+        if (!filter) return true;
+        const normalizedFilter = matchCase ? filter : filter.toLowerCase();
+
+        const matchText = (text: string | undefined, normalizedFilter: string): boolean => {
+            if (!text) return false;
+
+            const normalizedText = matchCase ? text : text.toLowerCase();
+
+            if (matchWholeWord) {
+                const regex = this.getOrCreateRegex(normalizedFilter, matchCase);
+                return regex.test(normalizedText);
+            } else {
+                return normalizedText.indexOf(normalizedFilter) >= 0;
+            }
+        };
+
+        const matchField = (field: string, normalizedFilter: string): boolean => {
+            const rawValue = row[field]?.toString();
+            const formattedValue = row.__formattedProps?.[field]?.toString();
+            return matchText(rawValue, normalizedFilter) || matchText(formattedValue, normalizedFilter);
+        };
+
+        const colonIdx = filter.indexOf(":");
+        if (colonIdx > 0) {
+            let field = filter.substring(0, colonIdx).trim();
+            // Map display names to actual field names
+            switch (field) {
+                case "Type":
+                    field = "type";
+                    break;
+                case "Scope":
+                    field = "name";
+                    break;
+            }
+
+            const searchTerm = filter.substring(colonIdx + 1).trim();
+            const normalizedSearchTerm = matchCase ? searchTerm : searchTerm.toLowerCase();
+            return matchField(field, normalizedSearchTerm) || matchField("name", normalizedFilter); // fallback to scopename + normalizedFilter if no field matches
+        }
+        return Object.keys(row).some(field => matchField(field, normalizedFilter));
     }
 
     _rawDataMap: { [id: number]: string } = {};
-    metrics(metrics: IScope[], scopeTypes: string[], properties: string[], scopeFilter: string, matchCase: boolean): this {
+    metrics(metrics: IScope[], scopeTypes: string[], properties: string[], scopeFilter: string, matchCase: boolean, matchWholeWord: boolean): this {
         this
             .columns(["##"])    //  Reset hash to force recalculation of default widths
             .columns(["##", nlsHPCC.Type, "StdDevs", nlsHPCC.Scope, ...properties, "__StdDevs"])
@@ -72,7 +108,7 @@ export class ScopesTable extends Table {
                     .width(0)
             ])
             .data(metrics
-                .filter(m => this.scopeFilterFunc(m, scopeFilter, matchCase))
+                .filter(m => this.scopeFilterFunc(m, scopeFilter, matchCase, matchWholeWord))
                 .filter(row => {
                     return scopeTypes.indexOf(row.type) >= 0;
                 }).map((row, idx) => {

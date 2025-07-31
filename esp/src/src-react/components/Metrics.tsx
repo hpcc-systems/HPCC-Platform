@@ -2,7 +2,7 @@ import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, IIconProps, SearchBox, Stack, TooltipHost } from "@fluentui/react";
 import { ToggleButton } from "@fluentui/react-components";
 import { useConst } from "@fluentui/react-hooks";
-import { TextCaseTitleRegular, TextCaseTitleFilled, BranchForkHintRegular, BranchForkFilled } from "@fluentui/react-icons";
+import { TextCaseTitleRegular, TextCaseTitleFilled, BranchForkHintRegular, BranchForkFilled, TextWholeWordFilled, TextWholeWordRegular } from "@fluentui/react-icons";
 import { WorkunitsServiceEx, IScope } from "@hpcc-js/comms";
 import { Table } from "@hpcc-js/dgrid";
 import { scopedLogger } from "@hpcc-js/util";
@@ -64,6 +64,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const [hotspots, setHotspots] = React.useState<string>("");
     const [includePendingItems, setIncludePendingItems] = React.useState(true);
     const [matchCase, setMatchCase] = React.useState(false);
+    const [matchWholeWord, setMatchWholeWord] = React.useState(false);
 
     React.useEffect(() => {
         if (targetsRoxie && wuid) {
@@ -163,7 +164,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
 
     const scopesTable = useConst(() => new ScopesTable()
         .multiSelect(true)
-        .metrics([], view.scopeTypes, view.properties, scopeFilter, matchCase)
+        .metrics([], view.scopeTypes, view.properties, scopeFilter, matchCase, matchWholeWord)
         .sortable(true)
     );
 
@@ -182,10 +183,10 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
             return metricGraph.itemStatus(row) !== "unknown";
         });
         scopesTable
-            .metrics(scopesTableMetrics, view.scopeTypes, view.properties, scopeFilter, matchCase)
+            .metrics(scopesTableMetrics, view.scopeTypes, view.properties, scopeFilter, matchCase, matchWholeWord)
             .lazyRender()
             ;
-    }, [includePendingItems, matchCase, metricGraph, metrics, scopeFilter, scopesTable, view.properties, view.scopeTypes]);
+    }, [includePendingItems, matchCase, matchWholeWord, metricGraph, metrics, scopeFilter, scopesTable, view.properties, view.scopeTypes]);
 
     const updateScopesTable = React.useCallback((selection?: IScope[]) => {
         if (scopesTable?.renderCount() > 0 && selectedMetricsSource !== "scopesTable") {
@@ -375,6 +376,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                                     </TooltipHost>
                                 </Stack.Item>
                                 <ToggleButton appearance="subtle" icon={matchCase ? <TextCaseTitleFilled /> : <TextCaseTitleRegular />} title={nlsHPCC.MatchCase} checked={matchCase} onClick={() => { setMatchCase(!matchCase); }} />
+                                <ToggleButton appearance="subtle" icon={matchWholeWord ? <TextWholeWordFilled /> : <TextWholeWordRegular />} title={nlsHPCC.MatchWholeWord} checked={matchWholeWord} onClick={() => { setMatchWholeWord(!matchWholeWord); }} />
                             </Stack>}
                             main={<AutosizeHpccJSComponent widget={scopesTable} ></AutosizeHpccJSComponent>}
                         />
