@@ -124,7 +124,7 @@ public:
             case AllRowCompress:
             {
                 compressor->open(compressed, sz, rowSz);
-                compressor->write(ptr, sz);
+                compressor->write(ptr, srcLen);
                 compressor->close();
                 break;
             }
