@@ -73,6 +73,10 @@ Documentation on managing sensitive information such as passwords, API keys, and
 
 Operational guidelines for managing the Roxie query cluster, including deployment, query optimization, and troubleshooting.
 
+### [OptimizingRoxieQueryPerformance](OptimizingRoxieQueryPerformance.md)
+
+Explains how to configure Roxie to maintain consistent query response times by setting minimum execution thresholds through various methods including configuration files, ECL code options, and URL parameters. It also describes how to monitor performance.
+
 ## Thor
 
 Instructions for configuring and maintaining the Thor data processing engine, with details on workload distribution, performance tuning, and fault tolerance.

@@ -116,6 +116,10 @@ The Thor engine is the data refinery component of the HPCC Platform, designed fo
 
 Roxie is the query processing engine, optimized for real-time data delivery. It is designed to handle high-concurrency, low-latency queries efficiently, making it ideal for queries requiring rapid responses.
 
+### [OptimizingRoxieQueryPerformance](OptimizingRoxieQueryPerformance.md)
+
+Explains how to configure Roxie to maintain consistent query response times by setting minimum execution thresholds through various methods including configuration files, ECL code options, and URL parameters. It also describes how to monitor performance.
+
 ### Roxie Memory Manager
 
 [MemoryManager](MemoryManager.md)
