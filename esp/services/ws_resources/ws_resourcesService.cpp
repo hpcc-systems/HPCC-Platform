@@ -119,6 +119,18 @@ bool CWsResourcesEx::onWebLinksQuery(IEspContext& context, IEspWebLinksQueryRequ
             configuredWebLink->setName(serviceLinkTree.queryProp("@name"));
             configuredWebLink->setDescription(serviceLinkTree.queryProp("@description"));
             configuredWebLink->setURL(serviceLinkTree.queryProp("@url"));
+
+            IArrayOf<IConstResourceType>& linkedResources = resp.getLinkedResources();
+            Owned<IPropertyTreeIterator> resourceTypeItr = serviceLinkTree.getElements("linkedResource/type");
+            ForEach(*resourceTypeItr)
+            {
+                IPropertyTree& resourceTypeTree = resourceTypeItr->query();
+                Owned<IEspResourceType> resourceType = createResourceType();
+                resourceType->setName(resourceTypeTree.queryProp("@name"));
+                resourceType->setDescription(resourceTypeTree.queryProp("@description"));
+                linkedResources.append(*resourceType.getLink());
+            }
+
             configuredWebLinks.append(*configuredWebLink.getLink());
         }
 
