@@ -112,9 +112,9 @@ class IndexModelExpansionTest : public CppUnit::TestFixture
         expansion.configure(*configTree);
         CPPUNIT_ASSERT(expansion.estimating);
         CPPUNIT_ASSERT(expansion.estimates[0].size == 8'192);
-        CPPUNIT_ASSERT(expansion.estimates[0].time = 8'192);
-        CPPUNIT_ASSERT(expansion.estimates[1].size = 14'336);
-        CPPUNIT_ASSERT(expansion.estimates[1].time = 6'144);
+        CPPUNIT_ASSERT(expansion.estimates[0].time == 8'192);
+        CPPUNIT_ASSERT(expansion.estimates[1].size == 14'336);
+        CPPUNIT_ASSERT(expansion.estimates[1].time == 10'752);
         END_TEST
     }
 
