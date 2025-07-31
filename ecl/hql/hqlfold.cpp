@@ -1384,6 +1384,10 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, const ch
                 doubleresult = *(double*)&intresult;
   #endif
         }
+        else
+        {
+            intresult = (int)int64result;
+        }
  #else
         // Unknown architecture
         UNIMPLEMENTED;
