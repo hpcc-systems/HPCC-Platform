@@ -940,6 +940,8 @@ class CNodeCache : public CInterface
 private:
     CNodeMRUCache cache[CacheMax] = { CacheBranch, CacheLeaf, CacheBlob };
     std::vector<std::shared_ptr<hpccMetrics::IMetric>> metrics;
+    Owned<IDiskPageCache> diskCache;
+    offset_t diskCacheOffsetMask = 0;
 public:
     CNodeCache(size_t maxNodeMem, size_t maxLeaveMem, size_t maxBlobMem)
     {
@@ -962,6 +964,12 @@ public:
     inline size_t setBlobCacheMem(size_t newSize)
     {
         return setCacheMem(newSize, CacheBlob);
+    }
+    void setDiskCache(IDiskPageCache * _diskCache)
+    {
+        diskCache.set(_diskCache);
+        if (diskCache)
+            diskCacheOffsetMask = ~(offset_t)(diskCache->queryPageSize() - 1);
     }
     void clear()
     {
@@ -1393,7 +1401,7 @@ CMemKeyIndex::CMemKeyIndex(unsigned _iD, IMemoryMappedFile *_io, const char *_na
     init(hdr, isTLK);
 }
 
-const CJHTreeNode *CMemKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, CCachedIndexRead & readCache) const
+const CJHTreeNode *CMemKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, CLoadNodeCacheState & readState) const
 {
     //Memory mapped files do not take advantage of the read cache
     nodesLoaded++;
@@ -1436,10 +1444,10 @@ CDiskKeyIndex::CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool
     init(hdr, isTLK);
 }
 
-const CJHTreeNode *CDiskKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, CCachedIndexRead & readCache) const
+const CJHTreeNode *CDiskKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, CLoadNodeCacheState & readState) const
 {
     nodesLoaded++;
-    IFileIO * useIO = readCache.bufferedIO ? readCache.bufferedIO.get() : io.get();
+    IFileIO * useIO = readState.bufferedIO ? readState.bufferedIO.get() : io.get();
     unsigned nodeSize = keyHdr->getNodeSize();
 
     //Use alloca() to allocate a buffer on the stack if the node size is small enough.
@@ -1569,8 +1577,8 @@ const CJHSearchNode *CKeyIndex::getIndexNodeUsingLoader(const INodeLoader &nodeL
 
 void CKeyIndex::dumpNode(FILE *out, offset_t pos, unsigned count, bool isRaw)
 {
-    CCachedIndexRead readCache;
-    Owned<const CJHTreeNode> node = loadNode(nullptr, pos, readCache);
+    CLoadNodeCacheState readState;
+    Owned<const CJHTreeNode> node = loadNode(nullptr, pos, readState);
     node->dump(out, keySize(), count, isRaw);
 }
 
@@ -1600,7 +1608,7 @@ bool CKeyIndex::hasPayload()
     return keyHdr->hasPayload();
 }
 
-const CJHTreeBlobNode *CKeyIndex::getBlobNode(offset_t nodepos, IContextLogger *ctx, CCachedIndexRead & readCache)
+const CJHTreeBlobNode *CKeyIndex::getBlobNode(offset_t nodepos, IContextLogger *ctx, CLoadNodeCacheState & readState)
 {
     Owned<const CJHTreeBlobNode> match;
     cycle_t readCycles = 0;
@@ -1611,7 +1619,7 @@ const CJHTreeBlobNode *CKeyIndex::getBlobNode(offset_t nodepos, IContextLogger *
         {
 
             CCycleTimer blobLoadTimer;
-            Owned<const CJHTreeNode> node = loadNode(&fetchCycles, nodepos, readCache); // note - don't use the cache
+            Owned<const CJHTreeNode> node = loadNode(&fetchCycles, nodepos, readState); // note - don't use the cache
             assertex(node->isBlob());
             cachedBlobNode.setown(static_cast<const CJHTreeBlobNode *>(node.getClear()));
             cachedBlobNodePos = nodepos;
@@ -1645,8 +1653,8 @@ const byte *CKeyIndex::loadBlob(unsigned __int64 blobid, size32_t &blobSize, ICo
     offset_t nodepos = blobid & I64C(0xffffffffffff);
     size32_t offset = (size32_t) ((blobid & I64C(0xffff000000000000)) >> 44);
 
-    CCachedIndexRead readCache;
-    Owned<const CJHTreeBlobNode> blobNode = getBlobNode(nodepos, ctx, readCache);
+    CLoadNodeCacheState readState;
+    Owned<const CJHTreeBlobNode> blobNode = getBlobNode(nodepos, ctx, readState);
     size32_t sizeRemaining = blobNode->getTotalBlobSize(offset);
     blobSize = sizeRemaining;
     byte *ret = (byte *) malloc(sizeRemaining);
@@ -1659,7 +1667,7 @@ const byte *CKeyIndex::loadBlob(unsigned __int64 blobid, size32_t &blobSize, ICo
         finger += gotHere;
         if (!sizeRemaining)
             break;
-        blobNode.setown(getBlobNode(blobNode->getRightSib(), ctx, readCache));
+        blobNode.setown(getBlobNode(blobNode->getRightSib(), ctx, readState));
         offset = 0;
     }
     return ret;
@@ -1714,10 +1722,10 @@ void CKeyIndex::loadBloomFilters()
         return; // indexes created before introduction of bloomfilter would have FFFF... in this space
     }
 
-    CCachedIndexRead readCache;
+    CLoadNodeCacheState readState;
     while (bloomAddr)
     {
-        Owned<const CJHTreeNode> node = loadNode(nullptr, bloomAddr, readCache);
+        Owned<const CJHTreeNode> node = loadNode(nullptr, bloomAddr, readState);
         assertex(node->isBloom());
         CJHTreeBloomTableNode &bloomNode = *(CJHTreeBloomTableNode *)node.get();
         bloomAddr = bloomNode.get8();
@@ -1732,7 +1740,7 @@ void CKeyIndex::loadBloomFilters()
             offset_t next = node->getRightSib();
             if (!next)
                 break;
-            node.setown(loadNode(nullptr, next, readCache));
+            node.setown(loadNode(nullptr, next, readState));
             assertex(node->isBloom());
         }
         assertex(bloomTable.length()==bloomTableSize);
@@ -1785,10 +1793,10 @@ IPropertyTree * CKeyIndex::getMetadata()
         return NULL;
     Owned<const CJHTreeMetadataNode> node;
     StringBuffer xml;
-    CCachedIndexRead readCache;
+    CLoadNodeCacheState readState;
     while(nodepos)
     {
-        node.setown(QUERYINTERFACE(loadNode(nullptr, nodepos, readCache), const CJHTreeMetadataNode));
+        node.setown(QUERYINTERFACE(loadNode(nullptr, nodepos, readState), const CJHTreeMetadataNode));
         node->get(xml);
         nodepos = node->getRightSib();
     }
@@ -1913,10 +1921,10 @@ CKeyCursor::CKeyCursor(CKeyIndex &_key, const IIndexFilterList *_filter, bool _l
 {
     if (_blockedIOSize)
     {
-        readCache.blockIoSize = _blockedIOSize;
+        readState.blockIoSize = _blockedIOSize;
         IFileIO *baseIO = const_cast<IFileIO *>(key.queryFileIO());  // I suspect createBlockedIO should take const...
         if (baseIO)
-            readCache.bufferedIO.setown(createBlockedIO(LINK(baseIO), _blockedIOSize));
+            readState.bufferedIO.setown(createBlockedIO(LINK(baseIO), _blockedIOSize));
     }
     nodeKey = 0;
     recordBuffer = (char *) malloc(key.keySize());  // MORE - would be nice to know real max - is it stored in metadata?
@@ -3069,6 +3077,7 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
     if (unlikely(!typeCache.enabled))
         return nodeLoader.loadNode(nullptr, pos);
 
+    CCacheReservation cacheReservation;
     CKeyIdAndPos key(iD, pos);
     unsigned hashcode = typeCache.getKeyHash(key);
     unsigned subCache = cacheBits == 0 ? 0 : hashcode >> cacheShift;
@@ -3102,7 +3111,11 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
                 //Update ctx stats outside of the critical section.
                 if (unlikely(recordingEvents()))
                     queryRecorder().recordIndexLookup(iD, pos, type, true, fastPathMatch->getMemSize());
-                if (ctx) ctx->noteStatistic(hitStatId[cacheType], 1);
+                if (ctx)
+                     ctx->noteStatistic(hitStatId[cacheType], 1);
+                //MORE: Should there be a diskCache per cacheType?
+                if (diskCache)
+                    diskCache->noteUsed(iD, pos & diskCacheOffsetMask); // MORE: Mask the offset
                 return fastPathMatch;
             }
         }

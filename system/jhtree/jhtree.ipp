@@ -78,7 +78,16 @@ interface INodeLoader
     virtual const char *queryFileName() const = 0;
 };
 
-class CCachedIndexRead;
+// This class stores information that is used when loading a node from a file
+// including a cache of the last data that was read - so that sequential reads can avoid file fetches
+class CLoadNodeCacheState
+{
+public:
+    Owned<IFileIO> bufferedIO;      // MORE: This will be replaced in the future
+    size32_t blockIoSize = 0;
+    CCachedIndexRead readCache;     // Information about the last read request
+};
+
 class jhtree_decl CKeyIndex : implements IKeyIndex, public CInterface
 {
     friend class CKeyStore;
@@ -107,7 +116,7 @@ protected:
     CJHTreeNode *_loadNode(char *nodeData, offset_t pos, bool needsCopy) const;
     CJHTreeNode *_createNode(const NodeHdr &hdr) const;
     const CJHSearchNode *getIndexNodeUsingLoader(const INodeLoader &nodeLoader, offset_t offset, NodeType type, IContextLogger *ctx) const;
-    const CJHTreeBlobNode *getBlobNode(offset_t nodepos, IContextLogger *ctx, CCachedIndexRead & readCache);
+    const CJHTreeBlobNode *getBlobNode(offset_t nodepos, IContextLogger *ctx, CLoadNodeCacheState & readState);
 
     CKeyIndex(unsigned _iD, const char *_name);
     ~CKeyIndex();
@@ -158,7 +167,7 @@ public:
 
     // KeyIndex implementation virtuals...
     virtual const char *queryFileName() const = 0;
-    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, CCachedIndexRead & readCache) const = 0;  // Must be implemented in derived classes
+    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, CLoadNodeCacheState & readState) const = 0;  // Must be implemented in derived classes
 
     unsigned getBranchDepth() const { return keyHdr->getHdrStruct()->hdrseq; }
     bool bloomFilterReject(const IIndexFilterList &segs, IContextLogger *ctx) const;
@@ -175,7 +184,7 @@ public:
 
     virtual const CJHTreeNode * loadNode(cycle_t * fetchCycles, offset_t offset) const override
     {
-        return key.loadNode(fetchCycles, offset, readCache);
+        return key.loadNode(fetchCycles, offset, readState);
     }
     virtual const char *queryFileName() const override
     {
@@ -184,7 +193,7 @@ public:
 
 protected:
     const CKeyIndex & key;
-    mutable CCachedIndexRead readCache;
+    mutable CLoadNodeCacheState readState;
 };
 
 class jhtree_decl CMemKeyIndex : public CKeyIndex
@@ -197,7 +206,7 @@ public:
     virtual const char *queryFileName() const { return name.get(); }
     virtual const IFileIO *queryFileIO() const override { return nullptr; }
 // INodeLoader impl.
-    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, CCachedIndexRead & readCache) const override;
+    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, CLoadNodeCacheState & readState) const override;
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override {}
 };
 
@@ -212,7 +221,7 @@ public:
     virtual const char *queryFileName() const { return name.get(); }
     virtual const IFileIO *queryFileIO() const override { return io; }
 // INodeLoader impl.
-    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, CCachedIndexRead & readCache) const override;
+    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, CLoadNodeCacheState & readState) const override;
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override { ::mergeStats(stats, io); }
 };
 
@@ -233,7 +242,7 @@ protected:
     bool eof=false;
     bool matched=false; //MORE - this should probably be renamed. It's tracking state from one call of lookup to the next.
     bool logExcessiveSeeks = false;
-    mutable CCachedIndexRead readCache;
+    mutable CLoadNodeCacheState readState;
 public:
     CKeyCursor(CKeyIndex &_key, const IIndexFilterList *filter, bool _logExcessiveSeeks, unsigned _blockedIOSize);
     ~CKeyCursor();
@@ -263,7 +272,7 @@ public:
  // INodeLoader impl.
     virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) const override
     {
-        return key.loadNode(fetchCycles, offset, readCache);
+        return key.loadNode(fetchCycles, offset, readState);
     }
     const CJHSearchNode *getCursorNode(offset_t offset, NodeType type, IContextLogger *ctx) const
     {
