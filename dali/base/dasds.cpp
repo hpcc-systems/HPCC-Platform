@@ -1327,20 +1327,17 @@ public:
     void addDelta(char *path, IPropertyTree *delta)
     {
         CTransactionItem *item = new CTransactionItem(path, delta);
-        CriticalBlock b(pendingCrit);
         addToQueue(item);
     }
     CTransactionItem *addExt(char *name, size32_t length, void *content)
     {
         CTransactionItem *item = new CTransactionItem(name, length, content, true);
-        CriticalBlock b(pendingCrit);
         addToQueue(LINK(item));
         return item;
     }
     void removeExt(char *name)
     {
         CTransactionItem *item = new CTransactionItem(name);
-        CriticalBlock b(pendingCrit);
         addToQueue(item);
     }
     void flush()
@@ -1428,11 +1425,17 @@ public:
                         break;
                     }
                     pendingSz = 0;
-                    // Hold blockedSaveCrit before releasing pendingCrit, because need to ensure this saves ahead
-                    // of other transactions building up in addToQueue
-                    CHECKEDCRITICALBLOCK(blockedSaveCrit, fakeCritTimeout); // because if Dali is saving state (::blockingSave), it will clear pending
-                    b.leave();
 
+                    b.leave(); // NB: addToQueue could add to pending between here and regaining lock below
+                    // NB: ensure consistent lock ordering of blockedSaveCrit and pendingCrit
+                    CHECKEDCRITICALBLOCK(blockedSaveCrit, fakeCritTimeout); // because if Dali is saving state (::blockingSave), it will clear pending
+                    b.enter();
+                    // check if new items added in window above
+                    while (pending.size())
+                    {
+                        todo.push(std::move(pending.front()));
+                        pending.pop();
+                    }
                     // Because blockedSaveCrit is held, it will also block 'synchronous save' (see addToQueue)
                     // i.e. if stuck here, the transactions will start building up, and trigger a 'Forced synchronous save',
                     // which will in turn block. This must complete!
@@ -2213,21 +2216,27 @@ void CBinaryFileExternal::write(const char *name, IPropertyTree &tree)
 
 void CDeltaWriter::addToQueue(CTransactionItem *item)
 {
-    pending.push(item);
-    // add actual size for externals, and nominal '100 byte' value for delta transactions
-    // it will act. as a rough guide to appoaching size threshold. It is not worth
-    // synchronously preparing and serializing here (which will be done asynchronously later)
-    pendingSz += (CTransactionItem::f_addext == item->type) ? item->ext.dataLength : 100;
-    size_t items = pending.size();
-    if ((pendingSz < transactionMaxMem) && (items < transactionQueueLimit))
+    bool needsSyncSave = false;
     {
-        if (lastSaveTime && ((get_cycles_now() - lastSaveTime) < thresholdDuration))
-            return;
+        CriticalBlock b(pendingCrit);
+        pending.push(item);
+        // add actual size for externals, and nominal '100 byte' value for delta transactions
+        // it will act. as a rough guide to appoaching size threshold. It is not worth
+        // synchronously preparing and serializing here (which will be done asynchronously later)
+        pendingSz += (CTransactionItem::f_addext == item->type) ? item->ext.dataLength : 100;
+        size_t items = pending.size();
+        if ((pendingSz < transactionMaxMem) && (items < transactionQueueLimit))
+        {
+            if (lastSaveTime && ((get_cycles_now() - lastSaveTime) < thresholdDuration))
+                return;
 
-        if (!writeRequested)
-            requestAsyncWrite();
+            if (!writeRequested)
+                requestAsyncWrite();
+        }
+        else // here if exceeded transationQueueLimit, transactionMaxMem or exceeded time threshold (deltaSaveThresholdSecs)
+            needsSyncSave = true;
     }
-    else // here if exceeded transationQueueLimit, transactionMaxMem or exceeded time threshold (deltaSaveThresholdSecs)
+    if (needsSyncSave)
     {
         if (aborted) // critical situation if delta writer is no longer running (there will have been previous errors)
             DISLOG("CDeltaWriter thread was aborted! Dali is compromised. Save, shutdown or restart ASAP.");
@@ -2236,8 +2245,13 @@ void CDeltaWriter::addToQueue(CTransactionItem *item)
         // force a synchronous save
         CCycleTimer timer;
         PROGLOG("Forcing synchronous save of %u transactions (pendingSz=%zu)", (unsigned)pending.size(), pendingSz);
+
+        // NB: ensure consistent lock ordering of blockedSaveCrit and pendingCrit
         CHECKEDCRITICALBLOCK(blockedSaveCrit, fakeCritTimeout); // because if Dali is saving state (::blockingSave), it will clear pending
-        if (save(pending)) // if temporarily blocked, continue, meaning queue limit will overrun a bit (blocking window is short)
+        CriticalBlock b(pendingCrit);
+        size_t items = pending.size();
+        // NB: items could be 0. It's possible that the delta writer has caught up and flushed pending already
+        if (items && save(pending)) // if temporarily blocked, continue, meaning queue limit will overrun a bit (blocking window is short)
         {
             pendingSz = 0;
             timeThrottled += timer.elapsedCycles();
