@@ -54,7 +54,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
     queryParams = {}
 }) => {
 
-    const [workunit] = useWorkunit(wuid, true);
+    const { workunit } = useWorkunit(wuid, true);
     const [variables, , , refreshVariables] = useWorkunitVariables(wuid);
     const [targetClusters] = useLogicalClusters();
     const [targetsRoxie, setTargetsRoxie] = React.useState(false);

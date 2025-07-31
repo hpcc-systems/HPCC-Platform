@@ -43,7 +43,6 @@ npm run test           # Playwright tests
 - `eclwatch/` - Legacy Dojo-based interface
 - `src/` - Modern TypeScript source code shared with dojo and react
 - `src-react/` - React components and modern UI
-- `test-ui/` - UI test files
 - `tests/` - Playwright test files
 
 ### Key Files

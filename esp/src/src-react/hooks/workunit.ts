@@ -10,42 +10,61 @@ import { Archive } from "../util/metricArchive";
 
 const logger = scopedLogger("../hooks/workunit.ts");
 type RefreshFunc = (full?: boolean) => Promise<Workunit>;
+interface useWorkunitResult {
+    workunit: Workunit;
+    state: number;
+    lastUpdate: number;
+    isComplete: boolean;
+    refresh: RefreshFunc;
+}
 
-export function useWorkunit(wuid: string, full: boolean = false): [Workunit, WUStateID, number, boolean, RefreshFunc] {
+export function useWorkunit(wuid: string, full: boolean = false): useWorkunitResult {
 
-    const [retVal, setRetVal] = React.useState<{ workunit: Workunit, state: number, lastUpdate: number, isComplete: boolean, refresh: RefreshFunc }>();
+    const [workunit, setWorkunit] = React.useState<Workunit>();
+    const [state, setState] = React.useState<number>(WUStateID.NotFound);
+    const [lastUpdate, setLastUpdate] = React.useState<number>(Date.now());
+    const [isComplete, setIsComplete] = React.useState<boolean>(false);
+    const [refresh, setRefresh] = React.useState<RefreshFunc>(() => (full?: boolean) => Promise.resolve(undefined));
 
     React.useEffect(() => {
         if (!wuid) {
-            setRetVal({ workunit: undefined, state: WUStateID.NotFound, lastUpdate: Date.now(), isComplete: undefined, refresh: (full?: boolean) => Promise.resolve(undefined) });
+            setWorkunit(undefined);
+            setState(WUStateID.NotFound);
+            setLastUpdate(Date.now());
+            setIsComplete(false);
+            setRefresh(() => (full?: boolean) => Promise.resolve(undefined));
             return;
         }
+
         const wu = Workunit.attach({ baseUrl: "" }, wuid);
-        let active = true;
-        let handle;
-        const refresh = singletonDebounce(wu, "refresh");
-        refresh(full, { IncludeTotalClusterTime: true })
-            .then(() => {
-                if (active) {
-                    setRetVal({ workunit: wu, state: wu.StateID, lastUpdate: Date.now(), isComplete: wu.isComplete(), refresh });
-                    handle = wu.watch(() => {
-                        setRetVal({ workunit: wu, state: wu.StateID, lastUpdate: Date.now(), isComplete: wu.isComplete(), refresh });
-                    });
-                }
-            }).catch(err => logger.error(err));
+        const doRefresh = singletonDebounce(wu, "refresh");
+        setRefresh(() => (full?: boolean) => {
+            setLastUpdate(Date.now());
+            return doRefresh(full);
+        });
+
+        let cancelled = false;
+        const handle = wu.watch(() => {
+            if (!cancelled) {
+                setWorkunit(wu);
+                setState(wu.StateID);
+                setLastUpdate(Date.now());
+                setIsComplete(wu.isComplete());
+            }
+        }, true);
 
         return () => {
-            active = false;
+            cancelled = true;
             handle?.release();
         };
     }, [wuid, full]);
 
-    return [retVal?.workunit, retVal?.state, retVal?.lastUpdate, retVal?.isComplete, retVal?.refresh];
+    return { workunit, state, lastUpdate, isComplete, refresh };
 }
 
 export function useWorkunitResults(wuid: string): [Result[], Workunit, WUStateID, () => void] {
 
-    const [workunit, state] = useWorkunit(wuid);
+    const { workunit, state } = useWorkunit(wuid);
     const [results, setResults] = React.useState<Result[]>([]);
     const [count, inc] = useCounter();
 
@@ -86,7 +105,7 @@ export interface Variable {
 
 export function useWorkunitVariables(wuid: string): [Variable[], Workunit, WUStateID, () => void] {
 
-    const [workunit, state] = useWorkunit(wuid);
+    const { workunit, state } = useWorkunit(wuid);
     const [variables, setVariables] = React.useState<Variable[]>([]);
     const [count, inc] = useCounter();
 
@@ -133,7 +152,7 @@ export interface SourceFile extends WsWorkunits.ECLSourceFile {
 
 export function useWorkunitSourceFiles(wuid: string): [SourceFile[], Workunit, WUStateID, () => void] {
 
-    const [workunit, state] = useWorkunit(wuid);
+    const { workunit, state } = useWorkunit(wuid);
     const [sourceFiles, setSourceFiles] = React.useState<SourceFile[]>([]);
     const [count, inc] = useCounter();
 
@@ -181,7 +200,7 @@ export function useWorkunitSourceFiles(wuid: string): [SourceFile[], Workunit, W
 
 export function useWorkunitWorkflows(wuid: string): [WsWorkunits.ECLWorkflow[], Workunit, () => void] {
 
-    const [workunit, state] = useWorkunit(wuid);
+    const { workunit, state } = useWorkunit(wuid);
     const [workflows, setWorkflows] = React.useState<WsWorkunits.ECLWorkflow[]>([]);
     const [count, increment] = useCounter();
 
@@ -201,7 +220,7 @@ export function useWorkunitWorkflows(wuid: string): [WsWorkunits.ECLWorkflow[], 
 
 export function useWorkunitProcesses(wuid: string): [WsWorkunits.ECLWUProcess[], Workunit, () => void] {
 
-    const [workunit, state] = useWorkunit(wuid);
+    const { workunit, state } = useWorkunit(wuid);
     const [processes, setProcesses] = React.useState<WsWorkunits.ECLWUProcess[]>([]);
     const [count, increment] = useCounter();
 
@@ -239,7 +258,7 @@ export function useWorkunitXML(wuid: string): [string] {
 
 export function useWorkunitExceptions(wuid: string): [WsWorkunits.ECLException[], Workunit, () => void] {
 
-    const [workunit, state] = useWorkunit(wuid);
+    const { workunit, state } = useWorkunit(wuid);
     const [exceptions, setExceptions] = React.useState<WsWorkunits.ECLException[]>([]);
     const [count, increment] = useCounter();
 
@@ -259,7 +278,7 @@ export function useWorkunitExceptions(wuid: string): [WsWorkunits.ECLException[]
 
 export function useWorkunitResources(wuid: string): [string[], Workunit, WUStateID, () => void] {
 
-    const [workunit, state] = useWorkunit(wuid);
+    const { workunit, state } = useWorkunit(wuid);
     const [resources, setResources] = React.useState<string[]>([]);
     const [count, increment] = useCounter();
 
@@ -279,7 +298,7 @@ export function useWorkunitResources(wuid: string): [string[], Workunit, WUState
 
 export function useWorkunitQuery(wuid: string): [string, Workunit, WUStateID, () => void] {
 
-    const [workunit, state] = useWorkunit(wuid);
+    const { workunit, state } = useWorkunit(wuid);
     const [query, setQuery] = React.useState<string>("");
     const [count, increment] = useCounter();
 
@@ -297,7 +316,7 @@ export function useWorkunitQuery(wuid: string): [string, Workunit, WUStateID, ()
 
 export function useWorkunitArchive(wuid: string): [string, Workunit, WUStateID, Archive, () => void] {
 
-    const [workunit, state] = useWorkunit(wuid);
+    const { workunit, state } = useWorkunit(wuid);
     const [archiveString, setArchiveString] = React.useState<string>("");
     const [archive, setArchive] = React.useState<Archive>();
     const [count, increment] = useCounter();
@@ -366,7 +385,7 @@ function mapThorLogInfo(workunit: Workunit, thorLogInfo: WsWorkunits.ThorLogInfo
 
 export function useWorkunitHelpers(wuid: string): [HelperRow[], () => void] {
 
-    const [workunit, state] = useWorkunit(wuid);
+    const { workunit, state } = useWorkunit(wuid);
     const [counter, incCounter] = useCounter();
     const [helpers, setHelpers] = React.useState<HelperRow[]>([]);
 

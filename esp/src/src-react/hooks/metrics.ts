@@ -272,7 +272,7 @@ export function useWorkunitMetrics(
     nestedFilter: WsWorkunits.NestedFilter = nestedFilterDefault
 ): useMetricsResult {
 
-    const [workunit, state] = useWorkunit(wuid);
+    const { workunit, state } = useWorkunit(wuid);
     const [data, setData] = React.useState<IScopeEx[]>([]);
     const [columns, setColumns] = React.useState<{ [id: string]: any }>([]);
     const [activities, setActivities] = React.useState<WsWorkunits.Activity2[]>([]);

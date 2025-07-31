@@ -249,7 +249,7 @@ export const Result: React.FunctionComponent<ResultProps> = ({
     );
 
     const { currentUser } = useMyAccount();
-    const [wu] = useWorkunit(wuid);
+    const { workunit: wu } = useWorkunit(wuid);
     const [result, setResult] = React.useState<CommsResult>(resultTable.calcResult());
     const [FilterFields, setFilterFields] = React.useState<Fields>({});
     const [loading, setLoading] = React.useState(true);

@@ -41,7 +41,7 @@ export const DataPatterns: React.FunctionComponent<DataPatternsProps> = ({
     const [showOptimize, setShowOptimize] = React.useState(false);
     const [targetCluster, setTargetCluster] = React.useState<string>();
     const [wuid, setWuid] = React.useState<string>();
-    const [wu, , , isComplete] = useWorkunit(wuid, true);
+    const { workunit: wu, isComplete } = useWorkunit(wuid, true);
 
     const refreshData = React.useCallback((full: boolean = false) => {
         if (full) {
