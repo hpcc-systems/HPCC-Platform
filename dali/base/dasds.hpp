@@ -248,6 +248,11 @@ extern da_decl unsigned querySDSLockTimeoutCount();
 
 // utility
 
+enum class StoreFormat
+{
+    XML,
+    BINARY
+};
 interface IStoreHelper : extends IInterface
 {
     virtual StringBuffer &getDetachedDeltaName(StringBuffer &detachName) = 0;
@@ -256,7 +261,7 @@ interface IStoreHelper : extends IInterface
     virtual bool detachCurrentDelta() = 0;
     virtual void saveStore(IPropertyTree *root, unsigned *newEdition=NULL) = 0;
     virtual unsigned queryCurrentEdition() = 0;
-    virtual StringBuffer &getCurrentStoreFilename(StringBuffer &res, unsigned *xmlCrc=nullptr, unsigned *binaryCrc=nullptr) = 0;
+    virtual StringBuffer &getCurrentStoreFilename(StringBuffer &res, StoreFormat storeFormat, unsigned *crc=nullptr) = 0;
     virtual StringBuffer &getCurrentDeltaFilename(StringBuffer &res) = 0;
     virtual StringBuffer &getCurrentStoreInfoFilename(StringBuffer &res) = 0;
     virtual void backup(const char *filename) = 0;

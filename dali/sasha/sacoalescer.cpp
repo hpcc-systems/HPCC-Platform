@@ -82,7 +82,7 @@ void coalesceDatastore(IPropertyTree *coalesceProps, bool force)
 
 
             StringBuffer storeFilename(dataPath);
-            iStoreHelper->getCurrentStoreFilename(storeFilename);
+            iStoreHelper->getCurrentStoreFilename(storeFilename, StoreFormat::XML);
             StringBuffer memStr;
             getSystemTraceInfo(memStr.clear());
             MLOG("COALESCE: %s", memStr.str());

@@ -638,6 +638,67 @@ ISerialInputStream * createSerialInputStream(IFileIO * input, offset_t startOffs
     return new CFileSerialInputStream(input, startOffset, length);
 }
 
+//---------------------------------------------------------------------------
+
+class CCrcInputStream : public CSimpleInterfaceOf<ICrcSerialInputStream>
+{
+    CRC32 crc;
+    Linked<ISerialInputStream> input;
+
+public:
+    CCrcInputStream(ISerialInputStream *_input)
+        : input(_input) {}
+
+    virtual unsigned queryCrc() const override { return crc.get(); }
+
+    virtual size32_t read(size32_t len, void * ptr) override
+    {
+        size32_t numRead = input->read(len, ptr);
+        crc.tally(numRead, ptr);
+        return numRead;
+    }
+
+    virtual void get(size32_t len, void * ptr) override
+    {
+        input->get(len, ptr);
+        crc.tally(len, ptr);
+    }
+
+    virtual void skip(size32_t sz) override
+    {
+        if (unlikely(sz == 0))
+            return;
+
+        constexpr size32_t maxBufferSize = 8192; // 8KB max buffer for reading skipped data
+        char buffer[maxBufferSize];
+
+        while (sz > 0)
+        {
+            size32_t toRead = std::min(sz, maxBufferSize);
+            size32_t numRead = input->read(toRead, buffer);
+            if (numRead == 0)
+                break; // End of stream
+            crc.tally(numRead, buffer);
+            sz -= numRead;
+        }
+    }
+
+    virtual offset_t tell() const override
+    {
+        return input->tell();
+    }
+
+    virtual void reset(offset_t _offset, offset_t _flen) override
+    {
+        crc.reset();
+        input->reset(_offset, _flen);
+    }
+};
+
+ICrcSerialInputStream *createCrcInputStream(ISerialInputStream *input)
+{
+    return new CCrcInputStream(input);
+}
 
 //---------------------------------------------------------------------------
 
@@ -1382,6 +1443,75 @@ IBufferedSerialInputStream * createBufferedSerialInputStream(MemoryBuffer & sour
 {
     return new CBufferSerialInputStream(source);
 }
+
+ISerialInputStream *createProgressStream(ISerialInputStream *stream, offset_t offset, offset_t len, const char *msg, unsigned periodSecs)
+{
+    class CProgressStream : public CSimpleInterfaceOf<ISerialInputStream>
+    {
+        Linked<ISerialInputStream> stream;
+        offset_t offset = 0;
+        offset_t totalSize = 0;
+        StringAttr msg;
+        void log(double pct)
+        {
+            PROGLOG("%s - %.2f%% complete", msg.get(), pct);
+        }
+        void logProgressIfNeeded()
+        {
+            if (periodTimer.hasElapsed())
+            {
+                if (unlikely(0 == totalSize))
+                    log(100.0);
+                else
+                {
+                    offset_t pos = stream->tell();
+                    double pct = ((double)pos) / totalSize * 100;
+                    log(pct);
+                }
+            }
+        }
+        PeriodicTimer periodTimer;
+    public:
+        CProgressStream(ISerialInputStream *_stream, offset_t _offset, offset_t len, const char *_msg, unsigned periodSecs)
+            : stream(_stream), offset(_offset), msg(_msg), periodTimer(periodSecs*1000, true)
+        {
+            totalSize = offset+len;
+        }
+        ~CProgressStream()
+        {
+            offset_t pos = stream->tell();
+            if (pos == totalSize)
+                log(100.0);
+        }
+        // implements ISimpleReadStream
+        virtual size32_t read(size32_t len, void * data) override
+        {
+            size32_t rd = stream->read(len, data);
+            logProgressIfNeeded();
+            return rd;
+        }
+        virtual void skip(size32_t sz) override
+        {
+            stream->skip(sz);
+            logProgressIfNeeded();
+        }
+        virtual void get(size32_t len, void * ptr) override
+        {
+            stream->get(len, ptr);
+            logProgressIfNeeded();
+        }
+        virtual void reset(offset_t offset, offset_t len) override
+        {
+            stream->reset(offset, len);
+        }
+        virtual offset_t tell() const override
+        {
+            return stream->tell();
+        }
+    };
+    return new CProgressStream(stream, offset, len, msg, periodSecs);
+}
+
 
 
 /*
