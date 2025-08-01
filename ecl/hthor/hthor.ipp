@@ -45,6 +45,7 @@
 #include "roxierowbuff.hpp"
 
 #include "thorread.hpp"
+#include "thorwrite.hpp"
 
 roxiemem::IRowManager * queryRowManager();
 using roxiemem::OwnedConstRoxieRow;
@@ -297,6 +298,7 @@ protected:
     CachedOutputMetaData serializedOutputMeta;
     offset_t uncompressedBytesWritten;
     Owned<ILogicalRowWriter> outSeq;
+    Owned<IDiskRowWriter> genericWriter; // for generic write operations
     unsigned __int64 numRecords = 0;
     stat_type numDiskWrites = 0;
     cost_type diskAccessCost = 0;
