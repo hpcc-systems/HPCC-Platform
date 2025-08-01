@@ -1031,23 +1031,36 @@ bool CWsSMCEx::onIndex(IEspContext &context, IEspSMCIndexRequest &req, IEspSMCIn
     return true;
 }
 
+// Output encoding to include in a Javascript block
+// Follows owasp recommendations and also strips non-printable characters
+StringBuffer& encodeJavascript(const char* value, StringBuffer& encoded)
+{
+    if (!isEmptyString(value))
+    {
+        const char* pStr = value;
+        unsigned len = strlen(value);
+        for (unsigned i = 0; i < len; i++)
+        {
+            if (isalnum(static_cast<unsigned char>(*pStr)))
+                encoded.append(*pStr);
+            else if (isprint(*pStr))
+                encoded.appendf("\\u%04X", static_cast<unsigned char>(*pStr));
+
+            pStr++;
+        }
+    }
+
+    return encoded;
+}
+
+
 void CWsSMCEx::readBannerAndChatRequest(IEspContext& context, IEspActivityRequest &req, IEspActivityResponse& resp)
 {
     StringBuffer chatURLStr, bannerStr;
     const char* chatURL = req.getChatURL();
     const char* banner = req.getBannerContent();
-    //Filter out invalid chars
-    if (chatURL && *chatURL)
-    {
-        const char* pStr = chatURL;
-        unsigned len = strlen(chatURL);
-        for (unsigned i = 0; i < len; i++)
-        {
-            if (isprint(*pStr))
-                chatURLStr.append(*pStr);
-            pStr++;
-        }
-    }
+    //Filter out invalid chars and encode for safe assignment to javascript variable
+    encodeJavascript(chatURL, chatURLStr);
     if (banner && *banner)
     {
         const char* pStr = banner;
