@@ -1362,5 +1362,5 @@ export function formatDate(date: Date, useUTC: boolean): string {
     const hh = pad(useUTC ? date.getUTCHours() : date.getHours());
     const min = pad(useUTC ? date.getUTCMinutes() : date.getMinutes());
     const sec = pad(useUTC ? date.getUTCSeconds() : date.getSeconds());
-    return `${mm}/${dd}/${yyyy} ${hh}:${min}:${sec}`;
+    return `${yyyy}-${mm}-${dd} ${hh}:${min}:${sec}`;
 }
