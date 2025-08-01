@@ -1,0 +1,62 @@
+/*##############################################################################
+
+    HPCC SYSTEMS software Copyright (C) 2025 HPCC Systems®.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+############################################################################## */
+
+
+//--------------------------------------------------------------------------------
+//                           ECL LIB_PHONENUMBER TYPES
+//--------------------------------------------------------------------------------
+
+EXPORT phonenumber_type := ENUM(INTEGER1,
+    FIXED_LINE=0,
+    MOBILE,
+    FIXED_LINE_OR_MOBILE,
+    TOLL_FREE,
+    PREMIUM_RATE,
+    SHARED_COST,
+    VOIP,
+    PERSONAL_NUMBER,
+    PAGER,
+    UAN,
+    VOICEMAIL,
+    UNKNOWN
+);
+
+EXPORT phonenumber_error := ENUM(INTEGER1,
+    NO_PARSING_ERROR=0,
+    INVALID_COUNTRY_CODE_ERROR,
+    NOT_A_NUMBER,
+    TOO_SHORT_AFTER_IDD, // Too short after International Direct Dialing prefix
+    TOO_SHORT_NSN, // Too short to be a National Significant phone number
+    TOO_LONG_NSN // Too long to be a National Significant phone number
+);
+
+EXPORT phonenumber_data := RECORD
+    STRING number{MAXLENGTH(30)};
+    phonenumber_error error;
+    BOOLEAN valid;
+    phonenumber_type lineType;
+    STRING regionCode{MAXLENGTH(5)};
+    INTEGER2 countryCode;
+END;
+
+//--------------------------------------------------------------------------------
+//                           ECL SERVICE DEFINITIONS
+//--------------------------------------------------------------------------------
+
+EXPORT phonenumber := SERVICE : plugin('phonenumberplugin'), library('phonenumber'), namespace('phonenumber'), CPP, PURE
+    DATASET(phonenumber_data) parseNumber(CONST STRING phonenumber, CONST STRING countryCode) : cpp,action,context,fold,entrypoint='parser';
+END;
