@@ -1289,6 +1289,10 @@ void CWsSMCEx::setActivityResponse(IEspContext &context, CActivityInfo* activity
     double version = context.getClientVersion();
     const char* sortBy = req.getSortBy();
     bool descending = req.getDescending();
+
+    if (!isEmptyString(sortBy) && !(strieq(sortBy, "name") || strieq(sortBy, "size")))
+        throw makeStringException(ECLWATCH_INVALID_INPUT, "Invalid SortBy value- must be 'Name' or 'Size'");
+
     if (version >= 1.22)
     {
         StringBuffer s;

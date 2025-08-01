@@ -5,6 +5,7 @@ import { scopedLogger } from "@hpcc-js/util";
 import { userKeyValStore } from "src/KeyValStore";
 import { DockPanelLayout } from "../layouts/DockPanel";
 import { singletonDebounce } from "../util/throttle";
+import { isGraphvizWorkerResponse, layoutCache, LayoutStatus } from "../util/metricGraph";
 import { signal, useSignal } from "../hooks/signal";
 import { useWorkunit } from "./workunit";
 import { useQuery } from "./query";
@@ -41,7 +42,7 @@ interface UserMetricsView {
 
 const DefaultMetricsViews: StringMetricsViewMap = {
     Default: {
-        scopeTypes: ["graph", "subgraph", "activity", "operation", "workflow"],
+        scopeTypes: ["workflow", "graph", "subgraph", "child", "activity", "operation"],
         properties: ["CostExecute", "TimeElapsed"],
         ignoreGlobalStoreOutEdges: true,
         subgraphTpl: "%id% - %TimeElapsed%",
@@ -272,7 +273,7 @@ export function useWorkunitMetrics(
     nestedFilter: WsWorkunits.NestedFilter = nestedFilterDefault
 ): useMetricsResult {
 
-    const [workunit, state] = useWorkunit(wuid);
+    const { workunit, state } = useWorkunit(wuid);
     const [data, setData] = React.useState<IScopeEx[]>([]);
     const [columns, setColumns] = React.useState<{ [id: string]: any }>([]);
     const [activities, setActivities] = React.useState<WsWorkunits.Activity2[]>([]);
@@ -422,4 +423,49 @@ export function useWUQueryMetrics(
     const wuMetrics = useWorkunitMetrics(isQuery ? "" : wuid, scopeFilter, nestedFilter);
     const queryMetrics = useQueryMetrics(isQuery ? querySet : "", isQuery ? queryId : "", scopeFilter, nestedFilter);
     return isQuery ? { ...queryMetrics } : { ...wuMetrics };
+}
+
+export function useMetricsGraphLayout(dot: string): { svg: string, layoutStatus: LayoutStatus } {
+    const [svg, setSvg] = React.useState<string>("");
+    const [layoutStatus, setLayoutStatus] = React.useState<LayoutStatus>(LayoutStatus.UNKNOWN);
+
+    React.useEffect(() => {
+        if (!dot) {
+            setSvg("");
+            setLayoutStatus(LayoutStatus.UNKNOWN);
+            return;
+        }
+
+        let completedOrCancelled = false;
+        setLayoutStatus(layoutCache.status(dot));
+
+        setTimeout(() => {
+            if (!completedOrCancelled) {
+                setLayoutStatus(LayoutStatus.LONG_RUNNING);
+            }
+        }, 15000);
+
+        layoutCache.calcSVG(dot).then(response => {
+            if (isGraphvizWorkerResponse(response)) {
+                if (!completedOrCancelled) {
+                    setSvg(response.svg);
+                }
+            } else {
+                throw new Error(response.error);
+            }
+        }).catch(err => {
+            logger.error(err);
+        }).finally(() => {
+            if (!completedOrCancelled) {
+                setLayoutStatus(layoutCache.status(dot));
+                completedOrCancelled = true;
+            }
+        });
+
+        return () => {
+            completedOrCancelled = true;
+        };
+    }, [dot]);
+
+    return { svg, layoutStatus };
 }

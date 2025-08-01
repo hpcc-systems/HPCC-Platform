@@ -18858,7 +18858,7 @@ void HqlCppTranslator::doBuildNewRegexFindReplace(BuildCtx & ctx, const CHqlBoun
     switch (patternStringType->getTypeCode())
     {
         case type_varstring:
-            normalizedDataType.setown(makeStringType(UNKNOWN_LENGTH, patternStringType->queryCharset(), patternStringType->queryCollation()));
+            normalizedDataType.setown(makeStringType(UNKNOWN_LENGTH, LINK(patternStringType->queryCharset()), LINK(patternStringType->queryCollation())));
             break;
         case type_varunicode:
             normalizedDataType.setown(makeUnicodeType(UNKNOWN_LENGTH, patternStringType->queryLocale()));
@@ -19012,7 +19012,7 @@ void HqlCppTranslator::doBuildExprRegexFindSet(BuildCtx & ctx, IHqlExpression * 
     switch (patternStringType->getTypeCode())
     {
         case type_varstring:
-            normalizedDataType.setown(makeStringType(UNKNOWN_LENGTH, patternStringType->queryCharset(), patternStringType->queryCollation()));
+            normalizedDataType.setown(makeStringType(UNKNOWN_LENGTH, LINK(patternStringType->queryCharset()), LINK(patternStringType->queryCollation())));
             break;
         case type_varunicode:
             normalizedDataType.setown(makeUnicodeType(UNKNOWN_LENGTH, patternStringType->queryLocale()));
@@ -19059,7 +19059,7 @@ void HqlCppTranslator::doBuildExprRegexExtract(BuildCtx & ctx, IHqlExpression * 
     switch (patternStringType->getTypeCode())
     {
         case type_varstring:
-            normalizedDataType.setown(makeStringType(UNKNOWN_LENGTH, patternStringType->queryCharset(), patternStringType->queryCollation()));
+            normalizedDataType.setown(makeStringType(UNKNOWN_LENGTH, LINK(patternStringType->queryCharset()), LINK(patternStringType->queryCollation())));
             break;
         case type_varunicode:
             normalizedDataType.setown(makeUnicodeType(UNKNOWN_LENGTH, patternStringType->queryLocale()));

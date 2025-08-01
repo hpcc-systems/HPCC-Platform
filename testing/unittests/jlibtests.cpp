@@ -5728,6 +5728,40 @@ protected:
         }
         CPPUNIT_ASSERT(hashResult != 0);
     }
+    template <typename T, unsigned (*HASHCFUNC)(const unsigned char *, unsigned, unsigned)>
+    void testHashcN()
+    {
+        unsigned hashResult = fnvInitialHash32;
+
+        unsigned offset = 0;
+        unsigned len = sizeof(T);
+        for (unsigned i=0; i<maxCalls; i++)
+        {
+            if (offset + len > buffer.size())
+                offset = 0;
+
+            hashResult = HASHCFUNC(&buffer[offset], len, hashResult);
+            offset += len;
+        }
+        CPPUNIT_ASSERT(hashResult != 0);
+    }
+    template <typename T, unsigned (*HASHCFUNC)(T, unsigned)>
+    void testHashValueN()
+    {
+        unsigned hashResult = fnvInitialHash32;
+
+        unsigned offset = 0;
+        unsigned len = sizeof(T);
+        for (unsigned i=0; i<maxCalls; i++)
+        {
+            if (offset + len > buffer.size())
+                offset = 0;
+
+            hashResult = HASHCFUNC(*(const T *)(&buffer[offset]), hashResult);
+            offset += len;
+        }
+        CPPUNIT_ASSERT(hashResult != 0);
+    }
     void measure(const char *funcName, const std::function<void(void)> &func)
     {
         timer.reset();
@@ -5744,6 +5778,10 @@ protected:
         measure("hashcz (fnv1)", [this]() { testHashcz<hashcz>(); });
         measure("hashc_fnv1a", [this]() { testHashc<hashc_fnv1a>(); });
         measure("hashcz_fnv1a", [this]() { testHashcz<hashcz_fnv1a>(); });
+        measure("hashc fnv1a 4", [this]() { testHashcN<unsigned, hashc_fnv1a>(); });
+        measure("hashc fnv1a 8", [this]() { testHashcN<unsigned __int64, hashc_fnv1a>(); });
+        measure("hashc fnv1a 4V", [this]() { testHashValueN<unsigned, hashvalue_fnv1a>(); });
+        measure("hashc fnv1a 8V", [this]() { testHashValueN<unsigned __int64, hashvalue_fnv1a>(); });
     }
 };
 

@@ -1100,9 +1100,9 @@ public:
                         pdir->addFile(drv,fname.str(),fsz,dt,node,ep,*grp,numnodes,&mem);
                     }
                     catch (IException *e) {
-                        StringBuffer tmp(LOGPFX "scanDirectory: Error adding file ");
-                        addPathSepChar(rfn.getRemotePath(tmp)).append(fname);
-                        EXCLOG(e,tmp.str());
+                        StringBuffer filepath, errMsg;
+                        addPathSepChar(rfn.getRemotePath(filepath)).append(fname);
+                        error(filepath.str(), "scanDirectory Error adding file : %s", e->errorMessage(errMsg).str());
                         e->Release();
                     }
                 }
@@ -1718,9 +1718,9 @@ public:
                 listOrphans(file,basedir,scope,abort,recentCutoffDays);
             }
             catch (IException *e) {
-                StringBuffer tmp(LOGPFX "listOrphans: Error processing file ");
-                file->getNameMask(addPathSepChar(tmp.append(basedir.str())));
-                EXCLOG(e,tmp.str());
+                StringBuffer filepath, errMsg;
+                file->getNameMask(addPathSepChar(filepath.append(basedir)));
+                error(filepath.str(),"listOrphans Error processing file : %s",e->errorMessage(errMsg).str());
                 e->Release();
             }
             if (abort)

@@ -244,7 +244,10 @@ static unsigned sizePacked(unsigned __int64 value)
 
 static void serializePacked(MemoryBuffer & out, unsigned __int64  value)
 {
-    constexpr unsigned maxBytes = 9;
+    // Packed encoding uses 7 bits per byte, with the high bit as a continuation flag.
+    // For a 64-bit value like -1 (all bits set), this requires 10 bytes to encode properly,
+    // as 9 * 7 = 63 bits, and the extra bit in the 10th byte is needed to complete the encoding.
+    constexpr unsigned maxBytes = 10;
     unsigned index = maxBytes;
     byte result[maxBytes];
 
@@ -2326,17 +2329,11 @@ CInplaceLeafWriteNode::CInplaceLeafWriteNode(offset_t _fpos, CKeyHdr *_keyHdr, I
 bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size, unsigned __int64 sequence)
 {
     if (0xffff == hdr.numKeys)
-    {
-        compressor.close();
         return false;
-    }
 
     const size32_t prevUncompressedLen = uncompressed.length();
     if ((prevUncompressedLen > maxBytes * ctx.options.maxCompressionFactor) && (firstUncompressed == prevUncompressedLen))
-    {
-        compressor.close();
         return false;
-    }
 
     if (0 == hdr.numKeys)
     {
@@ -2521,8 +2518,6 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
         unsigned nowSize = getDataSize(true);
         assertex(oldSize == nowSize);
 
-        compressor.close();
-
         if (nowSize > maxBytes)
             throw makeStringExceptionV(0, "Internal error: Leaf grew too large after ignoring row @%llu:%u (%u > %u)", getFpos(), hdr.numKeys, hdr.keyBytes, maxBytes);
 
@@ -2539,6 +2534,14 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
     return true;
 }
 
+void CInplaceLeafWriteNode::finalize()
+{
+    if (openedCompressor)
+    {
+        compressor.close();
+        sizeCompressedPayload = compressor.buflen();
+    }
+}
 
 bool CInplaceLeafWriteNode::recompressAll(unsigned maxPayloadSize)
 {
@@ -2619,12 +2622,6 @@ unsigned CInplaceLeafWriteNode::getDataSize(bool includePayload)
 
 void CInplaceLeafWriteNode::write(IFileIOStream *out, CRC32 *crc)
 {
-    if (openedCompressor)
-    {
-        compressor.close();
-        sizeCompressedPayload = compressor.buflen();
-    }
-
     hdr.keyBytes = getDataSize(true);
     if (hdr.keyBytes > maxBytes)
         throw makeStringExceptionV(0, "Internal error: Inplace leaf node @%llu is too large (%u > %u)", getFpos(), hdr.keyBytes, maxBytes);

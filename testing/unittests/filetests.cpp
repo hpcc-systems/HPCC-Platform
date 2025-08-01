@@ -258,6 +258,7 @@ public:
         testCompressWrite(sampleSrc, 0x10000000, COMPRESS_METHOD_LZ4HC3);
         testCompressWrite(sampleSrc, 0x10000000, COMPRESS_METHOD_LZW);
         testCompressWrite(sampleSrc, 0x10000000, COMPRESS_METHOD_ZSTDS);
+        testCompressWrite(sampleSrc, 0x10000000, COMPRESS_METHOD_ZSTD);
     }
 
     void cleanup()

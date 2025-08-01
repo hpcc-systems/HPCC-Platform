@@ -49,7 +49,16 @@ class JlibCompressionTestBase : public CppUnit::TestFixture
 protected:
     static constexpr size32_t sz = 100*0x100000; // 100MB
     static constexpr const char *aesKey = "012345678901234567890123";
-    enum CompressOpt { RowCompress, AllRowCompress, BlockCompress, CompressToBuffer, FixedBlockCompress, LargeBlockCompress, FixedIndexCompress };
+    enum CompressOpt {
+        RowCompress,                    // Compress a row at a time into an expanding buffer
+        AllRowCompress,                 // Compress all rows in one call into a expanding buffer
+        BlockCompress,                  // Call the alternative api to directly compress a block of data
+        CompressToBuffer,               // Compress to a buffer using the compressToBuffer function
+        FixedBlockCompress,             // Compress a row at a time to fixed size 32KB blocks, allow rows to be split over blocks (like a file)
+        FixedIndexCompress,             // Compress a row at a time to fixed size 32KB blocks, prevent rows being split between blocks (index payload)
+        LargeBlockCompress,             // Compress all remaining rows in each write to a 32K fixed size block
+        MBBlockCompress                 // Compress all remaining rows in each write to a 1MB fixed size block
+    };
 public:
     void disableBacktraceOnAssert() { setBacktraceOnAssert(false); }
 
@@ -101,10 +110,9 @@ public:
             {
                 compressor->open(compressed, sz, rowSz);
                 const byte *ptrEnd = ptr + srcLen;
-                while (ptr != ptrEnd)
+                for (size_t offset = 0; offset < srcLen; offset += rowSz)
                 {
-                    compressor->write(ptr, rowSz);
-                    ptr += rowSz;
+                    compressor->write(src+offset, rowSz);
                 }
                 compressor->close();
                 try
@@ -124,7 +132,7 @@ public:
             case AllRowCompress:
             {
                 compressor->open(compressed, sz, rowSz);
-                compressor->write(ptr, sz);
+                compressor->write(ptr, srcLen);
                 compressor->close();
                 break;
             }
@@ -172,8 +180,9 @@ public:
                 break;
             }
             case LargeBlockCompress:
+            case MBBlockCompress:
             {
-                static constexpr size32_t blocksize = 32768;
+                size32_t blocksize = (opt == LargeBlockCompress) ? 32768 : 0x100000;
                 MemoryAttr buffer(blocksize);
 
                 size32_t offset = 0;
@@ -204,7 +213,7 @@ public:
             {
                 decompressToBuffer(tgt, compressed, options);
             }
-            else if ((opt == FixedBlockCompress) || (opt == LargeBlockCompress) || (opt == FixedIndexCompress))
+            else if ((opt == FixedBlockCompress) || (opt == LargeBlockCompress) || (opt == FixedIndexCompress) || (opt == MBBlockCompress))
             {
                 const byte * cur = compressed.bytes();
                 ForEachItemIn(i, sizes)
@@ -264,6 +273,8 @@ public:
             name.append("-fi");
         else if (opt == LargeBlockCompress)
             name.append("-lb");
+        else if (opt == MBBlockCompress)
+            name.append("-mb");
         if (options && *options)
             name.append("-").append(options);
 
@@ -286,8 +297,17 @@ public:
             time5GBs, copyTime5GBs + compressTime, copyTime5GBs + decompressTime,
              ratio, compressed.length());
 
-        CPPUNIT_ASSERT(tgt.length() >= srcLen);
-        CPPUNIT_ASSERT(0 == memcmp(src, tgt.bufferBase(), srcLen));
+        size32_t toCompare = std::min(srcLen, tgt.length());
+        for (size32_t i=0; i < toCompare; i++)
+        {
+            if (src[i] != tgt.bytes()[i])
+            {
+                VStringBuffer msg("Mismatch at %u", i);
+                CPPUNIT_FAIL(msg);
+                break;
+            }
+        }
+        CPPUNIT_ASSERT(tgt.length() == srcLen);
     }
 
     bool compressRows(MemoryBuffer & out, unsigned numRows, size32_t sizeLimit, ICompressHandler &handler, size32_t rowSz,const byte * src)
@@ -335,10 +355,10 @@ public:
 
             bool contentsMatch = (targetNlimit.length() == targetN1fail.length()) && (memcmp(targetNlimit.bytes(), targetN1fail.bytes(), targetNlimit.length()) == 0);
 
-            DBGLOG("Limit %s/%u: %s, sizes(%u, %u, %u) limit(%s), fail(%s)",
+            DBGLOG("Limit %s/%u: %s, sizes(%u, %u, %u) increase(%u) limit(%s), fail(%s)",
                     handler.queryType(), numRows,
                     (okN1f || contentsMatch) ? "SUCCESS" : "FAIL",
-                    targetN.length(), targetNlimit.length(), targetN1fail.length(),
+                    targetN.length(), targetNlimit.length(), targetN1fail.length(), n1Size - targetN.length(),
                     boolToStr(okN1l), boolToStr(okN1f));
         }
         catch (IException *e)
@@ -395,12 +415,18 @@ public:
 
                 //The stream compressors only currently support fixed size outputs
                 //They also do not support partial writes - so largeBlockCompress will fail.
-                if (strieq(type, "lz4s") || strieq(type, "lz4shc") || strieq(type, "zstds"))
-                {
+                if (strieq(type, "lz4s") || strieq(type, "lz4shc"))
                     continue;
-                }
+
+                //zstds needs to support partial writes to be able to support LargeBlockCompress/MBBlockCompress
+                //(That would be good for compressing network packets so worth revisiting)
+                if (strieq(type, "zstds"))
+                    continue;
 
                 testCompressor(handler, options, rowSz, src.length(), src.bytes(), LargeBlockCompress);
+                if  (!onlyFixedSize)
+                    testCompressor(handler, options, rowSz, src.length(), src.bytes(), MBBlockCompress);
+
 
                 //randrow has a limit of 64K rows - so it fails the row compress test
                 if (strieq(type, "randrow"))
@@ -495,19 +521,31 @@ public:
 
     void testSingle()
     {
-        MemoryBuffer src;
-        size32_t rowSz = 0;
-        initCompressionBuffer(src, rowSz);
+        try
+        {
+            MemoryBuffer src;
+            size32_t rowSz = 0;
+            initCompressionBuffer(src, rowSz);
 
-        const char * compression = "lz4";
-        const char * options = nullptr;
-        ICompressHandler * handler = queryCompressHandler(compression);
-        CPPUNIT_ASSERT_MESSAGE("Unknown compression type", handler);
+            const char * compression = "zstd";
+            const char * options = nullptr;
+            ICompressHandler * handler = queryCompressHandler(compression);
+            CPPUNIT_ASSERT_MESSAGE("Unknown compression type", handler);
 
-//        testCompressor(*handler, options, rowSz, src.length(), src.bytes(), LargeBlockCompress);
-        testCompressor(*handler, options, rowSz, src.length(), src.bytes(), FixedIndexCompress);
-        testCompressor(*handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
-  //      testCompressor(*handler, options, rowSz, src.length(), src.bytes(), LargeBlockCompress);
+            testCompressor(*handler, options, rowSz, src.length(), src.bytes(), FixedIndexCompress);
+            testCompressor(*handler, options, rowSz, src.length(), src.bytes(), LargeBlockCompress);
+            testCompressor(*handler, options, rowSz, src.length(), src.bytes(), RowCompress);
+            testCompressor(*handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
+            testCompressor(*handler, options, rowSz, src.length(), src.bytes(), MBBlockCompress);
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            EXCLOG(e, nullptr);
+            ::Release(e);
+            CPPUNIT_FAIL(msg.str());
+        }
     }
 };
 

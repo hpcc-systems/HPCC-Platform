@@ -49,6 +49,11 @@ interface ISerialInputStream : extends IInterface
     virtual offset_t tell() const = 0;                              // used to implement beginNested
 };
 
+interface ICrcSerialInputStream : extends ISerialInputStream // Implemented here to prevent circular reference with jcrc.hpp
+{
+    virtual unsigned queryCrc() const = 0;
+};
+
 interface IBufferedSerialInputStream : extends ISerialInputStream
 {
     virtual bool eos() = 0;                                         // no more data - will perform a read if necessary
@@ -95,6 +100,7 @@ interface IExpander;
 interface IFileIO;
 class MemoryBuffer;
 
+extern jlib_decl ICrcSerialInputStream * createCrcInputStream(ISerialInputStream * input);
 extern jlib_decl IBufferedSerialInputStream * createBufferedInputStream(ISerialInputStream * input, size32_t blockReadSize);
 extern jlib_decl ISerialInputStream * createDecompressingInputStream(IBufferedSerialInputStream * input, IExpander * decompressor);
 extern jlib_decl ISerialInputStream * createSerialInputStream(IFileIO * input);
@@ -124,5 +130,7 @@ inline IBufferedSerialInputStream * createBufferedInputStream(ISerialInputStream
     //If a threaded version is implemented it should use async io, rather than a thread to perform the look ahead
     return createBufferedInputStream(input, blockReadSize);
 }
+
+extern jlib_decl ISerialInputStream *createProgressStream(ISerialInputStream *stream, offset_t offset, offset_t len, const char *msg, unsigned periodSecs);
 
 #endif

@@ -1970,7 +1970,7 @@ span.dijitReset.dijitInline.dijitIcon.fa.disabled {
     border-top: 4px solid white;
 }
 
-.flat .phosphor_WidgetAdapter.p-DockPanel-widget {
+.flat .phosphor_WidgetAdapter.lm-DockPanel-widget {
     border-top: none;
     box-shadow: 0 -1px var(--colorNeutralStroke1), var(--shadow2);
 }
@@ -1980,18 +1980,18 @@ span.dijitReset.dijitInline.dijitIcon.fa.disabled {
     border-color: var(--colorNeutralStroke1)
 }
 
-.flat .p-TabBar-tab {
+.flat .lm-TabBar-tab {
     background-color: var(--colorNeutralBackground3);
     border-bottom-style: solid;
     border-color: var(--colorNeutralStroke1);
     border-width: 1px;
 }
 
-.flat .p-TabBar-tab:hover:not(.p-mod-current) {
+.flat .lm-TabBar-tab:hover:not(.lm-mod-current) {
     background-color: var(--colorNeutralBackground3Hover);
 }
 
-.flat .p-TabBar-tab.p-mod-current {
+.flat .lm-TabBar-tab.lm-mod-current {
     background-color: var(--colorNeutralBackground1);
     border-bottom-color: var(--colorNeutralStroke1);
 }

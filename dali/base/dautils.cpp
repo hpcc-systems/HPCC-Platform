@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+#include <unordered_map>
+
 #include "platform.h"
 #include "jlib.hpp"
 #include "jcontainerized.hpp"
@@ -2811,50 +2813,104 @@ IClusterFileScanIterator *getClusterFileScanIterator(
     return ret;
 }
 
-typedef MapStringTo<bool> IsSuperFileMap;
-
+// for fileservices
 void getLogicalFileSuperSubList(MemoryBuffer &mb, IUserDescriptor *user)
 {
-    // for fileservices
-    IsSuperFileMap supermap;
-    IPropertyTreeIterator *iter = queryDistributedFileDirectory().getDFAttributesIterator("*",user,true,true);
-    if (iter) {
-        ForEach(*iter) {
-            IPropertyTree &attr=iter->query();
-            if (attr.hasProp("@numsubfiles")) {
-                const char *name=attr.queryProp("@name");
-                if (name&&*name) {
-                    if (!supermap.getValue(name))
-                        supermap.setValue(name, true);
+    bool stupidSemantics = true; // keep existing semantics. Only add result if subfile is not a super
+
+    std::unordered_map<std::string, Linked<IPropertyTree>> superMap; // only used if stupidSemantics == true
+
+    CDaliVersion minServerVersionForSubFileSupport("3.20");
+    bool serverSupportsSubFiles = queryDaliServerVersion().compare(minServerVersionForSubFileSupport) >= 0;
+
+    StringBuffer filterBuf;
+    // superfiles only
+    filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFFileType).append(DFUQFilterSeparator).append(DFUQFFTsuperfileonly).append(DFUQFilterSeparator);
+
+    std::vector<DFUQResultField> selectiveFields = {DFUQResultField::name, DFUQResultField::numsubfiles};
+    if (serverSupportsSubFiles)
+        selectiveFields.push_back(DFUQResultField::subfilenames);
+    selectiveFields.push_back(DFUQResultField::term);
+
+    auto addSub = [&](const char *superName, const char *subName)
+    {
+        // Add a row {superName, subName} to the output dataset (mb)
+        size32_t sz = strlen(superName);
+        mb.append(sz).append(sz, superName);
+        sz = strlen(subName);
+        mb.append(sz).append(sz, subName);
+    };
+
+    bool allMatchingFilesReceived;
+    Owned<IPropertyTreeIterator> iter = queryDistributedFileDirectory().getDFAttributesFilteredIterator(filterBuf,
+        nullptr, selectiveFields.data(), user, true, allMatchingFilesReceived);
+    ForEach(*iter)
+    {
+        IPropertyTree &attr = iter->query();
+        if (attr.hasProp("@numsubfiles"))
+        {
+            const char *name=attr.queryProp("@name");
+            if (!isEmptyString(name)) // not sure it can really be empty
+            {
+                if (stupidSemantics) // if we're excluding superfiles, we can't add now!
+                    superMap.try_emplace(name, &attr); // how could it already be in the map??
+                else
+                {
+                    Owned<IPropertyTreeIterator> subIter = attr.getElements("SubFile");
+                    ForEach(*subIter)
+                    {
+                        const char *subFileName = subIter->query().queryProp(nullptr);
+                        addSub(name, subFileName);
+                    }
                 }
             }
         }
     }
-
-    HashIterator siter(supermap);
-    ForEach(siter) {
-        const char *supername = (const char *)siter.query().getKey();
-        CDfsLogicalFileName lname;
-        lname.set(supername);
-        StringBuffer query;
-        lname.makeFullnameQuery(query, DXB_SuperFile, true);
-        Owned<IRemoteConnection> conn = querySDS().connect(query.str(),myProcessSession(),0, INFINITE);
-        if (conn) { // Superfile may have disappeared by this stage, ignore.
-            Owned<IPropertyTree> root = conn->getRoot();
-            unsigned n=root->getPropInt("@numsubfiles");
-            StringBuffer path;
-            StringBuffer subname;
-            unsigned subnum = 0;
-            for (unsigned si=0;si<n;si++) {
-                IPropertyTree *sub = root->queryPropTree(path.clear().appendf("SubFile[@num=\"%d\"]",si+1).str());
-                if (sub) {
-                    const char *subname = sub->queryProp("@name");
-                    if (subname&&*subname) {
-                        if (!supermap.getValue(subname)) {
-                            size32_t sz = strlen(supername);
-                            mb.append(sz).append(sz,supername);
-                            sz = strlen(subname);
-                            mb.append(sz).append(sz,subname);
+    if (serverSupportsSubFiles && !stupidSemantics)
+        return; // all done in single loop above
+    for (const auto &elem: superMap)
+    {
+        const std::string &superName = elem.first;
+        const IPropertyTree &attr = *elem.second;
+        if (serverSupportsSubFiles)
+        {
+            Owned<IPropertyTreeIterator> subIter = attr.getElements("SubFile");
+            ForEach(*subIter)
+            {
+                const char *subFileName = subIter->query().queryProp(nullptr);
+                if (superMap.find(subFileName) == superMap.end()) // basically, if not a super
+                    addSub(superName.c_str(), subFileName);
+            }
+        }
+        else // legacy
+        {
+            CDfsLogicalFileName lname;
+            lname.set(superName.c_str());
+            StringBuffer query;
+            lname.makeFullnameQuery(query, DXB_SuperFile, true);
+            Owned<IRemoteConnection> conn = querySDS().connect(query.str(), myProcessSession(), 0, INFINITE);
+            if (conn) // Superfile may have disappeared by this stage, ignore.
+            {
+                Owned<IPropertyTree> root = conn->getRoot();
+                unsigned n=root->getPropInt("@numsubfiles");
+                StringBuffer path;
+                StringBuffer subname;
+                unsigned subnum = 0;
+                for (unsigned si=0;si<n;si++)
+                {
+                    IPropertyTree *sub = root->queryPropTree(path.clear().appendf("SubFile[@num=\"%d\"]",si+1).str());
+                    if (sub)
+                    {
+                        const char *subname = sub->queryProp("@name");
+                        if (!isEmptyString(subname))
+                        {
+                            if (superMap.find(subname) == superMap.end())
+                            {
+                                size32_t sz = superName.length();
+                                mb.append(sz).append(sz, superName.c_str());
+                                sz = strlen(subname);
+                                mb.append(sz).append(sz, subname);
+                            }
                         }
                     }
                 }
@@ -3737,15 +3793,15 @@ class FileReadPropertiesUpdater : public CSimpleInterfaceOf<IFileReadPropertiesU
     // Update the readCost and numDiskReads for owning superfiles
     // - this will recurse up the superfiles tree updating the owning superfiles
     // n.b. fileStatItem.file must be set to a valid IDistributedFile
-    void updateOwnersStats(FileStatMap & ownerStats, const FileStatItem & fileStatItem)
+    void updateOwnersStats(FileStatMap & ownerStats, const FileStatItem & fileStatItem, IDistributedFileTransaction &transaction)
     {
         // getOwningSuperFiles iterator is slow, so only call it once (say at the end of graph)
-        Owned<IDistributedSuperFileIterator> iter = fileStatItem.file->getOwningSuperFiles();
+        Owned<IDistributedSuperFileIterator> iter = fileStatItem.file->getOwningSuperFiles(&transaction);
         ForEach(*iter)
         {
             IDistributedSuperFile & cur = iter->query();
             const FileStatItem & owningFileStatItem = appendOwnersCostAndNumReads(ownerStats, &cur, fileStatItem.numDiskReads, fileStatItem.readCost);
-            updateOwnersStats(ownerStats, owningFileStatItem);
+            updateOwnersStats(ownerStats, owningFileStatItem, transaction);
         }
     }
 
@@ -3778,16 +3834,18 @@ public:
         FileStatMap ownerStats;
         // Iterate through files, updating the ownerStats
         // (Also, set FileStatItem::file to a valid IDistributedFile, if possible)
+
+        Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(udesc);
         for (auto & [logicalName, curStatItem] : stats)
         {
-            curStatItem.file.setown(queryDistributedFileDirectory().lookup(logicalName.c_str(), udesc, AccessMode::tbdRead,false,false,nullptr,defaultNonPrivilegedUser));
+            curStatItem.file.setown(transaction->lookupFile(logicalName.c_str(), AccessMode::tbdRead));
             if (!curStatItem.file) // File may have been deleted
             {
                 if (curStatItem.readCost)
                     OERRLOG("FileReadPropertiesUpdater: file has read cost but file not found: %s", logicalName.c_str());
                 continue;
             }
-            updateOwnersStats(ownerStats, curStatItem);
+            updateOwnersStats(ownerStats, curStatItem, *transaction);
         }
         // Update the file properties with the new stats
         for (auto & [logicalName, curStatItem] : stats)

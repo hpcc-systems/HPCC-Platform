@@ -265,7 +265,9 @@ enum DFUQFilterField
 #include <utility>
 #include <cctype>
 
-// NB: these are not serialized / are only used by the client. They are mapped to string equivalent before being transmitted to the server.
+// NB: these are not serialized / are only used by the client.
+// They are mapped to string equivalent before being transmitted to the server.
+// Therefore their order is not important, but must be kept in sync with the order in dfuqFieldInfos (dadfs.cpp)
 enum class DFUQResultField : unsigned
 {
     name,               // some code will assume this is the first field (and all other up to 'term' follow in order)
@@ -304,6 +306,7 @@ enum class DFUQResultField : unsigned
     readCost,
     writeCost,
     expireDays,
+    subfilenames,
     includeAll,
     term,               // NB: only used by client code, not passed to server. Signifies end of a list of fields
     fieldMask = 0xff,

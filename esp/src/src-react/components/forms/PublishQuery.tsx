@@ -43,7 +43,7 @@ export const PublishQueryForm: React.FunctionComponent<PublishFormProps> = ({
     setShowForm
 }) => {
 
-    const [workunit] = useWorkunit(wuid);
+    const { workunit } = useWorkunit(wuid);
 
     const { handleSubmit, control, reset } = useForm<PublishFormValues>({ defaultValues });
     const [submitDisabled, setSubmitDisabled] = React.useState(false);
