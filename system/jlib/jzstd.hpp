@@ -20,6 +20,9 @@
 
 #include "jlzw.hpp"
 
+extern jlib_decl ICompressor *createZStdCompressor(const char * options);
+extern jlib_decl IExpander   *createZStdExpander();
+
 extern jlib_decl ICompressor *createZStdStreamCompressor(const char * options);
 extern jlib_decl IExpander   *createZStdStreamExpander();
 
