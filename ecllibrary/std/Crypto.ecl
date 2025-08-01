@@ -14,7 +14,7 @@ IMPORT lib_cryptolib;
  *
  * @return        SET OF STRING containing all supported Hash Algorithms
  */
-EXPORT SET OF STRING SupportedHashAlgorithms() := lib_cryptolib.CryptoLib.SupportedHashAlgorithms();
+EXPORT SET OF STRING SupportedHashAlgorithms() := lib_cryptolib.CryptoLib.SupportedHashAlgorithms() : DEPRECATED('Replaced with Std.OpenSSL.Digest.AvailableAlgorithms() function');
 
 
 /**
@@ -22,7 +22,7 @@ EXPORT SET OF STRING SupportedHashAlgorithms() := lib_cryptolib.CryptoLib.Suppor
  *
  * @return        SET OF STRING containing all supported Cipher Algorithms
  */
-EXPORT SET OF STRING SupportedSymmetricCipherAlgorithms() := lib_cryptolib.CryptoLib.SupportedSymmetricCipherAlgorithms();
+EXPORT SET OF STRING SupportedSymmetricCipherAlgorithms() := lib_cryptolib.CryptoLib.SupportedSymmetricCipherAlgorithms() : DEPRECATED('Replaced with Std.OpenSSL.Ciphers.AvailableAlgorithms() function');
 
 
 /**
@@ -30,7 +30,7 @@ EXPORT SET OF STRING SupportedSymmetricCipherAlgorithms() := lib_cryptolib.Crypt
  *
  * @return        SET OF STRING containing all supported Public Key Algorithms
  */
-EXPORT SET OF STRING SupportedPublicKeyAlgorithms() := lib_cryptolib.CryptoLib.SupportedPublicKeyAlgorithms();
+EXPORT SET OF STRING SupportedPublicKeyAlgorithms() := lib_cryptolib.CryptoLib.SupportedPublicKeyAlgorithms() : DEPRECATED('No replacement function available; see Std.OpenSSL module');
 
 
 
@@ -49,7 +49,7 @@ EXPORT Hashing(VARSTRING hashAlgorithm) := MODULE
      */
     EXPORT DATA Hash(DATA inputData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.Hash(hashAlgorithm, inputData);
-    END;
+    END : DEPRECATED('Replaced with Std.OpenSSL.Digest.Hash() function');
 END; // Hashing module
 
 //-----
@@ -70,7 +70,7 @@ EXPORT SymmetricEncryption(VARSTRING algorithm, VARSTRING passphrase) := MODULE
      */
     EXPORT DATA Encrypt(DATA inputData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.SymmetricEncrypt( algorithm, passphrase, inputData );
-    END;
+    END : DEPRECATED('Replaced with Std.OpenSSL.Ciphers.Encrypt() function');
     
     /**
      * Decrypt the given cipher, using the specified passphrase and symmetric cipher
@@ -81,7 +81,7 @@ EXPORT SymmetricEncryption(VARSTRING algorithm, VARSTRING passphrase) := MODULE
      */
     EXPORT DATA Decrypt(DATA encryptedData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.SymmetricDecrypt( algorithm, passphrase, encryptedData );
-    END;
+    END : DEPRECATED('Replaced with Std.OpenSSL.Ciphers.Decrypt() function');
 END; // SymmetricEncryption module
 
 /**
@@ -100,7 +100,7 @@ EXPORT SymmEncryption(VARSTRING algorithm, DATA passphrase) := MODULE
      */
     EXPORT DATA Encrypt(DATA inputData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.SymEncrypt( algorithm, passphrase, inputData );
-    END;
+    END : DEPRECATED('Replaced with Std.OpenSSL.Ciphers.Encrypt() function');
     /**
      * Decrypt the given cipher, using the specified passphrase and symmetric cipher
      * algorithm that was returned by SupportedSymmetricCipherAlgorithms()
@@ -110,7 +110,7 @@ EXPORT SymmEncryption(VARSTRING algorithm, DATA passphrase) := MODULE
      */
     EXPORT DATA Decrypt(DATA encryptedData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.SymDecrypt( algorithm, passphrase, encryptedData );
-    END;
+    END : DEPRECATED('Replaced with Std.OpenSSL.Ciphers.Decrypt() function');
 END; // SymmEncryption module
 
 /**
@@ -132,7 +132,7 @@ EXPORT PublicKeyEncryption(VARSTRING pkAlgorithm, VARSTRING publicKeyFile = '', 
      */
     EXPORT DATA Encrypt(DATA inputData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.Encrypt( pkAlgorithm, publicKeyFile, passphrase, inputData);
-    END;
+    END : DEPRECATED('Replaced with Std.OpenSSL.PublicKey.RSASeal() function');
 
     /**
      * Decrypt the given encrypted data, using the specified private key file,
@@ -143,7 +143,7 @@ EXPORT PublicKeyEncryption(VARSTRING pkAlgorithm, VARSTRING publicKeyFile = '', 
      */
     EXPORT DATA Decrypt(DATA encryptedData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.Decrypt( pkAlgorithm, privateKeyFile, passphrase, encryptedData);
-    END;
+    END : DEPRECATED('Replaced with Std.OpenSSL.PublicKey.RSAUnseal() function');
 
     /**
      * Create a digital signature of the given data, using the
@@ -154,7 +154,7 @@ EXPORT PublicKeyEncryption(VARSTRING pkAlgorithm, VARSTRING publicKeyFile = '', 
      */
     EXPORT DATA Sign( DATA inputData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.Sign( pkAlgorithm, privateKeyFile, passphrase, inputData);
-    END;
+    END : DEPRECATED('Replaced with Std.OpenSSL.PublicKey.Sign() function');
 
     /**
      * Verify the given digital signature of the given data, using
@@ -166,7 +166,7 @@ EXPORT PublicKeyEncryption(VARSTRING pkAlgorithm, VARSTRING publicKeyFile = '', 
      */
     EXPORT BOOLEAN VerifySignature(DATA signature, DATA signedData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.VerifySignature( pkAlgorithm, publicKeyFile, passphrase, signature, signedData);
-    END;
+    END : DEPRECATED('Replaced with Std.OpenSSL.PublicKey.VerifySignature() function');
 END; // PublicKeyEncryption module
 
 /**
@@ -188,7 +188,7 @@ EXPORT PKEncryption(VARSTRING pkAlgorithm, VARSTRING publicKeyFile = '', VARSTRI
      */
     EXPORT DATA Encrypt(DATA inputData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.PKEncrypt( pkAlgorithm, publicKeyFile, passphrase, inputData);
-    END;
+    END : DEPRECATED('Replaced with Std.OpenSSL.PublicKey.RSASeal() function');
 
     /**
      * Decrypt the given encrypted data, using the specified private key file,
@@ -199,7 +199,7 @@ EXPORT PKEncryption(VARSTRING pkAlgorithm, VARSTRING publicKeyFile = '', VARSTRI
      */
     EXPORT DATA Decrypt(DATA encryptedData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.PKDecrypt( pkAlgorithm, privateKeyFile, passphrase, encryptedData);
-    END;
+    END : DEPRECATED('Replaced with Std.OpenSSL.PublicKey.RSAUnseal() function');
 
     /**
      * Create a digital signature of the given data, using the
@@ -210,7 +210,7 @@ EXPORT PKEncryption(VARSTRING pkAlgorithm, VARSTRING publicKeyFile = '', VARSTRI
      */
     EXPORT DATA Sign( DATA inputData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.PKSign( pkAlgorithm, privateKeyFile, passphrase, inputData);
-    END;
+    END : DEPRECATED('Replaced with Std.OpenSSL.PublicKey.Sign() function');
 
     /**
      * Verify the given digital signature of the given data, using
@@ -222,7 +222,7 @@ EXPORT PKEncryption(VARSTRING pkAlgorithm, VARSTRING publicKeyFile = '', VARSTRI
      */
     EXPORT BOOLEAN VerifySignature(DATA signature, DATA signedData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.PKVerifySignature( pkAlgorithm, publicKeyFile, passphrase, signature, signedData);
-    END;
+    END : DEPRECATED('Replaced with Std.OpenSSL.PublicKey.VerifySignature() function');
 END; // PKEncryption module
 
 /**
@@ -244,7 +244,7 @@ EXPORT PublicKeyEncryptionFromLFN(VARSTRING pkAlgorithm, VARSTRING publicKeyLFN 
      */
     EXPORT DATA Encrypt(DATA inputData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.EncryptLFN( pkAlgorithm, publicKeyLFN, passphrase, inputData);
-    END;
+    END : DEPRECATED('Replaced with Std.OpenSSL.PublicKey.RSASeal() function');
 
     /**
      * Decrypt the given encrypted data, using the specified private key LFN,
@@ -255,7 +255,7 @@ EXPORT PublicKeyEncryptionFromLFN(VARSTRING pkAlgorithm, VARSTRING publicKeyLFN 
      */
     EXPORT DATA Decrypt(DATA encryptedData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.DecryptLFN( pkAlgorithm, privateKeyLFN, passphrase, encryptedData);
-    END;
+    END : DEPRECATED('Replaced with Std.OpenSSL.PublicKey.RSAUnseal() function');
 
     /**
      * Create a digital signature of the given data, using the
@@ -266,7 +266,7 @@ EXPORT PublicKeyEncryptionFromLFN(VARSTRING pkAlgorithm, VARSTRING publicKeyLFN 
      */
     EXPORT DATA Sign( DATA inputData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.SignLFN( pkAlgorithm, privateKeyLFN, passphrase, inputData);
-    END;
+    END : DEPRECATED('Replaced with Std.OpenSSL.PublicKey.Sign() function');
 
     /**
      * Verify the given digital signature of the given data, using
@@ -278,7 +278,7 @@ EXPORT PublicKeyEncryptionFromLFN(VARSTRING pkAlgorithm, VARSTRING publicKeyLFN 
      */
     EXPORT BOOLEAN VerifySignature(DATA signature, DATA signedData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.VerifySignatureLFN( pkAlgorithm, publicKeyLFN, passphrase, signature, signedData);
-    END;
+    END : DEPRECATED('Replaced with Std.OpenSSL.PublicKey.VerifySignature() function');
 END; // PublicKeyEncryptionFromLFN module
 
 
@@ -301,7 +301,7 @@ EXPORT PKEncryptionFromLFN(VARSTRING pkAlgorithm, VARSTRING publicKeyLFN = '', V
      */
     EXPORT DATA Encrypt(DATA inputData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.PKEncryptLFN( pkAlgorithm, publicKeyLFN, passphrase, inputData);
-    END;
+    END : DEPRECATED('Replaced with Std.OpenSSL.PublicKey.RSASeal() function');
 
     /**
      * Decrypt the given encrypted data, using the specified private key LFN,
@@ -312,7 +312,7 @@ EXPORT PKEncryptionFromLFN(VARSTRING pkAlgorithm, VARSTRING publicKeyLFN = '', V
      */
     EXPORT DATA Decrypt(DATA encryptedData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.PKDecryptLFN( pkAlgorithm, privateKeyLFN, passphrase, encryptedData);
-    END;
+    END : DEPRECATED('Replaced with Std.OpenSSL.PublicKey.RSAUnseal() function');
 
     /**
      * Create a digital signature of the given data, using the
@@ -323,7 +323,7 @@ EXPORT PKEncryptionFromLFN(VARSTRING pkAlgorithm, VARSTRING publicKeyLFN = '', V
      */
     EXPORT DATA Sign( DATA inputData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.PKSignLFN( pkAlgorithm, privateKeyLFN, passphrase, inputData);
-    END;
+    END : DEPRECATED('Replaced with Std.OpenSSL.PublicKey.Sign() function');
 
     /**
      * Verify the given digital signature of the given data, using
@@ -335,7 +335,7 @@ EXPORT PKEncryptionFromLFN(VARSTRING pkAlgorithm, VARSTRING publicKeyLFN = '', V
      */
     EXPORT BOOLEAN VerifySignature(DATA signature, DATA signedData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.PKVerifySignatureLFN( pkAlgorithm, publicKeyLFN, passphrase, signature, signedData);
-    END;
+    END : DEPRECATED('Replaced with Std.OpenSSL.PublicKey.VerifySignature() function');
 END; // PKEncryptionFromLFN module
 
 /**
@@ -357,7 +357,7 @@ EXPORT PublicKeyEncryptionFromBuffer(VARSTRING pkAlgorithm, VARSTRING publicKeyB
       */
     EXPORT DATA Encrypt(DATA inputData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.EncryptBuff( pkAlgorithm, publicKeyBuff, passphrase, inputData);
-    END;
+    END : DEPRECATED('Replaced with Std.OpenSSL.PublicKey.RSASeal() function');
     
     /**
       * Decrypt the given data, using the specified private key, passphrase,
@@ -368,7 +368,7 @@ EXPORT PublicKeyEncryptionFromBuffer(VARSTRING pkAlgorithm, VARSTRING publicKeyB
       */
     EXPORT DATA Decrypt(DATA encryptedData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.DecryptBuff(pkAlgorithm, privateKeyBuff, passphrase, encryptedData);
-    END;
+    END : DEPRECATED('Replaced with Std.OpenSSL.PublicKey.RSAUnseal() function');
 
     /**
       * Create a digital signature of the given data, using the specified private key,
@@ -379,7 +379,7 @@ EXPORT PublicKeyEncryptionFromBuffer(VARSTRING pkAlgorithm, VARSTRING publicKeyB
       */
     EXPORT DATA Sign(DATA inputData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.SignBuff( pkAlgorithm, privateKeyBuff, passphrase, inputData);
-    END;
+    END : DEPRECATED('Replaced with Std.OpenSSL.PublicKey.Sign() function');
 
     /**
       * Verify the given digital signature of the given data, using the specified public key,
@@ -391,7 +391,7 @@ EXPORT PublicKeyEncryptionFromBuffer(VARSTRING pkAlgorithm, VARSTRING publicKeyB
       */
     EXPORT BOOLEAN VerifySignature(DATA signature, DATA signedData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.VerifySignatureBuff( pkAlgorithm, publicKeyBuff, passphrase, signature, signedData);
-    END;
+    END : DEPRECATED('Replaced with Std.OpenSSL.PublicKey.VerifySignature() function');
     
 END; // PublicKeyEncryptionFromBuffer module
 
@@ -415,7 +415,7 @@ EXPORT PKEncryptionFromBuffer(VARSTRING pkAlgorithm, VARSTRING publicKeyBuff = '
       */
     EXPORT DATA Encrypt(DATA inputData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.PKEncryptBuff( pkAlgorithm, publicKeyBuff, passphrase, inputData);
-    END;
+    END : DEPRECATED('Replaced with Std.OpenSSL.PublicKey.RSASeal() function');
 
     /**
       * Decrypt the given data, using the specified private key, passphrase,
@@ -426,7 +426,7 @@ EXPORT PKEncryptionFromBuffer(VARSTRING pkAlgorithm, VARSTRING publicKeyBuff = '
       */
     EXPORT DATA Decrypt(DATA encryptedData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.PKDecryptBuff(pkAlgorithm, privateKeyBuff, passphrase, encryptedData);
-    END;
+    END : DEPRECATED('Replaced with Std.OpenSSL.PublicKey.RSAUnseal() function');
 
     /**
       * Create a digital signature of the given data, using the specified private key,
@@ -437,7 +437,7 @@ EXPORT PKEncryptionFromBuffer(VARSTRING pkAlgorithm, VARSTRING publicKeyBuff = '
       */
     EXPORT DATA Sign(DATA inputData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.PKSignBuff( pkAlgorithm, privateKeyBuff, passphrase, inputData);
-    END;
+    END : DEPRECATED('Replaced with Std.OpenSSL.PublicKey.Sign() function');
 
     /**
       * Verify the given digital signature of the given data, using the specified public key,
@@ -449,7 +449,7 @@ EXPORT PKEncryptionFromBuffer(VARSTRING pkAlgorithm, VARSTRING publicKeyBuff = '
       */
     EXPORT BOOLEAN VerifySignature(DATA signature, DATA signedData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.PKVerifySignatureBuff( pkAlgorithm, publicKeyBuff, passphrase, signature, signedData);
-    END;
+    END : DEPRECATED('Replaced with Std.OpenSSL.PublicKey.VerifySignature() function');
 END; //PKEncryptionFromBuffer module
 
 END; // Crypto module

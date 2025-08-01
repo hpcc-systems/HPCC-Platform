@@ -16,13 +16,6 @@
 ############################################################################## */
 import Std;
 
-STRING pubKey := '-----BEGIN PUBLIC KEY-----' + '\n' +
-'MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCWnKkGM0l3Y6pKhxMq87hAGBL6' + '\n' +
-'FfEo2HC6XCSQuaAMLkdf7Yjn3FpvFIEO6A1ZYJy70cT8+HOFta+sSUyMn2fDc5cv' + '\n' +
-'VdX8v7XCycYXEBeZ4KsTCHHPCUoO/nxNbxhNz09T8dx/JsIH50LHipR6FTLTSCXR' + '\n' +
-'N9KVLaPXs5DdQx6PjQIDAQAB' + '\n' +
-'-----END PUBLIC KEY-----' + '\n';
-
 //--------------
 //Vault Example
 //--------------
@@ -30,6 +23,4 @@ STRING pubKey := '-----BEGIN PUBLIC KEY-----' + '\n' +
 DATA vaultData := x'227ACC7749A442CFBA6404AD59304DD608E3D1544B293221FA0A9E44AAAD272A3EEFF15387ABB54F1F375D35C034BB03623A5100942764356046DDDBA9963F7DDF1B7FED431769815F02BA2FDB4D1ECE7E5835FA392AB7FE5292979F80B469A062750F79039633CA60EDE01D292ED4B364C1BA7E8F1301F5DB33883872945A70';
 VARSTRING vaultKey := (VARSTRING) getSecret('vault-example', 'crypt.key');
 
-vaultEncModule := Std.Crypto.PKEncryptionFromBuffer('RSA', pubKey, vaultKey);
-
-output( (STRING)vaultEncModule.Decrypt(vaultData), named('vault_message'));
+OUTPUT( (STRING)Std.OpenSSL.PublicKey.RSAUnseal(vaultData, (DATA)'', vaultKey), NAMED('vault_message'));

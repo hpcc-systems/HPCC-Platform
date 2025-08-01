@@ -48,67 +48,67 @@ EXPORT STRING privKey := '-----BEGIN RSA PRIVATE KEY-----' + '\n' +
 '-----END RSA PRIVATE KEY-----';
 
   EXPORT TestSupportedPKE := MODULE
-    EXPORT TS01 := ASSERT(Std.Crypto.SupportedPublicKeyAlgorithms() = ['RSA']);
+    EXPORT TS01 := ASSERT(Std.Crypto.SupportedPublicKeyAlgorithms() = ['RSA']) : ONWARNING(2364, IGNORE);
   END;
 
   //Encrypt/Decrypt
 
   EXPORT TestPKE01 := MODULE
-    EXPORT mod := Std.Crypto.PublicKeyEncryptionFromBuffer('RSA', pubKey, privKey, '');
-    EXPORT DATA dat1 := mod.Encrypt(            (DATA)'The quick brown fox jumps over the lazy dog');
-    EXPORT TS01  := ASSERT(mod.Decrypt(dat1)  = (DATA)'The quick brown fox jumps over the lazy dog');
+    EXPORT mod := Std.Crypto.PublicKeyEncryptionFromBuffer('RSA', pubKey, privKey, '') : ONWARNING(2364, IGNORE);
+    EXPORT DATA dat1 := mod.Encrypt(            (DATA)'The quick brown fox jumps over the lazy dog') : ONWARNING(2364, IGNORE);
+    EXPORT TS01  := ASSERT(mod.Decrypt(dat1)  = (DATA)'The quick brown fox jumps over the lazy dog') : ONWARNING(2364, IGNORE);
   
-    EXPORT TS011 := ASSERT(mod.Decrypt(dat1) != (DATA)'Hello World');
+    EXPORT TS011 := ASSERT(mod.Decrypt(dat1) != (DATA)'Hello World') : ONWARNING(2364, IGNORE);
 
-    EXPORT DATA dat2 := mod.Encrypt(           (DATA)'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
-    EXPORT TS012 := ASSERT(mod.Decrypt(dat2) = (DATA)'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
+    EXPORT DATA dat2 := mod.Encrypt(           (DATA)'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ') : ONWARNING(2364, IGNORE);
+    EXPORT TS012 := ASSERT(mod.Decrypt(dat2) = (DATA)'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ') : ONWARNING(2364, IGNORE);
 
-    EXPORT DATA dat3 := mod.Encrypt(           (DATA)'0123456789~`!@#$%^&*()-_=+|][}{;:?.>,<');
-    EXPORT TS013 := ASSERT(mod.Decrypt(dat3) = (DATA)'0123456789~`!@#$%^&*()-_=+|][}{;:?.>,<');
+    EXPORT DATA dat3 := mod.Encrypt(           (DATA)'0123456789~`!@#$%^&*()-_=+|][}{;:?.>,<') : ONWARNING(2364, IGNORE);
+    EXPORT TS013 := ASSERT(mod.Decrypt(dat3) = (DATA)'0123456789~`!@#$%^&*()-_=+|][}{;:?.>,<') : ONWARNING(2364, IGNORE);
   END;
 
   EXPORT TestPKE02 := MODULE
-    EXPORT mod := Std.Crypto.PublicKeyEncryptionFromBuffer('RSA', pubKey, privKey, '0123456789');//uses a passphrase
-    EXPORT DATA dat1 := mod.Encrypt(            (DATA)'The quick brown fox jumps over the lazy dog');
-    EXPORT TS02  := ASSERT(mod.Decrypt(dat1)  = (DATA)'The quick brown fox jumps over the lazy dog');
+    EXPORT mod := Std.Crypto.PublicKeyEncryptionFromBuffer('RSA', pubKey, privKey, '0123456789') : ONWARNING(2364, IGNORE);
+    EXPORT DATA dat1 := mod.Encrypt(            (DATA)'The quick brown fox jumps over the lazy dog') : ONWARNING(2364, IGNORE);
+    EXPORT TS02  := ASSERT(mod.Decrypt(dat1)  = (DATA)'The quick brown fox jumps over the lazy dog') : ONWARNING(2364, IGNORE);
   
-    EXPORT TS021 := ASSERT(mod.Decrypt(dat1) != (DATA)'Hello World');
+    EXPORT TS021 := ASSERT(mod.Decrypt(dat1) != (DATA)'Hello World') : ONWARNING(2364, IGNORE);
 
-    EXPORT DATA dat2 := mod.Encrypt(           (DATA)'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
-    EXPORT TS022 := ASSERT(mod.Decrypt(dat2) = (DATA)'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
+    EXPORT DATA dat2 := mod.Encrypt(           (DATA)'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ') : ONWARNING(2364, IGNORE);
+    EXPORT TS022 := ASSERT(mod.Decrypt(dat2) = (DATA)'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ') : ONWARNING(2364, IGNORE);
 
-    EXPORT DATA dat3 := mod.Encrypt(           (DATA)'0123456789~`!@#$%^&*()-_=+|][}{;:?.>,<');
-    EXPORT TS023 := ASSERT(mod.Decrypt(dat3) = (DATA)'0123456789~`!@#$%^&*()-_=+|][}{;:?.>,<');
+    EXPORT DATA dat3 := mod.Encrypt(           (DATA)'0123456789~`!@#$%^&*()-_=+|][}{;:?.>,<') : ONWARNING(2364, IGNORE);
+    EXPORT TS023 := ASSERT(mod.Decrypt(dat3) = (DATA)'0123456789~`!@#$%^&*()-_=+|][}{;:?.>,<') : ONWARNING(2364, IGNORE);
   END;
 
   //Digital Signatures
 
   EXPORT TestPKE03 := MODULE
-    EXPORT mod := Std.Crypto.PublicKeyEncryptionFromBuffer('RSA', pubKey, privKey, '');
-    EXPORT DATA sig1 := mod.Sign(                           (DATA)'The quick brown fox jumps over the lazy dog');
-    EXPORT TS03 := ASSERT( TRUE = mod.VerifySignature(sig1, (DATA)'The quick brown fox jumps over the lazy dog'));
+    EXPORT mod := Std.Crypto.PublicKeyEncryptionFromBuffer('RSA', pubKey, privKey, '') : ONWARNING(2364, IGNORE);
+    EXPORT DATA sig1 := mod.Sign(                           (DATA)'The quick brown fox jumps over the lazy dog') : ONWARNING(2364, IGNORE);
+    EXPORT TS03 := ASSERT( TRUE = mod.VerifySignature(sig1, (DATA)'The quick brown fox jumps over the lazy dog')) : ONWARNING(2364, IGNORE);
  
-    EXPORT TS031:= ASSERT( FALSE = mod.VerifySignature(sig1, (DATA)'Hello World'));
+    EXPORT TS031:= ASSERT( FALSE = mod.VerifySignature(sig1, (DATA)'Hello World')) : ONWARNING(2364, IGNORE);
 
-    EXPORT DATA sig2 := mod.Sign(                            (DATA)'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
-    EXPORT TS032 := ASSERT( TRUE = mod.VerifySignature(sig2, (DATA)'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'));
+    EXPORT DATA sig2 := mod.Sign(                            (DATA)'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ') : ONWARNING(2364, IGNORE);
+    EXPORT TS032 := ASSERT( TRUE = mod.VerifySignature(sig2, (DATA)'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')) : ONWARNING(2364, IGNORE);
 
-    EXPORT DATA sig3 := mod.Sign(                           (DATA)'0123456789~`!@#$%^&*()-_=+|][}{;:?.>,<');
-    EXPORT S033 := ASSERT( TRUE = mod.VerifySignature(sig3, (DATA)'0123456789~`!@#$%^&*()-_=+|][}{;:?.>,<'));
+    EXPORT DATA sig3 := mod.Sign(                           (DATA)'0123456789~`!@#$%^&*()-_=+|][}{;:?.>,<') : ONWARNING(2364, IGNORE);
+    EXPORT S033 := ASSERT( TRUE = mod.VerifySignature(sig3, (DATA)'0123456789~`!@#$%^&*()-_=+|][}{;:?.>,<')) : ONWARNING(2364, IGNORE);
   END; 
 
   EXPORT TestPKE04 := MODULE
-    EXPORT mod := Std.Crypto.PublicKeyEncryptionFromBuffer('RSA', pubKey, privKey, '0123456789');//uses a passphrase
-    EXPORT DATA sig1 := mod.Sign(                           (DATA)'The quick brown fox jumps over the lazy dog');
-    EXPORT TS03 := ASSERT( TRUE = mod.VerifySignature(sig1, (DATA)'The quick brown fox jumps over the lazy dog'));
+    EXPORT mod := Std.Crypto.PublicKeyEncryptionFromBuffer('RSA', pubKey, privKey, '0123456789') : ONWARNING(2364, IGNORE);
+    EXPORT DATA sig1 := mod.Sign(                           (DATA)'The quick brown fox jumps over the lazy dog') : ONWARNING(2364, IGNORE);
+    EXPORT TS03 := ASSERT( TRUE = mod.VerifySignature(sig1, (DATA)'The quick brown fox jumps over the lazy dog')) : ONWARNING(2364, IGNORE);
  
-    EXPORT TS031:= ASSERT( FALSE = mod.VerifySignature(sig1, (DATA)'Hello World'));
+    EXPORT TS031:= ASSERT( FALSE = mod.VerifySignature(sig1, (DATA)'Hello World')) : ONWARNING(2364, IGNORE);
 
-    EXPORT DATA sig2 := mod.Sign(                            (DATA)'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
-    EXPORT TS032 := ASSERT( TRUE = mod.VerifySignature(sig2, (DATA)'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'));
+    EXPORT DATA sig2 := mod.Sign(                            (DATA)'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ') : ONWARNING(2364, IGNORE);
+    EXPORT TS032 := ASSERT( TRUE = mod.VerifySignature(sig2, (DATA)'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')) : ONWARNING(2364, IGNORE);
 
-    EXPORT DATA sig3 := mod.Sign(                           (DATA)'0123456789~`!@#$%^&*()-_=+|][}{;:?.>,<');
-    EXPORT S033 := ASSERT( TRUE = mod.VerifySignature(sig3, (DATA)'0123456789~`!@#$%^&*()-_=+|][}{;:?.>,<'));
+    EXPORT DATA sig3 := mod.Sign(                           (DATA)'0123456789~`!@#$%^&*()-_=+|][}{;:?.>,<') : ONWARNING(2364, IGNORE);
+    EXPORT S033 := ASSERT( TRUE = mod.VerifySignature(sig3, (DATA)'0123456789~`!@#$%^&*()-_=+|][}{;:?.>,<')) : ONWARNING(2364, IGNORE);
   END; 
 END;
 
