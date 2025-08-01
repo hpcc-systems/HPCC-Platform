@@ -2229,6 +2229,7 @@ static const DFUQFieldInfo dfuqFieldInfos[] =
     {DFUQResultField::readCost,        "@readCost",         DFUQResultFieldType::floatType},
     {DFUQResultField::writeCost,       "@writeCost",        DFUQResultFieldType::floatType},
     {DFUQResultField::expireDays,      "@expireDays",       DFUQResultFieldType::numericType},
+    {DFUQResultField::subfilenames,    "@subfilenames",     DFUQResultFieldType::stringType},
     {DFUQResultField::includeAll,      "includeAll",        DFUQResultFieldType::unknown}
 };
 const size_t dfuqFieldInfosCount = sizeof(dfuqFieldInfos)/sizeof(dfuqFieldInfos[0]);
@@ -2462,6 +2463,17 @@ public:
                     mb.append(val ? val : "0");
                     ++count;
                 }
+                if (options.includeField(DFUQResultField::subfilenames))
+                {
+                    Owned<IPropertyTreeIterator> subIter = root.getElements("SubFile");
+                    ForEach(*subIter)
+                    {
+                        const char *subFileName = subIter->query().queryProp("@name");
+                        mb.append("SubFile");
+                        mb.append(subFileName);
+                        ++count;
+                    }
+                }
             }
             else
             {
@@ -2583,16 +2595,16 @@ public:
         mb.read(count);
         if (count)
         {
-            StringBuffer at;
+            StringBuffer prop;
             StringBuffer val;
             while (true)
             {
-                mb.read(at);
+                mb.read(prop);
                 mb.read(val);
-                attr->setProp(at, val);
+                attr->addProp(prop, val);
                 if (0 == --count)
                     break;
-                at.clear();
+                prop.clear();
                 val.clear();
             }
         }

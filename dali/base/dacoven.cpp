@@ -38,7 +38,7 @@ extern void closedownDFS();
 // base is saved in store whenever block exhausted, so replacement coven servers can restart 
 
 // server side versioning.
-#define ServerVersion    "3.19"
+#define ServerVersion    "3.20"
 
 // last changed to reflect client version in 6.2 when enhanced iterate files support was added
 // Meaning older clients ClientVersion < 3.6 (HPCC version <6.2) will no longer be able to conenct to Dali
