@@ -54,8 +54,9 @@ void coalesceDatastore(IPropertyTree *coalesceProps, bool force)
             configFlags |= coalesceProps->getPropBool("@recoverFromIncErrors", false) ? SH_RecoverFromIncErrors : 0;
             configFlags |= coalesceProps->getPropBool("@backupErrorFiles", true) ? SH_BackupErrorFiles : 0;
             bool saveBinary = querySDS().queryProperties().getPropBool("Client/@saveBinary", false);
+            bool saveAsync = querySDS().queryProperties().getPropBool("Client/@saveAsync", true);
             bool stopped;
-            Owned<IStoreHelper> iStoreHelper = createStoreHelper(NULL, dataPath, backupPath.str(), configFlags, keepStores, 5000, &stopped, saveBinary);
+            Owned<IStoreHelper> iStoreHelper = createStoreHelper(NULL, dataPath, backupPath.str(), configFlags, keepStores, 5000, &stopped, saveBinary, saveAsync);
             unsigned baseEdition = iStoreHelper->queryCurrentEdition();
 
             if (minDeltaSize)
