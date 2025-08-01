@@ -259,7 +259,8 @@ public:
 class jhtree_decl CJHTreeNode : public CNodeBase
 {
 protected:
-    size32_t expandedSize = 0;
+    size32_t inMemorySize = 0;
+    unsigned loadExpandTime = 0;
     char *keyBuf = nullptr;
 
     static char *expandData(const void *src,size32_t &retsize);
@@ -270,7 +271,9 @@ public:
     ~CJHTreeNode();
 // reading methods
     virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy);
-    size32_t getMemSize() const { return sizeof(CJHTreeNode)+expandedSize; } // MORE - would be more accurate to make this virtual if we want to track all memory used by this node's info
+
+    inline unsigned getLoadExpandTime() const { return loadExpandTime; }
+    inline size32_t getMemSize() const { return sizeof(CJHTreeNode)+inMemorySize; } // MORE - would be more accurate to make this virtual if we want to track all memory used by this node's info
     inline offset_t getRightSib() const { return hdr.rightSib; }
     inline offset_t getLeftSib() const { return hdr.leftSib; }
 

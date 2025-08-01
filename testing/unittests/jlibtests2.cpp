@@ -124,8 +124,8 @@ public:
             CPPUNIT_ASSERT(!recorder.startRecording("traceid", "eventtrace.evtxxx", false));
 
             // Record some events
-            recorder.recordIndexLookup(1, branchOffset, NodeBranch, true, 9876);
-            recorder.recordIndexLookup(1, nodeSize, NodeLeaf, false, 0);
+            recorder.recordIndexLookup(1, branchOffset, NodeBranch, true, 9876, 400);
+            recorder.recordIndexLookup(1, nodeSize, NodeLeaf, false, 0, 0);
             recorder.recordIndexLoad(1, nodeSize, NodeLeaf, nodeSize*8, 500, 300);
             recorder.recordIndexEviction(1, branchOffset, NodeBranch, nodeSize);
 
@@ -144,19 +144,19 @@ public:
             CPPUNIT_ASSERT(!recorder.isRecording());
 
             //These should be ignored - count checked later on
-            recorder.recordIndexLookup(2, 400, NodeLeaf, false, 0);
-            recorder.recordIndexLookup(1, 800, NodeLeaf, false, 0);
+            recorder.recordIndexLookup(2, 400, NodeLeaf, false, 0, 0);
+            recorder.recordIndexLookup(1, 800, NodeLeaf, false, 0, 0);
 
             recorder.pauseRecording(false, true);
             CPPUNIT_ASSERT(recorder.isRecording());
 
             // Record more events
-            recorder.recordIndexLookup(2, 400, NodeLeaf, false, 0);
-            recorder.recordIndexLookup(1, 800, NodeLeaf, false, 0);
+            recorder.recordIndexLookup(2, 400, NodeLeaf, false, 0, 0);
+            recorder.recordIndexLookup(1, 800, NodeLeaf, false, 0, 0);
             recorder.recordIndexLoad(2, 500, NodeLeaf, 2048, 600, 400);
             recorder.recordIndexLoad(1, 800, NodeLeaf, 2048, 600, 400);
-            recorder.recordIndexLookup(1, 800, NodeLeaf, true, 2048);
-            recorder.recordIndexLookup(1, 1200, NodeLeaf, false, 0);
+            recorder.recordIndexLookup(1, 800, NodeLeaf, true, 2048, 600);
+            recorder.recordIndexLookup(1, 1200, NodeLeaf, false, 0, 0);
             recorder.recordIndexEviction(2, 500, NodeLeaf, 2048);
             recorder.recordIndexLoad(1, 1200, NodeLeaf, 2048, 600, 400);
 
@@ -234,7 +234,7 @@ public:
             // Record some events
             for (unsigned i=0; i < 100'000; i++)
             {
-                recorder.recordIndexLookup(1, i*nodeSize, NodeLeaf, false, 0);
+                recorder.recordIndexLookup(1, i*nodeSize, NodeLeaf, false, 0, 0);
                 recorder.recordIndexLoad(1, i*nodeSize, NodeLeaf, nodeSize*8, 500, 300);
             }
 
@@ -269,7 +269,7 @@ public:
             EventRecorder &recorder = queryRecorder();
             for (unsigned i=0; i < count; i++)
             {
-                recorder.recordIndexLookup(id, i*nodeSize, NodeLeaf, false, 0);
+                recorder.recordIndexLookup(id, i*nodeSize, NodeLeaf, false, 0, 0);
                 recorder.recordIndexLoad(id, i*nodeSize, NodeLeaf, nodeSize*8, 500, 300);
             }
             return 0;
@@ -406,7 +406,7 @@ attribute: EventThreadId = 100
 attribute: FileId = 12345
 attribute: FileOffset = 67890
 attribute: NodeKind = 0
-attribute: ExpandedSize = 4567
+attribute: InMemorySize = 4567
 )!!!";
             EventRecorder& recorder = queryRecorder();
             CPPUNIT_ASSERT(recorder.startRecording("all=true", "eventtrace.evt", false));
@@ -436,7 +436,7 @@ attribute: EventThreadId = 100
 attribute: FileId = 12345
 attribute: FileOffset = 67890
 attribute: NodeKind = 0
-attribute: ExpandedSize = 4567
+attribute: InMemorySize = 4567
 event: DaliConnect
 attribute: EventTimestamp = '2025-05-08T00:00:00.000001010'
 attribute: EventTraceId = '00000000000000000000000000000000'
