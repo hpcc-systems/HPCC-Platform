@@ -85,6 +85,7 @@ enum EventAttr : byte
     EvAttrEventStackTrace,
     EvAttrDataSize,
     EvAttrExpandTime,
+    EvAttrFirstUse,
     EvAttrMax
 };
 
@@ -400,7 +401,7 @@ public:
     void recordIndexLookup(unsigned fileid, offset_t offset, byte nodeKind, bool hit, size32_t sizeIfHit, __uint64  expandTimeIfHit);
     void recordIndexLoad(unsigned fileid, offset_t offset, byte nodeKind, size32_t size, __uint64 expandTime, __uint64 readTime);
     void recordIndexEviction(unsigned fileid, offset_t offset, byte nodeKind, size32_t size);
-    void recordIndexPayload(unsigned fileid, offset_t offset, __uint64 expandTime, size32_t size);
+    void recordIndexPayload(unsigned fileid, offset_t offset, bool firstUse, __uint64 expandTime);
 
     void recordDaliChangeMode(__int64 id, stat_type elapsedNs, size32_t dataSize);
     void recordDaliCommit(__int64 id, stat_type elapsedNs, size32_t dataSize);
