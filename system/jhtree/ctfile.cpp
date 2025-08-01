@@ -1045,7 +1045,7 @@ bool CJHLegacySearchNode::fetchPayload(unsigned int index, char *dst, PayloadRef
             }
         }
 
-        queryRecorder().recordIndexPayload(keyHdr->getKeyId(), getFpos(), 0, getMemSize());
+        queryRecorder().recordIndexPayload(keyHdr->getKeyId(), getFpos(), 0, 0);
 
         //Ensure the payload stays alive for the duration of this call, and is likely preserved until
         //the next call.  Always replacing is as efficient as conditional - since we are using a move operator.

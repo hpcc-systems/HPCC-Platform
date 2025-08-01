@@ -2085,7 +2085,7 @@ bool CJHInplaceLeafNode::fetchPayload(unsigned int index, char *dst, PayloadRefe
                     //Allocate a dummy payload so we can track whether it is hit or not
                     sharedPayload = std::shared_ptr<byte []>(new byte[1]);
                     expandedPayload = sharedPayload;
-                    sizeExpanded = -1;
+                    sizeExpanded = 0;
                 }
                 hit = false;
             }
