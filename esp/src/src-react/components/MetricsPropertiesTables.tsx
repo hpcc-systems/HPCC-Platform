@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useConst } from "@fluentui/react-hooks";
-import { Palette } from "@hpcc-js/common";
+import { d3Event, Palette } from "@hpcc-js/common";
 import { ColumnFormat, Table } from "@hpcc-js/dgrid";
 import { formatDecimal } from "src/Utility";
 import { formatTwoDigits } from "src/Session";
@@ -13,6 +13,41 @@ import { Attribute } from "../util/metricArchive";
 
 Palette.rainbow("StdDevs", ["#ffffff", "#ffffff", "#fff3cd", "#ffeaa7", "#fdcb6e", "#e17055", "#e17055"]);
 Palette.rainbow("StdDevsDark", ["#222222", "#222222", "#3d3520", "#4a3c1a", "#5a4a2e", "#6b2323", "#6b2323"]);
+
+class TableEx extends Table {
+    constructor() {
+        super();
+    }
+
+    enter(domNode, element) {
+        super.enter(domNode, element);
+        this._dgridDiv.on("dgrid-sort", () => {
+            const evt = d3Event();
+            if (evt.sort.length === 0) {
+                const data = this.data();
+                data.sort((l, r) => {
+                    return l[l.length - 1] < r[r.length - 1] ? -1 : 1;
+                });
+                this
+                    .data(data)
+                    .lazyRender()
+                    ;
+            }
+        });
+    }
+
+    update(domNode, element) {
+        super.update(domNode, element);
+        if (!this._dgrid.hasNeutralSort) {
+            this._dgrid.hasNeutralSort = true;
+        }
+    }
+
+    exit(domNode, element) {
+        this._dgridDiv.on("dgrid-sort", null);
+        super.exit(domNode, element);
+    }
+}
 
 export interface MetricsPropertiesTablesProps {
     wuid?: string;
@@ -34,7 +69,7 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
     }, [scopesTableColumns]);
 
     //  Props Table  ---
-    const propsTable = useConst(() => new Table()
+    const propsTable = useConst(() => new TableEx()
         .columns([nlsHPCC.Property, nlsHPCC.Value, "Avg", "Min", "Max", "Delta", "StdDev", "SkewMin", "SkewMax", "NodeMin", "NodeMax", "StdDevs"])
         .columnFormats([
             new ColumnFormat()
@@ -116,7 +151,9 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
             if (idx < scopes.length - 1) {
                 scopeProps.push(["------------------------------", "------------------------------"]);
             }
-            props.push(...scopeProps);
+            for (const prop of scopeProps) {
+                props.push([...prop, props.length]);
+            }
         });
 
         propsTable

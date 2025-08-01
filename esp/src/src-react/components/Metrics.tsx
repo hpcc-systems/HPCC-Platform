@@ -2,7 +2,7 @@ import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, IIconProps, SearchBox, Stack, TooltipHost } from "@fluentui/react";
 import { ToggleButton } from "@fluentui/react-components";
 import { useConst } from "@fluentui/react-hooks";
-import { TextCaseTitleRegular, TextCaseTitleFilled, BranchForkHintRegular, BranchForkFilled } from "@fluentui/react-icons";
+import { TextCaseTitleRegular, TextCaseTitleFilled, BranchForkHintRegular, BranchForkFilled, TextWholeWordFilled, TextWholeWordRegular } from "@fluentui/react-icons";
 import { WorkunitsServiceEx, IScope } from "@hpcc-js/comms";
 import { Table } from "@hpcc-js/dgrid";
 import { scopedLogger } from "@hpcc-js/util";
@@ -30,12 +30,6 @@ const filterIcon: IIconProps = { iconName: "Filter" };
 
 type SelectedMetricsSource = "" | "scopesTable" | "scopesSqlTable" | "metricGraphWidget" | "hotspot" | "reset";
 const TIMELINE_FIXEDHEIGHT = 152;
-
-const pushSelectionUrl = (parentUrl: string, lineageSelection?: string, selection?: string[]) => {
-    const lineageSelectionStr = lineageSelection?.length ? `/${lineageSelection}` : "";
-    const selectionStr = selection?.length ? `/${selection.join(",")}` : "";
-    pushUrl(`${parentUrl}${lineageSelectionStr}${selectionStr}`);
-};
 
 interface MetricsProps {
     wuid: string;
@@ -70,6 +64,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const [hotspots, setHotspots] = React.useState<string>("");
     const [includePendingItems, setIncludePendingItems] = React.useState(true);
     const [matchCase, setMatchCase] = React.useState(false);
+    const [matchWholeWord, setMatchWholeWord] = React.useState(false);
 
     React.useEffect(() => {
         if (targetsRoxie && wuid) {
@@ -96,10 +91,37 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         }
     }, [targetsRoxie, wuid]);
 
+    const pushSelectionUrl = React.useCallback((parentUrl: string, lineageSelection: string, selection: string[]) => {
+        const lineageSelectionStr = lineageSelection?.length ? `/${lineageSelection}` : "";
+        const selectionStr = selection?.length ? `/${selection.join(",")}` : "";
+        pushUrl(`${parentUrl}${lineageSelectionStr}${selectionStr}`);
+    }, []);
+
+    const pushSelectedMetricsUrl = React.useCallback((parentUrl: string, lineageSelection: string, selectedMetrics: IScope[]) => {
+        if (!lineageSelection && selectedMetrics.length) {
+            switch (selectedMetrics[0].type) {
+                case "workflow":
+                case "graph":
+                case "subgraph":
+                    lineageSelection = selectedMetrics[0].name;
+                    break;
+                default:
+                    lineageSelection = selectedMetrics[0].__lparam.__parentName;
+            }
+        }
+        let selection: string[];
+        if (lineageSelection && !selectedMetrics.length) {
+            selection = [lineageSelection];
+        } else {
+            selection = selectedMetrics.map(row => row.__lparam?.id ?? row.id);
+        }
+        pushSelectionUrl(parentUrl, lineageSelection, selection);
+    }, [pushSelectionUrl]);
+
     const onHotspot = React.useCallback(() => {
         setSelectedMetricsSource("hotspot");
         pushSelectionUrl(parentUrl, lineageSelection, selection);
-    }, [lineageSelection, parentUrl, selection]);
+    }, [lineageSelection, parentUrl, pushSelectionUrl, selection]);
 
     //  Timeline ---
     const timeline = useConst(() => new WUTimelineNoFetch()
@@ -114,11 +136,11 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                     timeline.selection([]);
                     setSelectedMetricsSource("scopesTable");
                     setScopeFilter(`name:${row[7].__hpcc_id}`);
-                    pushSelectionUrl(parentUrl, lineageSelection, [row[7].id]);
+                    pushSelectedMetricsUrl(parentUrl, lineageSelection, [row[7]]);
                 }
             }, true)
             ;
-    }, [timeline, lineageSelection, parentUrl]);
+    }, [timeline, lineageSelection, parentUrl, pushSelectedMetricsUrl]);
 
     React.useEffect(() => {
         if (view.showTimeline) {
@@ -137,12 +159,12 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
 
     const scopesSelectionChanged = React.useCallback((source: SelectedMetricsSource, lineageSelection?: string, selection: IScope[] = []) => {
         setSelectedMetricsSource(source);
-        pushSelectionUrl(parentUrl, lineageSelection, selection.map(row => row.__lparam?.id ?? row.id));
-    }, [parentUrl]);
+        pushSelectedMetricsUrl(parentUrl, lineageSelection, selection);
+    }, [parentUrl, pushSelectedMetricsUrl]);
 
     const scopesTable = useConst(() => new ScopesTable()
         .multiSelect(true)
-        .metrics([], view.scopeTypes, view.properties, scopeFilter, matchCase)
+        .metrics([], view.scopeTypes, view.properties, scopeFilter, matchCase, matchWholeWord)
         .sortable(true)
     );
 
@@ -161,10 +183,10 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
             return metricGraph.itemStatus(row) !== "unknown";
         });
         scopesTable
-            .metrics(scopesTableMetrics, view.scopeTypes, view.properties, scopeFilter, matchCase)
+            .metrics(scopesTableMetrics, view.scopeTypes, view.properties, scopeFilter, matchCase, matchWholeWord)
             .lazyRender()
             ;
-    }, [includePendingItems, matchCase, metricGraph, metrics, scopeFilter, scopesTable, view.properties, view.scopeTypes]);
+    }, [includePendingItems, matchCase, matchWholeWord, metricGraph, metrics, scopeFilter, scopesTable, view.properties, view.scopeTypes]);
 
     const updateScopesTable = React.useCallback((selection?: IScope[]) => {
         if (scopesTable?.renderCount() > 0 && selectedMetricsSource !== "scopesTable") {
@@ -329,12 +351,12 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
 
     const onLineageSelectionChange = React.useCallback((lineageSelection: string) => {
         pushSelectionUrl(parentUrl, lineageSelection, selection);
-    }, [parentUrl, selection]);
+    }, [parentUrl, pushSelectionUrl, selection]);
 
     const onSelectionChange = React.useCallback((selection: string[]) => {
         setSelectedMetricsSource("metricGraphWidget");
         pushSelectionUrl(parentUrl, lineageSelection, selection);
-    }, [lineageSelection, parentUrl]);
+    }, [lineageSelection, parentUrl, pushSelectionUrl]);
 
     return <HolyGrail
         header={<>
@@ -354,6 +376,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                                     </TooltipHost>
                                 </Stack.Item>
                                 <ToggleButton appearance="subtle" icon={matchCase ? <TextCaseTitleFilled /> : <TextCaseTitleRegular />} title={nlsHPCC.MatchCase} checked={matchCase} onClick={() => { setMatchCase(!matchCase); }} />
+                                <ToggleButton appearance="subtle" icon={matchWholeWord ? <TextWholeWordFilled /> : <TextWholeWordRegular />} title={nlsHPCC.MatchWholeWord} checked={matchWholeWord} onClick={() => { setMatchWholeWord(!matchWholeWord); }} />
                             </Stack>}
                             main={<AutosizeHpccJSComponent widget={scopesTable} ></AutosizeHpccJSComponent>}
                         />

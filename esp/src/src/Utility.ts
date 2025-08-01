@@ -3,7 +3,6 @@ import { format as d3Format, Palette } from "@hpcc-js/common";
 import { Level, join } from "@hpcc-js/util";
 import * as arrayUtil from "dojo/_base/array";
 import * as domConstruct from "dojo/dom-construct";
-import * as entities from "dojox/html/entities";
 import { darkTheme } from "../src-react/themes";
 import nlsHPCC from "./nlsHPCC";
 
@@ -11,45 +10,54 @@ declare const dojoConfig;
 declare const ActiveXObject;
 declare const require;
 
-export function xmlEncode(str) {
+export function encodeXML(str) {
     str = "" + str;
-    return entities.encode(str);
+
+    const xmlEntities: Record<string, string> = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&apos;",
+        "\n": "&#10;",
+        "\r": "&#13;"
+    };
+
+    return str.replace(/[&"'<>\n\r]/g, (match) => xmlEntities[match]);
 }
 
-export function xmlEncode2(str) {
-    str = "" + str;
-    return str.replace(/&/g, "&amp;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&apos;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/\n/g, "&#10;")
-        .replace(/\r/g, "&#13;")
-        ;
+export function encodeHTML(str?: string): string {
+    if (!str) return str || "";
+
+    const htmlEntities: Record<string, string> = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&apos;",
+        "\u00A0": "&nbsp;", // Non-breaking space (char code 160)
+        "\n": "&#10;",
+        "\r": "&#13;"
+    };
+
+    return str.replace(/[&<>"'\u00A0\n\r]/g, (match) => htmlEntities[match]);
 }
 
-export const encodeHTML = function (str?: string) {
-    return str?.replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&apos;");
-};
+export function decodeHTML(str?: string): string {
+    if (!str) return str || "";
 
-export const decodeHTML = function (str?: string) {
-    return str?.replace(/&apos;/g, "'")
-        .replace(/&quot;/g, '"')
-        .replace(/&gt;/g, ">")
-        .replace(/&lt;/g, "<")
-        .replace(/&amp;/g, "&");
-};
+    const htmlEntities: Record<string, string> = {
+        "&amp;": "&",
+        "&lt;": "<",
+        "&gt;": ">",
+        "&quot;": "\"",
+        "&apos;": "'",
+        "&nbsp;": "\u00A0", // Non-breaking space (char code 160)
+        "&#10;": "\n",
+        "&#13;": "\r"
+    };
 
-export function decodeHtml(html) {
-    const txt = document.createElement("textarea");
-    txt.innerHTML = html;
-    const retVal = txt.value;
-    txt.remove();
-    return retVal;
+    return str.replace(/&(?:amp|lt|gt|quot|apos|nbsp);|&#(?:10|13);/g, (match) => htmlEntities[match]);
 }
 
 export function parseXML(val) {
@@ -1232,13 +1240,18 @@ export function formatLine(labelTpl, obj): string {
 
 export function format(labelTpl, obj) {
     labelTpl = labelTpl.split("\\n").join("\n");
-    return labelTpl
-        .split("\n")
-        .map(line => formatLine(line, obj))
-        .filter(d => d.trim().length > 0)
-        .map(decodeHtml)
-        .join("\n")
-        ;
+
+    const lines = labelTpl.split("\n");
+    const result: string[] = [];
+
+    for (const line of lines) {
+        const formattedLine = formatLine(line, obj);
+        if (formattedLine.trim().length > 0) {
+            result.push(decodeHTML(formattedLine));
+        }
+    }
+
+    return result.join("\n");
 }
 
 const TEN_TRILLION = 10000000000000;
@@ -1349,5 +1362,5 @@ export function formatDate(date: Date, useUTC: boolean): string {
     const hh = pad(useUTC ? date.getUTCHours() : date.getHours());
     const min = pad(useUTC ? date.getUTCMinutes() : date.getMinutes());
     const sec = pad(useUTC ? date.getUTCSeconds() : date.getSeconds());
-    return `${mm}/${dd}/${yyyy} ${hh}:${min}:${sec}`;
+    return `${yyyy}-${mm}-${dd} ${hh}:${min}:${sec}`;
 }

@@ -2,7 +2,7 @@ import { Icon, Palette } from "@hpcc-js/common";
 import { BaseScope, ScopeEdge, ScopeGraph, ScopeSubgraph, ScopeVertex } from "@hpcc-js/comms";
 import { Edge, IGraphData, IGraphData2, Lineage, Subgraph, Vertex } from "@hpcc-js/graph";
 import { Edge as UtilEdge, Subgraph as UtilSubgraph, Vertex as UtilVertex } from "@hpcc-js/util";
-import { decodeHtml, format, formatNums, isSpill as _isSPill } from "./Utility";
+import { decodeHTML, format, formatNums, isSpill as _isSPill } from "./Utility";
 
 function isSpill(edge: ScopeEdge) {
     const sourceKind = edge.source._.attr("Kind").RawValue;
@@ -278,7 +278,7 @@ export abstract class WUScopeControllerBase<ISubgraph, IVertex, IEdge, IGraphDat
         retVal["Id"] = item._.Id;
         for (const key in retVal) {
             //  TODO Move into BaseScope  ---
-            retVal[key] = decodeHtml(retVal[key]);
+            retVal[key] = decodeHTML(retVal[key]);
         }
         retVal.__formatted = formatNums(item._.formattedAttrs());
         return retVal;

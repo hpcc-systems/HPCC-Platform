@@ -147,7 +147,7 @@ define([
                                     var txt = "Graph " + info.graphID + "[" + info.subgraphID + "]";
                                     Message = Message.replace(txt, "<a href='#' onClick='return false;' class='dgrid-row-url'>" + txt + "</a>");
                                 } else {
-                                    Message = Utility.xmlEncode2(Message);
+                                    Message = Utility.encodeXML(Message);
                                 }
                                 return Message;
                             }
