@@ -157,7 +157,7 @@ export const WorkunitPersona: React.FunctionComponent<WorkunitPersonaProps> = ({
     size = "sm"
 }) => {
 
-    const [workunit] = useWorkunit(wuid);
+    const { workunit } = useWorkunit(wuid);
     const [overlayName, setOverlayName] = React.useState("");
     const [overlayColor, setOverlayColor] = React.useState("");
     const { theme, themeV9 } = useUserTheme();

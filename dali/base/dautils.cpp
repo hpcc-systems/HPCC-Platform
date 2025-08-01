@@ -3844,15 +3844,15 @@ class FileReadPropertiesUpdater : public CSimpleInterfaceOf<IFileReadPropertiesU
     // Update the readCost and numDiskReads for owning superfiles
     // - this will recurse up the superfiles tree updating the owning superfiles
     // n.b. fileStatItem.file must be set to a valid IDistributedFile
-    void updateOwnersStats(FileStatMap & ownerStats, const FileStatItem & fileStatItem)
+    void updateOwnersStats(FileStatMap & ownerStats, const FileStatItem & fileStatItem, IDistributedFileTransaction &transaction)
     {
         // getOwningSuperFiles iterator is slow, so only call it once (say at the end of graph)
-        Owned<IDistributedSuperFileIterator> iter = fileStatItem.file->getOwningSuperFiles();
+        Owned<IDistributedSuperFileIterator> iter = fileStatItem.file->getOwningSuperFiles(&transaction);
         ForEach(*iter)
         {
             IDistributedSuperFile & cur = iter->query();
             const FileStatItem & owningFileStatItem = appendOwnersCostAndNumReads(ownerStats, &cur, fileStatItem.numDiskReads, fileStatItem.readCost);
-            updateOwnersStats(ownerStats, owningFileStatItem);
+            updateOwnersStats(ownerStats, owningFileStatItem, transaction);
         }
     }
 
@@ -3885,16 +3885,18 @@ public:
         FileStatMap ownerStats;
         // Iterate through files, updating the ownerStats
         // (Also, set FileStatItem::file to a valid IDistributedFile, if possible)
+
+        Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(udesc);
         for (auto & [logicalName, curStatItem] : stats)
         {
-            curStatItem.file.setown(queryDistributedFileDirectory().lookup(logicalName.c_str(), udesc, AccessMode::tbdRead,false,false,nullptr,defaultNonPrivilegedUser));
+            curStatItem.file.setown(transaction->lookupFile(logicalName.c_str(), AccessMode::tbdRead));
             if (!curStatItem.file) // File may have been deleted
             {
                 if (curStatItem.readCost)
                     OERRLOG("FileReadPropertiesUpdater: file has read cost but file not found: %s", logicalName.c_str());
                 continue;
             }
-            updateOwnersStats(ownerStats, curStatItem);
+            updateOwnersStats(ownerStats, curStatItem, *transaction);
         }
         // Update the file properties with the new stats
         for (auto & [logicalName, curStatItem] : stats)
