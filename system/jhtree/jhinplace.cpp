@@ -243,7 +243,10 @@ static unsigned sizePacked(unsigned __int64 value)
 
 static void serializePacked(MemoryBuffer & out, unsigned __int64  value)
 {
-    constexpr unsigned maxBytes = 9;
+    // Packed encoding uses 7 bits per byte, with the high bit as a continuation flag.
+    // For a 64-bit value like -1 (all bits set), this requires 10 bytes to encode properly,
+    // as 9 * 7 = 63 bits, and the extra bit in the 10th byte is needed to complete the encoding.
+    constexpr unsigned maxBytes = 10;
     unsigned index = maxBytes;
     byte result[maxBytes];
 

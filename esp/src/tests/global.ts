@@ -1,6 +1,77 @@
+import { Workunit } from "@hpcc-js/comms";
+import * as fs from "fs";
+import * as path from "path";
+
 export let baseURL = "http://127.0.0.1:8080";
-export function setBaseURL(baseUrl:string){
+export function setBaseURL(baseUrl: string) {
     baseURL = baseUrl;
+}
+
+const WU_DATA_FILE = path.join(__dirname, "test-wus.json");
+
+interface StoredWU {
+    Wuid: string;
+}
+
+interface StoredData {
+    baseURL: string;
+    wus: { [browser: string]: StoredWU[] };
+}
+
+export const state: StoredData = { baseURL, wus: {} };
+
+export function loadWUs() {
+    try {
+        if (fs.existsSync(WU_DATA_FILE)) {
+            const data = fs.readFileSync(WU_DATA_FILE, "utf8");
+            const stored: StoredData = JSON.parse(data);
+            if (stored.baseURL) {
+                baseURL = stored.baseURL;
+            }
+            if (stored.wus) {
+                state.wus = stored.wus;
+            }
+        }
+    } catch (err) {
+        console.warn("Failed to load WU data:", err);
+    }
+}
+
+export function saveWUs() {
+    try {
+        const dataToSave: StoredData = {
+            baseURL,
+            wus: state.wus
+        };
+        fs.writeFileSync(WU_DATA_FILE, JSON.stringify(dataToSave, null, 2));
+    } catch (err) {
+        console.warn("Failed to save WU data:", err);
+    }
+}
+
+export function setWU(wu: Workunit) {
+    if (!state.wus[wu.Owner]) {
+        state.wus[wu.Owner] = [];
+    }
+    const storedWU: StoredWU = {
+        Wuid: wu.Wuid
+    };
+    state.wus[wu.Owner].push(storedWU);
+    console.log(`   ${wu.Owner} ${wu.Wuid}`);
+}
+
+export function getWULength(browser: string) {
+    loadWUs();
+    return state.wus[browser]?.length ?? 0;
+}
+
+export function getWuid(browser: string, idx: number): string {
+    const wuEntries = state.wus[browser];
+    if (!wuEntries || idx >= wuEntries.length) {
+        throw new Error(`No workunit found for browser "${browser}" at index ${idx}`);
+    }
+    const wuEntry = wuEntries[idx];
+    return wuEntry.Wuid;
 }
 
 export namespace ecl {
@@ -43,7 +114,6 @@ DenormedRec ParentLoad(ParentRec L) := TRANSFORM
     SELF := L;
 END;
 
-//Ptbl := TABLE(NamesTable, DenormedRec);
 Ptbl := PROJECT(NamesTable, ParentLoad(LEFT));
 OUTPUT(Ptbl,, 'global::setup::ts::ParentDataReady', OVERWRITE);
 
@@ -59,8 +129,6 @@ DeNormedRecs := DENORMALIZE(Ptbl, NormAddrs,
 
 OUTPUT(DeNormedRecs,, 'global::setup::ts::NestedChildDataset', OVERWRITE);
 
-// *******************************
-
 ParentRec ParentOut(DenormedRec L) := TRANSFORM
     SELF := L;
 END;
@@ -68,21 +136,10 @@ END;
 Pout := PROJECT(DeNormedRecs, ParentOut(LEFT));
 OUTPUT(Pout,, 'global::setup::ts::ParentExtracted', OVERWRITE);
 
-// /* Using Form 1 of NORMALIZE */
 ChildRec NewChildren(DenormedRec L, INTEGER C) := TRANSFORM
     SELF := L.Children[C];
 END;
 NewChilds := NORMALIZE(DeNormedRecs, LEFT.NumRows, NewChildren(LEFT, COUNTER));
-
-// /* Using Form 2 of NORMALIZE */
-// ChildRec NewChildren(ChildRec L) := TRANSFORM
-//     SELF := L;
-// END;
-
-// NewChilds := NORMALIZE(DeNormedRecs, LEFT.Children, NewChildren(RIGHT));
-
-// /* Using Form 2 of NORMALIZE with inline TRANSFORM*/
-// NewChilds := NORMALIZE(DeNormedRecs, LEFT.Children, TRANSFORM(RIGHT));
 
 OUTPUT(NewChilds,, 'global::setup::ts::ChildrenExtracted', OVERWRITE);
 `;

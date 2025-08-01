@@ -75,8 +75,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
     wuid,
     otTraceParent = ""
 }) => {
-
-    const [workunit, , , , refresh] = useWorkunit(wuid, true);
+    const { workunit, lastUpdate, refresh } = useWorkunit(wuid, true);
     const [exceptions, , refreshSavings] = useWorkunitExceptions(wuid);
     const [jobname, setJobname] = React.useState("");
     const [description, setDescription] = React.useState("");
@@ -103,7 +102,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
         setJobname(workunit?.Jobname);
         setDescription(workunit?.Description);
         setWuProtected(workunit?.Protected);
-    }, [workunit?.Description, workunit?.Jobname, workunit?.Protected]);
+    }, [workunit?.Description, workunit?.Jobname, workunit?.Protected, lastUpdate]);
 
     React.useEffect(() => {
         const otTrace = parseOtTraceParent(otTraceParent);

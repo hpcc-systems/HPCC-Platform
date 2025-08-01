@@ -118,15 +118,6 @@ jobs:
       asset-name: 'docker-ubuntu-22_04'
     secrets: inherit
 
-  test-ui-docker-ubuntu-22_04:
-    if: ${{ contains('pull_request,push', github.event_name) }}
-    needs: build-docker-ubuntu-22_04
-    uses: ./.github/workflows/test-ui-gh_runner.yml
-    with:
-      os: ubuntu-22.04
-      asset-name: 'docker-ubuntu-22_04'
-    secrets: inherit
-
   test-bundles-on-thor-ubuntu-22_04:
     if: ${{ contains('pull_request,push', github.event_name) }}
     needs: build-docker-ubuntu-22_04

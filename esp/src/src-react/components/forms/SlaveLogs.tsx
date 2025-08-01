@@ -33,7 +33,7 @@ export const SlaveLogs: React.FunctionComponent<SlaveLogsProps> = ({
     setShowForm
 }) => {
 
-    const [workunit] = useWorkunit(wuid);
+    const { workunit } = useWorkunit(wuid);
 
     const [thorProcesses, setThorProcesses] = React.useState([]);
     const [maxThorSlaves, setMaxThorSlaves] = React.useState(1);
