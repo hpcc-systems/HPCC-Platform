@@ -35,10 +35,15 @@ export const XrefDetails: React.FunctionComponent<XrefDetailsProps> = ({
             .then(({ DFUXRefListResponse }) => {
                 const xrefNodes = DFUXRefListResponse?.DFUXRefListResult?.XRefNode;
                 if (xrefNodes) {
-                    xrefNodes.filter(node => node.Name === name).forEach(n => {
-                        setLastRun(n.Modified);
-                        setStatus(n.Status);
-                    });
+                    if (Array.isArray(xrefNodes)) {
+                        xrefNodes.filter(node => node.Name === name).forEach(n => {
+                            setLastRun(n.Modified);
+                            setStatus(n.Status);
+                        });
+                    } else {
+                        setLastRun(xrefNodes.Modified);
+                        setStatus(xrefNodes.Status);
+                    }
                 }
             })
             .catch(err => logger.error(err))
