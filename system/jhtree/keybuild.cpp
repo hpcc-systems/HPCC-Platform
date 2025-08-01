@@ -371,6 +371,9 @@ protected:
 
     void flushNode(CWriteNode *node, NodeInfoArray &nodeInfo)
     {   
+        if (node)
+            node->finalize();
+
         // Messy code, but I don't have the energy to recode right now.
         if (keyHdr->getKeyType() & TRAILING_HEADER_ONLY)
         {

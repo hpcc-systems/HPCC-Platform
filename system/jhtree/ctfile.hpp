@@ -457,6 +457,7 @@ public:
     CWriteNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode);
 
     virtual bool add(offset_t pos, const void *data, size32_t size, unsigned __int64 sequence) = 0;
+    virtual void finalize() = 0;
     virtual const void *getLastKeyValue() const = 0;
     virtual unsigned __int64 getLastSequence() const = 0;
 };
@@ -474,6 +475,7 @@ public:
 
     virtual void write(IFileIOStream *, CRC32 *crc) override;
     virtual bool add(offset_t pos, const void *data, size32_t size, unsigned __int64 sequence) override;
+    virtual void finalize() override { }
     virtual const void *getLastKeyValue() const override;
     virtual unsigned __int64 getLastSequence() const override { return firstSequence + hdr.numKeys; }
     virtual size32_t getMemorySize() const override { return 0; }
@@ -494,8 +496,8 @@ public:
     CLegacyWriteNode(offset_t fpos, CKeyHdr *keyHdr, bool isLeafNode);
     ~CLegacyWriteNode();
 
-    virtual void write(IFileIOStream *, CRC32 *crc) override;
     virtual bool add(offset_t pos, const void *data, size32_t size, unsigned __int64 sequence) override;
+    virtual void finalize() override;
     virtual const void *getLastKeyValue() const override { return lastKeyValue; }
     virtual unsigned __int64 getLastSequence() const override { return lastSequence; }
     virtual size32_t getMemorySize() const override { return memorySize; }
