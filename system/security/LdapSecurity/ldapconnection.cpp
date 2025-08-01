@@ -261,6 +261,7 @@ private:
     StringBuffer         m_basedn;
     StringBuffer         m_domain;
     StringBuffer         m_authmethod;
+    bool                 m_enableCreateAdminGroup = false;
 
     StringBuffer         m_user_basedn;
     StringBuffer         m_group_basedn;
@@ -550,6 +551,7 @@ public:
             StringBuffer sb;
             sb.appendf("cn=%s,%s", adminGrp.str(), group_basedn.str());
             adminGrp.set(sb);
+            m_enableCreateAdminGroup = true;  // only create admin group when relative to group base dn
         }
         //If fully qualified group OU name entered, no changes necessary
 
@@ -759,6 +761,11 @@ public:
     virtual const char* getGroupBasedn()
     {
         return m_group_basedn.str();
+    }
+
+    virtual bool getEnableCreateAdminGroup() const
+    {
+        return m_enableCreateAdminGroup;
     }
 
     virtual const char* getViewBasedn()
@@ -1683,9 +1690,12 @@ public:
             {
                 //Create HPCC admin group
                 {
-                    DBGLOG("Adding HPCC Admin group");
-                    try { addGroup(adminGroupName.str(), nullptr, "HPCC Administrators"); }
-                    catch(...) {}//group may already exist, so just move on
+                    if (m_ldapconfig->getEnableCreateAdminGroup())
+                    {
+                        DBGLOG("Adding HPCC Admin group");
+                        try { addGroup(adminGroupName.str(), nullptr, "HPCC Administrators"); }
+                        catch(...) {}//group may already exist, so just move on
+                    }
 
                     //Create HPCC Admin user
                     const char * pUser = m_ldapconfig->getHPCCAdminUser_username();
