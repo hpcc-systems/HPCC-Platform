@@ -3546,7 +3546,140 @@ public:
 CPPUNIT_TEST_SUITE_REGISTRATION( DaliSysInfoLoggerTester );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( DaliSysInfoLoggerTester, "DaliSysInfoLoggerTester" );
 
+class FileReadPropertiesUpdaterTester : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(FileReadPropertiesUpdaterTester);
+        CPPUNIT_TEST(testInit);
+        CPPUNIT_TEST(testFileReadPropertiesUpdater);
+    CPPUNIT_TEST_SUITE_END();
 
+    static constexpr const char *scope = "testfileupdate";
+    std::vector<std::string> subFileNames = {
+        std::string(scope) + "::subfile1",
+        std::string(scope) + "::subfile2",
+        std::string(scope) + "::subfile3"
+    };
+    std::vector<std::string> superFileNames = {
+        std::string(scope) + "::superfile",
+        std::string(scope) + "::supersuperfile"
+    };
+    bool daliClientInitialized = false;
+    void cleanupTestFiles(bool assertOnFailure)
+    {
+        try
+        {
+            for (auto it = superFileNames.rbegin(); it != superFileNames.rend(); ++it)
+                dir.removeSuperFile(it->c_str(), false, user);
+            for (auto &subFileName : subFileNames)
+                dir.removeEntry(subFileName.c_str(), user);
+        }
+        catch (IException *e)
+        {
+            StringBuffer errMsg;
+            e->errorMessage(errMsg);
+            e->Release();
+            fprintf(stderr, "Exception in cleanupTestFiles: %s\n", errMsg.str());
+            ASSERT(!assertOnFailure && "Failed to clean up test files");
+        }
+    }
+    void createTestFiles()
+    {
+        // Create subfiles
+        for (auto &subFileName : subFileNames)
+        {
+            Owned<IFileDescriptor> fdesc = createFileDescriptor();
+            fdesc->setDefaultDir((std::string("thordata/") + scope).c_str());
+
+            // Set file properties
+            fdesc->queryProperties().setPropInt("@recordSize", 17);
+            fdesc->queryProperties().setPropInt("@fileType", 1); // Flat file
+
+            // Create the distributed file
+            Owned<IDistributedFile> dfile = dir.createNew(fdesc);
+            ASSERT(dfile && "Failed to create distributed file");
+
+            // Attach the file to the logical name
+            dfile->attach(subFileName.c_str(), user);
+
+            ASSERT(dir.exists(subFileName.c_str(), user) && "Subfile was not created successfully");
+        }
+
+        // Create the superfile and add subfiles to the superfile
+        Owned<IDistributedSuperFile> superfile = dir.createSuperFile(superFileNames[0].c_str(), user, true, false);
+        ASSERT(superfile && "Failed to create superfile");
+        for (auto &subFileName : subFileNames)
+            superfile->addSubFile(subFileName.c_str());
+        superfile.clear();
+
+        // Create the supersuperfile and add superfile to it
+        Owned<IDistributedSuperFile> supersuperfile = dir.createSuperFile(superFileNames[1].c_str(), user, true, false);
+        ASSERT(supersuperfile && "Failed to create supersuperfile");
+        supersuperfile->addSubFile(superFileNames[0].c_str());
+        supersuperfile.clear();
+
+        // Some quick integrity checks
+        supersuperfile.setown(dir.lookupSuperFile(superFileNames[1].c_str(), user, AccessMode::readMeta));
+        ASSERT(supersuperfile && "Failed to find created supersuperfile");
+        unsigned numSubFiles = supersuperfile->numSubFiles();
+        ASSERT(numSubFiles == 1 && "Supersuperfile does not contain expected number of subfiles");
+
+        superfile.setown(dir.lookupSuperFile(superFileNames[0].c_str(), user, AccessMode::readMeta));
+        ASSERT(superfile && "Could not find created superfile");
+        numSubFiles = superfile->numSubFiles();
+        ASSERT(numSubFiles == subFileNames.size() && "Superfile does not contain expected number of subfiles");
+        size32_t superRecordSize = (size32_t)superfile->queryAttributes().getPropInt("@recordSize", -1);
+        ASSERT(superRecordSize == 17 && "Superfile record size does not match subfiles");
+    }
+
+public:
+    FileReadPropertiesUpdaterTester() : daliClientInitialized(false) {}
+    ~FileReadPropertiesUpdaterTester()
+    {
+        if (daliClientInitialized)
+            daliClientEnd();
+    }
+    void testInit()
+    {
+        daliClientInit();
+        daliClientInitialized = (initCounter > 0);
+    }
+
+    void testFileReadPropertiesUpdater()
+    {
+        cleanupTestFiles(false);
+        createTestFiles();
+
+        unsigned expectedSuperNumReads = 0;
+        unsigned expectedSuperReadCost = 0;
+        {
+            Owned<IFileReadPropertiesUpdater> fileReadPropertiesUpdater = createFileReadPropertiesUpdater(user);
+            for (size_t idx = 0; idx < subFileNames.size(); idx++)
+            {
+                Owned<IDistributedFile> subfile = dir.lookup(subFileNames[idx].c_str(), user, AccessMode::write, false, false, nullptr, true);
+                unsigned numReads = 10 + idx + 1; // create unique number of reads for each subfile
+                unsigned readCost = 1000 + idx + 1; // create unique read cost for each subfile
+                expectedSuperNumReads += numReads;
+                expectedSuperReadCost += readCost;
+                fileReadPropertiesUpdater->addCostAndNumReads(subfile, numReads, readCost);
+            }
+            fileReadPropertiesUpdater->publish();
+        }
+        // Each owning superfiles should have the same number of reads and read cost as calculated above
+        for(auto &superFileName : superFileNames)
+        {
+            Owned<IDistributedSuperFile> superfile = dir.lookupSuperFile(superFileName.c_str(), user, AccessMode::readMeta);
+            ASSERT(superfile && "Failed to find superfile");
+            unsigned superNumReads = superfile->queryAttributes().getPropInt("@numDiskReads", -1);
+            unsigned superReadCost = superfile->queryAttributes().getPropInt("@readCost", -1);
+            ASSERT(superNumReads == expectedSuperNumReads && "Superfile @numDiskReads does not match expected value");
+            ASSERT(superReadCost == expectedSuperReadCost && "Superfile @readCost does not match expected value");
+        }
+        cleanupTestFiles(true);
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( FileReadPropertiesUpdaterTester );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( FileReadPropertiesUpdaterTester, "FileReadPropertiesUpdaterTester" );
 
 
 static constexpr bool traceJobQueue = false;
