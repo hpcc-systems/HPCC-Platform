@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter id="LocalDeployment">
   <title>Local Deployment (Development and Testing)</title>
@@ -10,7 +10,7 @@
   <sect1 id="prereq" role="nobrk">
     <title>Prerequisites</title>
 
-    <para><graphic fileref="../../images/WhatYouNeed.jpg" /></para>
+    <para><graphic fileref="../../images/WhatYouNeed.jpg"/></para>
 
     <para>All third-party tools should be 64-bit versions.</para>
 
@@ -361,7 +361,7 @@ sasha:
         <para>This is <emphasis role="bold">not</emphasis> needed in a MacOS
         or WSL 2 environment.</para>
 
-        <graphic fileref="../../images/dockerFileShare.jpg" />
+        <graphic fileref="../../images/dockerFileShare.jpg"/>
       </listitem>
 
       <listitem>
@@ -415,7 +415,71 @@ OUTPUT(allPeople,,'MyData::allPeople',THOR,OVERWRITE);
       </listitem>
     </orderedlist>
 
-    <para></para>
+    <sect2 id="UsingMiniKube">
+      <title>Using Minikube</title>
+
+      <para>To use Minikube make sure the relevant directories exist. These
+      directories are<emphasis> dalistorage, hpcc-data, debug, queries, sasha,
+      dropzone</emphasis>, and the parent directory
+      <emphasis>hpccdata</emphasis>. If any directory is missing, pods may
+      fail to start.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Start the Minikube engine, this example is using Hyper-V as
+          the virtual machine manager. <programlisting>minikube start --vm-driver=hyperv --cpus=4 --memory=1200 </programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Mount the Windows directory.</para>
+
+          <para>To mount a local Windows directory (e.g., C:\hpccdata) to a
+          directory inside the Minikube VM (/mnt/hpccdata), use the following
+          command:<programlisting>minikube mount --ip 192.168.56.1 "C:\hpccdata:/mnt/hpccdata" --gid=10001 --uid=10000</programlisting></para>
+
+          <para>Use the IP address to bind the mount server (typically your
+          Hyper-V default switch IP).</para>
+
+          <para>The <emphasis>minikube mount</emphasis> process must remain
+          running for the directories to stay accessible. Run the command in a
+          separate terminal window, or start it as a background process. If
+          the terminal window running the mount process is closed, the mount
+          will be lost, and your containers will no longer have access to the
+          mounted directory.</para>
+        </listitem>
+
+        <listitem>
+          <para>Install the localfile Helm chart</para>
+
+          <programlisting>helm install localfile examples/localfile/hpcc-localfile --set common.hostpath=/mnt/hpccdata</programlisting>
+
+          <para>Copy the output from the 'helm install' command in this step
+          as detailed in step 3 of the preceding section, and save it to a
+          text file such as <emphasis>mystorage.yaml.</emphasis></para>
+        </listitem>
+
+        <listitem>
+          <para>Finally, install the hpcc Helm chart, and provide the yaml
+          file that provides the storage information created in the previous
+          step such as <emphasis>mystorage.yaml</emphasis>.</para>
+
+          <programlisting>helm install mycluster hpcc/hpcc --version=9.14.2 -f mystorage.yaml </programlisting>
+
+          <variablelist>
+            <varlistentry>
+              <term>Note:</term>
+
+              <listitem>
+                <para>The --version argument is optional, but recommended. It
+                ensures that you know which version you are installing. If
+                omitted, the latest non-development version is
+                installed.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+        </listitem>
+      </orderedlist>
+    </sect2>
   </sect1>
 
   <sect1 id="StoragePlanes">
@@ -471,10 +535,10 @@ OUTPUT(allPeople,,'MyData::allPeople',THOR,OVERWRITE);
         </varlistentry>
       </variablelist></para>
 
-    <para></para>
+    <para/>
 
-    <para></para>
+    <para/>
 
-    <para></para>
+    <para/>
   </sect1>
 </chapter>
