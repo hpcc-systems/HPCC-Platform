@@ -71,7 +71,7 @@ enum EventAttr : byte
     EvAttrNodeKind,
     EvAttrReadTime,
     EvAttrElapsedTime,
-    EvAttrExpandedSize,
+    EvAttrInMemorySize,
     EvAttrInCache,
     EvAttrPath,
     EvAttrConnectId,
@@ -85,6 +85,7 @@ enum EventAttr : byte
     EvAttrEventStackTrace,
     EvAttrDataSize,
     EvAttrExpandTime,
+    EvAttrLoadExpandTime,           // Separate from ExpandTime to allow aggregation of ExpandTime
     EvAttrMax
 };
 
@@ -397,7 +398,7 @@ public:
     bool pauseRecording(bool pause, bool recordChange);
 
 //Functions for each of the events that can be recorded..
-    void recordIndexLookup(unsigned fileid, offset_t offset, byte nodeKind, bool hit, size32_t sizeIfHit);
+    void recordIndexLookup(unsigned fileid, offset_t offset, byte nodeKind, bool hit, size32_t sizeIfHit, unsigned expandTimeIfHit);
     void recordIndexLoad(unsigned fileid, offset_t offset, byte nodeKind, size32_t size, __uint64 expandTime, __uint64 readTime);
     void recordIndexEviction(unsigned fileid, offset_t offset, byte nodeKind, size32_t size);
     void recordIndexPayload(unsigned fileid, offset_t offset, __uint64 expandTime, size32_t size);

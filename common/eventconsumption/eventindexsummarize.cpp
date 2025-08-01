@@ -44,13 +44,13 @@ bool CIndexFileSummary::visitEvent(CEvent& event)
             break;
         case EventIndexLoad:
             summary.loads++;
-            summary.loadedSize += event.queryNumericValue(EvAttrExpandedSize);
+            summary.loadedSize += event.queryNumericValue(EvAttrInMemorySize);
             summary.read += event.queryNumericValue(EvAttrReadTime);
             summary.elapsed += event.queryNumericValue(EvAttrExpandTime) + event.queryNumericValue(EvAttrReadTime);
             break;
         case EventIndexEviction:
             summary.evictions++;
-            summary.evictedSize += event.queryNumericValue(EvAttrExpandedSize);
+            summary.evictedSize += event.queryNumericValue(EvAttrInMemorySize);
             break;
         default:
             break;
