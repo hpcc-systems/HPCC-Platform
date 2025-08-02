@@ -100,7 +100,7 @@ The available log data columns include traceid(TRC), spanid(SPN), messageid(MID)
     helm install myhpcc ./hpcc --set global.logging.fields="STD-JOB"
     
     Example: Include trace and span info in addition to the standard columns:
-    helm install myhpcc ./hpcc --set global.logging.fields="STD-JOB"
+    helm install myhpcc ./hpcc --set global.logging.fields="STD+TRC+SPN"
     
 Adjustment of per-component logging values can require assertion of multiple component specific values, which can be inconvinient to do via the --set command line parameter. In these cases, a custom values file could be used to set all required fields.
 
