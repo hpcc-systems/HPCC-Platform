@@ -456,6 +456,7 @@ CDiskWriteSlaveActivityBase::CDiskWriteSlaveActivityBase(CGraphElementBase *cont
     : ProcessSlaveActivity(container, diskWriteActivityStatistics)
 {
     diskHelperBase = static_cast <IHThorDiskWriteArg *> (queryHelper());
+    reInit = 0 != (diskHelperBase->getFlags() & (TDXvarfilename|TDXdynamicfilename));
     grouped = false;
     compress = false;
     uncompressedBytesWritten = 0;
