@@ -17,6 +17,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <atomic>
 
 #include "platform.h"
 #include "jlib.hpp"
@@ -142,8 +143,8 @@ interface ISessionManagerServer: implements IConnectionMonitor
 
 
 static SessionId mySessionId=0;
-static ISessionManager *SessionManager=NULL;
-static ISessionManagerServer *SessionManagerServer=NULL;
+static std::atomic<ISessionManager *> sessionManager{nullptr};
+static ISessionManagerServer *SessionManagerServer=nullptr;
 static CriticalSection sessionCrit;
 
 #define SESSIONREPLYTIMEOUT (3*60*1000)
@@ -1396,7 +1397,7 @@ public:
     INode *getProcessSessionNode(SessionId id)
     {
         StringBuffer eps;
-        if (SessionManager->getClientProcessEndpoint(id,eps).length()!=0) 
+        if (sessionManager.load()->getClientProcessEndpoint(id,eps).length()!=0)
             return createINode(eps.str());
         return NULL;
     }
@@ -1787,13 +1788,20 @@ protected:
 
 ISessionManager &querySessionManager()
 {
-    CriticalBlock block(sessionCrit);
-    if (!SessionManager) {
-        assertex(!isCovenActive()||!queryCoven().inCoven()); // Check not Coven server (if occurs - not initialized correctly;
-                                                   // If !coven someone is checking for dali so allow
-        SessionManager = new CClientSessionManager();
+    ISessionManager * manager = sessionManager.load();
+    if (!manager)
+    {
+        CriticalBlock block(sessionCrit);
+        manager = sessionManager.load();
+        if (!manager)
+        {
+            assertex(!isCovenActive()||!queryCoven().inCoven()); // Check not Coven server (if occurs - not initialized correctly;
+                                                       // If !coven someone is checking for dali so allow
+            manager = new CClientSessionManager();
+            sessionManager.store(manager);
+        }
     }
-    return *SessionManager;
+    return *manager;
 }
 
 
@@ -1812,7 +1820,7 @@ public:
         assertex(queryCoven().inCoven()); // must be member of coven
         CCovenSessionManager *serv = new CCovenSessionManager();
         SessionManagerServer = serv;
-        SessionManager = serv;
+        sessionManager.store(serv);
         SessionManagerServer->start();
     }
 
@@ -1826,7 +1834,7 @@ public:
         SessionManagerServer->stop();
         SessionManagerServer->Release();
         SessionManagerServer = NULL;
-        SessionManager = NULL;
+        sessionManager.store(nullptr);
     }
 
     void ready()
@@ -1974,7 +1982,7 @@ bool registerClientProcess(ICommunicator *comm, IGroup *& retcoven,unsigned time
 extern void stopClientProcess()
 {
     CriticalBlock block(sessionCrit);
-    if (mySessionId&&SessionManager) {
+    if (mySessionId&&sessionManager) {
         try {
             querySessionManager().stopSession(mySessionId,false);
         }
@@ -2069,8 +2077,8 @@ MODULE_INIT(INIT_PRIORITY_DALI_DASESS)
 
 MODULE_EXIT()
 {
-    ::Release(SessionManager);
-    SessionManager = NULL;
+    ::Release(sessionManager.load());
+    sessionManager.store(nullptr);
 }
 
 
