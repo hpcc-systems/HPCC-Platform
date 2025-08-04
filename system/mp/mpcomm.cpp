@@ -372,6 +372,10 @@ public:
 
     unsigned flush(CBufferQueueNotify &nfy)
     {
+        // ordinality() is valid to be call outside of a critical section - and is very common to be empty
+        if (likely(received.ordinality() == 0))
+            return 0;
+
         unsigned count = 0;
         CriticalBlock block(sect);
         ForEachQueueItemInRev(i,received) {
