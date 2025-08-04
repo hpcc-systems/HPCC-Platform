@@ -2316,7 +2316,7 @@ bool CClientSDSManager::updateEnvironment(IPropertyTree *newEnv, bool forceGroup
 //////////////
 
 static bool releaseActiveManager = false;
-static ISDSManager * activeSDSManager=NULL;
+static std::atomic<ISDSManager *> activeSDSManager{nullptr};
 static ISDSManager * savedSDSManager=NULL;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
@@ -2327,8 +2327,8 @@ MODULE_EXIT()
 {
     if (releaseActiveManager)
     {
-        delete activeSDSManager;
-        activeSDSManager = nullptr;
+        delete activeSDSManager.load();
+        activeSDSManager.store(nullptr);
         delete savedSDSManager;
         savedSDSManager = nullptr;
     }
@@ -2336,18 +2336,24 @@ MODULE_EXIT()
 
 ISDSManager &querySDS()
 {
+    ISDSManager * sds = activeSDSManager.load();
+    if (likely(sds))
+        return *sds;
+
     CriticalBlock block(SDScrit);
-    if (activeSDSManager)
-        return *activeSDSManager;
-    else if (!queryCoven().inCoven())
+    sds = activeSDSManager.load();
+    if (sds)
+        return *sds;
+
+    if (!queryCoven().inCoven())
     {
         releaseActiveManager = true;
-        activeSDSManager = new CClientSDSManager();
+        activeSDSManager.store(new CClientSDSManager());
         return *activeSDSManager;
     }
     else
     {
-        activeSDSManager = &querySDSServer();
+        activeSDSManager.store(&querySDSServer());
         return *activeSDSManager;
     }
 }
@@ -2361,8 +2367,8 @@ void closeSDS()
     //There can be similar issues at closedown if threads have not been cleaned up properly.
     //Do not delete the active SDS manager immediately - save it so that it is deleted on the next call/closedown.
     ISDSManager * toDelete = savedSDSManager;
-    savedSDSManager = activeSDSManager;
-    activeSDSManager = nullptr;
+    savedSDSManager = activeSDSManager.load();
+    activeSDSManager.store(nullptr);
     if (savedSDSManager || toDelete)
     {
         assertex(!queryCoven().inCoven()); // only called by client
