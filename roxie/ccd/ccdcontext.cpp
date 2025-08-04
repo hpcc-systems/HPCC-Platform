@@ -2595,7 +2595,7 @@ class CRoxieServerContext : public CRoxieContextBase, implements IRoxieServerCon
 
     bool isRaw;
     bool sendHeartBeats;
-    unsigned lastSocketCheckTime;
+    std::atomic<unsigned> lastSocketCheckTime;
     unsigned lastHeartBeat;
 
 protected:
@@ -2826,15 +2826,18 @@ public:
         {
             if (socketCheckInterval)
             {
-                if (ticksNow - lastSocketCheckTime >= socketCheckInterval)
+                if ((ticksNow - lastSocketCheckTime) >= socketCheckInterval)
                 {
                     CriticalBlock b(abortLock);
-                    if (!protocol->checkConnection())
+                    if ((ticksNow - lastSocketCheckTime) >= socketCheckInterval)
                     {
-                        DBGLOG("Client socket close detected");
-                        throw MakeStringException(ROXIE_CLIENT_CLOSED, "Client socket closed");
+                        if (!protocol->checkConnection())
+                        {
+                            DBGLOG("Client socket close detected");
+                            throw MakeStringException(ROXIE_CLIENT_CLOSED, "Client socket closed");
+                        }
+                        lastSocketCheckTime = ticksNow;
                     }
-                    lastSocketCheckTime = ticksNow;
                 }
             }
             if (sendHeartBeats)
