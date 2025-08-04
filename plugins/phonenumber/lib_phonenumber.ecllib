@@ -60,3 +60,5 @@ END;
 EXPORT phonenumber := SERVICE : plugin('phonenumberplugin'), library('phonenumber'), namespace('phonenumber'), CPP, PURE
     DATASET(phonenumber_data) parseNumber(CONST STRING phonenumber, CONST STRING countryCode) : cpp,action,context,fold,entrypoint='parser';
 END;
+
+EXPORT parsePhoneNumber(CONST STRING phonenumber, CONST STRING countryCode) := $.phonenumber.parseNumber(phonenumber, countryCode)[NOBOUNDCHECK 1];

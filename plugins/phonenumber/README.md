@@ -92,12 +92,12 @@ END;
 
 ### Functions
 
-#### parseNumber
+#### parsePhoneNumber
 
 The primary function that performs comprehensive phone number parsing:
 
 ```ecl
-DATASET(phonenumber_data) parseNumber(CONST STRING phonenumber, CONST STRING countryCode)
+parsePhoneNumber(CONST STRING phonenumber, CONST STRING countryCode)
 ```
 
 **Parameters:**
@@ -112,7 +112,7 @@ DATASET(phonenumber_data) parseNumber(CONST STRING phonenumber, CONST STRING cou
 IMPORT lib_phonenumber;
 
 // Parse a US phone number
-result := lib_phonenumber.phonenumber.parseNumber('+1 516 924 2448', 'US');
+result := lib_phonenumber.parsePhoneNumber('+1 516 924 2448', 'US');
 OUTPUT(result);
 
 // Access the parsed data
@@ -133,7 +133,7 @@ OUTPUT(phoneData.countryCode);   // 1
 IMPORT lib_phonenumber;
 
 // Parse a single phone number
-phoneData := lib_phonenumber.phonenumber.parseNumber('(516) 924-2448', 'US')[1];
+phoneData := lib_phonenumber.parsePhoneNumber('(516) 924-2448', 'US')[1];
 
 OUTPUT(phoneData.number);        // "+15169242448"
 OUTPUT(phoneData.valid);         // TRUE
@@ -163,12 +163,10 @@ testNumbers := DATASET([
     {'+49 30 123456', 'DE', 'German number'}
 ], PhoneRecord);
 
-// Parse all numbers using NORMALIZE
-parsedResults := NORMALIZE(testNumbers, 
-    lib_phonenumber.phonenumber.parseNumber(LEFT.phone, LEFT.country),
+parsedResults := PROJECT(testNumbers,
     TRANSFORM({PhoneRecord, lib_phonenumber.phonenumber_data},
         SELF := LEFT,  // Copy original fields
-        SELF := RIGHT  // Copy parsed data
+        SELF := lib_phonenumber.parsePhoneNumber(LEFT.phone, LEFT.country)
     )
 );
 
@@ -182,11 +180,10 @@ OUTPUT(parsedResults);
 IMPORT lib_phonenumber;
 
 // Parse and filter to only valid numbers
-validNumbers := NORMALIZE(testNumbers, 
-    lib_phonenumber.phonenumber.parseNumber(LEFT.phone, LEFT.country),
+validNumbers := PROJECT(testNumbers,
     TRANSFORM({PhoneRecord, lib_phonenumber.phonenumber_data},
         SELF := LEFT,
-        SELF := RIGHT
+        SELF := lib_phonenumber.parsePhoneNumber(LEFT.phone, LEFT.country)
     )
 )(valid = TRUE);  // Filter to only valid numbers
 
@@ -204,7 +201,7 @@ phoneAnalysis := PROJECT(testNumbers, TRANSFORM({
     lib_phonenumber.phonenumber_data,
     STRING typeDescription
 },
-    phoneData := lib_phonenumber.phonenumber.parseNumber(LEFT.phone, LEFT.country)[1];
+    phoneData := lib_phonenumber.parsePhoneNumber(LEFT.phone, LEFT.country)[1];
     SELF.typeDescription := CASE(phoneData.lineType,
         lib_phonenumber.phonenumber_type.MOBILE => 'Mobile Phone',
         lib_phonenumber.phonenumber_type.FIXED_LINE => 'Landline',
@@ -232,7 +229,6 @@ ecl run thor testing/regress/ecl/phonenumber.ecl
 
 - The plugin uses Google's optimized libphonenumber library
 - Results can be cached for repeated operations on the same numbers
-- Batch processing with NORMALIZE is more efficient than individual calls
 - Consider pre-filtering obviously invalid formats before parsing
 
 ## Supported Regions
