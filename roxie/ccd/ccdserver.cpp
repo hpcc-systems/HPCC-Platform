@@ -4362,7 +4362,7 @@ private:
     Owned <IMessageCollator> mc;
     Owned<IMessageUnpackCursor> mu;
     Owned<IMessageResult> mr;
-    ChannelBuffer **buffers;
+    std::atomic<ChannelBuffer *> * buffers;
     IHThorArg &helper;
     unsigned __int64 stopAfter;
     unsigned resendSequence;
@@ -4440,9 +4440,14 @@ private:
 
     ChannelBuffer *queryChannelBuffer(unsigned channel, bool force=false)
     {
+        ChannelBuffer *b = buffers[channel].load();
+        if (likely(b || !force))
+            return b;
+
         CriticalBlock cb(buffersCrit);
-        ChannelBuffer *b = buffers[channel];
-        if (!b && force)
+        b = buffers[channel].load();
+
+        if (!b)
         {
             if (!contextCached)
             {
@@ -4510,7 +4515,8 @@ private:
                 contextCached = true;
             }
 
-            b = buffers[channel] = new ChannelBuffer(*this, channel);
+            b = new ChannelBuffer(*this, channel);
+            buffers[channel].store(b);
         }
         return b;
     }
@@ -4547,8 +4553,9 @@ public:
         keyedLimit = (unsigned __int64) -1;
         contextCached = false;
         stopAfter = I64C(0x7FFFFFFFFFFFFFFF);
-        buffers = new ChannelBuffer*[numChannels+1];
-        memset(buffers, 0, (numChannels+1)*sizeof(ChannelBuffer *));
+        buffers = new std::atomic<ChannelBuffer *>[numChannels+1];
+        for (unsigned i=0; i <= numChannels; i++)
+            buffers[i].store(nullptr);
         parentExtractSize = 0;
         rowManager = NULL;
         parentExtract = NULL;
@@ -4575,7 +4582,7 @@ public:
         }
         for (unsigned channel = 0; channel <= numChannels; channel++)
         {
-            delete(buffers[channel]);
+            delete(buffers[channel].load());
         }
         delete [] buffers;
     }
@@ -4687,7 +4694,7 @@ public:
                 }
                 if (!deferredStart)
                     ROQ->sendPacket(p, activity.queryLogCtx());
-                buffers[0]->signal(); // since replies won't come back on that channel...
+                buffers[0].load()->signal(); // since replies won't come back on that channel...
                 p->Release();
             }
         }
@@ -4800,8 +4807,8 @@ public:
         sentSequence = 0;
         for (unsigned channel = 0; channel <= numChannels; channel++)
         {
-            delete(buffers[channel]);
-            buffers[channel] = NULL;
+            delete(buffers[channel].load());
+            buffers[channel].store(nullptr);
         }
         flush();
         parentExtractSize = _parentExtractSize;
