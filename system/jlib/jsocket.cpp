@@ -5785,9 +5785,9 @@ public:
                     break;
                 if (n < 0)
                 {
-                    CriticalBlock block(sect);
                     if (err != JSE_INTR)
                     {
+                        CriticalBlock block(sect);
                         if (dummysockopen)
                         {
                             LOGERR(err,12,"CSocketEpollThread epoll error"); // should cache error ?
