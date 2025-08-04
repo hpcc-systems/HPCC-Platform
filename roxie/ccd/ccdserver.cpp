@@ -28397,17 +28397,17 @@ public:
         }
     }
 
-    Linked<IException> exception;
+    AtomicShared<IException> exception;  // Use AtomicShared, so it can be checked outside of the critical section
     CriticalSection eCrit;
 
     virtual void noteException(IException *E)
     {
         CriticalBlock b(eCrit);
-        if (!exception)
+        if (!exception.isSet())
         {
             if (graphAgentContext.queryDebugContext())
             {
-                graphAgentContext.queryDebugContext()->checkBreakpoint(DebugStateException, NULL, exception);
+                graphAgentContext.queryDebugContext()->checkBreakpoint(DebugStateException, NULL, E);
             }
             exception.set(E);
         }
@@ -28415,9 +28415,11 @@ public:
 
     virtual void checkAbort() 
     {
+        if (likely(!exception.isSet()))
+            return;
+
         CriticalBlock b(eCrit);
-        if (exception)
-            throw exception.getLink();
+        throw exception.getLinkNonAtomic();
     }
     unsigned queryWorkflowId() const
     {
