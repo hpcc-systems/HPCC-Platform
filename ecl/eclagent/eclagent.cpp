@@ -4493,6 +4493,10 @@ public:
             in->updateProgress(progress);
     }
 
+    virtual stat_type queryTotalCycles() const override
+    {
+        return in->queryTotalCycles();
+    }
 };
 
 //=======================================================================================
