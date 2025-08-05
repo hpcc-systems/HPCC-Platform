@@ -892,4 +892,145 @@ public:
 CPPUNIT_TEST_SUITE_REGISTRATION(ThreadPoolSizeTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(ThreadPoolSizeTest, "ThreadPoolSizeTest");
 
+//--------------------------------------------------------------------------------------------------
+
+#include "jregexp.hpp"
+#include <regex>
+
+class RegExprTest : public CppUnit::TestFixture
+{
+    static constexpr const char * archivePatternJlib = "[.]{zip|tar|tar[.]gz|tgz}{/|\\\\}";
+    static constexpr const char * archivePatternStdlib = "[.](zip|tar|tar[.]gz|tgz)(/|\\\\)";
+
+    CPPUNIT_TEST_SUITE(RegExprTest);
+    CPPUNIT_TEST(testRegExprMatches);
+    CPPUNIT_TEST(testStdRegexMatches);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    const char *splitNameStdlib(const char *fileName)
+    {
+        std::regex archiveSignatureRegex(archivePatternStdlib);
+        std::cmatch match;
+        if (std::regex_search(fileName, match, archiveSignatureRegex))
+        {
+            // return the text that follows the match
+            return match[0].second;
+        }
+        else
+            return nullptr;
+    }
+
+    const char *splitNameJlib(const char *fileName)
+    {
+        RegExpr archiveSignature(archivePatternJlib);
+        const char *sig = archiveSignature.find(fileName);
+        if (sig)
+            return sig+archiveSignature.findlen();
+        else
+            return NULL;
+    }
+
+    void testRegExprMatches()
+    {
+        // Pattern: "[.]{zip|tar|tar[.]gz|tgz}{/|\\}"
+        RegExpr expr(archivePatternJlib);
+
+        // Should match
+        CPPUNIT_ASSERT(expr.find(".zip/"));
+        CPPUNIT_ASSERT(expr.find(".zip\\"));
+        CPPUNIT_ASSERT(expr.find(".tar/"));
+        CPPUNIT_ASSERT(expr.find(".tar\\"));
+        CPPUNIT_ASSERT(expr.find(".tar.gz/"));
+        CPPUNIT_ASSERT(expr.find(".tar.gz\\"));
+        CPPUNIT_ASSERT(expr.find(".tgz/"));
+        CPPUNIT_ASSERT(expr.find(".tgz\\"));
+
+        // Should not match (wrong extension)
+        CPPUNIT_ASSERT(!expr.find(".rar/"));
+        CPPUNIT_ASSERT(!expr.find(".zipx/"));
+        CPPUNIT_ASSERT(!expr.find(".tarx/"));
+        CPPUNIT_ASSERT(!expr.find(".tar.gzx/"));
+        CPPUNIT_ASSERT(!expr.find(".tgzx/"));
+
+        // Should not match (missing trailing / or \\)
+        CPPUNIT_ASSERT(!expr.find(".zip"));
+        CPPUNIT_ASSERT(!expr.find(".tar"));
+        CPPUNIT_ASSERT(!expr.find(".tar.gz"));
+        CPPUNIT_ASSERT(!expr.find(".tgz"));
+
+        // Should match (extra characters after trailing)
+        CPPUNIT_ASSERT(expr.find(".zip//"));
+        CPPUNIT_ASSERT(expr.find(".tar\\abc"));
+        CPPUNIT_ASSERT(expr.find(".tar.gz/abc"));
+        CPPUNIT_ASSERT(expr.find(".tgz\\abc"));
+
+        // Should match (extra characters before trailing)
+        CPPUNIT_ASSERT(expr.find("abc.zip//"));
+        CPPUNIT_ASSERT(expr.find("blah.zip.x.tar\\abc"));
+        CPPUNIT_ASSERT(expr.find("azurefile:blah@zz.tar.gz/abc"));
+
+        // Should not match (missing dot)
+        CPPUNIT_ASSERT(!expr.find("zip/"));
+        CPPUNIT_ASSERT(!expr.find("tar/"));
+        CPPUNIT_ASSERT(!expr.find("tar.gz/"));
+        CPPUNIT_ASSERT(!expr.find("tgz/"));
+
+        CPPUNIT_ASSERT_EQUAL_STR("abc", splitNameJlib("azurefile:blah@zz.tar.gz/abc"));
+        CPPUNIT_ASSERT_EQUAL_STR("abc.zip/xyz", splitNameJlib("azurefile:blah@zz.tar.gz/abc.zip/xyz"));
+    }
+
+    void testStdRegexMatches()
+    {
+        // Equivalent std::regex pattern: R"(\.(zip|tar|tar\.gz|tgz)[/\\])"
+        std::regex re(archivePatternStdlib);
+
+        // Should match
+        CPPUNIT_ASSERT(std::regex_search(".zip/", re));
+        CPPUNIT_ASSERT(std::regex_search(".zip\\", re));
+        CPPUNIT_ASSERT(std::regex_search(".tar/", re));
+        CPPUNIT_ASSERT(std::regex_search(".tar\\", re));
+        CPPUNIT_ASSERT(std::regex_search(".tar.gz/", re));
+        CPPUNIT_ASSERT(std::regex_search(".tar.gz\\", re));
+        CPPUNIT_ASSERT(std::regex_search(".tgz/", re));
+        CPPUNIT_ASSERT(std::regex_search(".tgz\\", re));
+
+        // Should not match (wrong extension)
+        CPPUNIT_ASSERT(!std::regex_search(".rar/", re));
+        CPPUNIT_ASSERT(!std::regex_search(".zipx/", re));
+        CPPUNIT_ASSERT(!std::regex_search(".tarx/", re));
+        CPPUNIT_ASSERT(!std::regex_search(".tar.gzx/", re));
+        CPPUNIT_ASSERT(!std::regex_search(".tgzx/", re));
+
+        // Should not match (missing trailing / or \\)
+        CPPUNIT_ASSERT(!std::regex_search(".zip", re));
+        CPPUNIT_ASSERT(!std::regex_search(".tar", re));
+        CPPUNIT_ASSERT(!std::regex_search(".tar.gz", re));
+        CPPUNIT_ASSERT(!std::regex_search(".tgz", re));
+
+        // Should match (extra characters after trailing)
+        CPPUNIT_ASSERT(std::regex_search(".zip//", re));
+        CPPUNIT_ASSERT(std::regex_search(".tar\\abc", re));
+        CPPUNIT_ASSERT(std::regex_search(".tar.gz/abc", re));
+        CPPUNIT_ASSERT(std::regex_search(".tgz\\abc", re));
+
+        // Should match (extra characters before trailing)
+        CPPUNIT_ASSERT(std::regex_search("abc.zip//", re));
+        CPPUNIT_ASSERT(std::regex_search("blah.zip.x.tar\\abc", re));
+        CPPUNIT_ASSERT(std::regex_search("azurefile:blah@zz.tar.gz/abc", re));
+
+        // Should not match (missing dot)
+        CPPUNIT_ASSERT(!std::regex_search("zip/", re));
+        CPPUNIT_ASSERT(!std::regex_search("tar/", re));
+        CPPUNIT_ASSERT(!std::regex_search("tar.gz/", re));
+        CPPUNIT_ASSERT(!std::regex_search("tgz/", re));
+
+        CPPUNIT_ASSERT_EQUAL_STR("abc", splitNameStdlib("azurefile:blah@zz.tar.gz/abc"));
+        CPPUNIT_ASSERT_EQUAL_STR("abc.zip/xyz", splitNameStdlib("azurefile:blah@zz.tar.gz/abc.zip/xyz"));
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(RegExprTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(RegExprTest, "RegExprTest");
+
 #endif // _USE_CPPUNIT
