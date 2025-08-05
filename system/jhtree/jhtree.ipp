@@ -83,8 +83,9 @@ interface INodeLoader
 class CLoadNodeCacheState
 {
 public:
-    size32_t preferredReadSize = 0;
     CCachedIndexRead readCache;     // Information about the last read request
+    size32_t preferredReadSize{0};
+    bool usePageCache{true};        // Set to false if scanning a file sequentially
 };
 
 class jhtree_decl CKeyIndex : implements IKeyIndex, public CInterface

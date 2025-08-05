@@ -1374,13 +1374,15 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         setIndexWarningThresholds(topology);
 
         //Enabling the localNVMeCache will also by default enable remote file related optimizations
-        offset_t localNVMeCacheSize = topology->getPropInt64("@localNVMeCacheSize", 0);
-        bool usingRemoteStorage = (localNVMeCacheSize != 0);
+        IPropertyTree * pageCache = topology->queryPropTree("pageCache");
+        bool usingRemoteStorage = (pageCache != nullptr);
 
         unsigned inplaceSizeFactor = topology->getPropInt("@inplaceSizeFactor", usingRemoteStorage ? 0 : 100);
         unsigned lz4SpeedFactor = topology->getPropInt("@lz4SpeedFactor", usingRemoteStorage ? 0 : 600);             // If lz4 is 5x faster then value should be 500
         unsigned zStdSpeedFactor = topology->getPropInt("@zStdSpeedFactor", usingRemoteStorage ? 0 : 350);
         setIndexScaling(inplaceSizeFactor, lz4SpeedFactor, zStdSpeedFactor);
+        if (pageCache)
+            initializeDiskPageCache(pageCache);
 
         unsigned __int64 affinity = topology->getPropInt64("@affinity", 0);
         updateAffinity(affinity);
