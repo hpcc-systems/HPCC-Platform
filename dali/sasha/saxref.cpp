@@ -436,10 +436,12 @@ struct cDirDesc
         return false;
     }
 
-    void addNodeStats(unsigned node,unsigned drv,offset_t sz)
+    void addNodeStats(unsigned node,unsigned drv,offset_t sz,CriticalSection &crit)
     {
         if (drv>1)
             drv = 1;
+
+        CriticalBlock block(crit);
         totalsize[drv] += sz;
         if (!minnode[drv]||(minsize[drv]>sz)) {
             minnode[drv] = node+1;
@@ -1036,14 +1038,11 @@ public:
             file.setown(createIFile(rfn));
         Owned<IDirectoryIterator> iter;
         Owned<IException> e;
-        {
-            CriticalUnblock unblock(crit); // not strictly necessary if numThreads==1, but no harm
-            try {
-                iter.setown(file->directoryFiles(NULL,false,true));
-            }
-            catch (IException *_e) {
-                e.setown(_e);
-            }
+        try {
+            iter.setown(file->directoryFiles(NULL,false,true));
+        }
+        catch (IException *_e) {
+            e.setown(_e);
         }
         if (e) {
             StringBuffer tmp(LOGPFX "scanDirectory ");
@@ -1120,7 +1119,7 @@ public:
                 return false;
             path.setLength(dsz);
         }
-        pdir->addNodeStats(node,drv,nsz);
+        pdir->addNodeStats(node,drv,nsz,crit);
         return true;
 
     }
@@ -1149,9 +1148,11 @@ public:
             {
                 if (abort)
                     return;
-                CriticalBlock block(crit);
-                if (!ok||abort)
-                    return;
+                {
+                    CriticalBlock block(crit);
+                    if (!ok||abort)
+                        return;
+                }
 
                 StringBuffer path(rootdir);
                 StringBuffer tmp;
