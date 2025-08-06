@@ -989,7 +989,7 @@
   pvc: data-mystorage-hpcc-localfile-pvc
   prefix: "/var/lib/HPCCSystems/hpcc-data"
   category: data
-  numDevices: 2        </programlisting>
+  numDevices: 2</programlisting>
 
             <para>The Helm chart will expect to find PVCs named using the base
             name with numeric suffixes (e.g.,
