@@ -58,6 +58,11 @@
 #pragma warning(disable:4291)
 #endif
 
+#if defined(_DEBUG)
+//In debug check for multiple concurrent calls to blocked allocator - since it would cause major problems if possible
+#define CHECK_FOR_BLOCKED_MULTI_THREAD
+#endif
+
 namespace roxiemem {
 
 #define NOTIFY_UNUSED_PAGES_ON_FREE     // avoid linux swapping 'freed' pages to disk
@@ -2918,14 +2923,36 @@ public:
     {
     }
 
+    ~CRoxieDirectFixedBlockedRowHeap()
+    {
+#if defined(_DEBUG)
+        if (curRow != numRows)
+            DBGLOG("Blocked Row Heap still contains %u rows", numRows - curRow);
+#endif
+    }
+
     virtual void *allocate()
     {
+#if defined(CHECK_FOR_BLOCKED_MULTI_THREAD)
+        if (active++ != 0)
+        {
+            active--;
+            throw makeStringException(ROXIEMM_BLOCKED_MULTI_THREAD, "Multiple concurrent calls to CRoxieDirectFixedBlockedRowHeap::allocate");
+        }
+        //Potentially yield to make it more likely that another thread will call allocate() before this thread exits
+        MilliSleep(0);
+#endif
+
         if (curRow == numRows)
         {
             numRows = this->heap->allocateBlock(this->allocatorId, maxBlockedRows, rows);
             this->numAllocations += numRows; // not thread safe, but missing entries do not matter
             curRow = 0;
         }
+
+#if defined(CHECK_FOR_BLOCKED_MULTI_THREAD)
+        active--;
+#endif
         return rows[curRow++];
     }
 
@@ -2951,6 +2978,9 @@ protected:
     char * rows[maxBlockedRows]; // Deliberately uninitialized
     unsigned curRow = 0;
     unsigned numRows = 0;
+#if defined(CHECK_FOR_BLOCKED_MULTI_THREAD)
+    std::atomic<unsigned> active{0};
+#endif
 };
 
 //================================================================================
