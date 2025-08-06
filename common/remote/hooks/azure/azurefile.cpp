@@ -15,9 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-#include <azure/core.hpp>
-#include <azure/storage/blobs.hpp>
-#include <azure/storage/files/shares.hpp>
 #include "platform.h"
 #include "jlib.hpp"
 #include "jio.hpp"
@@ -29,6 +26,11 @@
 #include "jlog.hpp"
 #include "jplane.hpp"
 #include "azurefile.hpp"
+
+#include <azure/core.hpp>
+#include <azure/storage/blobs.hpp>
+#include <azure/storage/files/shares.hpp>
+#include <azure/core/base64.hpp>
 
 using namespace Azure::Storage;
 using namespace Azure::Storage::Blobs;
@@ -42,9 +44,9 @@ using namespace std::chrono;
  *
  * Does it make more sense to create input and output streams directly from the IFile rather than going via
  * an IFileIO.  E.g., append blobs
+ * The overhead is trivial, so leave as it is for now.
  */
-constexpr const char * azureFilePrefix = "azure:";
-constexpr const char * azureBlobPrefix = "azureblob:";  // Syntax azureblob:storageplane[/device]/apth
+constexpr const char * azureBlobPrefix = "azureblob:";  // Syntax azureblob:storageplane[/device]/<path>
 
 static bool areManagedIdentitiesEnabled()
 {
@@ -53,20 +55,22 @@ static bool areManagedIdentitiesEnabled()
     return enabled;
 }
 
+static constexpr unsigned maxAzureBlockCount = 50000;
+
+
 //---------------------------------------------------------------------------------------------------------------------
 
-class AzureFile;
+using SharedBlobClient = std::shared_ptr<Azure::Storage::Blobs::BlockBlobClient>;
 
-//The base class for AzureFileIO.  This class performs NO caching of the data - to avoid problems with
+class AzureBlob;
+//The base class for AzureBlobIO.  This class performs NO caching of the data - to avoid problems with
 //copying the data too many times.  It is the responsibility of the caller to implement a cache if necessary.
-class AzureFileIO : implements CInterfaceOf<IFileIO>
+class AzureBlobIO : implements CInterfaceOf<IFileIO>
 {
 public:
-    AzureFileIO(AzureFile * _file, const FileIOStats & _stats);
-    AzureFileIO(AzureFile * _file) : file(_file) {}
+    AzureBlobIO(AzureBlob * _file, const FileIOStats & _stats);
+    AzureBlobIO(AzureBlob * _file);
 
-    virtual size32_t read(offset_t pos, size32_t len, void * data) override;
-    virtual offset_t size() override;
     virtual void close() override
     {
     }
@@ -75,15 +79,19 @@ public:
     virtual IFile * queryFile() const;
 
 protected:
-    Linked<AzureFile> file;
+    Linked<AzureBlob> file;
     FileIOStats stats;
+    SharedBlobClient blockBlobClient;
 };
 
 
-class AzureFileReadIO : public AzureFileIO
+class AzureBlobReadIO final : public AzureBlobIO
 {
 public:
-    AzureFileReadIO(AzureFile * _file, const FileIOStats & _stats);
+    AzureBlobReadIO(AzureBlob * _file, const FileIOStats & _stats);
+
+    virtual offset_t size() override;
+    virtual size32_t read(offset_t pos, size32_t len, void * data) override;
 
     // Write methods not implemented - this is a read-only file
     virtual size32_t write(offset_t pos, size32_t len, const void * data) override
@@ -100,12 +108,17 @@ public:
 };
 
 
-class AzureFileWriteIO : public AzureFileIO
+class AzureBlobWriteIO : public AzureBlobIO
 {
 public:
-    AzureFileWriteIO(AzureFile * _file);
+    AzureBlobWriteIO(AzureBlob * _file);
+
     virtual void beforeDispose() override;
 
+    virtual size32_t read(offset_t pos, size32_t len, void * data) override
+    {
+        throwUnexpectedX("Reading from write only file");
+    }
     virtual offset_t size() override;
     virtual void setSize(offset_t size) override;
     virtual void flush() override;
@@ -115,30 +128,29 @@ protected:
     offset_t offset = 0;
 };
 
-class AzureFileAppendBlobWriteIO final : implements AzureFileWriteIO
+class AzureBlobBlockBlobWriteIO final : implements AzureBlobWriteIO
 {
 public:
-    AzureFileAppendBlobWriteIO(AzureFile * _file);
-
-    virtual void close() override;
-    virtual offset_t size() override;
-    virtual size32_t write(offset_t pos, size32_t len, const void * data) override;
-};
-
-class AzureFileBlockBlobWriteIO final : implements AzureFileWriteIO
-{
-public:
-    AzureFileBlockBlobWriteIO(AzureFile * _file);
+    AzureBlobBlockBlobWriteIO(AzureBlob * _file);
 
     virtual void close() override;
     virtual size32_t write(offset_t pos, size32_t len, const void * data) override;
+
+protected:
+    std::string generateNextUniqueBlockId();
+
+private:
+    StringBuffer baseBlockId;
+    std::vector<std::string> blockIds;
+    bool committed = false;
+    unsigned blockIndex = 0;
 };
 
 
-class AzureFile final : implements CInterfaceOf<IFile>
+class AzureBlob final : implements CInterfaceOf<IFile>
 {
 public:
-    AzureFile(const char *_azureFileName);
+    AzureBlob(const char *_azureFileName);
     virtual bool exists() override
     {
         ensureMetaData();
@@ -195,7 +207,7 @@ public:
 // Directory functions
     virtual IDirectoryIterator *directoryFiles(const char *mask, bool sub, bool includeDirs) override
     {
-        UNIMPLEMENTED_X("AzureFile::directoryFiles");
+        UNIMPLEMENTED_X("AzureBlob::directoryFiles");
     }
     virtual bool getInfo(bool &isdir,offset_t &size,CDateTime &modtime) override
     {
@@ -209,22 +221,22 @@ public:
     // Not going to be implemented - this IFile interface is too big..
     virtual bool setTime(const CDateTime * createTime, const CDateTime * modifiedTime, const CDateTime * accessedTime) override
     {
-        DBGLOG("AzureFile::setTime ignored");
+        DBGLOG("AzureBlob::setTime ignored");
         return false;
     }
     virtual bool remove() override;
-    virtual void rename(const char *newTail) override { UNIMPLEMENTED_X("AzureFile::rename"); }
-    virtual void move(const char *newName) override { UNIMPLEMENTED_X("AzureFile::move"); }
-    virtual void setReadOnly(bool ro) override { UNIMPLEMENTED_X("AzureFile::setReadOnly"); }
+    virtual void rename(const char *newTail) override { UNIMPLEMENTED_X("AzureBlob::rename"); }
+    virtual void move(const char *newName) override { UNIMPLEMENTED_X("AzureBlob::move"); }
+    virtual void setReadOnly(bool ro) override { UNIMPLEMENTED_X("AzureBlob::setReadOnly"); }
     virtual void setFilePermissions(unsigned fPerms) override
     {
-        DBGLOG("AzureFile::setFilePermissions() ignored");
+        DBGLOG("AzureBlob::setFilePermissions() ignored");
     }
-    virtual bool setCompression(bool set) override { UNIMPLEMENTED_X("AzureFile::setCompression"); }
-    virtual offset_t compressedSize() override { UNIMPLEMENTED_X("AzureFile::compressedSize"); }
-    virtual unsigned getCRC() override { UNIMPLEMENTED_X("AzureFile::getCRC"); }
-    virtual void setCreateFlags(unsigned short cflags) override { UNIMPLEMENTED_X("AzureFile::setCreateFlags"); }
-    virtual void setShareMode(IFSHmode shmode) override { UNIMPLEMENTED_X("AzureFile::setSharedMode"); }
+    virtual bool setCompression(bool set) override { UNIMPLEMENTED_X("AzureBlob::setCompression"); }
+    virtual offset_t compressedSize() override { UNIMPLEMENTED_X("AzureBlob::compressedSize"); }
+    virtual unsigned getCRC() override { UNIMPLEMENTED_X("AzureBlob::getCRC"); }
+    virtual void setCreateFlags(unsigned short cflags) override { UNIMPLEMENTED_X("AzureBlob::setCreateFlags"); }
+    virtual void setShareMode(IFSHmode shmode) override { UNIMPLEMENTED_X("AzureBlob::setSharedMode"); }
     virtual bool createDirectory() override;
     virtual IDirectoryDifferenceIterator *monitorDirectory(
                                   IDirectoryIterator *prev=NULL,    // in (NULL means use current as baseline)
@@ -233,25 +245,19 @@ public:
                                   bool includedirs=false,
                                   unsigned checkinterval=60*1000,
                                   unsigned timeout=(unsigned)-1,
-                                  Semaphore *abortsem=NULL) override { UNIMPLEMENTED_X("AzureFile::monitorDirectory"); }
-    virtual void copySection(const RemoteFilename &dest, offset_t toOfs=(offset_t)-1, offset_t fromOfs=0, offset_t size=(offset_t)-1, ICopyFileProgress *progress=NULL, CFflags copyFlags=CFnone) override { UNIMPLEMENTED_X("AzureFile::copySection"); }
-    virtual void copyTo(IFile *dest, size32_t buffersize=DEFAULT_COPY_BLKSIZE, ICopyFileProgress *progress=NULL, bool usetmp=false, CFflags copyFlags=CFnone) override { UNIMPLEMENTED_X("AzureFile::copyTo"); }
-    virtual IMemoryMappedFile *openMemoryMapped(offset_t ofs=0, memsize_t len=(memsize_t)-1, bool write=false) override { UNIMPLEMENTED_X("AzureFile::openMemoryMapped"); }
+                                  Semaphore *abortsem=NULL) override { UNIMPLEMENTED_X("AzureBlob::monitorDirectory"); }
+    virtual void copySection(const RemoteFilename &dest, offset_t toOfs=(offset_t)-1, offset_t fromOfs=0, offset_t size=(offset_t)-1, ICopyFileProgress *progress=NULL, CFflags copyFlags=CFnone) override { UNIMPLEMENTED_X("AzureBlob::copySection"); }
+    virtual void copyTo(IFile *dest, size32_t buffersize=DEFAULT_COPY_BLKSIZE, ICopyFileProgress *progress=NULL, bool usetmp=false, CFflags copyFlags=CFnone) override { UNIMPLEMENTED_X("AzureBlob::copyTo"); }
+    virtual IMemoryMappedFile *openMemoryMapped(offset_t ofs=0, memsize_t len=(memsize_t)-1, bool write=false) override { UNIMPLEMENTED_X("AzureBlob::openMemoryMapped"); }
 
-//Helper functions for the azureFileIO classes
-    offset_t read(offset_t pos, size32_t len, void * data, FileIOStats & stats);
-
-    void createAppendBlob();
-    void appendToAppendBlob(size32_t len, const void * data);
-    void createBlockBlob();
-    void appendToBlockBlob(size32_t len, const void * data);
+public:
+    SharedBlobClient getBlobClient() const;
+    void invalidateMeta() { haveMeta = false; }
 
 protected:
     std::shared_ptr<StorageSharedKeyCredential> getSharedKeyCredentials() const;
     std::string getBlobUrl() const;
     std::shared_ptr<BlobContainerClient> getBlobContainerClient() const;
-    template<typename T> std::shared_ptr<T> getClient() const;
-
 
     void ensureMetaData();
     void gatherMetaData();
@@ -262,7 +268,6 @@ protected:
 protected:
     StringBuffer fullName;
     StringAttr accountName;
-    StringAttr accountKey;
     StringAttr containerName;
     StringBuffer secretName;
     StringAttr blobName;
@@ -280,56 +285,133 @@ protected:
 
 //---------------------------------------------------------------------------------------------------------------------
 
-AzureFileIO::AzureFileIO(AzureFile * _file, const FileIOStats & _firstStats)
-: file(_file), stats(_firstStats)
+AzureBlobIO::AzureBlobIO(AzureBlob * _file, const FileIOStats & _firstStats)
+: file(_file), stats(_firstStats), blockBlobClient(file->getBlobClient())
+{
+
+}
+
+AzureBlobIO::AzureBlobIO(AzureBlob * _file) : file(_file), blockBlobClient(file->getBlobClient())
 {
 }
 
 
-size32_t AzureFileIO::read(offset_t pos, size32_t len, void * data)
-{
-    offset_t fileSize = file->size();
-    if (pos > fileSize)
-        return 0;
-    if (pos + len > fileSize)
-        len = fileSize - pos;
-    if (len == 0)
-        return 0;
-
-    return file->read(pos, len, data, stats);
-}
-
-offset_t AzureFileIO::size()
-{
-    return file->size();
-}
-
-unsigned __int64 AzureFileIO::getStatistic(StatisticKind kind)
+unsigned __int64 AzureBlobIO::getStatistic(StatisticKind kind)
 {
     return stats.getStatistic(kind);
 }
 
-IFile * AzureFileIO::queryFile() const
+IFile * AzureBlobIO::queryFile() const
 {
     return file;
 }
 
+
 //---------------------------------------------------------------------------------------------------------------------
 
-
-AzureFileReadIO::AzureFileReadIO(AzureFile * _file, const FileIOStats & _firstStats)
-: AzureFileIO(_file, _firstStats)
+static void handleRequestBackoff(const char * message, unsigned attempt, unsigned maxRetries)
 {
+    OWARNLOG("%s", message);
+
+    if (attempt >= maxRetries)
+        throw makeStringException(1234, message);
+
+    // Exponential backoff with jitter
+    unsigned backoffMs = (1U << attempt) * 100 + (rand() % 100);
+    Sleep(backoffMs);
+}
+
+static void handleRequestException(const Azure::Core::RequestFailedException& e, const char * op, unsigned attempt, unsigned maxRetries, const char * filename, offset_t pos, offset_t len)
+{
+    VStringBuffer msg("AzureBlob::%s failed (attempt %u/%u) for file %s at offset %llu, len %llu: %s (%d)",
+                      op, attempt, maxRetries, filename, pos, len, e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+
+    handleRequestBackoff(msg, attempt, maxRetries);
+}
+
+static void handleRequestException(const std::exception& e, const char * op, unsigned attempt, unsigned maxRetries, const char * filename, offset_t pos, offset_t len)
+{
+    VStringBuffer msg("AzureBlob::%s failed (attempt %u/%u) for file %s at offset %llu, len %llu: %s",
+                      op, attempt, maxRetries, filename, pos, len, e.what());
+
+    handleRequestBackoff(msg, attempt, maxRetries);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 
-AzureFileWriteIO::AzureFileWriteIO(AzureFile * _file)
-: AzureFileIO(_file)
+
+AzureBlobReadIO::AzureBlobReadIO(AzureBlob * _file, const FileIOStats & _firstStats)
+: AzureBlobIO(_file, _firstStats)
 {
 }
 
-void AzureFileWriteIO::beforeDispose()
+size32_t AzureBlobReadIO::read(offset_t pos, size32_t len, void * data)
+{
+    CCycleTimer timer;
+    offset_t fileSize = file->size();
+    if (pos > fileSize)
+        return 0;
+
+    if (pos + len > fileSize)
+        len = fileSize - pos;
+
+    if (len == 0)
+        return 0;
+
+    Azure::Storage::Blobs::DownloadBlobToOptions options;
+    options.Range = Azure::Core::Http::HttpRange();
+    options.Range.Value().Offset = pos;
+    options.Range.Value().Length = len;
+    uint8_t * buffer = reinterpret_cast<uint8_t*>(data);
+    long int sizeRead = 0;
+
+    constexpr unsigned maxRetries = 4;
+    unsigned attempt = 0;
+    for (;;)
+    {
+        try
+        {
+            Azure::Response<Models::DownloadBlobToResult> result = blockBlobClient->DownloadTo(buffer, len, options);
+            Azure::Core::Http::HttpRange range = result.Value.ContentRange;
+            if (range.Length.HasValue())
+                sizeRead = range.Length.Value();
+            else
+                sizeRead = 0;
+            break;
+        }
+        catch (const Azure::Core::RequestFailedException& e)
+        {
+            //Future: update stats if the read fails... - use a local object with a destructor that updates the time
+            attempt++;
+            handleRequestException(e, "read", attempt, maxRetries, file->queryFilename(), pos, len);
+        }
+        catch (const std::exception& e)
+        {
+            attempt++;
+            handleRequestException(e, "read", attempt, maxRetries, file->queryFilename(), pos, len);
+        }
+    }
+
+    //Use fastAdd because multi threaded access is not supported by this class
+    stats.ioReads.fastAdd(1);
+    stats.ioReadCycles.fastAdd(timer.elapsedCycles());
+    stats.ioReadBytes.fastAdd(sizeRead);
+    return sizeRead;
+}
+
+offset_t AzureBlobReadIO::size()
+{
+    return file->size();
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
+AzureBlobWriteIO::AzureBlobWriteIO(AzureBlob * _file)
+: AzureBlobIO(_file)
+{
+}
+
+void AzureBlobWriteIO::beforeDispose()
 {
     try
     {
@@ -340,80 +422,145 @@ void AzureFileWriteIO::beforeDispose()
     }
 }
 
-offset_t AzureFileWriteIO::size()
+offset_t AzureBlobWriteIO::size()
 {
-    throwUnexpected();
+    return offset;
 }
 
-void AzureFileWriteIO::setSize(offset_t size)
+void AzureBlobWriteIO::setSize(offset_t size)
 {
     UNIMPLEMENTED;
 }
 
-void AzureFileWriteIO::flush()
+void AzureBlobWriteIO::flush()
 {
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 
-AzureFileAppendBlobWriteIO::AzureFileAppendBlobWriteIO(AzureFile * _file) : AzureFileWriteIO(_file)
+AzureBlobBlockBlobWriteIO::AzureBlobBlockBlobWriteIO(AzureBlob * _file) : AzureBlobWriteIO(_file)
 {
-    file->createAppendBlob();
-}
+    // Each block in a block blob needs to have a unique id.  This must be base64 encoded, and less than 64 characters in length (before encoding).
+    // Use the following to generate a unique id:
+    // * 32bit hash of the file name
+    // * 64bit timestamp
+    // * 32bit hash of get_cycles_now()
+    // * 2 underscores
+    //
+    // This is then encoded to a base64 base string.
+    //
+    // Each block id then has a 8 character blockid appended to this base-64 encoded base id.
+    // 18bytes pre-encoding.  24 bytes post encoding.  32 characters with the blockid appended.
 
-void AzureFileAppendBlobWriteIO::close()
-{
-}
+    file->invalidateMeta();
 
-offset_t AzureFileAppendBlobWriteIO::size()
-{
-#ifdef TRACE_AZURE
-    //The following is fairly unusual, and suggests an unnecessary operation.
-    DBGLOG("Warning: Size (%" I64F "u) requested on output IO", offset);
-#endif
-    return offset;
-}
+    MemoryBuffer blockId;
+    blockId.append(hashncz_fnv1a((const byte *)file->queryFilename(), fnvInitialHash32));
+    blockId.append(getTimeStampNowValue());
+    blockId.append(hashvalue_fnv1a(get_cycles_now(), fnvInitialHash32));
+    blockId.append('_').append('_');
+    //Ensure the base block id is a multiple of 3, so that when it is base 64 encoded there are no padding characters
+    dbgassertex(blockId.length() % 3 == 0);
+    JBASE64_Encode(blockId.bytes(), blockId.length(), baseBlockId, false);
 
-size32_t AzureFileAppendBlobWriteIO::write(offset_t pos, size32_t len, const void * data)
-{
-    if (len)
+    try
     {
-        if (offset != pos)
-            throw makeStringExceptionV(100, "Azure file output only supports append.  File %s %" I64F "u v %" I64F "u", file->queryFilename(), pos, offset);
+        Azure::Core::IO::MemoryBodyStream empty(nullptr, 0);
+        // The Azure SDK for C++ overwrites an existing blob by default when calling Upload().
+        // There is no 'Overwrite' option in UploadBlockBlobOptions; simply call Upload().
+        blockBlobClient->Upload(empty);
+    }
+    catch (const Azure::Core::RequestFailedException& e)
+    {
+        IException * error = makeStringExceptionV(1234, "Azure create block blob failed: %s (%d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+        throw error;
+    }
+}
 
-        stats.ioWrites++;
-        stats.ioWriteBytes += len;
-        CCycleTimer timer;
+std::string AzureBlobBlockBlobWriteIO::generateNextUniqueBlockId()
+{
+    ++blockIndex;
+    if (blockIndex > maxAzureBlockCount)
+        throw makeStringException(1234, "Too many blocks for Azure block blob");
+
+    //Ensure a multiple of 4 characters are appended - so that it is a valid base64 encoding
+    char blockIndexText[9];
+    sprintf(blockIndexText, "%08u", blockIndex);
+
+    return std::string(baseBlockId).append(blockIndexText);
+}
+
+
+size32_t AzureBlobBlockBlobWriteIO::write(offset_t pos, size32_t len, const void * data)
+{
+    if (len == 0)
+        return 0;
+
+    if (unlikely(pos != offset))
+        throw makeStringExceptionV(1234, "Azure Blobs only support appending writes, unexpected write position %llu, expected %llu", pos, offset);
+
+    file->invalidateMeta();
+
+    CCycleTimer timer;
+    std::string blockId = generateNextUniqueBlockId();
+    blockIds.push_back(blockId);
+
+    constexpr unsigned maxRetries = 4;
+    unsigned attempt = 0;
+    for (;;)
+    {
+        try
         {
-            file->appendToAppendBlob(len, data);
+            Azure::Core::IO::MemoryBodyStream content(reinterpret_cast<const uint8_t*>(data), len);
+            blockBlobClient->StageBlock(blockId, content);
             offset += len;
+            break;
         }
-        stats.ioWriteCycles += timer.elapsedCycles();
+        catch (const Azure::Core::RequestFailedException& e)
+        {
+            attempt++;
+            handleRequestException(e, "write", attempt, maxRetries, file->queryFilename(), pos, len);
+        }
+        catch (const std::exception& e)
+        {
+            attempt++;
+            handleRequestException(e, "write", attempt, maxRetries, file->queryFilename(), pos, len);
+        }
     }
+
+    stats.ioWrites.fastAdd(1);
+    stats.ioWriteCycles.fastAdd(timer.elapsedCycles());
+    stats.ioWriteBytes.fastAdd(len);
     return len;
 }
 
-//---------------------------------------------------------------------------------------------------------------------
-
-AzureFileBlockBlobWriteIO::AzureFileBlockBlobWriteIO(AzureFile * _file) : AzureFileWriteIO(_file)
+void AzureBlobBlockBlobWriteIO::close()
 {
-    file->createBlockBlob();
-}
+    if (committed)
+        return;
+    file->invalidateMeta();
 
-void AzureFileBlockBlobWriteIO::close()
-{
-
-}
-
-size32_t AzureFileBlockBlobWriteIO::write(offset_t pos, size32_t len, const void * data)
-{
-    if (len)
+    constexpr unsigned maxRetries = 4;
+    unsigned attempt = 0;
+    for (;;)
     {
-        assertex(offset == pos);
-        file->appendToBlockBlob(len, data);
-        offset += len;
+        try
+        {
+            blockBlobClient->CommitBlockList(blockIds);
+            committed = true;
+            break;
+        }
+        catch (const Azure::Core::RequestFailedException& e)
+        {
+            attempt++;
+            handleRequestException(e, "close", attempt, maxRetries, file->queryFilename(), offset, 0);
+        }
+        catch (const std::exception& e)
+        {
+            attempt++;
+            handleRequestException(e, "close", attempt, maxRetries, file->queryFilename(), offset, 0);
+        }
     }
-    return len;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -434,7 +581,7 @@ static std::string getBlobUrl(const char *account, const char * container, const
     return url.append("/").append(blob);
 }
 
-AzureFile::AzureFile(const char *_azureFileName) : fullName(_azureFileName)
+AzureBlob::AzureBlob(const char *_azureFileName) : fullName(_azureFileName)
 {
     if (startsWith(fullName, azureBlobPrefix))
     {
@@ -477,7 +624,7 @@ AzureFile::AzureFile(const char *_azureFileName) : fullName(_azureFileName)
             if (!endDevice || (*endDevice != '/'))
                 throw makeStringExceptionV(99, "Unexpected end of device partition %s", fullName.str());
 
-            VStringBuffer childPath("containers[%d]", device-1);
+            VStringBuffer childPath("containers[%d]", device);
             IPropertyTree * deviceInfo = storageapi->queryPropTree(childPath);
             if (deviceInfo)
             {
@@ -508,59 +655,9 @@ AzureFile::AzureFile(const char *_azureFileName) : fullName(_azureFileName)
 
         //I am not at all sure we need to split this apart, only to join in back together again.
         slash = strchr(filename, '/');
-        assertex(slash);  // could probably relax this....
-        containerName.set(filename, slash-filename);
-        blobName.set(slash+1);
-    }
-    else if (startsWith(fullName, azureFilePrefix))
-    {
-        const char * filename = fullName + strlen(azureFilePrefix);
-        if (filename[0] != '/' || filename[1] != '/')
-            throw makeStringException(99, "// missing from azure: file reference");
+        if (!slash)
+            throw makeStringExceptionV(99, "Missing container in azureblob: file reference '%s'", filename);
 
-        //Allow the access key to be provided after the // before a @  i.e. azure://<account>:<access-key>@...
-        filename += 2;
-
-        //Allow the account and key to be quoted so that it can support slashes within the access key (since they are part of base64 encoding)
-        //e.g. i.e. azure://'<account>:<access-key>'@...
-        StringBuffer accessExtra;
-        if (filename[0] == '"' || filename[0] == '\'')
-        {
-            const char * endQuote = strchr(filename + 1, filename[0]);
-            if (!endQuote)
-                throw makeStringException(99, "access key is missing terminating quote");
-            accessExtra.append(endQuote - (filename + 1), filename + 1);
-            filename = endQuote+1;
-            if (*filename != '@')
-                throw makeStringException(99, "missing @ following quoted access key");
-            filename++;
-        }
-
-        const char * at = strchr(filename, '@');
-        const char * slash = strchr(filename, '/');
-        assertex(slash);  // could probably relax this....
-
-        //Possibly pedantic - only spot @s before the first leading /
-        if (at && (!slash || at < slash))
-        {
-            accessExtra.append(at - filename, filename);
-            filename = at+1;
-        }
-
-        if (accessExtra)
-        {
-            const char * colon = strchr(accessExtra, ':');
-            if (colon)
-            {
-                accountName.set(accessExtra, colon-accessExtra);
-                secretName.set(colon+1);
-            }
-            else
-            {
-                accountName.set(accessExtra); // Key is retrieved from the secrets
-                secretName.set("azure-").append(accountName);
-            }
-        }
         containerName.set(filename, slash-filename);
         blobName.set(slash+1);
     }
@@ -570,7 +667,7 @@ AzureFile::AzureFile(const char *_azureFileName) : fullName(_azureFileName)
     blobUrl = ::getBlobUrl(accountName, containerName, blobName);
 }
 
-std::shared_ptr<StorageSharedKeyCredential> AzureFile::getSharedKeyCredentials() const
+std::shared_ptr<StorageSharedKeyCredential> AzureBlob::getSharedKeyCredentials() const
 {
     StringBuffer key;
     getSecretValue(key, "storage", secretName, "key", true);
@@ -597,12 +694,12 @@ std::shared_ptr<StorageSharedKeyCredential> AzureFile::getSharedKeyCredentials()
     }
 }
 
-std::string AzureFile::getBlobUrl() const
+std::string AzureBlob::getBlobUrl() const
 {
     return blobUrl;
 }
 
-std::shared_ptr<BlobContainerClient> AzureFile::getBlobContainerClient() const
+std::shared_ptr<BlobContainerClient> AzureBlob::getBlobContainerClient() const
 {
     std::string blobContainerUrl = getContainerUrl(accountName, containerName);
 
@@ -627,31 +724,30 @@ std::shared_ptr<BlobContainerClient> AzureFile::getBlobContainerClient() const
     }
 }
 
-template<typename T>
-std::shared_ptr<T> AzureFile::getClient() const
+SharedBlobClient AzureBlob::getBlobClient() const
 {
     if (useManagedIdentity)
     {
         // For managed identity, create client without credentials
         // The Azure SDK will automatically use managed identity when no explicit credentials are provided
         // and the application is running in an Azure environment (VM, App Service, etc.)
-        return std::make_shared<T>(getBlobUrl());
+        return std::make_shared<Azure::Storage::Blobs::BlockBlobClient>(getBlobUrl());
     }
     else
     {
         auto cred = getSharedKeyCredentials();
-        return std::make_shared<T>(getBlobUrl(), cred);
+        return std::make_shared<Azure::Storage::Blobs::BlockBlobClient>(getBlobUrl(), cred);
     }
 }
 
-bool AzureFile::createDirectory()
+bool AzureBlob::createDirectory()
 {
     auto blobContainerClient = getBlobContainerClient();
     try
     {
         Azure::Response<Models::CreateBlobContainerResult> result = blobContainerClient->CreateIfNotExists();
         if (result.Value.Created==false)
-            DBGLOG("AzureFile::createDirectory: container not created because it already exists");
+            DBGLOG("AzureBlob::createDirectory: container not created because it already exists");
         return true;
     }
     catch (const Azure::Core::RequestFailedException& e)
@@ -661,75 +757,8 @@ bool AzureFile::createDirectory()
     }
 }
 
-void AzureFile::createAppendBlob()
-{
-    auto appendBlobClient = getClient<AppendBlobClient>();
-    try
-    {
-        Azure::Response<Models::CreateAppendBlobResult> result = appendBlobClient->CreateIfNotExists();
-        if (result.Value.Created==false)
-            OERRLOG("Azure append blob (container %s blob %s): blob not created", containerName.str(), blobName.str());
-        else
-        {
-            setProperties(0, result.Value.LastModified, result.Value.LastModified);
-        }
-    }
-    catch (const Azure::Core::RequestFailedException& e)
-    {
-        IException * error = makeStringExceptionV(1234, "Azure create append blob failed: %s (%d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
-        throw error;
-    }
-}
 
-
-void AzureFile::appendToAppendBlob(size32_t len, const void * data)
-{
-    auto appendBlobClient = getClient<AppendBlobClient>();
-    try
-    {
-        // MemoryBodyStream clones the data.  Future: use class derived from Azure::Core::IO::BodyStream to avoid creating a copy of data
-        Azure::Core::IO::MemoryBodyStream content(reinterpret_cast <const uint8_t *>(data), len);
-        appendBlobClient->AppendBlock(content);
-    }
-    catch (const Azure::Core::RequestFailedException& e)
-    {
-        IException * error = makeStringExceptionV(1234, "Azure append blob failed: %s (%d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
-        throw error;
-    }
-}
-
-void AzureFile::createBlockBlob()
-{
-    auto blockBlobClient = getClient<BlockBlobClient>();
-    try
-    {
-        Azure::Core::IO::MemoryBodyStream empty(nullptr, 0);
-        Azure::Response<Models::UploadBlockBlobResult> result = blockBlobClient->Upload(empty); // need to do this to create an empty blob
-        setProperties(0, result.Value.LastModified, result.Value.LastModified);
-    }
-    catch (const Azure::Core::RequestFailedException& e)
-    {
-        IException * error = makeStringExceptionV(1234, "Azure create block blob failed: %s (%d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
-        throw error;
-    }
-}
-
-void AzureFile::appendToBlockBlob(size32_t len, const void * data)
-{
-    auto appendBlobClient = getClient<AppendBlobClient>();
-    try
-    {
-        Azure::Core::IO::MemoryBodyStream content(reinterpret_cast <const uint8_t *>(data), len);
-        appendBlobClient->AppendBlock(content);
-    }
-    catch (const Azure::Core::RequestFailedException& e)
-    {
-        IException * error = makeStringExceptionV(1234, "Azure append block blob failed: %s (%d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
-        throw error;
-    }
-}
-
-bool AzureFile::getTime(CDateTime * createTime, CDateTime * modifiedTime, CDateTime * accessedTime)
+bool AzureBlob::getTime(CDateTime * createTime, CDateTime * modifiedTime, CDateTime * accessedTime)
 {
     ensureMetaData();
     if (createTime)
@@ -747,37 +776,8 @@ bool AzureFile::getTime(CDateTime * createTime, CDateTime * modifiedTime, CDateT
     return false;
 }
 
-offset_t AzureFile::read(offset_t pos, size32_t len, void * data, FileIOStats & stats)
-{
-    CCycleTimer timer;
-    auto blockBlobClient = getClient<BlockBlobClient>();
 
-    Azure::Storage::Blobs::DownloadBlobToOptions options;
-    options.Range = Azure::Core::Http::HttpRange();
-    options.Range.Value().Offset = pos;
-    options.Range.Value().Length = len;
-    uint8_t * buffer = reinterpret_cast<uint8_t*>(data);
-    long int sizeRead = 0;
-    try
-    {
-        Azure::Response<Models::DownloadBlobToResult> result = blockBlobClient->DownloadTo(buffer, len, options);
-        Azure::Core::Http::HttpRange range = result.Value.ContentRange;
-        if (range.Length.HasValue())
-            sizeRead = range.Length.Value();
-    }
-    catch (const Azure::Core::RequestFailedException& e)
-    {
-        IException * error = makeStringExceptionV(1234, "Azure read block blob failed: %s (%d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
-        throw error;
-    }
-
-    stats.ioReads++;
-    stats.ioReadCycles += timer.elapsedCycles();
-    stats.ioReadBytes += sizeRead;
-    return sizeRead;
-}
-
-IFileIO * AzureFile::createFileReadIO()
+IFileIO * AzureBlob::createFileReadIO()
 {
     //Read the first chunk of the file.  If it is the full file then fill in the meta information, otherwise
     //ensure the meta information is calculated before creating the file IO object
@@ -787,15 +787,15 @@ IFileIO * AzureFile::createFileReadIO()
     if (!exists())
         return nullptr;
 
-    return new AzureFileReadIO(this, readStats);
+    return new AzureBlobReadIO(this, readStats);
 }
 
-IFileIO * AzureFile::createFileWriteIO()
+IFileIO * AzureBlob::createFileWriteIO()
 {
-    return new AzureFileAppendBlobWriteIO(this);
+    return new AzureBlobBlockBlobWriteIO(this);
 }
 
-void AzureFile::ensureMetaData()
+void AzureBlob::ensureMetaData()
 {
     CriticalBlock block(cs);
     if (haveMeta)
@@ -805,10 +805,10 @@ void AzureFile::ensureMetaData()
     haveMeta = true;
 }
 
-void AzureFile::gatherMetaData()
+void AzureBlob::gatherMetaData()
 {
     CCycleTimer timer;
-    auto blobClient = getClient<BlobClient>();
+    auto blobClient = getBlobClient();
     try
     {
         Azure::Response<Models::BlobProperties> properties = blobClient->GetProperties();
@@ -822,9 +822,9 @@ void AzureFile::gatherMetaData()
     }
 }
 
-bool AzureFile::remove()
+bool AzureBlob::remove()
 {
-    auto blobClient = getClient<BlobClient>();
+    auto blobClient = getBlobClient();
     try
     {
         Azure::Response<Models::DeleteBlobResult> resp = blobClient->DeleteIfExists();
@@ -842,7 +842,7 @@ bool AzureFile::remove()
     return false;
 }
 
-void AzureFile::setProperties(int64_t _blobSize, Azure::DateTime _lastModified, Azure::DateTime _createdOn)
+void AzureBlob::setProperties(int64_t _blobSize, Azure::DateTime _lastModified, Azure::DateTime _createdOn)
 {
     haveMeta = true;
     fileExists = true;
@@ -853,9 +853,9 @@ void AzureFile::setProperties(int64_t _blobSize, Azure::DateTime _lastModified, 
 
 //---------------------------------------------------------------------------------------------------------------------
 
-static IFile *createAzureFile(const char *azureFileName)
+static IFile *createAzureBlob(const char *azureFileName)
 {
-    return new AzureFile(azureFileName);
+    return new AzureBlob(azureFileName);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -1106,8 +1106,8 @@ class AzureFileHook : public CInterfaceOf<IContainedFileHook>
 public:
     virtual IFile * createIFile(const char *fileName) override
     {
-        if (isAzureFileName(fileName))
-            return createAzureFile(fileName);
+        if (isAzureBlobName(fileName))
+            return createAzureBlob(fileName);
         else
             return nullptr;
     }
@@ -1119,17 +1119,11 @@ public:
     }
 
 protected:
-    static bool isAzureFileName(const char *fileName)
+    static bool isAzureBlobName(const char *fileName)
     {
         if (startsWith(fileName, azureBlobPrefix))
             return true;
-        if (!startsWith(fileName, azureFilePrefix))
-            return false;
-        const char * filename = fileName + strlen(azureFilePrefix);
-        const char * slash = strchr(filename, '/');
-        if (!slash)
-            return false;
-        return true;
+        return false;
     }
 } *azureFileHook;
 
