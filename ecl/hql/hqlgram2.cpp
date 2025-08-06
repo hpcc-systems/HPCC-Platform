@@ -49,7 +49,6 @@
 #include "hqlrepository.hpp"
 #include "hqlir.hpp"
 #include "reservedwords.hpp"
-#include "hqlcache.hpp"
 
 #define ADD_IMPLICIT_FILEPOS_FIELD_TO_INDEX         TRUE
 //#define USE_WHEN_FOR_SIDEEFFECTS
@@ -6499,7 +6498,7 @@ void HqlGram::reportErrorUnexpectedX(const attribute& errpos, IAtom * unexpected
 
 static bool includeError(HqlLookupContext & ctx, WarnErrorCategory category)
 {
-    if (ctx.syntaxChecking() && !ctx.ignoreSimplified())
+    if (ctx.syntaxChecking())
     {
         if (category==CategorySyntax || category==CategoryError || category==CategoryMistake)
             return true;
@@ -12872,8 +12871,6 @@ extern HQL_API void parseModule(IHqlScope *scope, IFileContents * contents, HqlL
         }
         E->Release();
     }
-    if (ctx.hasCacheLocation())
-        moduleCtx.createCache(false);
 
     moduleCtx.noteEndModule(success);
 }
@@ -12902,25 +12899,10 @@ bool parseForwardModuleMember(HqlGramCtx & _parent, IHqlScope *scope, IHqlExpres
     return (prevErrors == ctx.errs->errCount());
 }
 
-// If ctx.hasCacheLocation() then the cache entry is always updated with the dependency information (unless it is unavailable i.e. a forward scope)
-// if ctx.ignoreCache() then the contents of the cache are not used, but the cache is still updated
-// if ctx.regenerateCache() then the contents of the cache are not used and the cache is forced to be updated
 void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContext & ctx, IIdAtom * name, const char * fullName)
 {
-    bool cacheUptoDate = false;
     HqlLookupContext attrCtx(ctx);
     attrCtx.noteBeginAttribute(scope, contents, name);
-
-    // Set cacheUptoDate to true if cache is upto date
-    // Set usingSimplified to true if cache is upto date and option to ignoreSimplified & ignoreCache are both false
-    // Use simplified expression from cache if usingSimplified is true & syntaxChecking
-    // * None of these are set of ctx.regenerateCache==true, as the simplified expression & cache will need to regenerated.
-    if (ctx.hasCacheLocation() && !ctx.regenerateCache())
-    {
-        HqlParseContext & parseContext = ctx.queryParseContext();
-        Owned<IEclCachedDefinition> cached = parseContext.cache->getDefinition(fullName);
-        cacheUptoDate = cached->isUpToDate(parseContext.optionHash);
-    }
 
     //The attribute will be added to the current scope as a side-effect of parsing the attribute.
     try
@@ -12944,19 +12926,6 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
     OwnedHqlExpr parsed = scope->lookupSymbol(name, LSFsharedOK|LSFnoreport, ctx);
     ctx.incrementAttribsProcessed();
 
-    if (parsed)
-    {
-        //Forward scopes cannot be cached because the dependencies are not known as it is parsed
-        const bool canCache = parsed->getOperator() != no_forwardscope;
-        if (canCache)
-        {
-            const bool isMacro = parsed->isMacro();
-            const bool updateCache = ctx.hasCacheLocation() && (!cacheUptoDate || ctx.regenerateCache());
-            if (updateCache)
-                attrCtx.createCache(isMacro);
-        }
-    }
-
     attrCtx.noteEndAttribute(true);
     if (attrCtx.queryParseContext().timeParser)
     {
@@ -12970,7 +12939,6 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
 }
 
 // Parses string containing ecl definition and returns hql expression
-// (Will not generate simplified expression cache as a side affect)
 IHqlExpression * parseDefinition(const char * ecl, IIdAtom * name, MultiErrorReceiver &errors)
 {
     Owned<IHqlScope> scope = createScope();

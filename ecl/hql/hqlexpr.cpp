@@ -917,13 +917,6 @@ void HqlParseContext::setGatherMeta(const MetaOptions & options)
 }
 
 
-void HqlParseContext::setCacheLocation(const char * path)
-{
-    StringBuffer expandedPath;
-    makeAbsolutePath(path, expandedPath, false);
-    metaOptions.cacheLocation.set(expandedPath);
-}
-
 IPropertyTree * HqlParseContext::beginMetaSource(IFileContents * contents)
 {
     ISourcePath * sourcePath = contents->querySourcePath();
@@ -1088,55 +1081,6 @@ bool HqlParseContext::checkEndMeta()
     return wasGathering;
 }
 
-bool HqlParseContext::createCache(bool isMacro)
-{
-    StringBuffer fullName;
-    StringBuffer baseFilename;
-
-    getCacheBaseFilename(fullName, baseFilename);
-    if (!baseFilename)
-        return false;
-
-    if (!recursiveCreateDirectoryForFile(baseFilename))
-        return false;
-    StringBuffer filename(baseFilename);
-    filename.append(".cache");
-    StringBuffer tmpfilename;
-    makeTempCopyName(tmpfilename, filename); // stop partially written files being used
-    OwnedIFile cacheFile = createIFile(tmpfilename);
-    {
-        //Theoretically there is a potential for multiple processes to generate this file at the same time
-        //but since the create is unconditional, each process will create an independent file, and
-        //only one self consistent file will remain at the end.  Which survives does not matter.
-        OwnedIFileIO cacheIO = cacheFile->open(IFOcreate);
-        Owned<IIOStream> stream = createIOStream(cacheIO);
-        stream.setown(createBufferedIOStream(stream));
-        writeStringToStream(*stream, "<Cache");
-        VStringBuffer extraText(" hash=\"%" I64F "d\"", (__int64) optionHash);
-        if (isMacro)
-            extraText.append(" isMacro=\"1\"");
-        writeStringToStream(*stream, extraText);
-        writeStringToStream(*stream, ">\n");
-        if (curMeta().dependencies)
-            saveXML(*stream, curMeta().dependencies, 0, XML_Embed|XML_LineBreak);
-
-        writeStringToStream(*stream, "</Cache>\n");
-        stream->flush();
-    }
-    try
-    {
-        cacheFile->move(filename);
-    }
-    catch (IException * e)
-    {
-        // compilation shouldn't fail just because the cache couldn't be copied over
-        // (Copy over may fail when another process has created cache and using cache already)
-        DBGLOG(e);
-        e->Release();
-    }
-    return true;
-}
-
 void HqlParseContext::finishMeta(bool isSeparateFile, bool success, bool generateMeta)
 {
     if (metaStack.empty())  // paranoid - could only happen on an internal error
@@ -1277,25 +1221,6 @@ void HqlParseContext::createDependencyEntry(IHqlScope * parentScope, IIdAtom * i
     metaStack.tos().dependencies = attr;
 }
 
-void HqlParseContext::getCacheBaseFilename(StringBuffer & fullName, StringBuffer & baseFilename)
-{
-    assertex(curMeta().dependencies);
-
-    const char * module = curMeta().dependencies->queryProp("@module");
-    const char * attr = curMeta().dependencies->queryProp("@name");
-    fullName.append(module);
-    if (!isEmptyString(module) && !isEmptyString(attr))
-        fullName.append(".");
-    fullName.append(attr);
-
-    if (fullName && !hasPrefix(fullName, INTERNAL_LOCAL_MODULE_NAME, true))
-    {
-        baseFilename.append(metaOptions.cacheLocation);
-        addPathSepChar(baseFilename);
-        convertSelectsToPath(baseFilename, fullName);
-    }
-
-}
 //---------------------------------------------------------------------------------------------------------------------
 
 

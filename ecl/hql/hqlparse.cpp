@@ -1798,16 +1798,7 @@ IValue *HqlLex::foldConstExpression(const ECLlocation & errpos, IHqlExpression *
     }
 
     if (!value.get())
-    {
-        if (yyParser->lookupCtx.syntaxChecking() && yyParser->lookupCtx.hasCacheLocation())
-        {
-            reportError(errpos, ERR_EXPECTED_CONST, "Unable to expand constant expression when using cache. Try disabling cache."); // errpos could be better
-        }
-        else
-        {
-            reportError(errpos, ERR_EXPECTED_CONST, "Constant expression expected"); // errpos could be better
-        }
-    }
+        reportError(errpos, ERR_EXPECTED_CONST, "Constant expression expected"); // errpos could be better
 
     return value.getClear();
 }

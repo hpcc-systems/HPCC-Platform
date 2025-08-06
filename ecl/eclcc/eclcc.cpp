@@ -356,7 +356,6 @@ public:
     virtual IInterface * getGitUpdateLock(const char * key) override;
 
 protected:
-    void appendNeverSimplifyList(const char *attribsList);
     bool checkDaliConnected() const;
     void addFilenameDependency(StringBuffer & target, EclCompileInstance & instance, const char * filename);
     void applyApplicationOptions(IWorkUnit * wu);
@@ -448,8 +447,6 @@ protected:
     StringArray allowedPermissions;
     StringArray allowSignedPermissions;
     StringArray deniedPermissions;
-    StringAttr optMetaLocation;
-    StringBuffer neverSimplifyRegEx;
     StringAttr optDefaultGitPrefix;
     StringAttr optGitLock; // A key used to lock access to git updates
     StringAttr optGitUser;
@@ -499,12 +496,7 @@ protected:
     bool optFastSyntax = false;
     bool optCheckIncludePaths = true;
     bool optXml = false;
-    bool optTraceCache = false;
-    bool optVerifySimplified = false;
-    bool optRegenerateCache = false;
     bool optIgnoreUnknownImport = false;
-    bool optIgnoreCache = false;
-    bool optIgnoreSimplified = false;
     bool optExtraStats = false;
     bool optPruneArchive = true;
     bool optFetchRepos = true;
@@ -1373,30 +1365,7 @@ void EclCC::processSingleQuery(const EclRepositoryManager & localRepositoryManag
     if (instance.inputFile)
         setActiveSource(instance.inputFile->queryFilename());
 
-    Owned<IEclCachedDefinitionCollection> cache;
     hash64_t optionHash = 0;
-    if (optMetaLocation)
-    {
-        //Update the hash to include information about which options affect how symbols are processed.  It should only include options that
-        //affect how the code is parsed, not how it is generated.
-        //Include path
-        optionHash = rtlHash64VStr(eclLibraryPath, optionHash);
-        if (!optNoBundles)
-            optionHash = rtlHash64VStr(eclBundlePath, optionHash);
-        if (!optNoStdInc)
-            optionHash = rtlHash64VStr(stdIncludeLibraryPath, optionHash);
-        optionHash = rtlHash64VStr(includeLibraryPath, optionHash);
-
-        //Any explicit -D definitions
-        ForEachItemIn(i, definitions)
-            optionHash = rtlHash64VStr(definitions.item(i), optionHash);
-
-        optionHash = rtlHash64Data(sizeof(optLegacyImport), &optLegacyImport, optionHash);
-        optionHash = rtlHash64Data(sizeof(optLegacyWhen), &optLegacyWhen, optionHash);
-        //And create a cache instances
-        cache.setown(createEclFileCachedDefinitionCollection(instance.dataServer, optMetaLocation));
-    }
-
     if (instance.archive)
     {
         instance.archive->setPropBool("@legacyImport", instance.legacyImport);
@@ -1410,41 +1379,13 @@ void EclCC::processSingleQuery(const EclRepositoryManager & localRepositoryManag
         }
     }
 
-    if (withinRepository && instance.archive && cache)
-    {
-        Owned<IEclCachedDefinition> main = cache->getDefinition(queryAttributePath);
-        if (main->isUpToDate(optionHash))
-        {
-            if (main->hasKnownDependents())
-            {
-                DBGLOG("Create archive from cache for %s", queryAttributePath);
-                updateArchiveFromCache(instance.archive, cache, queryAttributePath);
-                return;
-            }
-            UWARNLOG("Cannot create archive from cache for %s because it is a macro", queryAttributePath);
-        }
-        else
-            UWARNLOG("Cannot create archive from cache for %s because it is not up to date", queryAttributePath);
-    }
-
     {
         //Minimize the scope of the parse context to reduce lifetime of cached items.
         WuStatisticTarget statsTarget(instance.wu, "eclcc");
         HqlParseContext parseCtx(&instance, instance.archive, statsTarget);
-        parseCtx.cache = cache;
         parseCtx.optionHash = optionHash;
         if (optSyntax)
             parseCtx.setSyntaxChecking();
-        if (optVerifySimplified)
-            parseCtx.setCheckSimpleDef();
-        if (optRegenerateCache)
-            parseCtx.setRegenerateCache();
-        if (optIgnoreCache)
-            parseCtx.setIgnoreCache();
-        if (optIgnoreSimplified)
-            parseCtx.setIgnoreSimplified();
-        if (neverSimplifyRegEx)
-            parseCtx.setNeverSimplify(neverSimplifyRegEx.str());
 
         //Allow fastsyntax to be specified in the archive to aid with regression testing
         if (optFastSyntax || (instance.srcArchive && instance.srcArchive->getPropBool("@fastSyntax", false)))
@@ -1469,8 +1410,6 @@ void EclCC::processSingleQuery(const EclRepositoryManager & localRepositoryManag
         {
             //Currently the meta information is generated as a side-effect of parsing the attributes, so disable
             //using the simplified expressions if meta information is requested.  HPCC-20716 will improve this.
-            parseCtx.setIgnoreCache();
-
             HqlParseContext::MetaOptions options;
             options.includePublicDefinitions = instance.wu->getDebugValueBool("metaIncludePublic", true);
             options.includePrivateDefinitions = instance.wu->getDebugValueBool("metaIncludePrivate", true);
@@ -1483,15 +1422,12 @@ void EclCC::processSingleQuery(const EclRepositoryManager & localRepositoryManag
             parseCtx.setGatherMeta(options);
         }
 
-        if (optMetaLocation && !instance.fromArchive)
-            parseCtx.setCacheLocation(optMetaLocation);
-
         setLegacyEclSemantics(instance.legacyImport, instance.legacyWhen);
 
         parseCtx.ignoreUnknownImport = instance.ignoreUnknownImport;
         parseCtx.ignoreSignatures = instance.ignoreSignatures;
         bool exportDependencies = instance.wu->getDebugValueBool("exportDependencies",false);
-        if (exportDependencies || optMetaLocation)
+        if (exportDependencies)
             parseCtx.nestedDependTree.setown(createPTree("Dependencies", ipt_fast));
 
         addTimeStamp(instance.wu, SSToperation, ">compile:>parse", StWhenStarted);
@@ -2505,30 +2441,6 @@ void EclCompileInstance::getTargetPlatform(StringBuffer & result)
         return eclcc.getTargetPlatform(result);
 }
 
-void EclCC::appendNeverSimplifyList(const char *attribsList)
-{
-    const char * p = attribsList;
-    while (*p)
-    {
-        StringBuffer attribRegex;
-        if (*p == ',') p++;
-        for (; *p && *p != ','; p++)
-        {
-            if (*p=='/' || *p=='.' || *p=='\\')
-                attribRegex.append("\\.");
-            else
-                attribRegex.append(*p);
-        }
-        if (attribRegex.length() > 0)
-        {
-            if (neverSimplifyRegEx.length() > 0)
-                neverSimplifyRegEx.append("|");
-            // Match attribute and all child scopes
-            neverSimplifyRegEx.append(attribRegex.str()).append("(\\..+)?");
-        }
-    }
-}
-
 void EclCC::noteCluster(const char *clusterName)
 {
 }
@@ -3089,14 +3001,11 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         }
         else if (iter.matchOption(tempArg, "--metacache"))
         {
-            if (!tempArg.isEmpty())
-                optMetaLocation.set(tempArg);
-            else
-                optMetaLocation.clear();
+            //ignore - backward compatibility only
         }
         else if (iter.matchOption(tempArg, "--neversimplify"))
         {
-            appendNeverSimplifyList(tempArg);
+            //ignore - backward compatibility only
         }
         else if (iter.matchFlag(optGenerateMeta, "-M"))
         {
@@ -3194,14 +3103,17 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
             if (!setTargetPlatformOption(tempArg.get(), optTargetClusterType))
                 return 1;
         }
-        else if (iter.matchFlag(optTraceCache, "--tracecache"))
+        else if (iter.matchFlag(tempBool, "--tracecache"))
         {
+            //ignore - backward compatibility only
         }
-        else if (iter.matchFlag(optVerifySimplified, "--internalverifysimplified"))
+        else if (iter.matchFlag(tempBool, "--internalverifysimplified"))
         {
+            //ignore - backward compatibility only
         }
-        else if (iter.matchFlag(optRegenerateCache, "--regeneratecache"))
+        else if (iter.matchFlag(tempBool, "--regeneratecache"))
         {
+            //ignore - backward compatibility only
         }
         else if (iter.matchFlag(tempArg, "-R"))
         {
@@ -3209,11 +3121,13 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
                 throw MakeStringException(99, "'-R%s' should have form -Rrepo[#version]=path", tempArg.str());
             repoMappings.append(tempArg);
         }
-        else if (iter.matchFlag(optIgnoreCache, "--internalignorecache"))
+        else if (iter.matchFlag(tempBool, "--internalignorecache"))
         {
+            //ignore - backward compatibility only
         }
-        else if (iter.matchFlag(optIgnoreSimplified, "--ignoresimplified"))
+        else if (iter.matchFlag(tempBool, "--ignoresimplified"))
         {
+            //ignore - backward compatibility only
         }
         else if (iter.matchFlag(optExtraStats, "--internalextrastats"))
         {
@@ -3356,8 +3270,6 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         title.append(inputFileNames.item(0)).newline();
         initLeakCheck(title);
     }
-
-    setTraceCache(optTraceCache);
 
     if (inputFileNames.ordinality() == 0 && !optKeywords)
     {
