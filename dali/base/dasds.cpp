@@ -5695,7 +5695,6 @@ public:
     unsigned saveStoreToFile(const IPropertyTree *root, IFileIO *iFileIOTmpStore, StoreFormat format)
     {
         const bool isBinary = (format == StoreFormat::BINARY);
-        LOG(MCdebugProgress, "Saving store to %s", isBinary ? "binary" : "XML");
         assertex(root);
         assertex(iFileIOTmpStore);
 
@@ -5774,20 +5773,38 @@ public:
             unsigned binaryCrc{0};
             bool binaryStoreSaved = false;
 
-            if (saveAsync)
+            if (saveAsync && saveBinary)
             {
-                // Execute saves in parallel
+                // Execute saves in parallel only if both saves are enabled
                 Owned<CCompletionTask> completed = new CCompletionTask();
 
                 completed->spawn([this, &xmlCrc, &root, &iXmlFileIOTmpStore]() {
+                    LOG(MCdebugProgress, "Saving store async to XML");
                     xmlCrc = saveStoreToFile(root, iXmlFileIOTmpStore, StoreFormat::XML);
                 });
 
                 if (saveBinary)
-                    completed->spawn([this, &binaryCrc, &root, &iBinaryFileIOTmpStore, &binaryStoreSaved]() {
-                        binaryCrc = saveStoreToFile(root, iBinaryFileIOTmpStore, StoreFormat::BINARY);
-                        binaryStoreSaved = true;
-                    });
+                {
+                    try
+                    {
+                        completed->spawn([this, &binaryCrc, &root, &iBinaryFileIOTmpStore, &binaryStoreSaved]() {
+                            LOG(MCdebugProgress, "Saving store async to binary");
+                            binaryCrc = saveStoreToFile(root, iBinaryFileIOTmpStore, StoreFormat::BINARY);
+                            binaryStoreSaved = true;
+                        });
+                    }
+                    catch (IException *e)
+                    {
+                        OWARNLOG(e, "Exception - Error saving async binary store file");
+                        e->Release();
+                        // If the binary save fails we ignore it and continue to allow the XML save to complete
+                    }
+                    catch (DALI_CATCHALL)
+                    {
+                        OWARNLOG("Unknown exception - Error saving async binary store file");
+                        // If the binary save fails we ignore it and continue to allow the XML save to complete
+                    }
+                }
 
                 // Wait for all saves to complete
                 completed->decAndWait();
@@ -5795,11 +5812,27 @@ public:
             else
             {
                 // Execute saves synchronously
+                LOG(MCdebugProgress, "Saving store to XML");
                 xmlCrc = saveStoreToFile(root, iXmlFileIOTmpStore, StoreFormat::XML);
 
                 if (saveBinary)
                 {
-                    binaryCrc = saveStoreToFile(root, iBinaryFileIOTmpStore, StoreFormat::BINARY);
+                    LOG(MCdebugProgress, "Saving store to binary");
+                    try
+                    {
+                        binaryCrc = saveStoreToFile(root, iBinaryFileIOTmpStore, StoreFormat::BINARY);
+                    }
+                    catch (IException *e)
+                    {
+                        OWARNLOG(e, "Exception - Error saving binary store file");
+                        e->Release();
+                        // If the binary save fails we ignore it and continue to allow the XML post processing to complete
+                    }
+                    catch (DALI_CATCHALL)
+                    {
+                        OWARNLOG("Unknown exception - Error saving binary store file");
+                        // If the binary save fails we ignore it and continue to allow the XML post processing to complete
+                    }
                     binaryStoreSaved = true;
                 }
             }
