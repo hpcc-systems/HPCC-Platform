@@ -621,6 +621,8 @@ public:
         forceStartInputsSequentially = _graphNode.getPropBool("hint[@name='startinputssequentially']/@value", _queryFactory.queryOptions().startInputsSequentially);
         defaultActivityCharacteristics = _graphNode.getPropBool("hint[@name='hasrowlatency']/@value", false) ? RSC::hasRowLatency : RSC::none;
         isCodeSigned = ::isActivityCodeSigned(_graphNode);
+
+        heapFlags |= roxiemem::RoxieHeapFlags::RHFblocked; // All activities use a blocked allocator, unless they explicitly disable
     }
     
     ~CRoxieServerActivityFactoryBase()
@@ -1855,6 +1857,8 @@ public:
                     dependencies.item(idx).reset();
                 if (input)
                     input->reset();
+                if (rowAllocator)
+                    rowAllocator->emptyCache();
             }
         }
         aborted = false;
@@ -2207,6 +2211,8 @@ public:
     }
     virtual void reset()
     {
+        if (rowAllocator)
+            rowAllocator->emptyCache();
         stopped = false;
         abortRequested.store(false, std::memory_order_relaxed);
     }
@@ -4936,6 +4942,9 @@ public:
         mc.clear(); // Or we won't free memory for graphs that get recreated
         mu.clear(); //ditto
         deferredStart = false;
+        if (rowAllocator)
+            rowAllocator->emptyCache();
+
         // NOTE: do NOT clear mergeOrder - this is set at create time not per child query
     }
 
@@ -8183,7 +8192,11 @@ class CRoxieServerHashDedupActivity : public CRoxieServerActivity
 
         void reset()
         {
-            kill(); 
+            kill();
+            if (elementRowAllocator)
+                elementRowAllocator->emptyCache();
+            if (keyRowAllocator)
+                keyRowAllocator->emptyCache();
         }
 
         bool insert(const void * row)
@@ -13280,6 +13293,10 @@ public:
         defaultLeft.clear();
         sortedLeft.clear();
         groupedSortedRight.clear();
+        if (defaultRightAllocator)
+            defaultRightAllocator->emptyCache();
+        if (defaultLeftAllocator)
+            defaultLeftAllocator->emptyCache();
     }
 
     virtual void setInput(unsigned idx, unsigned _sourceIdx, IFinalRoxieInput *_in)
@@ -17903,6 +17920,15 @@ public:
         CRoxieServerNaryActivity::stop();
     }
 
+    virtual void reset()
+    {
+        CRoxieServerNaryActivity::reset();
+        if (inputAllocator)
+            inputAllocator->emptyCache();
+        if (outputAllocator)
+            outputAllocator->emptyCache();
+    }
+
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector)
     {
         return processor.gatherConjunctions(collector);
@@ -18399,6 +18425,13 @@ public:
         size32_t thisSize = helper.createInitialRight(rowBuilder);
         initialRight.setown(rowBuilder.finalizeRowClear(thisSize));
         curRight.set(initialRight);
+    }
+
+    virtual void reset() override
+    {
+        CRoxieServerActivity::reset();
+        if (rightRowAllocator)
+            rightRowAllocator->emptyCache();
     }
 
     virtual const void * nextRow()
@@ -19026,6 +19059,8 @@ public:
         groupedInput.clear();
         defaultLeft.clear();
         defaultRight.clear();
+        if (defaultAllocator)
+            defaultAllocator->emptyCache();
     }
 
     virtual const void * nextRow()
@@ -19582,6 +19617,8 @@ public:
         ReleaseClearRoxieRow(left);
         defaultRight.clear();
         table.clear();
+        if (defaultRightAllocator)
+            defaultRightAllocator->emptyCache();
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -20065,6 +20102,10 @@ public:
         }
         matchedRight.kill();
         CRoxieServerTwoInputActivity::reset();
+        if (defaultRightAllocator)
+            defaultRightAllocator->emptyCache();
+        if (defaultLeftAllocator)
+            defaultLeftAllocator->emptyCache();
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -25629,6 +25670,8 @@ public:
             varFileInfo.clear();
             map.clear();
         }
+        if (extractAllocator)
+            extractAllocator->emptyCache();
     }
 
     virtual IFinalRoxieInput *queryOutput(unsigned idx)
@@ -26121,6 +26164,8 @@ public:
             if (goer)
                 ReleaseRoxieRow(goer);
         }
+        if (ccdRecordAllocator)
+            ccdRecordAllocator->emptyCache();
     }
 
     inline void addResult(const void *row)
@@ -26369,6 +26414,8 @@ public:
             keySet.clear();
             varFileInfo.clear();
         }
+        if (indexReadAllocator)
+            indexReadAllocator->emptyCache();
     }
 
     virtual IFinalRoxieInput *queryOutput(unsigned idx)
@@ -26730,8 +26777,6 @@ public:
     {
         CRoxieServerActivity::reset();
         joinGroupAllocator->emptyCache();
-        if (rowAllocator)
-            rowAllocator->emptyCache();
         defaultRight.clear();
         if (indexReadInput)
             indexReadInput->reset();
@@ -26742,6 +26787,8 @@ public:
         {
             ::Release(groups.dequeue());
         }
+        if (defaultRightAllocator)
+            defaultRightAllocator->emptyCache();
     }
 
     virtual unsigned getTotalRowsProcessed() const override
@@ -27059,6 +27106,13 @@ public:
         puller.start(parentExtractSize, parentExtract, paused, ctx->queryOptions().keyedJoinPreload, false, ctx);
     }
 
+    virtual void reset()
+    {
+        CRoxieServerKeyedJoinBase::reset();
+        if (fetchInputAllocator)
+            fetchInputAllocator->emptyCache();
+    }
+
     virtual void setInput(unsigned idx, unsigned _sourceIdx, IFinalRoxieInput *_in)
     {
         head.setInput(idx, _sourceIdx, _in);
@@ -27233,6 +27287,8 @@ public:
         CRoxieServerKeyedJoinBase::reset();
         if (indexReadAllocator)
             indexReadAllocator->emptyCache();
+        if (joinFieldsAllocator)
+            joinFieldsAllocator->emptyCache();
         if (varFileInfo)
         {
             keySet.clear();
