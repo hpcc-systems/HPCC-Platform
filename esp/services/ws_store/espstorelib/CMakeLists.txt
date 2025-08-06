@@ -26,6 +26,7 @@ include_directories (
     ${HPCC_SOURCE_DIR}/system/mp                    #MP, included by dali base
     ${HPCC_SOURCE_DIR}/system/security/shared
     ${HPCC_SOURCE_DIR}/esp/smc/SMCLib
+    # ${HPCC_SOURCE_DIR}/esp/services/ws_store/espstorelib/
 )
 
 ADD_DEFINITIONS ( -D_USRDLL -DDALIKVSTORE_EXPORTS -Dwsstore_API_LOCAL )
