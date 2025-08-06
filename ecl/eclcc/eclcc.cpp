@@ -521,45 +521,8 @@ protected:
 
 //=========================================================================================
 
-static int doSelfTest(int argc, const char *argv[])
-{
-#ifdef _USE_CPPUNIT
-    queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_prefix);
-    CppUnit::TextUi::TestRunner runner;
-    if (argc==2)
-    {
-        CppUnit::TestFactoryRegistry &registry = CppUnit::TestFactoryRegistry::getRegistry();
-        runner.addTest( registry.makeTest() );
-    }
-    else
-    {
-        // MORE - maybe add a 'list' function here?
-        for (int name = 2; name < argc; name++)
-        {
-            if (stricmp(argv[name], "-q")==0)
-            {
-                removeLog();
-            }
-            else
-            {
-                CppUnit::TestFactoryRegistry &registry = CppUnit::TestFactoryRegistry::getRegistry(argv[name]);
-                runner.addTest( registry.makeTest() );
-            }
-        }
-    }
-    bool wasSucessful = runner.run( "", false );
-    releaseAtoms();
-    return wasSucessful;
-#else
-    return true;
-#endif
-}
-
 static int doMain(int argc, const char *argv[])
 {
-    if (argc>=2 && stricmp(argv[1], "-selftest")==0)
-        return doSelfTest(argc, argv);
-
     EclCC processor(argc, argv);
     try
     {
