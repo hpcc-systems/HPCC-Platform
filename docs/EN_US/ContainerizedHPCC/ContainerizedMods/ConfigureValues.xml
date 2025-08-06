@@ -983,7 +983,7 @@
         <itemizedlist>
           <listitem>
             <para>Set the <emphasis>numDevices</emphasis> property to the
-            number of PVCs you want to use. </para>
+            number of PVCs you want to use.</para>
 
             <programlisting language="yaml">- name: data
   pvc: data-mystorage-hpcc-localfile-pvc
@@ -1009,6 +1009,19 @@
             </itemizedlist>
 
             <para>Each PVC will be mounted as a separate device.</para>
+
+            <variablelist>
+              <varlistentry>
+                <term>Note</term>
+
+                <listitem>
+                  <para>The Helm chart expects indexing to start at 1. Using
+                  this example the first PVC must be named
+                  data-mystorage-hpcc-localfile-pvc-1 and not
+                  data-mystorage-hpcc-localfile-pvc-0.</para>
+                </listitem>
+              </varlistentry>
+            </variablelist>
           </listitem>
 
           <listitem>
@@ -2035,9 +2048,8 @@ global:
 
         <para>The rule here to keep in mind where multiple YAML files are
         applied, the later ones will always overwrite the values in the
-        earlier ones. They are always merged in in sequence. The values are
-        always merged in the order they are given on the helm command
-        line.</para>
+        earlier ones. They are always merged in in sequence in the order they
+        are given on the helm command line.</para>
 
         <para>Another point to consider, where there is a global dictionary
         such as root: and its value is redefined in a 2nd file (as a
@@ -2085,15 +2097,14 @@ global:
         </sect4>
       </sect3>
 
-      <sect3 id="Additional_YMLUSage">
-        <title>Additional Usage</title>
+      <sect3 id="Override_YMLUSage">
+        <title>Overrides</title>
 
-        <para>HPCC Systems components are added or modified by passing in
-        override values. The Helm chart values are overridden, either by
-        passing in override value file(s) using -f, (for override file) or via
-        --set where you can override a single value. Those passed in values
-        are always merged in the same order they are given on the helm command
-        line.</para>
+        <para>You can add or modify HPCC Systems components by providing
+        override values. You override the Helm chart values by using either
+        override value files with -f or the --set flag to specify a single
+        value. Helm always merges the override values in the order you provide
+        them on the command line. </para>
 
         <para>For example:</para>
 
