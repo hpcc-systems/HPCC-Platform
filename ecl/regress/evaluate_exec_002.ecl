@@ -23,5 +23,8 @@ IMPORT Std;
 
 ds1 := NOFOLD(DATASET(10000, TRANSFORM({UNSIGNED4 n}, SELF.n := RANDOM()), DISTRIBUTED));
 
-// Data: Build data on a different thor cluster
-EXECUTE('mythor2', ds1);
+// Data: Build data on a different thor cluster and output it here
+EVALUATE('mythor2', ds1);
+
+// Data: Using the agent process, output some data from a Std library call
+EVALUATE(ECLAGENT, Std.File.SuperFileContents('~test::my_superfile'));
