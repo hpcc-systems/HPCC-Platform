@@ -181,29 +181,34 @@ false
 
 {{/*
 Generate global ConfigMap info
-Pass in root as .
+Pass in dict with root and optional excludePerCpuCost
 */}}
 {{- define "hpcc.generateGlobalConfigMap" -}}
+{{- if not (hasKey . "root") -}}
+ {{- fail (printf "hpcc.generateGlobalConfigMap: expected dict with key 'root' (and optional 'excludePerCpuCost'), but got keys: [%s]" (join ", " (keys .))) -}}
+{{- end -}}
+{{- $root := .root -}}
+{{- $excludePerCpuCost := .excludePerCpuCost | default false -}}
 {{- /*Create local variables which always exist to avoid having to check if intermediate key values exist*/ -}}
-{{- $storage := (.Values.storage | default dict) -}}
+{{- $storage := ($root.Values.storage | default dict) -}}
 {{- $planes := ($storage.planes | default list) -}}
-{{- $certificates := (.Values.certificates | default dict) -}}
+{{- $certificates := ($root.Values.certificates | default dict) -}}
 {{- $issuers := ($certificates.issuers | default dict) -}}
-{{- $security := .Values.security | default dict -}}
-{{- if .Values.global.plugins -}}
+{{- $security := $root.Values.security | default dict -}}
+{{- if $root.Values.global.plugins -}}
 plugins:
-{{- toYaml .Values.global.plugins | nindent 2 }}
+{{- toYaml $root.Values.global.plugins | nindent 2 }}
 {{ end -}}
-deploymentName: {{ (include "hpcc.fullname" (dict "root" $)) }}
-mtls: {{ (include "hpcc.isMtlsEnabled" (dict "root" $)) }}
-imageVersion: {{ .Values.global.image.version | default .Chart.Version }}
-singleNode: {{ .Values.global.singleNode | default false }}
-{{ if .Values.global.defaultEsp -}}
-defaultEsp: {{ .Values.global.defaultEsp | quote }}
+deploymentName: {{ (include "hpcc.fullname" (dict "root" $root)) }}
+mtls: {{ (include "hpcc.isMtlsEnabled" (dict "root" $root)) }}
+imageVersion: {{ $root.Values.global.image.version | default $root.Chart.Version }}
+singleNode: {{ $root.Values.global.singleNode | default false }}
+{{ if $root.Values.global.defaultEsp -}}
+defaultEsp: {{ $root.Values.global.defaultEsp | quote }}
 {{ end -}}
 services:
-{{ include "hpcc.generateConfigMapServices" . }}
-secretTimeout: {{ .Values.secrets.timeout | default 300 }}
+{{ include "hpcc.generateConfigMapServices" $root }}
+secretTimeout: {{ $root.Values.secrets.timeout | default 300 }}
 storage:
 {{- if hasKey $storage "hostGroups" }}
   hostGroups:
@@ -213,7 +218,7 @@ storage:
   remote:
 {{ toYaml $storage.remote | indent 2 }}
 {{- end }}
-  dataPlane: {{ include "hpcc.getDefaultDataPlane" . }}
+  dataPlane: {{ include "hpcc.getDefaultDataPlane" $root }}
 {{- if hasKey $storage "indexBuildPlane" }}
   indexBuildPlane: {{ $storage.indexBuildPlane }}
 {{- end }}
@@ -233,7 +238,7 @@ storage:
    {{- $_ := set $planeYaml "prefix" (printf "%s/%s" $planeYaml.prefix $plane.subPath) -}}
   {{- end -}}
   {{- if and (eq "data" $plane.category) (not $plane.defaultSprayParts) -}}
-   {{- $_ := set $planeYaml "defaultSprayParts" (include "hpcc.getMaxNumWorkers" $ | int) -}}
+  {{- $_ := set $planeYaml "defaultSprayParts" (include "hpcc.getMaxNumWorkers" $root | int) -}}
   {{- end -}}
   {{- /* Make sure there is enough containers provided if storageapi used*/ -}}
   {{- if $plane.storageapi -}}
@@ -255,22 +260,26 @@ storage:
  {{- end }}
 
 {{- end }}
-{{- if not (include "hpcc.hasPlaneForCategory" (dict "root" $ "category" "spill")) }}
+{{- if not (include "hpcc.hasPlaneForCategory" (dict "root" $root "category" "spill")) }}
   - name: hpcc-spill-plane
-    prefix: {{ .Values.global.defaultSpillPath | default "/var/lib/HPCCSystems/hpcc-spill" | quote }}
+    prefix: {{ $root.Values.global.defaultSpillPath | default "/var/lib/HPCCSystems/hpcc-spill" | quote }}
     category: spill
 {{- end }}
-{{- if .Values.global.cost }}
+{{- if $root.Values.global.cost }}
 cost:
-{{ toYaml .Values.global.cost | indent 2 }}
+{{- if $excludePerCpuCost }}
+{{ toYaml (omit $root.Values.global.cost "perCpu") | indent 2 }}
+{{- else }}
+{{ toYaml $root.Values.global.cost | indent 2 }}
 {{- end }}
-{{- if .Values.global.logAccess }}
+{{- end }}
+{{- if $root.Values.global.logAccess }}
 logAccess:
-{{ toYaml .Values.global.logAccess | indent 2 }}
+{{ toYaml $root.Values.global.logAccess | indent 2 }}
 {{- end }}
-{{- if .Values.global.expert }}
+{{- if $root.Values.global.expert }}
 expert:
-{{ toYaml .Values.global.expert | indent 2 }}
+{{ toYaml $root.Values.global.expert | indent 2 }}
 {{- end }}
 {{- if .Values.global.schedulingTimeoutSecs }}
 schedulingTimeoutSecs: {{ .Values.global.schedulingTimeoutSecs }}
@@ -1607,7 +1616,7 @@ data:
 {{ include "hpcc.generateConfigMapQueues" .root | indent 6 }}
 {{- end }}
     global:
-{{ include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
+{{ include "hpcc.generateGlobalConfigMap" (dict "root" .root) | indent 6 }}
 {{- end -}}
 
 {{/*

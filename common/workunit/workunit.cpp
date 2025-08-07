@@ -14218,8 +14218,16 @@ extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, unsigned wfid, const char 
     addTimeStamp(wu, getScopeType(scope), scope, kind, wfid);
 }
 
-static double getCostCpuHour()
+static double getCostCpuHour(const char * subComponentName)
 {
+    if (!isEmptyString(subComponentName))
+    {
+        VStringBuffer subComponentSection("%s/cost/@perCpu", subComponentName);
+        double costCpuHour = getComponentConfigSP()->getPropReal(subComponentSection.str(), -1.0);
+        if (costCpuHour < 0.0)
+            return 0.0;
+        return costCpuHour;
+    }
     double costCpuHour = 0.0;
     if (getComponentConfigSP()->hasProp("cost/@perCpu"))
         costCpuHour = getComponentConfigSP()->getPropReal("cost/@perCpu");
@@ -14232,23 +14240,21 @@ static double getCostCpuHour()
 
 extern WORKUNIT_API double getMachineCostRate()
 {
-    double numCpus = isContainerized() ? getResourcedCpus("resources") : getAffinityCpus();
-    return getCostCpuHour() * numCpus;
+    return getCostCpuHour(nullptr) * getResourcedCpus("resources");
 }
 
 extern WORKUNIT_API double getThorManagerRate()
 {
-    double numCpus = isContainerized() ? getResourcedCpus("managerResources") : getAffinityCpus();
-    return getCostCpuHour() * numCpus;
+    return getCostCpuHour("manager") * getResourcedCpus("managerResources");
 }
 
 extern WORKUNIT_API double getThorWorkerRate()
 {
-    // Note: (bare-metal) the use of getAffinityCpus to get the number of CPUs used by workers
-    // doesn't really make sense since the caller is likely to be running on thor manager (so it will
-    // return cpu affinity for the manager, rather than for the worker).  This needs rethinking.
-    double numCpus = isContainerized() ? getResourcedCpus("workerResources") : getAffinityCpus();
-    return getCostCpuHour() * numCpus;
+    // Note: (bare-metal) the use of getResourcedCpus (as it uses getAffinityCpus) to get the number
+    // of CPUs used by workers doesn't really make sense since the caller is likely to be running on
+    // thor manager (so it will return cpu affinity for the manager, rather than for the worker).
+    // This needs rethinking.
+    return getCostCpuHour("worker") * getResourcedCpus("workerResources");
 }
 
 extern WORKUNIT_API double getThorRate(unsigned numberOfWorkers)
