@@ -5668,8 +5668,17 @@ IHqlExpression * GlobalAttributeInfo::getStoredKey()
 
 void GlobalAttributeInfo::setCluster(IHqlExpression * expr)
 {
-    if (expr && !isBlankString(expr))
-        cluster.set(expr);
+    if (expr)
+    {
+        if (getIntValue(expr) == 1)
+        {
+            // Requested cluster is actually the agent process
+        }
+        else if (!isBlankString(expr))
+        {
+            cluster.set(expr);
+        }
+    }
 }
 
 void GlobalAttributeInfo::extractGlobal(IHqlExpression * global, ClusterType platform)
