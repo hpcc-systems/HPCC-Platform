@@ -490,7 +490,7 @@ AzureFile::AzureFile(const char *_azureFileName) : fullName(_azureFileName)
             if (!endDevice || (*endDevice != '/'))
                 throw makeStringExceptionV(99, "Unexpected end of device partition %s", fullName.str());
 
-            VStringBuffer childPath("containers[%d]", device-1);
+            VStringBuffer childPath("containers[%d]", device);
             IPropertyTree * deviceInfo = storageapi->queryPropTree(childPath);
             if (deviceInfo)
             {
