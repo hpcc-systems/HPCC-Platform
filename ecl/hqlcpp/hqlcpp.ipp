@@ -1198,6 +1198,8 @@ public:
     }
 
     void setTargetClusterType(ClusterType clusterType);
+    ClusterType pushTargetClusterType(ClusterType clusterType);
+    ClusterType popTargetClusterType();
     void ensureDiskAccessAllowed(IHqlExpression * expr);
     void checkAbort();
 
@@ -2104,7 +2106,7 @@ protected:
     unsigned            curCppFile;
     unsigned            maxWfid = 0;
     Linked<ICodegenContextCallback> ctxCallback;
-    std::vector<ClusterType> targetClusterTypes;
+    std::vector<ClusterType> targetClusterTypes; // There will always be at least one entry in this list; last entry is the current target
     bool contextAvailable;
     unsigned maxSequence;
     unsigned librarySequence = LibraryBaseSequence;
