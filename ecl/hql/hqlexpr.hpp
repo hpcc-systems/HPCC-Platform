@@ -869,7 +869,6 @@ public:
         bool includeImports = false;            // gather imports
         bool includeLocations = false;          // include information about source locations
         bool includeJavadoc = false;
-        StringAttr cacheLocation;
     };
 
     HqlParseContext(ICodegenContextCallback *_codegenCtx, IPropertyTree * _archive, IStatisticTarget & _statsTarget)
@@ -898,7 +897,6 @@ public:
     void noteExternalLookup(const char * package, IHqlScope * parentScope, IIdAtom * name, IHqlExpression * expr);
 
     void setGatherMeta(const MetaOptions & options);
-    void setCacheLocation(const char * path);
 
     inline IPropertyTree * getClearMetaTree() { return metaTree.getClear(); }
     inline IPropertyTree * queryArchive() const { return archive; }
@@ -907,21 +905,13 @@ public:
     inline void setFastSyntax() { expandCallsWhenBound = false; }
     inline bool isSyntaxChecking() const { return syntaxChecking; }
     inline void setSyntaxChecking() { syntaxChecking = true; }
-    inline void setCheckSimpleDef() { checkSimpleDef = true; }
-    inline void setRegenerateCache() { regenerateCache = true; }
-    inline void setIgnoreCache() { ignoreCache = true; }
-    inline void setIgnoreSimplified() { ignoreSimplified = true; }
-    void setNeverSimplify(const char *regex) { neverSimplifyRegEx.assign(regex, std::regex_constants::icase); neverSimplifyEnabled = true; };
-    bool neverSimplify(const char *fullname) { return neverSimplifyEnabled? std::regex_match(fullname, neverSimplifyRegEx):false; };
     bool includeInArchive(IHqlScope * scope) const;
     inline IPropertyTree * queryNestedDependTree() const { return nestedDependTree; }
 
     void beginMetaScope() { metaStack.append(*new FileParseMeta); }
     void beginMetaScope(FileParseMeta & active) { metaStack.append(OLINK(active)); }
     void endMetaScope() { metaStack.pop(); }
-    bool createCache(bool isMacro);
     inline FileParseMeta & curMeta() { return metaStack.tos(); }
-    inline bool hasCacheLocation( ) const { return !metaOptions.cacheLocation.isEmpty();}
 public:
     Linked<IPropertyTree> archive;
     Owned<IPropertyTree> nestedDependTree;
@@ -939,14 +929,9 @@ public:
     bool checkDirty = false;
     bool timeParser = false;
     bool syntaxChecking = false;
-    bool checkSimpleDef = false;
-    bool regenerateCache = false;
-    bool ignoreCache = false;
-    bool ignoreSimplified = false;
     Linked<ICodegenContextCallback> codegenCtx;
     IStatisticTarget & statsTarget;
     CIArrayOf<FileParseMeta> metaStack;
-    IEclCachedDefinitionCollection * cache = nullptr;
     hash64_t optionHash = 0;
     unsigned numAttribsProcessed = 0;
 
@@ -956,11 +941,8 @@ private:
     bool checkEndMeta();
     void finishMeta(bool isSeparateFile, bool success, bool generateMeta);
     IPropertyTree * beginMetaSource(IFileContents * contents);
-    void getCacheBaseFilename(StringBuffer & fullName, StringBuffer & baseFilename);
 
     MetaOptions metaOptions;
-    bool neverSimplifyEnabled = false;
-    std::regex neverSimplifyRegEx;
 
     struct {
         bool gatherNow;
@@ -1022,15 +1004,8 @@ public:
     inline void setAborting() { parseCtx.setAborting(); }
     inline bool checkDirty() const { return parseCtx.checkDirty; }
     inline bool syntaxChecking() const { return parseCtx.isSyntaxChecking(); }
-    inline bool regenerateCache() const { return parseCtx.regenerateCache; }
-    inline bool hasCacheLocation() const { return parseCtx.hasCacheLocation();}
-    inline bool checkSimpleDef() const { return parseCtx.checkSimpleDef; }
-    inline bool ignoreCache() const { return parseCtx.ignoreCache; }
-    inline bool ignoreSimplified() const { return parseCtx.ignoreSimplified; }
-    inline bool createCache(bool isMacro) { return parseCtx.createCache(isMacro); }
     void reportTiming(const char * name);
     inline void incrementAttribsProcessed() { ++parseCtx.numAttribsProcessed; }
-    inline bool neverSimplify(const char *fullname) { return parseCtx.neverSimplify(fullname); }
 protected:
 
     inline IPropertyTree * queryArchive() const { return parseCtx.archive; }
