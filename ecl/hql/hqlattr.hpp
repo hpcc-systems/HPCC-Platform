@@ -20,6 +20,7 @@
 #include "hqlexpr.hpp"
 #include "workunit.hpp"
 
+#define ECL_AGENT_CLUSTER_NAME "<_ECLAgent_>"
 #define MAX_MAXLENGTH (INFINITE_LENGTH-1)
 
 extern HQL_API IHqlExpression * queryAttribute(ITypeInfo * type, IAtom * search);

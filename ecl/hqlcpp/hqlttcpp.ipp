@@ -583,6 +583,7 @@ protected:
     void analyseExpr(IHqlExpression * expr);
     void addWorkflowItem(WorkflowItem & item);
     unsigned querySingleRootWfid(const HqlExprArray & transformed);
+    bool isRoxie() const { return translator.getTargetClusterType() == RoxieCluster; }
 
 protected:
     IWorkUnit *               wu;
@@ -600,7 +601,6 @@ protected:
     bool                      combineAllStored;
     bool                      combineTrivialStored;
     bool                      isRootAction;
-    bool                      isRoxie;
     bool                      expandPersistInputDependencies;
     int                       multiplePersistInstances;
     UnsignedArray             cumulativeDependencies;
@@ -640,12 +640,13 @@ protected:
         return LINK(expr);
     }
 
+    virtual bool isRoxie() const { return translator.getTargetClusterType() == RoxieCluster; }
+
 private:
     IWorkUnit *               wu;
     HqlCppTranslator &        translator;
     bool seenGlobalScope;
     bool seenLocalGlobalScope;
-    bool isRoxie;
 };
 
 class OptGlobalTransformer : public NewHqlTransformer
@@ -751,10 +752,11 @@ protected:
 
     inline ScopeMigrateInfo * queryBodyExtra(IHqlExpression * expr)     { return static_cast<ScopeMigrateInfo *>(queryTransformExtra(expr->queryBody())); }
 
+    virtual bool isRoxie() const { return translator.getTargetClusterType() == RoxieCluster; }
+
 private:
     IWorkUnit *               wu;
     HqlCppTranslator &        translator;
-    bool isRoxie;
     bool minimizeWorkunitTemporaries;
     unsigned activityDepth;
 };
@@ -802,10 +804,11 @@ protected:
 
     inline AutoScopeMigrateInfo * queryBodyExtra(IHqlExpression * expr)     { return static_cast<AutoScopeMigrateInfo *>(queryTransformExtra(expr->queryBody())); }
 
+    virtual bool isRoxie() const { return translator.getTargetClusterType() == RoxieCluster; }
+
 private:
     IWorkUnit *               wu;
     HqlCppTranslator &        translator;
-    bool isRoxie;
     bool isConditional;
     bool hasCandidate;
     bool isSequential;
