@@ -1714,7 +1714,7 @@ void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
     if (numKeys)
     {
          // only time the follow code if we are going to try and match the old timing.
-        CCycleTimer expansionTimer(traceInplaceLoadStats || (adjustExpansionTime && isLeaf()));
+        CCycleTimer expansionTimer(isLeaf());
 
         size32_t len = hdr.keyBytes;
         size32_t copyLen = len;
@@ -1763,7 +1763,7 @@ void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
         keyBuf = (char *) allocMem(copyLen + padding);
         memcpy(keyBuf, originalData, copyLen);
         memset(keyBuf+copyLen, 0, padding);
-        expandedSize = copyLen+padding;
+        inMemorySize = copyLen+padding;
 
         /**** If any of the following code changes queryPayload() must also be changed. ******/
 
@@ -1803,7 +1803,7 @@ void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
                     payloadOffsets.append(offset);
                 }
                 data += numKeys * bytesPerPayloadLength;
-                expandedSize += numKeys * sizeof(unsigned);
+                inMemorySize += numKeys * sizeof(unsigned);
             }
 
             // Some pathological indexes (ifblocks in the payload) could have (keyLen == keyCompareLen) and a variable size.
@@ -1843,7 +1843,7 @@ void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
                         {
                             size32_t sizeExpanded;
                             payload = expandPayload(sizeExpanded, payloadCompression, compressedLen, data);
-                            expandedSize += sizeExpanded;
+                            inMemorySize += sizeExpanded;
                             if (payload)
                                 ownedPayload = true;
                         }
@@ -1867,10 +1867,13 @@ void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
         else
             assertex((data - originalData) == len);
 
+        if (isLeaf() && !expandPayloadOnDemand)
+            loadExpandTime = expansionTimer.elapsedNs();
+
         //Branch nodes do not use LZW compression - so this will not attempt to adjust them.
         if ((adjustExpansionTime || traceInplaceLoadStats) && (payloadCompression != COMPRESS_METHOD_NONE) && !expandPayloadOnDemand)
         {
-            __uint64 timeTakenNs = expansionTimer.elapsedNs();
+            __uint64 timeTakenNs = loadExpandTime;
             unsigned scaling = 0;
             switch (payloadCompression)
             {
@@ -1892,7 +1895,7 @@ void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
 
             if (scaling)
             {
-                size32_t actualSizeExpanded = expandedSize - padding - actualKeyedSize;     // How much data was expanded in the payload
+                size32_t actualSizeExpanded = inMemorySize - padding - actualKeyedSize;     // How much data was expanded in the payload
                 size32_t originalSizeExpanded = actualSizeExpanded + originalKeyedSize;     // How much data would there have been if the whole node was compressed?
 
                 if (actualSizeExpanded)

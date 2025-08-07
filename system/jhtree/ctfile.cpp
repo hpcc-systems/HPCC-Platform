@@ -589,7 +589,7 @@ void CBloomFilterWriteNode::put8(__int64 val)
 void CJHTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _fpos, bool needCopy)
 {
     CNodeBase::init(_keyHdr, _fpos);
-    assertex(!keyBuf && (expandedSize == 0));
+    assertex(!keyBuf && (inMemorySize == 0));
     memcpy(&hdr, rawData, sizeof(hdr));
     SwapBigEndian(hdr);
     __int64 maxsib = keyHdr->getHdrStruct()->phyrec;
@@ -621,7 +621,7 @@ void CJHTreeNode::dump(FILE *out, int length, unsigned rowCount, bool raw) const
 
 CJHTreeNode::~CJHTreeNode()
 {
-    releaseMem(keyBuf, expandedSize);
+    releaseMem(keyBuf, inMemorySize);
 }
 
 void CJHTreeNode::releaseMem(void *togo, size32_t len)
@@ -875,13 +875,15 @@ void CJHLegacySearchNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _
         keys += sizeof(unsigned __int64);
         _WINREV(firstSequence);
     }
+
+    CCycleTimer expansionTimer(isLeaf());
     if (hdr.nodeType==NodeLeaf && (keyType & HTREE_COMPRESSED_KEY))
     {
-        expandedSize = keyHdr->getNodeSize();
+        inMemorySize = keyHdr->getNodeSize();
         if ((keyType & (HTREE_QUICK_COMPRESSED_KEY|HTREE_VARSIZE))==HTREE_QUICK_COMPRESSED_KEY)
             keyBuf = nullptr;
         else
-            keyBuf = expandData(keys, expandedSize);
+            keyBuf = expandData(keys, inMemorySize);
     }
     else
     {
@@ -966,13 +968,13 @@ void CJHLegacySearchNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _
                     target++;
                 }
             }
-            expandedSize = keyBufMb.length();
+            inMemorySize = keyBufMb.length();
             keyBuf = (char *)keyBufMb.detach();
             assertex(keyBuf);
         }
         else {
             keyBuf = NULL;
-            expandedSize = 0;
+            inMemorySize = 0;
             if (hdr.nodeType == NodeBranch)
             {
                 if ((hdr.leftSib == 0) && (hdr.rightSib == 0))
@@ -986,6 +988,9 @@ void CJHLegacySearchNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _
             }
         }
     }
+
+    if (isLeaf())
+        loadExpandTime = expansionTimer.elapsedNs();
 }
 
 void PayloadReference::clear()
@@ -1302,13 +1307,13 @@ void CJHTreeBlobNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _fpos
 {
     CJHTreeNode::load(_keyHdr, rawData, _fpos, needCopy);
     const byte *data = ((const byte *) rawData) + sizeof(hdr);
-    expandedSize = keyHdr->getNodeSize();
-    keyBuf = expandData(data, expandedSize);
+    inMemorySize = keyHdr->getNodeSize();
+    keyBuf = expandData(data, inMemorySize);
 }
 
 size32_t CJHTreeBlobNode::getTotalBlobSize(unsigned offset) const
 {
-    assertex(offset < expandedSize);
+    assertex(offset < inMemorySize);
     unsigned datalen;
     memcpy(&datalen, keyBuf+offset, sizeof(datalen));
     _WINREV(datalen);
@@ -1319,8 +1324,8 @@ size32_t CJHTreeBlobNode::getBlobData(unsigned offset, void *dst) const
 {
     unsigned sizeHere = getTotalBlobSize(offset);
     offset += sizeof(unsigned);
-    if (sizeHere > expandedSize - offset)
-        sizeHere = expandedSize - offset;
+    if (sizeHere > inMemorySize - offset)
+        sizeHere = inMemorySize - offset;
     memcpy(dst, keyBuf+offset, sizeHere);
     return sizeHere;
 }
@@ -1332,14 +1337,14 @@ void CJHTreeRawDataNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
     const byte *data = ((const byte *) rawData) + sizeof(hdr);
     unsigned short len = *reinterpret_cast<const unsigned short *>(data);
     _WINREV(len);
-    expandedSize = len;
+    inMemorySize = len;
     keyBuf = (char *) allocMem(len);
     memcpy(keyBuf, data+sizeof(unsigned short), len);
 }
 
 void CJHTreeMetadataNode::get(StringBuffer & out) const
 {
-    out.append(expandedSize, keyBuf);
+    out.append(inMemorySize, keyBuf);
 }
 
 void CJHTreeBloomTableNode::dump(FILE *out, int length, unsigned rowCount, bool raw) const
@@ -1360,14 +1365,14 @@ void CJHTreeBloomTableNode::dump(FILE *out, int length, unsigned rowCount, bool 
 
 void CJHTreeBloomTableNode::get(MemoryBuffer & out) const
 {
-    out.append(expandedSize-read, keyBuf + read);
+    out.append(inMemorySize-read, keyBuf + read);
 }
 
 __int64 CJHTreeBloomTableNode::get8()
 {
     __int64 ret = 0;
     assert(sizeof(ret)==8);
-    assertex(expandedSize >= read + sizeof(ret));
+    assertex(inMemorySize >= read + sizeof(ret));
     _WINCPYREV8(&ret, keyBuf + read);
     read += sizeof(ret);
     return ret;
@@ -1377,7 +1382,7 @@ unsigned CJHTreeBloomTableNode::get4()
 {
     unsigned ret = 0;
     assert(sizeof(ret)==4);
-    assertex(expandedSize >= read + sizeof(ret));
+    assertex(inMemorySize >= read + sizeof(ret));
     _WINCPYREV4(&ret, keyBuf + read);
     read += sizeof(ret);
     return ret;

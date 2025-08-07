@@ -241,7 +241,7 @@ Filters:
                                 - NodeKind: numeric, 0 or 1
                                 - ReadTime: numeric
                                 - ElapsedTime: numeric
-                                - ExpandedSize: numeric
+                                - InMemorySize: numeric
                                 - InCache: Boolean
                                 - Path: string
                                 - ConnectId: numeric
