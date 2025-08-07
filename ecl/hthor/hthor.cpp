@@ -263,10 +263,23 @@ void CHThorActivityBase::resetEOF()
 
 void CHThorActivityBase::updateProgress(IStatisticGatherer &progress) const
 {
+    {
+        StatsActivityScope scope(progress, activityId);
+        gatherActiveStats(progress);
+    }
+
     if (queryOutputs()>0)
         updateProgressForOther(progress, activityId, subgraphId);
     if (input)
         input->updateProgress(progress);
+}
+
+void CHThorActivityBase::gatherActiveStats(IStatisticGatherer &progress) const
+{
+    activityStats.addStatistics(progress);
+    progress.addStatistic(StTimeLocalExecute, cycle_to_nanosec(queryLocalCycles()));
+    if (processed)
+        progress.addStatistic(StNumRowsProcessed, processed);
 }
 
 void CHThorActivityBase::updateProgressForOther(IStatisticGatherer &progress, unsigned otherActivity, unsigned otherSubgraph) const
@@ -307,6 +320,21 @@ IException * CHThorActivityBase::makeWrappedException(IException * e, char const
 bool CHThorActivityBase::isPassThrough()
 {
     return false;
+}
+
+stat_type CHThorActivityBase::queryLocalCycles() const
+{
+    __int64 ret = activityStats.totalCycles;
+    if (input)
+        ret -= input->queryTotalCycles();
+    if (ret < 0) 
+        ret = 0;
+    return ret;
+}
+
+unsigned __int64 CHThorActivityBase::queryTotalCycles() const
+{
+    return activityStats.totalCycles;
 }
 
 //=====================================================================================================
@@ -455,6 +483,7 @@ void CHThorDiskWriteActivity::ready()
 
 void CHThorDiskWriteActivity::execute()
 {
+    ActivityTimer t(activityStats, timeActivities);
     // Loop thru the results
     numRecords = 0;
     while (next()) 
@@ -834,10 +863,9 @@ void CHThorDiskWriteActivity::publish()
     }
 }
 
-void CHThorDiskWriteActivity::updateProgress(IStatisticGatherer &progress) const
+void CHThorDiskWriteActivity::gatherActiveStats(IStatisticGatherer &progress) const
 {
-    CHThorActivityBase::updateProgress(progress);
-    StatsActivityScope scope(progress, activityId);
+    CHThorActivityBase::gatherActiveStats(progress);
     progress.addStatistic(StNumDiskWrites, numDiskWrites);
     if ((helperFlags & TDXtemporary) == 0)
         progress.addStatistic(StCostFileAccess, diskAccessCost);
@@ -931,6 +959,7 @@ void CHThorSpillActivity::execute()
 
 const void *CHThorSpillActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     const void *nextrec = getNext();
     if (nextrec)
     {
@@ -966,6 +995,7 @@ CHThorCsvWriteActivity::CHThorCsvWriteActivity(IAgentContext &_agent, unsigned _
 
 void CHThorCsvWriteActivity::execute()
 {
+    ActivityTimer t(activityStats, timeActivities);
     OwnedRoxieString header(helper.queryCsvParameters()->getHeader());
     if (header) {
         csvOutput.beginLine();
@@ -1052,6 +1082,7 @@ CHThorXmlWriteActivity::CHThorXmlWriteActivity(IAgentContext &_agent, unsigned _
 
 void CHThorXmlWriteActivity::execute()
 {
+    ActivityTimer t(activityStats, timeActivities);
     // Loop thru the results
     numRecords = 0;
     StringBuffer header;
@@ -1195,6 +1226,7 @@ CHThorIndexWriteActivity::~CHThorIndexWriteActivity()
 
 void CHThorIndexWriteActivity::execute()
 {
+    ActivityTimer t(activityStats, timeActivities);
     size32_t maxDiskRecordSize;
     if (helper.queryDiskRecordSize()->isVariableSize())
     {
@@ -1553,6 +1585,7 @@ public:
 
     virtual const void *nextRow()
     {
+        ActivityTimer t(activityStats, timeActivities);
         while (!waitForPipe())
         {
             if (!pipe)
@@ -1751,6 +1784,7 @@ public:
 
     virtual const void *nextRow()
     {
+        ActivityTimer t(activityStats, timeActivities);
         while (!waitForPipe())
         {
             if (!pipe)
@@ -1933,6 +1967,7 @@ public:
 
     virtual void execute()
     {
+        ActivityTimer t(activityStats, timeActivities);
         Owned<IException> pipeException;
         try
         {
@@ -2037,6 +2072,7 @@ void CHThorIterateActivity::ready()
 
 const void *CHThorIterateActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     for (;;)
     {
         right.setown(input->nextRow());
@@ -2092,6 +2128,7 @@ void CHThorProcessActivity::ready()
 
 const void *CHThorProcessActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     try
     {
         for (;;)
@@ -2151,6 +2188,7 @@ void CHThorNormalizeActivity::ready()
 
 const void *CHThorNormalizeActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     for (;;)
     {
         while (curRow == numThisRow)
@@ -2236,6 +2274,7 @@ void CHThorNormalizeChildActivity::ready()
 
 const void *CHThorNormalizeChildActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     for (;;)
     {
         if (!inbuff)
@@ -2307,6 +2346,7 @@ void CHThorNormalizeLinkedChildActivity::stop()
 
 const void * CHThorNormalizeLinkedChildActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     for (;;)
     {
         if (!curParent)
@@ -2351,6 +2391,7 @@ void CHThorProjectActivity::ready()
 
 const void * CHThorProjectActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     for (;;)
     {
         OwnedConstRoxieRow in(input->nextRow());
@@ -2398,6 +2439,7 @@ void CHThorPrefetchProjectActivity::ready()
 
 const void * CHThorPrefetchProjectActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (eof)
         return NULL;
     for (;;)
@@ -2461,6 +2503,7 @@ void CHThorFilterProjectActivity::ready()
 
 const void * CHThorFilterProjectActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (eof)
         return NULL;
     for (;;)
@@ -2514,6 +2557,7 @@ void CHThorCountProjectActivity::ready()
 
 const void * CHThorCountProjectActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     for (;;)
     {
         OwnedConstRoxieRow in = input->nextRow();
@@ -2573,6 +2617,7 @@ void CHThorRollupActivity::stop()
 
 const void *CHThorRollupActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     for (;;)
     {
         right.setown(input->nextRow());
@@ -2640,6 +2685,7 @@ void CHThorGroupDedupKeepLeftActivity::stop()
 
 const void *CHThorGroupDedupKeepLeftActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     OwnedConstRoxieRow next;
     for (;;)
     {
@@ -2666,6 +2712,7 @@ const void *CHThorGroupDedupKeepLeftActivity::nextRow()
 
 const void * CHThorGroupDedupKeepLeftActivity::nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
 {
+    ActivityTimer t(activityStats, timeActivities);
     OwnedConstRoxieRow next;
     for (;;)
     {
@@ -2736,6 +2783,7 @@ void CHThorGroupDedupKeepRightActivity::stop()
 
 const void *CHThorGroupDedupKeepRightActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (!firstDone)
     {
         firstDone = true;
@@ -2885,6 +2933,7 @@ void CHThorGroupDedupAllActivity::dedupRange(unsigned first, unsigned last, Owne
 
 const void *CHThorGroupDedupAllActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (!firstDone)
     {
         firstDone = true;
@@ -2950,6 +2999,7 @@ void CHThorHashDedupActivity::stop()
 
 const void * CHThorHashDedupActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (keepBest)
     {
         // Populate hash table with best rows
@@ -3033,6 +3083,7 @@ void CHThorFilterActivity::ready()
 
 const void * CHThorFilterActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (eof)
         return NULL;
 
@@ -3063,6 +3114,7 @@ const void * CHThorFilterActivity::nextRow()
 
 const void * CHThorFilterActivity::nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (eof)
         return NULL;
 
@@ -3117,6 +3169,7 @@ void CHThorFilterGroupActivity::stop()
 
 const void * CHThorFilterGroupActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     for (;;)
     {
         if (eof)
@@ -3154,6 +3207,7 @@ const void * CHThorFilterGroupActivity::nextRow()
 
 const void * CHThorFilterGroupActivity::nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (eof)
         return NULL;
 
@@ -3207,6 +3261,7 @@ void CHThorLimitActivity::ready()
 
 const void * CHThorLimitActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     OwnedConstRoxieRow ret(input->nextRow());
     if (ret)
     {
@@ -3225,6 +3280,7 @@ const void * CHThorLimitActivity::nextRow()
 
 const void * CHThorLimitActivity::nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
 {
+    ActivityTimer t(activityStats, timeActivities);
     OwnedConstRoxieRow ret(input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra));
     if (ret)
     {
@@ -3261,6 +3317,7 @@ void CHThorSkipLimitActivity::stop()
 
 const void * CHThorSkipLimitActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if(!buffer)
     {
         buffer.setown(new CRowBuffer(input->queryOutputMeta(), true));
@@ -3285,6 +3342,7 @@ CHThorCatchActivity::CHThorCatchActivity(IAgentContext &_agent, unsigned _activi
 
 const void * CHThorCatchActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     try
     {
         OwnedConstRoxieRow ret(input->nextRow());
@@ -3306,6 +3364,7 @@ const void * CHThorCatchActivity::nextRow()
 
 const void * CHThorCatchActivity::nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
 {
+    ActivityTimer t(activityStats, timeActivities);
     try
     {
         OwnedConstRoxieRow ret(input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra));
@@ -3354,6 +3413,7 @@ void CHThorSkipCatchActivity::onException(IException *E)
 
 const void * CHThorSkipCatchActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if(!buffer)
     {
         buffer.setown(new CRowBuffer(input->queryOutputMeta(), true));
@@ -3431,6 +3491,7 @@ void CHThorIfActivity::setInput(unsigned index, IHThorInput *_input)
 
 const void * CHThorIfActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (!selectedInput)
         return NULL;
 
@@ -3439,6 +3500,19 @@ const void * CHThorIfActivity::nextRow()
         processed++;
     return ret;
 }
+
+stat_type CHThorIfActivity::queryLocalCycles() const
+{
+    __int64 ret = activityStats.totalCycles;
+    if (inputTrue)
+        ret -= inputTrue->queryTotalCycles();
+    if (inputFalse)
+        ret -= inputFalse->queryTotalCycles();
+    if (ret < 0)
+        ret = 0;
+    return ret;
+}
+
 
 //=====================================================================================================
 
@@ -3466,6 +3540,7 @@ void CHThorCaseActivity::stop()
 
 const void *CHThorCaseActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (!selectedInput)
         return NULL;
 
@@ -3493,6 +3568,7 @@ void CHThorSampleActivity::ready()
 
 const void * CHThorSampleActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     for (;;)
     {
         OwnedConstRoxieRow ret(input->nextRow());
@@ -3536,6 +3612,7 @@ void CHThorAggregateActivity::ready()
 
 const void * CHThorAggregateActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (eof)
         return NULL;
     const void * next = input->nextRow();
@@ -3601,6 +3678,7 @@ void CHThorHashAggregateActivity::stop()
 
 const void * CHThorHashAggregateActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (eof)
         return NULL;
 
@@ -3674,6 +3752,7 @@ void CHThorSelectNActivity::ready()
 
 const void * CHThorSelectNActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (finished)
         return NULL;
 
@@ -3721,6 +3800,7 @@ void CHThorFirstNActivity::ready()
 
 const void * CHThorFirstNActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (finished)
         return NULL;
 
@@ -3794,6 +3874,7 @@ void CHThorChooseSetsActivity::ready()
 
 const void * CHThorChooseSetsActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (finished)
         return NULL;
 
@@ -3851,6 +3932,7 @@ void CHThorChooseSetsExActivity::stop()
 
 const void * CHThorChooseSetsExActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (gathered.ordinality() == 0)
     {
         curIndex = 0;
@@ -3980,6 +4062,7 @@ CHThorDegroupActivity::CHThorDegroupActivity(IAgentContext &_agent, unsigned _ac
 
 const void * CHThorDegroupActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     const void * ret = input->ungroupedNextRow();
     if (ret)
         processed++;
@@ -3988,6 +4071,7 @@ const void * CHThorDegroupActivity::nextRow()
 
 const void * CHThorDegroupActivity::nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
 {
+    ActivityTimer t(activityStats, timeActivities);
     const void * ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
     if (ret)
         processed++;
@@ -4027,6 +4111,7 @@ void CHThorGroupActivity::stop()
 
 const void *CHThorGroupActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (!firstDone)
     {
         firstDone = true;
@@ -4057,6 +4142,7 @@ const void *CHThorGroupActivity::nextRow()
 
 const void * CHThorGroupActivity::nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (firstDone)
     {
         if (next)
@@ -4100,6 +4186,7 @@ void CHThorGroupSortActivity::stop()
 
 const void *CHThorGroupSortActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if(!gotSorted)
         getSorted();
 
@@ -4541,6 +4628,7 @@ void CHThorGroupedActivity::stop()
 
 const void *CHThorGroupedActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (!firstDone)
     {
         next[0].setown(input->nextRow());
@@ -4593,6 +4681,7 @@ void CHThorSortedActivity::stop()
 
 const void *CHThorSortedActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (!firstDone)
     {
         firstDone = true;
@@ -4611,6 +4700,7 @@ const void *CHThorSortedActivity::nextRow()
 
 const void * CHThorSortedActivity::nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (next)
     {
         if (stepCompare->docompare(next, seek, numFields) >= 0)
@@ -4660,6 +4750,7 @@ void CHThorTraceActivity::stop()
 
 const void *CHThorTraceActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     OwnedConstRoxieRow ret(input->nextRow());
     if (!ret)
         return NULL;
@@ -4670,6 +4761,7 @@ const void *CHThorTraceActivity::nextRow()
 
 const void * CHThorTraceActivity::nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
 {
+    ActivityTimer t(activityStats, timeActivities);
     OwnedConstRoxieRow ret(input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra));
     if (ret)
     {
@@ -5017,6 +5109,7 @@ void CHThorJoinActivity::failLimit()
 
 const void *CHThorJoinActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     for (;;)
     {
         switch (state)
@@ -5334,6 +5427,16 @@ bool CHThorJoinActivity::isGrouped()
     return false;
 }
 
+stat_type CHThorJoinActivity::queryLocalCycles() const
+{
+    __int64 ret = CHThorActivityBase::queryLocalCycles();
+    if (input1)
+        ret -= input1->queryTotalCycles();
+    if (ret < 0) 
+        ret = 0;
+    return ret;
+}
+
 //=====================================================================================================
 
 CHThorSelfJoinActivity::CHThorSelfJoinActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorJoinArg &_arg, ThorActivityKind _kind, EclGraph & _graph)
@@ -5504,6 +5607,7 @@ bool CHThorSelfJoinActivity::fillGroup()
 
 const void * CHThorSelfJoinActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (limitedhelper)  {
         while(!eof) //limited match join
         {
@@ -5897,6 +6001,7 @@ const void * CHThorLookupJoinActivity::groupDenormalizeRecords(const void * left
 
 const void * CHThorLookupJoinActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if(!table)
         loadRight();
     switch (kind)
@@ -6145,6 +6250,16 @@ void CHThorLookupJoinActivity::failLimit()
     throw MakeStringException(0, "More than %u match candidates in join for row %s", limitLimit, xmlwrite.str());
 }
 
+stat_type CHThorLookupJoinActivity::queryLocalCycles() const
+{
+    __int64 ret = CHThorActivityBase::queryLocalCycles();
+    if (input1)
+        ret -= input1->queryTotalCycles();
+    if (ret < 0) 
+        ret = 0;
+    return ret;
+}
+
 unsigned const CHThorLookupJoinActivity::LookupTable::BadIndex(static_cast<unsigned>(-1));
 
 //=====================================================================================================
@@ -6270,6 +6385,7 @@ void CHThorAllJoinActivity::setInput(unsigned index, IHThorInput * _input)
 
 const void * CHThorAllJoinActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if(!started)
     {
         started = true;
@@ -6449,7 +6565,16 @@ bool CHThorAllJoinActivity::isGrouped()
     return input ? input->isGrouped() : false;
 }
 
-//=====================================================================================================
+stat_type CHThorAllJoinActivity::queryLocalCycles() const
+{
+    __int64 ret = CHThorActivityBase::queryLocalCycles();
+    if (input1)
+        ret -= input1->queryTotalCycles();
+    if (ret < 0) 
+        ret = 0;
+    return ret;
+}
+
 //=====================================================================================================
 
 CHThorWorkUnitWriteActivity::CHThorWorkUnitWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorWorkUnitWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph)
@@ -6472,6 +6597,7 @@ static void throwWuResultTooLarge(size32_t outputLimit, IHThorWorkUnitWriteArg &
 
 void CHThorWorkUnitWriteActivity::execute()
 {
+    ActivityTimer t(activityStats, timeActivities);
     unsigned flags = helper.getFlags();
     grouped = (POFgrouped & flags) != 0;
     // In absense of OPT_OUTPUTLIMIT check pre 5.2 legacy name OPT_OUTPUTLIMIT_LEGACY
@@ -6595,6 +6721,7 @@ CHThorDictionaryWorkUnitWriteActivity::CHThorDictionaryWorkUnitWriteActivity(IAg
 
 void CHThorDictionaryWorkUnitWriteActivity::execute()
 {
+    ActivityTimer t(activityStats, timeActivities);
     int sequence = helper.getSequence();
     const char *storedName = helper.queryName();
     assertex(storedName && *storedName);
@@ -6652,6 +6779,7 @@ CHThorRemoteResultActivity::CHThorRemoteResultActivity(IAgentContext &_agent, un
 
 void CHThorRemoteResultActivity::execute()
 {
+    ActivityTimer t(activityStats, timeActivities);
     OwnedConstRoxieRow result(input->nextRow());
     helper.sendResult(result);
 }
@@ -6674,6 +6802,7 @@ void CHThorInlineTableActivity::ready()
 
 const void *CHThorInlineTableActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     // Filtering empty rows, returns the next valid row
     while (curRow < numRows)
     {
@@ -6707,6 +6836,7 @@ CHThorActionActivity::CHThorActionActivity(IAgentContext &_agent, unsigned _acti
 
 void CHThorActionActivity::execute()
 {
+    ActivityTimer t(activityStats, timeActivities);
     helper.action();
 }
 
@@ -6722,6 +6852,7 @@ CHThorSideEffectActivity::CHThorSideEffectActivity(IAgentContext &_agent, unsign
 
 const void *CHThorSideEffectActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     try
     {
         helper.action();
@@ -6746,6 +6877,7 @@ void CHThorDummyActivity::execute()
 
 const void *CHThorDummyActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     return input ? input->nextRow() : NULL;
 }
 
@@ -6765,11 +6897,13 @@ void CHThorWhenActionActivity::ready()
 
 void CHThorWhenActionActivity::execute()
 {
+    ActivityTimer t(activityStats, timeActivities);
     graphElement->executeDependentActions(agent, graphElement->savedParentExtract, 1);
 }
 
 const void * CHThorWhenActionActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     return input->nextRow();
 }
 
@@ -6831,6 +6965,18 @@ void CHThorMultiInputActivity::updateProgress(IStatisticGatherer &progress) cons
     }
 }   
 
+stat_type CHThorMultiInputActivity::queryLocalCycles() const
+{
+    stat_type ret = activityStats.totalCycles;
+    ForEachItemIn(idx, inputs)
+    {
+        IHThorInput *i = inputs.item(idx);
+        if (i)
+            ret -= i->queryTotalCycles();
+    }
+    return ret;
+}
+
 //=====================================================================================================
 
 CHThorConcatActivity::CHThorConcatActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorFunnelArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
@@ -6849,6 +6995,7 @@ void CHThorConcatActivity::ready()
 
 const void *CHThorConcatActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (!curInput)
         return NULL;  // eof
     const void * next = curInput->nextRow();
@@ -6906,6 +7053,7 @@ void CHThorNonEmptyActivity::ready()
 
 const void *CHThorNonEmptyActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (!selectedInput)
     {
         ForEachItemIn(i, inputs)
@@ -6969,6 +7117,7 @@ const void * CHThorRegroupActivity::nextFromInputs()
 
 const void * CHThorRegroupActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (eof)
         return NULL;
 
@@ -7004,6 +7153,7 @@ void CHThorRollupGroupActivity::ready()
 
 const void * CHThorRollupGroupActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (eof)
         return NULL;
 
@@ -7067,6 +7217,7 @@ void CHThorCombineActivity::nextInputs(OwnedRowArray & out)
 
 const void *CHThorCombineActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     for (;;)
     {
         OwnedRowArray group;
@@ -7130,6 +7281,7 @@ void CHThorCombineGroupActivity::setInput(unsigned index, IHThorInput *_input)
 
 const void *CHThorCombineGroupActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     for (;;)
     {
         OwnedConstRoxieRow left(input->nextRow());
@@ -7318,6 +7470,7 @@ void CHThorWorkunitReadActivity::stop()
 
 const void *CHThorWorkunitReadActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if(diskread)
     {
         const void * ret = diskread->nextRow();
@@ -7408,6 +7561,7 @@ unsigned CHThorParseActivity::onMatch(ARowBuilder & self, const void * curRecord
 
 const void * CHThorParseActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     for (;;)
     {
         if (rowIter->isValid())
@@ -7468,6 +7622,7 @@ void CHThorEnthActivity::start()
 
 const void * CHThorEnthActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if(!started)
         start();
     OwnedConstRoxieRow ret;
@@ -7529,6 +7684,7 @@ void CHThorTopNActivity::stop()
 
 const void * CHThorTopNActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if(eof)
         return NULL;
     if(curIndex >= sortedCount)
@@ -7640,6 +7796,7 @@ void CHThorXmlParseActivity::stop()
 
 const void * CHThorXmlParseActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     for (;;)
     {
         if(xmlParser)
@@ -7736,6 +7893,7 @@ public:
 
     virtual const void * nextRow()
     {
+        ActivityTimer t(activityStats, timeActivities);
         const void * ret = merger.nextRow();
         if (ret)
             processed++;
@@ -7790,6 +7948,7 @@ CHThorWSCRowCallActivity::CHThorWSCRowCallActivity(IAgentContext &_agent, unsign
 
 const void *CHThorWSCRowCallActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     try
     {
         assertex(WSChelper);
@@ -7809,6 +7968,7 @@ const void *CHThorWSCRowCallActivity::nextRow()
 
 const void *CHThorHttpRowCallActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     try
     {
         if (WSChelper == NULL)
@@ -7828,6 +7988,7 @@ const void *CHThorHttpRowCallActivity::nextRow()
 
 const void *CHThorSoapRowCallActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     try
     {
         if (WSChelper == NULL)
@@ -7843,8 +8004,6 @@ const void *CHThorSoapRowCallActivity::nextRow()
     }
 }
 
-//---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 
 CHThorSoapRowActionActivity::CHThorSoapRowActionActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSoapActionArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorWSCBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph)
@@ -7877,6 +8036,7 @@ CHThorSoapDatasetCallActivity::CHThorSoapDatasetCallActivity(IAgentContext &_age
 
 const void * CHThorSoapDatasetCallActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     try
     {
         if (WSChelper == NULL)
@@ -8020,6 +8180,7 @@ CHThorChildIteratorActivity::CHThorChildIteratorActivity(IAgentContext &_agent, 
 
 const void *CHThorChildIteratorActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (eof)
         return NULL;
 
@@ -8071,6 +8232,7 @@ CHThorLinkedRawIteratorActivity::CHThorLinkedRawIteratorActivity(IAgentContext &
 
 const void *CHThorLinkedRawIteratorActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     const void *ret =helper.next();
     if (ret)
     {
@@ -8092,6 +8254,7 @@ CHThorChildNormalizeActivity::CHThorChildNormalizeActivity(IAgentContext &_agent
 
 const void *CHThorChildNormalizeActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (eof)
         return NULL;
 
@@ -8146,6 +8309,7 @@ CHThorChildAggregateActivity::CHThorChildAggregateActivity(IAgentContext &_agent
 
 const void *CHThorChildAggregateActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (eof)
         return NULL;
 
@@ -8203,6 +8367,7 @@ void CHThorChildGroupAggregateActivity::processRow(const void * next)
 
 const void * CHThorChildGroupAggregateActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (eof)
         return NULL;
 
@@ -8247,6 +8412,7 @@ void CHThorChildThroughNormalizeActivity::ready()
 
 const void *CHThorChildThroughNormalizeActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     try
     {
         for (;;)
@@ -8922,10 +9088,9 @@ void CHThorDiskReadBaseActivity::open()
     opened = true;
 }
 
-void CHThorDiskReadBaseActivity::updateProgress(IStatisticGatherer &progress) const
+void CHThorDiskReadBaseActivity::gatherActiveStats(IStatisticGatherer &progress) const
 {
-    CHThorActivityBase::updateProgress(progress);
-    StatsActivityScope scope(progress, activityId);
+    CHThorActivityBase::gatherActiveStats(progress);
     progress.addStatistic(StNumDiskReads, numDiskReads);
     progress.addStatistic(StCostFileAccess, diskAccessCost);
 }
@@ -9035,6 +9200,7 @@ void CHThorDiskReadActivity::stop()
 
 const void *CHThorDiskReadActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (!opened) open();
     if (eogPending && (lastGroupProcessed != processed))
     {
@@ -9170,6 +9336,7 @@ void CHThorDiskNormalizeActivity::gatherInfo(IFileDescriptor * fd)
 
 const void *CHThorDiskNormalizeActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (!opened) open();
     for (;;)
     {
@@ -9290,6 +9457,7 @@ void CHThorDiskAggregateActivity::gatherInfo(IFileDescriptor * fd)
 
 const void *CHThorDiskAggregateActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (finished) return NULL;
     try
     {
@@ -9363,6 +9531,7 @@ void CHThorDiskCountActivity::gatherInfo(IFileDescriptor * fd)
 
 const void *CHThorDiskCountActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (finished) return NULL;
 
     unsigned __int64 totalCount = 0;
@@ -9468,6 +9637,7 @@ void CHThorDiskGroupAggregateActivity::processRow(const void * next)
 
 const void *CHThorDiskGroupAggregateActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (eof)
         return NULL;
 
@@ -9580,6 +9750,7 @@ void CHThorCsvReadActivity::calcFixedDiskRecordSize()
 
 const void *CHThorCsvReadActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     while (!stopAfter || (processed - initialProcessed) < stopAfter)
     {
         checkOpenNext();
@@ -9697,6 +9868,7 @@ void CHThorXmlReadActivity::calcFixedDiskRecordSize()
 
 const void *CHThorXmlReadActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if(!opened) open();
     while (!eofseen && (!stopAfter  || (processed - initialProcessed) < stopAfter))
     {
@@ -9794,6 +9966,7 @@ void CHThorLocalResultReadActivity::ready()
 
 const void *CHThorLocalResultReadActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     const void * next = result->queryRow(curRow++);
     if (next)
     {
@@ -9884,6 +10057,7 @@ void CHThorLocalResultSpillActivity::ready()
 
 const void * CHThorLocalResultSpillActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     const void * ret = input->nextRow();
     if (ret)
     {
@@ -9960,6 +10134,7 @@ void CHThorLoopActivity::ready()
 
 const void * CHThorLoopActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (eof)
         return NULL;
 
@@ -10106,6 +10281,7 @@ void CHThorGraphLoopResultReadActivity::ready()
 
 const void *CHThorGraphLoopResultReadActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (result)
     {
         const void * next = result->queryRow(curRow++);
@@ -10198,6 +10374,7 @@ void CHThorGraphLoopActivity::ready()
 
 const void * CHThorGraphLoopActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (!executed)
     {
         executed = true;
@@ -10272,6 +10449,7 @@ void CHThorParallelGraphLoopActivity::ready()
 
 const void * CHThorParallelGraphLoopActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (!executed)
     {
         executed = true;
@@ -10365,6 +10543,11 @@ void LibraryCallOutput::resetEOF()
 void LibraryCallOutput::updateProgress(IStatisticGatherer &progress) const
 {
     owner->updateOutputProgress(progress, *this, processed);
+}
+
+stat_type LibraryCallOutput::queryTotalCycles() const
+{
+    return owner->queryTotalCycles();
 }
 
 
@@ -10644,6 +10827,7 @@ void CHThorNWaySelectActivity::ready()
 
 const void * CHThorNWaySelectActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (!selectedInput)
         return NULL;
     return selectedInput->nextRow();
@@ -10652,6 +10836,7 @@ const void * CHThorNWaySelectActivity::nextRow()
 
 const void * CHThorNWaySelectActivity::nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
 {
+    ActivityTimer t(activityStats, timeActivities);
     if (!selectedInput)
         return NULL;
     return selectedInput->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
@@ -10678,6 +10863,7 @@ void CHThorStreamedIteratorActivity::ready()
 
 const void *CHThorStreamedIteratorActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     assertex(rows);
     const void * next = rows->nextRow();
     if (next)
@@ -10719,6 +10905,7 @@ void CHThorExternalActivity::ready()
 
 const void *CHThorExternalActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     assertex(rows);
     const void * next = rows->nextRow();
     if (next)
@@ -11401,6 +11588,7 @@ void CHThorNewDiskReadActivity::onLimitExceeded()
 
 const void *CHThorNewDiskReadActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     //Avoid this check on each row- e.g., initialising streams with a null stream, which returns eof, and falls through to eof processing
     if (!opened) open();
 

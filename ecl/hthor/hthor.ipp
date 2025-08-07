@@ -212,6 +212,8 @@ protected:
     unsigned activityId;
     unsigned subgraphId;
     IEngineRowAllocator *rowAllocator = nullptr;
+    ActivityTimeAccumulator activityStats;
+    bool timeActivities{true};
 
     CHThorActivityBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _help, ThorActivityKind _kind, EclGraph & _graph);
     ~CHThorActivityBase();
@@ -230,6 +232,7 @@ public:
     virtual void setBoundGraph(IHThorBoundLoopGraph * graph) { UNIMPLEMENTED; }
     virtual __int64 getCount();
     virtual unsigned queryOutputs() const { return 1; }
+    virtual void gatherActiveStats(IStatisticGatherer &progress) const;
     virtual void updateProgress(IStatisticGatherer &progress) const;
     virtual void updateProgressForOther(IStatisticGatherer &progress, unsigned otherActivity, unsigned otherSubgraph) const;
     unsigned __int64 queryProcessed() const { return processed; }
@@ -240,6 +243,9 @@ public:
     void createRowAllocator();                                  
     virtual bool isPassThrough();
     virtual IEngineRowStream &queryStream() { return *this; }
+    virtual stat_type queryLocalCycles() const;
+    virtual stat_type queryTotalCycles() const override;
+
     inline const void *ungroupedNextRow() { return IEngineRowStream::ungroupedNextRow(); }
 
 protected:
@@ -319,7 +325,7 @@ protected:
     void open();
     void close();
     void publish();
-    void updateProgress(IStatisticGatherer &progress) const override;
+    virtual void gatherActiveStats(IStatisticGatherer &progress) const override;
     void updateWorkUnitResult(unsigned __int64 reccount);
     void finishOutput();
     bool next();
@@ -898,7 +904,8 @@ public:
         inputTrue->updateProgress(progress);
         if (inputFalse)
             inputFalse->updateProgress(progress);
-    }   
+    }
+    virtual stat_type queryLocalCycles() const override;
 };
 
 class CHThorSampleActivity : public CHThorSimpleActivityBase
@@ -1384,24 +1391,25 @@ private:
 public:
     CHThorJoinActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorJoinArg &_arg, ThorActivityKind _kind, EclGraph & _graph);
 
-    virtual void ready();
-    virtual void stop();
-    virtual bool needsAllocator() const { return true; }    
-    virtual void setInput(unsigned, IHThorInput *);
-    IHThorInput *queryOutput(unsigned index) { return this; }
+    virtual void ready() override;
+    virtual void stop() override;
+    virtual bool needsAllocator() const override { return true; }    
+    virtual void setInput(unsigned, IHThorInput *) override;
+    IHThorInput *queryOutput(unsigned index) override { return this; }
 
     //interface IHThorInput
-    virtual const void *nextRow();
+    virtual const void *nextRow() override;
 
-    virtual bool isGrouped();
+    virtual bool isGrouped() override;
 
-    virtual IOutputMetaData * queryOutputMeta() const { return outputMeta; }
-    virtual void updateProgress(IStatisticGatherer &progress) const
+    virtual IOutputMetaData * queryOutputMeta() const override { return outputMeta; }
+    virtual void updateProgress(IStatisticGatherer &progress) const override
     {
         CHThorActivityBase::updateProgress(progress);
         if (input1)
             input1->updateProgress(progress);
     }   
+    virtual stat_type queryLocalCycles() const override;
 };
 
 class CHThorSelfJoinActivity : public CHThorActivityBase
@@ -1550,6 +1558,7 @@ public:
         if (input1)
             input1->updateProgress(progress);
     }   
+    virtual stat_type queryLocalCycles() const override;
 
     virtual bool isGrouped();
 
@@ -1604,6 +1613,7 @@ public:
         if (input1)
             input1->updateProgress(progress);
     }   
+    virtual stat_type queryLocalCycles() const override;
 
     virtual bool isGrouped();
 
@@ -1790,6 +1800,7 @@ public:
 
     //interface IHThorInput
     virtual void updateProgress(IStatisticGatherer &progress) const;
+    virtual stat_type queryLocalCycles() const override;
 };
 
 class CHThorCaseActivity : public CHThorMultiInputActivity
@@ -2345,7 +2356,7 @@ public:
     virtual unsigned __int64 getLocalFilePosition(const void * row);
     virtual const char * queryLogicalFilename(const void * row) { return logicalFileName.get(); }
     virtual const byte * lookupBlob(unsigned __int64 id) { UNIMPLEMENTED; }
-    virtual void updateProgress(IStatisticGatherer &progress) const override;
+    virtual void gatherActiveStats(IStatisticGatherer &progress) const override;
 };
 
 class CHThorBinaryDiskReadBase : public CHThorDiskReadBaseActivity, implements IIndexReadContext
@@ -2826,6 +2837,7 @@ public:
     virtual void resetEOF();
     virtual IEngineRowStream &queryStream() { return *this; }
     virtual void updateProgress(IStatisticGatherer &progress) const;
+    virtual stat_type queryTotalCycles() const override;
 
 protected:
     IMPLEMENT_IINTERFACE;

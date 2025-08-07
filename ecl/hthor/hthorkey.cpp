@@ -197,10 +197,9 @@ public:
     virtual bool outputToFile(const char *) { return false; } 
     virtual IOutputMetaData * queryOutputMeta() const { return outputMeta; }
 
-    virtual void updateProgress(IStatisticGatherer &progress) const
+    virtual void gatherActiveStats(IStatisticGatherer &progress) const
     {
-        CHThorActivityBase::updateProgress(progress);
-        StatsActivityScope scope(progress, activityId);
+        CHThorActivityBase::gatherActiveStats(progress);
         contextLogger.recordStatistics(progress);
         progress.addStatistic(StNumPostFiltered, queryPostFiltered());
     }
@@ -4062,10 +4061,9 @@ public:
         helper.onLimitExceeded();
     }
 
-    virtual void updateProgress(IStatisticGatherer &progress) const
+    virtual void gatherActiveStats(IStatisticGatherer &progress) const
     {
-        CHThorThreadedActivityBase::updateProgress(progress);
-        StatsActivityScope scope(progress, activityId);
+        CHThorThreadedActivityBase::gatherActiveStats(progress);
         progress.addStatistic(StNumPreFiltered, prefiltered);
         progress.addStatistic(StNumPostFiltered, postfiltered);
         progress.addStatistic(StNumIndexSkips, skips);
