@@ -822,11 +822,9 @@ public:
         CFileSizeTracker *tracker = tempFileSizeTracker.query();
         return tracker ? tracker->queryActiveSize() : 0;
     }
-    cycle_t getElapsedCycles() const
+    void updateLastElapsedCycles()
     {
-        // Save last elapsed time so that the graph elapsed time and DeMonServer::reportStatus elapsed time are consistent
         lastElapsedCycles = get_cycles_now()-startCycles;
-        return lastElapsedCycles;
     }
     cycle_t getLastElapsedCycles() const
     {

@@ -134,7 +134,7 @@ public:
     virtual cost_type getDiskAccessCost() const override;
     virtual cost_type getExecuteCost() const override
     {
-        return money2cost_type(calculateThorCost(cycle_to_millisec(getElapsedCycles()), queryNodeClusterWidth()));
+        return money2cost_type(calculateThorCost(cycle_to_millisec(getLastElapsedCycles()), queryNodeClusterWidth()));
     }
     virtual cost_type getTotalCost() const override
     {

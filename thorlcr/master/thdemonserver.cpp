@@ -179,6 +179,7 @@ private:
                 ForEachItemIn (g, activeGraphs)
                 {
                     CGraphBase &graph = activeGraphs.item(g);
+                    graph.updateLastElapsedCycles();
                     updateGraphStats(currentWU, graphName, wfid, graph);
                 }
                 Owned<IWorkUnit> wu = &currentWU.lock();
@@ -206,6 +207,7 @@ private:
         {
             const CJobBase &job = graph->queryJob();
             IConstWorkUnit &currentWU = job.queryWorkUnit();
+            graph->updateLastElapsedCycles();
             updateGraphStats(currentWU, job.queryGraphName(), job.getWfid(), *graph);
             Owned<IWorkUnit> wu = &currentWU.lock();
             reportStatus(wu, *graph, finished, success);
