@@ -94,10 +94,6 @@ define([
             this._doDownload("gzip");
         },
 
-        _onDownloadXLS: function (args) {
-            this._doDownload("xls");
-        },
-
         _onFileDetails: function (args) {
             alert("todo");
         },
