@@ -262,7 +262,7 @@ struct cDirDesc
         }
 
         CThreadSafeMinHashTable(unsigned _initialSize = 7) : CMinHashTable<C>(_initialSize) {}
-        ~CThreadSafeMinHashTable() {}
+        ~CThreadSafeMinHashTable() = default;
 
         void add(C *c)
         {
@@ -310,6 +310,7 @@ struct cDirDesc
     unsigned hash;
     CThreadSafeMinHashTable<cDirDesc> dirs;
     CThreadSafeMinHashTable<cFileDesc> files;
+    mutable CriticalSection dirDescCrit;
     offset_t totalsize[2];              //  across all nodes
     offset_t minsize[2];                //  smallest node size
     offset_t maxsize[2];                //  largest node size
@@ -497,12 +498,12 @@ struct cDirDesc
         return false;
     }
 
-    void addNodeStats(unsigned node,unsigned drv,offset_t sz,CriticalSection &crit)
+    void addNodeStats(unsigned node,unsigned drv,offset_t sz)
     {
         if (drv>1)
             drv = 1;
 
-        CriticalBlock block(crit);
+        CriticalBlock block(dirDescCrit);
         totalsize[drv] += sz;
         if (!minnode[drv]||(minsize[drv]>sz)) {
             minnode[drv] = node+1;
@@ -1180,7 +1181,7 @@ public:
                 return false;
             path.setLength(dsz);
         }
-        pdir->addNodeStats(node,drv,nsz,crit);
+        pdir->addNodeStats(node,drv,nsz);
         return true;
 
     }
