@@ -1486,7 +1486,7 @@ HqlCppTranslator::HqlCppTranslator(IErrorReceiver * _errors, const char * _soNam
 
     //Ensure that any errors reported within the code generator automatically abort compiling immediately
     errorProcessor.setown(createAbortingErrorReceiver(*localOnWarnings));
-    targetClusterTypes.push_back(_targetClusterType);
+    targetClusterTypes.emplace_back(_targetClusterType);
     {
         CriticalBlock block(*systemCS);
         if (!cppSystemScope)
@@ -1568,6 +1568,7 @@ ClusterType HqlCppTranslator::pushTargetClusterType(ClusterType clusterType)
 
 ClusterType HqlCppTranslator::popTargetClusterType()
 {
+    assertex(targetClusterTypes.size() > 1);
     ClusterType old = targetClusterTypes.back();
     targetClusterTypes.pop_back();
     return old;
