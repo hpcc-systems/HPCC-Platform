@@ -15,13 +15,22 @@
     limitations under the License.
 ############################################################################## */
 
-IMPORT Std;
-
 // HPCC-32793
 
-// Assumes execution on mythor1 thor cluster
+#OPTION('enableClusterHopping', TRUE);
 
-ds1 := NOFOLD(DATASET(10000, TRANSFORM({UNSIGNED4 n}, SELF.n := RANDOM()), DISTRIBUTED));
+MyLayout := RECORD
+    UNSIGNED4   id;
+    UNSIGNED4   n;
+END;
 
-// Data: Build data on a different thor cluster
-EXECUTE('mythor2', ds1);
+MakeData(UNSIGNED4 numRows) := DATASET(numRows, TRANSFORM(MyLayout, SELF.id := HASH(COUNTER), SELF.n := RANDOM()), DISTRIBUTED);
+
+ds := MakeData(1000) : INDEPENDENT;
+
+// Assumes BWR submitted to thor named 'mythor1'
+
+x := EVALUATE('mythor2', SORT(ds, id));
+y := EVALUATE(ECLAGENT, SORT(ds, n));
+
+OUTPUT(x+y);
