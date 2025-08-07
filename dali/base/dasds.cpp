@@ -6441,6 +6441,14 @@ void CCovenSDSManager::loadStore(const bool *abort)
         for(i = 0; i < 5; i++)
         {
             PROGLOG("Load test %d", i);
+
+            // Release previous root if it exists
+            if (root)
+            {
+                root->Release();
+                root = nullptr;
+            }
+
             // Try loading binary store first if it exists
             try
             {
@@ -6452,6 +6460,14 @@ void CCovenSDSManager::loadStore(const bool *abort)
                 EXCLOG(e);
                 e->Release();
             }
+
+            // Release previous root if it exists
+            if (root)
+            {
+                root->Release();
+                root = nullptr;
+            }
+
             root = loadStoreType(StoreFormat::XML, bufferSize, abort);
         }
         PROGLOG("Load tests complete");
