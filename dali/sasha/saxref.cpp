@@ -246,9 +246,70 @@ struct cFileDesc // no virtuals
 
 struct cDirDesc
 {
+    // Include thread safe version of CMinHashTable for parallelized scanDirectories
+    // The first() and next() methods were not overloaded, so to use in a thread safe way,
+    // the crit member should be used to create a CriticalBlock before calling first()
+    // and unblock after the last next()
+    template <class C> class CThreadSafeMinHashTable : public CMinHashTable<C>
+    {
+    public:
+        mutable CriticalSection crit;
+
+        void expand(bool expand=true)
+        {
+            CriticalBlock block(crit);
+            CMinHashTable<C>::expand(expand);
+        }
+
+        CThreadSafeMinHashTable(unsigned _initialSize = 7) : CMinHashTable<C>(_initialSize) {}
+        ~CThreadSafeMinHashTable() {}
+
+        void add(C *c)
+        {
+            CriticalBlock block(crit);
+            CMinHashTable<C>::add(c);
+        }
+
+        C *findh(const char *key,unsigned h)
+        {
+            CriticalBlock block(crit);
+            return CMinHashTable<C>::findh(key, h);
+        }
+
+        C *find(const char *key,bool add)
+        {
+            CriticalBlock block(crit);
+            return CMinHashTable<C>::find(key, add);
+        }
+
+        unsigned findIndex(const char *key, unsigned h)
+        {
+            CriticalBlock block(crit);
+            return CMinHashTable<C>::findIndex(key, h);
+        }
+
+        C *getIndex(unsigned v) const
+        {
+            CriticalBlock block(crit);
+            return CMinHashTable<C>::getIndex(v);
+        }
+
+        void remove(C *c)
+        {
+            CriticalBlock block(crit);
+            CMinHashTable<C>::remove(c);
+        }
+
+        unsigned ordinality()
+        {
+            CriticalBlock block(crit);
+            return CMinHashTable<C>::ordinality();
+        }
+    };
+
     unsigned hash;
-    CMinHashTable<cDirDesc> dirs;       
-    CMinHashTable<cFileDesc> files; 
+    CThreadSafeMinHashTable<cDirDesc> dirs;
+    CThreadSafeMinHashTable<cFileDesc> files;
     offset_t totalsize[2];              //  across all nodes
     offset_t minsize[2];                //  smallest node size
     offset_t maxsize[2];                //  largest node size
