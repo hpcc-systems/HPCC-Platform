@@ -1509,6 +1509,8 @@ void WorkunitRuleAnalyser::update(IWorkUnit *wu)
 
 cost_type WorkunitRuleAnalyser::getTotalCostPenalty() const
 {
+    // All issues recorded here are related to activities, so the total cost penalty is the sum of all activity issues.
+    // Note, once graph/subgraph issues, this code may need to change.
     cost_type totalCost = 0;
     ForEachItemIn(i, issues)
         totalCost += issues.item(i).getCostPenalty();
@@ -2244,7 +2246,31 @@ void WUANALYSIS_API analyseWorkunit(IConstWorkUnit &workunit, const char *optGra
         if (analyser.hasIssues())
         {
             analyser.update(wu);
-            wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, CostOptimizerName, StCostSavingPotential, "Aggregate cost saving potential", analyser.getTotalCostPenalty(), 1, 0, StatsMergeSum);
+            cost_type totalCostSavingPotential = 0.0;
+            if (!isEmptyString(optGraph) && !streq(optGraph, "*"))
+            {
+                wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, optGraph, StCostSavingPotential, "Cost saving potential", analyser.getTotalCostPenalty(), 1, 0, StatsMergeSum);
+                // add up the cost saving potential for all graphs
+                WuScopeFilter filter;
+                filter.addOutputStatistic(StCostSavingPotential);
+                filter.addRequiredStat(StCostSavingPotential);
+                filter.addScopeType(SSTgraph);
+                filter.setDepth(3, 3);
+                filter.setIncludeNesting(0);
+                filter.setSources(SSFsearchGlobalStats);
+                filter.finishedFilter();
+                Owned<IConstWUScopeIterator> it = &wu->getScopeIterator(filter);
+                for (it->first(); it->isValid(); )
+                {
+                    stat_type currentCost = 0;
+                    if (it->getStat(StCostSavingPotential, currentCost))
+                        totalCostSavingPotential += currentCost;
+                    it->next();
+                }
+            }
+            else
+                totalCostSavingPotential += analyser.getTotalCostPenalty();
+            wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, "", StCostSavingPotential, "Cost saving potential", totalCostSavingPotential, 1, 0, StatsMergeSum);
         }
     }
 }
