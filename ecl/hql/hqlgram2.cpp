@@ -11574,6 +11574,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case DOTDOT: msg.append(".."); break;
     case DYNAMIC: msg.append("DYNAMIC"); break;
     case EBCDIC: msg.append("EBCDIC"); break;
+    case ECLAGENT: msg.append("ECLAGENT"); break;
     case ECLCRC: msg.append("ECLCRC"); break;
     case ELSE: msg.append("ELSE"); break;
     case ELSEIF: msg.append("ELSEIF"); break;
