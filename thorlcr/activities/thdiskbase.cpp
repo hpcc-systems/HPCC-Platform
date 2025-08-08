@@ -159,6 +159,7 @@ void CWriteMasterBase::init()
     queryThorFileManager().addScope(container.queryJob(), helperFileName, expandedFileName, mangle);
     fileName.set(expandedFileName);
     dlfn.set(fileName);
+    fileDesc.clear();
     if (diskHelperBase->getFlags() & TDWextend)
     {
         assertex(0 == (diskHelperBase->getFlags() & (TDXtemporary|TDXjobtemp)));
@@ -396,6 +397,7 @@ CWriteMasterBase::CWriteMasterBase(CMasterGraphElement *info)
      : CMasterActivity(info, diskWriteActivityStatistics)
 {
     diskHelperBase = (IHThorDiskWriteArg *)queryHelper();
+    reInit = 0 != (diskHelperBase->getFlags() & (TDXvarfilename|TDXdynamicfilename));
     targetOffset = 0;
 }
 
