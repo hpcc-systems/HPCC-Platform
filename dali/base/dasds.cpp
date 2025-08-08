@@ -2746,6 +2746,13 @@ public:
         return new CServerRemoteTree(mb);
     }
 
+    IPropertyTree *create(IBufferedSerialInputStream &in) override
+    {
+        CServerRemoteTree *tree = new CServerRemoteTree();
+        tree->deserializeFromStream(in);
+        return tree;
+    }
+
     virtual void createChildMap() override { children = new COrphanHandler(); }
 
     inline bool testExternalCandidate()
