@@ -53,6 +53,7 @@ struct IHThorInput : public IInputBase
     virtual void updateProgress(IStatisticGatherer &progress) const = 0;
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector) { return false; }
     virtual void resetEOF() { }
+    virtual stat_type queryTotalCycles() const = 0;
 
     // HThor is not going to support parallel streams
     virtual IEngineRowStream &queryStream() = 0;

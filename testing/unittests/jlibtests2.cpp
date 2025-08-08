@@ -124,8 +124,8 @@ public:
             CPPUNIT_ASSERT(!recorder.startRecording("traceid", "eventtrace.evtxxx", false));
 
             // Record some events
-            recorder.recordIndexLookup(1, branchOffset, NodeBranch, true, 9876);
-            recorder.recordIndexLookup(1, nodeSize, NodeLeaf, false, 0);
+            recorder.recordIndexLookup(1, branchOffset, NodeBranch, true, 9876, 400);
+            recorder.recordIndexLookup(1, nodeSize, NodeLeaf, false, 0, 0);
             recorder.recordIndexLoad(1, nodeSize, NodeLeaf, nodeSize*8, 500, 300);
             recorder.recordIndexEviction(1, branchOffset, NodeBranch, nodeSize);
 
@@ -144,19 +144,19 @@ public:
             CPPUNIT_ASSERT(!recorder.isRecording());
 
             //These should be ignored - count checked later on
-            recorder.recordIndexLookup(2, 400, NodeLeaf, false, 0);
-            recorder.recordIndexLookup(1, 800, NodeLeaf, false, 0);
+            recorder.recordIndexLookup(2, 400, NodeLeaf, false, 0, 0);
+            recorder.recordIndexLookup(1, 800, NodeLeaf, false, 0, 0);
 
             recorder.pauseRecording(false, true);
             CPPUNIT_ASSERT(recorder.isRecording());
 
             // Record more events
-            recorder.recordIndexLookup(2, 400, NodeLeaf, false, 0);
-            recorder.recordIndexLookup(1, 800, NodeLeaf, false, 0);
+            recorder.recordIndexLookup(2, 400, NodeLeaf, false, 0, 0);
+            recorder.recordIndexLookup(1, 800, NodeLeaf, false, 0, 0);
             recorder.recordIndexLoad(2, 500, NodeLeaf, 2048, 600, 400);
             recorder.recordIndexLoad(1, 800, NodeLeaf, 2048, 600, 400);
-            recorder.recordIndexLookup(1, 800, NodeLeaf, true, 2048);
-            recorder.recordIndexLookup(1, 1200, NodeLeaf, false, 0);
+            recorder.recordIndexLookup(1, 800, NodeLeaf, true, 2048, 600);
+            recorder.recordIndexLookup(1, 1200, NodeLeaf, false, 0, 0);
             recorder.recordIndexEviction(2, 500, NodeLeaf, 2048);
             recorder.recordIndexLoad(1, 1200, NodeLeaf, 2048, 600, 400);
 
@@ -234,7 +234,7 @@ public:
             // Record some events
             for (unsigned i=0; i < 100'000; i++)
             {
-                recorder.recordIndexLookup(1, i*nodeSize, NodeLeaf, false, 0);
+                recorder.recordIndexLookup(1, i*nodeSize, NodeLeaf, false, 0, 0);
                 recorder.recordIndexLoad(1, i*nodeSize, NodeLeaf, nodeSize*8, 500, 300);
             }
 
@@ -269,7 +269,7 @@ public:
             EventRecorder &recorder = queryRecorder();
             for (unsigned i=0; i < count; i++)
             {
-                recorder.recordIndexLookup(id, i*nodeSize, NodeLeaf, false, 0);
+                recorder.recordIndexLookup(id, i*nodeSize, NodeLeaf, false, 0, 0);
                 recorder.recordIndexLoad(id, i*nodeSize, NodeLeaf, nodeSize*8, 500, 300);
             }
             return 0;
@@ -406,7 +406,7 @@ attribute: EventThreadId = 100
 attribute: FileId = 12345
 attribute: FileOffset = 67890
 attribute: NodeKind = 0
-attribute: ExpandedSize = 4567
+attribute: InMemorySize = 4567
 )!!!";
             EventRecorder& recorder = queryRecorder();
             CPPUNIT_ASSERT(recorder.startRecording("all=true", "eventtrace.evt", false));
@@ -436,7 +436,7 @@ attribute: EventThreadId = 100
 attribute: FileId = 12345
 attribute: FileOffset = 67890
 attribute: NodeKind = 0
-attribute: ExpandedSize = 4567
+attribute: InMemorySize = 4567
 event: DaliConnect
 attribute: EventTimestamp = '2025-05-08T00:00:00.000001010'
 attribute: EventTraceId = '00000000000000000000000000000000'
@@ -891,5 +891,146 @@ public:
 
 CPPUNIT_TEST_SUITE_REGISTRATION(ThreadPoolSizeTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(ThreadPoolSizeTest, "ThreadPoolSizeTest");
+
+//--------------------------------------------------------------------------------------------------
+
+#include "jregexp.hpp"
+#include <regex>
+
+class RegExprTest : public CppUnit::TestFixture
+{
+    static constexpr const char * archivePatternJlib = "[.]{zip|tar|tar[.]gz|tgz}{/|\\\\}";
+    static constexpr const char * archivePatternStdlib = "[.](zip|tar|tar[.]gz|tgz)(/|\\\\)";
+
+    CPPUNIT_TEST_SUITE(RegExprTest);
+    CPPUNIT_TEST(testRegExprMatches);
+    CPPUNIT_TEST(testStdRegexMatches);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    const char *splitNameStdlib(const char *fileName)
+    {
+        std::regex archiveSignatureRegex(archivePatternStdlib);
+        std::cmatch match;
+        if (std::regex_search(fileName, match, archiveSignatureRegex))
+        {
+            // return the text that follows the match
+            return match[0].second;
+        }
+        else
+            return nullptr;
+    }
+
+    const char *splitNameJlib(const char *fileName)
+    {
+        RegExpr archiveSignature(archivePatternJlib);
+        const char *sig = archiveSignature.find(fileName);
+        if (sig)
+            return sig+archiveSignature.findlen();
+        else
+            return NULL;
+    }
+
+    void testRegExprMatches()
+    {
+        // Pattern: "[.]{zip|tar|tar[.]gz|tgz}{/|\\}"
+        RegExpr expr(archivePatternJlib);
+
+        // Should match
+        CPPUNIT_ASSERT(expr.find(".zip/"));
+        CPPUNIT_ASSERT(expr.find(".zip\\"));
+        CPPUNIT_ASSERT(expr.find(".tar/"));
+        CPPUNIT_ASSERT(expr.find(".tar\\"));
+        CPPUNIT_ASSERT(expr.find(".tar.gz/"));
+        CPPUNIT_ASSERT(expr.find(".tar.gz\\"));
+        CPPUNIT_ASSERT(expr.find(".tgz/"));
+        CPPUNIT_ASSERT(expr.find(".tgz\\"));
+
+        // Should not match (wrong extension)
+        CPPUNIT_ASSERT(!expr.find(".rar/"));
+        CPPUNIT_ASSERT(!expr.find(".zipx/"));
+        CPPUNIT_ASSERT(!expr.find(".tarx/"));
+        CPPUNIT_ASSERT(!expr.find(".tar.gzx/"));
+        CPPUNIT_ASSERT(!expr.find(".tgzx/"));
+
+        // Should not match (missing trailing / or \\)
+        CPPUNIT_ASSERT(!expr.find(".zip"));
+        CPPUNIT_ASSERT(!expr.find(".tar"));
+        CPPUNIT_ASSERT(!expr.find(".tar.gz"));
+        CPPUNIT_ASSERT(!expr.find(".tgz"));
+
+        // Should match (extra characters after trailing)
+        CPPUNIT_ASSERT(expr.find(".zip//"));
+        CPPUNIT_ASSERT(expr.find(".tar\\abc"));
+        CPPUNIT_ASSERT(expr.find(".tar.gz/abc"));
+        CPPUNIT_ASSERT(expr.find(".tgz\\abc"));
+
+        // Should match (extra characters before trailing)
+        CPPUNIT_ASSERT(expr.find("abc.zip//"));
+        CPPUNIT_ASSERT(expr.find("blah.zip.x.tar\\abc"));
+        CPPUNIT_ASSERT(expr.find("azurefile:blah@zz.tar.gz/abc"));
+
+        // Should not match (missing dot)
+        CPPUNIT_ASSERT(!expr.find("zip/"));
+        CPPUNIT_ASSERT(!expr.find("tar/"));
+        CPPUNIT_ASSERT(!expr.find("tar.gz/"));
+        CPPUNIT_ASSERT(!expr.find("tgz/"));
+
+        CPPUNIT_ASSERT_EQUAL_STR("abc", splitNameJlib("azurefile:blah@zz.tar.gz/abc"));
+        CPPUNIT_ASSERT_EQUAL_STR("abc.zip/xyz", splitNameJlib("azurefile:blah@zz.tar.gz/abc.zip/xyz"));
+    }
+
+    void testStdRegexMatches()
+    {
+        // Equivalent std::regex pattern: R"(\.(zip|tar|tar\.gz|tgz)[/\\])"
+        std::regex re(archivePatternStdlib);
+
+        // Should match
+        CPPUNIT_ASSERT(std::regex_search(".zip/", re));
+        CPPUNIT_ASSERT(std::regex_search(".zip\\", re));
+        CPPUNIT_ASSERT(std::regex_search(".tar/", re));
+        CPPUNIT_ASSERT(std::regex_search(".tar\\", re));
+        CPPUNIT_ASSERT(std::regex_search(".tar.gz/", re));
+        CPPUNIT_ASSERT(std::regex_search(".tar.gz\\", re));
+        CPPUNIT_ASSERT(std::regex_search(".tgz/", re));
+        CPPUNIT_ASSERT(std::regex_search(".tgz\\", re));
+
+        // Should not match (wrong extension)
+        CPPUNIT_ASSERT(!std::regex_search(".rar/", re));
+        CPPUNIT_ASSERT(!std::regex_search(".zipx/", re));
+        CPPUNIT_ASSERT(!std::regex_search(".tarx/", re));
+        CPPUNIT_ASSERT(!std::regex_search(".tar.gzx/", re));
+        CPPUNIT_ASSERT(!std::regex_search(".tgzx/", re));
+
+        // Should not match (missing trailing / or \\)
+        CPPUNIT_ASSERT(!std::regex_search(".zip", re));
+        CPPUNIT_ASSERT(!std::regex_search(".tar", re));
+        CPPUNIT_ASSERT(!std::regex_search(".tar.gz", re));
+        CPPUNIT_ASSERT(!std::regex_search(".tgz", re));
+
+        // Should match (extra characters after trailing)
+        CPPUNIT_ASSERT(std::regex_search(".zip//", re));
+        CPPUNIT_ASSERT(std::regex_search(".tar\\abc", re));
+        CPPUNIT_ASSERT(std::regex_search(".tar.gz/abc", re));
+        CPPUNIT_ASSERT(std::regex_search(".tgz\\abc", re));
+
+        // Should match (extra characters before trailing)
+        CPPUNIT_ASSERT(std::regex_search("abc.zip//", re));
+        CPPUNIT_ASSERT(std::regex_search("blah.zip.x.tar\\abc", re));
+        CPPUNIT_ASSERT(std::regex_search("azurefile:blah@zz.tar.gz/abc", re));
+
+        // Should not match (missing dot)
+        CPPUNIT_ASSERT(!std::regex_search("zip/", re));
+        CPPUNIT_ASSERT(!std::regex_search("tar/", re));
+        CPPUNIT_ASSERT(!std::regex_search("tar.gz/", re));
+        CPPUNIT_ASSERT(!std::regex_search("tgz/", re));
+
+        CPPUNIT_ASSERT_EQUAL_STR("abc", splitNameStdlib("azurefile:blah@zz.tar.gz/abc"));
+        CPPUNIT_ASSERT_EQUAL_STR("abc.zip/xyz", splitNameStdlib("azurefile:blah@zz.tar.gz/abc.zip/xyz"));
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(RegExprTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(RegExprTest, "RegExprTest");
 
 #endif // _USE_CPPUNIT

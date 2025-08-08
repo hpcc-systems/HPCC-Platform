@@ -125,7 +125,7 @@ class CascadeManager : public CInterface
             const SocketEndpoint &ep = servers.item(idx);
             try
             {
-                if (traceLevel)
+                if (doTrace(traceRoxieLock))
                 {
                     StringBuffer epStr;
                     ep.getEndpointHostText(epStr);
@@ -155,7 +155,7 @@ class CascadeManager : public CInterface
                 }
                 activeChildren.append(*sock.getClear());
                 activeIdxes.append(idx);
-                if (traceLevel)
+                if (doTrace(traceRoxieLock))
                 {
                     StringBuffer epStr;
                     ep.getEndpointHostText(epStr);
@@ -216,12 +216,12 @@ public:
         {
             StringBuffer dummy;
             doChildQuery(idx, "<control:childlock unlock='1'/>", dummy);
-            if (traceLevel)
+            if (doTrace(traceRoxieLock))
                 DBGLOG("UnlockChild %d returned %s", idx, dummy.str());
         }
         catch (IException *E)
         {
-            if (traceLevel)
+            if (doTrace(traceRoxieLock))
                 logctx.logOperatorException(E, __FILE__, __LINE__, "In unlockChild");
             E->Release();
         }
@@ -269,7 +269,7 @@ private:
                 unlockChildren();
                 if (!got)
                     throw MakeStringException(ROXIE_LOCK_ERROR, "lock failed");
-                if (traceLevel)
+                if (doTrace(traceRoxieLock))
                     DBGLOG("Lock succeeded but revision updated - go around again");
             }
             else

@@ -1415,7 +1415,10 @@ bool CWsTopologyEx::onTpClusterInfo(IEspContext &context, IEspTpClusterInfoReque
         Owned<IRemoteConnection> conn = querySDS().connect("/Status/Servers/", myProcessSession(),RTM_SUB,SDS_LOCK_TIMEOUT);
         if (conn)
         {
-            Owned<IConstWUClusterInfo> clusterInfo = getWUClusterInfoByName(req.getName());
+            StringBuffer encodedName;
+            // Prevent Blind XPath Injection
+            encodeXML(req.getName(), encodedName);
+            Owned<IConstWUClusterInfo> clusterInfo = getWUClusterInfoByName(encodedName.str());
             if (clusterInfo == nullptr)
                 throw makeStringExceptionV(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid Target Cluster name provided: '%s'", req.getName());
 

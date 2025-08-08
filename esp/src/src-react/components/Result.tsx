@@ -374,7 +374,6 @@ export const Result: React.FunctionComponent<ResultProps> = ({
                     { key: "zip", text: nlsHPCC.Zip, onClick: () => doDownload({ type: "zip", wuid, resultName: result.ResultName, sequence: result.Sequence, logicalName: result.LogicalFileName }) },
                     { key: "gzip", text: nlsHPCC.GZip, onClick: () => doDownload({ type: "gzip", wuid, resultName: result.ResultName, sequence: result.Sequence, logicalName: result.LogicalFileName }) },
                     { key: "json", text: nlsHPCC.JSON, onClick: () => doDownload({ type: "json", wuid, resultName: result.ResultName, sequence: result.Sequence, logicalName: result.LogicalFileName }) },
-                    { key: "xls", text: nlsHPCC.XLS, title: nlsHPCC.DownloadToCSVNonFlatWarning, onClick: () => doDownload({ type: "xls", wuid, resultName: result.ResultName, sequence: result.Sequence, logicalName: result.LogicalFileName }) },
                     { key: "csv", text: nlsHPCC.CSV, title: nlsHPCC.DownloadToCSVNonFlatWarning, onClick: () => doDownload({ type: "csv", wuid, resultName: result.ResultName, sequence: result.Sequence, logicalName: result.LogicalFileName }) },
                 ]
             }

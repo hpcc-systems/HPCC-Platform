@@ -33,6 +33,7 @@
 #include <sys/stat.h>
 #include <archive.h>
 #include <archive_entry.h>
+#include <regex>
 
 /*
  * Direct access to files in zip archives (and other libarchive-supported formats), without needing to extract them first
@@ -41,24 +42,23 @@
 
 //Require a trailing / on zip files - use /. for the root - otherwise zip files always get expanded when they are read.
 #ifdef _WIN32
-#define ARCHIVE_SIGNATURE "[.]{zip|tar|tar[.]gz|tgz}{/|\\\\}"
+#define ARCHIVE_SIGNATURE "[.](zip|tar|tar[.]gz|tgz)(/|\\\\)"
 #else
-#define ARCHIVE_SIGNATURE "[.]{zip|tar|tar[.]gz|tgz}/"
+#define ARCHIVE_SIGNATURE "[.](zip|tar|tar[.]gz|tgz)/"
 #endif
 
-static RegExpr *signature;
-static CriticalSection *lock;
+static const std::regex archiveSignatureRegex(ARCHIVE_SIGNATURE);
 
 static const char *splitName(const char *fileName)
 {
     if (!fileName)
-        return NULL;
-    CriticalBlock b(*lock);
-    const char *sig = signature->find(fileName);
-    if (sig)
-        return sig+signature->findlen();
+        return nullptr;
+
+    std::cmatch match;
+    if (std::regex_search(fileName, match, archiveSignatureRegex))
+        return match[0].second;
     else
-        return NULL;
+        return nullptr;
 }
 
 static void splitArchivedFileName(const char *fullName, StringAttr &container, StringAttr &option, StringAttr &relPath)
@@ -620,7 +620,6 @@ protected:
 
 extern ARCHIVEFILE_API void installFileHook()
 {
-    CriticalBlock b(*lock); // Probably overkill!
     if (!archiveFileHook)
     {
         archiveFileHook = new CArchiveFileHook;
@@ -630,22 +629,16 @@ extern ARCHIVEFILE_API void installFileHook()
 
 extern ARCHIVEFILE_API void removeFileHook()
 {
-    if (lock)
+    if (archiveFileHook)
     {
-        CriticalBlock b(*lock); // Probably overkill!
-        if (archiveFileHook)
-        {
-            removeContainedFileHook(archiveFileHook);
-            delete archiveFileHook;
-            archiveFileHook = NULL;
-        }
+        removeContainedFileHook(archiveFileHook);
+        delete archiveFileHook;
+        archiveFileHook = NULL;
     }
 }
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
-    lock = new CriticalSection;
-    signature = new RegExpr(ARCHIVE_SIGNATURE);
     archiveFileHook = NULL;
     return true;
 }
@@ -658,8 +651,4 @@ MODULE_EXIT()
         ::Release(archiveFileHook);
         archiveFileHook = NULL;
     }
-    delete signature;
-    delete lock;
-    lock = NULL;
-    signature = NULL;
 }

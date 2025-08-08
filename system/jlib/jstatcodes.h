@@ -361,6 +361,8 @@ enum StatisticKind
     StCycleQueryConsumeCycles,
     StNumSuccesses,
     StNumSoapcallRetries,
+    StTimeQueryPreparation,
+    StCycleQueryPreparationCycles,
     StMax,
 
     //For any quantity there is potentially the following variants.

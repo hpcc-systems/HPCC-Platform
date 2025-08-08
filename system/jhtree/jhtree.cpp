@@ -3110,7 +3110,7 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
 
                 //Update ctx stats outside of the critical section.
                 if (unlikely(recordingEvents()))
-                    queryRecorder().recordIndexLookup(iD, pos, type, true, fastPathMatch->getMemSize());
+                    queryRecorder().recordIndexLookup(iD, pos, type, true, fastPathMatch->getMemSize(), fastPathMatch->getLoadExpandTime());
                 if (ctx)
                      ctx->noteStatistic(hitStatId[cacheType], 1);
                 //MORE: Should there be a diskCache per cacheType?
@@ -3133,7 +3133,7 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
     }
 
     if (unlikely(recordingEvents()))
-        queryRecorder().recordIndexLookup(iD, pos, type, false, 0);
+        queryRecorder().recordIndexLookup(iD, pos, type, false, 0, 0);
 
     //If an exception is thrown before the node is cleanly loaded we need to remove the partially constructed
     //node from the cache otherwise it may never get loaded, and can prevent items being removed from the cache
@@ -3174,7 +3174,7 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
                 {
                     //This should never happen, but if it does, report as much information as possible to diagnose the issue.
                     StringBuffer msg;
-                    msg.appendf("Node type mismatch for node %s@%llx (expected %s, got %s)", nodeLoader.queryFileName(), pos, cacheTypeText[type], cacheTypeText[node->getNodeType()]);
+                    msg.appendf("Node type mismatch for node %s@%llx (expected %s, got %s:%u)", nodeLoader.queryFileName(), pos, cacheTypeText[type], node->getNodeTypeName(), node->getNodeType());
                     node->Release();
                     throwUnexpectedX(msg);
                 }

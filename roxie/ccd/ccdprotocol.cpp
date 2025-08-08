@@ -386,15 +386,13 @@ public:
 
     ProtocolQueryWorker(ProtocolListener *_listener) : listener(_listener)
     {
-        startNs = nsTick();
-        time(&startTime);
+        resetStartTime();
     }
 
     //  interface IPooledThread
     virtual void init(void *) override
     {
-        startNs = nsTick();
-        time(&startTime);
+        resetStartTime();
     }
 
     virtual bool canReuse() const override
@@ -407,6 +405,12 @@ public:
         if (traceLevel)
             DBGLOG("RoxieQueryWorker thread stop requested with query active - ignoring");
         return true;
+    }
+
+    void resetStartTime()
+    {
+        startNs = nsTick();
+        time(&startTime);
     }
 
 protected:
@@ -1763,8 +1767,7 @@ readAnother:
             if (resetQstart)
             {
                 resetQstart = false;
-                startNs = nsTick();
-                time(&startTime);
+                resetStartTime();
                 msgctx.setown(sink->createMsgContext(startTime));
             }
         }
@@ -1943,7 +1946,7 @@ readAnother:
                 msgctx->startSpan(uid, querySetName, queryName, isHTTP ? httpHelper.queryRequestHeaders() : inlineTraceHeaders, &spanStartTimeStamp);
 
                 //This must be set after the startSpan - since that resets the stats in the logctx
-                logctx.noteStatistic(StTimeQueryConsume, timeProcessQueryText); // include in the span an complete lines.
+                logctx.noteStatistic(StTimeQueryConsume, timeProcessQueryText); // include in the span and complete lines.
 
                 if (!uid)
                     uid = "-";
@@ -2082,6 +2085,7 @@ readAnother:
                         }
 
                         msgctx->noteQueryActive();
+                        logctx.noteStatistic(StTimeQueryPreparation, nsTick() - startNs); // include in the span and complete lines.
 
                         if (isHTTP)
                         {
@@ -2160,7 +2164,6 @@ readAnother:
         }
         unsigned bytesOut = client? client->bytesOut() : 0;
         stat_type elapsedNs = nsTick() - startNs;
-        unsigned elapsedMs = nanoToMilli(elapsedNs);
         if (client)
         {
             logctx.noteStatistic(StTimeSocketReadIO, client->getStatistic(StTimeSocketReadIO));
@@ -2209,6 +2212,7 @@ readAnother:
                         }
                         if (queryPT->getPropBool("@summaryStats", alwaysSendSummaryStats))
                         {
+                            unsigned elapsedMs = nanoToMilli(elapsedNs);
                             FlushingStringBuffer response(client, (protocolFlags & HPCC_PROTOCOL_BLOCKED), mlResponseFmt, (protocolFlags & HPCC_PROTOCOL_NATIVE_RAW), false, logctx);
                             response.startDataset("SummaryStats", NULL, (unsigned) -1);
                             VStringBuffer s(" COMPLETE: %s %s complete in %u msecs memory=%u Mb agentsreply=%u duplicatePackets=%u resentPackets=%u resultsize=%u continue=%d", queryName.get(), uid, elapsedMs, memused, agentsReplyLen, agentsDuplicates, agentsResends, bytesOut, continuationNeeded);

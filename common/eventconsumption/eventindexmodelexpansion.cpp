@@ -47,9 +47,9 @@ void Expansion::configure(const IPropertyTree& config)
 void Expansion::describePage(const CEvent& event, ModeledPage& page) const
 {
     // Expansion description is only relevant to events using the expanded size attribute.
-    if (event.hasAttribute(EvAttrExpandedSize))
+    if (event.hasAttribute(EvAttrInMemorySize))
     {
-        __uint64 eventSize = event.queryNumericValue(EvAttrExpandedSize);
+        __uint64 eventSize = event.queryNumericValue(EvAttrInMemorySize);
         // The expansion time attribute is not used by all events.
         __uint64 eventTime = (event.hasAttribute(EvAttrExpandTime) ? event.queryNumericValue(EvAttrExpandTime) : 0);
 
@@ -134,7 +134,7 @@ class IndexModelExpansionTest : public CppUnit::TestFixture
         CEvent event;
         event.reset(EventIndexLoad);
         event.setValue(EvAttrNodeKind, 0ULL);
-        event.setValue(EvAttrExpandedSize, 1ULL);
+        event.setValue(EvAttrInMemorySize, 1ULL);
         event.setValue(EvAttrExpandTime, 1ULL);
         expansion.describePage(event, page);
         CPPUNIT_ASSERT_EQUAL(page.expandedSize, 8'192ULL);
@@ -145,12 +145,12 @@ class IndexModelExpansionTest : public CppUnit::TestFixture
         CPPUNIT_ASSERT_EQUAL(page.expandedSize, 8'192ULL);
         CPPUNIT_ASSERT_EQUAL(page.expansionTime, 8'192ULL);
         CPPUNIT_ASSERT_EQUAL(page.expansionIsEstimated, true);
-        event.setValue(EvAttrExpandedSize, 0ULL);
+        event.setValue(EvAttrInMemorySize, 0ULL);
         expansion.describePage(event, page);
         CPPUNIT_ASSERT_EQUAL(page.expandedSize, 8'192ULL);
         CPPUNIT_ASSERT_EQUAL(page.expansionTime, 8'192ULL);
         CPPUNIT_ASSERT_EQUAL(page.expansionIsEstimated, true);
-        event.setValue(EvAttrExpandedSize, 1ULL);
+        event.setValue(EvAttrInMemorySize, 1ULL);
         event.setValue(EvAttrExpandTime, 0ULL);
         expansion.describePage(event, page);
         CPPUNIT_ASSERT_EQUAL(page.expandedSize, 8'192ULL);
@@ -168,7 +168,7 @@ class IndexModelExpansionTest : public CppUnit::TestFixture
         CEvent event;
         event.reset(EventIndexLoad);
         event.setValue(EvAttrNodeKind, 0ULL);
-        event.setValue(EvAttrExpandedSize, 1ULL);
+        event.setValue(EvAttrInMemorySize, 1ULL);
         event.setValue(EvAttrExpandTime, 1ULL);
         expansion.describePage(event, page);
         CPPUNIT_ASSERT_EQUAL(page.expandedSize, 1ULL);
@@ -179,12 +179,12 @@ class IndexModelExpansionTest : public CppUnit::TestFixture
         CPPUNIT_ASSERT_EQUAL(page.expandedSize, 1ULL);
         CPPUNIT_ASSERT_EQUAL(page.expansionTime, 1ULL);
         CPPUNIT_ASSERT_EQUAL(page.expansionIsEstimated, false);
-        event.setValue(EvAttrExpandedSize, 0ULL);
+        event.setValue(EvAttrInMemorySize, 0ULL);
         expansion.describePage(event, page);
         CPPUNIT_ASSERT_EQUAL(page.expandedSize, 0ULL);
         CPPUNIT_ASSERT_EQUAL(page.expansionTime, 1ULL);
         CPPUNIT_ASSERT_EQUAL(page.expansionIsEstimated, false);
-        event.setValue(EvAttrExpandedSize, 1ULL);
+        event.setValue(EvAttrInMemorySize, 1ULL);
         event.setValue(EvAttrExpandTime, 0ULL);
         expansion.describePage(event, page);
         CPPUNIT_ASSERT_EQUAL(page.expandedSize, 1ULL);
