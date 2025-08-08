@@ -3174,7 +3174,7 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
                 {
                     //This should never happen, but if it does, report as much information as possible to diagnose the issue.
                     StringBuffer msg;
-                    msg.appendf("Node type mismatch for node %s@%llx (expected %s, got %s)", nodeLoader.queryFileName(), pos, cacheTypeText[type], cacheTypeText[node->getNodeType()]);
+                    msg.appendf("Node type mismatch for node %s@%llx (expected %s, got %s:%u)", nodeLoader.queryFileName(), pos, cacheTypeText[type], node->getNodeTypeName(), node->getNodeType());
                     node->Release();
                     throwUnexpectedX(msg);
                 }

@@ -3793,15 +3793,15 @@ class FileReadPropertiesUpdater : public CSimpleInterfaceOf<IFileReadPropertiesU
     // Update the readCost and numDiskReads for owning superfiles
     // - this will recurse up the superfiles tree updating the owning superfiles
     // n.b. fileStatItem.file must be set to a valid IDistributedFile
-    void updateOwnersStats(FileStatMap & ownerStats, const FileStatItem & fileStatItem, IDistributedFileTransaction &transaction)
+    void updateOwnersStats(FileStatMap & ownerStats, const FileStatItem & fileStatItem, stat_type numDiskReads, cost_type curReadCost, IDistributedFileTransaction &transaction)
     {
         // getOwningSuperFiles iterator is slow, so only call it once (say at the end of graph)
         Owned<IDistributedSuperFileIterator> iter = fileStatItem.file->getOwningSuperFiles(&transaction);
         ForEach(*iter)
         {
             IDistributedSuperFile & cur = iter->query();
-            const FileStatItem & owningFileStatItem = appendOwnersCostAndNumReads(ownerStats, &cur, fileStatItem.numDiskReads, fileStatItem.readCost);
-            updateOwnersStats(ownerStats, owningFileStatItem, transaction);
+            const FileStatItem & owningFileStatItem = appendOwnersCostAndNumReads(ownerStats, &cur, numDiskReads, curReadCost);
+            updateOwnersStats(ownerStats, owningFileStatItem, numDiskReads, curReadCost, transaction);
         }
     }
 
@@ -3845,7 +3845,7 @@ public:
                     OERRLOG("FileReadPropertiesUpdater: file has read cost but file not found: %s", logicalName.c_str());
                 continue;
             }
-            updateOwnersStats(ownerStats, curStatItem, *transaction);
+            updateOwnersStats(ownerStats, curStatItem, curStatItem.numDiskReads, curStatItem.readCost, *transaction);
         }
         // Update the file properties with the new stats
         for (auto & [logicalName, curStatItem] : stats)
