@@ -200,6 +200,7 @@ public:
     void update(IWorkUnit *wu);
     bool hasIssues() const { return !issues.empty(); }
     stat_type queryOption(WutOptionType opt) const { return options.queryOption(opt); }
+    cost_type getTotalCostPenalty() const;
 protected:
     CIArrayOf<CActivityRule> activityRules;
     CIArrayOf<CSubgraphRule> subgraphRules;
@@ -1506,7 +1507,15 @@ void WorkunitRuleAnalyser::update(IWorkUnit *wu)
         issues.item(i).createException(wu);
 }
 
-
+cost_type WorkunitRuleAnalyser::getTotalCostPenalty() const
+{
+    // All issues recorded here are related to activities, so the total cost penalty is the sum of all activity issues.
+    // Note, once graph/subgraph issues, this code may need to change.
+    cost_type totalCost = 0;
+    ForEachItemIn(i, issues)
+        totalCost += issues.item(i).getCostPenalty();
+    return totalCost;
+}
 
 //-----------------------------------------------------------------------------------------------------------
 
@@ -2235,7 +2244,34 @@ void WUANALYSIS_API analyseWorkunit(IConstWorkUnit &workunit, const char *optGra
             addExceptionToWorkunit(wu, SeverityWarning, CostOptimizerName, error->errorCode(), msg.str(), nullptr, 0, 0, 0);
         }
         if (analyser.hasIssues())
+        {
             analyser.update(wu);
+            cost_type totalCostSavingPotential = 0.0;
+            if (!isEmptyString(optGraph) && !streq(optGraph, "*"))
+            {
+                wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, optGraph, StCostSavingPotential, "Cost saving potential", analyser.getTotalCostPenalty(), 1, 0, StatsMergeSum);
+                // add up the cost saving potential for all graphs
+                WuScopeFilter filter;
+                filter.addOutputStatistic(StCostSavingPotential);
+                filter.addRequiredStat(StCostSavingPotential);
+                filter.addScopeType(SSTgraph);
+                filter.setDepth(3, 3);
+                filter.setIncludeNesting(0);
+                filter.setSources(SSFsearchGlobalStats);
+                filter.finishedFilter();
+                Owned<IConstWUScopeIterator> it = &wu->getScopeIterator(filter);
+                for (it->first(); it->isValid(); )
+                {
+                    stat_type currentCost = 0;
+                    if (it->getStat(StCostSavingPotential, currentCost))
+                        totalCostSavingPotential += currentCost;
+                    it->next();
+                }
+            }
+            else
+                totalCostSavingPotential += analyser.getTotalCostPenalty();
+            wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, "", StCostSavingPotential, "Cost saving potential", totalCostSavingPotential, 1, 0, StatsMergeSum);
+        }
     }
 }
 
@@ -2270,6 +2306,8 @@ void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, const char *optGr
         Owned<IWorkUnit> lockedwu = &(wu->lock());
         lockedwu->clearExceptions(CostOptimizerName);
         analyser.update(lockedwu);
+        if (analyser.hasIssues())
+            lockedwu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, CostOptimizerName, StCostSavingPotential, "Aggregate cost saving potential", analyser.getTotalCostPenalty(), 1, 0, StatsMergeReplace);
         timingInfo.append(" update ");
         formatStatistic(timingInfo, cycle_to_nanosec(updateTimer.elapsedCycles()), SMeasureTimeNs);
     }

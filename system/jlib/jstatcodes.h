@@ -361,6 +361,7 @@ enum StatisticKind
     StCycleQueryConsumeCycles,
     StNumSuccesses,
     StNumSoapcallRetries,
+    StCostSavingPotential,
     StMax,
 
     //For any quantity there is potentially the following variants.
