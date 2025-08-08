@@ -416,6 +416,59 @@ Add ConfigMap volume for a component
 {{- end -}}
 
 {{/*
+Add ConfigMap volume mount to eclwatch for another component
+*/}}
+{{- define "hpcc.addComponentConfigMapVolumeMount" -}}
+- name: {{ .name }}-configmap-volume
+  mountPath: /etc/component-configs/{{ .name }}
+{{- end -}}
+
+{{/*
+Populates a dictionary with component names from the values dict.
+Pass in dict with root and results (the dict to populate).
+The results dict will have a "componentNames" key containing the list.
+
+Used to give eclwatch a list of configured components and their configmap names.
+*/}}
+{{- define "hpcc.populateComponentNames" -}}
+{{- $componentNames := list -}}
+{{- /* Most components are in a top-level array */ -}}
+{{- range $sectionName, $section := .root.Values -}}
+ {{- if hasPrefix "[]" (typeOf $section) -}}
+  {{- range $component := $section -}}
+   {{- if hasKey $component "name" -}}
+    {{- if not $component.disabled -}}
+     {{- $componentNames = append $componentNames $component.name -}}
+    {{- end -}}
+   {{- end -}}
+  {{- end -}}
+ {{- end -}}
+{{- end -}}
+{{- /* dali needs special handling */ -}}
+{{- range $dali := (.root.Values.dali | default dict) }}
+ {{- if and (not $dali.disabled) (hasKey $dali "services") -}}
+  {{- $daliSashaServicesCtx := dict "services" ($dali.services | default dict) -}}
+  {{- range $serviceName, $_service := $daliSashaServicesCtx.services }}
+   {{- $service := ($_service | default dict) -}}
+   {{- if not (has $serviceName $componentNames) -}}
+    {{- $componentNames = append $componentNames (printf "sasha-%s" $serviceName) -}}
+   {{- end -}}
+  {{- end -}}
+ {{- end -}}
+{{- end -}}
+{{- /* sasha needs special handling */ -}}
+{{- $sashaServicesCtx := dict "services" (.root.Values.sasha | default dict) -}}
+{{- include "hpcc.getSashaServices" $sashaServicesCtx -}}
+{{- range $serviceName, $_service := $sashaServicesCtx.services }}
+ {{- $service := ($_service | default dict) -}}
+ {{- if not (has $serviceName $componentNames) -}}
+  {{- $componentNames = append $componentNames (printf "sasha-%s" $serviceName) -}}
+ {{- end -}}
+{{- end -}}
+{{- $_ := set .results "componentNames" $componentNames -}}
+{{- end -}}
+
+{{/*
 Get mount details
 Pass in plane
 Returns dictionary with "results" of mount details
