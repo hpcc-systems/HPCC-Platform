@@ -57,7 +57,10 @@ public:
             if (p->name)
                 threadName = p->name;
             else
-                threadName.clear();
+            {
+                static unsigned threadCounter{0};
+                threadName = VStringBuffer("Thread%u", ++threadCounter).str();
+            }
         }
     }
 
@@ -108,13 +111,12 @@ private:
 class ThreadPoolTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(ThreadPoolTest);
+    // DJPS TODO
     CPPUNIT_TEST(testTableDrivenTightlyBoundThreadPool);
     CPPUNIT_TEST(testTableDrivenThrottledThreadPoolWithDefaultDelay);
     CPPUNIT_TEST(testTableDrivenThrottledThreadPoolWithFastThreadCompletion);
+
     CPPUNIT_TEST(testTableDrivenWaitAvailable);
-    /* DJPS
-        CPPUNIT_TEST(testWaitAvailable);
-    */
     CPPUNIT_TEST_SUITE_END();
 
 private:
@@ -185,7 +187,30 @@ public:
         Concurrent
     };
 
+    enum class ExpectedTestFunctionResult
+    {
+        ExpectedTrue,
+        ExpectedFalse,
+        IgnoreResult
+    };
+
     static constexpr unsigned DO_NOT_WAIT_FOR_RUNNING_THREADS{INFINITE}; // waitForLessThanRunningThreads
+
+    // Helper function to convert ExpectedTestFunctionResult enum to string
+    const char* expectedTestFunctionResultToStr(ExpectedTestFunctionResult result)
+    {
+        switch (result)
+        {
+            case ExpectedTestFunctionResult::ExpectedTrue:
+                return "ExpectedTrue";
+            case ExpectedTestFunctionResult::ExpectedFalse:
+                return "ExpectedFalse";
+            case ExpectedTestFunctionResult::IgnoreResult:
+                return "IgnoreResult";
+            default:
+                return "Unknown";
+        }
+    }
 
     void testTableDrivenTightlyBoundThreadPool()
     {
@@ -225,12 +250,12 @@ public:
                 2,    // maxThreads
                 0, // throttleDelayMs (0=infinite)
                 {
-                    // Thread name, runtimeMs, expectedStartDelayMs, startTimeoutMs, startException, startFunction, waitForLessThanRunningThreads
-                    {"Thread1", 300, 0, 0, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Fill pool slot 1
-                    {"Thread2", 300, 0, 0, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Fill pool slot 2
-                    {"Thread3", 800, 300, 300, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Wait ~300ms for Thread1/2 to complete
-                    {"Thread4", 800, 0, 0, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Start immediately (slot available after Thread3 blocks)
-                    {"Thread5", 100, 0, 100, ThreadStartExpectation::ShouldThrowException, FunctionToTest::StartFunction, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Timeout after 100ms, never starts
+                    // Thread name, runtimeMs, expectedStartDelayMs, startTimeoutMs, startException, startFunction, expectedTestFunctionResult, waitForLessThanRunningThreads
+                    {"Thread1", 300, 0, 0, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Fill pool slot 1
+                    {"Thread2", 300, 0, 0, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Fill pool slot 2
+                    {"Thread3", 800, 300, 300, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Wait ~300ms for Thread1/2 to complete
+                    {"Thread4", 800, 0, 0, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Start immediately (slot available after Thread3 blocks)
+                    {"Thread5", 100, 0, 50, ThreadStartExpectation::ShouldThrowException, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedFalse, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Timeout after 50ms, never starts
                 },
                 50,  // durationWiggleMs
                 ValidationPolicy::ValidateCounts // validationPolicy
@@ -240,11 +265,11 @@ public:
                 2,    // maxThreads
                 0, // throttleDelayMs (0=infinite)
                 {
-                    // Thread name, runtimeMs, expectedStartDelayMs, startTimeoutMs, startException, startFunction, waitForLessThanRunningThreads
-                    {"Thread1", 300, 0, 0, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartNoBlockFunction, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Start no block should fill pool slot 1
-                    {"Thread2", 300, 0, 0, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartNoBlockFunction, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Start no block should fill pool slot 2
-                    {"Thread3", 200, 0, 0, ThreadStartExpectation::ShouldThrowException, FunctionToTest::StartNoBlockFunction, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Start no block and pool at capacity so an exception should be thrown
-                    {"Thread4", 200, 0, 0, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartNoBlockFunction, 2}, // Start no block should fill pool slot 2 as waiting for < 2 threads running
+                    // Thread name, runtimeMs, expectedStartDelayMs, startTimeoutMs, startException, startFunction, expectedTestFunctionResult, waitForLessThanRunningThreads
+                    {"Thread1", 300, 0, 0, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartNoBlockFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Start no block should fill pool slot 1
+                    {"Thread2", 300, 0, 0, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartNoBlockFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Start no block should fill pool slot 2
+                    {"Thread3", 200, 0, 0, ThreadStartExpectation::ShouldThrowException, FunctionToTest::StartNoBlockFunction, ExpectedTestFunctionResult::ExpectedFalse, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Start no block and pool at capacity so an exception should be thrown
+                    {"Thread4", 200, 0, 0, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartNoBlockFunction, ExpectedTestFunctionResult::ExpectedTrue, 2}, // Start no block should fill pool slot 2 as waiting for < 2 threads running
                 },
                 50,  // durationWiggleMs
                 ValidationPolicy::ValidateCounts // validationPolicy
@@ -330,17 +355,17 @@ public:
             {
                 // Verify that exactly 3 exceptions were thrown (Thread3, Thread4, Thread5 timeout)
                 CPPUNIT_ASSERT_EQUAL_MESSAGE(
-                    StringBuffer().appendf("Scenario \"%s\": expected 3 timeout exceptions", scenario.testName).str(),
+                    VStringBuffer("Scenario \"%s\": expected 3 timeout exceptions", scenario.testName).str(),
                     3U, scenario.actualExceptionCount);
 
                 // Verify that exactly 2 threads started (Thread1, Thread2)
                 CPPUNIT_ASSERT_EQUAL_MESSAGE(
-                    StringBuffer().appendf("Scenario \"%s\": expected 2 threads to start", scenario.testName).str(),
+                    VStringBuffer("Scenario \"%s\": expected 2 threads to start", scenario.testName).str(),
                     2U, scenario.actualThreadStartedCount);
 
                 // Verify that exactly 2 threads completed
                 CPPUNIT_ASSERT_EQUAL_MESSAGE(
-                    StringBuffer().appendf("Scenario \"%s\": expected 2 threads to complete", scenario.testName).str(),
+                    VStringBuffer("Scenario \"%s\": expected 2 threads to complete", scenario.testName).str(),
                     2U, scenario.actualThreadCompletedCount);
             }
         }
@@ -356,11 +381,11 @@ public:
                 2,    // maxThreads
                 1000, // throttleDelayMs (0=infinite)
                 {
-                    // Thread name, runtimeMs, expectedStartDelayMs, startTimeoutMs, startException, startFunction, waitForLessThanRunningThreads
-                    {"Thread1", 1000, 0, 0, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Fill pool slot 1
-                    {"Thread2", 1000, 0, 0, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Fill pool slot 2
-                    {"Thread3", 100, 100, 100, ThreadStartExpectation::ShouldThrowException, FunctionToTest::StartFunction, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Timeout after 100ms, never starts
-                    {"Thread4", 100, 900, INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Wait ~1000ms (pool default) for Thread1/2 to complete
+                    // Thread name, runtimeMs, expectedStartDelayMs, startTimeoutMs, startException, startFunction, expectedTestFunctionResult, waitForLessThanRunningThreads
+                    {"Thread1", 1000, 0, 0, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Fill pool slot 1
+                    {"Thread2", 1000, 0, 0, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Fill pool slot 2
+                    {"Thread3", 100, 100, 100, ThreadStartExpectation::ShouldThrowException, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedFalse, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Timeout after 100ms, never starts
+                    {"Thread4", 100, 900, INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Wait ~1000ms (pool default) for Thread1/2 to complete
                 },
                 50,  // durationWiggleMs
                 ValidationPolicy::ValidateCounts // validationPolicy
@@ -370,11 +395,11 @@ public:
                 2,    // maxThreads
                 1000, // throttleDelayMs (0=infinite)
                 {
-                    // Thread name, runtimeMs, expectedStartDelayMs, startTimeoutMs, startException, startFunction, waitForLessThanRunningThreads
-                    {"Thread1", 300, 0, 0, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartNoBlockFunction, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Fill pool slot 1
-                    {"Thread2", 300, 0, 0, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartNoBlockFunction, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Fill pool slot 2
-                    {"Thread3", 200, 0, 0, ThreadStartExpectation::ShouldThrowException, FunctionToTest::StartNoBlockFunction, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Start no block and pool at capacity, an exception will be thrown
-                    {"Thread4", 200, 0, 0, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartNoBlockFunction, 2}, // Start no block should fill pool slot 2 as waiting for < 2 threads running
+                    // Thread name, runtimeMs, expectedStartDelayMs, startTimeoutMs, startException, startFunction, expectedTestFunctionResult, waitForLessThanRunningThreads
+                    {"Thread1", 300, 0, 0, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartNoBlockFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Fill pool slot 1
+                    {"Thread2", 300, 0, 0, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartNoBlockFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Fill pool slot 2
+                    {"Thread3", 200, 0, 0, ThreadStartExpectation::ShouldThrowException, FunctionToTest::StartNoBlockFunction, ExpectedTestFunctionResult::ExpectedFalse, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Start no block and pool at capacity, an exception will be thrown
+                    {"Thread4", 200, 0, 0, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartNoBlockFunction, ExpectedTestFunctionResult::ExpectedTrue, 2}, // Start no block should fill pool slot 2 as waiting for < 2 threads running
                 },
                 50,  // durationWiggleMs
                 ValidationPolicy::ValidateCounts // validationPolicy
@@ -460,26 +485,26 @@ public:
             {
                 // Should have 1 exception (Thread3 timeout) and 3 successful starts (Thread1, Thread2, Thread4)
                 CPPUNIT_ASSERT_EQUAL_MESSAGE(
-                    StringBuffer().appendf("Scenario \"%s\": expected 1 timeout exception", scenario.testName).str(),
+                    VStringBuffer("Scenario \"%s\": expected 1 timeout exception", scenario.testName).str(),
                     1U, scenario.actualExceptionCount);
                 CPPUNIT_ASSERT_EQUAL_MESSAGE(
-                    StringBuffer().appendf("Scenario \"%s\": expected 3 threads to start", scenario.testName).str(),
+                    VStringBuffer("Scenario \"%s\": expected 3 threads to start", scenario.testName).str(),
                     3U, scenario.actualThreadStartedCount);
                 CPPUNIT_ASSERT_EQUAL_MESSAGE(
-                    StringBuffer().appendf("Scenario \"%s\": expected 3 threads to complete", scenario.testName).str(),
+                    VStringBuffer("Scenario \"%s\": expected 3 threads to complete", scenario.testName).str(),
                     3U, scenario.actualThreadCompletedCount);
             }
             else if (strcmp(scenario.testName, "TestThrottledThreadPoolWithDefaultDelay_startNoBlockFunction") == 0)
             {
                 // Should have 1 exception (Thread3) and 3 successful starts (Thread1, Thread2, Thread4)
                 CPPUNIT_ASSERT_EQUAL_MESSAGE(
-                    StringBuffer().appendf("Scenario \"%s\": expected 1 startNoBlock exception", scenario.testName).str(),
+                    VStringBuffer("Scenario \"%s\": expected 1 startNoBlock exception", scenario.testName).str(),
                     1U, scenario.actualExceptionCount);
                 CPPUNIT_ASSERT_EQUAL_MESSAGE(
-                    StringBuffer().appendf("Scenario \"%s\": expected 3 threads to start", scenario.testName).str(),
+                    VStringBuffer("Scenario \"%s\": expected 3 threads to start", scenario.testName).str(),
                     3U, scenario.actualThreadStartedCount);
                 CPPUNIT_ASSERT_EQUAL_MESSAGE(
-                    StringBuffer().appendf("Scenario \"%s\": expected 3 threads to complete", scenario.testName).str(),
+                    VStringBuffer("Scenario \"%s\": expected 3 threads to complete", scenario.testName).str(),
                     3U, scenario.actualThreadCompletedCount);
             }
         }
@@ -495,14 +520,14 @@ public:
             threadName.clear().appendf("Thread%u", threadId);
             // Thread name, runtimeMs, expectedStartDelayMs, startTimeoutMs, startException, startFunction
             // With a 1ms throttle delay, threads beyond the pool capacity should start after the throttle delay expires (1ms), not after waiting for other threads to complete
-            threads.emplace_back(ThreadSpec{threadName.str(), (threadId < 100 ? 500U : 1000U), (threadId < 100 ? 0U : 1U), INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, DO_NOT_WAIT_FOR_RUNNING_THREADS});
+            threads.emplace_back(ThreadSpec{threadName.str(), (threadId < 100 ? 500U : 1000U), (threadId < 100 ? 0U : 1U), INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS});
         }
         for (unsigned threadId = 200; threadId < 400; threadId++)
         {
             threadName.clear().appendf("Thread%u", threadId);
             // Allow both success and timeout - these threads should start immediately if slots are available,
             // or timeout after 100ms if the pool is full
-            threads.emplace_back(ThreadSpec{threadName.str(), 1000, 0, 100, ThreadStartExpectation::OnlyCountExceptions, FunctionToTest::StartFunction, DO_NOT_WAIT_FOR_RUNNING_THREADS});
+            threads.emplace_back(ThreadSpec{threadName.str(), 1000, 0, 100, ThreadStartExpectation::OnlyCountExceptions, FunctionToTest::StartFunction, ExpectedTestFunctionResult::IgnoreResult, DO_NOT_WAIT_FOR_RUNNING_THREADS});
         }
 
         // Run the test scenario
@@ -520,43 +545,36 @@ public:
         // Verify that some exceptions occurred for the timeout threads (Thread200-399)
         // The exact count is variable depending on timing, but should be > 5 and < 50
         CPPUNIT_ASSERT_MESSAGE(
-            StringBuffer().appendf("Expected some exceptions (>5) for timeout threads, got %u", scenario.actualExceptionCount).str(),
+            VStringBuffer("Expected some exceptions (>5) for timeout threads, got %u", scenario.actualExceptionCount).str(),
             scenario.actualExceptionCount >= 5U && scenario.actualExceptionCount < 50U);
 
         // Verify that 400 threads started and completed counts are 400 minus the exception count
         CPPUNIT_ASSERT_MESSAGE(
-            StringBuffer().appendf("Expected 400 threads minus the exception count started, got %u", scenario.actualThreadStartedCount).str(),
+            VStringBuffer("Expected 400 threads minus the exception count started, got %u", scenario.actualThreadStartedCount).str(),
             (scenario.actualThreadStartedCount + scenario.actualExceptionCount == 400));
         CPPUNIT_ASSERT_MESSAGE(
-            StringBuffer().appendf("Expected 400 threads minus the exception count complete, got %u", scenario.actualThreadCompletedCount).str(),
+            VStringBuffer("Expected 400 threads minus the exception count complete, got %u", scenario.actualThreadCompletedCount).str(),
             (scenario.actualThreadCompletedCount + scenario.actualExceptionCount));
     }
 
     void testTableDrivenWaitAvailable()
     {
-
-    }
-
-    void testTableDrivenScenarios()
-    {
         // Define test scenarios using the table-driven framework
         std::vector<PoolTestScenario> scenarios = {
-            // Wait for slot availability - not true throttling
+            // Wait for availabile - Unlimited capacity pool
             {
-                "WaitForSlotAvailability",
-                2,    // maxThreads
-                1000, // throttleDelayMs
+                "PoolWithUnlimitedCapacity",
+                0,    // maxThreads (unlimited)
+                1000, // throttleDelayMs (default)
                 {
-                    // Thread name, runtimeMs, expectedStartDelayMs, startTimeoutMs, startException, startFunction, waitForLessThanRunningThreads
-                    {"Thread1", 300, 0, INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, DO_NOT_WAIT_FOR_RUNNING_THREADS},   // Fill pool slot 1
-                    {"Thread2", 300, 0, INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, DO_NOT_WAIT_FOR_RUNNING_THREADS},   // Fill pool slot 2
-                    {"Thread3", 200, 300, INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Wait ~300ms for Thread1/2 to complete
-                    {"Thread4", 200, 0, INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, DO_NOT_WAIT_FOR_RUNNING_THREADS},   // Start immediately (slot available after Thread3 blocks)
+                    // Thread name, runtimeMs, expectedStartDelayMs, startTimeoutMs, startException, startFunction, expectedTestFunctionResult, waitForLessThanRunningThreads
+                    {"waitAvailableShouldReturnTrue1", 100, 0, INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::WaitAvailableFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS},   // waitAvailable should return true
+                    {"waitAvailableShouldReturnTrue2", 0, 0, INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::WaitAvailableFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS}   // waitAvailable should return true
                 },
                 50,  // durationWiggleMs
                 ValidationPolicy::ValidateCounts // validationPolicy
-            },
-
+            }
+/*
             // True throttling behavior - threads start after throttle delay expires
             {
                 "TrueThrottlingBehavior",
@@ -624,7 +642,105 @@ public:
                 50,   // durationWiggleMs
                 ValidationPolicy::ValidateCounts, // validationPolicy
                 ConcurrencyMode::Concurrent  // concurrencyMode
-            }};
+            }
+*/
+        };
+
+        for (const auto &scenario : scenarios)
+        {
+            runTableDrivenScenario(scenario);
+        }
+    }
+
+    void testTableDrivenScenarios()
+    {
+        // Define test scenarios using the table-driven framework
+        std::vector<PoolTestScenario> scenarios = {
+            // Wait for slot availability - not true throttling
+            {
+                "WaitForSlotAvailability",
+                2,    // maxThreads
+                1000, // throttleDelayMs
+                {
+                    // Thread name, runtimeMs, expectedStartDelayMs, startTimeoutMs, startException, startFunction, expectedTestFunctionResult, waitForLessThanRunningThreads
+                    {"Thread1", 300, 0, INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS},   // Fill pool slot 1
+                    {"Thread2", 300, 0, INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS},   // Fill pool slot 2
+                    {"Thread3", 200, 300, INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Wait ~300ms for Thread1/2 to complete
+                    {"Thread4", 200, 0, INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS},   // Start immediately (slot available after Thread3 blocks)
+                },
+                50,  // durationWiggleMs
+                ValidationPolicy::ValidateCounts // validationPolicy
+            },
+
+            // True throttling behavior - threads start after throttle delay expires
+            {
+                "TrueThrottlingBehavior",
+                2,   // maxThreads
+                400, // throttleDelayMs
+                {
+                    // Thread name, runtimeMs, expectedStartDelayMs, startTimeoutMs, startException, startFunction, expectedTestFunctionResult, waitForLessThanRunningThreads
+                    {"LongThread1", 1000, 0, INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS},      // Long-running, won't complete during test
+                    {"LongThread2", 1000, 0, INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS},      // Long-running, won't complete during test
+                    {"ThrottledThread", 200, 400, INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Wait full 400ms throttle, then start anyway
+                },
+                50,  // durationWiggleMs
+                ValidationPolicy::ValidateCounts // validationPolicy
+            },
+
+            // Timeout before throttling completes - demonstrates true throttling timeout
+            {
+                "TimeoutBeforeThrottle",
+                2,   // maxThreads
+                600, // throttleDelayMs - threads wait this long when pool is full
+                {
+                    // Thread name, runtimeMs, expectedStartDelayMs, startTimeoutMs, startException, startFunction, expectedTestFunctionResult, waitForLessThanRunningThreads
+                    {"Blocker1", 1200, 0, INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS},         // Long-running blocker (1200ms)
+                    {"Blocker2", 1200, 0, INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS},         // Long-running blocker (1200ms)
+                    {"ThrottledThread", 200, 600, INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Wait full 600ms throttle, then start
+                    {"TimeoutThread", 200, 0, 300, ThreadStartExpectation::ShouldThrowException, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedFalse, DO_NOT_WAIT_FOR_RUNNING_THREADS},           // Timeout after 300ms (< 600ms throttle), never starts
+                    {"StartNoBlockFail", 200, 0, INFINITE, ThreadStartExpectation::ShouldThrowException, FunctionToTest::StartNoBlockFunction, ExpectedTestFunctionResult::ExpectedFalse, DO_NOT_WAIT_FOR_RUNNING_THREADS},    // startNoBlock should fail immediately
+                },
+                50,   // durationWiggleMs
+                ValidationPolicy::SkipValidation // validationPolicy (timeout doesn't start thread)
+            },
+
+            // Mixed: slot availability + throttling + timeouts
+            {
+                "MixedBehaviors",
+                2,   // maxThreads
+                300, // throttleDelayMs
+                {
+                    // Thread name, runtimeMs, expectedStartDelayMs, startTimeoutMs, startException, startFunction, expectedTestFunctionResult, waitForLessThanRunningThreads
+                    {"Quick1", 100, 0, INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS},        // Fill pool, complete quickly
+                    {"Quick2", 100, 0, INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS},        // Fill pool, complete quickly
+                    {"WaitForSlot", 200, 100, INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Wait ~100ms for Quick1/2 to complete
+                    {"LongRunner", 1000, 0, INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS},   // Start immediately, run long
+                    {"Throttled", 200, 200, INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS},   // Pool full, wait full 300ms throttle
+                    {"FastTimeout", 200, 0, 50, ThreadStartExpectation::ShouldThrowException, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedFalse, DO_NOT_WAIT_FOR_RUNNING_THREADS},          // Timeout before throttle expires
+                },
+                30,   // durationWiggleMs
+                ValidationPolicy::SkipValidation // validationPolicy (has timeout)
+            },
+
+            // Concurrent starts - test true concurrent blocking behavior
+            {
+                "ConcurrentThrottling",
+                2,   // maxThreads
+                500, // throttleDelayMs
+                {
+                    // Thread name, runtimeMs, expectedStartDelayMs, startTimeoutMs, startException, startFunction, expectedTestFunctionResult, waitForLessThanRunningThreads
+                    {"Blocker1", 2000, 0, INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Long-running, holds slot
+                    {"Blocker2", 2000, 0, INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Long-running, holds slot
+                    // These will be started concurrently to test true concurrent blocking/throttling
+                    {"Concurrent1", 200, 500, INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Should wait 500ms throttle
+                    {"Concurrent2", 200, 500, INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Should wait 500ms throttle
+                    {"Concurrent3", 200, 500, INFINITE, ThreadStartExpectation::ShouldSucceed, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Should wait 500ms throttle
+                },
+                50,   // durationWiggleMs
+                ValidationPolicy::ValidateCounts, // validationPolicy
+                ConcurrencyMode::Concurrent  // concurrencyMode
+            }
+        };
 
         for (const auto &scenario : scenarios)
         {
@@ -634,12 +750,13 @@ public:
 
     struct ThreadSpec
     {
-        std::string_view name;
+        std::string name;
         unsigned runtimeMs{0}; // How long the thread should run in ms
         unsigned expectedStartDelayMs{0}; // Expected delay before thread starts when pool is at capacity (0 = immediate)
         unsigned startTimeoutMs{0}; // Timeout for starting thread (INFINITE = no timeout)
         ThreadStartExpectation startException{ThreadStartExpectation::ShouldSucceed}; // Whether starting this thread should throw exception
         FunctionToTest startFunction{FunctionToTest::StartFunction}; // Which start function to test
+        ExpectedTestFunctionResult expectedTestFunctionResult{ExpectedTestFunctionResult::ExpectedTrue}; // Expected result of start function
         unsigned waitForLessThanRunningThreads{DO_NOT_WAIT_FOR_RUNNING_THREADS}; // Wait for less than X threads to be running before starting this thread, DO_NOT_WAIT_FOR_RUNNING_THREADS = don't wait
     };
 
@@ -668,15 +785,6 @@ public:
                                            ValidationPolicy validationPolicy = ValidationPolicy::ValidateCounts, ConcurrencyMode concurrencyMode = ConcurrencyMode::Sequential)
     {
         return {testName, maxThreads, throttleDelayMs, {}, wiggleMs, validationPolicy, concurrencyMode, 0, 0, 0};
-    }
-
-    // Helper method to add thread specifications to a scenario
-    static void addThread(PoolTestScenario &scenario, const char *name, unsigned runtimeMs,
-                          unsigned expectedStartDelayMs = 0, unsigned startTimeoutMs = INFINITE,
-                          ThreadStartExpectation startException = ThreadStartExpectation::ShouldSucceed, FunctionToTest startFunction = FunctionToTest::StartFunction,
-                          unsigned waitForLessThanRunningThreads = DO_NOT_WAIT_FOR_RUNNING_THREADS)
-    {
-        scenario.threads.push_back({name, runtimeMs, expectedStartDelayMs, startTimeoutMs, startException, startFunction, waitForLessThanRunningThreads});
     }
 
 private:
@@ -723,15 +831,15 @@ private:
             pool->joinAll(true);
 
             CPPUNIT_ASSERT_EQUAL_MESSAGE(
-                StringBuffer().appendf("Scenario \"%s\": started count mismatch", scenario.testName).str(),
+                VStringBuffer("Scenario \"%s\": started count mismatch", scenario.testName).str(),
                 expectedStartedCount, threadStartedCount.load());
 
             CPPUNIT_ASSERT_EQUAL_MESSAGE(
-                StringBuffer().appendf("Scenario \"%s\": completed count mismatch", scenario.testName).str(),
+                VStringBuffer("Scenario \"%s\": completed count mismatch", scenario.testName).str(),
                 expectedStartedCount, threadCompletedCount.load());
 
             CPPUNIT_ASSERT_EQUAL_MESSAGE(
-                StringBuffer().appendf("Scenario \"%s\": running count should be 0", scenario.testName).str(),
+                VStringBuffer("Scenario \"%s\": running count should be 0", scenario.testName).str(),
                 0U, pool->runningCount());
 
             // Store the actual counts in the scenario for test verification
@@ -788,7 +896,7 @@ private:
             startThreads.emplace_back([this, &scenario, i, idx, &durations, &startSuccessful, concurrentStartTime]()
                                       {
                 const auto& threadSpec = scenario.threads[i];
-                ThreadParams params = {threadSpec.runtimeMs, threadSpec.name.data()};
+                ThreadParams params = {threadSpec.runtimeMs, threadSpec.name.c_str()};
 
                 try
                 {
@@ -838,7 +946,7 @@ private:
 
         auto startTime = std::chrono::high_resolution_clock::now();
 
-        ThreadParams params = {threadSpec.runtimeMs, threadSpec.name.data()};
+        ThreadParams params = {threadSpec.runtimeMs, threadSpec.name.c_str()};
 
         bool startSuccessful = false;
         try
@@ -868,7 +976,7 @@ private:
             if (threadSpec.startException == ThreadStartExpectation::ShouldThrowException)
             {
                 StringBuffer msg;
-                msg.appendf("Thread \"%s\" should have thrown exception but didn't", threadSpec.name.data());
+                msg.appendf("Thread \"%s\" should have thrown exception but didn't", threadSpec.name.c_str());
                 CPPUNIT_FAIL(msg.str());
             }
         }
@@ -891,51 +999,81 @@ private:
                 case ThreadStartExpectation::OnlyCountExceptions:
                     // Count exception but don't fail test - this is expected behavior
                     exceptionCount++;
-                    DBGLOG("Thread \"%s\" threw expected exception (count: %u): %s", threadSpec.name.data(), exceptionCount, msg.str());
+                    DBGLOG("Thread \"%s\" threw expected exception (count: %u): %s", threadSpec.name.c_str(), exceptionCount, msg.str());
                     break;
                 case ThreadStartExpectation::ShouldSucceed:
-                    CPPUNIT_FAIL(StringBuffer().appendf("Thread \"%s\" threw unexpected exception: %s", threadSpec.name.data(), msg.str()).str());
+                    CPPUNIT_FAIL(VStringBuffer("Thread \"%s\" threw unexpected exception: %s", threadSpec.name.c_str(), msg.str()).str());
                     break;
                 default:
-                    CPPUNIT_FAIL(StringBuffer().appendf("Invalid start exception %d", static_cast<int>(threadSpec.startException)).str());
+                    CPPUNIT_FAIL(VStringBuffer("Invalid start exception %d", static_cast<int>(threadSpec.startException)).str());
                     break;
             }
         }
 
-        // Measure actual start duration if thread started successfully
-        if (startSuccessful)
+        // Validate thread start function return
+        switch (threadSpec.expectedTestFunctionResult)
         {
-            auto duration = measureThreadStartDuration(startTime, 1);
-            // Only validate timing for threads that have specific expectations
-            // OnlyCountExceptions threads that succeed are allowed to start at any time
-            if (threadSpec.startException != ThreadStartExpectation::OnlyCountExceptions)
-                validateThreadStartTiming(scenario.testName, threadSpec, duration, scenario.durationWiggleMs);
-            expectedStartedCount++;
-        }
-        else
-        {
-            // For failed starts, just measure the duration of the failure
-            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::high_resolution_clock::now() - startTime);
-
-            // If we expected the start to fail due to timeout, validate the timeout duration
-            if (threadSpec.startException == ThreadStartExpectation::ShouldThrowException && threadSpec.startTimeoutMs != INFINITE)
+            case ExpectedTestFunctionResult::IgnoreResult:
+                break;
+            case ExpectedTestFunctionResult::ExpectedTrue:
+            case ExpectedTestFunctionResult::ExpectedFalse:
             {
-                unsigned expectedTimeout = threadSpec.startTimeoutMs;
-                int actualDuration = duration.count();
-                int minWiggleTimeout = (expectedTimeout - scenario.durationWiggleMs);
-                bool stopMe = false;
-#ifdef _DEBUG
-                if (!(actualDuration >= minWiggleTimeout))
-                    DBGLOG("Thread \"%s\" timeout duration %u should be >= %u",
-                                           threadSpec.name.data(), (unsigned)duration.count(), expectedTimeout);
-#endif
+                bool expectedResult = (threadSpec.expectedTestFunctionResult == ExpectedTestFunctionResult::ExpectedTrue);
                 CPPUNIT_ASSERT_MESSAGE(
-                    StringBuffer().appendf("Thread \"%s\" timeout duration %u should be >= %u",
-                                           threadSpec.name.data(), (unsigned)duration.count(), expectedTimeout)
-                        .str(),
-                    actualDuration >= minWiggleTimeout);
+                    VStringBuffer("Thread \"%s\" start function returned %s but expected %s", threadSpec.name.c_str(), boolToStr(startSuccessful), expectedTestFunctionResultToStr(threadSpec.expectedTestFunctionResult)).str(),
+                    expectedResult == startSuccessful);
+                break;
             }
+            default:
+                CPPUNIT_FAIL("Invalid expected start function result enum");
+                break;
+        }
+
+        // Validate thread timing
+        switch (threadSpec.startFunction)
+        {
+            case FunctionToTest::StartNoBlockFunction:
+            case FunctionToTest::StartFunction:
+                // Measure actual start duration if thread started successfully
+                if (startSuccessful)
+                {
+                    auto duration = measureThreadStartDuration(startTime, 1);
+                    // Only validate timing for threads that have specific expectations
+                    // OnlyCountExceptions threads that succeed are allowed to start at any time
+                    if (threadSpec.startException != ThreadStartExpectation::OnlyCountExceptions)
+                        validateThreadStartTiming(scenario.testName, threadSpec, duration, scenario.durationWiggleMs);
+                    expectedStartedCount++;
+                }
+                else
+                {
+                    // For failed starts, just measure the duration of the failure
+                    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+                        std::chrono::high_resolution_clock::now() - startTime);
+
+                    // If we expected the start to fail due to timeout, validate the timeout duration
+                    if (threadSpec.startException == ThreadStartExpectation::ShouldThrowException && threadSpec.startTimeoutMs != INFINITE)
+                    {
+                        unsigned expectedTimeout = threadSpec.startTimeoutMs;
+                        int actualDuration = duration.count();
+                        int minWiggleTimeout = (expectedTimeout - scenario.durationWiggleMs);
+#ifdef _DEBUG
+                        if (!(actualDuration >= minWiggleTimeout))
+                            DBGLOG("Thread \"%s\" timeout duration %u should be >= %u",
+                                                threadSpec.name.c_str(), (unsigned)duration.count(), expectedTimeout);
+#endif
+                        CPPUNIT_ASSERT_MESSAGE(
+                            VStringBuffer("Thread \"%s\" timeout duration %u should be >= %u",
+                                                threadSpec.name.c_str(), (unsigned)duration.count(), expectedTimeout)
+                                .str(),
+                            actualDuration >= minWiggleTimeout);
+                    }
+                }
+                break;
+            case FunctionToTest::WaitAvailableFunction:
+                break;
+            default:
+                CPPUNIT_FAIL("Invalid start function enum");
+                break;
         }
     }
 
@@ -950,11 +1088,11 @@ private:
 #ifdef _DEBUG
             if (!(actualMs <= wiggleMs))
                 DBGLOG("Scenario \"%s\" Thread \"%s\" should start immediately but took %ums",
-                                       testName, threadSpec.name.data(), actualMs);
+                                       testName, threadSpec.name.c_str(), actualMs);
 #endif
             CPPUNIT_ASSERT_MESSAGE(
-                StringBuffer().appendf("Scenario \"%s\" Thread \"%s\" should start immediately but took %ums",
-                                       testName, threadSpec.name.data(), actualMs)
+                VStringBuffer("Scenario \"%s\" Thread \"%s\" should start immediately but took %ums",
+                                       testName, threadSpec.name.c_str(), actualMs)
                     .str(),
                 actualMs <= wiggleMs);
         }
@@ -966,11 +1104,11 @@ private:
 #ifdef _DEBUG
             if (!(actualMs >= minExpected && actualMs <= maxExpected))
                 DBGLOG("Scenario \"%s\" Thread \"%s\" expected throttling delay %ums but actual was %ums (range: %u-%u)",
-                       testName, threadSpec.name.data(), expectedMs, actualMs, minExpected, maxExpected);
+                       testName, threadSpec.name.c_str(), expectedMs, actualMs, minExpected, maxExpected);
 #endif
             CPPUNIT_ASSERT_MESSAGE(
-                StringBuffer().appendf("Scenario \"%s\" Thread \"%s\" expected throttling delay %ums but actual was %ums (range: %u-%u)",
-                                       testName, threadSpec.name.data(), expectedMs, actualMs, minExpected, maxExpected)
+                VStringBuffer("Scenario \"%s\" Thread \"%s\" expected throttling delay %ums but actual was %ums (range: %u-%u)",
+                                       testName, threadSpec.name.c_str(), expectedMs, actualMs, minExpected, maxExpected)
                     .str(),
                 actualMs >= minExpected && actualMs <= maxExpected);
         }
