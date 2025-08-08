@@ -47,6 +47,26 @@ Which versions should changes be applied to?  The following gives some examples 
 
 Occasionally earlier branches will be chosen, (e.g. security fixes to even older versions) but they should always be carefully discussed (and documented).
 
+## Branching Strategy
+
+### Release Branch Creation
+
+When a new major or minor version of the platform is due to be released, a new branch is created with the format `candidate-<major>.<minor>.x`. A point-release branch `candidate-<major>.<minor>.0` is also created to represent the release candidate (RC) for the first point release (0). The file `version.cmake` in the root directory contains details of the build number and when that version was tagged.
+
+### Release Candidate Process
+
+When a new RC is tagged, a new branch `candidate-<major>.<minor>.<point>` is created from `candidate-<major>.<minor>.x`. The `version.cmake` file for both branches is updated, and a tag is created for the RC on the point release branch. Commits may continue to be applied to the point-release branch, and new RCs tagged until it is marked as the final release (gold).
+
+### Version Numbering
+
+- Only even numbers are used for minor and point release versions
+- Builds on the `master` branch will have an odd minor release number
+- Builds on a `candidate-<major>.<minor>.x` branch will have an odd point release number
+
+### Pull Request Guidelines
+
+When submitting a pull request (PR), it should be targeted to the lowest version that should contain the fix. Changes to `master` will be included in the next major or minor release. All fixes from previous versions are automatically merged forward (upmerged) to later versions, including `master`, before the next round of RCs are created.
+
 ## Patches and images
 
 We aim to produce new point releases once a week.  The point releases will contain
