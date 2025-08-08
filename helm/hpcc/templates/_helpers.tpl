@@ -3011,3 +3011,22 @@ infrastructure:
 {{ toYaml .root.Values.global.infrastructure | indent 2 }}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Generate Thor component cost configuration with cost inheritance
+Pass in dict with root, me, and subComponent (e.g., "manager", "worker", "eclagent")
+Returns a dict with cost if applicable, empty dict otherwise
+*/}}
+{{- define "hpcc.generateThorComponentCostConfig" -}}
+{{- $cost := dict -}}
+{{- if and (hasKey .me .subComponent) (hasKey (index .me .subComponent) "cost") -}}
+{{- $cost = (index .me .subComponent).cost -}}
+{{- else if hasKey .me "cost" -}}
+{{- $cost = .me.cost -}}
+{{- end -}}
+{{- if ne (len $cost) 0 -}}
+{{ dict "cost" $cost | toYaml }}
+{{- else -}}
+{{ dict | toYaml }}
+{{- end -}}
+{{- end -}}
