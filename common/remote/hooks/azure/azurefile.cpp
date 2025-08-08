@@ -321,18 +321,18 @@ static void handleRequestBackoff(const char * message, unsigned attempt, unsigne
     Sleep(backoffMs);
 }
 
-static void handleRequestException(const Azure::Core::RequestFailedException& e, unsigned attempt, unsigned maxRetries, const char * filename, offset_t pos, offset_t len)
+static void handleRequestException(const Azure::Core::RequestFailedException& e, const char * op, unsigned attempt, unsigned maxRetries, const char * filename, offset_t pos, offset_t len)
 {
-    VStringBuffer msg("AzureBlob::read failed (attempt %u/%u) for file %s at offset %llu, len %llu: %s (%d)",
-                      attempt, maxRetries, filename, pos, len, e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+    VStringBuffer msg("AzureBlob::%s failed (attempt %u/%u) for file %s at offset %llu, len %llu: %s (%d)",
+                      op, attempt, maxRetries, filename, pos, len, e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
 
     handleRequestBackoff(msg, attempt, maxRetries);
 }
 
-static void handleRequestException(const std::exception& e, unsigned attempt, unsigned maxRetries, const char * filename, offset_t pos, offset_t len)
+static void handleRequestException(const std::exception& e, const char * op, unsigned attempt, unsigned maxRetries, const char * filename, offset_t pos, offset_t len)
 {
-    VStringBuffer msg("AzureBlob::read failed (attempt %u/%u) for file %s at offset %llu, len %llu: %s",
-                      attempt, maxRetries, filename, pos, len, e.what());
+    VStringBuffer msg("AzureBlob::%s failed (attempt %u/%u) for file %s at offset %llu, len %llu: %s",
+                      op, attempt, maxRetries, filename, pos, len, e.what());
 
     handleRequestBackoff(msg, attempt, maxRetries);
 }
@@ -374,12 +374,12 @@ size32_t AzureBlobReadIO::read(offset_t pos, size32_t len, void * data)
         {
             //Future: update stats if the read fails... - use a local object with a destructor that updates the time
             attempt++;
-            handleRequestException(e, attempt, maxRetries, file->queryFilename(), pos, len);
+            handleRequestException(e, "read", attempt, maxRetries, file->queryFilename(), pos, len);
         }
         catch (const std::exception& e)
         {
             attempt++;
-            handleRequestException(e, attempt, maxRetries, file->queryFilename(), pos, len);
+            handleRequestException(e, "read", attempt, maxRetries, file->queryFilename(), pos, len);
         }
     }
 
@@ -436,15 +436,20 @@ AzureBlobBlockBlobWriteIO::AzureBlobBlockBlobWriteIO(AzureBlob * _file) : AzureB
     // * 32bit hash of the file name
     // * 64bit timestamp
     // * 32bit hash of get_cycles_now()
-    // This is created as a base64 base string.
+    // * 2 underscores
     //
-    // Each block has the a 6 character blockid appended to this base id.
-    // 16bytes pre-encoding.  24 bytes post encoding.  30 bytes with the blockid appended.
+    // This is then encoded to a base64 base string.
+    //
+    // Each block id then has a 8 character blockid appended to this base-64 encoded base id.
+    // 18bytes pre-encoding.  24 bytes post encoding.  32 characters with the blockid appended.
 
     MemoryBuffer blockId;
     blockId.append(hashncz_fnv1a((const byte *)file->queryFilename(), fnvInitialHash32));
     blockId.append(getTimeStampNowValue());
     blockId.append(hashvalue_fnv1a(get_cycles_now(), fnvInitialHash32));
+    blockId.append('_').append('_');
+    //Ensure the base block id is a multiple of 3, so that when it is base 64 encoded there are no padding characters
+    dbgassertex(blockId.length() % 3 == 0);
     JBASE64_Encode(blockId.bytes(), blockId.length(), baseBlockId, false);
 
     try
@@ -467,8 +472,9 @@ std::string AzureBlobBlockBlobWriteIO::generateNextUniqueBlockId()
     if (blockIndex > maxAzureBlockCount)
         throw makeStringException(1234, "Too many blocks for Azure block blob");
 
-    char blockIndexText[7];
-    sprintf(blockIndexText, "%06u", blockIndex);
+    //Ensure a multiple of 4 characters are appended - so that it is a valid base64 encoding
+    char blockIndexText[9];
+    sprintf(blockIndexText, "%08u", blockIndex);
 
     return std::string(baseBlockId).append(blockIndexText);
 }
@@ -500,12 +506,12 @@ size32_t AzureBlobBlockBlobWriteIO::write(offset_t pos, size32_t len, const void
         catch (const Azure::Core::RequestFailedException& e)
         {
             attempt++;
-            handleRequestException(e, attempt, maxRetries, file->queryFilename(), pos, len);
+            handleRequestException(e, "write", attempt, maxRetries, file->queryFilename(), pos, len);
         }
         catch (const std::exception& e)
         {
             attempt++;
-            handleRequestException(e, attempt, maxRetries, file->queryFilename(), pos, len);
+            handleRequestException(e, "write", attempt, maxRetries, file->queryFilename(), pos, len);
         }
     }
 
@@ -534,12 +540,12 @@ void AzureBlobBlockBlobWriteIO::close()
         catch (const Azure::Core::RequestFailedException& e)
         {
             attempt++;
-            handleRequestException(e, attempt, maxRetries, file->queryFilename(), offset, 0);
+            handleRequestException(e, "close", attempt, maxRetries, file->queryFilename(), offset, 0);
         }
         catch (const std::exception& e)
         {
             attempt++;
-            handleRequestException(e, attempt, maxRetries, file->queryFilename(), offset, 0);
+            handleRequestException(e, "close", attempt, maxRetries, file->queryFilename(), offset, 0);
         }
     }
 }
