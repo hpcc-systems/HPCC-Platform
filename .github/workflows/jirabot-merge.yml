@@ -155,25 +155,28 @@ jobs:
                     if latestVersion[0] < branchVersion[0] or (latestVersion[0] == branchVersion[0] and latestVersion[1] < branchVersion[1]):
                         return [buildVersionString([branchVersion[0], branchVersion[1], 0])]
 
-                    # Get latest release in branch
-                    latestBranchVer = getLatestSemVer(projectConfig, branchVersion[0], branchVersion[1])
+                    if branchVersion[0] == 2:
+                        fixVersions.append(buildVersionString([branchVersion[0], branchVersion[1], 0]))
+                    else:
+                        # Get latest release in branch
+                        latestBranchVer = getLatestSemVer(projectConfig, branchVersion[0], branchVersion[1])
 
-                    curMajor = branchVersion[0]
-                    latestMajor = latestVersion[0]
-                    while curMajor <= latestMajor:
-                        latestVersionInMajor = getLatestSemVer(projectConfig, curMajor)
+                        curMajor = branchVersion[0]
+                        latestMajor = latestVersion[0]
+                        while curMajor <= latestMajor:
+                            latestVersionInMajor = getLatestSemVer(projectConfig, curMajor)
 
-                        curMinor = 0
-                        if curMajor == branchVersion[0]:
-                            curMinor = branchVersion[1]
+                            curMinor = 0
+                            if curMajor == branchVersion[0]:
+                                curMinor = branchVersion[1]
 
-                        latestMinor = latestVersionInMajor[1]
+                            latestMinor = latestVersionInMajor[1]
 
-                        while curMinor <= latestMinor:
-                            latestPointInMinor = getLatestSemVer(projectConfig, curMajor, curMinor)
-                            fixVersions.append(buildVersionString([latestPointInMinor[0], latestPointInMinor[1], latestPointInMinor[2] + 2]))
-                            curMinor += 2
-                        curMajor += 1
+                            while curMinor <= latestMinor:
+                                latestPointInMinor = getLatestSemVer(projectConfig, curMajor, curMinor)
+                                fixVersions.append(buildVersionString([latestPointInMinor[0], latestPointInMinor[1], latestPointInMinor[2] + 2]))
+                                curMinor += 2
+                            curMajor += 1
 
                 for fixVersion in fixVersions:
                     try:
