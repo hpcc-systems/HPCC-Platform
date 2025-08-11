@@ -246,70 +246,11 @@ struct cFileDesc // no virtuals
 
 struct cDirDesc
 {
-    // Include thread safe version of CMinHashTable for parallelized scanDirectories
-    // The first() and next() methods were not overloaded, so to use in a thread safe way,
-    // the crit member should be used to create a CriticalBlock before calling first()
-    // and unblock after the last next()
-    template <class C> class CThreadSafeMinHashTable : public CMinHashTable<C>
-    {
-    public:
-        mutable CriticalSection crit;
-
-        void expand(bool expand=true)
-        {
-            CriticalBlock block(crit);
-            CMinHashTable<C>::expand(expand);
-        }
-
-        CThreadSafeMinHashTable(unsigned _initialSize = 7) : CMinHashTable<C>(_initialSize) {}
-        ~CThreadSafeMinHashTable() = default;
-
-        void add(C *c)
-        {
-            CriticalBlock block(crit);
-            CMinHashTable<C>::add(c);
-        }
-
-        C *findh(const char *key,unsigned h)
-        {
-            CriticalBlock block(crit);
-            return CMinHashTable<C>::findh(key, h);
-        }
-
-        C *find(const char *key,bool add)
-        {
-            CriticalBlock block(crit);
-            return CMinHashTable<C>::find(key, add);
-        }
-
-        unsigned findIndex(const char *key, unsigned h)
-        {
-            CriticalBlock block(crit);
-            return CMinHashTable<C>::findIndex(key, h);
-        }
-
-        C *getIndex(unsigned v) const
-        {
-            CriticalBlock block(crit);
-            return CMinHashTable<C>::getIndex(v);
-        }
-
-        void remove(C *c)
-        {
-            CriticalBlock block(crit);
-            CMinHashTable<C>::remove(c);
-        }
-
-        unsigned ordinality()
-        {
-            CriticalBlock block(crit);
-            return CMinHashTable<C>::ordinality();
-        }
-    };
-
     unsigned hash;
-    CThreadSafeMinHashTable<cDirDesc> dirs;
-    CThreadSafeMinHashTable<cFileDesc> files;
+    CMinHashTable<cDirDesc> dirs;
+    CMinHashTable<cFileDesc> files;
+    mutable CriticalSection dirsCrit;
+    mutable CriticalSection filesCrit;
     mutable CriticalSection dirDescCrit;
     offset_t totalsize[2];              //  across all nodes
     offset_t minsize[2];                //  smallest node size
@@ -345,6 +286,7 @@ struct cDirDesc
     ~cDirDesc()
     {
         unsigned i;
+        CriticalBlock block(dirsCrit);
         cDirDesc *d = dirs.first(i);
         while (d) {
             delete d;
@@ -390,7 +332,8 @@ struct cDirDesc
     }
 
     cDirDesc *lookupDir(const char *name,CLargeMemoryAllocator *mem)
-    { 
+    {
+        CriticalBlock block(dirsCrit);
         cDirDesc *ret = dirs.find(name,false);
         if (!ret&&mem) {
             ret = new cDirDesc(*mem,name);
@@ -436,6 +379,8 @@ struct cDirDesc
         StringAttr mask;
         const char *fn = decodeName(drv,name,node,numnodes,mask,pf,nf,filenameLen);
         bool misplaced = isMisplaced(pf, nf, ep, grp);
+
+        CriticalBlock block(filesCrit);
         cFileDesc *file = files.find(fn,false);
         if (!file) {
             if (!mem)
@@ -478,6 +423,8 @@ struct cDirDesc
         // TODO: Add better check for misplaced in isContainerized
         // If plane being scanned is host based (i.e. not locally mounted), misplaced could still make sense
         bool misplaced = !isContainerized() && (nf!=grp.ordinality() || pf>=grp.ordinality() || !grp.queryNode(pf).endpoint().equals(ep));
+
+        CriticalBlock block(filesCrit);
         cFileDesc *file = files.find(fn,false);
         if (file) {
             if (misplaced) {
@@ -518,8 +465,18 @@ struct cDirDesc
     bool empty(unsigned drv)
     {
         // empty if no files, and all subdirs are empty
-        if ((files.ordinality()!=0)||(totalsize[drv]!=0))
-            return false;
+        {
+            CriticalBlock block(filesCrit);
+            if (files.ordinality()!=0)
+                return false;
+        }
+        {
+            CriticalBlock block(dirDescCrit);
+            if (totalsize[drv]!=0)
+                return false;
+        }
+
+        CriticalBlock block(dirsCrit);
         if (dirs.ordinality()==0)
             return true;
         unsigned i;
