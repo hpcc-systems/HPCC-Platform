@@ -46,6 +46,7 @@
 #ifdef __linux__
 #include <alloca.h>
 #endif
+#include <utility>
 
 #include "hlzw.h"
 
@@ -940,8 +941,6 @@ class CNodeCache : public CInterface
 private:
     CNodeMRUCache cache[CacheMax] = { CacheBranch, CacheLeaf, CacheBlob };
     std::vector<std::shared_ptr<hpccMetrics::IMetric>> metrics;
-    Owned<IDiskPageCache> diskCache;
-    offset_t diskCacheOffsetMask = 0;
 public:
     CNodeCache(size_t maxNodeMem, size_t maxLeaveMem, size_t maxBlobMem)
     {
@@ -964,12 +963,6 @@ public:
     inline size_t setBlobCacheMem(size_t newSize)
     {
         return setCacheMem(newSize, CacheBlob);
-    }
-    void setDiskCache(IDiskPageCache * _diskCache)
-    {
-        diskCache.set(_diskCache);
-        if (diskCache)
-            diskCacheOffsetMask = ~(offset_t)(diskCache->queryPageSize() - 1);
     }
     void clear()
     {
@@ -1444,41 +1437,6 @@ CDiskKeyIndex::CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool
     init(hdr, isTLK);
 }
 
-const CJHTreeNode *CDiskKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, CLoadNodeCacheState & readState) const
-{
-    nodesLoaded++;
-
-    unsigned nodeSize = keyHdr->getNodeSize();
-
-    //Future: We could potentially use a different readCache for different node types.
-    CCachedIndexRead & readCache = readState.readCache;
-    const byte * match = readCache.queryBuffer(pos, nodeSize);
-    if (match)
-        return CKeyIndex::loadNodeFromMemory(match, pos, true);
-
-    // Read at least one node, but potentially multiple nodes (e.g. if from a slow storage device)
-    size32_t readSize = readState.preferredReadSize;
-    if (readSize < nodeSize)
-        readSize = nodeSize;
-
-    // Align the read position to a multiple of the readSize, and get a buffer from the read cache (reused by subsequent calls)
-    offset_t posMask = (offset_t)(readSize - 1);
-    offset_t alignedPos = (pos & ~ posMask);
-    byte * buffer = readCache.getBufferForUpdate(alignedPos, readSize);
-
-    CCycleTimer fetchTimer(fetchCycles != nullptr);
-    size32_t sizeRead = io->read(alignedPos, readSize, buffer);
-    // Check if we have read in the required node - sizeRead may not equal readSize at the end of the file
-    if (unlikely(alignedPos + sizeRead < pos + nodeSize))
-        throw makeStringExceptionV(-1, "Error %d reading node at position %llx read %u at offset %llx", errno, pos, sizeRead, alignedPos);
-
-    readCache.adjustSize(sizeRead);
-
-    if (fetchCycles)
-        *fetchCycles = fetchTimer.elapsedCycles();
-    return CKeyIndex::loadNodeFromMemory(buffer + (pos - alignedPos), pos, true);
-}
-
 CJHTreeNode *CKeyIndex::_createNode(const NodeHdr &nodeHdr) const
 {
     if (nodeHdr.compressionType == LegacyCompression)
@@ -1895,6 +1853,126 @@ const CJHSearchNode *CKeyIndex::locateLastLeafNode(INodeLoader & nodeLoader, ICo
     }
 }
 
+//---------------------------------------------------------------------------------------------------------------------
+
+// This section contains all the functions that need to know about the page cache
+
+static IPageCache * activePageCache{nullptr};
+static size32_t pageCachePageSize{0};           // How big are the pages in the page cache - must be a power of 2 and a multiple of the node size
+
+const CJHTreeNode *CDiskKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, CLoadNodeCacheState & readState) const
+{
+    nodesLoaded++;
+
+    unsigned nodeSize = keyHdr->getNodeSize();
+
+    //Future: We could potentially use a different readCache for different node types.
+    CCachedIndexRead & readCache = readState.readCache;
+    const byte * match = readCache.queryBuffer(pos, nodeSize);
+    if (!match)
+    {
+        CCycleTimer fetchTimer(fetchCycles != nullptr);
+
+        // Read at least one node, but potentially multiple nodes (e.g. if from a slow storage device)
+        size32_t readSize = readState.preferredReadSize;
+        if (readSize < nodeSize)
+            readSize = nodeSize;
+
+        // Now check if there is an entry in the page cache
+        if (activePageCache && readState.usePageCache)
+        {
+            if (activePageCache->read(iD, pos, nodeSize, readCache))
+                goto done;
+
+            // Ensure that we read one or more page cache pages - ensure that large reads are a multiple of the page size
+            if (readSize < pageCachePageSize)
+                readSize = pageCachePageSize;
+            else
+                assertex((readSize & (pageCachePageSize - 1))== 0);
+        }
+
+        {
+            // Align the read position to a multiple of the read granularity, and get a reusable buffer from the readState object
+            offset_t readPosMask = ~(offset_t)(readSize - 1);
+            offset_t alignedPos = pos & readPosMask;
+            byte * buffer = readCache.getBufferForUpdate(alignedPos, readSize);
+
+            // NOTE: There will only be a single call to loadNode for a given position, but there may be multiple calls to
+            // read at the aligned position.  This means the same block of file may be read multiple times.
+            //
+            // If the reads are remote and using the api then that would be inefficient (locally the second read will hit
+            // the linux page cache).  It is worth tracking the number of writes where the entry is already present,
+            // and if it is high then consider adding some protection - but that is hard to implement efficiently.
+            size32_t sizeRead = io->read(alignedPos, readSize, buffer);
+
+            // Check if we have read in the required node - sizeRead may not equal readSize at the end of the file
+            if (unlikely(alignedPos + sizeRead < pos + nodeSize))
+                throw makeStringExceptionV(-1, "Error %d reading node at position %llx read %u at offset %llx", errno, pos, sizeRead, alignedPos);
+
+            if (activePageCache && readState.usePageCache)
+            {
+                //Insert the pages into the page cache - if more than one page was read they may already exist.
+                for (size32_t delta = 0; delta < readSize; delta += pageCachePageSize)
+                {
+                    activePageCache->write(iD, alignedPos + delta, buffer + delta);
+                }
+            }
+            readCache.adjustSize(sizeRead);
+        }
+
+done:
+        match = readCache.queryBuffer(pos, nodeSize);
+        assertex(match);
+
+        if (fetchCycles)
+            *fetchCycles = fetchTimer.elapsedCycles();
+    }
+    return CKeyIndex::loadNodeFromMemory(match, pos, true);
+}
+
+
+// The initialization and cleanup functions are not thread safe.  They must only be called when no index activity is occuring.
+void initializeDiskPageCache(const IPropertyTree *config)
+{
+    if (!config)
+        return;
+
+    if (config->getPropInt64("@size", 0) == 0)
+        return;
+
+    IPageCache * cache = nullptr;
+    const char * type = config->queryProp("@type");
+    if (type)
+    {
+        if (strieq(type, "demo"))
+            cache = createDemoPageCache(config);
+    }
+
+    // Create a default page cache if no type is specified
+    if (!cache)
+        cache = createDemoPageCache(config);
+
+    pageCachePageSize = cache->queryPageSize();
+    activePageCache = cache;
+}
+
+void clearDiskPageCache()
+{
+    IPageCache * cache = nullptr;
+    std::swap(cache, activePageCache);
+    ::Release(cache);
+}
+
+MODULE_INIT(INIT_PRIORITY_JHTREE_JHTREE)
+{
+    return 1;
+}
+MODULE_EXIT()
+{
+    clearDiskPageCache();
+}
+
+//---------------------------------------------------------------------------------------------------------------------
 
 class IndexPrewarmer : public CInterfaceOf<IKeyIndexPrewarmer>
 {
@@ -3116,9 +3194,6 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
                     queryRecorder().recordIndexLookup(iD, pos, type, true, fastPathMatch->getMemSize(), fastPathMatch->getLoadExpandTime());
                 if (ctx)
                      ctx->noteStatistic(hitStatId[cacheType], 1);
-                //MORE: Should there be a diskCache per cacheType?
-                if (diskCache)
-                    diskCache->noteUsed(iD, pos & diskCacheOffsetMask); // MORE: Mask the offset
                 return fastPathMatch;
             }
         }
