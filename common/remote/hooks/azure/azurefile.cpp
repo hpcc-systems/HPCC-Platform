@@ -85,7 +85,7 @@ protected:
 };
 
 
-class AzureBlobReadIO : public AzureBlobIO
+class AzureBlobReadIO final : public AzureBlobIO
 {
 public:
     AzureBlobReadIO(AzureBlob * _file, const FileIOStats & _stats);
@@ -348,6 +348,15 @@ AzureBlobReadIO::AzureBlobReadIO(AzureBlob * _file, const FileIOStats & _firstSt
 size32_t AzureBlobReadIO::read(offset_t pos, size32_t len, void * data)
 {
     CCycleTimer timer;
+    offset_t fileSize = file->size();
+    if (pos > fileSize)
+        return 0;
+
+    if (pos + len > fileSize)
+        len = fileSize - pos;
+
+    if (len == 0)
+        return 0;
 
     Azure::Storage::Blobs::DownloadBlobToOptions options;
     options.Range = Azure::Core::Http::HttpRange();
