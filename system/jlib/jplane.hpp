@@ -98,6 +98,8 @@ interface IStoragePlaneAlias: extends IInterface
 
 //I'm not sure if this should be used in place of an IGroup, probably as system gradually changes
 interface IStorageApiInfo;
+
+// This interface should only have specialized methods for accessing the plane information, rather a general function to return a property tree
 interface IStoragePlane: extends IInterface
 {
     virtual const char * queryPrefix() const = 0;
@@ -111,6 +113,8 @@ interface IStoragePlane: extends IInterface
     virtual bool isAccessible() const = 0;
     virtual unsigned __int64 getAttribute(PlaneAttributeType attr) const = 0;
     virtual bool isAnyDeviceLocal() const = 0;
+    virtual bool compressOnWrite() const = 0;
+    virtual const char * queryCompression() const = 0;
 };
 
 extern jlib_decl const IStoragePlane * getStoragePlaneByName(const char * name, bool required);
