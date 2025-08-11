@@ -75,6 +75,7 @@ IPropertyTree* getMemorySpecifications(const IPropertyTree *config, const char *
     if (totalRequirements > maxBytes)
         throw makeStringExceptionV(0, "The total memory requirements of the query (%u MB) in '%s' exceed the memory limit (%u MB)", (unsigned)(totalRequirements / 0x100000), context, maxMB);
     memorySpecifications->setPropInt64("@total", totalRequirements);
+    memorySpecifications->setPropInt64("@totalMemory", maxBytes);
 
     float maxPercentage = 100.0;
     offset_t recommendedMaxMemory = maxBytes;
@@ -91,9 +92,8 @@ IPropertyTree* getMemorySpecifications(const IPropertyTree *config, const char *
         }
     }
     memorySpecifications->setPropInt64("@recommendedMaxMemory", recommendedMaxMemory);
-    memorySpecifications->setPropInt64("@totalMemory", maxBytes);
 
-    // a simple helper used below, to fetch bool from workunit, or the memory settings (either managerMemory or workerMemory) or legacy location
+    // a simple helper used below, to fetch bool from workunit, the memory settings or legacy location
     auto getBoolSetting = [&](const char *setting, bool defaultValue)
     {
         VStringBuffer attrSetting("@%s", setting);

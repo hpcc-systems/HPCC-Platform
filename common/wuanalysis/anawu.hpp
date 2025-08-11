@@ -33,7 +33,7 @@ void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, const char *optGr
 //    cfg                     = the analyzer configuration options from system configuration files
 //    optGraph(optional)      = the graph to analyse.  When omitted, analyse entire workunit
 //    inEclAgent              = inEclAgent must be set to true when called from eclagent/hThor.  This is required as config/option specifies where
-//                              the analyzer executes.  So if inEclAgent==true, then it will executed the analysis only if the config option specifies
+//                              the analyzer executes.  So if inEclAgent==true, then it will execute the analysis only if the config option specifies
 //                              that analysis should take place in ECLAgent. And if inEclAgent==false, then analysis will only be executed if the config
 //                              option specifies that analysis should be executed in thor.
 //    costPerHour             = the approximate cost per hour for the entire cluster.
