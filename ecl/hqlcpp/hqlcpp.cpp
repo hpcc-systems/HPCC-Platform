@@ -1556,7 +1556,10 @@ HqlCppTranslator::~HqlCppTranslator()
 
 void HqlCppTranslator::setTargetClusterType(ClusterType clusterType)
 {
-    targetClusterTypes.front() = clusterType;
+    if (!targetClusterTypes.empty())
+        targetClusterTypes.back() = clusterType;
+    else
+        targetClusterTypes.push_back(clusterType);
 }
 
 ClusterType HqlCppTranslator::pushTargetClusterType(ClusterType clusterType)
