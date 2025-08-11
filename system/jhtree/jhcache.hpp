@@ -34,6 +34,8 @@
 class CCachedIndexRead
 {
 public:
+    void adjustSize(size32_t newSize) { dbgassertex(newSize <= size); size = newSize; }
+
     // request a buffer for data at a given offset and size - used when reading data from a file or retrieving from the cache
     byte * getBufferForUpdate(offset_t offset, size32_t writeSize);
 

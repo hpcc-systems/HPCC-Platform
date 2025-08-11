@@ -1414,7 +1414,7 @@ const CJHTreeNode *CMemKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, C
         throw E;
     }
     char *nodeData = (char *) (io->base() + pos);
-    return CKeyIndex::_loadNode(nodeData, pos, false);
+    return CKeyIndex::loadNodeFromMemory(nodeData, pos, false);
 }
 
 CDiskKeyIndex::CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool isTLK, size32_t _blockedIOSize)
@@ -1447,33 +1447,36 @@ CDiskKeyIndex::CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool
 const CJHTreeNode *CDiskKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, CLoadNodeCacheState & readState) const
 {
     nodesLoaded++;
-    IFileIO * useIO = readState.bufferedIO ? readState.bufferedIO.get() : io.get();
+
     unsigned nodeSize = keyHdr->getNodeSize();
 
-    //Use alloca() to allocate a buffer on the stack if the node size is small enough.
-    //Often the data could be read directly from the input files's buffer and not even be copied.
-    //Should we have a io->peek(pos, size) which returns a pointer if supported?
-    constexpr const size_t maxStackSize = 8192; // Default node size
-    MemoryAttr ma;
-    char *nodeData;
-    if (nodeSize <= maxStackSize)
-        nodeData = (char *) alloca(nodeSize);
-    else
-        nodeData = (char *) ma.allocate(nodeSize);
-    assertex(nodeData);
+    //Future: We could potentially use a different readCache for different node types.
+    CCachedIndexRead & readCache = readState.readCache;
+    const byte * match = readCache.queryBuffer(pos, nodeSize);
+    if (match)
+        return CKeyIndex::loadNodeFromMemory(match, pos, true);
+
+    // Read at least one node, but potentially multiple nodes (e.g. if from a slow storage device)
+    size32_t readSize = readState.preferredReadSize;
+    if (readSize < nodeSize)
+        readSize = nodeSize;
+
+    // Align the read position to a multiple of the readSize, and get a buffer from the read cache (reused by subsequent calls)
+    offset_t posMask = (offset_t)(readSize - 1);
+    offset_t alignedPos = (pos & ~ posMask);
+    byte * buffer = readCache.getBufferForUpdate(alignedPos, readSize);
 
     CCycleTimer fetchTimer(fetchCycles != nullptr);
-    if (useIO->read(pos, nodeSize, nodeData) != nodeSize)
-    {
-        IException *E = MakeStringException(errno, "Error %d reading node at position %" I64F "x", errno, pos); 
-        StringBuffer m;
-        m.appendf("In key %s, position 0x%" I64F "x", name.get(), pos);
-        EXCLOG(E, m.str());
-        throw E;
-    }
+    size32_t sizeRead = io->read(alignedPos, readSize, buffer);
+    // Check if we have read in the required node - sizeRead may not equal readSize at the end of the file
+    if (unlikely(alignedPos + sizeRead < pos + nodeSize))
+        throw makeStringExceptionV(-1, "Error %d reading node at position %llx read %u at offset %llx", errno, pos, sizeRead, alignedPos);
+
+    readCache.adjustSize(sizeRead);
+
     if (fetchCycles)
         *fetchCycles = fetchTimer.elapsedCycles();
-    return CKeyIndex::_loadNode(nodeData, pos, true);
+    return CKeyIndex::loadNodeFromMemory(buffer + (pos - alignedPos), pos, true);
 }
 
 CJHTreeNode *CKeyIndex::_createNode(const NodeHdr &nodeHdr) const
@@ -1520,7 +1523,7 @@ CJHTreeNode *CKeyIndex::_createNode(const NodeHdr &nodeHdr) const
     }
 }
 
-CJHTreeNode *CKeyIndex::_loadNode(char *nodeData, offset_t pos, bool needsCopy) const
+CJHTreeNode *CKeyIndex::loadNodeFromMemory(const void *nodeData, offset_t pos, bool needsCopy) const
 {
     try
     {
@@ -1921,11 +1924,11 @@ CKeyCursor::CKeyCursor(CKeyIndex &_key, const IIndexFilterList *_filter, bool _l
 {
     if (_blockedIOSize)
     {
-        readState.blockIoSize = _blockedIOSize;
-        IFileIO *baseIO = const_cast<IFileIO *>(key.queryFileIO());  // I suspect createBlockedIO should take const...
-        if (baseIO)
-            readState.bufferedIO.setown(createBlockedIO(LINK(baseIO), _blockedIOSize));
+        if (unlikely(!isPowerOf2(_blockedIOSize)))
+            throw makeStringExceptionV(-1, "Blocked IO size must be a power of 2");
+        readState.preferredReadSize = _blockedIOSize;
     }
+
     nodeKey = 0;
     recordBuffer = (char *) malloc(key.keySize());  // MORE - would be nice to know real max - is it stored in metadata?
 }
