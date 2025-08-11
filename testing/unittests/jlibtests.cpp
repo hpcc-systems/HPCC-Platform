@@ -430,6 +430,10 @@ protected:
             // Create a ConditionalClientSpan with the threshold
             OwnedActiveSpanScope conditionalClientSpan = serverSpan->createConditionalClientSpan("DONOTREPORTCLIENTSPAN", thresholdMs);
 
+            // Set attributes before threshold is exceeded
+            conditionalClientSpan->setSpanAttribute("shouldNotAppear", "value1");
+            conditionalClientSpan->setSpanAttribute("shouldNotAppearInt", 12345);
+
             // Sleep less than the threshold, span should not be recorded
             MilliSleep(10);
         }
@@ -438,17 +442,26 @@ protected:
             Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
             // Create another ConditionalClientSpan and exceed the threshold
             OwnedActiveSpanScope conditionalClientSpan = serverSpan->createConditionalClientSpan("REPORTTHISCLIENTSPAN", thresholdMs);
+
             Owned<IProperties> retrievedClientHeaders = createProperties();
             conditionalClientSpan->getClientHeaders(retrievedClientHeaders.get());
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("getClientHeaders failed to produce traceParent!", true, retrievedClientHeaders->hasProp("traceparent"));
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("getClientHeaders unexpectedly produced a traceParent!", false, retrievedClientHeaders->hasProp("traceparent"));
+            conditionalClientSpan->setSpanAttribute("shouldAppear1", "value1");
+            conditionalClientSpan->setSpanAttribute("shouldAppearInt1", 67890);
             MilliSleep(600);
+            conditionalClientSpan->setSpanAttribute("shouldAppear2", "value2");
+            conditionalClientSpan->setSpanAttribute("shouldAppearInt2", 67891);
+            conditionalClientSpan->getSpanContext(retrievedSpanCtxAttributes);
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing localParentSpanID detected", true,
+              retrievedSpanCtxAttributes->hasProp("localParentSpanID"));
+            conditionalClientSpan->endSpan();
+            conditionalClientSpan->getClientHeaders(retrievedClientHeaders.get());
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("getClientHeaders failed to produce a traceParent!", true, retrievedClientHeaders->hasProp("traceparent"));
             conditionalClientSpan->getSpanContext(retrievedSpanCtxAttributes);
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing localParentSpanID detected", true,
               retrievedSpanCtxAttributes->hasProp("localParentSpanID"));
         }
     }
-
-    //createBackdatedInternalSpan
 
     void testSpanIsValid()
     {
@@ -733,11 +746,6 @@ protected:
         //Now = 1747317725729197367
         //{ "type": "span", "name": "internalSpan", "trace_id": "c15305e4d2a6c20a87a49bd20449d996", "span_id": "4d2d7e5de8d008f5", "start": 1747317724729151340, "duration": 1000059222, "parent_span_id": "bfb21030afbf51ac" }
         //NOTE: The start time should be 1,000,000,000ns before now, and the duration should be at least 1,000,000,000
-
-        {
-            OwnedActiveSpanScope internalConditionalSpan = createBackdatedInternalSpan("internalSpan", 1'000'000'000, 500'000'000);
-            DBGLOG("Now = %llu", (__uint64)std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-        }
     }
 
 
