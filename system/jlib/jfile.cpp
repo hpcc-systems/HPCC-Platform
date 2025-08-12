@@ -2245,9 +2245,77 @@ void CFileIO::setSize(offset_t pos)
 
 //---------------------------------------------------------------------------
 
-CFileRangeIO::CFileRangeIO(IFileIO * _io, offset_t _headerSize, offset_t _maxLength)
+CIndirectFileIO::CIndirectFileIO(IFileIO * _io) : io(_io)
 {
-    io.set(_io);
+}
+
+size32_t CIndirectFileIO::read(offset_t pos, size32_t len, void * data)
+{
+    return io->read(pos, len, data);
+}
+
+offset_t CIndirectFileIO::size()
+{
+    return io->size();
+}
+
+size32_t CIndirectFileIO::write(offset_t pos, size32_t len, const void * data)
+{
+    return io->write(pos, len, data);
+}
+
+void CIndirectFileIO::setSize(offset_t size)
+{
+    io->setSize(size);
+}
+
+void CIndirectFileIO::flush()
+{
+    io->flush();
+}
+
+void CIndirectFileIO::close()
+{
+    io->close();
+}
+
+unsigned __int64 CIndirectFileIO::getStatistic(StatisticKind kind)
+{
+    return io->getStatistic(kind);
+}
+IFile * CIndirectFileIO::queryFile() const
+{
+    return io->queryFile();
+}
+
+//---------------------------------------------------------------------------
+
+CDelayedFileIO::CDelayedFileIO(IFileIO * _io, unsigned _delayNs)
+    : CIndirectFileIO(_io), delayNs(_delayNs)
+{
+}
+
+size32_t CDelayedFileIO::read(offset_t pos, size32_t len, void * data)
+{
+    NanoSleep(delayNs);
+    return CIndirectFileIO::read(pos, len, data);
+}
+size32_t CDelayedFileIO::write(offset_t pos, size32_t len, const void * data)
+{
+    NanoSleep(delayNs);
+    return CIndirectFileIO::write(pos, len, data);
+}
+
+IFileIO * createDelayedFileIO(IFileIO * io, unsigned delayNs)
+{
+    return new CDelayedFileIO(io, delayNs);
+}
+
+
+//---------------------------------------------------------------------------
+
+CFileRangeIO::CFileRangeIO(IFileIO * _io, offset_t _headerSize, offset_t _maxLength) : CIndirectFileIO(_io)
+{
     headerSize = _headerSize;
     maxLength = _maxLength;
 }
@@ -2260,7 +2328,7 @@ size32_t CFileRangeIO::read(offset_t pos, size32_t len, void * data)
             pos = maxLength;
         len = (size32_t)(maxLength - pos);
     }
-    return io->read(pos+headerSize, len, data);
+    return CIndirectFileIO::read(pos+headerSize, len, data);
 }
 
 offset_t CFileRangeIO::size()
@@ -2276,7 +2344,7 @@ size32_t CFileRangeIO::write(offset_t pos, size32_t len, const void * data)
             pos = maxLength;
         len = (size32_t)(maxLength - pos);
     }
-    return io->write(pos+headerSize, len, data);
+    return CIndirectFileIO::write(pos+headerSize, len, data);
 }
 
 //--------------------------------------------------------------------------
@@ -2298,11 +2366,6 @@ size32_t CCheckingFileIO::read(offset_t pos, size32_t len, void * data)
     return numRead;
 }
 
-offset_t CCheckingFileIO::size()
-{
-    return io->size();
-}
-
 size32_t CCheckingFileIO::write(offset_t pos, size32_t len, const void * data)
 {
     CriticalBlock block(cs);
@@ -2318,25 +2381,10 @@ size32_t CCheckingFileIO::write(offset_t pos, size32_t len, const void * data)
     return io->write(pos, len, data);
 }
 
-void CCheckingFileIO::setSize(offset_t size)
-{
-    io->setSize(size);
-}
-
-void CCheckingFileIO::flush()
-{
-    io->flush();
-}
-
 void CCheckingFileIO::close()
 {
     io->close();
     closed = true;
-}
-
-unsigned __int64 CCheckingFileIO::getStatistic(StatisticKind kind)
-{
-    return io->getStatistic(kind);
 }
 
 void CCheckingFileIO::report(const char * format, ...)

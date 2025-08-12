@@ -38,6 +38,98 @@
 
 //---------------------------------------------------------------------------------------------------------------------
 
+IBufferedSerialOutputStream * createBufferedOutputStream(IFileIO * io, const IPropertyTree * providerOptions)
+{
+    assertex(providerOptions);
+
+    bool compressed = providerOptions->getPropBool("@compressed", false);
+    const char * compression = providerOptions->queryProp("@compression");
+    CompressionMethod compressionMethod = translateToCompMethod(compression, compressed ? COMPRESS_METHOD_LZ4 : COMPRESS_METHOD_NONE);
+    bool sequentialAccess = providerOptions->getPropBool("@sequentialAccess", false);
+
+    MemoryBuffer encryptionKey;
+    Owned<ICompressor> encryptor;
+    if (providerOptions->hasProp("encryptionKey"))
+    {
+        providerOptions->getPropBin("encryptionKey", encryptionKey);
+        encryptor.setown(createAESCompressor256((size32_t)encryptionKey.length(), encryptionKey.bufferBase()));
+        compressionMethod = COMPRESS_METHOD_AES;
+    }
+
+    bool append = providerOptions->getPropBool("@extend", false);
+    if (append)
+        throwUnimplementedX("MORE: buffered output stream needs to adjust the write position");
+
+    Linked<IFileIO> outputfileio = io;
+    unsigned delayNs = providerOptions->getPropInt("@delayNs", 0);
+    if (delayNs)
+        outputfileio.setown(createDelayedFileIO(outputfileio, delayNs));
+
+    size32_t ioBufferSize = providerOptions->getPropInt("@sizeIoBuffer", oneMB);
+    size32_t streamBufferSize = ioBufferSize;
+    try
+    {
+        if (sequentialAccess)
+        {
+            Owned<ICompressor> compressor = getCompressor(compression ? compression : "lz4");
+            Owned<ISerialOutputStream> fileStream = createSerialOutputStream(outputfileio);
+            Owned<IBufferedSerialOutputStream> bufferedStream = createBufferedOutputStream(fileStream, ioBufferSize);
+            Owned<ISerialOutputStream> compressed = createCompressingOutputStream(bufferedStream, compressor);
+            return createBufferedOutputStream(compressed, oneMB);
+        }
+
+        if (compressionMethod != COMPRESS_METHOD_NONE)
+        {
+            //If the input file is empty return a dummy stream, otherwise create a decompressed reader
+            size32_t compBlockSize = 0; // i.e. default
+            size32_t blockedIoSize = -1; // i.e. default
+            Owned<ICompressedFileIO> compressedIO = createCompressedFileWriter(outputfileio, append, false, encryptor, compressionMethod, compBlockSize, blockedIoSize);
+
+            //MORE: The compressed file reader should provide a IBufferedSerialInputStream interface - which would avoid
+            //the need for extra buffering.
+
+            //MORE: This should throw an exception if the file does not appear to be compressed
+            if (!outputfileio)
+                return nullptr;
+
+            //If we are reading from a compressed file, then only buffer 1MB, not the io size (which may be 4MB)
+            //In the future compressedFileReader will directly implement the buffering
+            streamBufferSize = compressedIO->blockSize();
+            outputfileio.setown(compressedIO.getClear());
+        }
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e, "createOutputStream");
+        e->Release();
+        return nullptr;
+    }
+
+    //Now wrap the IFileIO in a stream interface
+    Owned<ISerialOutputStream> fileStream = createSerialOutputStream(outputfileio);
+
+    // Create a buffer around the file stream
+    // MORE: This should support threaded reading, but that appears to not yet be implemented....
+    unsigned threading = providerOptions->getPropInt("@threading", 0);
+    return createBufferedOutputStream(fileStream, streamBufferSize, threading);
+}
+
+
+// Create an input stream and and input io for a given input file.
+bool createBufferedOutputStream(Shared<IBufferedSerialOutputStream> & outputStream, Shared<IFileIO> & outputfileio, IFile * outputFile, const IPropertyTree * providerOptions)
+{
+    IFOmode mode = providerOptions->getPropBool("@extend", false) ? IFOwrite : IFOcreate;
+    outputfileio.setown(outputFile->open(mode));
+    if (!outputfileio)
+        return false;
+
+    outputStream.setown(createBufferedOutputStream(outputfileio, providerOptions));
+    return outputStream != nullptr;
+}
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
 /*
  * A class that implements IRowWriteFormatMapping - which provides all the information representing a translation 
  * from projected->expected->actual.

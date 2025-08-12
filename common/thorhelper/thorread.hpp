@@ -26,6 +26,7 @@
 
 #include "jrowstream.hpp"
 #include "rtlkey.hpp"
+#include "rtldynfield.hpp"
 
 #define PARQUET_FILE_TYPE_NAME "parquet"
 
@@ -73,13 +74,17 @@ THORHELPER_API IRowReadFormatMapping * createRowReadFormatMapping(RecordTranslat
 //
 // Internal provider options (e.g. readBufferSize) are passed as attributes, except for binary valuues (e.g. encryptionKeys)
 
+interface IHThorGenericDiskReadBaseArg;
+interface IHThorGenericDiskWriteArg;
+interface IStoragePlane;
+interface IDistributedFile;
 class THORHELPER_API FileAccessOptions
 {
 public:
     FileAccessOptions();
     explicit FileAccessOptions(const FileAccessOptions & original); // clone - ready for subsequent modification
 
-    bool isCompressed() const { return providerOptions->getPropBool("@compressed"); }
+    bool isCompressed() const;
     void setCompression(bool enable, const char * method);
 
     void updateFromFile(IDistributedFile * file);
@@ -155,5 +160,9 @@ public:
 extern THORHELPER_API IDiskRowReader * createLocalDiskReader(const char * format, IRowReadFormatMapping * mapping, const IPropertyTree * providerOptions, IEngineRowAllocator * optOutputAllocator);
 extern THORHELPER_API IDiskRowReader * createRemoteDiskReader(const char * format, IRowReadFormatMapping * mapping, const IPropertyTree * providerOptions, IEngineRowAllocator * optOutputAllocator);
 extern THORHELPER_API IDiskRowReader * createDiskReader(const char * format, bool streamRemote, IRowReadFormatMapping * mapping, const IPropertyTree * providerOptions, IEngineRowAllocator * optOutputAllocator);
+
+//MORE: These should probably move into jlib
+extern THORHELPER_API IBufferedSerialInputStream * createBufferedInputStream(IFileIO * io, const IPropertyTree * providerOptions);
+extern THORHELPER_API bool createBufferedInputStream(Shared<IBufferedSerialInputStream> & inputStream, Shared<IFileIO> & inputfileio, IFile * inputFile, const IPropertyTree * providerOptions);
 
 #endif
