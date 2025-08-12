@@ -1252,8 +1252,8 @@ ISerialOutputStream * createCompressingOutputStream(IBufferedSerialOutputStream 
 class CFileSerialOutputStream final : public CInterfaceOf<ISerialOutputStream>
 {
 public:
-    CFileSerialOutputStream(IFileIO * _output)
-    : output(_output)
+    CFileSerialOutputStream(IFileIO * _output, offset_t _offset)
+    : output(_output), nextOffset(_offset)
     {
     }
 
@@ -1281,9 +1281,9 @@ protected:
 };
 
 //Temporary class - long term goal is to have IFile create this directly and avoid an indirect call.
-ISerialOutputStream * createSerialOutputStream(IFileIO * output)
+ISerialOutputStream * createSerialOutputStream(IFileIO * output, offset_t offset)
 {
-    return new CFileSerialOutputStream(output);
+    return new CFileSerialOutputStream(output, offset);
 }
 
 //---------------------------------------------------------------------------------------------------------------------

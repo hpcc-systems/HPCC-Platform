@@ -57,9 +57,6 @@ IBufferedSerialOutputStream * createBufferedOutputStream(IFileIO * io, const IPr
     }
 
     bool append = providerOptions->getPropBool("@extend", false);
-    if (append)
-        throwUnimplementedX("MORE: buffered output stream needs to adjust the write position");
-
     Linked<IFileIO> outputfileio = io;
     unsigned delayNs = providerOptions->getPropInt("@delayNs", 0);
     if (delayNs)
@@ -72,7 +69,8 @@ IBufferedSerialOutputStream * createBufferedOutputStream(IFileIO * io, const IPr
         if (sequentialAccess)
         {
             Owned<ICompressor> compressor = getCompressor(compression ? compression : "lz4");
-            Owned<ISerialOutputStream> fileStream = createSerialOutputStream(outputfileio);
+            offset_t offset = append ? outputfileio->size() : 0;
+            Owned<ISerialOutputStream> fileStream = createSerialOutputStream(outputfileio, offset);
             Owned<IBufferedSerialOutputStream> bufferedStream = createBufferedOutputStream(fileStream, ioBufferSize);
             Owned<ISerialOutputStream> compressed = createCompressingOutputStream(bufferedStream, compressor);
             return createBufferedOutputStream(compressed, oneMB);
@@ -106,7 +104,8 @@ IBufferedSerialOutputStream * createBufferedOutputStream(IFileIO * io, const IPr
     }
 
     //Now wrap the IFileIO in a stream interface
-    Owned<ISerialOutputStream> fileStream = createSerialOutputStream(outputfileio);
+    offset_t offset = append ? outputfileio->size() : 0;
+    Owned<ISerialOutputStream> fileStream = createSerialOutputStream(outputfileio, offset);
 
     // Create a buffer around the file stream
     // MORE: This should support threaded reading, but that appears to not yet be implemented....
@@ -118,7 +117,7 @@ IBufferedSerialOutputStream * createBufferedOutputStream(IFileIO * io, const IPr
 // Create an input stream and and input io for a given input file.
 bool createBufferedOutputStream(Shared<IBufferedSerialOutputStream> & outputStream, Shared<IFileIO> & outputfileio, IFile * outputFile, const IPropertyTree * providerOptions)
 {
-    IFOmode mode = providerOptions->getPropBool("@extend", false) ? IFOwrite : IFOcreate;
+    IFOmode mode = providerOptions->getPropBool("@extend", false) ? IFOreadwrite : IFOcreate;
     outputfileio.setown(outputFile->open(mode));
     if (!outputfileio)
         return false;

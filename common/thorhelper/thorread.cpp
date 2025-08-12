@@ -52,6 +52,10 @@ IBufferedSerialInputStream * createBufferedInputStream(IFileIO * io, const IProp
     bool compressed = providerOptions->getPropBool("@compressed", false);
     if (providerOptions->getPropBool("@forceCompressed", false))
         compressed = true;
+    const char * compression = providerOptions->queryProp("@compression", compressed ? "lz4" : nullptr);
+    if (!isEmptyString(compression))
+        compressed = true;
+
     bool sequentialAccess = providerOptions->getPropBool("@sequentialAccess", false);
 
     MemoryBuffer encryptionKey;
@@ -81,7 +85,6 @@ IBufferedSerialInputStream * createBufferedInputStream(IFileIO * io, const IProp
             {
                 if (sequentialAccess)
                 {
-                    const char * compression = providerOptions->queryProp("@compression", "lz4");
                     Owned<IExpander> expander = getExpander(compression);
                     Owned<ISerialInputStream> fileStream = createSerialInputStream(inputfileio, 0, io->size());
                     Owned<IBufferedSerialInputStream> bufferedStream = createBufferedInputStream(fileStream, ioBufferSize);

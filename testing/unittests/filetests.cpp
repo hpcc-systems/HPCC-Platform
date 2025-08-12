@@ -385,26 +385,28 @@ public:
         io->close();
         stream.clear();
 
-        DBGLOG("Read  '%-25s' took %5ums size=%llu->%llu", title, timer.elapsedMs(), file->size(), totalRead);
+        DBGLOG("Read  '%-25s' took %5ums size=%llu<-%llu", title, timer.elapsedMs(), totalRead, file->size());
     }
 
     //Use XML for the options.  Json might be cleaner it cannot set attributes
     static constexpr std::initializer_list<std::pair<const char *, const char *>> testCases
     {
-        { "simple",           R"!()!" },
-        { "small buffer",     R"!(sizeIoBuffer="256")!" },
-        { "large buffer",     R"!(sizeIoBuffer="4000000")!" },
-        { "lz4",              R"!(sizeIoBuffer="1000000" compression="lz4")!" },
-        { "lz4 seq",          R"!(sizeIoBuffer="1000000" compression="lz4" sequentialAccess="1")!" },
-        { "zstd",             R"!(sizeIoBuffer="1000000" compression="zstd")!" },
-        { "zstd thread",      R"!(sizeIoBuffer="1000000" compression="zstd" threading="1")!" },
-        { "zstd work",        R"!(sizeIoBuffer="1000000" compression="zstd" work="50")!" },
-        { "zstd work thread", R"!(sizeIoBuffer="1000000" compression="zstd" work="50" threading="1")!" },
-        { "zstd seq",         R"!(sizeIoBuffer="1000000" compression="zstd" sequentialAccess="1")!" },
-        { "zstd work slow",        R"!(sizeIoBuffer="1000000" compression="zstd" work="50" delayNs="200000000")!" },
-        { "zstd work thread slow", R"!(sizeIoBuffer="1000000" compression="zstd" work="50" threading="1" delayNs="200000000")!" },
-// The following are not yet supported:
-//        { "lz4 append",       R"!(sizeIoBuffer="1000000" compression="lz4" extend="1")!" },
+        { "simple",                 R"!()!" },
+        { "small buffer",           R"!(sizeIoBuffer="256")!" },
+        { "large buffer",           R"!(sizeIoBuffer="4000000")!" },
+        { "large buffer append",    R"!(sizeIoBuffer="4000000" extend="1")!" },
+        { "lz4",                    R"!(sizeIoBuffer="1000000" compression="lz4")!" },
+        // Append to the previous file (in the same format) and check that the file read back is twice as long
+        { "lz4 append",             R"!(sizeIoBuffer="1000000" compression="lz4" extend="1")!" },
+        { "lz4 seq",                R"!(sizeIoBuffer="1000000" compression="lz4" sequentialAccess="1")!" },
+        { "lz4 seq append",         R"!(sizeIoBuffer="1000000" compression="lz4" sequentialAccess="1" extend="1")!" },
+        { "zstd",                   R"!(sizeIoBuffer="1000000" compression="zstd")!" },
+        { "zstd thread",            R"!(sizeIoBuffer="1000000" compression="zstd" threading="1")!" },
+        { "zstd work",              R"!(sizeIoBuffer="1000000" compression="zstd" work="50")!" },
+        { "zstd work thread",       R"!(sizeIoBuffer="1000000" compression="zstd" work="50" threading="1")!" },
+        { "zstd seq",               R"!(sizeIoBuffer="1000000" compression="zstd" sequentialAccess="1")!" },
+        { "zstd work slow",         R"!(sizeIoBuffer="1000000" compression="zstd" work="50" delayNs="200000000")!" },
+        { "zstd work thread slow",  R"!(sizeIoBuffer="1000000" compression="zstd" work="50" threading="1" delayNs="200000000")!" },
 // Where should the following options be implemented:
 //    overwrite
 //    optional
