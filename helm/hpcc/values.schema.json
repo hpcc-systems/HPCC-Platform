@@ -569,6 +569,33 @@
       },
       "additionalProperties": false
     },
+    "pageCache": {
+      "description": "Details of the page cache ",
+      "type": "object",
+      "properties": {
+        "sizeMB": {
+          "description": "How much disk space (in MB) to reserve for the disk cache",
+          "type": "integer"
+        },
+        "pageSize": {
+          "description": "How many bytes does each page occupy in the cache - must be a power of 2 and a multiple of the index node size",
+          "type": "integer"
+        },
+        "readSize": {
+          "description": "Recommended size when reading FROM the cache, must be a factor of pageSize",
+          "type": "integer"
+        },
+        "debugCacheMissPenalty": {
+          "description": "How long to delay a read that fails to hit the cache.  Used to model the performance impact of cache misses",
+          "type": "integer"
+        },
+        "type": {
+          "description": "Allows selection between the different cache implementations",
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
     "storagePlanes": {
       "description": "Storage plane definitions",
       "type": "array",
@@ -2588,6 +2615,9 @@
         },
         "plugins": {
           "$ref": "#/definitions/plugins"
+        },
+        "pageCache": {
+          "$ref": "#/definitions/pageCache"
         },
         "terminationGracePeriodSeconds": {
           "$ref": "#/definitions/terminationGracePeriodSeconds"

@@ -350,4 +350,7 @@ public:
 };
 
 
+interface IPropertyTree;
+void jhtree_decl initializeDiskPageCache(const IPropertyTree *config);
+
 #endif

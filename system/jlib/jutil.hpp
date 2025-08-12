@@ -655,5 +655,8 @@ extern jlib_decl void getResourceFromJfrog(StringBuffer &localPath, IPropertyTre
 
 extern jlib_decl void hold(const char *msg);
 
+template <typename T>
+inline bool isPowerOf2(T x) { return (x & (x-1)) == 0; }
+
 #endif
 

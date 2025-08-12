@@ -34,6 +34,8 @@
 class CCachedIndexRead
 {
 public:
+    void adjustSize(size32_t newSize) { dbgassertex(newSize <= size); size = newSize; }
+
     // request a buffer for data at a given offset and size - used when reading data from a file or retrieving from the cache
     byte * getBufferForUpdate(offset_t offset, size32_t writeSize);
 
@@ -72,7 +74,7 @@ class CCacheReservation
 // If a read from a file is not a multiple of the page size it is the caller's responsibility to zero fill if necessary
 // before inserting into the cache.
 
-interface IDiskPageCache : public IInterface
+interface IPageCache : public IInterface
 {
     virtual size32_t queryPageSize() const = 0;
 
@@ -81,29 +83,17 @@ interface IDiskPageCache : public IInterface
     virtual void noteUsed(unsigned fileId, offset_t offset) = 0;
 
     // Searching for a node in the disk node cache.  Return true if found, and ensure nodeData is populated
-    // if it returns false then the node is not in the cache.  The cache reserves a space for it to be inserted
-    // The caller should read the node from disk and then call write() or releaseReservation()
-    virtual bool readOrReserve(unsigned fileId, offset_t offset, CCachedIndexRead & nodeData, CCacheReservation & reservation) = 0;
+    // if it returns false then the node is not in the cache.
+    virtual bool read(unsigned fileId, offset_t offset, size32_t size, CCachedIndexRead & nodeData) = 0;
 
-    // if a readNode has reserved a spot in the cache, but the read fails, mark the reserved spot as invalid
-    virtual bool releaseReservation(unsigned fileId, offset_t offset, const CCacheReservation & reservation) = 0;
+    // Insert a block of data of size queryPageSize() into the disk node cache.  It may already exist.
+    virtual void write(unsigned fileId, offset_t offset, const byte * data) = 0;
 
-    // Insert a block of data into the disk node cache.
-    // If reservation is non null, then it will match the value from a previous call to readNodeOrReserve
-    // If reservation is null the data is being preemptively added to the cache (e.g. at startup)
-    virtual void write(unsigned fileId, offset_t offset, const CCachedIndexRead & nodeData, const CCacheReservation * reservation) = 0;
-
-    // Called to save the page cache state to disk.
-    // MORE: This will need a mechanism for mapping file ids to filenames.
-    virtual void saveState(IFile * stateFile) = 0;
-
-    // Called to restore the page cache state from disk.
-    // MORE: This will need a callback to resolve a filename to an IFileIO which can then be used to read data to add to the cache
-    // NOTE: If the fileids are not consistent then a full restore state may not be possible (depending on the hash implementation)
-    virtual void restoreState(IFile * stateFile, IFileIO * MORE) = 0;
+    // Called to gather the current state of the cache - so it can be preserved for quick cache warming.
+    virtual void gatherState(ICacheInfoRecorder & recorder) = 0;
 };
 
-interface IPropertyTree;
-void jhtree_decl initDiskNodeCache(const IPropertyTree *config);
+//Not called from outside jhtree, so no jhtree_decl
+extern IPageCache * createDemoPageCache(const IPropertyTree * config);
 
 #endif

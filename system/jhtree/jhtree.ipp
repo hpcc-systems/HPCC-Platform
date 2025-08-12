@@ -83,9 +83,9 @@ interface INodeLoader
 class CLoadNodeCacheState
 {
 public:
-    Owned<IFileIO> bufferedIO;      // MORE: This will be replaced in the future
-    size32_t blockIoSize = 0;
     CCachedIndexRead readCache;     // Information about the last read request
+    size32_t preferredReadSize{0};
+    bool usePageCache{true};        // Set to false if scanning a file sequentially
 };
 
 class jhtree_decl CKeyIndex : implements IKeyIndex, public CInterface
@@ -113,7 +113,7 @@ protected:
     mutable RelaxedAtomic<unsigned> keyScans;
     mutable offset_t latestGetNodeOffset;  // NOT SAFE but only used by keydiff
 
-    CJHTreeNode *_loadNode(char *nodeData, offset_t pos, bool needsCopy) const;
+    CJHTreeNode *loadNodeFromMemory(const void *nodeData, offset_t pos, bool needsCopy) const;
     CJHTreeNode *_createNode(const NodeHdr &hdr) const;
     const CJHSearchNode *getIndexNodeUsingLoader(const INodeLoader &nodeLoader, offset_t offset, NodeType type, IContextLogger *ctx) const;
     const CJHTreeBlobNode *getBlobNode(offset_t nodepos, IContextLogger *ctx, CLoadNodeCacheState & readState);
