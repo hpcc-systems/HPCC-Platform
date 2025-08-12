@@ -893,14 +893,10 @@ public:
         {
             assertex(bufferOffset <= blockWriteSize);
             size32_t space = (blockWriteSize - bufferOffset);
-            if (likely(space))
-            {
-                size32_t toCopy = std::min(len, space);
-                memcpy(data(bufferOffset), ptr, toCopy);
-                bufferOffset += toCopy;
-                return toCopy;
-            }
-            return 0;
+            size32_t toCopy = std::min(len, space);
+            memcpy(data(bufferOffset), ptr, toCopy);
+            bufferOffset += toCopy;
+            return toCopy;
         }
         else
         {
@@ -1252,8 +1248,8 @@ ISerialOutputStream * createCompressingOutputStream(IBufferedSerialOutputStream 
 class CFileSerialOutputStream final : public CInterfaceOf<ISerialOutputStream>
 {
 public:
-    CFileSerialOutputStream(IFileIO * _output)
-    : output(_output)
+    CFileSerialOutputStream(IFileIO * _output, offset_t _offset)
+    : output(_output), nextOffset(_offset)
     {
     }
 
@@ -1281,9 +1277,9 @@ protected:
 };
 
 //Temporary class - long term goal is to have IFile create this directly and avoid an indirect call.
-ISerialOutputStream * createSerialOutputStream(IFileIO * output)
+ISerialOutputStream * createSerialOutputStream(IFileIO * output, offset_t offset)
 {
-    return new CFileSerialOutputStream(output);
+    return new CFileSerialOutputStream(output, offset);
 }
 
 //---------------------------------------------------------------------------------------------------------------------

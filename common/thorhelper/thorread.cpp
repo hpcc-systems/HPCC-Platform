@@ -16,6 +16,7 @@
 ############################################################################## */
 #include "jliball.hpp"
 
+#include "jstream.hpp"
 #include "thorfile.hpp"
 
 #include "eclhelper.hpp"
@@ -40,66 +41,71 @@
     #include "parquetembed.hpp"
 #endif
 
-constexpr size32_t defaultReadBufferSize = 0x100000;
+constexpr size32_t defaultReadBufferSize = oneMB;
 
 //---------------------------------------------------------------------------------------------------------------------
 
-static IBufferedSerialInputStream * createInputStream(IFileIO * inputfileio, const IPropertyTree * providerOptions)
-{
-    assertex(providerOptions);
-    size32_t readBufferSize = providerOptions->getPropInt("@sizeIoBuffer", defaultReadBufferSize);
-
-    //MORE: Add support for passing these values to the function
-    offset_t startOffset = 0;
-    offset_t length = unknownFileSize;
-
-    //MORE: Is this a good idea?
-    if (length == unknownFileSize)
-    {
-        offset_t filesize = inputfileio->size();
-        assertex(startOffset <= filesize);
-        length = filesize - startOffset;
-    }
-
-    return createFileSerialStream(inputfileio, startOffset, length, readBufferSize);
-};
-
-
-static bool createInputStream(Shared<IBufferedSerialInputStream> & inputStream, Shared<IFileIO> & inputfileio, IFile * inputFile, const IPropertyTree * providerOptions)
+IBufferedSerialInputStream * createBufferedInputStream(IFileIO * io, const IPropertyTree * providerOptions)
 {
     assertex(providerOptions);
 
     bool compressed = providerOptions->getPropBool("@compressed", false);
-    if (providerOptions->getPropBool("@forceCompressed", false))
+    if (!compressed && providerOptions->getPropBool("@forceCompressed", false))
         compressed = true;
 
-    MemoryBuffer encryptionKey;
-    if (providerOptions->hasProp("encryptionKey"))
-        providerOptions->getPropBin("encryptionKey", encryptionKey);
+    const char * compression = providerOptions->queryProp("@compression", compressed ? "lz4" : nullptr);
+    if (!isEmptyString(compression))
+        compressed = true;
 
+    bool sequentialAccess = providerOptions->getPropBool("@sequentialAccess", false);
+
+    MemoryBuffer encryptionKey;
+    Owned<IExpander> eexp;
+    if (providerOptions->hasProp("encryptionKey"))
+    {
+        providerOptions->getPropBin("encryptionKey", encryptionKey);
+        eexp.setown(createAESExpander256((size32_t)encryptionKey.length(), encryptionKey.bufferBase()));
+        compressed = true;
+    }
+
+    size32_t ioBufferSize = providerOptions->getPropInt("@sizeIoBuffer", defaultReadBufferSize);
+    size32_t compressBufferSize = providerOptions->getPropInt("@sizeCompressBuffer", oneMB);
+
+    Linked<IFileIO> inputFileIO = io;
+    unsigned delayNs = providerOptions->getPropInt("@delayNs", 0);
+    if (delayNs)
+        inputFileIO.setown(createDelayedFileIO(inputFileIO, delayNs));
+
+    size32_t bufferSize = defaultReadBufferSize;
     try
     {
-        inputfileio.setown(inputFile->open(IFOread));
-        if (!inputfileio)
-            return false;
-
         if (compressed)
         {
-            Owned<IExpander> eexp;
-            if (encryptionKey.length()!=0)
-                eexp.setown(createAESExpander256((size32_t)encryptionKey.length(), encryptionKey.bufferBase()));
-
             //If the input file is empty return a dummy stream, otherwise create a decompressed reader
-            if (inputfileio->size() != 0)
+            size32_t fileSize = inputFileIO->size();
+            if (fileSize != 0)
             {
-                inputfileio.setown(createCompressedFileReader(inputfileio, eexp, useDefaultIoBufferSize));
+                if (sequentialAccess)
+                {
+                    Owned<IExpander> expander = getExpander(compression);
+                    Owned<ISerialInputStream> fileStream = createSerialInputStream(inputFileIO, 0, fileSize);
+                    Owned<IBufferedSerialInputStream> bufferedStream = createBufferedInputStream(fileStream, ioBufferSize);
+                    Owned<ISerialInputStream> compressed = createDecompressingInputStream(bufferedStream, expander);
+                    return createBufferedInputStream(compressed, oneMB);
+                }
+
+                inputFileIO.setown(createCompressedFileReader(inputFileIO, eexp, ioBufferSize));
 
                 //MORE: The compressed file reader should provide a IBufferedSerialInputStream interface - which would avoid
                 //the need for extra buffering.
 
                 //MORE: This should throw an exception if the file does not appear to be compressed
-                if (!inputfileio)
-                    return false;
+                if (!inputFileIO)
+                    return nullptr;
+
+                //If we are reading from a compressed file, then only buffer 1MB, not the io size (which may be 4MB)
+                //In the future compressedFileReader will directly implement the buffering
+                bufferSize = oneMB;
             }
         }
     }
@@ -107,11 +113,39 @@ static bool createInputStream(Shared<IBufferedSerialInputStream> & inputStream, 
     {
         EXCLOG(e, "createInputStream");
         e->Release();
-        return false;
+        return nullptr;
     }
 
-    inputStream.setown(createInputStream(inputfileio, providerOptions));
-    return true;
+    offset_t startOffset = 0;
+    offset_t length = unknownFileSize; // MORE: This could be an option to allow a subset of the file to be read
+
+    //MORE: Is this a good idea?
+    if (length == unknownFileSize)
+    {
+        offset_t filesize = inputFileIO->size();
+        assertex(startOffset <= filesize);
+        length = filesize - startOffset;
+    }
+
+    //Now wrap the IFileIO in a stream interface
+    Owned<ISerialInputStream> fileStream = createSerialInputStream(inputFileIO, startOffset, length);
+
+    // Create a buffer around the file stream
+    // MORE: This should support threaded reading, but that appears to not yet be implemented....
+
+    return createBufferedInputStream(fileStream, bufferSize);
+};
+
+
+// Create an input stream and and input io for a given input file.
+bool createBufferedInputStream(Shared<IBufferedSerialInputStream> & inputStream, Shared<IFileIO> & inputFileIO, IFile * inputFile, const IPropertyTree * providerOptions)
+{
+    inputFileIO.setown(inputFile->open(IFOread));
+    if (!inputFileIO)
+        return false;
+
+    inputStream.setown(createBufferedInputStream(inputFileIO, providerOptions));
+    return inputStream != nullptr;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -504,6 +538,11 @@ void FileAccessOptions::updateFromWriteHelper(IHThorGenericDiskWriteArg & helper
     }
 }
 
+bool FileAccessOptions::isCompressed() const
+{
+    return providerOptions->getPropBool("@compressed");
+}
+
 void FileAccessOptions::setCompression(bool enable, const char * method)
 {
     providerOptions->setPropBool("@compressed", enable);
@@ -554,7 +593,7 @@ protected:
 
 protected:
     Owned<IBufferedSerialInputStream> inputStream;
-    Owned<IFileIO> inputfileio;
+    Owned<IFileIO> inputFileIO;
     CThorContiguousRowBuffer inputBuffer;    // more: move to derived classes.
     Owned<IEngineRowAllocator> outputAllocator;
     RtlDynamicRowBuilder allocatedBuilder;
@@ -694,12 +733,7 @@ bool LocalDiskRowReader::setInputFile(IFile * inputFile, const char * _logicalFi
     filePart = _partNumber;
     fileBaseOffset = _baseOffset;
 
-    size32_t readBufferSize = providerOptions->getPropInt("@sizeIoBuffer", defaultReadBufferSize);
-    MemoryBuffer encryptionKey;
-    if (providerOptions->hasProp("encryptionKey"))
-        providerOptions->getPropBin("encryptionKey", encryptionKey);
-
-    if (!createInputStream(inputStream, inputfileio, inputFile, providerOptions))
+    if (!createBufferedInputStream(inputStream, inputFileIO, inputFile, providerOptions))
         return false;
 
     expectedFilter.kill();
@@ -838,7 +872,7 @@ bool BinaryDiskRowReader::setInputFile(IFile * inputFile, const char * _logicalF
     if (keyedTranslator)
         keyedTranslator->translate(actualFilter);
 
-    unsigned __int64 filesize = inputfileio->size();
+    unsigned __int64 filesize = inputFileIO->size();
     if (!compressed && getFixedDiskRecordSize() && ((offset_t)-1 != filesize) && (filesize % getFixedDiskRecordSize()) != 0)
     {
         StringBuffer s;
@@ -2106,14 +2140,14 @@ bool RemoteDiskRowReader::setInputFile(const RemoteFilename & rfilename, const c
         Owned<IFile> iFile = createIFile(rfilename);
 
         // remote side does projection/translation/filtering
-        inputfileio.setown(remoteFileIO.getClear());
-        if (!inputfileio)
+        inputFileIO.setown(remoteFileIO.getClear());
+        if (!inputFileIO)
             return false;
     }
 
     //MORE: Allow a previously created input stream to be reused to avoid reallocating the buffer
     size32_t readBufferSize = providerOptions->getPropInt("@sizeIoBuffer", defaultReadBufferSize);
-    inputStream.setown(createFileSerialStream(inputfileio, 0, (offset_t)-1, readBufferSize));
+    inputStream.setown(createFileSerialStream(inputFileIO, 0, (offset_t)-1, readBufferSize));
 
     inputBuffer.setStream(inputStream);
     eogPending = false;

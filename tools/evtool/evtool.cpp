@@ -200,7 +200,7 @@ IBufferedSerialOutputStream& consoleOut()
         Owned<IFile> file = createIFile("stdout:");
         Owned<IFileIO> fileIO = file->open(IFOwrite);
         Owned<ISerialOutputStream> baseStream = createSerialOutputStream(fileIO);
-        out.setown(createBufferedOutputStream(baseStream, 0x10000, false));
+        out.setown(createBufferedOutputStream(baseStream, 0x10000));
     }
     return *out;
 }
@@ -212,7 +212,7 @@ IBufferedSerialOutputStream& consoleErr()
         Owned<IFile> file = createIFile("stderr:");
         Owned<IFileIO> fileIO = file->open(IFOwrite);
         Owned<ISerialOutputStream> baseStream = createSerialOutputStream(fileIO);
-        err.setown(createBufferedOutputStream(baseStream, 0x10000, false));
+        err.setown(createBufferedOutputStream(baseStream, 0x10000));
     }
     return *err;
 }
