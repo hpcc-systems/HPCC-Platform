@@ -141,6 +141,8 @@ interface ICompressedFileIO: extends IFileIO
     virtual size32_t recordSize()=0;                // 0 for lzw/fastlz, otherwise record length for row difference compression
     virtual size32_t blockSize()=0;                 // block size used
     virtual unsigned method()=0;
+    virtual ISerialOutputStream * queryOutputStream() = 0;
+    virtual ISerialInputStream * queryInputStream() = 0;
 };
 
 constexpr size32_t useDefaultIoBufferSize = (size32_t)-1;

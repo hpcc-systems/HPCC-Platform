@@ -64,36 +64,38 @@ IBufferedSerialOutputStream * createBufferedOutputStream(IFileIO * io, const IPr
 
     size32_t ioBufferSize = providerOptions->getPropInt("@sizeIoBuffer", oneMB);
     size32_t streamBufferSize = ioBufferSize;
+    Owned<ISerialOutputStream> fileStream;
     try
     {
         if (sequentialAccess)
         {
             Owned<ICompressor> compressor = getCompressor(compression ? compression : "lz4");
             offset_t offset = append ? outputfileio->size() : 0;
-            Owned<ISerialOutputStream> fileStream = createSerialOutputStream(outputfileio, offset);
-            Owned<IBufferedSerialOutputStream> bufferedStream = createBufferedOutputStream(fileStream, ioBufferSize);
-            Owned<ISerialOutputStream> compressed = createCompressingOutputStream(bufferedStream, compressor);
-            return createBufferedOutputStream(compressed, oneMB);
+            Owned<ISerialOutputStream> rawFileStream = createSerialOutputStream(outputfileio, offset);
+            Owned<IBufferedSerialOutputStream> bufferedStream = createBufferedOutputStream(rawFileStream, ioBufferSize);
+            fileStream.setown(createCompressingOutputStream(bufferedStream, compressor));
+            streamBufferSize = oneMB;
         }
-
-        if (compressionMethod != COMPRESS_METHOD_NONE)
+        else if (compressionMethod != COMPRESS_METHOD_NONE)
         {
             //If the input file is empty return a dummy stream, otherwise create a decompressed reader
             size32_t compBlockSize = 0; // i.e. default
             size32_t blockedIoSize = -1; // i.e. default
             Owned<ICompressedFileIO> compressedIO = createCompressedFileWriter(outputfileio, append, false, encryptor, compressionMethod, compBlockSize, blockedIoSize);
 
-            //MORE: The compressed file reader should provide a IBufferedSerialInputStream interface - which would avoid
-            //the need for extra buffering.
-
             //MORE: This should throw an exception if the file does not appear to be compressed
-            if (!outputfileio)
+            if (!compressedIO)
                 return nullptr;
 
-            //If we are reading from a compressed file, then only buffer 1MB, not the io size (which may be 4MB)
-            //In the future compressedFileReader will directly implement the buffering
+            //If we are reading from a compressed file, then only buffer the block size, not the io size (which may be 4MB)
             streamBufferSize = compressedIO->blockSize();
-            outputfileio.setown(compressedIO.getClear());
+            fileStream.set(compressedIO->queryOutputStream());
+        }
+        else
+        {
+            //Now wrap the IFileIO in a stream interface
+            offset_t offset = append ? outputfileio->size() : 0;
+            fileStream.setown(createSerialOutputStream(outputfileio, offset));
         }
     }
     catch (IException *e)
@@ -102,10 +104,6 @@ IBufferedSerialOutputStream * createBufferedOutputStream(IFileIO * io, const IPr
         e->Release();
         return nullptr;
     }
-
-    //Now wrap the IFileIO in a stream interface
-    offset_t offset = append ? outputfileio->size() : 0;
-    Owned<ISerialOutputStream> fileStream = createSerialOutputStream(outputfileio, offset);
 
     // Create a buffer around the file stream
     // MORE: This should support threaded reading, but that appears to not yet be implemented....
