@@ -38,6 +38,12 @@ ESPenum TpMachineType : string
     HoleStandby("HOLESTANDBYNODES")
 };
 
+ESPenum TpConfigResponseFormat : string
+{
+    XML("XML"),
+    YAML("YAML")
+};
+
 //  ===========================================================================
 
 ESPStruct TpMachine
@@ -665,7 +671,33 @@ ESPresponse [exceptions_inline] TpListLogFilesResponse
     ESParray<ESPStruct LogFileStruct> Files;
 };
 
-ESPservice [auth_feature("DEFERRED"), noforms, version("1.32"), generated_client_version("0.0"), cache_group("ESPWsTP"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
+ESPrequest TpConfiguredComponentsRequest
+{
+};
+
+ESPresponse [exceptions_inline] TpConfiguredComponentsResponse
+{
+    ESParray<string> ConfiguredComponents;
+};
+
+ESPrequest TpComponentConfigurationRequest
+{
+    ESParray<string> ComponentNames;
+};
+
+ESPstruct TpConfigResult
+{
+    string ComponentName;
+    string Configuration;
+};
+
+ESPresponse [exceptions_inline] TpComponentConfigurationResponse
+{
+    ESPenum TpConfigResponseFormat ConfigFormat;
+    ESParray<ESPstruct TpConfigResult, Result> Results;
+};
+
+ESPservice [auth_feature("DEFERRED"), noforms, version("1.33"), generated_client_version("0.0"), cache_group("ESPWsTP"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
 {
     ESPmethod [cache_seconds(180), cache_global(1), resp_xsl_default("/esp/xslt/targetclusters.xslt")] TpTargetClusterQuery(TpTargetClusterQueryRequest, TpTargetClusterQueryResponse);
     ESPmethod [cache_seconds(180), cache_global(1), resp_xsl_default("/esp/xslt/topology.xslt")] TpClusterQuery(TpClusterQueryRequest, TpClusterQueryResponse);
@@ -689,6 +721,8 @@ ESPservice [auth_feature("DEFERRED"), noforms, version("1.32"), generated_client
     ESPmethod [cache_seconds(180), cache_global(1), min_ver(1.32)] TpListLogFiles(TpListLogFilesRequest, TpListLogFilesResponse);
 
     ESPmethod SystemLog(SystemLogRequest, SystemLogResponse);
+    ESPmethod [cache_seconds(180), cache_global(1), min_ver(1.33)] TpConfiguredComponents(TpConfiguredComponentsRequest, TpConfiguredComponentsResponse);
+    ESPmethod [cache_seconds(180), cache_global(1), min_ver(1.33)] TpComponentConfiguration(TpComponentConfigurationRequest, TpComponentConfigurationResponse);
 };
 
 SCMexportdef(WSWU);

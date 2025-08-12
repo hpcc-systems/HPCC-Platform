@@ -176,6 +176,9 @@ public:
     bool onTpGetComponentFile(IEspContext &context, IEspTpGetComponentFileRequest &req, IEspTpGetComponentFileResponse &resp);
 
     bool onTpThorStatus(IEspContext &context, IEspTpThorStatusRequest &req, IEspTpThorStatusResponse &resp);
+
+    bool onTpConfiguredComponents(IEspContext &context, IEspTpConfiguredComponentsRequest &req, IEspTpConfiguredComponentsResponse &resp);
+    bool onTpComponentConfiguration(IEspContext &context, IEspTpComponentConfigurationRequest &req, IEspTpComponentConfigurationResponse &resp);
 };
 
 
