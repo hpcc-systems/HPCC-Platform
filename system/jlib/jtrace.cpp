@@ -808,8 +808,10 @@ public:
 
     ISpan * createClientSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp = nullptr) override;
     ISpan * createInternalSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp = nullptr) override;
+    ISpan * createConditionalInternalSpan(const char * name, stat_type thresholdMs) override;
+    ISpan * createConditionalClientSpan(const char * name, stat_type thresholdMs) override;
 
-    virtual void endSpan() final override
+    virtual void endSpan() override
     {
         //It is legal to call endSpan multiple times, but only the first call will have any effect
         if (span != nullptr)
@@ -939,7 +941,9 @@ public:
         //StringBuffer traceStateHTTPHeader;
         //traceStateHTTPHeader.append("hpcc=").append(spanID.get());
 
-        clientHeaders->setNonEmptyProp(opentelemetry::trace::propagation::kTraceState.data(), span->GetContext().trace_state()->ToHeader().c_str());
+        clientHeaders->setNonEmptyProp(opentelemetry::trace::propagation::kTraceState.data(),
+         span != nullptr ? span->GetContext().trace_state()->ToHeader().c_str()
+                         : opentelemetry::trace::TraceState::GetDefault()->ToHeader().c_str());
     }
 
     /**
@@ -1142,7 +1146,7 @@ protected:
 
     opentelemetry::trace::StartSpanOptions opts;
     nostd::shared_ptr<opentelemetry::trace::Span> span;
-
+    std::vector<std::pair<std::string, opentelemetry::common::AttributeValue>> pendingAttributes;
 };
 
 class CNullSpan final : public CInterfaceOf<ISpan>
@@ -1178,12 +1182,13 @@ public:
 
     virtual ISpan * createClientSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp = nullptr) override { return getNullSpan(); }
     virtual ISpan * createInternalSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp = nullptr) override { return getNullSpan(); }
+    virtual ISpan * createConditionalInternalSpan(const char * name, stat_type thresholdMs) override { return getNullSpan(); }
+    virtual ISpan * createConditionalClientSpan(const char * name, stat_type thresholdMs) override { return getNullSpan(); }
 
 private:
     CNullSpan(const CNullSpan&) = delete;
     CNullSpan& operator=(const CNullSpan&) = delete;
 };
-
 
 class CChildSpan : public CSpan
 {
@@ -1244,6 +1249,128 @@ protected:
     CSpan * localParentSpan = nullptr;
 };
 
+
+class CConditionalChildSpan : public CChildSpan
+{
+public:
+    CConditionalChildSpan(const char * spanName, CSpan * parent, stat_type thresholdMs, opentelemetry::trace::SpanKind kind)
+        : CChildSpan(spanName, parent)
+        , thresholdDurationMS(thresholdMs)
+    {
+        startTP = std::chrono::high_resolution_clock::now();
+        if (kind == opentelemetry::trace::SpanKind::kInternal)
+            opts.kind = opentelemetry::trace::SpanKind::kInternal;
+        else
+            opts.kind = opentelemetry::trace::SpanKind::kClient;
+    }
+
+    virtual void endSpan() override
+    {
+        if (totalDurationMS == 0) // this is the first End call, record duration
+        {
+            auto endTP = std::chrono::high_resolution_clock::now();
+            totalDurationMS = std::chrono::duration_cast<std::chrono::milliseconds>(endTP - startTP).count();
+
+            if (totalDurationMS >= thresholdDurationMS)
+            {
+                // Only initialize the span if threshold is exceeded
+                init(SpanFlags::None);
+                storeSpanContext();
+
+                if (span)
+                {
+                    // Set all pending attributes now that the span exists
+                    for (const auto &kv : pendingStringAttributes)
+                        span->SetAttribute(kv.first.c_str(), kv.second.c_str());
+                    for (const auto &kv : pendingIntAttributes)
+                        span->SetAttribute(kv.first.c_str(), kv.second);
+
+                    pendingStringAttributes.clear();
+                    pendingIntAttributes.clear();
+
+                    span->End();
+                }
+            }
+        }
+    }
+
+    bool isThresholdMet() const
+    {
+        return totalDurationMS >= thresholdDurationMS;
+    }
+
+    void toString(StringBuffer & out, bool isLeaf) const override
+    {
+        out.appendf("\"Type\":\"%s\"", opts.kind == opentelemetry::trace::SpanKind::kInternal ? "Internal" : "Client");
+        out.appendf("\"ThresholdMet\":\"%s\"", isThresholdMet() ? "True" : "False");
+        //we would might need to output stored attributes/status/errors/exceptions
+        CChildSpan::toString(out, isLeaf);
+    }
+
+    virtual bool isRecording() const override
+    {
+        return isThresholdMet();
+    }
+
+    virtual bool isValid() const override
+    {
+        return isThresholdMet() && span && span->GetContext().IsValid();
+    }
+
+    void setSpanAttributes(const IProperties * attributes) override
+    {
+        UNIMPLEMENTED;
+    }
+
+    void setSpanAttribute(const char * key, const char * val) override
+    {
+        pendingStringAttributes.emplace_back(key, val);
+    }
+
+    void setSpanAttribute(const char *name, __uint64 value) override
+    {
+        pendingIntAttributes.emplace_back(name, value);
+    }
+
+    void addSpanEvent(const char * eventName, IProperties * attributes) override 
+    {
+        UNIMPLEMENTED;
+    }
+
+    void addSpanEvent(const char * eventName) override
+    {
+        UNIMPLEMENTED;
+    }
+
+    opentelemetry::v1::trace::SpanContext querySpanContext() const
+    {
+        UNIMPLEMENTED;
+    }
+
+    virtual void setSpanStatusSuccess(bool spanSucceeded, const char * statusMessage)
+    {
+        UNIMPLEMENTED;
+    }
+
+    virtual void recordError(const SpanError & error)
+    {
+        UNIMPLEMENTED;
+    }
+
+    virtual void recordException(IException * e, bool spanFailed, bool escapedScope)
+    {
+        UNIMPLEMENTED;
+    };
+
+protected:
+    int64_t thresholdDurationMS = 0;
+    int64_t totalDurationMS = 0;
+    std::chrono::high_resolution_clock::time_point startTP;
+
+    std::vector<std::pair<std::string, std::string>> pendingStringAttributes;
+    std::vector<std::pair<std::string, int64_t>> pendingIntAttributes;
+};
+
 class CInternalSpan : public CChildSpan
 {
 public:
@@ -1286,6 +1413,16 @@ ISpan * CSpan::createClientSpan(const char * name, const SpanTimeStamp * spanSta
 ISpan * CSpan::createInternalSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp)
 {
     return new CInternalSpan(name, this, spanStartTimeStamp);
+}
+
+ISpan * CSpan::createConditionalInternalSpan(const char * name, stat_type thresholdMs)
+{
+    return new CConditionalChildSpan(name, this, thresholdMs, opentelemetry::trace::SpanKind::kInternal);
+}
+
+ISpan * CSpan::createConditionalClientSpan(const char * name, stat_type thresholdMs)
+{
+    return new CConditionalChildSpan(name, this, thresholdMs, opentelemetry::trace::SpanKind::kClient);
 }
 
 class CServerSpan : public CSpan
@@ -1857,8 +1994,21 @@ ISpan * CTraceManager::createServerSpan(const char * name, const IProperties * h
     return new CServerSpan(name, httpHeaders, flags, spanStartTimeStamp);
 }
 
-ISpan * createBackdatedInternalSpan(const char * name, stat_type elapsedNs)
+ISpan * createActiveConditionalInternalSpan(const char * name, stat_type thresholdNs)
 {
+    return queryThreadedActiveSpan()->createConditionalInternalSpan(name, thresholdNs);
+}
+
+ISpan * createActiveConditionalClientSpan(const char * name, stat_type thresholdNs)
+{
+    return queryThreadedActiveSpan()->createConditionalClientSpan(name, thresholdNs);
+}
+
+ISpan * createBackdatedInternalSpan(const char * name, stat_type elapsedNs, stat_type thresholdNs)
+{
+    if (thresholdNs > 0 && elapsedNs < thresholdNs)
+        return queryNullSpan();
+
     SpanTimeStamp spanStartTimeStamp;
     spanStartTimeStamp.setNow();
     spanStartTimeStamp.adjust(std::chrono::nanoseconds(-elapsedNs));

@@ -72,6 +72,7 @@ public:
         CPPUNIT_TEST(testActiveSpans);
         CPPUNIT_TEST(testSpanFetchMethods);
         CPPUNIT_TEST(testSpanIsValid);
+        CPPUNIT_TEST(manualTestConditionalInternalSpan);
         //CPPUNIT_TEST(testJTraceJLOGExporterprintResources);
         //CPPUNIT_TEST(testJTraceJLOGExporterprintAttributes);
         CPPUNIT_TEST(manualTestsDeclaredSpanStartTime);
@@ -395,6 +396,71 @@ protected:
 
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty TraceID detected", false, isEmptyString(retrievedSpanCtxAttributes->queryProp("traceID")));
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected empty SpanID detected", false, isEmptyString(retrievedSpanCtxAttributes->queryProp("spanID")));
+    }
+
+    void manualTestConditionalInternalSpan()
+    {
+        // Create a server span as the parent
+        Owned<IProperties> mockHTTPHeaders = createProperties();
+        createMockHTTPHeaders(mockHTTPHeaders, true);
+        OwnedActiveSpanScope serverSpan = queryTraceManager().createServerSpan("REPORTTHISSERVERSPAN", mockHTTPHeaders);
+
+        // Set a threshold in milliseconds (e.g., 50ms)
+        constexpr stat_type thresholdMs = 500;
+        {
+            // Create a ConditionalInternalSpan with the threshold
+            OwnedActiveSpanScope conditionalInternalSpan = serverSpan->createConditionalInternalSpan("DONOTREPORT", thresholdMs);
+            // Sleep less than the threshold, span should not be recorded
+            MilliSleep(10);
+        }
+        //manually ensure the above span (name=DONOTREPORT) was not exported
+
+        {
+            // Create another ConditionalInternalSpan and exceed the threshold
+            Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
+            OwnedActiveSpanScope conditionalInternalSpan = serverSpan->createConditionalInternalSpan("REPORTTHIS3", thresholdMs);
+            MilliSleep(600);
+            conditionalInternalSpan->getSpanContext(retrievedSpanCtxAttributes);
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing localParentSpanID detected", true,
+              retrievedSpanCtxAttributes->hasProp("localParentSpanID"));
+        }
+        //manually ensure the above span (name=REPORTTHIS3) was exported
+        
+        {
+            // Create a ConditionalClientSpan with the threshold
+            OwnedActiveSpanScope conditionalClientSpan = serverSpan->createConditionalClientSpan("DONOTREPORTCLIENTSPAN", thresholdMs);
+
+            // Set attributes before threshold is exceeded
+            conditionalClientSpan->setSpanAttribute("shouldNotAppear", "value1");
+            conditionalClientSpan->setSpanAttribute("shouldNotAppearInt", 12345);
+
+            // Sleep less than the threshold, span should not be recorded
+            MilliSleep(10);
+        }
+        //manually ensure the above span (name=DONOTREPORTCLIENTSPAN) was not exported
+        {
+            Owned<IProperties> retrievedSpanCtxAttributes = createProperties();
+            // Create another ConditionalClientSpan and exceed the threshold
+            OwnedActiveSpanScope conditionalClientSpan = serverSpan->createConditionalClientSpan("REPORTTHISCLIENTSPAN", thresholdMs);
+
+            Owned<IProperties> retrievedClientHeaders = createProperties();
+            conditionalClientSpan->getClientHeaders(retrievedClientHeaders.get());
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("getClientHeaders unexpectedly produced a traceParent!", false, retrievedClientHeaders->hasProp("traceparent"));
+            conditionalClientSpan->setSpanAttribute("shouldAppear1", "value1");
+            conditionalClientSpan->setSpanAttribute("shouldAppearInt1", 67890);
+            MilliSleep(600);
+            conditionalClientSpan->setSpanAttribute("shouldAppear2", "value2");
+            conditionalClientSpan->setSpanAttribute("shouldAppearInt2", 67891);
+            conditionalClientSpan->getSpanContext(retrievedSpanCtxAttributes);
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing localParentSpanID detected", true,
+              retrievedSpanCtxAttributes->hasProp("localParentSpanID"));
+            conditionalClientSpan->endSpan();
+            conditionalClientSpan->getClientHeaders(retrievedClientHeaders.get());
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("getClientHeaders failed to produce a traceParent!", true, retrievedClientHeaders->hasProp("traceparent"));
+            conditionalClientSpan->getSpanContext(retrievedSpanCtxAttributes);
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Unexpected missing localParentSpanID detected", true,
+              retrievedSpanCtxAttributes->hasProp("localParentSpanID"));
+        }
     }
 
     void testSpanIsValid()
