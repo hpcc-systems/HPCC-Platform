@@ -99,6 +99,7 @@ jobs:
   build-docker-community:
     name: Build Docker Community
     needs: preamble
+    if: ${{ !contains(github.ref, 'community_2.') }}
     strategy:
       matrix:
         os: [ ubuntu-24.04, ubuntu-22.04, ubuntu-20.04, rockylinux-8 ]
@@ -126,18 +127,9 @@ jobs:
     needs: preamble
     strategy:
       matrix:
-        os: [ ubuntu-24.04, ubuntu-22.04, ubuntu-20.04, rockylinux-8, centos-7 ]
-        container: [ true, false ]
+        os: [ ubuntu-22.04 ]
+        container: [ false ]
         build-docker-image: [ false ]
-        include:
-          - os: ubuntu-22.04
-            container: true
-            build-docker-image: true
-        exclude:
-          - os: centos-7
-            container: true
-          - os: rockylinux-8
-            container: true
       fail-fast: false
     uses: ./.github/workflows/build-docker-internal.yml
     with:
@@ -150,6 +142,7 @@ jobs:
   build-docker-enterprise:
     name: Build Docker Enterprise
     needs: preamble
+    if: ${{ !contains(github.ref, 'community_2.') }}
     strategy:
       matrix:
         os: [ ubuntu-24.04, ubuntu-22.04 ]
@@ -162,6 +155,7 @@ jobs:
 
   build-documentation:
     needs: preamble
+    if: ${{ !contains(github.ref, 'community_2.') }}
     uses: ./.github/workflows/build-documentation.yml
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
@@ -176,6 +170,7 @@ jobs:
 
   build-clienttools-community-macos:
     needs: preamble
+    if: ${{ !contains(github.ref, 'community_2.') }}
     uses: ./.github/workflows/build-clienttools-macos-13.yml
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
@@ -184,6 +179,7 @@ jobs:
 
   build-clienttools-internal-macos:
     needs: preamble
+    if: ${{ !contains(github.ref, 'community_2.') }}
     uses: ./.github/workflows/build-clienttools-macos-13.yml
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
@@ -193,6 +189,7 @@ jobs:
 
   build-clienttools-community-windows:
     needs: preamble
+    if: ${{ !contains(github.ref, 'community_2.') }}
     uses: ./.github/workflows/build-clienttools-windows-2022.yml
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
@@ -203,6 +200,7 @@ jobs:
 
   build-clienttools-internal-windows:
     needs: preamble
+    if: ${{ !contains(github.ref, 'community_2.') }}
     uses: ./.github/workflows/build-clienttools-windows-2022.yml
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
@@ -212,6 +210,7 @@ jobs:
 
   build-bare-metal-eclide:
     needs: [ preamble, build-clienttools-community-windows, build-documentation ]
+    if: ${{ !contains(github.ref, 'community_2.') }}
     uses: ./.github/workflows/build-eclide.yml
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
@@ -223,6 +222,7 @@ jobs:
 
   changelogs:
     needs: preamble
+    if: ${{ !contains(github.ref, 'community_2.') }}
     uses: ./.github/workflows/build-changelogs.yml
     with:
       current-version: ${{ needs.preamble.outputs.hpcc_version_full }}
