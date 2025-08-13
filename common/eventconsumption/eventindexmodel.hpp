@@ -259,7 +259,7 @@ public:
 public:
     void configure(const IPropertyTree& config);
 
-    // Record, if necessary, that indicated index node has been obbserved. Intended to be called only
+    // Record, if necessary, that indicated index node has been observed. Intended to be called only
     // for IndexLookup events, but not enforced.
     bool observePage(const CEvent& event);
 

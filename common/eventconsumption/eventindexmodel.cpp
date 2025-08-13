@@ -106,7 +106,7 @@ protected:
             event.setValue(EvAttrExpandTime, page.expansionTime);
 
             // If an index cache is in use and the page is not in the cache, the size and time
-            // transform to zeroes, and a simumated IndexLoad is required.
+            // transform to zeroes, and a simulated IndexLoad is required.
         }
         else if (ExpansionMode::Transform == page.expansionMode)
         {
