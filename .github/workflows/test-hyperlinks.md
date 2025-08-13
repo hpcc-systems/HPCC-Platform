@@ -335,7 +335,7 @@ Internal links are those that point to another file in the same repository or a 
 ```
 
 ### Mid-page Anchor Links
-There is a special kind of links where the generated link points to a section header like this: [Anchor Links](#mind-page-anchor-links).
+There are special types of links where the generated link points to a section header in a page like this: [Anchor Links](#mid-page-anchor-links).
 To check this kind of links, the link checker action tries to find the link reference as is in the file.
 If this attempt fails, the action converts all '-' characters of the link reference to space then searching it case insensitive in the file.
 
