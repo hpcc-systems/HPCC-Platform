@@ -30,7 +30,7 @@ const white = getColorFromString("#ffffff");
 
 export function useBanner({ showForm, setShowForm }: useBannerProps): [React.FunctionComponent, React.FunctionComponent] {
 
-    const [activity] = useActivity();
+    const { activity } = useActivity();
 
     const [bannerColor, setBannerColor] = React.useState(activity?.BannerColor || "black");
     const [bannerMessage, setBannerMessage] = React.useState(activity?.BannerContent || "");
