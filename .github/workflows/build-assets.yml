@@ -102,6 +102,7 @@ jobs:
     permissions:
       contents: write
       actions: write
+    if: ${{ !contains(github.ref, 'community_2.') }}
     strategy:
       matrix:
         os: [ ubuntu-24.04, ubuntu-22.04, rockylinux-8 ]
@@ -136,8 +137,8 @@ jobs:
       actions: write
     strategy:
       matrix:
-        os: [ ubuntu-24.04, ubuntu-22.04, rockylinux-8 ]
-        container: [ true, false ]
+        os: [ ubuntu-22.04 ]
+        container: [ false ]
         build-docker-image: [ false ]
         architecture: [ "", "-arm" ]
         include:
@@ -165,6 +166,7 @@ jobs:
     permissions:
       contents: read
       actions: write
+    if: ${{ !contains(github.ref, 'community_2.') }}
     strategy:
       matrix:
         os: [ ubuntu-24.04, ubuntu-22.04 ]
@@ -181,6 +183,7 @@ jobs:
     permissions:
       contents: write
       actions: write
+    if: ${{ !contains(github.ref, 'community_2.') }}
     uses: ./.github/workflows/build-documentation.yml
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
@@ -203,6 +206,7 @@ jobs:
       matrix:
         cmake-config-options: [ "-DCMAKE_OSX_ARCHITECTURES=x86_64 -DCPACK_SYSTEM_NAME=Darwin-x86_64 -DUSE_PYTHON3=OFF", "" ]
       fail-fast: false
+    if: ${{ !contains(github.ref, 'community_2.') }}
     uses: ./.github/workflows/build-clienttools-macos-14.yml
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
@@ -220,6 +224,7 @@ jobs:
       matrix:
         cmake-config-options: [ "-DCMAKE_OSX_ARCHITECTURES=x86_64 -DCPACK_SYSTEM_NAME=Darwin-x86_64 -DUSE_PYTHON3=OFF", "" ]
       fail-fast: false
+    if: ${{ !contains(github.ref, 'community_2.') }}
     uses: ./.github/workflows/build-clienttools-macos-14.yml
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
@@ -234,6 +239,7 @@ jobs:
       contents: write
       actions: write
       packages: read
+    if: ${{ !contains(github.ref, 'community_2.') }}
     uses: ./.github/workflows/build-clienttools-windows-2022.yml
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
@@ -248,6 +254,7 @@ jobs:
       contents: read
       actions: write
       packages: read
+    if: ${{ !contains(github.ref, 'community_2.') }}
     uses: ./.github/workflows/build-clienttools-windows-2022.yml
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
@@ -263,6 +270,7 @@ jobs:
       contents: write
       actions: write
       packages: read
+    if: ${{ !contains(github.ref, 'community_2.') }}
     uses: ./.github/workflows/build-eclide.yml
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
@@ -299,6 +307,7 @@ jobs:
     needs: preamble
     permissions:
       contents: write
+    if: ${{ !contains(github.ref, 'community_2.') }}
     uses: ./.github/workflows/build-changelogs.yml
     with:
       current-version: ${{ needs.preamble.outputs.hpcc_version_full }}
