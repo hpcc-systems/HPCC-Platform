@@ -96,49 +96,41 @@ jobs:
           prerelease: ${{ contains(github.ref, '-rc') }}
           makeLatest: ${{ steps.vars.outputs.is_latest }}
 
-  build-docker-community:
-    name: Build Docker Community
-    needs: preamble
-    strategy:
-      matrix:
-        os: [ ubuntu-24.04, ubuntu-22.04, ubuntu-20.04, rockylinux-8 ]
-        container: [ true, false ]
-        build-docker-image: [ false ]
-        include:
-          - os: ubuntu-22.04
-            container: true
-            build-docker-image: true
-        exclude:
-          - os: rockylinux-8
-            container: true
-      fail-fast: false
-    
-    uses: ./.github/workflows/build-docker-community.yml
-    with:
-      os: ${{ matrix.os }}
-      container: ${{ matrix.container }}
-      build-docker-image: ${{ matrix.build-docker-image }}
-      community_ref: ${{ needs.preamble.outputs.community_ref }}
-    secrets: inherit
+#  build-docker-community:
+#    name: Build Docker Community
+#    needs: preamble
+#    strategy:
+#      matrix:
+#        os: [ ubuntu-24.04, ubuntu-22.04, ubuntu-20.04, rockylinux-8 ]
+#        container: [ true, false ]
+#        build-docker-image: [ false ]
+#        include:
+#          - os: ubuntu-22.04
+#            container: true
+#            build-docker-image: true
+#        exclude:
+#          - os: rockylinux-8
+#            container: true
+#      fail-fast: false
+#    
+#    uses: ./.github/workflows/build-docker-community.yml
+#    with:
+#      os: ${{ matrix.os }}
+#      container: ${{ matrix.container }}
+#      build-docker-image: ${{ matrix.build-docker-image }}
+#      community_ref: ${{ needs.preamble.outputs.community_ref }}
+#    secrets: inherit
 
   build-docker-internal:
     name: Build Docker Internal
     needs: preamble
     strategy:
       matrix:
-        os: [ ubuntu-24.04, ubuntu-22.04, ubuntu-20.04, rockylinux-8, centos-7 ]
-        container: [ true, false ]
+        os: [ ubuntu-22.04 ]
+        container: [ false ]
         build-docker-image: [ false ]
-        include:
-          - os: ubuntu-22.04
-            container: true
-            build-docker-image: true
-        exclude:
-          - os: centos-7
-            container: true
-          - os: rockylinux-8
-            container: true
       fail-fast: false
+
     uses: ./.github/workflows/build-docker-internal.yml
     with:
       os: ${{ matrix.os }}
@@ -147,111 +139,111 @@ jobs:
       build-docker-image: ${{ matrix.build-docker-image }}
     secrets: inherit
 
-  build-docker-enterprise:
-    name: Build Docker Enterprise
-    needs: preamble
-    strategy:
-      matrix:
-        os: [ ubuntu-24.04, ubuntu-22.04 ]
-      fail-fast: false
-    uses: ./.github/workflows/build-docker-enterprise.yml
-    with:
-      os: ${{ matrix.os }}
-      community_ref: ${{ needs.preamble.outputs.community_ref }}
-    secrets: inherit
+#  build-docker-enterprise:
+#    name: Build Docker Enterprise
+#    needs: preamble
+#    strategy:
+#      matrix:
+#        os: [ ubuntu-24.04, ubuntu-22.04 ]
+#      fail-fast: false
+#    uses: ./.github/workflows/build-docker-enterprise.yml
+#    with:
+#      os: ${{ matrix.os }}
+#      community_ref: ${{ needs.preamble.outputs.community_ref }}
+#    secrets: inherit
 
-  build-documentation:
-    needs: preamble
-    uses: ./.github/workflows/build-documentation.yml
-    with:
-      community-ref: ${{ needs.preamble.outputs.community_ref }}
-      folder-platform: ${{ needs.preamble.outputs.folder_platform }}
-      folder-build: ${{ needs.preamble.outputs.folder_build }}
-      candidate-base-branch: ${{ needs.preamble.outputs.candidate_base_branch }}
-      community-tag: ${{ needs.preamble.outputs.community_tag }}
-      mount-platform: ${{ needs.preamble.outputs.mount_platform }}
-      mount-build: ${{ needs.preamble.outputs.mount_build }}
-      make-latest: ${{ needs.preamble.outputs.is_latest != 'false' }}
-    secrets: inherit
+#  build-documentation:
+#    needs: preamble
+#    uses: ./.github/workflows/build-documentation.yml
+#    with:
+#      community-ref: ${{ needs.preamble.outputs.community_ref }}
+#      folder-platform: ${{ needs.preamble.outputs.folder_platform }}
+#      folder-build: ${{ needs.preamble.outputs.folder_build }}
+#      candidate-base-branch: ${{ needs.preamble.outputs.candidate_base_branch }}
+#      community-tag: ${{ needs.preamble.outputs.community_tag }}
+#      mount-platform: ${{ needs.preamble.outputs.mount_platform }}
+#      mount-build: ${{ needs.preamble.outputs.mount_build }}
+#      make-latest: ${{ needs.preamble.outputs.is_latest != 'false' }}
+#    secrets: inherit
 
-  build-clienttools-community-macos:
-    needs: preamble
-    uses: ./.github/workflows/build-clienttools-macos-13.yml
-    with:
-      community-ref: ${{ needs.preamble.outputs.community_ref }}
-      make-latest: ${{ needs.preamble.outputs.is_latest != 'false' }}
-    secrets: inherit
+#  build-clienttools-community-macos:
+#    needs: preamble
+#    uses: ./.github/workflows/build-clienttools-macos-13.yml
+#    with:
+#      community-ref: ${{ needs.preamble.outputs.community_ref }}
+#      make-latest: ${{ needs.preamble.outputs.is_latest != 'false' }}
+#    secrets: inherit
 
-  build-clienttools-internal-macos:
-    needs: preamble
-    uses: ./.github/workflows/build-clienttools-macos-13.yml
-    with:
-      community-ref: ${{ needs.preamble.outputs.community_ref }}
-      ln-ref: ${{ needs.preamble.outputs.internal_ref }}
-      make-latest: ${{ needs.preamble.outputs.is_latest != 'false' }}
-    secrets: inherit
+#  build-clienttools-internal-macos:
+#    needs: preamble
+#    uses: ./.github/workflows/build-clienttools-macos-13.yml
+#    with:
+#      community-ref: ${{ needs.preamble.outputs.community_ref }}
+#      ln-ref: ${{ needs.preamble.outputs.internal_ref }}
+#      make-latest: ${{ needs.preamble.outputs.is_latest != 'false' }}
+#    secrets: inherit
 
-  build-clienttools-community-windows:
-    needs: preamble
-    uses: ./.github/workflows/build-clienttools-windows-2022.yml
-    with:
-      community-ref: ${{ needs.preamble.outputs.community_ref }}
-      upload-package: true
-      asset-name: 'clienttools-for-eclide'
-      make-latest: ${{ needs.preamble.outputs.is_latest != 'false' }}
-    secrets: inherit
+#  build-clienttools-community-windows:
+#    needs: preamble
+#    uses: ./.github/workflows/build-clienttools-windows-2022.yml
+#    with:
+#      community-ref: ${{ needs.preamble.outputs.community_ref }}
+#      upload-package: true
+#      asset-name: 'clienttools-for-eclide'
+#      make-latest: ${{ needs.preamble.outputs.is_latest != 'false' }}
+#    secrets: inherit
 
-  build-clienttools-internal-windows:
-    needs: preamble
-    uses: ./.github/workflows/build-clienttools-windows-2022.yml
-    with:
-      community-ref: ${{ needs.preamble.outputs.community_ref }}
-      ln-ref: ${{ needs.preamble.outputs.internal_ref }}
-      make-latest: ${{ needs.preamble.outputs.is_latest != 'false' }}
-    secrets: inherit
+#  build-clienttools-internal-windows:
+#    needs: preamble
+#    uses: ./.github/workflows/build-clienttools-windows-2022.yml
+#    with:
+#      community-ref: ${{ needs.preamble.outputs.community_ref }}
+#      ln-ref: ${{ needs.preamble.outputs.internal_ref }}
+#      make-latest: ${{ needs.preamble.outputs.is_latest != 'false' }}
+#    secrets: inherit
 
-  build-bare-metal-eclide:
-    needs: [ preamble, build-clienttools-community-windows, build-documentation ]
-    uses: ./.github/workflows/build-eclide.yml
-    with:
-      community-ref: ${{ needs.preamble.outputs.community_ref }}
-      eclide-ref: ${{ needs.preamble.outputs.eclide_ref }}
-      clienttools-asset-name: 'clienttools-for-eclide'
-      documentation-asset-name: 'html-help-documents'
-      make-latest: ${{ needs.preamble.outputs.is_latest != 'false' }}
-    secrets: inherit
+#  build-bare-metal-eclide:
+#    needs: [ preamble, build-clienttools-community-windows, build-documentation ]
+#    uses: ./.github/workflows/build-eclide.yml
+#    with:
+#      community-ref: ${{ needs.preamble.outputs.community_ref }}
+#      eclide-ref: ${{ needs.preamble.outputs.eclide_ref }}
+#      clienttools-asset-name: 'clienttools-for-eclide'
+#      documentation-asset-name: 'html-help-documents'
+#      make-latest: ${{ needs.preamble.outputs.is_latest != 'false' }}
+#    secrets: inherit
 
-  changelogs:
-    needs: preamble
-    uses: ./.github/workflows/build-changelogs.yml
-    with:
-      current-version: ${{ needs.preamble.outputs.hpcc_version_full }}
-      make-latest: ${{ needs.preamble.outputs.is_latest != 'false' }}
-    secrets: inherit
+#  changelogs:
+#    needs: preamble
+#    uses: ./.github/workflows/build-changelogs.yml
+#    with:
+#      current-version: ${{ needs.preamble.outputs.hpcc_version_full }}
+#      make-latest: ${{ needs.preamble.outputs.is_latest != 'false' }}
+#    secrets: inherit
 
-  deploy_wordpress:
-    needs: [preamble, build-docker-community]
-    if: ${{ needs.preamble.outputs.is_latest && github.repository_owner == 'hpcc-systems' }}
-    uses: ./.github/workflows/wordpress_automation.yml
-    with:
-      tag: ${{ needs.preamble.outputs.community_tag }}
-    secrets: inherit
+#  deploy_wordpress:
+#    needs: [preamble, build-docker-community]
+#    if: ${{ needs.preamble.outputs.is_latest && github.repository_owner == 'hpcc-systems' }}
+#    uses: ./.github/workflows/wordpress_automation.yml
+#    with:
+#      tag: ${{ needs.preamble.outputs.community_tag }}
+#    secrets: inherit
 
-  test-build-validation:
-    name: "Test published image"
-    needs: [ preamble, build-docker-community ]
-    runs-on: ubuntu-22.04
-    if: ${{ github.repository_owner == 'hpcc-systems' && needs.preamble.outputs.is_latest == 'true' }}
-    env:
-      WF_YAML_FILE: az-bvt.yml
-    steps:
-      - name: "Trigger external azure test code"
-        run: |
-          data="{\"ref\":\"main\", \"inputs\":{ \"hpccVersion\":\"${{ needs.preamble.outputs.hpcc_version }}\",\"hpccSrcBranch\":\"${{ needs.preamble.outputs.community_tag }}\" }}"
-          curl -L \
-          -X POST \
-          -H "Accept: application/vnd.github+json" \
-          -H "Authorization: Bearer ${{ secrets.GAHT_TOKEN }}" \
-          -H "X-GitHub-Api-Version: 2022-11-28" \
-          https://api.github.com/repos/LexisNexis-RBA/hpccplat-build-verification-tests/actions/workflows/$WF_YAML_FILE/dispatches \
-          -d "${data}"
+#  test-build-validation:
+#    name: "Test published image"
+#    needs: [ preamble, build-docker-community ]
+#    runs-on: ubuntu-22.04
+#    if: ${{ github.repository_owner == 'hpcc-systems' && needs.preamble.outputs.is_latest == 'true' }}
+#    env:
+#      WF_YAML_FILE: az-bvt.yml
+#    steps:
+#      - name: "Trigger external azure test code"
+#        run: |
+#          data="{\"ref\":\"main\", \"inputs\":{ \"hpccVersion\":\"${{ needs.preamble.outputs.hpcc_version }}\",\"hpccSrcBranch\":\"${{ needs.preamble.outputs.community_tag }}\" }}"
+#          curl -L \
+#          -X POST \
+#          -H "Accept: application/vnd.github+json" \
+#          -H "Authorization: Bearer ${{ secrets.GAHT_TOKEN }}" \
+#          -H "X-GitHub-Api-Version: 2022-11-28" \
+#          https://api.github.com/repos/LexisNexis-RBA/hpccplat-build-verification-tests/actions/workflows/$WF_YAML_FILE/dispatches \
+#          -d "${data}"
