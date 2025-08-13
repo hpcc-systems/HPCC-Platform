@@ -47,10 +47,10 @@ const defaultUIState = {
     wuCanDown: false
 };
 
-interface ActivitiesProps {
+interface ActivitiesLegacyProps {
 }
 
-export const Activities: React.FunctionComponent<ActivitiesProps> = ({
+export const ActivitiesLegacy: React.FunctionComponent<ActivitiesLegacyProps> = ({
 }) => {
 
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
@@ -62,7 +62,7 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
     const { Grid, selection, refreshTable, copyButtons } = useGrid({
         store: activity.getStore({}),
         sort: { attribute: "idx", descending: false },
-        filename: "activities",
+        filename: "activities-legacy",
         columns: {
             col1: selector({
                 width: 27,
@@ -402,7 +402,7 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
     }, [activity, selection]);
 
     if (isContainer) {
-        return <HolyGrail key="activities"
+        return <HolyGrail key="activities-legacy"
             header={<CommandBar items={buttons} farItems={copyButtons} />}
             main={
                 <Grid />
@@ -417,7 +417,7 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
             <div className={classNames.reflexSplitterDiv}></div>
         </ReflexSplitter>
         <ReflexElement>
-            <HolyGrail key="activities"
+            <HolyGrail key="activities-legacy"
                 header={<CommandBar items={buttons} farItems={copyButtons} />}
                 main={
                     <Grid />

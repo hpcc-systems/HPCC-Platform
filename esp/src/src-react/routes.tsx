@@ -4,7 +4,7 @@ import { initialize, parsePage, parseSearch, parseSort, parseFullscreen, pushUrl
 
 declare const dojoConfig;
 
-export type MainNav = "activities" | "workunits" | "files" | "queries" | "topology" | "operations";
+export type MainNav = "activities" | "activities-legacy" | "workunits" | "files" | "queries" | "topology" | "operations";
 
 export interface RouteEx<R = any, C extends RouterContext = RouterContext> extends Route<R, C> {
     mainNav: MainNav[];
@@ -80,6 +80,12 @@ export const routes: RoutesEx = [
         path: "/activities",
         children: [
             { path: "", action: (context) => import("./components/Activities").then(_ => <_.Activities />) },
+        ]
+    }, {
+        mainNav: ["activities"],
+        path: "/activities-legacy",
+        children: [
+            { path: "", action: (context) => import("./components/ActivitiesLegacy").then(_ => <_.ActivitiesLegacy />) },
         ]
     },
     {
