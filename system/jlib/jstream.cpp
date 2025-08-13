@@ -893,14 +893,10 @@ public:
         {
             assertex(bufferOffset <= blockWriteSize);
             size32_t space = (blockWriteSize - bufferOffset);
-            if (likely(space))
-            {
-                size32_t toCopy = std::min(len, space);
-                memcpy(data(bufferOffset), ptr, toCopy);
-                bufferOffset += toCopy;
-                return toCopy;
-            }
-            return 0;
+            size32_t toCopy = std::min(len, space);
+            memcpy(data(bufferOffset), ptr, toCopy);
+            bufferOffset += toCopy;
+            return toCopy;
         }
         else
         {

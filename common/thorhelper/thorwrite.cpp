@@ -78,14 +78,11 @@ IBufferedSerialOutputStream * createBufferedOutputStream(IFileIO * io, const IPr
         }
         else if (compressionMethod != COMPRESS_METHOD_NONE)
         {
-            //If the input file is empty return a dummy stream, otherwise create a decompressed reader
-            size32_t compBlockSize = 0; // i.e. default
-            size32_t blockedIoSize = -1; // i.e. default
-            Owned<ICompressedFileIO> compressedIO = createCompressedFileWriter(outputfileio, append, false, encryptor, compressionMethod, compBlockSize, blockedIoSize);
+            size32_t compBlockSize = providerOptions->getPropInt("@sizeCompressBlock", 0);      // 0 means use the default
 
-            //MORE: This should throw an exception if the file does not appear to be compressed
-            if (!compressedIO)
-                return nullptr;
+            //This will throw an exception if appending and the file does not appear to be compressed
+            Owned<ICompressedFileIO> compressedIO = createCompressedFileWriter(outputfileio, append, false, encryptor, compressionMethod, compBlockSize, ioBufferSize);
+            assertex(compressedIO);
 
             //If we are reading from a compressed file, then only buffer the block size, not the io size (which may be 4MB)
             streamBufferSize = compressedIO->blockSize();
@@ -106,13 +103,12 @@ IBufferedSerialOutputStream * createBufferedOutputStream(IFileIO * io, const IPr
     }
 
     // Create a buffer around the file stream
-    // MORE: This should support threaded reading, but that appears to not yet be implemented....
     unsigned threading = providerOptions->getPropInt("@threading", 0);
     return createBufferedOutputStream(fileStream, streamBufferSize, threading);
 }
 
 
-// Create an input stream and and input io for a given input file.
+// Create an output stream and and output io for a given output file.
 bool createBufferedOutputStream(Shared<IBufferedSerialOutputStream> & outputStream, Shared<IFileIO> & outputfileio, IFile * outputFile, const IPropertyTree * providerOptions)
 {
     IFOmode mode = providerOptions->getPropBool("@extend", false) ? IFOreadwrite : IFOcreate;

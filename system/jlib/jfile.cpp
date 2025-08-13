@@ -2245,6 +2245,49 @@ void CFileIO::setSize(offset_t pos)
 
 //---------------------------------------------------------------------------
 
+size32_t CNullFileIO::read(offset_t pos, size32_t len, void * data)
+{
+    return 0;
+}
+
+offset_t CNullFileIO::size()
+{
+    return 0;
+}
+
+size32_t CNullFileIO::write(offset_t pos, size32_t len, const void * data)
+{
+    return len;
+}
+
+void CNullFileIO::setSize(offset_t size)
+{
+}
+
+void CNullFileIO::flush()
+{
+}
+
+void CNullFileIO::close()
+{
+}
+
+unsigned __int64 CNullFileIO::getStatistic(StatisticKind kind)
+{
+    return 0;
+}
+IFile * CNullFileIO::queryFile() const
+{
+    return nullptr;
+}
+
+IFileIO * createNullFileIO()
+{
+    return new CNullFileIO();
+}
+
+//---------------------------------------------------------------------------
+
 CIndirectFileIO::CIndirectFileIO(IFileIO * _io) : io(_io)
 {
 }

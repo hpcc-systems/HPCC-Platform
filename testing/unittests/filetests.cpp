@@ -48,6 +48,28 @@
 
 static constexpr byte zeros[0x100000] = { 0 };
 
+bool createTestBufferedInputStream(Shared<IBufferedSerialInputStream> & inputStream, Shared<IFileIO> & inputfileio, IFile * inputFile, const IPropertyTree * providerOptions)
+{
+    if (providerOptions->getPropBool("@null"))
+    {
+        inputfileio.setown(createNullFileIO());
+        inputStream.setown(createBufferedInputStream(inputfileio, providerOptions));
+        return true;
+    }
+    return createBufferedInputStream(inputStream, inputfileio, inputFile, providerOptions);
+}
+
+bool createTestBufferedOutputStream(Shared<IBufferedSerialOutputStream> & outputStream, Shared<IFileIO> & outputfileio, IFile * outputFile, const IPropertyTree * providerOptions)
+{
+    if (providerOptions->getPropBool("@null"))
+    {
+        outputfileio.setown(createNullFileIO());
+        outputStream.setown(createBufferedOutputStream(outputfileio, providerOptions));
+        return true;
+    }
+    return createBufferedOutputStream(outputStream, outputfileio, outputFile, providerOptions);
+}
+
 class JlibFileTest : public CppUnit::TestFixture
 {
 public:
@@ -299,7 +321,7 @@ public:
         Owned<IFile> file(createIFile(testFilename));
         Owned<IBufferedSerialOutputStream> stream;
         Owned<IFileIO> io;
-        if (!createBufferedOutputStream(stream, io, file, options))
+        if (!createTestBufferedOutputStream(stream, io, file, options))
              CPPUNIT_FAIL("Failed to create output stream");
 
         // Write sample data
@@ -330,7 +352,7 @@ public:
         };
 
         unsigned work = options->getPropInt("@work", 0);
-        constexpr unsigned numRows = 1000000;
+        constexpr unsigned numRows = 2000000;
         unsigned counter = 17; // Start with a prime number
 
         for (unsigned i = 0; i < numRows; ++i)
@@ -368,7 +390,7 @@ public:
         Owned<IFile> file(createIFile(testFilename));
         Owned<IBufferedSerialInputStream> stream;
         Owned<IFileIO> io;
-        if (!createBufferedInputStream(stream, io, file, options))
+        if (!createTestBufferedInputStream(stream, io, file, options))
              CPPUNIT_FAIL("Failed to create input stream");
 
         unsigned tempSize = options->getPropInt("@tempSize", 1024);
@@ -391,6 +413,8 @@ public:
     //Use XML for the options.  Json might be cleaner it cannot set attributes
     static constexpr std::initializer_list<std::pair<const char *, const char *>> testCases
     {
+        { "null",                   R"!(sizeIoBuffer="1000000" null="1")!" },
+        { "null thread",            R"!(sizeIoBuffer="1000000" null="1" threading="1")!" },
         { "simple",                 R"!()!" },
         { "small buffer",           R"!(sizeIoBuffer="256")!" },
         { "large buffer",           R"!(sizeIoBuffer="4000000")!" },
@@ -398,14 +422,19 @@ public:
         { "lz4",                    R"!(sizeIoBuffer="1000000" compression="lz4")!" },
         // Append to the previous file (in the same format) and check that the file read back is twice as long
         { "lz4 append",             R"!(sizeIoBuffer="1000000" compression="lz4" extend="1")!" },
+        // Sequential is the mode that can be used for spill files that are only ready sequentially
         { "lz4 seq",                R"!(sizeIoBuffer="1000000" compression="lz4" sequentialAccess="1")!" },
         { "lz4 seq append",         R"!(sizeIoBuffer="1000000" compression="lz4" sequentialAccess="1" extend="1")!" },
+        { "lz4hc3",                 R"!(sizeIoBuffer="1000000" compression="lz4hc3")!" },
         { "zstd",                   R"!(sizeIoBuffer="1000000" compression="zstd")!" },
         { "zstd thread",            R"!(sizeIoBuffer="1000000" compression="zstd" threading="1")!" },
+        { "zstd small block",       R"!(sizeIoBuffer="1000000" compression="zstd" sizeCompressBlock="32768")!" },
         { "zstd work",              R"!(sizeIoBuffer="1000000" compression="zstd" work="50")!" },
         { "zstd work thread",       R"!(sizeIoBuffer="1000000" compression="zstd" work="50" threading="1")!" },
         { "zstd seq",               R"!(sizeIoBuffer="1000000" compression="zstd" sequentialAccess="1")!" },
         { "zstd work slow",         R"!(sizeIoBuffer="1000000" compression="zstd" work="50" delayNs="200000000")!" },
+        // Check the buffer size is being used - this should be much faster than the line above because the delay is per write
+        { "zstd work slow/4",       R"!(sizeIoBuffer="4000000" compression="zstd" work="50" delayNs="200000000")!" },
         { "zstd work thread slow",  R"!(sizeIoBuffer="1000000" compression="zstd" work="50" threading="1" delayNs="200000000")!" },
 // Where should the following options be implemented:
 //    overwrite

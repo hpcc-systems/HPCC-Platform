@@ -127,7 +127,19 @@ private:
 
 };
 
-class jlib_decl CIndirectFileIO : implements CInterfaceOf<IFileIO>
+class CNullFileIO final : implements CInterfaceOf<IFileIO>
+{
+public:
+    virtual size32_t read(offset_t pos, size32_t len, void * data) override;
+    virtual offset_t size() override;
+    virtual size32_t write(offset_t pos, size32_t len, const void * data) override;
+    virtual void setSize(offset_t size) override;
+    virtual void flush() override;
+    virtual void close() override;
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override;
+    virtual IFile * queryFile() const;
+};
+class CIndirectFileIO : implements CInterfaceOf<IFileIO>
 {
 public:
     CIndirectFileIO(IFileIO * _base);
@@ -147,7 +159,7 @@ protected:
 
 
 // This class is for testing to allow a delay to be added to all reads and writes
-class jlib_decl CDelayedFileIO : public CIndirectFileIO
+class CDelayedFileIO final : public CIndirectFileIO
 {
 public:
     CDelayedFileIO(IFileIO * _io, unsigned _delayNs);
@@ -160,7 +172,7 @@ protected:
 };
 
 
-class jlib_decl CFileRangeIO : public CIndirectFileIO
+class CFileRangeIO final : public CIndirectFileIO
 {
 public:
     CFileRangeIO(IFileIO * _io, offset_t _headerSize, offset_t _maxLength);
