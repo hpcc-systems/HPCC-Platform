@@ -17,9 +17,9 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec colwidth="80.50pt" />
+      <colspec colwidth="80.50pt"/>
 
-      <colspec />
+      <colspec/>
 
       <tbody>
         <row>
@@ -41,25 +41,31 @@
   <para>The <emphasis role="bold">WorkunitMessages </emphasis>function returns
   a DATASET with this format:</para>
 
-  <programlisting>EXPORT WsMessage := RECORD
+  <programlisting lang="ECL" role="notrunnable">EXPORT WsMessage_v2 := RECORD
   UNSIGNED4 severity;
-  INTEGER4 code;
-  STRING32 location;
+  INTEGER4  code;
+  STRING32  location;
   UNSIGNED4 row;
   UNSIGNED4 col;
-  STRING16 source;
-  STRING20 time;
-  STRING message{MAXLENGTH(1024)};
+  STRING16  source;
+  STRING20  time;
+  UNSIGNED4 priority;
+  REAL8     cost;
+  STRING    message{MAXLENGTH(1024)};
 END;</programlisting>
 
   <para>This function returns all messages in the workunit. Each record in the
-  returned dataset specifies a message in the workunit. </para>
+  returned dataset specifies a message in the workunit.</para>
 
-  <para>The <emphasis>severity</emphasis> value can be 1 for Warning, 2 for
-  Error, or 3 for Information. </para>
+  <para>The <literal>severity</literal> value can be 1 for Warning, 2 for
+  Error, or 3 for Information.</para>
+
+  <para>Note: The DATASET structure returned by WorkunitMessages added two
+  fields (<literal>priority</literal> and <literal>cost</literal>) in version
+  9.10.0.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">IMPORT STD;
-OUTPUT(STD.System.Workunit.WorkunitMessages('W20210602-164946'));</programlisting>
+  <programlisting format="linespecific" lang="ECL" role="notrunnable">IMPORT STD;
+OUTPUT(STD.System.Workunit.WorkunitMessages('W20250602-164946'));</programlisting>
 </sect1>
