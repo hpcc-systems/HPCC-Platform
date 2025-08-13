@@ -1993,7 +1993,7 @@ struct CompressedFileTrailer
                 return (unsigned)(compressedType - NEWCOMPRESSEDFILEFLAG);
             throw makeStringExceptionV(-1, "File has compression type %u, which is not supported by this version", (unsigned)(compressedType - NEWCOMPRESSEDFILEFLAG));
         }
-        return 0;
+        return COMPRESS_METHOD_NONE;
     }
 
     void setDetails(IPropertyTree &tree)
@@ -2383,15 +2383,10 @@ public:
             {
                 if ((mode == ICFread) && !expander)
                 {
-                    if (compMethod == COMPRESS_METHOD_FASTLZ)
-                        expander.setown(createFastLZExpander());
-                    else if (compMethod == COMPRESS_METHOD_LZ4)
-                        expander.setown(createLZ4Expander());
-                    else // fallback
-                    {
-                        compMethod = COMPRESS_METHOD_LZW;
-                        expander.setown(createLZWExpander(true));
-                    }
+                    ICompressHandler *handler = queryCompressHandler((CompressionMethod)compMethod);
+                    if (unlikely(!handler))
+                        throw makeStringExceptionV(-1, "Unsupported compression method %u", compMethod);
+                    expander.setown(handler->getExpander(nullptr));
                 }
             }
         }
@@ -3204,6 +3199,14 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
         virtual ICompressor *getCompressor(const char *options) { return createZStdStreamCompressor(options); }
         virtual IExpander *getExpander(const char *options)     { return createZStdStreamExpander(); }
     };
+    class CZStdCompressHandler : public CCompressHandlerBase
+    {
+    public:
+        virtual const char *queryType() const override { return "ZSTD"; }
+        virtual CompressionMethod queryMethod() const override { return COMPRESS_METHOD_ZSTD; }
+        virtual ICompressor *getCompressor(const char *options) override { throwUnimplementedX("createZStdCompressor"); }
+        virtual IExpander *getExpander(const char *options) override { return createZStdExpander(); }
+    };
     class CAESCompressHandler : public CCompressHandlerBase
     {
     public:
@@ -3275,6 +3278,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     addCompressorHandler(new CLZ4SCompressHandler());
     addCompressorHandler(new CLZ4SHCCompressHandler());
     addCompressorHandler(new CZStdSCompressHandler());
+    addCompressorHandler(new CZStdCompressHandler());
     return true;
 }
 
@@ -3346,6 +3350,8 @@ CompressionMethod translateToCompMethod(const char *compStr, CompressionMethod d
             compMethod = COMPRESS_METHOD_LZ4S;
         else if (strieq("ZSTDS", compStr))
             compMethod = COMPRESS_METHOD_ZSTDS;
+        else if (strieq("ZSTD", compStr))
+            compMethod = COMPRESS_METHOD_ZSTD;
         //else // default is LZ4
     }
     return compMethod;
@@ -3377,6 +3383,8 @@ const char *translateFromCompMethod(unsigned compMethod)
             return "LZMA";
         case COMPRESS_METHOD_ZSTDS:
             return "ZSTDS";
+        case COMPRESS_METHOD_ZSTD:
+            return "ZSTD";
         default:
             return ""; // none
     }
