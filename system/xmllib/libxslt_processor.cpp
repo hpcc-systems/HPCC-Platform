@@ -1,6 +1,11 @@
 #include "jliball.hpp"
 #include <string.h>
 
+#if defined(__clang__) || defined(__GNUC__)
+//Disable the warning for the whole file.  It does not work if it only surrounds the #includes
+#pragma GCC diagnostic ignored "-Wparentheses"
+#endif
+
 #include <libxml/xmlmemory.h>
 #include <libxml/parserInternals.h>
 #include <libxml/debugXML.h>
