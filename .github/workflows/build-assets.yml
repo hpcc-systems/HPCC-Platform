@@ -229,9 +229,9 @@ jobs:
       make-latest: ${{ needs.preamble.outputs.is_latest != 'false' }}
     secrets: inherit
 
-  deploy_wordpress:
+  deploy-wordpress:
     needs: [preamble, build-docker-community]
-    if: ${{ needs.preamble.outputs.is_latest && github.repository_owner == 'hpcc-systems' }}
+    if: ${{ github.repository_owner == 'hpcc-systems' && needs.preamble.outputs.is_latest == 'true' }}
     uses: ./.github/workflows/wordpress_automation.yml
     with:
       tag: ${{ needs.preamble.outputs.community_tag }}

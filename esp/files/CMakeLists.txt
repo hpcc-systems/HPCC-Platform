@@ -16,4 +16,13 @@
 
 project( web_files ) 
 
-Install ( DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DESTINATION componentfiles COMPONENT Runtime USE_SOURCE_PERMISSIONS PATTERN "CMakeLists.txt" EXCLUDE )
+Install ( DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} 
+          DESTINATION componentfiles 
+          COMPONENT Runtime 
+          USE_SOURCE_PERMISSIONS 
+          PATTERN "CMakeLists.txt" EXCLUDE 
+          PATTERN "yui/build/swfstore/swfstore.swf" EXCLUDE
+          PATTERN "yui/build/charts/assets/charts.swf" EXCLUDE
+          PATTERN "yui/build/uploader/assets/uploader.swf" EXCLUDE
+          PATTERN "yui/build/connection/connection.swf" EXCLUDE
+)

@@ -106,9 +106,9 @@ static constexpr int queryMaxPriorityValue = QUERY_SLA_PRIORITY_VALUE;
 #define ROXIE_ACTIVITY_SPECIAL_LAST    0x3fffffffu
 
 
-#define SUBCHANNEL_MASK 3
-#define SUBCHANNEL_BITS 2    // allows for up to 7-way redundancy in a 16-bit short retries flag, high bits used for indicators/flags
-#define MAX_SUBCHANNEL  7    // (16-2) / SUBCHANNEL_BITS
+#define SUBCHANNEL_BITS 3U                              // allow for 2^N-1 retries from the server to the worker
+#define SUBCHANNEL_MASK ((1U << SUBCHANNEL_BITS) -1)
+#define MAX_SUBCHANNEL  ((16 - 2) / SUBCHANNEL_BITS)    // up to 4-way redundancy in a 16-bit short retries flag, 2 high bits used for indicators/flags
 
 #define ROXIE_FASTLANE      0x8000u         // mask in retries indicating agent reply goes on the fast queue
 #define ROXIE_BROADCAST     0x4000u         // mask in retries indicating original request was a broadcast
