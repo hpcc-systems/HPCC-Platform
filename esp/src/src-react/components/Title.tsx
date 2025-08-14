@@ -21,6 +21,7 @@ import { switchTechPreview } from "./controls/ComingSoon";
 import { About } from "./About";
 import { MyAccount } from "./MyAccount";
 import { debounce } from "../util/throttle";
+import { lightTheme as defaultLightTheme, darkTheme as defaultDarkTheme } from "../themes";
 
 const logger = scopedLogger("src-react/components/Title.tsx");
 
@@ -60,7 +61,8 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     const [, { opsCategory }] = useBuildInfo();
     const theme = useTheme();
     const { userSession, setUserSession, deleteUserSession } = useUserSession();
-    const toolbarThemeDefaults = { active: false, text: "", color: theme.palette.themeLight };
+    // Don't persist a theme-specific default color; leave empty by default so the title bar follows the current theme.
+    const toolbarThemeDefaults = { active: false, text: "", color: "" };
     const [logIconColor, setLogIconColor] = React.useState<CounterBadgeProps["color"]>();
 
     const [showAbout, setShowAbout] = React.useState(false);
@@ -104,8 +106,13 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     }, [searchValue]);
 
     const titlebarColorSet = React.useMemo(() => {
-        return titlebarColor && titlebarColor !== theme.palette.themeLight;
-    }, [theme.palette, titlebarColor]);
+        // Treat default theme light colors as "unset" so theme switching updates the bar.
+        const defaultColors = [
+            defaultLightTheme.palette.themeLight,
+            defaultDarkTheme.palette.themeLight
+        ];
+        return !!titlebarColor && !defaultColors.includes(titlebarColor as any);
+    }, [titlebarColor]);
 
     const personaProps: IPersonaSharedProps = React.useMemo(() => {
         return {
@@ -310,18 +317,20 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
         }
     }, [currentUser, setPasswordExpiredConfirm]);
 
-    return <div style={{ backgroundColor: titlebarColorSet ? titlebarColor : theme.palette.themeLight }}>
+    const barBg = titlebarColorSet ? titlebarColor : theme.palette.themeLight;
+    const barFg = titlebarColorSet ? Utility.textColor(titlebarColor) : theme.palette.themeDarker;
+    return <div style={{ backgroundColor: barBg }}>
         <BannerMessageBar />
         <Stack horizontal verticalAlign="center" horizontalAlign="space-between">
             <Stack.Item align="center">
                 <Stack horizontal>
                     <Stack.Item>
-                        <IconButton iconProps={waffleIcon} onClick={() => setNavWideMode(!navWideMode)} style={{ width: 48, height: 48, color: titlebarColorSet ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }} />
+                        <IconButton iconProps={waffleIcon} onClick={() => setNavWideMode(!navWideMode)} style={{ width: 48, height: 48, color: barFg }} />
                     </Stack.Item>
                     <Stack.Item align="center">
                         <Link href="#/activities">
                             <Text variant="large" nowrap block >
-                                <b title="ECL Watch" style={{ paddingLeft: "8px", color: titlebarColorSet ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }}>
+                                <b title="ECL Watch" style={{ paddingLeft: "8px", color: barFg }}>
                                     {(showEnvironmentTitle && environmentTitle) ? environmentTitle : "ECL Watch"}
                                 </b>
                             </Text>
@@ -345,7 +354,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                         </DefaultButton>
                     </Stack.Item>
                     <Stack.Item align="center">
-                        <IconButton title={nlsHPCC.Advanced} iconProps={collapseMenuIcon} menuProps={advMenuProps} style={{ color: titlebarColorSet ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }} />
+                        <IconButton title={nlsHPCC.Advanced} iconProps={collapseMenuIcon} menuProps={advMenuProps} style={{ color: barFg }} />
                     </Stack.Item>
                 </Stack>
                 <Toaster toasterId={toasterId} position={"top-end"} pauseOnHover />
