@@ -252,6 +252,7 @@ public:
 
 public:
     SharedBlobClient getBlobClient() const;
+    void invalidateMeta() { haveMeta = false; }
 
 protected:
     std::shared_ptr<StorageSharedKeyCredential> getSharedKeyCredentials() const;
@@ -452,6 +453,8 @@ AzureBlobBlockBlobWriteIO::AzureBlobBlockBlobWriteIO(AzureBlob * _file) : AzureB
     // Each block id then has a 8 character blockid appended to this base-64 encoded base id.
     // 18bytes pre-encoding.  24 bytes post encoding.  32 characters with the blockid appended.
 
+    file->invalidateMeta();
+
     MemoryBuffer blockId;
     blockId.append(hashncz_fnv1a((const byte *)file->queryFilename(), fnvInitialHash32));
     blockId.append(getTimeStampNowValue());
@@ -497,6 +500,8 @@ size32_t AzureBlobBlockBlobWriteIO::write(offset_t pos, size32_t len, const void
     if (unlikely(pos != offset))
         throw makeStringExceptionV(1234, "Azure Blobs only support appending writes, unexpected write position %llu, expected %llu", pos, offset);
 
+    file->invalidateMeta();
+
     CCycleTimer timer;
     std::string blockId = generateNextUniqueBlockId();
     blockIds.push_back(blockId);
@@ -534,6 +539,7 @@ void AzureBlobBlockBlobWriteIO::close()
 {
     if (committed)
         return;
+    file->invalidateMeta();
 
     constexpr unsigned maxRetries = 4;
     unsigned attempt = 0;
@@ -651,6 +657,8 @@ AzureBlob::AzureBlob(const char *_azureFileName) : fullName(_azureFileName)
 
         //I am not at all sure we need to split this apart, only to join in back together again.
         slash = strchr(filename, '/');
+        if (!slash)
+            throw makeStringExceptionV(99, "Missing container in azureblob: file reference '%s'", filename);
         assertex(slash);  // could probably relax this....
         containerName.set(filename, slash-filename);
         blobName.set(slash+1);
