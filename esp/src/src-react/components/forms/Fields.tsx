@@ -274,6 +274,7 @@ interface BaseField {
     placeholder?: string;
     readonly?: boolean;
     required?: boolean;
+    optional?: boolean;
 }
 
 interface StringField extends BaseField {
@@ -861,6 +862,49 @@ export const CloudPodNameField: React.FunctionComponent<CloudPodNameFieldProps> 
     return <ComboBox {...props} allowFreeform={true} autoComplete={"on"} options={options} />;
 };
 
+const formatDateForInput = (date: Date | string | undefined): string => {
+    if (!date) return "";
+    let dateStr;
+    // the html input "datetime-local" expects the value to be of the format "YYYY-MM-DDTHH:mm"
+    if (typeof date === "object") {
+        // but comes from the Logs component's filter initially as a Date
+        dateStr = date ? new Date(date).toISOString() : "";
+        return dateStr.substring(0, dateStr.lastIndexOf(":"));
+    } else {
+        // if not a complete ISO string, the datetime-local will creep forward
+        // in time with every subsequent new Date() (opening & closing
+        // the filter multiple times, for example)
+        let processedDate = date;
+        if (processedDate && processedDate.indexOf("Z") < 0) {
+            processedDate += ":00.000Z";
+        }
+        dateStr = processedDate ? new Date(processedDate).toISOString() : "";
+        return dateStr.substring(0, dateStr.lastIndexOf(":"));
+    }
+};
+
+export { SuperDatePicker } from "./SuperDatePicker";
+export type { DateRange, SuperDatePickerProps } from "./SuperDatePicker";
+
+interface DateTimeInputProps {
+    value: Date | string | undefined;
+    onChange: (value: string) => void;
+    style?: React.CSSProperties;
+}
+
+export const DateTimeInput: React.FunctionComponent<DateTimeInputProps> = ({ value, onChange, style }) => {
+    const formattedValue = formatDateForInput(value);
+
+    return (
+        <input
+            type="datetime-local"
+            value={formattedValue}
+            onChange={(e) => onChange(e.target.value)}
+            style={style}
+        />
+    );
+};
+
 const states = Object.keys(States).map(s => States[s]);
 const dfustates = Object.keys(DFUStates).map(s => DFUStates[s]);
 
@@ -957,6 +1001,8 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                         key={fieldID}
                         selectedKey={field.value}
                         options={field.options}
+                        required={field.required}
+                        optional={field.optional}
                         onChange={(ev, row) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
                     />
