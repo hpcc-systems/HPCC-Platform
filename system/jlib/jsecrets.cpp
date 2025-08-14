@@ -465,6 +465,8 @@ public:
     // Is it time to check if there is a new value for this secret?
     bool needsRefresh(cache_timestamp now) const
     {
+        if (!initialized)
+            return true;
         cache_timestamp elapsed = (now - checkedTimestamp);
         return (elapsed > secretTimeoutNs);
     }
@@ -479,6 +481,7 @@ public:
         //Update the checked timestamp - so that we do not continually check for updates to secrets which
         //are stale because the vault or other source of values in inaccessible.
         //Keep using the last good value
+        initialized = true;
         checkedTimestamp = now;
         if (accessed)
             accessedTimestamp = now;
@@ -490,6 +493,7 @@ public:
 private:
     void updateContents(IPropertyTree * _contents, cache_timestamp now, bool accessed)
     {
+        initialized = true;
         contents.set(_contents);
         updateHash();
         contentTimestamp = now;
@@ -512,6 +516,7 @@ private:
     cache_timestamp accessedTimestamp = 0; // When was this secret last accessed?
     cache_timestamp checkedTimestamp = 0;  // When was this last checked for updates?
     unsigned contentHash = 0;
+    bool initialized = false;
 };
 
 

@@ -4847,6 +4847,7 @@ class JLibSecretsTest : public CppUnit::TestFixture
 public:
     CPPUNIT_TEST_SUITE(JLibSecretsTest);
         CPPUNIT_TEST(setup);
+        CPPUNIT_TEST(testConcurrentRead);
         CPPUNIT_TEST(testUpdate1);
         CPPUNIT_TEST(testUpdate2);
         CPPUNIT_TEST(testBackgroundUpdate);
@@ -5176,6 +5177,66 @@ void testDefaultMasking()
         writeTestingSecret("secret5", "value", nullptr);
         writeTestingSecret("secret6", "value", nullptr);
         stopSecretUpdateThread();
+    }
+
+    class SecretReader : public Thread
+    {
+    public:
+        SecretReader(Semaphore & _startSem) : startSem(_startSem) {}
+
+        virtual int run()
+        {
+            startSem.wait();
+            try
+            {
+                getSecretValue(secret, "testing", "concurrent", "value", true);
+            }
+            catch (IException * e)
+            {
+                DBGLOG("Failed to read secret");
+                error.setown(e);
+            }
+            return 0;
+        }
+
+    public:
+        Semaphore & startSem;
+        StringBuffer secret;
+        Owned<IException> error;
+    };
+
+    void testConcurrentRead()
+    {
+        initPath(); // secretRoot needs to be called for each test
+
+        writeTestingSecret("concurrent", "value", "hello");
+
+        unsigned numReaders = 5;
+        Semaphore startSem;
+        CIArrayOf<SecretReader> readers;
+
+        for (unsigned i = 0; i < numReaders; i++)
+        {
+            SecretReader * reader = new SecretReader(startSem);
+            readers.append(*reader);
+            reader->start(true);
+        }
+
+        startSem.signal(numReaders);
+
+        for (unsigned i = 0; i < numReaders; i++)
+            readers.item(i).join();
+
+        for (unsigned i = 0; i < numReaders; i++)
+        {
+            IException * e = readers.item(i).error;
+            if (e)
+            {
+                StringBuffer msg;
+                e->errorMessage(msg);
+                CPPUNIT_FAIL(msg.str());
+            }
+        }
     }
 
     void testKeyEncoding()

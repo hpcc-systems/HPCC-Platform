@@ -1,16 +1,16 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
 import { GetLogsExRequest, LogaccessService, LogType, TargetAudience, WsLogaccess } from "@hpcc-js/comms";
 import { Level, scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
-import { formatDateString, logColor, removeAllExcept, timestampToDate, wuidToDate, wuidToTime } from "src/Utility";
+import { formatDateString, logColor, removeAllExcept, timestampToDate, wuidToDate, wuidToDateTime, wuidToTime } from "src/Utility";
 import { useLogAccessInfo } from "../hooks/platform";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { Filter } from "./forms/Filter";
-import { Fields } from "./forms/Fields";
-import { ShortVerticalDivider } from "./Common";
+import { Fields, DateRange } from "./forms/Fields";
+import { LogsHeader } from "./LogsHeader";
+import { LogsHeaderWithSuperDatePicker } from "./LogsHeaderWithSuperDatePicker";
 
 export const service = new LogaccessService({ baseUrl: "" });
 
@@ -52,7 +52,7 @@ const FilterFields: Fields = {
             { key: 250, text: "250" },
             { key: 500, text: "500" },
             { key: 1000, text: "1000" },
-        ]
+        ], value: "100", optional: false
     },
     StartDate: { type: "datetime", label: nlsHPCC.FromDate },
     EndDate: { type: "datetime", label: nlsHPCC.ToDate },
@@ -77,6 +77,7 @@ interface LogsProps {
     filter?: Partial<GetLogsExRequest>;
     page?: number;
     setLogCount?: (count: number | string) => void;
+    useSuperDatePicker?: boolean; // New prop to control header type
 }
 export const defaultFilter: Partial<GetLogsExRequest> = { StartDate: defaultStartDate };
 
@@ -100,12 +101,38 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
     wuid,
     filter = defaultFilter,
     page,
-    setLogCount
+    setLogCount,
+    useSuperDatePicker = wuid ? false : true
 }) => {
 
-    const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
     const [showFilter, setShowFilter] = React.useState(false);
     const [data, setData] = React.useState<any[]>([]);
+
+    // Auto-refresh state (only used when useSuperDatePicker is true)
+    const [autoRefresh, setAutoRefresh] = React.useState(false);
+    const [autoRefreshInterval, setAutoRefreshInterval] = React.useState(30); // 30 seconds default
+
+    const [currentFilter, setCurrentFilter] = React.useState<Partial<GetLogsExRequest>>(() => ({
+        ...filter,
+        StartDate: filter.StartDate || (wuid ? wuidToDateTime(wuid) : defaultStartDate)
+    }));
+
+    const hasFilter = React.useMemo(() => Object.keys(currentFilter).length > 0, [currentFilter]);
+
+    const [headerStartDateInput, setHeaderStartDateInput] = React.useState<Date | string | undefined>(() => {
+        return currentFilter.StartDate;
+    });
+    const [headerEndDateInput, setHeaderEndDateInput] = React.useState<Date | string | undefined>(() => {
+        return currentFilter.EndDate;
+    });
+
+    const [committedStartDate, setCommittedStartDate] = React.useState<Date | string | undefined>(() => {
+        return currentFilter.StartDate;
+    });
+    const [committedEndDate, setCommittedEndDate] = React.useState<Date | string | undefined>(() => {
+        return currentFilter.EndDate;
+    });
+
     const {
         selection, setSelection,
         setTotal,
@@ -173,73 +200,145 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
     const copyButtons = useCopyButtons(columns, selection, "logaccess");
 
     const query = React.useMemo(() => {
+        const queryFilter = { ...currentFilter };
+
         if (wuid !== undefined) {
-            filter.workunits = wuid;
-            if (typeof filter.StartDate === "string") {
-                filter.StartDate = new Date(filter.StartDate + ":00Z");
+            queryFilter.workunits = wuid;
+            if (typeof committedStartDate === "string") {
+                queryFilter.StartDate = new Date(committedStartDate + ":00Z");
+            } else if (committedStartDate) {
+                queryFilter.StartDate = committedStartDate;
             } else {
-                filter.StartDate = new Date(`${wuidToDate(wuid)}T${wuidToTime(wuid)}Z`);
+                queryFilter.StartDate = new Date(`${wuidToDate(wuid)}T${wuidToTime(wuid)}Z`);
             }
         } else {
-            if (typeof filter.StartDate === "string") {
-                filter.StartDate = new Date(filter.StartDate + ":00Z");
-            }
-            if (!filter.StartDate) {
+            if (typeof committedStartDate === "string") {
+                queryFilter.StartDate = new Date(committedStartDate + ":00Z");
+            } else if (committedStartDate) {
+                queryFilter.StartDate = committedStartDate;
+            } else {
                 //assign a reasonable default start date if one isn't set
-                filter.StartDate = new Date(now.getTime() - eightHours);
+                queryFilter.StartDate = new Date(now.getTime() - eightHours);
             }
-            if (typeof filter.EndDate === "string") {
-                filter.EndDate = new Date(filter.EndDate + ":00Z");
-            }
-            if (!filter.EndDate) {
-                filter.EndDate = new Date(now.getTime() + endTimeOffset);
+
+            if (typeof committedEndDate === "string") {
+                queryFilter.EndDate = new Date(committedEndDate + ":00Z");
+            } else if (committedEndDate) {
+                queryFilter.EndDate = committedEndDate;
+            } else {
+                queryFilter.EndDate = new Date(now.getTime() + endTimeOffset);
             }
         }
-        return formatQuery(filter);
-    }, [filter, now, wuid]);
+        return formatQuery(queryFilter);
+    }, [currentFilter, committedStartDate, committedEndDate, now, wuid]);
 
     const refreshData = React.useCallback(() => {
+        setCommittedStartDate(headerStartDateInput);
+        setCommittedEndDate(headerEndDateInput);
+
+        // also update currentFilter so the Filter dialog stays in sync
+        setCurrentFilter(prev => ({
+            ...prev,
+            StartDate: headerStartDateInput ? (typeof headerStartDateInput === "string" ? new Date(headerStartDateInput + ":00Z") : headerStartDateInput) : undefined,
+            EndDate: headerEndDateInput ? (typeof headerEndDateInput === "string" ? new Date(headerEndDateInput + ":00Z") : headerEndDateInput) : undefined
+        }));
+    }, [headerStartDateInput, headerEndDateInput]);
+
+    React.useEffect(() => {
         service.GetLogsEx(query as any).then(response => {
             setData(response.lines);
         }).catch(err => logger.error(err));
     }, [query]);
 
-    //  Command Bar  ---
-    const buttons = React.useMemo((): ICommandBarItemProps[] => [
-        {
-            key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshData()
-        },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
-        {
-            key: "filter", text: nlsHPCC.Filter, iconProps: { iconName: hasFilter ? "FilterSolid" : "Filter" },
-            onClick: () => {
-                setShowFilter(true);
-            }
-        },
-    ], [hasFilter, refreshData]);
+    const handleStartDateChange = React.useCallback((dateValue: string) => {
+        setHeaderStartDateInput(dateValue);
+    }, []);
 
+    const handleEndDateChange = React.useCallback((dateValue: string) => {
+        setHeaderEndDateInput(dateValue);
+    }, []);
+
+    const handleSuperDatePickerChange = React.useCallback((range: DateRange) => {
+        setHeaderStartDateInput(range.startDate);
+        setHeaderEndDateInput(range.endDate);
+
+        // update current filter so the Filter dialog stays in sync
+        setCurrentFilter(prev => ({
+            ...prev,
+            StartDate: range.startDate ? (typeof range.startDate === "string" ? new Date(range.startDate + ":00Z") : range.startDate) : undefined,
+            EndDate: range.endDate ? (typeof range.endDate === "string" ? new Date(range.endDate + ":00Z") : range.endDate) : undefined
+        }));
+
+        setCommittedStartDate(range.startDate);
+        setCommittedEndDate(range.endDate);
+    }, []);
+
+    // initial data load
     React.useEffect(() => {
         refreshData();
-    }, [refreshData]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     //  Filter  ---
     const filterFields: Fields = React.useMemo(() => {
         const retVal: Fields = {};
         for (const field in FilterFields) {
-            retVal[field] = { ...FilterFields[field], value: filter[field] };
+            retVal[field] = {
+                ...FilterFields[field],
+                value: currentFilter[field] !== undefined ? currentFilter[field] : FilterFields[field].value
+            };
             if (wuid !== undefined) {
-                delete filter.workunits;
+                delete currentFilter.workunits;
                 delete retVal.jobId;
             }
         }
         const colTypes = logColumns?.map(c => c.LogType.toString()) ?? [];
         removeAllExcept(retVal, [...colTypes, "LogLineLimit", "StartDate", "EndDate"]);
         return retVal;
-    }, [filter, logColumns, wuid]);
+    }, [currentFilter, logColumns, wuid]);
+
+    const handleFilterApply = React.useCallback((values: any) => {
+        setCurrentFilter(prev => ({ ...prev, ...values }));
+
+        if (values.StartDate !== undefined) {
+            setHeaderStartDateInput(values.StartDate);
+        }
+        if (values.EndDate !== undefined) {
+            setHeaderEndDateInput(values.EndDate);
+        }
+
+        pushParams(values);
+    }, []);
 
     return <HolyGrail
-        header={<CommandBar items={buttons} farItems={copyButtons} />}
+        header={
+            useSuperDatePicker ? (
+                <LogsHeaderWithSuperDatePicker
+                    startDate={headerStartDateInput}
+                    endDate={headerEndDateInput}
+                    onDateChange={handleSuperDatePickerChange}
+                    onRefresh={refreshData}
+                    onShowFilter={() => setShowFilter(true)}
+                    hasFilter={hasFilter}
+                    copyButtons={copyButtons}
+                    autoRefresh={autoRefresh}
+                    onAutoRefreshChange={setAutoRefresh}
+                    autoRefreshInterval={autoRefreshInterval}
+                    onAutoRefreshIntervalChange={setAutoRefreshInterval}
+                />
+            ) : (
+                <LogsHeader
+                    startDate={headerStartDateInput}
+                    endDate={headerEndDateInput}
+                    onStartDateChange={handleStartDateChange}
+                    onEndDateChange={handleEndDateChange}
+                    onRefresh={refreshData}
+                    onShowFilter={() => setShowFilter(true)}
+                    hasFilter={hasFilter}
+                    copyButtons={copyButtons}
+                />
+            )
+        }
         main={
             <div style={{ position: "relative", height: "100%" }}>
                 <FluentGrid
@@ -255,7 +354,7 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
                     }}
                     refresh={refreshTable}
                 ></FluentGrid>
-                <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
+                <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={handleFilterApply} />
             </div>
         }
     />;
