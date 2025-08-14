@@ -1437,7 +1437,9 @@ static void setUserDescriptor(Linked<IUserDescriptor> &udesc,IUserDescriptor *us
 {
     logNullUser(user);//stack trace if NULL user
     if (!user)
-        return;
+    {
+        user = queryDistributedFileDirectory().queryDefaultUser();
+    }
     udesc.set(user);
 }
 
@@ -1448,7 +1450,7 @@ static SecAccessFlags getScopePermissions(const char *scopename,IUserDescriptor 
         if (!user)
         {
             logNullUser(user);//stack trace if NULL user
-            return SecAccess_None;
+            user = queryDistributedFileDirectory().queryDefaultUser();
         }
 
         perms = querySessionManager().getPermissionsLDAP(queryDfsXmlBranchName(DXB_Scope),scopename,user,auditflags);
