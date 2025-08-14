@@ -29,11 +29,11 @@ bool CEventVisitationLinkTester::visitEvent(CEvent& actualEvent)
 {
     CEvent expectEvent;
     CPPUNIT_ASSERT(expect->nextEvent(expectEvent));
-    CPPUNIT_ASSERT_EQUAL(expectEvent.queryType(), actualEvent.queryType());
+    CPPUNIT_ASSERT_EQUAL_MESSAGE("EventType mismatch", unsigned(expectEvent.queryType()), unsigned(actualEvent.queryType()));
     for (CEventAttribute& expectAttr : expectEvent.definedAttributes)
     {
         CEventAttribute& actualAttr = actualEvent.queryAttribute(expectAttr.queryId());
-        CPPUNIT_ASSERT_EQUAL(expectAttr.queryState(), actualAttr.queryState());
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("attribute state mismatch", byte(expectAttr.queryState()), byte(actualAttr.queryState()));
         if (!expectAttr.isAssigned())
             continue;
         VStringBuffer msg("%s/%s", queryEventName(expectEvent.queryType()), queryEventAttributeName(expectAttr.queryId()));;

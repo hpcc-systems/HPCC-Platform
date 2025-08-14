@@ -30,12 +30,23 @@ public:
         {
             if (streq(opt, "lookup"))
             {
-                op.setObservedEvent(EventIndexLookup);
+                op.addObservedEvent(EventIndexCacheHit);
+                op.addObservedEvent(EventIndexCacheMiss);
+                accepted = true;
+            }
+            else if (streq(opt, "hit"))
+            {
+                op.addObservedEvent(EventIndexCacheHit);
+                accepted = true;
+            }
+            else if (streq(opt, "miss"))
+            {
+                op.addObservedEvent(EventIndexCacheMiss);
                 accepted = true;
             }
             else if (streq(opt, "load"))
             {
-                op.setObservedEvent(EventIndexLoad);
+                op.addObservedEvent(EventIndexLoad);
                 accepted = true;
             }
         }
@@ -79,8 +90,11 @@ selector correlating to a single event type. Additional options determine the
 analysis to be performed.
 
 Events:
+    --hit                     Analyse index cache hit events.
     --load                    Analyze index load events.
-    --lookup                  Analyze index lookup events.
+    --lookup                  Analyze index lookup, cache hit, and cache miss
+                              events.
+    --miss                    Analyze index cache miss events.
 )!!!";
         size32_t usageStrLength = strlen(usageStr);
         out.put(usageStrLength, usageStr);
