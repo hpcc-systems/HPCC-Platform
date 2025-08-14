@@ -27,7 +27,7 @@
 #include "jptree.ipp"
 
 #include "dasds.ipp"
-  
+
 class CClientSDSManager;
 class CClientRemoteTree;
 class CRemoteConnection : public CConnectionBase, public CTrackChanges, implements IRemoteConnection
@@ -144,12 +144,12 @@ public:
     }
 
     virtual void abort() // called when server closes
-    { 
+    {
         // JCS TBD?
     }
 
     virtual bool aborted() // called when server closes
-    { 
+    {
         return false;
     }
 
@@ -209,11 +209,11 @@ public:
         return data;
     }
     virtual void abort() // called when server closes
-    { 
+    {
         // JCS TBD?
     }
     virtual bool aborted() // called when server closes
-    { 
+    {
         return false;
     }
 };
@@ -327,6 +327,7 @@ public:
     virtual ChildMap *checkChildren() const override;
     virtual IPropertyTree *create(const char *name, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false) override;
     virtual IPropertyTree *create(MemoryBuffer &mb) override;
+    virtual IPropertyTree *create(IBufferedSerialInputStream &in) override;
     virtual void createChildMap() override;
     virtual IPropertyTree *ownPTree(IPropertyTree *tree) override;
     virtual void setLocal(size32_t size, const void *data, bool _binary, CompressionMethod compressType) override;
