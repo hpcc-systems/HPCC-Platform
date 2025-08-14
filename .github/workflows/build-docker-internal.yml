@@ -197,7 +197,7 @@ jobs:
             cmake -S /hpcc-dev/LN -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform ${{ steps.vars.outputs.cmake_docker_config }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGN_MODULES_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGN_MODULES_KEYID }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=ON ${{ inputs.cmake-options-extra }} && \
             cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
   
-      - name: Upload Assets to Jfrog (debian)
+      - name: Upload Assets to Jfrog (*.deb)
         if: ${{ contains(inputs.os, 'ubuntu') && github.repository_owner == 'hpcc-systems'}}
         shell: bash
         run: |
@@ -209,7 +209,7 @@ jobs:
             curl -u${{ secrets.JFROG_USERNAME }}:${{ secrets.JFROG_PASSWORD }} -XPUT "https://${{ secrets.JFROG_REGISTRY }}/hpccpl-debian-local/pool/LN/${_package};deb.distribution=${distribution};deb.component=LN;deb.architecture=amd64" -T ${{ steps.vars.outputs.folder_build }}/${_package} 
           done
   
-      - name: Upload Assets to Jfrog (centos)
+      - name: Upload Assets to Jfrog (*.rpm)
         if: ${{ !inputs.container && !contains(inputs.os, 'ubuntu') && github.repository_owner == 'hpcc-systems'}}
         shell: bash
         run: |
