@@ -257,6 +257,17 @@ int main(int argc, const char* argv[])
 
     //queryLogMsgManager()->changeMonitorFilterOwn(queryStderrLogMsgHandler(), getPassNoneLogMsgFilter());
 
+    // Every process must call loadConfiguration (if it has a configuration), or call initNullConfiguration
+    // before getComponentConfig or getGlobalConfig is called (used in common code, e.g. from jsocket)
+    // dfuplus does not have a standard configuration and is not normally used with one. It optionally processes
+    // an ini file (dfuplus.ini) found in the current working directory.
+    // It would be better if dfuplus moved over to a regular xml based config file, and the code below used getComponentConfig,
+    // then we could switch to loadConfiguration, and this code could be removed, but pragmatically, we want to keep it this way
+    // to preserve current usage patterns on bare-metal systems.
+    // In practice it is not expected that dfuplus will be used in a containerized environment, and if it were, it is not
+    // expected to have a local dfuplus.ini file.
+    initNullConfiguration();
+
     Owned<IProperties> globals = createProperties("dfuplus.ini", true);
 
     if(!build_globals(argc, argv, globals))
