@@ -286,7 +286,6 @@ struct cDirDesc
     ~cDirDesc()
     {
         unsigned i;
-        CriticalBlock block(dirsCrit);
         cDirDesc *d = dirs.first(i);
         while (d) {
             delete d;
