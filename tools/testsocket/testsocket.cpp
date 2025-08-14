@@ -907,6 +907,9 @@ int main(int argc, char **argv)
     if (argc < 2 && !(argc==2 && strstr(argv[1], "::")))
         usage(1);
 
+    // we must initialize configuration to allow getComponentConfig/getGlobalConfig to work (used in common code, e.g. jsocket)
+    initNullConfiguration();
+
     int arg = 2;
     bool echoSingle = true;
     while (arg < argc && *argv[arg]=='-')

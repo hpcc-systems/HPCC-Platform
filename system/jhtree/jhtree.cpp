@@ -1934,10 +1934,11 @@ done:
 // The initialization and cleanup functions are not thread safe.  They must only be called when no index activity is occuring.
 void initializeDiskPageCache(const IPropertyTree *config)
 {
+    assertex(!activePageCache);
     if (!config)
         return;
 
-    if (config->getPropInt64("@size", 0) == 0)
+    if (config->getPropInt64("@sizeMB", 0) == 0)
         return;
 
     IPageCache * cache = nullptr;
