@@ -37,8 +37,11 @@ public: // IEventModel
         case MetaFileInformation:
             onMetaFileInformation(events);
             break;
-        case EventIndexLookup:
-            onIndexLookup(events);
+        case EventIndexCacheHit:
+            onIndexCacheHit(events);
+            break;
+        case EventIndexCacheMiss:
+            onIndexCacheMiss(events);
             break;
         case EventIndexLoad:
             onIndexLoad(events);
@@ -82,23 +85,13 @@ protected:
         storage.observeFile(event.queryNumericValue(EvAttrFileId), event.queryTextValue(EvAttrPath));
     }
 
-    void onIndexLookup(std::vector<CEvent>& events)
+    void onIndexCacheHit(std::vector<CEvent>& events)
     {
         CEvent& event = events.front();
         ModeledPage page;
         bool firstObservation = expansion.observePage(event);
         expansion.describePage(event, page);
-        if (!event.queryBooleanValue(EvAttrInCache))
-        {
-            // A recorded miss without an index cache model is always a miss.
-            // Event attributes should already be zero.
-            // event.setValue(EvAttrInMemorySize, 0ULL);
-            // event.setValue(EvAttrExpandTime, 0ULL);
-
-            // If in an index cache model, the miss becomes a hit, the size and time are cached
-            // values, and the subsequent recorded IndexLoad must be suppressed.
-        }
-        else if (ExpansionMode::OnLoad == page.expansionMode)
+        if (ExpansionMode::OnLoad == page.expansionMode)
         {
             // A recorded hit without an index cache may transform the recorded size and time
             // into estimated values.
@@ -127,6 +120,12 @@ protected:
             // If the page was not in an active index cache, the size is also zero and a
             // simulated IndexLoad is required.
         }
+    }
+
+    void onIndexCacheMiss(std::vector<CEvent>& events)
+    {
+        CEvent& event = events.front();
+        (void)expansion.observePage(event);
     }
 
     void onIndexLoad(std::vector<CEvent>& events)
@@ -188,7 +187,7 @@ protected:
     void simulateIndexLoad(std::vector<CEvent>& events)
     {
         CEvent& lookup = events.front();
-        assertex(lookup.queryType() == EventIndexLookup);
+        assertex(lookup.queryType() == EventIndexCacheHit);
         events.emplace_back();
         CEvent& load = events.back();
         load.reset(EventIndexLoad);
@@ -477,9 +476,9 @@ expect:
                     </expansion>
                 </link>
                 <input>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="0" InCache="true" InMemorySize="20000" ExpandTime="1000"/>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="30000" ExpandTime="2000"/>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexCacheHit" FileId="1" FileOffset="0" NodeKind="0" InMemorySize="20000" ExpandTime="1000"/>
+                    <event type="IndexCacheHit" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="30000" ExpandTime="2000"/>
+                    <event type="IndexCacheHit" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="0" ExpandTime="0"/>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="0" InMemorySize="20000" ExpandTime="1000" ReadTime="0"/>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="30000" ExpandTime="2000" ReadTime="0"/>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="0" InMemorySize="0" ExpandTime="0" ReadTime="0"/>
@@ -490,9 +489,9 @@ expect:
                     <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="0" InMemorySize="0"/>
                 </input>
                 <expect>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="0" InCache="true" InMemorySize="12288" ExpandTime="3072"/>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="16384" ExpandTime="12288"/>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="16384" ExpandTime="12288"/>
+                    <event type="IndexCacheHit" FileId="1" FileOffset="0" NodeKind="0" InMemorySize="12288" ExpandTime="3072"/>
+                    <event type="IndexCacheHit" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="16384" ExpandTime="12288"/>
+                    <event type="IndexCacheHit" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="16384" ExpandTime="12288"/>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="0" InMemorySize="12288" ExpandTime="3072" ReadTime="500"/>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="16384" ExpandTime="12288" ReadTime="500"/>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="0" InMemorySize="12288" ExpandTime="3072" ReadTime="500"/>
@@ -524,20 +523,20 @@ expect:
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192" ExpandTime="1000" ReadTime="2000"/>
                     <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="0" ExpandTime="0"/>
                     <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192"/>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="false" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexCacheMiss" FileId="1" FileOffset="0" NodeKind="1"/>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="65536" ExpandTime="1000" ReadTime="2000"/>
                     <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="0" ExpandTime="0"/>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="32768" ExpandTime="16384"/>
+                    <event type="IndexCacheHit" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="32768" ExpandTime="16384"/>
                     <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="32768"/>
                 </input>
                 <expect>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="32768" ExpandTime="16384" ReadTime="500"/>
                     <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="0" ExpandTime="0"/>
                     <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="32768"/>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="false" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexCacheMiss" FileId="1" FileOffset="0" NodeKind="1"/>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="32768" ExpandTime="16384" ReadTime="500"/>
                     <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="0" ExpandTime="0"/>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="32768" ExpandTime="16384"/>
+                    <event type="IndexCacheHit" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="32768" ExpandTime="16384"/>
                     <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="32768"/>
                 </expect>
             </test>
@@ -559,17 +558,17 @@ expect:
                     </expansion>
                 </link>
                 <input>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="false" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexCacheMiss" FileId="1" FileOffset="0" NodeKind="1"/>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="65536" ExpandTime="1000" ReadTime="2000"/>
                     <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="0" ExpandTime="0"/>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="32768" ExpandTime="16384"/>
+                    <event type="IndexCacheHit" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="32768" ExpandTime="16384"/>
                     <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="32768"/>
                 </input>
                 <expect>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="false" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexCacheMiss" FileId="1" FileOffset="0" NodeKind="1"/>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192" ExpandTime="0" ReadTime="500"/>
                     <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="32768" ExpandTime="16384"/>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="8192" ExpandTime="0"/>
+                    <event type="IndexCacheHit" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192" ExpandTime="0"/>
                     <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192"/>
                 </expect>
             </test>
@@ -591,17 +590,17 @@ expect:
                     </expansion>
                 </link>
                 <input>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="false" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexCacheMiss" FileId="1" FileOffset="0" NodeKind="1"/>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192" ExpandTime="0" ReadTime="2000"/>
                     <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="0" ExpandTime="0"/>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="8192" ExpandTime="0"/>
+                    <event type="IndexCacheHit" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192" ExpandTime="0"/>
                     <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192"/>
                 </input>
                 <expect>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="false" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexCacheMiss" FileId="1" FileOffset="0" NodeKind="1"/>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192" ExpandTime="0" ReadTime="500"/>
                     <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="32768" ExpandTime="16384"/>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="8192" ExpandTime="0"/>
+                    <event type="IndexCacheHit" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192" ExpandTime="0"/>
                     <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192"/>
                 </expect>
             </test>
@@ -625,20 +624,20 @@ expect:
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192" ExpandTime="1000" ReadTime="2000"/>
                     <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="0" ExpandTime="0"/>
                     <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192"/>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="false" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexCacheMiss" FileId="1" FileOffset="0" NodeKind="1"/>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="65536" ExpandTime="1000" ReadTime="2000"/>
                     <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="0" ExpandTime="0"/>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="32768" ExpandTime="16384"/>
+                    <event type="IndexCacheHit" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="32768" ExpandTime="16384"/>
                     <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="32768"/>
                 </input>
                 <expect>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192" ExpandTime="1000" ReadTime="500"/>
                     <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="0" ExpandTime="0"/>
                     <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192"/>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="false" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexCacheMiss" FileId="1" FileOffset="0" NodeKind="1"/>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="65536" ExpandTime="1000" ReadTime="500"/>
                     <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="0" ExpandTime="0"/>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="32768" ExpandTime="16384"/>
+                    <event type="IndexCacheHit" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="32768" ExpandTime="16384"/>
                     <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="32768"/>
                 </expect>
             </test>
@@ -659,17 +658,17 @@ expect:
                     </expansion>
                 </link>
                 <input>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="false" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexCacheMiss" FileId="1" FileOffset="0" NodeKind="1"/>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192" ExpandTime="1000" ReadTime="2000"/>
                     <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="0" ExpandTime="0"/>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="32768" ExpandTime="1000"/>
+                    <event type="IndexCacheHit" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="32768" ExpandTime="1000"/>
                     <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="32768"/>
                 </input>
                 <expect>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="false" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexCacheMiss" FileId="1" FileOffset="0" NodeKind="1"/>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192" ExpandTime="0" ReadTime="500"/>
                     <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="8192" ExpandTime="1000"/>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="8192" ExpandTime="0"/>
+                    <event type="IndexCacheHit" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192" ExpandTime="0"/>
                     <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192"/>
                 </expect>
             </test>
@@ -693,17 +692,17 @@ expect:
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8312" ExpandTime="14576" ReadTime="2000"/>
                     <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="0" ExpandTime="0"/>
                     <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8312"/>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="false" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexCacheMiss" FileId="1" FileOffset="0" NodeKind="1"/>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8312" ExpandTime="0" ReadTime="2000"/>
                     <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="33874" ExpandTime="14576"/>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="8312" ExpandTime="0"/>
+                    <event type="IndexCacheHit" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8312" ExpandTime="0"/>
                     <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8312"/>
                 </input>
                 <expect>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="false" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexCacheMiss" FileId="1" FileOffset="0" NodeKind="1"/>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8312" ExpandTime="0" ReadTime="500"/>
                     <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="33874" ExpandTime="14576"/>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="8312" ExpandTime="0"/>
+                    <event type="IndexCacheHit" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8312" ExpandTime="0"/>
                     <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8312"/>
                 </expect>
             </test>
