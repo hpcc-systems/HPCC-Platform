@@ -463,19 +463,11 @@ struct cDirDesc
 
     bool empty(unsigned drv)
     {
+        // NB: Thread-safety not required because called after directory scan
+        // completes, when structure is read-only and no longer being modified.
         // empty if no files, and all subdirs are empty
-        {
-            CriticalBlock block(filesCrit);
-            if (files.ordinality()!=0)
-                return false;
-        }
-        {
-            CriticalBlock block(dirDescCrit);
-            if (totalsize[drv]!=0)
-                return false;
-        }
-
-        CriticalBlock block(dirsCrit);
+        if ((files.ordinality()!=0)||(totalsize[drv]!=0))
+            return false;
         if (dirs.ordinality()==0)
             return true;
         unsigned i;
