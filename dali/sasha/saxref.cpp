@@ -249,9 +249,9 @@ struct cDirDesc
     unsigned hash;
     CMinHashTable<cDirDesc> dirs;
     CMinHashTable<cFileDesc> files;
-    mutable CriticalSection dirsCrit;
-    mutable CriticalSection filesCrit;
-    mutable CriticalSection dirDescCrit;
+    CriticalSection dirsCrit;
+    CriticalSection filesCrit;
+    CriticalSection dirDescCrit;
     offset_t totalsize[2];              //  across all nodes
     offset_t minsize[2];                //  smallest node size
     offset_t maxsize[2];                //  largest node size
