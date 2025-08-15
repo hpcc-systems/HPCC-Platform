@@ -2887,7 +2887,7 @@ actionStmt
                             // $$.setExpr(createValue(no_nothor, makeVoidType(), $5.getExpr()), $1);
                             IHqlExpression * action = $5.getExpr();
                             Linked<ITypeInfo> type = action->queryType();
-                            IHqlExpression * indep = createValue(no_independent, makeNullType(), createConstant("1")); // Should be something better than '1'
+                            IHqlExpression * indep = createValue(no_independent, makeNullType(), createConstant(ECL_AGENT_CLUSTER_NAME));
                             $$.setExpr(createValue(no_colon, type.getClear(), { action, indep }, true), $1);
                         }
     | EVALUATE '(' expression ',' actionStmt ')'
@@ -8455,7 +8455,7 @@ dataSet
                             // $$.setExpr(createDataset(no_nothor, $5.getExpr()), $1);
                             IHqlExpression * ds = $5.getExpr();
                             Linked<ITypeInfo> type = ds->queryType();
-                            IHqlExpression * indep = createValue(no_independent, makeNullType(), createConstant("1")); // Should be something better than '1'
+                            IHqlExpression * indep = createValue(no_independent, makeNullType(), createConstant(ECL_AGENT_CLUSTER_NAME));
                             $$.setExpr(createDataset(no_colon, { ds, indep }), $1);
                         }
     | EVALUATE '(' expression ',' dataSet ')'
