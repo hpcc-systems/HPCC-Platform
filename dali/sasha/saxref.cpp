@@ -1200,9 +1200,9 @@ public:
             numThreads = numMaxThreads;
         afor.For(numMaxThreads,numThreads,true,numThreads>1);
         if (afor.ok)
-            log("Directory scan complete");
+            uncondlog("Directory scan complete");
         else
-            log("Errors occurred during scan");
+            uncondlog("Errors occurred during scan");
         return afor.ok;
     }
 
@@ -1349,7 +1349,7 @@ public:
         } filescan(*this,abort);
 
         filescan.scan();
-        log("File scan complete");
+        uncondlog("File scan complete");
 
     }
 
@@ -1750,23 +1750,23 @@ public:
     void listOrphans(bool &abort,unsigned int recentCutoffDays)
     {   
         // also does directories
-        log("Scanning for orphans");
+        uncondlog("Scanning for orphans");
         StringBuffer basedir;
         StringBuffer scope;
         listOrphans(NULL,basedir,scope,abort,recentCutoffDays);
         if (abort)
             return;
-        log("Orphan scan complete");
+        uncondlog("Orphan scan complete");
         sorteddirs.sort(compareDirs);   // NB sort reverse
         while (!abort&&sorteddirs.ordinality())
             dirbranch->addPropTree("Directory",&sorteddirs.popGet());
-        log("Directories sorted");
+        uncondlog("Directories sorted");
     }
 
 
     void listLost(bool &abort,bool ignorelazylost,unsigned int recentCutoffDays)
     {
-        log("Scanning for lost files");
+        uncondlog("Scanning for lost files");
         StringBuffer tmp;
         ForEachItemIn(i0,lostfiles) {
             if (abort)
@@ -1906,7 +1906,7 @@ public:
                 lostbranch->addPropTree("File",ft.getClear());
             }
         }
-        log("Lost scan complete");
+        uncondlog("Lost scan complete");
     }
 
 
