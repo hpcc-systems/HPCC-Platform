@@ -48,6 +48,10 @@ protected:
         __uint64 evictedSize{0};
         __uint64 elapsed{0};
         __uint64 read{0};
+        __uint64 expandTime{0};
+        __uint64 payloads{0};
+        __uint64 payloadExpansions{0};
+        __uint64 payloadConsumption{0};
     };
     struct FileSummary
     {
