@@ -1062,7 +1062,7 @@ public:
     inline bool generateAsserts() const                     { return options.checkAsserts; }
     inline bool getCheckRoxieRestrictions() const           { return options.checkRoxieRestrictions; }
     inline bool queryFreezePersists() const                 { return options.freezePersists; }
-    inline bool checkIndexReadLimit() const                 { return options.warnOnImplicitReadLimit; }
+    inline bool checkIndexReadLimit() const                 { return isOptionOverridden("warnOnImplicitReadLimit") ? options.warnOnImplicitReadLimit : targetRoxie(); }
     inline unsigned getDefaultImplicitIndexReadLimit() const { return options.defaultImplicitIndexReadLimit; }
     inline bool queryCommonUpChildGraphs() const            { return options.commonUpChildGraphs; }
     inline bool insideLibrary() const                       { return outputLibraryId != NULL; }
@@ -1198,8 +1198,16 @@ public:
     }
 
     void setTargetClusterType(ClusterType clusterType);
+    ClusterType pushTargetClusterType(ClusterType clusterType);
+    ClusterType popTargetClusterType();
+    void saveTargetClusterTypes();
+    ClusterType restoreTargetClusterTypes();
     void ensureDiskAccessAllowed(IHqlExpression * expr);
     void checkAbort();
+    bool isOptionOverridden(const std::string &name) const
+    {
+        return std::find(overriddenDebugOptions.begin(), overriddenDebugOptions.end(), name) != overriddenDebugOptions.end();
+    }
 
 public:
     //various helper functions.
@@ -2104,7 +2112,8 @@ protected:
     unsigned            curCppFile;
     unsigned            maxWfid = 0;
     Linked<ICodegenContextCallback> ctxCallback;
-    std::vector<ClusterType> targetClusterTypes;
+    std::vector<ClusterType> targetClusterTypes; // There will always be at least one entry in this list; last entry is the current target
+    std::vector<ClusterType> savedClusterTypes;
     bool contextAvailable;
     unsigned maxSequence;
     unsigned librarySequence = LibraryBaseSequence;
@@ -2132,6 +2141,7 @@ protected:
     HqlExprArray        internalFunctionExternals;
     UniqueSequenceCounter spillSequence;
     std::vector<IHqlStmt *> metaPassStmts;
+    std::vector<std::string> overriddenDebugOptions;
     
 #ifdef SPOT_POTENTIAL_COMMON_ACTIVITIES
     LocationArray       savedActivityLocations;

@@ -144,7 +144,7 @@ IHqlExpression * getDebugValueExpr(IConstWorkUnit * wu, IHqlExpression * expr)
 struct GlobalAttributeInfo
 {
 public:
-    GlobalAttributeInfo(const char * _filePrefix, const char * _storedPrefix, IHqlExpression * _value) : value(_value), persistRefresh(true)
+    GlobalAttributeInfo(HqlCppTranslator & _translator, const char * _filePrefix, const char * _storedPrefix, IHqlExpression * _value) : value(_value), translator(_translator), persistRefresh(true)
     {
         setOp = no_none;
         persistOp = no_none;
@@ -156,7 +156,7 @@ public:
 
     void extractGlobal(IHqlExpression * global, ClusterType platform);
     void extractIndependent(ClusterType platform);
-    void extractStoredInfo(IHqlExpression * expr, const char * id, IHqlExpression * codehash, bool isRoxie, int multiplePersistInstances);
+    void extractStoredInfo(IHqlExpression * expr, const char * id, IHqlExpression * codehash, int multiplePersistInstances);
     void checkFew(HqlCppTranslator & translator);
     void splitGlobalDefinition(ITypeInfo * type, IHqlExpression * value, IConstWorkUnit * wu, SharedHqlExpr & setOutput, OwnedHqlExpr * getOutput, bool isRoxie);
     IHqlExpression * getStoredKey();
@@ -173,7 +173,7 @@ protected:
     IHqlExpression * queryAlias(IHqlExpression * value);
     IHqlExpression * queryFilename(IHqlExpression * value, IConstWorkUnit * wu, bool isRoxie);
     void splitSmallDataset(IHqlExpression * value, SharedHqlExpr & setOutput, OwnedHqlExpr * getOutput);
-    void setCluster(IHqlExpression * expr);
+    bool setCluster(IHqlExpression * expr);
 
 public:
     LinkedHqlExpr value;
@@ -191,6 +191,7 @@ protected:
     OwnedHqlExpr extraOutputAttr;
     OwnedHqlExpr codehash;
     StringBuffer label;
+    HqlCppTranslator & translator;
     const char * filePrefix;
     const char * storedPrefix;
     int numPersistInstances;
@@ -2495,6 +2496,12 @@ ThorHqlTransformer::ThorHqlTransformer(HqlCppTranslator & _translator, ClusterTy
 
 IHqlExpression * ThorHqlTransformer::createTransformed(IHqlExpression * expr)
 {
+    ClusterType savedTargetClusterType = targetClusterType;
+    if (expr->getOperator() == no_cluster)
+    {
+        IHqlExpression * clusterTypeExpr = expr->queryChild(2);
+        targetClusterType = static_cast<ClusterType>(clusterTypeExpr->queryValue()->getIntValue());
+    }
     OwnedHqlExpr transformed = PARENT::createTransformed(expr);
     updateOrphanedSelectors(transformed, expr);
 
@@ -2613,6 +2620,9 @@ IHqlExpression * ThorHqlTransformer::createTransformed(IHqlExpression * expr)
         transformed.setown(transform(normalized));
         normalized->Release();
     }
+
+    // Restore saved cluster type
+    targetClusterType = savedTargetClusterType;
 
 /*
     //Has a minor impact on unnecessary local attributes
@@ -5666,10 +5676,14 @@ IHqlExpression * GlobalAttributeInfo::getStoredKey()
     return createAttribute(nameAtom, LINK(sequence), getLowerCaseConstantExpr(originalLabel));
 }
 
-void GlobalAttributeInfo::setCluster(IHqlExpression * expr)
+bool GlobalAttributeInfo::setCluster(IHqlExpression * expr)
 {
     if (expr && !isBlankString(expr))
+    {
         cluster.set(expr);
+        return true;
+    }
+    return false;
 }
 
 void GlobalAttributeInfo::extractGlobal(IHqlExpression * global, ClusterType platform)
@@ -5695,10 +5709,10 @@ void GlobalAttributeInfo::extractIndependent(ClusterType platform)
     persistOp = no_independent;
 }
 
-void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, const char * id, IHqlExpression * _codehash, bool isRoxie, int multiplePersistInstances)
+void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, const char * id, IHqlExpression * _codehash, int multiplePersistInstances)
 {
     node_operator op = expr->getOperator();
-    few = expr->hasAttribute(fewAtom) || (isRoxie) || (value->isDictionary() && !expr->hasAttribute(manyAtom));
+    few = expr->hasAttribute(fewAtom) || (translator.targetRoxie()) || (value->isDictionary() && !expr->hasAttribute(manyAtom));
 
     getUTF8Value(label, queryAttributeChild(expr, labelAtom, 0), nullptr);
     switch (op)
@@ -5759,7 +5773,15 @@ void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, const char * 
         storedName.clear();
         sequence.setown(getLocalSequenceNumber());
         extraSetAttr.setown(createAttribute(_workflow_Atom));
-        setCluster(queryRealChild(expr, 0));
+        if (setCluster(queryRealChild(expr, 0)))
+        {
+            StringBuffer clusterName;
+            getStringValue(clusterName, queryRealChild(expr, 0));
+            if (strsame(clusterName.str(), ECL_AGENT_CLUSTER_NAME))
+                translator.pushTargetClusterType(HThorCluster);
+            else
+                translator.pushTargetClusterType(ThorLCRCluster);
+        }
         break;
     case no_once:
         setOp = no_setresult;
@@ -6190,7 +6212,6 @@ WorkflowTransformer::WorkflowTransformer(IWorkUnit * _wu, HqlCppTranslator & _tr
     expandPersistInputDependencies = options.expandPersistInputDependencies;
     multiplePersistInstances = options.multiplePersistInstances ? options.defaultNumPersistInstances : 0;
     isRootAction = true;
-    isRoxie = (translator.getTargetClusterType() == RoxieCluster);
     isConditional = false;
     insideStored = false;
     activeWfid = 0;
@@ -6316,7 +6337,7 @@ unsigned WorkflowTransformer::ensureWorkflowAction(IHqlExpression * expr)
 
 unsigned WorkflowTransformer::splitValue(IHqlExpression * value)
 {
-    GlobalAttributeInfo info("jobtemp::wf", "wf", value);
+    GlobalAttributeInfo info(translator, "jobtemp::wf", "wf", value);
     info.sequence.setown(getLocalSequenceNumber());
     info.setOp = no_setresult;
     info.persistOp = no_global;
@@ -6391,7 +6412,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
     if (translator.queryOptions().preserveWhenSequential)
         value.setown(transformSequentialEtc(value));
 
-    GlobalAttributeInfo info("jobtemp::wf", "wf", value);
+    GlobalAttributeInfo info(translator, "jobtemp::wf", "wf", value);
     info.sequence.setown(getLocalSequenceNumber());
     OwnedHqlExpr scheduleActions;
 
@@ -6417,7 +6438,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
         case no_persist:
         case no_checkpoint:
         case no_stored:
-            info.extractStoredInfo(&cur, id, codehash, isRoxie, multiplePersistInstances);
+            info.extractStoredInfo(&cur, id, codehash, multiplePersistInstances);
 
             OwnedHqlExpr id = info.getStoredKey();
             unsigned match = alreadyProcessed.find(*id);
@@ -6471,7 +6492,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
         switch (curOp)
         {
         case no_persist:
-            if (isRoxie)
+            if (isRoxie())
             {
                 // MORE - Add dynamic attribute to ensure the file is not pre-resolved
             }
@@ -6480,7 +6501,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
         case no_checkpoint:
         case no_stored:
             {
-                info.extractStoredInfo(&cur, id, codehash, isRoxie, multiplePersistInstances);
+                info.extractStoredInfo(&cur, id, codehash, multiplePersistInstances);
 
                 OwnedHqlExpr id = info.getStoredKey();
                 alreadyProcessed.append(*id.getClear());
@@ -6490,14 +6511,14 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
             break;
         case no_independent:
         case no_once:
-            info.extractStoredInfo(&cur, id, codehash, isRoxie, multiplePersistInstances);
+            info.extractStoredInfo(&cur, id, codehash, multiplePersistInstances);
             break;
         case no_success:
             {
                 OwnedHqlExpr successExpr = transformSequentialEtc(cur.queryChild(0));
                 conts.success = splitValue(successExpr);
                 Owned<IWorkflowItem> wf = addWorkflowContingencyToWorkunit(conts.success, WFTypeSuccess, WFModeNormal, queryDirectDependencies(successExpr), NULL, wfid, info.queryLabel());
-                info.extractStoredInfo(&cur, id, codehash, isRoxie, multiplePersistInstances);
+                info.extractStoredInfo(&cur, id, codehash, multiplePersistInstances);
                 break;
             }
         case no_failure:
@@ -6505,7 +6526,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
                 OwnedHqlExpr failureExpr = transformSequentialEtc(cur.queryChild(0));
                 conts.failure = splitValue(failureExpr);
                 Owned<IWorkflowItem> wf = addWorkflowContingencyToWorkunit(conts.failure, WFTypeFailure, WFModeNormal, queryDirectDependencies(failureExpr), NULL, wfid, info.queryLabel());
-                info.extractStoredInfo(&cur, id, codehash, isRoxie, multiplePersistInstances);
+                info.extractStoredInfo(&cur, id, codehash, multiplePersistInstances);
                 break;
             }
         case no_recovery:
@@ -6513,7 +6534,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
                 conts.recovery = splitValue(cur.queryChild(0));
                 conts.retries = (unsigned)getIntValue(cur.queryChild(1), 0);
                 Owned<IWorkflowItem> wf = addWorkflowContingencyToWorkunit(conts.recovery, WFTypeRecovery, WFModeNormal, queryDirectDependencies(cur.queryChild(0)), NULL, wfid, info.queryLabel());
-                info.extractStoredInfo(&cur, id, codehash, isRoxie, multiplePersistInstances);
+                info.extractStoredInfo(&cur, id, codehash, multiplePersistInstances);
                 break;
             }
         case no_attr:
@@ -6565,7 +6586,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
         assertex(!sched.independent);           // should have been enforced by the tree normalization
         ITypeInfo * type = expr->queryType();
         info.checkFew(translator);
-        info.splitGlobalDefinition(type, value, wu, setValue, &getValue, isRoxie);
+        info.splitGlobalDefinition(type, value, wu, setValue, &getValue, isRoxie());
         copySetValueDependencies(queryBodyExtra(value), setValue);
     }
     else
@@ -6681,7 +6702,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
         {
             if (info.queryCluster())
             {
-                OwnedHqlExpr cluster = createValue(no_cluster, makeVoidType(), LINK(setValue), LINK(info.queryCluster()));
+                OwnedHqlExpr cluster = createValue(no_cluster, makeVoidType(), LINK(setValue), LINK(info.queryCluster()), createConstant((__int64)translator.getTargetClusterType()));
                 inheritDependencies(cluster);
                 setValue.set(cluster);
             }
@@ -6749,14 +6770,14 @@ IHqlExpression * WorkflowTransformer::extractCommonWorkflow(IHqlExpression * exp
         DBGLOG("%s", s.str());
     translator.addWorkunitException(SeverityInformation, 0, s.str(), location);
 
-    GlobalAttributeInfo info("jobtemp::wfa", "wfa", transformed);
+    GlobalAttributeInfo info(translator, "jobtemp::wfa", "wfa", transformed);
     info.extractIndependent(translator.getTargetClusterType());       // should really be a slightly different function
 
     OwnedHqlExpr setValue;
     OwnedHqlExpr getValue;
     ContingencyData conts;
     WorkflowTransformInfo * transformedExtra = queryBodyExtra(transformed);
-    info.splitGlobalDefinition(transformed->queryType(), transformed, wu, setValue, &getValue, isRoxie);
+    info.splitGlobalDefinition(transformed->queryType(), transformed, wu, setValue, &getValue, isRoxie());
     copySetValueDependencies(transformedExtra, setValue);
 
     Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(setValue), conts, NULL, info.queryLabel());
@@ -7535,10 +7556,15 @@ void WorkflowTransformer::transformRoot(const HqlExprArray & in, WorkflowArray &
     WorkflowTransformInfo globalInfo(NULL);
     ForEachItemIn(idx, in)
     {
+        translator.saveTargetClusterTypes();
         OwnedHqlExpr ret = transform(&in.item(idx));
         copyDependencies(queryBodyExtra(ret), &globalInfo);
         if ((ret->getOperator() != no_null) || queryBodyExtra(ret)->queryDependencies().ordinality())
+        {
+            // ClusterType currentCluster = translator.getTargetClusterType();
             transformed.append(*ret.getClear());
+        }
+        translator.restoreTargetClusterTypes();
     }
 
     if (trivialStoredExprs.length())
@@ -8322,7 +8348,6 @@ ExplicitGlobalTransformer::ExplicitGlobalTransformer(IWorkUnit * _wu, HqlCppTran
 : HoistingHqlTransformer(explicitGlobalTransformerInfo, CTFnoteifactions|CTFtraverseallnodes), translator(_translator)
 {
     wu = _wu;
-    isRoxie = (translator.getTargetClusterType() == RoxieCluster);
     seenGlobalScope = false;
     seenLocalGlobalScope = false;
 }
@@ -8409,14 +8434,14 @@ IHqlExpression * ExplicitGlobalTransformer::createTransformed(IHqlExpression * e
                 }
                 else
                 {
-                    GlobalAttributeInfo info("jobtemp::global","gl", transformed);
+                    GlobalAttributeInfo info(translator, "jobtemp::global","gl", transformed);
                     if (op == no_nothor)
                         info.extractGlobal(NULL, RoxieCluster);
                     else
                         info.extractGlobal(transformed, translator.getTargetClusterType());
                     OwnedHqlExpr getResult, setResult;
                     info.checkFew(translator);
-                    info.splitGlobalDefinition(transformed->queryType(), value, wu, setResult, &getResult, isRoxie);
+                    info.splitGlobalDefinition(transformed->queryType(), value, wu, setResult, &getResult, isRoxie());
                     if (op == no_nothor)
                         setResult.setown(createValue(no_nothor, makeVoidType(), LINK(setResult)));
                     IHqlExpression * cluster = queryRealChild(transformed, 1);
@@ -8557,8 +8582,7 @@ NewScopeMigrateTransformer::NewScopeMigrateTransformer(IWorkUnit * _wu, HqlCppTr
 : HoistingHqlTransformer(newScopeMigrateTransformerInfo, CTFnone), translator(_translator)
 {
     wu = _wu;
-    isRoxie = translator.targetRoxie();
-    if (!isRoxie && !_translator.queryOptions().resourceConditionalActions)
+    if (!isRoxie() && !_translator.queryOptions().resourceConditionalActions)
         setFlags(CTFnoteifactions);
     minimizeWorkunitTemporaries = translator.queryOptions().minimizeWorkunitTemporaries;
 #ifdef REMOVE_GLOBAL_ANNOTATION
@@ -8864,7 +8888,6 @@ AutoScopeMigrateTransformer::AutoScopeMigrateTransformer(IWorkUnit * _wu, HqlCpp
 : HoistingHqlTransformer(autoScopeMigrateTransformerInfo, CTFnone), translator(_translator)
 {
     wu = _wu;
-    isRoxie = (translator.getTargetClusterType() == RoxieCluster);
     isConditional = false;
     isSequential = false;
     hasCandidate = false;
@@ -9090,13 +9113,13 @@ IHqlExpression * AutoScopeMigrateTransformer::createTransformed(IHqlExpression *
             translator.reportWarning(CategoryEfficiency, SeverityIgnore, queryActiveLocation(expr), HQLWRN_GlobalDatasetFromChildQuery, HQLWRN_GlobalDatasetFromChildQuery_Text, nameText.str());
         }
 
-        GlobalAttributeInfo info("jobtemp::auto","auto", transformed);
+        GlobalAttributeInfo info(translator, "jobtemp::auto","auto", transformed);
         info.extractGlobal(NULL, translator.getTargetClusterType());
         if (translator.targetThor() && extra->globalInsideChild)
             info.preventDiskSpill();
         OwnedHqlExpr getResult, setResult;
         info.checkFew(translator);
-        info.splitGlobalDefinition(transformed->queryType(), transformed, wu, setResult, &getResult, isRoxie);
+        info.splitGlobalDefinition(transformed->queryType(), transformed, wu, setResult, &getResult, isRoxie());
 
         //If the first use is conditional, then hoist the expression globally (it can't have any dependents)
         //else hoist it within the current graph, otherwise it can get hoisted before globals on datasets that
@@ -14507,7 +14530,7 @@ void HqlCppTranslator::transformWorkflowItem(WorkflowItem & curWorkflow)
     checkNormalized(curWorkflow);
     //sort(x)[n] -> topn(x, n)[]n, count(x)>n -> count(choosen(x,n+1)) > n and possibly others
     {
-        optimizeActivities(curWorkflow.queryWfid(), curWorkflow.queryExprs(), !targetThor(), options.optimizeNonEmpty);
+        optimizeActivities(curWorkflow.queryWfid(), curWorkflow.queryExprs(), !targetThor(), isOptionOverridden("optimizeNonEmpty") ? options.optimizeNonEmpty : !targetThor());
     }
     checkNormalized(curWorkflow);
 

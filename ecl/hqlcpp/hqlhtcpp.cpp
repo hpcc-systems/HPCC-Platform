@@ -7324,7 +7324,8 @@ ABoundActivity * HqlCppTranslator::buildCachedActivity(BuildCtx & ctx, IHqlExpre
         }
     case no_if:
         {
-            if (options.recreateMapFromIf && !expr->isAction())
+            bool recreateMapFromIf = (isOptionOverridden("recreateMapFromIf") ? options.recreateMapFromIf : !targetThor());
+            if (recreateMapFromIf && !expr->isAction())
             {
                 OwnedHqlExpr converted = combineIfsToMap(expr);
                 if (converted)
@@ -9416,9 +9417,18 @@ void HqlCppTranslator::doBuildStmtAssert(BuildCtx & ctx, IHqlExpression * expr)
 
 void HqlCppTranslator::doBuildStmtCluster(BuildCtx & ctx, IHqlExpression * expr)
 {
-    pushCluster(ctx, expr->queryChild(1));
+    IHqlExpression * clusterTypeExpr = expr->queryChild(2);
+    pushTargetClusterType(static_cast<ClusterType>(clusterTypeExpr->queryValue()->getIntValue()));
+
+    if (!targetHThor())
+        pushCluster(ctx, expr->queryChild(1));
+    
     buildStmt(ctx, expr->queryChild(0));
-    popCluster(ctx);
+    
+    if (!targetHThor())
+        popCluster(ctx);
+
+    popTargetClusterType();
 }
 
 //---------------------------------------------------------------------------
@@ -10402,6 +10412,12 @@ void HqlCppTranslator::buildClusterHelper(BuildCtx & ctx, IHqlExpression * expr)
 {
     IHqlExpression * cluster = expr->queryAttribute(clusterAtom);
     if (!cluster)
+        return;
+    
+    // Don't proceed if the cluster is actually citing the eclagent process
+    StringBuffer clusterName;
+    getStringValue(clusterName, cluster->queryChild(0));
+    if (strisame(clusterName.str(), ECL_AGENT_CLUSTER_NAME))
         return;
 
     MemberFunction func(*this, ctx, "virtual const char * getCluster(unsigned idx) override");
@@ -12578,7 +12594,8 @@ void HqlCppTranslator::doBuildJoinRowLimitHelper(ActivityInstance & instance, IH
     {
         OwnedHqlExpr implicitLimit = getSizetConstant(options.defaultImplicitKeyedJoinLimit);
         doBuildUnsignedFunction(instance.startctx, "getMatchAbortLimit", implicitLimit);
-        if (options.warnOnImplicitJoinLimit)
+        bool warnOnImplicitJoinLimit = (isOptionOverridden("warnOnImplicitJoinLimit") ? options.warnOnImplicitJoinLimit : targetRoxie());
+        if (warnOnImplicitJoinLimit)
         {
             StringBuffer fname;
             if (filename)
@@ -18709,7 +18726,8 @@ IHqlExpression * HqlCppTranslator::doBuildRegexCompileInstance(BuildCtx & ctx, I
     if (pattern->isConstant())
     {
         //defaultStaticRegex means regexes are generated globally rather than within an activity.  allowStaticRegex allows the feature to be disabled.
-        if ((options.defaultStaticRegex && options.allowStaticRegex) || !getInvariantMemberContext(ctx, &declareCtx, &initCtx, true, false))
+        bool defaultStaticRegex = (isOptionOverridden("defaultStaticRegex") ? options.defaultStaticRegex : targetRoxie());
+        if ((defaultStaticRegex && options.allowStaticRegex) || !getInvariantMemberContext(ctx, &declareCtx, &initCtx, true, false))
         {
             if (options.allowStaticRegex)
             {
