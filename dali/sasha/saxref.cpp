@@ -244,6 +244,23 @@ struct cFileDesc // no virtuals
 };
 
 
+// Parses directory name to determine if it is a dir-per-part directory
+// Returns the name converted to a number if possible, otherwise 0
+static unsigned getDirPerPartNum(const char *name)
+{
+    unsigned num = 0;
+    while (*name)
+    {
+        if (isdigit(*name))
+            num = num * 10 + (*name - '0');
+        else
+            return 0;
+        name++;
+    }
+    return num;
+}
+
+
 struct cDirDesc
 {
     unsigned hash;
@@ -482,25 +499,6 @@ struct cMessage: public CInterface
 };
 
 
-// Parses cDirDesc name to determine if it is a dir-per-part directory
-// Returns the name converted to a number if possible, otherwise 0
-static unsigned getDirPerPartNum(cDirDesc *dir)
-{
-    StringBuffer dirName;
-    dir->getName(dirName);
-    const char *name = dirName.str();
-    unsigned num = 0;
-    while (*name)
-    {
-        if (isdigit(*name))
-            num = num * 10 + (*name - '0');
-        else
-            return 0;
-        name++;
-    }
-    return num;
-}
-
 // A found file that has a dir-per-part directory will have multiple cFileDesc entries in each of the dir-per-part
 // cDirDescs. For found files, we do not know if it is a dir-per-part file since there is no metadata. We only merge
 // cFileDescs where only a single file was marked present, and we find matching files in the dir-per-part directories.
@@ -512,7 +510,9 @@ static void mergeDirPerPartDirs(cDirDesc *parent, cDirDesc *dir, const char *cur
         return;
 
     // Check if dir name is a number
-    unsigned dirPerPartNum = getDirPerPartNum(dir);
+    StringBuffer dirName;
+    dir->getName(dirName);
+    unsigned dirPerPartNum = getDirPerPartNum(dirName.str());
     if (dirPerPartNum == 0)
         return;
 
