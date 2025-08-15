@@ -372,12 +372,44 @@ struct cDirDesc
         return fn;
     }
 
-    bool isMisplaced(unsigned partNum, unsigned numParts, const SocketEndpoint &ep, IGroup &grp)
+    bool isMisplaced(unsigned partNum, unsigned numParts, const SocketEndpoint &ep, IGroup &grp, const char *name, const char *scope, unsigned stripeNum, unsigned numStripedDevices)
     {
-        // MORE: Add better check for misplaced in Containerized
-        // If plane being scanned is host based (i.e. not locally mounted), misplaced could still make sense
         if (isContainerized())
-            return false;
+        {
+            // Remove dir-per-part from scope for hashing filename and comparing to part number
+            unsigned dirPerPartNum = 0;
+            const char *lastScope = nullptr;
+            StringBuffer scopeBuf(scope);
+            if (scopeBuf.length())
+            {
+                lastScope = strrchr(scope, ':');
+                if (!lastScope)
+                    lastScope = scope;
+                else
+                    lastScope++;
+                dirPerPartNum = getDirPerPartNum(lastScope);
+            }
+            if (numStripedDevices>1)
+            {
+                if (dirPerPartNum !=0 && dirPerPartNum <= numParts)
+                    scopeBuf.setLength(lastScope - scope);
+                else
+                    scopeBuf.append("::");
+                // Remove file mask from filename for hashing
+                const char *ext = strrchr(name,'.');
+                if (!ext)
+                    ext = name + strlen(name);
+                unsigned lfnHash = getFilenameHash(scopeBuf.append(ext-name,name).str());
+                if ((stripeNum>numStripedDevices)||(stripeNum<1))
+                    return true;
+                if (calcStripeNumber(partNum, lfnHash, numStripedDevices)!=stripeNum)
+                    return true;
+            }
+            else if (numParts!=grp.ordinality() || partNum>=grp.ordinality() || !grp.queryNode(partNum).endpoint().equals(ep))
+                return true;
+
+            return dirPerPartNum==0 || partNum!=(dirPerPartNum-1);
+        }
 
         return numParts!=grp.ordinality() || partNum>=grp.ordinality() || !grp.queryNode(partNum).endpoint().equals(ep);
     }
@@ -390,7 +422,7 @@ struct cDirDesc
         unsigned filenameLen; // length of file name excluding extension i.e. ._$P$_of_$N$
         StringAttr mask;
         const char *fn = decodeName(drv,name,node,numnodes,mask,pf,nf,filenameLen);
-        bool misplaced = isMisplaced(pf, nf, ep, grp);
+        bool misplaced = isMisplaced(pf, nf, ep, grp, name, scope, stripeNum, numStripedDevices);
         cFileDesc *file = files.find(fn,false);
         if (!file) {
             if (!mem)
