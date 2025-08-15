@@ -462,8 +462,8 @@ struct cDirDesc
         unsigned filenameLen;
         StringAttr mask;
         const char *fn = decodeName(drv,name,node,numnodes,mask,pf,nf,filenameLen);
-        // TODO: Add better check for misplaced in isContainerized
-        // If plane being scanned is host based (i.e. not locally mounted), misplaced could still make sense
+        // NB: markFile is only called on files found from logical file metadata. Cannot check if file was striped
+        // to correct location since processFiles only checks the expected location.
         bool misplaced = !isContainerized() && (nf!=grp.ordinality() || pf>=grp.ordinality() || !grp.queryNode(pf).endpoint().equals(ep));
         cFileDesc *file = files.find(fn,false);
         if (file) {
