@@ -585,6 +585,13 @@ public:
     unsigned lastlog;
     unsigned sfnum;
     unsigned fnum;
+
+    // Heartbeat mechanism for long-running directory scans
+    CriticalSection heartbeatSect;
+    time_t heartbeatStartTime;
+    time_t lastHeartbeat;
+    unsigned heartbeatInterval;  // in seconds
+    unsigned heartbeatCount;
     Owned<IPropertyTree> foundbranch;
     Owned<IPropertyTree> lostbranch;
     Owned<IPropertyTree> orphansbranch;
@@ -671,6 +678,61 @@ public:
 
     }
 
+    void startHeartbeat(const char * op)
+    {
+        CriticalBlock block(heartbeatSect);
+        time(&heartbeatStartTime);
+        lastHeartbeat = heartbeatStartTime;
+        heartbeatInterval = 60; // Start with 1 minute (in seconds)
+        heartbeatCount = 0;
+        uncondlog("%s heartbeat started (interval: 1 minute)", op);
+    }
+
+    void checkHeartbeat(const char * op)
+    {
+        CriticalBlock block(heartbeatSect);
+        time_t now = time(NULL);
+
+        if ((now - lastHeartbeat) >= heartbeatInterval) {
+            unsigned elapsedMinutes = (unsigned)(now - heartbeatStartTime) / 60;
+            unsigned elapsedHours = elapsedMinutes / 60;
+            unsigned remainingMinutes = elapsedMinutes % 60;
+
+            heartbeatCount++;
+
+            // Format UTC timestamp directly from time_t
+            struct tm *utc_tm = gmtime(&now);
+            char timestamp[32];
+            strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", utc_tm);
+
+            if (elapsedHours > 0) {
+                log("%s - elapsed: %uh %um (%s UTC)", op, elapsedHours, remainingMinutes, timestamp);
+            } else {
+                log("%s - elapsed: %um (%s UTC)", op, elapsedMinutes, timestamp);
+            }
+
+            if (heartbeatCount > 1) {
+                unsigned logCount = 0;
+                unsigned tmp = heartbeatCount;
+                while (tmp > 1) {
+                    tmp >>= 1;
+                    logCount++;
+                }
+                unsigned newInterval = 60 * (1 << logCount);
+                if (newInterval > 3600) {
+                    newInterval = 3600; // Cap at 1 hour
+                }
+                if (newInterval > heartbeatInterval) {
+                    heartbeatInterval = newInterval;
+                    unsigned intervalMinutes = heartbeatInterval / 60;
+                    DBGLOG("Heartbeat interval increased to %u minute%s", intervalMinutes, intervalMinutes > 1 ? "s" : "");
+                }
+            }
+
+            lastHeartbeat = now;
+        }
+    }
+
     void addBranch(IPropertyTree *root,const char *name,IPropertyTree *branch)
     {
         if (!branch)
@@ -686,6 +748,10 @@ public:
         lastlog = 0;
         sfnum = 0;
         fnum = 0;
+        heartbeatStartTime = 0;
+        lastHeartbeat = 0;
+        heartbeatInterval = 60; // Start with 1 minute (in seconds)
+        heartbeatCount = 0;
     }
 
     void start(bool updateeclwatch,const char *clname)
@@ -1025,6 +1091,7 @@ public:
 
     bool scanDirectory(unsigned node,const SocketEndpoint &ep,StringBuffer &path, unsigned drv, cDirDesc *pdir, IFile *cachefile, unsigned level)
     {
+        checkHeartbeat("Directory scan");
         size32_t dsz = path.length();
         if (pdir==NULL) 
             pdir = root;
@@ -1198,6 +1265,7 @@ public:
             numMaxThreads = numuniqnodes;
         if (numThreads > numMaxThreads)
             numThreads = numMaxThreads;
+        startHeartbeat("Directory scan"); // Initialize heartbeat mechanism
         afor.For(numMaxThreads,numThreads,true,numThreads>1);
         if (afor.ok)
             uncondlog("Directory scan complete");
@@ -1683,6 +1751,7 @@ public:
 
     void listOrphans(cDirDesc *d,StringBuffer &basedir,StringBuffer &scope,bool &abort,unsigned int recentCutoffDays)
     {
+        checkHeartbeat("Orphan scan");
         if (abort)
             return;
         if (!d) {
@@ -1751,6 +1820,7 @@ public:
     {   
         // also does directories
         uncondlog("Scanning for orphans");
+        startHeartbeat("Orphan scan");
         StringBuffer basedir;
         StringBuffer scope;
         listOrphans(NULL,basedir,scope,abort,recentCutoffDays);
