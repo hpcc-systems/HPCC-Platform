@@ -592,33 +592,34 @@ public:
 
     void log(const char * format, ...) __attribute__((format(printf, 2, 3)))
     {
-        CriticalBlock block(logsect);
         va_list args;
         va_start(args, format);
         StringBuffer line;
         line.valist_appendf(format, args);
         va_end(args);
-        if (clustname.get())
-            PROGLOG(LOGPFX "[%s] %s",clustname.get(),line.str());
-        else
-            PROGLOG(LOGPFX "%s",line.str());
-        if (logconn) {
-            logcache.set(line.str());
-            updateStatus(false);
-        }
+        doLog(line, false);
     }
 
-    void statlog(const char * format, ...) __attribute__((format(printf, 2, 3)))
+    void uncondlog(const char * format, ...) __attribute__((format(printf, 2, 3)))
     {
-        CriticalBlock block(logsect);
         va_list args;
         va_start(args, format);
         StringBuffer line;
         line.valist_appendf(format, args);
         va_end(args);
+        doLog(line, true);
+    }
+
+    void doLog(const char * line, bool uncond)
+    {
+        CriticalBlock block(logsect);
+        if (clustname.get())
+            PROGLOG(LOGPFX "[%s] %s",clustname.get(),line);
+        else
+            PROGLOG(LOGPFX "%s",line);
         if (logconn) {
-            logcache.set(line.str());
-            updateStatus(false);
+            logcache.set(line);
+            updateStatus(uncond);
         }
     }
 
