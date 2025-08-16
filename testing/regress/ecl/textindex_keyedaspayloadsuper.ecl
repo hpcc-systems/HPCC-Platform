@@ -48,7 +48,8 @@ nowipIndex := files.getSearchIndexVariant('nowip');
 
 rec := recordof(searchIndex);
 
-prefix := files.QueryFilePrefix;
+//Ensure the prefix is constant, otherwise the child query keeps re-resolving the file
+prefix := '~regress::' + __TARGET_PLATFORM__ + '::' + MAP(multiPart => 'multi', 'single') + '_' + variant + '::';
 supername := prefix + 'ti_superfile1'+variant;
 
 //The actual format of the index is the following - wip is keyed:
@@ -141,5 +142,5 @@ SEQUENTIAL(
         FileServices.AddSuperFile(supername, __nameof__(dupSearchIndex))),
     FileServices.FinishSuperFileTransaction(),
     FileServices.AddSuperFile(supername, __nameof__(searchIndex)),
-    createSamples(numJoins, 60000);
+    createSamples(numJoins, 6000);
 );

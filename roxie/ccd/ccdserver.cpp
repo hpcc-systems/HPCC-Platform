@@ -24063,6 +24063,7 @@ public:
             EOFseen = false;
             keySet.setown(createKeyIndexSet());
             keySet->addIndex(LINK(key));
+            throwUnexpected();
             if (owner.seekGEOffset)
                 tlk.setown(createKeyMerger(trans->querySourceMeta(), keySet, owner.seekGEOffset, &owner, owner.indexHelper.hasNewSegmentMonitors(), !owner.isBlind()));
             else

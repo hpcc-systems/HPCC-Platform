@@ -419,7 +419,8 @@ bool CHThorIndexReadActivityBase::doPreopenLimitFile(unsigned __int64 & count, u
         {
             Owned<IKeyIndex> tlk = openKeyFile(df->queryPart(num));
             verifyIndex(tlk);
-            Owned<IKeyManager> tlman = createLocalKeyManager(layoutTrans->querySourceMeta(), tlk, &contextLogger, helper.hasNewSegmentMonitors(), false);
+            const RtlRecord & actualRecInfo = layoutTrans ? layoutTrans->querySourceMeta() : eclKeySize.queryRecordAccessor(true);
+            Owned<IKeyManager> tlman = createLocalKeyManager(actualRecInfo, tlk, &contextLogger, helper.hasNewSegmentMonitors(), false);
             initManager(tlman, true);
             while(tlman->lookup(false) && (count<=limit))
             {
@@ -455,7 +456,8 @@ IKeyIndex * CHThorIndexReadActivityBase::doPreopenLimitPart(unsigned __int64 & r
         verifyIndex(kidx);
     if (limit != (unsigned) -1)
     {
-        Owned<IKeyManager> kman = createLocalKeyManager(layoutTrans->querySourceMeta(), kidx, &contextLogger, helper.hasNewSegmentMonitors(), false);
+        const RtlRecord & actualRecInfo = layoutTrans ? layoutTrans->querySourceMeta() : eclKeySize.queryRecordAccessor(true);
+        Owned<IKeyManager> kman = createLocalKeyManager(actualRecInfo, kidx, &contextLogger, helper.hasNewSegmentMonitors(), false);
         initManager(kman, false);
         result += kman->checkCount(limit-result);
     }
@@ -557,7 +559,8 @@ void CHThorIndexReadActivityBase::initManager(IKeyManager *manager, bool isTlk)
 void CHThorIndexReadActivityBase::initPart()
 {
     assertex(!keyIndex->isTopLevelKey());
-    klManager.setown(createLocalKeyManager(layoutTrans->querySourceMeta(), keyIndex, &contextLogger, helper.hasNewSegmentMonitors(), false));
+    const RtlRecord & actualRecInfo = layoutTrans ? layoutTrans->querySourceMeta() : eclKeySize.queryRecordAccessor(true);
+    klManager.setown(createLocalKeyManager(actualRecInfo, keyIndex, &contextLogger, helper.hasNewSegmentMonitors(), false));
     initManager(klManager, false);
     callback.setManager(klManager, nullptr);
 }
@@ -591,7 +594,8 @@ bool CHThorIndexReadActivityBase::firstMultiPart()
     if(!tlk)
         openTlk();
     verifyIndex(tlk);
-    tlManager.setown(createLocalKeyManager(layoutTrans->querySourceMeta(), tlk, &contextLogger, helper.hasNewSegmentMonitors(), false));
+    const RtlRecord & actualRecInfo = layoutTrans ? layoutTrans->querySourceMeta() : eclKeySize.queryRecordAccessor(true);
+    tlManager.setown(createLocalKeyManager(actualRecInfo, tlk, &contextLogger, helper.hasNewSegmentMonitors(), false));
     initManager(tlManager, true);
     nextPartNumber = 0;
     return nextMultiPart();
@@ -844,6 +848,7 @@ bool CHThorIndexReadActivity::nextPart()
     if(keyIndexCache && (seekGEOffset || localSortKey))
     {
         killPart();
+        //MORE: Not sure about this...
         klManager.setown(createKeyMerger(eclKeySize.queryRecordAccessor(true), keyIndexCache, seekGEOffset, NULL, helper.hasNewSegmentMonitors(), false));
         keyIndexCache.clear();
         initManager(klManager, false);
@@ -3171,7 +3176,8 @@ public:
             //Owned<IRecordLayoutTranslator> 
             trans.setown(owner.getLayoutTranslator(&f));
             owner.verifyIndex(&f, index, trans);
-            Owned<IKeyManager> manager = createLocalKeyManager(trans->querySourceMeta(), index, &contextLogger, owner.hasNewSegmentMonitors(), false);
+            const RtlRecord & actualRecInfo = trans ? trans->querySourceMeta() : owner.queryIndexRecord();
+            Owned<IKeyManager> manager = createLocalKeyManager(actualRecInfo, index, &contextLogger, owner.hasNewSegmentMonitors(), false);
             managers.append(*manager.getLink());
         }
         opened = true;
@@ -3211,7 +3217,8 @@ void KeyedLookupPartHandler::openPart()
         return;
     Owned<IKeyIndex> index = openKeyFile(*part);
     const IDynamicTransform * trans = tlk->queryRecordLayoutTranslator();
-    manager.setown(createLocalKeyManager(trans->querySourceMeta(), index, &contextLogger, owner.hasNewSegmentMonitors(), false));
+    const RtlRecord & actualRecInfo = trans ? trans->querySourceMeta() : owner.queryIndexRecord();
+    manager.setown(createLocalKeyManager(actualRecInfo, index, &contextLogger, owner.hasNewSegmentMonitors(), false));
     if(trans && !index->isTopLevelKey())
         manager->setLayoutTranslator(trans);
 }
@@ -3291,7 +3298,8 @@ public:
             {
                 Owned<IKeyIndex> index = openKeyFile(f.queryPart(0));
                 owner.verifyIndex(&f, index, trans);
-                manager.setown(createLocalKeyManager(trans->querySourceMeta(), index, &contextLogger, owner.hasNewSegmentMonitors(), false));
+                const RtlRecord & actualRecInfo = trans ? trans->querySourceMeta() : owner.queryIndexRecord();
+                manager.setown(createLocalKeyManager(actualRecInfo, index, &contextLogger, owner.hasNewSegmentMonitors(), false));
             }
             else
             {
@@ -3304,7 +3312,8 @@ public:
                     parts->addIndex(index.getLink());
                 }
                 owner.verifyIndex(&f, index, trans);
-                manager.setown(createKeyMerger(trans->querySourceMeta(), parts, 0, &contextLogger, owner.hasNewSegmentMonitors(), false));
+                const RtlRecord & actualRecInfo = trans ? trans->querySourceMeta() : owner.queryIndexRecord();
+                manager.setown(createKeyMerger(actualRecInfo, parts, 0, &contextLogger, owner.hasNewSegmentMonitors(), false));
             }
             if(trans)
                 manager->setLayoutTranslator(trans);
