@@ -23770,7 +23770,8 @@ public:
                                     {
                                         Owned<IKeyManager> countKey;
                                         const IDynamicTransform * trans = translators->queryTranslator(fileNo);
-                                        countKey.setown(createLocalKeyManager(trans->querySourceMeta(), thisKey, this, indexHelper.hasNewSegmentMonitors(), !isBlind()));
+                                        IOutputMetaData * actualIndexFormat = translators->queryActualLayout(fileNo);
+                                        countKey.setown(createLocalKeyManager(actualIndexFormat->queryRecordAccessor(true), thisKey, this, indexHelper.hasNewSegmentMonitors(), !isBlind()));
                                         countKey->setLayoutTranslator(trans);
                                         createSegmentMonitors(countKey);
                                         unsigned __int64 count = countKey->checkCount(keyedLimit);
@@ -23791,7 +23792,8 @@ public:
                             }
                             else
                             {
-                                tlk.setown(createLocalKeyManager(trans->querySourceMeta(), thisKey, this, indexHelper.hasNewSegmentMonitors(), !isBlind()));
+                                IOutputMetaData * actualIndexFormat = translators->queryActualLayout(fileNo);
+                                tlk.setown(createLocalKeyManager(actualIndexFormat->queryRecordAccessor(true), thisKey, this, indexHelper.hasNewSegmentMonitors(), !isBlind()));
                                 if (!thisKey->isTopLevelKey())
                                     tlk->setLayoutTranslator(trans);
                                 else
@@ -24494,7 +24496,8 @@ public:
         for (unsigned i = 0; i < numParts; i++)
         {
             const IDynamicTransform * trans = translators->queryTranslator(i);
-            Owned<IKeyManager> countTlk = createLocalKeyManager(trans->querySourceMeta(), keyIndexSet->queryPart(i), this, indexHelper.hasNewSegmentMonitors(), !isBlind());
+            IOutputMetaData * actualIndexFormat = translators->queryActualLayout(i);
+            Owned<IKeyManager> countTlk = createLocalKeyManager(actualIndexFormat->queryRecordAccessor(true), keyIndexSet->queryPart(i), this, indexHelper.hasNewSegmentMonitors(), !isBlind());
             countTlk->setLayoutTranslator(trans);
             indexHelper.createSegmentMonitors(countTlk);
             countTlk->finishSegmentMonitors();
@@ -24525,14 +24528,15 @@ public:
                 return NULL;
             }
             const IDynamicTransform * trans = translators->queryTranslator(0);
+            IOutputMetaData * actualIndexFormat = translators->queryActualLayout(0);
             if (numParts > 1 || seekGEOffset)
             {
-                tlk.setown(createKeyMerger(trans->querySourceMeta(), keyIndexSet, seekGEOffset, this, indexHelper.hasNewSegmentMonitors(), !isBlind()));
+                tlk.setown(createKeyMerger(actualIndexFormat->queryRecordAccessor(true), keyIndexSet, seekGEOffset, this, indexHelper.hasNewSegmentMonitors(), !isBlind()));
                 tlk->setLayoutTranslator(trans);
             }
             else
             {
-                tlk.setown(createLocalKeyManager(trans->querySourceMeta(), keyIndexSet->queryPart(0), this, indexHelper.hasNewSegmentMonitors(), !isBlind()));
+                tlk.setown(createLocalKeyManager(actualIndexFormat->queryRecordAccessor(true), keyIndexSet->queryPart(0), this, indexHelper.hasNewSegmentMonitors(), !isBlind()));
                 tlk->setLayoutTranslator(trans);
             }
             indexHelper.createSegmentMonitors(tlk);
@@ -26290,8 +26294,8 @@ public:
         }
         if (!tlk)
         {
-            const RtlRecord & recordInfo = translators ? translators->queryTranslator(0)->querySourceMeta() : helper.queryIndexRecordSize()->queryRecordAccessor(true);
-            tlk.setown(createLocalKeyManager(recordInfo, NULL, this, helper.hasNewSegmentMonitors(), !isBlind()));
+            IOutputMetaData * actualIndexFormat = translators ? translators->queryActualLayout(0) : helper.queryIndexRecordSize();
+            tlk.setown(createLocalKeyManager(actualIndexFormat->queryRecordAccessor(true), NULL, this, helper.hasNewSegmentMonitors(), !isBlind()));
         }
         puller.start(parentExtractSize, parentExtract, paused, ctx->queryOptions().fullKeyedJoinPreload, false, ctx);
     }
@@ -27158,8 +27162,8 @@ public:
         }
         if (!tlk)
         {
-            const RtlRecord & recordInfo = translators ? translators->queryTranslator(0)->querySourceMeta() : helper.queryIndexRecordSize()->queryRecordAccessor(true);
-            tlk.setown(createLocalKeyManager(recordInfo, NULL, this, helper.hasNewSegmentMonitors(), !isBlind()));
+            IOutputMetaData * actualIndexFormat = translators ? translators->queryActualLayout(0) : helper.queryIndexRecordSize();
+            tlk.setown(createLocalKeyManager(actualIndexFormat->queryRecordAccessor(true), NULL, this, helper.hasNewSegmentMonitors(), !isBlind()));
         }
         puller.start(parentExtractSize, parentExtract, paused, ctx->queryOptions().keyedJoinPreload, isSimple, ctx);
 

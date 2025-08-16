@@ -666,13 +666,13 @@ const IDynamicTransform * CHThorIndexReadActivityBase::getLayoutTranslator(IDist
     switch (getLayoutTranslationMode())
     {
     case RecordTranslationMode::AlwaysECL:
-        verifyFormatCrc(helper.getDiskFormatCrc(), f, (superIterator ? superName.str() : NULL) , true, false);
+        verifyFormatCrc(helper.getDiskFormatCrc(), f, (superIterator ? superName.str() : NULL) , true, false, false);
         break;
     case RecordTranslationMode::None:
-        verifyFormatCrc(helper.getDiskFormatCrc(), f, (superIterator ? superName.str() : NULL) , true, true);
+        verifyFormatCrc(helper.getDiskFormatCrc(), f, (superIterator ? superName.str() : NULL) , true, true, false);
         break;
     default:
-        if(!verifyFormatCrc(helper.getDiskFormatCrc(), f, (superIterator ? superName.str() : NULL) , true, false))
+        if(!verifyFormatCrc(helper.getDiskFormatCrc(), f, (superIterator ? superName.str() : NULL) , true, false, false))
         {
             IPropertyTree &props = f->queryAttributes();
             actualFormat.setown(getDaliLayoutInfo(props));
@@ -685,8 +685,11 @@ const IDynamicTransform * CHThorIndexReadActivityBase::getLayoutTranslator(IDist
             actualTranslator->describe();
             if (actualTranslator->keyedTranslated())
                 throw MakeStringException(0, "Untranslatable key layout mismatch reading index %s - keyed fields do not match", f->queryLogicalName());
-            VStringBuffer msg("Record layout translation required for %s", f->queryLogicalName());
-            agent.addWuExceptionEx(msg.str(), WRN_UseLayoutTranslation, SeverityInformation, MSGAUD_user, "hthor");
+            if (actualTranslator->needsTranslate())
+            {
+                VStringBuffer msg("Record layout translation required for %s", f->queryLogicalName());
+                agent.addWuExceptionEx(msg.str(), WRN_UseLayoutTranslation, SeverityInformation, MSGAUD_user, "hthor");
+            }
 
             actualLayouts.append(actualFormat.getLink());  // ensure adequate lifespan
         }
@@ -4082,17 +4085,17 @@ protected:
     {
         if(getLayoutTranslationMode() == RecordTranslationMode::AlwaysECL)
         {
-            verifyFormatCrc(helper.getIndexFormatCrc(), f, super ? super->queryLogicalName() : NULL, true, false);  // Traces if mismatch
+            verifyFormatCrc(helper.getIndexFormatCrc(), f, super ? super->queryLogicalName() : NULL, true, false, true);  // Traces if mismatch
             return NULL;
         }
 
         if(getLayoutTranslationMode() == RecordTranslationMode::None)
         {
-            verifyFormatCrc(helper.getIndexFormatCrc(), f, super ? super->queryLogicalName() : NULL, true, true);
+            verifyFormatCrc(helper.getIndexFormatCrc(), f, super ? super->queryLogicalName() : NULL, true, true, false);
             return NULL;
         }
 
-        if(verifyFormatCrc(helper.getIndexFormatCrc(), f, super ? super->queryLogicalName() : NULL, true, false))
+        if(verifyFormatCrc(helper.getIndexFormatCrc(), f, super ? super->queryLogicalName() : NULL, true, false, false))
         {
             return NULL;
         }
