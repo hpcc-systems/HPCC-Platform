@@ -195,10 +195,9 @@ unsigned mtu_size = 1400; // upper limit on outbound buffer size - allow some he
 StringBuffer fileNameServiceDali;
 StringBuffer roxieName;
 StringBuffer allowedPipePrograms;
-#ifdef _CONTAINERIZED
 StringBuffer defaultPlane;
 StringBuffer defaultIndexBuildPlane;
-#endif
+
 bool trapTooManyActiveQueries;
 unsigned maxEmptyLoopIterations;
 unsigned maxGraphLoopIterations;
