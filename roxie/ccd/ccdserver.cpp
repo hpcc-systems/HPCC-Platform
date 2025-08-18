@@ -23762,6 +23762,8 @@ public:
                         {
                             unsigned fileNo = 0;
                             IKeyIndex *thisKey = thisBase->queryPart(fileNo);
+                            const IDynamicTransform * trans = translators->queryTranslator(fileNo);
+                            const RtlRecord & actualRecInfo = translators->queryActualLayout(fileNo)->queryRecordAccessor(true);
                             if (!thisKey->isTopLevelKey())
                             {
                                 if (keyedLimit != (unsigned __int64) -1)
@@ -23769,9 +23771,7 @@ public:
                                     if ((indexHelper.getFlags() & TIRcountkeyedlimit) != 0)
                                     {
                                         Owned<IKeyManager> countKey;
-                                        const IDynamicTransform * trans = translators->queryTranslator(fileNo);
-                                        IOutputMetaData * actualIndexFormat = translators->queryActualLayout(fileNo);
-                                        countKey.setown(createLocalKeyManager(actualIndexFormat->queryRecordAccessor(true), thisKey, this, indexHelper.hasNewSegmentMonitors(), !isBlind()));
+                                        countKey.setown(createLocalKeyManager(actualRecInfo, thisKey, this, indexHelper.hasNewSegmentMonitors(), !isBlind()));
                                         countKey->setLayoutTranslator(trans);
                                         createSegmentMonitors(countKey);
                                         unsigned __int64 count = countKey->checkCount(keyedLimit);
@@ -23784,16 +23784,14 @@ public:
                                     }
                                 }
                             }
-                            const IDynamicTransform * trans = translators->queryTranslator(fileNo);
                             if (seekGEOffset && !thisKey->isTopLevelKey())
                             {
-                                tlk.setown(createSingleKeyMerger(trans->querySourceMeta(), thisKey, seekGEOffset, this, indexHelper.hasNewSegmentMonitors(), !isBlind()));
+                                tlk.setown(createSingleKeyMerger(actualRecInfo, thisKey, seekGEOffset, this, indexHelper.hasNewSegmentMonitors(), !isBlind()));
                                 tlk->setLayoutTranslator(trans);
                             }
                             else
                             {
-                                IOutputMetaData * actualIndexFormat = translators->queryActualLayout(fileNo);
-                                tlk.setown(createLocalKeyManager(actualIndexFormat->queryRecordAccessor(true), thisKey, this, indexHelper.hasNewSegmentMonitors(), !isBlind()));
+                                tlk.setown(createLocalKeyManager(actualRecInfo, thisKey, this, indexHelper.hasNewSegmentMonitors(), !isBlind()));
                                 if (!thisKey->isTopLevelKey())
                                     tlk->setLayoutTranslator(trans);
                                 else
@@ -23851,7 +23849,7 @@ public:
                                 if (++fileNo < thisBase->numParts())
                                 {
                                     thisKey = thisBase->queryPart(fileNo);
-                                    tlk->setKey(thisKey);
+                                    tlk->setKey(thisKey, translators->queryActualLayout(fileNo)->queryRecordAccessor(true));
                                     if (!thisKey->isTopLevelKey())
                                         tlk->setLayoutTranslator(translators->queryTranslator(fileNo));
                                     else
@@ -23862,7 +23860,7 @@ public:
                                     break;
                             }
                             tlk->releaseSegmentMonitors();
-                            tlk->setKey(NULL);
+                            tlk->clearKey();
                         }
                     }
                 }
@@ -24496,10 +24494,9 @@ public:
         unsigned __int64 result = 0;
         for (unsigned i = 0; i < numParts; i++)
         {
-            const IDynamicTransform * trans = translators->queryTranslator(i);
             IOutputMetaData * actualIndexFormat = translators->queryActualLayout(i);
             Owned<IKeyManager> countTlk = createLocalKeyManager(actualIndexFormat->queryRecordAccessor(true), keyIndexSet->queryPart(i), this, indexHelper.hasNewSegmentMonitors(), !isBlind());
-            countTlk->setLayoutTranslator(trans);
+            countTlk->setLayoutTranslator(translators->queryTranslator(i));
             indexHelper.createSegmentMonitors(countTlk);
             countTlk->finishSegmentMonitors();
             result += countTlk->checkCount(limit-result);
@@ -26349,7 +26346,7 @@ public:
                     IKeyIndex *thisKey = thisBase->queryPart(fileNo);
                     try
                     {
-                        tlk->setKey(thisKey);
+                        tlk->setKey(thisKey, translators->queryActualLayout(fileNo)->queryRecordAccessor(true));
                         if (!thisKey->isTopLevelKey())
                             tlk->setLayoutTranslator(translators->queryTranslator(fileNo));
                         else
@@ -26433,7 +26430,7 @@ public:
                             if (++fileNo < thisBase->numParts())
                             {
                                 thisKey = thisBase->queryPart(fileNo);
-                                tlk->setKey(thisKey);
+                                tlk->setKey(thisKey, translators->queryActualLayout(fileNo)->queryRecordAccessor(true));
                                 if (!thisKey->isTopLevelKey())
                                     tlk->setLayoutTranslator(translators->queryTranslator(fileNo));
                                 else
@@ -26444,12 +26441,12 @@ public:
                                 break;
                         }
                         tlk->releaseSegmentMonitors();
-                        tlk->setKey(NULL);
+                        tlk->clearKey();
                     }
                     catch (...)
                     {
                         tlk->releaseSegmentMonitors();
-                        tlk->setKey(NULL);
+                        tlk->clearKey();
                         throw;
                     }
                 }
@@ -27207,7 +27204,7 @@ public:
                 {
                     unsigned fileNo = 0;
                     IKeyIndex *thisKey = thisBase->queryPart(fileNo);
-                    tlk->setKey(thisKey);
+                    tlk->setKey(thisKey, translators->queryActualLayout(fileNo)->queryRecordAccessor(true));
                     if (thisKey && !thisKey->isTopLevelKey())
                         tlk->setLayoutTranslator(translators->queryTranslator(fileNo));
                     else
@@ -27308,7 +27305,7 @@ public:
                             if (++fileNo < thisBase->numParts())
                             {
                                 thisKey = thisBase->queryPart(fileNo);
-                                tlk->setKey(thisKey);
+                                tlk->setKey(thisKey, translators->queryActualLayout(fileNo)->queryRecordAccessor(true));
                                 if (thisKey && !thisKey->isTopLevelKey())
                                     tlk->setLayoutTranslator(translators->queryTranslator(fileNo));
                                 else
@@ -27319,12 +27316,12 @@ public:
                                 break;
                         }
                         tlk->releaseSegmentMonitors();
-                        tlk->setKey(NULL);
+                        tlk->clearKey();
                     }
                     catch (...)
                     {
                         tlk->releaseSegmentMonitors();
-                        tlk->setKey(NULL);
+                        tlk->clearKey();
                         throw;
                     }
                 }

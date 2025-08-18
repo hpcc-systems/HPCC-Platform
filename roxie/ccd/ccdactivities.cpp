@@ -2519,14 +2519,15 @@ protected:
             else
             {
                 IKeyIndex *k = kib->queryPart(lastPartNo.fileNo);
+
+                const RtlRecord & actualRecInfo = translators->queryActualLayout(lastPartNo.fileNo)->queryRecordAccessor(true);
                 if (filechanged || !tlk)
                 {
-                    const IDynamicTransform * trans = translators->queryTranslator(lastPartNo.fileNo);
-                    tlk.setown(createLocalKeyManager(trans->querySourceMeta(), k, &logctx, hasNewSegmentMonitors(), !logctx.isBlind()));
+                    tlk.setown(createLocalKeyManager(actualRecInfo, k, &logctx, hasNewSegmentMonitors(), !logctx.isBlind()));
                     createSegmentMonitorsPending = true;
                 }
                 else
-                    tlk->setKey(k);
+                    tlk->setKey(k, actualRecInfo);
             }
         }
     }
