@@ -26,7 +26,8 @@
 project( securesocket ) 
 
 set (    SRCS 
-         securesocket.cpp 
+         securesocket.cpp
+         socketutils.cpp
     )
 
 include_directories ( 
