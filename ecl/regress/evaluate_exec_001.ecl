@@ -23,7 +23,7 @@ IMPORT Std;
 
 ds := NOFOLD(DATASET(10000, TRANSFORM({UNSIGNED4 n}, SELF.n := RANDOM()), DISTRIBUTED));
 
-// Action: Write the dataset to a different thor cluster
+// Action: Build and write the dataset to a different thor cluster
 EVALUATE('mythor2', OUTPUT(ds, {ds}, '~test::data', OVERWRITE, COMPRESSED));
 
 // Action: Using the agent process, create a superfile
