@@ -848,8 +848,11 @@ bool CHThorIndexReadActivity::nextPart()
     if(keyIndexCache && (seekGEOffset || localSortKey))
     {
         killPart();
-        //MORE: Not sure about this...
-        klManager.setown(createKeyMerger(eclKeySize.queryRecordAccessor(true), keyIndexCache, seekGEOffset, NULL, helper.hasNewSegmentMonitors(), false));
+
+        // What happens if the preopened indexes have a mixture of formats?  The merger will throw an error that they key sizes
+        // are inconsistent.  This may need improving in the future.
+        const RtlRecord & actualRecInfo = layoutTrans ? layoutTrans->querySourceMeta() : eclKeySize.queryRecordAccessor(true);
+        klManager.setown(createKeyMerger(actualRecInfo, keyIndexCache, seekGEOffset, NULL, helper.hasNewSegmentMonitors(), false));
         keyIndexCache.clear();
         initManager(klManager, false);
         callback.setManager(klManager, nullptr);
