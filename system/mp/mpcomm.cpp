@@ -610,7 +610,7 @@ class CMPConnectThread: public Thread
                     {
                         closedOrHandled = true;
                         // process() will remove itself from handler, and need to avoid it doing so while in 'crit'
-                        // since the maintenance thread could also be tyring to manipulate handlers and calling closeIfTimedout()
+                        // since the maintenance thread could also be trying to manipulate handlers and calling closeIfTimedout()
                         b.leave();
                         selectHandler.process(*this);
                     }

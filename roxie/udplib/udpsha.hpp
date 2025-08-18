@@ -354,6 +354,7 @@ private:
     virtual bool set_nonblock(bool on) override { UNIMPLEMENTED; }
     virtual bool set_nagle(bool on) override { UNIMPLEMENTED; }
     virtual void set_linger(int lingersecs) override { UNIMPLEMENTED; }
+    virtual void set_quick_ack(bool on) override { UNIMPLEMENTED; }
     virtual void cancel_accept() override { UNIMPLEMENTED; }
     virtual void shutdown(unsigned mode) override { UNIMPLEMENTED; }
     virtual void shutdownNoThrow(unsigned mode) override { UNIMPLEMENTED; }

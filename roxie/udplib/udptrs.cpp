@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2025 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -35,6 +35,8 @@
 #include <math.h>
 #include <atomic>
 #include <algorithm>
+
+#include "tcptrs.hpp"
 
 using roxiemem::DataBuffer;
 
@@ -87,7 +89,7 @@ static unsigned lastFlowRequestsSent = 0;
 static unsigned lastFlowPermitsReceived = 0;
 static unsigned lastDataPacketsSent = 0;
 
-unsigned getMaxRequestDeadTimeout()
+static unsigned getMaxRequestDeadTimeout()
 {
     if (udpRequestDeadTimeout == 0)
         return 0;
@@ -805,7 +807,7 @@ public:
 
 };
 
-class CSendManager : implements ISendManager, public CInterface
+class CUdpSendManager : implements ISendManager, public CInterface
 {
     class StartedThread : public Thread
     {
@@ -846,7 +848,7 @@ class CSendManager : implements ISendManager, public CInterface
     class send_resend_flow : public StartedThread
     {
         // Check if any senders have timed out
-        CSendManager &parent;
+        CUdpSendManager &parent;
         Semaphore terminated;
 
         virtual int doRun() override
@@ -930,7 +932,7 @@ class CSendManager : implements ISendManager, public CInterface
         }
 
     public:
-        send_resend_flow(CSendManager &_parent)
+        send_resend_flow(CUdpSendManager &_parent)
             : StartedThread("UdpLib::send_resend_flow"), parent(_parent)
         {
             start(false);
@@ -947,11 +949,11 @@ class CSendManager : implements ISendManager, public CInterface
 
     class send_receive_flow : public StartedThread 
     {
-        CSendManager &parent;
+        CUdpSendManager &parent;
         int      receive_port;
         Owned<ISocket> flow_socket;
     public:
-        send_receive_flow(CSendManager &_parent, int r_port) : StartedThread("UdpLib::send_receive_flow"), parent(_parent)
+        send_receive_flow(CUdpSendManager &_parent, int r_port) : StartedThread("UdpLib::send_receive_flow"), parent(_parent)
         {
             receive_port = r_port;
             if (check_max_socket_read_buffer(udpFlowSocketsSize) < 0) 
@@ -1047,12 +1049,12 @@ class CSendManager : implements ISendManager, public CInterface
 
     class send_data : public StartedThread 
     {
-        CSendManager &parent;
+        CUdpSendManager &parent;
         simple_queue<UdpPermitToSendMsg> send_queue;
         Linked<TokenBucket> bucket;
 
     public:
-        send_data(CSendManager &_parent, TokenBucket *_bucket)
+        send_data(CUdpSendManager &_parent, TokenBucket *_bucket)
             : StartedThread("UdpLib::send_data"), parent(_parent), send_queue(100), bucket(_bucket) // MORE - send q size should be configurable and/or related to size of cluster?
         {
             if (check_max_socket_write_buffer(udpLocalWriteSocketSize) < 0) 
@@ -1170,7 +1172,7 @@ class CSendManager : implements ISendManager, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    CSendManager(int server_flow_port, int data_port, int client_flow_port, int q_size, int _numQueues, const IpAddress &_myIP, TokenBucket *_bucket, bool _encrypted)
+    CUdpSendManager(int server_flow_port, int data_port, int client_flow_port, int q_size, int _numQueues, const IpAddress &_myIP, TokenBucket *_bucket, bool _encrypted)
         : myIP(_myIP),
           receiversTable([_numQueues, q_size, server_flow_port, data_port, _encrypted, this](const ServerIdentifier ip) { return new UdpReceiverEntry(ip.getIpAddress(), myIP, _numQueues, q_size, server_flow_port, data_port, _encrypted);}),
           bucket(_bucket),
@@ -1188,7 +1190,7 @@ public:
     }
 
 
-    ~CSendManager() 
+    ~CUdpSendManager() 
     {
         delete resend_flow;
         delete receive_flow;
@@ -1254,205 +1256,18 @@ public:
 
 };
 
-ISendManager *createSendManager(int server_flow_port, int data_port, int client_flow_port, int queue_size_pr_server, int queues_pr_server, const IpAddress &_myIP, TokenBucket *rateLimiter, bool encryptionInTransit)
+ISendManager *createUdpSendManager(int server_flow_port, int data_port, int client_flow_port, int queue_size_pr_server, int queues_pr_server, const IpAddress &_myIP, TokenBucket *rateLimiter, bool encryptionInTransit)
 {
     assertex(!_myIP.isNull());
-    return new CSendManager(server_flow_port, data_port, client_flow_port, queue_size_pr_server, queues_pr_server, _myIP, rateLimiter, encryptionInTransit);
+    return new CUdpSendManager(server_flow_port, data_port, client_flow_port, queue_size_pr_server, queues_pr_server, _myIP, rateLimiter, encryptionInTransit);
 }
 
-class CMessagePacker : implements IMessagePacker, public CInterface
+ISendManager *createSendManager(int server_flow_port, int data_port, int client_flow_port, int queue_size_pr_server, int queues_pr_server, const IpAddress &_myIP, TokenBucket *rateLimiter, bool encryptionInTransit)
 {
-    ISendManager   &parent;
-    IUdpReceiverEntry &receiver;
-    UdpPacketHeader package_header;
-    DataBuffer     *part_buffer;
-    const unsigned data_buffer_size;
-    unsigned data_used;
-    void *mem_buffer;
-    unsigned mem_buffer_size;
-    unsigned totalSize;
-    bool            packed_request;
-    MemoryBuffer    metaInfo;
-    bool            last_message_done;
-    int             queue_number;
-
-public:
-    IMPLEMENT_IINTERFACE;
-
-    CMessagePacker(ruid_t ruid, unsigned msgId, const void *messageHeader, unsigned headerSize, ISendManager &_parent, IUdpReceiverEntry &_receiver, const IpAddress & _sourceNode, unsigned _msgSeq, unsigned _queue, bool _encrypted)
-        : parent(_parent), receiver(_receiver), data_buffer_size(DATA_PAYLOAD - sizeof(UdpPacketHeader) - (_encrypted ? 16 : 0))
-
-    {
-        queue_number = _queue;
-
-        package_header.length = 0;          // filled in with proper value later
-        package_header.metalength = 0;
-        package_header.ruid = ruid;
-        package_header.msgId = msgId;
-        package_header.pktSeq = 0;
-        package_header.node.setIp(_sourceNode);
-        package_header.msgSeq = _msgSeq;
-
-        packed_request = false;
-        part_buffer = bufferManager->allocate();
-        assertex(data_buffer_size >= headerSize + sizeof(unsigned short));
-        *(unsigned short *) (&part_buffer->data[sizeof(UdpPacketHeader)]) = headerSize;
-        memcpy(&part_buffer->data[sizeof(UdpPacketHeader)+sizeof(unsigned short)], messageHeader, headerSize);
-        data_used = headerSize + sizeof(unsigned short);
-        mem_buffer = 0;
-        mem_buffer_size = 0;
-        last_message_done = false;
-        totalSize = 0;
-    }
-
-    ~CMessagePacker()
-    {
-        if (part_buffer)
-            part_buffer->Release();
-        if (mem_buffer) free (mem_buffer);
-    }
-
-    virtual void *getBuffer(unsigned len, bool variable) override
-    {
-        if (variable)
-            len += sizeof(RecordLengthType);
-        if (data_buffer_size < len)
-        {
-            // Won't fit in one, so allocate temp location
-            if (mem_buffer_size < len)
-            {
-                free(mem_buffer);
-                mem_buffer = checked_malloc(len, ROXIE_MEMORY_ERROR);
-                mem_buffer_size = len;
-            }
-            packed_request = false;
-            if (variable)
-                return ((char *) mem_buffer) + sizeof(RecordLengthType);
-            else
-                return mem_buffer;
-        }
-
-        if (part_buffer && ((data_buffer_size - data_used) < len))
-            flush(false); // Note that we never span records that are small enough to fit - this can result in significant wastage if record just over DATA_PAYLOAD/2
-
-        if (!part_buffer)
-        {
-            part_buffer = bufferManager->allocate();
-        }
-        packed_request = true;
-        if (variable)
-            return &part_buffer->data[data_used + sizeof(UdpPacketHeader) + sizeof(RecordLengthType)];
-        else
-            return &part_buffer->data[data_used + sizeof(UdpPacketHeader)];
-    }
-
-    virtual void putBuffer(const void *buf, unsigned len, bool variable) override
-    {
-        if (variable)
-        {
-            assertex(len < MAX_RECORD_LENGTH);
-            buf = ((char *) buf) - sizeof(RecordLengthType);
-            *(RecordLengthType *) buf = len;
-            len += sizeof(RecordLengthType);
-        }
-        totalSize += len;
-        if (packed_request)
-        {
-            assert(len <= (data_buffer_size - data_used));
-            data_used += len;
-        }
-        else
-        {
-            //Edge case - ensure that the length of a variable length record does not span a packet
-            //this can occur when large rows > data_buffer_size are being appended to the buffer.
-            if (variable && ((data_buffer_size - data_used) < sizeof(RecordLengthType)))
-                flush(false);
-
-            while (len)
-            {
-                if (!part_buffer)
-                {
-                    part_buffer = bufferManager->allocate();
-                    data_used = 0;
-                }
-                unsigned chunkLen = data_buffer_size - data_used;
-                if (chunkLen > len)
-                    chunkLen = len;
-                memcpy(&part_buffer->data[sizeof(UdpPacketHeader)+data_used], buf, chunkLen);
-                data_used += chunkLen;
-                len -= chunkLen;
-                buf = &(((char*)buf)[chunkLen]);
-                if (len)
-                    flush(false);
-            }
-        }
-    }
-
-    virtual void sendMetaInfo(const void *buf, unsigned len) override {
-        metaInfo.append(len, buf);
-    }
-
-    virtual void flush() override { flush(true); }
-
-    virtual unsigned size() const override
-    {
-        return totalSize;
-    }
-private:
-
-    void flush(bool last_msg)
-    {
-        if (!last_message_done && last_msg)
-        {
-            last_message_done = true;
-            if (!part_buffer)
-                part_buffer = bufferManager->allocate();
-            const char *metaData = metaInfo.toByteArray();
-            unsigned metaLength = metaInfo.length();
-            unsigned maxMetaLength = data_buffer_size - data_used;
-            while (metaLength > maxMetaLength)
-            {
-                memcpy(&part_buffer->data[sizeof(UdpPacketHeader)+data_used], metaData, maxMetaLength);
-                put_package(part_buffer, data_used, maxMetaLength);
-                metaLength -= maxMetaLength;
-                metaData += maxMetaLength;
-                data_used = 0;
-                maxMetaLength = data_buffer_size;
-                part_buffer = bufferManager->allocate();
-            }
-            if (metaLength)
-                memcpy(&part_buffer->data[sizeof(UdpPacketHeader)+data_used], metaData, metaLength);
-            package_header.pktSeq |= UDP_PACKET_COMPLETE;
-            put_package(part_buffer, data_used, metaLength);
-        }
-        else if (part_buffer)
-        {
-            // Just flush current - used when no room for current row
-            if (data_used)
-                put_package(part_buffer, data_used, 0); // buffer released in put_package
-            else
-                part_buffer->Release(); // If NO data in buffer, release buffer back to pool
-        }
-        part_buffer = 0;
-        data_used = 0;
-    }
-
-    void put_package(DataBuffer *dataBuff, unsigned datalength, unsigned metalength)
-    {
-        package_header.length = datalength + metalength + sizeof(UdpPacketHeader);
-        package_header.metalength = metalength;
-        memcpy(dataBuff->data, &package_header, sizeof(package_header));
-        parent.writeOwn(receiver, dataBuff, package_header.length, queue_number);
-        package_header.pktSeq++;
-    }
-
-
-};
-
-
-extern UDPLIB_API IMessagePacker *createMessagePacker(ruid_t ruid, unsigned msgId, const void *messageHeader, unsigned headerSize, ISendManager &_parent, IUdpReceiverEntry &_receiver, const IpAddress & _sourceNode, unsigned _msgSeq, unsigned _queue, bool _encrypted)
-{
-    return new CMessagePacker(ruid, msgId, messageHeader, headerSize, _parent, _receiver, _sourceNode, _msgSeq, _queue, _encrypted);
+    if (useTcpTransport)
+        return createTcpSendManager(server_flow_port, data_port, client_flow_port, queue_size_pr_server, queues_pr_server, _myIP, rateLimiter, encryptionInTransit);
+    else
+        return createUdpSendManager(server_flow_port, data_port, client_flow_port, queue_size_pr_server, queues_pr_server, _myIP, rateLimiter, encryptionInTransit);
 }
 
 IRoxieOutputQueueManager *ROQ = nullptr;
