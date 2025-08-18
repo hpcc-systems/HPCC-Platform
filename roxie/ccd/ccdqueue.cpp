@@ -252,54 +252,13 @@ unsigned getReplicationLevel(unsigned channel)
 
 //============================================================================================
 
-// This function maps a agent number to the multicast ip used to talk to it.
-
-IpAddress multicastBase("239.1.1.1");           // TBD IPv6 (need IPv6 multicast addresses?
-IpAddress multicastLast("239.1.5.254");
-
-const IpAddress &getChannelIp(IpAddress &ip, unsigned _channel)
-{
-    // need to be careful to avoid the .0's and the .255's (not sure why...)
-    ip = multicastBase;
-    if (!ip.ipincrement(_channel,1,254,1,0xffff)
-        ||(ip.ipcompare(multicastLast)>0))
-        throw MakeStringException(ROXIE_MULTICAST_ERROR, "Out-of-range multicast channel %d", _channel);
-    return ip;
-}
-
 static Owned<ISocket> multicastSocket;
-
-void joinMulticastChannel(unsigned channel)
-{
-    IpAddress multicastIp;
-    getChannelIp(multicastIp, channel);
-    SocketEndpoint ep(ccdMulticastPort, multicastIp);
-    StringBuffer epStr;
-    ep.getEndpointHostText(epStr);
-    if (!multicastSocket->join_multicast_group(ep))
-        throw MakeStringException(ROXIE_MULTICAST_ERROR, "Failed to join multicast channel %d (%s)", channel, epStr.str());
-    if (traceLevel)
-        DBGLOG("Joined multicast channel %d (%s)", channel, epStr.str());
-}
-
-static SocketEndpointArray multicastEndpoints;  // indexed by channel
-
-void setMulticastEndpoints(unsigned numChannels)
-{
-    for (unsigned channel = 0; channel <= numChannels; channel++)  // NOTE - channel 0 is special, and numChannels does not include it
-    {
-        IpAddress multicastIp;
-        getChannelIp(multicastIp, channel);
-        multicastEndpoints.append(SocketEndpoint(ccdMulticastPort, multicastIp));
-    }
-}
-
 
 void openMulticastSocket()
 {
     if (!multicastSocket)
     {
-        const char *desc = roxieMulticastEnabled ? "multicast" : "UDP";
+        const char *desc = "UDP";
         multicastSocket.setown(ISocket::udp_create(ccdMulticastPort));
         multicastSocket->set_receive_buffer_size(udpMulticastBufferSize);
         size32_t actualSize = multicastSocket->get_receive_buffer_size();
@@ -311,24 +270,6 @@ void openMulticastSocket()
         }
         if (doTrace(TraceFlags::Always))
             DBGLOG("Roxie: %s socket created port=%d sockbuffsize=%d actual %d", desc, ccdMulticastPort, udpMulticastBufferSize, actualSize);
-        if (roxieMulticastEnabled && !localAgent)
-        {
-            if (multicastTTL)
-            {
-                multicastSocket->set_ttl(multicastTTL);
-                DBGLOG("Roxie: %s TTL: %u", desc, multicastTTL);
-            }
-            else
-                DBGLOG("Roxie: %s TTL not set", desc);
-            Owned<const ITopologyServer> topology = getTopology();
-            for (unsigned channel : topology->queryChannels())
-            {
-                assertex(channel);
-                joinMulticastChannel(channel);
-            }
-            joinMulticastChannel(0); // all agents also listen on channel 0
-
-        }
     }
 }
 
@@ -340,97 +281,91 @@ void closeMulticastSockets()
 static bool channelWrite(RoxiePacketHeader &buf, bool includeSelf)
 {
     size32_t minwrote = 0;
-    if (roxieMulticastEnabled)
-    {
-        return multicastSocket->udp_write_to(multicastEndpoints.item(buf.channel), &buf, buf.packetlength) == buf.packetlength;
-    }
-    else
-    {
 #ifdef SUBCHANNELS_IN_HEADER
-        // In the containerized system, the list of subchannel IPs is captured in the packet header to ensure everyone is using the
-        // same snapshot of the topology state.
-        // If the subchannel IPs are not set, fill them in now. If they are set, use them.
-        if (buf.subChannels[0].isNull())
-        {
-            Owned<const ITopologyServer> topo = getTopology();
-            const SocketEndpointArray &eps = topo->queryAgents(buf.channel);
-            if (!eps.ordinality())
-                throw makeStringExceptionV(0, "No agents available for channel %d", buf.channel);
-            if (buf.channel==0)
-            {
-                // Note that we expand any writes on channel 0 here, since we need to capture the server's view of what agents are on each channel
-                bool allOk = true;
-                if (doTrace(traceRoxiePackets))
-                {
-                    StringBuffer header;
-                    DBGLOG("Translating packet sent to channel 0: %s", buf.toString(header).str());
-                }
-                for (unsigned channel = 0; channel < numChannels; channel++)
-                {
-                    buf.channel = channel+1;
-                    if (!channelWrite(buf, true))
-                        allOk = false;
-                    buf.clearSubChannels();
-                }
-                buf.channel = 0;
-                return allOk;
-            }
-
-            unsigned hdrHashVal = buf.priorityHash();
-            unsigned numAgents = eps.ordinality();
-            unsigned subChannel = (hdrHashVal % numAgents);
-
-            for (unsigned idx = 0; idx < MAX_SUBCHANNEL; idx++)
-            {
-                if (idx == numAgents)
-                    break;
-                buf.subChannels[idx].setIp(eps.item(subChannel));
-                subChannel++;
-                if (subChannel == numAgents)
-                    subChannel = 0;
-            }
-        }
-        else
-        {
-            assert(buf.channel != 0);
-        }
-        for (unsigned subChannel = 0; subChannel < MAX_SUBCHANNEL; subChannel++)
-        {
-            if (buf.subChannels[subChannel].isNull())
-                break;
-            if (includeSelf || !buf.subChannels[subChannel].isMe())
-            {
-                if (doTrace(traceRoxiePackets))
-                {
-                    StringBuffer s, header;
-                    DBGLOG("Writing %d bytes to subchannel %d (%s) %s", buf.packetlength, subChannel, buf.subChannels[subChannel].getTraceText(s).str(), buf.toString(header).str());
-                }
-                SocketEndpoint ep(ccdMulticastPort, buf.subChannels[subChannel].getIpAddress());
-                size32_t wrote = multicastSocket->udp_write_to(ep, &buf, buf.packetlength);
-                if (!subChannel || wrote < minwrote)
-                    minwrote = wrote;
-                if (delaySubchannelPackets)
-                    MilliSleep(100);
-            }
-            else if (doTrace(traceRoxiePackets))
-            {
-                StringBuffer s, header;
-                DBGLOG("NOT writing %d bytes to subchannel %d (%s) %s", buf.packetlength, subChannel, buf.subChannels[subChannel].getTraceText(s).str(), buf.toString(header).str());
-            }
-        }
-#else
+    // In the containerized system, the list of subchannel IPs is captured in the packet header to ensure everyone is using the
+    // same snapshot of the topology state.
+    // If the subchannel IPs are not set, fill them in now. If they are set, use them.
+    if (buf.subChannels[0].isNull())
+    {
         Owned<const ITopologyServer> topo = getTopology();
         const SocketEndpointArray &eps = topo->queryAgents(buf.channel);
         if (!eps.ordinality())
             throw makeStringExceptionV(0, "No agents available for channel %d", buf.channel);
-        ForEachItemIn(idx, eps)
+        if (buf.channel==0)
         {
-            size32_t wrote = multicastSocket->udp_write_to(eps.item(idx), &buf, buf.packetlength);
-            if (!idx || wrote < minwrote)
-                minwrote = wrote;
+            // Note that we expand any writes on channel 0 here, since we need to capture the server's view of what agents are on each channel
+            bool allOk = true;
+            if (doTrace(traceRoxiePackets))
+            {
+                StringBuffer header;
+                DBGLOG("Translating packet sent to channel 0: %s", buf.toString(header).str());
+            }
+            for (unsigned channel = 0; channel < numChannels; channel++)
+            {
+                buf.channel = channel+1;
+                if (!channelWrite(buf, true))
+                    allOk = false;
+                buf.clearSubChannels();
+            }
+            buf.channel = 0;
+            return allOk;
         }
-#endif
+
+        unsigned hdrHashVal = buf.priorityHash();
+        unsigned numAgents = eps.ordinality();
+        unsigned subChannel = (hdrHashVal % numAgents);
+
+        for (unsigned idx = 0; idx < MAX_SUBCHANNEL; idx++)
+        {
+            if (idx == numAgents)
+                break;
+            buf.subChannels[idx].setIp(eps.item(subChannel));
+            subChannel++;
+            if (subChannel == numAgents)
+                subChannel = 0;
+        }
     }
+    else
+    {
+        assert(buf.channel != 0);
+    }
+    for (unsigned subChannel = 0; subChannel < MAX_SUBCHANNEL; subChannel++)
+    {
+        if (buf.subChannels[subChannel].isNull())
+            break;
+        if (includeSelf || !buf.subChannels[subChannel].isMe())
+        {
+            if (doTrace(traceRoxiePackets))
+            {
+                StringBuffer s, header;
+                DBGLOG("Writing %d bytes to subchannel %d (%s) %s", buf.packetlength, subChannel, buf.subChannels[subChannel].getTraceText(s).str(), buf.toString(header).str());
+            }
+            SocketEndpoint ep(ccdMulticastPort, buf.subChannels[subChannel].getIpAddress());
+            size32_t wrote = multicastSocket->udp_write_to(ep, &buf, buf.packetlength);
+            if (!subChannel || wrote < minwrote)
+                minwrote = wrote;
+            if (delaySubchannelPackets)
+                MilliSleep(100);
+        }
+        else if (doTrace(traceRoxiePackets))
+        {
+            StringBuffer s, header;
+            DBGLOG("NOT writing %d bytes to subchannel %d (%s) %s", buf.packetlength, subChannel, buf.subChannels[subChannel].getTraceText(s).str(), buf.toString(header).str());
+        }
+    }
+#else
+    Owned<const ITopologyServer> topo = getTopology();
+    const SocketEndpointArray &eps = topo->queryAgents(buf.channel);
+    if (!eps.ordinality())
+        throw makeStringExceptionV(0, "No agents available for channel %d", buf.channel);
+    ForEachItemIn(idx, eps)
+    {
+        size32_t wrote = multicastSocket->udp_write_to(eps.item(idx), &buf, buf.packetlength);
+        if (!idx || wrote < minwrote)
+            minwrote = wrote;
+    }
+#endif
+
     return minwrote==buf.packetlength;
 }
 

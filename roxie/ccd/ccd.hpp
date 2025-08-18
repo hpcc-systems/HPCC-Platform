@@ -67,9 +67,6 @@
 extern IException *MakeRoxieException(int code, const char *format, ...) __attribute__((format(printf, 2, 3)));
 void openMulticastSocket();
 
-void setMulticastEndpoints(unsigned numChannels);
-
-
 #define OUTOFBAND_SEQUENCE    0x8000        // indicates an out-of-band reply
 #define OVERFLOWSEQUENCE_MAX 0x7fffu        // Max value before we want to wrap (to avoid collision with flag)
 #define CONTINUE_SEQUENCE_SKIPTO  0x8000    // flag in continueSequence field indicating presence of skipTo data
@@ -403,11 +400,9 @@ extern SinkMode defaultSinkMode;
 extern bool limitWaitingWorkers;
 
 #if defined(_CONTAINERIZED) || defined(SUBCHANNELS_IN_HEADER)
-static constexpr bool roxieMulticastEnabled = false;
 extern unsigned myChannel;
-#else
-extern bool roxieMulticastEnabled;   // enable use of multicast for sending requests to agents
 #endif
+
 extern bool preloadOnceData;
 extern bool reloadRetriesFailed;
 extern bool selfTestMode;
