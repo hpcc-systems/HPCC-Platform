@@ -10413,12 +10413,6 @@ void HqlCppTranslator::buildClusterHelper(BuildCtx & ctx, IHqlExpression * expr)
     IHqlExpression * cluster = expr->queryAttribute(clusterAtom);
     if (!cluster)
         return;
-    
-    // Don't proceed if the cluster is actually citing the eclagent process
-    StringBuffer clusterName;
-    getStringValue(clusterName, cluster->queryChild(0));
-    if (strisame(clusterName.str(), ECL_AGENT_CLUSTER_NAME))
-        return;
 
     MemberFunction func(*this, ctx, "virtual const char * getCluster(unsigned idx) override");
 

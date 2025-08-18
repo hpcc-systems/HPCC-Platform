@@ -32,6 +32,7 @@
 #include "hqlusage.hpp"
 #include "eclrtl.hpp"
 
+#include <algorithm>
 #include <string>
 #include <unordered_map>
 
@@ -1204,9 +1205,17 @@ public:
     ClusterType restoreTargetClusterTypes();
     void ensureDiskAccessAllowed(IHqlExpression * expr);
     void checkAbort();
-    bool isOptionOverridden(const std::string &name) const
+    void saveOverriddenOption(const std::string & name)
     {
-        return std::find(overriddenDebugOptions.begin(), overriddenDebugOptions.end(), name) != overriddenDebugOptions.end();
+        std::string lowerName = name;
+        std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), ::tolower);
+        overriddenDebugOptions.push_back(lowerName);
+    }
+    bool isOptionOverridden(const std::string & name) const
+    {
+        std::string lowerName = name;
+        std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), ::tolower);
+        return std::find(overriddenDebugOptions.begin(), overriddenDebugOptions.end(), lowerName) != overriddenDebugOptions.end();
     }
 
 public:
