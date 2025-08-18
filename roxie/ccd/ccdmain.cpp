@@ -113,9 +113,7 @@ bool oneShotRoxie = false;
 unsigned minPayloadSize = 800;
 
 unsigned udpMulticastBufferSize = 262142;
-#if defined(_CONTAINERIZED) || defined(SUBCHANNELS_IN_HEADER)
 unsigned myChannel;
-#endif
 
 IPropertyTree *topology;
 MapStringTo<int> *preferredClusters;

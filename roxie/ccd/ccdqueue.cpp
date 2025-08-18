@@ -64,9 +64,7 @@ RoxiePacketHeader::RoxiePacketHeader(const RoxiePacketHeader &source, unsigned _
     if (_activityId >= ROXIE_ACTIVITY_SPECIAL_FIRST && _activityId <= ROXIE_ACTIVITY_SPECIAL_LAST)
         overflowSequence |= OUTOFBAND_SEQUENCE; // Need to make sure it is not treated as dup of actual reply in the udp layer
     retries = getSubChannelMask(subChannel) | (source.retries & ~ROXIE_RETRIES_MASK);
-#ifdef SUBCHANNELS_IN_HEADER
     memcpy(subChannels, source.subChannels, sizeof(subChannels));
-#endif
     packetlength = sizeof(RoxiePacketHeader);
 }
 
@@ -125,19 +123,15 @@ void RoxiePacketHeader::init(const RemoteActivityId &_remoteId, ruid_t _uid, uns
     channel = _channel;
     overflowSequence = _overflowSequence;
     continueSequence = 0;
-#ifdef SUBCHANNELS_IN_HEADER
     clearSubChannels();
-#endif
     filler = 0; // keeps valgrind happy
 }
 
-#ifdef SUBCHANNELS_IN_HEADER
 void RoxiePacketHeader::clearSubChannels()
 {
     for (unsigned idx = 0; idx < MAX_SUBCHANNEL; idx++)
         subChannels[idx].clear();
 }
-#endif
 
 StringBuffer &RoxiePacketHeader::toString(StringBuffer &ret) const
 {
@@ -186,7 +180,6 @@ StringBuffer &RoxiePacketHeader::toString(StringBuffer &ret) const
                 ret.appendf(" BROADCAST");
         }
     }
-#ifdef SUBCHANNELS_IN_HEADER
     ret.append(" subchannels=");
     for (unsigned idx = 0; idx < MAX_SUBCHANNEL; idx++)
     {
@@ -200,7 +193,6 @@ StringBuffer &RoxiePacketHeader::toString(StringBuffer &ret) const
             ret.append("(me)");
         }
     }
-#endif
     return ret;
 }
 
@@ -281,7 +273,6 @@ void closeMulticastSockets()
 static bool channelWrite(RoxiePacketHeader &buf, bool includeSelf)
 {
     size32_t minwrote = 0;
-#ifdef SUBCHANNELS_IN_HEADER
     // In the containerized system, the list of subchannel IPs is captured in the packet header to ensure everyone is using the
     // same snapshot of the topology state.
     // If the subchannel IPs are not set, fill them in now. If they are set, use them.
@@ -353,18 +344,6 @@ static bool channelWrite(RoxiePacketHeader &buf, bool includeSelf)
             DBGLOG("NOT writing %d bytes to subchannel %d (%s) %s", buf.packetlength, subChannel, buf.subChannels[subChannel].getTraceText(s).str(), buf.toString(header).str());
         }
     }
-#else
-    Owned<const ITopologyServer> topo = getTopology();
-    const SocketEndpointArray &eps = topo->queryAgents(buf.channel);
-    if (!eps.ordinality())
-        throw makeStringExceptionV(0, "No agents available for channel %d", buf.channel);
-    ForEachItemIn(idx, eps)
-    {
-        size32_t wrote = multicastSocket->udp_write_to(eps.item(idx), &buf, buf.packetlength);
-        if (!idx || wrote < minwrote)
-            minwrote = wrote;
-    }
-#endif
 
     return minwrote==buf.packetlength;
 }
@@ -1271,17 +1250,11 @@ class CRoxieWorker : public CInterface, implements IPooledThread
 {
     RoxieQueue *queue;
     CriticalSection actCrit;
-#ifndef NEW_IBYTI
-    Semaphore ibytiSem;
-#endif
     std::atomic<bool> stopped;
     std::atomic<bool> abortLaunch;
     std::atomic<bool> workerThreadBusy;
     Owned<IRoxieAgentActivity> activity;
     Owned<IRoxieQueryPacket> packet;
-#ifndef SUBCHANNELS_IN_HEADER
-    Owned<const ITopologyServer> topology;
-#endif
     AgentContextLogger logctx;
     RoxiePacketHeader packetHeader;
 
@@ -1349,24 +1322,16 @@ public:
                 return false;
             queryFound = true;
             abortLaunch = true;
-#ifndef NEW_IBYTI
-            if (doIbytiDelay)
-                ibytiSem.signal();
-#endif
             if (activity) 
             {
                 // Try to stop/abort a job after it starts only if IBYTI comes from a higher priority agent 
                 // (more primary in the rank). The agents with higher rank will hold the lower bits of the retries field in IBYTI packet).
-#ifdef SUBCHANNELS_IN_HEADER
                 if (doTrace(traceRoxiePackets))
                 {
                     StringBuffer x;
                     DBGLOG("Deciding whether to abort: checkRank=%um respondingSub=%u, mySub=%u", checkRank, h.getRespondingSubChannel(), h.mySubChannel());
                 }
                 if (!checkRank || h.getRespondingSubChannel() < h.mySubChannel())
-#else
-                if (!checkRank || topology->queryChannelInfo(h.channel).otherAgentHasPriority(h.priorityHash(), h.getRespondingSubChannel()))
-#endif
                 {
                     if (doTrace(traceRoxiePackets))
                         DBGLOG("Decided to abort running activity based on ranks");
@@ -1409,11 +1374,7 @@ public:
             }
             
             RoxiePacketHeader &header = packet->queryHeader();
-#ifdef SUBCHANNELS_IN_HEADER
             unsigned mySubChannel = header.mySubChannel();
-#else
-            unsigned mySubChannel = topology->queryChannelInfo(header.channel).subChannel();
-#endif
             // I failed to do the query, but already sent out IBYTI - resend it so someone else can try
             if (!isUser)
             {
@@ -1463,12 +1424,7 @@ public:
     {
         RoxiePacketHeader &header = packet->queryHeader();
         unsigned channel = header.channel;
-#ifdef SUBCHANNELS_IN_HEADER
         unsigned mySubChannel = header.mySubChannel();
-#else
-        unsigned numAgents = topology->queryAgents(channel).ordinality();
-        unsigned mySubChannel = topology->queryChannelInfo(channel).subChannel();
-#endif
 
         try
         {   
@@ -1478,87 +1434,6 @@ public:
                 if (mySubChannel)
                     abortLaunch = true;  // when debugging, we always run on primary only...
             }
-#ifndef NEW_IBYTI
-#ifdef SUBCHANNELS_IN_HEADER
-            else if (doIbytiDelay && mySubChannel)
-            {
-                unsigned delay = 0;
-                for (unsigned subChannel = 0; subChannel < mySubChannel; subChannel++)
-                    delay += getIbytiDelay(header.subChannels[subChannel].getIpAddress());
-                unsigned __int64 actualDelay = 0;
-                if (doTrace(traceRoxiePackets))
-                {
-                    StringBuffer x;
-                    DBGLOG("YES myTurnToDelay subchannel=%u delay=%u %s", mySubChannel, delay, header.toString(x).str());
-                }
-                if (delay)
-                {
-                    unsigned __int64 start = nsTick();
-                    ibytiSem.wait(delay);
-                    actualDelay = nsTick()-start;
-                }
-                if (doTrace(traceRoxiePackets) || (delay && !abortLaunch && doTrace(traceIBYTIfails)))
-                {
-                    StringBuffer x;
-                    DBGLOG("Delay %u done, abortLaunch=%d, elapsed=%" I64F "d", delay, (int) abortLaunch, actualDelay);
-                }
-                if (!abortJob)
-                {
-                    for (unsigned subChannel = 0; subChannel < mySubChannel; subChannel++)
-                        noteNodeSick(header.subChannels[subChannel]);
-                    logctx.setStatistic(StTimeIBYTIDelay, actualDelay);
-                }
-            }
-#else
-            else if (doIbytiDelay && (numAgents > 1))
-            {
-                unsigned hdrHashVal = header.priorityHash();
-                unsigned primarySubChannel = (hdrHashVal % numAgents);
-                if (primarySubChannel != mySubChannel)
-                {
-                    unsigned delay = topology->queryChannelInfo(channel).getIbytiDelay(primarySubChannel);
-                    if (doTrace(traceIBYTI))
-                    {
-                        StringBuffer x;
-                        logctx.CTXLOG("YES myTurnToDelayIBYTI subchannel=%u delay=%u hash=%u %s", mySubChannel, delay, hdrHashVal, header.toString(x).str());
-                    }
-                    
-                    // MORE: if we are dealing with a query that was on channel 0, we may want a longer delay 
-                    // (since the theory about duplicated work not mattering when cluster is idle does not hold up)
-
-                    if (delay)
-                    {
-                        unsigned __int64 start = nsTick();
-                        ibytiSem.wait(delay);
-                        if (!abortLaunch)
-                        {
-                            topology->queryChannelInfo(channel).noteChannelsSick(primarySubChannel);
-                            if (doTrace(traceRoxiePackets) || doTrace(traceIBYTIfails))
-                            {
-                                StringBuffer x;
-                                DBGLOG("Delay %u done, abortLaunch=%d", delay, (int) abortLaunch);
-                            }
-                            logctx.setStatistic(StTimeIBYTIDelay, nsTick()-start);
-                        }
-                        if (doTrace(traceIBYTIfails))
-                        {
-                            StringBuffer x;
-                            logctx.CTXLOG("Buddy did%s send IBYTI, updated delay : %s",
-                                abortLaunch ? "" : " NOT", header.toString(x).str());
-                        }
-                    }
-                }
-                else
-                {
-                    if (doTrace(traceIBYTI))
-                    {
-                        StringBuffer x;
-                        logctx.CTXLOG("NOT myTurnToDelayIBYTI subchannel=%u hash=%u %s", mySubChannel, hdrHashVal, header.toString(x).str());
-                    }
-                }
-            }
-#endif
-#endif
 
             if (abortLaunch)
             {
@@ -1651,10 +1526,6 @@ public:
                         break;
                     abortLaunch = false;
                     workerThreadBusy = true;
-#ifndef NEW_IBYTI
-                    if (doIbytiDelay) 
-                        ibytiSem.reinit(0U); // Make sure sem is is in no-signaled state
-#endif
                     Owned<ISerializedRoxieQueryPacket> next = queue->dequeue();
                     if (next)
                     {
@@ -1664,15 +1535,10 @@ public:
                         if (wuid)
                             jobName.set(wuid);
                         logctx.setStatistic(StTimeAgentQueue, nsTick()-next->queryEnqueuedTimeStamp());
-#ifdef NEW_IBYTI
                         logctx.setStatistic(StTimeIBYTIDelay, next->queryIBYTIDelayTime());
-#endif
                         setPacket(next->deserialize());
                         next.clear();
                         RoxiePacketHeader &header = packet->queryHeader();
-#ifndef SUBCHANNELS_IN_HEADER
-                        topology.setown(getTopology());
-#endif
                         if (doTrace(traceRoxiePackets, TraceFlags::Max))
                         {
                             StringBuffer x;
@@ -1696,9 +1562,6 @@ public:
                     workerThreadBusy = false;
                     {
                         setPacket(nullptr);
-#ifndef SUBCHANNELS_IN_HEADER
-                        topology.clear();
-#endif
                         logctx.set(NULL);
                     }
                 }
@@ -1713,9 +1576,6 @@ public:
                 }
                 else
                     E->Release();
-#ifndef SUBCHANNELS_IN_HEADER
-                topology.clear();
-#endif
             }
             catch(...)
             {
@@ -1726,9 +1586,6 @@ public:
                     throwRemoteException(E.getClear(), NULL, packet, false);
                     setPacket(nullptr);
                 }
-#ifndef SUBCHANNELS_IN_HEADER
-                topology.clear();
-#endif
             }
         }
     }
@@ -1999,7 +1856,6 @@ public:
 };
 
 //------------------------------------------------------------------------------------------------------------
-#ifdef NEW_IBYTI
 
 class DelayedPacketQueue
 {
@@ -2256,7 +2112,6 @@ public:
 private:
     CIArrayOf<DelayedPacketQueueChannel> channels;
 };
-#endif
 
 //------------------------------------------------------------------------------------------------------------
 
@@ -2270,9 +2125,7 @@ protected:
     unsigned maxPacketSize = 0;
     std::atomic<bool> running = { false };
     StringContextLogger logctx;
-#ifdef NEW_IBYTI
     DelayedPacketQueueManager delayed;
-#endif
 
     class WorkerUdpTracker : public TimeDivisionTracker<6, false>
     {
@@ -2365,10 +2218,9 @@ public:
 
     virtual void sendIbyti(RoxiePacketHeader &header, const IRoxieContextLogger &logctx, unsigned subChannel) override
     {
-#ifdef SUBCHANNELS_IN_HEADER
         if (!header.hasBuddies())
             return;
-#endif
+
         MTIME_SECTION(queryActiveTimer(), "RoxieSocketQueueManager::sendIbyti");
         RoxiePacketHeader ibytiHeader(header, header.activityId & ROXIE_PRIORITY_MASK, subChannel);
     
@@ -2469,20 +2321,12 @@ public:
     {
         assert(!localAgent);
         bool preActivity = false;
-#ifdef SUBCHANNELS_IN_HEADER
         unsigned mySubChannel = header.mySubChannel();
-#else
-        Owned<const ITopologyServer> topology = getTopology();
-        const ChannelInfo &channelInfo = topology->queryChannelInfo(header.channel);
-        unsigned mySubChannel = channelInfo.subChannel();
-#endif
 
         if (header.retries == QUERY_ABORTED)
         {
             bool foundInQ = false;
-#ifdef NEW_IBYTI
             foundInQ = mySubChannel != 0 && delayed.queryQueue(header.channel, mySubChannel).doIBYTI(header);
-#endif
             if (!foundInQ)
                 foundInQ = queue.remove(header);
             if (!foundInQ)
@@ -2504,15 +2348,8 @@ public:
             }
             else
             {
-#ifndef SUBCHANNELS_IN_HEADER
-                channelInfo.noteChannelHealthy(subChannel);
-#else
                 noteNodeHealthy(header.subChannels[subChannel]);
-#endif
-                bool foundInQ = false;
-#ifdef NEW_IBYTI
-                foundInQ = mySubChannel != 0 && delayed.queryQueue(header.channel, mySubChannel).doIBYTI(header);
-#endif
+                bool foundInQ = mySubChannel != 0 && delayed.queryQueue(header.channel, mySubChannel).doIBYTI(header);
                 if (!foundInQ)
                     foundInQ = queue.remove(header);  // Check on list waiting for a free worker
                 if (foundInQ)
@@ -2590,12 +2427,7 @@ public:
             }
             else
             {
-#ifdef SUBCHANNELS_IN_HEADER
                 unsigned mySubchannel = header.mySubChannel();
-#else
-                Owned<const ITopologyServer> topology = getTopology();
-                unsigned mySubchannel = topology->queryChannelInfo(header.channel).subChannel();
-#endif
                 Owned<ISerializedRoxieQueryPacket> packet = createSerializedRoxiePacket(mb);
                 unsigned retries = header.thisChannelRetries(mySubchannel);
                 if (retries >= SUBCHANNEL_MASK)
@@ -2667,7 +2499,6 @@ public:
                             StringBuffer xx; logctx.CTXLOG("Retry %d received on subchannel %u for %s", retries+1, mySubchannel, header.toString(xx).str());
                         }
                         WorkerUdpTracker::TimeDivision division(timeTracker, WorkerUdpTracker::pushing);
-#ifdef NEW_IBYTI
                         // It's debatable whether we should delay for the primary here - they had one chance already...
                         // But then again, so did we, assuming the timeout is longer than the IBYTIdelay
                         unsigned delay = 0;
@@ -2679,14 +2510,12 @@ public:
                         if (delay)
                             delayed.queryQueue(header.channel, mySubchannel).append(packet.getClear(), msTick()+delay);
                         else
-#endif
                             queue.enqueueUnique(packet.getClear(), mySubchannel, 0);
                     }
                 }
                 else // first time (not a retry).
                 {
                     WorkerUdpTracker::TimeDivision division(timeTracker, WorkerUdpTracker::pushing);
-#ifdef NEW_IBYTI
                     unsigned delay = 0;
                     if (mySubchannel != 0 && (header.activityId & ~ROXIE_PRIORITY_MASK) < ROXIE_ACTIVITY_SPECIAL_FIRST)  // i.e. I am not the primary here, and never delay special
                     {
@@ -2696,7 +2525,6 @@ public:
                     if (delay)
                         delayed.queryQueue(header.channel, mySubchannel).append(packet.getClear(), msTick()+delay);
                     else
-#endif
                         queue.enqueue(packet.getClear(), 0);
                 }
             }
@@ -2718,13 +2546,9 @@ public:
             {
                 // NOTE - this thread needs to do as little as possible - just read packets and queue them up - otherwise we can get packet loss due to buffer overflow
                 // DO NOT put tracing on this thread except at very high tracelevels!
-#ifdef NEW_IBYTI
                 unsigned timeout = delayed.timeout(msTick());
                 if (timeout>5000)
                     timeout = 5000;
-#else
-                unsigned timeout = 5000;
-#endif
                 division.switchState(WorkerUdpTracker::allocating);
                 void * buffer = mb.reserve(maxPacketSize);
 
@@ -2786,9 +2610,7 @@ public:
                     break;
                 }
             }
-#ifdef NEW_IBYTI
             delayed.checkExpired(msTick(), slaQueue, hiQueue, loQueue, bgQueue);
-#endif
         }
         return 0;
     }
