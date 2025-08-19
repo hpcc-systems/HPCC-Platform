@@ -326,7 +326,7 @@ protected:
 class InplaceIndexCompressor : public CInterfaceOf<IIndexCompressor>
 {
 public:
-    InplaceIndexCompressor(size32_t keyedSize, const CKeyHdr * keyHdr, IHThorIndexWriteArg * helper, const char * _compressionName);
+    InplaceIndexCompressor(size32_t keyedSize, IHThorIndexWriteArg * helper, const char * _compressionName);
 
     virtual const char *queryName() const override { return compressionName.str(); }
     virtual CWriteNode *createNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode) const override
