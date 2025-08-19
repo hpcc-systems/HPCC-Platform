@@ -18,6 +18,7 @@
 #include <queue>
 #include <list>
 #include <unordered_map>
+#include <future>
 
 #include "platform.h"
 #include "jhash.hpp"
@@ -5692,24 +5693,28 @@ public:
         return res;
     }
 
-    unsigned saveStoreToFile(const IPropertyTree *root, IFileIO *iFileIOTmpStore, StoreFormat format)
+    static constexpr const char *temporaryXmlFileSaveName = "dali_store_tmp.xml";
+    static constexpr const char *temporaryBinaryFileSaveName = "dali_store_tmp.bin";
+    IFile *saveStoreToFile(const IPropertyTree *root, IFileIO *iFileIOTmpStore, const StoreFormat format, unsigned &crc)
     {
         const bool isBinary = (format == StoreFormat::BINARY);
+        LOG(MCdebugProgress, "Saving store to %s", isBinary ? "binary" : "XML");
         assertex(root);
-        assertex(iFileIOTmpStore);
 
         // iFileIOTmpStore is passed in so that it can be used by the caller after the saveStoreToBinaryFile() call,
         // for error processing and rename etc
-        IFile *iFile = iFileIOTmpStore->queryFile();
+        StringBuffer tmpStoreName;
+        if (isBinary)
+            iFileIOTmpStore = createUniqueFile(location, temporaryBinaryFileSaveName, NULL, tmpStoreName);
+        else
+            iFileIOTmpStore = createUniqueFile(location, temporaryXmlFileSaveName, NULL, tmpStoreName);
+        IFile *iFile = createIFile(tmpStoreName);
         dbgassertex(iFile);
-        const char *fileName = iFile->queryFilename();
-        dbgassertex(fileName);
         StringBuffer planeName;
         size32_t bufferSize = bufferSize1mb;
-        if (findPlaneFromPath(fileName, planeName))
+        if (findPlaneFromPath(location, planeName))
             bufferSize = (size32_t)getPlaneAttributeValue(planeName, BlockedSequentialIO, bufferSize);
 
-        unsigned crc = 0;
         if (isBinary)
         {
             Owned<ISerialOutputStream> serialStream = createSerialOutputStream(iFileIOTmpStore);
@@ -5743,7 +5748,31 @@ public:
             crcPipeStream.clear();
         }
         iFileIOTmpStore->close();
-        return crc;
+        return iFile;
+    }
+
+    IFile *safeSaveStoreToFile(const IPropertyTree *root, const StoreFormat format, unsigned &crc)
+    {
+        IFileIO *iFileIOTmpStore{nullptr};
+        try
+        {
+            return saveStoreToFile(root, iFileIOTmpStore, format, crc);
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e, VStringBuffer("Exception - Error saving %s store to : %s",
+                format == StoreFormat::XML ? "XML" : "Binary",
+                format == StoreFormat::XML ? temporaryXmlFileSaveName : temporaryBinaryFileSaveName));
+            e->Release();
+            iFileIOTmpStore->Release();
+            return nullptr;
+        }
+        catch (DALI_CATCHALL)
+        {
+            DISLOG("Unknown exception - Error saving %s store", format == StoreFormat::XML ? "XML" : "Binary");
+            iFileIOTmpStore->Release();
+            return nullptr;
+        }
     }
     virtual void saveStore(IPropertyTree *root, unsigned *_newEdition) override
     {
@@ -5754,88 +5783,41 @@ public:
         unsigned edition = storeInfo.edition;
         unsigned newEdition = nextEditionN(edition);
         bool savesCompleted = false;
+
+        OwnedIFile iXmlFileTmpStore;
+        OwnedIFile iBinaryFileTmpStore;
+
         try
         {
-            // Save store as XML
-            StringBuffer tmpStoreName;
-            constexpr const char *temporaryXmlFileSaveName = "dali_store_tmp.xml";
-            OwnedIFileIO iXmlFileIOTmpStore = createUniqueFile(location, temporaryXmlFileSaveName, NULL, tmpStoreName);
-            OwnedIFile iXmlFileTmpStore = createIFile(tmpStoreName);
-
-            // Save store as binary
-            OwnedIFile iBinaryFileTmpStore;
-            constexpr const char *temporaryBinaryFileSaveName = "dali_store_tmp.bin";
-            OwnedIFileIO iBinaryFileIOTmpStore = createUniqueFile(location, temporaryBinaryFileSaveName, NULL, tmpStoreName);
-            iBinaryFileTmpStore.setown(createIFile(tmpStoreName));
-
             // Execute save operations
             unsigned xmlCrc{0};
             unsigned binaryCrc{0};
-            bool binaryStoreSaved = false;
 
-            if (saveAsync && saveBinary)
+            std::future<IFile *> xmlStoreSavedFuture;
+            if (saveBinary)
             {
-                // Execute saves in parallel only if both saves are enabled
-                Owned<CCompletionTask> completed = new CCompletionTask();
-
-                completed->spawn([this, &xmlCrc, &root, &iXmlFileIOTmpStore]() {
-                    LOG(MCdebugProgress, "Saving store async to XML");
-                    xmlCrc = saveStoreToFile(root, iXmlFileIOTmpStore, StoreFormat::XML);
-                });
-
-                if (saveBinary)
+                if (saveAsync)
                 {
-                    try
+                    // Save the XML in the background
+                    xmlStoreSavedFuture = std::async(std::launch::async, [&]() -> IFile *
                     {
-                        completed->spawn([this, &binaryCrc, &root, &iBinaryFileIOTmpStore, &binaryStoreSaved]() {
-                            LOG(MCdebugProgress, "Saving store async to binary");
-                            binaryCrc = saveStoreToFile(root, iBinaryFileIOTmpStore, StoreFormat::BINARY);
-                            binaryStoreSaved = true;
-                        });
-                    }
-                    catch (IException *e)
-                    {
-                        OWARNLOG(e, "Exception - Error saving async binary store file");
-                        e->Release();
-                        // If the binary save fails we ignore it and continue to allow the XML save to complete
-                    }
-                    catch (DALI_CATCHALL)
-                    {
-                        OWARNLOG("Unknown exception - Error saving async binary store file");
-                        // If the binary save fails we ignore it and continue to allow the XML save to complete
-                    }
+                        LOG(MCdebugProgress, "Saving XML store asynch");
+                        return safeSaveStoreToFile(root, StoreFormat::XML, xmlCrc);
+                    });
                 }
+                else // if synchronous save XML 1st
+                    iXmlFileTmpStore.setown(safeSaveStoreToFile(root, StoreFormat::XML, xmlCrc));
 
-                // Wait for all saves to complete
-                completed->decAndWait();
+                iBinaryFileTmpStore.setown(safeSaveStoreToFile(root, StoreFormat::BINARY, binaryCrc));
+                if (saveAsync)
+                    iXmlFileTmpStore.setown(xmlStoreSavedFuture.get());
             }
             else
-            {
-                // Execute saves synchronously
-                LOG(MCdebugProgress, "Saving store to XML");
-                xmlCrc = saveStoreToFile(root, iXmlFileIOTmpStore, StoreFormat::XML);
+                iXmlFileTmpStore.setown(safeSaveStoreToFile(root, StoreFormat::XML, xmlCrc));
 
-                if (saveBinary)
-                {
-                    LOG(MCdebugProgress, "Saving store to binary");
-                    try
-                    {
-                        binaryCrc = saveStoreToFile(root, iBinaryFileIOTmpStore, StoreFormat::BINARY);
-                    }
-                    catch (IException *e)
-                    {
-                        OWARNLOG(e, "Exception - Error saving binary store file");
-                        e->Release();
-                        // If the binary save fails we ignore it and continue to allow the XML post processing to complete
-                    }
-                    catch (DALI_CATCHALL)
-                    {
-                        OWARNLOG("Unknown exception - Error saving binary store file");
-                        // If the binary save fails we ignore it and continue to allow the XML post processing to complete
-                    }
-                    binaryStoreSaved = true;
-                }
-            }
+            // Any binary save failure is ignored as only the XML save is critical
+            if (!iXmlFileTmpStore) // The XML save has failed so exit
+                return;
 
             // Rename temporary store files to new store files using edition number
             StringBuffer newXmlStoreName;
@@ -5873,7 +5855,7 @@ public:
                     iBinaryFileTmpStore->remove();
                 return;
             }
-            if (binaryStoreSaved)
+            if (iBinaryFileTmpStore)
             {
                 try
                 {
@@ -5919,7 +5901,7 @@ public:
                 }
             }
             clearStoreInfo(storeFileName, location, 0, NULL);
-            writeStoreInfo(storeFileName, location, newEdition, &xmlCrc, (binaryStoreSaved ? &binaryCrc : nullptr), &storeInfo);
+            writeStoreInfo(storeFileName, location, newEdition, &xmlCrc, (iBinaryFileTmpStore ? &binaryCrc : nullptr), &storeInfo);
 
             try
             {
@@ -5929,7 +5911,7 @@ public:
                     StringBuffer rLxml(remoteBackupLocation);
                     constructStoreName(storeName, newEdition, rLxml, ".xml");
                     copyFile(rLxml.str(), newXmlStoreNamePath.str());
-                    if (binaryStoreSaved)
+                    if (iBinaryFileTmpStore)
                     {
                         StringBuffer rLbinary(remoteBackupLocation);
                         constructStoreName(storeName, newEdition, rLbinary, ".bin");
@@ -5937,7 +5919,7 @@ public:
                     }
 
                     clearStoreInfo(storeFileName, remoteBackupLocation, 0, NULL);
-                    writeStoreInfo(storeFileName, remoteBackupLocation, newEdition, &xmlCrc, (binaryStoreSaved ? &binaryCrc : nullptr), &storeInfo);
+                    writeStoreInfo(storeFileName, remoteBackupLocation, newEdition, &xmlCrc, (iBinaryFileTmpStore ? &binaryCrc : nullptr), &storeInfo);
                     PROGLOG("Copy store done");
                 }
             }
