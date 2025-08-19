@@ -26,6 +26,7 @@ import { VariableImportForm } from "./forms/landing-zone/VariableImportForm";
 import { XmlImportForm } from "./forms/landing-zone/XmlImportForm";
 import { FileListForm } from "./forms/landing-zone/FileListForm";
 import { QueryRequest } from "src/store/Memory";
+import { useGlobalStore } from "../hooks/store";
 
 function formatQuery(targetDropzones, filter): QueryRequest {
     const dropzones = targetDropzones.filter(row => row.Name === filter?.DropZoneName);
@@ -76,11 +77,35 @@ interface LandingZoneProps {
 
 let dzExpanded = "";
 
+let globalDescriptionStore = {
+    descriptions: {},
+    updateFunction: null
+};
+
 export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
     filter = emptyFilter
 }) => {
 
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
+
+    const [landingZoneDescriptions, setLandingZoneDescriptions] = useGlobalStore("LandingZone_Descriptions", {}, false);
+
+    const updateLandingZoneDescriptions = React.useCallback((path: string, desc: string) => {
+        console.log('updateLandingZoneDescriptions called:', path, desc);
+        if (landingZoneDescriptions[path] !== desc) {
+            const newDescriptions = {
+                ...landingZoneDescriptions,
+                [path]: desc
+            };
+            console.log('Setting new descriptions:', newDescriptions);
+            void setLandingZoneDescriptions(newDescriptions);
+        }
+    }, [landingZoneDescriptions, setLandingZoneDescriptions]);
+
+    React.useEffect(() => {
+        globalDescriptionStore.descriptions = landingZoneDescriptions;
+        globalDescriptionStore.updateFunction = updateLandingZoneDescriptions;
+    }, [landingZoneDescriptions, updateLandingZoneDescriptions]);
 
     const [showFilter, setShowFilter] = React.useState(false);
     const [showAddFile, setShowAddFile] = React.useState(false);
@@ -115,7 +140,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
         filename: "landingZones",
         getSelected: function () {
             if (filter?.__dropZone) {
-                return this.inherited(arguments, [FileSpray.CreateLandingZonesFilterStore( filter.__dropZone )]);
+                return this.inherited(arguments, [FileSpray.CreateLandingZonesFilterStore(filter.__dropZone)]);
             }
             return this.inherited(arguments, [FileSpray.CreateFileListStore()]);
         },
@@ -178,7 +203,102 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
                     node.innerText = Utility.convertedSize(value);
                 }, []),
             },
-            modifiedtime: { label: nlsHPCC.Date, width: 162, sortable: false }
+            modifiedtime: {
+                label: nlsHPCC.Date, width: 162, sortable: false
+            },
+            description: {
+                label: nlsHPCC.Description,
+                width: 250,
+                sortable: false,
+                renderCell: function (object, value, node) {
+                    const path = object.fullFolderPath || object.displayName;
+
+                    const getCurrentDesc = () => {
+                        if (!globalDescriptionStore.descriptions) {
+                            globalDescriptionStore.descriptions = {};
+                        }
+                        return globalDescriptionStore.descriptions[path] ?? "";
+                    };
+                    const currentDesc = getCurrentDesc();
+
+                    const input = document.createElement("input");
+                    input.type = "text";
+                    input.value = currentDesc;
+                    input.style.width = "100%";
+                    input.placeholder = "Add a description";
+                    input.style.border = "1px solid #ccc";
+                    input.style.padding = "4px";
+
+                    let originalValue = currentDesc;
+
+                    const saveDescription = () => {
+                        const newValue = input.value.trim();
+                        console.log("Attempting to save description:", path, "from", originalValue, "to", newValue);
+
+                        if (newValue !== originalValue && globalDescriptionStore.updateFunction) {
+                            try {
+                                globalDescriptionStore.updateFunction(path, newValue);
+                                originalValue = newValue;
+                                console.log("Save attempt completed");
+                            } catch (error) {
+                                console.error("Error saving description:", error);
+                            }
+                        } else if (!globalDescriptionStore.updateFunction) {
+                            console.error("Update function not available");
+                        } else {
+                            console.log("No changes detected, skipping save");
+                        }
+                    };
+
+                    let saveTimer;
+                    input.oninput = () => {
+                        clearTimeout(saveTimer);
+                        saveTimer = setTimeout(saveDescription, 1000);
+                    };
+
+                    input.onblur = () => {
+                        clearTimeout(saveTimer);
+                        saveDescription();
+                    };
+
+                    input.onkeydown = (event) => {
+                        if (event.key === "Enter") {
+                            clearTimeout(saveTimer);
+                            saveDescription();
+                            input.blur();
+                        }
+                        if (event.key === "Escape") {
+                            clearTimeout(saveTimer);
+                            input.value = originalValue;
+                            input.blur();
+                        }
+                    };
+
+                    const observer = new MutationObserver((mutations) => {
+                        mutations.forEach((mutation) => {
+                            if (mutation.type === "childList") {
+                                mutation.removedNodes.forEach((removedNode) => {
+                                    if (removedNode.contains && removedNode.contains(input)) {
+                                        clearTimeout(saveTimer);
+                                    }
+                                });
+                            }
+                        });
+                    });
+
+                    observer.observe(node.parentElement || document.body, {
+                        childList: true,
+                        subtree: true
+                    });
+
+                    node._cleanup = () => {
+                        clearTimeout(saveTimer);
+                        observer.disconnect();
+                    };
+
+                    node.appendChild(input);
+                }
+            }
         }
     });
 
