@@ -53,7 +53,199 @@ extern "C" DECL_EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 
 namespace parquetembed
 {
-// //--------------------------------------------------------------------------
+
+
+/**
+ * @brief Helper function to check if a field name is ECL compatible (lowercase alphanumeric or _ and not starting with a digit).
+ *
+ * @param len Length of the field name.
+ * @param name The field name string.
+ * @return true if the field name is ECL compatible, false otherwise.
+ */
+static bool isEclCompatible(size32_t len, const char *name)
+{
+    if (std::isupper(name[0]) || (!std::isalpha(name[0]) && name[0] != '_'))
+        return false;
+    for (size32_t i = 1; i < len; ++i)
+    {
+        char c = name[i];
+        if (std::isupper(c) || (!std::isalnum(c) && c != '_'))
+            return false;
+    }
+    return true;
+}
+
+/**
+ * @brief Helper function to transform a field name to an ECL compatible name.
+ *
+ * @param name StringBuffer containing the original field name.
+ * @param out StringBuffer to store the transformed ECL compatible name.
+ * @return true if the name was transformed, false if it was already compatible.
+ * If the field was already compatible, the original name is swapped into out to
+ * avoid unnecessary copying.
+ */
+static bool toEclCompatible(StringBuffer &name, StringBuffer &out)
+{
+    assertex(name);
+    if (isEclCompatible(name.length(), name.str()))
+    {
+        out.swapWith(name);
+        return true;
+    }
+    if (std::isdigit(name.charAt(0)))
+        out.append('_');
+    for (size_t i = 0; i < name.length(); ++i)
+    {
+        char c = name.charAt(i);
+        if (!std::isalnum(c) && c != '_')
+            out.append('_');
+        else if (std::isupper(c))
+            out.append((char)std::tolower(c));
+        else
+            out.append(c);
+    }
+    return false;
+}
+
+/**
+ * @brief Helper function to map Arrow data types to ECL data types.
+ *
+ * @param type Shared pointer to the Arrow data type.
+ * @param out StringBuffer to store the resulting ECL data type.
+ * @return StringBuffer& Reference to the output StringBuffer.
+ */
+static StringBuffer &arrowTypeToEcl(const std::shared_ptr<arrow::DataType> &type, StringBuffer &out)
+{
+    using arrow::Type;
+    switch (type->id())
+    {
+        case Type::BOOL: return out.set("BOOLEAN");
+        case Type::INT8: return out.set("INTEGER1");
+        case Type::INT16: return out.set("INTEGER2");
+        case Type::INT32: return out.set("INTEGER4");
+        case Type::INT64: return out.set("INTEGER8");
+        case Type::UINT8: return out.set("UNSIGNED1");
+        case Type::UINT16: return out.set("UNSIGNED2");
+        case Type::UINT32: return out.set("UNSIGNED4");
+        case Type::UINT64: return out.set("UNSIGNED8");
+        case Type::FLOAT: return out.set("REAL4");
+        case Type::DOUBLE: return out.set("REAL8");
+        // Strings in Parquet are UTF-8 encoded
+        case Type::STRING: return out.set("UTF8");
+        case Type::LARGE_STRING: return out.set("UTF8");
+        case Type::BINARY: return out.set("DATA");
+        case Type::LARGE_BINARY: return out.set("DATA");
+        case Type::FIXED_SIZE_BINARY:
+        {
+            std::string byteWidth = std::to_string(std::static_pointer_cast<arrow::FixedSizeBinaryType>(type)->byte_width());
+            return out.set("DATA").append(byteWidth.length(), byteWidth.c_str());
+        }
+        case Type::DATE32: return out.set("INTEGER4 /*DATE32*/");
+        case Type::DATE64: return out.set("INTEGER8 /*DATE64*/");
+        case Type::TIMESTAMP: return out.set("INTEGER8 /*TIMESTAMP*/");
+        case Type::TIME32: return out.set("INTEGER4 /*TIME32*/");
+        case Type::TIME64: return out.set("INTEGER8 /*TIME64*/");
+        case Type::DECIMAL128:
+        {
+            std::string precision128 = std::to_string(std::static_pointer_cast<arrow::Decimal128Type>(type)->precision());
+            std::string scale128 = std::to_string(std::static_pointer_cast<arrow::Decimal128Type>(type)->scale());
+            return out.set("DECIMAL").append(precision128.length(), precision128.c_str()).append("_").append(scale128.length(), scale128.c_str());
+        }
+        case Type::DECIMAL256:
+        {
+            std::string precision256 = std::to_string(std::static_pointer_cast<arrow::Decimal256Type>(type)->precision());
+            std::string scale256 = std::to_string(std::static_pointer_cast<arrow::Decimal256Type>(type)->scale());
+            return out.set("DECIMAL").append(precision256.length(), precision256.c_str()).append("_").append(scale256.length(), scale256.c_str());
+        }
+        default: return out.set("STRING /*UNSUPPORTED: ").append(type->ToString()).append("*/");
+    }
+}
+
+/**
+ * @brief Recursively builds an ECL record structure from an Arrow schema.
+ *
+ * @param schema Shared pointer to the Arrow schema.
+ * @param out StringBuffer to store the generated ECL record structure.
+ * @param indent Indentation level for formatting the output (default is 4).
+ */
+static void buildEclRecord(const std::shared_ptr<arrow::Schema> &schema, StringBuffer &out, int indent = 4)
+{
+    StringBuffer pad;
+    pad.appendN(indent, ' ');
+    for (int i = 0; i < schema->num_fields(); ++i)
+    {
+        const std::shared_ptr<arrow::Field> &field = schema->field(i);
+        StringBuffer origName(field->name().length(), field->name().c_str());
+        StringBuffer eclName;
+        bool isCompatible = toEclCompatible(origName, eclName);
+        StringBuffer eclType;
+        if (field->type()->id() == arrow::Type::STRUCT)
+        {
+            StringBuffer childRecord;
+            childRecord.append(eclName).append("Rec := RECORD\n");
+            std::shared_ptr<arrow::StructType> structType = std::static_pointer_cast<arrow::StructType>(field->type());
+            std::shared_ptr<arrow::Schema> childSchema = std::make_shared<arrow::Schema>(structType->fields());
+            buildEclRecord(childSchema, childRecord);
+            childRecord.append("END;\n\n");
+            out.insert(0, childRecord);
+            out.append(pad).append(eclName).append("Rec ").append(eclName);
+        }
+        else if (field->type()->id() == arrow::Type::LIST || field->type()->id() == arrow::Type::LARGE_LIST)
+        {
+            out.append(pad).append("SET OF ");
+            if (field->type()->id() == arrow::Type::LIST)
+                arrowTypeToEcl(std::static_pointer_cast<arrow::ListType>(field->type())->value_type(), eclType);
+            else
+                arrowTypeToEcl(std::static_pointer_cast<arrow::LargeListType>(field->type())->value_type(), eclType);
+            out.append(eclType).append(' ').append(eclName);
+        }
+        else
+        {
+            arrowTypeToEcl(field->type(), eclType);
+            out.append(pad).append(eclType).append(' ').append(eclName);
+        }
+        if (!isCompatible)
+            out.append(" {XPATH('").append(origName).append("')}");
+        out.append(";\n");
+    }
+}
+
+/**
+ * @brief Given a file path to a Parquet file, generates the ECL record structure for that file.
+ *
+ * @param lenResult Length of the resulting string containing the ECL record structure.
+ * @param result The resulting string containing the ECL record structure.
+ * @param lenFilePath Length of the input file path string.
+ * @param filePath The input file path string pointing to the Parquet file.
+ */
+extern "C++" PARQUETEMBED_PLUGIN_API void getParquetRecordStructure(size32_t &__lenResult, char * &__result, size32_t lenFilePath, const char *filePath)
+{
+    try
+    {
+        // Open Parquet file and get schema
+        StringBuffer filePathBuf(lenFilePath, filePath);
+        std::unique_ptr<ParquetReader> reader = std::make_unique<ParquetReader>("read", filePathBuf.str(), 0, nullptr, nullptr);
+        std::shared_ptr<arrow::Schema> schema = reader->getSchema();
+
+        StringBuffer ecl("parquetRecord := RECORD\n");
+        buildEclRecord(schema, ecl);
+        ecl.append("END;\n");
+
+        __lenResult = ecl.length();
+        __result = (char *)rtlMalloc(__lenResult);
+        memcpy(__result, ecl.str(), __lenResult);
+    }
+    catch (const std::exception &e)
+    {
+        VStringBuffer err("Error: %s", e.what());
+        __lenResult = err.length();
+        __result = (char *)rtlMalloc(__lenResult);
+        memcpy(__result, err.str(), __lenResult);
+    }
+}
+
+
+//--------------------------------------------------------------------------
 // Plugin Classes
 //--------------------------------------------------------------------------
 
