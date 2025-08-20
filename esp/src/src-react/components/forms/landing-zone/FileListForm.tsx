@@ -43,7 +43,7 @@ interface FileListFormProps {
     showForm: boolean;
     selection: object[];
     setShowForm: (_: boolean) => void;
-    onSubmit?: (_: void) => void;
+    onSubmit?: (dropzoneName?: string, netAddress?: string) => void;
 }
 
 export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
@@ -98,7 +98,7 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                     } else {
                         closeForm();
                         if (typeof onSubmit === "function") {
-                            onSubmit();
+                            onSubmit(data.dropzone, machine);
                         }
                         reset(defaultValues);
                     }
