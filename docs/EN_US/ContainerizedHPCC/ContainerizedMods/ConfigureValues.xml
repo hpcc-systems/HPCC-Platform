@@ -664,6 +664,147 @@
         mounts the plane categories it needs.</para>
       </sect3>
 
+      <sect3 id="StorageDefaults">
+        <title>Storage Defaults </title>
+
+        <para>As of version 9.14, HPCC Systems supports a new
+        <literal>defaults</literal> section under storage configuration that
+        provides fallback settings for storage planes. This feature allows
+        administrators to define common configuration values that can be
+        inherited by individual storage planes, reducing duplication and
+        simplifying configuration management.</para>
+
+        <sect4 id="Configuration-Structure">
+          <title>Storage Defaults Configuration</title>
+
+          <para>The storage defaults section is added as a sibling to the
+          <literal>planes</literal> section in your Helm values
+          configuration:</para>
+
+          <programlisting language="yaml">storage:
+  defaults:
+    # Common settings that apply to all planes unless overridden
+    category: "storage"
+    numDevices: 1
+    blockSize: 65536
+    # Any other storage plane properties
+  
+  planes:
+    - name: "data"
+      category: "lz"  # This overrides the default
+      # Other plane-specific settings
+    
+    - name: "spill"
+      # This plane will inherit defaults
+      # numDevices: 1, blockSize: 65536, etc.
+</programlisting>
+        </sect4>
+
+        <sect4 id="How-Defaults-Work">
+          <title>How Storage Defaults Work</title>
+
+          <para>The defaults mechanism works as follows:</para>
+
+          <orderedlist>
+            <listitem>
+              <para><emphasis role="bold">Priority:</emphasis> Individual
+              plane settings take precedence over defaults</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Inheritance:</emphasis> Storage
+              planes automatically inherit any properties not explicitly
+              defined at the plane level</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Data Types:</emphasis> Defaults
+              apply to integer and boolean attributes in storage plane
+              configurations</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Fallback Creation:</emphasis> If no
+              defaults section exists in the configuration, the system
+              automatically creates an empty defaults tree to ensure
+              consistent behavior</para>
+            </listitem>
+          </orderedlist>
+        </sect4>
+
+        <sect4 id="Common-Use-Cases">
+          <title>Example Use Cases</title>
+
+          <sect5 id="Cost-Management">
+            <title>Cost Management</title>
+
+            <para>Define default cost parameters that can be inherited by
+            multiple planes:</para>
+
+            <programlisting language="yaml">
+storage:
+  defaults:
+    cost:
+      accessCost: 0.001
+      storageCost: 0.02
+      bandwidthCost: 0.05
+  
+  planes:
+    - name: "data"
+      cost:
+        accessCost: 0.002  # Override for high-performance storage
+    
+    - name: "backup"
+      # Inherits all default cost settings
+      </programlisting>
+          </sect5>
+
+          <sect5 id="Performance-Tuning">
+            <title>Performance Tuning</title>
+
+            <para>Set consistent performance parameters across storage
+            planes:</para>
+
+            <programlisting language="yaml">
+storage:
+  defaults:
+    blockSize: 65536
+    numDevices: 2
+    readTimeout: 300
+    writeTimeout: 300
+  
+  planes:
+    - name: "fast-ssd"
+      blockSize: 131072  # Larger blocks for SSD
+      
+    - name: "standard"
+      # Uses default block size and timeouts
+      </programlisting>
+          </sect5>
+
+          <sect5 id="Security-Compliance">
+            <title>Security and Compliance</title>
+
+            <para>Apply consistent security settings organization-wide:</para>
+
+            <programlisting language="yaml">
+storage:
+  defaults:
+    encryption: true
+    compressionLevel: 6
+    auditEnabled: true
+  
+  planes:
+    - name: "sensitive-data"
+      compressionLevel: 9  # Higher compression for sensitive data
+      
+    - name: "public-data"
+      encryption: false    # Override for non-sensitive data
+      </programlisting>
+          </sect5>
+        </sect4>
+      </sect3>
+
       <sect3 id="YML_EphemeralStorage">
         <title>Ephemeral Storage</title>
 
