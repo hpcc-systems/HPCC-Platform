@@ -6088,16 +6088,13 @@ private:
     }
 
     //Add new user to the given base DN
-    virtual bool addUser(ISecUser & user, const char* basedn)
+    virtual bool addUser(ISecUser & user)
     {
-        StringBuffer prevBaseDN(m_ldapconfig->getUserBasedn());
-        m_ldapconfig->setUserBasedn(basedn);
-        bool rc = addUser(user);
-        m_ldapconfig->setUserBasedn(prevBaseDN.str());
-        return rc;
+        return addUser(user, m_ldapconfig->getUserBasedn());
     }
 
-    virtual bool addUser(ISecUser& user)
+
+    virtual bool addUser(ISecUser& user, const char* basedn)
     {
         LdapServerType serverType = m_ldapconfig->getServerType();
         const char* username = user.getName();
@@ -6150,7 +6147,7 @@ private:
         {
             dn.append("uid=").append(user.getName()).append(",");
         }
-        dn.append(m_ldapconfig->getUserBasedn());
+        dn.append(basedn);
 
         char* oc_name;
         char* act_fieldname;
