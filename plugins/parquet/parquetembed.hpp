@@ -391,6 +391,8 @@ public:
     bool getCursor(MemoryBuffer & cursor);
     void setCursor(MemoryBuffer & cursor);
 
+    std::shared_ptr<arrow::Schema> getSchema();
+
 private:
     arrow::Status openReadFile();
     __int64 readColumns(__int64 currTable);

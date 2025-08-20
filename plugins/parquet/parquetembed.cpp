@@ -560,6 +560,24 @@ void ParquetReader::setCursor(MemoryBuffer & cursor)
 }
 
 /**
+ * @brief Open a FileReader or dataset Scanner for the target location set in the constructor and get the schema.
+ *
+ * @return std::shared_ptr<arrow::Schema> The schema of the file or partitioned dataset.
+ */
+std::shared_ptr<arrow::Schema> ParquetReader::getSchema()
+{
+    reportIfFailure(openReadFile());
+    if (scanner)
+        return scanner->options()->dataset_schema;
+    else
+    {
+        std::shared_ptr<arrow::Schema> schema;
+        reportIfFailure(std::get<1>(parquetFileReaders[0])->GetSchema(&schema));
+        return schema;
+    }
+}
+
+/**
  * @brief Constructs a ParquetWriter for the target destination and checks for existing data.
  *
  * @param option The read or write option as well as information about partitioning.
