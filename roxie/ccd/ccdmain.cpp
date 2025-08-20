@@ -717,6 +717,12 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         saveTopology(topology->getPropBool("@lockDali", false));
         originalTopologyHash = currentTopologyHash = getTopologyHash();
 
+        // Allow the command line to override the location of local secrets, so that roxie can be run from the build directory,
+        // but still pick up secrets from a deployed instance
+        const char * secretPath = topology->queryProp("@secretpath");
+        if (secretPath)
+            setSecretMount(secretPath);
+
         // Any settings we read from topology that must NOT be overridden in workunit debug fields should be read at this point, before the following section
         getAllowedPipePrograms(allowedPipePrograms, true);
 
