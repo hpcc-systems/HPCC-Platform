@@ -19,6 +19,7 @@
 #include <list>
 #include <unordered_map>
 #include <future>
+#include <optional>
 
 #include "platform.h"
 #include "jhash.hpp"
@@ -5695,7 +5696,7 @@ public:
 
     static constexpr const char *temporaryXmlFileSaveName = "dali_store_tmp.xml";
     static constexpr const char *temporaryBinaryFileSaveName = "dali_store_tmp.bin";
-    IFile *saveStoreToFile(const IPropertyTree *root, IFileIO *iFileIOTmpStore, const StoreFormat format, unsigned &crc)
+    IFile *saveStoreToFile(const IPropertyTree *root, Owned<IFileIO> &iFileIOTmpStore, const StoreFormat format, unsigned &crc)
     {
         const bool isBinary = (format == StoreFormat::BINARY);
         LOG(MCdebugProgress, "Saving store to %s", isBinary ? "binary" : "XML");
@@ -5705,9 +5706,9 @@ public:
         // for error processing and rename etc
         StringBuffer tmpStoreName;
         if (isBinary)
-            iFileIOTmpStore = createUniqueFile(location, temporaryBinaryFileSaveName, NULL, tmpStoreName);
+            iFileIOTmpStore.setown(createUniqueFile(location, temporaryBinaryFileSaveName, NULL, tmpStoreName));
         else
-            iFileIOTmpStore = createUniqueFile(location, temporaryXmlFileSaveName, NULL, tmpStoreName);
+            iFileIOTmpStore.setown(createUniqueFile(location, temporaryXmlFileSaveName, NULL, tmpStoreName));
         IFile *iFile = createIFile(tmpStoreName);
         dbgassertex(iFile);
         StringBuffer planeName;
@@ -5753,7 +5754,7 @@ public:
 
     IFile *safeSaveStoreToFile(const IPropertyTree *root, const StoreFormat format, unsigned &crc)
     {
-        IFileIO *iFileIOTmpStore{nullptr};
+        Owned<IFileIO> iFileIOTmpStore;
         try
         {
             return saveStoreToFile(root, iFileIOTmpStore, format, crc);
@@ -5761,8 +5762,8 @@ public:
         catch (IException *e)
         {
             EXCLOG(e, VStringBuffer("Exception - Error saving %s store to : %s",
-                format == StoreFormat::XML ? "XML" : "Binary",
-                format == StoreFormat::XML ? temporaryXmlFileSaveName : temporaryBinaryFileSaveName));
+                                    format == StoreFormat::XML ? "XML" : "Binary",
+                                    format == StoreFormat::XML ? temporaryXmlFileSaveName : temporaryBinaryFileSaveName));
             e->Release();
             iFileIOTmpStore->Release();
             return nullptr;
@@ -5784,33 +5785,31 @@ public:
         unsigned newEdition = nextEditionN(edition);
         bool savesCompleted = false;
 
-        OwnedIFile iXmlFileTmpStore;
-        OwnedIFile iBinaryFileTmpStore;
-
         try
         {
-            // Execute save operations
+            OwnedIFile iXmlFileTmpStore;
+            OwnedIFile iBinaryFileTmpStore;
             unsigned xmlCrc{0};
             unsigned binaryCrc{0};
 
-            std::future<IFile *> xmlStoreSavedFuture;
+            // Execute save operations
+            std::optional<std::future<IFile *>> xmlStoreSavedFuture;
             if (saveBinary)
             {
                 if (saveAsync)
                 {
                     // Save the XML in the background
-                    xmlStoreSavedFuture = std::async(std::launch::async, [&]() -> IFile *
-                    {
+                    xmlStoreSavedFuture = std::async(std::launch::async, [this, &xmlCrc, root]() -> IFile *
+                                                     {
                         LOG(MCdebugProgress, "Saving XML store asynch");
-                        return safeSaveStoreToFile(root, StoreFormat::XML, xmlCrc);
-                    });
+                        return safeSaveStoreToFile(root, StoreFormat::XML, xmlCrc); });
                 }
                 else // if synchronous save XML 1st
                     iXmlFileTmpStore.setown(safeSaveStoreToFile(root, StoreFormat::XML, xmlCrc));
 
                 iBinaryFileTmpStore.setown(safeSaveStoreToFile(root, StoreFormat::BINARY, binaryCrc));
-                if (saveAsync)
-                    iXmlFileTmpStore.setown(xmlStoreSavedFuture.get());
+                if (xmlStoreSavedFuture.has_value())
+                    iXmlFileTmpStore.setown(xmlStoreSavedFuture->get());
             }
             else
                 iXmlFileTmpStore.setown(safeSaveStoreToFile(root, StoreFormat::XML, xmlCrc));
