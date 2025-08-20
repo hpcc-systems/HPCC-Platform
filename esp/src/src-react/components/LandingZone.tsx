@@ -1,20 +1,20 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, mergeStyleSets } from "@fluentui/react";
-import { useConst, useOnEvent } from "@fluentui/react-hooks";
-import * as domClass from "dojo/dom-class";
+import { useOnEvent } from "@fluentui/react-hooks";
+import { FileSprayService } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
 import * as iframe from "dojo/request/iframe";
-import * as put from "put-selector/put";
 import { TpDropZoneQuery } from "src/WsTopology";
-import * as FileSpray from "src/FileSpray";
 import * as ESPRequest from "src/ESPRequest";
-import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
+import { deleteDropZoneFile, lfEncode } from "../comms/fileSpray";
 import { useConfirm } from "../hooks/confirm";
-import { useGrid } from "../hooks/grid";
+import { useTreeData } from "../hooks/useLandingZoneTreeData";
+import { useLandingZoneStore } from "../hooks/useLandingZoneStore";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
-import { selector, tree } from "./DojoGrid";
+import { LandingZoneTreeTable, LandingZoneItem } from "./controls/LandingZoneTreeTable";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
 import { AddFileForm } from "./forms/landing-zone/AddFileForm";
@@ -25,24 +25,21 @@ import { JsonImportForm } from "./forms/landing-zone/JsonImportForm";
 import { VariableImportForm } from "./forms/landing-zone/VariableImportForm";
 import { XmlImportForm } from "./forms/landing-zone/XmlImportForm";
 import { FileListForm } from "./forms/landing-zone/FileListForm";
-import { QueryRequest } from "src/store/Memory";
 
-function formatQuery(targetDropzones, filter): QueryRequest {
-    const dropzones = targetDropzones.filter(row => row.Name === filter?.DropZoneName);
-    const machines = targetDropzones[0]?.TpMachines?.TpMachine?.filter(row => row.ConfigNetaddress === filter?.Server);
-    return {
-        id: "*",
-        filter: (filter?.DropZoneName && dropzones.length && machines.length) ? {
-            DropZoneName: filter.DropZoneName,
-            Server: filter.Server,
-            NameFilter: filter.NameFilter,
-            ECLWatchVisibleOnly: true,
-            __dropZone: {
-                ...targetDropzones.filter(row => row.Name === filter?.DropZoneName)[0],
-                machine: machines[0]
-            }
-        } : undefined
-    };
+const logger = scopedLogger("src-react/components/LandingZone.tsx");
+
+interface LandingZoneFilter {
+    DropZoneName?: string;
+    Server?: string;
+    NameFilter?: string;
+    ECLWatchVisibleOnly?: boolean;
+    __dropZone?: any;
+}
+
+const emptyFilter: LandingZoneFilter = {};
+
+interface LandingZoneProps {
+    filter?: LandingZoneFilter;
 }
 
 const buttonStyles = mergeStyleSets({
@@ -59,22 +56,6 @@ const FilterFields: Fields = {
     "Server": { type: "target-server", label: nlsHPCC.Server },
     "NameFilter": { type: "string", label: nlsHPCC.FileName, placeholder: nlsHPCC.somefile },
 };
-
-interface LandingZoneFilter {
-    DropZoneName?: string;
-    Server?: string;
-    NameFilter?: string;
-    ECLWatchVisibleOnly?: boolean;
-    __dropZone?: any;
-}
-
-const emptyFilter: LandingZoneFilter = {};
-
-interface LandingZoneProps {
-    filter?: LandingZoneFilter;
-}
-
-let dzExpanded = "";
 
 export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
     filter = emptyFilter
@@ -95,118 +76,369 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
     const [showFileUpload, setShowFileUpload] = React.useState(false);
     const [targetDropzones, setTargetDropzones] = React.useState([]);
 
+    const [expandedNodes, setExpandedNodes] = React.useState<Set<string>>(new Set());
+    const [selectedPaths, setSelectedPaths] = React.useState<string[]>([]);
+    const [allDropZoneData, setAllDropZoneData] = React.useState<any[]>([]);
+
+    const [loadingItems, setLoadingItems] = React.useState<Set<string>>(new Set());
+    const [initialLoading, setInitialLoading] = React.useState(false);
+
+    const { data: dropZoneData, loading: dataLoading, refresh: refreshDropZones } = useLandingZoneStore();
+
     React.useEffect(() => {
         TpDropZoneQuery({}).then(({ TpDropZoneQueryResponse }) => {
             setTargetDropzones(TpDropZoneQueryResponse?.TpDropZones?.TpDropZone || []);
         });
     }, []);
 
-    //  Grid ---
-    const store = useConst(() => FileSpray.CreateLandingZonesStore());
+    React.useEffect(() => {
+        setAllDropZoneData(dropZoneData);
+    }, [dropZoneData]);
 
-    const query = React.useMemo(() => {
-        return formatQuery(targetDropzones, filter);
+    // load specific files when a drop zone + machine is selected (via filter)
+    React.useEffect(() => {
+        if (filter?.DropZoneName && filter?.Server) {
+            setInitialLoading(true);
+
+            const fileSprayService = new FileSprayService({ baseUrl: "" });
+
+            fileSprayService.DropZoneFileSearch({
+                DropZoneName: filter.DropZoneName,
+                Server: filter.Server,
+                NameFilter: filter.NameFilter || "*",
+                ECLWatchVisibleOnly: true
+            }).then(response => {
+                const files = response?.Files?.PhysicalFileStruct || [];
+                const dropzone = targetDropzones.find(dz => dz.Name === filter.DropZoneName);
+                const machine = dropzone?.TpMachines?.TpMachine?.find(m => m.ConfigNetaddress === filter.Server);
+
+                if (machine) {
+                    const data = files.map((file: any) => {
+                        const fullPath = machine.Directory + "/" + (file.Path === null ? "" : (file.Path + "/")) + file.name;
+                        const fullFolderPathParts = fullPath.split("/");
+                        fullFolderPathParts.pop();
+                        const netAddress = machine.Netaddress;
+
+                        return {
+                            ...file,
+                            calculatedID: netAddress + fullPath,
+                            NetAddress: netAddress,
+                            OS: machine.OS,
+                            fullPath,
+                            fullFolderPath: fullFolderPathParts.join("/"),
+                            DropZone: dropzone,
+                            displayName: file.Path ? (file.Path + "/" + file.name) : file.name,
+                            type: file.isDir ? "folder" : "file",
+                            getLogicalFile: () => `~file::${netAddress}${file.fullPath}`
+                        };
+                    });
+
+                    setAllDropZoneData(prevData => {
+                        const newData = [...prevData];
+                        data.forEach(file => {
+                            newData.push(file);
+                        });
+                        return newData;
+                    });
+
+                    // auto-expand to show the selected dropzone and machine
+                    const dropzone = targetDropzones.find(dz => dz.Name === filter.DropZoneName);
+                    if (dropzone && filter.DropZoneName && filter.Server) {
+                        const dropzoneId = `dropzone-${dropzone.Name}-${encodeURIComponent(dropzone.Path || "")}`;
+                        const machineId = `machine-${filter.DropZoneName}-${filter.Server}`;
+                        setExpandedNodes(new Set([dropzoneId, machineId]));
+                    }
+                }
+                setInitialLoading(false);
+            }).catch(() => {
+                setInitialLoading(false);
+            });
+        }
     }, [filter, targetDropzones]);
 
-    const { Grid, selection, refreshTable, copyButtons } = useGrid({
-        store,
-        query,
-        sort: { attribute: "modifiedtime", descending: true },
-        filename: "landingZones",
-        getSelected: function () {
-            if (filter?.__dropZone) {
-                return this.inherited(arguments, [FileSpray.CreateLandingZonesFilterStore( filter.__dropZone )]);
-            }
-            return this.inherited(arguments, [FileSpray.CreateFileListStore()]);
-        },
-        columns: {
-            col1: selector({
-                width: 27,
-                disabled: function (item) {
-                    if (item.type) {
-                        switch (item.type) {
-                            case "dropzone":
-                            case "folder":
-                            case "machine":
-                                return true;
-                        }
+    const handleExpansionChange = React.useCallback((expandedIds: Set<string>) => {
+        const newlyExpanded = Array.from(expandedIds).filter(id => !expandedNodes.has(id));
+
+        newlyExpanded.forEach(nodeId => {
+            if (nodeId.startsWith("machine-")) {
+                // extract dropzone and machine info from the nodeId
+                // format: machine-{dropzoneName}-{machineAddress}
+                const parts = nodeId.replace("machine-", "").split("-");
+                if (parts.length >= 2) {
+                    const dropzoneName = parts[0];
+                    const machineAddress = parts.slice(1).join("-");
+                    const dropzone = targetDropzones.find(dz => dz.Name === dropzoneName);
+                    const machine = dropzone?.TpMachines?.TpMachine?.find(m =>
+                        m.Netaddress === machineAddress || m.ConfigNetaddress === machineAddress
+                    );
+
+                    if (dropzone && machine) {
+                        const machineId = `machine-${dropzoneName}-${machineAddress}`;
+                        setLoadingItems(prev => new Set(prev).add(machineId));
+
+                        const fileSprayService = new FileSprayService({ baseUrl: "" });
+
+                        fileSprayService.FileList({
+                            DropZoneName: dropzoneName,
+                            Netaddr: machine.Netaddress,
+                            Path: machine.Directory === "/" ? "/" : machine.Directory + "/",
+                            Mask: "",
+                            OS: machine.OS.toString()
+                        }).then(response => {
+                            const files = response?.files?.PhysicalFileStruct || [];
+
+                            const transformedFiles = files.map((file: any) => {
+                                const basePath = machine.Directory === "/" ? "" : machine.Directory;
+                                const fullPath = basePath + "/" + file.name + (file.isDir ? "/" : "");
+
+                                // fullFolderPath should be the Path field from the response (the directory containing this item)
+                                const fullFolderPath = file.Path === "/" ? "/" : file.Path;
+
+                                const netAddress = machine.Netaddress;
+
+                                return {
+                                    ...file,
+                                    calculatedID: netAddress + fullPath,
+                                    NetAddress: netAddress,
+                                    OS: machine.OS,
+                                    fullPath,
+                                    fullFolderPath,
+                                    DropZone: dropzone,
+                                    displayName: file.name,
+                                    type: file.isDir ? "folder" : "file",
+                                    getLogicalFile: () => `~file::${netAddress}${lfEncode(fullPath)}`
+                                };
+                            });
+
+                            setAllDropZoneData(prevData => {
+                                const filteredData = prevData.filter(item =>
+                                    !(item.NetAddress === machine.Netaddress && item.DropZone?.Name === dropzoneName)
+                                );
+                                return [...filteredData, ...transformedFiles];
+                            });
+
+                            setLoadingItems(prev => {
+                                const newSet = new Set(prev);
+                                newSet.delete(machineId);
+                                return newSet;
+                            });
+                        }).catch(err => {
+                            logger.error(err);
+                            setLoadingItems(prev => {
+                                const newSet = new Set(prev);
+                                newSet.delete(machineId);
+                                return newSet;
+                            });
+                        });
                     }
-                    return false;
-                },
-                selectorType: "checkbox"
-            }),
-            displayName: tree({
-                label: nlsHPCC.Name,
-                sortable: false,
-                shouldExpand: function (row, level) {
-                    if ((dzExpanded === "" || dzExpanded === row.data.DropZone?.Name) && level <= 1) {
-                        dzExpanded = row.data.DropZone.Name;
-                        return true;
-                    }
-                    return false;
-                },
-                formatter: function (_name, row) {
-                    let img = "";
-                    let name = row.displayName;
-                    if (row.isDir === undefined) {
-                        img = Utility.getImageHTML("server.png");
-                        name += " [" + row.Path + "]";
-                    } else if (row.isMachine) {
-                        img = Utility.getImageHTML("machine.png");
-                    } else if (row.isDir) {
-                        img = Utility.getImageHTML("folder.png");
-                    } else {
-                        img = Utility.getImageHTML("file.png");
-                    }
-                    return img + "&nbsp;" + name;
-                },
-                renderExpando: function (level, hasChildren, expanded, object) {
-                    const dir = this.grid.isRTL ? "right" : "left";
-                    let cls = ".dgrid-expando-icon";
-                    if (hasChildren) {
-                        cls += ".ui-icon.ui-icon-triangle-1-" + (expanded ? "se" : "e");
-                    }
-                    const node = put("div" + cls + "[style=margin-" + dir + ": " + (level * (this.indentWidth || 9)) + "px; float: " + dir + ";" + (!hasChildren ? " width: 16px; height: 16px;" : "") + "]");
-                    node.innerHTML = "&nbsp;";
-                    return node;
                 }
-            }),
-            filesize: {
-                label: nlsHPCC.Size, width: 100, sortable: false,
-                renderCell: React.useCallback(function (object, value, node, options) {
-                    domClass.add(node, "justify-right");
-                    node.innerText = Utility.convertedSize(value);
-                }, []),
-            },
-            modifiedtime: { label: nlsHPCC.Date, width: 162, sortable: false }
-        }
+            } else if (nodeId.startsWith("folder-")) {
+                // the folder ID contains the machine address and full path: folder-{machineAddress}-{fullPath}
+                // instead of trying to parse this complex format, find the folder data by matching the node ID
+                const folderData = allDropZoneData.find(item => {
+                    if (item.type !== "folder") return false;
+
+                    const expectedId = `folder-${item.NetAddress}-${item.fullPath}`;
+                    return expectedId === nodeId;
+                });
+
+                if (folderData) {
+                    const folderId = nodeId; // nodeId is the folder ID
+                    setLoadingItems(prev => new Set(prev).add(folderId));
+
+                    const fileSprayService = new FileSprayService({ baseUrl: "" });
+
+                    fileSprayService.FileList({
+                        DropZoneName: folderData.DropZone.Name,
+                        Netaddr: folderData.NetAddress,
+                        Path: folderData.fullPath,
+                        Mask: "",
+                        OS: folderData.OS.toString()
+                    }).then(response => {
+                        const files = response?.files?.PhysicalFileStruct || [];
+
+                        const transformedFiles = files.map((file: any) => {
+                            const fullPath = folderData.fullPath + file.name + (file.isDir ? "/" : "");
+                            // fullFolderPath should be the parent folder (without trailing slash)
+                            const fullFolderPath = folderData.fullPath.replace(/\/$/, "");
+
+                            return {
+                                ...file,
+                                calculatedID: folderData.NetAddress + fullPath,
+                                NetAddress: folderData.NetAddress,
+                                OS: folderData.OS,
+                                fullPath,
+                                fullFolderPath,
+                                DropZone: folderData.DropZone,
+                                displayName: file.name,
+                                type: file.isDir ? "folder" : "file",
+                                getLogicalFile: () => `~file::${folderData.NetAddress}${lfEncode(fullPath)}`
+                            };
+                        });
+
+                        setAllDropZoneData(prevData => {
+                            const folderPathWithoutSlash = folderData.fullPath.replace(/\/$/, "");
+                            const filteredData = prevData.filter(item =>
+                                !(item.fullFolderPath === folderPathWithoutSlash && item.NetAddress === folderData.NetAddress)
+                            );
+                            return [...filteredData, ...transformedFiles];
+                        });
+
+                        setLoadingItems(prev => {
+                            const newSet = new Set(prev);
+                            newSet.delete(folderId);
+                            return newSet;
+                        });
+                    }).catch(err => {
+                        logger.error(err);
+                        setLoadingItems(prev => {
+                            const newSet = new Set(prev);
+                            newSet.delete(folderId);
+                            return newSet;
+                        });
+                    });
+                }
+            }
+        });
+
+        setExpandedNodes(expandedIds);
+    }, [expandedNodes, targetDropzones, allDropZoneData]);
+
+    const {
+        treeItems,
+        selectedItemIds,
+        expandedItemIds,
+        onSelectionChange
+    } = useTreeData({
+        dropZones: targetDropzones,
+        currentDropZone: filter?.DropZoneName || "",
+        allData: allDropZoneData,
+        selectedPaths,
+        expandedNodes,
+        onExpandedNodesChange: handleExpansionChange,
+        onSelectionChange: setSelectedPaths
     });
+
+    const selection = React.useMemo(() => {
+        return treeItems.filter(item => selectedItemIds.has(item.id) && item.type === "file")
+            .map(item => item.data);
+    }, [treeItems, selectedItemIds]);
+
+    const refreshTable = React.useCallback((clearSelection = false) => {
+        if (clearSelection) {
+            setSelectedPaths([]);
+        }
+        refreshDropZones();
+    }, [refreshDropZones]);
+
+    const refreshMachineFiles = React.useCallback((dropZoneName: string, netAddress: string) => {
+        const dropzone = targetDropzones.find(dz => dz.Name === dropZoneName);
+        const machine = dropzone?.TpMachines?.TpMachine?.find(m =>
+            m.Netaddress === netAddress || m.ConfigNetaddress === netAddress
+        );
+
+        if (dropzone && machine) {
+            const fileSprayService = new FileSprayService({ baseUrl: "" });
+
+            fileSprayService.FileList({
+                DropZoneName: dropZoneName,
+                Netaddr: machine.Netaddress,
+                Path: machine.Directory === "/" ? "/" : machine.Directory + "/",
+                Mask: "",
+                OS: machine.OS.toString()
+            }).then(response => {
+                const files = response?.files?.PhysicalFileStruct || [];
+
+                const transformedFiles = files.map((file: any) => {
+                    const basePath = machine.Directory === "/" ? "" : machine.Directory;
+                    const fullPath = basePath + "/" + file.name + (file.isDir ? "/" : "");
+                    const fullFolderPath = file.Path === "/" ? "/" : file.Path;
+
+                    return {
+                        ...file,
+                        calculatedID: machine.Netaddress + fullPath,
+                        NetAddress: machine.Netaddress,
+                        OS: machine.OS,
+                        fullPath,
+                        fullFolderPath,
+                        DropZone: dropzone,
+                        displayName: file.name,
+                        type: file.isDir ? "folder" : "file",
+                        getLogicalFile: () => `~file::${machine.Netaddress}${lfEncode(fullPath)}`
+                    };
+                });
+
+                setAllDropZoneData(prevData => {
+                    const filteredData = prevData.filter(item =>
+                        !(item.NetAddress === machine.Netaddress && item.DropZone?.Name === dropZoneName)
+                    );
+                    return [...filteredData, ...transformedFiles];
+                });
+            }).catch(err => {
+                logger.error(err);
+            });
+        }
+    }, [targetDropzones]);
+
+    const copyButtons = React.useMemo(() => [], []);
+
+    const handleItemAction = React.useCallback((item: LandingZoneItem, action: "download" | "delete") => {
+        if (action === "download" && item.type === "file") {
+            const downloadIframeName = "downloadIframe_" + item.data.calculatedID;
+            const frame = iframe.create(downloadIframeName);
+            const url = `${ESPRequest.getBaseURL("FileSpray")}/DownloadFile?Name=${encodeURIComponent(item.data.name)}&NetAddress=${item.data.NetAddress}&Path=${encodeURIComponent(item.data.fullFolderPath)}&OS=${item.data.OS}&DropZoneName=${item.data.DropZone.Name}`;
+            iframe.setSrc(frame, url, true);
+        } else if (action === "delete" && item.type === "file") {
+            deleteDropZoneFile({
+                DropZoneName: item.data.DropZone.Name,
+                NetAddress: item.data.NetAddress,
+                Path: item.data.fullFolderPath,
+                OS: item.data.OS,
+                Names: item.data.name
+            }).then(() => {
+                setSelectedPaths([]);
+                refreshMachineFiles(item.data.DropZone.Name, item.data.NetAddress);
+            });
+        }
+    }, [refreshMachineFiles, setSelectedPaths]);
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
         message: nlsHPCC.DeleteSelectedFiles,
         items: selection.map(s => s.name),
         onSubmit: React.useCallback(() => {
-            selection.forEach((item, idx) => {
-                if (item._isUserFile) {
-                    store.removeUserFile(item);
-                    refreshTable(true);
-                } else {
-                    FileSpray.DeleteDropZoneFile({
-                        request: {
-                            DropZoneName: item.DropZone.Name,
-                            NetAddress: item.NetAddress,
-                            Path: item.fullFolderPath,
-                            OS: item.OS,
-                            Names: item.name
-                        },
-                        load: function (response) {
-                            refreshTable(true);
-                        }
-                    });
+            const machineGroups = new Map<string, any[]>();
+            selection.forEach((item) => {
+                const key = `${item.DropZone.Name}::${item.NetAddress}`;
+                if (!machineGroups.has(key)) {
+                    machineGroups.set(key, []);
                 }
+                machineGroups.get(key).push(item);
             });
-        }, [refreshTable, selection, store])
+
+            setSelectedPaths([]);
+
+            Array.from(machineGroups.entries()).forEach(([key, items]) => {
+                const [dropZoneName, netAddress] = key.split("::");
+
+                const deletePromises = items.map(item =>
+                    deleteDropZoneFile({
+                        DropZoneName: item.DropZone.Name,
+                        NetAddress: item.NetAddress,
+                        Path: item.fullFolderPath,
+                        OS: item.OS,
+                        Names: item.name
+                    })
+                );
+
+                Promise.all(deletePromises).then(() => {
+                    refreshMachineFiles(dropZoneName, netAddress);
+                }).catch(err => {
+                    logger.error(err);
+                    refreshMachineFiles(dropZoneName, netAddress);
+                });
+            });
+        }, [refreshMachineFiles, selection, setSelectedPaths])
     });
 
     //  Command Bar  ---
@@ -370,7 +602,16 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
                         <p>Drop file(s) to upload.</p>
                     </div>
                 </div>
-                <Grid />
+                <LandingZoneTreeTable
+                    items={treeItems}
+                    loading={dataLoading || initialLoading}
+                    loadingItems={loadingItems}
+                    selectedItems={selectedItemIds}
+                    expandedItems={expandedItemIds}
+                    onSelectionChange={onSelectionChange}
+                    onExpansionChange={handleExpansionChange}
+                    onItemAction={handleItemAction}
+                />
                 <Filter
                     showFilter={showFilter} setShowFilter={setShowFilter}
                     filterFields={filterFields} onApply={pushParams}
@@ -379,12 +620,18 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
                     <FileListForm
                         formMinWidth={360} selection={uploadFiles}
                         showForm={showFileUpload} setShowForm={setShowFileUpload}
-                        onSubmit={() => refreshTable()}
+                        onSubmit={(dropzoneName, netAddress) => {
+                            if (dropzoneName && netAddress) {
+                                refreshMachineFiles(dropzoneName, netAddress);
+                            }
+                        }}
                     />
                 }
                 <AddFileForm
-                    formMinWidth={620} store={store} refreshGrid={refreshTable}
+                    formMinWidth={620}
+                    refreshGrid={refreshTable}
                     showForm={showAddFile} setShowForm={setShowAddFile}
+                    dropzones={targetDropzones}
                 />
                 <FixedImportForm
                     formMinWidth={620} selection={selection}
