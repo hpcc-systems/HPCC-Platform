@@ -124,7 +124,6 @@ void coalesceDatastore(IPropertyTree *coalesceProps, bool force)
 
             StringBuffer storeFilename(dataPath);
 
-            Owned<IPropertyTree> _root;
             IPropertyTree *root{nullptr};
             // Try loading binary store first if it exists
             try
@@ -138,7 +137,11 @@ void coalesceDatastore(IPropertyTree *coalesceProps, bool force)
                 e->Release();
             }
             if (!root)
+            {
+                storeFilename.set(dataPath);
                 root = loadStoreType(StoreFormat::XML, iStoreHelper, storeFilename);
+            }
+            Owned<IPropertyTree> _root;
             if (!root)
             {
                 _root.setown(root);
