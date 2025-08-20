@@ -6,12 +6,12 @@ import { Result as CommsResult, XSDXMLNode } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import { WUResult } from "@hpcc-js/eclwatch";
 import nlsHPCC from "src/nlsHPCC";
-import { ESPBase } from "src/ESPBase";
 import { csvEncode } from "src/Utility";
 import { useWorkunit, useMyAccount, useConfirm } from "../hooks/index";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 import { pushParams, replaceUrl } from "../util/history";
+import { getESPBaseURL } from "../util/espUrl";
 import { ShortVerticalDivider } from "./Common";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
@@ -205,14 +205,13 @@ interface doDownloadOpts {
 }
 
 function doDownload(opts: doDownloadOpts) {
-    const base = new ESPBase();
     const { type, wuid, resultName, sequence, logicalName } = { ...opts };
     if (wuid && resultName) {
-        window.open(base.getBaseURL() + "/WUResultBin?Format=" + type + "&Wuid=" + wuid + "&ResultName=" + resultName, "_blank");
+        window.open(getESPBaseURL() + "/WUResultBin?Format=" + type + "&Wuid=" + wuid + "&ResultName=" + resultName, "_blank");
     } else if (wuid && sequence !== undefined) {
-        window.open(base.getBaseURL() + "/WUResultBin?Format=" + type + "&Wuid=" + wuid + "&Sequence=" + sequence, "_blank");
+        window.open(getESPBaseURL() + "/WUResultBin?Format=" + type + "&Wuid=" + wuid + "&Sequence=" + sequence, "_blank");
     } else if (logicalName) {
-        window.open(base.getBaseURL() + "/WUResultBin?Format=" + type + "&LogicalName=" + logicalName, "_blank");
+        window.open(getESPBaseURL() + "/WUResultBin?Format=" + type + "&LogicalName=" + logicalName, "_blank");
     }
 }
 
