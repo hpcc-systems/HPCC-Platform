@@ -43,6 +43,7 @@
     *(char *) (name+(length)) = '\0';
 
 #include "jfile.hpp"
+#include "jstream.hpp"
 #include "jptree.ipp"
 #include "jlog.hpp"
 
@@ -4540,6 +4541,21 @@ IPropertyTree *createPTreeFromBinary(IBufferedSerialInputStream &src, IPTreeNode
     IPropertyTree *tree = nodeCreator->create(nullptr); // The nullptr is a dummy name value, it will be overwritten by deserializeFromStream
     tree->deserializeFromStream(src);
     return tree;
+}
+
+IPropertyTree *createPTreeFromBinaryFile(const char *filename, size32_t bufferSize, IPTreeNodeCreator *nodeCreator)
+{
+    OwnedIFile ifile = createIFile(filename);
+    OwnedIFileIO ifileio = ifile->open(IFOread);
+    if (!ifileio)
+        throw MakeStringException(0, "Could not locate filename: %s", filename);
+
+    Owned<ISerialInputStream> stream = createSerialInputStream(ifileio);
+    Owned<IBufferedSerialInputStream> bufferedStream = createBufferedInputStream(stream, 0x10000); // 64KB buffer
+    IPropertyTree *root = createPTreeFromBinary(*bufferedStream, nodeCreator);
+    bufferedStream.clear();
+
+    return root;
 }
 
 
