@@ -664,6 +664,46 @@
         mounts the plane categories it needs.</para>
       </sect3>
 
+      <sect3 id="StorageDefaults">
+        <title>Storage Defaults</title>
+
+        <para>As of version 9.14, HPCC Systems supports a new
+        <literal>defaults</literal> section under storage configuration that
+        provides fallback settings for storage planes. This feature allows
+        administrators to define common configuration values that can be
+        inherited by individual storage planes, reducing duplication and
+        simplifying configuration management.</para>
+
+        <sect4 id="Configuration-Structure">
+          <title>Storage Defaults Configuration</title>
+
+          <para>The storage defaults section is added as a sibling to the
+          <literal>planes</literal> section in your Helm values
+          configuration.</para>
+
+          <!-- Placeholder for valid example configuration -->
+        </sect4>
+
+        <sect4 id="How-Defaults-Work">
+          <title>How Storage Defaults Work</title>
+
+          <para>The defaults mechanism works as follows:</para>
+
+          <orderedlist>
+            <listitem>
+              <para><emphasis role="bold">Priority:</emphasis> Individual
+              plane settings take precedence over defaults</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Inheritance:</emphasis> Storage
+              planes automatically inherit any properties not explicitly
+              defined at the plane level</para>
+            </listitem>
+          </orderedlist>
+        </sect4>
+      </sect3>
+
       <sect3 id="YML_EphemeralStorage">
         <title>Ephemeral Storage</title>
 
