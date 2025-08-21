@@ -21,6 +21,8 @@
 #include "jmisc.hpp"
 #include "jhinplace.hpp"
 
+#include <regex>
+
 struct CRC32HTE
 {
     CRC32 crc;
@@ -112,7 +114,91 @@ class LegacyIndexCompressor : public CInterfaceOf<IIndexCompressor>
     }
 };
 
-class CKeyBuilder : public CInterfaceOf<IKeyBuilder>
+class HybridIndexCompressor : public CInterfaceOf<IIndexCompressor>
+{
+protected:
+    Owned<IIndexCompressor> leafCompressor;
+    Owned<IIndexCompressor> branchCompressor;
+
+    IIndexCompressor* constructCompressor(const char* compressionType, const char* options, unsigned keyedSize, IHThorIndexWriteArg *helper)
+    {
+        if (strcmp(compressionType, "inplace") == 0)
+        {
+            std::string compression = std::string(compressionType) + ":" + options;
+            return new InplaceIndexCompressor(keyedSize, helper, compression.c_str());
+        }
+        else if (strcmp(compressionType, "legacy") == 0)
+        {
+            return new LegacyIndexCompressor();
+        }
+        return nullptr;
+    }
+
+    bool extractCompressionAndOptions(const std::string& format, std::string& compression, std::string& options)
+    {
+        // IE: inplace[hclevel=9,option=..]
+        static const std::regex formatOptionsRegex("([^\\[]+)(\\[[^\\]]*\\])?");
+
+        std::smatch formatMatch;
+        std::string formatCompression;
+        std::string formatOptions;
+        if (std::regex_match(format, formatMatch, formatOptionsRegex) && formatMatch.size() >= 2)
+        {
+            compression = formatMatch[1];
+            if (formatMatch.size() == 3)
+                options = formatMatch[2];
+        }
+        else
+            return false;
+
+        return true;
+    }
+public:
+    HybridIndexCompressor(const std::string& compressionFormatStr, unsigned keyedSize, IHThorIndexWriteArg *helper)
+    {
+        // "hybrid:branch[options]:leaf[options]"
+        static const std::regex hybridFormatRegex("hybrid:([^:]+):([^:]+)");
+
+        std::smatch compressionMatches;
+        if (std::regex_match(compressionFormatStr, compressionMatches, hybridFormatRegex) && compressionMatches.size() == 3)
+        {
+            std::string branchCompression, branchOptions;
+            if (extractCompressionAndOptions(compressionMatches[1], branchCompression, branchOptions)) 
+                branchCompressor.setown(constructCompressor(branchCompression.c_str(), branchOptions.c_str(), keyedSize, helper));
+            else
+                throw MakeStringException(0, "Invalid hybrid compression format, unable to parse branch options");
+
+            std::string leafCompression, leafOptions;
+            if (extractCompressionAndOptions(compressionMatches[2], leafCompression, leafOptions)) 
+                leafCompressor.setown(constructCompressor(leafCompression.c_str(), leafOptions.c_str(), keyedSize, helper));
+            else
+                throw MakeStringException(0, "Invalid hybrid compression format, unable to parse leaf options");
+        }
+        else
+        {
+            throw MakeStringException(0, "Invalid hybrid compression format");
+        }
+    }
+
+    virtual const char *queryName() const override { return "Hybrid"; }
+    virtual CWriteNode *createNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode) const override
+    {
+        if (isLeafNode)
+            return leafCompressor->createNode(_fpos, _keyHdr, isLeafNode);
+        else
+            return branchCompressor->createNode(_fpos, _keyHdr, isLeafNode);
+    }
+    virtual offset_t queryBranchMemorySize() const override
+    {
+        return branchCompressor->queryBranchMemorySize();
+    }
+    virtual offset_t queryLeafMemorySize() const override
+    {
+        return leafCompressor->queryLeafMemorySize();
+    }
+};
+
+class CBaseKeyBuilder : public CInterfaceOf<IKeyBuilder>
 {
 protected:
     unsigned keyValueSize;
@@ -131,6 +217,11 @@ protected:
     CRC32 headCRC;
     bool doCrc = false;
 
+    static unsigned getKeyedSize(unsigned rawSize, unsigned _keyedSize)
+    {
+        return _keyedSize != (unsigned) -1 ? _keyedSize : rawSize;
+    }
+
 private:
     unsigned __int64 duplicateCount;
     RelaxedAtomic<__uint64> numLeaves{0};
@@ -148,13 +239,14 @@ private:
     bool isTLK = false;
 
 public:
-    CKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned _keyedSize, unsigned __int64 _startSequence,  IHThorIndexWriteArg *_helper, const char * defaultCompression, bool _enforceOrder, bool _isTLK)
+    CBaseKeyBuilder(IFileIOStream *_out, IIndexCompressor* _indexCompressor, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned _keyedSize, unsigned __int64 _startSequence,  IHThorIndexWriteArg *_helper, bool _enforceOrder, bool _isTLK)
         : out(_out),
           enforceOrder(_enforceOrder),
           isTLK(_isTLK)
     {
         sequence = _startSequence;
         keyHdr.setown(new CWriteKeyHdr());
+        indexCompressor.setown(_indexCompressor);
         keyValueSize = rawSize;
         keyedSize = _keyedSize != (unsigned) -1 ? _keyedSize : rawSize;
 
@@ -163,14 +255,18 @@ public:
         nextPos = nodeSize; // leaving room for header
         prevLeafNode = NULL;
 
+        doCrc = true;
+        duplicateCount = 0;
+
         assertex(nodeSize >= CKeyHdr::getSize());
         assertex(nodeSize <= 0xffff); // stored in a short in the header - we should fix that if/when we restructure header
         if (!(flags & COL_PREFIX))
-            throw MakeStringException(0, "Invalid flags in CKeyBuilder::CKeyBuilder - COL_PREFIX is required");
+            throw MakeStringException(0, "Invalid flags in CBaseKeyBuilder::CBaseKeyBuilder - COL_PREFIX is required");
         if (flags & TRAILING_HEADER_ONLY)
             flags |= USE_TRAILING_HEADER;
         if ((flags & (HTREE_QUICK_COMPRESSED_KEY|HTREE_VARSIZE)) == (HTREE_QUICK_COMPRESSED_KEY|HTREE_VARSIZE))
             flags &= ~HTREE_QUICK_COMPRESSED;  // Quick does not support variable-size rows
+
         KeyHdr *hdr = keyHdr->getHdrStruct();
         hdr->nodeSize = nodeSize;
         hdr->extsiz = 4096;
@@ -199,9 +295,6 @@ public:
 
         keyHdr->write(out, &headCRC);  // Reserve space for the header - we may seek back and write it properly later
 
-        doCrc = true;
-        duplicateCount = 0;
-        const char * compression = defaultCompression;
         if (_helper)
         {
             partitionFieldMask = _helper->getPartitionFieldMask();
@@ -216,25 +309,11 @@ public:
                     bloomInfo++;
                 }
             }
-            if (_helper->getFlags() & TIWcompressdefined)
-                compression = _helper->queryCompression();
         }
 
-        if (!isEmptyString(compression))
-        {
-            hdr->version = 2;    // Old builds will give a reasonable error message
-            if (strieq(compression, "POC") || startsWithIgnoreCase(compression, "POC:"))
-                indexCompressor.setown(new PocIndexCompressor);
-            else if (strieq(compression, "inplace") || startsWithIgnoreCase(compression, "inplace:"))
-                indexCompressor.setown(new InplaceIndexCompressor(keyedSize, keyHdr, _helper, compression));
-            else
-                throw makeStringExceptionV(0, "Unrecognised index compression format %s", compression);
-        }
-        else
-            indexCompressor.setown(new LegacyIndexCompressor);
     }
-
-    ~CKeyBuilder()
+    
+    ~CBaseKeyBuilder()
     {
         for (;;)
         {
@@ -247,24 +326,27 @@ public:
 
     void buildLevel(NodeInfoArray &thisLevel, NodeInfoArray &parents)
     {
-        unsigned int leaf = 0;
+        // We should only be building branch nodes here
+        assertex(levels > 0);
+
+        unsigned int nodeIndex = 0;
         CWriteNode *node = NULL;
-        node = indexCompressor->createNode(nextPos, keyHdr, levels==0);
+        node = indexCompressor->createNode(nextPos, keyHdr, false); 
         nextPos += keyHdr->getNodeSize();
         numBranches++;
-        while (leaf<thisLevel.ordinality())
+        while (nodeIndex<thisLevel.ordinality())
         {
-            CNodeInfo &info = thisLevel.item(leaf);
+            CNodeInfo &info = thisLevel.item(nodeIndex);
             if (!node->add(info.pos, info.value, info.size, info.sequence))
             {
                 flushNode(node, parents);
                 node->Release();
-                node = indexCompressor->createNode(nextPos, keyHdr, levels==0);
+                node = indexCompressor->createNode(nextPos, keyHdr, false);
                 nextPos += keyHdr->getNodeSize();
                 numBranches++;
                 verifyex(node->add(info.pos, info.value, info.size, info.sequence));
             }
-            leaf++;
+            nodeIndex++;
         }
         flushNode(node, parents);
         flushNode(NULL, parents);
@@ -697,11 +779,69 @@ protected:
     }
 };
 
-extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyFieldSize, unsigned __int64 startSequence, IHThorIndexWriteArg *helper, const char * defaultCompression, bool enforceOrder, bool isTLK)
+class CLegacyKeyBuilder : public CBaseKeyBuilder
 {
-    return new CKeyBuilder(_out, flags, rawSize, nodeSize, keyFieldSize, startSequence, helper, defaultCompression, enforceOrder, isTLK);
+public:
+    CLegacyKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned _keyedSize, unsigned __int64 _startSequence,  IHThorIndexWriteArg *_helper, const char * compression, bool _enforceOrder, bool _isTLK)
+    : CBaseKeyBuilder(_out, createIndexCompressor(compression, getKeyedSize(rawSize, _keyedSize), _helper), flags, rawSize, nodeSize, _keyedSize, _startSequence, _helper, _enforceOrder, _isTLK)
+    {
+        if (!isEmptyString(compression))
+        {
+            KeyHdr *hdr = keyHdr->getHdrStruct();
+            hdr->version = 2;    // Old builds will give a reasonable error message
+        }
+    }
+private:
+    static IIndexCompressor* createIndexCompressor(const char* compression, unsigned keyedSize, IHThorIndexWriteArg *helper)
+    {
+        if (!isEmptyString(compression))
+        {
+            if (strieq(compression, "POC") || startsWithIgnoreCase(compression, "POC:"))
+                return new PocIndexCompressor;
+            else if (strieq(compression, "inplace") || startsWithIgnoreCase(compression, "inplace:"))
+                return new InplaceIndexCompressor(keyedSize, helper, compression);
+            else
+                throw makeStringExceptionV(0, "Unrecognised index compression format %s", compression);
+        }
+        else
+            return new LegacyIndexCompressor;
+    }
+};
+
+class CHybridKeyBuilder : public CBaseKeyBuilder
+{
+public:
+    CHybridKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned _keyedSize, unsigned __int64 _startSequence,  IHThorIndexWriteArg *_helper, const char * compression, bool _enforceOrder, bool _isTLK)
+    : CBaseKeyBuilder(_out, new HybridIndexCompressor(compression, getKeyedSize(rawSize, _keyedSize), _helper), flags, rawSize, nodeSize, _keyedSize, _startSequence, _helper, _enforceOrder, _isTLK)
+    {
+        KeyHdr *hdr = keyHdr->getHdrStruct();
+        hdr->version = 3;
+    }
+};
+
+const char* getCompression(const char* defaultCompression, IHThorIndexWriteArg *helper)
+{
+    const char * compression = defaultCompression;
+    if (helper)
+    {
+        if (helper->getFlags() & TIWcompressdefined)
+            compression = helper->queryCompression();
+    }
+    return compression;
 }
 
+extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyFieldSize, unsigned __int64 startSequence, IHThorIndexWriteArg *helper, const char * defaultCompression, bool enforceOrder, bool isTLK)
+{
+    const char* compression = getCompression(defaultCompression, helper);
+    if (startsWithIgnoreCase(compression, "hybrid"))
+    {
+        // Hybrid format should always be compressed, and legacy node looks for HTREE_COMPRESSED_KEY for lzw
+        flags |= HTREE_COMPRESSED_KEY;
+        return new CHybridKeyBuilder(_out, flags, rawSize, nodeSize, keyFieldSize, startSequence, helper, compression, enforceOrder, isTLK);
+    }
+    else
+        return new CLegacyKeyBuilder(_out, flags, rawSize, nodeSize, keyFieldSize, startSequence, helper, compression, enforceOrder, isTLK);
+}
 
 class PartNodeInfo : public CInterface
 {
