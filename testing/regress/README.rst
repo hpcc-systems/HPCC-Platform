@@ -3,6 +3,8 @@ Overview of Regression Suite usage
 
 To use Regression Suite change directory to HPCC-Platform/testing/regress subdirectory.
 
+If working in a private environment, copy /opt/HPCCSystems/testing/regress to ~/HPCCSystems-regression and recursively chown the HPCCSystems-regression directory.
+
 Regression Suite requires Python environment version >=2.6.6 and < 3.x
 
 Global parameters of Regression Suite:
