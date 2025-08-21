@@ -54,21 +54,8 @@
 
 #define ROXIE_STATEFILE_VERSION 2
 
-// Have not yet tested impact of new IBYTI handling in non-containerized systems
-
-#define NEW_IBYTI
-
-#if defined(_CONTAINERIZED) || defined (NEW_IBYTI)
-// Both containerized mode and new IBYTI mode assume subchannels are passed in header.
-// It SHOULD also work, and may be beneficial, in non-containerized systems but has not as yet been confirmed.
-#define SUBCHANNELS_IN_HEADER
-#endif
-
 extern IException *MakeRoxieException(int code, const char *format, ...) __attribute__((format(printf, 2, 3)));
 void openMulticastSocket();
-
-void setMulticastEndpoints(unsigned numChannels);
-
 
 #define OUTOFBAND_SEQUENCE    0x8000        // indicates an out-of-band reply
 #define OVERFLOWSEQUENCE_MAX 0x7fffu        // Max value before we want to wrap (to avoid collision with flag)
@@ -169,9 +156,7 @@ public:
 
     std::atomic<ruid_t> uid = 0;        // unique id
     ServerIdentifier serverId;
-#ifdef SUBCHANNELS_IN_HEADER
     ServerIdentifier subChannels[MAX_SUBCHANNEL];
-#endif
     unsigned filler = 0; // keeps valgrind happy
 
     RoxiePacketHeader() = default;
@@ -198,7 +183,6 @@ public:
         return bitpos / SUBCHANNEL_BITS;
     }
 
-#ifdef SUBCHANNELS_IN_HEADER
     unsigned mySubChannel() const // NOTE - 0 based
     {
         if (localAgent)
@@ -224,7 +208,6 @@ public:
     }
 
     void clearSubChannels();
-#endif
 
     inline unsigned getSequenceId() const
     {
@@ -401,13 +384,8 @@ extern bool ignoreFileSizeMismatches;
 extern int fileTimeFuzzySeconds;
 extern SinkMode defaultSinkMode;
 extern bool limitWaitingWorkers;
-
-#if defined(_CONTAINERIZED) || defined(SUBCHANNELS_IN_HEADER)
-static constexpr bool roxieMulticastEnabled = false;
 extern unsigned myChannel;
-#else
-extern bool roxieMulticastEnabled;   // enable use of multicast for sending requests to agents
-#endif
+
 extern bool preloadOnceData;
 extern bool reloadRetriesFailed;
 extern bool selfTestMode;

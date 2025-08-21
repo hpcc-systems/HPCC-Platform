@@ -113,11 +113,7 @@ bool oneShotRoxie = false;
 unsigned minPayloadSize = 800;
 
 unsigned udpMulticastBufferSize = 262142;
-#if !defined(_CONTAINERIZED) && !defined(SUBCHANNELS_IN_HEADER)
-bool roxieMulticastEnabled = true;
-#else
 unsigned myChannel;
-#endif
 
 IPropertyTree *topology;
 MapStringTo<int> *preferredClusters;
@@ -1149,9 +1145,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 
         udpFlowSocketsSize = topology->getPropInt("@udpFlowSocketsSize", udpFlowSocketsSize);
         udpLocalWriteSocketSize = topology->getPropInt("@udpLocalWriteSocketSize", udpLocalWriteSocketSize);
-#if !defined(_CONTAINERIZED) && !defined(SUBCHANNELS_IN_HEADER)
-        roxieMulticastEnabled = topology->getPropBool("@roxieMulticastEnabled", true);   // enable use of multicast for sending requests to agents
-#endif
 
         udpResendLostPackets = topology->getPropBool("@udpResendLostPackets", true);
         udpAssumeSequential = topology->getPropBool("@udpAssumeSequential", false);
@@ -1286,7 +1279,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         actResetLogPeriod = topology->getPropInt("@actResetLogPeriod", 300);
         watchActivityId = topology->getPropInt("@watchActivityId", 0);
         delaySubchannelPackets = topology->getPropBool("@delaySubchannelPackets", false);
-        IBYTIbufferSize = topology->getPropInt("@IBYTIbufferSize", roxieMulticastEnabled ? 0 : 10);
+        IBYTIbufferSize = topology->getPropInt("@IBYTIbufferSize", 10);
         IBYTIbufferLifetime = topology->getPropInt("@IBYTIbufferLifetime", initIbytiDelay);
         traceTranslations = topology->getPropBool("@traceTranslations", true);
         defaultTimeActivities = topology->getPropBool("@timeActivities", true);
@@ -1474,27 +1467,12 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             myRoles.push_back(me);
         }
 #else
-        // Set multicast base addresses - must be done before generating agent channels
-        if (roxieMulticastEnabled && !localAgent)
-        {
-            if (topology->queryProp("@multicastBase"))
-                multicastBase.ipset(topology->queryProp("@multicastBase"));
-            else
-                throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - multicastBase not set");
-            if (topology->queryProp("@multicastLast"))
-                multicastLast.ipset(topology->queryProp("@multicastLast"));
-            else
-                throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - multicastLast not set");
-        }
         readStaticTopology();
 #endif
         // Now we know all the channels, we can open and subscribe the multicast channels
         if (!localAgent)
-        {
             openMulticastSocket();
-            if (roxieMulticastEnabled)
-                setMulticastEndpoints(numChannels);
-        }
+
         setDaliServixSocketCaching(true);  // enable daliservix caching
         enableForceRemoteReads(); // forces file reads to be remote reads if they match environment setting 'forceRemotePattern' pattern.
 
