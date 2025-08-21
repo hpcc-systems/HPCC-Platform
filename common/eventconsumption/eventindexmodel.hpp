@@ -23,6 +23,27 @@
 #include <set>
 #include <type_traits>
 #include <unordered_map>
+#include <unordered_set>
+
+// Node expansion strategy indicator. Each value reflects the expected stategy used during event
+// recording and the strategy applied by the index model.
+// - OnLoad: event attributes are assumed to reflect node expansion on load both  before and after
+//           modeling.
+// - Transform: event attributes are assumed to reflect node expansion on load before modeling,
+//           and on-demand expansion after modeling.
+// - OnDemand: event attributes are assumed to reflect node expansion on-demand both before and
+//           after modeling.
+//
+// Note that no value for on-demand on input and on-load on output is defined. Transformation of
+// InMemorySize and ExpandTime attributes could only be estimated before visiting an IndexPayload
+// event for the node. With estimation an optional configuration, and IndexPayload events not
+// guaranteed for each loaded node, the transformation can't be reliably modeled.
+enum class ExpansionMode
+{
+    OnLoad,
+    Transform,
+    OnDemand
+};
 
 // The index event model configuration conforms to this structure:
 //   kind: index-event
@@ -38,6 +59,7 @@
 //       branchPlane: name of place in which index branches reside, if different from the default
 //       leafPlane: name of place in which index leaves reside, if different from the default
 //   expansion:
+//     mode: choice of `ll`, `ld`, or `dd`
 //     node:
 //     - kind: node kind
 //       sizeFactor: floating point multiplier for estimated node size
@@ -58,6 +80,10 @@
 // - `file/leafPlane` is optional; omission, or empty, implies the file's index leaves reside in the
 //   file's default storage plane.
 // - `expansion` is optional; omission prevents any expansion modeling.
+// - `expansion/mode` is optional; omission and empty are equivalent to `ll`. Accepted options are:
+//   - `ll`: model input and output are both on-load
+//   - `ld`: model input is on-load and output is on-demand
+//   - `dd`: model input and output are both on-demand
 // - `expansion/node` is optional; omission prevents estimating algorithm performance. If present,
 //   one instance for each type of index node is required.
 // - `expansion/node/kind` is a required choice of `branch` or `leaf`.
@@ -71,13 +97,37 @@
 // included as the model does not retain that information.
 struct ModeledPage
 {
+    struct Size
+    {
+        __uint64 size{0};
+        bool estimated{false}; // included for unit tests
+    };
     __uint64 fileId{0};
     __uint64 offset{0};
     __uint64 nodeKind{1};
     __uint64 readTime{0};
-    __uint64 expandedSize{0};
+    Size compressed;
+    Size expanded;
     __uint64 expansionTime{0};
-    bool expansionIsEstimated{false};
+    ExpansionMode expansionMode{ExpansionMode::OnLoad};
+};
+
+class IndexHashKey
+{
+public:
+    __uint64 fileId{0};
+    __uint64 offset{0};
+    bool operator == (const IndexHashKey& other) const { return fileId == other.fileId && offset == other.offset; }
+};
+
+class IndexHashKeyHash
+{
+public:
+    std::size_t operator()(const IndexHashKey& key) const
+    {
+        struct { __uint64 f; __uint64 s; } buf{key.fileId, key.offset};
+        return hashc_fnv1a((byte*)&buf, sizeof(buf), fnvInitialHash32);
+    }
 };
 
 // Encapsulation of the configuration's `storage` element.
@@ -121,46 +171,21 @@ private:
     {
     public:
         static constexpr __uint64 DefaultPageSize = 8192; // 8K page size
-        class Key
-        {
-        public:
-            __uint64 fileId{0};
-            __uint64 offset{0};
-            Key(__uint64 _fileId, __uint64 _offset) : fileId(_fileId), offset(_offset) {}
-            bool operator == (const Key& other) const { return fileId == other.fileId && offset == other.offset; }
-        };
-        class KeyEqual
-        {
-        public:
-            bool operator () (const Key& left, const Key& right) const
-            {
-                return ((left == right) || (left.fileId == right.fileId && left.offset == right.offset));
-            }
-        };
-        class KeyHash
-        {
-        public:
-            std::size_t operator()(const Key& key) const
-            {
-                struct { __uint64 f; __uint64 s; } buf{key.fileId, key.offset};
-                return hashc_fnv1a((byte*)&buf, sizeof(buf), fnvInitialHash32);
-            }
-        };
         class Value
         {
         public:
-            const Key     key; // enables mapping from MRU to hash table on MRU removals
+            const IndexHashKey key; // enables mapping from MRU to hash table on MRU removals
             struct Value* prev{nullptr};
             struct Value* next{nullptr};
-            Value(const Key& _key) : key(_key) {}
+            Value(const IndexHashKey& _key) : key(_key) {}
         };
-        using Hash = std::unordered_map<const Key, std::unique_ptr<Value>, KeyHash, KeyEqual>;
+        using Hash = std::unordered_map<const IndexHashKey, std::unique_ptr<Value>, IndexHashKeyHash>;
     public:
         void configure(const IPropertyTree& config);
         inline __uint64 getReadTimeIfExists(__uint64 fileId, __uint64 offset) { return getReadTimeIfExists({fileId, offset}); }
-        __uint64 getReadTimeIfExists(const Key& key);
+        __uint64 getReadTimeIfExists(const IndexHashKey& key);
         inline bool insert(__uint64 fileId, __uint64 offset) { return insert({fileId, offset}); }
-        bool insert(const Key& key);
+        bool insert(const IndexHashKey& key);
     private:
         void reserve(__uint64 size);
     public:
@@ -219,15 +244,47 @@ public:
     static constexpr size_t NumKinds = 2;
     struct Estimate
     {
+        __uint64 compressed{8'192}; // all nodes assumed to be 8K on disk
+        __uint64 expanded{0};
+        __uint64 time{0};
+    };
+    class ActualValue
+    {
+    public:
         __uint64 size{0};
         __uint64 time{0};
     };
-
+    using ActualHistory = std::unordered_map<IndexHashKey, ActualValue, IndexHashKeyHash>;
+    using EstimatedHistory = std::unordered_set<IndexHashKey, IndexHashKeyHash>;
 public:
     void configure(const IPropertyTree& config);
+
+    // Record, if necessary, that indicated index node has been observed. Intended to be called only
+    // for IndexLookup events, but not enforced.
+    bool observePage(const CEvent& event);
+
+    // Determines if the indicated index node has been observed in a previous event. Called for index
+    // events that do not include data needed for historical caching, such as IndexEviction and
+    // IndexPayload.
+    bool checkObservedPage(const CEvent& event) const;
+
+    // Determines if the indicated index node has been observed in a previous event. If it has then
+    // the historical cache may be updated with this event's data. Called for index events that
+    // contain hostorical data that might not have been available in previous events, specifically
+    // IndexLoad.
+    bool refreshObservedPage(const CEvent& event);
+
+    // Applies the expansion configuration to the indicated index node, updading `page` with the
+    // modeled sizes (both compressed and expanded) and the time to expand.
     void describePage(const CEvent& event, ModeledPage& page) const;
 
+protected:
+    inline bool usingHistory() const { return (mode != ExpansionMode::OnLoad); }
+    void refreshPage(ActualHistory::iterator& it, const CEvent& event);
 public:
+    ActualHistory actualHistory;
+    EstimatedHistory estimatedHistory;
     Estimate estimates[NumKinds];
+    ExpansionMode mode{ExpansionMode::OnLoad};
     bool estimating{false};
 };
