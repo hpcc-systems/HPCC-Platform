@@ -1,0 +1,20 @@
+<Dataset name='validNumbers'>
+ <Row><validNumbers>Pass</validNumbers></Row>
+</Dataset>
+<Dataset name='invalidNumbers'>
+ <Row><invalidNumbers>Pass</invalidNumbers></Row>
+</Dataset>
+<Dataset name='phoneTypeCount'>
+ <Row><linetype>0</linetype><typedescription>Landline     </typedescription><typecount>29</typecount></Row>
+ <Row><linetype>2</linetype><typedescription>Other/Unknown</typedescription><typecount>6</typecount></Row>
+ <Row><linetype>3</linetype><typedescription>Toll-Free    </typedescription><typecount>2</typecount></Row>
+</Dataset>
+<Dataset name='countryDistribution'>
+ <Row><countrycode>1</countrycode><regioncode>US</regioncode><numbercount>8</numbercount></Row>
+ <Row><countrycode>33</countrycode><regioncode>FR</regioncode><numbercount>5</numbercount></Row>
+ <Row><countrycode>39</countrycode><regioncode>VA</regioncode><numbercount>5</numbercount></Row>
+ <Row><countrycode>44</countrycode><regioncode>GB</regioncode><numbercount>5</numbercount></Row>
+ <Row><countrycode>49</countrycode><regioncode>DE</regioncode><numbercount>4</numbercount></Row>
+ <Row><countrycode>81</countrycode><regioncode>JP</regioncode><numbercount>5</numbercount></Row>
+ <Row><countrycode>86</countrycode><regioncode>CN</regioncode><numbercount>5</numbercount></Row>
+</Dataset>

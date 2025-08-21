@@ -888,6 +888,18 @@ public:
     }
 };
 
+static bool getDirectAccessStoragePlanes(StringArray &planes)
+{
+    Owned<IPropertyTreeIterator> iter = getComponentConfigSP()->getElements("directAccessPlanes");
+    ForEach(*iter)
+    {
+        const char *plane = iter->query().queryProp("");
+        if (!isEmptyString(plane))
+            planes.appendUniq(plane);
+    }
+
+    return !planes.empty();
+}
 class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress, public CInterface
 {
     friend class CcdFileTest;
@@ -1766,9 +1778,10 @@ public:
     }
 
     virtual ILazyFileIO *lookupFile(const char *lfn, RoxieFileType fileType,
-                                     IPartDescriptor *pdesc, unsigned numParts, unsigned channel,
-                                     const StringArray &localEnoughLocationInfo,
-                                     const StringArray &deployedLocationInfo, bool startFileCopy)
+                                     IPartDescriptor *pdesc,
+                                     IPartDescriptor *remotePDesc,
+                                     unsigned numParts, unsigned channel,
+                                     bool startFileCopy) override
     {
         unsigned replicationLevel = getReplicationLevel(channel);
         IPropertyTree &partProps = pdesc->queryProperties();
@@ -1839,7 +1852,35 @@ public:
                     return f.getClear();
             }
 
-            ret.setown(openFile(lfn, partNo, channel, localLocation, pdesc, localEnoughLocationInfo, deployedLocationInfo, dfsSize, dfsDate));
+            StringArray localEnoughLocations; //files from these locations won't be copied to the default plane
+            StringArray remoteLocations;
+            const char *peerCluster = pdesc->queryOwner().queryProperties().queryProp("@cloneFromPeerCluster");
+            if (peerCluster)
+            {
+                if (*peerCluster!='-') // a remote cluster was specified explicitly
+                    appendRemoteLocations(pdesc, remoteLocations, NULL, peerCluster, true);  // Add only from specified cluster
+            }
+            else
+            {
+                if (isContainerized())
+                {
+                    const char *myCluster = (ROXIE_KEY == fileType) ? defaultIndexBuildPlane.str() : defaultPlane.str();
+                    StringArray localEnoughPlanes;
+                    if (getDirectAccessStoragePlanes(localEnoughPlanes))
+                        appendRemoteLocations(pdesc, localEnoughLocations, NULL, localEnoughPlanes, true);
+                    localEnoughPlanes.append(myCluster);
+                    appendRemoteLocations(pdesc, remoteLocations, NULL, localEnoughPlanes, false);      // Add from any plane on same dali, other than default or local enough
+                }
+                else
+                {
+                    const char *myCluster = roxieName.str();
+                    appendRemoteLocations(pdesc, remoteLocations, NULL, myCluster, false);      // Add from any cluster on same dali, other than mine
+                }
+            }
+            if (remotePDesc)
+                appendRemoteLocations(remotePDesc, remoteLocations, NULL, NULL, false);    // Then any remote on remote dali
+
+            ret.setown(openFile(lfn, partNo, channel, localLocation, pdesc, localEnoughLocations, remoteLocations, dfsSize, dfsDate));
 
             if (startFileCopy)
             {
@@ -2211,52 +2252,9 @@ public:
     virtual StringAttrMapping *queryFileErrorList() { return &fileErrorList; }  // returns list of files that could not be open
 };
 
-#ifdef _CONTAINERIZED
-static bool getDirectAccessStoragePlanes(StringArray &planes)
-{
-    Owned<IPropertyTreeIterator> iter = getComponentConfigSP()->getElements("directAccessPlanes");
-    ForEach(*iter)
-    {
-        const char *plane = iter->query().queryProp("");
-        if (!isEmptyString(plane))
-            planes.appendUniq(plane);
-    }
-
-    return !planes.empty();
-}
-#endif
-
 ILazyFileIO *createPhysicalFile(const char *id, IPartDescriptor *pdesc, IPartDescriptor *remotePDesc, RoxieFileType fileType, int numParts, bool startCopy, unsigned channel)
 {
-#ifdef _CONTAINERIZED
-    const char *myCluster = (ROXIE_KEY == fileType) ? defaultIndexBuildPlane.str() : defaultPlane.str();
-#else
-    const char *myCluster = roxieName.str();
-#endif
-    StringArray localEnoughLocations; //files from these locations won't be copied to the default plane
-    StringArray remoteLocations;
-    const char *peerCluster = pdesc->queryOwner().queryProperties().queryProp("@cloneFromPeerCluster");
-    if (peerCluster)
-    {
-        if (*peerCluster!='-') // a remote cluster was specified explicitly
-            appendRemoteLocations(pdesc, remoteLocations, NULL, peerCluster, true);  // Add only from specified cluster
-    }
-    else
-    {
-#ifdef _CONTAINERIZED
-        StringArray localEnoughPlanes;
-        if (getDirectAccessStoragePlanes(localEnoughPlanes))
-            appendRemoteLocations(pdesc, localEnoughLocations, NULL, localEnoughPlanes, true);
-        localEnoughPlanes.append(myCluster);
-        appendRemoteLocations(pdesc, remoteLocations, NULL, localEnoughPlanes, false);      // Add from any plane on same dali, other than default or loacal enough
-#else
-        appendRemoteLocations(pdesc, remoteLocations, NULL, myCluster, false);      // Add from any cluster on same dali, other than mine
-#endif
-    }
-    if (remotePDesc)
-        appendRemoteLocations(remotePDesc, remoteLocations, NULL, NULL, false);    // Then any remote on remote dali
-
-    return queryFileCache().lookupFile(id, fileType, pdesc, numParts, channel, localEnoughLocations, remoteLocations, startCopy);
+    return queryFileCache().lookupFile(id, fileType, pdesc, remotePDesc, numParts, channel, startCopy);
 }
 
 //====================================================================================================

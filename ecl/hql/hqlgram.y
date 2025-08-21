@@ -39,6 +39,11 @@
 #undef YYSTYPE
 #define YYSTYPE attribute
 
+#if defined(__clang__) || defined(__GNUC__)
+//Disable the warning for the whole file.  It does not work if it only surrounds the #includes
+#pragma GCC diagnostic ignored "-Wclass-memaccess"
+#endif
+
 #include "platform.h"
 #include <stdio.h>
 #include <stdlib.h>
