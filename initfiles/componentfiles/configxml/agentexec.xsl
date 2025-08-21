@@ -76,6 +76,10 @@
         <xsl:value-of select="@defaultMemoryLimitMB"/>
       </xsl:attribute>
 
+      <xsl:attribute name="fieldTranslationEnabled">
+        <xsl:value-of select="@fieldTranslationEnabled"/>
+      </xsl:attribute>
+
       <xsl:attribute name="logDir">
         <xsl:call-template name="makeAbsolutePath">
           <xsl:with-param name="path" select="@logDir"/>

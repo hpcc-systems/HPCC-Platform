@@ -15,36 +15,59 @@
 
 ## Quick Start
 
-### 1. Add Helm Repositories
+### Pre-Requisites
+
+#### Kubernetes Cluster
+
+A running Kubernetes cluster (v1.21+ recommended).
+Sufficient resources (CPU, memory, storage) for HPCC components and observability stack.
+kubectl configured and authenticated to access the cluster.
+
+#### Helm
+
+Helm v3.6+ installed and configured.
+
+#### HPCC Platform
+
+Local access to HPCC-Systems/HPCC-Platform's git repository
+
+```sh
+git clone https://github.com/hpcc-systems/HPCC-Platform.git
+```
+
+#### Access to the ECK4HPCCObservability chart
+
+```sh
+cd HPCC-Platform/helm/managed/observability/eck
+```
+
+#### Elastic, OTel and HPCC Systems Helm Repositories
 
 ```sh
 helm repo add elastic https://helm.elastic.co
 helm repo add otel https://open-telemetry.github.io/opentelemetry-helm-charts
+helm repo add hpcc https://hpcc-systems.github.io/helm-chart/
 ```
 
-### 2. Fetch Dependency Helm Charts
+> **Note:** If any of the above repos were previously added, take note of the local aliases and use them where appropriate
+
+### 1. Fetch Dependency Helm Charts
 
 From the `HPCC-Platform/helm/managed/observability/eck/` directory:
 
 ```sh
-helm dependency build .
+HPCC-Platform/helm/managed/observability/eck/> helm dependency build .
 ```
 
-### 3. Install Elastic ECK Operator
+### 2. Install Elastic ECK Operator
 
 > **Note:** The release must be named `elastic-operator`.
 
 ```sh
 helm install elastic-operator elastic/eck-operator -n elastic-system --create-namespace
 ```
-### 4. Create service Account (optional)
-This step is only necessary to annotate HPCC component logs with kubernetes metadata which is useful when using logs to debug issues.
 
-```sh
-kubectl apply -f ./service-account.yaml
-```
-
-### 5. Install the Observability Chart
+### 3. Install the Observability Chart
 
 > **Note:** The release must be named `eck-apm`.
 
@@ -52,23 +75,27 @@ kubectl apply -f ./service-account.yaml
 From the `HPCC-Platform/helm/managed/observability/eck/` directory:
 
 ```sh
-helm install eck-apm .
+HPCC-Platform/helm/managed/observability/eck> helm install eck-apm .
 ```
 
-### 6. Configure HPCC to Export Traces
+### 4. Configure HPCC to Export Traces
 
-Provide the sample [jtrace configuration values file](./otlp-http-collector-k8s.yaml) onto your HPCC cluster.
+Inject the sample [jtrace configuration values file](./otlp-http-collector-k8s.yaml) onto your HPCC cluster.
 
 Details on HPCC trace configuration can be found in [helm/examples/tracing/README](https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/examples/tracing/README.md).
 
-Assuming the HPCC helm repository is available:
+> **Note:** Choose one of the next two steps:
+
 ```sh
+#Choose this option if HPCC-Platform is currently NOT deployed
 #deploy fresh HPCC cluster
 helm install myhpcc hpcc/hpcc -f ./otlp-http-collector-k8s.yaml
 ```
 
 ```sh
-# or upgrade pre-existing HPCC cluster
+#Choose this option if HPCC-Platform is already deployed
+#upgrade pre-existing HPCC cluster
+#Note: this command assumes the existing cluster is named myhpcc, use the actual cluster name
 helm upgrade myhpcc hpcc/hpcc -f ./otlp-http-collector-k8s.yaml
 ```
 
@@ -88,7 +115,8 @@ helm upgrade myhpcc hpcc/hpcc -f ./otlp-http-collector-k8s.yaml
     ```
 
 #### Access Trace data
-- Navigate to **Observability then Applications → Traces**
+
+- Once logged in, navigate to **Observability (top-right hamburger menu) then Applications → Traces**
 - Ensure the time range (top right) is set appropriately
 - Traces are grouped by originating service (esp, thor, etc.) or transaction type (wsstore/feth, wsworkunits/wuquery, run_workunit, etc)
 - Specific traces can be queried by many keywords such as trace.id, span.id
@@ -120,6 +148,7 @@ docker run --rm ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetry
 ```
 
 ### Test APM Server Certificate-Based Connectivity
+
 By default the APM server is not accessible outside of the cluster. To test, perform the following steps from within the cluster, or expose the service outside of the cluster.
 
 #### Fetch Elastic APM Token and CA Certificate
