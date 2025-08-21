@@ -181,6 +181,7 @@ Filters:
                               from the EventType enumeration:
                                 - IndexLookup
                                 - IndexLoad
+                                - IndexPayload
                                 - IndexEviction
                                 - DaliChangeMode
                                 - DaliCommit
@@ -209,6 +210,7 @@ Filters:
                                 - Index
                                   - IndexLookup
                                   - IndexLoad
+                                  - IndexPayload
                                   - IndexEviction
                                   - FileInformation
                                 - Other
@@ -240,7 +242,7 @@ Filters:
                                 - FileOffset: numeric
                                 - NodeKind: numeric, 0 or 1
                                 - ReadTime: numeric
-                                - ElapsedTime: numeric
+                                - ExpandTime: numeric
                                 - InMemorySize: numeric
                                 - InCache: Boolean
                                 - Path: string
