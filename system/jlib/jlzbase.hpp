@@ -19,6 +19,7 @@
 #define JLZBASE_INCL
 
 #include "jlzw.hpp"
+#include "jfcmp.hpp"
 
 // Base classes for the LZ4 and ZStd compression
 // They are private to jlib, so they do not have a jlib_decl
@@ -33,6 +34,20 @@ inline unsigned sizePacked(size32_t value)
     }
     return size;
 }
+
+//---------------------------------------------------------------------------------------------------------------------
+
+class CBlockExpander : public CFcmpExpander
+{
+public:
+    virtual void expand(void *buf) override;
+    virtual size32_t expandFirst(MemoryBuffer & target, const void * src) override;
+    virtual size32_t expandNext(MemoryBuffer & target) override;
+    virtual bool supportsBlockDecompression() const override { return true; }
+
+protected:
+    size32_t totalExpanded = 0;
+};
 
 /*
  * The serialized stream compressed data has the following format:

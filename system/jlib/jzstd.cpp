@@ -27,6 +27,43 @@
 
 #include <zstd.h>
 
+//---------------------------------------------------------------------------------------------------------------------
+
+class CZStdExpander final : public CBlockExpander
+{
+public:
+    CZStdExpander()
+    {
+    }
+
+    virtual size32_t expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
+    {
+        assertex(destSize != 0);
+        size_t result = ZSTD_decompress(dest, destSize, src, srcSize);
+        if (ZSTD_isError(result))
+        {
+            if (unlikely(ZSTD_getErrorCode(result) != ZSTD_error_dstSize_tooSmall))
+                throw makeStringExceptionV(0, "ZStd decompression error: %s", ZSTD_getErrorName(result));
+            //If the buffer is too small, return 0, and the caller can try again
+            return 0;
+        }
+        return (size32_t)result;
+    }
+
+    virtual bool supportsBlockDecompression() const override
+    {
+        return true;
+    }
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+
+
+IExpander *createZStdExpander()
+{
+    return new CZStdExpander();
+}
+
 // See notes on CStreamCompressor for the serialized stream format
 
 // The ZStd streaming functions compress data in blocks. We are using ZSTD_e_flush.
