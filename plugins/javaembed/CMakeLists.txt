@@ -53,10 +53,12 @@ if(JAVAEMBED AND USE_JAVA)
 
         set(java_sources HpccClassLoader.java
                          HpccUtils.java
-                         ActivityContext.java)
+                         ActivityContext.java
+                         HpccLogHandler.java)
         set(java_classes ${CMAKE_CURRENT_BINARY_DIR}/com/HPCCSystems/HpccClassLoader.class
                          ${CMAKE_CURRENT_BINARY_DIR}/com/HPCCSystems/HpccUtils.class
-                         ${CMAKE_CURRENT_BINARY_DIR}/com/HPCCSystems/ActivityContext.class)
+                         ${CMAKE_CURRENT_BINARY_DIR}/com/HPCCSystems/ActivityContext.class
+                         ${CMAKE_CURRENT_BINARY_DIR}/com/HPCCSystems/HpccLogHandler.class)
         add_custom_command ( OUTPUT ${java_classes}
             COMMAND ${Java_JAVAC_EXECUTABLE} ${java_sources} -d ${CMAKE_CURRENT_BINARY_DIR} -source 1.8 -target 1.8
             DEPENDS ${java_sources}
@@ -65,7 +67,7 @@ if(JAVAEMBED AND USE_JAVA)
         add_custom_target(build-java-classes ALL
           DEPENDS ${java_classes}
         )
-            
+
         add_definitions(-D_USRDLL -DJAVAEMBED_EXPORTS)
 
         HPCC_ADD_LIBRARY(javaembed SHARED ${SRCS})
