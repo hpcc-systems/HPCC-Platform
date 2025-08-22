@@ -812,11 +812,25 @@ static void setupGlobals(CheckedJNIEnv *J)
         jclass logHandlerClass = J->FindClass("com/HPCCSystems/HpccLogHandler");
         if (logHandlerClass)
         {
-            jmethodID initialize = J->GetStaticMethodID(logHandlerClass, "initialize", "()V");
+            StringBuffer log4jConfigPath;
+            if (isContainerized())
+            {
+                const char *envLog4jConfigPath = getenv("LOG4J_CONFIG_PATH");
+                if (envLog4jConfigPath && *envLog4jConfigPath)
+                    log4jConfigPath.append(envLog4jConfigPath);
+            }
+            else
+            {
+                const IProperties &conf = queryEnvironmentConf();
+                conf.getProp("log4jconfigpath", log4jConfigPath);
+            }
+
+            jmethodID initialize = J->GetStaticMethodID(logHandlerClass, "initialize", "(Ljava/lang/String;)V");
             if (initialize)
             {
-                J->CallStaticVoidMethod(logHandlerClass, initialize);
-                PROGLOG("javaembed: Enhanced logging with log level support enabled");
+                jstring configPathStr = J->NewStringUTF(log4jConfigPath.str());
+                J->CallStaticVoidMethod(logHandlerClass, initialize, configPathStr);
+                J->DeleteLocalRef(configPathStr);
             }
         }
     }
