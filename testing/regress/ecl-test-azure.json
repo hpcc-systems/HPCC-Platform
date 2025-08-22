@@ -6,7 +6,7 @@
         "dropzoneIp" : "127.0.0.1",
         "dropzonePath" : "/var/lib/HPCCSystems/mydropzone/",
         "espFileSprayService" : "FileSpray",
-        "useSsl" : "False",
+        "useSsl" : "True",
         "username": "regress",
         "password": "regress",
         "suiteDir": "",
@@ -21,16 +21,16 @@
         "Engines": [
             "hthor",
             "thor",
-            "roxie-workunit"
+            "roxie"
         ],
         "Clusters": {
             "hthor" : "hthor",
-            "thor"  : "thor",
+            "thor"  : "thor-1",
             "roxie-workunit" : "roxie-workunit"
         },
         "ClusterNames": {
             "hthor" : "myhthor",
-            "thor"  : "mythor",
+            "thor"  : "thor-1",
             "roxie-workunit" : "myroxie"
         },
         "timeout":"3600",
