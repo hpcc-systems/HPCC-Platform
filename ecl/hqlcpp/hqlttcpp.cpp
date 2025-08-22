@@ -2499,7 +2499,7 @@ IHqlExpression * ThorHqlTransformer::createTransformed(IHqlExpression * expr)
     if (expr->getOperator() == no_cluster)
     {
         IHqlExpression * clusterTypeExpr = expr->queryChild(2);
-        targetClusterType = static_cast<ClusterType>(clusterTypeExpr->queryValue()->getIntValue());
+        targetClusterType = static_cast<ClusterType>(getIntValue(clusterTypeExpr));
     }
     OwnedHqlExpr transformed = PARENT::createTransformed(expr);
     updateOrphanedSelectors(transformed, expr);
