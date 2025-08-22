@@ -1205,13 +1205,13 @@ public:
     ClusterType restoreTargetClusterTypes();
     void ensureDiskAccessAllowed(IHqlExpression * expr);
     void checkAbort();
-    void saveOverriddenOption(const std::string & name)
+    void saveOverriddenOption(const char * name)
     {
         std::string lowerName = name;
         std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), ::tolower);
         overriddenDebugOptions.push_back(lowerName);
     }
-    bool isOptionOverridden(const std::string & name) const
+    bool isOptionOverridden(const char * name) const
     {
         std::string lowerName = name;
         std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), ::tolower);
