@@ -21,7 +21,10 @@ IMPORT Std;
 
 // Assumes execution on mythor1 thor cluster
 
-ds1 := NOFOLD(DATASET(10000, TRANSFORM({UNSIGNED4 n}, SELF.n := RANDOM()), DISTRIBUTED));
+ds := NOFOLD(DATASET(10000, TRANSFORM({UNSIGNED4 n}, SELF.n := RANDOM()), DISTRIBUTED));
 
-// Data: Build data on a different thor cluster
-EXECUTE('mythor2', ds1);
+// Action: Build and write the dataset to a different thor cluster
+EVALUATE('mythor2', OUTPUT(ds, {ds}, '~test::data', OVERWRITE, COMPRESSED));
+
+// Action: Using the agent process, create a superfile
+EVALUATE(ECLAGENT, Std.File.CreateSuperFile('~test::my_superfile'));
