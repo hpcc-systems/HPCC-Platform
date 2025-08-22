@@ -805,8 +805,6 @@ static void setupGlobals(CheckedJNIEnv *J)
         throw makeWrappedExceptionV(E, E->errorCode(), "javaembed: Unable to find HPCC classes - is classpath set properly?");
     }
 
-#ifdef JAVAEMBED_ENHANCED_LOGGING
-    // Try to load and initialize log handler (only when enhanced logging is enabled)
     try
     {
         jclass logHandlerClass = J->FindClass("com/HPCCSystems/HpccLogHandler");
@@ -834,12 +832,10 @@ static void setupGlobals(CheckedJNIEnv *J)
             }
         }
     }
-    catch (...)
+    catch (IException *E)
     {
-        // Continue if log handler is not available
-        ERRLOG("javaembed: Enhanced log handler not available, using basic logging");
+        throw makeWrappedExceptionV(E, E->errorCode(), "javaembed: Unable to find HpccLogHandler - is classpath set properly?");
     }
-#endif
 }
 
 static StringAttr & getSignature(StringAttr &ret, CheckedJNIEnv *J, jclass clazz, const char *funcName)

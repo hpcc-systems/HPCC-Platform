@@ -53,17 +53,12 @@ if(JAVAEMBED AND USE_JAVA)
 
         set(java_sources HpccClassLoader.java
                          HpccUtils.java
-                         ActivityContext.java)
+                         ActivityContext.java
+                         HpccLogHandler.java)
         set(java_classes ${CMAKE_CURRENT_BINARY_DIR}/com/HPCCSystems/HpccClassLoader.class
                          ${CMAKE_CURRENT_BINARY_DIR}/com/HPCCSystems/HpccUtils.class
-                         ${CMAKE_CURRENT_BINARY_DIR}/com/HPCCSystems/ActivityContext.class)
-
-        if(USE_JAVA_NATIVE_LOGS)
-            message(STATUS "Capturing Java native logs")
-            list(APPEND java_sources HpccLogHandler.java)
-            list(APPEND java_classes ${CMAKE_CURRENT_BINARY_DIR}/com/HPCCSystems/HpccLogHandler.class)
-            add_definitions(-DJAVAEMBED_ENHANCED_LOGGING)
-        endif()
+                         ${CMAKE_CURRENT_BINARY_DIR}/com/HPCCSystems/ActivityContext.class
+                         ${CMAKE_CURRENT_BINARY_DIR}/com/HPCCSystems/HpccLogHandler.class)
         add_custom_command ( OUTPUT ${java_classes}
             COMMAND ${Java_JAVAC_EXECUTABLE} ${java_sources} -d ${CMAKE_CURRENT_BINARY_DIR} -source 1.8 -target 1.8
             DEPENDS ${java_sources}

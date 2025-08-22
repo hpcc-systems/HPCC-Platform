@@ -59,54 +59,21 @@ public class HpccLogHandler extends OutputStream
      */
     private static void createLog4jConfig(String configFilePath) throws IOException
     {
-        String configXml;
-
         if (configFilePath != null && !configFilePath.trim().isEmpty())
         {
             Path customConfigPath = Paths.get(configFilePath);
             if (Files.exists(customConfigPath))
             {
-                configXml = new String(Files.readAllBytes(customConfigPath));
-                HpccUtils.log("Using custom log4j configuration from: " + configFilePath);
-            }
-            else
-            {
-                HpccUtils.log("Custom config log4j file not found at: " + configFilePath + ", using default configuration");
-                configXml = getDefaultConfigXml();
+                String configXml = new String(Files.readAllBytes(customConfigPath));
+                HpccUtils.log("Enabled Java log redirection with custom log4j configuration from: " + configFilePath);
+
+                final Path log4jConfigPath = Paths.get(System.getProperty("user.dir"), "log4j2.xml");
+                Files.write(log4jConfigPath, configXml.getBytes());
+
+                System.setOut(new java.io.PrintStream(new HpccLogHandler(), true));
+                System.setErr(new java.io.PrintStream(new HpccLogHandler(), true));
             }
         }
-        else
-        {
-            HpccUtils.log("Using default log4j configuration");
-            configXml = getDefaultConfigXml();
-        }
-
-        final Path log4jConfigPath = Paths.get(System.getProperty("user.dir"), "log4j2.xml");
-        Files.write(log4jConfigPath, configXml.getBytes());
-
-        System.setOut(new java.io.PrintStream(new HpccLogHandler(), true));
-        System.setErr(new java.io.PrintStream(new HpccLogHandler(), true));
-    }
-
-    /**
-     * Get the default log4j2 XML configuration
-     * @return Default XML configuration as a string
-     */
-    private static String getDefaultConfigXml()
-    {
-        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-            "<Configuration status=\"INFO\">\n" +
-            "  <Appenders>\n" +
-            "    <Console name=\"HpccConsole\" target=\"SYSTEM_OUT\">\n" +
-            "      <PatternLayout pattern=\"%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n\"/>\n" +
-            "    </Console>\n" +
-            "  </Appenders>\n" +
-            "  <Loggers>\n" +
-            "    <Root level=\"info\">\n" +
-            "      <AppenderRef ref=\"HpccConsole\"/>\n" +
-            "    </Root>\n" +
-            "  </Loggers>\n" +
-            "</Configuration>";
     }
 
     @Override
