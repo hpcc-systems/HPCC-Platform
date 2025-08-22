@@ -9418,14 +9418,14 @@ void HqlCppTranslator::doBuildStmtAssert(BuildCtx & ctx, IHqlExpression * expr)
 void HqlCppTranslator::doBuildStmtCluster(BuildCtx & ctx, IHqlExpression * expr)
 {
     IHqlExpression * clusterTypeExpr = expr->queryChild(2);
-    pushTargetClusterType(static_cast<ClusterType>(clusterTypeExpr->queryValue()->getIntValue()));
+    pushTargetClusterType(static_cast<ClusterType>(getIntValue(clusterTypeExpr)));
 
-    if (!targetHThor())
+    if (targetThor())
         pushCluster(ctx, expr->queryChild(1));
     
     buildStmt(ctx, expr->queryChild(0));
     
-    if (!targetHThor())
+    if (targetThor())
         popCluster(ctx);
 
     popTargetClusterType();
