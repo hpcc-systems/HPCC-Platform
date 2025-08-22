@@ -6429,7 +6429,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
         case no_persist:
         case no_checkpoint:
         case no_stored:
-            info.extractStoredInfo(&cur, id, codehash, translator.targetRoxie(), multiplePersistInstances);
+            info.extractStoredInfo(&cur, id, codehash, isRoxie(), multiplePersistInstances);
 
             OwnedHqlExpr id = info.getStoredKey();
             unsigned match = alreadyProcessed.find(*id);
@@ -6492,7 +6492,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
         case no_checkpoint:
         case no_stored:
             {
-                info.extractStoredInfo(&cur, id, codehash, translator.targetRoxie(), multiplePersistInstances);
+                info.extractStoredInfo(&cur, id, codehash, isRoxie(), multiplePersistInstances);
 
                 OwnedHqlExpr id = info.getStoredKey();
                 alreadyProcessed.append(*id.getClear());
@@ -6501,11 +6501,11 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
             }
             break;
         case no_once:
-            info.extractStoredInfo(&cur, id, codehash, translator.targetRoxie(), multiplePersistInstances);
+            info.extractStoredInfo(&cur, id, codehash, isRoxie(), multiplePersistInstances);
             break;
         case no_independent:
             {
-                info.extractStoredInfo(&cur, id, codehash, translator.targetRoxie(), multiplePersistInstances);
+                info.extractStoredInfo(&cur, id, codehash, isRoxie(), multiplePersistInstances);
                 IHqlExpression * clusterExpr = info.queryCluster();
                 if (clusterExpr)
                 {
@@ -6523,7 +6523,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
                 OwnedHqlExpr successExpr = transformSequentialEtc(cur.queryChild(0));
                 conts.success = splitValue(successExpr);
                 Owned<IWorkflowItem> wf = addWorkflowContingencyToWorkunit(conts.success, WFTypeSuccess, WFModeNormal, queryDirectDependencies(successExpr), NULL, wfid, info.queryLabel());
-                info.extractStoredInfo(&cur, id, codehash, translator.targetRoxie(), multiplePersistInstances);
+                info.extractStoredInfo(&cur, id, codehash, isRoxie(), multiplePersistInstances);
                 break;
             }
         case no_failure:
@@ -6531,7 +6531,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
                 OwnedHqlExpr failureExpr = transformSequentialEtc(cur.queryChild(0));
                 conts.failure = splitValue(failureExpr);
                 Owned<IWorkflowItem> wf = addWorkflowContingencyToWorkunit(conts.failure, WFTypeFailure, WFModeNormal, queryDirectDependencies(failureExpr), NULL, wfid, info.queryLabel());
-                info.extractStoredInfo(&cur, id, codehash, translator.targetRoxie(), multiplePersistInstances);
+                info.extractStoredInfo(&cur, id, codehash, isRoxie(), multiplePersistInstances);
                 break;
             }
         case no_recovery:
@@ -6539,7 +6539,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
                 conts.recovery = splitValue(cur.queryChild(0));
                 conts.retries = (unsigned)getIntValue(cur.queryChild(1), 0);
                 Owned<IWorkflowItem> wf = addWorkflowContingencyToWorkunit(conts.recovery, WFTypeRecovery, WFModeNormal, queryDirectDependencies(cur.queryChild(0)), NULL, wfid, info.queryLabel());
-                info.extractStoredInfo(&cur, id, codehash, translator.targetRoxie(), multiplePersistInstances);
+                info.extractStoredInfo(&cur, id, codehash, isRoxie(), multiplePersistInstances);
                 break;
             }
         case no_attr:
@@ -7566,7 +7566,6 @@ void WorkflowTransformer::transformRoot(const HqlExprArray & in, WorkflowArray &
         copyDependencies(queryBodyExtra(ret), &globalInfo);
         if ((ret->getOperator() != no_null) || queryBodyExtra(ret)->queryDependencies().ordinality())
         {
-            // ClusterType currentCluster = translator.getTargetClusterType();
             transformed.append(*ret.getClear());
         }
         translator.restoreTargetClusterTypes();
