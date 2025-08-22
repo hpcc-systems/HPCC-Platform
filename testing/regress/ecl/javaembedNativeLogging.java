@@ -24,9 +24,12 @@ public class javaembedNativeLogging
 
     public static String testLogging(String arg)
     {
-        logger.info("This is an info message.");
+        logger.trace("This is a trace message.");
         logger.debug("This is a debug message."); // Will not be logged with root level "info"
+        logger.info("This is an info message.");
         logger.warn("This is a warning message.");
+        logger.error("This is an error message.");
+        logger.fatal("This is a fatal message!");
 
         return arg;
     }

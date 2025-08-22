@@ -812,10 +812,10 @@ static void setupGlobals(CheckedJNIEnv *J)
         jclass logHandlerClass = J->FindClass("com/HPCCSystems/HpccLogHandler");
         if (logHandlerClass)
         {
-            jmethodID installLogCapture = J->GetStaticMethodID(logHandlerClass, "installLogCapture", "()V");
-            if (installLogCapture)
+            jmethodID initialize = J->GetStaticMethodID(logHandlerClass, "initialize", "()V");
+            if (initialize)
             {
-                J->CallStaticVoidMethod(logHandlerClass, installLogCapture);
+                J->CallStaticVoidMethod(logHandlerClass, initialize);
                 PROGLOG("javaembed: Enhanced logging with log level support enabled");
             }
         }

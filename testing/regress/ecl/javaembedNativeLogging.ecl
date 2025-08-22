@@ -17,6 +17,7 @@
 
 //class=embedded
 //class=3rdparty
+#OPTION('pickBestEngine', false);
 
 import java;
 
