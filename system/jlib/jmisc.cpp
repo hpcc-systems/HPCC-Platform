@@ -778,7 +778,11 @@ static void UnixAbortHandler(int signo)
     hadAbortSignal = true;
     if (handlers.length()==0 || notifyOnAbort(type))
     {
-        _exit(0);
+        // This used to call _exit(0) to avoid calling all the module exit functions
+        // But then manually added atexit handlers (such as for example from code coverage) would not get called
+        // Instead we can clear module exit func list and then call exit() ...
+        ClearModuleObjects();
+        exit(0);
     }
 }
 #endif

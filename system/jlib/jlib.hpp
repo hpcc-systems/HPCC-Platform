@@ -334,6 +334,7 @@ public:
     void add(InitializerType &iT);
     void add(boolFunc func, unsigned int priority, unsigned int modpriority, byte state=ITS_Uninitialized);
     count_t items() { return initializers.ordinality(); }
+    void clear();
 
     InitializerType & element(aindex_t i) { return initializers.element(i); }
 };
@@ -372,6 +373,7 @@ public:
     
 
 extern jlib_decl void _InitModuleObjects();
+extern jlib_decl void ClearModuleObjects();
 extern jlib_decl void ExitModuleObjects();
 extern jlib_decl void ExitModuleObjects(SoContext soCtx);
 
