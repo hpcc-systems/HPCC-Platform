@@ -21,6 +21,6 @@
 
 import java;
 
-// Test function that demonstrates various logging methods
+// Test function that demonstrates various logging levels
 STRING testLogging(STRING message) := IMPORT(java, 'javaembedNativeLogging.testLogging:(Ljava/lang/String;)Ljava/lang/String;');
 OUTPUT(testLogging('log4j'));

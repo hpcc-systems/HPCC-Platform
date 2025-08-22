@@ -34,17 +34,20 @@ public class HpccLogHandler extends OutputStream
      * Initialize the log4j configuration to redirect output to HPCC native logging
      * @param configFilePath Optional path to a custom log4j2.xml configuration file
      */
-    public static synchronized void initialize(String configFilePath) {
-        if (initialized) {
+    public static synchronized void initialize(String configFilePath)
+    {
+        if (initialized)
+        {
             return;
         }
 
-        try {
-            // Create log4j configuration
+        try
+        {
             createLog4jConfig(configFilePath);
-
             initialized = true;
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             System.err.println("Failed to initialize HpccLogHandler: " + e.getMessage());
             e.printStackTrace();
         }
@@ -54,20 +57,26 @@ public class HpccLogHandler extends OutputStream
      * Create and configure log4j to use our custom appender
      * @param configFilePath Optional path to a custom log4j2.xml configuration file
      */
-    private static void createLog4jConfig(String configFilePath) throws IOException {
+    private static void createLog4jConfig(String configFilePath) throws IOException
+    {
         String configXml;
 
-        if (configFilePath != null && !configFilePath.trim().isEmpty()) {
-            // Try to read the custom configuration file
+        if (configFilePath != null && !configFilePath.trim().isEmpty())
+        {
             Path customConfigPath = Paths.get(configFilePath);
-            if (Files.exists(customConfigPath)) {
+            if (Files.exists(customConfigPath))
+            {
                 configXml = new String(Files.readAllBytes(customConfigPath));
                 HpccUtils.log("Using custom log4j configuration from: " + configFilePath);
-            } else {
+            }
+            else
+            {
                 HpccUtils.log("Custom config log4j file not found at: " + configFilePath + ", using default configuration");
                 configXml = getDefaultConfigXml();
             }
-        } else {
+        }
+        else
+        {
             HpccUtils.log("Using default log4j configuration");
             configXml = getDefaultConfigXml();
         }
@@ -75,10 +84,7 @@ public class HpccLogHandler extends OutputStream
         final Path log4jConfigPath = Paths.get(System.getProperty("user.dir"), "log4j2.xml");
         Files.write(log4jConfigPath, configXml.getBytes());
 
-        // Redirect System.out to our custom stream
         System.setOut(new java.io.PrintStream(new HpccLogHandler(), true));
-
-        // Optionally redirect System.err as well
         System.setErr(new java.io.PrintStream(new HpccLogHandler(), true));
     }
 
@@ -86,7 +92,8 @@ public class HpccLogHandler extends OutputStream
      * Get the default log4j2 XML configuration
      * @return Default XML configuration as a string
      */
-    private static String getDefaultConfigXml() {
+    private static String getDefaultConfigXml()
+    {
         return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
             "<Configuration status=\"INFO\">\n" +
             "  <Appenders>\n" +
@@ -103,40 +110,36 @@ public class HpccLogHandler extends OutputStream
     }
 
     @Override
-    public void write(int b) throws IOException {
-        if (b == '\n' || b == '\r') {
+    public void write(int b) throws IOException
+    {
+        if (b == '\n' || b == '\r')
             flush();
-        } else {
+        else
             buffer.write(b);
-        }
     }
 
     @Override
-    public void write(byte[] b, int off, int len) throws IOException {
-        for (int i = off; i < off + len; i++) {
+    public void write(byte[] b, int off, int len) throws IOException
+    {
+        for (int i = off; i < off + len; i++)
             write(b[i]);
-        }
     }
 
     @Override
-    public void flush() throws IOException {
-        if (buffer.size() > 0) {
+    public void flush() throws IOException
+    {
+        if (buffer.size() > 0)
+        {
             String message = buffer.toString().trim();
-            if (!message.isEmpty()) {
-                try {
-                    HpccUtils.log(message);
-                } catch (Exception e) {
-                    // Fallback to System.err if HpccUtils.log fails
-                    System.err.println("HpccLogHandler: Failed to log message: " + message);
-                    e.printStackTrace();
-                }
-            }
+            if (!message.isEmpty())
+                HpccUtils.log(message);
             buffer.reset();
         }
     }
 
-        @Override
-    public void close() throws IOException {
+    @Override
+    public void close() throws IOException
+    {
         flush();
         super.close();
     }

@@ -57,10 +57,9 @@ if(JAVAEMBED AND USE_JAVA)
         set(java_classes ${CMAKE_CURRENT_BINARY_DIR}/com/HPCCSystems/HpccClassLoader.class
                          ${CMAKE_CURRENT_BINARY_DIR}/com/HPCCSystems/HpccUtils.class
                          ${CMAKE_CURRENT_BINARY_DIR}/com/HPCCSystems/ActivityContext.class)
-        
-        # Conditionally include enhanced logging support
+
         if(USE_JAVA_NATIVE_LOGS)
-            message(STATUS "Using Java native logs")
+            message(STATUS "Capturing Java native logs")
             list(APPEND java_sources HpccLogHandler.java)
             list(APPEND java_classes ${CMAKE_CURRENT_BINARY_DIR}/com/HPCCSystems/HpccLogHandler.class)
             add_definitions(-DJAVAEMBED_ENHANCED_LOGGING)
@@ -73,7 +72,7 @@ if(JAVAEMBED AND USE_JAVA)
         add_custom_target(build-java-classes ALL
           DEPENDS ${java_classes}
         )
-            
+
         add_definitions(-D_USRDLL -DJAVAEMBED_EXPORTS)
 
         HPCC_ADD_LIBRARY(javaembed SHARED ${SRCS})
