@@ -1037,6 +1037,7 @@ bool CJHLegacySearchNode::fetchPayload(unsigned int index, char *dst, PayloadRef
     if (recording)
     {
         std::shared_ptr<byte []> sharedPayload;
+        bool isFirstUse = false;
 
         {
             CriticalBlock block(payloadExpandCs);
@@ -1047,10 +1048,11 @@ bool CJHLegacySearchNode::fetchPayload(unsigned int index, char *dst, PayloadRef
                 //Allocate a dummy payload so we can track whether it is hit or not
                 sharedPayload = std::shared_ptr<byte []>(new byte[1]);
                 expandedPayload = sharedPayload;
+                isFirstUse = true;
             }
         }
 
-        queryRecorder().recordIndexPayload(keyHdr->getKeyId(), getFpos(), 0, getMemSize());
+        queryRecorder().recordIndexPayload(keyHdr->getKeyId(), getFpos(), isFirstUse, 0);
 
         //Ensure the payload stays alive for the duration of this call, and is likely preserved until
         //the next call.  Always replacing is as efficient as conditional - since we are using a move operator.
