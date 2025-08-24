@@ -25,7 +25,10 @@
 #include "esp.hpp"
 #include "esdl_def.hpp"
 
+#ifdef _MSC_VER
+#pragma warning(push)
 #pragma warning(disable: 4786)
+#endif
 
 #define XPATH_QUOTED(p) VStringBuffer("'%s'", p).str()
 
@@ -62,5 +65,8 @@ inline void setXpathQuotedParam(IProperties* properties, const char* name, const
 
 esdl_decl IEsdlDefinitionHelper* createEsdlDefinitionHelper( );
 
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 #endif // !defined(ESDL_DEF_HELPER_HPP)
