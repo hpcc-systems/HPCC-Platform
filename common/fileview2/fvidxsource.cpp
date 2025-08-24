@@ -224,7 +224,7 @@ __int64 IndexDataSource::numRows(bool force)
     __int64 total = 0;
     ForEachItemIn(i, matchingParts)
     {
-        manager->setKey(NULL);
+        manager->clearKey();
         curPart.clear();
         if (singlePart)
             curPart.set(queryTLK());
@@ -239,12 +239,12 @@ __int64 IndexDataSource::numRows(bool force)
             }
         }
 
-        manager->setKey(curPart);
+        manager->setKey(curPart, diskRecordMeta->queryRecordAccessor(true));
         manager->reset();
         total += manager->getCount();
     }
 
-    manager->setKey(NULL);
+    manager->clearKey();
     curPart.clear();
     resetCursor();
     return total;
@@ -285,7 +285,7 @@ bool IndexDataSource::getNextRow(MemoryBuffer & out, bool extractRow)
         {
             if ((curPartIndex != -1) && ((unsigned)curPartIndex >= matchingParts.ordinality()))
                 return false;
-            manager->setKey(NULL);
+            manager->clearKey();
             curPart.clear();
             if ((unsigned)++curPartIndex >= matchingParts.ordinality())
                 return false;
@@ -298,7 +298,7 @@ bool IndexDataSource::getNextRow(MemoryBuffer & out, bool extractRow)
                 if (!curPart)
                     return false;
             }
-            manager->setKey(curPart);
+            manager->setKey(curPart, diskRecordMeta->queryRecordAccessor(true));
             manager->reset();
         }
         
