@@ -22,6 +22,7 @@
 #include <string>
 #include <sstream>
 #include "portlist.h"
+#include "roxie.hpp"
 #include "jlib.hpp"
 #include "jmisc.hpp"
 #include "jexcept.hpp"
@@ -29,6 +30,8 @@
 #include "jmd5.hpp"
 #include "jfile.hpp"
 #include "jptree.hpp"
+#include "jsecrets.hpp"
+#include "securesocket.hpp"
 
 /**
  * While billed as a topology server (and used for that by Roxie), this service actually remembers and
@@ -84,6 +87,9 @@ unsigned timeoutHeartbeatAgent = 20000;     // How long before an agent is marke
 unsigned removeHeartbeatInterval = 120000;  // How long before a node is removed from list
 unsigned topologyReportInterval = 60000;    // How often topology is reported to logging (if traceLevel >= 2)
 bool aborted = false;
+bool tls = false;
+Owned<const ISyncedPropertyTree> tlsConfig;
+Owned<ISecureSocketContext> secureContext;
 Semaphore stopping;
 StringBuffer topologyFile;
 
@@ -218,12 +224,33 @@ void doServer(ISocket *socket)
             try
             {
                 Owned<ISocket> p = ISocket::connect(me);
+                if (tlsConfig)
+                {
+                    Owned<ISecureSocketContext> secureCtx = createSecureSocketContextSynced(tlsConfig, ClientSocket);
+                    if (!secureCtx)
+                        throw makeStringException(ROXIE_TLS_ERROR, "toposerver failed creating secure context for roxie control message");
+                    Owned<ISecureSocket> ssock = secureCtx->createSecureSocket(p.getClear());
+                    if (!ssock)
+                        throw makeStringException(ROXIE_TLS_ERROR, "toposerver failed creating secure socket for roxie control message");
+
+                    int status = ssock->secure_connect();
+                    if (status < 0)
+                    {
+                        StringBuffer err;
+                        err.append("toposerver failed to establish secure connection to ");
+                        me.getEndpointHostText(err);
+                        err.append(": returned ").append(status);
+                        throw makeStringException(ROXIE_TLS_ERROR, err.str());
+                    }
+                    p.setown(ssock.getClear());
+                }
                 // TLS TODO: secure_connect() here if globally configured for mtls ...
                 p->write("\0\0\0\0", 4);
                 p->close();
             }
             catch (IException *e)
             {
+                EXCLOG(e);
                 e->Release();
             }
         }
@@ -232,8 +259,19 @@ void doServer(ISocket *socket)
     {
         try
         {
-            Owned<ISocket> client = socket->accept();
-            // TLS TODO: secure_accept() here if globally configured for mtls ...
+            Owned<ISocket> client;
+            client.setown(socket->accept());
+            if (tls)
+            {
+                Owned<ISecureSocket> ssocket = secureContext->createSecureSocket(socket);
+                int status = ssocket->secure_accept(traceLevel);
+                if (status < 0)
+                {
+                    // secure_accept may also DBGLOG() errors ...
+                    shutdownAndCloseNoThrow(ssocket);
+                    continue;
+                }
+            }
             timeoutTopology();
             unsigned packetLen;
             client->read(&packetLen, 4);
@@ -322,6 +360,7 @@ static constexpr const char * defaultYaml = R"!!(
     port: 9004
     stdlog: true
     traceLevel: 1
+    tls: false
     logging:
       queueDrop: 32
 )!!";
@@ -372,6 +411,7 @@ int main(int argc, const char *argv[])
         timeoutHeartbeatServer = topology->getPropInt("@timeoutHeartbeatServer", heartbeatInterval*6);
         removeHeartbeatInterval = topology->getPropInt("@removeHeartbeatInterval", heartbeatInterval*10);
         topologyReportInterval = topology->getPropInt("@topologyReportInterval", topologyReportInterval);
+        tls = topology->getPropBool("@tls", false);
 
 #ifndef _CONTAINERIZED
         if (topology->getPropBool("@stdlog", traceLevel != 0))
@@ -406,9 +446,14 @@ int main(int argc, const char *argv[])
             DBGLOG("removeHeartbeatInterval value too small - setting to %u", removeHeartbeatInterval);
         }
         Owned<ISocket> socket = ISocket::create(topoPort);
+        if (tls)
+        {
+            tlsConfig.setown(getIssuerTlsSyncedConfig("local", nullptr, false));
+            // MORE - should this be recreated periodically for cert rotation?
+            secureContext.setown(createSecureSocketContextSynced(tlsConfig, ServerSocket));
+        }
         if (traceLevel)
             DBGLOG("Topology server starting on port %u", topoPort);
-
         writeSentinelFile(sentinelFile);
         doServer(socket);
         if (traceLevel)
