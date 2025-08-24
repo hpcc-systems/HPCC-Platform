@@ -38,6 +38,91 @@
 
 //---------------------------------------------------------------------------------------------------------------------
 
+IBufferedSerialOutputStream * createBufferedOutputStream(IFileIO * io, const IPropertyTree * providerOptions)
+{
+    assertex(providerOptions);
+
+    bool compressed = providerOptions->getPropBool("@compressed", false);
+    const char * compression = providerOptions->queryProp("@compression");
+    CompressionMethod compressionMethod = translateToCompMethod(compression, compressed ? COMPRESS_METHOD_LZ4 : COMPRESS_METHOD_NONE);
+    bool sequentialAccess = providerOptions->getPropBool("@sequentialAccess", false);
+
+    MemoryBuffer encryptionKey;
+    Owned<ICompressor> encryptor;
+    if (providerOptions->hasProp("encryptionKey"))
+    {
+        providerOptions->getPropBin("encryptionKey", encryptionKey);
+        encryptor.setown(createAESCompressor256((size32_t)encryptionKey.length(), encryptionKey.bufferBase()));
+        compressionMethod = COMPRESS_METHOD_AES;
+    }
+
+    bool append = providerOptions->getPropBool("@extend", false);
+    Linked<IFileIO> outputfileio = io;
+    unsigned delayNs = providerOptions->getPropInt("@delayNs", 0);
+    if (delayNs)
+        outputfileio.setown(createDelayedFileIO(outputfileio, delayNs));
+
+    size32_t ioBufferSize = providerOptions->getPropInt("@sizeIoBuffer", oneMB);
+    size32_t streamBufferSize = ioBufferSize;
+    Owned<ISerialOutputStream> fileStream;
+    try
+    {
+        if (sequentialAccess)
+        {
+            Owned<ICompressor> compressor = getCompressor(compression ? compression : "lz4");
+            offset_t offset = append ? outputfileio->size() : 0;
+            Owned<ISerialOutputStream> rawFileStream = createSerialOutputStream(outputfileio, offset);
+            Owned<IBufferedSerialOutputStream> bufferedStream = createBufferedOutputStream(rawFileStream, ioBufferSize);
+            fileStream.setown(createCompressingOutputStream(bufferedStream, compressor));
+            streamBufferSize = oneMB;
+        }
+        else if (compressionMethod != COMPRESS_METHOD_NONE)
+        {
+            size32_t compBlockSize = providerOptions->getPropInt("@sizeCompressBlock", 0);      // 0 means use the default
+
+            //This will throw an exception if appending and the file does not appear to be compressed
+            Owned<ICompressedFileIO> compressedIO = createCompressedFileWriter(outputfileio, append, false, encryptor, compressionMethod, compBlockSize, ioBufferSize);
+            assertex(compressedIO);
+
+            //If we are reading from a compressed file, then only buffer the block size, not the io size (which may be 4MB)
+            streamBufferSize = compressedIO->blockSize();
+            fileStream.set(compressedIO->queryOutputStream());
+        }
+        else
+        {
+            //Now wrap the IFileIO in a stream interface
+            offset_t offset = append ? outputfileio->size() : 0;
+            fileStream.setown(createSerialOutputStream(outputfileio, offset));
+        }
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e, "createOutputStream");
+        e->Release();
+        return nullptr;
+    }
+
+    // Create a buffer around the file stream
+    unsigned threading = providerOptions->getPropInt("@threading", 0);
+    return createBufferedOutputStream(fileStream, streamBufferSize, threading);
+}
+
+
+// Create an output stream and and output io for a given output file.
+bool createBufferedOutputStream(Shared<IBufferedSerialOutputStream> & outputStream, Shared<IFileIO> & outputfileio, IFile * outputFile, const IPropertyTree * providerOptions)
+{
+    IFOmode mode = providerOptions->getPropBool("@extend", false) ? IFOreadwrite : IFOcreate;
+    outputfileio.setown(outputFile->open(mode));
+    if (!outputfileio)
+        return false;
+
+    outputStream.setown(createBufferedOutputStream(outputfileio, providerOptions));
+    return outputStream != nullptr;
+}
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
 /*
  * A class that implements IRowWriteFormatMapping - which provides all the information representing a translation 
  * from projected->expected->actual.
