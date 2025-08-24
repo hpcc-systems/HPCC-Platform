@@ -247,8 +247,11 @@ struct cFileDesc // no virtuals
 struct cDirDesc
 {
     unsigned hash;
-    CMinHashTable<cDirDesc> dirs;       
-    CMinHashTable<cFileDesc> files; 
+    CMinHashTable<cDirDesc> dirs;
+    CMinHashTable<cFileDesc> files;
+    CriticalSection dirsCrit;
+    CriticalSection filesCrit;
+    CriticalSection dirDescCrit;
     offset_t totalsize[2];              //  across all nodes
     offset_t minsize[2];                //  smallest node size
     offset_t maxsize[2];                //  largest node size
@@ -328,7 +331,8 @@ struct cDirDesc
     }
 
     cDirDesc *lookupDir(const char *name,CLargeMemoryAllocator *mem)
-    { 
+    {
+        CriticalBlock block(dirsCrit);
         cDirDesc *ret = dirs.find(name,false);
         if (!ret&&mem) {
             ret = new cDirDesc(*mem,name);
@@ -374,6 +378,8 @@ struct cDirDesc
         StringAttr mask;
         const char *fn = decodeName(drv,name,node,numnodes,mask,pf,nf,filenameLen);
         bool misplaced = isMisplaced(pf, nf, ep, grp);
+
+        CriticalBlock block(filesCrit);
         cFileDesc *file = files.find(fn,false);
         if (!file) {
             if (!mem)
@@ -416,6 +422,8 @@ struct cDirDesc
         // TODO: Add better check for misplaced in isContainerized
         // If plane being scanned is host based (i.e. not locally mounted), misplaced could still make sense
         bool misplaced = !isContainerized() && (nf!=grp.ordinality() || pf>=grp.ordinality() || !grp.queryNode(pf).endpoint().equals(ep));
+
+        CriticalBlock block(filesCrit);
         cFileDesc *file = files.find(fn,false);
         if (file) {
             if (misplaced) {
@@ -440,6 +448,8 @@ struct cDirDesc
     {
         if (drv>1)
             drv = 1;
+
+        CriticalBlock block(dirDescCrit);
         totalsize[drv] += sz;
         if (!minnode[drv]||(minsize[drv]>sz)) {
             minnode[drv] = node+1;
@@ -453,6 +463,8 @@ struct cDirDesc
 
     bool empty(unsigned drv)
     {
+        // NB: Thread-safety not required because called after directory scan
+        // completes, when structure is read-only and no longer being modified.
         // empty if no files, and all subdirs are empty
         if ((files.ordinality()!=0)||(totalsize[drv]!=0))
             return false;
@@ -1036,14 +1048,11 @@ public:
             file.setown(createIFile(rfn));
         Owned<IDirectoryIterator> iter;
         Owned<IException> e;
-        {
-            CriticalUnblock unblock(crit); // not strictly necessary if numThreads==1, but no harm
-            try {
-                iter.setown(file->directoryFiles(NULL,false,true));
-            }
-            catch (IException *_e) {
-                e.setown(_e);
-            }
+        try {
+            iter.setown(file->directoryFiles(NULL,false,true));
+        }
+        catch (IException *_e) {
+            e.setown(_e);
         }
         if (e) {
             StringBuffer tmp(LOGPFX "scanDirectory ");
@@ -1149,9 +1158,11 @@ public:
             {
                 if (abort)
                     return;
-                CriticalBlock block(crit);
-                if (!ok||abort)
-                    return;
+                {
+                    CriticalBlock block(crit);
+                    if (!ok||abort)
+                        return;
+                }
 
                 StringBuffer path(rootdir);
                 StringBuffer tmp;
