@@ -244,6 +244,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   endif ()
   if (PROFILING AND (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANGXX))
     add_definitions (-fno-omit-frame-pointer)
+    add_definitions (-D_PROFILING)
   endif ()
 
   if (WIN32)

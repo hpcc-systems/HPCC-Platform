@@ -65,7 +65,7 @@ public:
 };
 
 #ifdef HQLEXPR_MULTI_THREADED
-typedef CriticalBlock HqlCriticalBlock;
+typedef CCriticalBlock HqlCriticalBlock;
 #else
 typedef NullCriticalBlock HqlCriticalBlock;
 #endif
