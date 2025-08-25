@@ -21,8 +21,13 @@
 #include <stdlib.h>
 #ifdef __linux__
 #include <alloca.h>
+#include <sys/syscall.h>
+#include <sys/uio.h>
 #endif
 #include <algorithm>
+
+#include <cmath>
+#include <deque>
 
 #include "jmisc.hpp"
 #include "jset.hpp"
@@ -49,6 +54,362 @@ const byte * CCachedIndexRead::queryBuffer(offset_t offset, size32_t readSize) c
         return nullptr;
     return static_cast<const byte *>(data.get()) + (offset - baseOffset);
 }
+
+static unsigned cache_index(offset_t cacheKey, unsigned numCacheEntries)
+{
+    // murmur64 bit mix modified to use mix13 parameters
+    cacheKey ^= (cacheKey >> 30);
+    cacheKey *= 0xbf58476d1ce4e5b9;
+    cacheKey ^= (cacheKey >> 27);
+    cacheKey *= 0x94d049bb133111eb;
+    cacheKey ^= (cacheKey >> 31);
+    return (cacheKey % numCacheEntries);
+}
+
+bool isPrime(unsigned x)
+{
+    if (x <= 1)
+        return false;
+    else if (x == 2)
+        return true;
+    else if (x % 2 == 0)
+        return false;
+
+    unsigned t = sqrt(x) + 1;
+    unsigned i;
+    for (i=3; i<=t; i+= 2)
+    {
+        if ((x % i) == 0)
+            return false;
+    }
+    return true;
+}
+
+unsigned largestPrime(unsigned x)
+{
+    unsigned ix;
+    for (ix=x-1; ix>=1; ix--)
+    {
+        if (isPrime(ix))
+            return ix;
+    }
+    return 0;
+}
+
+//--------------------------------------------------------------------------------------------------------------------
+
+class CMyPageCache final : public CInterfaceOf<IPageCache>
+{
+public:
+    CMyPageCache(const IPropertyTree * config)
+    {
+#ifdef __linux__
+        totSize = config->getPropInt64("@sizeMB", 100) * 0x100000;
+        pageSize = config->getPropInt("@pageSize", 0x10000);
+        readSize = config->getPropInt("@readSize", pageSize);
+        cacheMissPenalty = config->getPropInt("@debugCacheMissPenalty", 0);
+        offsetMask = ~(offset_t)(pageSize-1);
+
+        DBGLOG("mck: cache pageSize: %u", pageSize);
+        DBGLOG("mck: cache readSize: %u", readSize);
+
+        if ((pageSize < 8192) || !isPowerOf2(pageSize))
+            throw makeStringExceptionV(0, "Invalid page size %u", pageSize);
+
+        // If read size is smaller than the page size, and a power of 2 then pageSize must be a multiple of readSize
+        // TODO: MCK - ???
+        if ((readSize > pageSize) || !isPowerOf2(readSize))
+            throw makeStringExceptionV(0, "Invalid read size %u for page %u", readSize, pageSize);
+
+        // adjust size so that number of entries is the largest possible prime ...
+
+        numEntries = largestPrime((totSize / pageSize) / 16);
+        if (numEntries < 1)
+            numEntries = 1;
+        setSize = numEntries * pageSize;
+        totSize = setSize * 16;
+
+        DBGLOG("mck: cache file size: %llu", totSize);
+        DBGLOG("mck: cache set size: %llu", setSize);
+        DBGLOG("mck: cache num entries per set: %u", numEntries);
+
+        int openFlags = O_CREAT | O_RDWR;
+
+        useDirect = false;
+#if 0
+        bool tryDirect = false;
+        if (config->queryProp("@directIO"))
+            tryDirect = config->getPropBool("@directIO");
+        if (tryDirect)
+        {
+            if ((pageSize % 4096) == 0)
+            {
+                int rc = posix_memalign((void **)&alignedAddr, pageSize, pageSize);
+                if (rc == 0)
+                {
+                    useDirect = true;
+                    openFlags |= O_DIRECT;
+                }
+            }
+        }
+#else
+# ifndef RWF_UNCHACHED
+        if ((pageSize % 4096) == 0)
+        {
+            int rc = posix_memalign((void **)&alignedAddr, pageSize, pageSize);
+            if (rc == 0)
+            {
+                useDirect = true;
+                openFlags |= O_DIRECT;
+            }
+        }
+        if (useDirect)
+            DBGLOG("mck: disk page cache using O_DIRECT");
+        else
+            DBGLOG("mck: disk page cache using normal i/o");
+# else
+            DBGLOG("mck: disk page cache using RWF_UNCACHED");
+# endif
+#endif
+
+        const char *cacheFile = config->queryProp("@file");
+        if (!cacheFile)
+            cacheFile = "/tmp/roxiecache.tmp";
+
+        cacheFd = open(cacheFile, openFlags, 0644);
+        if (cacheFd < 0)
+        {
+            DBGLOG("Error opening pagecache file %s, errno %d", cacheFile, errno);
+            // disable cache
+            totSize = 0;
+        }
+
+        int rc = posix_fallocate(cacheFd, 0ULL, totSize);
+        if (rc != 0)
+        {
+            DBGLOG("Error allocating pagecache file %s, errno %d", cacheFile, rc);
+            // disable cache
+            totSize = 0;
+        }
+
+        posix_fadvise(cacheFd, 0ULL, totSize, POSIX_FADV_RANDOM | POSIX_FADV_NOREUSE);
+
+        DBGLOG("mck: sizeof(struct CacheEntry): %lu cache total mem size: %lu", sizeof(struct CacheEntry), numEntries * 16 * sizeof(struct CacheEntry));
+
+        cache = new struct CacheEntry [numEntries];
+        for (int i=0; i<numEntries; i++)
+        {
+            for (int j=0; j<16; j++)
+            {
+                cache[i].lru.push_back(j);
+                cache[i].cSet[j].fileId = invalidFileId;
+                cache[i].cSet[j].offset = invalidOffset;
+            }
+        }
+#endif
+    }
+
+    virtual size32_t queryPageSize() const override
+    {
+        return pageSize;
+    }
+
+    // Called when the node has been hit in the memory cache - ensure LRU is updated
+    // The offset will need to be aligned to the page boundary
+    virtual void noteUsed(unsigned fileId, offset_t offset) override
+    {
+        CriticalBlock b(crit);
+        offset_t pageOffset = offset & offsetMask;
+        DBGLOG("CMyPageCache::noteUsed (%u, %llu)", fileId, pageOffset);
+    }
+
+    // Searching for a node in the disk node cache.  Return true if found, and ensure nodeData is populated
+    // if it returns false then the node is not in the cache.
+    virtual bool read(unsigned fileId, offset_t offset, size32_t size, CCachedIndexRead & nodeData) override
+    {
+#ifdef __linux__
+        dbgassertex(size <= pageSize);
+
+        if ( (totSize == 0) || (fileId == invalidFileId) || (offset == invalidOffset) )
+            return onCacheMiss(fileId, offset, size);
+
+        offset_t readPosMask = ~(offset_t)(pageSize - 1);
+        offset_t alignedPos = offset & readPosMask;
+
+        unsigned fid = fileId & 0xffffff;
+        offset_t oid = alignedPos & 0xffffffffff;
+        offset_t key = fid | (oid << 24);
+        // offset_t keyCantor = (fid + oid) * (fid + oid + 1);
+        unsigned findex = cache_index(key, numEntries);
+
+        CriticalBlock b(crit);
+
+        for (int ix=0; ix<16; ix++)
+        {
+            if ( (cache[findex].cSet[ix].fileId == fileId) && (cache[findex].cSet[ix].offset == alignedPos) )
+            {
+                byte * data = nodeData.getBufferForUpdate(alignedPos, pageSize);
+
+                offset_t cacheOffset = (ix * setSize) + (findex * pageSize);
+
+                std::deque<short int>::iterator it;
+                for (it = cache[findex].lru.begin(); it != cache[findex].lru.end(); ++it)
+                {
+                    if (*it == ix)
+                    {
+                        cache[findex].lru.erase(it);
+                        break;
+                    }
+                }
+
+                // TODO: MCK - handle if readSize != pageSize ...
+
+#ifdef __NR_preadv2
+                struct iovec iov[1];
+                iov[0].iov_len = pageSize;
+
+                int pFlags = 0;
+                if (useDirect)
+                {
+                    iov[0].iov_base = alignedAddr;
+#ifdef RWF_HIPRI
+                    pFlags |= RWF_HIPRI;
+#endif
+                }
+                else
+                {
+                    iov[0].iov_base = data;
+#ifdef RWF_UNCHACHED
+                    pFlags |= RWF_UNCHACHED;
+#endif
+                }
+
+                int rc = preadv2(cacheFd, iov, 1, cacheOffset, pFlags);
+#else
+                int rc = pread64(cacheFd, data, pageSize, cacheOffset);
+#endif
+                if (rc == pageSize)
+                {
+                    if (useDirect)
+                        memcpy(data, alignedAddr, pageSize);
+                    cache[findex].lru.push_back(ix);
+                    return true;
+                }
+
+                cache[findex].cSet[ix].fileId = invalidFileId;
+                cache[findex].cSet[ix].offset = invalidOffset;
+                cache[findex].lru.push_front(ix);
+                break;
+            }
+        }
+#endif
+        return onCacheMiss(fileId, offset, size);
+    }
+
+    // Insert a block of data into the disk node cache.
+    // If reservation is non null, then it will match the value from a previous call to readNodeOrReserve
+    // If reservation is null the data is being preemptively added to the cache (e.g. at startup)
+    virtual void write(unsigned fileId, offset_t alignedPos, const byte * data) override
+    {
+#ifdef __linux__
+        if ( (totSize == 0) || (fileId == invalidFileId) || (alignedPos == invalidOffset) )
+            return;
+
+        unsigned fid = fileId & 0xffffff;
+        offset_t oid = alignedPos & 0xffffffffff;
+        offset_t key = fid | (oid << 24);
+
+        unsigned findex = cache_index(key, numEntries);
+
+        CriticalBlock b(crit);
+
+        int ix = cache[findex].lru.front();
+
+        cache[findex].cSet[ix].fileId = fileId;
+        cache[findex].cSet[ix].offset = alignedPos;
+
+        offset_t cacheOffset = (ix * setSize) + (findex * pageSize);
+
+#ifdef __NR_pwritev2
+        struct iovec iov[1];
+        iov[0].iov_len = pageSize;
+
+        int pFlags = 0;
+        if (useDirect)
+        {
+            memcpy(alignedAddr, data, pageSize);
+            iov[0].iov_base = alignedAddr;
+#ifdef RWF_HIPRI
+            pFlags |= RWF_HIPRI;
+#endif
+        }
+        else
+        {
+            iov[0].iov_base = (void *)data;
+#ifdef RWF_UNCHACHED
+            pFlags |= RWF_UNCHACHED;
+#endif
+        }
+
+        int rc = pwritev2(cacheFd, iov, 1, cacheOffset, pFlags);
+#else
+        int rc = pwrite64(cacheFd, data, pageSize, cacheOffset);
+#endif
+
+        if (rc == pageSize)
+        {
+            cache[findex].lru.pop_front();
+            cache[findex].lru.push_back(ix);
+        }
+        else
+        {
+            cache[findex].cSet[ix].fileId = invalidFileId;
+            cache[findex].cSet[ix].offset = invalidOffset;
+        }
+#endif
+    }
+
+    // Called to gather the current state of the cache - so it can be preserved for quick cache warming.
+    virtual void gatherState(ICacheInfoRecorder & recorder) override
+    {
+        CriticalBlock b(crit);
+    }
+
+protected:
+    bool onCacheMiss(unsigned fileId, offset_t offset, size32_t size)
+    {
+        if (cacheMissPenalty)
+            MilliSleep(cacheMissPenalty);
+        return false;
+    }
+
+protected:
+    CriticalSection crit;
+    offset_t totSize{0};
+    offset_t setSize{0};
+    size32_t pageSize{0};
+    size32_t readSize{0};
+    offset_t offsetMask{0};
+    unsigned cacheMissPenalty{0};
+    unsigned numEntries{1};
+    int cacheFd;
+    byte *alignedAddr;
+    bool useDirect{false};
+
+    static constexpr offset_t invalidOffset = ~(offset_t)0;
+    static constexpr unsigned invalidFileId = ~(unsigned)0;
+    struct CacheSet
+    {
+        unsigned fileId{invalidFileId};
+        offset_t offset{invalidOffset};
+    };
+    struct CacheEntry
+    {
+        std::deque<short int> lru;
+        struct CacheSet cSet[16];
+    };
+    struct CacheEntry *cache;
+};
 
 //--------------------------------------------------------------------------------------------------------------------
 
@@ -176,6 +537,11 @@ protected:
 IPageCache * createDemoPageCache(const IPropertyTree * config)
 {
     return new CDemoPageCache(config);
+}
+
+IPageCache * createMyPageCache(const IPropertyTree * config)
+{
+    return new CMyPageCache(config);
 }
 
 #ifdef _USE_CPPUNIT
