@@ -804,6 +804,38 @@ static void setupGlobals(CheckedJNIEnv *J)
     {
         throw makeWrappedExceptionV(E, E->errorCode(), "javaembed: Unable to find HPCC classes - is classpath set properly?");
     }
+
+    try
+    {
+        jclass logHandlerClass = J->FindClass("com/HPCCSystems/HpccLogHandler");
+        if (logHandlerClass)
+        {
+            StringBuffer log4jConfigPath;
+            if (isContainerized())
+            {
+                const char *envLog4jConfigPath = getenv("LOG4J_CONFIG_PATH");
+                if (envLog4jConfigPath && *envLog4jConfigPath)
+                    log4jConfigPath.append(envLog4jConfigPath);
+            }
+            else
+            {
+                const IProperties &conf = queryEnvironmentConf();
+                conf.getProp("log4jconfigpath", log4jConfigPath);
+            }
+
+            jmethodID initialize = J->GetStaticMethodID(logHandlerClass, "initialize", "(Ljava/lang/String;)V");
+            if (initialize)
+            {
+                jstring configPathStr = J->NewStringUTF(log4jConfigPath.str());
+                J->CallStaticVoidMethod(logHandlerClass, initialize, configPathStr);
+                J->DeleteLocalRef(configPathStr);
+            }
+        }
+    }
+    catch (IException *E)
+    {
+        throw makeWrappedExceptionV(E, E->errorCode(), "javaembed: Unable to find HpccLogHandler - is classpath set properly?");
+    }
 }
 
 static StringAttr & getSignature(StringAttr &ret, CheckedJNIEnv *J, jclass clazz, const char *funcName)
