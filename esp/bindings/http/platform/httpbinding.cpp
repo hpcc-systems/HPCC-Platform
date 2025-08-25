@@ -405,7 +405,8 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                 {
                     //This is a Pluggable Security Manager
                     setBndCfgServiceType(tree, procname, bnd_cfg);
-                    m_secmgr.setown(SecLoader::loadPluggableSecManager<ISecManager>(bindname, bnd_cfg, secMgrCfg));
+                    //m_secmgr.setown(SecLoader::loadPluggableSecManager<ISecManager>(bindname, bnd_cfg, secMgrCfg));
+                    m_secmgr = std::shared_ptr<ISecManager>(SecLoader::loadPluggableSecManager<ISecManager>(bindname, bnd_cfg, secMgrCfg));
                     m_authmap.setown(m_secmgr->createAuthMap(authcfg));
                     m_feature_authmap.setown(m_secmgr->createFeatureMap(authcfg));
                     m_setting_authmap.setown(m_secmgr->createSettingMap(authcfg));
@@ -429,8 +430,25 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                             }
                         }
 
-                        m_secmgr.setown(SecLoader::loadSecManager("LdapSecurity", "EspHttpBinding", LINK(lscfg)));
-                        if(m_secmgr.get() == NULL)
+                        StringBuffer resourcesBaseDnBuf;
+                        authcfg->getProp("@resourcesBasedn", resourcesBaseDnBuf);
+
+                        StringBuffer workunitsBaseDnBuff;
+                        authcfg->getProp("@workunitsBasedn", workunitsBaseDnBuff);
+
+                        StringBuffer extraParams;
+                        extraParams.append(resourcesBaseDnBuf).append(",").append(workunitsBaseDnBuff);
+
+                        lscfg->addProp("@extraParams", extraParams.str());
+
+                        // StringBuffer server;
+                        // lscfg->getProp(".//@ldapAddress", server);
+
+                        //m_secmgr.setown(SecLoader::loadSecManager("LdapSecurity", "EspHttpBinding", LINK(lscfg)));
+                        //if(m_secmgr.get() == NULL)
+
+                        m_secmgr = SecLoader::loadSharedSecManager("LdapSecurity", "EspHttpBinding", LINK(lscfg));
+                        if(!m_secmgr)
                         {
                             throw MakeStringException(-1, "error generating SecManager");
                         }
@@ -460,7 +478,7 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
         }
     }
 
-    if(m_secmgr.get())
+    if(m_secmgr)
     {
         const char* desc = m_secmgr->getDescription();
         if(desc && *desc)
@@ -480,7 +498,7 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
     //Even for non-session based environment, the sessionIDCookieName may be used to
     //remove session related cookies cached in some browser page.
     sessionIDCookieName.setf("%s%d", SESSION_ID_COOKIE, m_port);
-    if (!m_secmgr.get() || !daliClientActive())
+    if (!m_secmgr || !daliClientActive())
     {
         VStringBuffer xpath("AuthDomains/AuthDomain[@domainName=\"%s\"]", domainName.get());
         IPropertyTree* authDomainTree = proc_cfg->queryPropTree(xpath);
@@ -844,13 +862,15 @@ void EspHttpBinding::populateRequest(CHttpRequest *request)
 {
     IEspContext* ctx = request->queryContext();
 
-    ctx->setSecManger(m_secmgr.getLink());
+    //ctx->setSecManger(m_secmgr.getLink());
+    ctx->setSecManger(m_secmgr);
     ctx->setFeatureAuthMap(m_feature_authmap.getLink());
 
     StringBuffer userid, password,realm,peer;
     ctx->getUserID(userid);
 
-    if(m_secmgr.get() == NULL)
+    //if(m_secmgr.get() == NULL)
+    if(m_secmgr == nullptr)
     {
         return;
     }

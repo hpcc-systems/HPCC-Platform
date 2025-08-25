@@ -49,7 +49,7 @@ private:
 
     Owned<ISecUser> m_user;
     Owned<ISecResourceList> m_resources;
-    Owned<ISecManager> m_secmgr;
+    std::shared_ptr<ISecManager> m_secmgr;
     Owned<IAuthMap> m_feature_authmap;
     Owned<ISecPropertyList> m_sec_settings;
 
@@ -288,9 +288,9 @@ public:
         return m_resources.get();
     }
 
-    virtual void setSecManger(ISecManager* mgr)
+    virtual void setSecManger(const std::shared_ptr<ISecManager> &mgr)
     {
-        m_secmgr.setown(mgr);
+        m_secmgr = mgr;
         m_SecurityHandler.setSecManger(mgr);
     }
 
