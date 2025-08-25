@@ -571,36 +571,53 @@ bool CMessageCollator::attach_data(const void *data, unsigned len)
 
 void CMessageCollator::collate(DataBuffer *dataBuff)
 {
-    PUID puid = GETPUID(dataBuff);
-    // MORE - we leak (at least until query terminates) a PackageSequencer for messages that we only receive parts of - maybe only an issue for "catchall" case
-    PackageSequencer *pkSqncr = mapping.getValue(puid);
-    bool isNew = false;
-    if (!pkSqncr)
+    UdpPacketHeader *pktHdr = (UdpPacketHeader*) dataBuff->data;
+    // Special case for single packet messages - if the sequence number is 0 and the complete flag is set
+    // No need to check in the hash table - even if a retry.
+    // In the future this could also use a simpler package sequencer
+    PackageSequencer *pkSqncr;
+    if ((pktHdr->pktSeq & (UDP_PACKET_SEQUENCE_MASK|UDP_PACKET_COMPLETE)) == UDP_PACKET_COMPLETE)
     {
         pkSqncr = new PackageSequencer(encrypted);
-        isNew = true;
+        bool isComplete = pkSqncr->insert(dataBuff, totalDuplicates, totalResends);
+        assertex(isComplete);
     }
-    bool isComplete = pkSqncr->insert(dataBuff, totalDuplicates, totalResends);
-    if (isComplete)
+    else
     {
+        PUID puid = GETPUID(dataBuff);
+        // MORE - we leak (at least until query terminates) a PackageSequencer for messages that we only receive parts of - maybe only an issue for "catchall" case
+        pkSqncr = mapping.getValue(puid);
+        bool isNew = false;
+        if (!pkSqncr)
+        {
+            pkSqncr = new PackageSequencer(encrypted);
+            isNew = true;
+        }
+        bool isComplete = pkSqncr->insert(dataBuff, totalDuplicates, totalResends);
+        if (!isComplete)
+        {
+            if (isNew)
+            {
+                mapping.setValue(puid, pkSqncr);
+                pkSqncr->Release();
+            }
+            return;
+        }
+
         if (!isNew)
         {
             pkSqncr->Link();
             mapping.remove(puid);
         }
-        queueCrit.enter();
-        if (pkSqncr->isOutOfBand())
-            queue.push_front(pkSqncr);
-        else
-            queue.push_back(pkSqncr);
-        queueCrit.leave();
-        sem.signal();
     }
-    else if (isNew)
-    {
-        mapping.setValue(puid, pkSqncr);
-        pkSqncr->Release();
-    }
+
+    queueCrit.enter();
+    if (pkSqncr->isOutOfBand())
+        queue.push_front(pkSqncr);
+    else
+        queue.push_back(pkSqncr);
+    queueCrit.leave();
+    sem.signal();
 }
 
 IMessageResult *CMessageCollator::getNextResult(unsigned time_out, bool &anyActivity)
