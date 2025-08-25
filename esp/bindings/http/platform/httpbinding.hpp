@@ -152,7 +152,8 @@ private:
     StringAttr              m_authmethod;
     StringBuffer            m_filespath;
     StringBuffer            m_wsdlAddress;
-    Owned<ISecManager>      m_secmgr;
+    std::shared_ptr<ISecManager>  m_secmgr;
+    //Owned<ISecManager>      m_secmgr;
     Owned<IAuthMap>         m_authmap;
     Owned<IAuthMap>         m_feature_authmap;
     Owned<IAuthMap>         m_setting_authmap;

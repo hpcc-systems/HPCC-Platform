@@ -17,6 +17,8 @@
 
 #ifndef _SECLOADER_HPP__
 #define _SECLOADER_HPP__
+#include <memory>
+
 #include "seclib.hpp"
 
 typedef IAuthMap* (*createDefaultAuthMap_t_)(IPropertyTree* config);
@@ -109,6 +111,52 @@ public:
         else
             throw MakeStringException(-1, "Security model %s not supported", model_name);
     }
+
+
+    static std::shared_ptr<ISecManager> loadSharedSecManager(const char* model_name, const char* servicename, IPropertyTree* cfg)
+    {
+        if (!model_name || !*model_name)
+            throw MakeStringExceptionDirect(-1, "Security model not specified");
+
+        StringBuffer realName;
+
+        if(stricmp(model_name, "LdapSecurity") == 0)
+        {
+            static std::map<std::string, std::shared_ptr<ISecManager>> ldapInstances;
+
+            StringBuffer extraParams;
+            cfg->getProp("@extraParams", extraParams);
+
+            std::string instanceName;
+            instanceName.append(servicename).append(",").append(extraParams.str());
+
+            auto it = ldapInstances.find(instanceName);
+            if (it == ldapInstances.end())
+            {
+                realName.append(SharedObjectPrefix).append(LDAPSECLIB).append(SharedObjectExtension);
+                HINSTANCE ldapseclib = LoadSharedObject(realName.str(), true, false);
+                if(ldapseclib == NULL)
+                    throw MakeStringException(-1, "can't load library %s", realName.str());
+
+                newSecManager_t_ xproc = NULL;
+                xproc = (newSecManager_t_)GetSharedProcedure(ldapseclib, "newLdapSecManager");
+
+                if (xproc)
+                {
+                    std::shared_ptr<ISecManager> pSecMgr = std::shared_ptr<ISecManager>(xproc(servicename, *cfg));
+                    ldapInstances.emplace(std::pair<std::string, std::shared_ptr<ISecManager>>(instanceName, pSecMgr));
+                    return pSecMgr;
+                }
+                else
+                    throw MakeStringException(-1, "procedure newLdapSecManager of %s can't be loaded", realName.str());
+            }
+            else
+                return it->second;
+        }
+        else
+            throw MakeStringException(-1, "Security model %s not supported", model_name);
+    }
+
 
     static IAuthMap* loadTheDefaultAuthMap(IPropertyTree* cfg)
     {

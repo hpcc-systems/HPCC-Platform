@@ -27,7 +27,7 @@
 
 class SecHandler : public CInterface
 {
-    Owned<ISecManager> m_secmgr;
+    std::shared_ptr<ISecManager> m_secmgr;
     Owned<ISecResourceList> m_resources;
     Owned<ISecUser> m_user;
     Owned<IAuthMap> m_feature_authmap;
@@ -48,7 +48,7 @@ public:
     bool authorizeSecReqFeatures(StringArray & features, IEspStringIntMap & pmap, unsigned *required);
     bool authorizeSecFeature(const char * pszFeatureUrl, const char* UserID, const char* CompanyID, SecAccessFlags & access,bool bCheckTrial,int DebitUnits, SecUserStatus & user_status);
 
-    void setSecManger(ISecManager* mgr);
+    void setSecManger(const std::shared_ptr<ISecManager> &mgr);
     void setResources(ISecResourceList* rlist);
     void setUser(ISecUser* user);
     void setFeatureAuthMap(IAuthMap * map);

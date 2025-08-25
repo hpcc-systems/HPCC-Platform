@@ -39,9 +39,9 @@ SecHandler::~SecHandler()
 
 }
 
-void SecHandler::setSecManger(ISecManager* mgr)
+void SecHandler::setSecManger(const std::shared_ptr<ISecManager> &mgr)
 {
-    m_secmgr.set(mgr);
+    m_secmgr = mgr;
 }
 
 
@@ -210,7 +210,7 @@ bool SecHandler::authorizeSecReqFeatures(StringArray & features, IEspStringIntMa
     if(features.length() == 0)
         return false;
     
-    if(m_secmgr.get() == NULL)
+    if(m_secmgr == nullptr)
     {
         for(unsigned i = 0; i < features.length(); i++)
         {
