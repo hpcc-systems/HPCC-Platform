@@ -48,7 +48,7 @@ public class HpccLogHandler extends OutputStream
         }
         catch (Exception e)
         {
-            System.err.println("Failed to initialize HpccLogHandler: " + e.getMessage());
+            HpccUtils.log("Failed to initialize HpccLogHandler: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -72,6 +72,10 @@ public class HpccLogHandler extends OutputStream
 
                 System.setOut(new java.io.PrintStream(new HpccLogHandler(), true));
                 System.setErr(new java.io.PrintStream(new HpccLogHandler(), true));
+            }
+            else
+            {
+                HpccUtils.log("Java log redirection not enabled. Configuration file was not found at " + configFilePath);
             }
         }
     }
