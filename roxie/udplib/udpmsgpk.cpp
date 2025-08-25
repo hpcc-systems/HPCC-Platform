@@ -102,6 +102,13 @@ public:
     
     DataBuffer *next(DataBuffer *after)
     {
+        if (after)
+        {
+            UdpPacketHeader * hdr = (UdpPacketHeader*) after->data;
+            if (hdr->pktSeq & UDP_PACKET_COMPLETE)
+                return nullptr;
+        }
+
         dataAvailable.wait(); // MORE - when do I interrupt? Should I time out? Will potentially block indefinitely if sender restarts (leading to an abandoned packet) or stalls.
         DataBuffer *ret;
         if (after)
@@ -244,7 +251,6 @@ public:
                     if (fingerHdr->pktSeq & UDP_PACKET_COMPLETE)
                     {
                         res = true;
-                        dataAvailable.signal(); // allowing us to read the NULL that signifies end of message. May prefer to use the flag to stop?
                     }
                 }
                 else
