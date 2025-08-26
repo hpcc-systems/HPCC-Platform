@@ -56,8 +56,7 @@
         ],
         "setupExtraParams":{
             "OriginalTextFilesOsPath" : "/opt/HPCCSystems/testing/regress",
-            "OriginalTextFilesIp" : "127.0.0.1",
-            "OriginalLogFilesPath" : "/var/log/HPCCSystems/"
+            "OriginalTextFilesIp" : "127.0.0.1"
         },
         "setupExtraDParams":{
             "HPCCBaseDir" : "/opt/HPCCSystems/"

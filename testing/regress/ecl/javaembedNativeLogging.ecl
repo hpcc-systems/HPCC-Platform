@@ -53,7 +53,7 @@ wuidTimestamp := (STRING)wuidYear + '-' + monthStr + '-' + dayStr + ' ' + hourSt
 
 // Construct log file path
 currentDate := (STRING)wuidYear + '_' + monthStr + '_' + dayStr;
-STRING logPrefix := '' : STORED('OriginalLogFilesPath');
+logPrefix := '/var/log/HPCCSystems/';
 logFilePath := logPrefix + 'myeclagent/eclagent.' + currentDate + '.log';
 logCommand := 'cat ' + logFilePath;
 
