@@ -17,10 +17,81 @@
 
 //class=embedded
 //class=3rdparty
-#OPTION('pickBestEngine', false);
+//nothor
+//noroxie
 
 import java;
+import Std.Str;
 
 // Test function that demonstrates various logging levels
 STRING testLogging(STRING message) := IMPORT(java, 'javaembedNativeLogging.testLogging:(Ljava/lang/String;)Ljava/lang/String;');
-OUTPUT(testLogging('log4j'));
+
+// Get current workunit ID and extract timestamp information
+currentWuid := WORKUNIT;
+wuidParts := Str.SplitWords(currentWuid, '-');
+wuidDatePart := wuidParts[1];
+wuidTimePart := wuidParts[2];
+
+// Parse workunit timestamp (assuming format Wyyyymmdd-hhmmss)
+// Extract year, month, day, hour, minute, second from wuid
+wuidYear := (INTEGER)wuidDatePart[2..5];
+wuidMonth := (INTEGER)wuidDatePart[6..7];
+wuidDay := (INTEGER)wuidDatePart[8..9];
+wuidHour := (INTEGER)wuidTimePart[1..2];
+wuidMinute := (INTEGER)wuidTimePart[3..4];
+wuidSecond := (INTEGER)wuidTimePart[5..6];
+
+// Create timestamp string for comparison (YYYY-MM-DD HH:MM:SS format)
+// Use proper string padding for two-digit numbers
+monthStr := IF(wuidMonth < 10, '0' + (STRING)wuidMonth, (STRING)wuidMonth);
+dayStr := IF(wuidDay < 10, '0' + (STRING)wuidDay, (STRING)wuidDay);
+hourStr := IF(wuidHour < 10, '0' + (STRING)wuidHour, (STRING)wuidHour);
+minuteStr := IF(wuidMinute < 10, '0' + (STRING)wuidMinute, (STRING)wuidMinute);
+secondStr := IF(wuidSecond < 10, '0' + (STRING)wuidSecond, (STRING)wuidSecond);
+
+wuidTimestamp := (STRING)wuidYear + '-' + monthStr + '-' + dayStr + ' ' + hourStr + ':' + minuteStr + ':' + secondStr;
+
+// Construct log file path
+currentDate := (STRING)wuidYear + '_' + monthStr + '_' + dayStr;
+STRING logPrefix := '' : STORED('OriginalLogFilesPath');
+logFilePath := logPrefix + 'myeclagent/eclagent.' + currentDate + '.log';
+logCommand := 'cat ' + logFilePath;
+
+// Read log file using PIPE
+logLines := PIPE(logCommand, {STRING line}, CSV(SEPARATOR('')));
+filteredLogs := logLines(
+    LENGTH(TRIM(line)) > 32 AND
+    Str.CompareIgnoreCase(line[14..32], wuidTimestamp) >= 0
+);
+javaembedLogs := filteredLogs(Str.Find(line, 'javaembed: user:') > 0);
+
+// Count logs by log level
+LogLevelRec := RECORD
+    STRING line;
+    STRING logLevel;
+END;
+javaembedWithLevel := PROJECT(javaembedLogs, TRANSFORM(LogLevelRec,
+    SELF.line := LEFT.line,
+    SELF.logLevel := MAP(
+        // Log4j Log Levels
+        Str.Find(LEFT.line, ' FATAL ') > 0 => 'FATAL',
+        Str.Find(LEFT.line, ' ERROR ') > 0 => 'ERROR',
+        Str.Find(LEFT.line, ' WARN ') > 0 => 'WARN',
+        Str.Find(LEFT.line, ' INFO ') > 0 => 'INFO',
+        Str.Find(LEFT.line, ' DEBUG ') > 0 => 'DEBUG',
+        Str.Find(LEFT.line, ' TRACE ') > 0 => 'TRACE',
+        // javaembed plugin statuses
+        Str.Find(LEFT.line, 'Enabled Java log redirection') > 0 => 'ENABLED',
+        Str.Find(LEFT.line, 'Java log redirection not enabled') > 0 => 'DISABLED',
+        'UNKNOWN'
+    )
+));
+logCounts := TABLE(javaembedWithLevel, {logLevel; INTEGER count := COUNT(GROUP);}, logLevel);
+
+// Output results
+SEQUENTIAL
+(
+    OUTPUT(testLogging('log4j'), NAMED('JavaLogTest')),
+    OUTPUT(COUNT(javaembedLogs), NAMED('JavaembedLogLineCount')),
+    OUTPUT(logCounts, NAMED('JavaembedLogLevels'))
+);

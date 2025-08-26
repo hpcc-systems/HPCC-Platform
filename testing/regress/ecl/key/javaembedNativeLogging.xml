@@ -1,3 +1,12 @@
-<Dataset name='Result 1'>
- <Row><Result_1>log4j</Result_1></Row>
+<Dataset name='JavaLogTest'>
+ <Row><JavaLogTest>log4j</JavaLogTest></Row>
+</Dataset>
+<Dataset name='JavaembedLogLineCount'>
+ <Row><JavaembedLogLineCount>4</JavaembedLogLineCount></Row>
+</Dataset>
+<Dataset name='JavaembedLogLevels'>
+ <Row><loglevel>ENABLED </loglevel><count>1</count></Row>
+ <Row><loglevel>ERROR   </loglevel><count>1</count></Row>
+ <Row><loglevel>FATAL   </loglevel><count>1</count></Row>
+ <Row><loglevel>WARN    </loglevel><count>1</count></Row>
 </Dataset>
