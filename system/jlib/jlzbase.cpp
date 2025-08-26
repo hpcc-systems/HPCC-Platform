@@ -22,6 +22,121 @@
 
 //---------------------------------------------------------------------------------------------------------------------
 
+void CBlockExpander::expand(void *buf)
+{
+    if (!outlen)
+        return;
+    if (buf)
+    {
+        if (bufalloc)
+            free(outbuf);
+        bufalloc = 0;
+        outbuf = (unsigned char *)buf;
+    }
+    else if (outlen>bufalloc)
+    {
+        if (bufalloc)
+            free(outbuf);
+        bufalloc = outlen;
+        outbuf = (unsigned char *)malloc(bufalloc);
+        if (!outbuf)
+            throw makeStringExceptionV(MSGAUD_operator, 0, "Out of memory in BlockExpander::expand, requesting %u bytes", bufalloc);
+    }
+
+    size32_t done = 0;
+    for (;;)
+    {
+        const size32_t szchunk = *in;
+        in++;
+        if (szchunk+done<outlen)
+        {
+            size32_t written = expandDirect(outlen - done, outbuf + done, szchunk, in);
+            done += written;
+            if (!written||(done>outlen))
+                throw makeStringExceptionV(0, "BlockExpander - corrupt data(1) %u %u",written,szchunk);
+        }
+        else
+        {
+            if (szchunk+done!=outlen)
+                throw makeStringExceptionV(0, "BlockExpander - corrupt data(2) %u %u",szchunk,outlen);
+            memcpy(outbuf+done,in,szchunk);
+            break;
+        }
+        in = (const size32_t *)(((const byte *)in)+szchunk);
+    }
+}
+
+size32_t CBlockExpander::expandFirst(MemoryBuffer & target, const void * src)
+{
+    init(src);
+    totalExpanded = 0;
+    return expandNext(target);
+}
+
+size32_t CBlockExpander::expandNext(MemoryBuffer & target)
+{
+    if (totalExpanded == outlen)
+        return 0;
+
+    const size32_t szchunk = *in;
+    in++;
+
+    target.clear();
+    size32_t written;
+    if (szchunk+totalExpanded<outlen)
+    {
+        if (unlikely(szchunk == 0))
+        {
+            //Special case this corruption - otherwise it enters an infinite loop
+            VStringBuffer msg("Unexpected zero length block at block offset %u", (size32_t)((const byte *)in - (const byte *)original));
+            throwUnexpectedX(msg.str());
+        }
+
+        //All but the last block are compressed (see expand() function above).
+        //Slightly concerning there always has to be one trailing byte for this to work!
+        size32_t maxOut = target.capacity();
+        size32_t maxEstimate = (outlen - totalExpanded);
+        size32_t estimate = szchunk; // start conservatively - likely to be preallocated to correct size already.
+        if (estimate > maxEstimate)
+            estimate = maxEstimate;
+        if (maxOut < estimate)
+            maxOut = estimate;
+
+        for (;;)
+        {
+            //Try and decompress into the current target buffer.  If too small increase size and repeat
+            written = expandDirect(maxOut, target.reserve(maxOut), szchunk, in);
+            if ((int)written > 0)
+            {
+                target.setLength(written);
+                break;
+            }
+
+            //Sanity check to catch corrupt lz4 data that always returns an error.
+            if (maxOut > outlen)
+            {
+                VStringBuffer msg("Decompression expected max %u bytes, but now %u at block offset %u", outlen, maxOut, (size32_t)((const byte *)in - (const byte *)original));
+                throwUnexpectedX(msg.str());
+            }
+
+            maxOut += szchunk; // Likely to quickly approach the actual expanded size
+            target.clear();
+        }
+    }
+    else
+    {
+        void * buf = target.reserve(szchunk);
+        written = szchunk;
+        memcpy(buf,in,szchunk);
+    }
+
+    in = (const size32_t *)(((const byte *)in)+szchunk);
+    totalExpanded += written;
+    if (totalExpanded > outlen)
+        throw makeStringExceptionV(0, "BlockExpander - corrupt data(3) %u %u",written,szchunk);
+    return written;
+}
+
 //Enable the following to debug details of the stream compression
 //#define LZ4LOGGING
 

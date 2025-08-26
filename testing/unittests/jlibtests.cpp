@@ -4188,6 +4188,8 @@ public:
                     continue;
                 if (strieq(type, "randrow"))
                     continue;
+                if (strieq(type, "zstd")) // zstd only implemented as an expander in version 9.12.x
+                    continue;
                 if (strieq(type, "lz4s") || strieq(type, "lz4shc") || strieq(type, "zstds"))
                 {
                     testCompressor(handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
@@ -4258,6 +4260,8 @@ public:
                 const char * type = handler.queryType();
                 //Ignore unusual compressors with no expanders...
                 if (strieq(type, "randrow"))
+                    continue;
+                if (strieq(type, "zstd")) // zstd only implemented as an expander in version 9.12.x
                     continue;
                 const char * options = streq("AES", handler.queryType()) ? aesKey: "";
                 if (streq(type, "LZ4HC"))
