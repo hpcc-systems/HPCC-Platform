@@ -108,7 +108,7 @@ protected:
             // If an index cache is in use and the page is not in the cache, the size and time
             // transform to zeroes, and a simulated IndexLoad is required.
         }
-        else if (ExpansionMode::Transform == page.expansionMode)
+        else if (ExpansionMode::OnLoadToOnDemand == page.expansionMode)
         {
             // A recorded hit without an index cache replaces the size and time with zeroes.
             event.setValue(EvAttrInMemorySize, page.compressed.size);
@@ -195,7 +195,7 @@ protected:
     {
         CEvent& lookup = events.front();
         assertex(lookup.queryType() == EventIndexLookup);
-        events.push_back(CEvent());
+        events.emplace_back();
         CEvent& load = events.back();
         load.reset(EventIndexLoad);
         for (CEventAttribute& attr : load.assignedAttributes)

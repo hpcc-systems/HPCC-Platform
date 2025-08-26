@@ -29,8 +29,8 @@
 // recording and the strategy applied by the index model.
 // - OnLoad: event attributes are assumed to reflect node expansion on load both  before and after
 //           modeling.
-// - Transform: event attributes are assumed to reflect node expansion on load before modeling,
-//           and on-demand expansion after modeling.
+// - OnLoadToOnDemand: event attributes are assumed to reflect node expansion on load before
+//           modeling, and on-demand expansion after modeling.
 // - OnDemand: event attributes are assumed to reflect node expansion on-demand both before and
 //           after modeling.
 //
@@ -41,7 +41,7 @@
 enum class ExpansionMode
 {
     OnLoad,
-    Transform,
+    OnLoadToOnDemand,
     OnDemand
 };
 
@@ -117,6 +117,9 @@ class IndexHashKey
 public:
     __uint64 fileId{0};
     __uint64 offset{0};
+    IndexHashKey() = default;
+    IndexHashKey(__uint64 _fileId, __uint64 _offset) : fileId(_fileId), offset(_offset) {}
+    IndexHashKey(const CEvent& event) : fileId(event.queryNumericValue(EvAttrFileId)), offset(event.queryNumericValue(EvAttrFileOffset)) {}
     bool operator == (const IndexHashKey& other) const { return fileId == other.fileId && offset == other.offset; }
 };
 
@@ -125,8 +128,7 @@ class IndexHashKeyHash
 public:
     std::size_t operator()(const IndexHashKey& key) const
     {
-        struct { __uint64 f; __uint64 s; } buf{key.fileId, key.offset};
-        return hashc_fnv1a((byte*)&buf, sizeof(buf), fnvInitialHash32);
+        return hashc_fnv1a((byte*)&key, sizeof(key), fnvInitialHash32);
     }
 };
 
@@ -270,7 +272,7 @@ public:
 
     // Determines if the indicated index node has been observed in a previous event. If it has then
     // the historical cache may be updated with this event's data. Called for index events that
-    // contain hostorical data that might not have been available in previous events, specifically
+    // contain historical data that might not have been available in previous events, specifically
     // IndexLoad.
     bool refreshObservedPage(const CEvent& event);
 

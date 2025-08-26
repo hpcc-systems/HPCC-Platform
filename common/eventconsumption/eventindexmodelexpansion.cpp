@@ -24,7 +24,7 @@ void Expansion::configure(const IPropertyTree& config)
     if (isEmptyString(modeStr) || strieq(modeStr, "ll"))
         mode = ExpansionMode::OnLoad;
     else if (strieq(modeStr, "ld"))
-        mode = ExpansionMode::Transform;
+        mode = ExpansionMode::OnLoadToOnDemand;
     else if (strieq(modeStr, "dd"))
         mode = ExpansionMode::OnDemand;
     else
@@ -71,7 +71,7 @@ bool Expansion::observePage(const CEvent& event)
     if (!usingHistory())
         return false;
 
-    IndexHashKey key = {event.queryNumericValue(EvAttrFileId), event.queryNumericValue(EvAttrFileOffset)};
+    IndexHashKey key(event);
     bool hit = event.queryBooleanValue(EvAttrInCache);
     if (estimating)
     {
@@ -105,7 +105,7 @@ bool Expansion::checkObservedPage(const CEvent& event) const
 {
     if (!usingHistory())
         return true;
-    IndexHashKey key = {event.queryNumericValue(EvAttrFileId), event.queryNumericValue(EvAttrFileOffset)};
+    IndexHashKey key(event);
     if (estimating)
         return estimatedHistory.count(key) != 0;
     return actualHistory.count(key) != 0;
@@ -115,7 +115,7 @@ bool Expansion::refreshObservedPage(const CEvent& event)
 {
     if (!usingHistory())
         return true;
-    IndexHashKey key = {event.queryNumericValue(EvAttrFileId), event.queryNumericValue(EvAttrFileOffset)};
+    IndexHashKey key(event);
     if (estimating)
         return estimatedHistory.count(key) != 0;
     ActualHistory::iterator it = actualHistory.find(key);
@@ -147,7 +147,7 @@ void Expansion::describePage(const CEvent& event, ModeledPage& page) const
 
     __uint64 nodeKind = (event.hasAttribute(EvAttrNodeKind) ? event.queryNumericValue(EvAttrNodeKind) : 1);
     assertex(nodeKind < NumKinds);
-    IndexHashKey key = {event.queryNumericValue(EvAttrFileId), event.queryNumericValue(EvAttrFileOffset)};
+    IndexHashKey key(event);
     if (estimating)
     {
         if (!usingHistory() || estimatedHistory.count(key))
@@ -167,11 +167,7 @@ void Expansion::describePage(const CEvent& event, ModeledPage& page) const
                 switch (mode)
                 {
                 case ExpansionMode::OnLoad:
-                    page.compressed = {estimates[nodeKind].compressed, true};
-                    page.expanded = {it->second.size, false};
-                    page.expansionTime = it->second.time;
-                    break;
-                case ExpansionMode::Transform:
+                case ExpansionMode::OnLoadToOnDemand:
                     page.compressed = {estimates[nodeKind].compressed, true};
                     page.expanded = {it->second.size, false};
                     page.expansionTime = it->second.time;
@@ -190,14 +186,10 @@ void Expansion::describePage(const CEvent& event, ModeledPage& page) const
                 switch (mode)
                 {
                 case ExpansionMode::OnLoad:
+                case ExpansionMode::OnLoadToOnDemand:
                     page.compressed = {estimates[nodeKind].compressed, true};
                     page.expanded = {it->second.size, false};
                     page.expansionTime = it->second.time;
-                    break;
-                case ExpansionMode::Transform:
-                    page.compressed = {estimates[nodeKind].compressed, true};
-                    page.expanded = {UINT32_MAX, true}; // No estimate available for the expanded
-                    page.expansionTime = 0;
                     break;
                 case ExpansionMode::OnDemand:
                     page.compressed = {it->second.size, false};
@@ -214,8 +206,7 @@ void Expansion::describePage(const CEvent& event, ModeledPage& page) const
     {
         page.compressed = {estimates[nodeKind].compressed, true};
         page.expanded = {event.queryNumericValue(EvAttrInMemorySize), false};
-        if (event.hasAttribute(EvAttrExpandTime))
-            page.expansionTime = event.queryNumericValue(EvAttrExpandTime);
+        page.expansionTime = (event.hasAttribute(EvAttrExpandTime) ? event.queryNumericValue(EvAttrExpandTime) : 0);
     }
 }
 
@@ -389,7 +380,7 @@ public:
             <expansion mode="ld"/>
         )!!!");
         expansion.configure(*configTree);
-        CPPUNIT_ASSERT_EQUAL(ExpansionMode::Transform, expansion.mode);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoadToOnDemand, expansion.mode);
         END_TEST
     }
 
