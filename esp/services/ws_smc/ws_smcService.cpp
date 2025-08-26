@@ -33,6 +33,7 @@
 
 #include "roxiecontrol.hpp"
 #include "workunit.hpp"
+#include "junicode.hpp"
 
 #define STATUS_SERVER_THOR "ThorMaster"
 #define STATUS_SERVER_HTHOR "HThorServer"
@@ -1031,23 +1032,158 @@ bool CWsSMCEx::onIndex(IEspContext &context, IEspSMCIndexRequest &req, IEspSMCIn
     return true;
 }
 
+// Output encoding to include in a Javascript block.
+// Follows OWASP guidance: keep [A-Za-z0-9], escape other printable ASCII as \uXXXX,
+// properly escape non-ASCII by decoding UTF-8 first. Also drop ASCII control chars
+// to maintain existing behavior.
+StringBuffer& encodeJavascript(const char* value, StringBuffer& encoded)
+{
+    if (isEmptyString(value))
+        return encoded;
+
+    const byte *p = reinterpret_cast<const byte *>(value);
+    const byte *end = p + strlen(value);
+
+    while (p < end)
+    {
+        UTF32 cp = readUtf8Character((unsigned)(end - p), p); // advances p safely
+
+        if (cp == sourceIllegal)
+        {
+            encoded.append("\\uFFFD");
+            p++;
+            continue;
+        }
+
+        if (cp < 0x80)
+        {
+            // ASCII branch: preserve alnum, escape other printable ASCII, drop controls
+            unsigned char ch = static_cast<unsigned char>(cp);
+            if (isalnum(ch))
+                encoded.append(ch);
+            else if (isprint(ch))
+                encoded.appendf("\\u%04X", ch);
+            // else: non-printable ASCII -> omit
+        }
+        else if (cp <= 0xFFFF)
+        {
+            // BMP: escape as \uXXXX, but avoid lone surrogates
+            if (cp >= 0xD800 && cp <= 0xDFFF)
+                encoded.append("\\uFFFD");
+            else
+                encoded.appendf("\\u%04X", static_cast<unsigned>(cp));
+        }
+        else if (cp <= 0x10FFFF)
+        {
+            // Supplementary planes: escape as UTF-16 surrogate pair
+            unsigned u = static_cast<unsigned>(cp - 0x10000);
+            unsigned high = 0xD800 + (u >> 10);
+            unsigned low  = 0xDC00 + (u & 0x3FF);
+            encoded.appendf("\\u%04X\\u%04X", high, low);
+        }
+        else
+        {
+            // Out of Unicode range
+            encoded.append("\\uFFFD");
+        }
+
+        if (cp == sourceExhausted)
+            break;
+    }
+
+    return encoded;
+}
+
+
+#ifdef _USE_CPPUNIT
+
+#include "unittests.hpp"
+
+class EncodeJavascriptTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE( EncodeJavascriptTest );
+        CPPUNIT_TEST(testAsciiAlnum);
+        CPPUNIT_TEST(testAsciiPrintableEscaped);
+        CPPUNIT_TEST(testAsciiControlDropped);
+        CPPUNIT_TEST(testUtf8Bmp);
+        CPPUNIT_TEST(testUtf8Supplementary);
+        CPPUNIT_TEST(testInvalidUtf8);
+        CPPUNIT_TEST(testOutOfRange);
+    CPPUNIT_TEST_SUITE_END();
+
+    static void assertEncoded(const char *input, const char *expected)
+    {
+        StringBuffer out;
+        encodeJavascript(input, out);
+        ASSERT_EQUAL(std::string(out.str()), std::string(expected));
+    }
+
+    void testAsciiAlnum()
+    {
+        assertEncoded("Az09", "Az09");
+    }
+
+    void testAsciiPrintableEscaped()
+    {
+        // space, dash, underscore, dot should be escaped
+        assertEncoded(" -_.", "\\u0020\\u002D\\u005F\\u002E");
+    }
+
+    void testAsciiControlDropped()
+    {
+        StringBuffer in;
+        in.append('A').append((char)0x0A).append('B').append((char)0x09).append('C'); // A\nB\tC
+        assertEncoded(in.str(), "ABC");
+    }
+
+    void testUtf8Bmp()
+    {
+        // U+00E9 (é) -> \u00E9; U+4E2D (中) -> \u4E2D
+        StringBuffer in;
+        in.append(" "); // leading space to ensure escaping of ASCII printable
+        in.append((char)0xC3).append((char)0xA9); // é
+        in.append(" ");
+        in.append((char)0xE4).append((char)0xB8).append((char)0xAD); // 中
+        assertEncoded(in.str(), "\\u0020\\u00E9\\u0020\\u4E2D");
+    }
+
+    void testUtf8Supplementary()
+    {
+        // U+1F600 GRINNING FACE -> surrogate pair \uD83D\uDE00
+        StringBuffer in;
+        in.append((char)0xF0).append((char)0x9F).append((char)0x98).append((char)0x80);
+        assertEncoded(in.str(), "\\uD83D\\uDE00");
+    }
+
+    void testInvalidUtf8()
+    {
+        // Lone continuation byte 0x80 and truncated sequence 0xC2 at end -> each becomes \uFFFD
+        StringBuffer in;
+        in.append((char)0x80).append('X').append((char)0xC2);
+        assertEncoded(in.str(), "\\uFFFDX\\uFFFD");
+    }
+
+    void testOutOfRange()
+    {
+        // U+10FFFF is the highest Unicode code point
+        StringBuffer in;
+        in.append((char)0xF4).append((char)0x90).append((char)0x80).append((char)0x80); // U+110000
+        assertEncoded(in.str(), "\\uFFFD\\uFFFD\\uFFFD\\uFFFD");
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( EncodeJavascriptTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( EncodeJavascriptTest, "EncodeJavascriptTest" );
+
+#endif // _USE_CPPUNIT
+
 void CWsSMCEx::readBannerAndChatRequest(IEspContext& context, IEspActivityRequest &req, IEspActivityResponse& resp)
 {
     StringBuffer chatURLStr, bannerStr;
     const char* chatURL = req.getChatURL();
     const char* banner = req.getBannerContent();
-    //Filter out invalid chars
-    if (chatURL && *chatURL)
-    {
-        const char* pStr = chatURL;
-        unsigned len = strlen(chatURL);
-        for (unsigned i = 0; i < len; i++)
-        {
-            if (isprint(*pStr))
-                chatURLStr.append(*pStr);
-            pStr++;
-        }
-    }
+    //Filter out invalid chars and encode for safe assignment to javascript variable
+    encodeJavascript(chatURL, chatURLStr);
     if (banner && *banner)
     {
         const char* pStr = banner;
