@@ -346,7 +346,7 @@ void CBlockExpander::expand(void *buf)
         in++;
         if (szchunk+done<outlen)
         {
-            size32_t written = expandDirect(outlen - done, (byte *)buf + done, szchunk, in);
+            size32_t written = expandDirect(outlen - done, outbuf + done, szchunk, in);
             done += written;
             if (!written||(done>outlen))
                 throw makeStringExceptionV(0, "BlockExpander - corrupt data(1) %u %u",written,szchunk);
@@ -355,7 +355,7 @@ void CBlockExpander::expand(void *buf)
         {
             if (szchunk+done!=outlen)
                 throw makeStringExceptionV(0, "BlockExpander - corrupt data(2) %u %u",szchunk,outlen);
-            memcpy((byte *)buf+done,in,szchunk);
+            memcpy(outbuf+done,in,szchunk);
             break;
         }
         in = (const size32_t *)(((const byte *)in)+szchunk);
