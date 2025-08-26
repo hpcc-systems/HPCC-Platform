@@ -20,6 +20,7 @@
         storageWrites="0.0038"/>
  </Hardware>
  <Software>
+  <Globals log4jConfigPath="${INSTALL_DIR}/testing/regress/ecl/javaembedNativeLoggingLOG4JCONFIG.xml">
   <DropZone build="_"
             buildSet="DropZone"
             computer="localhost"

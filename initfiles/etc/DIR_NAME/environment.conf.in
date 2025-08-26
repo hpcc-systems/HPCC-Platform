@@ -8,8 +8,6 @@ runtime=${RUNTIME_PATH}
 lock=${LOCK_PATH}
 # Supported logging fields: AUD,CLS,DET,MID,TIM,DAT,PID,TID,NOD,JOB,USE,SES,COD,MLT,MCT,NNT,COM,QUO,PFX,ALL,STD
 logfields=TIM+DAT+MLT+MID+PID+TID+COD+QUO+PFX+AUD
-# Log4j configuration path for Java embed logging, filename should be log4j2.xml
-# log4jconfigpath=/absolute/path/to/log4j2.xml
 pid=${PID_PATH}
 log=${LOG_PATH}
 user=${RUNTIME_USER}

@@ -819,8 +819,8 @@ static void setupGlobals(CheckedJNIEnv *J)
             }
             else
             {
-                const IProperties &conf = queryEnvironmentConf();
-                conf.getProp("log4jconfigpath", log4jConfigPath);
+                Owned<IPropertyTree> env = getHPCCEnvironment();
+                log4jConfigPath.append(env->queryProp("Software/Globals/@log4jConfigPath"));
             }
 
             jmethodID initialize = J->GetStaticMethodID(logHandlerClass, "initialize", "(Ljava/lang/String;)V");
