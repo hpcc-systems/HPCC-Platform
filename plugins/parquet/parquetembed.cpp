@@ -218,13 +218,12 @@ static void buildEclRecord(const std::shared_ptr<arrow::Schema> &schema, StringB
  * @param lenFilePath Length of the input file path string.
  * @param filePath The input file path string pointing to the Parquet file.
  */
-extern "C++" PARQUETEMBED_PLUGIN_API void getParquetRecordStructure(size32_t &__lenResult, char * &__result, const char *readType, size32_t lenFilePath, const char *filePath)
+extern "C++" PARQUETEMBED_PLUGIN_API void getParquetRecordStructure(size32_t &__lenResult, char * &__result, const char *readType, const char *filePath)
 {
     try
     {
         // Open Parquet file and get schema
-        StringBuffer filePathBuf(lenFilePath, filePath);
-        std::unique_ptr<ParquetReader> reader = std::make_unique<ParquetReader>(readType, filePathBuf.str(), 0, nullptr, nullptr);
+        std::unique_ptr<ParquetReader> reader = std::make_unique<ParquetReader>(readType, filePath, 0, nullptr, nullptr);
         std::shared_ptr<arrow::Schema> schema = reader->getSchema();
 
         StringBuffer ecl("parquetRecord := RECORD\n");

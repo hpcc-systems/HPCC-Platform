@@ -44,7 +44,7 @@ namespace parquetembed
 
 extern "C++"
 {
-    PARQUETEMBED_PLUGIN_API void getParquetRecordStructure(size32_t &__lenResult, char * &__result, const char *readType, size32_t lenFilePath, const char *filePath);
+    PARQUETEMBED_PLUGIN_API void getParquetRecordStructure(size32_t &__lenResult, char * &__result, const char *readType, const char *filePath);
 }
 
 extern void UNSUPPORTED(const char *feature) __attribute__((noreturn));

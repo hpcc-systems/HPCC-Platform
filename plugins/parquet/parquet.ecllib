@@ -17,7 +17,7 @@
 
 SHARED ParquetService := SERVICE : plugin('parquetembed')
   BOOLEAN getEmbedContext():cpp, pure, namespace='parquetembed', entrypoint='getEmbedContext', prototype='IEmbedContext* getEmbedContext()';
-  STRING getParquetRecordStructure(VARSTRING readType, STRING filePath):cpp, pure, fold, namespace='parquetembed', entrypoint='getParquetRecordStructure';
+  STRING getParquetRecordStructure(VARSTRING readType, VARSTRING filePath):cpp, pure, fold, namespace='parquetembed', entrypoint='getParquetRecordStructure';
 END;
 
 EXPORT ParquetIO := MODULE
@@ -43,7 +43,7 @@ EXPORT ParquetIO := MODULE
         * @param filePath The full path to the Parquet file.
         * @return STRING The ECL record structure as a string.
         */
-        EXPORT getParquetRecordStructure(STRING filePath) := ParquetService.getParquetRecordStructure('readhivepartition', filePath);
+        EXPORT getParquetRecordStructure(VARSTRING filePath) := ParquetService.getParquetRecordStructure('readhivepartition', filePath);
     END;
 
     EXPORT DirectoryPartition := MODULE
@@ -67,7 +67,7 @@ EXPORT ParquetIO := MODULE
         * @param filePath The full path to the Parquet file.
         * @return STRING The ECL record structure as a string.
         */
-        EXPORT getParquetRecordStructure(STRING filePath) := ParquetService.getParquetRecordStructure('readdirectorypartition', filePath);
+        EXPORT getParquetRecordStructure(VARSTRING filePath) := ParquetService.getParquetRecordStructure('readdirectorypartition', filePath);
     END;
 
     EXPORT Read(resultLayout, filePath) := FUNCTIONMACRO
@@ -90,7 +90,7 @@ EXPORT ParquetIO := MODULE
     * @param filePath The full path to the Parquet file.
     * @return STRING The ECL record structure as a string.
     */
-    EXPORT getParquetRecordStructure(STRING filePath) := ParquetService.getParquetRecordStructure('read', filePath);
+    EXPORT getParquetRecordStructure(VARSTRING filePath) := ParquetService.getParquetRecordStructure('read', filePath);
 END;
 
 EXPORT getEmbedContext := ParquetService.getEmbedContext;
