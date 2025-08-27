@@ -391,6 +391,8 @@ struct cDirDesc
             }
             if (numStripedDevices>1)
             {
+                if ((stripeNum>numStripedDevices)||(stripeNum<1))
+                    return true;
                 if (dirPerPartNum !=0 && dirPerPartNum <= numParts)
                     scopeBuf.setLength(lastScope - scope);
                 else
@@ -400,8 +402,6 @@ struct cDirDesc
                 if (!ext)
                     ext = name + strlen(name);
                 unsigned lfnHash = getFilenameHash(scopeBuf.append(ext-name,name).str());
-                if ((stripeNum>numStripedDevices)||(stripeNum<1))
-                    return true;
                 if (calcStripeNumber(partNum, lfnHash, numStripedDevices)!=stripeNum)
                     return true;
             }
