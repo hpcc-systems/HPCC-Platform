@@ -20,6 +20,17 @@
 #include "eventunittests.hpp"
 #include "eventmodeling.h"
 
+static const char* queryEventAttributeStateName(CEventAttribute::State state)
+{
+    switch (state)
+    {
+    case CEventAttribute::Unused: return "unused";
+    case CEventAttribute::Defined: return "defined";
+    case CEventAttribute::Assigned: return "assigned";
+    default: return "unknown";
+    }
+}
+
 bool CEventVisitationLinkTester::visitFile(const char* filename, uint32_t version)
 {
     return true;
@@ -29,14 +40,16 @@ bool CEventVisitationLinkTester::visitEvent(CEvent& actualEvent)
 {
     CEvent expectEvent;
     CPPUNIT_ASSERT(expect->nextEvent(expectEvent));
-    CPPUNIT_ASSERT_EQUAL_MESSAGE("EventType mismatch", unsigned(expectEvent.queryType()), unsigned(actualEvent.queryType()));
+    if (expectEvent.queryType() != actualEvent.queryType())
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("EventType mismatch", queryEventName(expectEvent.queryType()), queryEventName(actualEvent.queryType()));
     for (CEventAttribute& expectAttr : expectEvent.definedAttributes)
     {
         CEventAttribute& actualAttr = actualEvent.queryAttribute(expectAttr.queryId());
-        CPPUNIT_ASSERT_EQUAL_MESSAGE("attribute state mismatch", byte(expectAttr.queryState()), byte(actualAttr.queryState()));
+        VStringBuffer msg("%s/%s", queryEventName(expectEvent.queryType()), queryEventAttributeName(expectAttr.queryId()));
+        if (expectAttr.queryState() != actualAttr.queryState())
+            CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("%s state mismatch", msg.str()).str(), queryEventAttributeStateName(expectAttr.queryState()), queryEventAttributeStateName(actualAttr.queryState()));
         if (!expectAttr.isAssigned())
             continue;
-        VStringBuffer msg("%s/%s", queryEventName(expectEvent.queryType()), queryEventAttributeName(expectAttr.queryId()));;
         switch (expectAttr.queryTypeClass())
         {
         case EATCtext:
