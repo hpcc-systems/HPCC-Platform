@@ -56,13 +56,13 @@ namespace parquetembed
 
 
 /**
- * @brief Helper function to check if a field name is ECL compatible (lowercase alphanumeric or _ and not starting with a digit).
+ * @brief Helper function to check if a Parquet field name is ECL compatible (lowercase alphanumeric or _ and not starting with a digit).
  *
  * @param len Length of the field name.
  * @param name The field name string.
  * @return true if the field name is ECL compatible, false otherwise.
  */
-static bool isEclCompatible(size32_t len, const char *name)
+static bool isFieldNameEclCompatible(size32_t len, const char *name)
 {
     if (std::isupper(name[0]) || (!std::isalpha(name[0]) && name[0] != '_'))
         return false;
@@ -76,7 +76,7 @@ static bool isEclCompatible(size32_t len, const char *name)
 }
 
 /**
- * @brief Helper function to transform a field name to an ECL compatible name.
+ * @brief Helper function to transform a Parquet field name to an ECL compatible name.
  *
  * @param name StringBuffer containing the original field name.
  * @param out StringBuffer to store the transformed ECL compatible name.
@@ -84,10 +84,10 @@ static bool isEclCompatible(size32_t len, const char *name)
  * If the field was already compatible, the original name is swapped into out to
  * avoid unnecessary copying.
  */
-static bool toEclCompatible(StringBuffer &name, StringBuffer &out)
+static bool toEclCompatibleFieldName(StringBuffer &name, StringBuffer &out)
 {
     assertex(name);
-    if (isEclCompatible(name.length(), name.str()))
+    if (isFieldNameEclCompatible(name.length(), name.str()))
     {
         out.swapWith(name);
         return true;
@@ -177,7 +177,7 @@ static void buildEclRecord(const std::shared_ptr<arrow::Schema> &schema, StringB
         const std::shared_ptr<arrow::Field> &field = schema->field(i);
         StringBuffer origName(field->name().length(), field->name().c_str());
         StringBuffer eclName;
-        bool isCompatible = toEclCompatible(origName, eclName);
+        bool isCompatible = toEclCompatibleFieldName(origName, eclName);
         StringBuffer eclType;
         if (field->type()->id() == arrow::Type::STRUCT)
         {
