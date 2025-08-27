@@ -719,27 +719,15 @@ public:
             else
                 uncondlog("%s - elapsed: %um (%s UTC)", op, elapsedMinutes, timestamp);
 
-            if (heartbeatCount > 1)
+            // Increase heartbeat interval with cap of 1 hour
+            if (heartbeatCount < 7)
             {
-                unsigned logCount = 0;
-                unsigned tmp = heartbeatCount;
-                while (tmp > 1)
-                {
-                    tmp >>= 1;
-                    logCount++;
-                }
-                unsigned newInterval = 60 * (1 << logCount);
-                if (newInterval > 3600)
-                    newInterval = 3600; // Cap at 1 hour
-                if (newInterval > heartbeatInterval)
-                {
-                    heartbeatInterval = newInterval;
-                    unsigned intervalMinutes = heartbeatInterval / 60;
-                    if (clustname.get())
-                        DBGLOG(LOGPFX "[%s] Heartbeat interval increased to %u minute%s", clustname.get(), intervalMinutes, intervalMinutes > 1 ? "s" : "");
-                    else
-                        DBGLOG(LOGPFX "Heartbeat interval increased to %u minute%s", intervalMinutes, intervalMinutes > 1 ? "s" : "");
-                }
+                heartbeatInterval = heartbeatCount == 6 ? 3600 : 60 * (1 << heartbeatCount);
+                unsigned intervalMinutes = heartbeatInterval / 60;
+                if (clustname.get())
+                    DBGLOG(LOGPFX "[%s] Heartbeat interval increased to %u minute%s", clustname.get(), intervalMinutes, intervalMinutes > 1 ? "s" : "");
+                else
+                    DBGLOG(LOGPFX "Heartbeat interval increased to %u minute%s", intervalMinutes, intervalMinutes > 1 ? "s" : "");
             }
         }
     }
