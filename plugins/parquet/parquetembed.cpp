@@ -97,7 +97,7 @@ static bool toEclCompatible(StringBuffer &name, StringBuffer &out)
     for (size_t i = 0; i < name.length(); ++i)
     {
         char c = name.charAt(i);
-        if (!std::isalnum(c) && c != '_')
+        if (!std::isalnum(c))
             out.append('_');
         else if (std::isupper(c))
             out.append((char)std::tolower(c));
