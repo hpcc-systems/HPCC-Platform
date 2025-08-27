@@ -416,7 +416,7 @@ struct cDirDesc
 
     cFileDesc *addFile(unsigned drv,StringBuffer &path,const char *scope,__int64 sz,CDateTime &dt,unsigned node, const SocketEndpoint &ep, IGroup &grp, unsigned numnodes, CLargeMemoryAllocator *mem, unsigned stripeNum, unsigned numStripedDevices)
     {
-        const char *name = strrchr(path.str(),PATHSEPCHAR)+1;
+        const char *name = pathTail(path);
         unsigned nf;          // num parts
         unsigned pf;          // part num
         unsigned filenameLen; // length of file name excluding extension i.e. ._$P$_of_$N$
