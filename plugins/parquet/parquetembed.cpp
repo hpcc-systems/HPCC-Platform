@@ -92,8 +92,7 @@ static bool toEclCompatibleFieldName(StringBuffer &name, StringBuffer &out)
         out.swapWith(name);
         return true;
     }
-    if (std::isdigit(name.charAt(0)))
-        out.append('_');
+    out.append("p_");
     for (size_t i = 0; i < name.length(); ++i)
     {
         char c = name.charAt(i);
@@ -104,6 +103,11 @@ static bool toEclCompatibleFieldName(StringBuffer &name, StringBuffer &out)
         else
             out.append(c);
     }
+
+    // Create a simple hash from the original name for uniqueness
+    unsigned hash = hashc((const unsigned char *)name.str(), name.length(), 0);
+    out.appendf("_%x", hash & 0xFFF); // limit to 3 hex digits
+
     return false;
 }
 

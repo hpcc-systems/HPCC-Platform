@@ -196,6 +196,8 @@ parquetSupportedTypesRecord := RECORD
     SET OF INTEGER setIntField {XPATH('SET-INT-FIELD')};
     SET OF STRING  setStringField {XPATH('setStringField')};
     childRec refField;
+    INTEGER field1 {XPATH('AAA')}; // Test collision during field name conversion
+    INTEGER field2 {XPATH('p_aaa')};
 END;
 
 // Create test data with a single row
@@ -220,7 +222,9 @@ testData := DATASET([{
     X'0123456789ABCDEF',
     [1, 2, 3, 4, 5],
     ['apple', 'banana', 'cherry'],
-    {TRUE, [X'A1', D'test'], {255, 'test'}}
+    {TRUE, [X'A1', D'test'], {255, 'test'}},
+    42,
+    -42
 }], parquetSupportedTypesRecord);
 
 // Define the test file path
