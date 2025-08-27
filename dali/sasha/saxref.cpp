@@ -690,46 +690,57 @@ public:
 
     void checkHeartbeat(const char * op)
     {
-        CriticalBlock block(heartbeatSect);
         time_t now = time(NULL);
+        bool logHeartbeat = false;
 
-        if ((now - lastHeartbeat) >= heartbeatInterval) {
+        {
+            CriticalBlock block(heartbeatSect);
+            if ((now - lastHeartbeat) >= heartbeatInterval)
+            {
+                heartbeatCount++;
+                lastHeartbeat = now;
+                logHeartbeat = true;
+            }
+        }
+
+        if (logHeartbeat)
+        {
             unsigned elapsedMinutes = (unsigned)(now - heartbeatStartTime) / 60;
             unsigned elapsedHours = elapsedMinutes / 60;
             unsigned remainingMinutes = elapsedMinutes % 60;
-
-            heartbeatCount++;
 
             // Format UTC timestamp directly from time_t
             struct tm *utc_tm = gmtime(&now);
             char timestamp[32];
             strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", utc_tm);
 
-            if (elapsedHours > 0) {
-                log("%s - elapsed: %uh %um (%s UTC)", op, elapsedHours, remainingMinutes, timestamp);
-            } else {
-                log("%s - elapsed: %um (%s UTC)", op, elapsedMinutes, timestamp);
-            }
+            if (elapsedHours > 0)
+                uncondlog("%s - elapsed: %uh %um (%s UTC)", op, elapsedHours, remainingMinutes, timestamp);
+            else
+                uncondlog("%s - elapsed: %um (%s UTC)", op, elapsedMinutes, timestamp);
 
-            if (heartbeatCount > 1) {
+            if (heartbeatCount > 1)
+            {
                 unsigned logCount = 0;
                 unsigned tmp = heartbeatCount;
-                while (tmp > 1) {
+                while (tmp > 1)
+                {
                     tmp >>= 1;
                     logCount++;
                 }
                 unsigned newInterval = 60 * (1 << logCount);
-                if (newInterval > 3600) {
+                if (newInterval > 3600)
                     newInterval = 3600; // Cap at 1 hour
-                }
-                if (newInterval > heartbeatInterval) {
+                if (newInterval > heartbeatInterval)
+                {
                     heartbeatInterval = newInterval;
                     unsigned intervalMinutes = heartbeatInterval / 60;
-                    DBGLOG("Heartbeat interval increased to %u minute%s", intervalMinutes, intervalMinutes > 1 ? "s" : "");
+                    if (clustname.get())
+                        DBGLOG(LOGPFX "[%s] Heartbeat interval increased to %u minute%s", clustname.get(), intervalMinutes, intervalMinutes > 1 ? "s" : "");
+                    else
+                        DBGLOG(LOGPFX "Heartbeat interval increased to %u minute%s", intervalMinutes, intervalMinutes > 1 ? "s" : "");
                 }
             }
-
-            lastHeartbeat = now;
         }
     }
 
