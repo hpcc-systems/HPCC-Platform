@@ -37,7 +37,7 @@ EXPORT ParquetIO := MODULE
 
         /**
         * Returns the ECL record structure for the given Parquet file. The structure
-        * that is returned will contain XPATH for Parquet fields that have fields names
+        * that is returned will contain XPATH for Parquet fields that have field names
         * that are not ECL compatible.
         *
         * @param filePath The full path to the Parquet file.
@@ -61,7 +61,7 @@ EXPORT ParquetIO := MODULE
 
         /**
         * Returns the ECL record structure for the given Parquet file. The structure
-        * that is returned will contain XPATH for Parquet fields that have fields names
+        * that is returned will contain XPATH for Parquet fields that have field names
         * that are not ECL compatible.
         *
         * @param filePath The full path to the Parquet file.
