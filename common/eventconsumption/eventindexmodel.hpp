@@ -64,6 +64,7 @@ enum class ExpansionMode
 //     - kind: node kind
 //       sizeFactor: floating point multiplier for estimated node size
 //       sizeToTimeFactor: floating point multiplier for estimated node expansion time
+//       mode: choice of `ll`, `ld`, or `dd`
 //
 // - `kind` is optional; as the first model the value is implied.
 // - `cache-read` is optional; if zero, empty, or omitted, the cache is disabled.
@@ -92,6 +93,9 @@ enum class ExpansionMode
 // - `expansion/node/sizeToTimeFactor` is a required positive floating point multiplier for
 //   algorithm performance estimation. The estimated size is multipled by this factor to estimate
 //   the expansion time.
+// - `expansion/node/mode` is defined exactly as `expansion/mode` is defined and has the effect of
+//   overriding the `expansion/mode` or default value for the specific node kind. Leaf and branch
+//   nodes can specify different modes.
 
 // Encapsulation of all modeled information about given file page. Note that the file path is not
 // included as the model does not retain that information.
@@ -281,12 +285,13 @@ public:
     void describePage(const CEvent& event, ModeledPage& page) const;
 
 protected:
-    inline bool usingHistory() const { return (mode != ExpansionMode::OnLoad); }
+    inline bool usingHistory(const CEvent& event) const { return usingHistory(event.hasAttribute(EvAttrNodeKind) ? event.queryNumericValue(EvAttrNodeKind) : 1); }
+    inline bool usingHistory(__uint64 nodeKind) const { assertex(nodeKind < NumKinds); return (modes[nodeKind] != ExpansionMode::OnLoad); }
     void refreshPage(ActualHistory::iterator& it, const CEvent& event);
 public:
     ActualHistory actualHistory;
     EstimatedHistory estimatedHistory;
     Estimate estimates[NumKinds];
-    ExpansionMode mode{ExpansionMode::OnLoad};
+    ExpansionMode modes[NumKinds] = {ExpansionMode::OnLoad,};
     bool estimating{false};
 };

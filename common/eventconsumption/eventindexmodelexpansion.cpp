@@ -18,9 +18,8 @@
 #include "eventindexmodel.hpp"
 #include "jevent.hpp"
 
-void Expansion::configure(const IPropertyTree& config)
+static void parseExpansionMode(const char* modeStr, ExpansionMode& mode)
 {
-    const char* modeStr = config.queryProp("@mode");
     if (isEmptyString(modeStr) || strieq(modeStr, "ll"))
         mode = ExpansionMode::OnLoad;
     else if (strieq(modeStr, "ld"))
@@ -29,29 +28,65 @@ void Expansion::configure(const IPropertyTree& config)
         mode = ExpansionMode::OnDemand;
     else
         throw makeStringExceptionV(-1, "invalid index model expansion mode '%s'", modeStr);
-    switch (config.getCount("node"))
+}
+
+void Expansion::configure(const IPropertyTree& config)
+{
+    unsigned estimatedCount = 0;
+
+    // Accepts a default expansion mode for all node kinds.
+    const char* modeStr = config.queryProp("@mode");
+    ExpansionMode defaultMode = ExpansionMode::OnLoad;
+    parseExpansionMode(modeStr, defaultMode);
+
+    // Process settings for each node kind.
+    for (unsigned idx = 0; idx < NumKinds; ++idx)
     {
-    case 0:
-        estimating = false;
-        break;
-    case NumKinds:
+        const IPropertyTree* node = config.queryPropTree(VStringBuffer("node[@kind=%u]", idx));
+        if (!node)
+        {
+            modes[idx] = defaultMode;
+            continue;
+        }
+
+        // Identify per-kind overrides of the default expansion mode
+        if (node->hasProp("@mode"))
+            parseExpansionMode(node->queryProp("@mode"), modes[idx]);
+        else
+            modes[idx] = defaultMode;
+
         // MORE: Consider support for custom compressed size "estimates" if more precise values are
         // available. If configured per node element, expansion factors must become optional.
-        for (unsigned idx = 0; idx < NumKinds; ++idx)
+        estimates[idx].compressed = node->getPropReal("@compressed", estimates[idx].compressed);
+
+        // Identify per-kind expansion estimation factors.
+        bool haveSizeFactor = node->hasProp("@sizeFactor");
+        bool haveSizeToTimeFactor = node->hasProp("@sizeToTimeFactor");
+        if (haveSizeFactor != haveSizeToTimeFactor)
+            throw makeStringExceptionV(-1, "index model expansion configuration for node kind %u is missing %s", idx, haveSizeFactor ? "sizeToTimeFactor" : "sizeFactor");
+        if (haveSizeFactor)
         {
-            const IPropertyTree* node = config.queryPropTree(VStringBuffer("node[@kind=%u]", idx));
-            assertex(node);
             double sizeFactor = node->getPropReal("@sizeFactor");
             double sizeToTimeFactor = node->getPropReal("@sizeToTimeFactor");
             assertex(sizeFactor > 0.0);
             assertex(sizeToTimeFactor > 0.0);
             estimates[idx].expanded = estimates[idx].compressed * sizeFactor;
             estimates[idx].time = estimates[idx].expanded * sizeToTimeFactor;
+            estimatedCount++;
         }
+    }
+
+    // Enforce that either all or no node kinds have estimation factors.
+    switch (estimatedCount)
+    {
+    case 0:
+        estimating = false;
+        break;
+    case NumKinds:
         estimating = true;
         break;
     default:
-        throw makeStringException(0, "invalid index model expansion configuration");
+        throw makeStringException(0, "index model expansion configuration requires estimation factors for all or no node kinds");
     }
 }
 
@@ -68,7 +103,7 @@ bool Expansion::observePage(const CEvent& event)
     // allows events to propagate from the model that would be suppressed by the cache. Identify
     // for which configurations this discrepancy is acceptable.
 
-    if (!usingHistory())
+    if (!usingHistory(event))
         return false;
 
     IndexHashKey key(event);
@@ -103,7 +138,7 @@ bool Expansion::observePage(const CEvent& event)
 
 bool Expansion::checkObservedPage(const CEvent& event) const
 {
-    if (!usingHistory())
+    if (!usingHistory(event))
         return true;
     IndexHashKey key(event);
     if (estimating)
@@ -113,7 +148,7 @@ bool Expansion::checkObservedPage(const CEvent& event) const
 
 bool Expansion::refreshObservedPage(const CEvent& event)
 {
-    if (!usingHistory())
+    if (!usingHistory(event))
         return true;
     IndexHashKey key(event);
     if (estimating)
@@ -143,28 +178,28 @@ void Expansion::describePage(const CEvent& event, ModeledPage& page) const
     // Only describe pages for index file events
     if (!(event.hasAttribute(EvAttrFileId) && event.hasAttribute(EvAttrFileOffset)))
         return;
-    page.expansionMode = mode;
-
     __uint64 nodeKind = (event.hasAttribute(EvAttrNodeKind) ? event.queryNumericValue(EvAttrNodeKind) : 1);
     assertex(nodeKind < NumKinds);
+    page.expansionMode = modes[nodeKind];
+
     IndexHashKey key(event);
     if (estimating)
     {
-        if (!usingHistory() || estimatedHistory.count(key))
+        if (!usingHistory(nodeKind) || estimatedHistory.count(key))
         {
             page.compressed = {estimates[nodeKind].compressed, true};
             page.expanded = {estimates[nodeKind].expanded, true};
             page.expansionTime = estimates[nodeKind].time;
         }
     }
-    else if (usingHistory())
+    else if (usingHistory(nodeKind))
     {
         ActualHistory::const_iterator it = actualHistory.find(key);
         if (it != actualHistory.end())
         {
             if (event.queryType() == EventIndexPayload)
             {
-                switch (mode)
+                switch (page.expansionMode)
                 {
                 case ExpansionMode::OnLoad:
                 case ExpansionMode::OnLoadToOnDemand:
@@ -183,7 +218,7 @@ void Expansion::describePage(const CEvent& event, ModeledPage& page) const
             }
             else
             {
-                switch (mode)
+                switch (page.expansionMode)
                 {
                 case ExpansionMode::OnLoad:
                 case ExpansionMode::OnLoadToOnDemand:
@@ -202,7 +237,7 @@ void Expansion::describePage(const CEvent& event, ModeledPage& page) const
             }
         }
     }
-    else // if (!usingHistory())
+    else // if (!usingHistory(nodeKind))
     {
         page.compressed = {estimates[nodeKind].compressed, true};
         page.expanded = {event.queryNumericValue(EvAttrInMemorySize), false};
@@ -222,8 +257,9 @@ class IndexModelExpansionTest : public CppUnit::TestFixture
     CPPUNIT_TEST(testDescribeEstimation);
     CPPUNIT_TEST(testDescribeActual);
     CPPUNIT_TEST(testOnLoadConfiguration);
-    CPPUNIT_TEST(testTransformConfiguration);
+    CPPUNIT_TEST(testOnLoadToOnDemandConfiguration);
     CPPUNIT_TEST(testOnDemandConfiguration);
+    CPPUNIT_TEST(testMixedConfiguration);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -360,7 +396,8 @@ public:
             <expansion/>
         )!!!");
         expansion.configure(*configTree);
-        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, expansion.mode);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, expansion.modes[0]);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, expansion.modes[1]);
         END_TEST
         START_TEST
         Expansion expansion;
@@ -368,11 +405,36 @@ public:
             <expansion mode="ll"/>
         )!!!");
         expansion.configure(*configTree);
-        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, expansion.mode);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, expansion.modes[0]);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, expansion.modes[1]);
+        END_TEST
+        START_TEST
+        Expansion expansion;
+        Owned<IPropertyTree> configTree = createTestConfiguration(R"!!!(
+            <expansion>
+                <node kind="0"/>
+                <node kind="1"/>
+            </expansion>
+        )!!!");
+        expansion.configure(*configTree);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, expansion.modes[0]);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, expansion.modes[1]);
+        END_TEST
+        START_TEST
+        Expansion expansion;
+        Owned<IPropertyTree> configTree = createTestConfiguration(R"!!!(
+            <expansion mode="ld">
+                <node kind="0" mode="ll"/>
+                <node kind="1" mode="ll"/>
+            </expansion>
+        )!!!");
+        expansion.configure(*configTree);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, expansion.modes[0]);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, expansion.modes[1]);
         END_TEST
     }
 
-    void testTransformConfiguration()
+    void testOnLoadToOnDemandConfiguration()
     {
         START_TEST
         Expansion expansion;
@@ -380,7 +442,8 @@ public:
             <expansion mode="ld"/>
         )!!!");
         expansion.configure(*configTree);
-        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoadToOnDemand, expansion.mode);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoadToOnDemand, expansion.modes[0]);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoadToOnDemand, expansion.modes[1]);
         END_TEST
     }
 
@@ -392,7 +455,24 @@ public:
             <expansion mode="dd"/>
         )!!!");
         expansion.configure(*configTree);
-        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnDemand, expansion.mode);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnDemand, expansion.modes[0]);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnDemand, expansion.modes[1]);
+        END_TEST
+    }
+
+    void testMixedConfiguration()
+    {
+        START_TEST
+        Expansion expansion;
+        Owned<IPropertyTree> configTree = createTestConfiguration(R"!!!(
+            <expansion mode="ld">
+                <node kind="0" mode="ll"/>
+                <node kind="1" mode="dd"/>
+            </expansion>
+        )!!!");
+        expansion.configure(*configTree);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, expansion.modes[0]);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnDemand, expansion.modes[1]);
         END_TEST
     }
 };
