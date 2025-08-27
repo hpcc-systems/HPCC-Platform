@@ -588,10 +588,10 @@ public:
 
     // Heartbeat mechanism for long-running directory scans
     CriticalSection heartbeatSect;
-    time_t heartbeatStartTime;
-    time_t lastHeartbeat;
-    unsigned heartbeatInterval;  // in seconds
-    unsigned heartbeatCount;
+    time_t heartbeatStartTime = 0;
+    time_t lastHeartbeat = 0;
+    unsigned heartbeatInterval = 60;  // Start with 1 minute (in seconds)
+    unsigned heartbeatCount = 0;
     Owned<IPropertyTree> foundbranch;
     Owned<IPropertyTree> lostbranch;
     Owned<IPropertyTree> orphansbranch;
@@ -759,10 +759,6 @@ public:
         lastlog = 0;
         sfnum = 0;
         fnum = 0;
-        heartbeatStartTime = 0;
-        lastHeartbeat = 0;
-        heartbeatInterval = 60; // Start with 1 minute (in seconds)
-        heartbeatCount = 0;
     }
 
     void start(bool updateeclwatch,const char *clname)
