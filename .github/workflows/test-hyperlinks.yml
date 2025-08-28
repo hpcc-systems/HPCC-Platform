@@ -65,6 +65,7 @@ jobs:
         with:
           repository: hpcc-systems/HPCC-Platform
           fetch-depth: 2
+          submodules: recursive
 
       - name: List Documentation files
         run: |
