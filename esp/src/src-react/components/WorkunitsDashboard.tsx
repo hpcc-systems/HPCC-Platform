@@ -5,14 +5,12 @@ import { Card, CardHeader, CardPreview } from "@fluentui/react-components";
 import { WorkunitsService, WsWorkunits } from "@hpcc-js/comms";
 import { Area, Column, Pie, Bar } from "@hpcc-js/chart";
 import { chain, filter, group, map, sort } from "@hpcc-js/dataflow";
-import * as Observable from "dojo/store/Observable";
-import * as ESPWorkunit from "src/ESPWorkunit";
 import nlsHPCC from "src/nlsHPCC";
 import { wuidToDate } from "src/Utility";
-import { Memory } from "src/store/Memory";
 import { Chip } from "./controls/Chip";
-import { pushParamExact } from "../util/history";
+import { CreateWUQueryStore } from "../comms/workunit";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
+import { pushParamExact } from "../util/history";
 import { Workunits } from "./Workunits";
 
 const stackStyles: IStackStyles = {
@@ -30,6 +28,8 @@ const innerStackTokens: IStackTokens = {
     childrenGap: 5,
     padding: 10,
 };
+
+const DEFAULT_LASTNDAYS = 7;
 
 const service = new WorkunitsService({ baseUrl: "" });
 
@@ -54,7 +54,7 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
     filterProps
 }) => {
     filterProps = {
-        lastNDays: 7,
+        lastNDays: DEFAULT_LASTNDAYS,
         ...filterProps
     };
 
@@ -183,16 +183,30 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
         ;
 
     //  Table ---
-    const workunitsStore = useConst(() => new Observable(new Memory("Wuid")));
-    const tablePipeline = chain(
-        filter<WorkunitEx>(row => filterProps.cluster === undefined || row.Cluster === filterProps.cluster),
-        filter(row => filterProps.owner === undefined || row.Owner === filterProps.owner),
-        filter(row => filterProps.state === undefined || row.State === filterProps.state),
-        filter(row => filterProps.protected === undefined || row.Protected === filterProps.protected),
-        filter(row => filterProps.day === undefined || row.Day === filterProps.day),
-        map(row => ESPWorkunit.Get(row.Wuid, row))
-    );
-    workunitsStore.setData([...tablePipeline(workunits)]);
+    const workunitsStore = useConst(() => CreateWUQueryStore());
+
+    const workunitsFilter = React.useMemo(() => {
+        let start = new Date();
+        let end = new Date();
+
+        if (filterProps.day) {
+            start = new Date(filterProps.day);
+            end = new Date(filterProps.day);
+            end.setDate(end.getDate() + 1);
+        } else {
+            const lastNDays = filterProps.lastNDays ?? DEFAULT_LASTNDAYS;
+            start.setDate(start.getDate() - lastNDays);
+        }
+
+        return {
+            StartDate: start.toISOString(),
+            EndDate: end.toISOString(),
+            ...(filterProps.cluster && { Cluster: filterProps.cluster }),
+            ...(filterProps.owner && { Owner: filterProps.owner }),
+            ...(filterProps.state && { State: filterProps.state }),
+            ...(filterProps.protected !== undefined && { Protected: filterProps.protected }),
+        };
+    }, [filterProps.cluster, filterProps.day, filterProps.lastNDays, filterProps.owner, filterProps.protected, filterProps.state]);
 
     return <>
         <Stack tokens={outerStackTokens} styles={{ root: { height: "100%" } }}>
@@ -284,7 +298,7 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
                 <Stack.Item grow={5} styles={stackItemStyles}>
                     <Card style={{ height: "100%" }}>
                         <CardPreview style={{ height: "100%" }}>
-                            <Workunits store={workunitsStore} />
+                            <Workunits filter={workunitsFilter} store={workunitsStore} />
                         </CardPreview>
                     </Card>
                 </Stack.Item>
