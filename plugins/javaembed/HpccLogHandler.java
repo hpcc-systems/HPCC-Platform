@@ -34,7 +34,7 @@ public class HpccLogHandler extends OutputStream
      * Initialize the log4j configuration to redirect output to HPCC native logging
      * @param configFilePath Optional path to a custom log4j2.xml configuration file
      */
-    public static synchronized void initialize(String configFilePath)
+    public static synchronized void initialize(String level, String pattern)
     {
         if (initialized)
         {
@@ -43,7 +43,8 @@ public class HpccLogHandler extends OutputStream
 
         try
         {
-            createLog4jConfig(configFilePath);
+            createLog4jConfig(level, pattern);
+            HpccUtils.log("HpccLogHandler initialized, Enabled Java log redirection.");
             initialized = true;
         }
         catch (Exception e)
@@ -54,30 +55,36 @@ public class HpccLogHandler extends OutputStream
     }
 
     /**
-     * Create and configure log4j to use our custom appender
-     * @param configFilePath Optional path to a custom log4j2.xml configuration file
+     * Create log4j config with custom level and pattern
+     * @param logLevel The logging level to set
+     * @param logPattern The logging pattern to use
      */
-    private static void createLog4jConfig(String configFilePath) throws IOException
+    private static void createLog4jConfig(String level, String pattern) throws IOException
     {
-        if (configFilePath != null && !configFilePath.trim().isEmpty())
-        {
-            Path customConfigPath = Paths.get(configFilePath);
-            if (Files.exists(customConfigPath))
-            {
-                String configXml = new String(Files.readAllBytes(customConfigPath));
-                HpccUtils.log("Enabled Java log redirection with custom log4j configuration from: " + configFilePath);
+        // Use default pattern if not provided and ensure surrounding quotes are removed
+        if (pattern == null || pattern.isEmpty())
+            pattern = "%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n";
+        else if (pattern.length() >= 2 && pattern.charAt(0) == '"' && pattern.charAt(pattern.length() - 1) == '"')
+            pattern = pattern.substring(1, pattern.length() - 1);
 
-                final Path log4jConfigPath = Paths.get(System.getProperty("user.dir"), "log4j2.xml");
-                Files.write(log4jConfigPath, configXml.getBytes());
+        String configXml = "<Configuration status=\"WARN\">\n" +
+                "    <Appenders>\n" +
+                "        <Console name=\"Console\" target=\"SYSTEM_OUT\">\n" +
+                "            <PatternLayout pattern=\"" + pattern + "\"/>\n" +
+                "        </Console>\n" +
+                "    </Appenders>\n" +
+                "    <Loggers>\n" +
+                "        <Root level=\"" + level + "\">\n" +
+                "            <AppenderRef ref=\"Console\"/>\n" +
+                "        </Root>\n" +
+                "    </Loggers>\n" +
+                "</Configuration>";
 
-                System.setOut(new java.io.PrintStream(new HpccLogHandler(), true));
-                System.setErr(new java.io.PrintStream(new HpccLogHandler(), true));
-            }
-            else
-            {
-                HpccUtils.log("Java log redirection not enabled. Configuration file was not found at " + configFilePath);
-            }
-        }
+        final Path log4jConfigPath = Paths.get(System.getProperty("user.dir"), "log4j2.xml");
+        Files.write(log4jConfigPath, configXml.getBytes());
+
+        System.setOut(new java.io.PrintStream(new HpccLogHandler(), true));
+        System.setErr(new java.io.PrintStream(new HpccLogHandler(), true));
     }
 
     @Override

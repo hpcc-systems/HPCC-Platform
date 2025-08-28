@@ -807,29 +807,43 @@ static void setupGlobals(CheckedJNIEnv *J)
 
     try
     {
-        jclass logHandlerClass = J->FindClass("com/HPCCSystems/HpccLogHandler");
-        if (logHandlerClass)
-        {
-            StringBuffer log4jConfigPath;
-            if (isContainerized())
-            {
-                const char *envLog4jConfigPath = getenv("LOG4J_CONFIG_PATH");
-                if (envLog4jConfigPath && *envLog4jConfigPath)
-                    log4jConfigPath.append(envLog4jConfigPath);
-            }
-            else
-            {
-                Owned<IPropertyTree> env = getHPCCEnvironment();
-                log4jConfigPath.append(env->queryProp("Software/Globals/@log4jConfigPath"));
-            }
+        const char *log4jLevel = nullptr;
+        const char *log4jPattern = nullptr;
 
-            jmethodID initialize = J->GetStaticMethodID(logHandlerClass, "initialize", "(Ljava/lang/String;)V");
-            if (initialize)
+        if (isContainerized())
+        {
+            log4jLevel = getenv("LOG4J_LEVEL");
+            log4jPattern = getenv("LOG4J_PATTERN");
+        }
+        else
+        {
+            const IProperties &conf = queryEnvironmentConf();
+            log4jLevel = conf.queryProp("log4jLevel");
+            log4jPattern = conf.queryProp("log4jPattern");
+        }
+
+        // Only load log handler if log4jLevel is set
+        if (log4jLevel && *log4jLevel)
+        {
+            jclass logHandlerClass = J->FindClass("com/HPCCSystems/HpccLogHandler");
+            if (logHandlerClass)
             {
-                jstring configPathStr = J->NewStringUTF(log4jConfigPath.str());
-                J->CallStaticVoidMethod(logHandlerClass, initialize, configPathStr);
-                J->DeleteLocalRef(configPathStr);
+                jmethodID initialize = J->GetStaticMethodID(logHandlerClass, "initialize", "(Ljava/lang/String;Ljava/lang/String;)V");
+                if (initialize)
+                {
+                    jstring log4jLevelStr = J->NewStringUTF(log4jLevel);
+                    jstring log4jPatternStr = J->NewStringUTF(log4jPattern);
+
+                    J->CallStaticVoidMethod(logHandlerClass, initialize, log4jLevelStr, log4jPatternStr);
+
+                    J->DeleteLocalRef(log4jLevelStr);
+                    J->DeleteLocalRef(log4jPatternStr);
+                }
             }
+        }
+        else if (log4jPattern && *log4jPattern)
+        {
+            DBGLOG("javaembed: Ignoring log4jPattern setting because log4jLevel was not set");
         }
     }
     catch (IException *E)

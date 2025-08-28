@@ -74,15 +74,15 @@ javaembedWithLevel := PROJECT(javaembedLogs, TRANSFORM(LogLevelRec,
     SELF.line := LEFT.line,
     SELF.logLevel := MAP(
         // Log4j Log Levels
-        Str.Find(LEFT.line, ' FATAL ') > 0 => 'FATAL',
-        Str.Find(LEFT.line, ' ERROR ') > 0 => 'ERROR',
-        Str.Find(LEFT.line, ' WARN ') > 0 => 'WARN',
-        Str.Find(LEFT.line, ' INFO ') > 0 => 'INFO',
-        Str.Find(LEFT.line, ' DEBUG ') > 0 => 'DEBUG',
-        Str.Find(LEFT.line, ' TRACE ') > 0 => 'TRACE',
+        Str.Find(LEFT.line, 'FATAL') > 0 => 'FATAL',
+        Str.Find(LEFT.line, 'ERROR') > 0 => 'ERROR',
+        Str.Find(LEFT.line, 'WARN') > 0 => 'WARN',
+        Str.Find(LEFT.line, 'INFO') > 0 => 'INFO',
+        Str.Find(LEFT.line, 'DEBUG') > 0 => 'DEBUG',
+        Str.Find(LEFT.line, 'TRACE') > 0 => 'TRACE',
         // javaembed plugin statuses
         Str.Find(LEFT.line, 'Enabled Java log redirection') > 0 => 'ENABLED',
-        Str.Find(LEFT.line, 'Java log redirection not enabled') > 0 => 'DISABLED',
+        Str.Find(LEFT.line, 'Failed to initialize HpccLogHandler') > 0 => 'INITFAIL',
         'UNKNOWN'
     )
 ));
