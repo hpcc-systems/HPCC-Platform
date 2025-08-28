@@ -37,7 +37,8 @@ export function getESPBaseURL(service: string = "WsWorkunits"): string {
     const serverIP = getServerIP();
 
     if (serverIP) {
-        return `http://${serverIP}:8010/${service}`;
+        const protocol = (typeof window !== "undefined" && window.location?.protocol) ? window.location.protocol.replace(":", "") : "http";
+        return `${protocol}://${serverIP}:8010/${service}`;
     }
 
     return `/${service}`;
