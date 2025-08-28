@@ -60,7 +60,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     const [, { opsCategory }] = useBuildInfo();
     const theme = useTheme();
     const { userSession, setUserSession, deleteUserSession } = useUserSession();
-    const toolbarThemeDefaults = { active: false, text: "", color: theme.palette.themeLight };
+    const toolbarThemeDefaults = { active: false, text: "", color: "" };
     const [logIconColor, setLogIconColor] = React.useState<CounterBadgeProps["color"]>();
 
     const [showAbout, setShowAbout] = React.useState(false);
