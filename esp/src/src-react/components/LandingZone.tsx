@@ -6,12 +6,12 @@ import * as iframe from "dojo/request/iframe";
 import * as put from "put-selector/put";
 import { TpDropZoneQuery } from "src/WsTopology";
 import * as FileSpray from "src/FileSpray";
-import * as ESPRequest from "src/ESPRequest";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
 import { useGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
+import { getESPBaseURL } from "../util/espUrl";
 import { pushParams } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
 import { selector, tree } from "./DojoGrid";
@@ -115,7 +115,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
         filename: "landingZones",
         getSelected: function () {
             if (filter?.__dropZone) {
-                return this.inherited(arguments, [FileSpray.CreateLandingZonesFilterStore( filter.__dropZone )]);
+                return this.inherited(arguments, [FileSpray.CreateLandingZonesFilterStore(filter.__dropZone)]);
             }
             return this.inherited(arguments, [FileSpray.CreateFileListStore()]);
         },
@@ -237,7 +237,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
                 selection.forEach(item => {
                     const downloadIframeName = "downloadIframe_" + item.calculatedID;
                     const frame = iframe.create(downloadIframeName);
-                    const url = `${ESPRequest.getBaseURL("FileSpray")}/DownloadFile?Name=${encodeURIComponent(item.name)}&NetAddress=${item.NetAddress}&Path=${encodeURIComponent(item.fullFolderPath)}&OS=${item.OS}&DropZoneName=${item.DropZone.Name}`;
+                    const url = `${getESPBaseURL("FileSpray")}/DownloadFile?Name=${encodeURIComponent(item.name)}&NetAddress=${item.NetAddress}&Path=${encodeURIComponent(item.fullFolderPath)}&OS=${item.OS}&DropZoneName=${item.DropZone.Name}`;
                     iframe.setSrc(frame, url, true);
                 });
             }
