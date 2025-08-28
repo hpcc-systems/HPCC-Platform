@@ -302,6 +302,9 @@ IEspCorsHelper *createEspCorsHelper(IPropertyTree *cors)
     return new CEspCorsHelper(cors);
 }
 
+static std::map<std::string, Owned<ISecManager>> ldapInstances;
+static CriticalSection ldapInstancesCS;
+
 EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const char *procname)
 {
     Owned<IPropertyTree> proc_cfg = getProcessConfig(tree, procname);
@@ -429,10 +432,31 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                             }
                         }
 
-                        m_secmgr.setown(SecLoader::loadSecManager("LdapSecurity", "EspHttpBinding", LINK(lscfg)));
-                        if(m_secmgr.get() == NULL)
+                        StringBuffer resourcesBaseDnBuf;
+                        authcfg->getProp("@resourcesBasedn", resourcesBaseDnBuf);
+
+                        StringBuffer workunitsBaseDnBuff;
+                        authcfg->getProp("@workunitsBasedn", workunitsBaseDnBuff);
+
+                        std::string instanceParams;
+                        instanceParams.append(resourcesBaseDnBuf.str()).append(":").append(workunitsBaseDnBuff.str());
+
                         {
-                            throw MakeStringException(-1, "error generating SecManager");
+                            CriticalBlock block(ldapInstancesCS);
+
+                            auto it = ldapInstances.find(instanceParams);
+                            if (it != ldapInstances.end())
+                            {
+                                m_secmgr.set(it->second);
+                            }
+                            else
+                            {
+                                auto pSecMgr = SecLoader::loadSecManager("LdapSecurity", "EspHttpBinding", LINK(lscfg));
+                                if (!pSecMgr)
+                                    throw MakeStringException(-1, "error generating SecManager");
+                                ldapInstances.emplace(instanceParams, pSecMgr);
+                                m_secmgr.set(pSecMgr);
+                            }
                         }
 
                         StringBuffer basednbuf;
