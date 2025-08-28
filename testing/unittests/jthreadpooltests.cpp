@@ -213,7 +213,7 @@ public:
         std::vector<PoolTestScenario> scenarios = {
             // Test Thread Pool start delay
             {
-                "TestTightlyBoundThreadPool_threadPoolFullStartTimeout",
+                "ThreadPoolFullStartTimeout",
                 1, // maxThreads
                 0, // throttleDelayMs (0=infinite)
                 {
@@ -224,7 +224,7 @@ public:
                 50,                              // durationWiggleMs
                 ValidationPolicy::ValidateCounts // validationPolicy
             },
-            {"TestTightlyBoundThreadPool_delayedThreadStart",
+            {"DelayedThreadStart",
              1, // maxThreads
              0, // throttleDelayMs (0=infinite)
              {
@@ -233,7 +233,7 @@ public:
                  {"ThrottledDelayedThread", 100, 500, 600, FunctionExceptionExpectation::ShouldSucceed, FunctionToTest::StartFunction, ExpectedTestFunctionResult::ExpectedTrue, DO_NOT_WAIT_FOR_RUNNING_THREADS}, // Wait ~600ms for Thread1 to complete
              }},
             {
-                "TestTightlyBoundThreadPool_startNoBlockFunction",
+                "StartNoBlockFunction",
                 2, // maxThreads
                 0, // throttleDelayMs (0=infinite)
                 {
@@ -325,7 +325,7 @@ public:
         std::vector<PoolTestScenario> scenarios = {
             // Test Thread Pool start delay
             {
-                "TestThrottledThreadPoolWithDefaultDelay_functionToTest",
+                "StartFunctionThrottleDelay",
                 2,    // maxThreads
                 1000, // throttleDelayMs (0=infinite)
                 {
@@ -339,7 +339,7 @@ public:
                 ValidationPolicy::ValidateCounts // validationPolicy
             },
             {
-                "TestThrottledThreadPoolWithDefaultDelay_startNoBlockFunction",
+                "StartNoBlockFunctionThrottleDelay",
                 2,    // maxThreads
                 1000, // throttleDelayMs (0=infinite)
                 {
@@ -418,11 +418,13 @@ public:
                 ConcurrencyMode::Concurrent       // concurrencyMode
             }};
 
+        unsigned expectedInitialValidationCount = 2;
+        unsigned furtherValidationCountLeft = expectedInitialValidationCount;
         for (const auto &scenario : scenarios)
         {
             runTableDrivenScenario(scenario);
 
-            if (strcmp(scenario.testName, "TestThrottledThreadPoolWithDefaultDelay_functionToTest") == 0)
+            if (strcmp(scenario.testName, "StartFunctionThrottleDelay") == 0)
             {
                 // Should have 1 exception (Thread3 timeout) and 3 successful starts (Thread1, Thread2, Thread4)
                 CPPUNIT_ASSERT_EQUAL_MESSAGE(
@@ -434,8 +436,9 @@ public:
                 CPPUNIT_ASSERT_EQUAL_MESSAGE(
                     VStringBuffer("Scenario \"%s\": expected 3 threads to complete", scenario.testName).str(),
                     3U, scenario.actualThreadCompletedCount);
+                --furtherValidationCountLeft;
             }
-            else if (strcmp(scenario.testName, "TestThrottledThreadPoolWithDefaultDelay_startNoBlockFunction") == 0)
+            else if (strcmp(scenario.testName, "StartNoBlockFunctionThrottleDelay") == 0)
             {
                 // Should have 1 exception (Thread3) and 3 successful starts (Thread1, Thread2, Thread4)
                 CPPUNIT_ASSERT_EQUAL_MESSAGE(
@@ -447,8 +450,15 @@ public:
                 CPPUNIT_ASSERT_EQUAL_MESSAGE(
                     VStringBuffer("Scenario \"%s\": expected 3 threads to complete", scenario.testName).str(),
                     3U, scenario.actualThreadCompletedCount);
+                --furtherValidationCountLeft;
             }
         }
+        CPPUNIT_ASSERT_EQUAL_MESSAGE(
+            VStringBuffer("Scenario \"%s\": expected extra validation for %u tests but only processed %u test",
+                __func__,
+                expectedInitialValidationCount,
+                furtherValidationCountLeft).str(),
+            0U, furtherValidationCountLeft);
     }
 
     void testTableDrivenThrottledThreadPoolWithFastThreadCompletion()
