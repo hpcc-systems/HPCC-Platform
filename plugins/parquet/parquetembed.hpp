@@ -41,6 +41,12 @@
 
 namespace parquetembed
 {
+
+extern "C++"
+{
+    PARQUETEMBED_PLUGIN_API void getParquetRecordStructure(size32_t &__lenResult, char * &__result, const char *readType, const char *filePath);
+}
+
 extern void UNSUPPORTED(const char *feature) __attribute__((noreturn));
 extern void failx(const char *msg, ...) __attribute__((noreturn)) __attribute__((format(printf, 1, 2)));
 extern void fail(const char *msg) __attribute__((noreturn));
@@ -390,6 +396,8 @@ public:
 
     bool getCursor(MemoryBuffer & cursor);
     void setCursor(MemoryBuffer & cursor);
+
+    std::shared_ptr<arrow::Schema> getSchema();
 
 private:
     arrow::Status openReadFile();
