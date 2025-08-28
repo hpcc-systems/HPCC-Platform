@@ -4,6 +4,8 @@
 <chapter id="ContainerConfigurationValuesCHAPTER">
   <title>Configuration Values</title>
 
+   
+
   <para>This chapter describes the configuration of HPCC Systems for a
   Kubernetes Containerized deployment. The following sections detail how
   configurations are supplied to helm charts, how to find out what options are
@@ -11,6 +13,8 @@
   sections will also provide a brief walk through of some of the contents of
   the default <emphasis>values.yaml</emphasis> file used in configuring the
   HPCC Systems for a containerized deployment.</para>
+
+   
 
   <sect1 id="Intro_Containerized_Environments" role="nobrk">
     <title>The Container Environment</title>
@@ -122,6 +126,8 @@
     </sect2>
   </sect1>
 
+   
+
   <sect1 id="TheValuesYaml_FileAndRelated" role="nobrk">
     <title>HPCC Systems Components and the <emphasis>values.yaml</emphasis>
     File</title>
@@ -173,10 +179,12 @@
         <para>Any service related info needs to be under a service object, for
         example:</para>
 
-        <para><programlisting>  service:
+        <para>
+          <programlisting>  service:
     servicePort: 7200
     visibility: local
-</programlisting></para>
+</programlisting>
+        </para>
 
         <para>This applies to most all of the HPCC Systems components, ESP,
         Dali, dafilesrv, and Sasha. Roxie's specification is slightly
@@ -315,16 +323,20 @@
         <emphasis role="bold">numWorkers</emphasis> value to 50 and you would
         have a 50-way Thor. As indicated in the following example:</para>
 
-        <para><programlisting>thor:
+        <para>
+          <programlisting>thor:
 - name: thor
   prefix: thor
-  numWorkers: 50</programlisting></para>
+  numWorkers: 50</programlisting>
+        </para>
 
         <para>In doing so, ideally you should rename the resource to something
         which clearly describes it, such as <emphasis>thor_50</emphasis> as in
         the following example.</para>
 
-        <para><programlisting>- name: thor_50</programlisting></para>
+        <para>
+          <programlisting>- name: thor_50</programlisting>
+        </para>
 
         <para>Updating the <emphasis>numWorkers</emphasis> value will restart
         the Thor agent listening to the queue, causing all new jobs to use the
@@ -469,6 +481,8 @@
     </sect2>
   </sect1>
 
+   
+
   <sect1 id="Delivered_HPCC_ValuesYaml">
     <title>The HPCC Systems <emphasis>values.yaml</emphasis> file</title>
 
@@ -485,7 +499,8 @@
     <para>The delivered HPCC Systems Values file primarily consists of the
     following areas:</para>
 
-    <para><informaltable>
+    <para>
+      <informaltable>
         <tgroup cols="3">
           <tbody>
             <row>
@@ -513,7 +528,8 @@
             </row>
           </tbody>
         </tgroup>
-      </informaltable></para>
+      </informaltable>
+    </para>
 
     <para>The subsequent sections will examine some of these more closely and
     why each of them is there.</para>
@@ -647,7 +663,9 @@
         The following sections look at the currently supported categories of
         data used in our containerized deployment.</para>
 
-        <para><programlisting> category: data|dali|lz|dll|spill|temp  # What category of data is stored on this plane?</programlisting></para>
+        <para>
+          <programlisting> category: data|dali|lz|dll|spill|temp  # What category of data is stored on this plane?</programlisting>
+        </para>
 
         <para>The system itself can write out to any data plane. This is how
         the data category can help to improve performance. For example, if you
@@ -662,6 +680,89 @@
         don't need them. For example the ECLCC Server component does not need
         to know about landing zones, or where Dali stores its data, so it only
         mounts the plane categories it needs.</para>
+      </sect3>
+
+      <sect3 id="StorageDefaults">
+        <title>Storage Defaults</title>
+
+        <para>As of version 9.14, HPCC Systems supports a new
+        <literal>defaults</literal> section under storage configuration that
+        provides fallback settings for storage planes. This feature allows
+        administrators to define common configuration values that can be
+        inherited by individual storage planes, reducing duplication and
+        simplifying configuration management.</para>
+
+        <sect4 id="Configuration-Structure">
+          <title>Storage Defaults Configuration</title>
+
+          <para>The storage defaults section is added as a sibling to the
+          <literal>planes</literal> section in your Helm values
+          configuration.</para>
+
+          <!-- Placeholder for valid example configuration -->
+        </sect4>
+
+        <sect4 id="How-Defaults-Work">
+          <title>How Storage Defaults Work</title>
+
+          <para>The defaults mechanism works as follows:</para>
+
+          <orderedlist>
+            <listitem>
+              <para><emphasis role="bold">Priority:</emphasis> Individual
+              plane settings take precedence over defaults</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Inheritance:</emphasis> Storage
+              planes automatically inherit any properties not explicitly
+              defined at the plane level</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Data Types:</emphasis> Defaults
+              apply to integer and boolean attributes in storage plane
+              configurations</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Fallback Creation:</emphasis> If no
+              defaults section exists in the configuration, the system
+              automatically creates an empty defaults tree to ensure
+              consistent behavior</para>
+            </listitem>
+          </orderedlist>
+        </sect4>
+
+        <sect4 id="Common-Use-Cases">
+          <title>Example Use Cases</title>
+
+          <!-- removed 2 additional examples for performance tuning and security due to possibility of being AI Hallucinations - optionally insert a valid example -->
+
+          <sect5 id="Cost-Management">
+            <title>Cost Management</title>
+
+            <para>Define default cost parameters that can be inherited by
+            multiple planes:</para>
+
+            <programlisting language="yaml">
+storage:
+  defaults:
+    cost:
+      accessCost: 0.001
+      storageCost: 0.02
+      bandwidthCost: 0.05
+  
+  planes:
+    - name: "data"
+      cost:
+        accessCost: 0.002  # Override for high-performance storage
+    
+    - name: "backup"
+      # Inherits all default cost settings
+</programlisting>
+          </sect5>
+        </sect4>
       </sect3>
 
       <sect3 id="YML_EphemeralStorage">
@@ -1129,8 +1230,10 @@ thor:
       <emphasis>values.yaml</emphasis> file can be found under the helm/hpcc/
       directory on the HPCC Systems github repository:</para>
 
-      <para><ulink
-      url="https://github.com/hpcc-systems/HPCC-Platform">https://github.com/hpcc-systems/HPCC-Platform</ulink></para>
+      <para>
+        <ulink
+        url="https://github.com/hpcc-systems/HPCC-Platform">https://github.com/hpcc-systems/HPCC-Platform</ulink>
+      </para>
     </sect2>
 
     <sect2>
@@ -1307,15 +1410,18 @@ thor:
         bare-metal environment.conf values have these equivalent values which
         can be set for containerized instances.</para>
 
-        <para><informaltable>
+        <para>
+          <informaltable>
             <tgroup cols="2">
               <tbody>
                 <row>
-                  <entry><emphasis role="bold">Environment.conf
-                  Value</emphasis></entry>
+                  <entry>
+                    <emphasis role="bold">Environment.conf Value</emphasis>
+                  </entry>
 
-                  <entry><emphasis role="bold">Helm Environment
-                  Variable</emphasis></entry>
+                  <entry>
+                    <emphasis role="bold">Helm Environment Variable</emphasis>
+                  </entry>
                 </row>
 
                 <row>
@@ -1343,15 +1449,18 @@ thor:
                 </row>
               </tbody>
             </tgroup>
-          </informaltable></para>
+          </informaltable>
+        </para>
 
         <para>The following example sets the environment variable to skip
         Python cleanup on the Thor component:</para>
 
-        <para><programlisting>thor: 
+        <para>
+          <programlisting>thor: 
   env: 
   - name: SKIP_PYTHON_CLEANUP 
-    value: true</programlisting></para>
+    value: true</programlisting>
+        </para>
       </sect3>
     </sect2>
 
@@ -1389,6 +1498,8 @@ thor:
       the value set at the global level.</para>
     </sect2>
   </sect1>
+
+   
 
   <sect1 id="CV_Pods-Nodes">
     <title>Pods and Nodes</title>
@@ -1545,7 +1656,8 @@ thor:
       <para>Kubernetes uses the following methods to choose where to schedule
       pods:</para>
 
-      <para><itemizedlist>
+      <para>
+        <itemizedlist>
           <listitem>
             <para>nodeSelector field matching against node labels</para>
           </listitem>
@@ -1569,7 +1681,8 @@ thor:
           <listitem>
             <para>Scheduler name</para>
           </listitem>
-        </itemizedlist></para>
+        </itemizedlist>
+      </para>
 
       <sect3 id="CV_NodeLabels">
         <title>Node Labels</title>
@@ -1605,11 +1718,13 @@ thor:
         list. This example schedules "all" HPCC components to use the node
         pool with the label group: "hpcc".</para>
 
-        <para><programlisting> placements:
+        <para>
+          <programlisting> placements:
    - pods: ["all"]
      placement:
        nodeSelector:
-         group: "hpcc"</programlisting></para>
+         group: "hpcc"</programlisting>
+        </para>
 
         <para><emphasis role="bold">Note:</emphasis> The label group:hpcc
         matches the node pool label:hpcc.</para>
@@ -1622,11 +1737,13 @@ thor:
         configure a specific type (Dali) of HPCC Systems component not to use
         a particular node pool.</para>
 
-        <para><programlisting> placements:
+        <para>
+          <programlisting> placements:
    - pods: ["type:dali"]
      placement:
        nodeSelector:
-         spot: "false"</programlisting></para>
+         spot: "false"</programlisting>
+        </para>
 
         <para>When using nodeSelector, multiple nodeSelectors can be applied.
         If duplicate keys are defined, only the last one prevails.</para>
@@ -1656,8 +1773,10 @@ thor:
         <para>For more information and examples of our Taints, Tolerations,
         and Placements please review our developer documentation:</para>
 
-        <para><ulink
-        url="https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/hpcc/docs/placements.md">https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/hpcc/docs/placements.md</ulink></para>
+        <para>
+          <ulink
+          url="https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/hpcc/docs/placements.md">https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/hpcc/docs/placements.md</ulink>
+        </para>
 
         <sect4 id="CSP_TaintsandTolerationsExamples">
           <title>Taints and Tolerations Examples</title>
@@ -1670,13 +1789,15 @@ thor:
           two components to the node pools with these exact labels, group and
           gpu.</para>
 
-          <para><programlisting> placements:
+          <para>
+            <programlisting> placements:
    - pods: ["all"]
      tolerations:
        key: "group"
          operator: "Equal" 
            value: "hpcc"
-             effect: "NoSchedule"         </programlisting></para>
+             effect: "NoSchedule"         </programlisting>
+          </para>
 
           <programlisting>placements:
    - pods: ["type:thor"] 
@@ -1734,8 +1855,10 @@ thor:
         url="https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/">https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/</ulink>
         and</para>
 
-        <para><ulink
-        url="https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/">https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/</ulink></para>
+        <para>
+          <ulink
+          url="https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/">https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/</ulink>
+        </para>
 
         <para>Using the "topologySpreadConstraints" example, there are two
         node pools which have "hpcc=nodepool1" and "hpcc=nodepool2"
@@ -1891,6 +2014,8 @@ thor:
     </sect2>
   </sect1>
 
+   
+
   <sect1 id="MoreHelmANDYAML">
     <title>Helm and Yaml Basics</title>
 
@@ -1946,7 +2071,9 @@ thor:
         starting with the default values from the delivered hpcc helm
         chart.</para>
 
-        <para><programlisting>helm install myhpcc hpcc/hpcc -f myoverrides.yaml</programlisting></para>
+        <para>
+          <programlisting>helm install myhpcc hpcc/hpcc -f myoverrides.yaml</programlisting>
+        </para>
 
         <para>Any pre-existing values in a dictionary that are not overridden
         will continue to be present in the merged result. However, you can
@@ -1965,12 +2092,14 @@ thor:
         <para>An example of a list of dictionaries, with placement.tolerations
         as a nested list.:</para>
 
-        <para><programlisting>placements:
+        <para>
+          <programlisting>placements:
 - pods: ["all"]
   placement:
     tolerations:
     - key: "kubernetes.azure.com/scalesetpriority"
-</programlisting></para>
+</programlisting>
+        </para>
 
         <para>The list entry here is denoted using the hyphen, which is an
         entry item in the list, which itself is a dictionary with nested
@@ -2168,7 +2297,8 @@ global:
 
         <para>The following options are currently available:</para>
 
-        <para><variablelist>
+        <para>
+          <variablelist>
             <varlistentry>
               <term>numRenameRetries</term>
 
@@ -2213,8 +2343,11 @@ global:
                 outside of its networks.</para>
               </listitem>
             </varlistentry>
-          </variablelist></para>
+          </variablelist>
+        </para>
       </sect3>
     </sect2>
   </sect1>
+
+   
 </chapter>
