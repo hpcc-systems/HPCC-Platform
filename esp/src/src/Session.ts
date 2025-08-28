@@ -1,6 +1,4 @@
-import * as cookie from "dojo/cookie";
-import * as xhr from "dojo/request/xhr";
-import * as topic from "dojo/topic";
+import { cookie, xhr, topic } from "src-dojo/index";
 import { format as d3Format } from "@hpcc-js/common";
 import { SMCService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";

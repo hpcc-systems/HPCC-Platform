@@ -1,8 +1,4 @@
-﻿import * as arrayUtil from "dojo/_base/array";
-import * as declare from "dojo/_base/declare";
-import * as Deferred from "dojo/Deferred";
-import * as dom from "dojo/dom";
-import * as domConstruct from "dojo/dom-construct";
+﻿import { arrayUtil, declare, DeferredFull as Deferred, dom, domConstruct } from "src-dojo/index";
 
 import * as ESPQuery from "./ESPQuery";
 import * as ESPWorkunit from "./ESPWorkunit";

@@ -1,9 +1,4 @@
-﻿import * as arrayUtil from "dojo/_base/array";
-import * as declare from "dojo/_base/declare";
-import * as Deferred from "dojo/_base/Deferred";
-import * as lang from "dojo/_base/lang";
-import * as Observable from "dojo/store/Observable";
-import * as QueryResults from "dojo/store/util/QueryResults";
+﻿import { arrayUtil, declare, Deferred, lang, Observable, QueryResults } from "src-dojo/index";
 
 import { DFUService, WsDfu as HPCCWsDfu } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";

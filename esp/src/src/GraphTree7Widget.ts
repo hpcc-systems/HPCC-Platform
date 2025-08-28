@@ -1,12 +1,4 @@
-import * as arrayUtil from "dojo/_base/array";
-import * as declare from "dojo/_base/declare";
-import * as lang from "dojo/_base/lang";
-import * as aspect from "dojo/aspect";
-import * as dom from "dojo/dom";
-import * as has from "dojo/has";
-import * as topic from "dojo/topic";
-
-import * as registry from "dijit/registry";
+import { arrayUtil, declare, lang, aspect, dom, has, topic, registry } from "src-dojo/index";
 
 import { ECLGraph, ScopeGraph, Workunit } from "@hpcc-js/comms";
 import { Graph as GraphWidget, Graph2 as Graph2Widget, Subgraph, Vertex } from "@hpcc-js/graph";
@@ -25,21 +17,6 @@ import { WUScopeController, WUScopeController8 } from "./WUScopeController";
 // @ts-expect-error
 import * as template from "dojo/text!hpcc/templates/GraphTree7Widget.html";
 
-import "dijit/Fieldset";
-import "dijit/form/Button";
-import "dijit/form/CheckBox";
-import "dijit/form/DropDownButton";
-import "dijit/form/Form";
-import "dijit/form/TextBox";
-import "dijit/form/ToggleButton";
-import "dijit/layout/BorderContainer";
-import "dijit/layout/ContentPane";
-import "dijit/layout/StackContainer";
-import "dijit/layout/StackController";
-import "dijit/layout/TabContainer";
-import "dijit/Toolbar";
-import "dijit/ToolbarSeparator";
-import "dijit/TooltipDialog";
 import "hpcc/TableContainer";
 
 declare const dojoConfig;

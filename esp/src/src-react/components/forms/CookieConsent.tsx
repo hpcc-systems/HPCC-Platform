@@ -10,9 +10,9 @@ interface CookieConsentProps {
 }
 
 export const CookieConsent: React.FunctionComponent<CookieConsentProps> = ({
-    onApply = () => {},
+    onApply = () => { },
     showCookieConsent,
-    setShowCookieConsent = () => {}
+    setShowCookieConsent = () => { }
 }) => {
     return <MessageBox title={nlsHPCC.PleaseEnableCookies} show={showCookieConsent} setShow={setShowCookieConsent}
         footer={<>

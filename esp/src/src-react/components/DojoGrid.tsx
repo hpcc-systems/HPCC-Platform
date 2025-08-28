@@ -1,12 +1,6 @@
 import * as React from "react";
 import { useConst } from "@fluentui/react-hooks";
-import * as declare from "dojo/_base/declare";
-// @ts-expect-error
-import * as selector from "dgrid/selector";
-// @ts-expect-error
-import * as tree from "dgrid/tree";
-// @ts-expect-error
-import * as editor from "dgrid/editor";
+import { declare, selector, tree, editor } from "src-dojo/index"; // already exported from dojoLib
 import * as ESPUtil from "src/ESPUtil";
 import { DojoComponent } from "../layouts/DojoAdapter";
 

@@ -2,13 +2,7 @@ import { Connection, ResourcesService, Topology } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import { containerized } from "./BuildInfo";
 import { Memory } from "./store/Memory";
-import * as arrayUtil from "dojo/_base/array";
-import * as Deferred from "dojo/_base/Deferred";
-import * as lang from "dojo/_base/lang";
-import * as Observable from "dojo/store/Observable";
-import * as QueryResults from "dojo/store/util/QueryResults";
-import * as on from "dojo/on";
-import * as aspect from "dojo/aspect";
+import { arrayUtil, Deferred, lang, Observable, QueryResults, on, aspect } from "src-dojo/index";
 
 import * as ESPRequest from "./ESPRequest";
 import * as Utility from "./Utility";

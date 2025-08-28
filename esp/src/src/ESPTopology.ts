@@ -1,8 +1,4 @@
-﻿import * as arrayUtil from "dojo/_base/array";
-import * as declare from "dojo/_base/declare";
-import * as lang from "dojo/_base/lang";
-import * as all from "dojo/promise/all";
-import * as QueryResults from "dojo/store/util/QueryResults";
+﻿import { arrayUtil, declare, lang, all, QueryResults } from "src-dojo/index";
 
 import * as ESPTree from "./ESPTree";
 import * as ESPUtil from "./ESPUtil";

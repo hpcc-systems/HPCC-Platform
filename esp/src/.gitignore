@@ -1,5 +1,6 @@
 blob-report/
 build/
+dist/
 hpcc-js/
 lib/
 node_modules/
@@ -7,6 +8,7 @@ playwright/.cache/
 playwright-report/
 test-results/
 types/
+tmp/
 .vscode/*
 !.vscode/tasks.json
 lws.target.txt

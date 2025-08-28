@@ -1,7 +1,4 @@
-﻿import * as declare from "dojo/_base/declare";
-import * as lang from "dojo/_base/lang";
-import * as Observable from "dojo/store/Observable";
-import * as topic from "dojo/topic";
+﻿import { declare, lang, Observable, topic } from "src-dojo/index";
 import * as ESPRequest from "./ESPRequest";
 import * as ESPUtil from "./ESPUtil";
 import * as FileSpray from "./FileSpray";

@@ -1,10 +1,6 @@
-import * as declare from "dojo/_base/declare";
-import * as dom from "dojo/dom";
-import * as domClass from "dojo/dom-class";
-import * as domForm from "dojo/dom-form";
+import { declare, dom, domClass, domForm, registry } from "src-dojo/index";
 import nlsHPCC from "./nlsHPCC";
 
-import * as registry from "dijit/registry";
 
 import { select as d3Select } from "@hpcc-js/common";
 import { Workunit } from "@hpcc-js/comms";
@@ -20,17 +16,6 @@ import * as DelayLoadWidget from "hpcc/DelayLoadWidget";
 // @ts-expect-error
 import * as template from "dojo/text!hpcc/templates/DataPatternsWidget.html";
 
-import "dijit/Fieldset";
-import "dijit/form/Button";
-import "dijit/form/CheckBox";
-import "dijit/form/DropDownButton";
-import "dijit/form/Form";
-import "dijit/layout/BorderContainer";
-import "dijit/layout/ContentPane";
-import "dijit/layout/TabContainer";
-import "dijit/Toolbar";
-import "dijit/ToolbarSeparator";
-import "dijit/TooltipDialog";
 import "hpcc/TableContainer";
 import "hpcc/TargetSelectWidget";
 

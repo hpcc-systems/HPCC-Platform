@@ -1,4 +1,4 @@
-import * as declare from "dojo/_base/declare";
+import { declare, registry } from "src-dojo/index";
 import { ECLEditor } from "@hpcc-js/codemirror";
 import { extent, Palette } from "@hpcc-js/common";
 import { Workunit, WsWorkunits } from "@hpcc-js/comms";
@@ -6,12 +6,6 @@ import { Table } from "@hpcc-js/dgrid";
 import { SplitPanel } from "@hpcc-js/phosphor";
 import { DirectoryTree } from "@hpcc-js/tree";
 import { RecursivePartial, xml2json } from "@hpcc-js/util";
-import "dijit/form/Button";
-import "dijit/layout/BorderContainer";
-import "dijit/layout/ContentPane";
-import * as registry from "dijit/registry";
-import "dijit/Toolbar";
-import "dijit/ToolbarSeparator";
 import nlsHPCC from "./nlsHPCC";
 import { themeIsDark } from "./Utility";
 // @ts-expect-error

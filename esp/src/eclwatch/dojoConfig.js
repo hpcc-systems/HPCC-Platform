@@ -19,6 +19,7 @@ function getConfig(env) {
         blankGif: "/esp/files/eclwatch/img/blank.gif",
         paths: {
             "hpcc": baseUrl + "/eclwatch",
+            "src-dojo": baseUrl + "/lib/src-dojo",
             "src": baseUrl + "/lib/src",
             "src-react": baseUrl + "/lib/src-react",
             "src-react-css": baseUrl + "/src-react",

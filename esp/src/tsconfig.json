@@ -37,14 +37,16 @@
         }
     },
     "include": [
-        "src/**/*",
-        "src-react/**/*"
+        "src-dojo/index.ts",
+        "src-dojo/nls/**/*",
+        "src/index.ts",
+        "src-react/index.tsx"
     ],
     "watchOptions": {
         "watchFile": "useFsEvents",
         "watchDirectory": "useFsEvents",
         "excludeDirectories": [
             "**/node_modules"
-        ],
+        ]
     }
 }
