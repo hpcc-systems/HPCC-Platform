@@ -128,7 +128,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
         CRuntimeSummaryStatisticCollection podStats;
         std::vector<std::string> nodeNames; // ordered list of the unique node names
         bool collectAttempted = false;
-        
+
     public:
         CPodInfo() : podStats(podStatistics)
         {
@@ -189,13 +189,12 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
             reportExceptionToWorkunit(*wu, e);
         }
     } podInfo;
-    
+
     Owned<IDeMonServer> demonServer;
     std::atomic<unsigned> activeTasks;
     StringAttr          currentWuid;
     ILogMsgHandler *logHandler;
 
-    CJobMaster *getCurrentJob() { CriticalBlock b(jobCrit); return jobs.ordinality() ? &OLINK(jobs.item(0)) : NULL; }
     bool executeGraph(IConstWorkUnit &workunit, const char *graphName, const SocketEndpoint &agentEp);
     void addJob(CJobMaster &job) { CriticalBlock b(jobCrit); jobs.append(job); }
     void removeJob(CJobMaster &job) { CriticalBlock b(jobCrit); jobs.zap(job); }
@@ -364,6 +363,7 @@ public:
     virtual void updateWorkUnitLog(IWorkUnit &workunit);
     virtual void setExceptionCtx(IThorException *e);
     virtual void deltaPostmortemInProgress(int v);
+    virtual Owned<CJobMaster> getCurrentJob() { CriticalBlock b(jobCrit); return jobs.ordinality() ? &OLINK(jobs.item(0)) : nullptr; }
 };
 
 // CJobManager impl.
