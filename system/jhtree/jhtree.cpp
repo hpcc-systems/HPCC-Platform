@@ -3192,7 +3192,7 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
 
                 //Update ctx stats outside of the critical section.
                 if (unlikely(recordingEvents()))
-                    queryRecorder().recordIndexLookup(iD, pos, type, true, fastPathMatch->getMemSize(), fastPathMatch->getLoadExpandTime());
+                    queryRecorder().recordIndexCacheHit(iD, pos, type, fastPathMatch->getMemSize(), fastPathMatch->getLoadExpandTime());
                 if (ctx)
                      ctx->noteStatistic(hitStatId[cacheType], 1);
                 return fastPathMatch;
@@ -3212,7 +3212,7 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
     }
 
     if (unlikely(recordingEvents()))
-        queryRecorder().recordIndexLookup(iD, pos, type, false, 0, 0);
+        queryRecorder().recordIndexCacheMiss(iD, pos, type);
 
     //If an exception is thrown before the node is cleanly loaded we need to remove the partially constructed
     //node from the cache otherwise it may never get loaded, and can prevent items being removed from the cache

@@ -28,14 +28,21 @@ protected: // Abstract interface
     virtual void appendAnalysis(StringBuffer& lines) const = 0;
 
 public: // IBucketVisitor
-    virtual void begin(EventType observedEvent, unsigned granularity) override
+    virtual void begin(const std::set<EventType>& observedEvents, unsigned granularity) override
     {
+        StringBuffer eventNames;
+        for (EventType type : observedEvents)
+        {
+            if (eventNames.length())
+                eventNames.append(", ");
+            eventNames.append(queryEventName(type));
+        }
         currentGranularity = granularity;
         StringBuffer lines;
         lines.append("analysis: ");
         appendAnalysis(lines);
         lines.append('\n');
-        lines.append("event: ").append(queryEventName(observedEvent)).append('\n');
+        lines.append("event: ").append(eventNames).append('\n');
         lines.append("granularity: ").append(granularity).append('\n');
         out->put(lines.length(), lines.str());
     }

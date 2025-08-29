@@ -19,6 +19,7 @@
 
 #include "eventconsumption.h"
 #include "eventvisitor.h"
+#include <set>
 
 #define defaultBucketCount 10
 constexpr static byte bucketArrayBits = 10; // 1K buckets per activity key
@@ -67,7 +68,7 @@ enum BucketKind
 interface IBucketVisitor : IInterface
 {
     // Begin a hotspot analysis activity.
-    virtual void begin(EventType observedEvent, unsigned granularity) = 0;
+    virtual void begin(const std::set<EventType>& observedEvents, unsigned granularity) = 0;
     // Perform any setup required before visiting hotspot activity buckets for one file.
     virtual void arrive(unsigned id, const char* path) = 0;
     // Observe a hotspot activity bucket.
