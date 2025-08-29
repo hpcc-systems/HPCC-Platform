@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include <string>
+#include <atomic>
 
 #ifndef _WIN32
 #include <sys/types.h>
@@ -79,11 +80,11 @@ static Owned<IMPtagAllocator> ClusterMPAllocator;
 
 // Callback for getting current graph context when available
 typedef void (*GraphContextCallback)(StringBuffer &graphName, graph_id &subGraphId);
-static GraphContextCallback graphContextCallback = nullptr;
+static std::atomic<GraphContextCallback> graphContextCallback{nullptr};
 
 void setGraphContextCallback(GraphContextCallback callback)
 {
-    graphContextCallback = callback;
+    graphContextCallback.store(callback);
 }
 
 // stat. mappings shared between master and slave activities
@@ -416,13 +417,16 @@ CThorException *_ThorWrapException(IException *e, const char *format, va_list ar
     baseMessage.limited_valist_appendf(2048, format, args);
 
     // Try to append graph context if available
-    if (graphContextCallback)
+    // Capture callback pointer safely to avoid race condition
+    GraphContextCallback callback = graphContextCallback.load();
+
+    if (callback)
     {
         StringBuffer graphName;
         graph_id subGraphId{0};
         try
         {
-            graphContextCallback(graphName, subGraphId);
+            callback(graphName, subGraphId);
 
             // Append graph information if we have either a name or a valid subgraph ID
             if (graphName.length() > 0 || subGraphId != 0)

@@ -20,11 +20,16 @@
 #include "thormisc.hpp"
 #include "jexcept.hpp"
 #include "jstring.hpp"
+#include <thread>
+#include <atomic>
+#include <vector>
+#include <chrono>
 
 class ExceptionTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(ExceptionTest);
     CPPUNIT_TEST(testThorWrapException);
+    CPPUNIT_TEST(testThorWrapExceptionConcurrentAccess);
     CPPUNIT_TEST_SUITE_END();
 
 private:
@@ -239,6 +244,152 @@ public:
         }
 
         // Clean up callback
+        setGraphContextCallback(nullptr);
+    }
+
+    void testThorWrapExceptionConcurrentAccess()
+    {
+        // Test concurrent access to graphContextCallback in _ThorWrapException
+
+        constexpr unsigned numThreads = 10;
+        constexpr unsigned iterationsPerThread = 10;
+
+        std::atomic<unsigned> readyThreads{0};
+        std::atomic<bool> startSignal{false};
+        std::atomic<unsigned> completedThreads{0};
+        std::atomic<unsigned> successfulWraps{0};
+        std::atomic<unsigned> callbackChanges{0};
+
+        // Test callbacks
+        auto callback1 = [](StringBuffer &graphName, graph_id &subGraphId)
+        {
+            graphName.append("ConcurrentGraph1");
+            subGraphId = 1001;
+        };
+
+        auto callback2 = [](StringBuffer &graphName, graph_id &subGraphId)
+        {
+            graphName.append("ConcurrentGraph2");
+            subGraphId = 2002;
+        };
+
+        auto callback3 = [](StringBuffer &graphName, graph_id &subGraphId)
+        {
+            graphName.append("ConcurrentGraph3");
+            subGraphId = 3003;
+        };
+
+        // Array of callbacks to cycle through
+        GraphContextCallback callbacks[] = {nullptr, callback1, callback2, callback3};
+        constexpr unsigned numCallbacks = sizeof(callbacks) / sizeof(callbacks[0]);
+
+        // Thread function that repeatedly calls ThorWrapException while callback changes
+        auto workerThread = [&](unsigned threadId)
+        {
+            readyThreads++;
+
+            // Wait for all threads to be ready
+            while (!startSignal.load())
+            {
+                std::this_thread::sleep_for(std::chrono::microseconds(1));
+            }
+
+            for (unsigned i = 0; i < iterationsPerThread; ++i)
+            {
+                try
+                {
+                    // Create a test exception
+                    throw MakeStringException(1000 + threadId, "Concurrent test exception from thread %u", threadId);
+                }
+                catch (IException *e)
+                {
+                    try
+                    {
+                        // This is the critical line being tested - it should safely load the atomic callback
+                        Owned<IThorException> thorEx = ThorWrapException(e, "Concurrent access test iteration %u", i);
+
+                        // Verify we got a valid exception
+                        if (thorEx)
+                        {
+                            StringBuffer msg;
+                            thorEx->errorMessage(msg);
+
+                            // The message should be valid and contain our text
+                            if (msg.length() > 0 &&
+                                strstr(
+                                    msg.str(),
+                                    VStringBuffer("Concurrent test exception from thread %u : Concurrent access test iteration %u", threadId, i).str()))
+                                successfulWraps++;
+                        }
+
+                        e->Release();
+                    }
+                    catch (...)
+                    {
+                        e->Release();
+                        // If we get here, there was likely a race condition or crash
+                        CPPUNIT_FAIL("Exception occurred during concurrent ThorWrapException call");
+                    }
+                }
+            }
+
+            completedThreads++;
+        };
+
+        // Thread function that changes the callback frequently
+        auto callbackChangerThread = [&]()
+        {
+            readyThreads++;
+
+            // Wait for all threads to be ready
+            while (!startSignal.load())
+                std::this_thread::sleep_for(std::chrono::microseconds(1));
+
+            unsigned changeCount = 0;
+            const unsigned maxChanges = numThreads * iterationsPerThread / 2;
+
+            while (completedThreads.load() < numThreads && changeCount < maxChanges)
+            {
+                // Cycle through different callbacks including nullptr
+                GraphContextCallback newCallback = callbacks[changeCount % numCallbacks];
+                setGraphContextCallback(newCallback);
+                callbackChanges++;
+                changeCount++;
+            }
+        };
+
+        // Start all threads
+        std::vector<std::thread> threads;
+        for (unsigned i = 0; i < numThreads; ++i)
+            threads.emplace_back(workerThread, i);
+
+        // Create callback changer thread
+        threads.emplace_back(callbackChangerThread);
+
+        // Wait for all threads to be ready
+        while (readyThreads.load() < numThreads + 1)
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+        // Signal all threads to start
+        startSignal = true;
+
+        // Wait for all threads to complete
+        for (auto &thread : threads)
+            thread.join();
+
+        // Verify results
+        CPPUNIT_ASSERT_EQUAL(numThreads, completedThreads.load());
+        CPPUNIT_ASSERT_EQUAL(numThreads * iterationsPerThread, successfulWraps.load());
+
+        CPPUNIT_ASSERT(callbackChanges.load() > 0);
+
+        CPPUNIT_ASSERT_MESSAGE("All threads completed successfully without race conditions",
+                               completedThreads.load() == numThreads);
+
+        CPPUNIT_ASSERT_MESSAGE("All ThorWrapException calls succeeded",
+                               successfulWraps.load() == numThreads * iterationsPerThread);
+
+        // Clean up
         setGraphContextCallback(nullptr);
     }
 };
