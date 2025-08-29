@@ -1,5 +1,4 @@
-import * as arrayUtil from "dojo/_base/array";
-import * as lang from "dojo/_base/lang";
+import { arrayUtil, lang } from "src-dojo/index";
 
 import * as ESPRequest from "./ESPRequest";
 

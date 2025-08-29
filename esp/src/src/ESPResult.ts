@@ -1,11 +1,4 @@
-﻿import * as arrayUtil from "dojo/_base/array";
-import * as declare from "dojo/_base/declare";
-import * as Deferred from "dojo/_base/Deferred";
-import * as lang from "dojo/_base/lang";
-import * as domConstruct from "dojo/dom-construct";
-
-import * as entities from "dojox/html/entities";
-import * as parser from "dojox/xml/parser";
+﻿import { arrayUtil, declare, Deferred, domConstruct, lang, dojoxHtmlEntities as entities, dojoxXmlParser as parser } from "src-dojo/index";
 
 import * as ESPRequest from "./ESPRequest";
 import { Get as LFGet } from "./ESPLogicalFile";

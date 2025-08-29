@@ -1,11 +1,4 @@
-import * as arrayUtil from "dojo/_base/array";
-import * as Deferred from "dojo/_base/Deferred";
-import * as lang from "dojo/_base/lang";
-import * as Observable from "dojo/store/Observable";
-import * as QueryResults from "dojo/store/util/QueryResults";
-import * as topic from "dojo/topic";
-
-import * as parser from "dojox/xml/parser";
+import { arrayUtil, Deferred, lang, Observable, QueryResults, topic, dojoxXmlParser as parser } from "src-dojo/index";
 
 import { ESPBase } from "./ESPBase";
 import * as ESPRequest from "./ESPRequest";

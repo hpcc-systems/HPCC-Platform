@@ -1,11 +1,4 @@
-﻿import * as arrayUtil from "dojo/_base/array";
-import * as declare from "dojo/_base/declare";
-import * as Deferred from "dojo/_base/Deferred";
-import * as lang from "dojo/_base/lang";
-import * as Observable from "dojo/store/Observable";
-import * as topic from "dojo/topic";
-
-import * as parser from "dojox/xml/parser";
+﻿import { arrayUtil, declare, Deferred, lang, Observable, topic, dojoxXmlParser as parser } from "src-dojo/index";
 
 import { WorkunitsService, WsWorkunits as WsWorkunitsNS } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";

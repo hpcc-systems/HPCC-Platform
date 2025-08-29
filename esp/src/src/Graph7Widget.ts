@@ -1,9 +1,4 @@
-import * as declare from "dojo/_base/declare";
-import * as lang from "dojo/_base/lang";
-import * as aspect from "dojo/aspect";
-import * as dom from "dojo/dom";
-
-import * as registry from "dijit/registry";
+import { declare, lang, aspect, dom, registry } from "src-dojo/index";
 
 import { ScopeGraph, Workunit } from "@hpcc-js/comms";
 import { Graph as GraphWidget, Subgraph, Vertex } from "@hpcc-js/graph";
@@ -14,12 +9,6 @@ import * as _Widget from "hpcc/_Widget";
 
 // @ts-expect-error
 import * as template from "dojo/text!hpcc/templates/Graph7Widget.html";
-
-import "dijit/form/Button";
-import "dijit/layout/BorderContainer";
-import "dijit/layout/ContentPane";
-import "dijit/Toolbar";
-import "dijit/ToolbarSeparator";
 
 import nlsHPCC from "./nlsHPCC";
 import { WUScopeController } from "./WUScopeController";

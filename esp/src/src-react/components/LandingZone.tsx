@@ -1,9 +1,7 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, mergeStyleSets } from "@fluentui/react";
 import { useConst, useOnEvent } from "@fluentui/react-hooks";
-import * as domClass from "dojo/dom-class";
-import * as iframe from "dojo/request/iframe";
-import * as put from "put-selector/put";
+import { domClass, iframe, put } from "src-dojo/index";
 import { TpDropZoneQuery } from "src/WsTopology";
 import * as FileSpray from "src/FileSpray";
 import * as ESPRequest from "src/ESPRequest";
@@ -115,7 +113,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
         filename: "landingZones",
         getSelected: function () {
             if (filter?.__dropZone) {
-                return this.inherited(arguments, [FileSpray.CreateLandingZonesFilterStore( filter.__dropZone )]);
+                return this.inherited(arguments, [FileSpray.CreateLandingZonesFilterStore(filter.__dropZone)]);
             }
             return this.inherited(arguments, [FileSpray.CreateFileListStore()]);
         },

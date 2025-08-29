@@ -1,7 +1,7 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 import { useConst, useId } from "@fluentui/react-hooks";
-import * as registry from "dijit/registry";
+import { registry } from "src-dojo/index";
 import nlsHPCC from "src/nlsHPCC";
 import { resolve } from "src/Utility";
 

@@ -1,6 +1,6 @@
 import * as React from "react";
 import { XMLSourceEditor } from "./SourceEditor";
-import * as ESPRequest from "../../src/ESPRequest";
+import * as ESPRequest from "src/ESPRequest";
 
 interface ConfigurationProps {
 }

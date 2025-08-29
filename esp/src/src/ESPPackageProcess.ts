@@ -1,4 +1,4 @@
-﻿import * as Observable from "dojo/store/Observable";
+﻿import { Observable } from "src-dojo/index";
 import * as ESPRequest from "./ESPRequest";
 
 class Store extends ESPRequest.Store {

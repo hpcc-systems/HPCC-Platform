@@ -1,4 +1,4 @@
-import * as QueryResults from "dojo/store/util/QueryResults";
+import { QueryResults } from "src-dojo/index";
 import { DeferredResponse, Thenable } from "./Deferred";
 import { scopedLogger } from "@hpcc-js/util";
 

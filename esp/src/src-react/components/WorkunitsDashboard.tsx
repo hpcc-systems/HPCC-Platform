@@ -5,7 +5,7 @@ import { Card, CardHeader, CardPreview } from "@fluentui/react-components";
 import { WorkunitsService, WsWorkunits } from "@hpcc-js/comms";
 import { Area, Column, Pie, Bar } from "@hpcc-js/chart";
 import { chain, filter, group, map, sort } from "@hpcc-js/dataflow";
-import * as Observable from "dojo/store/Observable";
+import { Observable } from "src-dojo/index";
 import * as ESPWorkunit from "src/ESPWorkunit";
 import nlsHPCC from "src/nlsHPCC";
 import { wuidToDate } from "src/Utility";

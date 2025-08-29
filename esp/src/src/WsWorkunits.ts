@@ -1,9 +1,4 @@
-import * as arrayUtil from "dojo/_base/array";
-import * as Deferred from "dojo/_base/Deferred";
-import * as lang from "dojo/_base/lang";
-import * as all from "dojo/promise/all";
-import * as Observable from "dojo/store/Observable";
-import * as topic from "dojo/topic";
+import { arrayUtil, Deferred, lang, all, Observable, topic } from "src-dojo/index";
 import * as ESPRequest from "./ESPRequest";
 import nlsHPCC from "./nlsHPCC";
 

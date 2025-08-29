@@ -1,7 +1,4 @@
-import * as arrayUtil from "dojo/_base/array";
-import * as lang from "dojo/_base/lang";
-import * as Observable from "dojo/store/Observable";
-import * as QueryResults from "dojo/store/util/QueryResults";
+import { arrayUtil, lang, Observable, QueryResults } from "src-dojo/index";
 
 import * as ESPRequest from "./ESPRequest";
 

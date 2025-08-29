@@ -1,5 +1,4 @@
-﻿import * as arrayUtil from "dojo/_base/array";
-import * as declare from "dojo/_base/declare";
+﻿import { arrayUtil, declare } from "src-dojo/index";
 import * as ESPUtil from "./ESPUtil";
 import { Memory } from "./store/Memory";
 
