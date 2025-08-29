@@ -17,6 +17,8 @@
 
 //class=embedded
 //class=3rdparty
+// We would depend on something like elastic4hpcc to test in k8s
+//class=3rdpartyservice
 //nothor
 //noroxie
 
