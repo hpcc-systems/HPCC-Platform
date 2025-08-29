@@ -585,6 +585,13 @@ public:
     unsigned lastlog;
     unsigned sfnum;
     unsigned fnum;
+
+    // Heartbeat mechanism for long-running directory scans
+    CriticalSection heartbeatSect;
+    time_t heartbeatStartTime = 0;
+    time_t lastHeartbeat = 0;
+    unsigned heartbeatInterval = 60;  // Start with 1 minute (in seconds)
+    unsigned heartbeatCount = 0;
     Owned<IPropertyTree> foundbranch;
     Owned<IPropertyTree> lostbranch;
     Owned<IPropertyTree> orphansbranch;
@@ -592,33 +599,34 @@ public:
 
     void log(const char * format, ...) __attribute__((format(printf, 2, 3)))
     {
-        CriticalBlock block(logsect);
         va_list args;
         va_start(args, format);
         StringBuffer line;
         line.valist_appendf(format, args);
         va_end(args);
-        if (clustname.get())
-            PROGLOG(LOGPFX "[%s] %s",clustname.get(),line.str());
-        else
-            PROGLOG(LOGPFX "%s",line.str());
-        if (logconn) {
-            logcache.set(line.str());
-            updateStatus(false);
-        }
+        doLog(line, false);
     }
 
-    void statlog(const char * format, ...) __attribute__((format(printf, 2, 3)))
+    void uncondlog(const char * format, ...) __attribute__((format(printf, 2, 3)))
     {
-        CriticalBlock block(logsect);
         va_list args;
         va_start(args, format);
         StringBuffer line;
         line.valist_appendf(format, args);
         va_end(args);
+        doLog(line, true);
+    }
+
+    void doLog(const char * line, bool uncond)
+    {
+        CriticalBlock block(logsect);
+        if (clustname.get())
+            PROGLOG(LOGPFX "[%s] %s",clustname.get(),line);
+        else
+            PROGLOG(LOGPFX "%s",line);
         if (logconn) {
-            logcache.set(line.str());
-            updateStatus(false);
+            logcache.set(line);
+            updateStatus(uncond);
         }
     }
 
@@ -668,6 +676,60 @@ public:
             }
         }
 
+    }
+
+    void startHeartbeat(const char * op)
+    {
+        CriticalBlock block(heartbeatSect);
+        time(&heartbeatStartTime);
+        lastHeartbeat = heartbeatStartTime;
+        heartbeatInterval = 60; // Start with 1 minute (in seconds)
+        heartbeatCount = 0;
+        uncondlog("%s heartbeat started (interval: 1 minute)", op);
+    }
+
+    void checkHeartbeat(const char * op)
+    {
+        time_t now = time(NULL);
+        bool logHeartbeat = false;
+
+        {
+            CriticalBlock block(heartbeatSect);
+            if ((now - lastHeartbeat) >= heartbeatInterval)
+            {
+                heartbeatCount++;
+                lastHeartbeat = now;
+                logHeartbeat = true;
+            }
+        }
+
+        if (logHeartbeat)
+        {
+            unsigned elapsedMinutes = (unsigned)(now - heartbeatStartTime) / 60;
+            unsigned elapsedHours = elapsedMinutes / 60;
+            unsigned remainingMinutes = elapsedMinutes % 60;
+
+            // Format UTC timestamp directly from time_t
+            struct tm *utc_tm = gmtime(&now);
+            char timestamp[32];
+            strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", utc_tm);
+
+            if (elapsedHours > 0)
+                uncondlog("%s - elapsed: %uh %um (%s UTC)", op, elapsedHours, remainingMinutes, timestamp);
+            else
+                uncondlog("%s - elapsed: %um (%s UTC)", op, elapsedMinutes, timestamp);
+
+            // Increase heartbeat interval with cap of 1 hour
+            if (heartbeatCount < 7)
+            {
+                heartbeatInterval = heartbeatCount == 6 ? 3600 : 60 * (1 << heartbeatCount);
+                unsigned intervalMinutes = heartbeatInterval / 60;
+                if (clustname.get())
+                    DBGLOG(LOGPFX "[%s] Heartbeat interval increased to %u minute%s", clustname.get(), intervalMinutes, intervalMinutes > 1 ? "s" : "");
+                else
+                    DBGLOG(LOGPFX "Heartbeat interval increased to %u minute%s", intervalMinutes, intervalMinutes > 1 ? "s" : "");
+            }
+        }
     }
 
     void addBranch(IPropertyTree *root,const char *name,IPropertyTree *branch)
@@ -1024,6 +1086,7 @@ public:
 
     bool scanDirectory(unsigned node,const SocketEndpoint &ep,StringBuffer &path, unsigned drv, cDirDesc *pdir, IFile *cachefile, unsigned level)
     {
+        checkHeartbeat("Directory scan");
         size32_t dsz = path.length();
         if (pdir==NULL) 
             pdir = root;
@@ -1197,11 +1260,12 @@ public:
             numMaxThreads = numuniqnodes;
         if (numThreads > numMaxThreads)
             numThreads = numMaxThreads;
+        startHeartbeat("Directory scan"); // Initialize heartbeat mechanism
         afor.For(numMaxThreads,numThreads,true,numThreads>1);
         if (afor.ok)
-            log("Directory scan complete");
+            uncondlog("Directory scan complete");
         else
-            log("Errors occurred during scan");
+            uncondlog("Errors occurred during scan");
         return afor.ok;
     }
 
@@ -1348,7 +1412,7 @@ public:
         } filescan(*this,abort);
 
         filescan.scan();
-        log("File scan complete");
+        uncondlog("File scan complete");
 
     }
 
@@ -1682,6 +1746,7 @@ public:
 
     void listOrphans(cDirDesc *d,StringBuffer &basedir,StringBuffer &scope,bool &abort,unsigned int recentCutoffDays)
     {
+        checkHeartbeat("Orphan scan");
         if (abort)
             return;
         if (!d) {
@@ -1749,23 +1814,24 @@ public:
     void listOrphans(bool &abort,unsigned int recentCutoffDays)
     {   
         // also does directories
-        log("Scanning for orphans");
+        uncondlog("Scanning for orphans");
+        startHeartbeat("Orphan scan");
         StringBuffer basedir;
         StringBuffer scope;
         listOrphans(NULL,basedir,scope,abort,recentCutoffDays);
         if (abort)
             return;
-        log("Orphan scan complete");
+        uncondlog("Orphan scan complete");
         sorteddirs.sort(compareDirs);   // NB sort reverse
         while (!abort&&sorteddirs.ordinality())
             dirbranch->addPropTree("Directory",&sorteddirs.popGet());
-        log("Directories sorted");
+        uncondlog("Directories sorted");
     }
 
 
     void listLost(bool &abort,bool ignorelazylost,unsigned int recentCutoffDays)
     {
-        log("Scanning for lost files");
+        uncondlog("Scanning for lost files");
         StringBuffer tmp;
         ForEachItemIn(i0,lostfiles) {
             if (abort)
@@ -1905,7 +1971,7 @@ public:
                 lostbranch->addPropTree("File",ft.getClear());
             }
         }
-        log("Lost scan complete");
+        uncondlog("Lost scan complete");
     }
 
 
