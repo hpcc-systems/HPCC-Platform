@@ -611,6 +611,11 @@ extern graph_decl IThorException *MakeThorAudienceException(LogMsgAudience audie
 extern graph_decl IThorException *MakeThorOperatorException(int code, const char *format, ...) __attribute__((format(printf, 2, 3)));
 extern graph_decl IThorException *MakeThorFatal(IException *e, int code, const char *format, ...) __attribute__((format(printf, 3, 4)));
 extern graph_decl IThorException *ThorWrapException(IException *e, const char *msg, ...) __attribute__((format(printf, 2, 3)));
+
+// Callback mechanism for getting current graph context
+typedef void (*GraphContextCallback)(StringBuffer &graphName, graph_id &subGraphId);
+extern graph_decl void setGraphContextCallback(GraphContextCallback callback);
+
 extern graph_decl void setExceptionActivityInfo(CGraphElementBase &container, IThorException *e);
 
 extern graph_decl void GetTempFilePath(StringBuffer &name, const char *suffix);
