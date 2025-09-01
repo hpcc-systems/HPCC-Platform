@@ -179,7 +179,9 @@ protected:
                         rfn.getPath(remotePath);
                         unsigned crc = 0;
                         lastPart->getCrc(crc);
-                        keyIndex.setown(createKeyIndex(remotePath.str(), crc, false, 0));
+                        unsigned __int64 blockedIOSize{0};
+                        verifyex(findPlaneAttrFromPath(remotePath, BlockedRandomIO, 0, blockedIOSize)); // should never happen - error if plane not found
+                        keyIndex.setown(createKeyIndex(remotePath.str(), crc, false, (size32_t)blockedIOSize));
                         break;
                     }
                 }
