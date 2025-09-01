@@ -3,6 +3,7 @@
 #include "jlog.ipp"
 #include "jptree.hpp"
 #include "jmisc.hpp"
+#include "jplane.hpp"
 
 #include "mpbase.hpp"
 #include "mpcomm.hpp"
@@ -27,8 +28,43 @@ MODULE_EXIT()
 }
 
 
+IPropertyTree *loadStoreType(StoreFormat format, IStoreHelper *iStoreHelper, StringBuffer &storeFilename)
+{
+    assertex(iStoreHelper);
+    IPropertyTree *root{nullptr};
+
+    bool isBinary = format == StoreFormat::BINARY;
+
+    iStoreHelper->getCurrentStoreFilename(storeFilename, format);
+
+    OwnedIFile storeIFile = createIFile(storeFilename.str());
+    if (storeIFile->exists())
+    {
+        PROGLOG("Loading store: %s, size=%" I64F "d", storeFilename.str(), storeIFile->size());
+        if (isBinary)
+        {
+            StringBuffer planeName;
+            constexpr size32_t bufferSize1mb = 0x100000;
+            size32_t bufferSize = bufferSize1mb;
+            if (findPlaneFromPath(storeFilename.str(), planeName))
+                bufferSize = (size32_t)getPlaneAttributeValue(planeName, BlockedSequentialIO, bufferSize);
+
+            root = createPTreeFromBinaryFile(storeFilename.str(), bufferSize);
+        }
+        else
+        {
+            root = createPTreeFromXMLFile(storeFilename.str());
+        }
+        PROGLOG("Loaded: %s", storeFilename.str());
+    }
+
+    return root;
+}
+
 void coalesceDatastore(IPropertyTree *coalesceProps, bool force)
 {
+    assertex(coalesceProps);
+
     try
     {
         StringBuffer dataPath, backupPath;
@@ -48,14 +84,16 @@ void coalesceDatastore(IPropertyTree *coalesceProps, bool force)
 
         offset_t minDeltaSize = force?0:coalesceProps->getPropInt64("@minDeltaSize", DEFAULT_MINDELTASIZE);
 
+        bool saveBinary = confProps.getPropBool("Client/@saveBinary", false);
+        bool saveAsync = confProps.getPropBool("Client/@saveAsync", true);
+
         for (;;) {
             PROGLOG("COALESCER: dataPath=%s, backupPath=%s, minDeltaSize = %" I64F "dK", dataPath.str(), backupPath.str(), (unsigned __int64) minDeltaSize);
             unsigned configFlags = SH_External|SH_CheckNewDelta;
             configFlags |= coalesceProps->getPropBool("@recoverFromIncErrors", false) ? SH_RecoverFromIncErrors : 0;
             configFlags |= coalesceProps->getPropBool("@backupErrorFiles", true) ? SH_BackupErrorFiles : 0;
-            bool saveBinary = querySDS().queryProperties().getPropBool("Client/@saveBinary", false);
             bool stopped;
-            Owned<IStoreHelper> iStoreHelper = createStoreHelper(NULL, dataPath, backupPath.str(), configFlags, keepStores, 5000, &stopped, saveBinary);
+            Owned<IStoreHelper> iStoreHelper = createStoreHelper(NULL, dataPath, backupPath.str(), configFlags, keepStores, 5000, &stopped, saveBinary, saveAsync);
             unsigned baseEdition = iStoreHelper->queryCurrentEdition();
 
             if (minDeltaSize)
@@ -80,22 +118,34 @@ void coalesceDatastore(IPropertyTree *coalesceProps, bool force)
                 }
             }
 
-
-            StringBuffer storeFilename(dataPath);
-            iStoreHelper->getCurrentStoreFilename(storeFilename, StoreFormat::XML);
             StringBuffer memStr;
             getSystemTraceInfo(memStr.clear());
             MLOG("COALESCE: %s", memStr.str());
-            Owned<IPropertyTree> _root;
-            OwnedIFile storeIFile = createIFile(storeFilename.str());
-            if (storeIFile->exists())
+
+            StringBuffer storeFilename(dataPath);
+
+            IPropertyTree *root{nullptr};
+            // Try loading binary store first if it exists
+            try
             {
-                PROGLOG("Loading store: %s, size=%" I64F "d", storeFilename.str(), storeIFile->size());
-                _root.setown(createPTreeFromXMLFile(storeFilename.str()));
-                PROGLOG("Loaded: %s", storeFilename.str());
+                root = loadStoreType(StoreFormat::BINARY, iStoreHelper, storeFilename);
             }
-            else
+            catch (IException *e)
             {
+                // Log the exception but do not re-throw or exit to allow fall back to loading the XML store
+                EXCLOG(e);
+                e->Release();
+            }
+            if (!root)
+            {
+                storeFilename.set(dataPath);
+                root = loadStoreType(StoreFormat::XML, iStoreHelper, storeFilename);
+            }
+            Owned<IPropertyTree> _root;
+            if (!root)
+            {
+                _root.setown(root);
+
                 if (baseEdition==0) {
                     PROGLOG("Creating base store");
                     _root.setown(createPTree("SDS"));
@@ -105,7 +155,7 @@ void coalesceDatastore(IPropertyTree *coalesceProps, bool force)
                     break; // don't think much point continuing is there?
                 }
             }
-            IPropertyTree *root = _root.get();
+
             getSystemTraceInfo(memStr.clear());
             MLOG("COALESCE: %s", memStr.str());
 
