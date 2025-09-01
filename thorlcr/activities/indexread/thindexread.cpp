@@ -24,6 +24,7 @@
 #include "thdiskbase.ipp"
 #include "thindexread.ipp"
 
+static size32_t constexpr unknownConfigValue = (size32_t)-1;
 class CIndexReadBase : public CMasterActivity
 {
 protected:
@@ -37,6 +38,8 @@ protected:
     bool partitionKey = false;
     StringBuffer fileName;
     unsigned fileStatsTableStart = NotFound;
+    size32_t configSequentialIOSize{unknownConfigValue};
+    size32_t configRandomIOSize{unknownConfigValue};
 
     rowcount_t aggregateToLimit()
     {
@@ -179,7 +182,22 @@ protected:
                         rfn.getPath(remotePath);
                         unsigned crc = 0;
                         lastPart->getCrc(crc);
-                        keyIndex.setown(createKeyIndex(remotePath.str(), crc, false, 0));
+                        constexpr size32_t bufferSize1mb = 0x100000;
+                        size32_t blockedIOSize = bufferSize1mb;
+                        StringBuffer planeName;
+                        if (findPlaneFromPath(fileName, planeName))
+                            blockedIOSize = getPlaneAttributeValue(planeName, BlockedRandomIO, configRandomIOSize);
+                        if (!indexBaseHelper->hasSegmentMonitors()) // unfiltered
+                        {
+                            // If unfiltered, use the sequential block size if defined in the plane, or component config.
+                            // If not, default to the random block size defined in the plane, or component config.
+                            size32_t blockedSequentialIOSize = getPlaneAttributeValue(planeName, BlockedSequentialIO, unknownConfigValue);
+                            if (unknownConfigValue != blockedSequentialIOSize)
+                                blockedIOSize = blockedSequentialIOSize; // sequential from plane
+                            else if (unknownConfigValue != configSequentialIOSize)
+                                blockedIOSize = configSequentialIOSize; // sequential from component config
+                        }
+                        keyIndex.setown(createKeyIndex(remotePath.str(), crc, false, blockedIOSize));
                         break;
                     }
                 }
@@ -267,6 +285,13 @@ public:
                     nofilter = true;
                 prepareKey(index);
                 mapping.setown(getFileSlaveMaps(index->queryLogicalName(), *fileDesc, container.queryJob().queryUserDescriptor(), container.queryJob().querySlaveGroup(), container.queryLocalOrGrouped(), true, NULL, index->querySuperFile()));
+
+                configSequentialIOSize = (size32_t)getExpertOptInt64(getPlaneAttributeString(BlockedSequentialIO), (size32_t)-1);
+                if ((size32_t)-1 != configSequentialIOSize)
+                    configSequentialIOSize *= 1024;
+                configRandomIOSize = (size32_t)getExpertOptInt64(getPlaneAttributeString(BlockedRandomIO), (size32_t)-1);
+                if ((size32_t)-1 != configRandomIOSize)
+                    configRandomIOSize *= 1024;
             }
         }
     }
