@@ -27,7 +27,6 @@
 #include "jfile.hpp"
 #include "jregexp.hpp"
 #include "jthread.hpp"
-#include "jtask.hpp"
 #include "javahash.hpp"
 #include "javahash.tpp"
 #include "jmisc.hpp"
@@ -5694,86 +5693,73 @@ public:
         return res;
     }
 
-    static constexpr const char *temporaryXmlFileSaveName = "dali_store_tmp.xml";
-    static constexpr const char *temporaryBinaryFileSaveName = "dali_store_tmp.bin";
-    IFile *saveStoreToFile(const IPropertyTree *root, Owned<IFileIO> &iFileIOTmpStore, const StoreFormat format, unsigned &crc)
+    IFile *saveStoreToFile(const IPropertyTree *root, const StoreFormat format, unsigned &crc)
     {
         const bool isBinary = (format == StoreFormat::BINARY);
         LOG(MCdebugProgress, "Saving store to %s", isBinary ? "binary" : "XML");
         assertex(root);
 
-        // iFileIOTmpStore is passed in so that it can be used by the caller after the saveStoreToBinaryFile() call,
-        // for error processing and rename etc
+        Owned<IFileIO> iFileIOTmpStore;
         StringBuffer tmpStoreName;
-        if (isBinary)
-            iFileIOTmpStore.setown(createUniqueFile(location, temporaryBinaryFileSaveName, NULL, tmpStoreName));
-        else
-            iFileIOTmpStore.setown(createUniqueFile(location, temporaryXmlFileSaveName, NULL, tmpStoreName));
-        IFile *iFile = createIFile(tmpStoreName);
+        iFileIOTmpStore.setown(createUniqueFile(location, VStringBuffer("dali_store_tmp%s", isBinary ? ".bin" : ".xml").str(), nullptr, tmpStoreName));
+        Owned<IFile> iFile = LINK(iFileIOTmpStore->queryFile());
         dbgassertex(iFile);
         StringBuffer planeName;
         size32_t bufferSize = bufferSize1mb;
-        if (findPlaneFromPath(location, planeName))
-            bufferSize = (size32_t)getPlaneAttributeValue(planeName, BlockedSequentialIO, bufferSize);
-
-        if (isBinary)
-        {
-            Owned<ISerialOutputStream> serialStream = createSerialOutputStream(iFileIOTmpStore);
-            Owned<ICrcSerialOutputStream> crcSerialStream = createCrcOutputStream(serialStream);
-            Owned<IBufferedSerialOutputStream> bufOutStream = createBufferedOutputStream(crcSerialStream, bufferSize);
-            root->serializeToStream(*bufOutStream);
-            bufOutStream->flush();
-            bufOutStream.clear();
-            crcSerialStream->flush();
-            crc = crcSerialStream->queryCrc();
-            crcSerialStream.clear();
-            serialStream->flush();
-            serialStream.clear();
-        }
-        else
-        {
-            OwnedIFileIOStream fstream = createIOStream(iFileIOTmpStore);
-            Owned<ICrcIOStream> crcPipeStream = createCrcPipeStream(fstream);
-            Owned<IIOStream> ios = createBufferedIOStream(crcPipeStream, bufferSize);
-
-#ifdef _DEBUG
-            toXML(root, *ios); // formatted (default)
-#else
-            toXML(root, *ios, 0, 0);
-#endif
-            ios->flush();
-            ios.clear();
-            fstream.clear();
-            crcPipeStream->flush();
-            crc = crcPipeStream->queryCrc();
-            crcPipeStream.clear();
-        }
-        iFileIOTmpStore->close();
-        return iFile;
-    }
-
-    IFile *safeSaveStoreToFile(const IPropertyTree *root, const StoreFormat format, unsigned &crc)
-    {
-        Owned<IFileIO> iFileIOTmpStore;
         try
         {
-            return saveStoreToFile(root, iFileIOTmpStore, format, crc);
+            if (findPlaneFromPath(location, planeName))
+                bufferSize = (size32_t)getPlaneAttributeValue(planeName, BlockedSequentialIO, bufferSize);
+
+            if (isBinary)
+            {
+                Owned<ISerialOutputStream> serialStream = createSerialOutputStream(iFileIOTmpStore);
+                Owned<ICrcSerialOutputStream> crcSerialStream = createCrcOutputStream(serialStream);
+                Owned<IBufferedSerialOutputStream> bufOutStream = createBufferedOutputStream(crcSerialStream, bufferSize);
+                root->serializeToStream(*bufOutStream);
+                bufOutStream->flush();
+                bufOutStream.clear();
+                crcSerialStream->flush();
+                crc = crcSerialStream->queryCrc();
+                crcSerialStream.clear();
+                serialStream->flush();
+                serialStream.clear();
+            }
+            else
+            {
+                OwnedIFileIOStream fstream = createIOStream(iFileIOTmpStore);
+                Owned<ICrcIOStream> crcPipeStream = createCrcPipeStream(fstream);
+                Owned<IIOStream> ios = createBufferedIOStream(crcPipeStream, bufferSize);
+
+#ifdef _DEBUG
+                toXML(root, *ios); // formatted (default)
+#else
+                toXML(root, *ios, 0, 0);
+#endif
+                ios->flush();
+                ios.clear();
+                fstream.clear();
+                crcPipeStream->flush();
+                crc = crcPipeStream->queryCrc();
+                crcPipeStream.clear();
+            }
+            iFileIOTmpStore->close();
         }
         catch (IException *e)
         {
-            EXCLOG(e, VStringBuffer("Exception - Error saving %s store to : %s",
-                                    format == StoreFormat::XML ? "XML" : "Binary",
-                                    format == StoreFormat::XML ? temporaryXmlFileSaveName : temporaryBinaryFileSaveName));
-            e->Release();
-            iFileIOTmpStore->Release();
-            return nullptr;
+            iFile->remove();
+            EXCLOG(e);
+            throw;
         }
         catch (DALI_CATCHALL)
         {
-            DISLOG("Unknown exception - Error saving %s store", format == StoreFormat::XML ? "XML" : "Binary");
-            iFileIOTmpStore->Release();
-            return nullptr;
+            iFile->remove();
+            IException *e = makeStringException(0, VStringBuffer("Unknown exception - Error saving %s store", isBinary ? "binary" : "XML"));
+            DISLOG(e);
+            throw;
         }
+
+        return iFile.getClear();
     }
     virtual void saveStore(IPropertyTree *root, unsigned *_newEdition) override
     {
@@ -5785,38 +5771,51 @@ public:
         unsigned newEdition = nextEditionN(edition);
         bool savesCompleted = false;
 
+        OwnedIFile iXmlFileTmpStore;
         try
         {
-            OwnedIFile iXmlFileTmpStore;
             OwnedIFile iBinaryFileTmpStore;
             unsigned xmlCrc{0};
             unsigned binaryCrc{0};
 
             // Execute save operations
-            std::optional<std::future<IFile *>> xmlStoreSavedFuture;
             if (saveBinary)
             {
+                std::future<IFile *> xmlStoreSavedFuture;
                 if (saveAsync)
                 {
                     // Save the XML in the background
-                    xmlStoreSavedFuture = std::async(std::launch::async, [this, &xmlCrc, root]() -> IFile *
-                                                     {
+                    auto asyncXmlSaveFunc = [this, &xmlCrc, root]() -> IFile *
+                    {
                         LOG(MCdebugProgress, "Saving XML store asynch");
-                        return safeSaveStoreToFile(root, StoreFormat::XML, xmlCrc); });
+                        return saveStoreToFile(root, StoreFormat::XML, xmlCrc);
+                    };
+                    xmlStoreSavedFuture = std::async(std::launch::async, asyncXmlSaveFunc);
                 }
                 else // if synchronous save XML 1st
-                    iXmlFileTmpStore.setown(safeSaveStoreToFile(root, StoreFormat::XML, xmlCrc));
+                    iXmlFileTmpStore.setown(saveStoreToFile(root, StoreFormat::XML, xmlCrc));
 
-                iBinaryFileTmpStore.setown(safeSaveStoreToFile(root, StoreFormat::BINARY, binaryCrc));
-                if (xmlStoreSavedFuture.has_value())
-                    iXmlFileTmpStore.setown(xmlStoreSavedFuture->get());
+                try
+                {
+                    iBinaryFileTmpStore.setown(saveStoreToFile(root, StoreFormat::BINARY, binaryCrc));
+                }
+                catch (IException *e)
+                {
+                    OWARNLOG(e, "Exception - Error saving Binary store");
+                    e->Release();
+                    // Any binary save failure is ignored as only the XML save is critical
+                }
+                catch (DALI_CATCHALL)
+                {
+                    OWARNLOG("Unknown exception - Error saving Binary store");
+                    // Any binary save failure is ignored as only the XML save is critical
+                }
+
+                if (saveAsync)
+                    iXmlFileTmpStore.setown(xmlStoreSavedFuture.get());
             }
             else
-                iXmlFileTmpStore.setown(safeSaveStoreToFile(root, StoreFormat::XML, xmlCrc));
-
-            // Any binary save failure is ignored as only the XML save is critical
-            if (!iXmlFileTmpStore) // The XML save has failed so exit
-                return;
+                iXmlFileTmpStore.setown(saveStoreToFile(root, StoreFormat::XML, xmlCrc));
 
             // Rename temporary store files to new store files using edition number
             StringBuffer newXmlStoreName;
@@ -5833,7 +5832,8 @@ public:
             if (storeInfo.edition != edition)
             {
                 WARNLOG("Another process has updated the edition whilst saving the store: %s", newXmlStoreNamePath.str());
-                iXmlFileTmpStore->remove();
+                if (iXmlFileTmpStore)
+                    iXmlFileTmpStore->remove();
                 if (iBinaryFileTmpStore)
                     iBinaryFileTmpStore->remove();
                 return;
@@ -5849,7 +5849,8 @@ public:
                 StringBuffer errMsg;
                 EXCLOG(e, errMsg.append("Failed to rename new xml store to : ").append(newXmlStoreNamePath).append(". Has already been created by another process?").str());
                 e->Release();
-                iXmlFileTmpStore->remove();
+                if (iXmlFileTmpStore)
+                    iXmlFileTmpStore->remove();
                 if (iBinaryFileTmpStore)
                     iBinaryFileTmpStore->remove();
                 return;
@@ -5900,7 +5901,7 @@ public:
                 }
             }
             clearStoreInfo(storeFileName, location, 0, NULL);
-            writeStoreInfo(storeFileName, location, newEdition, &xmlCrc, (iBinaryFileTmpStore ? &binaryCrc : nullptr), &storeInfo);
+            writeStoreInfo(storeFileName, location, newEdition, &xmlCrc, iBinaryFileTmpStore ? &binaryCrc : nullptr, &storeInfo);
 
             try
             {
@@ -5940,6 +5941,8 @@ public:
             StringBuffer s("Exception - Error saving store file");
             DISLOG(e, s.str());
             e->Release();
+            if (iXmlFileTmpStore)
+                iXmlFileTmpStore->remove();
         }
         if (savesCompleted)
         {
