@@ -1445,7 +1445,7 @@ static void setUserDescriptor(Linked<IUserDescriptor> &udesc,IUserDescriptor *us
 
 static SecAccessFlags getScopePermissions(const char *scopename,IUserDescriptor *user,unsigned auditflags)
 {  // scope must be normalized already
-    SecAccessFlags perms = SecAccess_Full;
+    SecAccessFlags perms = SecAccess_None;
     if (scopename && *scopename) {
         if (!user)
         {
@@ -12608,7 +12608,8 @@ SecAccessFlags CDistributedFileDirectory::getFilePermissions(const char *lname,I
 SecAccessFlags CDistributedFileDirectory::getFDescPermissions(IFileDescriptor *fdesc,IUserDescriptor *user,unsigned auditflags)
 {
     // this checks have access to the nodes in the file descriptor
-    SecAccessFlags retPerms = SecAccess_Full;
+    bool accessSet = false;  // signal first permission set since the code below reduces the value
+    SecAccessFlags retPerms = SecAccess_None;   // default to no access
     unsigned np = fdesc->numParts();
     for (unsigned i=0;i<np;i++) {
         INode *node = fdesc->queryNode(i);
@@ -12637,11 +12638,16 @@ SecAccessFlags CDistributedFileDirectory::getFDescPermissions(IFileDescriptor *f
                 CDfsLogicalFileName dlfn;
                 dlfn.setExternal(rfn.queryEndpoint(),localpath.str());
                 SecAccessFlags perm = getDLFNPermissions(dlfn,user,auditflags);
-                if (perm < retPerms) {
+                if (!accessSet) {
                     retPerms = perm;
-                    if (retPerms == SecAccess_None)
-                        return SecAccess_None;
+                    accessSet = true;
                 }
+                else if (perm < retPerms) {
+                    retPerms = perm;
+                }
+
+                if (retPerms == SecAccess_None)
+                    return SecAccess_None;
             }
         }
     }
