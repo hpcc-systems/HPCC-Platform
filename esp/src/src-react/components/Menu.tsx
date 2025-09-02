@@ -253,6 +253,11 @@ export const MainNavigation: React.FunctionComponent<MainNavigationProps> = ({
 }) => {
     const styles = useStyles();
 
+    // Add the same hooks that SubNavigation uses
+    const { isAdmin } = useMyAccount();
+    const envHasAuth = useCheckEnvAuthType();
+    const { logsEnabled, logsStatusMessage } = useLogAccessInfo();
+
     const selKey = React.useMemo(() => {
         return navSelectedKey(hashPath);
     }, [hashPath]);
@@ -262,6 +267,17 @@ export const MainNavigation: React.FunctionComponent<MainNavigationProps> = ({
     }, [hashPath]);
 
     const { setTheme, isDark } = useUserTheme();
+
+    // Helper function to check if a sub-item is disabled
+    const isSubItemDisabled = React.useCallback((itemKey: string) => {
+        const restrictedRoutes = ["security"];
+        if (envHasAuth) {
+            restrictedRoutes.push("daliadmin", "sasha");
+        }
+
+        return (itemKey === "/topology/logs" && !logsEnabled) ||
+            (restrictedRoutes.some(substring => itemKey.includes(substring)) && !isAdmin);
+    }, [logsEnabled, isAdmin, envHasAuth]);
 
     return <div className={styles.root}>
         <NavDrawer selectedValue={selKey} open={true} type={"inline"} density="medium" className={navWideMode ? styles.nav : styles.navSmall} >
@@ -275,29 +291,49 @@ export const MainNavigation: React.FunctionComponent<MainNavigationProps> = ({
                                 value={item.value}
                                 title={item.name}
                                 style={{
-                                    paddingLeft: "4px", paddingRight: "4px", color: selKey === item.value ? tokens.colorBrandForeground1 : tokens.colorNeutralForeground1,
+                                    paddingLeft: "4px",
+                                    paddingRight: "4px",
+                                    color: selKey === item.value ? tokens.colorBrandForeground1 : tokens.colorNeutralForeground1,
                                 }}
                             >
                                 {navWideMode ? item.name : ""}
                             </NavItem>
                             {navWideMode && selKey === item.value && subMenuItems[item.value]?.length > 0 && (
                                 <>
-                                    {subMenuItems[item.value].map((sub) => (
-                                        <NavItem
-                                            key={sub.itemKey}
-                                            href={`#${sub.itemKey}`}
-                                            value={sub.itemKey}
-                                            style={{
-                                                padding: "4px 0 4px 32px",
-                                                color: subNav === sub.itemKey ? tokens.colorBrandForeground2 : tokens.colorNeutralForeground1,
-                                                fontWeight: subNav === sub.itemKey ? tokens.fontWeightSemibold : tokens.fontWeightRegular,
-                                                background: "none",
-                                                textDecoration: "none"
-                                            }}
-                                        >
-                                            {sub.headerText}
-                                        </NavItem>
-                                    ))}
+                                    {subMenuItems[item.value].map((sub) => {
+                                        const isDisabled = isSubItemDisabled(sub.itemKey);
+                                        const getTitle = () => {
+                                            if (sub.itemKey === "/topology/logs" && !logsEnabled) {
+                                                return logsStatusMessage;
+                                            }
+                                            return sub.headerText;
+                                        };
+
+                                        return (
+                                            <NavItem
+                                                key={sub.itemKey}
+                                                href={isDisabled ? undefined : `#${sub.itemKey}`}
+                                                value={sub.itemKey}
+                                                title={getTitle()}
+                                                disabled={isDisabled}
+                                                style={{
+                                                    padding: "4px 0 4px 32px",
+                                                    color: isDisabled
+                                                        ? tokens.colorNeutralForegroundDisabled
+                                                        : subNav === sub.itemKey
+                                                            ? tokens.colorBrandForeground2
+                                                            : tokens.colorNeutralForeground1,
+                                                    fontWeight: subNav === sub.itemKey ? tokens.fontWeightSemibold : tokens.fontWeightRegular,
+                                                    background: "none",
+                                                    textDecoration: "none",
+                                                    cursor: isDisabled ? "not-allowed" : "pointer",
+                                                    opacity: isDisabled ? 0.6 : 1
+                                                }}
+                                            >
+                                                {sub.headerText}
+                                            </NavItem>
+                                        );
+                                    })}
                                 </>
                             )}
                         </React.Fragment>
