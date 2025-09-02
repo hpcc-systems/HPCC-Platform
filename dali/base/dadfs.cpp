@@ -12644,9 +12644,10 @@ SecAccessFlags CDistributedFileDirectory::getFDescPermissions(IFileDescriptor *f
                 }
                 else if (perm < retPerms) {
                     retPerms = perm;
-                    if (retPerms == SecAccess_None)
-                        return SecAccess_None;
                 }
+
+                if (retPerms == SecAccess_None)
+                    return SecAccess_None;
             }
         }
     }
