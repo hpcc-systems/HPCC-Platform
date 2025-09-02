@@ -359,7 +359,7 @@ export const Result: React.FunctionComponent<ResultProps> = ({
 
     const rightButtons: ICommandBarItemProps[] = [
         {
-            key: "copy", text: nlsHPCC.CopyWUIDs, iconOnly: true, iconProps: { iconName: "Copy" },
+            key: "copy", text: nlsHPCC.CopyToClipboard, iconOnly: true, iconProps: { iconName: "Copy" },
             subMenuProps: {
                 items: [
                     { key: "tsv", text: nlsHPCC.CSV, onClick: () => resultTable.copyAsCSV() },
