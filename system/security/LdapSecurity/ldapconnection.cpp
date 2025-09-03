@@ -4684,7 +4684,7 @@ public:
 
         const char* username = user->getName();
 
-        // Only check username against HPCCAdmin if legacy behavior is enabled
+        // Only check username against sys user if legacy behavior is enabled
         if (m_useLegacySuperUserStatusCheck)
         {
             const char* sysuser = m_ldapconfig->getSysUser();
