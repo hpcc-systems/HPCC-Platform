@@ -1516,6 +1516,8 @@ public:
                     throw;
                 }
                 WARNLOG("Retrying read of %s (%d)",parent->queryLocalName(),tries);
+                if (e->errorCode() == ETIMEDOUT)
+                    parent->disconnect();
                 Owned<IException> exc = e;
                 if (!reopen())
                 {
