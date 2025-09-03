@@ -195,6 +195,36 @@ bool isRemoteReadCandidate(const IAgentContext &agent, const RemoteFilename &rfn
     return false;
 }
 
+/**
+ * Given a temporary logical filename for hthor, attach scopes to it
+ * so that thor processes can find it (or hthor can find a thor-created
+ * temp filename published to Dali)
+ *
+ * @param   out     Reference to a string buffer that will be destructively
+ *                  modified to contain the result
+ * @param   wuid    The current workunit ID
+ * @param   lfn     The logical filename
+ * @param   user    The current user's username, or NULL
+ */
+StringBuffer & mangleTempFileName(StringBuffer & out, const char * lfn, const char * wuid, const char * user)
+{
+    out.clear();
+    if (lfn)
+    {
+        if (*lfn == '~')
+        {
+            out.append("~");
+            ++lfn;
+        }
+        out.appendLower(queryDfsXmlBranchName(DXB_Internal)).append("::");
+        if (user && *user)
+            out.appendLower(user).append("::");
+        out.append("temporary::");
+        out.append(lfn).append("__").appendLower(wuid);
+    }
+    return out;
+}
+
 //=====================================================================================================
 
 CHThorActivityBase::CHThorActivityBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _help, ThorActivityKind _kind, EclGraph & _graph)
@@ -486,7 +516,7 @@ void CHThorDiskWriteActivity::stop()
         uncompressedBytesWritten = outSeq->getPosition();
     close();
     updateWorkUnitResult(numRecords);
-    if((helperFlags & (TDXtemporary | TDXjobtemp) ) == 0 && !agent.queryResolveFilesLocally())
+    if((helperFlags & TDXtemporary) == 0 && !agent.queryResolveFilesLocally())
         publish();
     incomplete = false;
     if(clusterHandler)
@@ -499,7 +529,14 @@ void CHThorDiskWriteActivity::stop()
 void CHThorDiskWriteActivity::resolve()
 {
     OwnedRoxieString rawname = helper.getFileName();
-    mangleHelperFileName(mangledHelperFileName, rawname, agent.queryWuid(), helperFlags);
+    if (helperFlags & TDXjobtemp)
+    {
+        mangleTempFileName(mangledHelperFileName, rawname, agent.queryWuid(), agent.queryWorkUnit()->queryUser());
+    }
+    else
+    {
+        mangleHelperFileName(mangledHelperFileName, rawname, agent.queryWuid(), helperFlags);
+    }
     assertex(mangledHelperFileName.str());
 
     //Order of precedence for the file access options:
@@ -515,7 +552,7 @@ void CHThorDiskWriteActivity::resolve()
         fileAccessOptions.setCompression(true, nullptr);
     fileAccessOptions.updateFromWriteHelper(helper, defaultPlane.str());
 
-    if((helperFlags & (TDXtemporary | TDXjobtemp)) == 0)
+    if((helperFlags & TDXtemporary) == 0)
     {
         Owned<ILocalOrDistributedFile> f = agent.resolveLFN(mangledHelperFileName.str(),"Cannot write, invalid logical name",true,false,AccessMode::tbdWrite,&lfn,defaultPrivilegedUser);
         if (f)
@@ -8560,8 +8597,15 @@ void CHThorDiskReadBaseActivity::checkFileType(IDistributedFile *file)
 void CHThorDiskReadBaseActivity::resolve()
 {
     OwnedRoxieString fileName(helper.getFileName());
-    mangleHelperFileName(mangledHelperFileName, fileName, agent.queryWuid(), helper.getFlags());
-    if (helper.getFlags() & (TDXtemporary | TDXjobtemp))
+    if (helper.getFlags() & TDXjobtemp)
+    {
+        mangleTempFileName(mangledHelperFileName, fileName, agent.queryWuid(), agent.queryWorkUnit()->queryUser());
+    }
+    else
+    {
+        mangleHelperFileName(mangledHelperFileName, fileName, agent.queryWuid(), helper.getFlags());
+    }
+    if (helper.getFlags() & TDXtemporary)
     {
         StringBuffer mangledFilename;
         mangleLocalTempFilename(mangledFilename, mangledHelperFileName.str(), nullptr);
@@ -9506,7 +9550,7 @@ const void *CHThorDiskCountActivity::nextRow()
 
     unsigned __int64 totalCount = 0;
     if (fieldFilters.ordinality() == 0 && !helper.hasFilter() &&
-        (fixedDiskRecordSize != 0) && !(helper.getFlags() & (TDXtemporary | TDXjobtemp)) &&
+        (fixedDiskRecordSize != 0) && !(helper.getFlags() & TDXtemporary) &&
         !((helper.getFlags() & TDXcompress) && agent.queryResolveFilesLocally()) )
     {
         resolve();
@@ -11000,7 +11044,7 @@ void CHThorNewDiskReadBaseActivity::resolveFile()
 
     OwnedRoxieString fileName(helper.getFileName());
     mangleHelperFileName(mangledHelperFileName, fileName, agent.queryWuid(), helperFlags);
-    if (helperFlags & (TDXtemporary | TDXjobtemp))
+    if (helperFlags & TDXtemporary)
     {
         StringBuffer mangledFilename;
         mangleLocalTempFilename(mangledFilename, mangledHelperFileName.str(), nullptr);
