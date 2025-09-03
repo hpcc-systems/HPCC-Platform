@@ -1133,7 +1133,7 @@ thor:
       url="https://github.com/hpcc-systems/HPCC-Platform">https://github.com/hpcc-systems/HPCC-Platform</ulink></para>
     </sect2>
 
-    <sect2>
+    <sect2 id="HPCC_SecurityValues" role="brk">
       <title>Security Values</title>
 
       <para>This section will look at the <emphasis>values.yaml</emphasis>
@@ -1213,8 +1213,9 @@ thor:
       components.</para>
 
       <para>The certificate system integrates with cert-manager to provide
-      automated certificate generation and renewal for both internal (local)
-      and external (public/remote) communications.</para>
+      automated certificate generation and renewal for both internal (local,
+      i.e., communication between HPCC components within the same cluster or
+      namespace) and external (public/remote) communications.</para>
 
       <sect3 id="Container_Certificates">
         <title>Enable Certificates</title>
@@ -1414,7 +1415,7 @@ certificates:
         <sect4 id="Multi_Domain_Certificate_Management">
           <title>Multi-Domain Certificate Management</title>
 
-          <para>The <literal>alternativeDomains</literal> feature is now the
+          <para>The <literal>alternativeDomains</literal> feature is the
           preferred method for configuring certificates that need to be valid
           across multiple domains and subdomains. Common use cases
           include:</para>
