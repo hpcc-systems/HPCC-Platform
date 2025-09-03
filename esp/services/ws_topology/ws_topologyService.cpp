@@ -1996,3 +1996,130 @@ bool CWsTopologyEx::onTpListLogFiles(IEspContext &context, IEspTpListLogFilesReq
     }
     return false;
 }
+
+void populateConfiguredComponents(StringArray& componentArray)
+{
+    componentArray.append("global");
+
+#ifdef _CONTAINERIZED
+    Owned<IPropertyTree> componentConfig = getComponentConfig();
+    Owned<IPropertyTreeIterator> components = componentConfig->getElements("configuredComponents[@name]");
+
+    ForEach(*components)
+    {
+        IPropertyTree &component = components->query();
+        componentArray.append(component.queryProp("@name"));
+    }
+#endif
+}
+
+bool CWsTopologyEx::onTpConfiguredComponents(IEspContext &context, IEspTpConfiguredComponentsRequest &req, IEspTpConfiguredComponentsResponse &resp)
+{
+    try
+    {
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_TOPOLOGY_ACCESS_DENIED, "WsTopology::onTpConfiguredComponents: Permission denied.");
+        populateConfiguredComponents(resp.getConfiguredComponents());
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool getConfigForComponent(const char* name, StringBuffer& config)
+{
+    if( isEmptyString(name) )
+        return false;
+    
+    if( stricmp(name, "global") == 0 )
+    {
+        Owned<IPropertyTree> globalConfig = getGlobalConfig();
+        if( isContainerized() )
+            toYAML(globalConfig, config, 2, 0);
+        else
+            toXML(globalConfig, config);
+        return true;
+    }
+
+    // Only "global" is supported for non-containerized systems for now
+    if( !isContainerized() )
+        throw makeStringExceptionV(ECLWATCH_INVALID_COMPONENT_NAME, "Unsupported config retrieval for non-containerized deployments: '%s'.", name);;
+
+    StringBuffer configMapPath;
+    if( stricmp(name, "eclwatch") == 0 )
+        configMapPath.set("/etc/config/eclwatch.yaml");
+    else
+        configMapPath.setf("/etc/component-configs/%s/%s.yaml", name, name);
+
+    // Read configuration from external configmap file
+    Owned<IPropertyTree> configTree = createPTreeFromYAMLFile(configMapPath.str());
+    if (!configTree)
+    {
+        DBGLOG("Failed to read config with createPTreeFromYAMLFile: %s", configMapPath.str());
+        return false;
+    }
+
+    // Trim sections we don't want out of the config
+    configTree->removeProp("global");
+    toYAML(configTree, config, 2, 0);
+    
+    return true;
+}
+
+bool CWsTopologyEx::onTpComponentConfiguration(IEspContext &context, IEspTpComponentConfigurationRequest &req, IEspTpComponentConfigurationResponse &resp)
+{
+    try
+    {
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_TOPOLOGY_ACCESS_DENIED, "WsTopology::onTpComponentConfiguration: Permission denied.");
+        context.ensureSuperUser(ECLWATCH_SUPER_USER_ACCESS_DENIED, "Access denied, administrators only.");
+        
+        StringArray componentNames;
+        StringArray configuredComponentNames;
+        populateConfiguredComponents(configuredComponentNames);
+
+        if (req.getComponentNames().empty())
+            throw makeStringExceptionV(ECLWATCH_INVALID_COMPONENT_NAME, "No Component name provided.");
+        
+        if (req.getComponentNames().contains("ALL") || req.getComponentNames().contains("all"))
+            componentNames.appendArray(configuredComponentNames);
+        else
+            componentNames.appendArray(req.getComponentNames());
+
+        IArrayOf<IEspTpConfigResult> componentConfigs;
+
+        ForEachItemIn(i, componentNames)
+        {
+            const char *componentName = componentNames.item(i);
+            if (!componentName || !*componentName)
+                continue;
+            
+            if (!configuredComponentNames.contains(componentName))
+                throw makeStringExceptionV(ECLWATCH_INVALID_COMPONENT_NAME, "Invalid Component name provided: '%s' not configured.", componentName);
+
+            StringBuffer config;
+            if (!getConfigForComponent(componentName, config))
+                throw makeStringExceptionV(ECLWATCH_INVALID_COMPONENT_NAME, "Failure to read configuration for: '%s'.", componentName);
+
+            if (config.isEmpty())
+                throw makeStringExceptionV(ECLWATCH_COMPONENT_CONFIG_EMPTY, "Config for component: '%s' is empty.", componentName);
+
+            Owned<IEspTpConfigResult> configuration = createTpConfigResult();
+            configuration->setComponentName(componentName);
+            configuration->setConfiguration(config.str());
+            componentConfigs.append(*configuration.getClear());
+        }
+
+        if (isContainerized())
+            resp.setConfigFormat("YAML");
+        else
+            resp.setConfigFormat("XML");
+
+        resp.setResults(componentConfigs);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
