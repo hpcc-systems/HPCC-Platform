@@ -41,7 +41,7 @@ jobs:
       - name: Dependencies
         shell: "bash"
         run: |
-          brew install bison flex pkg-config autoconf autoconf-archive automake libtool cmake openjdk@11
+          brew install bison flex autoconf-archive automake openjdk@11
 
       - name: Remove builtin vcpkg
         shell: "bash"
