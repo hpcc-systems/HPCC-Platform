@@ -99,6 +99,9 @@ jobs:
   build-docker-community:
     name: Build Docker Community
     needs: preamble
+    permissions:
+      contents: write
+      actions: write
     strategy:
       matrix:
         os: [ ubuntu-24.04, ubuntu-22.04, ubuntu-20.04, rockylinux-8 ]
@@ -124,6 +127,9 @@ jobs:
   build-docker-internal:
     name: Build Docker Internal
     needs: preamble
+    permissions:
+      contents: read
+      actions: write
     strategy:
       matrix:
         os: [ ubuntu-24.04, ubuntu-22.04, ubuntu-20.04, rockylinux-8, centos-7 ]
@@ -150,6 +156,9 @@ jobs:
   build-docker-enterprise:
     name: Build Docker Enterprise
     needs: preamble
+    permissions:
+      contents: read
+      actions: write
     strategy:
       matrix:
         os: [ ubuntu-24.04, ubuntu-22.04 ]
@@ -162,6 +171,9 @@ jobs:
 
   build-documentation:
     needs: preamble
+    permissions:
+      contents: write
+      actions: write
     uses: ./.github/workflows/build-documentation.yml
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
@@ -176,6 +188,9 @@ jobs:
 
   build-clienttools-community-macos:
     needs: preamble
+    permissions:
+      contents: write
+      actions: write
     uses: ./.github/workflows/build-clienttools-macos-13.yml
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
@@ -184,6 +199,9 @@ jobs:
 
   build-clienttools-internal-macos:
     needs: preamble
+    permissions:
+      contents: read
+      actions: write
     uses: ./.github/workflows/build-clienttools-macos-13.yml
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
@@ -193,6 +211,9 @@ jobs:
 
   build-clienttools-community-windows:
     needs: preamble
+    permissions:
+      contents: write
+      actions: write
     uses: ./.github/workflows/build-clienttools-windows-2022.yml
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
@@ -203,6 +224,9 @@ jobs:
 
   build-clienttools-internal-windows:
     needs: preamble
+    permissions:
+      contents: read
+      actions: write
     uses: ./.github/workflows/build-clienttools-windows-2022.yml
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
@@ -212,6 +236,9 @@ jobs:
 
   build-bare-metal-eclide:
     needs: [ preamble, build-clienttools-community-windows, build-documentation ]
+    permissions:
+      contents: write
+      actions: write
     uses: ./.github/workflows/build-eclide.yml
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
@@ -223,6 +250,8 @@ jobs:
 
   changelogs:
     needs: preamble
+    permissions:
+      contents: write
     uses: ./.github/workflows/build-changelogs.yml
     with:
       current-version: ${{ needs.preamble.outputs.hpcc_version_full }}

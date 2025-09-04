@@ -1,5 +1,4 @@
-import * as Observable from "dojo/store/Observable";
-import * as topic from "dojo/topic";
+import { Observable, topic } from "src-dojo/index";
 
 import * as ESPRequest from "./ESPRequest";
 

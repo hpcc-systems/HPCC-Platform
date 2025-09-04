@@ -1,7 +1,4 @@
-﻿import * as arrayUtil from "dojo/_base/array";
-import * as declare from "dojo/_base/declare";
-import * as lang from "dojo/_base/lang";
-import * as Observable from "dojo/store/Observable";
+﻿import { arrayUtil, declare, lang, Observable } from "src-dojo/index";
 
 import * as ESPDFUWorkunit from "./ESPDFUWorkunit";
 import * as ESPQueue from "./ESPQueue";

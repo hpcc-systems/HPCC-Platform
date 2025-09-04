@@ -6,7 +6,7 @@ import { scopedLogger } from "@hpcc-js/util";
 import { TableGroup } from "./forms/Groups";
 import nlsHPCC from "src/nlsHPCC";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { parser } from "dojo/main";
+import { parser } from "src-dojo/index";
 
 const logger = scopedLogger("src-react/components/DFSExist.tsx");
 

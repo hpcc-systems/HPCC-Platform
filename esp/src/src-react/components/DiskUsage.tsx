@@ -1,18 +1,21 @@
 import * as React from "react";
 import { Link } from "@fluentui/react";
-import { MachineService } from "@hpcc-js/comms";
-import { scopedLogger } from "@hpcc-js/util";
+import { Divider, Toolbar, ToolbarButton } from "@fluentui/react-components";
+import { ArrowClockwise20Regular } from "@fluentui/react-icons";
 import { ComponentDetails as ComponentDetailsWidget, Summary as SummaryWidget } from "src/DiskUsage";
 import nlsHPCC from "src/nlsHPCC";
 import * as Utility from "src/Utility";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
-import { ReflexContainer, ReflexElement, ReflexSplitter, classNames, styles } from "../layouts/react-reflex";
+import { HolyGrail } from "../layouts/HolyGrail";
+import { SizeMe } from "../layouts/SizeMe";
 import { pushUrl } from "../util/history";
 import { FluentGrid, useFluentStoreState } from "./controls/Grid";
+import { FolderUsageCards } from "./cards/DiskUsageCard";
+import { useTargetClusterUsageEx } from "../hooks/diskUsage";
 
-const logger = scopedLogger("src-react/components/DiskUsage.tsx");
-
-const machineService = new MachineService({ baseUrl: "" });
+//
+// Disk Usage Components
+//
 
 interface SummaryProps {
     cluster?: string;
@@ -34,15 +37,17 @@ export const Summary: React.FunctionComponent<SummaryProps> = ({
     return <AutosizeHpccJSComponent widget={summary}></AutosizeHpccJSComponent >;
 };
 
-interface DetailsProps {
+interface ClusterUsageProps {
     cluster: string;
 }
 
-export const Details: React.FunctionComponent<DetailsProps> = ({
+export const ClusterUsage: React.FunctionComponent<ClusterUsageProps> = ({
     cluster
 }) => {
 
     const { refreshTable } = useFluentStoreState({});
+    const [refreshToken, setRefreshToken] = React.useState(0);
+    const { data: usage, refresh } = useTargetClusterUsageEx(cluster);
 
     //  Grid ---
     const columns = React.useMemo(() => {
@@ -72,51 +77,48 @@ export const Details: React.FunctionComponent<DetailsProps> = ({
 
     type Columns = typeof columns;
     type Row = { __hpcc_id: string } & { [K in keyof Columns]: string | number };
-    const [data, setData] = React.useState<Row[]>([]);
-
-    const refreshData = React.useCallback(() => {
-        machineService.GetTargetClusterUsageEx([cluster])
-            .then(response => {
-                const _data: Row[] = [];
-                if (response) {
-                    response.forEach(component => {
-                        component.ComponentUsages.forEach(cu => {
-                            cu.MachineUsages.forEach(mu => {
-                                mu.DiskUsages.forEach((du, i) => {
-                                    _data.push({
-                                        __hpcc_id: `__usage_${i}`,
-                                        PercentUsed: Math.round((du.InUse / du.Total) * 100),
-                                        Component: cu.Name,
-                                        IPAddress: mu.Name,
-                                        Type: du.Name,
-                                        Path: du.Path,
-                                        InUse: Utility.convertedSize(du.InUse),
-                                        Total: Utility.convertedSize(du.Total)
-                                    });
-                                });
-                            });
+    const data = React.useMemo<Row[]>(() => {
+        const rows: Row[] = [];
+        (usage ?? []).forEach(component => {
+            component.ComponentUsages.forEach(cu => {
+                cu.MachineUsages.forEach(mu => {
+                    mu.DiskUsages.forEach((du, i) => {
+                        rows.push({
+                            __hpcc_id: `__usage_${i}`,
+                            PercentUsed: Math.round((du.InUse / du.Total) * 100),
+                            Component: cu.Name,
+                            IPAddress: mu.Name,
+                            Type: du.Name,
+                            Path: du.Path,
+                            InUse: Utility.convertedSize(du.InUse),
+                            Total: Utility.convertedSize(du.Total)
                         });
                     });
-                }
-                setData(_data);
-            })
-            .catch(err => logger.error(err))
-            ;
-    }, [cluster]);
+                });
+            });
+        });
+        return rows;
+    }, [usage]);
 
-    React.useEffect(() => {
-        refreshData();
-    }, [refreshData]);
-
-    return <FluentGrid
-        data={data}
-        primaryID={"__hpcc_id"}
-        sort={{ attribute: "__hpcc_id", descending: false }}
-        columns={columns}
-        setSelection={() => null}
-        setTotal={() => null}
-        refresh={refreshTable}
-    ></FluentGrid>;
+    return <HolyGrail
+        header={
+            <Toolbar>
+                <ToolbarButton appearance="subtle" icon={<ArrowClockwise20Regular />} aria-label={nlsHPCC.Refresh} onClick={() => { refresh(); setRefreshToken(t => t + 1); }}>
+                    {nlsHPCC.Refresh}
+                </ToolbarButton>
+            </Toolbar>
+        }
+        main={<SizeMe>{({ size }) => {
+            return <div style={{ position: "relative", width: "100%", height: "100%" }}>
+                <div style={{ position: "absolute", width: "100%", height: `${size.height}px`, overflowY: "auto" }}>
+                    <Divider>{nlsHPCC.Category}</Divider>
+                    <FolderUsageCards cluster={cluster} refreshToken={refreshToken} />
+                    <Divider>{nlsHPCC.Folders}</Divider>
+                    <FluentGrid data={data} primaryID="__hpcc_id" sort={{ attribute: "__hpcc_id", descending: false }} columns={columns} setSelection={() => null} setTotal={() => null} refresh={refreshTable} />
+                </div>
+            </div>;
+        }}</SizeMe>}
+    />;
 };
 
 interface MachineUsageProps {
@@ -134,24 +136,4 @@ export const MachineUsage: React.FunctionComponent<MachineUsageProps> = ({
     }, [machine]);
 
     return <AutosizeHpccJSComponent widget={summary}></AutosizeHpccJSComponent >;
-};
-
-interface ClusterUsageProps {
-    cluster: string;
-}
-
-export const ClusterUsage: React.FunctionComponent<ClusterUsageProps> = ({
-    cluster
-}) => {
-    return <ReflexContainer orientation="horizontal">
-        <ReflexElement minSize={100} size={100} style={{ overflow: "hidden" }}>
-            <Summary cluster={cluster} />
-        </ReflexElement>
-        <ReflexSplitter style={styles.reflexSplitter}>
-            <div className={classNames.reflexSplitterDiv}></div>
-        </ReflexSplitter>
-        <ReflexElement style={{ overflow: "hidden" }}>
-            <Details cluster={cluster} />
-        </ReflexElement>
-    </ReflexContainer >;
 };

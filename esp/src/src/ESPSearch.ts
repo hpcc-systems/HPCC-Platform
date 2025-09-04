@@ -1,4 +1,4 @@
-import * as Observable from "dojo/store/Observable";
+import { Observable } from "src-dojo/index";
 import * as ESPWorkunit from "./ESPWorkunit";
 import * as ESPDFUWorkunit from "./ESPDFUWorkunit";
 import * as ESPLogicalFile from "./ESPLogicalFile";

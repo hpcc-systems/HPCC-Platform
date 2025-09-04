@@ -1,10 +1,4 @@
-import * as arrayUtil from "dojo/_base/array";
-import * as config from "dojo/_base/config";
-import * as Deferred from "dojo/_base/Deferred";
-import * as lang from "dojo/_base/lang";
-import * as cookie from "dojo/cookie";
-import * as QueryResults from "dojo/store/util/QueryResults";
-import * as topic from "dojo/topic";
+import { arrayUtil, config, Deferred, lang, cookie, QueryResults, topic } from "src-dojo/index";
 import * as ESPUtil from "./ESPUtil";
 
 import * as hpccComms from "@hpcc-js/comms";
