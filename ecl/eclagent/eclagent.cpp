@@ -1578,12 +1578,6 @@ char *EclAgent::getEnv(const char *name, const char *defaultValue) const
 void EclAgent::selectCluster(const char *newCluster)
 {
     StringAttr oldCluster = queryWorkUnit()->queryClusterName();
-    if (getClusterType(clusterType)==HThorCluster)
-    {
-        // If the current cluster is an hthor cluster, it's an error to change it...
-        if (!streq(oldCluster, newCluster))
-            throw MakeStringException(-1, "Error - cannot switch cluster in hthor jobs");
-    }
     if (!streq(oldCluster, newCluster))
     {
         WorkunitUpdate wu = updateWorkUnit();
