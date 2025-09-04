@@ -328,8 +328,12 @@ export const Result: React.FunctionComponent<ResultProps> = ({
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => {
-                resultTable.reset();
-                resultTable.render(() => setResult(resultTable.calcResult()));
+                resultTable.bypassCache(true);
+                try {
+                    resultTable.render(() => setResult(resultTable.calcResult()));
+                } finally {
+                    resultTable.bypassCache(false);
+                }
             }
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
