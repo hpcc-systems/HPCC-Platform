@@ -45,6 +45,12 @@ void ExitModuleObjects(SoContext ctx)
 
 void ExitModuleObjects() { ExitModuleObjects(0); }
 
+void ClearModuleObjects()
+{
+    if (_initTable)
+        _initTable->clear();
+}
+
 void _InitModuleObjects()
 {
     try
@@ -130,6 +136,11 @@ int InitTable::sortFuncAscending(InitializerType const *i1, InitializerType cons
 {
     int ret = i1->modpriority - i2->modpriority;
     return ret ? ret : i1->priority - i2->priority;
+}
+
+void InitTable::clear()
+{
+    initializers.clear();
 }
 
 void InitTable::add(InitializerType &iT)
