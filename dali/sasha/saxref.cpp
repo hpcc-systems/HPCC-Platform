@@ -414,9 +414,8 @@ struct cDirDesc
         return numParts!=grp.ordinality() || partNum>=grp.ordinality() || !grp.queryNode(partNum).endpoint().equals(ep);
     }
 
-    cFileDesc *addFile(unsigned drv,StringBuffer &path,const char *scope,__int64 sz,CDateTime &dt,unsigned node, const SocketEndpoint &ep, IGroup &grp, unsigned numnodes, CLargeMemoryAllocator *mem, unsigned stripeNum, unsigned numStripedDevices)
+    cFileDesc *addFile(unsigned drv,const char *name,const char *filePath,const char *scope,__int64 sz,CDateTime &dt,unsigned node, const SocketEndpoint &ep, IGroup &grp, unsigned numnodes, CLargeMemoryAllocator *mem, unsigned stripeNum, unsigned numStripedDevices)
     {
-        const char *name = pathTail(path);
         unsigned nf;          // num parts
         unsigned pf;          // part num
         unsigned filenameLen; // length of file name excluding extension i.e. ._$P$_of_$N$
@@ -435,7 +434,7 @@ struct cDirDesc
             cMisplacedRec *mp = file->misplaced;
             while (mp) {
                 if (mp->eq(drv,pf,node,numnodes)) {
-                    OERRLOG(LOGPFX "Duplicate file with mismatched tail (%d,%d) %s",pf,node,path.str());
+                    OERRLOG(LOGPFX "Duplicate file with mismatched tail (%d,%d) %s",pf,node,filePath);
                     return NULL;
                 }
                 mp = mp->next;
@@ -449,7 +448,7 @@ struct cDirDesc
             // NB: still perform setpresent() below, so that later 'orphan' and 'found' scanning can spot the part as orphaned or part of a found file.
         }
         if (file->setpresent(drv,pf)) {
-            OERRLOG(LOGPFX "Duplicate file with mismatched tail (%d) %s",pf,path.str());
+            OERRLOG(LOGPFX "Duplicate file with mismatched tail (%d) %s",pf,filePath);
             file = NULL;
         }
         return file;
@@ -1132,7 +1131,7 @@ public:
                 iter->getModifiedTime(dt);
                 if (!fileFiltered(path.str(),dt)) {
                     try {
-                        pdir->addFile(drv,path,scope.str(),fsz,dt,node,ep,*grp,numnodes,&mem,stripeNum,numStripedDevices);
+                        pdir->addFile(drv,fname.str(),path.str(),scope.str(),fsz,dt,node,ep,*grp,numnodes,&mem,stripeNum,numStripedDevices);
                     }
                     catch (IException *e) {
                         StringBuffer filepath, errMsg;
