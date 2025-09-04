@@ -1739,9 +1739,12 @@ private:
         unsigned remainingHttpConnectionRequests = global->maxHttpConnectionRequests ? global->maxHttpConnectionRequests : 1;
         unsigned readWait = WAIT_FOREVER;
 
+        SpanTimeStamp spanStartTimeStamp(true);
         Owned<IHpccProtocolMsgContext> msgctx = sink->createMsgContext(startTime);
 
 readAnother:
+        std::map<std::string, CCycleTimer> phaseTimers;
+        std::map<std::string, stat_type> phaseDurations;
         unsigned agentsReplyLen = 0;
         unsigned agentsDuplicates = 0;
         unsigned agentsResends = 0;
@@ -1752,6 +1755,7 @@ readAnother:
         {
             if (client)
             {
+                phaseTimers["socketRead"].reset();
                 client->querySocket()->getPeerAddress(peer);
                 if (!client->readBlocktms(rawText.clear(), readWait, &httpHelper, continuationNeeded, isStatus, global->maxBlockSize))
                 {
@@ -1763,6 +1767,7 @@ readAnother:
                     client.clear();
                     return;
                 }
+                phaseDurations["socketRead"] = phaseTimers["socketRead"].elapsedNs();
             }
             if (resetQstart)
             {
@@ -1797,8 +1802,6 @@ readAnother:
             client.clear();
             return;
         }
-
-        SpanTimeStamp spanStartTimeStamp(true);
 
         PerfTracer perf;
         IRoxieContextLogger &logctx = static_cast<IRoxieContextLogger&>(*msgctx->queryLogContext());
@@ -1852,6 +1855,7 @@ readAnother:
             }
             else if (mlRequestFmt==MarkupFmt_XML || mlRequestFmt==MarkupFmt_JSON)
             {
+                phaseTimers["queryNameExtract"].reset();
                 QueryNameExtractor extractor(mlRequestFmt);
                 extractor.extractName(httpHelper, rawText.str(), logctx, peerStr, ep.port);
                 queryName.set(extractor.name);
@@ -1861,6 +1865,7 @@ readAnother:
                 isRequestArray = extractor.isRequestArray;
                 if (httpHelper.isHttp())
                     httpHelper.setUseEnvelope(extractor.isSoap);
+                phaseDurations["queryNameExtract"] = phaseTimers["queryNameExtract"].elapsedNs();
             }
 
             if (!queryName && !isStatus)
@@ -1926,6 +1931,7 @@ readAnother:
                 readFlags |= (whitespace == WhiteSpaceHandling::Strip ? ptr_ignoreWhiteSpace : ptr_none);
 
                 CCycleTimer xmlTimer;
+                phaseTimers["xmlParse"].reset();
                 try
                 {
                     createQueryPTree(queryPT, httpHelper, rawText.str(), ipt_caseInsensitive|ipt_fast, (PTreeReaderOptions)readFlags, queryName);
@@ -1942,8 +1948,19 @@ readAnother:
                 sanitizeQuery(queryPT, queryName, sanitizedText, httpHelper, uid, isBlind, isDebug, inlineTraceHeaders);
 
                 __uint64 timeProcessQueryText = xmlTimer.elapsedNs();
-
+                phaseDurations["xmlParse"] = phaseTimers["xmlParse"].elapsedNs();
                 msgctx->startSpan(uid, querySetName, queryName, isHTTP ? httpHelper.queryRequestHeaders() : inlineTraceHeaders, &spanStartTimeStamp);
+
+                for (const auto &kv : phaseDurations)
+                {
+                    if (logctx.queryActiveSpan())
+                    {
+                        // Add an event to the active span for each phase duration
+                        std::map<std::string, std::string> eventAttrs;
+                        eventAttrs["durationNs"] = std::to_string(kv.second);
+                        logctx.queryActiveSpan()->addSpanEvent(kv.first.c_str(), eventAttrs);
+                    }
+                }
 
                 //This must be set after the startSpan - since that resets the stats in the logctx
                 logctx.noteStatistic(StTimeQueryConsume, timeProcessQueryText); // include in the span and complete lines.
