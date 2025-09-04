@@ -652,7 +652,7 @@ public:
         const char* res_name = resource.getName();
         ILdapConfig* ldapconfig = ldapclient->getLdapConfig();
 
-        if(stricmp(ldapconfig->getSysUser(), user.getName()) == 0)
+        if(ldapclient->isSuperUser(&user))
         {
             resource.setAccessFlags(SecAccess_Full);
             return true;
