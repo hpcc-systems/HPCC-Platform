@@ -19,6 +19,7 @@ project ( eclwatch )
 file(REMOVE_RECURSE
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch
     ${CMAKE_CURRENT_BINARY_DIR}/src
+    ${CMAKE_CURRENT_BINARY_DIR}/src-dojo
     ${CMAKE_CURRENT_BINARY_DIR}/src-react
 )
 
@@ -29,6 +30,7 @@ file(COPY
     ${CMAKE_CURRENT_SOURCE_DIR}/ganglia
     ${CMAKE_CURRENT_SOURCE_DIR}/loader
     ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-dojo
     ${CMAKE_CURRENT_SOURCE_DIR}/src-react
     ${CMAKE_CURRENT_SOURCE_DIR}/eslint.config.mjs
     ${CMAKE_CURRENT_SOURCE_DIR}/GetUserName.html
@@ -237,6 +239,22 @@ set ( SRCS
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/XrefOrphanFilesWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/XrefQueryWidget.js
 
+    # src-dojo 
+    ${CMAKE_CURRENT_BINARY_DIR}/src-dojo/index.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src-dojo/dgrid.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src-dojo/dijit.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src-dojo/dojo.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src-dojo/dojox.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src-dojo/nls/hpcc.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src-dojo/nls/bs/hpcc.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src-dojo/nls/es/hpcc.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src-dojo/nls/fr/hpcc.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src-dojo/nls/hr/hpcc.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src-dojo/nls/hu/hpcc.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src-dojo/nls/pt-br/hpcc.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src-dojo/nls/sr/hpcc.ts
+    ${CMAKE_CURRENT_BINARY_DIR}/src-dojo/nls/zh/hpcc.ts
+
     # src files
     ${CMAKE_CURRENT_BINARY_DIR}/src/DataPatterns/AttributeDesc.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/DataPatterns/Cardinality.ts
@@ -247,15 +265,6 @@ set ( SRCS
     ${CMAKE_CURRENT_BINARY_DIR}/src/DataPatterns/PopularPatterns.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/DataPatterns/Report.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/DataPatterns/StatChart.ts
-    ${CMAKE_CURRENT_BINARY_DIR}/src/nls/hpcc.ts
-    ${CMAKE_CURRENT_BINARY_DIR}/src/nls/bs/hpcc.ts
-    ${CMAKE_CURRENT_BINARY_DIR}/src/nls/es/hpcc.ts
-    ${CMAKE_CURRENT_BINARY_DIR}/src/nls/fr/hpcc.ts
-    ${CMAKE_CURRENT_BINARY_DIR}/src/nls/hr/hpcc.ts
-    ${CMAKE_CURRENT_BINARY_DIR}/src/nls/hu/hpcc.ts
-    ${CMAKE_CURRENT_BINARY_DIR}/src/nls/pt-br/hpcc.ts
-    ${CMAKE_CURRENT_BINARY_DIR}/src/nls/sr/hpcc.ts
-    ${CMAKE_CURRENT_BINARY_DIR}/src/nls/zh/hpcc.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/react/hooks/useWsStore.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/react/index.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/react/render.ts
@@ -271,7 +280,6 @@ set ( SRCS
     ${CMAKE_CURRENT_BINARY_DIR}/src/Clippy.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/DataPatternsWidget.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/DiskUsage.ts
-    ${CMAKE_CURRENT_BINARY_DIR}/src/dojoLib.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/ECLArchiveWidget.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/ESPActivity.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/ESPBase.ts

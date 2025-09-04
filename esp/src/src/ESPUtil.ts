@@ -1,33 +1,6 @@
 ﻿import { select as d3Select } from "@hpcc-js/common";
-import * as registry from "dijit/registry";
-import * as Tooltip from "dijit/Tooltip";
-import * as arrayUtil from "dojo/_base/array";
-import * as declare from "dojo/_base/declare";
-import * as lang from "dojo/_base/lang";
-import * as aspect from "dojo/aspect";
-import * as domClass from "dojo/dom-class";
-import * as domStyle from "dojo/dom-style";
-import * as Evented from "dojo/Evented";
-import * as json from "dojo/json";
-import * as on from "dojo/on";
-import * as query from "dojo/query";
-import * as Stateful from "dojo/Stateful";
+import { registry, arrayUtil, declare, lang, aspect, domClass, domStyle, Evented, json, on, query, Stateful, Tooltip, ColumnResizer, CompoundColumns, DijitRegistry, Grid, Keyboard, OnDemandGrid, Selection } from "src-dojo/index";
 import { Memory } from "./store/Memory";
-
-// @ts-expect-error
-import * as ColumnResizer from "dgrid/extensions/ColumnResizer";
-// @ts-expect-error
-import * as CompoundColumns from "dgrid/extensions/CompoundColumns";
-// @ts-expect-error
-import * as DijitRegistry from "dgrid/extensions/DijitRegistry";
-// @ts-expect-error
-import * as DGrid from "dgrid/Grid";
-// @ts-expect-error
-import * as Keyboard from "dgrid/Keyboard";
-// @ts-expect-error
-import * as OnDemandGrid from "dgrid/OnDemandGrid";
-// @ts-expect-error
-import * as Selection from "dgrid/Selection";
 
 import nlsHPCC from "./nlsHPCC";
 import { userKeyValStore } from "./KeyValStore";
@@ -435,7 +408,7 @@ export function Grid(pagination?, selection?, overrides?: object, compoundColumn
     const rows = Number(localStorage.getItem(gridName + "_GridRowsPerPage"));
 
     if (pagination) {
-        baseClass = [DGrid, Pagination, ColumnResizer, Keyboard, DijitRegistry, CompoundColumns];
+        baseClass = [Grid, Pagination, ColumnResizer, Keyboard, DijitRegistry, CompoundColumns];
         lang.mixin(params, {
             rowsPerPage: rows || 50,
             pagingLinks: 1,
