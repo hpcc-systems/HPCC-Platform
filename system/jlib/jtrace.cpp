@@ -875,6 +875,14 @@ public:
         }
     }
 
+    void addSpanEvent(const char * eventName, std::map<std::string, std::string> & attributesMap) override 
+    {
+        if (span && !isEmptyString(eventName))
+        {
+            span->AddEvent(eventName, attributesMap);
+        }
+    }
+
     void addSpanEvent(const char * eventName) override
     {
         if (span && !isEmptyString(eventName))
@@ -1155,6 +1163,7 @@ public:
     virtual void setSpanAttributes(const IProperties * attributes) override {}
     virtual void addSpanEvent(const char * eventName) override {}
     virtual void addSpanEvent(const char * eventName, IProperties * attributes) override {};
+    virtual void addSpanEvent(const char * eventName, std::map<std::string, std::string> & attributesMap) override {};
     virtual void endSpan() override {}
     virtual void getSpanContext(IProperties * ctxProps) const override {}
     virtual void getClientHeaders(IProperties * clientHeaders) const override {}

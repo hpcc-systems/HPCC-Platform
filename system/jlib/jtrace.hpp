@@ -150,6 +150,7 @@ interface ISpan : extends IInterface
     virtual void setSpanAttributes(const IProperties * attributes) = 0;
     virtual void addSpanEvent(const char * eventName) = 0;
     virtual void addSpanEvent(const char * eventName, IProperties * attributes) = 0;
+    virtual void addSpanEvent(const char * eventName, std::map<std::string, std::string> & attributesMap) = 0;
     virtual void endSpan() = 0; // Indicate that the span has ended even if it has not yet been destroyed
     virtual void getSpanContext(IProperties * ctxProps) const = 0;
     virtual void getClientHeaders(IProperties * clientHeaders) const = 0;
