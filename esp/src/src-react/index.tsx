@@ -7,9 +7,6 @@ import { needsRedirectV9 } from "src/Session";
 import { ECLWatchLogger } from "./hooks/logging";
 import { replaceUrl } from "./util/history";
 
-import "css!dijit-themes/flat/flat.css";
-import "css!hpcc/css/ecl.css";
-import "css!hpcc/css/hpcc.css";
 import "src-react-css/index.css";
 
 ECLWatchLogger.init();

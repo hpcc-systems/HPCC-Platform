@@ -3,7 +3,7 @@ import { Palette } from "@hpcc-js/common";
 import { WsMachineEx, MachineService, DFUXRefService, WsDFUXRef } from "@hpcc-js/comms";
 import { ColumnFormat, Table } from "@hpcc-js/dgrid";
 import { FlexGrid } from "@hpcc-js/layout";
-import * as dojoOn from "dojo/on";
+import { on as dojoOn } from "src-dojo/index";
 import nlsHPCC from "./nlsHPCC";
 
 Palette.rainbow("DiskUsage", ["green", "green", "green", "green", "green", "green", "green", "green", "orange", "red", "red"]);

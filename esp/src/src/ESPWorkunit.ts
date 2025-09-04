@@ -1,10 +1,4 @@
-﻿import * as arrayUtil from "dojo/_base/array";
-import * as declare from "dojo/_base/declare";
-import * as Deferred from "dojo/_base/Deferred";
-import * as lang from "dojo/_base/lang";
-import * as all from "dojo/promise/all";
-import * as Observable from "dojo/store/Observable";
-import * as topic from "dojo/topic";
+﻿import { arrayUtil, declare, Deferred, lang, all, Observable, topic } from "src-dojo/index";
 
 import { Workunit as HPCCWorkunit, WorkunitsService, WsWorkunits as WsWorkunitsNS, WUUpdate } from "@hpcc-js/comms";
 import { IEvent } from "@hpcc-js/util";
