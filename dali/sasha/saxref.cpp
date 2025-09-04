@@ -1185,6 +1185,18 @@ public:
             }
             void Do(unsigned i)
             {
+                /* NB: Threading behavior depends on deployment type and cluster configuration:
+                *
+                * Bare-metal deployments:
+                *   - Multi-threaded: Each thread scans a different node (i = node number)
+                *   - Single-threaded: When only one node is available
+                *
+                * Containerized deployments:
+                *   - Striped planes: Multi-threaded, each thread scans a different stripe directory (i = stripe number)
+                *   - Non-striped planes: Single-threaded scan
+                *
+                * @param i Thread index - represents either node number (bare-metal) or stripe number (containerized)
+                */
                 if (abort)
                     return;
                 CriticalBlock block(crit);
@@ -1193,13 +1205,16 @@ public:
 
                 StringBuffer path(rootdir);
                 StringBuffer scope;
-                // A hosted plane will never be striped, so for striped planes, use local host
                 if (parent.isPlaneStriped)
                 {
                     assertex(!parent.storagePlane->hasProp("@hostGroup"));
+
+                    // A hosted plane will never be striped, so for striped planes, use local host
                     SocketEndpoint localEP;
                     localEP.setLocalHost(0);
+                    // Add stripe directory to path so each thread scans a different stripe directory
                     addPathSepChar(path).append('d').append(i+1);
+
                     parent.log("Scanning %s directory %s",parent.storagePlane->queryProp("@name"),path.str());
                     if (!parent.scanDirectory(0,localEP,path,scope,0,parent.root,NULL,1,i+1))
                     {
@@ -1209,18 +1224,19 @@ public:
                 }
                 else
                 {
-                    StringBuffer tmp;
+                    StringBuffer hostStr;
                     SocketEndpoint ep = parent.rawgrp->queryNode(i).endpoint();
-                    parent.log("Scanning %s directory %s",ep.getEndpointHostText(tmp).str(),path.str());
+                    parent.log("Scanning %s directory %s",ep.getEndpointHostText(hostStr).str(),path.str());
                     if (!parent.scanDirectory(i,ep,path,scope,0,NULL,NULL,0,0)) {
                         ok = false;
                         return;
                     }
                     if (!isContainerized()) {
+                        // MORE: If containerized, a hosted plane may still have replication
                         i = (i+r)%n;
                         setReplicateFilename(path,1);
                         ep = parent.rawgrp->queryNode(i).endpoint();
-                        parent.log("Scanning %s directory %s",ep.getEndpointHostText(tmp.clear()).str(),path.str());
+                        parent.log("Scanning %s directory %s",ep.getEndpointHostText(hostStr.clear()).str(),path.str());
                         if (!parent.scanDirectory(i,ep,path,scope,1,NULL,NULL,0,0)) {
                             ok = false;
                         }
