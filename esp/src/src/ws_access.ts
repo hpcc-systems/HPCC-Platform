@@ -1,11 +1,4 @@
-import * as arrayUtil from "dojo/_base/array";
-import * as Deferred from "dojo/_base/Deferred";
-import * as lang from "dojo/_base/lang";
-import * as all from "dojo/promise/all";
-import * as Observable from "dojo/store/Observable";
-import * as QueryResults from "dojo/store/util/QueryResults";
-import * as SimpleQueryEngine from "dojo/store/util/SimpleQueryEngine";
-import * as topic from "dojo/topic";
+import { arrayUtil, Deferred, lang, all, Observable, QueryResults, SimpleQueryEngine, topic } from "src-dojo/index";
 
 import { AccessService, WsAccess } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";

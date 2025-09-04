@@ -12,7 +12,7 @@ import { useUserTheme } from "../hooks/theme";
 import { useWorkunitXML } from "../hooks/workunit";
 import { IFrame } from "./IFrame";
 
-import "eclwatch/css/cmDarcula.css";
+import "hpcc/css/cmDarcula.css";
 
 const logger = scopedLogger("src-react/components/SourceEditor.tsx");
 

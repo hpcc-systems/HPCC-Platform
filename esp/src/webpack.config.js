@@ -19,75 +19,85 @@ proxyItems.forEach(item => {
     };
 });
 
+
+const plugins = [
+    new DojoWebpackPlugin({
+        loaderConfig: require("./eclwatch/dojoConfig"),
+        environment: { dojoRoot: "build/dist" },
+        buildEnvironment: { dojoRoot: "node_modules" }, // used at build time
+        locales: ["en", "bs", "es", "fr", "hr", "hu", "pt-br", "sr", "zh"]
+    }),
+    // For plugins registered after the DojoAMDPlugin, data.request has been normalized and
+    // resolved to an absMid and loader-config maps and aliases have been applied
+    new webpack.NormalModuleReplacementPlugin(/^dojox\/gfx\/renderer!/, "dojox/gfx/canvas"),
+    new webpack.NormalModuleReplacementPlugin(
+        /^css!/, function (data) {
+            data.request = data.request.replace(/^css!/, "!style-loader!css-loader!");
+        }
+    ),
+    new webpack.NormalModuleReplacementPlugin(
+        /^xstyle\/css!/, function (data) {
+            data.request = data.request.replace(/^xstyle\/css!/, "!style-loader!css-loader!");
+        }
+    ),
+
+    // Custom plugin to remove "use strict" from final bundles
+    {
+        apply: (compiler) => {
+            compiler.hooks.thisCompilation.tap('RemoveUseStrictPlugin', (compilation) => {
+                compilation.hooks.processAssets.tap(
+                    {
+                        name: 'RemoveUseStrictPlugin',
+                        stage: compilation.constructor.PROCESS_ASSETS_STAGE_OPTIMIZE_INLINE
+                    },
+                    () => {
+                        try {
+                            for (const filename of Object.keys(compilation.assets)) {
+                                if (filename.endsWith('.js')) {
+                                    const asset = compilation.assets[filename];
+                                    const source = asset.source();
+                                    const newSource = source.replace(/["']use strict["'];?\s*/g, "\n");
+                                    if (source !== newSource) {
+                                        compilation.assets[filename] = new webpack.sources.RawSource(newSource);
+                                    }
+                                }
+                            }
+                        } catch (error) {
+                            console.warn('RemoveUseStrictPlugin warning:', error.message);
+                        }
+                    }
+                );
+            });
+        }
+    }
+];
+
 module.exports = function (env) {
     const isDev = (env && env.development) || env === "development";
     const isProduction = !isDev;
     console.log(isProduction ? "Production bundle" : "Debug bundle");
 
-    const entry = {
-        stub: "eclwatch/stub",
-        dojoLib: "lib/src/dojoLib",
-        index: "lib/src-react/index"
-    };
-
-    const plugins = [
-        new DojoWebpackPlugin({
-            loaderConfig: require("./eclwatch/dojoConfig"),
-            environment: { dojoRoot: "build/dist" },
-            buildEnvironment: { dojoRoot: "node_modules" }, // used at build time
-            locales: ["en", "bs", "es", "fr", "hr", "hu", "pt-br", "sr", "zh"]
-        }),
-        // For plugins registered after the DojoAMDPlugin, data.request has been normalized and
-        // resolved to an absMid and loader-config maps and aliases have been applied
-        new webpack.NormalModuleReplacementPlugin(/^dojox\/gfx\/renderer!/, "dojox/gfx/canvas"),
-        new webpack.NormalModuleReplacementPlugin(
-            /^css!/, function (data) {
-                data.request = data.request.replace(/^css!/, "!style-loader!css-loader!");
-            }
-        ),
-        new webpack.NormalModuleReplacementPlugin(
-            /^xstyle\/css!/, function (data) {
-                data.request = data.request.replace(/^xstyle\/css!/, "!style-loader!css-loader!");
-            }
-        ),
-
-        // Custom plugin to remove "use strict" from final bundles
-        {
-            apply: (compiler) => {
-                compiler.hooks.thisCompilation.tap('RemoveUseStrictPlugin', (compilation) => {
-                    compilation.hooks.processAssets.tap(
-                        {
-                            name: 'RemoveUseStrictPlugin',
-                            stage: compilation.constructor.PROCESS_ASSETS_STAGE_OPTIMIZE_INLINE
-                        },
-                        () => {
-                            try {
-                                for (const filename of Object.keys(compilation.assets)) {
-                                    if (filename.endsWith('.js')) {
-                                        const asset = compilation.assets[filename];
-                                        const source = asset.source();
-                                        const newSource = source.replace(/["']use strict["'];?\s*/g, "\n");
-                                        if (source !== newSource) {
-                                            compilation.assets[filename] = new webpack.sources.RawSource(newSource);
-                                        }
-                                    }
-                                }
-                            } catch (error) {
-                                console.warn('RemoveUseStrictPlugin warning:', error.message);
-                            }
-                        }
-                    );
-                });
-            }
-        }
-    ];
-
     return {
         context: path.resolve(__dirname),
-        entry: entry,
+        entry: {
+            "src-dojo": {
+                import: "./lib/src-dojo/index",
+            },
+            "src-lib": {
+                import: "./lib/src/index",
+                dependOn: ["src-dojo"],
+            },
+            stub: {
+                import: "./eclwatch/stub",
+                dependOn: ["src-lib", "src-dojo"],
+            },
+            index: {
+                import: "./lib/src-react/index",
+                dependOn: ["src-lib", "src-dojo"],
+            },
+        },
         output: {
             filename: "[name].eclwatch.js",
-            chunkFilename: "[name].eclwatch.js",
             path: path.resolve(__dirname, "build/dist"),
             publicPath: "/esp/files/dist/",
             pathinfo: true
@@ -153,6 +163,11 @@ module.exports = function (env) {
             liveReload: false,
             proxy,
             port: 8080
-        }
+        },
+
+        // Silence noisy missing / failed source map warnings coming from third-party deps
+        ignoreWarnings: [
+            (warning) => typeof warning.message === "string" && warning.message.includes("Failed to parse source map")
+        ]
     };
 };

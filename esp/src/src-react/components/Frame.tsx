@@ -1,5 +1,5 @@
 import * as React from "react";
-import * as topic from "dojo/topic";
+import { topic } from "src-dojo/index";
 import { ThemeProvider } from "@fluentui/react";
 import { FluentProvider } from "@fluentui/react-components";
 import { select as d3Select } from "@hpcc-js/common";

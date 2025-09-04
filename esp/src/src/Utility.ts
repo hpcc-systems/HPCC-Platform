@@ -1,8 +1,7 @@
 ﻿import { getTheme } from "@fluentui/react";
 import { format as d3Format, Palette } from "@hpcc-js/common";
 import { Level, join } from "@hpcc-js/util";
-import * as arrayUtil from "dojo/_base/array";
-import * as domConstruct from "dojo/dom-construct";
+import { arrayUtil, domConstruct } from "src-dojo/index";
 import { darkTheme } from "../src-react/themes";
 import nlsHPCC from "./nlsHPCC";
 

@@ -1,4 +1,4 @@
-import * as lang from "dojo/_base/lang";
+import { lang } from "src-dojo/index";
 
 import * as ESPRequest from "./ESPRequest";
 import nlsHPCC from "./nlsHPCC";

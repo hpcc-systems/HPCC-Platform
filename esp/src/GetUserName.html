@@ -12,10 +12,10 @@
         }
 
         .container {
-            width: 99%;
             position: absolute;
             top: 50%;
-            transform: translateY(-50%);
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
 
         .formContainer {
@@ -79,8 +79,7 @@
             display: none;
         }
     </style>
-    <script>dojoConfig = { async: true, parseOnLoad: false }</script>
-    <script src="/esp/files/dist/dojoLib.eclwatch.js"></script>
+    <script type="text/javascript" src="/esp/files/dist/src-dojo.eclwatch.js" charset="utf-8"></script>
 </head>
 
 <body>
@@ -98,7 +97,7 @@
     </div>
 
     <script type="text/javascript">
-        require(["dojo/ready", "src/nlsHPCC"],
+        require(["dojo/ready", "src-dojo/index"],
             function (ready, nlsHPCCMod) {
                 var nlsHPCC = nlsHPCCMod.default;
                 ready(function () {

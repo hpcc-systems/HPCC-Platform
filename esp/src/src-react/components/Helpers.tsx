@@ -1,12 +1,12 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
 import { TreeItemValue } from "@fluentui/react-components";
-import * as ESPRequest from "src/ESPRequest";
 import { convertedSize } from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { HelperRow, useWorkunitHelpersTree } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { DockPanel, DockPanelItem, ResetableDockPanel } from "../layouts/DockPanel";
+import { getESPBaseURL } from "../util/espUrl";
 import { pushUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
 import { FlatTreeItem, FlatTreeEx } from "./controls/FlatTreeEx";
@@ -71,7 +71,7 @@ function getURL(wuid: string, item: HelperRow, option?: number) {
             break;
     }
 
-    return ESPRequest.getBaseURL() + params + (option ? `&Option=${encodeURIComponent(option)}` : "&Option=1");
+    return getESPBaseURL() + params + (option ? `&Option=${encodeURIComponent(option)}` : "&Option=1");
 }
 
 interface FlatTreeItemEx extends FlatTreeItem {
