@@ -1203,7 +1203,7 @@ thor:
       </sect3>
     </sect2>
 
-    <sect2 id="HPCCContainer_Certificates">
+    <sect2 id="HPCCContainer_Certificates" role="brk">
       <title>Certificates</title>
 
       <para>HPCC Systems containerized deployments support comprehensive
@@ -1220,8 +1220,8 @@ thor:
       <sect3 id="Container_Certificates">
         <title>Enable Certificates</title>
 
-        <para>The certificates section can be used to enable the cert-manager
-        to generate TLS certificates for each component in the HPCC Systems
+        <para>Use the certificates section to enable cert-manager to generate
+        TLS certificates for each component in the HPCC Systems
         deployment.</para>
 
         <programlisting>certificates:
