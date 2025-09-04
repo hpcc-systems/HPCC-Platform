@@ -1,6 +1,6 @@
 import { LogaccessService, LogLine, GetLogsExRequest, WsLogaccess, Exceptions } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
-import * as Observable from "dojo/store/Observable";
+import { Observable } from "src-dojo/index";
 import { Paged } from "./store/Paged";
 import { BaseStore } from "./store/Store";
 

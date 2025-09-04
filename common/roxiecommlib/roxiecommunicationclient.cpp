@@ -176,13 +176,6 @@ protected:
             throw me.getClear();
     }
 
-    unsigned waitMsToSeconds(unsigned wait)
-    {
-        if (wait==0 || wait==(unsigned)-1)
-            return wait;
-        return wait/1000;
-    }
-
     unsigned remainingMsWait(unsigned wait, unsigned start)
     {
         if (wait==0 || wait==(unsigned)-1)
@@ -338,17 +331,16 @@ public:
         sock->write(&len, sizeof(len));
         sock->write(msg, msglen);
 
+        CCycleTimer timer;
         StringBuffer resp;
         for (;;)
         {
-            sock->read(&len, sizeof(len));
+            size32_t size_read;
+            sock->readtms(&len, sizeof(len), sizeof(len), size_read, timer.remainingMs(wait));
             if (!len)
                 break;
             _WINREV(len);
-            size32_t size_read;
-            sock->read(resp.reserveTruncate(len), len, len, size_read, waitMsToSeconds(wait));
-            if (size_read<len)
-                throw MakeStringException(-1, "Error reading roxie control message response");
+            sock->readtms(resp.reserveTruncate(len), len, len, size_read, timer.remainingMs(wait));
         }
 
         Owned<IPropertyTree> ret = createPTreeFromXMLString(resp.str());
