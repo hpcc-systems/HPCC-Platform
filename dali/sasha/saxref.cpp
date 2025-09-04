@@ -247,8 +247,11 @@ struct cFileDesc // no virtuals
 struct cDirDesc
 {
     unsigned hash;
-    CMinHashTable<cDirDesc> dirs;       
-    CMinHashTable<cFileDesc> files; 
+    CMinHashTable<cDirDesc> dirs;
+    CMinHashTable<cFileDesc> files;
+    CriticalSection dirsCrit;
+    CriticalSection filesCrit;
+    CriticalSection dirDescCrit;
     offset_t totalsize[2];              //  across all nodes
     offset_t minsize[2];                //  smallest node size
     offset_t maxsize[2];                //  largest node size
@@ -328,7 +331,10 @@ struct cDirDesc
     }
 
     cDirDesc *lookupDir(const char *name,CLargeMemoryAllocator *mem)
-    { 
+    {
+        // NB: Creation only happens during scanDirectories, but lookupDir is also called
+        // in findDirectory during scanLogicalFiles. Could avoid crit path if (!mem)
+        CriticalBlock block(dirsCrit);
         cDirDesc *ret = dirs.find(name,false);
         if (!ret&&mem) {
             ret = new cDirDesc(*mem,name);
@@ -374,6 +380,8 @@ struct cDirDesc
         StringAttr mask;
         const char *fn = decodeName(drv,name,node,numnodes,mask,pf,nf,filenameLen);
         bool misplaced = isMisplaced(pf, nf, ep, grp);
+
+        CriticalBlock block(filesCrit);
         cFileDesc *file = files.find(fn,false);
         if (!file) {
             if (!mem)
@@ -416,6 +424,8 @@ struct cDirDesc
         // TODO: Add better check for misplaced in isContainerized
         // If plane being scanned is host based (i.e. not locally mounted), misplaced could still make sense
         bool misplaced = !isContainerized() && (nf!=grp.ordinality() || pf>=grp.ordinality() || !grp.queryNode(pf).endpoint().equals(ep));
+
+        CriticalBlock block(filesCrit); // NB: currently, markFile is only called from scanOrphans, which is single-threaded
         cFileDesc *file = files.find(fn,false);
         if (file) {
             if (misplaced) {
@@ -440,6 +450,8 @@ struct cDirDesc
     {
         if (drv>1)
             drv = 1;
+
+        CriticalBlock block(dirDescCrit);
         totalsize[drv] += sz;
         if (!minnode[drv]||(minsize[drv]>sz)) {
             minnode[drv] = node+1;
@@ -453,6 +465,8 @@ struct cDirDesc
 
     bool empty(unsigned drv)
     {
+        // NB: Thread-safety not required because called after directory scan
+        // completes, when structure is read-only and no longer being modified.
         // empty if no files, and all subdirs are empty
         if ((files.ordinality()!=0)||(totalsize[drv]!=0))
             return false;
@@ -779,7 +793,6 @@ public:
 class CNewXRefManager: public CNewXRefManagerBase
 {
     cDirDesc *root;     
-    CriticalSection crit;
     bool iswin;                     // set by scanDirectories
     IpAddress *iphash;
     unsigned *ipnum;
@@ -1036,14 +1049,11 @@ public:
             file.setown(createIFile(rfn));
         Owned<IDirectoryIterator> iter;
         Owned<IException> e;
-        {
-            CriticalUnblock unblock(crit); // not strictly necessary if numThreads==1, but no harm
-            try {
-                iter.setown(file->directoryFiles(NULL,false,true));
-            }
-            catch (IException *_e) {
-                e.setown(_e);
-            }
+        try {
+            iter.setown(file->directoryFiles(NULL,false,true));
+        }
+        catch (IException *_e) {
+            e.setown(_e);
         }
         if (e) {
             StringBuffer tmp(LOGPFX "scanDirectory ");
@@ -1133,12 +1143,11 @@ public:
             const char *rootdir;
             unsigned n;
             unsigned r;
-            CriticalSection &crit;
             bool &abort;
         public:
             bool ok;
-            casyncfor(CNewXRefManager &_parent,const char *_rootdir,CriticalSection &_crit,bool &_abort)
-                : parent(_parent), crit(_crit), abort(_abort)
+            casyncfor(CNewXRefManager &_parent,const char *_rootdir,bool &_abort)
+                : parent(_parent), abort(_abort)
             {
                 rootdir = _rootdir;
                 n = parent.numuniqnodes;
@@ -1147,9 +1156,6 @@ public:
             }
             void Do(unsigned i)
             {
-                if (abort)
-                    return;
-                CriticalBlock block(crit);
                 if (!ok||abort)
                     return;
 
@@ -1189,7 +1195,7 @@ public:
                 }
     //             PROGLOG("Done %i - %d used",i,parent.mem.maxallocated());
             }
-        } afor(*this,rootdir,crit,abort);
+        } afor(*this,rootdir,abort);
         unsigned numMaxThreads = 0;
         if (isPlaneStriped)
             numMaxThreads = numStripedDevices;
