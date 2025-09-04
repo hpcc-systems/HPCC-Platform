@@ -585,6 +585,57 @@ static void mergeDirPerPartDirs(cDirDesc *parent, cDirDesc *dir, const char *cur
     }
 }
 
+constexpr int64_t oneSecondNS = 1000 * 1000 * 1000; // 1 second in nanoseconds
+constexpr int64_t oneHourNS = 60 * 60 * oneSecondNS; // 1 hour in nanoseconds
+class XRefPeriodicTimer : public PeriodicTimer
+{
+public:
+    XRefPeriodicTimer() = default;
+    XRefPeriodicTimer(unsigned seconds, bool suppressFirst, const char *_clustname)
+    : clustname(_clustname) { reset(seconds, suppressFirst, clustname); }
+
+    unsigned calcElapsedMinutes() const
+    {
+        int64_t elapsedNS = cycle_to_nanosec(lastElapsedCycles - startCycles);
+        return elapsedNS / oneSecondNS / 60;
+    }
+
+    bool hasElapsed()
+    {
+        // MORE: Could make PeriodicTimer::hasElapsed thread safe and remove CriticalBlock
+        CriticalBlock block(timerSect);
+        return PeriodicTimer::hasElapsed();
+    }
+
+    void reset(unsigned seconds, bool suppressFirst, const char *_clustname)
+    {
+        clustname = _clustname;
+        PeriodicTimer::reset(seconds*1000, suppressFirst);
+        startCycles = lastElapsedCycles;
+    }
+
+    // Double the time period until it reaches 1 hour
+    void updatePeriod()
+    {
+        int64_t timePeriodNS = cycle_to_nanosec(timePeriodCycles) + 1; // 1 second is lost converting to nanoseconds
+        if (timePeriodNS < oneHourNS)
+        {
+            int64_t newTimePeriodNS = timePeriodNS >= oneHourNS / 2 ? oneHourNS : timePeriodNS * 2;
+            timePeriodCycles = nanosec_to_cycle(newTimePeriodNS);
+
+            unsigned intervalMinutes = newTimePeriodNS / oneSecondNS / 60;
+            if (clustname)
+                DBGLOG(LOGPFX "[%s] Heartbeat interval increased to %u minutes", clustname, intervalMinutes);
+            else
+                DBGLOG(LOGPFX "Heartbeat interval increased to %u minutes", intervalMinutes);
+        }
+    }
+
+private:
+    CriticalSection timerSect;
+    const char *clustname = nullptr; // Cluster name for logging
+    cycle_t startCycles = 0;
+};
 
 class CNewXRefManagerBase
 {
@@ -599,40 +650,30 @@ public:
     unsigned lastlog;
     unsigned sfnum;
     unsigned fnum;
+    XRefPeriodicTimer heartbeatTimer;
+
     Owned<IPropertyTree> foundbranch;
     Owned<IPropertyTree> lostbranch;
     Owned<IPropertyTree> orphansbranch;
     Owned<IPropertyTree> dirbranch;
 
-    void log(const char * format, ...) __attribute__((format(printf, 2, 3)))
+    void log(bool forceStatusUpdate, const char * format, ...) __attribute__((format(printf, 3, 4)))
     {
-        CriticalBlock block(logsect);
+        StringBuffer line;
         va_list args;
         va_start(args, format);
-        StringBuffer line;
         line.valist_appendf(format, args);
         va_end(args);
+
         if (clustname.get())
             PROGLOG(LOGPFX "[%s] %s",clustname.get(),line.str());
         else
             PROGLOG(LOGPFX "%s",line.str());
-        if (logconn) {
-            logcache.set(line.str());
-            updateStatus(false);
-        }
-    }
 
-    void statlog(const char * format, ...) __attribute__((format(printf, 2, 3)))
-    {
-        CriticalBlock block(logsect);
-        va_list args;
-        va_start(args, format);
-        StringBuffer line;
-        line.valist_appendf(format, args);
-        va_end(args);
         if (logconn) {
+            CriticalBlock block(logsect);
             logcache.set(line.str());
-            updateStatus(false);
+            updateStatus(forceStatusUpdate);
         }
     }
 
@@ -684,6 +725,34 @@ public:
 
     }
 
+    void startHeartbeat(const char * op)
+    {
+        heartbeatTimer.reset(60, true, clustname.get()); // 1 minute interval
+        log(true, "%s heartbeat started (interval: 1 minute)", op);
+    }
+
+    void checkHeartbeat(const char * op)
+    {
+        time_t now = time(NULL);
+        if (!heartbeatTimer.hasElapsed())
+            return;
+
+        unsigned elapsedMinutes = heartbeatTimer.calcElapsedMinutes();
+        unsigned elapsedHours = elapsedMinutes / 60;
+        unsigned remainingMinutes = elapsedMinutes % 60;
+
+        struct tm *utc_tm = gmtime(&now);
+        char timestamp[32];
+        strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", utc_tm);
+
+        if (elapsedHours > 0)
+            log(true, "%s - elapsed: %uh %um (%s UTC)", op, elapsedHours, remainingMinutes, timestamp);
+        else
+            log(true, "%s - elapsed: %um (%s UTC)", op, elapsedMinutes, timestamp);
+
+        heartbeatTimer.updatePeriod();
+    }
+
     void addBranch(IPropertyTree *root,const char *name,IPropertyTree *branch)
     {
         if (!branch)
@@ -716,13 +785,13 @@ public:
             xpath.insert(0,"/DFU/XREF/");
             logconn.setown(querySDS().connect(xpath.str(),myProcessSession(),0 ,INFINITE));
         }
-        log("Starting");
+        log(false, "Starting");
     }
 
     void finish(bool aborted)
     {
         if (aborted)
-            log("Aborted");
+            log(false, "Aborted");
         logconn.clear(); // final message done by save to eclwatch
     }
 
@@ -751,7 +820,7 @@ public:
     {
         if (abort)
             return;
-        log("Saving information");
+        log(false,"Saving information");
         Owned<IPropertyTree> croot = createPTree("Cluster");
         croot->setProp("@name",clustname);
         if (!rootdir.isEmpty()) 
@@ -825,7 +894,7 @@ public:
         lostbranch.setown(createPTree("Lost"));
         orphansbranch.setown(createPTree("Orphans"));
         dirbranch.setown(createPTree("Directories"));
-        log("Max memory = %d MB", maxMb);
+        log(false, "Max memory = %d MB", maxMb);
 
         StringBuffer userName;
         serverConfig->getProp("@sashaUser", userName);
@@ -1037,6 +1106,7 @@ public:
 
     bool scanDirectory(unsigned node,const SocketEndpoint &ep,StringBuffer &path, unsigned drv, cDirDesc *pdir, IFile *cachefile, unsigned level)
     {
+        checkHeartbeat("Directory scan");
         size32_t dsz = path.length();
         if (pdir==NULL) 
             pdir = root;
@@ -1168,7 +1238,7 @@ public:
                     SocketEndpoint localEP;
                     localEP.setLocalHost(0);
                     addPathSepChar(path).append('d').append(i+1);
-                    parent.log("Scanning %s directory %s",parent.storagePlane->queryProp("@name"),path.str());
+                    parent.log(false,"Scanning %s directory %s",parent.storagePlane->queryProp("@name"),path.str());
                     if (!parent.scanDirectory(0,localEP,path,0,parent.root,NULL,1))
                     {
                         ok = false;
@@ -1178,7 +1248,7 @@ public:
                 else
                 {
                     SocketEndpoint ep = parent.rawgrp->queryNode(i).endpoint();
-                    parent.log("Scanning %s directory %s",ep.getEndpointHostText(tmp).str(),path.str());
+                    parent.log(false,"Scanning %s directory %s",ep.getEndpointHostText(tmp).str(),path.str());
                     if (!parent.scanDirectory(i,ep,path,0,NULL,NULL,0)) {
                         ok = false;
                         return;
@@ -1187,7 +1257,7 @@ public:
                         i = (i+r)%n;
                         setReplicateFilename(path,1);
                         ep = parent.rawgrp->queryNode(i).endpoint();
-                        parent.log("Scanning %s directory %s",ep.getEndpointHostText(tmp.clear()).str(),path.str());
+                        parent.log(false,"Scanning %s directory %s",ep.getEndpointHostText(tmp.clear()).str(),path.str());
                         if (!parent.scanDirectory(i,ep,path,1,NULL,NULL,0)) {
                             ok = false;
                         }
@@ -1203,11 +1273,12 @@ public:
             numMaxThreads = numuniqnodes;
         if (numThreads > numMaxThreads)
             numThreads = numMaxThreads;
+        startHeartbeat("Directory scan"); // Initialize heartbeat mechanism
         afor.For(numMaxThreads,numThreads,true,numThreads>1);
         if (afor.ok)
-            log("Directory scan complete");
+            log(true,"Directory scan complete");
         else
-            log("Errors occurred during scan");
+            log(true,"Errors occurred during scan");
         return afor.ok;
     }
 
@@ -1253,7 +1324,7 @@ public:
             {
                 if (abort)
                     return;
-                parent.log("Process file %s",name.str());
+                parent.log(false,"Process file %s",name.str());
                 parent.fnum++;
 
                 Owned<IFileDescriptor> fdesc;
@@ -1354,7 +1425,7 @@ public:
         } filescan(*this,abort);
 
         filescan.scan();
-        log("File scan complete");
+        log(true,"File scan complete");
 
     }
 
@@ -1688,6 +1759,7 @@ public:
 
     void listOrphans(cDirDesc *d,StringBuffer &basedir,StringBuffer &scope,bool &abort,unsigned int recentCutoffDays)
     {
+        checkHeartbeat("Orphan scan");
         if (abort)
             return;
         if (!d) {
@@ -1755,23 +1827,24 @@ public:
     void listOrphans(bool &abort,unsigned int recentCutoffDays)
     {   
         // also does directories
-        log("Scanning for orphans");
+        log(true,"Scanning for orphans");
+        startHeartbeat("Orphan scan");
         StringBuffer basedir;
         StringBuffer scope;
         listOrphans(NULL,basedir,scope,abort,recentCutoffDays);
         if (abort)
             return;
-        log("Orphan scan complete");
+        log(true,"Orphan scan complete");
         sorteddirs.sort(compareDirs);   // NB sort reverse
         while (!abort&&sorteddirs.ordinality())
             dirbranch->addPropTree("Directory",&sorteddirs.popGet());
-        log("Directories sorted");
+        log(true,"Directories sorted");
     }
 
 
     void listLost(bool &abort,bool ignorelazylost,unsigned int recentCutoffDays)
     {
-        log("Scanning for lost files");
+        log(true,"Scanning for lost files");
         StringBuffer tmp;
         ForEachItemIn(i0,lostfiles) {
             if (abort)
@@ -1911,7 +1984,7 @@ public:
                 lostbranch->addPropTree("File",ft.getClear());
             }
         }
-        log("Lost scan complete");
+        log(true,"Lost scan complete");
     }
 
 
@@ -2048,7 +2121,7 @@ public:
             void processSuperFile(IPropertyTree &file,StringBuffer &name)
             {
                 parent.sfnum++;
-                parent.log("Scanning SuperFile %s",name.str());
+                parent.log(false,"Scanning SuperFile %s",name.str());
                 unsigned numsub = file.getPropInt("@numsubfiles");
                 unsigned n = 0;
                 Owned<IPropertyTreeIterator> iter = file.getElements("SubFile");
@@ -2104,7 +2177,7 @@ public:
 
         bool fix = false;
 
-        log("Crossreferencing %d SuperFiles",superowner.ordinality());
+        log(false,"Crossreferencing %d SuperFiles",superowner.ordinality());
         ForEachItemIn(i1,superowner) {
             const char *owner = superowner.item(i1);
             const char *owned = superowned.item(i1);
@@ -2147,8 +2220,8 @@ public:
                     }
                 }
             }
-        }       
-        log("Crossreferencing %d Files",fileowned.ordinality());
+        }
+        log(false,"Crossreferencing %d Files",fileowned.ordinality());
         ForEachItemIn(i3,fileowned) {
             const char *fowner = fileowner.item(i3);
             const char *fowned = fileowned.item(i3);
