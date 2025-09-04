@@ -3528,29 +3528,31 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
     if (handlePublisherResponse(req, resp, publisherWuid))
         return true;
 
-    WorkunitUpdate wu(&cw->lock());
-    if (!wu)
-        throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Error opening wuid %s for query %s", wuid.str(), source);
-
     StringBuffer targetQueryId;
-    WUQueryActivationOptions activate = (WUQueryActivationOptions)req.getActivate();
-    addQueryToQuerySet(wu, target, targetQueryName.get(), activate, targetQueryId, context.queryUserId());
 
-    Owned<IPropertyTree> queryTree = getQueryById(target, targetQueryId, false);
-    if (queryTree)
     {
-        updateMemoryLimitSetting(queryTree, req.getMemoryLimit(), srcInfo);
-        updateQueryPriority(queryTree, req.getPriority(), srcInfo);
-        updateTimeLimitSetting(queryTree, req.getTimeLimit_isNull(), req.getTimeLimit(), srcInfo);
-        updateWarnTimeLimitSetting(queryTree, req.getWarnTimeLimit_isNull(), req.getWarnTimeLimit(), srcInfo);
-        if (req.getComment())
-            queryTree->setProp("@comment", req.getComment());
-        else if (srcInfo && srcInfo->getComment())
-            queryTree->setProp("@comment", srcInfo->getComment());
-        if (srcInfo && srcInfo->getSnapshot())
-            queryTree->setProp("@snapshot", srcInfo->getSnapshot());
+        WorkunitUpdate wu(&cw->lock());
+        if (!wu)
+            throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Error opening wuid %s for query %s", wuid.str(), source);
+
+        WUQueryActivationOptions activate = (WUQueryActivationOptions)req.getActivate();
+        addQueryToQuerySet(wu, target, targetQueryName.get(), activate, targetQueryId, context.queryUserId());
+
+        Owned<IPropertyTree> queryTree = getQueryById(target, targetQueryId, false);
+        if (queryTree)
+        {
+            updateMemoryLimitSetting(queryTree, req.getMemoryLimit(), srcInfo);
+            updateQueryPriority(queryTree, req.getPriority(), srcInfo);
+            updateTimeLimitSetting(queryTree, req.getTimeLimit_isNull(), req.getTimeLimit(), srcInfo);
+            updateWarnTimeLimitSetting(queryTree, req.getWarnTimeLimit_isNull(), req.getWarnTimeLimit(), srcInfo);
+            if (req.getComment())
+                queryTree->setProp("@comment", req.getComment());
+            else if (srcInfo && srcInfo->getComment())
+                queryTree->setProp("@comment", srcInfo->getComment());
+            if (srcInfo && srcInfo->getSnapshot())
+                queryTree->setProp("@snapshot", srcInfo->getSnapshot());
+        }
     }
-    wu.clear();
 
     resp.setQueryId(targetQueryId.str());
 

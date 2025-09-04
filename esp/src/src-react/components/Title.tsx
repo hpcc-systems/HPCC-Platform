@@ -3,7 +3,7 @@ import { ContextualMenuItemType, DefaultButton, IconButton, IContextualMenuItem,
 import { Button, ButtonProps, CounterBadgeProps, CounterBadge, SearchBox, Toaster } from "@fluentui/react-components";
 import { WindowNewRegular } from "@fluentui/react-icons";
 import { Level, scopedLogger } from "@hpcc-js/util";
-import { cookie } from "dojo/main";
+import { cookie } from "src-dojo/index";
 
 import nlsHPCC from "src/nlsHPCC";
 import * as Utility from "src/Utility";
