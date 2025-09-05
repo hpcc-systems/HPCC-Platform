@@ -33,57 +33,19 @@ class ExceptionTest : public CppUnit::TestFixture
     CPPUNIT_TEST_SUITE_END();
 
 private:
-    GraphContextCallback originalCallback;
 
 public:
     void setUp()
     {
-        // Save the original callback state
-        originalCallback = nullptr;
-        setGraphContextCallback(nullptr);
     }
 
     void tearDown()
     {
-        // Restore the original callback state
-        setGraphContextCallback(originalCallback);
-    }
-
-    // Test callback that provides graph context
-    static void testGraphCallbackWithBoth(StringBuffer &graphName, graph_id &subGraphId)
-    {
-        graphName.append("TestGraph");
-        subGraphId = 42;
-    }
-
-    // Test callback that provides empty graph name
-    static void emptyGraphCallback(StringBuffer &graphName, graph_id &subGraphId)
-    {
-        graphName.clear();
-        subGraphId = 99;
-    }
-
-    static void failingGraphCallback(StringBuffer &graphName, graph_id &subGraphId)
-    {
-        throw MakeStringException(1, "Callback failure");
-    }
-
-    static void zeroSubgraphCallback(StringBuffer &graphName, graph_id &subGraphId)
-    {
-        graphName.append("ZeroSubgraph");
-        subGraphId = 0;
-    }
-
-    static void emptyBothCallback(StringBuffer &graphName, graph_id &subGraphId)
-    {
-        graphName.clear();
-        subGraphId = 0;
     }
 
     void testThorWrapException()
     {
         // Test 1: ThorWrapException without any callback set
-        setGraphContextCallback(nullptr);
         try
         {
             throw MakeStringException(1, "Original error");
@@ -103,7 +65,6 @@ public:
         }
 
         // Test 2: ThorWrapException with callback providing graph context
-        setGraphContextCallback(testGraphCallbackWithBoth);
         try
         {
             throw MakeStringException(1, "Original error");
@@ -123,7 +84,6 @@ public:
         }
 
         // Test 3: ThorWrapException when callback throws an exception
-        setGraphContextCallback(failingGraphCallback);
         try
         {
             throw MakeStringException(1, "Original error");
@@ -143,7 +103,6 @@ public:
         }
 
         // Test 4: Callback that provides empty graph name
-        setGraphContextCallback(emptyGraphCallback);
         try
         {
             throw MakeStringException(456, "Empty name test");
@@ -164,7 +123,6 @@ public:
         }
 
         // Test 5: Callback that provides valid graph name but zero subgraph ID
-        setGraphContextCallback(zeroSubgraphCallback);
         try
         {
             throw MakeStringException(789, "Zero subgraph test");
@@ -184,7 +142,6 @@ public:
         }
 
         // Test 6: Callback that provides both empty name
-        setGraphContextCallback(emptyGraphCallback);
         try
         {
             throw MakeStringException(456, "Empty name test");
@@ -204,7 +161,6 @@ public:
         }
 
         // Test 6: Callback that provides both empty name and zero subgraph ID
-        setGraphContextCallback(emptyBothCallback);
         try
         {
             throw MakeStringException(999, "Both empty test");
@@ -224,7 +180,6 @@ public:
         }
 
         // Test 7: Test with MakeThorFatal (which internally calls _ThorWrapException)
-        setGraphContextCallback(testGraphCallbackWithBoth);
         try
         {
             throw MakeStringException(777, "Fatal test exception");
@@ -273,9 +228,6 @@ public:
                 e2->Release();
             }
         }
-
-        // Clean up callback
-        setGraphContextCallback(nullptr);
     }
 
     void testThorWrapExceptionConcurrentAccess()
@@ -309,10 +261,6 @@ public:
             graphName.append("ConcurrentGraph3");
             subGraphId = 3003;
         };
-
-        // Array of callbacks to cycle through
-        GraphContextCallback callbacks[] = {nullptr, callback1, callback2, callback3};
-        constexpr unsigned numCallbacks = sizeof(callbacks) / sizeof(callbacks[0]);
 
         // Thread function that repeatedly calls ThorWrapException while callback changes
         auto workerThread = [&](unsigned threadId)
@@ -378,15 +326,6 @@ public:
 
             unsigned changeCount = 0;
             const unsigned maxChanges = numThreads * iterationsPerThread / 2;
-
-            while (completedThreads.load() < numThreads && changeCount < maxChanges)
-            {
-                // Cycle through different callbacks including nullptr
-                GraphContextCallback newCallback = callbacks[changeCount % numCallbacks];
-                setGraphContextCallback(newCallback);
-                callbackChanges++;
-                changeCount++;
-            }
         };
 
         // Start all threads
@@ -419,9 +358,6 @@ public:
 
         CPPUNIT_ASSERT_MESSAGE("All ThorWrapException calls succeeded",
                                successfulWraps.load() == numThreads * iterationsPerThread);
-
-        // Clean up
-        setGraphContextCallback(nullptr);
     }
 };
 

@@ -16,7 +16,6 @@
 ############################################################################## */
 
 #include <string>
-#include <atomic>
 
 #ifndef _WIN32
 #include <sys/types.h>
@@ -77,15 +76,6 @@ mptag_t managerWorkerMpTag;
 mptag_t kjServiceMpTag;
 Owned<IPropertyTree> globals;
 static Owned<IMPtagAllocator> ClusterMPAllocator;
-
-// Callback for getting current graph context when available
-typedef void (*GraphContextCallback)(StringBuffer &graphName, graph_id &subGraphId);
-static std::atomic<GraphContextCallback> graphContextCallback{nullptr};
-
-void setGraphContextCallback(GraphContextCallback callback)
-{
-    graphContextCallback.store(callback);
-}
 
 // stat. mappings shared between master and slave activities
 const StatisticsMapping spillStatistics({StTimeSpillElapsed, StTimeSortElapsed, StNumSpills, StSizeSpillFile, StSizePeakTempDisk});
@@ -284,7 +274,7 @@ protected:
     Linked<IException> originalException;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-    CThorException(LogMsgAudience _audience,int code, const char *str)
+    CThorException(LogMsgAudience _audience,int code, const char *str) 
         : audience(_audience), errorcode(code), msg(str), action(tea_null), graphId(0), id(0), slave(0), line(0), column(0), severity(SeverityInformation), kind(TAKnone) { };
     CThorException(MemoryBuffer &mb)
     {
@@ -411,40 +401,7 @@ CThorException *_ThorWrapException(IException *e, const char *format, va_list ar
     StringBuffer eStr;
     eStr.appendf("%d, ", e->errorCode());
     e->errorMessage(eStr).append(" : ");
-
-    // Build the base message
-    StringBuffer baseMessage;
-    baseMessage.limited_valist_appendf(2048, format, args);
-
-    // Try to append graph context if available
-    // Capture callback pointer safely to avoid race condition
-    GraphContextCallback callback = graphContextCallback.load();
-
-    if (callback)
-    {
-        StringBuffer graphName;
-        graph_id subGraphId{0};
-        try
-        {
-            callback(graphName, subGraphId);
-
-            // Append graph information if we have either a name or a valid subgraph ID
-            if (graphName.length() > 0 || subGraphId != 0)
-            {
-                baseMessage.append(", Graph ");
-                if (graphName.length() > 0)
-                    baseMessage.append(graphName);
-                if (subGraphId != 0)
-                    baseMessage.appendf("[%" GIDPF "d]", subGraphId);
-            }
-        }
-        catch (...)
-        {
-            // Ignore any exceptions from the callback to avoid recursive issues
-        }
-    }
-
-    eStr.append(baseMessage);
+    eStr.limited_valist_appendf(2048, format, args);
     CThorException *te = new CThorException(e->errorAudience(), e->errorCode(), eStr.str());
     if (QUERYINTERFACE(e, IMP_Exception))
     {
@@ -676,9 +633,9 @@ public:
     {
         num = 0;
     }
-    const char *queryTempDir()
-    {
-        return subDirPath;
+    const char *queryTempDir() 
+    { 
+        return subDirPath; 
     }
     void clearTempDirectory(bool log)
     {
@@ -922,7 +879,7 @@ void setupGroups(INode *_masterNode, IGroup *_processGroup, IGroup *_slaveGroup)
 
     nodeComm.setown(createCommunicator(nodeGroup));
 }
-
+    
 void setupCluster(INode *_masterNode, IGroup *_processGroup, unsigned channelsPerSlave, unsigned portBase, unsigned portInc)
 {
     IArrayOf<INode> slaveGroupNodes;
@@ -1222,7 +1179,7 @@ StringBuffer &getPartFilename(IPartDescriptor &partDesc, unsigned copy, StringBu
 
 void CFifoFileCache::deleteFile(IFile &ifile)
 {
-    try
+    try 
     {
         if (!ifile.remove())
             FLLOG(MCoperatorWarning, "CFifoFileCache: Failed to remove file (missing) : %s", ifile.queryFilename());
@@ -1313,7 +1270,7 @@ public:
 
         for (;;)
         {
-            while (!memDeserializer.eos())
+            while (!memDeserializer.eos()) 
             {
                 RtlDynamicRowBuilder rowBuilder(activity.queryRowAllocator());
                 size32_t sz = activity.queryRowDeserializer()->deserialize(rowBuilder, memDeserializer);
@@ -1370,7 +1327,7 @@ class CRowServer : public CSimpleInterface, implements IThreaded, implements IRo
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CRowServer(CActivityBase *_activity, IRowStream *_seq, ICommunicator &_comm, mptag_t _mpTag)
+    CRowServer(CActivityBase *_activity, IRowStream *_seq, ICommunicator &_comm, mptag_t _mpTag) 
         : activity(_activity), seq(_seq), comm(_comm), mpTag(_mpTag), threaded("CRowServer")
     {
         fetchBuffSize = DEFAULT_ROWSERVER_BUFF_SIZE;
@@ -1453,8 +1410,8 @@ IEngineRowStream *createUngroupStream(IRowStream *input)
         ~CUngroupStream() { input->Release(); }
         virtual const void *nextRow() override
         {
-            const void *ret = input->nextRow();
-            if (ret)
+            const void *ret = input->nextRow(); 
+            if (ret) 
                 return ret;
             else
                 return input->nextRow();
@@ -1719,7 +1676,7 @@ void CThorPerfTracer::start(const char *_workunit, unsigned _subGraphId, double 
     subGraphId = _subGraphId;
     DBGLOG("Starting perf trace of subgraph %u, with interval %.3g seconds", subGraphId, interval);
     perf.setInterval(interval);
-    perf.start();
+    perf.start();    
 }
 
 void CThorPerfTracer::stop()
