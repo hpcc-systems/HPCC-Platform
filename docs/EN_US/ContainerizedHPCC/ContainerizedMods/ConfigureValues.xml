@@ -1133,29 +1133,11 @@ thor:
       url="https://github.com/hpcc-systems/HPCC-Platform">https://github.com/hpcc-systems/HPCC-Platform</ulink></para>
     </sect2>
 
-    <sect2>
-      <title>The Security Values</title>
+    <sect2 id="HPCC_SecurityValues" role="brk">
+      <title>Security Values</title>
 
       <para>This section will look at the <emphasis>values.yaml</emphasis>
       sections dealing with the system security components.</para>
-
-      <sect3>
-        <title>Certificates</title>
-
-        <para>The certificates section can be used to enable the cert-manager
-        to generate TLS certificates for each component in the HPCC Systems
-        deployment.</para>
-
-        <programlisting>certificates:
-  enabled: false
-  issuers:
-    local:
-      name: hpcc-local-issuer</programlisting>
-
-        <para>In the delivered YAML file certificates are not enabled, as
-        illustrated above. You must first install the cert-manager to use this
-        feature.</para>
-      </sect3>
 
       <sect3 id="ValYAML_Secrets">
         <title>Secrets</title>
@@ -1218,6 +1200,457 @@ thor:
     methods:
     - "GET"
     - "POST" </programlisting>
+      </sect3>
+    </sect2>
+
+    <sect2 id="HPCCContainer_Certificates" role="brk">
+      <title>Certificates</title>
+
+      <para>HPCC Systems containerized deployments support comprehensive
+      certificate management through Helm chart configuration. This includes
+      support for multiple certificate issuers, domain management, and
+      advanced certificate features for secure communication between
+      components.</para>
+
+      <para>The certificate system integrates with cert-manager to provide
+      automated certificate generation and renewal for both internal (local,
+      i.e., communication between HPCC components within the same cluster or
+      namespace) and external (public/remote) communications.</para>
+
+      <sect3 id="Container_Certificates">
+        <title>Enable Certificates</title>
+
+        <para>Use the certificates section to enable cert-manager to generate
+        TLS certificates for each component in the HPCC Systems
+        deployment.</para>
+
+        <programlisting>certificates:
+  enabled: false
+  issuers:
+    local:
+      name: hpcc-local-issuer</programlisting>
+
+        <para>In the delivered YAML file certificates are not enabled, as
+        illustrated above. You must first install the cert-manager to use this
+        feature.</para>
+      </sect3>
+
+      <sect3 id="Certificate_Issuers_Configuration">
+        <title>Certificate Issuers Configuration</title>
+
+        <para>Certificate issuers are configured in the
+        <literal>certificates.issuers</literal> section of the Helm values.
+        The system supports multiple issuer types:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para><emphasis role="bold">local</emphasis>: For internal
+            component communication</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">public</emphasis>: For external-facing
+            services</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">remote</emphasis>: For remote client
+            connections</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">signing</emphasis>: For code signing
+            certificates</para>
+          </listitem>
+        </itemizedlist>
+
+        <sect4 id="Remote_Issuer_Configuration">
+          <title>Remote Issuer Configuration</title>
+
+          <para>The <literal>remote</literal> issuer is specifically designed
+          for generating certificates that can be used by remote clients to
+          securely connect to HPCC services. This issuer supports advanced
+          domain configuration options.</para>
+        </sect4>
+
+        <sect4 id="Alternative_Domains_Support">
+          <title>Alternative Domains Support</title>
+
+          <para>The <literal>certificates.issuers.remote</literal> section
+          supports an <literal>alternativeDomains</literal> array
+          configuration option. This feature allows certificates to be valid
+          for multiple domains in addition to the primary domain specified in
+          the issuer configuration.</para>
+
+          <para><emphasis role="bold">Configuration Syntax</emphasis></para>
+
+          <para>Each entry in the <literal>alternativeDomains</literal> array
+          represents an additional domain that will be included in the
+          <literal>dnsNames</literal> property of the generated Certificate
+          resource manifest.</para>
+
+          <example>
+            <title>Remote Issuer with Alternative Domains</title>
+
+            <programlisting>
+certificates:
+  enabled: true
+  issuers:
+    remote:
+      name: remote-issuer
+      kind: ClusterIssuer
+      domain: example.com
+      alternativeDomains:
+        - subdomain1.example.com
+        - subdomain2.example.com
+        - api.example.org
+        - secure.mycompany.net
+          </programlisting>
+          </example>
+
+          <para>In this configuration:</para>
+
+          <itemizedlist>
+            <listitem>
+              <para>The primary domain is
+              <literal>example.com</literal></para>
+            </listitem>
+
+            <listitem>
+              <para>Certificates will also be valid for all domains listed in
+              <literal>alternativeDomains</literal></para>
+            </listitem>
+
+            <listitem>
+              <para>The generated Certificate resource will include all
+              domains in its <literal>dnsNames</literal> section</para>
+            </listitem>
+          </itemizedlist>
+        </sect4>
+      </sect3>
+
+      <sect3 id="Certificate_Generation_Process">
+        <title>Certificate Generation Process</title>
+
+        <para>When the Helm chart is deployed with certificate generation
+        enabled, the system automatically creates Certificate resources based
+        on the issuer configuration. For remote issuers with alternative
+        domains:</para>
+
+        <orderedlist>
+          <listitem>
+            <para><emphasis role="bold">Domain Collection</emphasis>: The
+            system collects the primary domain and all alternative domains
+            from the issuer configuration</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">DNS Names Generation</emphasis>:
+            Service names are combined with each domain to create
+            comprehensive DNS name lists</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Certificate Creation</emphasis>:
+            cert-manager generates certificates valid for all specified domain
+            combinations</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Secret Storage</emphasis>: Generated
+            certificates are stored in Kubernetes secrets for use by HPCC
+            components</para>
+          </listitem>
+        </orderedlist>
+
+        <sect4 id="Generated_Certificate_Properties">
+          <title>Generated Certificate Properties</title>
+
+          <para>Certificates generated with alternative domains will
+          contain:</para>
+
+          <variablelist>
+            <varlistentry>
+              <term>Subject Alternative Names (SAN)</term>
+
+              <listitem>
+                <para>All combinations of service names with the primary
+                domain and alternative domains</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>Common Name</term>
+
+              <listitem>
+                <para>Typically set to the service name combined with the
+                primary domain</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>Validity Period</term>
+
+              <listitem>
+                <para>Default 90-day validity with automatic renewal before
+                expiration</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>Usage</term>
+
+              <listitem>
+                <para>Configured for both server authentication and client
+                authentication</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+        </sect4>
+      </sect3>
+
+      <sect3 id="Use_Cases_Best_Practices">
+        <title>Use Cases and Best Practices</title>
+
+        <sect4 id="Multi_Domain_Certificate_Management">
+          <title>Multi-Domain Certificate Management</title>
+
+          <para>The <literal>alternativeDomains</literal> feature is the
+          preferred method for configuring certificates that need to be valid
+          across multiple domains and subdomains. Common use cases
+          include:</para>
+
+          <itemizedlist>
+            <listitem>
+              <para><emphasis role="bold">Multi-tenant Deployments</emphasis>:
+              Supporting multiple customer domains from a single HPCC
+              deployment</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Load Balancer
+              Integration</emphasis>: Certificates valid for both direct
+              service access and load balancer endpoints</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Development and
+              Production</emphasis>: Single certificates valid across multiple
+              environment domains</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Legacy Migration</emphasis>:
+              Supporting both old and new domain names during migration
+              periods</para>
+            </listitem>
+          </itemizedlist>
+        </sect4>
+
+        <sect4 id="Configuration_Best_Practices">
+          <title>Configuration Best Practices</title>
+
+          <orderedlist>
+            <listitem>
+              <para><emphasis role="bold">Domain Validation</emphasis>: Ensure
+              all domains in <literal>alternativeDomains</literal> are
+              properly configured in DNS before certificate generation</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Certificate Authority
+              Limits</emphasis>: Be aware of rate limits imposed by
+              certificate authorities when using multiple domains</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Security Considerations</emphasis>:
+              Only include domains that should legitimately be covered by the
+              same certificate</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Renewal Planning</emphasis>: Monitor
+              certificate renewal processes when using external certificate
+              authorities</para>
+            </listitem>
+          </orderedlist>
+        </sect4>
+      </sect3>
+
+      <sect3 id="Complete_Configuration_Example">
+        <title>Complete Configuration Example</title>
+
+        <para>Below is a comprehensive example showing how to configure
+        multiple issuers with alternative domain support:</para>
+
+        <example>
+          <title>Complete Certificate Configuration</title>
+
+          <programlisting>
+certificates:
+  enabled: true
+  issuers:
+    local:
+      name: local-ca-issuer
+      kind: Issuer
+      domain: hpcc.local
+      
+    public:
+      name: letsencrypt-prod
+      kind: ClusterIssuer
+      domain: hpcc.example.com
+      
+    remote:
+      name: remote-ca-issuer
+      kind: ClusterIssuer
+      domain: api.example.com
+      alternativeDomains:
+        - client.example.com
+        - secure.example.com
+        - legacy.oldcompany.net
+        - backup.example.org
+      
+    signing:
+      name: code-signing-issuer
+      kind: Issuer
+      domain: signing.internal
+      </programlisting>
+        </example>
+
+        <para>This configuration enables:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>Local inter-component communication with internal
+            certificates</para>
+          </listitem>
+
+          <listitem>
+            <para>Public-facing services with Let's Encrypt
+            certificates</para>
+          </listitem>
+
+          <listitem>
+            <para>Remote client certificates valid across multiple
+            domains</para>
+          </listitem>
+
+          <listitem>
+            <para>Code signing capabilities for ECL applications</para>
+          </listitem>
+        </itemizedlist>
+      </sect3>
+
+      <sect3 id="Troubleshooting">
+        <title>Troubleshooting Certificates</title>
+
+        <sect4 id="Certificate_Generation_Issues">
+          <title>Certificate Generation Issues</title>
+
+          <para>If certificates are not generating correctly with alternative
+          domains:</para>
+
+          <orderedlist>
+            <listitem>
+              <para>Verify that cert-manager is properly installed and
+              running</para>
+            </listitem>
+
+            <listitem>
+              <para>Check that all domains resolve properly via DNS</para>
+            </listitem>
+
+            <listitem>
+              <para>Examine Certificate and CertificateRequest resources for
+              error messages</para>
+            </listitem>
+
+            <listitem>
+              <para>Validate issuer configuration and permissions</para>
+            </listitem>
+          </orderedlist>
+        </sect4>
+
+        <sect4 id="Common_Error_Messages">
+          <title>Common Error Messages</title>
+
+          <para>Watch for these common issues when using alternative
+          domains:</para>
+
+          <variablelist>
+            <varlistentry>
+              <term>DNS validation failures</term>
+
+              <listitem>
+                <para>Ensure all alternative domains have proper DNS records
+                and are accessible from the certificate authority</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>Rate limit exceeded</term>
+
+              <listitem>
+                <para>Some certificate authorities impose limits on the number
+                of domains per certificate or certificates per
+                timeframe</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>Invalid domain format</term>
+
+              <listitem>
+                <para>Verify that all domains in alternativeDomains follow
+                proper DNS naming conventions</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+        </sect4>
+      </sect3>
+
+      <sect3 id="Migration_Legacy_Configuration">
+        <title>Migration from Legacy Configuration</title>
+
+        <para>If you are currently using individual domain configurations or
+        multiple certificate resources, consider migrating to the
+        <literal>alternativeDomains</literal> approach for simplified
+        management:</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Identify all domains currently covered by separate
+            certificates</para>
+          </listitem>
+
+          <listitem>
+            <para>Update the remote issuer configuration to include all
+            domains in the <literal>alternativeDomains</literal> array</para>
+          </listitem>
+
+          <listitem>
+            <para>Deploy the updated configuration</para>
+          </listitem>
+
+          <listitem>
+            <para>Verify that the new certificate covers all required
+            domains</para>
+          </listitem>
+
+          <listitem>
+            <para>Remove old certificate configurations once the new setup is
+            validated</para>
+          </listitem>
+        </orderedlist>
+
+        <note>
+          <para>The <literal>alternativeDomains</literal> configuration is now
+          the preferred method for multi-domain certificate management in HPCC
+          Systems containerized deployments. This approach simplifies
+          certificate management and reduces the overhead of maintaining
+          multiple certificate resources.</para>
+        </note>
       </sect3>
     </sect2>
 
