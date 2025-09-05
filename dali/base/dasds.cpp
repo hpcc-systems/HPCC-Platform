@@ -19,7 +19,6 @@
 #include <list>
 #include <unordered_map>
 #include <future>
-#include <optional>
 
 #include "platform.h"
 #include "jhash.hpp"
@@ -5693,15 +5692,14 @@ public:
         return res;
     }
 
-    IFile *saveStoreToFile(const IPropertyTree *root, const StoreFormat format, unsigned &crc)
+    IFile *saveStoreToFile(const IPropertyTree *root, StoreFormat format, unsigned &crc)
     {
         const bool isBinary = (format == StoreFormat::BINARY);
         LOG(MCdebugProgress, "Saving store to %s", isBinary ? "binary" : "XML");
         assertex(root);
 
-        Owned<IFileIO> iFileIOTmpStore;
         StringBuffer tmpStoreName;
-        iFileIOTmpStore.setown(createUniqueFile(location, VStringBuffer("dali_store_tmp%s", isBinary ? ".bin" : ".xml").str(), nullptr, tmpStoreName));
+        Owned<IFileIO> iFileIOTmpStore(createUniqueFile(location, VStringBuffer("dali_store_tmp%s", isBinary ? ".bin" : ".xml").str(), nullptr, tmpStoreName));
         Owned<IFile> iFile = LINK(iFileIOTmpStore->queryFile());
         dbgassertex(iFile);
         StringBuffer planeName;
@@ -5754,9 +5752,9 @@ public:
         catch (DALI_CATCHALL)
         {
             iFile->remove();
-            IException *e = makeStringException(0, VStringBuffer("Unknown exception - Error saving %s store", isBinary ? "binary" : "XML"));
-            DISLOG(e);
-            throw;
+            VStringBuffer errMsg("Unknown exception - Error saving %s store", isBinary ? "binary" : "XML");
+            DISLOG("%s", errMsg.str());
+            throw MakeStringException(0, "%s", errMsg.str());
         }
 
         return iFile.getClear();
