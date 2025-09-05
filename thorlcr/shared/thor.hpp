@@ -64,7 +64,7 @@ thor:
   watchdogProgressEnabled: true
   logging:
     detail: 50
-    thorworkerdetail: 20 // default = WarnMsgThreshold
+    thorworkerdetail: 40 // default = below ProgressMsgThreshold = 50, above AudMsgThreshold = 30
 )!!";
 #else
 constexpr const char * thorDefaultConfigYaml = R"!!(
