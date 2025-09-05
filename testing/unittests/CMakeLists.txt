@@ -58,7 +58,6 @@ set (    SRCS
          ${HPCC_SOURCE_DIR}/tools/esp-api/espshell.cpp
          ${HPCC_SOURCE_DIR}/tools/esp-api/espservice.cpp
          commonJsonWriterTests.cpp
-         exceptiontests.cpp
          rtlxmltests.cpp
     )
 
@@ -81,8 +80,6 @@ include_directories (
          ./../../system/libbase58
          ./../../fs/dafsclient
          ./../../common/thorhelper
-         ./../../thorlcr/thorutil
-         ./../../thorlcr/shared
          ./../../dali/base
          ./../../system/security/shared
          ./../../common/deftype
@@ -126,7 +123,6 @@ target_link_libraries ( unittests
          deftype
          libbase58
          thorhelper
-         graph_lcr
          esphttp
          esdllib
          logginglib
