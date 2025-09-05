@@ -1201,16 +1201,43 @@ static void addDependencies(IPropertyTree *xgmml, bool failIfMissing, CGraphTabl
     }
 }
 
+static memsize_t lastHeapUsage =  0;
+static constexpr LogMsgCategory MCthorMem(MCdebugInfo(40));
+static unsigned minHeapIncreaseThresholdMB = INFINITE; // uninitialized
+static unsigned pctIncreaseThreshold = INFINITE;
+static CriticalSection traceHeapCrit;
 void traceMemUsage()
 {
-    StringBuffer memStatsStr;
-    roxiemem::memstats(memStatsStr);
-    LOG(MCthorDetailedDebugInfo, "Roxiemem stats: %s", memStatsStr.str());
+    CriticalBlock b(traceHeapCrit);
     memsize_t heapUsage = getMapInfo("heap");
-    if (heapUsage) // if 0, assumed to be unavailable
+    // check if new heapUsage is significantly different from lastHeapUsage
+    // either a >= 10% increase, or a >= 50MB increase
+    if (INFINITE == minHeapIncreaseThresholdMB)
     {
+        minHeapIncreaseThresholdMB = getComponentConfigSP()->getPropInt("expert/@minHeapIncreaseThreasholdMB", 50);
+        pctIncreaseThreshold = getComponentConfigSP()->getPropInt("expert/@pctIncreaseThreshold", 10);
+    }
+    if ((0 == minHeapIncreaseThresholdMB) && (0 == pctIncreaseThreshold))
+        return;
+    constexpr unsigned oneMB = 0x100000;
+    if ((lastHeapUsage == 0) ||
+        ((heapUsage > lastHeapUsage) &&
+         ((heapUsage / lastHeapUsage > (100 + pctIncreaseThreshold) / 100) &&
+          (heapUsage - lastHeapUsage > minHeapIncreaseThresholdMB * oneMB)
+         )
+        )
+       )
+    {
+        lastHeapUsage = heapUsage;
+        if (!REJECTLOG(MCthorDetailedDebugInfo))
+        {
+            StringBuffer memStatsStr;
+            roxiemem::memstats(memStatsStr);
+            LOG(MCthorDetailedDebugInfo, "Roxiemem stats: %s", memStatsStr.str());
+        }
         memsize_t rmtotal = roxiemem::getTotalMemoryLimit();
-        LOG(MCthorDetailedDebugInfo, "Heap usage (excluding Roxiemem) : %" I64F "d bytes", (unsigned __int64)(heapUsage-rmtotal));
+        // JCSMORE: should move to traceflags
+        LOG(MCthorMem, "Heap usage: %u MB. Roxiemem[total: %u MB, allocated: %u MB]", (unsigned)(heapUsage / oneMB), (unsigned)(rmtotal / oneMB), (unsigned)((HEAP_ALIGNMENT_SIZE * roxiemem::getHeapAllocated()) / oneMB));
     }
 }
 
@@ -2852,9 +2879,6 @@ void CJobBase::endJob()
         ::Release(userDesc);
         callThreadTerminationHooks(true); // must call any installed thread termination functions, before unloading plugins
         ::Release(pluginMap);
-
-        if (!REJECTLOG(MCthorDetailedDebugInfo))
-            traceMemUsage();
 
         if (numChannels > 1) // if only 1 - then channel allocator is same as sharedAllocator, leaks will be reported by the single channel
             checkAndReportLeaks(sharedAllocator->queryRowManager());

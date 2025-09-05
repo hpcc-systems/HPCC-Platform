@@ -1954,6 +1954,7 @@ public:
                         }
                         jobs.removeExact(job);
                         DBGLOG("QueryDone, removed %s from jobs", key.get());
+                        traceMemUsage();
 
                         // reset for next job
                         setProcessAborted(false);
