@@ -1556,7 +1556,37 @@ HqlCppTranslator::~HqlCppTranslator()
 
 void HqlCppTranslator::setTargetClusterType(ClusterType clusterType)
 {
-    targetClusterTypes.front() = clusterType;
+    if (!targetClusterTypes.empty())
+        targetClusterTypes.back() = clusterType;
+    else
+        targetClusterTypes.push_back(clusterType);
+}
+
+ClusterType HqlCppTranslator::pushTargetClusterType(ClusterType clusterType)
+{
+    ClusterType old = targetClusterTypes.back();
+    targetClusterTypes.push_back(clusterType);
+    return old;
+}
+
+ClusterType HqlCppTranslator::popTargetClusterType()
+{
+    assertex(targetClusterTypes.size() > 1);
+    ClusterType old = targetClusterTypes.back();
+    targetClusterTypes.pop_back();
+    return old;
+}
+
+void HqlCppTranslator::saveTargetClusterTypes()
+{
+    savedClusterTypes = targetClusterTypes;
+}
+
+ClusterType HqlCppTranslator::restoreTargetClusterTypes()
+{
+    ClusterType old = targetClusterTypes.back();
+    targetClusterTypes = savedClusterTypes;
+    return old;
 }
 
 void HqlCppTranslator::ensureDiskAccessAllowed(IHqlExpression * expr)
@@ -1938,6 +1968,7 @@ void HqlCppTranslator::cacheOptions()
             if (0 == stricmp(name.str(), debugOptions[x].optName))
             {
                 debugOptions[x].setValue(val.str());
+                saveOverriddenOption(name.str());
                 break;
             }
         }
@@ -2041,6 +2072,7 @@ void HqlCppTranslator::postProcessOptions()
         //Static regexes are not generated in stand-alone executables because they are initialised
         //before the regex cache - causing a crash.
         options.defaultStaticRegex = false;
+        saveOverriddenOption("defaultStaticRegex");
         options.allowStaticRegex = false;
     }
 
