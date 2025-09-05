@@ -124,8 +124,8 @@ public:
             CPPUNIT_ASSERT(!recorder.startRecording("traceid", "eventtrace.evtxxx", false));
 
             // Record some events
-            recorder.recordIndexLookup(1, branchOffset, NodeBranch, true, 9876, 400);
-            recorder.recordIndexLookup(1, nodeSize, NodeLeaf, false, 0, 0);
+            recorder.recordIndexCacheHit(1, branchOffset, NodeBranch, 9876, 400);
+            recorder.recordIndexCacheMiss(1, nodeSize, NodeLeaf);
             recorder.recordIndexLoad(1, nodeSize, NodeLeaf, nodeSize*8, 500, 300);
             recorder.recordIndexEviction(1, branchOffset, NodeBranch, nodeSize);
 
@@ -144,19 +144,19 @@ public:
             CPPUNIT_ASSERT(!recorder.isRecording());
 
             //These should be ignored - count checked later on
-            recorder.recordIndexLookup(2, 400, NodeLeaf, false, 0, 0);
-            recorder.recordIndexLookup(1, 800, NodeLeaf, false, 0, 0);
+            recorder.recordIndexCacheMiss(2, 400, NodeLeaf);
+            recorder.recordIndexCacheMiss(1, 800, NodeLeaf);
 
             recorder.pauseRecording(false, true);
             CPPUNIT_ASSERT(recorder.isRecording());
 
             // Record more events
-            recorder.recordIndexLookup(2, 400, NodeLeaf, false, 0, 0);
-            recorder.recordIndexLookup(1, 800, NodeLeaf, false, 0, 0);
+            recorder.recordIndexCacheMiss(2, 400, NodeLeaf);
+            recorder.recordIndexCacheMiss(1, 800, NodeLeaf);
             recorder.recordIndexLoad(2, 500, NodeLeaf, 2048, 600, 400);
             recorder.recordIndexLoad(1, 800, NodeLeaf, 2048, 600, 400);
-            recorder.recordIndexLookup(1, 800, NodeLeaf, true, 2048, 600);
-            recorder.recordIndexLookup(1, 1200, NodeLeaf, false, 0, 0);
+            recorder.recordIndexCacheHit(1, 800, NodeLeaf, 2048, 600);
+            recorder.recordIndexCacheMiss(1, 1200, NodeLeaf);
             recorder.recordIndexEviction(2, 500, NodeLeaf, 2048);
             recorder.recordIndexLoad(1, 1200, NodeLeaf, 2048, 600, 400);
 
@@ -234,7 +234,7 @@ public:
             // Record some events
             for (unsigned i=0; i < 100'000; i++)
             {
-                recorder.recordIndexLookup(1, i*nodeSize, NodeLeaf, false, 0, 0);
+                recorder.recordIndexCacheMiss(1, i*nodeSize, NodeLeaf);
                 recorder.recordIndexLoad(1, i*nodeSize, NodeLeaf, nodeSize*8, 500, 300);
             }
 
@@ -246,7 +246,7 @@ public:
             CPPUNIT_ASSERT_EQUAL(200'000U, summary.numEvents);
 
             verifyCounts("eventtrace.evt", {
-                { EventIndexLookup, 100'000 },
+                { EventIndexCacheMiss, 100'000 },
                 { EventIndexLoad, 100'000 }
             });
         }
@@ -269,7 +269,7 @@ public:
             EventRecorder &recorder = queryRecorder();
             for (unsigned i=0; i < count; i++)
             {
-                recorder.recordIndexLookup(id, i*nodeSize, NodeLeaf, false, 0, 0);
+                recorder.recordIndexCacheMiss(id, i*nodeSize, NodeLeaf);
                 recorder.recordIndexLoad(id, i*nodeSize, NodeLeaf, nodeSize*8, 500, 300);
             }
             return 0;
@@ -319,7 +319,7 @@ public:
 
             //The counts are only valid if we waited for the threads to finish
             if (!delay)
-                verifyCounts("eventtrace.evt", { { EventIndexLookup, 200'000 }, { EventIndexLoad, 200'000 } });
+                verifyCounts("eventtrace.evt", { { EventIndexCacheMiss, 200'000 }, { EventIndexLoad, 200'000 } });
         }
         catch (IException * e)
         {
