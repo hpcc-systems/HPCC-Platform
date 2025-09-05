@@ -368,11 +368,11 @@ void CSlaveMessageHandler::threadmain()
     }
     catch (IException *e)
     {
-        StringBuffer msg("CSlaveMessageHandler::threadmain");
+        StringBuffer errMsg("CSlaveMessageHandler::threadmain");
         const char *graphName = job.queryGraphName();
         if (graphName && *graphName)
-            msg.appendf(" Graph: %s", graphName);
-        Owned<IThorException> te = ThorWrapException(e, "%s", msg.str());
+            errMsg.appendf(" Graph: %s", graphName);
+        Owned<IThorException> te = ThorWrapException(e, "%s", errMsg.str());
         e->Release();
         job.fireException(te);
     }
