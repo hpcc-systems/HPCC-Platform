@@ -2995,15 +2995,15 @@ IPropertyTree *getXPathMatchTree(IPropertyTree &parent, const char *xpath)
 
 void PTree::serializeAttributes(IBufferedSerialOutputStream &tgt) const
 {
-    Owned<IAttributeIterator> aIter = getAttributes();
-    if (aIter->first())
+    AttrValue *attr = getNextAttribute(nullptr);
+    if (attr)
     {
         do
         {
-            append(tgt, aIter->queryName());
-            append(tgt, aIter->queryValue());
-        }
-        while (aIter->next());
+            append(tgt, attr->key.get());
+            append(tgt, attr->value.get());
+            attr = getNextAttribute(attr);
+        } while (attr);
     }
     append(tgt, ""); // attribute terminator. i.e. blank attr name.
 }
@@ -3023,18 +3023,17 @@ void PTree::serializeCutOff(IBufferedSerialOutputStream &tgt, int cutoff, int de
 {
     serializeSelf(tgt);
 
-    if (-1 == cutoff || depth<cutoff)
+    // Serialize children if we haven't hit the cutoff
+    constexpr int unlimitedDepth = -1;
+    if (unlimitedDepth == cutoff || depth < cutoff)
     {
         Owned<IPropertyTreeIterator> iter = getElements("*");
-        if (iter->first())
+        ForEach(*iter)
         {
-            do
-            {
-                IPropertyTree *_child = &iter->query();
-                PTree *child = QUERYINTERFACE(_child, PTree); assertex(child);
-                child->serializeCutOff(tgt, cutoff, depth+1);
-            }
-            while (iter->next());
+            IPropertyTree *childTree = &iter->query();
+            PTree *child = QUERYINTERFACE(childTree, PTree);
+            assertex(child);
+            child->serializeCutOff(tgt, cutoff, depth + 1);
         }
     }
     append(tgt, ""); // element terminator. i.e. blank child name length.
@@ -3097,7 +3096,10 @@ void PTree::deserializeSelf(IBufferedSerialInputStream &src)
         std::pair<const char *, const char *> attrPair = peekKeyValuePair(src, len);
         if (attrPair.second == nullptr)
             throwUnexpectedX("PTree deserialization error: end of stream, expected attribute value");
-        setProp(attrPair.first, attrPair.second);
+
+        constexpr bool attributeNameNotEncoded = false; // Deserialized attribute name is in its original unencoded form
+        setAttribute(attrPair.first, attrPair.second, attributeNameNotEncoded);
+
         src.skip(len + 1); // +1 to skip over second null terminator.
     }
 
