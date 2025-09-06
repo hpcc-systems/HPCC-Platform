@@ -771,7 +771,7 @@ public:
                 </expect>
             </test>
         )!!!";
-        testEventVisitationLinks(testData, false);
+        testEventVisitationLinks(testData, PTEFlenientParsing);
     }
 
     void testFilterByEventsByContext()
@@ -809,7 +809,7 @@ public:
                 </expect>
             </test>
         )!!!";
-        testEventVisitationLinks(testData, false);
+        testEventVisitationLinks(testData, PTEFlenientParsing);
     }
 
     void testFilterByEventsByType()
@@ -844,7 +844,7 @@ public:
                 </expect>
             </test>
         )!!!";
-        testEventVisitationLinks(testData, false);
+        testEventVisitationLinks(testData, PTEFlenientParsing);
     }
 
     void testFilterByEventsByContextComplement()
@@ -883,7 +883,7 @@ public:
                 </expect>
             </test>
         )!!!";
-        testEventVisitationLinks(testData, false);
+        testEventVisitationLinks(testData, PTEFlenientParsing);
     }
 
     void testFilterByEventsByTypeComplement()
@@ -930,7 +930,7 @@ public:
                 </expect>
             </test>
         )!!!";
-        testEventVisitationLinks(testData, false);
+        testEventVisitationLinks(testData, PTEFlenientParsing);
     }
 
     void testFilterByEventsWithGoodException()
@@ -967,7 +967,7 @@ public:
                 </expect>
             </test>
         )!!!";
-        testEventVisitationLinks(testData, false);
+        testEventVisitationLinks(testData, PTEFlenientParsing);
     }
 
     void testFilterByEventsWithIrrelevantException()
@@ -1005,7 +1005,7 @@ public:
                 </expect>
             </test>
         )!!!";
-        testEventVisitationLinks(testData, false);
+        testEventVisitationLinks(testData, PTEFlenientParsing);
     }
 
     void testFilterByEventByCanceledTerms()
@@ -1055,7 +1055,7 @@ public:
                 </expect>
             </test>
         )!!!";
-        testEventVisitationLinks(testData, false);
+        testEventVisitationLinks(testData, PTEFlenientParsing);
     }
 
     void testFilterByEventByBadName()
@@ -1072,7 +1072,7 @@ public:
                 </expect>
             </test>
         )!!!";
-        CPPUNIT_ASSERT_THROW_MESSAGE("expected exception for bad event filter term name", testEventVisitationLinks(testData, false), std::exception);
+        CPPUNIT_ASSERT_THROW_MESSAGE("expected exception for bad event filter term name", testEventVisitationLinks(testData, PTEFlenientParsing), std::exception);
     }
 
     void testFilterByEventByBadComparison()
@@ -1089,7 +1089,7 @@ public:
                 </expect>
             </test>
         )!!!";
-        CPPUNIT_ASSERT_THROW_MESSAGE("expected exception for bad event filter term comparison", testEventVisitationLinks(testData, false), std::exception);
+        CPPUNIT_ASSERT_THROW_MESSAGE("expected exception for bad event filter term comparison", testEventVisitationLinks(testData, PTEFlenientParsing), std::exception);
     }
 
     void testFilterByAttributeByFileId()
@@ -1127,7 +1127,7 @@ public:
                 </expect>
             </test>
         )!!!";
-        testEventVisitationLinks(testData, false);
+        testEventVisitationLinks(testData, PTEFlenientParsing);
     }
 
     void testFilterByAttributeByPath1()
@@ -1155,7 +1155,7 @@ public:
                 </expect>
             </test>
         )!!!";
-        testEventVisitationLinks(testData, false);
+        testEventVisitationLinks(testData, PTEFlenientParsing);
     }
 
     void testFilterByAttributeByPath2()
@@ -1184,7 +1184,7 @@ public:
                 </expect>
             </test>
         )!!!";
-        testEventVisitationLinks(testData, false);
+        testEventVisitationLinks(testData, PTEFlenientParsing);
     }
 
     void testFilterByAttributeByPath3()
@@ -1215,7 +1215,7 @@ public:
                 </expect>
             </test>
         )!!!";
-        testEventVisitationLinks(testData, false);
+        testEventVisitationLinks(testData, PTEFlenientParsing);
     }
 
     void testFilterByAttributeByBool1()
@@ -1238,7 +1238,7 @@ public:
                 </expect>
             </test>
         )!!!";
-        testEventVisitationLinks(testData, false);
+        testEventVisitationLinks(testData, PTEFlenientParsing);
     }
 
     void testFilterByAttributeByBool2()
@@ -1263,7 +1263,7 @@ public:
                 </expect>
             </test>
         )!!!";
-        testEventVisitationLinks(testData, false);
+        testEventVisitationLinks(testData, PTEFlenientParsing);
     }
 
     void testFilterByAttributeByTimestamp1()
@@ -1303,7 +1303,7 @@ public:
                 </expect>
             </test>
         )!!!";
-        testEventVisitationLinks(testData, false);
+        testEventVisitationLinks(testData, PTEFlenientParsing);
     }
 
     void testFilterByAttributeByTimestamp2()
@@ -1343,7 +1343,7 @@ public:
                 </expect>
             </test>
         )!!!";
-        testEventVisitationLinks(testData, false);
+        testEventVisitationLinks(testData, PTEFlenientParsing);
     }
 
     void testFilterByAttributeByTimestamp3()
@@ -1378,7 +1378,7 @@ public:
                 </expect>
             </test>
         )!!!";
-        testEventVisitationLinks(testData, false);
+        testEventVisitationLinks(testData, PTEFlenientParsing);
     }
 
     void testFilterByAttributeByNodeKind()
@@ -1404,7 +1404,7 @@ public:
                 </expect>
             </test>
         )!!!";
-        testEventVisitationLinks(testData, false);
+        testEventVisitationLinks(testData, PTEFlenientParsing);
     }
 
     void testFilterByAttributeByTraceId()
@@ -1432,7 +1432,7 @@ public:
                 </expect>
             </test>
         )!!!";
-        testEventVisitationLinks(testData, false);
+        testEventVisitationLinks(testData, PTEFlenientParsing);
     }
 };
 

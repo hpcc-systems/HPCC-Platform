@@ -935,7 +935,7 @@ bool CIndexFileSummary::doOp()
     default:
         return false;
     }
-    if (!traverseEvents(inputPath, *collector))
+    if (!traverseEvents(*collector))
         return false;
     collector->summarize();
     return true;

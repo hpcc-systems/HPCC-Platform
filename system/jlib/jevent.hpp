@@ -364,6 +364,7 @@ public:
     {
         return setValue(attr, __uint64(value));
     }
+    void fixup(const struct EventFileProperties& fileProps);
 
 public:
     CEvent();
@@ -542,6 +543,22 @@ extern jlib_decl EventRecorder eventRecorder;
 inline EventRecorder & queryRecorder() { return EventRecorderInternal::eventRecorder; }
 inline bool recordingEvents() { return EventRecorderInternal::eventRecorder.isRecording(); }
 
+// Tri-state values for EventFileProperties::options fields
+// File properties for a single file could use a Boolean flag. Potential iteration of events from
+// multiple files introduces a third possibility when not all files are configured identically.
+enum class EventFileOption : byte
+{
+    Disabled,              // No files have this option enabled
+    Enabled,               // All files have this option enabled
+    Ambiguous = UINT8_MAX  // Some but not all files have this option enabled
+};
+
+// Values indicating ambiguous/conflicting properties when multiplexing multiple sources
+constexpr uint32_t AmbiguousVersion = UINT32_MAX;
+constexpr byte AmbiguousChannelId = UINT8_MAX;
+constexpr byte AmbiguousReplicaId = UINT8_MAX;
+constexpr __uint64 AmbiguousInstanceId = UINT64_MAX;
+
 // Abstract interface for visiting the events in a previously recorded event data file.
 // An implementation will receive a sequence of calls:
 // - visitFile: signals the start of a file
@@ -571,16 +588,16 @@ interface IEventVisitor : extends IInterface
 struct jlib_decl EventFileProperties
 {
     StringAttr path;              // location of the event data file
-    uint32_t version{0};          // event file version number
+    uint32_t version{0};          // event file version number (AmbiguousVersion if sources conflict)
     struct {
-        bool includeTraceIds{false};
-        bool includeThreadIds{false};
-        bool includeStackTraces{false};
+        EventFileOption includeTraceIds{EventFileOption::Disabled};
+        EventFileOption includeThreadIds{EventFileOption::Disabled};
+        EventFileOption includeStackTraces{EventFileOption::Disabled};
     } options;
     StringAttr processDescriptor;
-    byte channelId{0};
-    byte replicaId{0};
-    __uint64 instanceId{0};
+    byte channelId{0};            // AmbiguousChannelId if sources conflict
+    byte replicaId{0};            // AmbiguousReplicaId if sources conflict
+    __uint64 instanceId{0};       // AmbiguousInstanceId if sources conflict
     uint32_t eventsRead{0};
     uint32_t bytesRead{0};
 };
