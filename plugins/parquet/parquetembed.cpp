@@ -64,11 +64,12 @@ namespace parquetembed
  */
 static bool isFieldNameEclCompatible(size32_t len, const char *name)
 {
-    if (std::isupper(name[0]) || (!std::isalpha(name[0]) && name[0] != '_'))
+    byte c0 = name[0];
+    if (std::isupper(c0) || (!std::isalpha(c0) && c0 != '_'))
         return false;
     for (size32_t i = 1; i < len; ++i)
     {
-        char c = name[i];
+        byte c = name[i];
         if (std::isupper(c) || (!std::isalnum(c) && c != '_'))
             return false;
     }
@@ -95,7 +96,7 @@ static bool toEclCompatibleFieldName(StringBuffer &name, StringBuffer &out)
     out.append("p_");
     for (size_t i = 0; i < name.length(); ++i)
     {
-        char c = name.charAt(i);
+        byte c = name.charAt(i);
         if (!std::isalnum(c))
             out.append('_');
         else if (std::isupper(c))
