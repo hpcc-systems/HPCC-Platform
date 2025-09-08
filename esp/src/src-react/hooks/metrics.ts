@@ -426,7 +426,7 @@ export function useWUQueryMetrics(
 }
 
 export function useMetricsGraphLayout(dot: string): { svg: string, layoutStatus: LayoutStatus } {
-    const [svg, setSvg] = React.useState<string>("");
+    const [svg, setSvg] = React.useState<string>(layoutCache.svg(dot));
     const [layoutStatus, setLayoutStatus] = React.useState<LayoutStatus>(LayoutStatus.UNKNOWN);
 
     React.useEffect(() => {
