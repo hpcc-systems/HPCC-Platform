@@ -778,7 +778,12 @@ static void UnixAbortHandler(int signo)
     hadAbortSignal = true;
     if (handlers.length()==0 || notifyOnAbort(type))
     {
+#ifdef _COVERAGE
+        ClearModuleObjects();
+        exit(0);
+#else
         _exit(0);
+#endif
     }
 }
 #endif
