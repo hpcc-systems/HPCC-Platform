@@ -184,29 +184,31 @@ static void buildEclRecord(const std::shared_ptr<arrow::Schema> &schema, StringB
         StringBuffer eclName;
         bool isCompatible = toEclCompatibleFieldName(origName, eclName);
         StringBuffer eclType;
-        if (field->type()->id() == arrow::Type::STRUCT)
+        const std::shared_ptr<arrow::DataType> fieldType = field->type();
+        arrow::Type::type typeID = fieldType->id();
+        if (typeID == arrow::Type::STRUCT)
         {
             StringBuffer childRecord;
             childRecord.append(eclName).append("Rec := RECORD\n");
-            std::shared_ptr<arrow::StructType> structType = std::static_pointer_cast<arrow::StructType>(field->type());
+            std::shared_ptr<arrow::StructType> structType = std::static_pointer_cast<arrow::StructType>(fieldType);
             std::shared_ptr<arrow::Schema> childSchema = std::make_shared<arrow::Schema>(structType->fields());
             buildEclRecord(childSchema, childRecord);
             childRecord.append("END;\n\n");
             out.insert(0, childRecord);
             out.append(pad).append(eclName).append("Rec ").append(eclName);
         }
-        else if (field->type()->id() == arrow::Type::LIST || field->type()->id() == arrow::Type::LARGE_LIST)
+        else if (typeID == arrow::Type::LIST || typeID == arrow::Type::LARGE_LIST)
         {
             out.append(pad).append("SET OF ");
-            if (field->type()->id() == arrow::Type::LIST)
-                arrowTypeToEcl(std::static_pointer_cast<arrow::ListType>(field->type())->value_type(), eclType);
+            if (typeID == arrow::Type::LIST)
+                arrowTypeToEcl(std::static_pointer_cast<arrow::ListType>(fieldType)->value_type(), eclType);
             else
-                arrowTypeToEcl(std::static_pointer_cast<arrow::LargeListType>(field->type())->value_type(), eclType);
+                arrowTypeToEcl(std::static_pointer_cast<arrow::LargeListType>(fieldType)->value_type(), eclType);
             out.append(eclType).append(' ').append(eclName);
         }
         else
         {
-            arrowTypeToEcl(field->type(), eclType);
+            arrowTypeToEcl(fieldType, eclType);
             out.append(pad).append(eclType).append(' ').append(eclName);
         }
         if (!isCompatible)
