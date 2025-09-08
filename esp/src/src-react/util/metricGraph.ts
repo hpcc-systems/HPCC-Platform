@@ -573,6 +573,14 @@ class LayoutCache {
         return this._cache[hashDot].response;
     }
 
+    svg(dot: string) {
+        const hashDot = hashSum(dot);
+        if (hashDot in this._cache) {
+            return this._cache[hashDot].svg;
+        }
+        return "";
+    }
+
     status(dot: string): LayoutStatus {
         const hashDot = hashSum(dot);
         if (!(hashDot in this._cache)) {
