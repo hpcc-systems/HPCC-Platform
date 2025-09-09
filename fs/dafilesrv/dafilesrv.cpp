@@ -389,9 +389,12 @@ int main(int argc, const char* argv[])
 
 #ifndef _CONTAINERIZED
     Owned<IPropertyTree> env = getHPCCEnvironment();
-    IPropertyTree* globalTracing = env->getPropTree("Software/tracing");
-    if (globalTracing != nullptr)
-        extractedGlobalConfig->addPropTree("tracing", globalTracing);
+    if (env)
+    {
+        IPropertyTree* globalTracing = env->getPropTree("Software/tracing");
+        if (globalTracing != nullptr)
+            extractedGlobalConfig->addPropTree("tracing", globalTracing);
+    }
 #endif
 
     const char* componentTag = "dafilesrv";

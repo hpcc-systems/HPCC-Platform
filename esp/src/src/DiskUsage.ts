@@ -153,31 +153,6 @@ export class Summary extends FlexGrid {
     }
 }
 
-export class ClusterGauge extends Gauge {
-    constructor(readonly _targetCluster: string) {
-        super();
-        this
-            .title(_targetCluster)
-            .showTick(true);
-    }
-
-    refresh(bypassCachedResult: boolean = false) {
-        machineService.GetTargetClusterUsageEx([this._targetCluster], bypassCachedResult).then(response => {
-            const details = response && response[0];
-            if (details) {
-                this
-                    .value((details.max || 0) / 100)
-                    .valueDescription(nlsHPCC.Max)
-                    .tickValue((details.mean || 0) / 100)
-                    .tickValueDescription(nlsHPCC.Mean)
-                    .tooltip(details.ComponentUsagesDescription)
-                    .render();
-            }
-        });
-        return this;
-    }
-}
-
 const netAddress = mu => mu.NetAddress !== "." ? mu.NetAddress : mu.Name;
 
 interface DirectoryEx {

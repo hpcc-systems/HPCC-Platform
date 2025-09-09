@@ -4,7 +4,7 @@ import { Graph2, hashSum, scopedLogger } from "@hpcc-js/util";
 import { format } from "src/Utility";
 import { IScopeEx, MetricsView } from "../hooks/metrics";
 
-import "src-react-css/util/metricGraph.css";
+import "/src-react/util/metricGraph.css";
 
 const logger = scopedLogger("src-react/util/metricGraph.ts");
 
