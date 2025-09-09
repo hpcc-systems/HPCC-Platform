@@ -52,6 +52,8 @@
 #include "esptrace.h"
 #include "jevent.hpp"
 
+#include "configmaskingconfig.hpp"
+
 using namespace hpccMetrics;
 
 void CEspServer::sendSnmpMessage(const char* msg) { throwUnexpected(); }
@@ -122,6 +124,16 @@ bool CEspServer::isAttachedToDali()
 bool CEspServer::isSubscribedToDali()
 {
     return m_config->isSubscribedToDali();
+}
+
+void CEspServer::initializeDataMaskingEngine(const char* dataMaskingConfig)
+{
+    if (!isEmptyString(dataMaskingConfig))
+    {
+        dataMaskEngine.setown(new DataMasking::CEngine());
+        Owned<IPTree> maskTree = createPTreeFromYAMLString(dataMaskingConfig);
+        dataMaskEngine->loadProfiles(*maskTree.get());
+    }
 }
 
 
@@ -627,6 +639,7 @@ int init_main(int argc, const char* argv[])
             initializeTraceFlags(config);
             initializeMetrics(config);        
             initializeStoragePlanes(daliClientActive(), true);
+            srv->initializeDataMaskingEngine(configMaskerConfig);
         }
         catch(IException* e)
         {

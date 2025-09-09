@@ -49,6 +49,7 @@
 #include <memory>
 
 #include "esdl_def_helper.hpp"
+#include "datamasking.h"
 
 
 #define FILE_UPLOAD     "FileUploadAccess"
@@ -1694,30 +1695,54 @@ int EspHttpBinding::onGetContent(IEspContext &context, CHttpRequest* request, CH
     return onGetNotFound(context, request,  response, serv);
 }
 
+int returnInternalServerError(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *message)
+{
+    HtmlPage page("Enterprise Services Platform");
+    page.appendContent(new CHtmlHeader(H1, "Internal Server Error"));
+    if (!isEmptyString(message))
+        page.appendContent(new CHtmlHeader(H2, message));
+
+    StringBuffer content;
+    page.getHtml(content);
+
+    response->setContent(content.length(), content.str());
+    response->setContentType("text/html; charset=UTF-8");
+    response->setStatus(HTTP_STATUS_INTERNAL_SERVER_ERROR);
+    response->send();
+    return 0;
+}
+
 int EspHttpBinding::onGetConfig(IEspContext &context, CHttpRequest* request, CHttpResponse* response)
 {
     ISecUser* user = context.queryUser();
     if (m_viewConfig || (user && (user->getStatus()==SecUserStatus_Inhouse)))
     {
+        IDataMaskingProfile* profile = queryDataMaskingProfile("urn:hpcc:platform:configs", 1);
+        if (nullptr == profile)
+        {
+            OERRLOG("Unable to query the configuration data masking profile urn:hpcc:platform:configs");
+            return returnInternalServerError(context, request, response, "Unable to mask configuration values");
+        }
+
+        StringBuffer content;
         if (getESPContainer() && getESPContainer()->queryApplicationConfig())
         {
             ESPLOG(LogNormal, "Get config generated during application init");
-            StringBuffer content("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+            content.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
             if (context.queryRequestParameters()->hasProp("display"))
                 content.append("<?xml-stylesheet type=\"text/xsl\" href=\"/esp/xslt/xmlformatter.xsl\"?>");
             toXML(getESPContainer()->queryApplicationConfig(), content);
-            response->setContent(content.str());
-            response->setContentType(HTTP_TYPE_APPLICATION_XML_UTF8);
-            response->setStatus(HTTP_STATUS_OK);
-            response->send();
-            return 0;
+        }
+        else
+        {
+            ESPLOG(LogNormal, "Get config file: %s", m_configFile.get());
+            xmlContentFromFile(m_configFile, "/esp/xslt/xmlformatter.xsl", content);
         }
 
-        ESPLOG(LogNormal, "Get config file: %s", m_configFile.get());
-
-        StringBuffer content;
-        xmlContentFromFile(m_configFile, "/esp/xslt/xmlformatter.xsl", content);
-        response->setContent(content.str());
+        // Masking does not change the length of the content so we can use the const_cast to avoid a copy
+        char *maskedContent = const_cast<char*>(content.str());
+        profile->maskContent("xml", maskedContent, 0, content.length());
+        response->setContent(maskedContent);
         response->setContentType(HTTP_TYPE_APPLICATION_XML_UTF8);
         response->setStatus(HTTP_STATUS_OK);
         response->send();
