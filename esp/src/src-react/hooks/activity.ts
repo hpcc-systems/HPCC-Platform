@@ -1,9 +1,8 @@
 import * as React from "react";
-import type { IObserverHandle } from "@hpcc-js/util";
 import { Activity } from "@hpcc-js/comms";
 import { useCounter } from "./util";
 
-export function useActivity() {
+export function useActivity(): [Activity, number, () => void] {
 
     const [activity, setActivity] = React.useState<Activity>();
     const [lastUpdate, setLastUpdate] = React.useState(Date.now());
@@ -12,7 +11,7 @@ export function useActivity() {
     React.useEffect(() => {
         const activity = Activity.attach({ baseUrl: "" });
         let active = true;
-        let handle: IObserverHandle | undefined;
+        let handle;
         activity.lazyRefresh().then(() => {
             if (active) {
                 setActivity(activity);
@@ -23,10 +22,9 @@ export function useActivity() {
         });
         return () => {
             active = false;
-            handle?.release();
+            handle.release();
         };
     }, [count]);
 
-    return { activity, lastUpdate, refresh: increment };
+    return [activity, lastUpdate, increment];
 }
-
