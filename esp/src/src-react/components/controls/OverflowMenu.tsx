@@ -40,14 +40,7 @@ const useOverflowMenuStyles = makeStyles({
     },
     menuButton: {
         alignSelf: "center",
-        padding: "2px",
-        minWidth: "24px",
-        height: "24px"
     },
-    menuIcon: {
-        width: "16px",
-        height: "16px"
-    }
 });
 
 export interface OverflowMenuProps {
@@ -73,7 +66,7 @@ export const OverflowMenu: React.FunctionComponent<OverflowMenuProps> = ({
                 appearance="transparent"
                 className={styles.menuButton}
                 ref={ref}
-                icon={<MoreHorizontal className={styles.menuIcon} />}
+                icon={<MoreHorizontal />}
                 aria-label={`${overflowCount} more menu items`}
                 role="menuItem"
             />
