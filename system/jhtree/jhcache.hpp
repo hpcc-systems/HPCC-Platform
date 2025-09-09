@@ -96,6 +96,6 @@ interface IPageCache : public IInterface
 //Not called from outside jhtree, so no jhtree_decl
 extern IPageCache * createDemoPageCache(const IPropertyTree * config);
 
-extern IPageCache * createMyPageCache(const IPropertyTree * config);
+extern IPageCache * createDiskPageCache(const IPropertyTree * config);
 
 #endif
