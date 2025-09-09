@@ -15,61 +15,6 @@ const logger = scopedLogger("src/ESPDFUWorkunit.ts");
 
 const i18n = nlsHPCC;
 
-export function getProtectedImage(isProtected: boolean) {
-    if (isProtected) {
-        return Utility.getImageURL("locked.png");
-    }
-    return Utility.getImageURL("unlocked.png");
-}
-
-export function getStateIconClass(state: number) {
-    switch (state) {
-        case 1:
-            return "iconWarning";
-        case 2:
-            return "iconSubmitted";
-        case 3:
-            return "iconRunning";
-        case 4:
-            return "iconFailed";
-        case 5:
-            return "iconFailed";
-        case 6:
-            return "iconCompleted";
-        case 7:
-            return "iconRunning";
-        case 8:
-            return "iconAborting";
-        case 999:
-            return "iconDeleted";
-    }
-    return "iconWorkunit";
-}
-
-export function getStateImage(state: number) {
-    switch (state) {
-        case 1:
-            return Utility.getImageURL("workunit_warning.png");
-        case 2:
-            return Utility.getImageURL("workunit_submitted.png");
-        case 3:
-            return Utility.getImageURL("workunit_running.png");
-        case 4:
-            return Utility.getImageURL("workunit_failed.png");
-        case 5:
-            return Utility.getImageURL("workunit_failed.png");
-        case 6:
-            return Utility.getImageURL("workunit_completed.png");
-        case 7:
-            return Utility.getImageURL("workunit_running.png");
-        case 8:
-            return Utility.getImageURL("workunit_aborting.png");
-        case 999:
-            return Utility.getImageURL("workunit_deleted.png");
-    }
-    return Utility.getImageURL("workunit.png");
-}
-
 class Store extends ESPRequest.Store {
 
     service = "FileSpray";
@@ -297,13 +242,56 @@ const Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], { // jshint ignor
         return this.State;
     },
     getProtectedImage() {
-        return getProtectedImage(this.isProtected);
+        if (this.isProtected) {
+            return Utility.getImageURL("locked.png");
+        }
+        return Utility.getImageURL("unlocked.png");
     },
     getStateIconClass() {
-        return getStateIconClass(this.State);
+        switch (this.State) {
+            case 1:
+                return "iconWarning";
+            case 2:
+                return "iconSubmitted";
+            case 3:
+                return "iconRunning";
+            case 4:
+                return "iconFailed";
+            case 5:
+                return "iconFailed";
+            case 6:
+                return "iconCompleted";
+            case 7:
+                return "iconRunning";
+            case 8:
+                return "iconAborting";
+            case 999:
+                return "iconDeleted";
+        }
+        return "iconWorkunit";
     },
     getStateImage() {
-        return getStateImage(this.State);
+        switch (this.State) {
+            case 1:
+                return Utility.getImageURL("workunit_warning.png");
+            case 2:
+                return Utility.getImageURL("workunit_submitted.png");
+            case 3:
+                return Utility.getImageURL("workunit_running.png");
+            case 4:
+                return Utility.getImageURL("workunit_failed.png");
+            case 5:
+                return Utility.getImageURL("workunit_failed.png");
+            case 6:
+                return Utility.getImageURL("workunit_completed.png");
+            case 7:
+                return Utility.getImageURL("workunit_running.png");
+            case 8:
+                return Utility.getImageURL("workunit_aborting.png");
+            case 999:
+                return Utility.getImageURL("workunit_deleted.png");
+        }
+        return Utility.getImageURL("workunit.png");
     }
 });
 
