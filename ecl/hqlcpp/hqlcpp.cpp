@@ -1872,6 +1872,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.convertWhenExecutedToCompound,"convertWhenExecutedToCompound", queryLegacyWhenSemantics()),
         DebugOption(options.standAloneExe,"standAloneExe", false),
         DebugOption(options.enableCompoundCsvRead,"enableCompoundCsvRead", true),
+        DebugOption(options.enableClusterHopping,"enableClusterHopping", false),
         // The following works 99% of the time, but disabled due to potential problems with the ambiguity of LEFT
         //possibly causing filters on nested records to be incorrectly removed.
         DebugOption(options.optimizeNestedConditional,"optimizeNestedConditional", false),

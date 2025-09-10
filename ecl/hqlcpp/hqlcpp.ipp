@@ -854,6 +854,7 @@ struct HqlCppOptions
     bool                allowStaticRegex = true;
     bool                defaultStaticRegex = false;
     bool                traceAll = false;
+    bool                enableClusterHopping = false;
     std::unordered_map<std::string, bool> traceOptions;
 
 public:

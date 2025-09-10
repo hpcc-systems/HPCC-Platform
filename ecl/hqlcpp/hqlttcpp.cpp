@@ -6506,15 +6506,18 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
         case no_independent:
             {
                 info.extractStoredInfo(&cur, id, codehash, isRoxie(), multiplePersistInstances);
-                IHqlExpression * clusterExpr = info.queryCluster();
-                if (clusterExpr)
+                if (translator.queryOptions().enableClusterHopping)
                 {
-                    StringBuffer clusterName;
-                    getStringValue(clusterName, clusterExpr);
-                    if (strsame(clusterName.str(), ECL_AGENT_CLUSTER_NAME))
-                        translator.pushTargetClusterType(HThorCluster);
-                    else
-                        translator.pushTargetClusterType(ThorLCRCluster);
+                    IHqlExpression * clusterExpr = info.queryCluster();
+                    if (clusterExpr)
+                    {
+                        StringBuffer clusterName;
+                        getStringValue(clusterName, clusterExpr);
+                        if (strsame(clusterName.str(), ECL_AGENT_CLUSTER_NAME))
+                            translator.pushTargetClusterType(HThorCluster);
+                        else
+                            translator.pushTargetClusterType(ThorLCRCluster);
+                    }
                 }
                 break;
             }
