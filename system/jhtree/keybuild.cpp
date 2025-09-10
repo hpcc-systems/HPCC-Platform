@@ -21,8 +21,6 @@
 #include "jmisc.hpp"
 #include "jhinplace.hpp"
 
-#include <regex>
-
 struct CRC32HTE
 {
     CRC32 crc;
@@ -119,70 +117,11 @@ class HybridIndexCompressor : public CInterfaceOf<IIndexCompressor>
 protected:
     Owned<IIndexCompressor> leafCompressor;
     Owned<IIndexCompressor> branchCompressor;
-
-    IIndexCompressor* constructCompressor(const char* compressionType, const char* options, unsigned keyedSize, const CKeyHdr* keyHdr, IHThorIndexWriteArg *helper)
-    {
-        if (strcmp(compressionType, "inplace") == 0)
-        {
-            std::string compression = std::string(compressionType) + ":" + options;
-            return new InplaceIndexCompressor(keyedSize, keyHdr, helper, compression.c_str());
-        }
-        else if (strcmp(compressionType, "legacy") == 0)
-        {
-            return new LegacyIndexCompressor();
-        }
-        
-        return nullptr;
-    }
-
-    bool extractCompressionAndOptions(const std::string& format, std::string& compression, std::string& options)
-    {
-        // IE: inplace[hclevel=9,option=..]
-        static const std::regex formatOptionsRegex("([^\\[]+)(\\[[^\\]]*\\])?");
-
-        std::smatch formatMatch;
-        std::string formatCompression;
-        std::string formatOptions;
-        if (std::regex_match(format, formatMatch, formatOptionsRegex) && formatMatch.size() >= 2)
-        {
-            compression = formatMatch[1];
-            if (formatMatch.size() == 3)
-            {
-                options = formatMatch[2];
-                if (options.length() >= 2)
-                    options = options.substr(1,options.length()-2); // Get rid of brackets
-            }
-        }
-        else
-            return false;
-
-        return true;
-    }
 public:
-    HybridIndexCompressor(const std::string& compressionFormatStr, unsigned keyedSize, const CKeyHdr* keyHdr, IHThorIndexWriteArg *helper)
+    HybridIndexCompressor(unsigned keyedSize, const CKeyHdr* keyHdr, IHThorIndexWriteArg *helper, const char * compression)
     {
-        // "hybrid:branch[options]:leaf[options]"
-        static const std::regex hybridFormatRegex("hybrid:([^:]+):([^:]+)");
-
-        std::smatch compressionMatches;
-        if (std::regex_match(compressionFormatStr, compressionMatches, hybridFormatRegex) && compressionMatches.size() == 3)
-        {
-            std::string branchCompression, branchOptions;
-            if (extractCompressionAndOptions(compressionMatches[1], branchCompression, branchOptions)) 
-                branchCompressor.setown(constructCompressor(branchCompression.c_str(), branchOptions.c_str(), keyedSize, keyHdr, helper));
-            else
-                throw MakeStringException(0, "Invalid hybrid compression format, unable to parse branch options");
-
-            std::string leafCompression, leafOptions;
-            if (extractCompressionAndOptions(compressionMatches[2], leafCompression, leafOptions)) 
-                leafCompressor.setown(constructCompressor(leafCompression.c_str(), leafOptions.c_str(), keyedSize, keyHdr, helper));
-            else
-                throw MakeStringException(0, "Invalid hybrid compression format, unable to parse leaf options");
-        }
-        else
-        {
-            throw MakeStringException(0, "Invalid hybrid compression format");
-        }
+        leafCompressor.setown(new LegacyIndexCompressor());
+        branchCompressor.setown(new InplaceIndexCompressor(keyedSize, keyHdr, helper, compression));
     }
 
     virtual const char *queryName() const override { return "Hybrid"; }
@@ -245,9 +184,7 @@ private:
 
 public:
     CKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned _keyedSize, unsigned __int64 _startSequence,  IHThorIndexWriteArg *_helper, const char * defaultCompression, bool _enforceOrder, bool _isTLK)
-    : out(_out),
-    enforceOrder(_enforceOrder),
-    isTLK(_isTLK)
+        : out(_out), enforceOrder(_enforceOrder), isTLK(_isTLK)
     {
         sequence = _startSequence;
         keyHdr.setown(new CWriteKeyHdr());
@@ -325,8 +262,7 @@ public:
                 indexCompressor.setown(new InplaceIndexCompressor(keyedSize, keyHdr, _helper, compression));
             else if (strieq(compression, "hybrid") || startsWithIgnoreCase(compression, "hybrid:"))
             {
-                hdr->version = 3;
-                indexCompressor.setown(new HybridIndexCompressor(compression, keyedSize, keyHdr, _helper));
+                indexCompressor.setown(new HybridIndexCompressor(keyedSize, keyHdr, _helper, compression));
             }
             else
                 throw makeStringExceptionV(0, "Unrecognised index compression format %s", compression);
