@@ -49,7 +49,6 @@ include_directories (
          ${HPCC_SOURCE_DIR}/rtl/include
          ${HPCC_SOURCE_DIR}/esp/smc/SMCLib
          ${HPCC_SOURCE_DIR}/esp/clients/ws_dfsclient
-         ${HPCC_SOURCE_DIR}/system/masking/include
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DWsPackageProcess_API_LOCAL -DFileSpray_API_LOCAL -DWSDFU_API_LOCAL -DESP_SERVICE_WsPackageProcess)

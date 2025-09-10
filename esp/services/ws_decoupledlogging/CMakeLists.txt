@@ -49,7 +49,6 @@ include_directories (
          ${HPCC_SOURCE_DIR}/esp/logging/logginglib
          ${HPCC_SOURCE_DIR}/esp/smc/SMCLib
          ${HPCC_SOURCE_DIR}/common/thorhelper
-         ${HPCC_SOURCE_DIR}/system/masking/include
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DLOGGINGCOMMON_EXPORTS -DWSDecoupledLog_API_LOCAL -DESP_SERVICE_WSDecoupledLog)

@@ -51,7 +51,6 @@ include_directories (
          ${HPCC_SOURCE_DIR}/esp/logging/logginglib
          ${HPCC_SOURCE_DIR}/esp/logging/loggingmanager
          ${HPCC_SOURCE_DIR}/common/thorhelper
-         ${HPCC_SOURCE_DIR}/system/masking/include
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )

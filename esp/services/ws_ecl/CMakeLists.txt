@@ -54,7 +54,6 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/thorhelper
          ${HPCC_SOURCE_DIR}/esp/smc/SMCLib
          ${HPCC_SOURCE_DIR}/dali/sasha
-         ${HPCC_SOURCE_DIR}/system/masking/include
     )
 
 ADD_DEFINITIONS( -D_USRDLL )

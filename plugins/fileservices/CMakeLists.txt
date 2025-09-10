@@ -59,7 +59,6 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/mp
          ${HPCC_SOURCE_DIR}/system/security/shared
          ${HPCC_SOURCE_DIR}/system/xmllib
-         ${HPCC_SOURCE_DIR}/system/masking/include
             )
 
 ADD_DEFINITIONS( -D_USRDLL -DFILESERVICES_EXPORTS -DWSDFU_API_LOCAL -DFileSpray_API_LOCAL )

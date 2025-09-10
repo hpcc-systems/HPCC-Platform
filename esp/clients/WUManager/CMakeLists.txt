@@ -48,7 +48,6 @@ include_directories (
          ./../../platform 
          ./../../clients 
          ${HPCC_SOURCE_DIR}/common/thorhelper
-         ${HPCC_SOURCE_DIR}/system/masking/include
     )
 
 ADD_DEFINITIONS( -D_CONSOLE -DWSWU_API_LOCAL -Dws_logaccess_API_LOCAL )

@@ -64,7 +64,6 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/thorhelper
          ${HPCC_SOURCE_DIR}/esp/espcommon
          ${HPCC_SOURCE_DIR}/testing/unittests
-         ${HPCC_SOURCE_DIR}/system/masking/include
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DWS_SMC_EXPORTS -DWSSMC_API_LOCAL -DESP_SERVICE_WsSMC)

@@ -48,7 +48,6 @@ include_directories (
          ${HPCC_SOURCE_DIR}/ecl/eclcc
          ${HPCC_SOURCE_DIR}/common/thorhelper
          ${ESPSCM_GENERATED_DIR}
-         ${HPCC_SOURCE_DIR}/system/masking/include
     )
 
 ADD_DEFINITIONS( -D_CONSOLE -DWSWU_API_LOCAL -Dws_logaccess_API_LOCAL -DFileSpray_API_LOCAL )

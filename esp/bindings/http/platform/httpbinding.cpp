@@ -49,6 +49,7 @@
 #include <memory>
 
 #include "esdl_def_helper.hpp"
+#include "datamasking.h"
 
 
 #define FILE_UPLOAD     "FileUploadAccess"
@@ -1699,28 +1700,14 @@ int EspHttpBinding::onGetConfig(IEspContext &context, CHttpRequest* request, CHt
     ISecUser* user = context.queryUser();
     if (m_viewConfig || (user && (user->getStatus()==SecUserStatus_Inhouse)))
     {
-        IEspContainer * container = getESPContainer();
-        if (nullptr == container)
-        {
-            OERRLOG("Unable to mask the configuration file");
-            return onGetNotFound(context, request, response, NULL);
-        }
-
-        IDataMaskingEngine* dataMaskEngine = container->queryDataMaskingEngine();
-        if (nullptr == dataMaskEngine)
-        {
-            OERRLOG("Unable to get the data masking engine");
-            return onGetNotFound(context, request, response, NULL);
-        }
-
-        IDataMaskingProfile* profile = dataMaskEngine->queryProfile("urn:hpcc:platform:configs", 1);
+        IDataMaskingProfile* profile = queryDataMaskingProfile("urn:hpcc:platform:configs", 1);
         if (nullptr == profile)
         {
-            OERRLOG("Unable to select the configuration data masking profile");
+            OERRLOG("Unable to query the configuration data masking profile urn:hpcc:platform:configs");
             return onGetNotFound(context, request, response, NULL);
         }
             
-        if (container->queryApplicationConfig())
+        if (getESPContainer() && getESPContainer()->queryApplicationConfig())
         {
             ESPLOG(LogNormal, "Get config generated during application init");
             StringBuffer content("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");

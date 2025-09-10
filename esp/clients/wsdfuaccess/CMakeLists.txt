@@ -58,7 +58,6 @@ include_directories (
          ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/Platform
          ${HPCC_SOURCE_DIR}/esp/smc/SMCLib
          ${HPCC_SOURCE_DIR}/testing/unittests
-         ${HPCC_SOURCE_DIR}/system/masking/include
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DWSDFUACCESS_EXPORTS -DWSDFU_API_LOCAL )

@@ -42,7 +42,6 @@ include_directories(
     ${HPCC_SOURCE_DIR}/system/security/securesocket
     ${HPCC_SOURCE_DIR}/system/security/LdapSecurity
     ${HPCC_SOURCE_DIR}/common/thorhelper
-    ${HPCC_SOURCE_DIR}/system/masking/include
     )
 
 add_definitions(-D_USRDLL -Dldapenvironment_API_LOCAL -DESP_SERVICE_ldapenvironment)

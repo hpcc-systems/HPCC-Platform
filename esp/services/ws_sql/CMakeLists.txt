@@ -100,7 +100,6 @@ if(WSSQL_SERVICE)
         ${HPCC_SOURCE_DIR}/rtl/eclrtl
         ${HPCC_SOURCE_DIR}/rtl/include
         ${HPCC_SOURCE_DIR}/esp/espcommon
-        ${HPCC_SOURCE_DIR}/system/masking/include
         )
 
     if (CMAKE_COMPILER_IS_CLANG)

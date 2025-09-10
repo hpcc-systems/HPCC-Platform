@@ -61,7 +61,6 @@ HPCC_ADD_SUBDIRECTORY (espstorelib)
         ${HPCC_SOURCE_DIR}/common/deftype
         ${ESPSCM_GENERATED_DIR}
         ${HPCC_SOURCE_DIR}/common/thorhelper
-        ${HPCC_SOURCE_DIR}/system/masking/include
         )
 
     add_definitions(-D_USRDLL -Dwsstore_API_LOCAL -DESP_SERVICE_wsstore)

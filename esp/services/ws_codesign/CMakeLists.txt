@@ -59,7 +59,6 @@ include_directories (
          ${CMAKE_BINARY_DIR}/esp/services/ws_codesign
          ${HPCC_SOURCE_DIR}/common/thorhelper
          ${HPCC_SOURCE_DIR}/system/codesigner
-         ${HPCC_SOURCE_DIR}/system/masking/include
     )
 
 ADD_DEFINITIONS( -D_USRDLL -Dws_codesign_API_LOCAL -DESP_SERVICE_ws_codesign)

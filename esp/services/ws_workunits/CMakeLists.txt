@@ -102,7 +102,6 @@ include_directories (
          ${HPCC_SOURCE_DIR}/dali/ft
          ${HPCC_SOURCE_DIR}/common/wuanalysis
          ./../../../testing/unittests
-         ${HPCC_SOURCE_DIR}/system/masking/include
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DWS_WORKUNITS_EXPORTS -DWSWU_API_LOCAL -Dws_logaccess_API_LOCAL -DFileSpray_API_LOCAL -DESP_SERVICE_WsWorkunits)

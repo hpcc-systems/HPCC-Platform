@@ -60,7 +60,6 @@ include_directories (
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
          ${HPCC_SOURCE_DIR}/common/thorhelper
-         ${HPCC_SOURCE_DIR}/system/masking/include
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DWsDeploy_API_LOCAL -DESP_SERVICE_WsDeploy)

@@ -13,7 +13,10 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
-include_directories (${SCM_GENERATED_DIR})
+include_directories (
+  ${SCM_GENERATED_DIR}
+  ${HPCC_SOURCE_DIR}/system/masking/include
+)
 HPCC_ADD_SUBDIRECTORY (bindings)
 HPCC_ADD_SUBDIRECTORY (clients)
 HPCC_ADD_SUBDIRECTORY (eclwatch "PLATFORM")

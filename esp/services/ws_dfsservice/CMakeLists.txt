@@ -59,7 +59,6 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/workunit
          ${HPCC_SOURCE_DIR}/rtl/include
          ${HPCC_SOURCE_DIR}/rtl/eclrtl
-         ${HPCC_SOURCE_DIR}/system/masking/include
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DWS_DFS_EXPORTS -DWsDfs_API_LOCAL -DESP_SERVICE_WsDfs)

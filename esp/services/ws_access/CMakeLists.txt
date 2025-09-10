@@ -49,7 +49,6 @@ include_directories (
          ${HPCC_SOURCE_DIR}/dali/base
          ${HPCC_SOURCE_DIR}/system/mp
          ${HPCC_SOURCE_DIR}/common/thorhelper
-         ${HPCC_SOURCE_DIR}/system/masking/include
     )
 
 ADD_DEFINITIONS( -D_USRDLL -Dws_access_API_LOCAL -DESP_SERVICE_ws_access)

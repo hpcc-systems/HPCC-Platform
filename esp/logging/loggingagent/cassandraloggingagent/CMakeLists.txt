@@ -38,7 +38,6 @@ if(USE_CASSANDRA)
      ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp
      ${HPCC_SOURCE_DIR}/esp/logging/logginglib
      ${HPCC_SOURCE_DIR}/common/thorhelper
-     ${HPCC_SOURCE_DIR}/system/masking/include
   )
 
   ADD_DEFINITIONS( -D_USRDLL -DCASSANDRALOGAGENT_EXPORTS )

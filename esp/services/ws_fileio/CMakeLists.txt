@@ -59,7 +59,6 @@ include_directories (
          ./../../bindings/SOAP/xpp
          ${HPCC_SOURCE_DIR}/common/thorhelper
          ${HPCC_SOURCE_DIR}/dali/sasha
-         ${HPCC_SOURCE_DIR}/system/masking/include
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DWsFileIO_API_LOCAL -DESP_SERVICE_WsFileIO)

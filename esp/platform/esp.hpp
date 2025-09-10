@@ -20,7 +20,6 @@
 #include "seclib.hpp"
 #include "esplog.hpp"
 #include "mapinfo.hpp"
-#include "datamasking.h"
 
 interface IEspStringIntMap : extends IInterface
 {
@@ -250,6 +249,8 @@ typedef unsigned LogLevel;
 #define LogMin    1
 #define LogNormal 5
 #define LogMax    10
+
+class IDataMaskingEngine;
 
 interface IEspContainer : extends IInterface
 {

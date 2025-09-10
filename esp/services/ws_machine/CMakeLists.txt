@@ -57,7 +57,6 @@ include_directories (
          ./../../../esp/platform
          ./../../smc/SMCLib
          ${HPCC_SOURCE_DIR}/common/thorhelper
-         ${HPCC_SOURCE_DIR}/system/masking/include
     )
 
 ADD_DEFINITIONS( -D_USRDLL -Dws_machine_API_LOCAL -DESP_SERVICE_ws_machine)

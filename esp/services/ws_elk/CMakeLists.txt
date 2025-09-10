@@ -57,7 +57,6 @@ include_directories (
          ${CMAKE_BINARY_DIR}/oss
          ${CMAKE_BINARY_DIR}/esp/services/ws_elk
          ${HPCC_SOURCE_DIR}/common/thorhelper
-         ${HPCC_SOURCE_DIR}/system/masking/include
     )
 
 ADD_DEFINITIONS( -D_USRDLL -Dws_elk_API_LOCAL )

@@ -47,7 +47,6 @@ include_directories (
          ./../../bindings/SOAP/xpp
          ./../../smc/SMCLib
          ${HPCC_SOURCE_DIR}/common/thorhelper
-         ${HPCC_SOURCE_DIR}/system/masking/include
     )
 
 ADD_DEFINITIONS( -D_USRDLL -Dws_account_API_LOCAL -DESP_SERVICE_ws_account)

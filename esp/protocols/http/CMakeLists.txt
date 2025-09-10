@@ -70,7 +70,6 @@ include_directories(
     ./../../../common/workunit
     ${HPCC_SOURCE_DIR}/common/thorhelper
     ${HPCC_SOURCE_DIR}/esp/esdllib
-    ${HPCC_SOURCE_DIR}/system/masking/include
     )
 
 add_definitions(-DESPHTTP_EXPORTS -DESP_TIMING -D_USRDLL -DESP_PLUGIN -DTXSUMMARY_EXPORTS)

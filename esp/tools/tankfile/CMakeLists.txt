@@ -47,7 +47,6 @@ include_directories (
          ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp
          ${HPCC_SOURCE_DIR}/esp/clients
          ${HPCC_SOURCE_DIR}/common/thorhelper
-         ${HPCC_SOURCE_DIR}/system/masking/include
     )
 
 ADD_DEFINITIONS( -D_CONSOLE -DWSDecoupledLog_API_LOCAL )

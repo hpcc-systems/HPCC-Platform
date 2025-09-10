@@ -49,7 +49,6 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/environment
          ${HPCC_SOURCE_DIR}/dali/base
          ${HPCC_SOURCE_DIR}/dali/sasha
-         ${HPCC_SOURCE_DIR}/system/masking/include
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DWSSasha_API_LOCAL -DESP_SERVICE_WSSasha)
