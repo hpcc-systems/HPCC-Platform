@@ -2732,7 +2732,7 @@ void CInplaceLeafWriteNode::write(IFileIOStream *out, CRC32 *crc)
 //=========================================================================================================
 
 
-InplaceIndexCompressor::InplaceIndexCompressor(size32_t keyedSize, IHThorIndexWriteArg * helper, const char * _compressionName)
+InplaceIndexCompressor::InplaceIndexCompressor(size32_t keyedSize, const CKeyHdr * keyHdr, IHThorIndexWriteArg * helper, const char * _compressionName)
 : compressionName(_compressionName)
 {
     if (helper)
