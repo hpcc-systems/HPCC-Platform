@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include "eventindexmodel.hpp"
+#include <vector>
 
 class CIndexEventModel : public CInterfaceOf<IEventModel>
 {
@@ -26,28 +27,39 @@ public: // IEventModel
     {
         if (!nextLink)
             return false;
-        bool propagate = true;
+        // Dispatch an event collection initially containing the current event to the appropriate
+        // event handler. An event handler may modify the event collection as needed, including
+        // updating the event, discarding the event, or adding new events.
+        std::vector<CEvent> events;
+        events.push_back(event);
         switch (event.queryType())
         {
         case MetaFileInformation:
-            propagate = onMetaFileInformation(event);
+            onMetaFileInformation(events);
             break;
         case EventIndexLookup:
-            propagate = onIndexLookup(event);
+            onIndexLookup(events);
             break;
         case EventIndexLoad:
-            propagate = onIndexLoad(event);
+            onIndexLoad(events);
             break;
         case EventIndexEviction:
-            propagate = onIndexEviction(event);
+            onIndexEviction(events);
             break;
         case EventIndexPayload:
-            propagate = onIndexPayload(event);
+            onIndexPayload(events);
             break;
         default:
             break;
         }
-        return (propagate ? nextLink->visitEvent(event) : true);
+        // Propagate each collected event until complete or aborted.
+        for (CEvent& e : events)
+        {
+            if (!nextLink->visitEvent(e))
+                return false;
+        }
+        // Visitation is never aborted by the model.
+        return true;
     }
 
 public:
@@ -64,46 +76,141 @@ public:
     }
 
 protected:
-    bool onMetaFileInformation(CEvent& event)
+    void onMetaFileInformation(std::vector<CEvent>& events)
     {
+        CEvent& event = events.front();
         storage.observeFile(event.queryNumericValue(EvAttrFileId), event.queryTextValue(EvAttrPath));
-        return true;
     }
 
-    bool onIndexLookup(CEvent& event)
+    void onIndexLookup(std::vector<CEvent>& events)
     {
+        CEvent& event = events.front();
         ModeledPage page;
+        bool firstObservation = expansion.observePage(event);
         expansion.describePage(event, page);
-        event.setValue(EvAttrInMemorySize, page.expandedSize);
-        return true;
+        if (!event.queryBooleanValue(EvAttrInCache))
+        {
+            // A recorded miss without an index cache model is always a miss.
+            // Event attributes should already be zero.
+            // event.setValue(EvAttrInMemorySize, 0ULL);
+            // event.setValue(EvAttrExpandTime, 0ULL);
+
+            // If in an index cache model, the miss becomes a hit, the size and time are cached
+            // values, and the subsequent recorded IndexLoad must be suppressed.
+        }
+        else if (ExpansionMode::OnLoad == page.expansionMode)
+        {
+            // A recorded hit without an index cache may transform the recorded size and time
+            // into estimated values.
+            event.setValue(EvAttrInMemorySize, page.expanded.size);
+            event.setValue(EvAttrExpandTime, page.expansionTime);
+
+            // If an index cache is in use and the page is not in the cache, the size and time
+            // transform to zeroes, and a simulated IndexLoad is required.
+        }
+        else if (ExpansionMode::OnLoadToOnDemand == page.expansionMode)
+        {
+            // A recorded hit without an index cache replaces the size and time with zeroes.
+            event.setValue(EvAttrInMemorySize, page.compressed.size);
+            event.setValue(EvAttrExpandTime, 0ULL);
+
+            // If an index cache is in use and the page is not in the cache, the size and time
+            // transform to zeroes, and a simulated IndexLoad is required.
+        }
+        else if (ExpansionMode::OnDemand == page.expansionMode)
+        {
+            // A recorded hit without an index cache may transform the recorded size to an
+            // estimated value. The time should be zero.
+            event.setValue(EvAttrInMemorySize, page.compressed.size);
+            event.setValue(EvAttrExpandTime, 0ULL);
+
+            // If the page was not in an active index cache, the size is also zero and a
+            // simulated IndexLoad is required.
+        }
     }
 
-    bool onIndexLoad(CEvent& event)
+    void onIndexLoad(std::vector<CEvent>& events)
     {
+        CEvent& event = events.front();
+        if (!expansion.refreshObservedPage(event))
+        {
+            events.clear();
+            return; // discard unobserved page
+        }
         ModeledPage page;
         storage.useAndDescribePage(event.queryNumericValue(EvAttrFileId), event.queryNumericValue(EvAttrFileOffset), event.queryNumericValue(EvAttrNodeKind), page);
-        expansion.describePage(event, page);
         event.setValue(EvAttrReadTime, page.readTime);
-        event.setValue(EvAttrInMemorySize, page.expandedSize);
-        event.setValue(EvAttrExpandTime, page.expansionTime);
-        return true;
+        expansion.describePage(event, page);
+        if (ExpansionMode::OnLoad == page.expansionMode)
+        {
+            event.setValue(EvAttrInMemorySize, page.expanded.size);
+            event.setValue(EvAttrExpandTime, page.expansionTime);
+        }
+        else
+        {
+            event.setValue(EvAttrInMemorySize, page.compressed.size);
+            event.setValue(EvAttrExpandTime, 0ULL);
+        }
     }
 
-    bool onIndexEviction(CEvent& event)
+    void onIndexEviction(std::vector<CEvent>& events)
     {
+        CEvent& event = events.front();
+        if (!expansion.checkObservedPage(event))
+        {
+            events.clear();
+            return; // discard unobserved page
+        }
         ModeledPage page;
         expansion.describePage(event, page);
-        event.setValue(EvAttrInMemorySize, page.expandedSize);
-        return true;
+        if (ExpansionMode::OnLoad == page.expansionMode)
+            event.setValue(EvAttrInMemorySize, page.expanded.size);
+        else
+            event.setValue(EvAttrInMemorySize, page.compressed.size);
     }
 
-    bool onIndexPayload(CEvent& event)
+    void onIndexPayload(std::vector<CEvent>& events)
     {
+        CEvent& event = events.front();
+        if (!expansion.checkObservedPage(event))
+        {
+            events.clear();
+            return; // discard unobserved page
+        }
         ModeledPage page;
         expansion.describePage(event, page);
-        event.setValue(EvAttrInMemorySize, page.expandedSize);
-        event.setValue(EvAttrExpandTime, page.expansionTime);
-        return true;
+        if (ExpansionMode::OnLoad == page.expansionMode)
+        {
+            event.setValue(EvAttrInMemorySize, 0ULL);
+            event.setValue(EvAttrExpandTime, 0ULL);
+        }
+        else
+        {
+            event.setValue(EvAttrInMemorySize, page.expanded.size);
+            event.setValue(EvAttrExpandTime, page.expansionTime);
+        }
+    }
+
+    void simulateIndexLoad(std::vector<CEvent>& events)
+    {
+        CEvent& lookup = events.front();
+        assertex(lookup.queryType() == EventIndexLookup);
+        events.emplace_back();
+        CEvent& load = events.back();
+        load.reset(EventIndexLoad);
+        for (CEventAttribute& attr : load.assignedAttributes)
+        {
+            if (!lookup.hasAttribute(attr.queryId()))
+                continue;
+            if (attr.isTimestamp())
+                attr.setValue(lookup.queryNumericValue(attr.queryId()) + 1ULL);
+            else if (attr.isNumeric())
+                attr.setValue(lookup.queryNumericValue(attr.queryId()));
+            else if (attr.isBoolean())
+                attr.setValue(lookup.queryBooleanValue(attr.queryId()));
+            else
+                attr.setValue(lookup.queryTextValue(attr.queryId()));
+        }
     }
 
 protected:
@@ -133,7 +240,13 @@ class IndexEventModelTests : public CppUnit::TestFixture
     CPPUNIT_TEST(testExplicitNoPageCache);
     CPPUNIT_TEST(testPageCacheEviction);
     CPPUNIT_TEST(testNoPageCacheEviction);
-    CPPUNIT_TEST(testExpansionEstimation);
+    CPPUNIT_TEST(testInMemoryExpansionEstimation);
+    CPPUNIT_TEST(testOnLoadExpansionEstimation);
+    CPPUNIT_TEST(testTransformExpansionEstimation);
+    CPPUNIT_TEST(testOnDemandExpansionEstimation);
+    CPPUNIT_TEST(testOnLoadExpansionActual);
+    CPPUNIT_TEST(testTransformExpansionActual);
+    CPPUNIT_TEST(testOnDemandExpansionActual);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -356,7 +469,7 @@ expect:
         testEventVisitationLinks(testData);
     }
 
-    void testExpansionEstimation()
+    void testInMemoryExpansionEstimation()
     {
         constexpr const char* testData = R"!!!(
             <test>
@@ -370,9 +483,9 @@ expect:
                     </expansion>
                 </link>
                 <input>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="0" InCache="true" InMemorySize="20000"/>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="30000"/>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="0"/>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="0" InCache="true" InMemorySize="20000" ExpandTime="1000"/>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="30000" ExpandTime="2000"/>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="0" ExpandTime="0"/>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="0" InMemorySize="20000" ExpandTime="1000" ReadTime="0"/>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="30000" ExpandTime="2000" ReadTime="0"/>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="0" InMemorySize="0" ExpandTime="0" ReadTime="0"/>
@@ -383,17 +496,221 @@ expect:
                     <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="0" InMemorySize="0"/>
                 </input>
                 <expect>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="0" InCache="true" InMemorySize="12288"/>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="16384"/>
-                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="16384"/>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="0" InCache="true" InMemorySize="12288" ExpandTime="3072"/>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="16384" ExpandTime="12288"/>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="16384" ExpandTime="12288"/>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="0" InMemorySize="12288" ExpandTime="3072" ReadTime="500"/>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="16384" ExpandTime="12288" ReadTime="500"/>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="0" InMemorySize="12288" ExpandTime="3072" ReadTime="500"/>
-                    <event type="IndexPayload" FileId="1" FileOffset="0" ExpandTime="12288" InMemorySize="16384"/>
-                    <event type="IndexPayload" FileId="1" FileOffset="0" ExpandTime="12288" InMemorySize="16384"/>
+                    <event type="IndexPayload" FileId="1" FileOffset="0" ExpandTime="0" InMemorySize="0"/>
+                    <event type="IndexPayload" FileId="1" FileOffset="0" ExpandTime="0" InMemorySize="0"/>
                     <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="0" InMemorySize="12288"/>
                     <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="16384"/>
                     <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="0" InMemorySize="12288"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData);
+    }
+
+    void testOnLoadExpansionEstimation()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link type="index-events">
+                    <storage>
+                        <plane name="a" readTime="500"/>
+                    </storage>
+                    <expansion>
+                        <node kind="0" sizeFactor="1.5" sizeToTimeFactor="0.25"/>
+                        <node kind="1" mode="ll" sizeFactor="4.0" sizeToTimeFactor="0.5"/>
+                    </expansion>
+                </link>
+                <input>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192" ExpandTime="1000" ReadTime="2000"/>
+                    <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192"/>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="false" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="65536" ExpandTime="1000" ReadTime="2000"/>
+                    <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="32768" ExpandTime="16384"/>
+                    <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="32768"/>
+                </input>
+                <expect>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="32768" ExpandTime="16384" ReadTime="500"/>
+                    <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="32768"/>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="false" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="32768" ExpandTime="16384" ReadTime="500"/>
+                    <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="32768" ExpandTime="16384"/>
+                    <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="32768"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData);
+    }
+
+    void testTransformExpansionEstimation()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link type="index-events">
+                    <storage>
+                        <plane name="a" readTime="500"/>
+                    </storage>
+                    <expansion>
+                        <node kind="0" sizeFactor="1.5" sizeToTimeFactor="0.25"/>
+                        <node kind="1" mode="ld" sizeFactor="4.0" sizeToTimeFactor="0.5"/>
+                    </expansion>
+                </link>
+                <input>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="false" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="65536" ExpandTime="1000" ReadTime="2000"/>
+                    <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="32768" ExpandTime="16384"/>
+                    <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="32768"/>
+                </input>
+                <expect>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="false" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192" ExpandTime="0" ReadTime="500"/>
+                    <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="32768" ExpandTime="16384"/>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="8192" ExpandTime="0"/>
+                    <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData);
+    }
+
+    void testOnDemandExpansionEstimation()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link type="index-events">
+                    <storage>
+                        <plane name="a" readTime="500"/>
+                    </storage>
+                    <expansion>
+                        <node kind="0" sizeFactor="1.5" sizeToTimeFactor="0.25"/>
+                        <node kind="1" mode="dd" sizeFactor="4.0" sizeToTimeFactor="0.5"/>
+                    </expansion>
+                </link>
+                <input>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="false" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192" ExpandTime="0" ReadTime="2000"/>
+                    <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="8192" ExpandTime="0"/>
+                    <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192"/>
+                </input>
+                <expect>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="false" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192" ExpandTime="0" ReadTime="500"/>
+                    <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="32768" ExpandTime="16384"/>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="8192" ExpandTime="0"/>
+                    <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData);
+    }
+
+    void testOnLoadExpansionActual()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link type="index-events">
+                    <storage>
+                        <plane name="a" readTime="500"/>
+                    </storage>
+                    <expansion>
+                        <node kind="1" mode="ll"/>
+                    </expansion>
+                </link>
+                <input>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192" ExpandTime="1000" ReadTime="2000"/>
+                    <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192"/>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="false" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="65536" ExpandTime="1000" ReadTime="2000"/>
+                    <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="32768" ExpandTime="16384"/>
+                    <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="32768"/>
+                </input>
+                <expect>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192" ExpandTime="1000" ReadTime="500"/>
+                    <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192"/>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="false" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="65536" ExpandTime="1000" ReadTime="500"/>
+                    <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="32768" ExpandTime="16384"/>
+                    <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="32768"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData);
+    }
+
+    void testTransformExpansionActual()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link type="index-events">
+                    <storage>
+                        <plane name="a" readTime="500"/>
+                    </storage>
+                    <expansion>
+                        <node kind="1" mode="ld"/>
+                    </expansion>
+                </link>
+                <input>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="false" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192" ExpandTime="1000" ReadTime="2000"/>
+                    <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="32768" ExpandTime="1000"/>
+                    <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="32768"/>
+                </input>
+                <expect>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="false" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192" ExpandTime="0" ReadTime="500"/>
+                    <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="8192" ExpandTime="1000"/>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="8192" ExpandTime="0"/>
+                    <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8192"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData);
+    }
+
+    void testOnDemandExpansionActual()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link type="index-events">
+                    <storage>
+                        <plane name="a" readTime="500"/>
+                    </storage>
+                    <expansion>
+                        <node kind="1" mode="dd"/>
+                    </expansion>
+                </link>
+                <input>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8312" ExpandTime="14576" ReadTime="2000"/>
+                    <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8312"/>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="false" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8312" ExpandTime="0" ReadTime="2000"/>
+                    <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="33874" ExpandTime="14576"/>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="8312" ExpandTime="0"/>
+                    <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8312"/>
+                </input>
+                <expect>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="false" InMemorySize="0" ExpandTime="0"/>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8312" ExpandTime="0" ReadTime="500"/>
+                    <event type="IndexPayload" FileId="1" FileOffset="0" InMemorySize="33874" ExpandTime="14576"/>
+                    <event type="IndexLookup" FileId="1" FileOffset="0" NodeKind="1" InCache="true" InMemorySize="8312" ExpandTime="0"/>
+                    <event type="IndexEviction" FileId="1" FileOffset="0" NodeKind="1" InMemorySize="8312"/>
                 </expect>
             </test>
         )!!!";
