@@ -182,21 +182,7 @@ protected:
                         rfn.getPath(remotePath);
                         unsigned crc = 0;
                         lastPart->getCrc(crc);
-                        constexpr size32_t bufferSize1mb = 0x100000;
-                        size32_t blockedIOSize = bufferSize1mb;
-                        StringBuffer planeName;
-                        if (findPlaneFromPath(fileName, planeName))
-                            blockedIOSize = getPlaneAttributeValue(planeName, BlockedRandomIO, configRandomIOSize);
-                        if (!indexBaseHelper->hasSegmentMonitors()) // unfiltered
-                        {
-                            // If unfiltered, use the sequential block size if defined in the plane, or component config.
-                            // If not, default to the random block size defined in the plane, or component config.
-                            size32_t blockedSequentialIOSize = getPlaneAttributeValue(planeName, BlockedSequentialIO, unknownConfigValue);
-                            if (unknownConfigValue != blockedSequentialIOSize)
-                                blockedIOSize = blockedSequentialIOSize; // sequential from plane
-                            else if (unknownConfigValue != configSequentialIOSize)
-                                blockedIOSize = configSequentialIOSize; // sequential from component config
-                        }
+                        size32_t blockedIOSize = getEffectiveBlockSize();
                         keyIndex.setown(createKeyIndex(remotePath.str(), crc, false, blockedIOSize));
                         break;
                     }
@@ -236,6 +222,26 @@ protected:
             superSubIndex++;
             f = &iter->query();
         }
+    }
+
+    size32_t getEffectiveBlockSize()
+    {
+        constexpr size32_t bufferSize1mb = 0x100000;
+        size32_t blockedIOSize = bufferSize1mb;
+        StringBuffer planeName;
+        if (findPlaneFromPath(fileName, planeName))
+            blockedIOSize = getPlaneAttributeValue(planeName, BlockedRandomIO, configRandomIOSize);
+        if (!indexBaseHelper->hasSegmentMonitors()) // unfiltered
+        {
+            // If unfiltered, use the sequential block size if defined in the plane, or component config.
+            // If not, default to the random block size defined in the plane, or component config.
+            size32_t blockedSequentialIOSize = getPlaneAttributeValue(planeName, BlockedSequentialIO, unknownConfigValue);
+            if (unknownConfigValue != blockedSequentialIOSize)
+                blockedIOSize = blockedSequentialIOSize; // sequential from plane
+            else if (unknownConfigValue != configSequentialIOSize)
+                blockedIOSize = configSequentialIOSize; // sequential from component config
+        }
+        return blockedIOSize;
     }
 
 public:
