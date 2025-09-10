@@ -73,4 +73,7 @@ maskingPlugin:
             - startToken: 'siteCertificate="'
               endToken: '"'
               contentType: xml
+            - startToken: 'ldapCipherSuite="'
+              endToken: '"'
+              contentType: xml
 )!!!";
