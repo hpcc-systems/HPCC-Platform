@@ -63,7 +63,7 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL -DWS_TOPOLOGY_EXPORTS -DWSWU_API_LOCAL -DESP_SERVICE_WsTopology)
 
 HPCC_ADD_LIBRARY( ws_topology SHARED ${SRCS} )
-add_dependencies ( ws_topology espscm datamasker )
+add_dependencies ( ws_topology espscm )
 install ( TARGETS ws_topology RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( ws_topology
          jlib
@@ -78,7 +78,6 @@ target_link_libraries ( ws_topology
          workunit
          SMCLib
          swapnodelib
-         datamasker
          ${COMMON_ESP_SERVICE_LIBS}
          )
 

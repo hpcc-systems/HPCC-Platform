@@ -64,7 +64,6 @@ target_link_libraries ( esp
          remote 
          dalibase 
          workunit
-         datamasker
     ) 
 
 if (NOT CONTAINERIZED)
