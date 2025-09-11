@@ -36,6 +36,7 @@
 #include "jprop.hpp"
 #include "jregexp.hpp"
 #include "jdebug.hpp"
+#include "jiouring.hpp"
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -108,7 +109,7 @@ bool CReadSocketHandler::notifySelected(ISocket *sock, unsigned selected)
                 if (oneShort)
                 {
                     // process() will remove itself from handler, and need to avoid it doing so while in 'crit'
-                    // since the maintenance thread could also be tyring to manipulate handlers and calling closeIfTimedout()
+                    // since the maintenance thread could also be trying to manipulate handlers and calling closeIfTimedout()
                     closedOrHandled = true;
                     b.leave();
                 }
@@ -491,38 +492,245 @@ void ConcreteConnectionLister::processMessageContents(CReadSocketHandler * owned
 
 //---------------------------------------------------------------------------------------------------------------------
 
-size32_t CSocketTarget::write(const void * data, size32_t len)
+CSocketTarget::CSocketTarget(CTcpSender & _sender, const SocketEndpoint & _ep) : sender(_sender), ep(_ep)
 {
-    //MORE: Add retry logic.
-    //MORE: How do we prevent this blocking other threads though e.g. when sending a request to all nodes in a
-    //      channel and one channel is down -.do we use non-blocking and note when something is not sent?
-    if (!socket)
+}
+
+void CSocketTarget::connect()
+{
+    // Must be called within a critical section....
+    try
     {
         socket.setown(ISocket::connect_timeout(ep, 5000));
-        if (lowLatency)
-            socket->set_nagle(false);
+        if (socket)
+        {
+            // Keep track of the number of connections - a useful stat, and to distinguish between initial connection and reconnection.
+            numConnects++;
+            if (sender.lowLatency)
+                socket->set_nagle(false);
+        }
     }
+    catch (IException * e)
+    {
+        socket.clear();
+        e->Release();
+    }
+}
+
+unsigned CSocketTarget::dropPendingRequests()
+{
+    for (unsigned i = 0; i < numRequests; i++)
+    {
+        unsigned index = wrapIndex(headRequestIndex + i);
+        void * buffer = buffers[index];
+        sender.releaseBuffer(buffer);
+    }
+    numRequests = 0;
+    unsigned numToSignal = threadsWaiting;
+    threadsWaiting = 0;
+    return numToSignal;
+}
+
+ISocket * CSocketTarget::getSocket()
+{
+    CriticalBlock b(crit);
+    return LINK(querySocket());
+}
+
+ISocket * CSocketTarget::querySocket()
+{
+    if (!socket)
+        connect();
+    return socket;
+}
+
+size32_t CSocketTarget::writeSync(const void * data, size32_t len)
+{
+    Owned<ISocket> target = getSocket();
+    if (!target)
+        return 0;
 
     try
     {
-        //GH->MK as discussed this need to move to the read.
-        if (lowLatency)
-            socket->set_quick_ack(true);
-        return socket->write(data, len);
+        return target->write(data, len);
     }
     catch (IException * e)
     {
         //Force a reconnect next time - could add retry loop and logic...
+        CriticalBlock b(crit);
         socket.clear();
         throw;
     }
 }
 
-size32_t CTcpSender::sendToTarget(const void * data, size32_t len, const SocketEndpoint &ep)
+void CSocketTarget::waitForRequestSpace(CLeavableCriticalBlock & block)
 {
-    CSocketTarget * sock = queryWorkerSocket(ep);
-    return sock->write(data, len);
+    threadsWaiting++;
+    block.leave();
+    waitSem.wait();
+    block.enter();
 }
+
+void CSocketTarget::writeAsync(const void * data, size32_t len, void * ownedBuffer)
+{
+    if (!sender.asyncSender)
+    {
+        writeSync(data, len);
+        sender.releaseBuffer(ownedBuffer);
+        return;
+    }
+
+    CLeavableCriticalBlock block(crit);
+    for(;;)
+    {
+        //If reconnecting, drop the packets until the connection has succeeded.
+        if (unlikely((state == State::Aborting) || (state == State::Reconnecting)))
+        {
+            sender.releaseBuffer(ownedBuffer);
+            return;
+        }
+
+        //Ensure there is space to record the next item to send..
+        //Maybe this should always expand rather than block???
+        if (likely(numRequests != maxQueueDepth))
+            break;
+
+        waitForRequestSpace(block);
+    }
+
+    //First of all, record the new request in the list of pending items
+    unsigned nextRequestIndex = wrapIndex(headRequestIndex + numRequests);
+
+    requests[nextRequestIndex].len = len;
+    requests[nextRequestIndex].data = data;
+    buffers[nextRequestIndex] = ownedBuffer;
+    numRequests++;
+
+    //Check for completions - because it may mean this request can be processed immediately
+    sender.asyncSender->checkForCompletions();
+
+    //Depending on the current state, we may need to start a new async operation
+    switch (state)
+    {
+    case State::Unconnected:
+        startAsyncConnect();
+        break;
+    case State::Connected:
+        startAsyncWrite();
+        break;
+    default:
+        //Need to wait for the async operation to complete.
+        break;
+    }
+}
+
+void CSocketTarget::startAsyncWrite()
+{
+    state = State::Writing;
+    WriteRequest & request = requests[headRequestIndex];
+    sender.asyncSender->enqueueSocketWrite(socket, request.data, request.len, *this);
+}
+
+void CSocketTarget::startAsyncConnect()
+{
+    state = numConnects ? State::Reconnecting : State::Connecting;
+
+    //MORE: Need to code a clean async connect - that would involve
+    // * adding an ISocket call to create an unconnected socket
+    // * add an async connect call to the ISocket interface
+    // * add a callback to the ISocket interface to process the post connect and then call back to this classes' callback
+    // for the moment connect synchronously, and revisit in a later PR
+    connect();
+
+    //Process as if an async connect had completed
+    int result = socket ? 0 : -1;
+    onAsyncComplete(result);
+}
+
+void CSocketTarget::onAsyncComplete(int result)
+{
+    unsigned newSpaceToSignal = 0;
+
+    {
+        CriticalBlock block(crit); // It is possible that a caller has already locked this critical section
+        switch (state)
+        {
+        case State::Connecting:
+        case State::Reconnecting:
+            if (result < 0)
+            {
+                // If connecting for the first time failed there may be requests queued.  At the moment they are not dropped
+                // but uncomment the following line if that is the desired behaviour
+                // If reconnecting all items will be dropped already.
+                // waitSem.signal(dropPendingRequests());
+
+                // What should this do?  Schedule a delay and then try and reconnect?
+                // For the moment set the state so that it will try to connect on the next request
+                state = State::Unconnected;
+            }
+            else
+            {
+                if (numRequests != 0)
+                    startAsyncWrite();
+                else
+                    state = State::Connected;
+            }
+            break;
+        case State::ConnectWaiting:
+            startAsyncConnect();
+            break;
+        case State::Writing:
+            if (result >= 0)
+            {
+                WriteRequest & request = requests[headRequestIndex];
+                // How much of the data has been consumed?
+                // When writev is supported this may consume multiple buffers...
+                if (request.len == result)
+                {
+                    //All of the data is consumed
+                    sender.releaseBuffer(buffers[headRequestIndex]);
+                    headRequestIndex = wrapIndex(headRequestIndex + 1);
+                    if (threadsWaiting)
+                    {
+                        newSpaceToSignal = 1;
+                        threadsWaiting -= newSpaceToSignal;
+                    }
+                    numRequests--;
+                    if (numRequests != 0)
+                        startAsyncWrite();
+                    else
+                        state = State::Connected;
+                }
+                else
+                {
+                    OERRLOG("Short write on socket %u of %zu", result, request.len);
+                    //A partial write - need to adjust the size of the request and resubmit
+                    request.len -= result;
+                    request.data = (const byte *)request.data + result;
+                    startAsyncWrite();
+                }
+            }
+            else
+            {
+                int errcode = -result;
+                if (errcode == EAGAIN)
+                {
+                    startAsyncWrite();
+                }
+                else
+                {
+                    //connection lost.  Throw away all pending writes and start connecting again
+                    newSpaceToSignal = dropPendingRequests();
+                    startAsyncConnect();
+                }
+            }
+            break;
+        }
+    }
+    if (newSpaceToSignal)
+        waitSem.signal(newSpaceToSignal);
+}
+
 
 CSocketTarget * CTcpSender::queryWorkerSocket(const SocketEndpoint &ep)
 {
@@ -531,7 +739,12 @@ CSocketTarget * CTcpSender::queryWorkerSocket(const SocketEndpoint &ep)
     if (match != workerSockets.end())
         return match->second.get();
 
-    Owned<CSocketTarget> workerSocket = new CSocketTarget(ep, lowLatency);
+    Owned<CSocketTarget> workerSocket = new CSocketTarget(*this, ep);
     workerSockets.emplace(ep, workerSocket);
     return workerSocket;
+}
+
+void CTcpSender::releaseBuffer(void * buffer)
+{
+    throwUnimplementedX("CTcpSender::releaseBuffer must be implemented by derived class to support async writes");
 }
