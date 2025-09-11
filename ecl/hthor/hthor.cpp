@@ -195,36 +195,6 @@ bool isRemoteReadCandidate(const IAgentContext &agent, const RemoteFilename &rfn
     return false;
 }
 
-/**
- * Given a temporary logical filename for hthor, attach scopes to it
- * so that thor processes can find it (or hthor can find a thor-created
- * temp filename published to Dali)
- *
- * @param   out     Reference to a string buffer that will be destructively
- *                  modified to contain the result
- * @param   wuid    The current workunit ID
- * @param   lfn     The logical filename
- * @param   user    The current user's username, or NULL
- */
-StringBuffer & mangleTempFileName(StringBuffer & out, const char * lfn, const char * wuid, const char * user)
-{
-    out.clear();
-    if (lfn)
-    {
-        if (*lfn == '~')
-        {
-            out.append("~");
-            ++lfn;
-        }
-        out.appendLower(queryDfsXmlBranchName(DXB_Internal)).append("::");
-        if (user && *user)
-            out.appendLower(user).append("::");
-        out.append("temporary::");
-        out.append(lfn).append("__").appendLower(wuid);
-    }
-    return out;
-}
-
 //=====================================================================================================
 
 CHThorActivityBase::CHThorActivityBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _help, ThorActivityKind _kind, EclGraph & _graph)
@@ -531,7 +501,7 @@ void CHThorDiskWriteActivity::resolve()
     OwnedRoxieString rawname = helper.getFileName();
     if (helperFlags & TDXjobtemp)
     {
-        mangleTempFileName(mangledHelperFileName, rawname, agent.queryWuid(), agent.queryWorkUnit()->queryUser());
+        mangleTemporaryFileName(mangledHelperFileName, rawname, agent.queryWuid(), agent.queryWorkUnit()->queryUser());
     }
     else
     {
@@ -8599,7 +8569,7 @@ void CHThorDiskReadBaseActivity::resolve()
     OwnedRoxieString fileName(helper.getFileName());
     if (helper.getFlags() & TDXjobtemp)
     {
-        mangleTempFileName(mangledHelperFileName, fileName, agent.queryWuid(), agent.queryWorkUnit()->queryUser());
+        mangleTemporaryFileName(mangledHelperFileName, fileName, agent.queryWuid(), agent.queryWorkUnit()->queryUser());
     }
     else
     {

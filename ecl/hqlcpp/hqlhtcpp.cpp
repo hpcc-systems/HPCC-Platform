@@ -9417,25 +9417,29 @@ void HqlCppTranslator::doBuildStmtAssert(BuildCtx & ctx, IHqlExpression * expr)
 
 void HqlCppTranslator::doBuildStmtCluster(BuildCtx & ctx, IHqlExpression * expr)
 {
+    IHqlExpression * clusterTypeExpr = nullptr;
+    StringBuffer clusterName;
+    getStringValue(clusterName, expr->queryChild(1));
+    bool doPushCluster = !strsame(clusterName.str(), ECL_AGENT_CLUSTER_NAME);
+
     if (options.enableClusterHopping)
     {
-        IHqlExpression * clusterTypeExpr = expr->queryChild(2);
+        clusterTypeExpr = expr->queryChild(2);
         if (clusterTypeExpr)
             pushTargetClusterType(static_cast<ClusterType>(getIntValue(clusterTypeExpr)));
-
-        pushCluster(ctx, expr->queryChild(1));
-        buildStmt(ctx, expr->queryChild(0));
-        popCluster(ctx);
-
-        if (clusterTypeExpr)
-            popTargetClusterType();
     }
-    else
-    {
+
+    if (clusterTypeExpr)
+        pushTargetClusterType(static_cast<ClusterType>(getIntValue(clusterTypeExpr)));
+    if (doPushCluster)
         pushCluster(ctx, expr->queryChild(1));
-        buildStmt(ctx, expr->queryChild(0));
+    
+    buildStmt(ctx, expr->queryChild(0));
+    
+    if (doPushCluster)
         popCluster(ctx);
-    }
+    if (clusterTypeExpr)
+        popTargetClusterType();
 }
 
 //---------------------------------------------------------------------------
