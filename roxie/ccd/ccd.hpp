@@ -55,7 +55,7 @@
 #define ROXIE_STATEFILE_VERSION 2
 
 extern IException *MakeRoxieException(int code, const char *format, ...) __attribute__((format(printf, 2, 3)));
-void openMulticastSocket();
+void openWorkerRequestSocket();
 
 #define OUTOFBAND_SEQUENCE    0x8000        // indicates an out-of-band reply
 #define OVERFLOWSEQUENCE_MAX 0x7fffu        // Max value before we want to wrap (to avoid collision with flag)

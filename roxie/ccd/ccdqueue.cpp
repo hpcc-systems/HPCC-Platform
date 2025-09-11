@@ -274,9 +274,9 @@ public:
     RoxieUdpWorkerCommunicator() : Thread("RoxieUdpWorkerListener")
     {
         const char *desc = "UDP";
-        multicastSocket.setown(ISocket::udp_create(ccdMulticastPort));
-        multicastSocket->set_receive_buffer_size(udpMulticastBufferSize);
-        size32_t actualSize = multicastSocket->get_receive_buffer_size();
+        workerRequestSocket.setown(ISocket::udp_create(ccdMulticastPort));
+        workerRequestSocket->set_receive_buffer_size(udpMulticastBufferSize);
+        size32_t actualSize = workerRequestSocket->get_receive_buffer_size();
 
         if (actualSize < udpMulticastBufferSize)
         {
@@ -286,7 +286,7 @@ public:
         if (doTrace(TraceFlags::Always))
             DBGLOG("Roxie: %s socket created port=%d sockbuffsize=%d actual %d", desc, ccdMulticastPort, udpMulticastBufferSize, actualSize);
 
-        maxPacketSize = multicastSocket->get_max_send_size();
+        maxPacketSize = workerRequestSocket->get_max_send_size();
         if ((maxPacketSize==0) || (maxPacketSize>65535))
             maxPacketSize = 65535;
     }
@@ -319,7 +319,7 @@ public:
                 void * buffer = mb.reserve(maxPacketSize);
 
                 unsigned l;
-                multicastSocket->readtms(buffer, sizeof(RoxiePacketHeader), maxPacketSize, l, defaultTimeout);
+                workerRequestSocket->readtms(buffer, sizeof(RoxiePacketHeader), maxPacketSize, l, defaultTimeout);
 
                 mb.setLength(l);
                 receiver->processMessage(mb);
@@ -337,15 +337,15 @@ public:
                         E->Release();
                         // MORE: Protect with try logic, in case udp_create throws exception ?
                         //       What to do if create fails (ie exception is caught) ?
-                        if (multicastSocket)
+                        if (workerRequestSocket)
                         {
                             //This is not thread safe - what happens if a thread is sending at the same time that
                             //the socket is recreated?
-                            multicastSocket->close();
+                            workerRequestSocket->close();
 
-                            Owned<ISocket> newMulticastSocket = ISocket::udp_create(ccdMulticastPort);
-                            newMulticastSocket->set_receive_buffer_size(udpMulticastBufferSize);
-                            multicastSocket.swap(newMulticastSocket);
+                            Owned<ISocket> newWorkerRequestSocket = ISocket::udp_create(ccdMulticastPort);
+                            newWorkerRequestSocket->set_receive_buffer_size(udpMulticastBufferSize);
+                            workerRequestSocket.swap(newWorkerRequestSocket);
                         }
                     }
                 }
@@ -376,7 +376,7 @@ public:
     {
         if (running)
         {
-            shutdownAndCloseNoThrow(multicastSocket);
+            shutdownAndCloseNoThrow(workerRequestSocket);
             join();
             receiver = nullptr;
             running = false;
@@ -385,11 +385,11 @@ public:
 
     virtual size32_t sendToWorker(const void * data, size32_t len, const SocketEndpoint &ep)
     {
-        return multicastSocket->udp_write_to(ep, data, len);
+        return workerRequestSocket->udp_write_to(ep, data, len);
     }
 
 protected:
-    Owned<ISocket> multicastSocket;
+    Owned<ISocket> workerRequestSocket;
     IRoxieWorkerRequestReceiver * receiver{nullptr};
     size32_t maxPacketSize = 0;
     std::atomic<bool> running = { false };
@@ -479,7 +479,7 @@ protected:
 
 //---------------------------------------------------------------------------------------------------------------------
 
-void openMulticastSocket()
+void openWorkerRequestSocket()
 {
     if (!workerCommunicator)
     {
@@ -490,7 +490,7 @@ void openMulticastSocket()
     }
 }
 
-void closeMulticastSockets()
+void closeWorkerRequestSockets()
 {
     workerCommunicator.clear();
 }

@@ -1478,7 +1478,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 #endif
         // Now we know all the channels, we can open and subscribe the multicast channels
         if (!localAgent)
-            openMulticastSocket();
+            openWorkerRequestSocket();
 
         setDaliServixSocketCaching(true);  // enable daliservix caching
         enableForceRemoteReads(); // forces file reads to be remote reads if they match environment setting 'forceRemotePattern' pattern.
@@ -1811,7 +1811,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
     stopRoxieEventRecording(nullptr);
     cleanupPlugins();
     unloadHpccProtocolPlugin();
-    closeMulticastSockets();
+    closeWorkerRequestSockets();
     releaseAgentDynamicFileCache();
     releaseRoxieStateCache();
     setDaliServixSocketCaching(false);  // make sure it cleans up or you get bogus memleak reports

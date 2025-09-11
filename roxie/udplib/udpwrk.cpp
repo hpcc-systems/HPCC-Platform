@@ -45,11 +45,11 @@ public:
 
     size32_t sendToWorker(size32_t len, const void * data, const SocketEndpoint &ep)
     {
-        return multicastSocket->udp_write_to(ep, data, len);
+        return workerRequestSocket->udp_write_to(ep, data, len);
     }
 
 private:
-    Owned<ISocket> multicastSocket;
+    Owned<ISocket> workerRequestSocket;
     SocketEndpointArray multicastEndpoints;
 };
 
