@@ -1033,4 +1033,117 @@ public:
 CPPUNIT_TEST_SUITE_REGISTRATION(RegExprTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(RegExprTest, "RegExprTest");
 
+//--------------------------------------------------------------------------------------------------
+
+#include "jiouring.hpp"
+#include <regex>
+
+class IOURingTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(IOURingTest);
+        CPPUNIT_TEST(testcallback);
+        CPPUNIT_TEST(testcallbackNoThread);
+        CPPUNIT_TEST(testcallback2NoThread);
+        CPPUNIT_TEST(testcallbacks);
+    CPPUNIT_TEST_SUITE_END();
+
+    class SemCallback final : public IAsyncCallback
+    {
+    public:
+        virtual void onAsyncComplete(int result) override
+        {
+            sem.signal();
+        };
+
+    public:
+        Semaphore sem;
+    };
+
+public:
+    void testcallback()
+    {
+        Owned<IPropertyTree> config = createPTreeFromXMLString("<iouring/>");
+        Owned<IAsyncProcessor> processor = createUring(config, true);
+        if (!processor)
+            return;
+
+        SemCallback hello;
+        processor->enqueueCallbackCommand(hello);
+        hello.sem.wait();
+    }
+
+    void testcallbackNoThread()
+    {
+        Owned<IPropertyTree> config = createPTreeFromXMLString("<iouring/>");
+        Owned<IAsyncProcessor> processor = createUring(config, false);
+        if (!processor)
+            return;
+
+        SemCallback hello;
+        processor->enqueueCallbackCommand(hello);
+        while (!hello.sem.wait(0))
+            processor->checkForCompletions();
+    }
+
+    void testcallback2NoThread()
+    {
+        Owned<IPropertyTree> config = createPTreeFromXMLString("<iouring/>");
+        Owned<IAsyncProcessor> processor = createUring(config, false);
+        if (!processor)
+            return;
+
+        // Test the non threaded uring processor - which only checks for completion when new events are submitted
+        // Because no-op operations are processed immediately this test is not valid
+        SemCallback action1;
+        SemCallback action2;
+        processor->enqueueCallbackCommand(action1);
+        Sleep(10);
+        processor->enqueueCallbackCommand(action2);
+        CPPUNIT_ASSERT(action1.sem.wait(0));
+        while (!action2.sem.wait(0))
+            processor->checkForCompletions();
+    }
+
+    void testcallback2NoThreadDelay()
+    {
+        Owned<IPropertyTree> config = createPTreeFromXMLString("<iouring/>");
+        Owned<IAsyncProcessor> processor = createUring(config, false);
+        if (!processor)
+            return;
+
+        // Test the non threaded uring processor - which only checks for completion when new events are submitted
+        // The commands need to be non-no-ops Because no-op operations are processed immediately this test is not valid
+        SemCallback action1;
+        SemCallback action2;
+        processor->enqueueCallbackCommand(action1);
+        Sleep(100);
+        CPPUNIT_ASSERT(!action1.sem.wait(0));
+        processor->enqueueCallbackCommand(action2);
+        Sleep(100);
+        CPPUNIT_ASSERT(action1.sem.wait(0));
+        CPPUNIT_ASSERT(!action2.sem.wait(0));
+        while (!action2.sem.wait(0))
+            processor->checkForCompletions();
+    }
+
+    void testcallbacks()
+    {
+        Owned<IPropertyTree> config = createPTreeFromXMLString("<iouring/>");
+        Owned<IAsyncProcessor> processor = createUring(config, true);
+        if (!processor)
+            return;
+
+        // Test multiple actions being triggered by a single submission
+        SemCallback action1;
+        SemCallback action2;
+        processor->enqueueCallbackCommands(std::vector<IAsyncCallback *>{&action1, &action2});
+        action1.sem.wait();
+        action2.sem.wait();
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(IOURingTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(IOURingTest, "IOURingTest");
+
+
 #endif // _USE_CPPUNIT

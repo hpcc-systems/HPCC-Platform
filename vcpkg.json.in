@@ -120,6 +120,10 @@
             "platform": "@VCPKG_KAFKA@"
         },
         {
+            "name": "liburing",
+            "platform": "!windows & !osx"
+        },
+        {
             "name": "libuv",
             "platform": "@VCPKG_CASSANDRAEMBED@"
         },
