@@ -2665,6 +2665,8 @@ InplaceIndexCompressor::InplaceIndexCompressor(size32_t keyedSize, const CKeyHdr
             if (method != COMPRESS_METHOD_NONE)
             {
                 ctx.compressionHandler = queryCompressHandler(method);
+                if (!streq(value, "1"))
+                    ctx.compressionOptions.append(',').append(value);
                 useDefaultCompression = false;
             }
             else if (strieq(option, "uncompressed"))
