@@ -44,7 +44,7 @@
 class CReadSocketHandler;
 
 //This is the interface called by the read socket handler when messages are read or the socket is closed
-interface ISockerMessageProcessor
+interface ISocketMessageProcessor
 {
     virtual bool onlyProcessFirstRead() const = 0;                      // Does this only handle one read request, or are multiple messages processed
     virtual unsigned getMessageSize(const void * header) const = 0;     // For variable length messages, given the header, how big is the rest?
@@ -58,7 +58,7 @@ interface ISockerMessageProcessor
 class SECURESOCKET_API CReadSocketHandler : public CInterfaceOf<ISocketSelectNotify>
 {
 public:
-    CReadSocketHandler(ISockerMessageProcessor & _processor, ISocket *_sock, size32_t _minSize, size32_t _maxSize);
+    CReadSocketHandler(ISocketMessageProcessor & _processor, ISocket *_sock, size32_t _minSize, size32_t _maxSize);
 
     ISocket *querySocket() { return sock; }
     MemoryBuffer & queryBuffer() { return buffer; }
@@ -74,7 +74,7 @@ public:
     void prepareForNextRead();
 
 protected:
-    ISockerMessageProcessor & processor;
+    ISocketMessageProcessor & processor;
     Linked<ISocket> sock;
     StringBuffer peerHostText;
     StringBuffer peerEndpointText;
@@ -90,7 +90,7 @@ protected:
 
 //This class uses a select handler to maintain a list of sockets that are being listened to
 //It has the option for closing sockets that have been idle for too long
-class SECURESOCKET_API CReadSelectHandler : public ISockerMessageProcessor
+class SECURESOCKET_API CReadSelectHandler : public ISocketMessageProcessor
 {
 public:
     CReadSelectHandler(unsigned inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets);

@@ -78,17 +78,18 @@ public:
         if (bucket)
             bucket->wait((length / 1024)+1);
 
-        // A complete hack see note below
-        CSocketTarget * socket = (CSocketTarget *)&receiver;
+        // IUdpReceiverEntry is an opaque interface - cast to the unrelated actual class.  Better would be to derive
+        // CSocketTarget from IUdpReceiverEntry, but that requires refactoring to resolve dll dependencies
+        CSocketTarget * socket = reinterpret_cast<CSocketTarget *>(&receiver);
         socket->write(buffer->data, length);
         buffer->Release();
     }
 
     virtual IMessagePacker *createMessagePacker(ruid_t ruid, unsigned sequence, const void *messageHeader, unsigned headerSize, const ServerIdentifier &destNode, int queue) override
     {
-        // A complete hack.  version 2 will resolve the ip address in the sender, and return a pointer to the object, which will support resend
+        // Resolve the ip to a class instance for sending data to that node, use reinterpret class to cast to an unrelated opaque interface
         SocketEndpoint ep(dataPort, destNode.getIpAddress());
-        IUdpReceiverEntry * receiver = (IUdpReceiverEntry *)sender.queryWorkerSocket(ep);
+        IUdpReceiverEntry * receiver = reinterpret_cast<IUdpReceiverEntry *>(sender.queryWorkerSocket(ep));
         return ::createMessagePacker(ruid, sequence, messageHeader, headerSize, *this, *receiver, myIP, getNextMessageSequence(), queue, encrypted);
     }
 

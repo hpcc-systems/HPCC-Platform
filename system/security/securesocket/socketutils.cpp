@@ -39,7 +39,7 @@
 
 //---------------------------------------------------------------------------------------------------------------------
 
-CReadSocketHandler::CReadSocketHandler(ISockerMessageProcessor & _processor, ISocket *_sock, size32_t _minSize, size32_t _maxSize)
+CReadSocketHandler::CReadSocketHandler(ISocketMessageProcessor & _processor, ISocket *_sock, size32_t _minSize, size32_t _maxSize)
  : processor(_processor), sock(_sock), minSize(_minSize), maxReadSize(_maxSize)
 {
     lastActivityCycles = get_cycles_now();
