@@ -41,12 +41,6 @@ features:
       light: /devdoc/user.png
     details: Documentation for End-Users
     link: /devdoc/EndUsers  
-  - title: QA/Testing User Docs
-    icon:
-      dark:  /devdoc/QA.png
-      light: /devdoc/QA.png
-    details: Documentation for QA/Testing Users
-    link: /devdoc/QAUsers    
   - title: Clone, Build, & Deploy
     details: Building the HPCC Platform from source code, deploying to a test environment and submitting pull requests.
     icon:
