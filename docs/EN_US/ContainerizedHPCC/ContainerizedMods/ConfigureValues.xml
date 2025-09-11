@@ -881,7 +881,26 @@
         <programlisting>ds := DATASET('~remote::hpcc2::somescope1::somelfn1', rec);</programlisting>
       </sect3>
 
-      <sect3>
+      <sect3 id="Azure_ManagedIdentity">
+        <title>Azure Managed Identity Authentication</title>
+
+        <para>HPCC Systems platform supports Azure managed identities as an
+        authentication method for API file access, allowing the platform to
+        authenticate with Azure storage without requiring explicit storage
+        account keys.</para>
+
+        <para>Enable Azure managed identity authentication using the
+        <literal>managed</literal> configuration property option in the
+        <literal>values.schema.json</literal> file which implements the
+        necessary logic to use that managed identity when enabled.</para>
+
+        <para>Azure's managed identities improves security by eliminating the
+        need to store sensitive storage account keys in configuration files,
+        instead leveraging Azure's managed identity service for
+        authentication.</para>
+      </sect3>
+
+      <sect3 id="Preferred_Storage">
         <title>Preferred Storage</title>
 
         <para>The <emphasis>preferredReadPlanes</emphasis> option is available
