@@ -6264,6 +6264,7 @@ bool HqlCppTranslator::buildCode(HqlQueryContext & query, const char * embeddedL
         }
 
         buildRowAccessors();
+        wu()->setDebugValueInt("usingClusterHopping", (clusterTypesChanged ? 1 : 0), true);
     }
 
     ::Release(outputLibrary);

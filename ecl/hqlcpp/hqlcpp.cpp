@@ -1566,6 +1566,8 @@ ClusterType HqlCppTranslator::pushTargetClusterType(ClusterType clusterType)
 {
     ClusterType old = targetClusterTypes.back();
     targetClusterTypes.push_back(clusterType);
+    if (old != clusterType)
+        clusterTypesChanged = true;
     return old;
 }
 

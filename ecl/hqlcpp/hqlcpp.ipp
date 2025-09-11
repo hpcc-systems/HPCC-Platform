@@ -2124,6 +2124,7 @@ protected:
     Linked<ICodegenContextCallback> ctxCallback;
     std::vector<ClusterType> targetClusterTypes; // There will always be at least one entry in this list; last entry is the current target
     std::vector<ClusterType> savedClusterTypes;
+    bool clusterTypesChanged = false;
     bool contextAvailable;
     unsigned maxSequence;
     unsigned librarySequence = LibraryBaseSequence;
