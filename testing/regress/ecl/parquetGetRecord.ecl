@@ -164,14 +164,18 @@ IMPORT PARQUET;
 
 // Create a comprehensive test record with all supported data types
 childChildRec := RECORD
-    UNSIGNED u1;
+    UNSIGNED u1 {XPATH('CHILD-CHILD-U1')};
     STRING d1;
+    BOOLEAN b1;
 END;
 
 childRec := RECORD
     BOOLEAN b1;
-    SET OF DATA1 sd1;
     childChildRec cc1;
+    SET OF DATA1 sd1;
+    INTEGER field1 {XPATH('AAA')}; // Test collision during field name conversion
+    INTEGER p_aaa_1;
+    INTEGER p_aaa;
 END;
 
 parquetSupportedTypesRecord := RECORD
@@ -197,7 +201,11 @@ parquetSupportedTypesRecord := RECORD
     SET OF STRING  setStringField {XPATH('setStringField')};
     childRec refField;
     INTEGER field1 {XPATH('AAA')}; // Test collision during field name conversion
-    INTEGER field2 {XPATH('p_aaa')};
+    INTEGER p_aaa_1;
+    INTEGER p_aaa;
+    INTEGER field4 {XPATH('BBB')};
+    INTEGER p_bbb;
+    INTEGER p_bbb_1;
 END;
 
 // Create test data with a single row
@@ -222,9 +230,13 @@ testData := DATASET([{
     X'0123456789ABCDEF',
     [1, 2, 3, 4, 5],
     ['apple', 'banana', 'cherry'],
-    {TRUE, [X'A1', D'test'], {255, 'test'}},
+    {TRUE, {255, 'test', FALSE}, [X'A1', D'test'], 42, -42, 314159},
     42,
-    -42
+    -42,
+    314159,
+    42,
+    -42,
+    314159
 }], parquetSupportedTypesRecord);
 
 // Define the test file path

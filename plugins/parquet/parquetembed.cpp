@@ -55,6 +55,10 @@ namespace parquetembed
 {
 
 
+// Represents a Parquet field with its ECL-compatible name and compatibility status
+// Used to track field name transformations when converting from Parquet schema to ECL record structure
+typedef std::vector<std::tuple<StringBuffer, bool>> ParquetFieldList;
+
 /**
  * @brief Helper function to check if a Parquet field name is ECL compatible (lowercase alphanumeric or _ and not starting with a digit).
  *
@@ -82,17 +86,13 @@ static bool isFieldNameEclCompatible(size32_t len, const char *name)
  * @param name StringBuffer containing the original field name.
  * @param out StringBuffer to store the transformed ECL compatible name.
  * @return true if the name was transformed, false if it was already compatible.
- * If the field was already compatible, the original name is swapped into out to
- * avoid unnecessary copying.
  */
 static bool toEclCompatibleFieldName(StringBuffer &name, StringBuffer &out)
 {
     assertex(name);
     if (isFieldNameEclCompatible(name.length(), name.str()))
-    {
-        out.swapWith(name);
         return true;
-    }
+
     out.append("p_");
     for (size_t i = 0; i < name.length(); ++i)
     {
@@ -105,11 +105,67 @@ static bool toEclCompatibleFieldName(StringBuffer &name, StringBuffer &out)
             out.append(c);
     }
 
-    // Create a simple hash from the original name for uniqueness
-    unsigned hash = hashc((const unsigned char *)name.str(), name.length(), 0);
-    out.appendf("_%x", hash & 0xFFF); // limit to 3 hex digits
-
     return false;
+}
+
+/**
+ * @brief Retrieves the field names from an Arrow schema and stores them in a vector of StringBuffers.
+ *
+ * @param schema Shared pointer to the Arrow schema.
+ * @return Shared pointer to a flattened list of StringBuffers containing all field names.
+ */
+static std::shared_ptr<std::vector<StringBuffer>> getAllFieldNames(arrow::Schema &schema)
+{
+    auto originalNames = std::make_shared<std::vector<StringBuffer>>();
+
+    int numFields = schema.num_fields();
+    for (int i = 0; i < numFields; i++)
+    {
+        const std::string &fieldName = schema.field(i)->name();
+        originalNames->emplace_back(fieldName.length(), fieldName.c_str());
+    }
+
+    return originalNames;
+}
+
+/**
+ * @brief Generates a list of ParquetFieldInfo objects with unique ECL-compatible field names. Does not explore nested structures.
+ * Caller should get child schema and call getUniqueFieldNames as needed for nested structures.
+ * If a field name is not ECL-compatible, it is transformed and made unique by appending a numeric suffix if necessary.
+ *
+ * @param schema Shared pointer to the Arrow schema.
+ * @return ParquetFieldList A list of ParquetFieldInfo objects representing the fields with unique ECL-compatible names.
+ */
+static std::shared_ptr<ParquetFieldList> getUniqueFieldNames(arrow::Schema &schema)
+{
+    std::shared_ptr<std::vector<StringBuffer>> uniqueFieldNames = getAllFieldNames(schema);
+
+    std::shared_ptr<ParquetFieldList> parquetFieldNames = std::make_shared<ParquetFieldList>();
+    int numFields = schema.num_fields();
+    for (int i = 0; i < numFields; i++)
+    {
+        StringBuffer &originalFieldName = (*uniqueFieldNames)[i];
+        StringBuffer eclCompatibleName; // Empty if isFieldNameEclCompatible
+        bool isFieldNameEclCompatible = toEclCompatibleFieldName(originalFieldName, eclCompatibleName);
+        if (!isFieldNameEclCompatible)
+        {
+            // Ensure the transformed field name is unique
+            StringBuffer uniqueFieldName(eclCompatibleName);
+            size32_t eclNameLen = eclCompatibleName.length();
+            int suffix = 0;
+            auto compareStringBuffer = [&uniqueFieldName](const StringBuffer &fieldName) { return strncmp(uniqueFieldName.str(), fieldName.str(), uniqueFieldName.length()) == 0; };
+            while (std::find_if(uniqueFieldNames->begin(), uniqueFieldNames->end(), compareStringBuffer) != uniqueFieldNames->end())
+            {
+                uniqueFieldName.setLength(eclNameLen);
+                uniqueFieldName.append('_').append(++suffix);
+            }
+            originalFieldName.setown(uniqueFieldName);
+        }
+
+        parquetFieldNames->emplace_back(originalFieldName.str(), isFieldNameEclCompatible);
+    }
+
+    return parquetFieldNames;
 }
 
 /**
@@ -173,29 +229,29 @@ static StringBuffer &arrowTypeToEcl(const std::shared_ptr<arrow::DataType> &type
  * @param out StringBuffer to store the generated ECL record structure.
  * @param indent Indentation level for formatting the output (default is 4).
  */
-static void buildEclRecord(const std::shared_ptr<arrow::Schema> &schema, StringBuffer &out, int indent = 4)
+static void buildEclRecord(arrow::Schema &schema, StringBuffer &out, int indent = 4)
 {
+    std::shared_ptr<ParquetFieldList> uniqueFieldNames = getUniqueFieldNames(schema);
     StringBuffer pad;
     pad.appendN(indent, ' ');
-    for (int i = 0; i < schema->num_fields(); ++i)
+    for (int i = 0; i < schema.num_fields(); ++i)
     {
-        const std::shared_ptr<arrow::Field> &field = schema->field(i);
-        StringBuffer origName(field->name().length(), field->name().c_str());
-        StringBuffer eclName;
-        bool isCompatible = toEclCompatibleFieldName(origName, eclName);
         StringBuffer eclType;
+        StringBuffer &eclFieldName = std::get<0>(uniqueFieldNames->at(i));
+        bool isFieldNameEclCompatible = std::get<1>(uniqueFieldNames->at(i));
+        const std::shared_ptr<arrow::Field> field = schema.field(i);
         const std::shared_ptr<arrow::DataType> fieldType = field->type();
         arrow::Type::type typeID = fieldType->id();
         if (typeID == arrow::Type::STRUCT)
         {
             StringBuffer childRecord;
-            childRecord.append(eclName).append("Rec := RECORD\n");
+            childRecord.append(eclFieldName).append("Rec := RECORD\n");
             std::shared_ptr<arrow::StructType> structType = std::static_pointer_cast<arrow::StructType>(fieldType);
-            std::shared_ptr<arrow::Schema> childSchema = std::make_shared<arrow::Schema>(structType->fields());
+            arrow::Schema childSchema = arrow::Schema(structType->fields());
             buildEclRecord(childSchema, childRecord);
             childRecord.append("END;\n\n");
             out.insert(0, childRecord);
-            out.append(pad).append(eclName).append("Rec ").append(eclName);
+            out.append(pad).append(eclFieldName).append("Rec ").append(eclFieldName);
         }
         else if (typeID == arrow::Type::LIST || typeID == arrow::Type::LARGE_LIST)
         {
@@ -204,15 +260,15 @@ static void buildEclRecord(const std::shared_ptr<arrow::Schema> &schema, StringB
                 arrowTypeToEcl(std::static_pointer_cast<arrow::ListType>(fieldType)->value_type(), eclType);
             else
                 arrowTypeToEcl(std::static_pointer_cast<arrow::LargeListType>(fieldType)->value_type(), eclType);
-            out.append(eclType).append(' ').append(eclName);
+            out.append(eclType).append(' ').append(eclFieldName);
         }
         else
         {
             arrowTypeToEcl(fieldType, eclType);
-            out.append(pad).append(eclType).append(' ').append(eclName);
+            out.append(pad).append(eclType).append(' ').append(eclFieldName);
         }
-        if (!isCompatible)
-            out.append(" {XPATH('").append(origName).append("')}");
+        if (!isFieldNameEclCompatible)
+            out.append(" {XPATH('").append(field->name()).append("')}");
         out.append(";\n");
     }
 }
@@ -234,7 +290,7 @@ extern "C++" PARQUETEMBED_PLUGIN_API void getParquetRecordStructure(size32_t &__
         std::shared_ptr<arrow::Schema> schema = reader->getSchema();
 
         StringBuffer ecl("parquetRecord := RECORD\n");
-        buildEclRecord(schema, ecl);
+        buildEclRecord(*(schema.get()), ecl);
         ecl.append("END;\n");
 
         __lenResult = ecl.length();
