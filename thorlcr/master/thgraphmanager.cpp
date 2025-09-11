@@ -128,7 +128,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
         CRuntimeSummaryStatisticCollection podStats;
         std::vector<std::string> nodeNames; // ordered list of the unique node names
         bool collectAttempted = false;
-        
+
     public:
         CPodInfo() : podStats(podStatistics)
         {
@@ -189,7 +189,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
             reportExceptionToWorkunit(*wu, e);
         }
     } podInfo;
-    
+
     Owned<IDeMonServer> demonServer;
     std::atomic<unsigned> activeTasks;
     StringAttr          currentWuid;
@@ -380,6 +380,7 @@ CJobManager::CJobManager(ILogMsgHandler *_logHandler) : logHandler(_logHandler)
 
     StringBuffer soPath;
     globals->getProp("@query_so_dir", soPath);
+    DBGLOG("DJPS1 Get querySo directory: %s", soPath.str());
     StringBuffer soPattern("*.");
 #ifdef _WIN32
     soPattern.append("dll");
@@ -537,6 +538,7 @@ bool CJobManager::fireException(IException *e)
 
 bool CJobManager::execute(IConstWorkUnit *workunit, const char *wuid, const char *graphName, const SocketEndpoint &agentep)
 {
+    DBGLOG("DJPS70 CJobManager::execute(...)");
     Owned<IException> exception;
     TraceFlags startTraceFlags = queryTraceFlags();
     COnScopeExit restoreTraceFlags([&](){ updateTraceFlags(startTraceFlags, true); });
@@ -580,7 +582,7 @@ bool CJobManager::execute(IConstWorkUnit *workunit, const char *wuid, const char
             wu->setDebugAgentListenerIP(sb); //tells debugger what IP to write commands to
             wu->setDebugAgentListenerPort(debugListener->getPort());
         }
-        workunitGraphCacheEnabled = getExpertOptBool("workunitGraphCacheEnabled", workunitGraphCacheEnabled);
+        workunitGraphCacheEnabled = getExpertOptBool("workunitGraphCacheEnabled", workunitGraphCacheEnabled, globals);
         return doit(workunit, graphName, agentep);
     }
     catch (IException *e)
@@ -1052,15 +1054,17 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     bool sendSo = false;
     Owned<ILoadedDllEntry> querySo;
     StringBuffer soPath;
-    if (!getExpertOptBool("saveQueryDlls"))
+    if (!getExpertOptBool("saveQueryDlls", false, globals))
     {
         DBGLOG("Loading query name: %s", soName.str());
+        DBGLOG("DJPS69 Loading query name: %s", soName.str());
         querySo.setown(queryDllServer().loadDll(soName.str(), DllLocationLocal));
         soPath.append(querySo->queryName());
     }
     else
     {
         globals->getProp("@query_so_dir", soPath);
+        DBGLOG("DJPS2 Get querySo directory: %s", soPath.str());
         StringBuffer compoundPath;
         compoundPath.append(soPath.str());
         soPath.append(soName.str());
@@ -1086,7 +1090,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
                 FLLOG(MCexception(e), e, "Failed to write query dll - ignoring!");
                 e->Release();
             }
-            sendSo = getExpertOptBool("dllsToSlaves", true);
+            sendSo = getExpertOptBool("dllsToSlaves", true, globals);
         }
         querySo.setown(createDllEntry(compoundPath.str(), false, NULL, false));
         soPath.swapWith(compoundPath);
@@ -1412,8 +1416,206 @@ void auditThorJobEvent(const char *eventName, const char *wuid, const char *grap
     LOG(MCauditInfo, "%s", msg.c_str());
 }
 
+// Configuration change detection for graceful restart
+static std::atomic<bool> configChangeDetected{false};
+static StringBuffer currentConfigSHA;
+static CriticalSection configSHAcs;
+
+// Helper function to log long strings in chunks
+static void logStringInChunks(const char *str, const char *prefix = "")
+{
+    if (!str || !*str)
+        return;
+
+    constexpr size_t chunkSize = 80;
+    size_t len = strlen(str);
+    size_t offset = 0;
+
+    while (offset < len)
+    {
+        size_t remaining = len - offset;
+        size_t chunkLen = (remaining < chunkSize) ? remaining : chunkSize;
+        StringBuffer chunk;
+        chunk.append(chunkLen, str + offset);
+        PROGLOG("%s%s", prefix, chunk.str());
+        offset += chunkLen;
+    }
+}
+// Compute SHA hash of the current configuration
+static void computeConfigSHA(StringBuffer &shaStr)
+{
+    shaStr.clear();
+    try
+    {
+        Owned<IPropertyTree> componentConfig = getComponentConfigSP();
+        if (!componentConfig)
+            PROGLOG("DJPS3 No component config!");
+        Owned<IPropertyTree> globalConfig = getGlobalConfigSP();
+        if (!globalConfig)
+            PROGLOG("DJPS4 No global config!");
+
+        StringBuffer componentConfigXML;
+        if (componentConfig)
+        {
+            toXML(componentConfig, componentConfigXML, 0, 0);
+            PROGLOG("DJPS5 componentConfigXML: %u", componentConfigXML.length());
+            logStringInChunks(componentConfigXML.str(), "DJPS6 componentConfigXML: ");
+        }
+        StringBuffer globalConfigXML;
+        if (globalConfig)
+        {
+            toXML(globalConfig, globalConfigXML, 0, 0);
+            PROGLOG("DJPS7 globalConfigXML: %u", globalConfigXML.length());
+            logStringInChunks(globalConfigXML.str(), "DJPS8 globalConfigXML: ");
+        }
+
+        if (componentConfigXML.length() || globalConfigXML.length())
+        {
+            StringBuffer configXML;
+            configXML.append(componentConfigXML);
+            configXML.append(globalConfigXML);
+            PROGLOG("DJPS9 configXML: %u", configXML.length());
+            logStringInChunks(configXML.str(), "DJPS10 configXML: ");
+            hash64_t configHash = rtlHash64Data(configXML.length(), configXML.str(), 0);
+            shaStr.appendf("%" I64F "x", configHash);
+        }
+    }
+    catch (IException *e)
+    {
+        IWARNLOG(e, "DJPS11 Failed to compute configuration SHA");
+        e->Release();
+    }
+}
+/*
+static void computeConfigSHA(StringBuffer &shaStr, IPropertyTree *componentConfig, IPropertyTree *globalConfig)
+{
+    if (!componentConfig)
+        PROGLOG("DJPS: No component config!");
+    if (!globalConfig)
+        PROGLOG("DJPS: No global config!");
+
+    shaStr.clear();
+    try
+    {
+        StringBuffer componentConfigXML;
+        if (componentConfig)
+        {
+            toXML(componentConfig, componentConfigXML, 0, 0);
+            PROGLOG("DJPS componentConfigXML: %u", componentConfigXML.length());
+            logStringInChunks(componentConfigXML.str(), "DJPS componentConfigXML: ");
+        }
+        StringBuffer globalConfigXML;
+        if (globalConfig)
+        {
+            toXML(globalConfig, globalConfigXML, 0, 0);
+            PROGLOG("DJPS globalConfigXML: %u", globalConfigXML.length());
+            logStringInChunks(globalConfigXML.str(), "DJPS globalConfigXML: ");
+        }
+
+        if (componentConfigXML.length() || globalConfigXML.length())
+        {
+            StringBuffer configXML;
+            configXML.append(componentConfigXML);
+            configXML.append(globalConfigXML);
+            PROGLOG("DJPS configXML: %u", configXML.length());
+            logStringInChunks(configXML.str(), "DJPS configXML: ");
+            hash64_t configHash = rtlHash64Data(configXML.length(), configXML.str(), 0);
+            shaStr.appendf("%" I64F "x", configHash);
+        }
+    }
+    catch (IException *e)
+    {
+        IWARNLOG(e, "DJPS Failed to compute configuration SHA");
+        e->Release();
+    }
+}
+
+static CConfigUpdateHook configUpdateHook;
+*/
+
+static void configUpdateNotifyHandler(const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
+{
+    PROGLOG("DJPS12 configUpdateNotifyHandler() called");
+
+    // Compute SHA of current (new) configuration
+    StringBuffer newConfigSHA;
+    computeConfigSHA(newConfigSHA);
+    PROGLOG("DJPS13 newConfigSHA: %s", newConfigSHA.str());
+
+    // Check and update the stored SHA, only if SHA actually changed (content change, not just file touch)
+    {
+        CriticalBlock b(configSHAcs);
+        if (newConfigSHA.length() && !streq(currentConfigSHA.str(), newConfigSHA.str()))
+        {
+            configChangeDetected = true;
+            currentConfigSHA.set(newConfigSHA.str());
+
+            PROGLOG("DJPS14X Configuration SHA changed from '%s' to '%s' - Thor will gracefully restart after current job completes",
+                    currentConfigSHA.str(),
+                    newConfigSHA.str());
+        }
+    }
+}
+
 void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphName)
 {
+    // Install configuration change detection handler for graceful restart
+    unsigned configUpdateHookId{0};
+    if (isContainerized())
+    {
+        configUpdateHookId = installConfigUpdateHook(configUpdateNotifyHandler, false);
+        if (configUpdateHookId)
+        {
+            PROGLOG("DJPS15 Configuration change monitoring enabled for graceful restart with CB ID: %u", configUpdateHookId);
+
+            // Initialize the configuration SHA baseline
+            StringBuffer initialConfigSHA;
+            computeConfigSHA(initialConfigSHA);
+            {
+                CriticalBlock b(configSHAcs);
+                currentConfigSHA.set(initialConfigSHA.str());
+            }
+            PROGLOG("DJPS16 Initial configuration SHA: %s", initialConfigSHA.str());
+        }
+        else
+            IWARNLOG("DJPS17X Failed to install configuration change monitoring");
+/* 2 methods of detecting config changes - either use a notify handler (above), or a modifier (below)
+        auto modifyFunc = [](IPropertyTree * newComponentConfiguration, IPropertyTree * newGlobalConfiguration)
+        {
+            PROGLOG("DJPS modifyFunc() called");
+
+            StringBuffer newIncomingConfigSHA;
+            computeConfigSHA(newIncomingConfigSHA, newComponentConfiguration, newGlobalConfiguration);
+            PROGLOG("DJPS newIncomingConfigSHA: %s", newIncomingConfigSHA.str());
+
+            // Compute SHA of current (new) configuration
+            StringBuffer newConfigSHA;
+            computeConfigSHA(newConfigSHA);
+            PROGLOG("DJPS newConfigSHA: %s", newConfigSHA.str());
+
+            // Check and update the stored SHA, only if SHA actually changed (content change, not just file touch)
+            {
+                CriticalBlock b(configSHAcs);
+                if (newConfigSHA.length() && !strsame(currentConfigSHA.str(), newConfigSHA.str()))
+                {
+                    configChangeDetected = true;
+                    PROGLOG("DJPSX Configuration SHA changed from '%s' to '%s' - Thor will gracefully restart after current job completes",
+                            currentConfigSHA.str(),
+                            newConfigSHA.str());
+                    currentConfigSHA.set(newConfigSHA.str());
+                }
+            }
+        };
+
+        // Initialize the configuration SHA baseline
+        computeConfigSHA(currentConfigSHA);
+        PROGLOG("DJPS Initial configuration SHA: %s", currentConfigSHA.str());
+        PROGLOG("DJPS configUpdateHook.installModifierOnce(modifyFunc, false); before");
+        configUpdateHook.installModifierOnce(modifyFunc, false);
+        PROGLOG("DJPS Configuration change monitoring enabled for graceful restart");
+*/
+    }
+
     aborting = 0;
     unsigned multiThorMemoryThreshold = globals->getPropInt("@multiThorMemoryThreshold")*0x100000;
     try
@@ -1597,6 +1799,14 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                     }
 
                     currentGraphName.clear();
+
+                    // Check for configuration changes and exit gracefully if detected
+                    if (configChangeDetected)
+                    {
+                        PROGLOG("DJPS18X Configuration change detected - exiting gracefully to allow pod restart with new configuration");
+                        break;
+                    }
+
                     unsigned lingerRemaining;
                     if (lingerTimer.timedout(&lingerRemaining))
                         break;
@@ -1645,6 +1855,12 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
         FLLOG(MCexception(e), e,"ThorMaster");
         e->Release();
     }
+
+    // Cleanup configuration change monitoring
+    if (configUpdateHookId)
+        removeConfigUpdateHook(configUpdateHookId);
+//    configUpdateHook.clear(); DJPS
+
     if (multiThorMemoryThreshold)
         setMultiThorMemoryNotify(0,NULL);
 }

@@ -10439,24 +10439,42 @@ StringBuffer &getExpertOptPath(const char *opt, StringBuffer &out)
 #endif
 }
 
-bool hasExpertOpt(const char *opt)
+bool hasExpertOpt(const char *opt, IPropertyTree *ipt)
 {
     StringBuffer xpath;
     getExpertOptPath(opt, xpath);
+    if (ipt)
+        return ipt->hasProp(xpath);
     return getComponentConfigSP()->hasProp(xpath);
 }
 
-bool getExpertOptBool(const char *opt, bool dft)
+bool getExpertOptBool(const char *opt, bool dft, IPropertyTree *ipt)
 {
     StringBuffer xpath;
     getExpertOptPath(opt, xpath);
+    if (ipt)
+    {
+/*
+        DBGLOG("DJPS49 ipt->getPropBool(%s, %s)", xpath.str(), dft ? "true" : "false");
+        DBGLOG("DJPS49 ipt->hasProp(xpath) is %s for %s", ipt->hasProp(xpath) ? "true" : "false", xpath.str());
+        DBGLOG("DJPS49 ipt->getPropBool(xpath, dft) : %s", ipt->getPropBool(xpath, dft) ? "true" : "false");
+*/
+        return ipt->getPropBool(xpath, dft);
+    }
+/*
+    DBGLOG("DJPS50 getComponentConfigSP()->getPropBool(%s, %s)", xpath.str(), dft ? "true" : "false");
+    DBGLOG("DJPS50 getComponentConfigSP()->hasProp(xpath) is %s for %s", getComponentConfigSP()->hasProp(xpath) ? "true" : "false", xpath.str());
+    DBGLOG("DJPS50 getComponentConfigSP()->getPropBool(xpath, dft) : %s", getComponentConfigSP()->getPropBool(xpath, dft) ? "true" : "false");
+*/
     return getComponentConfigSP()->getPropBool(xpath, dft);
 }
 
-__int64 getExpertOptInt64(const char *opt, __int64 dft)
+__int64 getExpertOptInt64(const char *opt, __int64 dft, IPropertyTree *ipt)
 {
     StringBuffer xpath;
     getExpertOptPath(opt, xpath);
+    if (ipt)
+        return ipt->getPropInt64(xpath, dft);
     return getComponentConfigSP()->getPropInt64(xpath, dft);
 }
 
@@ -10475,11 +10493,15 @@ StringBuffer &getExpertOptString(const char *opt, StringBuffer &out)
     return out;
 }
 
-void setExpertOpt(const char *opt, const char *value)
+void setExpertOpt(const char *opt, const char *value, IPropertyTree *ipt)
 {
     StringBuffer xpath;
     getExpertOptPath(nullptr, xpath);
-    Owned<IPropertyTree> config = getComponentConfigSP();
+    Owned<IPropertyTree> config;
+    if (ipt)
+        config.setown(LINK(ipt));
+    else
+        config = getComponentConfigSP();
     if (!config->hasProp(xpath))
         config->setPropTree(xpath);
     getExpertOptPath(opt, xpath.clear());

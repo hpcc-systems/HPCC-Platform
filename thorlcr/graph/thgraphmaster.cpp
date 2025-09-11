@@ -1738,20 +1738,26 @@ void CJobMaster::sendQuery()
     if (querySent) return;
     CMessageBuffer tmp;
     tmp.append(slavemptag);
+    DBGLOG("DJPS61 slavemptag: %u", slavemptag);
     tmp.append(queryWuid());
+    DBGLOG("DJPS62 queryWuid(): %s", queryWuid());
     tmp.append(graphName);
+    DBGLOG("DJPS63 graphName: %s", graphName.str());
     const char *soName = queryDllEntry().queryName();
     DBGLOG("Query dll: %s", soName);
+    DBGLOG("DJPS64 Query dll: %s", soName);
     tmp.append(soName);
-    if (getExpertOptBool("saveQueryDlls"))
+    if (getExpertOptBool("saveQueryDlls", false, globals))
     {
         tmp.append(sendSo);
+        DBGLOG("DJPS65 sendSo: %s", sendSo ? "true" : "false");
         if (sendSo)
         {
             CTimeMon atimer;
             OwnedIFile iFile = createIFile(soName);
             OwnedIFileIO iFileIO = iFile->open(IFOread);
             size32_t sz = (size32_t)iFileIO->size();
+            DBGLOG("DJPS66 size: %u", sz);
             tmp.append(sz);
             read(iFileIO, 0, sz, tmp);
             DBGLOG("Loading query for serialization to slaves took %d ms", atimer.elapsed());
@@ -1772,6 +1778,7 @@ void CJobMaster::sendQuery()
     CMessageBuffer msg;
     msg.append(QueryInit);
     compressToBuffer(msg, tmp.length(), tmp.toByteArray());
+    DBGLOG("DJPS67 tmp.length(): %d", tmp.length());
 
     CTimeMon queryToSlavesTimer;
     querySent = true;
