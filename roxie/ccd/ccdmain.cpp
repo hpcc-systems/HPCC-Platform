@@ -1395,12 +1395,15 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         minimumInterestingActivityCycles = nanosec_to_cycle(minimumInterestingActivityMs * 1'000'000);
 
         minFreeDiskSpace = topology->getPropInt64("@minFreeDiskSpace", (1024 * 0x100000)); // default to 1 GB
-        mtu_size = topology->getPropInt("@mtuPayload", mtu_size);
+        //Use a different option to configure the tcp packet size - so that cloned default settings don't affect tcp
+        if (useTcpTransport)
+            mtu_size = topology->getPropInt("@tcpMaxPacketSize", mtu_size);
+        else
+            mtu_size = topology->getPropInt("@mtuPayload", mtu_size);
         if (mtu_size)
         {
-            if (mtu_size < 1400 || mtu_size > 9000)
+            if (!useTcpTransport && (mtu_size < 1400 || mtu_size > 9000))
                 throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid settings - mtuPayload should be between 1400 and 9000");
-
         }
         else if (topology->getPropBool("@jumboFrames", false))
             mtu_size = 9000;    // upper limit on outbound buffer size - allow some header room too
