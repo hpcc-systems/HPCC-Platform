@@ -52,6 +52,14 @@ eck-stack:
           version: latest
     http:
       service:
+        metadata:
+          annotations:
+            hpcc.eclwatch.io/enabled: "true"
+            #Optional but informative
+            hpcc.eclwatch.io/description: "Provides Observability Management"
+            hpcc.eclwatch.io/label : "HPCC Observability (tracing) on Kibana"
+            hpcc.eclwatch.io/path: "/app/apm/traces/explorer/waterfall?comparisonEnabled=false&detailTab=timeline&environment=ENVIRONMENT_ALL&rangeFrom=now-1h&rangeTo=now&showCriticalPath=false&traceId={trace_id}&type=kql"
+            hpcc.eclwatch.io/resource.type: "traces"
         spec:
           type: LoadBalancer # default is ClusterIP
     ingress:
