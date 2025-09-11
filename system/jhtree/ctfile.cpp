@@ -482,8 +482,6 @@ size32_t CLegacyWriteNode::compressValue(const char *keyData, size32_t size, cha
     return size-pack+1;
 }
 
-//=========================================================================================================
-
 CBlobWriteNode::CBlobWriteNode(offset_t _fpos, CKeyHdr *_keyHdr) : CWriteNodeBase(_fpos, _keyHdr)
 {
     hdr.nodeType = NodeBlob;
@@ -993,11 +991,6 @@ void CJHLegacySearchNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _
         loadExpandTime = expansionTimer.elapsedNs();
 }
 
-void PayloadReference::clear()
-{
-    data.reset();
-}
-
 offset_t CJHSearchNode::prevNodeFpos() const
 {
     offset_t ll;
@@ -1142,7 +1135,10 @@ void CJHLegacySearchNode::dump(FILE *out, int length, unsigned rowCount, bool ra
         fprintf(out, "==========\n");
 }
 
-//=========================================================================================================
+void PayloadReference::clear()
+{
+    data.reset();
+}
 
 CJHVarTreeNode::CJHVarTreeNode()
 {
