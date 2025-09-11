@@ -77,6 +77,9 @@ Instructions for using vcpkg with the HPCC Systems Platform
 [ESP API tool](../tools/esp-api/README.md)
 Documentation for ESP API tool.
 
+[Index Formats](indexformats.md)
+Details of the index formats used by the platform.
+
 ## Azure
 
 Details about using the HPCC Systems platform in Azure.
