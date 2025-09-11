@@ -56,6 +56,7 @@
 #include "jstats.h"
 #include "ctfile.hpp"
 #include "jhinplace.hpp"
+#include "jhblockcompressed.hpp"
 
 #include "jhtree.ipp"
 #include "keybuild.hpp"
@@ -1475,6 +1476,9 @@ CJHTreeNode *CKeyIndex::_createNode(const NodeHdr &nodeHdr) const
             if (nodeHdr.nodeType == NodeBranch)
                 return new CJHInplaceBranchNode();
             UNIMPLEMENTED;
+        case BlockCompression:
+            assertex(nodeHdr.nodeType== NodeLeaf);    // Should only be using the new format for leaf nodes
+            return new CJHBlockCompressedSearchNode();
         default:
             throwUnexpected();
         }

@@ -123,6 +123,7 @@ enum CompressionType : byte
     // Additional compression formats can be added here...
     SplitPayload = 1,         // A proof-of-concept using separate compression blocks for keyed fields vs payload
     InplaceCompression = 2,
+    BlockCompression = 3
 };
 
 //#pragma pack(1)

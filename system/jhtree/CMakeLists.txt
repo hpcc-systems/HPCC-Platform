@@ -30,6 +30,7 @@ set (    SRCS
          ctfile.cpp 
          jhcache.cpp
          jhinplace.cpp
+         jhblockcompressed.cpp
          jhtree.cpp 
          jhutil.cpp 
          bloom.cpp
