@@ -1,0 +1,13 @@
+<Dataset name='JavaLogTest'>
+ <Row><JavaLogTest>log4j</JavaLogTest></Row>
+</Dataset>
+<Dataset name='JavaembedLogLineCount'>
+ <Row><JavaembedLogLineCount>5</JavaembedLogLineCount></Row>
+</Dataset>
+<Dataset name='JavaembedLogLevels'>
+ <Row><loglevel>ENABLED </loglevel><count>1</count></Row>
+ <Row><loglevel>ERROR   </loglevel><count>1</count></Row>
+ <Row><loglevel>FATAL   </loglevel><count>1</count></Row>
+ <Row><loglevel>PATTERN </loglevel><count>1</count></Row>
+ <Row><loglevel>WARN    </loglevel><count>1</count></Row>
+</Dataset>

@@ -16,6 +16,15 @@ In containerized environments, the plugin is configured via environment variable
   - List of directories, JAR files, or ZIP files that the JVM searches when loading classes not included in the Java standard library.
   - Default: The default value is the classes sub-folder under the install directory.
   - Useful for specifying the location of target Java classes and their dependencies.
+- **HPCC_JAVA_EMBED_LOG4J_LEVEL**
+  - Sets the log4j log scope level. Required to enable Java log4j redirection
+  - Available options: OFF, FATAL, ERROR, WARN, INFO, DEBUG, TRACE, ALL
+  - See: https://logging.apache.org/log4j/2.x/manual/customloglevels.html
+- **HPCC_JAVA_EMBED_LOG4J_PATTERN**
+  - Sets the log message pattern for Java log4j.
+  - Optional (Default: [%t] - %msg%n)
+  - **\*WARNING\*** An invalid pattern will cause log4j to silently fail to redirect logs to HPCC
+  - See: https://logging.apache.org/log4j/2.x/manual/pattern-layout.html
 
 In containerized environments, you can only use Java versions included in the HPCC Systems-provided image.  
 To use a different Java version or distribution, you must customize the base Docker image and set the above configuration options accordingly.
@@ -35,7 +44,16 @@ In bare-metal systems, administrators can install or remove Java environments as
 - **JNI_PATH**
   - Used if HPCC cannot locate the appropriate JNI library (`libjvm`) or if you want to specify an alternative `libjvm`.
   - Example:
-  
+- **log4jLevel**
+  - Sets the log4j log scope level. Required to enable Java log4j redirection
+  - Available options: OFF, FATAL, ERROR, WARN, INFO, DEBUG, TRACE, ALL
+  - See: https://logging.apache.org/log4j/2.x/manual/customloglevels.html
+- **log4jPattern**
+  - Sets the log message pattern for Java log4j.
+  - Optional (Default: [%t] - %msg%n)
+  - **\*WARNING\*** An invalid pattern will cause log4j to silently fail to redirect logs to HPCC
+  - See: https://logging.apache.org/log4j/2.x/manual/pattern-layout.html
+
     ```text
     JNI_PATH=/absolute/path/to/alternative/libjvm.so
     ```
