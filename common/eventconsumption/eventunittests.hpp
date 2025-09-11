@@ -24,22 +24,6 @@
 #include "eventiterator.h"
 #include "unittests.hpp"
 
-// The code being tested throws many unexpected exceptions that the test framework does not handle
-// properly. The start and end macros handle these exceptions by converting them to test failures.
-#define START_TEST \
-    try \
-    {
-
-#define END_TEST \
-    } \
-    catch (IException* e) \
-    { \
-        StringBuffer msg; \
-        e->errorMessage(msg); \
-        e->Release(); \
-        CPPUNIT_FAIL(msg.str()); \
-    }
-
 // Event visiting endpoint used by unit tests to verify that visitation links processing known
 // input produce expected results.
 //

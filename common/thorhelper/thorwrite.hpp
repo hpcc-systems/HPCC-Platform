@@ -55,4 +55,8 @@ THORHELPER_API IRowWriteFormatMapping * createRowWriteFormatMapping(RecordTransl
 
 THORHELPER_API void getDefaultWritePlane(StringBuffer & plane, unsigned helperFlags);
 
+//MORE: These should probably move into jlib
+THORHELPER_API IBufferedSerialOutputStream * createBufferedOutputStream(IFileIO * io, const IPropertyTree * providerOptions);
+THORHELPER_API bool createBufferedOutputStream(Shared<IBufferedSerialOutputStream> & outputStream, Shared<IFileIO> & outputfileio, IFile * outputFile, const IPropertyTree * providerOptions);
+
 #endif // __THORWRITE_HPP_

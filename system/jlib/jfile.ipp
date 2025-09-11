@@ -127,34 +127,23 @@ private:
 
 };
 
-class jlib_decl CFileRangeIO : implements IFileIO, public CInterface
+class CNullFileIO final : implements CSimpleInterfaceOf<IFileIO>
 {
 public:
-    CFileRangeIO(IFileIO * _io, offset_t _headerSize, offset_t _maxLength);
-    IMPLEMENT_IINTERFACE
-
-    virtual size32_t read(offset_t pos, size32_t len, void * data);
-    virtual offset_t size();
-    virtual size32_t write(offset_t pos, size32_t len, const void * data);
-    virtual void setSize(offset_t size) { UNIMPLEMENTED; }
-    virtual void flush() { io->flush(); }
-    virtual void close() { io->close(); }
-    virtual unsigned __int64 getStatistic(StatisticKind kind) { return io->getStatistic(kind); }
-    virtual IFile * queryFile() const { return io->queryFile(); }
-
-protected:
-    Linked<IFileIO>     io;
-    offset_t            headerSize;
-    offset_t            maxLength;
+    virtual size32_t read(offset_t pos, size32_t len, void * data) override;
+    virtual offset_t size() override;
+    virtual size32_t write(offset_t pos, size32_t len, const void * data) override;
+    virtual void setSize(offset_t size) override;
+    virtual void flush() override;
+    virtual void close() override;
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override;
+    virtual IFile * queryFile() const;
 };
 
-//A wrapper class than can be used to ensure the interface is used in a sensible way - e.g.
-//files are closed before destruction when writing.  Sensible buffering is in place.
-class jlib_decl CCheckingFileIO : implements CInterfaceOf<IFileIO>
+class CIndirectFileIO : implements CSimpleInterfaceOf<IFileIO>
 {
 public:
-    CCheckingFileIO(const char * _filename, IFileIO * _io) : filename(_filename), io(_io) {}
-    ~CCheckingFileIO();
+    CIndirectFileIO(IFileIO * _base);
 
     virtual size32_t read(offset_t pos, size32_t len, void * data) override;
     virtual offset_t size() override;
@@ -163,6 +152,52 @@ public:
     virtual void flush() override;
     virtual void close() override;
     virtual unsigned __int64 getStatistic(StatisticKind kind) override;
+    virtual IFile * queryFile() const;
+
+protected:
+    Linked<IFileIO>     io;
+};
+
+
+// This class is for testing to allow a delay to be added to all reads and writes
+class CDelayedFileIO final : public CIndirectFileIO
+{
+public:
+    CDelayedFileIO(IFileIO * _io, unsigned _delayNs);
+
+    virtual size32_t read(offset_t pos, size32_t len, void * data);
+    virtual size32_t write(offset_t pos, size32_t len, const void * data);
+
+protected:
+    unsigned delayNs;
+};
+
+
+class CFileRangeIO final : public CIndirectFileIO
+{
+public:
+    CFileRangeIO(IFileIO * _io, offset_t _headerSize, offset_t _maxLength);
+
+    virtual size32_t read(offset_t pos, size32_t len, void * data);
+    virtual offset_t size();
+    virtual size32_t write(offset_t pos, size32_t len, const void * data);
+
+protected:
+    offset_t            headerSize;
+    offset_t            maxLength;
+};
+
+//A wrapper class than can be used to ensure the interface is used in a sensible way - e.g.
+//files are closed before destruction when writing.  Sensible buffering is in place.
+class jlib_decl CCheckingFileIO : public CIndirectFileIO
+{
+public:
+    CCheckingFileIO(const char * _filename, IFileIO * _io) : CIndirectFileIO(_io), filename(_filename) {}
+    ~CCheckingFileIO();
+
+    virtual size32_t read(offset_t pos, size32_t len, void * data) override;
+    virtual size32_t write(offset_t pos, size32_t len, const void * data) override;
+    virtual void close() override;
 
 protected:
     void report(const char * format, ...) __attribute__((format(printf, 2, 3)));
@@ -170,7 +205,6 @@ protected:
 protected:
     CriticalSection cs;
     StringAttr filename;
-    Linked<IFileIO> io;
     bool closed = false;
     bool traced = false;
     unsigned minSeqReadSize = 0x10000;
