@@ -40,7 +40,7 @@ bool CEventVisitationLinkTester::visitEvent(CEvent& actualEvent)
         switch (expectAttr.queryTypeClass())
         {
         case EATCtext:
-            CPPUNIT_ASSERT_EQUAL_MESSAGE(msg.str(), expectAttr.queryTextValue(), actualAttr.queryTextValue());
+            CPPUNIT_ASSERT_EQUAL_MESSAGE(msg.str(), std::string(expectAttr.queryTextValue()), std::string(actualAttr.queryTextValue()));
             break;
         case EATCnumeric:
         case EATCtimestamp:
@@ -94,7 +94,7 @@ IPropertyTree* createTestConfiguration(const char* testData)
     return tree.getClear();
 }
 
-void testEventVisitationLinks(const char* testData)
+void testEventVisitationLinks(const char* testData, bool strictParsing)
 {
     START_TEST
     Owned<IPropertyTree> testTree = createTestConfiguration(testData);
@@ -103,17 +103,15 @@ void testEventVisitationLinks(const char* testData)
     IPropertyTree* expectTree = testTree->queryBranch("expect");
     CPPUNIT_ASSERT_MESSAGE("missing expected results section", expectTree != nullptr);
     Owned<IPropertyTreeIterator> links = testTree->getElements("link");
-    CPPUNIT_ASSERT_MESSAGE("missing visitation link section", links->first());
-    testEventVisitationLinks(*inputTree, *expectTree, *links);
+    testEventVisitationLinks(*inputTree, *expectTree, *links, strictParsing);
     END_TEST
 }
 
-void testEventVisitationLinks(const IPropertyTree& inputTree, const IPropertyTree& expectTree, IPropertyTreeIterator& visitationLinks)
+void testEventVisitationLinks(const IPropertyTree& inputTree, const IPropertyTree& expectTree, IPropertyTreeIterator& visitationLinks, bool strictParsing)
 {
     START_TEST
-    CPPUNIT_ASSERT_MESSAGE("missing visitation links", visitationLinks.first());
-    Owned<IEventIterator> input = new CPropertyTreeEvents(inputTree);
-    Owned<IEventIterator> expect = new CPropertyTreeEvents(expectTree);
+    Owned<IEventIterator> input = new CPropertyTreeEvents(inputTree, strictParsing);
+    Owned<IEventIterator> expect = new CPropertyTreeEvents(expectTree, strictParsing);
     Owned<IEventVisitor> visitor = new CEventVisitationLinkTester(*expect);
     ForEach(visitationLinks)
     {

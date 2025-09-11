@@ -25,16 +25,41 @@ bool CPropertyTreeEvents::nextEvent(CEvent& event)
         const char* typeStr = node.queryProp("@type");
         EventType type = queryEventType(typeStr);
         if (EventNone == type)
-            throw makeStringExceptionV(-1, "unknown event type: %s", typeStr);
+        {
+            if (strictParsing)
+                throw makeStringExceptionV(-1, "unknown event type: %s", typeStr);
+            eventsIt->next();
+            return nextEvent(event);
+        }
         event.reset(type);
 
-        // accept all attributes defined for the event type
-        for (CEventAttribute& attr : event.definedAttributes)
+        Owned<IAttributeIterator> attrIt = node.getAttributes();
+        ForEach(*attrIt)
         {
-            VStringBuffer xpath("@%s", queryEventAttributeName(attr.queryId()));
-            const char* valueStr = node.queryProp(xpath);
+            const char* name = attrIt->queryName();
+            if (isEmptyString(name))
+                continue;
+            if ('@' == *name)
+                name++;
+            if (isEmptyString(name) || streq(name, "type"))
+                continue;
+            EventAttr attrId = queryEventAttribute(name);
+            if (EvAttrNone == attrId)
+            {
+                if (strictParsing)
+                    throw makeStringExceptionV(-1, "unknown attribute: %s", name);
+                continue;
+            }
+            if (!event.isAttribute(attrId))
+            {
+                if (strictParsing)
+                    throw makeStringExceptionV(-1, "unused attribute %s/%s", typeStr, name);
+                continue;
+            }
+            const char* valueStr = attrIt->queryValue();
             if (isEmptyString(valueStr))
                 continue;
+            CEventAttribute& attr = event.queryAttribute(attrId);
             switch (attr.queryTypeClass())
             {
             case EATCtext:
@@ -48,9 +73,13 @@ bool CPropertyTreeEvents::nextEvent(CEvent& event)
                 attr.setValue(strToBool(valueStr));
                 break;
             default:
-                throw makeStringExceptionV(-1, "unknown attribute type class %u for %s/%s", attr.queryTypeClass(), typeStr, xpath.str());
+                if (strictParsing)
+                    throw makeStringExceptionV(-1, "unknown attribute type class %u for %s/%s", attr.queryTypeClass(), typeStr, name);
+                break;
             }
         }
+        if (strictParsing && !event.isComplete())
+            throw makeStringExceptionV(-1, "incomplete event %s", typeStr);
 
         // advance to the next matching node
         (void)eventsIt->next();
@@ -77,8 +106,14 @@ uint32_t CPropertyTreeEvents::queryBytesRead() const
 }
 
 CPropertyTreeEvents::CPropertyTreeEvents(const IPropertyTree& _events)
+    : CPropertyTreeEvents(_events, true)
+{
+}
+
+CPropertyTreeEvents::CPropertyTreeEvents(const IPropertyTree& _events, bool _strictParsing)
     : events(&_events)
     , eventsIt(_events.getElements("event"))
+    , strictParsing(_strictParsing)
 {
     // enable the "next" event to populate from the first matching node
     (void)eventsIt->first();
@@ -92,3 +127,102 @@ void visitIterableEvents(IEventIterator& iter, IEventVisitor& visitor)
         visitor.visitEvent(event);
     visitor.departFile(iter.queryBytesRead());
 }
+
+#ifdef _USE_CPPUNIT
+
+#include "eventunittests.hpp"
+
+class EventIteratorTests : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(EventIteratorTests);
+    CPPUNIT_TEST(testStrictEventParsingUnknownEvent);
+    CPPUNIT_TEST(testStrictEventParsingUnknownAttribute);
+    CPPUNIT_TEST(testStrictEventParsingUnusedAttribute);
+    CPPUNIT_TEST(testStrictEventParsingIncompleteEvent);
+    CPPUNIT_TEST(testLenientEventParsing);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void testStrictEventParsingUnknownEvent()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <input>
+                    <event type="Unknown"/>
+                </input>
+                <expect>
+                </expect>
+            </test>
+        )!!!";
+        CPPUNIT_ASSERT_THROW_MESSAGE("expected exception not thrown", testEventVisitationLinks(testData), std::exception);
+    }
+
+    void testStrictEventParsingUnknownAttribute()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <input>
+                    <event type="FileInformation" unknown="foo"/>
+                </input>
+                <expect>
+                </expect>
+            </test>
+        )!!!";
+        CPPUNIT_ASSERT_THROW_MESSAGE("expected exception not thrown", testEventVisitationLinks(testData), std::exception);
+    }
+
+    void testStrictEventParsingUnusedAttribute()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <input>
+                    <event type="FileInformation" InMemorySize="0"/>
+                </input>
+                <expect>
+                </expect>
+            </test>
+        )!!!";
+        CPPUNIT_ASSERT_THROW_MESSAGE("expected exception not thrown", testEventVisitationLinks(testData), std::exception);
+    }
+
+    void testStrictEventParsingIncompleteEvent()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <input>
+                    <event type="FileInformation" FileId="1"/>
+                </input>
+                <expect>
+                </expect>
+            </test>
+        )!!!";
+        CPPUNIT_ASSERT_THROW_MESSAGE("expected exception not thrown", testEventVisitationLinks(testData), std::exception);
+    }
+
+    void testLenientEventParsing()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <input>
+                    <event type="unknown"/>
+                    <event type="FileInformation" unknown="foo"/>
+                    <event type="FileInformation" InMemorySize="0"/>
+                    <event type="FileInformation" FileId="1"/>
+                    <event type="FileInformation" FileId="1" Path="foo"/>
+                </input>
+                <expect>
+                    <event type="FileInformation"/>
+                    <event type="FileInformation"/>
+                    <event type="FileInformation" FileId="1"/>
+                    <event type="FileInformation" FileId="1" Path="foo"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData, false);
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(EventIteratorTests);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(EventIteratorTests, "eventiterator");
+
+#endif
