@@ -548,6 +548,8 @@ public:
                 count += indexInput->checkCount(keyedLimit-count); // part max, is total limit [keyedLimit] minus total so far [count]
             else
                 count += indexInput->getCount();
+            if ((helper->getFlags() & TIRaggregateexists))
+                break; // Early termination for EXISTS queries
             bool limitHit = count > keyedLimit;
             if (keyManager)
                 resetManager(keyManager);
@@ -1259,7 +1261,7 @@ public:
             {
                 distributor->disconnect(true);
                 distributor->join();
-            }            
+            }
         }
         PARENT::stop();
     }
@@ -1431,7 +1433,7 @@ public:
             sz = sizeof(unsigned __int64);
         }
         dataLinkIncrement();
-        return result.finalizeRowClear(sz);     
+        return result.finalizeRowClear(sz);
     }
     virtual void stop() override
     {
@@ -1597,7 +1599,7 @@ class CIndexAggregateSlaveActivity : public CIndexReadSlaveBase
     CPartialResultAggregator aggregator;
 
 public:
-    CIndexAggregateSlaveActivity(CGraphElementBase *_container) 
+    CIndexAggregateSlaveActivity(CGraphElementBase *_container)
         : CIndexReadSlaveBase(_container), aggregator(*this)
     {
         helper = (IHThorIndexAggregateArg *)container.queryHelper();
@@ -1667,7 +1669,7 @@ public:
             }
             return nullptr;
         }
-    }  
+    }
 };
 
 CActivityBase *createIndexAggregateSlave(CGraphElementBase *container) { return new CIndexAggregateSlaveActivity(container); }
