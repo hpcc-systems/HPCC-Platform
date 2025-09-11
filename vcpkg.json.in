@@ -20,6 +20,7 @@
             "default-features": false,
             "features": [
                 "acero",
+                "compute",
                 "dataset",
                 "filesystem",
                 "parquet"
@@ -185,6 +186,7 @@
             ]
         },
         "pcre2",
+        "picojson",
         {
             "name": "python3",
             "platform": "@VCPKG_PYTHON3@ & windows"
