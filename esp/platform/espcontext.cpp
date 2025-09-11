@@ -28,6 +28,7 @@
 #include "espsecurecontext.hpp"
 #include "ldapsecurity.ipp"
 #include "dasds.hpp"
+#include "datamasking.h"
 
 class CEspContext : public CInterface, implements IEspContext
 {
@@ -1098,6 +1099,17 @@ const char* getBuildVersion()
 IEspServer* queryEspServer()
 {
     return dynamic_cast<IEspServer*>(getESPContainer());
+}
+
+IDataMaskingProfile* queryDataMaskingProfile(const char* profileName, int version)
+{
+    if (getContainer())
+    {
+        IDataMaskingEngine* engine = getContainer()->queryDataMaskingEngine();
+        if (engine)
+            return engine->queryProfile(profileName, version);
+    }
+    return nullptr;
 }
 
 IRemoteConnection* getSDSConnectionWithRetry(const char* xpath, unsigned mode, unsigned timeoutMs)

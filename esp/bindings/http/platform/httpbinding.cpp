@@ -49,6 +49,7 @@
 #include <memory>
 
 #include "esdl_def_helper.hpp"
+#include "datamasking.h"
 
 
 #define FILE_UPLOAD     "FileUploadAccess"
@@ -1699,6 +1700,13 @@ int EspHttpBinding::onGetConfig(IEspContext &context, CHttpRequest* request, CHt
     ISecUser* user = context.queryUser();
     if (m_viewConfig || (user && (user->getStatus()==SecUserStatus_Inhouse)))
     {
+        IDataMaskingProfile* profile = queryDataMaskingProfile("urn:hpcc:platform:configs", 1);
+        if (nullptr == profile)
+        {
+            OERRLOG("Unable to query the configuration data masking profile urn:hpcc:platform:configs");
+            return onGetNotFound(context, request, response, NULL);
+        }
+            
         if (getESPContainer() && getESPContainer()->queryApplicationConfig())
         {
             ESPLOG(LogNormal, "Get config generated during application init");
@@ -1706,7 +1714,10 @@ int EspHttpBinding::onGetConfig(IEspContext &context, CHttpRequest* request, CHt
             if (context.queryRequestParameters()->hasProp("display"))
                 content.append("<?xml-stylesheet type=\"text/xsl\" href=\"/esp/xslt/xmlformatter.xsl\"?>");
             toXML(getESPContainer()->queryApplicationConfig(), content);
-            response->setContent(content.str());
+            // Masking does not change the length of the content so we can use the const_cast to avoid a copy
+            char *maskedContent = const_cast<char*>(content.str());
+            profile->maskContent("xml", maskedContent, 0, content.length());
+            response->setContent(maskedContent);
             response->setContentType(HTTP_TYPE_APPLICATION_XML_UTF8);
             response->setStatus(HTTP_STATUS_OK);
             response->send();
@@ -1717,7 +1728,10 @@ int EspHttpBinding::onGetConfig(IEspContext &context, CHttpRequest* request, CHt
 
         StringBuffer content;
         xmlContentFromFile(m_configFile, "/esp/xslt/xmlformatter.xsl", content);
-        response->setContent(content.str());
+        // Masking does not change the length of the content so we can use the const_cast to avoid a copy
+        char *maskedContent = const_cast<char*>(content.str());
+        profile->maskContent("xml", maskedContent, 0, content.length());
+        response->setContent(maskedContent);
         response->setContentType(HTTP_TYPE_APPLICATION_XML_UTF8);
         response->setStatus(HTTP_STATUS_OK);
         response->send();
