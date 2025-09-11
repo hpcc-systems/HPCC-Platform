@@ -180,15 +180,9 @@ protected:
         ModeledPage page;
         expansion.describePage(event, page);
         if (ExpansionMode::OnLoad == page.expansionMode)
-        {
-            event.setValue(EvAttrInMemorySize, 0ULL);
             event.setValue(EvAttrExpandTime, 0ULL);
-        }
         else
-        {
-            event.setValue(EvAttrInMemorySize, page.expanded.size);
             event.setValue(EvAttrExpandTime, page.expansionTime);
-        }
     }
 
     void simulateIndexLoad(std::vector<CEvent>& events)
