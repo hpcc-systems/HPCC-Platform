@@ -903,6 +903,11 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         // If using TCP then send larger packets - it reduces the allocations and increases throughput
         mtu_size = useTcpTransport ? 8193 : 0;  // 0 means it will use the options below
 
+        // If using tcp then messages are unlikely to get lost, and for batch the response time is less relevant
+        // so increase the default timeout to avoid sending too many messages when the system is overloaded
+        if (useTcpTransport || isBatchRoxie)
+            packetAcknowledgeTimeout = 500;
+
         //Enabling the localNVMeCache will also by default enable remote file related optimizations
         bool mimicLegacyCompression = topology->getPropBool("@mimicLegacyCompression", !usingRemoteStorage);
 
