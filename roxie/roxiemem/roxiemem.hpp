@@ -67,6 +67,9 @@
 
 #define TRACK_DATABUFF_STATE
 
+// Opaque type to avoid too many includes
+interface IAsyncProcessor;
+
 //================================================================================
 // Roxie heap
 
@@ -603,6 +606,8 @@ extern roxiemem_decl StringBuffer &memstats(StringBuffer &stats);
 extern roxiemem_decl void memstats(unsigned &totalpg, unsigned &freepg, unsigned &maxblk);
 extern roxiemem_decl IPerfMonHook *createRoxieMemStatsPerfMonHook(IPerfMonHook *chain=NULL); // for passing to jdebug startPerformanceMonitor
 extern roxiemem_decl size_t getRelativeRoxiePtr(const void *_ptr); // Useful for debugging - to provide a value that is consistent from run to run
+
+extern roxiemem_decl void registerRoxieMemory(IAsyncProcessor & processor);
 
 } // namespace roxiemem
 #endif

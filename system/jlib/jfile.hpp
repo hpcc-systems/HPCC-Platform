@@ -30,6 +30,7 @@
 #include "jsocket.hpp"
 #include "jstatcodes.h"
 #include "jstream.hpp"
+#include "jlib.hpp"
 
 interface IFile;
 interface IFileIO;
@@ -48,8 +49,7 @@ enum IFSmode { IFScurrent = FILE_CURRENT, IFSend = FILE_END, IFSbegin = FILE_BEG
 enum CFPmode { CFPcontinue, CFPcancel, CFPstop };    // modes for ICopyFileProgress::onProgress return
 enum IFEflags { IFEnone=0x0, IFEnocache=0x1, IFEcache=0x2, IFEsync=0x4, IFEsyncAtClose=0x8 }; // mask
 
-constexpr offset_t unknownFileSize = (offset_t)-1;
-constexpr size32_t oneMB = 0x100000;
+static constexpr offset_t unknownFileSize = (offset_t)-1;
 
 class CDateTime;
 

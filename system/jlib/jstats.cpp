@@ -337,17 +337,14 @@ void formatTimeStampAsLocalTime(StringBuffer & out, unsigned __int64 value)
 }
 
 
-static const unsigned oneKb = 1024;
-static const unsigned oneMb = 1024 * 1024;
-static const unsigned oneGb = 1024 * 1024 * 1024;
 static unsigned toPermille(unsigned x) { return (x * 1000) / 1024; }
 static StringBuffer & formatSize(StringBuffer & out, unsigned __int64 value)
 {
 
-    unsigned Gb = (unsigned)(value / oneGb);
-    unsigned Mb = (unsigned)((value % oneGb) / oneMb);
-    unsigned Kb = (unsigned)((value % oneMb) / oneKb);
-    unsigned b = (unsigned)(value % oneKb);
+    unsigned Gb = (unsigned)(value / oneGB);
+    unsigned Mb = (unsigned)((value % oneGB) / oneMB);
+    unsigned Kb = (unsigned)((value % oneMB) / oneKB);
+    unsigned b = (unsigned)(value % oneKB);
     if (Gb)
         return out.appendf("%u.%03uGB", Gb, toPermille(Mb));
     else if (Mb)
