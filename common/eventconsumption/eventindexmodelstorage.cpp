@@ -45,7 +45,7 @@ void Storage::PageCache::configure(const IPropertyTree& config)
         capacity = __uint64(config.getPropInt64("@cache-capacity", capacity));
 }
 
-__uint64 Storage::PageCache::getReadTimeIfExists(const Key& key)
+__uint64 Storage::PageCache::getReadTimeIfExists(const IndexHashKey& key)
 {
     if (!readTime)
         return 0;
@@ -56,7 +56,7 @@ __uint64 Storage::PageCache::getReadTimeIfExists(const Key& key)
     return readTime;
 }
 
-bool Storage::PageCache::insert(const Key& key)
+bool Storage::PageCache::insert(const IndexHashKey& key)
 {
     if (!readTime)
         return false;

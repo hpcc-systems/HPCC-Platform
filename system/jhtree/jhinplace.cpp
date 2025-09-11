@@ -2066,9 +2066,8 @@ bool CJHInplaceLeafNode::fetchPayload(unsigned int index, char *dst, PayloadRefe
     {
         std::shared_ptr<byte []> sharedPayload;
 
-        CCycleTimer startTimer(recording);
-        size32_t sizeExpanded = 0;
-        bool hit = true;
+        CCycleTimer startTimer(recording && expandPayloadOnDemand);
+        bool isFirstUse = false;
         {
             CriticalBlock block(cs);
 
@@ -2080,6 +2079,7 @@ bool CJHInplaceLeafNode::fetchPayload(unsigned int index, char *dst, PayloadRefe
                     const byte * data = payload;
                     CompressionMethod payloadCompression = (CompressionMethod)*data++;
                     size32_t compressedLen = readPacked32(data);
+                    size32_t sizeExpanded;
                     sharedPayload = std::shared_ptr<byte []>(expandPayload(sizeExpanded, payloadCompression, compressedLen, data));
                     expandedPayload = sharedPayload;
                 }
@@ -2088,16 +2088,15 @@ bool CJHInplaceLeafNode::fetchPayload(unsigned int index, char *dst, PayloadRefe
                     //Allocate a dummy payload so we can track whether it is hit or not
                     sharedPayload = std::shared_ptr<byte []>(new byte[1]);
                     expandedPayload = sharedPayload;
-                    sizeExpanded = -1;
                 }
-                hit = false;
+                isFirstUse = true;
             }
         }
 
         if (recording)
         {
-            unsigned __int64 expandTime = hit ? 0 : startTimer.elapsedNs();
-            queryRecorder().recordIndexPayload(keyHdr->getKeyId(), getFpos(), expandTime, sizeExpanded);
+            unsigned __int64 expandTime = (expandPayloadOnDemand && isFirstUse) ? startTimer.elapsedNs() : 0;
+            queryRecorder().recordIndexPayload(keyHdr->getKeyId(), getFpos(), isFirstUse, expandTime);
         }
 
         //Ensure the payload stays alive for the duration of this call, and is likely preserved until
@@ -2769,6 +2768,8 @@ InplaceIndexCompressor::InplaceIndexCompressor(size32_t keyedSize, const CKeyHdr
             if (method != COMPRESS_METHOD_NONE)
             {
                 ctx.compressionHandler = queryCompressHandler(method);
+                if (!streq(value, "1"))
+                    ctx.compressionOptions.append(',').append(value);
                 useDefaultCompression = false;
             }
             else if (strieq(option, "uncompressed"))

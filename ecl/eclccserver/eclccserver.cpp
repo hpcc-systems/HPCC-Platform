@@ -971,6 +971,8 @@ public:
             {
                 Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
                 Owned<IWorkUnit> wu = factory->updateWorkUnit(wuid);
+                if (!wu)
+                    throw makeStringExceptionV(0, "Workunit %s no longer exists", wuid);
                 wu->getDebugValue("platformVersion", optPlatformVersion);
                 addTimeStamp(wu, SSToperation, ">compile", StWhenDequeued, 0);
                 addTimeStamp(wu, SSToperation, ">compile", StWhenK8sLaunched, 0);
@@ -1005,8 +1007,8 @@ public:
                     addExceptionToWorkunit(workunit, SeverityError, "eclccserver", error->errorCode(), msg.str(), NULL, 0, 0, 0);
                     workunit->setState(WUStateFailed);
                 }
+                workunit->commit();
             }
-            workunit->commit();
             workunit.clear();
         }
 #endif

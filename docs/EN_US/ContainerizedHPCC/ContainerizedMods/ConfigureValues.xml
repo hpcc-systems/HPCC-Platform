@@ -664,6 +664,46 @@
         mounts the plane categories it needs.</para>
       </sect3>
 
+      <sect3 id="StorageDefaults">
+        <title>Storage Defaults</title>
+
+        <para>As of version 9.14, HPCC Systems supports a new
+        <literal>defaults</literal> section under storage configuration that
+        provides fallback settings for storage planes. This feature allows
+        administrators to define common configuration values that can be
+        inherited by individual storage planes, reducing duplication and
+        simplifying configuration management.</para>
+
+        <sect4 id="Configuration-Structure">
+          <title>Storage Defaults Configuration</title>
+
+          <para>The storage defaults section is added as a sibling to the
+          <literal>planes</literal> section in your Helm values
+          configuration.</para>
+
+          <!-- Placeholder for valid example configuration -->
+        </sect4>
+
+        <sect4 id="How-Defaults-Work">
+          <title>How Storage Defaults Work</title>
+
+          <para>The defaults mechanism works as follows:</para>
+
+          <orderedlist>
+            <listitem>
+              <para><emphasis role="bold">Priority:</emphasis> Individual
+              plane settings take precedence over defaults</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Inheritance:</emphasis> Storage
+              planes automatically inherit any properties not explicitly
+              defined at the plane level</para>
+            </listitem>
+          </orderedlist>
+        </sect4>
+      </sect3>
+
       <sect3 id="YML_EphemeralStorage">
         <title>Ephemeral Storage</title>
 
@@ -841,7 +881,26 @@
         <programlisting>ds := DATASET('~remote::hpcc2::somescope1::somelfn1', rec);</programlisting>
       </sect3>
 
-      <sect3>
+      <sect3 id="Azure_ManagedIdentity">
+        <title>Azure Managed Identity Authentication</title>
+
+        <para>HPCC Systems platform supports Azure managed identities as an
+        authentication method for API file access, allowing the platform to
+        authenticate with Azure storage without requiring explicit storage
+        account keys.</para>
+
+        <para>Enable Azure managed identity authentication using the
+        <literal>managed</literal> configuration property option in the
+        <literal>values.schema.json</literal> file which implements the
+        necessary logic to use that managed identity when enabled.</para>
+
+        <para>Azure's managed identities improves security by eliminating the
+        need to store sensitive storage account keys in configuration files,
+        instead leveraging Azure's managed identity service for
+        authentication.</para>
+      </sect3>
+
+      <sect3 id="Preferred_Storage">
         <title>Preferred Storage</title>
 
         <para>The <emphasis>preferredReadPlanes</emphasis> option is available
