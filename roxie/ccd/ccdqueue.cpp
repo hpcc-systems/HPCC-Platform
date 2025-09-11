@@ -2431,7 +2431,7 @@ protected:
             wakeEarly.signal();
         }
 
-        void noteNewDelayedPacked(unsigned newWakeTime)
+        void noteNewDelayedPacket(unsigned newWakeTime)
         {
             //If the new packet has an earlier wake time than the lowest we have, then update the lowerst wake time
             //and signal the semaphore to wake the processor thread - so it can adjust the sleep time.
@@ -2797,7 +2797,7 @@ public:
                         {
                             unsigned expiryTime = msTick() + delay;
                             delayed.queryQueue(header.channel, mySubchannel).append(packet.getClear(), expiryTime);
-                            delayedPacketProcessor.noteNewDelayedPacked(expiryTime);
+                            delayedPacketProcessor.noteNewDelayedPacket(expiryTime);
                         }
                         else
                             queue.enqueueUnique(packet.getClear(), mySubchannel, 0);
@@ -2816,7 +2816,7 @@ public:
                     {
                         unsigned expiryTime = msTick() + delay;
                         delayed.queryQueue(header.channel, mySubchannel).append(packet.getClear(), expiryTime);
-                        delayedPacketProcessor.noteNewDelayedPacked(expiryTime);
+                        delayedPacketProcessor.noteNewDelayedPacket(expiryTime);
                     }
                     else
                         queue.enqueue(packet.getClear(), 0);
