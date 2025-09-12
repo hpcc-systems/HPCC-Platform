@@ -320,9 +320,9 @@ public: // IEventFilter
     {
         if (EvAttrFileId == id)
         {
-            // Special case to join EventIndexLookup, EventIndexLoad, and EventIndexEvtion with
-            // MetaFileInformation by the common EvAttrFileId attribute. The result allows the
-            // index events to be filtered by path using the file ID.
+            // Special case to join EventIndexCacheHit, EventIndexCacheMiss, EventIndexLoad, and
+            // EventIndexEviction with MetaFileInformation by the common EvAttrFileId attribute. The
+            // result allows the index events to be filtered by path using the file ID.
             //
             // MetaFileInformation events cannot be filtered by file ID.
             FilterTerm* term = ensureTerm<FileIdFilterTerm>(id);

@@ -267,7 +267,7 @@ public:
     void configure(const IPropertyTree& config);
 
     // Record, if necessary, that indicated index node has been observed. Intended to be called only
-    // for IndexLookup events, but not enforced.
+    // for IndexCacheHit and IndexCacheMiss events, but not enforced.
     bool observePage(const CEvent& event);
 
     // Determines if the indicated index node has been observed in a previous event. Called for index

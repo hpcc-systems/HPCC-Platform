@@ -32,7 +32,8 @@
 enum EventType : byte
 {
     EventNone,
-    EventIndexLookup,
+    EventIndexCacheHit,
+    EventIndexCacheMiss,
     EventIndexLoad,
     EventIndexEviction,
     EventDaliChangeMode,
@@ -72,7 +73,6 @@ enum EventAttr : byte
     EvAttrReadTime,
     EvAttrElapsedTime,
     EvAttrInMemorySize,
-    EvAttrInCache,
     EvAttrPath,
     EvAttrConnectId,
     EvAttrEnabled,
@@ -398,7 +398,8 @@ public:
     bool pauseRecording(bool pause, bool recordChange);
 
 //Functions for each of the events that can be recorded..
-    void recordIndexLookup(unsigned fileid, offset_t offset, byte nodeKind, bool hit, size32_t sizeIfHit, __uint64  expandTimeIfHit);
+    void recordIndexCacheHit(unsigned fileid, offset_t offset, byte nodeKind, size32_t size, __uint64 expandTime);
+    void recordIndexCacheMiss(unsigned fileid, offset_t offset, byte nodeKind);
     void recordIndexLoad(unsigned fileid, offset_t offset, byte nodeKind, size32_t size, __uint64 expandTime, __uint64 readTime);
     void recordIndexEviction(unsigned fileid, offset_t offset, byte nodeKind, size32_t size);
     void recordIndexPayload(unsigned fileid, offset_t offset, bool firstUse, __uint64 expandTime);
