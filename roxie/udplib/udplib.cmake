@@ -25,22 +25,27 @@
 
 project( udplib ) 
 
-set (    SRCS 
-         udpmsgpk.cpp 
-         udpsha.cpp 
-         udptrr.cpp 
-         udptrs.cpp
-	 udptopo.cpp
-	 udpipmap.cpp
+set (   SRCS
+        tcptrr.cpp
+        tcptrs.cpp
+        udpmsgpk.cpp
+        udppack.cpp
+        udpsha.cpp
+        udptrr.cpp
+        udptrs.cpp
+	    udptopo.cpp
+	    udpipmap.cpp
+        udpwrk.cpp
     )
 
 include_directories ( 
-         ./../../roxie/roxiemem 
-         ./../../system/include 
-         ./../../system/jlib 
-         ./../../roxie/ccd
+         ${HPCC_SOURCE_DIR}/roxie/roxiemem
+         ${HPCC_SOURCE_DIR}/system/include
+         ${HPCC_SOURCE_DIR}/system/jlib
+         ${HPCC_SOURCE_DIR}/roxie/ccd
          ${HPCC_SOURCE_DIR}/testing/unittests
-         ./../../roxie/roxie
+         ${HPCC_SOURCE_DIR}/roxie/roxie
+         ${HPCC_SOURCE_DIR}/system/security/securesocket
     )
 
 HPCC_ADD_LIBRARY( udplib SHARED ${SRCS} )
@@ -51,5 +56,6 @@ install ( TARGETS udplib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${L
 
 target_link_libraries ( udplib 
          jlib
-         roxiemem 
+         roxiemem
+         securesocket
     )
