@@ -81,6 +81,12 @@ export const routes: RoutesEx = [
         children: [
             { path: "", action: (context) => import("./components/Activities").then(_ => <_.Activities />) },
         ]
+    }, {
+        mainNav: ["activities"],
+        path: "/activities-preview",
+        children: [
+            { path: "", action: (context) => import("./components/ActivitiesCards").then(_ => <_.Activities />) },
+        ]
     },
     {
         mainNav: ["activities"],
