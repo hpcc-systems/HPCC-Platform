@@ -1,1 +1,1 @@
-${version_file_prefix}${projname}_${version}-${stagever}
+${version_file_prefix}${PACKAGE_PROJECT_NAME}_${PACKAGE_VERSION}-${PACKAGE_STAGE}
