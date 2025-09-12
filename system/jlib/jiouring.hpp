@@ -37,6 +37,7 @@ interface IAsyncProcessor : public IInterface
 
 // Functions for managing the completion queue - particularly non-threaded urings
     virtual void checkForCompletions() = 0;
+    virtual void lockMemory(const void * buffer, size_t len) = 0; // Avoid memcpy by locking the memory
     virtual void terminate() = 0;
 };
 

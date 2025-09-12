@@ -22,7 +22,7 @@
 #include "jiface.hpp"
 #include "jptree.hpp"
 #include "jmutex.hpp"
-
+#include "jlog.hpp"
 
 #if defined(__linux__) || defined (__FreeBSD__)
 
@@ -49,6 +49,8 @@ public:
     virtual void enqueueCallbackCommands(std::vector<IAsyncCallback *> callbacks);
     virtual void enqueueSocketWrite(ISocket * socket, size32_t len, const void * buf, IAsyncCallback & callback) override;
 
+    virtual void lockMemory(const void * buffer, size_t len) override;
+
     bool dequeueCompletion(CompletionResponse & response);
     bool isAborting() const { return aborting; }
 
@@ -63,6 +65,8 @@ protected:
     bool alive{false};
     std::atomic<bool> aborting{false};
     io_uring ring;
+    const byte * startLockedMemory{nullptr};
+    const byte * endLockedMemory{nullptr};
 };
 
 
@@ -155,7 +159,9 @@ void URingProcessor::enqueueSocketWrite(ISocket * socket, size32_t len, const vo
     offset_t offset = 0;
     if (isFixedBuffer(len, buf))
     {
-        unsigned bufferIndex = 0;
+        size32_t oneGb = 0x40000000;
+        size32_t memoryOffset = (const byte *)buf - startLockedMemory;
+        unsigned bufferIndex = memoryOffset / oneGb;
         io_uring_prep_write_fixed(sqe, socket->OShandle(), buf, len, offset, bufferIndex);
     }
     else
@@ -169,8 +175,44 @@ void URingProcessor::enqueueSocketWrite(ISocket * socket, size32_t len, const vo
 //NOTE: Use MADV_DONTFORK on the roxie mem, and align the databuffer blocks on 512B boundary, so it can be used with O_DIRECT
 bool URingProcessor::isFixedBuffer(size32_t len, const void * buf) const
 {
-    //Later allow a range of addresses from roxiemem to be registered as fixed to avoid copying..
-    return false;
+    if (!startLockedMemory)
+        return false;
+
+    //MORE: Check that the buffer does not overlap a 1GB boundary
+    const byte * start = static_cast<const byte *>(buf);
+    return (start >= startLockedMemory) && (start + len <= endLockedMemory);
+}
+
+void URingProcessor::lockMemory(const void * buffer, size_t len)
+{
+    //Blocks of memory can only be registered in multiples of 1GB
+    size_t oneGb = 0x40000000;
+    unsigned numBlocks = (len + oneGb - 1) / oneGb;
+    iovec * iov = new iovec[numBlocks];
+
+    DBGLOG("Locking memory: %p, length: %zu", buffer, len);
+    for (unsigned i = 0; i < numBlocks; i++)
+    {
+        iov[i].iov_base = (void *)((memsize_t)buffer + i * oneGb);
+        iov[i].iov_len = oneGb;
+    }
+    //Correct the length of the last block
+    if ((len % oneGb) != 0)
+        iov[numBlocks - 1].iov_len = len % oneGb;
+
+    DBGLOG("Calling io_uring_register with %u blocks", numBlocks);
+    int ret = io_uring_register(ring.ring_fd, IORING_REGISTER_BUFFERS, iov, numBlocks);
+    delete [] iov;
+
+    DBGLOG("io_uring_register returned %d", ret);
+    if (ret == 0)
+    {
+        DBGLOG("Successfully registered memory with io_uring");
+        startLockedMemory = static_cast<const byte *>(buffer);
+        endLockedMemory = startLockedMemory + len;
+    }
+    else
+        OERRLOG("Failed to register memory with io_uring: error code %d", ret);
 }
 
 void URingProcessor::terminate()
