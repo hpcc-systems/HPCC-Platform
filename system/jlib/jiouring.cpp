@@ -43,16 +43,19 @@ public:
     {
         terminate();
     }
+    virtual void terminate() override;
 
     virtual void enqueueCallbackCommand(IAsyncCallback & callback) override;
     virtual void enqueueCallbackCommands(std::vector<IAsyncCallback *> callbacks);
-    virtual void terminate() override;
+    virtual void enqueueSocketWrite(ISocket * socket, size32_t len, const void * buf, IAsyncCallback & callback) override;
 
     bool dequeueCompletion(CompletionResponse & response);
     bool isAborting() const { return aborting; }
 
 protected:
     virtual void submitRequests() = 0;
+
+    bool isFixedBuffer(size32_t len, const void * buf) const;
 
 protected:
     CriticalSection crit;
@@ -141,6 +144,32 @@ void URingProcessor::enqueueCallbackCommands(std::vector<IAsyncCallback *> callb
     }
 
     submitRequests();
+}
+
+void URingProcessor::enqueueSocketWrite(ISocket * socket, size32_t len, const void * buf, IAsyncCallback & callback)
+{
+    CLeavableCriticalBlock block(crit, isMultiThreaded);
+
+    struct io_uring_sqe *sqe = io_uring_get_sqe(&ring);
+    offset_t offset = 0;
+    if (isFixedBuffer(len, buf))
+    {
+        unsigned bufferIndex = 0;
+        io_uring_prep_write_fixed(sqe, socket->OShandle(), buf, len, offset, bufferIndex);
+    }
+    else
+        io_uring_prep_write(sqe, socket->OShandle(), buf, len, offset);
+
+    io_uring_sqe_set_data(sqe, &callback);
+
+    submitRequests();
+}
+
+//NOTE: Use MADV_DONTFORK on the roxie mem, and align the databuffer blocks on 512B boundary, so it can be used with O_DIRECT
+bool URingProcessor::isFixedBuffer(size32_t len, const void * buf) const
+{
+    //Later allow a range of addresses from roxiemem to be registered as fixed to avoid copying..
+    return false;
 }
 
 void URingProcessor::terminate()
@@ -266,7 +295,7 @@ protected:
 
 //------------------------------------------------------------------------------
 
-IAsyncProcessor * createUring(const IPropertyTree * config, bool threaded)
+IAsyncProcessor * createURingProcessor(const IPropertyTree * config, bool threaded)
 {
     if (threaded)
         return new URingThreadedProcessor(config);
@@ -274,10 +303,11 @@ IAsyncProcessor * createUring(const IPropertyTree * config, bool threaded)
         return new URingUnthreadedProcessor(config);
 }
 
+
 #else
 
 // Lib uring is only supported on Linux and FreeBSD
-IAsyncProcessor * createUring(const IPropertyTree * config)
+IAsyncProcessor * createURingProcessor(const IPropertyTree * config)
 {
     return nullptr;
 }

@@ -166,15 +166,26 @@ struct HashSocketEndpoint
 };
 
 
+interface IAsyncCallback;
+interface IAsyncProcessor;
+
 class CTcpSender;
 class SECURESOCKET_API CSocketTarget : public CInterface
 {
 public:
     CSocketTarget(CTcpSender & _sender, const SocketEndpoint & _ep) : sender(_sender), ep(_ep) {}
 
+    void connectAsync(IAsyncProcessor * processor);
+
     size32_t write(const void * data, size32_t len);
+    void writeAsync(IAsyncProcessor * processor, size32_t len, const void * data, IAsyncCallback & callback);
+
+public:
+    ISocket * getSocket();      // Thread safe
+    ISocket * querySocket();    // Must be called in a critical section
 
 protected:
+    CriticalSection crit;
     CTcpSender & sender;
     const SocketEndpoint ep;
     Owned<ISocket> socket;

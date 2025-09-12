@@ -24,6 +24,7 @@
 #include "jlog.hpp"
 #include "jencrypt.hpp"
 #include "jsecrets.hpp"
+#include "jiouring.hpp"
 #include "roxie.hpp"
 #ifdef _WIN32
 #include <winsock.h>
@@ -40,16 +41,63 @@
 
 using roxiemem::DataBuffer;
 
+class TcpSendRequest final : public IAsyncCallback
+{
+public:
+    TcpSendRequest(IAsyncProcessor * _processor, CSocketTarget * _socket, DataBuffer * _buffer, size32_t _length)
+        : processor(_processor), socket(_socket), buffer(_buffer), length(_length)
+    {
+    }
+
+    void submit()
+    {
+        socket->writeAsync(processor, length, buffer->data, *this);
+    }
+
+    virtual void onAsyncComplete(int result) override
+    {
+        if (result < 0)
+        {
+            switch (-result)
+            {
+            case EAGAIN:
+                //Not sure this can ever happen, but here as an indication of what should be done
+                submit();
+                return;
+            }
+
+            //Force an asynchronous reconnect
+            socket->connectAsync(processor);
+        }
+        buffer->Release();
+        // This object is no longer needed - free it up.  This is slightly dangerous.... but the object should not be
+        // used after this point.
+        delete this;
+    }
+
+private:
+    IAsyncProcessor * processor;
+    CSocketTarget * socket;
+    DataBuffer * buffer;
+    unsigned length;
+};
+
 class CTcpSendManager : implements ISendManager, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
 
     static constexpr bool lowLatency = false; // Do not set to true because there after often multiple packets sent in quick succession (e.g. stats then data)
-    CTcpSendManager(int server_flow_port, int data_port, int client_flow_port, int q_size, int _numQueues, const IpAddress &_myIP, TokenBucket *_bucket, bool _encrypted)
+    CTcpSendManager(int server_flow_port, int data_port, int client_flow_port, int q_size, int _numQueues, const IpAddress &_myIP, TokenBucket *_bucket, bool _encrypted, bool useIOUring)
         : sender(lowLatency), numQueues(_numQueues), myIP(_myIP), bucket(_bucket), dataPort(data_port), encrypted(_encrypted)
     {
         myId = myIP.getHostText(myIdStr).str();
+
+        if (useIOUring)
+        {
+            Owned<IPropertyTree> config = createPTreeFromXMLString("<iouring/>");
+            asyncSender.setown(createURingProcessor(config, false));
+        }
     }
 
 
@@ -81,8 +129,16 @@ public:
         // IUdpReceiverEntry is an opaque interface - cast to the unrelated actual class.  Better would be to derive
         // CSocketTarget from IUdpReceiverEntry, but that requires refactoring to resolve dll dependencies
         CSocketTarget * socket = reinterpret_cast<CSocketTarget *>(&receiver);
-        socket->write(buffer->data, length);
-        buffer->Release();
+        if (asyncSender)
+        {
+            TcpSendRequest * request = new TcpSendRequest(asyncSender, socket, buffer, length);
+            request->submit();
+        }
+        else
+        {
+            socket->write(buffer->data, length);
+            buffer->Release();
+        }
     }
 
     virtual IMessagePacker *createMessagePacker(ruid_t ruid, unsigned sequence, const void *messageHeader, unsigned headerSize, const ServerIdentifier &destNode, int queue) override
@@ -133,10 +189,11 @@ protected:
     unsigned dataPort;
     bool encrypted;
     std::atomic<unsigned> msgSeq{0};
+    Owned<IAsyncProcessor> asyncSender;
 };
 
-ISendManager *createTcpSendManager(int server_flow_port, int data_port, int client_flow_port, int queue_size_pr_server, int queues_pr_server, const IpAddress &_myIP, TokenBucket *rateLimiter, bool encryptionInTransit)
+ISendManager *createTcpSendManager(int server_flow_port, int data_port, int client_flow_port, int queue_size_pr_server, int queues_pr_server, const IpAddress &_myIP, TokenBucket *rateLimiter, bool encryptionInTransit, bool useIOUring)
 {
     assertex(!_myIP.isNull());
-    return new CTcpSendManager(server_flow_port, data_port, client_flow_port, queue_size_pr_server, queues_pr_server, _myIP, rateLimiter, encryptionInTransit);
+    return new CTcpSendManager(server_flow_port, data_port, client_flow_port, queue_size_pr_server, queues_pr_server, _myIP, rateLimiter, encryptionInTransit, useIOUring);
 }

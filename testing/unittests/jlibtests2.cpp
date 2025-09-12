@@ -1063,7 +1063,7 @@ public:
     void testcallback()
     {
         Owned<IPropertyTree> config = createPTreeFromXMLString("<iouring/>");
-        Owned<IAsyncProcessor> processor = createUring(config, true);
+        Owned<IAsyncProcessor> processor = createURingProcessor(config, true);
         if (!processor)
             return;
 
@@ -1075,7 +1075,7 @@ public:
     void testcallbackNoThread()
     {
         Owned<IPropertyTree> config = createPTreeFromXMLString("<iouring/>");
-        Owned<IAsyncProcessor> processor = createUring(config, false);
+        Owned<IAsyncProcessor> processor = createURingProcessor(config, false);
         if (!processor)
             return;
 
@@ -1088,7 +1088,7 @@ public:
     void testcallback2NoThread()
     {
         Owned<IPropertyTree> config = createPTreeFromXMLString("<iouring/>");
-        Owned<IAsyncProcessor> processor = createUring(config, false);
+        Owned<IAsyncProcessor> processor = createURingProcessor(config, false);
         if (!processor)
             return;
 
@@ -1107,7 +1107,7 @@ public:
     void testcallback2NoThreadDelay()
     {
         Owned<IPropertyTree> config = createPTreeFromXMLString("<iouring/>");
-        Owned<IAsyncProcessor> processor = createUring(config, false);
+        Owned<IAsyncProcessor> processor = createURingProcessor(config, false);
         if (!processor)
             return;
 
@@ -1129,7 +1129,7 @@ public:
     void testcallbacks()
     {
         Owned<IPropertyTree> config = createPTreeFromXMLString("<iouring/>");
-        Owned<IAsyncProcessor> processor = createUring(config, true);
+        Owned<IAsyncProcessor> processor = createURingProcessor(config, true);
         if (!processor)
             return;
 
