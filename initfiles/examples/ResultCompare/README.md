@@ -59,6 +59,7 @@ To create a new monitoring template:
 
 	 Nested diff_monitor.  A diff_monitor is by default inherited by its children. So in our example, the following implies that
 	   all fields under "Name" will be monitored if MonitorName was selected:
+```xml
        <Name diff_monitor="Name">
 		  <First/>
 		  <Last/>
@@ -66,6 +67,7 @@ To create a new monitoring template:
 			<Alias/>
 		  </Aliases>
 		</Name>
+```
 
 	  - Turning off monitoring:
 		If instead we didn't want aliases to be monitored just because MonitorName was enabled, we could set diff_monitor="" to disable everything under Aliases

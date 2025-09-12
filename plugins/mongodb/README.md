@@ -16,7 +16,7 @@ The plugin uses vcpkg and can be installed by creating a separate build director
 cd ./mongodb-build
 cmake -DMONGODBEMBED=ON ../HPCC-Platform
 make -j3 package
-sudo dpkg -i ./hpccsystems-plugin-mongodbembed_<version>.deb
+sudo dpkg -i ./hpccsystems-plugin-mongodbembed_`<version>`.deb
 ```
 
 ## Documentation
@@ -58,7 +58,7 @@ To create the uri for the MongoDB connection instance the ECL user needs to pass
 
 #### Connection Options
 
-To specify connection options to the MongoDB cluster use the connectionOptions option in the embed statement. The format for the connection options is ampersand separated options like so: \<option0\>&\<option1\>
+To specify connection options to the MongoDB cluster use the connectionOptions option in the embed statement. The format for the connection options is ampersand separated options like so: `<option0>&<option1>`
 
 **Important note:** when connecting to a MongoDB Cluster and not a local instance the retryWrites=true and w=majority options are already set according to MongoDB examples.
 

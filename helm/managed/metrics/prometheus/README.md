@@ -11,7 +11,7 @@ This chart is dependent on the prometheus-community's kube-prometheus-stack char
 #### Dependency update
 ##### HELM Command
 Helm provides a convenient command to automatically pull appropriate dependencies to the /charts directory:
-> helm dependency update <HPCC-Systems Git clone location>/helm/managed/metrics/prometheus
+> helm dependency update `<HPCC-Systems Git clone location>`/helm/managed/metrics/prometheus
 
 ##### HELM Install parameter
 Otherwise, provide the "--dependency-update" argument in the helm install command
