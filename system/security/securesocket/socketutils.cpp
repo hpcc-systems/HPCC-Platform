@@ -499,15 +499,12 @@ size32_t CSocketTarget::write(const void * data, size32_t len)
     if (!socket)
     {
         socket.setown(ISocket::connect_timeout(ep, 5000));
-        if (lowLatency)
+        if (sender.lowLatency)
             socket->set_nagle(false);
     }
 
     try
     {
-        //GH->MK as discussed this need to move to the read.
-        if (lowLatency)
-            socket->set_quick_ack(true);
         return socket->write(data, len);
     }
     catch (IException * e)
@@ -518,12 +515,6 @@ size32_t CSocketTarget::write(const void * data, size32_t len)
     }
 }
 
-size32_t CTcpSender::sendToTarget(const void * data, size32_t len, const SocketEndpoint &ep)
-{
-    CSocketTarget * sock = queryWorkerSocket(ep);
-    return sock->write(data, len);
-}
-
 CSocketTarget * CTcpSender::queryWorkerSocket(const SocketEndpoint &ep)
 {
     CriticalBlock b(crit);
@@ -531,7 +522,7 @@ CSocketTarget * CTcpSender::queryWorkerSocket(const SocketEndpoint &ep)
     if (match != workerSockets.end())
         return match->second.get();
 
-    Owned<CSocketTarget> workerSocket = new CSocketTarget(ep, lowLatency);
+    Owned<CSocketTarget> workerSocket = new CSocketTarget(*this, ep);
     workerSockets.emplace(ep, workerSocket);
     return workerSocket;
 }

@@ -166,16 +166,17 @@ struct HashSocketEndpoint
 };
 
 
+class CTcpSender;
 class SECURESOCKET_API CSocketTarget : public CInterface
 {
 public:
-    CSocketTarget(const SocketEndpoint & _ep, bool _lowLatency) : ep(_ep), lowLatency(_lowLatency) {}
+    CSocketTarget(CTcpSender & _sender, const SocketEndpoint & _ep) : sender(_sender), ep(_ep) {}
 
     size32_t write(const void * data, size32_t len);
 
 protected:
+    CTcpSender & sender;
     const SocketEndpoint ep;
-    const bool lowLatency;
     Owned<ISocket> socket;
 };
 
@@ -187,11 +188,12 @@ public:
     CTcpSender(bool _lowLatency) : lowLatency(_lowLatency) {}
 
     CSocketTarget * queryWorkerSocket(const SocketEndpoint &ep);
-    size32_t sendToTarget(const void * data, size32_t len, const SocketEndpoint &ep);
+
+public:
+    const bool lowLatency;
 
 protected:
     CriticalSection crit;
-    const bool lowLatency;
     std::unordered_map<SocketEndpoint, Owned<CSocketTarget>, HashSocketEndpoint > workerSockets;
 };
 
