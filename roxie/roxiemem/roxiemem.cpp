@@ -19,6 +19,7 @@
 #include "roxierowbuff.hpp"
 #include "jlog.hpp"
 #include "jset.hpp"
+#include "jiouring.hpp"
 #include <new>
 #ifdef _USE_TBB
 #include "tbb/tbb_stddef.h"
@@ -1278,6 +1279,10 @@ size_t getRelativeRoxiePtr(const void *_ptr)
     return -1;
 }
 
+void registerRoxieMemory(IAsyncProcessor & processor)
+{
+    processor.lockMemory(heapBase, heapEnd - heapBase);
+}
 
 inline static HeapletBase *findBase(const void *ptr)
 {

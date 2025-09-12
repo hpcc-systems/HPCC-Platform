@@ -98,9 +98,11 @@ public:
             Owned<IPropertyTree> config = createPTreeFromXMLString("<iouring poll='1'/>");
             dbglogXML(config);
             asyncSender.setown(createURingProcessor(config, false));
+            //MORE: I am not sure if this is actually worthwhile - need to perform some performance tests
+            if (asyncSender)
+                roxiemem::registerRoxieMemory(*asyncSender);
         }
     }
-
 
     ~CTcpSendManager()
     {
