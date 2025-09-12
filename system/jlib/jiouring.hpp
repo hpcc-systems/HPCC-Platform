@@ -21,20 +21,26 @@
 #include <vector>
 #include "jptree.hpp"
 
+interface IAsyncProcessor;
 interface IAsyncCallback
 {
     virtual void onAsyncComplete(int result) = 0;
 };
 
+//-----------------------------------------------------------------------------------------------
 interface IAsyncProcessor : public IInterface
 {
+// Functions for each of the asynchronous actions that can be queued
     virtual void enqueueCallbackCommand(IAsyncCallback & callback) = 0;
     virtual void enqueueCallbackCommands(std::vector<IAsyncCallback *> callbacks) = 0;
+    virtual void enqueueSocketWrite(ISocket * socket, size32_t len, const void * buf, IAsyncCallback & callback) = 0;
+
+// Functions for managing the completion queue - particularly non-threaded urings
     virtual void checkForCompletions() = 0;
     virtual void terminate() = 0;
 };
 
 // Create an instance of the IAsyncProcessor interface - may return null if not supported
-extern jlib_decl IAsyncProcessor * createUring(const IPropertyTree * config, bool threaded);
+extern jlib_decl IAsyncProcessor * createURingProcessor(const IPropertyTree * config, bool threaded);
 
 #endif

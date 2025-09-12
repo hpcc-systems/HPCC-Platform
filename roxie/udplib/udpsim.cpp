@@ -309,7 +309,7 @@ void simulateTraffic()
                 {
                     IpAddress pretendIP(VStringBuffer("8.8.8.%d", i));
                     // Note - this is assuming we send flow on the data port (that option defaults true in roxie too)
-                    Owned<ISendManager> sm = createSendManager(serverFlowPort, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, maxSendQueueSize, 3, pretendIP, nullptr, encryptInTransit);
+                    Owned<ISendManager> sm = createSendManager(serverFlowPort, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, maxSendQueueSize, 3, pretendIP, nullptr, encryptInTransit, false);
                     unsigned numPackets = packetsPerThread / myStarts;
                     for (unsigned j = 0; j < packetsPerThread; j++)
                     {

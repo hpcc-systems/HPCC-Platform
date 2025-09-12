@@ -2911,8 +2911,9 @@ public:
         bool udpSendFlowOnDataPort = topology->getPropBool("@udpSendFlowOnDataPort", true);
         unsigned dataPort = topology->getPropInt("@dataPort", CCD_DATA_PORT);
         unsigned clientFlowPort = topology->getPropInt("@clientFlowPort", CCD_CLIENT_FLOW_PORT);
+        bool useIOUringForSend = topology->getPropBool("@workerSendUseIOUring", false);
         receiveManager.setown(createReceiveManager(serverFlowPort, dataPort, clientFlowPort, udpQueueSize, encryptionInTransit));
-        sendManager.setown(createSendManager(udpSendFlowOnDataPort ? dataPort : serverFlowPort, dataPort, clientFlowPort, udpSendQueueSize, fastLaneQueue ? 3 : 2, myNode.getIpAddress(), bucket, encryptionInTransit));
+        sendManager.setown(createSendManager(udpSendFlowOnDataPort ? dataPort : serverFlowPort, dataPort, clientFlowPort, udpSendQueueSize, fastLaneQueue ? 3 : 2, myNode.getIpAddress(), bucket, encryptionInTransit, useIOUringForSend));
     }
 
     virtual void abortPendingData(const SocketEndpoint &ep) override

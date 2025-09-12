@@ -36,6 +36,7 @@
 #include "jprop.hpp"
 #include "jregexp.hpp"
 #include "jdebug.hpp"
+#include "jiouring.hpp"
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -491,28 +492,59 @@ void ConcreteConnectionLister::processMessageContents(CReadSocketHandler * owned
 
 //---------------------------------------------------------------------------------------------------------------------
 
+void CSocketTarget::connectAsync(IAsyncProcessor * processor)
+{
+    CriticalBlock b(crit);
+
+    //Currently synchronous - make it asynchronous in the next version
+    socket.clear();
+    (void)querySocket();
+}
+
+ISocket * CSocketTarget::getSocket()
+{
+    CriticalBlock b(crit);
+    return LINK(querySocket());
+}
+
+ISocket * CSocketTarget::querySocket()
+{
+    if (!socket)
+    {
+        socket.setown(ISocket::connect_timeout(ep, 5000));
+        if (socket && sender.lowLatency)
+            socket->set_nagle(false);
+    }
+    return socket;
+}
+
 size32_t CSocketTarget::write(const void * data, size32_t len)
 {
     //MORE: Add retry logic.
     //MORE: How do we prevent this blocking other threads though e.g. when sending a request to all nodes in a
     //      channel and one channel is down -.do we use non-blocking and note when something is not sent?
-    if (!socket)
-    {
-        socket.setown(ISocket::connect_timeout(ep, 5000));
-        if (sender.lowLatency)
-            socket->set_nagle(false);
-    }
+    Owned<ISocket> target = getSocket();
+    if (!target)
+        return 0;
 
     try
     {
-        return socket->write(data, len);
+        return target->write(data, len);
     }
     catch (IException * e)
     {
         //Force a reconnect next time - could add retry loop and logic...
+        CriticalBlock b(crit);
         socket.clear();
         throw;
     }
+}
+
+void CSocketTarget::writeAsync(IAsyncProcessor * processor, size32_t len, const void * data, IAsyncCallback & callback)
+{
+    Owned<ISocket> target = getSocket();
+    if (target)
+        processor->enqueueSocketWrite(target, len, data, callback);
 }
 
 CSocketTarget * CTcpSender::queryWorkerSocket(const SocketEndpoint &ep)
