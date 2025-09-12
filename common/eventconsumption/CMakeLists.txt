@@ -37,6 +37,7 @@ set (
     ${CMAKE_CURRENT_SOURCE_DIR}/eventiterator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventmodeling.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventoperation.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/eventsaveas.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventunittests.cpp
 )
 

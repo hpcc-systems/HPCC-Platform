@@ -32,6 +32,7 @@ int main(int argc, const char* argv[])
 
     CEvtCommandGroup evtool({
         { "dump", createDumpCommand },
+        { "save-as", createSaveAsCommand },
         { "sim", createSimCommand },
         { "index", createIndexCommand },
     });

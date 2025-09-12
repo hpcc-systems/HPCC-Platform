@@ -53,5 +53,6 @@ extern void cleanupConsole();
 
 // Command factory functions.
 extern IEvToolCommand* createDumpCommand();
+extern IEvToolCommand* createSaveAsCommand();
 extern IEvToolCommand* createSimCommand();
 extern IEvToolCommand* createIndexCommand();

@@ -37,6 +37,7 @@ set (  SRCS
        evtindex.cpp
        evtindex_summary.cpp
        evtindex_hotspot.cpp
+       evtsaveas.cpp
     )
 
 ADD_DEFINITIONS(-D_CONSOLE)
