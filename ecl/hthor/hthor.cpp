@@ -434,6 +434,14 @@ ClusterWriteHandler *createClusterWriteHandler(IAgentContext &agent, IHThorIndex
     return clusterHandler.getClear();
 }
 
+unsigned temporaryFileMask(IConstWorkUnit * wu)
+{
+    if (wu && wu->getDebugValueBool("usingClusterHopping", false))
+        return TDXtemporary;
+    else
+        return TDXtemporary|TDXjobtemp;
+}
+
 //=====================================================================================================
 
 CHThorDiskWriteActivity::CHThorDiskWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGenericDiskWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
@@ -486,8 +494,7 @@ void CHThorDiskWriteActivity::stop()
         uncompressedBytesWritten = outSeq->getPosition();
     close();
     updateWorkUnitResult(numRecords);
-    unsigned tempMask = (agent.queryWorkUnit()->getDebugValueBool("usingClusterHopping", false) ? TDXtemporary : (TDXtemporary|TDXjobtemp));
-    if((helperFlags & tempMask) == 0 && !agent.queryResolveFilesLocally())
+    if((helperFlags & temporaryFileMask(agent.queryWorkUnit())) == 0 && !agent.queryResolveFilesLocally())
         publish();
     incomplete = false;
     if(clusterHandler)
@@ -523,8 +530,7 @@ void CHThorDiskWriteActivity::resolve()
         fileAccessOptions.setCompression(true, nullptr);
     fileAccessOptions.updateFromWriteHelper(helper, defaultPlane.str());
 
-    unsigned tempMask = (agent.queryWorkUnit()->getDebugValueBool("usingClusterHopping", false) ? TDXtemporary : (TDXtemporary|TDXjobtemp));
-    if((helperFlags & tempMask) == 0)
+    if((helperFlags & temporaryFileMask(agent.queryWorkUnit())) == 0)
     {
         Owned<ILocalOrDistributedFile> f = agent.resolveLFN(mangledHelperFileName.str(),"Cannot write, invalid logical name",true,false,AccessMode::tbdWrite,&lfn,defaultPrivilegedUser);
         if (f)
@@ -8577,8 +8583,7 @@ void CHThorDiskReadBaseActivity::resolve()
     {
         mangleHelperFileName(mangledHelperFileName, fileName, agent.queryWuid(), helper.getFlags());
     }
-    unsigned tempMask = (agent.queryWorkUnit()->getDebugValueBool("usingClusterHopping", false) ? TDXtemporary : (TDXtemporary|TDXjobtemp));
-    if (helper.getFlags() & tempMask)
+    if (helper.getFlags() & temporaryFileMask(agent.queryWorkUnit()))
     {
         StringBuffer mangledFilename;
         mangleLocalTempFilename(mangledFilename, mangledHelperFileName.str(), nullptr);
@@ -9522,9 +9527,8 @@ const void *CHThorDiskCountActivity::nextRow()
     if (finished) return NULL;
 
     unsigned __int64 totalCount = 0;
-    unsigned tempMask = (agent.queryWorkUnit()->getDebugValueBool("usingClusterHopping", false) ? TDXtemporary : (TDXtemporary|TDXjobtemp));
     if (fieldFilters.ordinality() == 0 && !helper.hasFilter() &&
-        (fixedDiskRecordSize != 0) && !(helper.getFlags() & tempMask) &&
+        (fixedDiskRecordSize != 0) && !(helper.getFlags() & temporaryFileMask(agent.queryWorkUnit())) &&
         !((helper.getFlags() & TDXcompress) && agent.queryResolveFilesLocally()) )
     {
         resolve();
@@ -11018,8 +11022,7 @@ void CHThorNewDiskReadBaseActivity::resolveFile()
 
     OwnedRoxieString fileName(helper.getFileName());
     mangleHelperFileName(mangledHelperFileName, fileName, agent.queryWuid(), helperFlags);
-    unsigned tempMask = (agent.queryWorkUnit()->getDebugValueBool("usingClusterHopping", false) ? TDXtemporary : (TDXtemporary|TDXjobtemp));
-    if (helperFlags & tempMask)
+    if (helperFlags & temporaryFileMask(agent.queryWorkUnit()))
     {
         StringBuffer mangledFilename;
         mangleLocalTempFilename(mangledFilename, mangledHelperFileName.str(), nullptr);
