@@ -492,6 +492,10 @@ void ConcreteConnectionLister::processMessageContents(CReadSocketHandler * owned
 
 //---------------------------------------------------------------------------------------------------------------------
 
+CSocketTarget::CSocketTarget(CTcpSender & _sender, const SocketEndpoint & _ep) : sender(_sender), ep(_ep)
+{
+}
+
 void CSocketTarget::connectAsync(IAsyncProcessor * processor)
 {
     CriticalBlock b(crit);

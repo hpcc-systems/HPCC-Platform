@@ -95,7 +95,8 @@ public:
 
         if (useIOUring)
         {
-            Owned<IPropertyTree> config = createPTreeFromXMLString("<iouring/>");
+            Owned<IPropertyTree> config = createPTreeFromXMLString("<iouring poll='1'/>");
+            dbglogXML(config);
             asyncSender.setown(createURingProcessor(config, false));
         }
     }
