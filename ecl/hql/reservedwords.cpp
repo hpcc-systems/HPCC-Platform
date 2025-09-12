@@ -511,7 +511,6 @@ static const char * eclReserved15[] = { //Actions and statements
     "event",
     "eventextra",
     "eventname",
-    "execute",
     "export",
     "from",
     "import",
@@ -544,6 +543,7 @@ static const char * eclReserved15[] = { //Actions and statements
 static const char * eclReserved16[] = { //Compiler directive/hints
     "__common__",
     "distributed",
+    "eclagent",
     "evaluate",
     "forward",
     "hint",
