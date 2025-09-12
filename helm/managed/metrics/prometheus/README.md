@@ -16,7 +16,7 @@ Helm provides a convenient command to automatically pull appropriate dependencie
 ##### HELM Install parameter
 Otherwise, provide the "--dependency-update" argument in the helm install command
 For example:
-> helm install myprometheus <HPCC-Systems Git clone location>/helm/managed/metrics/prometheus --dependency-update
+> helm install myprometheus `<HPCC-Systems Git clone location>`/helm/managed/metrics/prometheus --dependency-update
 
 ### Chart Values
 This chart is largely based on the default prometheus-community/kube-prometheus-stack chart, to see HPCC manipulated values:

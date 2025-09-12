@@ -18,7 +18,7 @@ sudo apt-get install redis-server
 ```
 
 *Note:* redis-server 2.6.12 or greater is required to use this plugin as intended. For efficiency, such version requirements are not checked as this is a runtime check only. The use of a
-lesser version will result in an exception, normally indicating that either a given command does not exist or that the wrong number of arguments was passed to it. The Set``<type>``
+lesser version will result in an exception, normally indicating that either a given command does not exist or that the wrong number of arguments was passed to it. The Set`<type>`
 plugin functions will not work when setting with an expiration for a version less than 2.6.12. In addition, whilst it is possible to use `Expire` with a version less than
 2.1.3 it is not advised due to [the change in its semantics](http://redis.io/commands/expire).
 
@@ -38,7 +38,7 @@ The **redis-server** package comes with the redis client **redis-cli**. This can
 `redis-cli -p 6380` to connect to the redis-cache on port 6380 (assuming one has been started).
 
 Perhaps one of the most handy uses of **redis-cli** is the ability to monitor all commands issued to the server via the redis command `MONITOR`. `INFO ALL` is also a useful command
-for listing the server and cache settings and statistics. *Note:* that if **requirepass** is activated **redis-cli** with require you to authenticate via `AUTH ``<passcode>```.
+for listing the server and cache settings and statistics. *Note:* that if **requirepass** is activated **redis-cli** with require you to authenticate via `AUTH `<passcode>``.
 
 Further [documentation](http://redis.io/documentation) is available with a full list of redis [commands](http://redis.io/commands).
 
@@ -101,7 +101,7 @@ The core points to note here are:
    * There is a **SET** and **GET** function associated with each fundamental **ECL** type. These must be used for and with their correct *value* types! Miss-use *should* result
    in an runtime exception, however, this is only conditional on having the value retrieved from the server fitting into memory of the requested type. E.g. it is possible for a
    STRING of length 8, set with SetString, being successfully retrieved from the cache via GetInteger without an **ECL** exception being thrown.
-   * `CONST VARSTRING options` passes the server **IP** and **port** to the plugin in the *strict* format - `--SERVER=``<ip>``:``<port>``. If `options` is empty, the default
+   * `CONST VARSTRING options` passes the server **IP** and **port** to the plugin in the *strict* format - `--SERVER=`<ip>`:`<port>`. If `options` is empty, the default
    127.0.0.1:6379 is used. *Note:* 6379 is the default port for **redis-server**.
    * `UNSIGNED4 timeout` has units *ms* and has a default value of 1 second (0 := infinity).  *c.f.* 'Timeout Values' below for advice on choosing appropriate values.
    * `UNSIGNED expire` has units *ms* and a default of **0**, i.e. *forever*.
@@ -189,7 +189,7 @@ SEQUENTIAL(
 
     //If the key does not exist it will 'lock' the key and retrun an empty STRING.
     STRING value := myRedis.GetOrLockString('supercali- what?');
-    //All SetAndPublish``<type>``() return the value passed in as the 2nd parameter.
+    //All SetAndPublish`<type>`() return the value passed in as the 2nd parameter.
     IF (LENGTH(value) == 0, myRedis.SetAndPublishString('supercali- what?', myFunc('poppins', 3)), value);
     );
 ```
@@ -204,9 +204,9 @@ possible for those functions with more server calls to timeout more regularly th
 anticipated latency of the client-server-IO, where such multiple should be at least the maximum expected number of internal redis calls made by these plugin functions, e.g. 12.
 
 When using the **ECL** pattern described in the above section *An ECL Example*, it is required to set the timeout and lock expiration to be equal to the timeout (if any)
-of `myFunc` **+** that passed to `SetAndPublish`<type>``, such that both the lock and waiting subscribers live long enough for a value to be set/published.
+of `myFunc` **+** that passed to `SetAndPublish<type>`, such that both the lock and waiting subscribers live long enough for a value to be set/published.
 
-It should also be noted that, whilst it is possible to set different values for `timeout` and `expire` to the function `GetOrLock`<type>``, it is advisable not to.
+It should also be noted that, whilst it is possible to set different values for `timeout` and `expire` to the function `GetOrLock<type>`, it is advisable not to.
 This is such that the lock does not out live all waiting subscribers that collectively timeout and thus not blocking any subsequent retries of the locking pattern.
 
 Behaviour and Implementation Details
@@ -215,7 +215,7 @@ A few notes to point out here:
    * PUB-SUB channels are not disconnected from the keyspace as they are in their native redis usage. The key itself is used as the lock with its value being set as the channel to later
    PUBLISH on or SUBSCRIBE to. This channel is a string, unique by only the *key* and *database*, prefixed with **'redis_ecl_lock'**. E.g. the *key* 'myKey' designated for *database* 1,
    will have the following lock id - 'redis_ecl_lock_myKey_1'.
-   * It is possible to manually 'unlock' this lock (`DELETE` the key) via the `Unlock(`<key>`)` function. *Note:* this function will fail on any communication or reply error however,
+   * It is possible to manually 'unlock' this lock (`DELETE` the key) via the `Unlock(<key>)` function. *Note:* this function will fail on any communication or reply error however,
    it will **silently fail**, leaving the lock to expire, if the server observes any change to the key during the function call duration.
    * When the *race-winner* publishes, it actually publishes the value itself and that any subscriber will then obtain the key-value in this fashion. Therefore, not requiring an
     additional `GET` and possible further race conditions in doing so. *Note:* This does however, mean that it is possible for the actual redis `SET` to fail on one client/process,
@@ -229,8 +229,8 @@ A few notes to point out here:
 |:--------------------|:-------:|:-------:|-----------------:|
 | A new connection    | 3       | 4       | database         |
 | Cached connection   | 0       | 2       | database, timeout|
-| Get``<type>``           | 1       | 5       | new connection   |
-| Set``<type>``           | 1       | 5       | new connection   |
+| Get`<type>`           | 1       | 5       | new connection   |
+| Set`<type>`           | 1       | 5       | new connection   |
 | FlushDB             | 1       | 5       | new connection   |
 | Delete              | 1       | 5       | new connection   |
 | Persist             | 1       | 5       | new connection   |
