@@ -473,7 +473,7 @@ public:
 protected:
     std::unique_ptr<RoxieTcpListener> listener;
     CTcpSender sender;
-    size32_t maxPacketSize = 0x40000; // Allow up to 256K.
+    size32_t maxPacketSize = 0x40000; // Allow up to 256KB.
     std::atomic<bool> running = { false };
 };
 
