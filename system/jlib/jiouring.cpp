@@ -350,7 +350,7 @@ IAsyncProcessor * createURingProcessor(const IPropertyTree * config, bool thread
 #else
 
 // Lib uring is only supported on Linux and FreeBSD
-IAsyncProcessor * createURingProcessor(const IPropertyTree * config)
+IAsyncProcessor * createURingProcessor(const IPropertyTree * config, bool threaded)
 {
     return nullptr;
 }

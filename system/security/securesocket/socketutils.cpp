@@ -109,7 +109,7 @@ bool CReadSocketHandler::notifySelected(ISocket *sock, unsigned selected)
                 if (oneShort)
                 {
                     // process() will remove itself from handler, and need to avoid it doing so while in 'crit'
-                    // since the maintenance thread could also be tyring to manipulate handlers and calling closeIfTimedout()
+                    // since the maintenance thread could also be trying to manipulate handlers and calling closeIfTimedout()
                     closedOrHandled = true;
                     b.leave();
                 }

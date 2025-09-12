@@ -87,7 +87,7 @@ class CTcpSendManager : implements ISendManager, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    static constexpr bool lowLatency = false; // Do not set to true because there after often multiple packets sent in quick succession (e.g. stats then data)
+    static constexpr bool lowLatency = false; // Do not set to true because there are often multiple packets sent in quick succession (e.g. stats then data)
     CTcpSendManager(int server_flow_port, int data_port, int client_flow_port, int q_size, int _numQueues, const IpAddress &_myIP, TokenBucket *_bucket, bool _encrypted, bool useIOUring)
         : sender(lowLatency), numQueues(_numQueues), myIP(_myIP), bucket(_bucket), dataPort(data_port), encrypted(_encrypted)
     {
