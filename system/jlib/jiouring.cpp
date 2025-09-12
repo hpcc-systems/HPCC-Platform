@@ -70,6 +70,7 @@ URingProcessor::URingProcessor(const IPropertyTree * config)
 {
     unsigned queueDepth = config->getPropInt("@queueDepth", 128);
     bool polling = config->getPropBool("@poll", false);
+    isMultiThreaded = !config->getPropBool("@singleThreaded", false);
 
     io_uring_params params;
     memset(&params, 0, sizeof(params));

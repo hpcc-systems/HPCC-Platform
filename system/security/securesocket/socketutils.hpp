@@ -173,7 +173,7 @@ class CTcpSender;
 class SECURESOCKET_API CSocketTarget : public CInterface
 {
 public:
-    CSocketTarget(CTcpSender & _sender, const SocketEndpoint & _ep) : sender(_sender), ep(_ep) {}
+    CSocketTarget(CTcpSender & _sender, const SocketEndpoint & _ep);
 
     void connectAsync(IAsyncProcessor * processor);
 
