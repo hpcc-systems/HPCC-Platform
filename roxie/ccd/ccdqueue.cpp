@@ -466,7 +466,8 @@ public:
 
     virtual size32_t sendToWorker(const void * data, size32_t len, const SocketEndpoint &ep)
     {
-        return sender.sendToTarget(data, len, ep);
+        CSocketTarget * sock = sender.queryWorkerSocket(ep);
+        return sock->write(data, len);
     }
 
 protected:
