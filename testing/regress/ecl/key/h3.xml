@@ -2,15 +2,15 @@
  <Row><Result_1>622236750694711295</Result_1></Row>
 </Dataset>
 <Dataset name='Result 2'>
- <Row><lat>40.68942184369929</lat><lon>-74.04443139990863</lon></Row>
+ <Row><lat>40.68942184369928</lat><lon>-74.04443139990863</lon></Row>
 </Dataset>
 <Dataset name='Result 3'>
- <Row><lat>40.69005860095358</lat><lon>-74.04415176176158</lon></Row>
- <Row><lat>40.68990769452519</lat><lon>-74.0450617923963</lon></Row>
- <Row><lat>40.68927093604355</lat><lon>-74.04534141750702</lon></Row>
- <Row><lat>40.68878509072404</lat><lon>-74.04471103053613</lon></Row>
- <Row><lat>40.68893599264273</lat><lon>-74.04380102076254</lon></Row>
- <Row><lat>40.68957274439053</lat><lon>-74.04352137709904</lon></Row>
+ <Row><lat>40.69005860095357</lat><lon>-74.04415176176158</lon></Row>
+ <Row><lat>40.68990769452517</lat><lon>-74.04506179239631</lon></Row>
+ <Row><lat>40.68927093604354</lat><lon>-74.04534141750702</lon></Row>
+ <Row><lat>40.68878509072403</lat><lon>-74.04471103053613</lon></Row>
+ <Row><lat>40.68893599264271</lat><lon>-74.04380102076254</lon></Row>
+ <Row><lat>40.68957274439051</lat><lon>-74.04352137709905</lon></Row>
 </Dataset>
 <Dataset name='Result 4'>
  <Row><Result_4>10</Result_4></Row>

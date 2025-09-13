@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-#include "opentelemetry/trace/semantic_conventions.h" //known span defines
 #include "opentelemetry/context/propagation/global_propagator.h" // context::propagation::GlobalTextMapPropagator::GetGlobalPropagator
 #include "opentelemetry/sdk/trace/batch_span_processor_options.h" //opentelemetry::sdk::trace::TracerProviderFactory::Create(context)
 #include "opentelemetry/sdk/trace/tracer_provider_factory.h" //opentelemetry::sdk::trace::TracerProviderFactory::Create(context)
