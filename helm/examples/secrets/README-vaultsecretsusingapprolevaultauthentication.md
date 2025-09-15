@@ -98,12 +98,12 @@ vault read auth/approle/role/hpcc-vault-access/role-id
 
 Output:
 
-role_id     <role_id>
+role_id     \<role_id\>
 
 
 ### Update values file
 
-Edit examples/secrets/values-secrets-approle.yaml to set both appRoleId entries for the vault configurations to <role_id> output above.
+Edit examples/secrets/values-secrets-approle.yaml to set both appRoleId entries for the vault configurations to \<role_id\> output above.
 
 
 Get a secret-id issued using the new role-id:
@@ -114,14 +114,14 @@ vault write -f auth/approle/role/hpcc-vault-access/secret-id
 
 Output
 
-secret_id               <secret_id>
-secret_id_accessor      <accessor>
+secret_id               \<secret_id\>
+secret_id_accessor      \<accessor\>
 secret_id_ttl           10m
 
 Create a kubernetes secret containing the secret_id that was just output.
 
 ```bash
-kubectl create secret generic approle-secret --from-literal=secret-id=<secret_id>
+kubectl create secret generic approle-secret --from-literal=secret-id=\<secret_id\>
 ```
 
 

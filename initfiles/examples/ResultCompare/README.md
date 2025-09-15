@@ -36,16 +36,16 @@ To create a new monitoring template:
 	   The value cannot be arbitrary.  It must be defined to match exactly how the query being monitored works.
            It's very important that this match the logic in the query exactly.
 	   For our example the match for addresses is defined as:
-         <Addresses diff_match='Line1+City+State'>
-		   <Address>
-		     <type/>
-			 <Line1/>
-			 <Line2/>
-			 <City/>
-			 <State/>
-			 <Zip/>
-		   </Address>
-		 </Addresses>
+	         \\<Addresses diff_match='Line1+City+State'>
+		   \\<Address>
+		     \\<type/>
+			 \\<Line1/>
+			 \\<Line2/>
+			 \\<City/>
+			 \\<State/>
+			 \\<Zip/>
+		   \\</Address>
+		 \\</Addresses>
            In our case Line2, Zip, and Zip4 are not included simply so that we can play with non-key fields
            within this example.
 
@@ -55,49 +55,49 @@ To create a new monitoring template:
      "diff_monitor": this creates a named category of fields to be monitored.
 	   In our example we've added to categories that can be monitored.  "Name" and "Address".
 	   These will show up in the monitoring query as boolean selections that the user can enable or disable.
-	   For example: <MonitorAdress>1</MonitorAddress> would indicate that the user wants to be alerted when address items change.
+	   For example: \\<MonitorAddress>1\\</MonitorAddress> would indicate that the user wants to be alerted when address items change.
 
 	 Nested diff_monitor.  A diff_monitor is by default inherited by its children. So in our example, the following implies that
 	   all fields under "Name" will be monitored if MonitorName was selected:
-       <Name diff_monitor="Name">
-		  <First/>
-		  <Last/>
-		  <Aliases>
-			<Alias/>
-		  </Aliases>
-		</Name>
+       \\<Name diff_monitor="Name">
+	  \\<First/>
+	  \\<Last/>
+	  \\<Aliases>
+		\\<Alias/>
+	  \\</Aliases>
+	\\</Name>
 
 	  - Turning off monitoring:
 		If instead we didn't want aliases to be monitored just because MonitorName was enabled, we could set diff_monitor="" to disable everything under Aliases
-		<Name diff_monitor="Name">
-		  <First/>
-		  <Last/>
-		  <Aliases diff_monitor="">
-			<Alias/>
-		  </Aliases>
-		</Name>
+		\\<Name diff_monitor="Name">
+		  \\<First/>
+		  \\<Last/>
+		  \\<Aliases diff_monitor="">
+			\\<Alias/>
+		  \\</Aliases>
+		\\</Name>
 
 	  - Interleaved monitoring flags:
 		The following would monitor changes to First or Last name if "MonitorName" is enabled.  And changes to the list of Aliases if "MonitorAlias" is enabled.
-		<Name diff_monitor="Name">
-		  <First/>
-		  <Last/>
-		  <Aliases diff_monitor="Alias">
-			<Alias/>
-		  </Aliases>
-		</Name>
+		\\<Name diff_monitor="Name">
+		  \\<First/>
+		  \\<Last/>
+		  \\<Aliases diff_monitor="Alias">
+			\\<Alias/>
+		  \\</Aliases>
+		\\</Name>
 
 	  - Multiple monitoring flags:
 		The following would monitor changes to All the fields under Name "MonitorName" is enabled.
 		But if MonitorName is not enabled, but "MonitorAlias" is enabled, then only aliases will be monitored.
 		This comes in very handy for example if I want to be able to monitor either addresses that appear anywhere, or Everything in the Best section.
-		<Name diff_monitor="Name">
-		  <First/>
-		  <Last/>
-		  <Aliases diff_monitor="Name|Alias">
-			<Alias/>
-		  </Aliases>
-		</Name>
+		\\<Name diff_monitor="Name">
+		  \\<First/>
+		  \\<Last/>
+		  \\<Aliases diff_monitor="Name|Alias">
+			\\<Alias/>
+		  \\</Aliases>
+		\\</Name>
 
 To generate the monitoring query from the completed template:
 -----------------------------------------------------------------------------------------------------------------
@@ -127,9 +127,9 @@ To generate the monitoring query from the completed template:
 Publishing our Monitoring queries:
 -----------------------------------------------------------------------------------------------------------------
   Run the commands:
-    ecl publish --server=<EclWatchIP> <RoxieTargetName> Compare_OrganizationInfo.ecl
-    ecl publish --server=<EclWatchIP> <RoxieTargetName> Monitor_create_OrganizationInfo.ecl
-    ecl publish --server=<EclWatchIP> <RoxieTargetName> Monitor_run_OrganizationInfo.ecl
+	ecl publish --server=\\<EclWatchIP\\> \\<RoxieTargetName\\> Compare_OrganizationInfo.ecl
+	ecl publish --server=\\<EclWatchIP\\> \\<RoxieTargetName\\> Monitor_create_OrganizationInfo.ecl
+	ecl publish --server=\\<EclWatchIP\\> \\<RoxieTargetName\\> Monitor_run_OrganizationInfo.ecl
 
 
 Testing our example:

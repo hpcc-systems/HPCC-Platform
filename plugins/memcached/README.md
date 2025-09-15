@@ -24,7 +24,7 @@ Getting started
 ---------------
 
 The daemon can be started by typing `memcached -d` within a terminal. To run with with a non-default configuration, for example to listen on another **IP** and **port** -
-`memcached -d -l <ip> -p <port>`. When wishing to use a pool of memcached servers, each instance must be started, bound to the **IP** that makes it visible to the other
+`memcached -d -l \<ip\> -p \<port\>`. When wishing to use a pool of memcached servers, each instance must be started, bound to the **IP** that makes it visible to the other
 instances, e.g. the default `memcached -d` on all machines will not work as they will all be bound to the localhost loopback, 127.0.0.1.
 
 This plugin forces the **_binary-only_** communication protocol and therefore **memcached** cannot be started in its ASCII mode, i.e. `memcached -b ascii`.
@@ -80,7 +80,7 @@ The core points to note here are:
    in an runtime exception, however, this is only conditional on having the value retrieved from the server fitting into memory of the requested type. E.g. it is possible for a
    STRING of length 8, set with SetString, being successfully retrieved from the cache via GetInteger without an **ECL** exception being thrown. A warning is added to the
    local log file when this occurs.
-   * `CONST VARSTRING options` passes the server **IP** and **port** to the plugin in the *strict* format - `--SERVER=<ip>:<port>`. Multiple server use simply requires all
+    * `CONST VARSTRING options` passes the server **IP** and **port** to the plugin in the *strict* format - `--SERVER=\<ip\>:\<port\>`. Multiple server use simply requires all
    to be specified e.g. `--SERVER=192.168.1.98:11211 --SERVER=192.168.1.97:11211`. In addition a variety of options are passed in with this string e.g **_timeout_ _values_**.
    A full list of possible options exists [here](http://docs.libmemcached.org/libmemcached_configuration.html).
    * `UNSIGNED expire` has units seconds and a default of **0**, i.e. *forever*. *Note:* Anything above 30 days is treated as a unix timestamp.
@@ -128,8 +128,8 @@ instead the non-partition-key functions are used.
 Behaviour and Implementation Details
 ------------------------------------
 A few notes to point out here:
-   * When a key and value are stored with Set<type>, memcached also allows for a 4byte flag to be stored. This plugin utilizes this space to store an enumeration specifying the
-   **ECL** type that is being stored. Care should therefore be taken when using KeyType(<key>) when the key was set from a client other than this plugin.
+    * When a key and value are stored with Set\<type\>, memcached also allows for a 4byte flag to be stored. This plugin utilizes this space to store an enumeration specifying the
+    **ECL** type that is being stored. Care should therefore be taken when using KeyType(\<key\>) when the key was set from a client other than this plugin.
    * The following libmemcached settings are invoked by default for this plugin, all of which take precedence over any passed in via the `options` string:
    **MEMCACHED_BEHAVIOR_KETAMA** = 1, **MEMCACHED_BEHAVIOR_USE_UDP** = 0, **MEMCACHED_BEHAVIOR_NO_BLOCK** = 0, **MEMCACHED_BEHAVIOR_BUFFER_REQUESTS** = 0,
    **MEMCACHED_BEHAVIOR_BINARY_PROTOCOL** = 1.

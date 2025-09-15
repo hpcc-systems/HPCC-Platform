@@ -7,9 +7,9 @@ It utilizes the (Add related API details).
 Installation and Dependencies
 ----------------------------
 
-To build the <plugin name> plugin with the HPCC-Platform, <dependency> is required.
+To build the \<plugin name\> plugin with the HPCC-Platform, \<dependency\> is required.
 ```
-sudo apt-get install <dependency>
+sudo apt-get install \<dependency\>
 ```
 
 *Note:* Add notes such as min versions etc.

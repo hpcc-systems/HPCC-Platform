@@ -7,7 +7,7 @@ It utilizes the C wrappers for BLAS
 Installation and Dependencies
 ----------------------------
 
-To build the <plugin name> plugin with the HPCC-Platform, <dependency> is required.
+To build the \<plugin name\> plugin with the HPCC-Platform, \<dependency\> is required.
 ```
 sudo apt-get install atlas-dev
 ```

@@ -2,18 +2,18 @@
 
 The placement is responsible for finding the best Node for a Pod. It can be configured
 through placement to include an array of objects to configure the Kubernetes Scheduler.
-It must have a "pods" list which tells it which pod the settings will be applied to.<br/>
+It must have a "pods" list which tells it which pod the settings will be applied to.
 The syntax is:
 ```code
    placements:
    - pods: [list]
      placement:
-       <supported configurations>
+       \<supported configurations\>
 ```
 The list item in "pods" can be one of the following:
-1) HPCC Systems component types in format: "type:<type name>". <type name> includes
-   dali, esp, eclagent, eclccserver, roxie, thor. For example "type:esp"
-2) Target, the name of array item of above type in format "target:<target name>"
+1) HPCC Systems component types in format: "type:\<type name\>". (\<type name\> includes
+  dali, esp, eclagent, eclccserver, roxie, thor.) For example "type:esp"
+2) Target, the name of array item of above type in format "target: \<target name\>"
    For example "target:roxie", "target:thor".
 3) Pod, "Deployment" metadata name, which usually should be from the name of the array
    item of a type. For example, "eclwatch", "mydali", "thor-thoragent"..
