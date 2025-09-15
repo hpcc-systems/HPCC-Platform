@@ -1759,9 +1759,10 @@ public:
     }
 
     virtual ILazyFileIO *lookupFile(const char *lfn, RoxieFileType fileType,
-                                     IPartDescriptor *pdesc, unsigned numParts, unsigned channel,
-                                     const StringArray &localEnoughLocationInfo,
-                                     const StringArray &deployedLocationInfo, bool startFileCopy)
+                                     IPartDescriptor *pdesc,
+                                     IPartDescriptor *remotePDesc,
+                                     unsigned numParts, unsigned channel,
+                                     bool startFileCopy) override
     {
         unsigned replicationLevel = getReplicationLevel(channel);
         IPropertyTree &partProps = pdesc->queryProperties();
@@ -1832,7 +1833,36 @@ public:
                     return f.getClear();
             }
 
-            ret.setown(openFile(lfn, partNo, channel, localLocation, pdesc, localEnoughLocationInfo, deployedLocationInfo, dfsSize, dfsDate));
+        #ifdef _CONTAINERIZED
+            const char *myCluster = (ROXIE_KEY == fileType) ? defaultIndexBuildPlane.str() : defaultPlane.str();
+        #else
+            const char *myCluster = roxieName.str();
+        #endif
+            StringArray localEnoughLocations; //files from these locations won't be copied to the default plane
+            StringArray deployedLocationInfo;
+            const char *peerCluster = pdesc->queryOwner().queryProperties().queryProp("@cloneFromPeerCluster");
+            if (peerCluster)
+            {
+                if (*peerCluster!='-') // a remote cluster was specified explicitly
+                    appendRemoteLocations(pdesc, deployedLocationInfo, NULL, peerCluster, true);  // Add only from specified cluster
+            }
+            else
+            {
+        #ifdef _CONTAINERIZED
+                StringArray localEnoughPlanes;
+                if (getDirectAccessStoragePlanes(localEnoughPlanes))
+                    appendRemoteLocations(pdesc, localEnoughLocations, NULL, localEnoughPlanes, true);
+                localEnoughPlanes.append(myCluster);
+                appendRemoteLocations(pdesc, deployedLocationInfo, NULL, localEnoughPlanes, false);      // Add from any plane on same dali, other than default or loacal enough
+        #else
+                appendRemoteLocations(pdesc, deployedLocationInfo, NULL, myCluster, false);      // Add from any cluster on same dali, other than mine
+        #endif
+            }
+            if (remotePDesc)
+                appendRemoteLocations(remotePDesc, deployedLocationInfo, NULL, NULL, false);    // Then any remote on remote dali
+
+
+            ret.setown(openFile(lfn, partNo, channel, localLocation, pdesc, localEnoughLocations, deployedLocationInfo, dfsSize, dfsDate));
 
             if (startFileCopy)
             {
@@ -2221,35 +2251,7 @@ static bool getDirectAccessStoragePlanes(StringArray &planes)
 
 ILazyFileIO *createPhysicalFile(const char *id, IPartDescriptor *pdesc, IPartDescriptor *remotePDesc, RoxieFileType fileType, int numParts, bool startCopy, unsigned channel)
 {
-#ifdef _CONTAINERIZED
-    const char *myCluster = (ROXIE_KEY == fileType) ? defaultIndexBuildPlane.str() : defaultPlane.str();
-#else
-    const char *myCluster = roxieName.str();
-#endif
-    StringArray localEnoughLocations; //files from these locations won't be copied to the default plane
-    StringArray remoteLocations;
-    const char *peerCluster = pdesc->queryOwner().queryProperties().queryProp("@cloneFromPeerCluster");
-    if (peerCluster)
-    {
-        if (*peerCluster!='-') // a remote cluster was specified explicitly
-            appendRemoteLocations(pdesc, remoteLocations, NULL, peerCluster, true);  // Add only from specified cluster
-    }
-    else
-    {
-#ifdef _CONTAINERIZED
-        StringArray localEnoughPlanes;
-        if (getDirectAccessStoragePlanes(localEnoughPlanes))
-            appendRemoteLocations(pdesc, localEnoughLocations, NULL, localEnoughPlanes, true);
-        localEnoughPlanes.append(myCluster);
-        appendRemoteLocations(pdesc, remoteLocations, NULL, localEnoughPlanes, false);      // Add from any plane on same dali, other than default or loacal enough
-#else
-        appendRemoteLocations(pdesc, remoteLocations, NULL, myCluster, false);      // Add from any cluster on same dali, other than mine
-#endif
-    }
-    if (remotePDesc)
-        appendRemoteLocations(remotePDesc, remoteLocations, NULL, NULL, false);    // Then any remote on remote dali
-
-    return queryFileCache().lookupFile(id, fileType, pdesc, numParts, channel, localEnoughLocations, remoteLocations, startCopy);
+    return queryFileCache().lookupFile(id, fileType, pdesc, remotePDesc, numParts, channel, startCopy);
 }
 
 //====================================================================================================
@@ -3067,7 +3069,7 @@ public:
                                 throw MakeStringException(ROXIE_MISMATCH, "Untranslatable record layout mismatch detected for file %s", subname);
                             else if (mode == RecordTranslationMode::PayloadRemoveOnly && translator->hasNewFields())
                                 throw MakeStringException(0, "Translatable file layout mismatch reading file %s but translation disabled when expected fields are missing from source.", subname);
-                            else if (translator->needsTranslate())
+                        else if (translator->needsTranslate())
                             {
                                 if (fileMode==FileFormatMode::index && translator->keyedTranslated())
                                     throw MakeStringException(ROXIE_MISMATCH, "Record layout mismatch detected in keyed fields for file %s", subname);
