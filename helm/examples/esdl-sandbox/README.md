@@ -38,4 +38,4 @@ soapplus -url http://.:8899/EsdlExample -i roxierequest.xml
 
 6. Interact with both services by browsing to:
 
-http://<DynamicEsdlIP>:8899
+http://\<DynamicEsdlIP\>:8899

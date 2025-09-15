@@ -30,8 +30,8 @@ your installation by creating a topic and interacting with it.
 
 *Expand the section that matches your runtime environment (bare metal vs containerized)*
 
-<details>
-<summary>Configuring in a Bare Metal Environment</summary>
+\<details>
+\<summary>Configuring in a Bare Metal Environment\</summary>
 
 The Apache Kafka plugin uses sensible default configuration values but these can
 be modified via configuration files.
@@ -60,8 +60,8 @@ HPCC configuration directory, which is `/etc/HPCCSystems`.  The global
 configuration file should be named `kafka_global.conf`.  Per-topic configuration
 files are also supported, and they can be different for a publisher or a
 consumer.  For a publisher, the naming convention is
-`kafka_publisher_topic_<TopicName>.conf` and for a consumer it is
-`kafka_consumer_topic_<TopicName>.conf`.  In both cases, `<TopicName>` is the
+`kafka_publisher_topic_\<TopicName\>.conf` and for a consumer it is
+`kafka_consumer_topic_\<TopicName\>.conf`.  In both cases, `\<TopicName\>` is the
 name of the topic you are publishing to or consuming from.
 
 Settings that affect the protocol used to connect to the Kafka broker (such as
@@ -87,10 +87,10 @@ overriding their normal default values:
     queued.max.messages.kbytes=10000000
     fetch.message.max.bytes=10000000
     auto.offset.reset=smallest
-</details>
+\</details>
 
-<details>
-<summary>Configuring in a Containerized Environment</summary>
+\<details>
+\<summary>Configuring in a Containerized Environment\</summary>
 
 The Apache Kafka plugin uses sensible default configuration values but these can
 be modified via configuration entries in the HPCC Systems Helm chart.
@@ -133,8 +133,8 @@ will scan for configuration entries.  The global
 configuration block should be named `global`.  Per-topic configuration
 blocks are also supported, and they can be different for a publisher or a
 consumer.  For a publisher, the naming convention is
-`publisher_topic_<TopicName>` and for a consumer it is
-`consumer_topic_<TopicName>`.  In both cases, `<TopicName>` is the
+`publisher_topic_\<TopicName\>` and for a consumer it is
+`consumer_topic_\<TopicName\>`.  In both cases, `\<TopicName\>` is the
 name of the topic you are publishing to or consuming from.
 
 Settings that affect the protocol used to connect to the Kafka broker (such as
@@ -176,7 +176,7 @@ overriding their normal default values:
       value: 10000000
     - name: auto.offset.reset
       value: smallest
-</details>
+\</details>
 
 ## Publishing messages with the plugin
 
@@ -449,7 +449,7 @@ off.  The file is saved to the HPCC engine's data directory which is typically
 `/var/lib/HPCCSystems/myeclagent/` depending on the engine you're using (the
 exact path may be different if you have named an engine differently in your HPCC
 configuration).  The format of the saved offset filename is
-`<TopicName>-<PartitionNum>-<ConsumerGroup>.offset`.
+`\<TopicName\>-\<PartitionNum\>-\<ConsumerGroup\>.offset`.
 
 Note that saving partition offsets is engine-specific in a bare-metal environment.
 One practical consideration of this is that you cannot have one engine (e.g. Thor)
