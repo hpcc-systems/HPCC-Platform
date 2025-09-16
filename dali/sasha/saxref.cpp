@@ -372,56 +372,133 @@ struct cDirDesc
         return fn;
     }
 
-    bool isMisplaced(unsigned partNum, unsigned numParts, const SocketEndpoint &ep, IGroup &grp, const char *name, const char *scope, unsigned stripeNum, unsigned numStripedDevices)
+    bool isMisplaced(unsigned partNum, unsigned numParts, const SocketEndpoint &ep, IGroup &grp, const char *fullPath, unsigned filePathOffset, unsigned stripeNum, unsigned numStripedDevices)
     {
-        if (isContainerized())
+        // External files (i.e. no ._n_of_m suffix) are considered misplaced so we can get
+        // the node where the external file was found for addExternalFoundFile later
+        if (numParts==NotFound)
         {
-            // Remove dir-per-part from scope for hashing filename and comparing to part number
-            unsigned dirPerPartNum = 0;
-            const char *lastScope = nullptr;
-            StringBuffer scopeBuf(scope);
-            if (scopeBuf.length())
-            {
-                lastScope = strrchr(scope, ':');
-                if (!lastScope)
-                    lastScope = scope;
-                else
-                    lastScope++;
-                dirPerPartNum = getDirPerPartNum(lastScope);
-            }
-            if (numStripedDevices>1)
-            {
-                if ((stripeNum>numStripedDevices)||(stripeNum<1))
-                    return true;
-                if (dirPerPartNum !=0 && dirPerPartNum <= numParts)
-                    scopeBuf.setLength(lastScope - scope);
-                else
-                    scopeBuf.append("::");
-                // Remove file mask from filename for hashing
-                const char *ext = strrchr(name,'.');
-                if (!ext)
-                    ext = name + strlen(name);
-                unsigned lfnHash = getFilenameHash(scopeBuf.append(ext-name,name).str());
-                if (calcStripeNumber(partNum, lfnHash, numStripedDevices)!=stripeNum)
-                    return true;
-            }
-            else if (numParts!=grp.ordinality() || partNum>=grp.ordinality() || !grp.queryNode(partNum).endpoint().equals(ep))
-                return true;
-
-            return dirPerPartNum==0 || partNum!=(dirPerPartNum-1);
+            return true;
         }
 
-        return numParts!=grp.ordinality() || partNum>=grp.ordinality() || !grp.queryNode(partNum).endpoint().equals(ep);
+        if (isContainerized())
+        {
+            // MORE: How can we check hosted planes?
+            // Checking against group info would still make sense in containerized if hosted plane
+            // if (hostedPlane)
+            //     return numParts!=grp.ordinality() || partNum>=grp.ordinality() || !grp.queryNode(partNum).endpoint().equals(ep);
+
+            if ((numStripedDevices>1)&&((stripeNum>numStripedDevices)||(stripeNum<1)))
+            {
+                return true;
+            }
+
+            // Get pointer to filename
+            filePathOffset++; // fullPath+filePathOffset will always be a slash, so skip it
+            const char *filePath = fullPath+filePathOffset;
+            unsigned filePathLen = strlen(filePath);
+            const char *filename = fullPath+filePathOffset+filePathLen;
+            while(filename>filePath)
+            {
+                if (*filename=='/')
+                {
+                    filename++;
+                    break;
+                }
+                else
+                {
+                    filename--;
+                }
+            }
+
+            // Calculate dir-per-part number, if there is one, from file path
+            constexpr unsigned maxDirPerPartDigits = 6;
+            constexpr unsigned pow10[maxDirPerPartDigits] = {1, 10, 100, 1000, 10000, 100000};
+            const char *dirPerPartDir = filename-2;
+            unsigned dirPerPartNum = 0;
+            while(dirPerPartDir>filePath)
+            {
+                if (isdigit(*dirPerPartDir))
+                {
+                    if (((filename-2)-dirPerPartDir)>=maxDirPerPartDigits)
+                    {
+                        dirPerPartNum = 0;
+                        break;
+                    }
+                    dirPerPartNum = dirPerPartNum + ((*dirPerPartDir - '0') * pow10[(filename-2) - dirPerPartDir]);
+                    dirPerPartDir--;
+                }
+                else if (*dirPerPartDir=='/')
+                {
+                    break;
+                }
+                else
+                {
+                    dirPerPartDir = filename;
+                    dirPerPartNum = 0;
+                    break;
+                }
+            }
+
+            // Check dirPerPartNum against partNum if one was found and it could sensibly be a dir-per-part directory
+            if ((dirPerPartNum>0)&&(dirPerPartNum<=numParts)&&(partNum!=(dirPerPartNum-1)))
+            {
+                return true;
+            }
+
+            // No more checks for non-striped containerized planes
+            if (numStripedDevices==1)
+            {
+                return false;
+            }
+
+            // Get pointer to extension in filename to exclude for hashing
+            const char *ext = filePath+filePathLen;
+            while (ext>filename)
+            {
+                if (*ext=='.')
+                {
+                    break;
+                }
+                else
+                {
+                    ext--;
+                }
+            }
+            if (ext==filename)
+            {
+                // No extension found, use full filename
+                ext = filePath+filePathLen;
+            }
+
+            // Calculate hash from the file path
+            unsigned lfnHash = 0;
+            if (dirPerPartNum)
+            {
+                lfnHash = getLfnHashFromPath(dirPerPartDir-filePath,filePath);
+                lfnHash = appendLfnHashFromPath(ext-filename, filename, lfnHash);
+            }
+            else
+            {
+                lfnHash = getLfnHashFromPath(ext-filePath, filePath, lfnHash);
+            }
+
+            return calcStripeNumber(partNum, lfnHash, numStripedDevices)!=stripeNum;
+        }
+        else
+        {
+            return numParts!=grp.ordinality() || partNum>=grp.ordinality() || !grp.queryNode(partNum).endpoint().equals(ep);
+        }
     }
 
-    cFileDesc *addFile(unsigned drv,const char *name,const char *filePath,const char *scope,__int64 sz,CDateTime &dt,unsigned node, const SocketEndpoint &ep, IGroup &grp, unsigned numnodes, CLargeMemoryAllocator *mem, unsigned stripeNum, unsigned numStripedDevices)
+    cFileDesc *addFile(unsigned drv,const char *name,const char *filePath,unsigned filePathOffset,unsigned node, const SocketEndpoint &ep, IGroup &grp, unsigned numnodes, CLargeMemoryAllocator *mem, unsigned stripeNum, unsigned numStripedDevices)
     {
         unsigned nf;          // num parts
         unsigned pf;          // part num
         unsigned filenameLen; // length of file name excluding extension i.e. ._$P$_of_$N$
         StringAttr mask;
         const char *fn = decodeName(drv,name,node,numnodes,mask,pf,nf,filenameLen);
-        bool misplaced = isMisplaced(pf, nf, ep, grp, name, scope, stripeNum, numStripedDevices);
+        bool misplaced = isMisplaced(pf,nf,ep,grp,filePath,filePathOffset,stripeNum,numStripedDevices);
         cFileDesc *file = files.find(fn,false);
         if (!file) {
             if (!mem)
@@ -1053,10 +1130,9 @@ public:
     }
 
 
-    bool scanDirectory(unsigned node,const SocketEndpoint &ep,StringBuffer &path, StringBuffer &scope, unsigned drv, cDirDesc *pdir, IFile *cachefile, unsigned level, unsigned stripeNum)
+    bool scanDirectory(unsigned node,const SocketEndpoint &ep,StringBuffer &path, unsigned drv, cDirDesc *pdir, IFile *cachefile, unsigned level, unsigned filePathOffset, unsigned stripeNum)
     {
         size32_t dsz = path.length();
-        size32_t scopeLen = scope.length();
         if (pdir==NULL) 
             pdir = root;
         RemoteFilename rfn;
@@ -1112,7 +1188,7 @@ public:
                             // /var/lib/HPCCSystems/hpcc-data/d1/somescope/otherscope/afile.1_of_2
                             // /var/lib/HPCCSystems/hpcc-data/d2/somescope/otherscope/afile.2_of_2
                             // These files would never be matched if we didn't build up the cDirDesc structure without the stripe directory
-                            if (!scanDirectory(node,ep,path,scope,drv,pdir,NULL,level+1,stripeNum))
+                            if (!scanDirectory(node,ep,path,drv,pdir,NULL,level+1,filePathOffset,stripeNum))
                                 return false;
 
                             path.setLength(dsz);
@@ -1126,12 +1202,11 @@ public:
             }
             else {
                 CDateTime dt;
-                offset_t fsz = iter->getFileSize();
-                nsz += fsz;
+                nsz += iter->getFileSize();
                 iter->getModifiedTime(dt);
                 if (!fileFiltered(path.str(),dt)) {
                     try {
-                        pdir->addFile(drv,fname.str(),path.str(),scope.str(),fsz,dt,node,ep,*grp,numnodes,&mem,stripeNum,numStripedDevices);
+                        pdir->addFile(drv,fname.str(),path.str(),filePathOffset,node,ep,*grp,numnodes,&mem,stripeNum,numStripedDevices);
                     }
                     catch (IException *e) {
                         StringBuffer filepath, errMsg;
@@ -1142,20 +1217,15 @@ public:
                 }
             }
             path.setLength(dsz);
-            scope.setLength(scopeLen);
         }
         iter.clear();
         ForEachItemIn(i,dirs) {
             addPathSepChar(path).append(dirs.item(i));
-            if (scopeLen > 0)
-                scope.append("::");
-            scope.append(dirs.item(i));
             if (file.get()&&!resetRemoteFilename(file,path.str())) // sneaky way of avoiding cache
                 file.clear();
-            if (!scanDirectory(node,ep,path,scope,drv,pdir->lookupDir(dirs.item(i),&mem),file,level+1,stripeNum))
+            if (!scanDirectory(node,ep,path,drv,pdir->lookupDir(dirs.item(i),&mem),file,level+1,filePathOffset,stripeNum))
                 return false;
             path.setLength(dsz);
-            scope.setLength(scopeLen);
         }
         pdir->addNodeStats(node,drv,nsz);
         return true;
@@ -1203,7 +1273,6 @@ public:
                     return;
 
                 StringBuffer path(rootdir);
-                StringBuffer scope;
                 if (parent.isPlaneStriped)
                 {
                     assertex(!parent.storagePlane->hasProp("@hostGroup"));
@@ -1215,7 +1284,7 @@ public:
                     addPathSepChar(path).append('d').append(i+1);
 
                     parent.log("Scanning %s directory %s",parent.storagePlane->queryProp("@name"),path.str());
-                    if (!parent.scanDirectory(0,localEP,path,scope,0,parent.root,NULL,1,i+1))
+                    if (!parent.scanDirectory(0,localEP,path,0,parent.root,NULL,1,path.length(),i+1))
                     {
                         ok = false;
                         return;
@@ -1226,7 +1295,7 @@ public:
                     StringBuffer hostStr;
                     SocketEndpoint ep = parent.rawgrp->queryNode(i).endpoint();
                     parent.log("Scanning %s directory %s",ep.getEndpointHostText(hostStr).str(),path.str());
-                    if (!parent.scanDirectory(i,ep,path,scope,0,NULL,NULL,0,0)) {
+                    if (!parent.scanDirectory(i,ep,path,0,NULL,NULL,0,path.length(),0)) {
                         ok = false;
                         return;
                     }
@@ -1236,7 +1305,7 @@ public:
                         setReplicateFilename(path,1);
                         ep = parent.rawgrp->queryNode(i).endpoint();
                         parent.log("Scanning %s directory %s",ep.getEndpointHostText(hostStr.clear()).str(),path.str());
-                        if (!parent.scanDirectory(i,ep,path,scope,1,NULL,NULL,0,0)) {
+                        if (!parent.scanDirectory(i,ep,path,1,NULL,NULL,0,path.length(),0)) {
                             ok = false;
                         }
                     }
