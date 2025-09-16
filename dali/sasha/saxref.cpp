@@ -244,23 +244,6 @@ struct cFileDesc // no virtuals
 };
 
 
-// Parses directory name to determine if it is a dir-per-part directory
-// Returns the name converted to a number if possible, otherwise 0
-static unsigned getDirPerPartNum(const char *name)
-{
-    unsigned num = 0;
-    while (*name)
-    {
-        if (isdigit(*name))
-            num = num * 10 + (*name - '0');
-        else
-            return 0;
-        name++;
-    }
-    return num;
-}
-
-
 struct cDirDesc
 {
     unsigned hash;
