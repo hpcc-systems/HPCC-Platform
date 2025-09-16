@@ -69,6 +69,12 @@ public:
             //Force an asynchronous reconnect
             socket->connectAsync(processor);
         }
+        else
+        {
+            if ((unsigned)result != length)
+                OERRLOG("Short write on socket %u of %u", result, length);
+        }
+
         buffer->Release();
         // This object is no longer needed - free it up.  This is slightly dangerous.... but the object should not be
         // used after this point.
@@ -97,7 +103,7 @@ public:
         {
             Owned<IPropertyTree> config = createPTreeFromXMLString("<iouring poll='1'/>");
             dbglogXML(config);
-            asyncSender.setown(createURingProcessor(config, false));
+            asyncSender.setown(createURingProcessor(config, true));
             //MORE: I am not sure if this is actually worthwhile - need to perform some performance tests
             if (asyncSender)
                 roxiemem::registerRoxieMemory(*asyncSender);

@@ -57,6 +57,7 @@ public:
 protected:
     virtual void submitRequests() = 0;
 
+    io_uring_sqe * allocRequest(CLeavableCriticalBlock & activeBlock);
     bool isFixedBuffer(size32_t len, const void * buf) const;
 
 protected:
@@ -107,6 +108,18 @@ URingProcessor::URingProcessor(const IPropertyTree * config)
     alive = true;
 }
 
+io_uring_sqe * URingProcessor::allocRequest(CLeavableCriticalBlock & activeBlock)
+{
+    for (;;)
+    {
+        io_uring_sqe *sqe = io_uring_get_sqe(&ring);
+        if (sqe)
+            return sqe;
+        // MORE: If the buffer is full we need to wait for some completions and try again
+        MilliSleep(1);
+    }
+}
+
 bool URingProcessor::dequeueCompletion(CompletionResponse & response)
 {
     if (aborting)
@@ -126,7 +139,7 @@ void URingProcessor::enqueueCallbackCommand(IAsyncCallback & callback)
 {
     CLeavableCriticalBlock block(crit, isMultiThreaded);
 
-    struct io_uring_sqe *sqe = io_uring_get_sqe(&ring);
+    io_uring_sqe * sqe = allocRequest(block);
     /* Setup a nop operation - should be called back immediately */
     io_uring_prep_nop(sqe);
     /* Set user data */
@@ -141,7 +154,8 @@ void URingProcessor::enqueueCallbackCommands(std::vector<IAsyncCallback *> callb
 
     for (IAsyncCallback * callback : callbacks)
     {
-        struct io_uring_sqe *sqe = io_uring_get_sqe(&ring);
+        io_uring_sqe * sqe = allocRequest(block);
+
         /* Setup a nop operation - should be called back immediately */
         io_uring_prep_nop(sqe);
         /* Set user data */
@@ -155,7 +169,7 @@ void URingProcessor::enqueueSocketWrite(ISocket * socket, size32_t len, const vo
 {
     CLeavableCriticalBlock block(crit, isMultiThreaded);
 
-    struct io_uring_sqe *sqe = io_uring_get_sqe(&ring);
+    io_uring_sqe * sqe = allocRequest(block);
     offset_t offset = 0;
     if (isFixedBuffer(len, buf))
     {
