@@ -457,6 +457,18 @@ public:
             DBGLOG("%s", str.str());
     }
 
+    void reset(unsigned defaultState)
+    {
+        currentState = defaultState;
+        lastTick = get_cycles_now();
+        lastReport = lastTick;
+        for (unsigned i = 0; i < NUMSTATES; i++)
+        {
+            totals[i] = 0;
+            counts[i] = 0;
+        }
+    }
+
     class TimeDivision
     {
         unsigned prevState = 0;
