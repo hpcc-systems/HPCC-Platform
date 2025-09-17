@@ -19,10 +19,12 @@ import { ZAPDialog } from "./forms/ZAPDialog";
 import { InfoGrid } from "./InfoGrid";
 import { WorkunitPersona } from "./controls/StateIcon";
 import { localKeyValStore } from "src/KeyValStore";
+import { IssueDialog } from "./forms/IssueDialog"; // <-- NEW
 
 const logger = scopedLogger("../components/WorkunitDetails.tsx");
 
 const WU_SUMMARY_SPLITTER = "workunit_summary_splitter";
+const ISSUE_LINKS_PREFIX = "wuIssueLinks:"; // <-- NEW
 
 export function resetWorkunitSummarySplitter() {
     const store = localKeyValStore();
@@ -88,6 +90,10 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
     const [dockpanel, setDockpanel] = React.useState<ResetableDockPanel>();
     const [layout, setLayout] = useLocalStore<[number, number]>(WU_SUMMARY_SPLITTER, [0.67, 0.33], false);
 
+    // NEW: Issue dialog + links
+    const [showIssueForm, setShowIssueForm] = React.useState(false);
+    const [issueLinks, setIssueLinks] = React.useState<Array<{ type: "jira" | "github"; url: string; created: string }>>([]);
+
     const [messageBarContent, setMessageBarContent] = React.useState<MessageBarContent | undefined>();
     const dismissMessageBar = React.useCallback(() => setMessageBarContent(undefined), []);
     const showMessageBar = React.useCallback((content: MessageBarContent) => {
@@ -109,6 +115,35 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
         setOtTraceId(otTrace.traceId);
         setOtSpanId(otTrace.spanId);
     }, [otTraceParent]);
+
+    // Load stored issue links for this WUID (localKeyValStore)
+    React.useEffect(() => {
+        const store = localKeyValStore();
+        const key = `${ISSUE_LINKS_PREFIX}${wuid}`;
+        if (store) {
+            store.get(key).then(val => {
+                let arr: any[] = [];
+                if (val) {
+                    try {
+                        const parsed = JSON.parse(val);
+                        if (Array.isArray(parsed)) {
+                            arr = parsed;
+                        }
+                    } catch {
+                        // ignore JSON parse errors
+                    }
+                }
+                setIssueLinks(arr);
+            }).catch(() => setIssueLinks([]));
+        } else {
+            setIssueLinks([]);
+        }
+    }, [wuid, lastUpdate]);
+
+    const handleIssueSaved = React.useCallback((rec: { type: "jira" | "github"; url: string; created: string }) => {
+        setIssueLinks(prev => [rec, ...prev].slice(0, 10));
+        showMessageBar({ type: MessageBarType.success, message: "Issue link saved to this workunit." });
+    }, [showMessageBar]);
 
     const canSave = workunit && (
         jobname !== workunit.Jobname ||
@@ -224,10 +259,17 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
             onClick: () => setShowZapForm(true)
         },
         { key: "divider_7", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+
+        // ---- NEW: Report Issue button
         {
-            key: "slaveLogs", text: nlsHPCC.SlaveLogs, disabled: !workunit?.ThorLogList,
-            onClick: () => setShowThorSlaveLogs(true)
+            key: "divider_issue", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider />
         },
+        {
+            key: "reportIssue", text: "Report Issue", iconProps: { iconName: "Bug" },
+            onClick: () => setShowIssueForm(true)
+        }
+        // ----------------------------
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     ], [wuProtected, canDelete, canDeschedule, canReschedule, canSave, description, jobname, otTraceParent, refresh, refreshSavings, setShowDeleteConfirm, showMessageBar, workunit, wuid]);
 
     React.useEffect(() => {
@@ -323,6 +365,23 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
                                         logger.debug(`${id}:  ${value}`);
                                 }
                             }} />
+
+                            {/* NEW: Linked issue list */}
+                            {issueLinks?.length > 0 && (
+                                <div style={{ marginTop: 12 }}>
+                                    <h3 style={{ margin: "8px 0" }}>Linked Issues</h3>
+                                    <ul style={{ margin: 0, paddingInlineStart: 18 }}>
+                                        {issueLinks.map((l, i) => (
+                                            <li key={`${l.created}-${i}`}>
+                                                <a href={l.url} target="_blank" rel="noopener noreferrer">
+                                                    {l.type.toUpperCase()} Issue
+                                                </a>{" "}
+                                                <span style={{ opacity: 0.7 }}>({new Date(l.created).toLocaleString()})</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
                         </div>
                     </ScrollablePane>
                 </DockPanelItem>
@@ -330,10 +389,29 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
                     <InfoGrid wuid={wuid}></InfoGrid>
                 </DockPanelItem>
             </DockPanel>
+
+            {/* Existing dialogs */}
             <PublishQueryForm wuid={wuid} showForm={showPublishForm} setShowForm={setShowPublishForm} />
             <ZAPDialog wuid={wuid} showForm={showZapForm} setShowForm={setShowZapForm} />
             <SlaveLogs wuid={wuid} showForm={showThorSlaveLogs} setShowForm={setShowThorSlaveLogs} />
             <DeleteConfirm />
+
+            {/* NEW: Issue dialog */}
+            <IssueDialog
+                wuid={wuid}
+                showForm={showIssueForm}
+                setShowForm={setShowIssueForm}
+                jiraBaseUrl={"https://yourcompany.atlassian.net"}        // TODO: configure
+                githubRepoUrl={"https://github.com/your-org/your-repo"}  // TODO: configure
+                workunitContext={{
+                    owner: workunit?.Owner,
+                    cluster: workunit?.Cluster,
+                    state: workunit?.StateEx || workunit?.State,
+                    jobname: workunit?.Jobname,
+                    description: workunit?.Description
+                }}
+                onIssueLinkSaved={handleIssueSaved}
+            />
         </>}
     />;
 };
