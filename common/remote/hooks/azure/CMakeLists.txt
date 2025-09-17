@@ -15,7 +15,7 @@
 ################################################################################
 
 
-# Component: azurefile
+# Component: azureapi
 #####################################################
 # Description:
 # ------------
@@ -30,12 +30,18 @@ find_package(azure-storage-blobs-cpp CONFIG REQUIRED)
 find_package(azure-storage-files-shares-cpp CONFIG REQUIRED)
 find_package(azure-storage-common-cpp CONFIG REQUIRED)
 
-project( azurefile )
+project( azureapi )
 SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STRICT_CXX_FLAGS}")
 
 set (   SRCS
+        azureblob.cpp
+        azureblob.hpp
         azurefile.cpp
         azurefile.hpp
+        azureapi.cpp
+        azureapi.hpp
+        azureapiutils.cpp
+        azureapiutils.hpp
     )
 
 include_directories (
@@ -43,7 +49,7 @@ include_directories (
         ${HPCC_SOURCE_DIR}/system/jlib
     )
 
-ADD_DEFINITIONS( -D_USRDLL -DAZURE_FILE_EXPORTS )
+ADD_DEFINITIONS( -D_USRDLL -DAZURE_API_EXPORTS )
 
 HPCC_ADD_LIBRARY( azurefile SHARED ${SRCS}  )
 install ( TARGETS azurefile DESTINATION filehooks CALC_DEPS)

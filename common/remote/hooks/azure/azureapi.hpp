@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2019 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2025 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,16 +15,27 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef AZURE_FILE_HPP
-#define AZURE_FILE_HPP
+#ifndef AZURE_API_HPP
+#define AZURE_API_HPP
 
 #include "jfile.hpp"
+#include "azureblob.hpp"
+#include "azurefile.hpp"
+
+#ifdef AZURE_API_EXPORTS
+#define AZUREAPI_API DECL_EXPORT
+#else
+#define AZUREAPI_API DECL_IMPORT
+#endif
 
 /*
- * Provides Azure File Share implementation for filenames of the form azurefile:<storagePlane>/<shareName>/<path>
- * File hooks are installed by azureapi.hpp which handles both blob and file storage
+ * Unified Azure API that supports both Blob and File operations
+ * Installs hooks into createIFile for both azureblob: and azurefile: prefixes
  */
 
-IFile * createAzureFile(const char * filename);
+extern "C" {
+  extern AZUREAPI_API void installFileHook();
+  extern AZUREAPI_API void removeFileHook();
+};
 
 #endif
