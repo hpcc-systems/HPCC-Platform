@@ -2746,6 +2746,13 @@ public:
         return new CServerRemoteTree(mb);
     }
 
+    IPropertyTree *create(IBufferedSerialInputStream &in) override
+    {
+        CServerRemoteTree *tree = new CServerRemoteTree();
+        tree->deserializeFromStream(in);
+        return tree;
+    }
+
     virtual void createChildMap() override { children = new COrphanHandler(); }
 
     inline bool testExternalCandidate()
@@ -5778,6 +5785,12 @@ public:
             OwnedIFile iBinaryFileTmpStore;
             unsigned binaryCrc{0};
             unsigned *binaryCrcPtr{nullptr};
+
+#define DAVE
+#ifdef DAVE
+            saveBinary = true;
+#endif
+
             if (saveBinary)
             {
                 StringBuffer tmpStoreName;
@@ -6421,6 +6434,52 @@ void CCovenSDSManager::loadStore(const bool *abort)
             LOG(MCdebugInfo, "Store %d does not exist, creating new store", iStoreHelper->queryCurrentEdition());
             root = new CServerRemoteTree("SDS");
         }
+
+#define DAVE
+#ifdef DAVE
+        int i{0};
+        for(i = 0; i < 5; i++)
+        {
+            PROGLOG("Save test %d", i);
+            iStoreHelper->saveStore(root, nullptr);
+
+        }
+        PROGLOG("Save tests complete");
+        for(i = 0; i < 5; i++)
+        {
+            PROGLOG("Load test %d", i);
+
+            // Release previous root if it exists
+            if (root)
+            {
+                root->Release();
+                root = nullptr;
+            }
+
+            // Try loading binary store first if it exists
+            try
+            {
+                root = loadStoreType(StoreFormat::BINARY, bufferSize, abort);
+            }
+            catch (IException *e)
+            {
+                // Log the exception but do not re-throw or exit to allow fall back to loading the XML store
+                EXCLOG(e);
+                e->Release();
+            }
+
+            // Release previous root if it exists
+            if (root)
+            {
+                root->Release();
+                root = nullptr;
+            }
+
+            root = loadStoreType(StoreFormat::XML, bufferSize, abort);
+        }
+        PROGLOG("Load tests complete");
+#endif
+
         bool errors;
         Owned<IException> deltaE;
         try { iStoreHelper->loadDeltas(root, &errors); }
