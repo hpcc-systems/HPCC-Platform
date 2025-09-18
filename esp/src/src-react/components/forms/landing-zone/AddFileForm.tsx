@@ -1,8 +1,12 @@
 import * as React from "react";
 import { DefaultButton, PrimaryButton, Spinner, TextField } from "@fluentui/react";
+import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
+import { addUserFile } from "../../../comms/fileSpray";
 import { MessageBox } from "../../../layouts/MessageBox";
+
+const logger = scopedLogger("src-react/components/forms/AddFileForm.tsx");
 
 interface AddFileFormValues {
     NetAddress: string;
@@ -17,17 +21,17 @@ const defaultValues: AddFileFormValues = {
 interface AddFileFormProps {
     formMinWidth?: number;
     showForm: boolean;
-    refreshGrid: (() => void),
-    store: any;
+    refreshGrid: (() => void);
     setShowForm: (_: boolean) => void;
+    dropzones?: any[];
 }
 
 export const AddFileForm: React.FunctionComponent<AddFileFormProps> = ({
     formMinWidth = 300,
     showForm,
     refreshGrid,
-    store,
-    setShowForm
+    setShowForm,
+    dropzones = []
 }) => {
 
     const { handleSubmit, control, reset } = useForm<AddFileFormValues>({ defaultValues });
@@ -43,34 +47,46 @@ export const AddFileForm: React.FunctionComponent<AddFileFormProps> = ({
             (data, evt) => {
                 setSubmitDisabled(true);
                 setSpinnerHidden(false);
-                const dropZone = {
-                    ...store.get(data.NetAddress),
-                    NetAddress: data.NetAddress
-                };
-                let fullPathParts = data.fullPath.split("/");
-                if (fullPathParts.length === 1) {
-                    fullPathParts = data.fullPath.split("\\");
+
+                // find dropzone by NetAddress
+                const dropZone = dropzones.find(dz =>
+                    dz.TpMachines?.TpMachine?.some(machine =>
+                        machine.Netaddress === data.NetAddress ||
+                        machine.ConfigNetaddress === data.NetAddress
+                    )
+                );
+
+                if (!dropZone) {
+                    logger.error(`Dropzone not found for NetAddress: ${data.NetAddress}`);
+                    setSubmitDisabled(false);
+                    setSpinnerHidden(true);
+                    return;
                 }
-                const file = {
-                    ...store.get(data.NetAddress + data.fullPath),
-                    name: fullPathParts[fullPathParts.length - 1],
-                    displayName: fullPathParts[fullPathParts.length - 1],
+
+                addUserFile({
+                    NetAddress: data.NetAddress,
                     fullPath: data.fullPath,
-                    isDir: false,
-                    DropZone: dropZone
-                };
-                store.addUserFile(file);
-                refreshGrid();
-                setSubmitDisabled(false);
-                setSpinnerHidden(true);
-                closeForm();
-                reset(defaultValues);
+                    dropZone: dropZone
+                }).then((fileItem) => {
+                    logger.debug(`Successfully added user file: ${fileItem.name}`);
+                    refreshGrid();
+                    setSubmitDisabled(false);
+                    setSpinnerHidden(true);
+                    closeForm();
+                    reset(defaultValues);
+                }).catch((error) => {
+                    logger.error(error);
+                    setSubmitDisabled(false);
+                    setSpinnerHidden(true);
+                });
             },
             err => {
-                console.log(err);
+                logger.error(err);
+                setSubmitDisabled(false);
+                setSpinnerHidden(true);
             }
         )();
-    }, [closeForm, handleSubmit, refreshGrid, reset, store]);
+    }, [closeForm, handleSubmit, refreshGrid, reset, dropzones]);
 
     return <MessageBox title={nlsHPCC.AddFile} show={showForm} setShow={closeForm}
         footer={<>

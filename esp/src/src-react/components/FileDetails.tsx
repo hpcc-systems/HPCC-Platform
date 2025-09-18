@@ -1,4 +1,5 @@
 import * as React from "react";
+import { makeStyles } from "@fluentui/react-components";
 import { WsDfu } from "@hpcc-js/comms";
 import { SizeMe } from "../layouts/SizeMe";
 import nlsHPCC from "src/nlsHPCC";
@@ -23,6 +24,10 @@ import { IndexFileSummary } from "./IndexFileSummary";
 import { DelayLoadedPanel, OverflowTabList, TabInfo } from "./controls/TabbedPanes/index";
 
 import "react-reflex/styles.css";
+
+const useStyles = makeStyles({
+    root: { height: "100%" }
+});
 
 type StringStringMap = { [key: string]: string };
 interface FileDetailsProps {
@@ -106,9 +111,11 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
         // but if excluded the count for "protectby" does not update correctly
     }, [file, file?.ProtectList?.DFUFileProtect?.length]); //eslint-disable-line react-hooks/exhaustive-deps
 
+    const classes = useStyles();
+
     return <FullscreenFrame fullscreen={fullscreen}>
         <SizeMe>{({ size }) =>
-            <div style={{ height: "100%" }}>
+            <div className={classes.root}>
                 <FullscreenStack fullscreen={fullscreen}>
                     <OverflowTabList tabs={tabs} selected={tab} onTabSelect={onTabSelect} size="medium" />
                 </FullscreenStack>
@@ -121,7 +128,7 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
                     }
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "contents"} size={size}>
-                    <Result cluster={cluster} logicalFile={logicalFile} filter={queryParams.contents} />
+                    <Result cluster={cluster} logicalFile={logicalFile} filter={queryParams.contents} hasEcl={!!file?.Ecl} />
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "datapatterns"} size={size}>
                     <DataPatterns cluster={cluster} logicalFile={logicalFile} />

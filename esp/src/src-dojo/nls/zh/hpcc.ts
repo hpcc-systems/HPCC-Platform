@@ -73,7 +73,7 @@
     AutoRefreshIncrement: "自动刷新增量",
     Back: "返回",
     BackupDFUWorkunit: "备份DFU工作单元",
-    BackupECLWorkunit: "备份ECL工作单元", 
+    BackupECLWorkunit: "备份ECL工作单元",
     BannerColor: "标语的颜色",
     BannerColorTooltip: "修改上方显示框的背景颜色",
     BannerMessage: "标语的文字",
