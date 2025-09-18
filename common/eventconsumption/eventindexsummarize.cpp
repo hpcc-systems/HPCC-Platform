@@ -36,11 +36,11 @@ bool CIndexFileSummary::visitEvent(CEvent& event)
         NodeKindSummary& summary = nodeSummary(fileId, nodeKind);
         switch (event.queryType())
         {
-        case EventIndexLookup:
-            if (event.queryBooleanValue(EvAttrInCache))
-                summary.hits++;
-            else
-                summary.misses++;
+        case EventIndexCacheHit:
+            summary.hits++;
+            break;
+        case EventIndexCacheMiss:
+            summary.misses++;
             break;
         case EventIndexLoad:
             summary.loads++;

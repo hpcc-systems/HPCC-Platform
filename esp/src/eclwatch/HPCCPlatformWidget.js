@@ -556,7 +556,7 @@ define([
         _onAboutLoaded: false,
         _onAbout: function (evt) {
             var placeholderNode = dom.byId(this.id + "DialogPlaceholder");
-            srcReact.render(AboutModule.About, {
+            srcReact.lightThemedRender(AboutModule.About, {
                 eclwatchVersion: "5",
                 show: true,
                 onClose: function () {

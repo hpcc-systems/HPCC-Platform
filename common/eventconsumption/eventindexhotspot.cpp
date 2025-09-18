@@ -19,6 +19,7 @@
 #include "eventindexhotspot.hpp"
 #include <array>
 #include <map>
+#include <set>
 
 class CHotspotEventVisitor : public CInterfaceOf<IEventVisitor>
 {
@@ -155,11 +156,11 @@ public: // IEventVisitor
         if (event.hasAttribute(EvAttrFileId))
         {
             EventType type = event.queryType();
-            if (type != MetaFileInformation && type != observedEvent)
+            if (type != MetaFileInformation && observedEvents.count(type) == 0)
                 return true;
             __uint64 fileId = event.queryNumericValue(EvAttrFileId);
             auto [it, inserted] = activity.try_emplace(fileId, *this, fileId);
-            if (type == observedEvent)
+            if (observedEvents.count(type))
                 it->second.recordEvent(event.queryNumericValue(EvAttrFileOffset), event.queryNumericValue(EvAttrNodeKind)? BucketLeaf : BucketBranch);
             else
                 it->second.setPath(event.queryTextValue(EvAttrPath));
@@ -169,17 +170,17 @@ public: // IEventVisitor
 
     virtual void departFile(uint32_t bytesRead) override
     {
-        analyzer->begin(observedEvent, granularityBits);
+        analyzer->begin(observedEvents, granularityBits);
         for (auto& [fileId, activity] : activity)
             activity.forEachBucket(*analyzer);
         analyzer->end();
     }
 
 public:
-    CHotspotEventVisitor(IBucketVisitor& _analyzer, EventType _observedEvent, byte _granularityBits)
+    CHotspotEventVisitor(IBucketVisitor& _analyzer, const std::set<EventType>& _observedEvents, byte _granularityBits)
         : analyzer(&_analyzer)
-        , observedEvent(_observedEvent)
         , granularityBits(_granularityBits)
+        , observedEvents(_observedEvents)
     {
     }
 
@@ -187,14 +188,14 @@ private:
     // map file id (as __uint64 due to visitor interface) to index activity
     using Activity = std::map<__uint64, CActivity>;
     Linked<IBucketVisitor> analyzer;
-    EventType observedEvent{EventNone};
     byte granularityBits{0};
     Activity activity;
+    std::set<EventType> observedEvents;
 };
 
 bool CIndexHotspotOp::ready() const
 {
-    return CEventConsumingOp::ready() && observedEvent != EventNone;
+    return CEventConsumingOp::ready() && !observedEvents.empty();
 }
 
 bool CIndexHotspotOp::doOp()
@@ -205,14 +206,14 @@ bool CIndexHotspotOp::doOp()
     else
         analyzer.setown(createAllBucketVisitor(*out));
 
-    CHotspotEventVisitor visitor(*analyzer, observedEvent, granularityBits);
+    CHotspotEventVisitor visitor(*analyzer, observedEvents, granularityBits);
     return traverseEvents(inputPath, visitor);
 }
 
-void CIndexHotspotOp::setObservedEvent(EventType _observedEvent)
+void CIndexHotspotOp::addObservedEvent(EventType observedEvent)
 {
-    assertex(_observedEvent == EventIndexLookup || _observedEvent == EventIndexLoad);
-    observedEvent = _observedEvent;
+    assertex(observedEvent == EventIndexCacheHit || observedEvent == EventIndexCacheMiss || observedEvent == EventIndexLoad);
+    observedEvents.insert(observedEvent);
 }
 
 void CIndexHotspotOp::setGranularity(byte bits)

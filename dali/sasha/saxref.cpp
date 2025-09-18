@@ -650,6 +650,8 @@ public:
     unsigned lastlog;
     unsigned sfnum;
     unsigned fnum;
+    std::atomic<uint64_t> processedDirs{0};
+    std::atomic<uint64_t> processedFiles{0};
     XRefPeriodicTimer heartbeatTimer;
 
     Owned<IPropertyTree> foundbranch;
@@ -727,6 +729,8 @@ public:
 
     void startHeartbeat(const char * op)
     {
+        processedDirs = 0;
+        processedFiles = 0;
         heartbeatTimer.reset(60, true, clustname.get()); // 1 minute interval
         log(true, "%s heartbeat started (interval: 1 minute)", op);
     }
@@ -739,16 +743,20 @@ public:
 
         unsigned elapsedMinutes = heartbeatTimer.calcElapsedMinutes();
         unsigned elapsedHours = elapsedMinutes / 60;
+        unsigned elapsedDays = elapsedHours / 24;
+        unsigned remainingHours = elapsedHours % 24;
         unsigned remainingMinutes = elapsedMinutes % 60;
 
         struct tm *utc_tm = gmtime(&now);
         char timestamp[32];
         strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", utc_tm);
 
-        if (elapsedHours > 0)
-            log(true, "%s - elapsed: %uh %um (%s UTC)", op, elapsedHours, remainingMinutes, timestamp);
+        if (elapsedDays > 0)
+            log(true, "%s - elapsed: %ud %uh processed: %lu dirs, %lu files (%s UTC)", op, elapsedDays, remainingHours, processedDirs.load(), processedFiles.load(), timestamp);
+        else if (elapsedHours > 0)
+            log(true, "%s - elapsed: %uh %um processed: %lu dirs, %lu files (%s UTC)", op, elapsedHours, remainingMinutes, processedDirs.load(), processedFiles.load(), timestamp);
         else
-            log(true, "%s - elapsed: %um (%s UTC)", op, elapsedMinutes, timestamp);
+            log(true, "%s - elapsed: %um processed: %lu dirs, %lu files (%s UTC)", op, elapsedMinutes, processedDirs.load(), processedFiles.load(), timestamp);
 
         heartbeatTimer.updatePeriod();
     }
@@ -1178,6 +1186,7 @@ public:
                 if (!fileFiltered(path.str(),dt)) {
                     try {
                         pdir->addFile(drv,fname.str(),fsz,dt,node,ep,*grp,numnodes,&mem);
+                        processedFiles++;
                     }
                     catch (IException *e) {
                         StringBuffer filepath, errMsg;
@@ -1198,9 +1207,11 @@ public:
                 return false;
             path.setLength(dsz);
         }
-        pdir->addNodeStats(node,drv,nsz);
-        return true;
 
+        pdir->addNodeStats(node,drv,nsz);
+        processedDirs++;
+
+        return true;
     }
 
     bool scanDirectories(bool &abort, unsigned numThreads)
@@ -1801,12 +1812,14 @@ public:
                 error(filepath.str(),"listOrphans Error processing file : %s",e->errorMessage(errMsg).str());
                 e->Release();
             }
+            processedFiles++;
             if (abort)
                 return;
             file = d->files.next(i);
         }
         basedir.setLength(bds);
         scope.setLength(scopeLen);
+        processedDirs++;
     }
 
     static int compareDirs(IInterface * const *t1,IInterface * const *t2)

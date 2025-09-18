@@ -20,6 +20,8 @@
 
 #include "espthread.hpp"
 #include "espcfg.ipp"
+#include "datamaskingengine.hpp"
+#include "datamaskingplugin.hpp"
 
 typedef ISocket * isockp;
 
@@ -67,6 +69,7 @@ private:
     unsigned countCacheClients = 0;
     MapStringToMyClass<IEspCache> cacheClientMap;
     Owned<IPropertyTree> applicationConfig;
+    Owned<IDataMaskingEngine> dataMaskEngine;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -189,6 +192,13 @@ public:
             VALOG(MCdebugInfo, fmt, args);
             va_end(args);
         }
+    }
+
+    void initializeDataMaskingEngine(const char* dataMaskConfig);
+
+    virtual IDataMaskingEngine *queryDataMaskingEngine() override
+    {
+        return dataMaskEngine.get();
     }
 
 //IEspServer
