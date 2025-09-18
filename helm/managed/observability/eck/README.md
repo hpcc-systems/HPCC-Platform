@@ -80,7 +80,7 @@ HPCC-Platform/helm/managed/observability/eck> helm install eck-apm .
 
 ### 4. Configure HPCC to Export Traces
 
-Inject the sample [jtrace configuration values file](./otlp-http-collector-k8s.yaml) onto your HPCC cluster.
+Inject the sample [jtrace configuration values file](https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/managed/observability/eck/otlp-http-collector-k8s.yaml) onto your HPCC cluster.
 
 Details on HPCC trace configuration can be found in [helm/examples/tracing/README](https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/examples/tracing/README.md).
 

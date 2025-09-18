@@ -470,7 +470,7 @@ Activities page:
 ![img.png](BaseTableTest1.png)
 ![img.png](BaseTableTest2.png)
 
-The BaseTableTest<T> class is designed as a superclass for testing web pages containing tabular data. It is intended for use in automated tests,
+The BaseTableTest\<T>\ class is designed as a superclass for testing web pages containing tabular data. It is intended for use in automated tests,
 particularly for pages like workunits, files, and queries, and includes functionality for testing their respective details pages.  
 It defines methods for common functionalities like:
 
