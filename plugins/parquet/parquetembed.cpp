@@ -15,6 +15,7 @@
 #include "arrow/result.h"
 #include "parquet/arrow/schema.h"
 #include "arrow/io/api.h"
+#include "arrow/compute/initialize.h"
 #include <cmath>
 
 #include "rtlembed.hpp"
@@ -2429,6 +2430,11 @@ extern DECL_EXPORT bool syntaxCheck(const char *script)
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
+    auto st = arrow::compute::Initialize();
+    if (!st.ok())
+    {
+        throw MakeStringException(-1, "Failed to initialize Arrow compute");
+    }
     return true;
 }
 
