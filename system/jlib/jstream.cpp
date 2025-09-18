@@ -530,11 +530,10 @@ extern jlib_decl std::pair<const char *, const char *> peekKeyValuePair(IBuffere
     }
 }
 
-extern jlib_decl bool peekStringList(std::vector<const char *> matches, IBufferedSerialInputStream & in, size32_t & len)
+const char * peekStringList(std::vector<size32_t> & matchOffsets, IBufferedSerialInputStream & in, size32_t & len)
 {
     size32_t scanned = 0;
     size32_t startNext = 0;
-    std::vector<size32_t> matchOffsets;
     for (;;)
     {
         size32_t got;
@@ -545,11 +544,9 @@ extern jlib_decl bool peekStringList(std::vector<const char *> matches, IBuffere
             if (startNext == scanned)
             {
                 //End of file, but the last string was null terminated...
-                for (unsigned match : matchOffsets)
-                    matches.push_back(start + match);
-                return true;
+                return start;
             }
-            return false;
+            return nullptr;
         }
 
         for (size32_t offset = scanned; offset < got; offset++)
@@ -559,10 +556,9 @@ extern jlib_decl bool peekStringList(std::vector<const char *> matches, IBuffere
             {
                 if (offset == startNext)
                 {
-                    for (unsigned match : matchOffsets)
-                        matches.push_back(start + match);
+                    //A zero length string terminates the list - include the empty string in the length
                     len = offset + 1;
-                    return true;
+                    return start;
                 }
                 matchOffsets.push_back(startNext);
                 startNext = offset + 1;
