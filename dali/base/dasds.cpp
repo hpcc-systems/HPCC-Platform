@@ -5752,9 +5752,8 @@ public:
         catch (DALI_CATCHALL)
         {
             iFile->remove();
-            VStringBuffer errMsg("Unknown exception - Error saving %s store", isBinary ? "binary" : "XML");
-            DISLOG("%s", errMsg.str());
-            throw MakeStringException(0, "%s", errMsg.str());
+            DISLOG("%s", VStringBuffer("Unknown exception - Error saving %s store", isBinary ? "binary" : "XML").str());
+            throw;
         }
 
         return iFile.getClear();
