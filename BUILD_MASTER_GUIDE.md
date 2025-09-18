@@ -16,7 +16,29 @@ This comprehensive guide provides step-by-step instructions for building the HPC
 
 ## Quick Start
 
-For experienced developers who want to get started quickly:
+### Automated Build Verification
+
+For the fastest way to verify your system and test the build process:
+
+```bash
+# Clone the repository
+git clone --recurse-submodules https://github.com/hpcc-systems/HPCC-Platform.git
+cd HPCC-Platform
+
+# Run the automated verification script
+./verify-build-setup.sh
+```
+
+The verification script will:
+- Check all prerequisites
+- Initialize submodules
+- Configure a test build (client tools only)
+- Verify the build system works
+- Provide next steps
+
+### Manual Quick Start
+
+For experienced developers who want to configure manually:
 
 ```bash
 # 1. Install prerequisites (Ubuntu/Debian example)
@@ -26,7 +48,7 @@ sudo apt-get install cmake ninja-build git bison flex build-essential binutils-d
 git clone --recurse-submodules https://github.com/hpcc-systems/HPCC-Platform.git
 cd HPCC-Platform
 
-# 3. Configure the build
+# 3. Configure the build (first-time setup can take 15-30 minutes)
 mkdir build
 cd build
 cmake -B . -S .. -G Ninja -DCONTAINERIZED=OFF -DUSE_OPTIONAL=OFF -DUSE_CPPUNIT=ON -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON -DCMAKE_BUILD_TYPE=Debug
@@ -37,6 +59,8 @@ cmake --build . --parallel
 # 5. Create package
 cmake --build . --target package
 ```
+
+**Note:** The first-time build configuration downloads and compiles many dependencies via vcpkg, which can take 15-30 minutes depending on your system and network connection.
 
 ## Prerequisites
 
@@ -123,6 +147,16 @@ git submodule status
 
 ## Build Configuration
 
+HPCC Platform uses [vcpkg](https://vcpkg.io/) for cross-platform dependency management. On first build, vcpkg will automatically download and compile all required dependencies, which can take 15-30 minutes depending on your system.
+
+### Understanding the Build Process
+
+The HPCC Platform build process consists of three main phases:
+
+1. **vcpkg Bootstrap** (first-time only): Downloads and builds the vcpkg package manager
+2. **Dependency Resolution** (first-time or when dependencies change): Downloads and compiles all third-party libraries
+3. **HPCC Build**: Compiles the actual HPCC Platform code
+
 ### Recommended Development Configuration
 
 Create a build directory and configure with CMake:
@@ -197,6 +231,18 @@ Available plugins:
 
 ## Building the Platform
 
+### Build Time Expectations
+
+Build times vary significantly based on configuration and system specifications:
+
+| Build Type | First Time | Subsequent Builds | Notes |
+|------------|------------|-------------------|-------|
+| Client Tools Only | 15-30 minutes | 2-5 minutes | Includes vcpkg setup time |
+| Full Platform (Debug) | 45-90 minutes | 10-20 minutes | All components and plugins |
+| Full Platform (Release) | 30-60 minutes | 5-15 minutes | Optimized builds are faster |
+
+**Note**: First-time builds include vcpkg dependency compilation which adds significant time.
+
 ### Using CMake Build Command (Recommended)
 
 ```bash
@@ -265,6 +311,21 @@ sudo dnf localinstall hpccsystems-platform-community-*.rpm
 ```
 
 ## Testing Your Build
+
+### Quick Verification
+
+Use the provided verification script to test your build setup:
+
+```bash
+# From the HPCC Platform source directory
+./verify-build-setup.sh
+```
+
+This script will:
+- Verify all prerequisites are installed
+- Test CMake configuration
+- Build a small component to verify the toolchain works
+- Provide guidance for next steps
 
 ### Unit Tests
 
@@ -380,6 +441,19 @@ cmake --build . --target docs
 ## Troubleshooting
 
 ### Common Issues
+
+#### vcpkg Configuration Takes Too Long
+The initial vcpkg setup can take 15-45 minutes depending on your internet connection and system performance. If it appears to hang:
+
+1. **Check progress**: Look in `build/vcpkg_buildtrees/` for active compilation logs
+2. **Monitor network**: vcpkg downloads many packages from GitHub and other sources  
+3. **Increase timeout**: Use `timeout 3600` (1 hour) for cmake on slower systems
+4. **Resume after interruption**: Re-run the same cmake command; vcpkg will resume where it left off
+
+```bash
+# Example with extended timeout
+timeout 3600 cmake -B . -S .. -G Ninja [your options]
+```
 
 #### Missing Dependencies
 If CMake configuration fails due to missing dependencies:
