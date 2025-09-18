@@ -5,7 +5,7 @@ import nlsHPCC from "src/nlsHPCC";
 
 export type FlatTreeItem = HeadlessFlatTreeItemProps & { content_parens?: string };
 
-const TreeIcon: React.FC<{ itemType: "branch" | "leaf"; isOpen: boolean; isSelected: boolean }> = React.memo(({ itemType, isOpen, isSelected }) => {
+const TreeIcon: React.FunctionComponent<{ itemType: "branch" | "leaf"; isOpen: boolean; isSelected: boolean }> = React.memo(({ itemType, isOpen, isSelected }) => {
     if (itemType === "branch") {
         if (isOpen) {
             return isSelected ? <FolderOpen20Filled /> : <FolderOpen20Regular />;
@@ -26,7 +26,7 @@ interface FlatTreeExProps {
     setOpenTreeValues?: React.Dispatch<React.SetStateAction<Set<TreeItemValue>>>;
 }
 
-export const FlatTreeEx: React.FC<FlatTreeExProps> = React.memo(({
+export const FlatTreeEx: React.FunctionComponent<FlatTreeExProps> = React.memo(({
     treeItems = [],
     selectedTreeValue,
     checkedTreeValues,

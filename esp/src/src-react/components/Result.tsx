@@ -226,6 +226,7 @@ interface ResultProps {
     logicalFile?: string;
     cluster?: string;
     filter?: { [key: string]: any };
+    hasEcl?: boolean;
 }
 
 const emptyFilter: { [key: string]: any } = {};
@@ -235,7 +236,8 @@ export const Result: React.FunctionComponent<ResultProps> = ({
     resultName,
     logicalFile,
     cluster,
-    filter = emptyFilter
+    filter = emptyFilter,
+    hasEcl
 }) => {
 
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
@@ -310,6 +312,18 @@ export const Result: React.FunctionComponent<ResultProps> = ({
         }
         return [filterFields, hasHtml];
     }, [FilterFields, filter]);
+
+    React.useEffect(() => {
+        if (logicalFile) {
+            if (hasEcl === false) {
+                setMessageBarContent({ type: MessageBarType.warning, message: nlsHPCC.ECLLayoutNotAvailable });
+            } else {
+                if (messageBarContent?.type === MessageBarType.warning && messageBarContent?.message === nlsHPCC.ECLLayoutNotAvailable) {
+                    setMessageBarContent(undefined);
+                }
+            }
+        }
+    }, [hasEcl, logicalFile, messageBarContent?.message, messageBarContent?.type]);
 
     const securityMessageHTML = React.useMemo(() => nlsHPCC.SecurityMessageHTML.split("{__placeholder__}").join(wu?.Owner ? wu?.Owner : nlsHPCC.Unknown).split("\n"), [wu?.Owner]);
     const [ViewHTMLConfirm, showViewHTMLConfirm] = useConfirm({

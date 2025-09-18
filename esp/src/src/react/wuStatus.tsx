@@ -1,8 +1,5 @@
 import * as React from "react";
-import { ThemeProvider } from "@fluentui/react";
-import { FluentProvider } from "@fluentui/react-components";
 import { Workunit, WUStateID } from "@hpcc-js/comms";
-import { useUserTheme } from "../../src-react/hooks/theme";
 import { StepProps, Stepper } from "../../src-react/components/controls/Stepper";
 import nlsHPCC from "../nlsHPCC";
 
@@ -70,7 +67,6 @@ export const WUStatus: React.FunctionComponent<WUStatus> = ({
     wuid
 }) => {
     const [activeStep, setActiveStep] = React.useState(-1);
-    const { theme, themeV9 } = useUserTheme();
     const [failed, setFailed] = React.useState(false);
     const [stepProps, setStepProps] = React.useState<StepProps[]>();
     const [steps, setSteps] = React.useState([]);
@@ -102,9 +98,5 @@ export const WUStatus: React.FunctionComponent<WUStatus> = ({
         }));
     }, [activeStep, failed, steps]);
 
-    return <FluentProvider theme={themeV9} >
-        <ThemeProvider theme={theme}>
-            <Stepper activeStep={activeStep} steps={stepProps}></Stepper>
-        </ThemeProvider>
-    </FluentProvider>;
+    return <Stepper activeStep={activeStep} steps={stepProps}></Stepper>;
 };
