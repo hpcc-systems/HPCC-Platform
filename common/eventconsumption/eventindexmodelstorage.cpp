@@ -40,50 +40,31 @@ const Storage::Plane& Storage::File::lookupPlane(__uint64 nodeKind) const
 
 void Storage::PageCache::configure(const IPropertyTree& config)
 {
-    readTime = __uint64(config.getPropInt64("@cache-read", readTime));
-    if (readTime)
-        capacity = __uint64(config.getPropInt64("@cache-capacity", capacity));
+    readTime = __uint64(config.getPropInt64("@cacheReadTime", readTime));
+    if (enabled())
+        IndexMRUCache::configure(config);
 }
 
 __uint64 Storage::PageCache::getReadTimeIfExists(const IndexHashKey& key)
 {
-    if (!readTime)
-        return 0;
-    Hash::iterator hashIt = hash.find(key);
-    if (hash.end() == hashIt)
-        return 0;
-    mru.moveToHead(hashIt->second.get());
-    return readTime;
+    if (exists(key))
+        return readTime;
+    return 0;
 }
 
-bool Storage::PageCache::insert(const IndexHashKey& key)
+bool Storage::PageCache::enabled() const
 {
-    if (!readTime)
-        return false;
-    if (getReadTimeIfExists(key))
-        return false;
-    reserve(DefaultPageSize);
-    std::unique_ptr<Value> entry = std::make_unique<Value>(key);
-    mru.enqueueHead(entry.get());
-    hash[key].swap(entry);
-    used += DefaultPageSize;
-    return true;
+    return (readTime > 0);
 }
 
-void Storage::PageCache::reserve(__uint64 request)
+__uint64 Storage::PageCache::size(const IndexHashKey&)
 {
-    if (!capacity)
-        return;
-    if (capacity < request)
-        throw makeStringExceptionV(-1, "page cache capacity %llu less than reserved page request %llu", capacity, request);
-    while ((capacity - used) < request)
-    {
-        Value* dead = mru.dequeueTail();
-        if (!dead)
-            throw makeStringException(-1, "page cache MRU unexpectedly empty");
-        hash.erase(dead->key);
-        used -= request;
-    }
+    return DefaultPageSize;
+}
+
+const char* Storage::PageCache::description() const
+{
+    return "page cache";
 }
 
 void Storage::configure(const IPropertyTree& config)
@@ -119,7 +100,8 @@ void Storage::useAndDescribePage(__uint64 fileId, __uint64 offset, __uint64 node
         page.readTime = plane.readTime;
         // MORE: if multiple pages should be loaded, add all to the cache, with the requested page
         // added last.
-        (void)cache.insert(fileId, offset);
+        IndexMRUNullCacheReporter nullreporter;
+        (void)cache.insert(fileId, offset, nullreporter);
     }
 }
 
@@ -229,6 +211,8 @@ const Storage::File& Storage::lookupFile(__uint64 fileId) const
 
 #include "eventunittests.hpp"
 
+static IndexMRUNullCacheReporter nullReporter;
+
 class IndexModelStorageTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(IndexModelStorageTest);
@@ -251,8 +235,8 @@ public:
     {
         START_TEST
         constexpr const char* configText =
-R"!!!(cache-capacity: 16384
-cache-read: 100
+R"!!!(cacheCapacity: 16384
+cacheReadTime: 100
 )!!!";
         Storage::PageCache cache;
         Owned<IPropertyTree> configTree = createPTreeFromYAMLString(configText);
@@ -260,15 +244,15 @@ cache-read: 100
         CPPUNIT_ASSERT_EQUAL(100ULL, cache.readTime);
         CPPUNIT_ASSERT_EQUAL(16384ULL, cache.capacity);
         CPPUNIT_ASSERT(!cache.getReadTimeIfExists(1, 0));
-        CPPUNIT_ASSERT(cache.insert(1, 0));
+        CPPUNIT_ASSERT(cache.insert(1, 0, nullReporter));
         CPPUNIT_ASSERT_EQUAL(100ULL, cache.getReadTimeIfExists(1, 0));
-        CPPUNIT_ASSERT(!cache.insert(1, 0));
+        CPPUNIT_ASSERT(!cache.insert(1, 0, nullReporter));
         CPPUNIT_ASSERT_EQUAL(100ULL, cache.getReadTimeIfExists(1, 0));
-        CPPUNIT_ASSERT(cache.insert(1, 8192));
+        CPPUNIT_ASSERT(cache.insert(1, 8192, nullReporter));
         CPPUNIT_ASSERT_EQUAL(100ULL, cache.getReadTimeIfExists(1, 0));
         CPPUNIT_ASSERT_EQUAL(100ULL, cache.getReadTimeIfExists(1, 8192));
         CPPUNIT_ASSERT_EQUAL(0ULL, cache.getReadTimeIfExists(1, 16384));
-        CPPUNIT_ASSERT(cache.insert(1, 16384));
+        CPPUNIT_ASSERT(cache.insert(1, 16384, nullReporter));
         CPPUNIT_ASSERT_EQUAL(0ULL, cache.getReadTimeIfExists(1, 0));
         CPPUNIT_ASSERT_EQUAL(100ULL, cache.getReadTimeIfExists(1, 8192));
         CPPUNIT_ASSERT_EQUAL(100ULL, cache.getReadTimeIfExists(1, 16384));
@@ -278,12 +262,12 @@ cache-read: 100
     void testUnboundedPageCache()
     {
         START_TEST
-        constexpr const char* configText = "<storage cache-read=\"100\"/>";
+        constexpr const char* configText = "<storage cacheReadTime=\"100\"/>";
         Owned<IPropertyTree> configTree = createTestConfiguration(configText);
         Storage::PageCache cache;
         cache.configure(*configTree);
         for (size_t idx = 0, offset = 0; idx < 1'000'000; idx++, offset += 8192)
-            CPPUNIT_ASSERT(cache.insert(1, offset));
+            CPPUNIT_ASSERT(cache.insert(1, offset, nullReporter));
         CPPUNIT_ASSERT_EQUAL(100ULL, cache.getReadTimeIfExists(1, cache.mru.tail()->key.offset));
         END_TEST
     }
@@ -291,12 +275,12 @@ cache-read: 100
     void testLargePageCache()
     {
         START_TEST
-        constexpr const char* configText = "<storage cache-read=\"100\" cache-capacity=\"4096000000\"/>";
+        constexpr const char* configText = "<storage cacheReadTime=\"100\" cacheCapacity=\"4096000000\"/>";
         Owned<IPropertyTree> configTree = createTestConfiguration(configText);
         Storage::PageCache cache;
         cache.configure(*configTree);
         for (size_t idx = 0, offset = 0; idx < 1'000'000; idx++, offset += 8192)
-            CPPUNIT_ASSERT(cache.insert(1, offset));
+            CPPUNIT_ASSERT(cache.insert(1, offset, nullReporter));
         CPPUNIT_ASSERT_EQUAL(100ULL, cache.getReadTimeIfExists(1, cache.mru.tail()->key.offset));
         END_TEST
     }
@@ -306,13 +290,13 @@ cache-read: 100
     void setupHugePageCache()
     {
         START_TEST
-        constexpr const char* configText = "<storage cache-read=\"100\" cache-capacity=\"327680000000\"/>";
+        constexpr const char* configText = "<storage cacheReadTime=\"100\" cacheCapacity=\"327680000000\"/>";
         Owned<IPropertyTree> configTree = createTestConfiguration(configText);
         hugeCache.reset(new Storage::PageCache);
         hugeCache->configure(*configTree);
         __uint64 start = get_cycles_now();
         for (size_t idx = 0, offset = 0; idx < 40'000'001; idx++, offset += 8192)
-            CPPUNIT_ASSERT(hugeCache->insert(1, offset));
+            CPPUNIT_ASSERT(hugeCache->insert(1, offset, nullReporter));
         __uint64 end = cycle_to_nanosec(get_cycles_now() - start);
         DBGLOG("populated 40,000,001 page cache entries in %lluns", end);
         CPPUNIT_ASSERT_EQUAL(8'192ULL, hugeCache->mru.tail()->key.offset);

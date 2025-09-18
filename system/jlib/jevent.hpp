@@ -357,6 +357,7 @@ public:
 public:
     CEvent();
     void reset(EventType _type);
+    void transform(EventType newType);
 
 private:
     const std::initializer_list<EventAttr>& queryOrderedAttributeIds() const;
