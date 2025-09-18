@@ -16,7 +16,6 @@
 ############################################################################## */
 
 #include "platform.h"
-#include <liburing.h>
 
 #include "jiouring.hpp"
 #include "jiface.hpp"
@@ -25,6 +24,8 @@
 #include "jlog.hpp"
 
 #if defined(__linux__) || defined (__FreeBSD__)
+
+#include <liburing.h>
 
 //------------------------------------------------------------------------------
 
@@ -46,8 +47,9 @@ public:
     virtual void terminate() override;
 
     virtual void enqueueCallbackCommand(IAsyncCallback & callback) override;
-    virtual void enqueueCallbackCommands(std::vector<IAsyncCallback *> callbacks);
-    virtual void enqueueSocketWrite(ISocket * socket, size32_t len, const void * buf, IAsyncCallback & callback) override;
+    virtual void enqueueCallbackCommands(const std::vector<IAsyncCallback *> & callbacks) override;
+    virtual void enqueueSocketConnect(ISocket * socket, const struct sockaddr * addr, size32_t addrlen, IAsyncCallback & callback) override;
+    virtual void enqueueSocketWrite(ISocket * socket, const void * buf, size32_t len, IAsyncCallback & callback) override;
 
     virtual void lockMemory(const void * buffer, size_t len) override;
 
@@ -59,10 +61,11 @@ protected:
 
     io_uring_sqe * allocRequest(CLeavableCriticalBlock & activeBlock);
     bool isFixedBuffer(size32_t len, const void * buf) const;
+    void processCompletions();
 
 protected:
-    CriticalSection crit;
-    bool isMultiThreaded{true};             // If false, the critical section is not used
+    CriticalSection requestCrit;        // Protect against queuing two operations at the same time
+    bool isMultiThreaded{true};         // If false, the critical section is not used
     bool alive{false};
     std::atomic<bool> aborting{false};
     io_uring ring;
@@ -137,7 +140,7 @@ bool URingProcessor::dequeueCompletion(CompletionResponse & response)
 
 void URingProcessor::enqueueCallbackCommand(IAsyncCallback & callback)
 {
-    CLeavableCriticalBlock block(crit, isMultiThreaded);
+    CLeavableCriticalBlock block(requestCrit, isMultiThreaded);
 
     io_uring_sqe * sqe = allocRequest(block);
     /* Setup a nop operation - should be called back immediately */
@@ -148,9 +151,9 @@ void URingProcessor::enqueueCallbackCommand(IAsyncCallback & callback)
     submitRequests();
 }
 
-void URingProcessor::enqueueCallbackCommands(std::vector<IAsyncCallback *> callbacks)
+void URingProcessor::enqueueCallbackCommands(const std::vector<IAsyncCallback *> & callbacks)
 {
-    CLeavableCriticalBlock block(crit, isMultiThreaded);
+    CLeavableCriticalBlock block(requestCrit, isMultiThreaded);
 
     for (IAsyncCallback * callback : callbacks)
     {
@@ -165,9 +168,28 @@ void URingProcessor::enqueueCallbackCommands(std::vector<IAsyncCallback *> callb
     submitRequests();
 }
 
-void URingProcessor::enqueueSocketWrite(ISocket * socket, size32_t len, const void * buf, IAsyncCallback & callback)
+
+void URingProcessor::enqueueSocketConnect(ISocket * socket, const struct sockaddr * addr, size32_t addrlen, IAsyncCallback & callback)
 {
-    CLeavableCriticalBlock block(crit, isMultiThreaded);
+    CLeavableCriticalBlock block(requestCrit, isMultiThreaded);
+
+    io_uring_sqe * sqe = allocRequest(block);
+
+    int socketfd = socket->OShandle();
+    //Need to execute some contents of pre_connect
+    //Need to add a method inside ISocket that creates an object to manage the connection
+    //and calls the final call back once the socket connected
+    io_uring_prep_connect(sqe, socketfd, addr, addrlen);
+
+    io_uring_sqe_set_data(sqe, &callback);
+    //On completion, need to process the equivalent of ISocket::post_connect()
+
+    submitRequests();
+}
+
+void URingProcessor::enqueueSocketWrite(ISocket * socket, const void * buf, size32_t len, IAsyncCallback & callback)
+{
+    CLeavableCriticalBlock block(requestCrit, isMultiThreaded);
 
     io_uring_sqe * sqe = allocRequest(block);
     offset_t offset = 0;
@@ -229,6 +251,17 @@ void URingProcessor::lockMemory(const void * buffer, size_t len)
         OERRLOG("Failed to register memory with io_uring: error code %d", ret);
 }
 
+void URingProcessor::processCompletions()
+{
+    while (io_uring_cq_ready(&ring) != 0)
+    {
+        CompletionResponse response;
+        if (dequeueCompletion(response))
+            response.callback->onAsyncComplete(response.result);
+    }
+}
+
+
 void URingProcessor::terminate()
 {
     if (!alive)
@@ -237,6 +270,7 @@ void URingProcessor::terminate()
     alive = false;
     io_uring_queue_exit(&ring);
 }
+
 
 //------------------------------------------------------------------------------
 
@@ -287,6 +321,7 @@ public:
 
     virtual void checkForCompletions() override
     {
+        //This is performed on another thread, adding a check on a different thread will introduce thread contention
     }
 
     virtual void submitRequests() override
@@ -317,7 +352,7 @@ protected:
 class URingUnthreadedProcessor final : public URingProcessor
 {
 public:
-    URingUnthreadedProcessor(const IPropertyTree * config) : URingProcessor(config), completionThread(*this)
+    URingUnthreadedProcessor(const IPropertyTree * config) : URingProcessor(config)
     {
     }
 
@@ -333,20 +368,6 @@ public:
         //Then check for all existing completions
         processCompletions();
     }
-
-protected:
-    void processCompletions()
-    {
-        while (io_uring_cq_ready(&ring) != 0)
-        {
-            CompletionResponse response;
-            if (dequeueCompletion(response))
-                response.callback->onAsyncComplete(response.result);
-        }
-    }
-
-protected:
-    URingCompletionThread completionThread;
 };
 
 

@@ -32,6 +32,8 @@
 #include "jthread.hpp"
 #include "jqueue.tpp"
 #include "jtime.hpp"
+#include "jiouring.hpp"
+
 #include <thread>
 #include <list>
 #include <vector>
@@ -166,46 +168,90 @@ struct HashSocketEndpoint
 };
 
 
-interface IAsyncCallback;
-interface IAsyncProcessor;
-
 class CTcpSender;
-class SECURESOCKET_API CSocketTarget : public CInterface
+// Support writing data to a single target
+// Data can either be written synchronously using the write() function or asynchronously using the writeAsync() function
+//
+// Asynchronous operation uses a state machine to process connecting and writing.
+// Because write() (and writev2 etc.) can sometimes write less data than requested, writes to the same socket need
+// to be serialized.  If there is an active write in progress the next write is queued.  If too many requests are
+// queued then the thread will block and wait for space to become available.
+class SECURESOCKET_API CSocketTarget : public CInterface, public IAsyncCallback
 {
+    static constexpr unsigned maxQueueDepth = 40;
+
+    enum class State
+    {
+        Unconnected,    // Object has been created
+        Connecting,     // initial connection
+        Reconnecting,   // Connection has been lost and we are trying to reconnect
+        Connected,      // Connection has been established, no write in progress
+        Writing,        // Data is being written to the socket
+        ConnectWaiting, // Failed to connect - trying again later
+        Aborting        // Abort any pending transactions - program is terminating
+    };
+    struct WriteRequest
+    {
+        size_t len;
+        const void * data;
+    };
 public:
     CSocketTarget(CTcpSender & _sender, const SocketEndpoint & _ep);
 
-    void connectAsync(IAsyncProcessor * processor);
+    size32_t writeSync(const void * data, size32_t len);
+    void writeAsync(const void * data, size32_t len, void * ownedBuffer); // calls writeSync if no async processor is set
 
-    size32_t write(const void * data, size32_t len);
-    void writeAsync(IAsyncProcessor * processor, size32_t len, const void * data, IAsyncCallback & callback);
+protected:
+    inline unsigned wrapIndex(unsigned index) { return index < maxQueueDepth ? index : index - maxQueueDepth; }
 
-public:
     ISocket * getSocket();      // Thread safe
     ISocket * querySocket();    // Must be called in a critical section
+
+    void connect();             // Synchronous connect
+    unsigned dropPendingRequests();
+    void startAsyncWrite();
+    void startAsyncConnect();
+
+    void waitForRequestSpace(CLeavableCriticalBlock & block);
+
+// interface IAsyncCallback
+    virtual void onAsyncComplete(int result) override;
+
 
 protected:
     CriticalSection crit;
     CTcpSender & sender;
     const SocketEndpoint ep;
     Owned<ISocket> socket;
+    unsigned threadsWaiting{0};
+    unsigned numConnects{0};
+    Semaphore waitSem;
+    State state{State::Unconnected};
+    void * buffers[maxQueueDepth];
+    WriteRequest requests[maxQueueDepth];
+    unsigned headRequestIndex = 0;
+    unsigned numRequests = 0;
 };
 
 // MORE: This needs extending so that the items in the hash table know their ip address,
 // and can automatically reconnect if they are disconnected.
 class SECURESOCKET_API CTcpSender
 {
+    friend class CSocketTarget;
 public:
     CTcpSender(bool _lowLatency) : lowLatency(_lowLatency) {}
 
     CSocketTarget * queryWorkerSocket(const SocketEndpoint &ep);
+    void setAsyncProcessor(IAsyncProcessor * _asyncSender) { asyncSender.set(_asyncSender); }
 
-public:
-    const bool lowLatency;
+protected:
+    virtual void releaseBuffer(void * buffer);      // Default implementation throws an exception - i.e. aync send is not supported
 
 protected:
     CriticalSection crit;
-    std::unordered_map<SocketEndpoint, Owned<CSocketTarget>, HashSocketEndpoint > workerSockets;
+    std::unordered_map<SocketEndpoint, Owned<CSocketTarget>, HashSocketEndpoint> workerSockets;
+    Owned<IAsyncProcessor> asyncSender;
+    const bool lowLatency;
 };
 
 #endif
