@@ -1,12 +1,12 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, IDropdownOption, keyframes, mergeStyleSets, PrimaryButton, Stack } from "@fluentui/react";
-import { ProgressRingDotsIcon } from "@fluentui/react-icons-mdl2";
+import { Checkbox, DefaultButton, IDropdownOption, mergeStyleSets, PrimaryButton, Stack } from "@fluentui/react";
 import { FileSprayService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
 import { TargetDropzoneTextField, TargetFolderTextField, TargetServerTextField } from "../Fields";
 import { joinPath } from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
+import { useUserTheme } from "../../../hooks/theme";
 import { MessageBox } from "../../../layouts/MessageBox";
 import { debounce } from "../../../util/throttle";
 import * as FormStyles from "./styles";
@@ -61,14 +61,33 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
     const [os, setOs] = React.useState<number>();
 
     const [submitDisabled, setSubmitDisabled] = React.useState(false);
+    const [uploadPct, setUploadPct] = React.useState<number>(0);
 
     const { handleSubmit, control, reset } = useForm<FileListFormValues>({ defaultValues });
+    const { theme } = useUserTheme();
+
+    const beforeUnloadHandler = React.useCallback((evt: BeforeUnloadEvent) => {
+        evt.preventDefault();
+        return nlsHPCC.Uploading;
+    }, []);
+
+    const addBeforeUnload = React.useCallback(() => {
+        window.addEventListener("beforeunload", beforeUnloadHandler);
+    }, [beforeUnloadHandler]);
+
+    const removeBeforeUnload = React.useCallback(() => {
+        window.removeEventListener("beforeunload", beforeUnloadHandler);
+    }, [beforeUnloadHandler]);
 
     const closeForm = React.useCallback(() => {
         setShowForm(false);
+        removeBeforeUnload();
+        setUploadPct(0);
         const uploaderBtn = document.querySelector("#uploaderBtn");
-        uploaderBtn["value"] = null;
-    }, [setShowForm]);
+        if (uploaderBtn) {
+            uploaderBtn["value"] = null;
+        }
+    }, [removeBeforeUnload, setShowForm]);
 
     const doSubmit = React.useCallback((data) => {
         const uploadFiles = (folderPath, selection) => {
@@ -79,14 +98,27 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
             const uploadUrl = `/FileSpray/UploadFile.json?upload_&rawxml_=1&NetAddress=${machine}&OS=${os}&Path=${folderPath}&DropZoneName=${data.dropzone}`;
 
             setSubmitDisabled(true);
+            setUploadPct(0);
 
-            fetch(uploadUrl, {
-                method: "POST",
-                body: formData,
-            })
-                .then(response => response.json())
-                .then(response => {
-                    setSubmitDisabled(false);
+            // have to use XMLHttpRequest over native fetch to capture upload progress
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", uploadUrl, true);
+
+            xhr.upload.onprogress = (evt) => {
+                if (evt.lengthComputable) {
+                    const pct = Math.round((evt.loaded / evt.total) * 100);
+                    setUploadPct(pct);
+                    if (pct < 100) {
+                        addBeforeUnload();
+                    }
+                }
+            };
+
+            xhr.onload = () => {
+                removeBeforeUnload();
+                setSubmitDisabled(false);
+                try {
+                    const response = JSON.parse(xhr.responseText || "{}");
                     const exceptions = response?.Exceptions?.Exception ?? [];
                     if (exceptions.length > 0) {
                         logger.error(exceptions[0]?.Message ?? nlsHPCC.ErrorUploadingFile);
@@ -102,8 +134,21 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                         }
                         reset(defaultValues);
                     }
-                })
-                .catch(err => logger.error(err));
+                } catch (evt) {
+                    logger.error(nlsHPCC.ErrorUploadingFile);
+                } finally {
+                    setUploadPct(0);
+                }
+            };
+
+            xhr.onerror = () => {
+                removeBeforeUnload();
+                setSubmitDisabled(false);
+                logger.error(nlsHPCC.ErrorUploadingFile);
+                setUploadPct(0);
+            };
+
+            xhr.send(formData);
         };
 
         handleSubmit(
@@ -139,39 +184,45 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
         )();
     }, [closeForm, handleSubmit, machine, onSubmit, os, pathSep, reset, selection]);
 
-    const progressIconSpin = keyframes({
-        "0%": {
-            transform: "rotate(0deg)"
-        },
-        "50%": {
-            transform: "rotate(180deg)"
-        },
-        "100%": {
-            transform: "rotate(360deg)"
-        }
-    });
-
     const componentStyles = mergeStyleSets(
         FormStyles.componentStyles,
         {
-            container: {
-                minWidth: formMinWidth ? formMinWidth : 300,
-            },
+            container: { minWidth: formMinWidth ? formMinWidth : 300 },
             progressMessage: {
                 margin: "10px 10px 8px 0",
+                display: "flex",
+                flexDirection: "column",
+                gap: 4,
+                width: "100%"
             },
-            progressIcon: {
-                animation: `${progressIconSpin} 1.55s infinite linear`
+            progressBarWrapper: {
+                width: "100%",
+                height: 6,
+                background: theme.palette.neutralLight,
+                borderRadius: 3,
+                overflow: "hidden",
+                position: "relative"
             },
+            progressBarFill: {
+                height: "100%",
+                background: theme.palette.themePrimary,
+                transition: "width .2s linear",
+                width: 0
+            }
         }
     );
 
     return <MessageBox title={nlsHPCC.FileUploader} show={showForm} setShow={closeForm}
         footer={<>
             {submitDisabled &&
-                <span className={componentStyles.progressMessage}>
-                    {nlsHPCC.Uploading}... <ProgressRingDotsIcon className={componentStyles.progressIcon} />
-                </span>
+                // TODO: need to figure out why there's some theme clashing issue here
+                // preventing just using a ProgressBar wrapped with a FluentProvider...
+                <div className={componentStyles.progressMessage} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={uploadPct}>
+                    <span>{nlsHPCC.Uploading}... {uploadPct > 0 && `${uploadPct}%`}</span>
+                    <div className={componentStyles.progressBarWrapper}>
+                        <div className={componentStyles.progressBarFill} style={{ width: `${uploadPct}%` }} />
+                    </div>
+                </div>
             }
             <PrimaryButton text={nlsHPCC.Upload} onClick={handleSubmit(doSubmit)} disabled={submitDisabled} />
             {submitDisabled &&
