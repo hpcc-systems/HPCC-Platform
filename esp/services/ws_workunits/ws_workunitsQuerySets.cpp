@@ -3123,7 +3123,7 @@ public:
         StringBuffer fetchedName;
         StringBuffer remoteDfs;
         fetchRemoteWorkunit(NULL, context, srcAddress.str(), NULL, NULL, wuid, fetchedName, xml, dllname, dll, remoteDfs, useSSL);
-        deploySharedObject(*context, wuid, dllname, target, queryName, dll, queryDirectory, xml.str(), false);
+        deploySharedObject(*context, wuid, target, queryName, dll, queryDirectory, xml.str(), false);
 
         SCMStringBuffer existingQueryId;
         queryIdFromQuerySetWuid(destQuerySet, wuid, queryName, existingQueryId);
@@ -3448,7 +3448,7 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
             wuid.set(srcInfo->getWuid());
         if (targetQueryName.isEmpty())
             targetQueryName.set(queryName);
-        deploySharedObject(context, wuid, dllname.str(), target, targetQueryName.get(), dll, queryDirectory.str(), xml.str(), false);
+        deploySharedObject(context, wuid, target, targetQueryName.get(), dll, queryDirectory.str(), xml.str(), false);
     }
     else
     {
