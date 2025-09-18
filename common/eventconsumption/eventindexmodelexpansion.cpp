@@ -101,7 +101,6 @@ bool Expansion::observePage(const CEvent& event)
         return false;
 
     IndexHashKey key(event);
-    bool hit = event.queryBooleanValue(EvAttrInCache);
     if (estimating)
     {
         // Estimated values are pre-calculated. Track the key reference only.
@@ -111,7 +110,7 @@ bool Expansion::observePage(const CEvent& event)
     {
         // Ensure a cache entry exists for the looked up page.
         auto [it, inserted] = actualHistory.insert(std::make_pair(key, ActualValue()));
-        if (hit)
+        if (event.queryType() == EventIndexCacheHit)
         {
             if (inserted)
             {
