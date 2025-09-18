@@ -168,7 +168,7 @@ public:
 // For example, a storage page cache assumes a fixed page size while a node cache relies on
 // expension data for each page.
 //
-// Subclasses must impliement:
+// Subclasses must implement:
 // - enabled: returns true if the cache is configured for use in the model
 // - size: returns the size of a page in bytes
 // - description: returns a string description of the cache for use in error messages

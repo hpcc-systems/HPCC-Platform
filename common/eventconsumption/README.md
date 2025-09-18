@@ -159,7 +159,7 @@ It is worth noting that element attributes follow the title case naming conventi
     memory/
         observed/
             @NodeKind
-            @NFileId
+            @FileId
             @FileOffset
 
 These identify the node and the cache to which it belongs. The node may be the same as or differ from nodes referenced by input events.

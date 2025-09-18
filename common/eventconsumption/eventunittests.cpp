@@ -45,7 +45,7 @@ bool CEventVisitationLinkTester::visitEvent(CEvent& actualEvent)
     for (CEventAttribute& expectAttr : expectEvent.definedAttributes)
     {
         CEventAttribute& actualAttr = actualEvent.queryAttribute(expectAttr.queryId());
-        VStringBuffer msg("%s/%s", queryEventName(expectEvent.queryType()), queryEventAttributeName(expectAttr.queryId()));;
+        VStringBuffer msg("%s/%s", queryEventName(expectEvent.queryType()), queryEventAttributeName(expectAttr.queryId()));
         if (expectAttr.queryState() != actualAttr.queryState())
             CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("%s state mismatch", msg.str()).str(), queryEventAttributeStateName(expectAttr.queryState()), queryEventAttributeStateName(actualAttr.queryState()));
         if (!expectAttr.isAssigned())

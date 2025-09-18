@@ -1353,7 +1353,7 @@ void CEvent::reset(EventType _type)
     type = _type;
     // Reset the attribute states in two steps to avoid searching the event attributes
     // once for each attribute.
-    for (unsigned i=1; i < EvAttrMax; i++)
+    for (unsigned i = EvAttrNone + 1; i < EvAttrMax; i++)
         attributes[i].reset(CEventAttribute::Unused);
     for (EventAttr attr : eventInformation[type].attributes)
         attributes[attr].reset(CEventAttribute::Defined);
@@ -1367,7 +1367,7 @@ void CEvent::transform(EventType newType)
     {
         CEvent tmp;
         tmp.reset(newType);
-        for (unsigned i = 1; i < EvAttrMax; i++)
+        for (unsigned i = EvAttrNone + 1; i < EvAttrMax; i++)
         {
             CEventAttribute& attr = attributes[i];
             if (!(attr.isAssigned() && tmp.isAttribute(attr.queryId())))

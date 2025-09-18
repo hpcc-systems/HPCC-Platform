@@ -162,6 +162,7 @@ protected:
                 simulated.setValue(EvAttrInMemorySize, page.compressed.size);
                 simulated.setValue(EvAttrExpandTime, 0ULL);
                 simulated.setValue(EvAttrReadTime, page.readTime);
+                break;
             default:
                 break;
             }
