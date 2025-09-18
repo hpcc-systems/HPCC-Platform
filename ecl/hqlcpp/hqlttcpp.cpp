@@ -14578,13 +14578,21 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
     HqlExprArray exprs;
     normalizeGraphForGeneration(exprs, query);
 
-    if (options.generateLogicalGraph || options.generateLogicalGraphOnly)
+    if (!options.obfuscateOutput)
     {
-        LogicalGraphCreator creator(wu());
-        creator.createLogicalGraph(exprs);
-        if (options.generateLogicalGraphOnly)
-            return false;
-        curActivityId = creator.queryMaxActivityId();
+        if (options.generateLogicalGraph || options.generateLogicalGraphOnly)
+        {
+            LogicalGraphCreator creator(wu());
+            creator.createLogicalGraph(exprs);
+            if (options.generateLogicalGraphOnly)
+                return false;
+            curActivityId = creator.queryMaxActivityId();
+        }
+    }
+    else if (options.generateLogicalGraphOnly)
+    {
+        // obfuscateOutput and generateLogicalGraphOnly means we don't do anything else
+        return false;
     }
 
     if (options.generateIR)
