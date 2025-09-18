@@ -1,5 +1,6 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Link, mergeStyleSets } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Link } from "@fluentui/react";
+import { makeStyles } from "@fluentui/react-components";
 import { DFUService } from "@hpcc-js/comms";
 import { SizeMe } from "../layouts/SizeMe";
 import * as WsDfu from "src/WsDfu";
@@ -20,6 +21,36 @@ import { Filter } from "./forms/Filter";
 import { RemoteCopy } from "./forms/RemoteCopy";
 import { RenameFile } from "./forms/RenameFile";
 import { ShortVerticalDivider } from "./Common";
+
+const useStyles = makeStyles({
+    outerWrapper: {
+        position: "relative",
+        width: "100%",
+        height: "100%"
+    },
+    innerWrapper: {
+        position: "absolute",
+        width: "100%"
+    },
+    folderContainer: {
+        display: "flex",
+        alignItems: "center"
+    },
+    folderIcon: {
+        fontSize: "1.5em",
+        marginRight: "8px"
+    },
+    breadcrumbWrapper: {
+        padding: "1em 2.5em",
+        borderTopStyle: "solid",
+        borderTopWidth: "1px",
+        borderBottomStyle: "solid",
+        borderBottomWidth: "1px"
+    },
+    breadcrumbSeparator: {
+        margin: "0 0.5em"
+    }
+});
 
 const FilterFields: Fields = {
     "ScopeName": { type: "string", label: nlsHPCC.Scope, readonly: true },
@@ -84,6 +115,7 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
     filter = emptyFilter,
     scope = "."
 }) => {
+    const styles = useStyles();
 
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
     const [filterFields, setFilterFields] = React.useState<Fields>({});
@@ -170,8 +202,8 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
                         let path = [].concat(scopePath, row.Directory).join("::");
                         path = (path.startsWith("::")) ? path.substring(2) : path;
                         url = "#/scopes/" + path;
-                        return <div style={{ display: "flex", alignItems: "center" }}>
-                            <Icon iconName={"FabricFolder"} style={{ fontSize: "1.5em", marginRight: "8px" }} />
+                        return <div className={styles.folderContainer}>
+                            <Icon iconName={"FabricFolder"} className={styles.folderIcon} />
                             <Link data-selection-disabled={true} href={url}>{name}</Link>
                         </div>;
                     }
@@ -202,7 +234,7 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
                 formatter: (cost, row) => `${formatCost(cost ?? 0)}`
             }
         };
-    }, [scopePath]);
+    }, [scopePath, styles.folderContainer, styles.folderIcon]);
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
@@ -338,8 +370,8 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
         main={
             <>
                 <SizeMe>{({ size }) =>
-                    <div style={{ position: "relative", width: "100%", height: "100%" }}>
-                        <div style={{ position: "absolute", width: "100%", height: `${size.height}px` }}>
+                    <div className={styles.outerWrapper}>
+                        <div className={styles.innerWrapper} style={{ height: `${size.height}px` }}>
                             <FluentGrid
                                 data={data}
                                 primaryID={"__hpcc_id"}
@@ -348,6 +380,7 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
                                 setSelection={setSelection}
                                 setTotal={setTotal}
                                 refresh={refreshTable}
+                                canSelectRow={(item) => item?.isDirectory === false}
                             ></FluentGrid>
                         </div>
                     </div>
@@ -373,16 +406,7 @@ export const ScopesBreadcrumb: React.FunctionComponent<ScopesBreadcrumbProps> = 
 }) => {
 
     const { theme } = useUserTheme();
-    const breadcrumbStyles = React.useMemo(() => mergeStyleSets({
-        wrapper: {
-            padding: "1em 2.5em",
-            borderTop: `1px solid ${theme.palette.neutralLight}`,
-            borderBottom: `1px solid ${theme.palette.neutralLight}`,
-        },
-        separator: {
-            margin: "0 0.5em"
-        }
-    }), [theme]);
+    const styles = useStyles();
 
     const [scopePath, setScopePath] = React.useState([]);
 
@@ -390,20 +414,20 @@ export const ScopesBreadcrumb: React.FunctionComponent<ScopesBreadcrumbProps> = 
         setScopePath(scope.split("::"));
     }, [scope]);
 
-    return <div className={breadcrumbStyles.wrapper}>
+    return <div className={styles.breadcrumbWrapper} style={{ borderTopColor: theme.palette.neutralLight, borderBottomColor: theme.palette.neutralLight }}>
         <Link href="#/scopes">Root Scope</Link>
         {(scope !== ".") &&
             <>
                 {scopePath.map((scope, idx) => {
                     if (idx === scopePath.length - 1) {
                         return <span key={`${scope}_${idx}`}>
-                            <span className={breadcrumbStyles.separator}>::</span>
+                            <span className={styles.breadcrumbSeparator}>::</span>
                             <span>{scope}</span>
                         </span>;
                     }
                     const path = scopePath.slice(0, idx + 1).join("::");
                     return <span key={`${scope}_${idx}`}>
-                        <span className={breadcrumbStyles.separator}>::</span>
+                        <span className={styles.breadcrumbSeparator}>::</span>
                         <Link href={`#/scopes/${path}`}>{scope}</Link>
                     </span>;
 
