@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Checkbox, DefaultButton, Dropdown, IDropdownOption, mergeStyleSets, PrimaryButton, Spinner, Stack, TextField } from "@fluentui/react";
+import { makeStyles } from "@fluentui/react-components";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
 import * as FileSpray from "src/FileSpray";
@@ -11,6 +12,11 @@ import { pushUrl } from "../../../util/history";
 import * as FormStyles from "./styles";
 
 const logger = scopedLogger("src-react/components/forms/landing-zone/JsonImportForm.tsx");
+
+const useStyles = makeStyles({
+    spinnerHidden: { display: "none" },
+    spinner: { display: "inherit" }
+});
 
 interface JsonImportFormValues {
     destGroup: string;
@@ -40,7 +46,7 @@ const defaultValues: JsonImportFormValues = {
     destGroup: "",
     DFUServerQueue: "",
     namePrefix: "",
-    sourceFormat: "1",
+    sourceFormat: "2",
     sourceMaxRecordSize: "",
     overwrite: false,
     replicate: false,
@@ -169,9 +175,11 @@ export const JsonImportForm: React.FunctionComponent<JsonImportFormProps> = ({
         }
     }, [selection, reset]);
 
+    const classes = useStyles();
+
     return <MessageBox title={nlsHPCC.Import} show={showForm} setShow={closeForm}
         footer={<>
-            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="right" className={spinnerHidden ? classes.spinnerHidden : classes.spinner} />
             <PrimaryButton text={nlsHPCC.Import} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
         </>}>
@@ -321,7 +329,6 @@ export const JsonImportForm: React.FunctionComponent<JsonImportFormProps> = ({
                                 key={fieldName}
                                 label={nlsHPCC.Format}
                                 options={[
-                                    { key: "1", text: "ASCII" },
                                     { key: "2", text: "UTF-8" },
                                     { key: "3", text: "UTF-8N" },
                                     { key: "4", text: "UTF-16" },

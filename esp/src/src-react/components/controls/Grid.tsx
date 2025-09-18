@@ -208,7 +208,8 @@ interface FluentStoreGridProps {
     selectionMode?: SelectionMode,
     setSelection: ISelection | ((selection: any[]) => void),
     setTotal: (total: number) => void,
-    onRenderRow?: IRenderFunction<IDetailsRowProps>
+    onRenderRow?: IRenderFunction<IDetailsRowProps>,
+    canSelectRow?: (item: any, index: number) => boolean
 }
 
 const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
@@ -223,7 +224,8 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
     selectionMode = SelectionMode.multiple,
     setSelection,
     setTotal,
-    onRenderRow
+    onRenderRow,
+    canSelectRow
 }) => {
     const memoizedColumns = useDeepMemo(() => columns, [], [columns]);
     const [sorted, setSorted] = React.useState<QuerySortItem>(sort);
@@ -233,6 +235,7 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
 
     const selectionHandler = useConst(() => {
         return isISelection(setSelection) ? setSelection : new Selection({
+            canSelectItem: (item: any, index?: number) => canSelectRow ? canSelectRow(item, index ?? -1) : true,
             onSelectionChanged: () => {
                 setSelection(selectionHandler.getSelection());
             }
@@ -279,6 +282,31 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
     const fluentColumns: IColumn[] = React.useMemo(() => {
         return columnsAdapter(memoizedColumns, columnWidths);
     }, [columnWidths, memoizedColumns]);
+
+    // prune invalid selections when the data set or the condition allowing selection changes
+    React.useEffect(() => {
+        if (!canSelectRow || isISelection(setSelection)) return;
+
+        const selectedItems = selectionHandler.getItems();
+        if (!selectedItems || selectedItems.length === 0) return;
+
+        const indices = selectionHandler.getSelectedIndices();
+        if (!indices.length) return;
+
+        let changed = false;
+        selectionHandler.setChangeEvents(false, true);
+        for (const i of indices) {
+            if (!canSelectRow(selectedItems[i], i)) {
+                selectionHandler.setIndexSelected(i, false, false);
+                changed = true;
+            }
+        }
+        selectionHandler.setChangeEvents(true, true);
+
+        if (changed) {
+            setSelection(selectionHandler.getSelection());
+        }
+    }, [items, canSelectRow, selectionHandler, setSelection]);
 
     React.useEffect(() => {
         updateColumnSorted(fluentColumns, sorted?.attribute as string, sorted?.descending);
@@ -356,7 +384,8 @@ interface FluentGridProps {
     setSelection: ISelection | ((selection: any[]) => void),
     setTotal: (total: number) => void,
     refresh: RefreshTable,
-    onRenderRow?: IRenderFunction<IDetailsRowProps>
+    onRenderRow?: IRenderFunction<IDetailsRowProps>,
+    canSelectRow?: (item: any, index: number) => boolean
 }
 
 export const FluentGrid: React.FunctionComponent<FluentGridProps> = ({
@@ -371,7 +400,8 @@ export const FluentGrid: React.FunctionComponent<FluentGridProps> = ({
     setSelection,
     setTotal,
     refresh,
-    onRenderRow
+    onRenderRow,
+    canSelectRow
 }) => {
 
     const constStore = useConst(() => new Memory(primaryID, alphaNumColumns));
@@ -382,7 +412,7 @@ export const FluentGrid: React.FunctionComponent<FluentGridProps> = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [constStore, data, /*refresh*/]);
 
-    return <FluentStoreGrid store={constStore} columns={columns} sort={sort} start={0} count={data.length} height={height} selectionMode={selectionMode} setSelection={setSelection} setTotal={setTotal} refresh={refresh} onRenderRow={onRenderRow}>
+    return <FluentStoreGrid store={constStore} columns={columns} sort={sort} start={0} count={data.length} height={height} selectionMode={selectionMode} setSelection={setSelection} setTotal={setTotal} refresh={refresh} onRenderRow={onRenderRow} canSelectRow={canSelectRow}>
     </FluentStoreGrid>;
 };
 
@@ -399,7 +429,8 @@ interface FluentPagedGridProps {
     setSelection: ISelection | ((selection: any[]) => void),
     setTotal: (total: number) => void,
     refresh: RefreshTable,
-    onRenderRow?: IRenderFunction<IDetailsRowProps>
+    onRenderRow?: IRenderFunction<IDetailsRowProps>,
+    canSelectRow?: (item: any, index: number) => boolean
 }
 
 export const FluentPagedGrid: React.FunctionComponent<FluentPagedGridProps> = ({
@@ -415,7 +446,8 @@ export const FluentPagedGrid: React.FunctionComponent<FluentPagedGridProps> = ({
     setSelection,
     setTotal,
     refresh,
-    onRenderRow
+    onRenderRow,
+    canSelectRow
 }) => {
     const [page, setPage] = React.useState(pageNum - 1);
     const [sortBy, setSortBy] = React.useState(sort);
@@ -436,7 +468,7 @@ export const FluentPagedGrid: React.FunctionComponent<FluentPagedGridProps> = ({
         setPage(_page);
     }, [pageNum]);
 
-    return <FluentStoreGrid store={store} query={query} columns={columns} sort={sortBy} start={page * pageSize} count={pageSize} height={height} selectionMode={selectionMode} setSelection={setSelection} setTotal={setTotal} refresh={refresh} onRenderRow={onRenderRow}>
+    return <FluentStoreGrid store={store} query={query} columns={columns} sort={sortBy} start={page * pageSize} count={pageSize} height={height} selectionMode={selectionMode} setSelection={setSelection} setTotal={setTotal} refresh={refresh} onRenderRow={onRenderRow} canSelectRow={canSelectRow}>
     </FluentStoreGrid>;
 };
 
