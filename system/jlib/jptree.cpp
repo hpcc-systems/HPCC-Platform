@@ -2995,15 +2995,15 @@ IPropertyTree *getXPathMatchTree(IPropertyTree &parent, const char *xpath)
 
 void PTree::serializeAttributes(IBufferedSerialOutputStream &tgt) const
 {
-    Owned<IAttributeIterator> aIter = getAttributes();
-    if (aIter->first())
+    AttrValue *attr = getNextAttribute(nullptr);
+    if (attr)
     {
         do
         {
-            append(tgt, aIter->queryName());
-            append(tgt, aIter->queryValue());
-        }
-        while (aIter->next());
+            append(tgt, attr->key.get());
+            append(tgt, attr->value.get());
+            attr = getNextAttribute(attr);
+        } while (attr);
     }
     append(tgt, ""); // attribute terminator. i.e. blank attr name.
 }
@@ -3097,7 +3097,10 @@ void PTree::deserializeSelf(IBufferedSerialInputStream &src)
         std::pair<const char *, const char *> attrPair = peekKeyValuePair(src, len);
         if (attrPair.second == nullptr)
             throwUnexpectedX("PTree deserialization error: end of stream, expected attribute value");
-        setProp(attrPair.first, attrPair.second);
+
+        constexpr bool attributeNameNotEncoded = false; // Deserialized attribute name is in its original unencoded form
+        setAttribute(attrPair.first, attrPair.second, attributeNameNotEncoded);
+
         src.skip(len + 1); // +1 to skip over second null terminator.
     }
 
