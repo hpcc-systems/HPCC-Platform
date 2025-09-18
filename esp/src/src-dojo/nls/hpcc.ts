@@ -281,6 +281,7 @@ export = {
         DynamicNoServicesFound: "No services found",
         EBCDIC: "EBCDIC",
         ECL: "ECL",
+        ECLLayoutNotAvailable: "ECL layout is not available for this file",
         ECLWatchRequiresCookies: "ECL Watch requires cookies enabled to continue.",
         ECLWatchSessionManagement: "ECL Watch session management",
         ECLWatchVersion: "ECL Watch Version",
