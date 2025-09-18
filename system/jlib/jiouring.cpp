@@ -16,7 +16,6 @@
 ############################################################################## */
 
 #include "platform.h"
-#include <liburing.h>
 
 #include "jiouring.hpp"
 #include "jiface.hpp"
@@ -25,6 +24,8 @@
 #include "jlog.hpp"
 
 #if defined(__linux__) || defined (__FreeBSD__)
+
+#include <liburing.h>
 
 //------------------------------------------------------------------------------
 
@@ -46,10 +47,12 @@ public:
     virtual void terminate() override;
 
     virtual void enqueueCallbackCommand(IAsyncCallback & callback) override;
-    virtual void enqueueCallbackCommands(std::vector<IAsyncCallback *> callbacks);
-    virtual void enqueueSocketWrite(ISocket * socket, size32_t len, const void * buf, IAsyncCallback & callback) override;
+    virtual void enqueueCallbackCommands(const std::vector<IAsyncCallback *> & callbacks) override;
+    virtual void enqueueSocketConnect(ISocket * socket, const struct sockaddr * addr, size32_t addrlen, IAsyncCallback & callback) override;
+    virtual void enqueueSocketWrite(ISocket * socket, const void * buf, size32_t len, IAsyncCallback & callback) override;
 
     virtual void lockMemory(const void * buffer, size_t len) override;
+    virtual void checkForCompletions() override;
 
     bool dequeueCompletion(CompletionResponse & response);
     bool isAborting() const { return aborting; }
@@ -59,6 +62,7 @@ protected:
 
     io_uring_sqe * allocRequest(CLeavableCriticalBlock & activeBlock);
     bool isFixedBuffer(size32_t len, const void * buf) const;
+    void processCompletions();
 
 protected:
     CriticalSection crit;
@@ -148,7 +152,7 @@ void URingProcessor::enqueueCallbackCommand(IAsyncCallback & callback)
     submitRequests();
 }
 
-void URingProcessor::enqueueCallbackCommands(std::vector<IAsyncCallback *> callbacks)
+void URingProcessor::enqueueCallbackCommands(const std::vector<IAsyncCallback *> & callbacks)
 {
     CLeavableCriticalBlock block(crit, isMultiThreaded);
 
@@ -165,7 +169,26 @@ void URingProcessor::enqueueCallbackCommands(std::vector<IAsyncCallback *> callb
     submitRequests();
 }
 
-void URingProcessor::enqueueSocketWrite(ISocket * socket, size32_t len, const void * buf, IAsyncCallback & callback)
+
+void URingProcessor::enqueueSocketConnect(ISocket * socket, const struct sockaddr * addr, size32_t addrlen, IAsyncCallback & callback)
+{
+    CLeavableCriticalBlock block(crit, isMultiThreaded);
+
+    io_uring_sqe * sqe = allocRequest(block);
+
+    int socketfd = socket->OShandle();
+    //Need to execute some contents of pre_connect
+    //Need to add a method inside ISocket that creates an object to manage the connection
+    //and calls the final call back once the socket connected
+    io_uring_prep_connect(sqe, socketfd, addr, addrlen);
+
+    io_uring_sqe_set_data(sqe, &callback);
+    //On completion, need to process the equivalent of ISocket::post_connect()
+
+    submitRequests();
+}
+
+void URingProcessor::enqueueSocketWrite(ISocket * socket, const void * buf, size32_t len, IAsyncCallback & callback)
 {
     CLeavableCriticalBlock block(crit, isMultiThreaded);
 
@@ -229,6 +252,24 @@ void URingProcessor::lockMemory(const void * buffer, size_t len)
         OERRLOG("Failed to register memory with io_uring: error code %d", ret);
 }
 
+void URingProcessor::checkForCompletions()
+{
+    CLeavableCriticalBlock block(crit, false);
+    if (block.tryEnter())
+        processCompletions();
+}
+
+void URingProcessor::processCompletions()
+{
+    while (io_uring_cq_ready(&ring) != 0)
+    {
+        CompletionResponse response;
+        if (dequeueCompletion(response))
+            response.callback->onAsyncComplete(response.result);
+    }
+}
+
+
 void URingProcessor::terminate()
 {
     if (!alive)
@@ -237,6 +278,7 @@ void URingProcessor::terminate()
     alive = false;
     io_uring_queue_exit(&ring);
 }
+
 
 //------------------------------------------------------------------------------
 
@@ -285,10 +327,6 @@ public:
         completionThread.start(false);
     }
 
-    virtual void checkForCompletions() override
-    {
-    }
-
     virtual void submitRequests() override
     {
         /* Finally, submit all the requests */
@@ -317,13 +355,8 @@ protected:
 class URingUnthreadedProcessor final : public URingProcessor
 {
 public:
-    URingUnthreadedProcessor(const IPropertyTree * config) : URingProcessor(config), completionThread(*this)
+    URingUnthreadedProcessor(const IPropertyTree * config) : URingProcessor(config)
     {
-    }
-
-    virtual void checkForCompletions() override
-    {
-        processCompletions();
     }
 
     virtual void submitRequests() override
@@ -333,20 +366,6 @@ public:
         //Then check for all existing completions
         processCompletions();
     }
-
-protected:
-    void processCompletions()
-    {
-        while (io_uring_cq_ready(&ring) != 0)
-        {
-            CompletionResponse response;
-            if (dequeueCompletion(response))
-                response.callback->onAsyncComplete(response.result);
-        }
-    }
-
-protected:
-    URingCompletionThread completionThread;
 };
 
 

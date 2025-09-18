@@ -28,12 +28,15 @@ interface IAsyncCallback
 };
 
 //-----------------------------------------------------------------------------------------------
+
+struct sockaddr;
 interface IAsyncProcessor : public IInterface
 {
 // Functions for each of the asynchronous actions that can be queued
     virtual void enqueueCallbackCommand(IAsyncCallback & callback) = 0;
-    virtual void enqueueCallbackCommands(std::vector<IAsyncCallback *> callbacks) = 0;
-    virtual void enqueueSocketWrite(ISocket * socket, size32_t len, const void * buf, IAsyncCallback & callback) = 0;
+    virtual void enqueueCallbackCommands(const std::vector<IAsyncCallback *> & callbacks) = 0;
+    virtual void enqueueSocketConnect(ISocket * socket, const struct sockaddr * addr, size32_t addrlen, IAsyncCallback & callback) = 0;
+    virtual void enqueueSocketWrite(ISocket * socket, const void * buf, size32_t len, IAsyncCallback & callback) = 0;
 
 // Functions for managing the completion queue - particularly non-threaded urings
     virtual void checkForCompletions() = 0;

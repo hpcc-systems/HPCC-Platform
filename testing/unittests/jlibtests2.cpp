@@ -1062,6 +1062,8 @@ class IOURingTest : public CppUnit::TestFixture
 public:
     void testcallback()
     {
+        START_TEST
+
         Owned<IPropertyTree> config = createPTreeFromXMLString("<iouring/>");
         Owned<IAsyncProcessor> processor = createURingProcessor(config, true);
         if (!processor)
@@ -1070,10 +1072,14 @@ public:
         SemCallback hello;
         processor->enqueueCallbackCommand(hello);
         hello.sem.wait();
+
+        END_TEST
     }
 
     void testcallbackNoThread()
     {
+        START_TEST
+
         Owned<IPropertyTree> config = createPTreeFromXMLString("<iouring/>");
         Owned<IAsyncProcessor> processor = createURingProcessor(config, false);
         if (!processor)
@@ -1083,10 +1089,14 @@ public:
         processor->enqueueCallbackCommand(hello);
         while (!hello.sem.wait(0))
             processor->checkForCompletions();
+
+        END_TEST
     }
 
     void testcallback2NoThread()
     {
+        START_TEST
+
         Owned<IPropertyTree> config = createPTreeFromXMLString("<iouring/>");
         Owned<IAsyncProcessor> processor = createURingProcessor(config, false);
         if (!processor)
@@ -1102,10 +1112,14 @@ public:
         CPPUNIT_ASSERT(action1.sem.wait(0));
         while (!action2.sem.wait(0))
             processor->checkForCompletions();
+
+        END_TEST
     }
 
     void testcallback2NoThreadDelay()
     {
+        START_TEST
+
         Owned<IPropertyTree> config = createPTreeFromXMLString("<iouring/>");
         Owned<IAsyncProcessor> processor = createURingProcessor(config, false);
         if (!processor)
@@ -1124,10 +1138,14 @@ public:
         CPPUNIT_ASSERT(!action2.sem.wait(0));
         while (!action2.sem.wait(0))
             processor->checkForCompletions();
+
+        END_TEST
     }
 
     void testcallbacks()
     {
+        START_TEST
+
         Owned<IPropertyTree> config = createPTreeFromXMLString("<iouring/>");
         Owned<IAsyncProcessor> processor = createURingProcessor(config, true);
         if (!processor)
@@ -1139,6 +1157,8 @@ public:
         processor->enqueueCallbackCommands(std::vector<IAsyncCallback *>{&action1, &action2});
         action1.sem.wait();
         action2.sem.wait();
+
+        END_TEST
     }
 };
 

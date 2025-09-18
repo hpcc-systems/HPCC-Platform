@@ -435,7 +435,6 @@ protected:
     IRoxieWorkerRequestReceiver & receiver;
 };
 
-
 class RoxieTcpWorkerCommunicator : public CInterfaceOf<IRoxieWorkerCommunicator>
 {
 public:
@@ -467,7 +466,7 @@ public:
     virtual size32_t sendToWorker(const void * data, size32_t len, const SocketEndpoint &ep)
     {
         CSocketTarget * sock = sender.queryWorkerSocket(ep);
-        return sock->write(data, len);
+        return sock->writeSync(data, len);
     }
 
 protected:

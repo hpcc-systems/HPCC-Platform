@@ -120,7 +120,7 @@
         },
         {
             "name": "liburing",
-            "platform": "!windows & !osx"
+            "platform": "linux"
         },
         {
             "name": "libuv",
