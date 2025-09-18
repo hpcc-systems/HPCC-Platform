@@ -18,6 +18,8 @@
 //Test searching for 'foo' in a dataset
 //This test demonstrates the search functionality with the term 'foo'
 
+import Std.Str;
+
 searchTerm := 'foo' : STORED('searchTerm');
 
 // Create a test dataset with various strings, some containing 'foo'
@@ -42,8 +44,8 @@ testData := DATASET([
 // Search for records containing 'foo'
 searchResults := testData(REGEXFIND('foo', value));
 
-// Alternative search using position
-positionResults := testData(STD.Str.Find(value, searchTerm, 1) > 0);
+// Alternative search using position (proper way)
+positionResults := testData(Str.Find(value, searchTerm, 1) > 0);
 
 // Count results
 fooCount := COUNT(searchResults);

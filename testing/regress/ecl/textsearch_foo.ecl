@@ -30,12 +30,15 @@ useLocal := #IFDEFINED(root.useLocal, false);
 
 import $.Common.TextSearch;
 
-// Test queries that search for "foo"
+// Test queries that search for "foo" 
 fooQueries := DATASET([
     {'"foo"'},                              // Simple search for foo
     {'OR("foo", "bar")'},                   // Search for foo OR bar  
     {'AND("foo", "bar")'},                  // Search for foo AND bar (both must exist)
+    {'ANDNOT("foo", "bar")'},               // Search for foo but NOT bar
     {'PHRASE("foo", "bar")'},               // Search for phrase "foo bar"
+    {'MOFN(1, "foo", "bar", "baz")'},       // At least 1 of foo, bar, baz
+    {'PROXIMITY("foo", "bar", 5, 5)'},      // foo within 5 words of bar
 ], TextSearch.queryInputRecord);
 
 // Execute the search queries
