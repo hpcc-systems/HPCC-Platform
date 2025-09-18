@@ -250,6 +250,8 @@ typedef unsigned LogLevel;
 #define LogNormal 5
 #define LogMax    10
 
+interface IDataMaskingEngine;
+
 interface IEspContainer : extends IInterface
 {
     virtual void exitESP() = 0;
@@ -283,6 +285,7 @@ interface IEspContainer : extends IInterface
     virtual void clearCacheByGroupID(const char* ids, StringArray& errorMsgs) = 0;
     virtual IPropertyTree *queryApplicationConfig() = 0;
     virtual void setApplicationConfig(IPropertyTree *config) = 0;
+    virtual IDataMaskingEngine *queryDataMaskingEngine() = 0;
 };
 
 interface IEspRpcBinding;
