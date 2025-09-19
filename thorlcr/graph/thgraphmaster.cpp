@@ -309,7 +309,7 @@ void CSlaveMessageHandler::threadmain()
                     msg.clear();
                     StringBuffer phys;
                     if (create && !job.queryCreatedFile(logicalName)) // not sure who would do this ever??
-                        queryThorFileManager().getPublishPhysicalName(job, logicalName, partNo, phys); 
+                        queryThorFileManager().getPublishPhysicalName(job, logicalName, partNo, phys);
                     else
                         queryThorFileManager().getPhysicalName(job, logicalName, partNo, phys);
                     msg.append(phys);
@@ -369,6 +369,7 @@ void CSlaveMessageHandler::threadmain()
     catch (IException *e)
     {
         Owned<IThorException> te = ThorWrapException(e, "CSlaveMessageHandler::threadmain");
+        te->setGraphInfo(job.queryGraphName(), job.queryCurrentSubGraphId());
         e->Release();
         job.fireException(te);
     }
@@ -1037,7 +1038,7 @@ public:
         Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
         if (r)
         {
-            r->setResultBool(result);   
+            r->setResultBool(result);
             r->setResultStatus(ResultStatusCalculated);
         }
         else
@@ -1049,7 +1050,7 @@ public:
         Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
         if (r)
         {
-            r->setResultData(result, len);  
+            r->setResultData(result, len);
             r->setResultStatus(ResultStatusCalculated);
         }
         else
@@ -1085,7 +1086,7 @@ public:
         Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
         if (r)
         {
-            r->setResultRaw(len, result, ResultFormatRaw);  
+            r->setResultRaw(len, result, ResultFormatRaw);
             r->setResultStatus(ResultStatusCalculated);
         }
         else
@@ -1097,7 +1098,7 @@ public:
         Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
         if (r)
         {
-            r->setResultReal(result);   
+            r->setResultReal(result);
             r->setResultStatus(ResultStatusCalculated);
         }
         else
@@ -1110,7 +1111,7 @@ public:
         if (r)
         {
             r->setResultIsAll(isAll);
-            r->setResultRaw(len, result, ResultFormatRaw);  
+            r->setResultRaw(len, result, ResultFormatRaw);
             r->setResultStatus(ResultStatusCalculated);
         }
         else
@@ -1122,7 +1123,7 @@ public:
         Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
         if (r)
         {
-            r->setResultString(result, len);    
+            r->setResultString(result, len);
             r->setResultStatus(ResultStatusCalculated);
         }
         else
@@ -1146,7 +1147,7 @@ public:
         Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
         if (r)
         {
-            r->setResultString(result, strlen(result)); 
+            r->setResultString(result, strlen(result));
             r->setResultStatus(ResultStatusCalculated);
         }
         else
@@ -1169,7 +1170,7 @@ public:
         setResultUnicode(stepname, sequence, rtlUnicodeStrlen(val), val);
     }
     virtual bool getResultBool(const char * stepname, unsigned sequence) override
-    { 
+    {
         PROTECTED_GETRESULT(stepname, sequence, "Bool", "bool",
             return r->getResultBool();
         );
@@ -1211,7 +1212,7 @@ public:
         );
     }
     virtual __int64 getResultInt(const char * name, unsigned sequence) override
-    { 
+    {
         PROTECTED_GETRESULT(name, sequence, "Int", "integer",
             return r->getResultInt();
         );
@@ -1250,7 +1251,7 @@ public:
         );
     }
     virtual char * getResultVarString(const char * stepname, unsigned sequence) override
-    { 
+    {
         PROTECTED_GETRESULT(stepname, sequence, "VarString", "string",
             SCMStringBuffer result;
             r->getResultString(result, false);
@@ -1267,7 +1268,7 @@ public:
         );
     }
     virtual unsigned getResultHash(const char * name, unsigned sequence) override
-    { 
+    {
         PROTECTED_GETRESULT(name, sequence, "Hash", "hash",
             return r->getResultHash();
         );
@@ -1414,7 +1415,7 @@ public:
     {
         StringBuffer out;
         if (globals)
-            globals->getProp("@nodeGroup",out); 
+            globals->getProp("@nodeGroup",out);
         return out.detach();
     }
 // ICodeContextExt impl.
@@ -1538,7 +1539,7 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, ILoaded
     sharedAllocator.setown(::createThorAllocator(queryMemoryMB, 0, 1, memorySpillAtPercentage, *logctx, crcChecking, usePackedAllocator));
     Owned<IMPServer> mpServer = getMPServer();
     CJobChannel *channel = addChannel(mpServer);
-    channel->reservePortKind(TPORT_mp); 
+    channel->reservePortKind(TPORT_mp);
     channel->reservePortKind(TPORT_watchdog);
     channel->reservePortKind(TPORT_debug);
 
@@ -2330,7 +2331,7 @@ bool CJobMaster::fireException(IException *e)
         default:
         {
             LOG(MCprogress, e);
-            queryJobManager().replyException(*this, e); 
+            queryJobManager().replyException(*this, e);
             fatalHandler->inform(LINK(e));
             try { abort(e); }
             catch (IException *e)
