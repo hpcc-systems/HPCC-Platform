@@ -2687,7 +2687,6 @@ protected:
     offset_t fileSize;
     unsigned fileCheckSum;
     RoxieFileType fileType;
-    size32_t configRandomIOSize = 0;
     bool isSuper;
 
     StringArray subNames;
@@ -2821,8 +2820,6 @@ public:
                     remoteFDesc.setown(daliHelper->checkClonedFromRemote(_lfn, fDesc, cacheIt, defaultPrivilegedUser));
                 addFile(dFile->queryLogicalName(), fDesc.getClear(), remoteFDesc.getClear());
             }
-            // could do globally once, not sure worth it though.
-            configRandomIOSize = (size32_t)getExpertOptInt64(getPlaneAttributeString(BlockedRandomIO), 0) * 1024;
         }
     }
     virtual void beforeDispose()
@@ -3203,7 +3200,7 @@ public:
                                 if (!local) // do not buffer local files used by standaloe roxie
                                 {
                                     unsigned replicationLevel = getReplicationLevel(channel);
-                                    blockedIOSize = getPartPlaneAttr(*pdesc, replicationLevel, BlockedRandomIO, configRandomIOSize);
+                                    blockedIOSize = getPartPlaneAttr(*pdesc, replicationLevel, BlockedRandomIO, 0);
                                 }
                             }
                         }
@@ -3251,7 +3248,7 @@ public:
                     if (!local) // do not buffer local files used by standaloe roxie
                     {
                         unsigned replicationLevel = getReplicationLevel(channel);
-                        blockedIOSize = getPartPlaneAttr(*pdesc, replicationLevel, BlockedRandomIO, configRandomIOSize);
+                        blockedIOSize = getPartPlaneAttr(*pdesc, replicationLevel, BlockedRandomIO, 0);
                     }
                     if (lazyOpen)
                     {
