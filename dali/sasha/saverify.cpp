@@ -199,18 +199,14 @@ public:
 class CFileCrcList
 {
     CIpTable dafilesrvips;
-    Owned<IUserDescriptor> udesc;
+    Linked<IUserDescriptor> udesc;
 public:
     bool &stopped;
     CIArrayOf<CFileCrcItem> list;
 
-    CFileCrcList(bool &_stopped)
-        : stopped(_stopped)
+    CFileCrcList(bool &_stopped, IUserDescriptor *_udesc)
+        : stopped(_stopped), udesc(_udesc)
     {
-        StringBuffer userName;
-        serverConfig->getProp("@sashaUser", userName);
-        udesc.setown(createUserDescriptor());
-        udesc->set(userName.str(), nullptr);
     }
 
     void add(RemoteFilename &filename,unsigned partno,unsigned copy,unsigned crc)
@@ -380,7 +376,9 @@ public:
         stopped = false;
 
         StringBuffer userName;
-        serverConfig->getProp("@sashaUser", userName);
+        serverConfig->getProp("@user", userName);
+        if (userName.isEmpty()) // for backward compatibility
+            serverConfig->getProp("@sashaUser", userName);
         udesc.setown(createUserDescriptor());
         udesc->set(userName.str(), nullptr);
     }
@@ -421,7 +419,7 @@ public:
         while (!stopped) {
             try {
                 PROGLOG("VERIFIER: Started");
-                CFileCrcList filelist(stopped);
+                CFileCrcList filelist(stopped, udesc);
                 Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator("*",udesc,true,false);
                 if (iter) {
                     CDateTime mincutoff;
