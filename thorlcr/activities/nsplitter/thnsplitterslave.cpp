@@ -218,7 +218,6 @@ public:
 
         if (!inputPrepared)
         {
-            inputPrepared = true;
             try
             {
                 assertex(((unsigned)-1) != connectedOutputCount);
@@ -295,6 +294,8 @@ public:
                 }
                 if (!spill)
                     writer.start(); // writer keeps writing ahead as much as possible, the readahead impl. will block when has too much
+
+                inputPrepared = true;
             }
             catch (IException *e)
             {
@@ -518,14 +519,17 @@ void CSplitterOutput::start()
     else
     {
         if (activity.newSplitter)
+        {
+            assertex(activity.sharedRowStream);
             splitterStream = activity.sharedRowStream->queryOutput(outIdx);
+        }
     }
     dataLinkStart();
 }
 
 // IEngineRowStream
 void CSplitterOutput::stop()
-{ 
+{
     if (stopped)
         return;
     stopped = true;
