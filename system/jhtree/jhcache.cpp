@@ -56,6 +56,7 @@ const byte * CCachedIndexRead::queryBuffer(offset_t offset, size32_t readSize) c
     return static_cast<const byte *>(data.get()) + (offset - baseOffset);
 }
 
+#ifdef __linux__
 static unsigned cacheIndex(offset_t cacheVal, unsigned numCacheEntries)
 {
     // murmur64 bit mix modified to use mix13 parameters
@@ -76,7 +77,7 @@ static bool isPrime(unsigned x)
     else if (x % 2 == 0)
         return false;
 
-    unsigned t = sqrt(x) + 1;
+    unsigned t = std::sqrt(x) + 1;
     unsigned i;
     for (i=3; i<=t; i+=2)
     {
@@ -99,20 +100,48 @@ static unsigned largestPrime(unsigned x)
     return 0;
 }
 
-enum IOMethod { NORMAL, UNCACHED, DIRECT };
-
-static byte **alignedAddr{nullptr};
-
-static void clearAlignedAddrs(int numAddrs)
+static int openPageCacheFile(const char *cacheFile, unsigned openFlags, offset_t totSize)
 {
-    if (alignedAddr)
+    int cacheFd = open(cacheFile, openFlags, 0600);
+    if (cacheFd < 0)
     {
-        for (int i=0; i<numAddrs; i++)
-            free(alignedAddr[i]);
-        delete[] alignedAddr;
-        alignedAddr = nullptr;
+        DBGLOG("Error opening disk page cache file %s, errno %d", cacheFile, errno);
+        return -1;
     }
+
+    // prevent another HPCC process from accidentally using same file ...
+    int rc = flock(cacheFd, LOCK_EX | LOCK_NB);
+    if (rc != 0)
+    {
+        DBGLOG("Error locking disk page cache file %s, errno %d", cacheFile, errno);
+        close(cacheFd);
+        return -1;
+    }
+
+    rc = posix_fallocate(cacheFd, 0ULL, totSize);
+    if (rc != 0)
+    {
+        DBGLOG("Error allocating all space for disk page cache file %s (size: %llu), errno %d", cacheFile, totSize, rc);
+        close(cacheFd);
+        return -1;
+    }
+
+    // if was previously larger ...
+    rc = ftruncate(cacheFd, totSize);
+    if (rc != 0)
+    {
+        DBGLOG("Error setting size of disk page cache file %s (size: %llu), errno %d", cacheFile, totSize, rc);
+        close(cacheFd);
+        return -1;
+    }
+
+    posix_fadvise(cacheFd, 0ULL, totSize, POSIX_FADV_RANDOM | POSIX_FADV_NOREUSE);
+
+    return cacheFd;
 }
+#endif
+
+enum IOMethod { NORMAL, UNCACHED, DIRECT };
 
 //--------------------------------------------------------------------------------------------------------------------
 
@@ -127,12 +156,8 @@ public:
         readSize = config->getPropInt("@readSize", pageSize);
         cacheMissPenalty = config->getPropInt("@debugCacheMissPenalty", 0);
 
-        if ( (config->getPropBool("@disable", false)) || (totSize < 1) )
-        {
-            DBGLOG("Disk pageCache framework present, but disabled");
-            totSize = 0;
+        if ( (config->getPropBool("@disable", false)) || (totSize == 0) )
             return;
-        }
 
         // throws means roxie will not start ...
         if ((pageSize < 8192) || !isPowerOf2(pageSize))
@@ -162,33 +187,21 @@ public:
         if (ioMethodStr)
         {
             if ( (strisame(ioMethodStr, "direct")) && ((readSize % 4096) == 0) )
-                ioMethod = DIRECT;
+            {
+                // same as fCrit ...
+                rc = posix_memalign((void **)&alignedAddr, 4096, numCrits * pageSize);
+                if (rc == 0)
+                {
+                    ioMethod = DIRECT;
+                    openFlags |= O_DIRECT;
+                }
+                else
+                    DBGLOG("Error allocating aligned buffer, disabling direct i/o, errno %d", rc);
+            }
 #ifdef RWF_UNCACHED
             else if (strisame(ioMethodStr, "uncached"))
                 ioMethod = UNCACHED;
 #endif
-        }
-
-        if (ioMethod == DIRECT)
-        {
-            bool tryDirect = true;
-            // same as fCrit ...
-            alignedAddr = new byte * [numCrits];
-            for (int i=0; i<numCrits; i++)
-            {
-                rc = posix_memalign((void **)(&alignedAddr[i]), pageSize, pageSize);
-                if (rc != 0)
-                {
-                    DBGLOG("Error allocating aligned buffers, disabling direct i/o, errno %d", rc);
-                    tryDirect = false;
-                    clearAlignedAddrs(i);
-                    break;
-                }
-            }
-            if (tryDirect)
-                openFlags |= O_DIRECT;
-            else
-                ioMethod = NORMAL;
         }
 
         // should we check config for some HPCC dir ?
@@ -196,46 +209,11 @@ public:
         if (!cacheFile)
             cacheFile = "/tmp/roxiecache.tmp";
 
-        cacheFd = open(cacheFile, openFlags, 0600);
+        cacheFd = openPageCacheFile(cacheFile, openFlags, totSize);
         if (cacheFd < 0)
-        {
-            DBGLOG("Error opening disk page cache file %s, errno %d", cacheFile, errno);
-            clearAlignedAddrs(numCrits);
-            totSize = 0;
             return;
-        }
 
-        // prevent another HPCC process from accidentally using same file ...
-        rc = flock(cacheFd, LOCK_EX | LOCK_NB);
-        if (rc != 0)
-        {
-            DBGLOG("Error locking disk page cache file %s, errno %d", cacheFile, errno);
-            clearAlignedAddrs(numCrits);
-            totSize = 0;
-            return;
-        }
-
-        rc = posix_fallocate(cacheFd, 0ULL, totSize);
-        if (rc != 0)
-        {
-            DBGLOG("Error allocating all space for disk page cache file %s (size: %llu), errno %d", cacheFile, totSize, rc);
-            clearAlignedAddrs(numCrits);
-            totSize = 0;
-            return;
-        }
-
-        posix_fadvise(cacheFd, 0ULL, totSize, POSIX_FADV_RANDOM | POSIX_FADV_NOREUSE);
-
-        CacheEntry *cEntry = new CacheEntry [numEntries];
-        cache.reset(cEntry);
-        for (unsigned i=0; i<numEntries; i++)
-        {
-            for (uint8_t j=0; j<numSets; j++)
-            {
-                cache[i].lruArray[j] = j;
-                cache[i].cSet[j].value = invalidValue;
-            }
-        }
+        cache = new CacheEntry [numEntries];
 
         DBGLOG("Disk pageCache readSize: %u pageSize %u", readSize, pageSize);
         DBGLOG("Disk pageCache num sets: %d file size: %llu MB critsecs: %d", numSets, totSize / 1048576ULL, numCrits);
@@ -249,14 +227,32 @@ public:
             ioMsg.append("uncached");
         DBGLOG("%s", ioMsg.str());
 
-        size32_t directMem = 0;
+        size_t directMem = 0;
         if (ioMethod == DIRECT)
             directMem = numCrits * pageSize;
-        size32_t totMem = (sizeof(CDiskPageCache) + directMem + (numEntries * sizeof(CacheEntry))) / 1024;
-        DBGLOG("Disk pageCache memory size: %lu + %lu = %u KB", sizeof(CDiskPageCache) + directMem, (numEntries * sizeof(CacheEntry)), totMem);
+        size_t totMem = (sizeof(CDiskPageCache) + directMem + (numEntries * sizeof(CacheEntry))) / 1024;
+        DBGLOG("Disk pageCache memory size: %Zu + %Zu = %Zu KB", sizeof(CDiskPageCache) + directMem, (numEntries * sizeof(CacheEntry)), totMem);
+
+        cacheOK = true;
 #endif
     }
 
+    // NOTE: dtor/Release not called because MODULE_EXIT not called at _exit()
+    virtual ~CDiskPageCache()
+    {
+        if (alignedAddr)
+        {
+            free(alignedAddr);
+            alignedAddr = nullptr;
+        }
+        if (cache)
+        {
+            delete[] cache;
+            cache = nullptr;
+        }
+    }
+
+#ifdef __linux__
     void getCacheInfo(unsigned fileId, offset_t alignedPosShift, offset_t &cacheVal, unsigned &cacheKey, unsigned &critIndex)
     {
         cacheVal = fileId | (alignedPosShift << fileIdBits);
@@ -273,7 +269,7 @@ public:
         int pFlags = 0;
         if (ioMethod == DIRECT)
         {
-            iov[0].iov_base = alignedAddr[critIndex];
+            iov[0].iov_base = &alignedAddr[critIndex * pageSize];
 # ifdef RWF_HIPRI
             pFlags |= RWF_HIPRI;
 # endif
@@ -293,7 +289,7 @@ public:
 #else // preadv2
         int rc;
         if (ioMethod == DIRECT)
-            rc = pread64(cacheFd, alignedAddr[critIndex], toRead, cacheFileOffset);
+            rc = pread64(cacheFd, &alignedAddr[critIndex * pageSize], toRead, cacheFileOffset);
         else
             rc = pread64(cacheFd, data, toRead, cacheFileOffset);
 #endif // preadv2
@@ -301,7 +297,7 @@ public:
         if (rc == toRead)
         {
             if (ioMethod == DIRECT)
-                memcpy(data, alignedAddr[critIndex], toRead);
+                memcpy(data, &alignedAddr[critIndex * pageSize], toRead);
             return true;
         }
 
@@ -311,7 +307,7 @@ public:
     bool writeCacheFile(offset_t cacheFileOffset, unsigned critIndex, const byte *data)
     {
         if (ioMethod == DIRECT)
-            memcpy(alignedAddr[critIndex], data, pageSize);
+            memcpy(&alignedAddr[critIndex * pageSize], data, pageSize);
 
 #ifdef __NR_pwritev2
         struct iovec iov[1];
@@ -320,7 +316,7 @@ public:
         int pFlags = 0;
         if (ioMethod == DIRECT)
         {
-            iov[0].iov_base = alignedAddr[critIndex];
+            iov[0].iov_base = &alignedAddr[critIndex * pageSize];
 # ifdef RWF_HIPRI
             pFlags |= RWF_HIPRI;
 # endif
@@ -339,31 +335,18 @@ public:
 #else // pwritev2
         int rc;
         if (ioMethod == DIRECT)
-            rc = pwrite64(cacheFd, alignedAddr[critIndex], pageSize, cacheFileOffset);
+            rc = pwrite64(cacheFd, &alignedAddr[critIndex * pageSize], pageSize, cacheFileOffset);
         else
             rc = pwrite64(cacheFd, data, pageSize, cacheFileOffset);
 #endif // pwritev2
 
         return (rc == pageSize);
     }
+#endif
 
     virtual size32_t queryPageSize() const override
     {
         return pageSize;
-    }
-
-    uint8_t findEntry(unsigned cacheKey, offset_t cacheValue, uint8_t &item)
-    {
-        for (uint8_t iy=0; iy<numSets; iy++)
-        {
-            uint8_t ix = cache[cacheKey].lruArray[iy];
-            if (cache[cacheKey].cSet[ix].value == cacheValue)
-            {
-                item = iy;
-                return ix;
-            }
-        }
-        return numSets;
     }
 
     virtual void noteUsed(unsigned fileId, offset_t offset) override { }
@@ -378,9 +361,6 @@ public:
         offset_t alignedPos = offset & pageOffsetMask;
         offset_t alignedPosShift = alignedPos >> pageSizeExp;
 
-        if (totSize == 0)
-            return onCacheMiss(fileId, offset, size);
-
         if ( (fileId >= (1U << fileIdBits)) || (alignedPosShift >= (1ULL << offsetBits)) )
             throw makeStringExceptionV(0, "disk page cache read: invalid fileId %u / offset %llu", fileId, alignedPos);
 
@@ -391,13 +371,14 @@ public:
 
         CriticalBlock b(fCrit[critIndex]);
 
-        uint8_t iy;
-        uint8_t ix = findEntry(cacheKey, cacheVal, iy);
+        CacheEntry & curCacheSet = cache[cacheKey];
 
-        if (ix == numSets)
+        uint8_t setIndex = curCacheSet.findInCacheSet(cacheVal);
+
+        if (setIndex == numSets)
             return onCacheMiss(fileId, offset, size);
 
-        offset_t cacheFileOffset = (ix * setSize) + (cacheKey * pageSize);
+        offset_t cacheFileOffset = (setIndex * setSize) + (cacheKey * pageSize);
 
         if (readSize < pageSize)
         {
@@ -412,13 +393,13 @@ public:
         bool ret = readCacheFile(cacheFileOffset, critIndex, readSize, data);
         if (ret)
         {
-            cache[cacheKey].lruMoveTail(iy);
+            curCacheSet.delegateIndexToMostRecentlyUsed(setIndex);
             // hit++
             return true;
         }
 
-        cache[cacheKey].cSet[ix].value = invalidValue;
-        cache[cacheKey].lruMoveHead(iy);
+        curCacheSet.setEntry(setIndex, invalidValue);
+        curCacheSet.promoteIndexToLeastRecentlyUsed(setIndex);
 #endif
         return onCacheMiss(fileId, offset, size);
     }
@@ -431,9 +412,6 @@ public:
 #ifdef __linux__
         offset_t alignedPosShift = alignedPos >> pageSizeExp;
 
-        if (totSize == 0)
-            return;
-
         if ( (fileId >= (1U << fileIdBits)) || (alignedPosShift >= (1ULL << offsetBits)) )
             throw makeStringExceptionV(0, "disk page cache write: invalid fileId %u / offset %llu", fileId, alignedPos);
 
@@ -444,20 +422,22 @@ public:
 
         CriticalBlock b(fCrit[critIndex]);
 
-        uint8_t ix = cache[cacheKey].lruGetHead();
+        CacheEntry & curCacheSet = cache[cacheKey];
 
-        offset_t cacheFileOffset = (ix * setSize) + (cacheKey * pageSize);
+        uint8_t setIndex = curCacheSet.getLeastRecentlyUsedIndex();
+
+        offset_t cacheFileOffset = (setIndex * setSize) + (cacheKey * pageSize);
 
         bool ret = writeCacheFile(cacheFileOffset, critIndex, data);
         if (ret)
         {
-            cache[cacheKey].cSet[ix].value = cacheVal;
-            cache[cacheKey].lruMoveTail(0);
+            curCacheSet.setEntry(setIndex, cacheVal);
+            curCacheSet.delegateIndexToMostRecentlyUsed(setIndex);
             return;
         }
 
-        cache[cacheKey].cSet[ix].value = invalidValue;
-        // ix is already at head ...
+        curCacheSet.setEntry(setIndex, invalidValue);
+        // setIndex is already at least recently used ...
 #endif
     }
 
@@ -467,6 +447,11 @@ public:
         CriticalBlock b(crit);
         // TODO: MCK will need a global lock here and then check/pause readCacheFile/writeCacheFile
         //       to get complete cache state ...
+    }
+
+    virtual bool isInitializedOK() const override
+    {
+        return cacheOK;
     }
 
 protected:
@@ -483,6 +468,7 @@ protected:
     static constexpr unsigned fileIdBits = 64 - offsetBits;
     static constexpr int numSets = 16; // 4, 8, 16 ...
     static constexpr int numCrits = 256;
+    static constexpr offset_t invalidValue = ~(offset_t)0;
     offset_t totSize{0};
     offset_t setSize{0};
     size32_t pageSize{0};
@@ -495,61 +481,86 @@ protected:
     int cacheFd{-1};
     CriticalSection fCrit[numCrits];
     IOMethod ioMethod{NORMAL};
+    byte *alignedAddr{nullptr};
     CriticalSection crit;
+    bool cacheOK{false};
 
-    static constexpr offset_t invalidValue = ~(offset_t)0;
     struct CacheSet
     {
         offset_t value{invalidValue};
     };
     struct CacheEntry
     {
+        CacheEntry()
+        {
+            for (uint8_t j=0; j<numSets; j++)
+            {
+                lruArray[j] = j;
+                cSet[j].value = invalidValue;
+            }
+        }
+
         CacheSet cSet[numSets];
 
+        // array of cache set indexes in order from LRU (0) at the head to MRU (numSets-1) at the tail
         uint8_t lruArray[numSets];
 
-        uint8_t lruGetHead()
+        void setEntry(uint8_t indx, offset_t val)
+        {
+            cSet[indx].value = val;
+        }
+
+        uint8_t findInCacheSet(offset_t cacheValue)
+        {
+            for (uint8_t ix=0; ix<numSets; ix++)
+            {
+                if (cSet[ix].value == cacheValue)
+                    return ix;
+            }
+            return numSets;
+        }
+
+        uint8_t getLeastRecentlyUsedIndex()
         {
             return lruArray[0];
         }
 
-        void lruMoveHead(uint8_t item)
+        void delegateIndexToMostRecentlyUsed(uint8_t indx)
         {
-            if (item > 0)
+            // move index to MRU tail, shifting others before index
+            if (lruArray[numSets-1] == indx)
+                return;
+
+            unsigned cur = 0;
+            while (cur < numSets && lruArray[cur] != indx)
+                cur++;
+            while (cur < (numSets-1))
             {
-                uint8_t s = lruArray[item];
-                for(uint8_t i=item; i>0; i--)
-                    lruArray[i] = lruArray[i-1];
-                lruArray[0] = s;
+                lruArray[cur] = lruArray[cur+1];
+                cur++;
             }
+            lruArray[numSets-1] = indx;
         }
 
-        void lruMoveTail(uint8_t item)
+        void promoteIndexToLeastRecentlyUsed(uint8_t indx)
         {
-            if (item < (numSets-1))
+            // move index to LRU head, shifting others after index
+            if (lruArray[0] == indx)
+                return;
+
+            unsigned cur = numSets-1;
+            while (cur > 0 && lruArray[cur] != indx)
+                cur--;
+            while (cur > 0)
             {
-                uint8_t s = lruArray[item];
-                for(uint8_t i=item; i<(numSets-1); i++)
-                    lruArray[i] = lruArray[i+1];
-                lruArray[numSets-1] = s;
+                lruArray[cur] = lruArray[cur-1];
+                cur--;
             }
+            lruArray[0] = indx;
         }
 
     };
-    struct CacheClear
-    {
-        void operator()(CacheEntry *cEntry)
-        {
-            if (cEntry)
-            {
-                clearAlignedAddrs(numCrits);
-                delete[] cEntry;
-                cEntry = nullptr;
-            }
-        }
-    };
-    // NOTE: dtor/Release not called because MODULE_EXIT not called at _exit()
-    std::unique_ptr<CacheEntry[], CacheClear> cache;
+    CacheEntry *cache{nullptr};
 };
 
 //--------------------------------------------------------------------------------------------------------------------
@@ -658,6 +669,11 @@ protected:
         return false;
     }
 
+    virtual bool isInitializedOK() const override
+    {
+        return true;
+    }
+
 protected:
     CriticalSection crit;
     offset_t size;
@@ -682,7 +698,11 @@ IPageCache * createDemoPageCache(const IPropertyTree * config)
 
 IPageCache * createDiskPageCache(const IPropertyTree * config)
 {
-    return new CDiskPageCache(config);
+    IPageCache *pCache = new CDiskPageCache(config);
+    if (pCache->isInitializedOK())
+        return pCache;
+    pCache->Release();
+    return nullptr;
 }
 
 #ifdef _USE_CPPUNIT

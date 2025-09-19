@@ -1955,6 +1955,9 @@ void initializeDiskPageCache(const IPropertyTree *config)
     if (!cache)
         cache = createDiskPageCache(config);
 
+    if (!cache)
+        return;
+
     pageCachePageSize = cache->queryPageSize();
     activePageCache = cache;
 }

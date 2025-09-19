@@ -91,6 +91,9 @@ interface IPageCache : public IInterface
 
     // Called to gather the current state of the cache - so it can be preserved for quick cache warming.
     virtual void gatherState(ICacheInfoRecorder & recorder) = 0;
+
+    // if all ok with creating page cache.
+    virtual bool isInitializedOK() const = 0;
 };
 
 //Not called from outside jhtree, so no jhtree_decl
