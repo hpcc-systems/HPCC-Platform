@@ -905,7 +905,11 @@ public:
         log(false, "Max memory = %d MB", maxMb);
 
         StringBuffer userName;
+#ifdef _CONTAINERIZED
+        serverConfig->getProp("@user", userName);
+#else
         serverConfig->getProp("@sashaUser", userName);
+#endif
         udesc.setown(createUserDescriptor());
         udesc->set(userName.str(), nullptr);
 
