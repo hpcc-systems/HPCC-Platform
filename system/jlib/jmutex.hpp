@@ -277,6 +277,21 @@ public:
         assertex(owner == GetCurrentThreadId());
 #endif
     }
+    inline bool tryEnter()
+    {
+        if (!TryEnterCriticalSection(&flags))
+            return false;
+#ifdef _ASSERT_LOCK_SUPPORT
+        if (owner)
+        {
+            assertex(owner==GetCurrentThreadId());
+            depth++;
+        }
+        else
+            owner = GetCurrentThreadId();
+#endif
+        return true;
+    }
 #ifdef ENABLE_CHECKEDCRITICALSECTIONS
     bool wouldBlock()  { if (TryEnterCriticalSection(&flags)) { leave(); return false; } return true; } // debug only
 #endif
@@ -352,6 +367,23 @@ public:
         assertex(owner == GetCurrentThreadId());
 #endif
     }
+
+    inline bool tryEnter()
+    {
+        int ret = pthread_mutex_trylock(&mutex);
+        if (ret != 0)
+            return false;
+#ifdef _ASSERT_LOCK_SUPPORT
+        if (owner)
+        {
+            assertex(owner==GetCurrentThreadId());
+            depth++;
+        }
+        else
+            owner = GetCurrentThreadId();
+#endif
+        return true;
+    }
 };
 #endif
 
@@ -414,6 +446,12 @@ public:
             locked = false;
             crit.leave();
         }
+    }
+    inline bool tryEnter()
+    {
+        assertex(!locked);
+        locked = crit.tryEnter();
+        return locked;
     }
 };
 

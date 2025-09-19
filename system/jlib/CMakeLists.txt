@@ -51,6 +51,10 @@ find_package(nlohmann_json CONFIG REQUIRED)
 find_package(opentelemetry-cpp CONFIG REQUIRED)
 find_package(zstd CONFIG REQUIRED)
 
+if (NOT WIN32 AND NOT WIN64 AND NOT APPLE)
+    pkg_check_modules(liburing REQUIRED IMPORTED_TARGET liburing>=2.0)
+endif ()
+
 SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STRICT_CXX_FLAGS}")
 
 set (    SRCS
@@ -73,6 +77,7 @@ set (    SRCS
          jhash.cpp
          jiface.cpp
          jio.cpp
+         jiouring.cpp
          jiter.cpp
          jkeyboard.cpp
          jlib.cpp
@@ -147,6 +152,7 @@ set (    INCLUDES
         jiface.hpp
         jio.hpp
         jio.ipp
+        jiouring.hpp
         jisem.hpp
         jiter.hpp
         jiter.ipp
@@ -246,6 +252,10 @@ target_link_libraries ( jlib
         libbase58
         yaml
        )
+
+if (NOT WIN32 AND NOT WIN64 AND NOT APPLE)
+    target_link_libraries ( jlib PkgConfig::liburing )
+endif ()
 
 if ( ${HAVE_LIBDL} )
 target_link_libraries ( jlib dl)

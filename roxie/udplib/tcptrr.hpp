@@ -18,8 +18,6 @@
 #ifndef TCPTRR_HPP__
 #define TCPTRR_HPP__
 
-//#include "udpsha.hpp"
-
 /* to do
      put in check to make sure that multicast is enabled on network.
      handle client termination better.
