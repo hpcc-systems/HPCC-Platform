@@ -2897,6 +2897,10 @@
         },
         "terminationGracePeriodSeconds": {
           "$ref": "#/definitions/terminationGracePeriodSeconds"
+        },
+        "user": {
+          "type": "string",
+          "description": "Username for Sasha services to access DFS (containerized configurations)"
         }
       }
     },
@@ -3066,12 +3070,9 @@
           "description": "Default number of days to delete unused standard files that are flagged with EXPIRY",
           "default": "14"
         },
-        "user": {
-          "type": "string",
-          "description": "A username authorized to access and remove expired files"
-        },
         "disabled": {},
         "interval": {},
+        "user": {},
         "service": {},
         "at" : {},
         "throttle": {},
@@ -3141,6 +3142,7 @@
         "properties": {
           "disabled": {},
           "interval": {},
+          "user": {},
           "env": {},
           "annotations": {},
           "labels": {},
