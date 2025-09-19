@@ -135,7 +135,7 @@ export function useMyAccount(): { currentUser: WsAccount.MyAccountResponse, isAd
                         }
                     }).catch(err => {
                         const newErr = new Error(`${nlsHPCC.UnableToRetrieveGroups},`, { cause: err });
-                        logger.error(newErr);
+                        logger.info(newErr);
                     });
                 }
                 setCurrentUser(account);

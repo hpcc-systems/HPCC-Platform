@@ -366,7 +366,7 @@ define([
                         const err = response.Exceptions.Exception[0];
                         const errMessage = `${context.i18n.UnableToRetrieveGroups},\n\t${context.i18n.CausedBy}: "${err.Message}"`;
                         dojo.publish("hpcc/brToaster", {
-                            Severity: "Error",
+                            Severity: "Info",
                             Source: "ws_access.UserEdit",
                             Exceptions: [{
                                 Source: context.i18n.Error,
