@@ -50,103 +50,119 @@ bool ElasticMetricSink::getHostConfig(const IPropertyTree *pSettingsTree)
     StringBuffer hostProtocol;
     StringBuffer hostPort;
 
-    Owned<IPropertyTree> pHostConfigTree = pSettingsTree->getPropTree("host");
-    if (pHostConfigTree)
+    try
     {
-        pHostConfigTree->getProp("@domain", hostDomain);
-
-        if (!pHostConfigTree->getProp("@protocol", hostProtocol))
-            hostProtocol.append("https");
-
-        if (!pHostConfigTree->getProp("@port", hostPort))
-            hostPort.append("9200");
-    }
-
-    // Validate the host configuration minimal settings are present
-    if (hostDomain.isEmpty() || hostProtocol.isEmpty())
-    {
-        WARNLOG("ElasticMetricSink: Host configuration missing domain and/or protocol");
-        return false;
-    }
-
-    // build url for use with httplib Client
-    elasticHostUrl.append(hostProtocol).append("://").append(hostDomain);
-    if (!hostPort.isEmpty())
-        elasticHostUrl.append(":").append(hostPort);
-
-    // Read optional certificate file path
-    pHostConfigTree->getProp("@certificateFilePath", certificateFilePath);
-
-    // Get authentication settings, if present
-    Owned<IPropertyTree> pAuthConfigTree = pHostConfigTree->getPropTree("authentication");
-    if (!pAuthConfigTree)
-        return true;
-
-    // Retrieve the authentication type and validate (only basic is supported)
-    if (!pAuthConfigTree->getProp("@type", authenticationType) || !streq(authenticationType, "basic"))
-    {
-        WARNLOG("ElasticMetricSink: Only basic authentication is supported");
-        return false;
-    }
-
-    StringBuffer credentialsSecretKey;
-    pAuthConfigTree->getProp("@credentialsSecret", credentialsSecretKey);  // vault/secrets key
-    if (!credentialsSecretKey.isEmpty())
-    {
-        StringBuffer credentialsVaultId;
-        pAuthConfigTree->getProp("@credentialsVaultId", credentialsVaultId);//optional HashiCorp vault ID
-
-        PROGLOG("Retrieving ElasticSearch host authentication username/password from secrets tree '%s', from vault '%s'",
-               credentialsSecretKey.str(), !credentialsVaultId.isEmpty() ? credentialsVaultId.str() : "");
-
-        Owned<const IPropertyTree> secretTree(getSecret("authn", credentialsSecretKey.str(), credentialsVaultId, nullptr));
-        if (secretTree == nullptr)
+        Owned<IPropertyTree> pHostConfigTree = pSettingsTree->getPropTree("host");
+        if (pHostConfigTree)
         {
-            WARNLOG("ElasticMetricSink: Unable to load secret tree '%s', from vault '%s'", credentialsSecretKey.str(),
-                    !credentialsVaultId.isEmpty() ? credentialsVaultId.str() : "n/a");
+            pHostConfigTree->getProp("@domain", hostDomain);
+
+            if (!pHostConfigTree->getProp("@protocol", hostProtocol))
+                hostProtocol.append("https");
+
+            if (!pHostConfigTree->getProp("@port", hostPort))
+                hostPort.append("9200");
+        }
+
+        // Validate the host configuration minimal settings are present
+        if (hostDomain.isEmpty() || hostProtocol.isEmpty())
+        {
+            WARNLOG("ElasticMetricSink: Host configuration missing domain and/or protocol");
             return false;
         }
 
-        // authentication type defines the secret key name/value pairs to retrieve
-        if (streq(authenticationType, "basic"))
+        // build url for use with httplib Client
+        elasticHostUrl.append(hostProtocol).append("://").append(hostDomain);
+        if (!hostPort.isEmpty())
+            elasticHostUrl.append(":").append(hostPort);
+
+        // Read optional certificate file path
+        pHostConfigTree->getProp("@certificateFilePath", certificateFilePath);
+
+        // Get authentication settings, if present
+        Owned<IPropertyTree> pAuthConfigTree = pHostConfigTree->getPropTree("authentication");
+        if (!pAuthConfigTree)
+            return true;
+
+        // Retrieve the authentication type and validate (only basic is supported)
+        if (!pAuthConfigTree->getProp("@type", authenticationType) || !streq(authenticationType, "basic"))
         {
-            if (!getSecretKeyValue(username, secretTree, "username") || !getSecretKeyValue(password, secretTree, "password"))
+            WARNLOG("ElasticMetricSink: Only basic authentication is supported");
+            return false;
+        }
+
+        StringBuffer credentialsSecretKey;
+        pAuthConfigTree->getProp("@credentialsSecret", credentialsSecretKey);  // vault/secrets key
+        if (!credentialsSecretKey.isEmpty())
+        {
+            StringBuffer credentialsVaultId;
+            pAuthConfigTree->getProp("@credentialsVaultId", credentialsVaultId);//optional HashiCorp vault ID
+
+            PROGLOG("Retrieving ElasticSearch host authentication username/password from secrets tree '%s', from vault '%s'",
+                   credentialsSecretKey.str(), !credentialsVaultId.isEmpty() ? credentialsVaultId.str() : "");
+
+            Owned<const IPropertyTree> secretTree(getSecret("authn", credentialsSecretKey.str(), credentialsVaultId, nullptr));
+            if (secretTree == nullptr)
             {
-                WARNLOG("ElasticMetricSink: Missing username and/or password from secrets tree '%s', vault '%s'",
-                        credentialsSecretKey.str(), !credentialsVaultId.isEmpty() ? credentialsVaultId.str() : "n/a");
+                WARNLOG("ElasticMetricSink: Unable to load secret tree '%s', from vault '%s'", credentialsSecretKey.str(),
+                        !credentialsVaultId.isEmpty() ? credentialsVaultId.str() : "n/a");
                 return false;
             }
+
+            // authentication type defines the secret key name/value pairs to retrieve
+            if (streq(authenticationType, "basic"))
+            {
+                if (!getSecretKeyValue(username, secretTree, "username") || !getSecretKeyValue(password, secretTree, "password"))
+                {
+                    WARNLOG("ElasticMetricSink: Missing username and/or password from secrets tree '%s', vault '%s'",
+                            credentialsSecretKey.str(), !credentialsVaultId.isEmpty() ? credentialsVaultId.str() : "n/a");
+                    return false;
+                }
+            }
         }
+        else
+        {
+            // if basic auth, username and password are stored directly in the configuration
+            if (streq(authenticationType, "basic"))
+            {
+                StringBuffer encryptedPassword;
+                if (!pAuthConfigTree->getProp("@username", username) || !pAuthConfigTree->getProp("@password", encryptedPassword))
+                {
+                    WARNLOG("ElasticMetricSink: Missing username and/or password from configuration");
+                    return false;
+                }
+                decrypt(password, encryptedPassword.str()); //MD5 encrypted in config
+            }
+        }
+
+        // Read optional timeout values
+        connectTimeout = pHostConfigTree->getPropInt("@connectionTimeout", connectTimeout);
+        readTimeout = pHostConfigTree->getPropInt("@readTimeout", readTimeout);
+        writeTimeout = pHostConfigTree->getPropInt("@writeTimeout", writeTimeout);
+
+        // Ensure timeouts are not longer than the collection period
+        if (connectTimeout > (int)collectionPeriodSeconds)
+            WARNLOG("ElasticMetricSink: Connection timeout is longer than the collection period %d", collectionPeriodSeconds);
+
+        if (readTimeout > (int)collectionPeriodSeconds)
+            WARNLOG("ElasticMetricSink: Read timeout is longer than the collection period %d", collectionPeriodSeconds);
+
+        if (writeTimeout > (int)collectionPeriodSeconds)
+            WARNLOG("ElasticMetricSink: Write timeout is longer than the collection period %d", collectionPeriodSeconds);
     }
-    else
+    catch (IException *e)
     {
-        // if basic auth, username and password are stored directly in the configuration
-        if (streq(authenticationType, "basic"))
-        {
-            StringBuffer encryptedPassword;
-            if (!pAuthConfigTree->getProp("@username", username) || !pAuthConfigTree->getProp("@password", encryptedPassword))
-            {
-                WARNLOG("ElasticMetricSink: Missing username and/or password from configuration");
-                return false;
-            }
-            decrypt(password, encryptedPassword.str()); //MD5 encrypted in config
-        }
+        Owned<IException> ex = e;
+        StringBuffer errorMsg;
+        ex->errorMessage(errorMsg);
+        WARNLOG("ElasticMetricSink: Exception during initialization, error=%d, message=%s", e->errorCode(), errorMsg.str());
+        return false;
     }
-
-    // Read optional timeout values
-    connectTimeout = pHostConfigTree->getPropInt("@connectionTimeout", connectTimeout);
-    readTimeout = pHostConfigTree->getPropInt("@readTimeout", readTimeout);
-    writeTimeout = pHostConfigTree->getPropInt("@writeTimeout", writeTimeout);
-
-    // Ensure timeouts are not longer than the collection period
-    if (connectTimeout > (int)collectionPeriodSeconds)
-        WARNLOG("ElasticMetricSink: Connection timeout is longer than the collection period %d", collectionPeriodSeconds);
-
-    if (readTimeout > (int)collectionPeriodSeconds)
-        WARNLOG("ElasticMetricSink: Read timeout is longer than the collection period %d", collectionPeriodSeconds);
-
-    if (writeTimeout > (int)collectionPeriodSeconds)
-        WARNLOG("ElasticMetricSink: Write timeout is longer than the collection period %d", collectionPeriodSeconds);
+    catch (...)
+    {
+        WARNLOG("ElasticMetricSink: Unknown exception during initialization");
+        return false;
+    }
 
     return true;
 }
