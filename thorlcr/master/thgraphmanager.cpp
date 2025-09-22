@@ -1448,9 +1448,12 @@ static void computeConfigSHA(StringBuffer &shaStr)
 
 static void configUpdateNotifyHandler(const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
 {
+    PROGLOG("DJPS configUpdateNotifyHandler() called");
+
     // Compute SHA of current (new) configuration
     StringBuffer newConfigSHA;
     computeConfigSHA(newConfigSHA);
+    PROGLOG("DJPS newConfigSHA: %s", newConfigSHA.str());
 
     // Check and update the stored SHA, only if SHA actually changed (content change, not just file touch)
     {
@@ -1470,7 +1473,7 @@ static void configUpdateNotifyHandler(const IPropertyTree *oldComponentConfigura
 void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphName)
 {
     // Install configuration change detection handler for graceful restart
-    unsigned configUpdateHookId = 0;
+    unsigned configUpdateHookId{0};
     if (isContainerized())
     {
         configUpdateHookId = installConfigUpdateHook(configUpdateNotifyHandler, false);
