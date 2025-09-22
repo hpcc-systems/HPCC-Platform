@@ -767,6 +767,7 @@ public:
     bool onStartStop( IEspContext &context, IEspStartStopRequest &req,  IEspStartStopResponse &resp);
     bool onStartStopBegin( IEspContext &context, IEspStartStopBeginRequest &req,  IEspStartStopBeginResponse &resp);
     bool onStartStopDone( IEspContext &context, IEspStartStopDoneRequest &req,  IEspStartStopResponse &resp);
+    bool onGetGlobalMetrics(IEspContext &context, IEspGetGlobalMetricsRequest &req, IEspGetGlobalMetricsResponse &resp);
 
     void getRoxieStateInfo(CRoxieStateInfoThreadParam* param);
     void doGetMachineInfo(IEspContext& context, CMachineInfoThreadParam* pReq);
