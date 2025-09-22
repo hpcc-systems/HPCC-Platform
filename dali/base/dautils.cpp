@@ -3866,3 +3866,35 @@ IFileReadPropertiesUpdater * createFileReadPropertiesUpdater(IUserDescriptor * u
 {
     return new FileReadPropertiesUpdater(udesc);
 }
+
+StringBuffer & mangleTemporaryFileName(StringBuffer & out, const char * lfn, const char * wuid, const char * user, bool isPaused, bool jobUsesCheckpoints)
+{
+    out.clear();
+    if (lfn)
+    {
+        if (*lfn == '~')
+        {
+            out.append("~");
+            ++lfn;
+        }
+        out.appendLower(queryDfsXmlBranchName(DXB_Internal)).append("::");
+        if (user && *user)
+            out.appendLower(user).append("::");
+        if (isPaused)
+        {
+            out.append("thorpause");
+            StringBuffer tail;
+            CDfsLogicalFileName dfslfn;
+            dfslfn.set(lfn);
+            dfslfn.getTail(tail);
+            lfn = tail.str();
+        }
+        else
+        {
+            out.append(jobUsesCheckpoints ? "checkpoints" : "temporary");
+        }
+        out.append("::");
+        out.append(lfn).append("__").appendLower(wuid);
+    }
+    return out;
+}

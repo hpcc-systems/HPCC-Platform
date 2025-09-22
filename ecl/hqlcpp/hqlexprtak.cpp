@@ -109,10 +109,6 @@ extern ThorActivityKind mapExpressionToActivityKind(IHqlExpression * expr)
     switch (op)
     {
         // Dataset operations
-        case no_table:
-        case no_compound_diskread:
-            return TAKdiskread;  // Default already handled above for formats
-        
         case no_temptable:
             return TAKinlinetable;
         
@@ -381,13 +377,6 @@ extern ThorActivityKind mapExpressionToActivityKind(IHqlExpression * expr)
         }
         
         // File operations
-        case no_fetch:
-        case no_compound_fetch:
-            return TAKfetch;  // Format-specific already handled above
-        
-        case no_output:
-            return TAKdiskwrite;  // Format-specific already handled above
-        
         case no_buildindex:
             return TAKindexwrite;
         
