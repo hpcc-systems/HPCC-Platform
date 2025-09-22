@@ -55,6 +55,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  actions: write
+
 jobs:
 
   build-workflow-dispatch:
@@ -218,13 +222,6 @@ jobs:
     uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: ubuntu-22.04
-    secrets: inherit
-
-  build-gh_runner-ubuntu-20_04:
-    if: ${{ contains('schedule,push', github.event_name) }}
-    uses: ./.github/workflows/build-gh_runner.yml
-    with:
-      os: ubuntu-20.04
     secrets: inherit
 
   build-gh_runner-windows-2022:

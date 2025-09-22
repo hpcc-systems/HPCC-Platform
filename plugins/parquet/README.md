@@ -14,7 +14,7 @@ The plugin uses vcpkg and can be installed by creating a separate build director
 cd ./parquet-build
 cmake -DPARQUETEMBED=ON ../HPCC-Platform
 make -j4 package
-sudo dpkg -i ./hpccsystems-plugin-parquetembed_<version>.deb
+sudo dpkg -i ./hpccsystems-plugin-parquetembed_\<version\>.deb
 ```
 
 ## Documentation

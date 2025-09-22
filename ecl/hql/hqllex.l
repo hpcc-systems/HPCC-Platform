@@ -715,6 +715,7 @@ DISTRIBUTION        { RETURNSYM(DISTRIBUTION); }
 DIV                 { RETURNSYM(DIV); }
 DYNAMIC             { RETURNSYM(DYNAMIC); }
 EBCDIC              { RETURNSYM(EBCDIC); }
+ECLAGENT            { RETURNSYM(ECLAGENT); }
 ECLCRC              { RETURNSYM(ECLCRC); }
 ELSE                { RETURNSYM(ELSE); }
 ELSIF               { RETURNSYM(ELSEIF); }
@@ -734,7 +735,6 @@ EVENTEXTRA          { RETURNSYM(EVENTEXTRA); }
 EVENTNAME           { RETURNSYM(EVENTNAME); }
 EXCEPT              { RETURNSYM(EXCEPT); }
 EXCLUSIVE           { RETURNSYM(EXCLUSIVE); }
-EXECUTE             { RETURNSYM(EXECUTE); }
 EXISTS              { RETURNSYM(EXISTS); }
 EXP                 { RETURNSYM(EXP); }
 EXPIRE              { RETURNSYM(EXPIRE); }

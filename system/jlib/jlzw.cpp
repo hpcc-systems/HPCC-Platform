@@ -2070,6 +2070,15 @@ public:
         return nullptr;
     }
 
+    virtual ISerialOutputStream * queryOutputStream() override
+    {
+        return nullptr;
+    }
+    virtual ISerialInputStream * queryInputStream() override
+    {
+        return nullptr;
+    }
+
 protected:
     Linked<IFileIO> fileio;
     CompressedFileTrailer trailer;
@@ -2378,7 +2387,7 @@ public:
 
 //---------------------------------------------------------------------------------------------------------------------
 
-class CCompressedFileWriter : public CCompressedFileBase
+class CCompressedFileWriter : public CCompressedFileBase, implements ISerialOutputStream
 {
     unsigned curblocknum;
     MemoryBuffer iobuffer;          // buffer used for writing to file
@@ -2409,6 +2418,8 @@ class CCompressedFileWriter : public CCompressedFileBase
         return (byte *)iobuffer.bufferBase() + compblockoffset;
     }
 public:
+    IMPLEMENT_IINTERFACE_USING(CCompressedFileBase)
+
     CCompressedFileWriter(IFileIO *_fileio,CompressedFileTrailer &_trailer,ICFmode _mode, bool _setcrc,ICompressor *_compressor, unsigned compMethod, unsigned bufferSize)
         : CCompressedFileBase(_fileio, _trailer, bufferSize), mode(_mode), setcrc(_setcrc), compressor(_compressor)
     {
@@ -2598,6 +2609,30 @@ public:
     virtual unsigned dataCRC() override
     {
         return trailer.crc;
+    }
+
+// ISerialOutputStream
+    virtual void put(size32_t len, const void * data) override
+    {
+        for (;;) {
+            size32_t done = compress(data,len);
+            trailer.expandedSize += done;
+            len -= done;
+            data = (const byte *)data+done;
+            if (len==0)
+                break;
+            doFlush(true, false);
+        }
+    }
+
+    virtual offset_t tell() const override
+    {
+        return trailer.expandedSize;
+    }
+
+    virtual ISerialOutputStream * queryOutputStream()
+    {
+        return this;
     }
 };
 

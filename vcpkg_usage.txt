@@ -88,11 +88,15 @@ azure-storage-files-shares-cpp provides CMake targets:
   find_package(azure-storage-files-shares-cpp CONFIG REQUIRED)
   target_link_libraries(main PRIVATE Azure::azure-storage-files-shares)
 
-boost-property-tree provides CMake targets:
+The package boost-property-tree is compatible with built-in CMake targets of FindBoost.cmake:
 
-  # this is heuristically generated, and may not be correct
-  find_package(boost_property_tree CONFIG REQUIRED)
-  target_link_libraries(main PRIVATE Boost::property_tree)
+    find_package(Boost REQUIRED COMPONENTS property_tree)
+    target_link_libraries(main PRIVATE Boost::property_tree)
+
+or the generated cmake configs via:
+
+    find_package( REQUIRED CONFIG)
+    target_link_libraries(main PRIVATE Boost::property_tree)
 
 libuv provides CMake targets:
 
@@ -201,6 +205,11 @@ libmysql provides CMake targets:
 
     find_package(unofficial-libmysql REQUIRED)
     target_link_libraries(main PRIVATE unofficial::libmysql::libmysql)
+
+libphonenumber provides CMake targets:
+
+    find_package(libphonenumber CONFIG REQUIRED)
+    target_link_libraries(main PRIVATE libphonenumber::phonenumber)
 
 The package librdkafka:x64-linux-dynamic provides CMake targets:
 

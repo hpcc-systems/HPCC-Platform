@@ -16,6 +16,7 @@
 ############################################################################## */
 #include "jliball.hpp"
 
+#include "jstream.hpp"
 #include "thorfile.hpp"
 
 #include "eclhelper.hpp"
@@ -24,6 +25,7 @@
 #include "rtlfield.hpp"
 #include "rtlds_imp.hpp"
 #include "rtldynfield.hpp"
+#include "rtlformat.hpp"
 #include "roxiemem.hpp"
 
 #include "rmtclient.hpp"
@@ -39,74 +41,111 @@
     #include "parquetembed.hpp"
 #endif
 
-constexpr size32_t defaultReadBufferSize = 0x100000;
+constexpr size32_t defaultReadBufferSize = oneMB;
 
 //---------------------------------------------------------------------------------------------------------------------
 
-static IBufferedSerialInputStream * createInputStream(IFileIO * inputfileio, const IPropertyTree * providerOptions)
-{
-    assertex(providerOptions);
-    size32_t readBufferSize = providerOptions->getPropInt("readBufferSize", defaultReadBufferSize);
-
-    //MORE: Add support for passing these values to the function
-    offset_t startOffset = 0;
-    offset_t length = unknownFileSize;
-
-    //MORE: Is this a good idea?
-    if (length == unknownFileSize)
-    {
-        offset_t filesize = inputfileio->size();
-        assertex(startOffset <= filesize);
-        length = filesize - startOffset;
-    }
-
-    return createFileSerialStream(inputfileio, startOffset, length, readBufferSize);
-};
-
-
-static bool createInputStream(Shared<IBufferedSerialInputStream> & inputStream, Shared<IFileIO> & inputfileio, IFile * inputFile, const IPropertyTree * providerOptions)
+IBufferedSerialInputStream * createBufferedInputStream(IFileIO * io, const IPropertyTree * providerOptions)
 {
     assertex(providerOptions);
 
     bool compressed = providerOptions->getPropBool("@compressed", false);
-    bool blockcompressed = providerOptions->getPropBool("@blockCompressed", false);
-    bool forceCompressed = providerOptions->getPropBool("@forceCompressed", false);
+    if (!compressed && providerOptions->getPropBool("@forceCompressed", false))
+        compressed = true;
+
+    const char * compression = providerOptions->queryProp("@compression", compressed ? "lz4" : nullptr);
+    if (!isEmptyString(compression))
+        compressed = true;
+
+    bool sequentialAccess = providerOptions->getPropBool("@sequentialAccess", false);
 
     MemoryBuffer encryptionKey;
+    Owned<IExpander> eexp;
     if (providerOptions->hasProp("encryptionKey"))
+    {
         providerOptions->getPropBin("encryptionKey", encryptionKey);
+        eexp.setown(createAESExpander256((size32_t)encryptionKey.length(), encryptionKey.bufferBase()));
+        compressed = true;
+    }
 
-    bool rowcompressed = false;
+    size32_t ioBufferSize = providerOptions->getPropInt("@sizeIoBuffer", defaultReadBufferSize);
+    size32_t compressBufferSize = providerOptions->getPropInt("@sizeCompressBuffer", oneMB);
+
+    Linked<IFileIO> inputFileIO = io;
+    unsigned delayNs = providerOptions->getPropInt("@delayNs", 0);
+    if (delayNs)
+        inputFileIO.setown(createDelayedFileIO(inputFileIO, delayNs));
+
+    size32_t bufferSize = defaultReadBufferSize;
     try
     {
         if (compressed)
         {
-            Owned<IExpander> eexp;
-            if (encryptionKey.length()!=0)
-                eexp.setown(createAESExpander256((size32_t)encryptionKey.length(), encryptionKey.bufferBase()));
-            inputfileio.setown(createCompressedFileReader(inputFile, eexp, useDefaultIoBufferSize, false, IFEnone));
-            if(!inputfileio && !blockcompressed) //fall back to old decompression, unless dfs marked as new
+            //If the input file is empty return a dummy stream, otherwise create a decompressed reader
+            size32_t fileSize = inputFileIO->size();
+            if (fileSize != 0)
             {
-                inputfileio.setown(inputFile->open(IFOread));
-                if(inputfileio)
-                    rowcompressed = true;
+                if (sequentialAccess)
+                {
+                    Owned<IExpander> expander = getExpander(compression);
+                    Owned<ISerialInputStream> fileStream = createSerialInputStream(inputFileIO, 0, fileSize);
+                    Owned<IBufferedSerialInputStream> bufferedStream = createBufferedInputStream(fileStream, ioBufferSize);
+                    Owned<ISerialInputStream> compressed = createDecompressingInputStream(bufferedStream, expander);
+                    return createBufferedInputStream(compressed, oneMB);
+                }
+
+                inputFileIO.setown(createCompressedFileReader(inputFileIO, eexp, ioBufferSize));
+
+                //MORE: The compressed file reader should provide a IBufferedSerialInputStream interface - which would avoid
+                //the need for extra buffering.
+
+                //MORE: This should throw an exception if the file does not appear to be compressed
+                if (!inputFileIO)
+                    return nullptr;
+
+                //If we are reading from a compressed file, then only buffer 1MB, not the io size (which may be 4MB)
+                //In the future compressedFileReader will directly implement the buffering
+                bufferSize = oneMB;
             }
         }
-        else
-            inputfileio.setown(inputFile->open(IFOread));
-
-        if (!inputfileio)
-            return false;
     }
     catch (IException *e)
     {
         EXCLOG(e, "createInputStream");
         e->Release();
-        return false;
+        return nullptr;
     }
 
-    inputStream.setown(createInputStream(inputfileio, providerOptions));
-    return true;
+    offset_t startOffset = 0;
+    offset_t length = unknownFileSize; // MORE: This could be an option to allow a subset of the file to be read
+
+    //MORE: Is this a good idea?
+    if (length == unknownFileSize)
+    {
+        offset_t filesize = inputFileIO->size();
+        assertex(startOffset <= filesize);
+        length = filesize - startOffset;
+    }
+
+    //Now wrap the IFileIO in a stream interface
+    Owned<ISerialInputStream> fileStream = createSerialInputStream(inputFileIO, startOffset, length);
+
+    // Create a buffer around the file stream
+    // MORE: This should support threaded reading, but that appears to not yet be implemented....
+
+    return createBufferedInputStream(fileStream, bufferSize);
+};
+
+
+// Create an input stream and and input io for a given input file.
+bool createBufferedInputStream(Shared<IBufferedSerialInputStream> & inputStream, Shared<IFileIO> & inputFileIO, IFile * inputFile, const IPropertyTree * providerOptions)
+{
+    inputFileIO.setown(inputFile->open(IFOread));
+    if (!inputFileIO)
+        return false;
+
+    inputStream.setown(createBufferedInputStream(inputFileIO, providerOptions));
+    return inputStream != nullptr;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -279,6 +318,250 @@ static IRowReadFormatMapping * createUnprojectedMapping(IRowReadFormatMapping * 
 
 //---------------------------------------------------------------------------------------------------------------------
 
+static void inheritPropIfMissing(IPropertyTree & target, const char * targetName, const IPropertyTree & source, const char * sourceName)
+{
+    if (source.hasProp(sourceName) && !target.hasProp(targetName))
+        target.setProp(targetName, source.queryProp(sourceName));
+}
+
+static void inheritSeparatorPropIfMissing(IPropertyTree & target, const char * targetName, const IPropertyTree & source, const char * sourceName)
+{
+    //Legacy - commas are quoted if they occur in a separator list, so need to remove the leading backslashes
+    if (source.hasProp(sourceName) && !target.hasProp(targetName))
+    {
+        StringBuffer unquoted;
+        const char * text = source.queryProp(sourceName);
+        while (*text)
+        {
+            if ((text[0] == '\\') && (text[1] == ','))
+                text++;
+            unquoted.append(*text++);
+        }
+        target.setProp(targetName, unquoted);
+    }
+}
+
+
+FileAccessOptions::FileAccessOptions()
+    : formatOptions(createPTree()), providerOptions(createPTree())
+{
+}
+
+FileAccessOptions::FileAccessOptions(const FileAccessOptions & original)
+    : format(original.format), recordTranslationMode(original.recordTranslationMode),
+      formatOptions(createPTreeFromIPT(original.formatOptions)), providerOptions(createPTreeFromIPT(original.providerOptions)),
+      actualDiskMeta(original.actualDiskMeta.getLink()), formatCrc(original.formatCrc)
+{
+}
+
+//This should be called after updateFromReadHelper, and should only set values not explicitly set in the ECL code.
+void FileAccessOptions::updateFromFile(IDistributedFile * distributedFile)
+{
+    const char *kind = queryFileKind(distributedFile);
+    const IPropertyTree & attributes = distributedFile->queryAttributes();
+
+    //Future feature - allow the format to be omitted from the ecl code, and infer it from the file meta.
+    if (!format)
+        format.set(kind);
+
+    //Check for field translation - only supported when reading as a flat file
+    if (strsame(format, "flat"))
+    {
+        //The source must also be a flat file
+        if (strsame(kind, "flat"))
+        {
+            Owned<IOutputMetaData> publishedMeta = getDaliLayoutInfo(attributes);
+            if (publishedMeta)
+            {
+                actualDiskMeta.setown(publishedMeta.getClear());
+                formatCrc = attributes.getPropInt("@formatCrc");
+            }
+
+            size32_t dfsSize = attributes.getPropInt("@recordSize");
+            if (dfsSize != 0)
+                formatOptions->setPropInt("@recordSize", dfsSize);
+        }
+    }
+
+    bool fileIsGrouped = attributes.getPropBool("@grouped");
+    bool expectedGrouped = formatOptions->getPropBool("@grouped", false);
+    if (fileIsGrouped != expectedGrouped)
+        throw makeStringExceptionV(9999, "DFS and code generated group info. differs: DFS(%s) ECL(%s)", boolToStr(fileIsGrouped), boolToStr(expectedGrouped));
+
+    bool blockcompressed = false;
+    bool compressed = distributedFile->isCompressed(&blockcompressed); //try new decompression, fall back to old unless marked as block
+    if (compressed)
+        setCompression(true, nullptr);
+
+    //MORE: There should probably be a generic way of storing and extracting format options for a file
+    inheritPropIfMissing(*formatOptions, "quote", attributes, "@csvQuote");
+    inheritSeparatorPropIfMissing(*formatOptions, "separator", attributes, "@csvSeparate");
+    inheritPropIfMissing(*formatOptions, "terminator", attributes, "@csvTerminate");
+    inheritPropIfMissing(*formatOptions, "escape", attributes, "@csvEscape");
+}
+
+void FileAccessOptions::updateFromGraphNode(const IPropertyTree * node)
+{
+    if (node)
+    {
+        const char *recordTranslationModeHintText = node->queryProp("hint[@name='layouttranslation']/@value");
+        if (recordTranslationModeHintText)
+            recordTranslationMode = getTranslationMode(recordTranslationModeHintText, true);
+    }
+}
+
+void FileAccessOptions::updateFromStoragePlane(const IStoragePlane * storagePlane, IFOmode mode)
+{
+    if (!storagePlane)
+        return;
+
+    providerOptions->setPropInt64("@sizeIoBuffer", storagePlane->getAttribute(BlockedSequentialIO));
+
+    if (mode == IFOwrite)
+    {
+        const char * compression = storagePlane->queryCompression();
+        if (compression)
+        {
+            if (!strieq(compression, "none"))
+                setCompression(true, compression);
+            else
+                setCompression(false, nullptr);
+        }
+        else if (storagePlane->compressOnWrite())
+            setCompression(true, nullptr);
+
+        providerOptions->setPropBool("@renameAfterWrite", storagePlane->getAttribute(RenameSupported));
+    }
+}
+
+void FileAccessOptions::updateFromStoragePlane(const char * storagePlaneName, IFOmode mode)
+{
+    Owned<const IStoragePlane> storagePlane = getStoragePlaneByName(storagePlaneName, false);
+    updateFromStoragePlane(storagePlane, mode);
+}
+
+void FileAccessOptions::updateFromReadHelper(IHThorGenericDiskReadBaseArg & helper)
+{
+    unsigned helperFlags = helper.getFlags();
+    bool isGeneric = (helperFlags & TDXgeneric) != 0;
+
+    const char * eclFormat = isGeneric ? helper.queryFormat() : nullptr;
+    if (eclFormat)
+        format.set(eclFormat);
+    else if (!format)
+        format.set("flat");
+
+    formatCrc = helper.getDiskFormatCrc();
+
+    providerOptions->setPropBool("@forceCompressed", (helperFlags & TDXcompress) != 0);
+    if (helperFlags & TDRoptional)
+        providerOptions->setPropBool("@optional", true);
+
+    formatOptions->setPropBool("@grouped", (helperFlags & TDXgrouped) != 0);
+    if ((helperFlags & TDRcloneappendvirtual) != 0)
+        formatOptions->setPropBool("@cloneAppendVirtuals", true);
+
+    if (isGeneric)
+    {
+        CPropertyTreeWriter formatWriter(formatOptions);
+        helper.getFormatOptions(formatWriter);
+
+        CPropertyTreeWriter providerWriter(providerOptions);
+        helper.getProviderOptions(providerWriter);
+    }
+
+    if (helperFlags & TDWnocompress)
+        setCompression(false, nullptr);
+
+    rtlDataAttr k;
+    size32_t kl;
+    helper.getEncryptKey(kl,k.refdata());
+    if (kl)
+    {
+        providerOptions->setPropBin("encryptionKey", kl, k.getdata());
+        setCompression(true, nullptr);
+    }
+}
+
+void FileAccessOptions::updateFromWriteHelper(IHThorGenericDiskWriteArg & helper, const char * defaultStoragePlaneName)
+{
+    unsigned helperFlags = helper.getFlags();
+    bool isGeneric = (helperFlags & TDXgeneric) != 0;
+
+    if (isGeneric)
+        format.set(helper.queryFormat());
+    else
+        format.set("flat");
+
+    roxiemem::OwnedRoxieString helperCluster(helper.getCluster(0));
+    const char * targetPlaneName = helperCluster.get();
+    if (!targetPlaneName)
+        targetPlaneName = defaultStoragePlaneName;
+
+    updateFromStoragePlane(targetPlaneName, IFOwrite);
+
+    formatOptions->setPropBool("@grouped", ((helperFlags & TDXgrouped) != 0));
+
+    bool forceCompressed = (helperFlags & (TDXcompress|TDWnewcompress)) != 0;
+    if (forceCompressed)
+        setCompression(true, nullptr);
+    providerOptions->setPropBool("@forceCompressed", forceCompressed);
+    //Explicitly disable compression if TDWnocompress is set
+    if (helperFlags & TDWnocompress)
+        setCompression(false, nullptr);
+
+    providerOptions->setPropBool("@extend", (helperFlags & TDWextend) != 0);
+    providerOptions->setPropBool("@overwrite", (helperFlags & TDWoverwrite) != 0);
+//    providerOptions->setPropBool("@writeDirect", false); // I'm not sure what thor uses this for (TW_Direct)
+
+    if (helperFlags & TDXjobtemp)
+        providerOptions->setPropBool("@jobTemp", true);
+    else if (helperFlags & TDXtemporary)
+        providerOptions->setPropBool("@temporary", true);
+
+    if (isGeneric)
+    {
+        CPropertyTreeWriter formatWriter(formatOptions);
+        helper.getFormatOptions(formatWriter);
+
+        CPropertyTreeWriter providerWriter(providerOptions);
+        helper.getProviderOptions(providerWriter);
+    }
+
+    rtlDataAttr k;
+    size32_t kl;
+    helper.getEncryptKey(kl,k.refdata());
+    if (kl)
+    {
+        providerOptions->setPropBin("encryptionKey", kl, k.getdata());
+        setCompression(true, nullptr);
+    }
+}
+
+bool FileAccessOptions::isCompressed() const
+{
+    return providerOptions->getPropBool("@compressed");
+}
+
+void FileAccessOptions::setCompression(bool enable, const char * method)
+{
+    providerOptions->setPropBool("@compressed", enable);
+    //Only override the method if it is explicitly provided
+    if (enable && method)
+        providerOptions->setProp("@compression", method);
+    else if (!enable)
+        providerOptions->setProp("@compression", nullptr);
+}
+
+void updatePlaneFromHelper(StringBuffer & plane, IHThorDiskWriteArg & helper)
+{
+    roxiemem::OwnedRoxieString helperCluster(helper.getCluster(0));
+    if (helperCluster)
+        plane.set(helperCluster);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
 /*
  * The base class for reading rows from an external file.  Each activity will have an instance of a disk reader for
  * each actual file format.
@@ -310,7 +593,7 @@ protected:
 
 protected:
     Owned<IBufferedSerialInputStream> inputStream;
-    Owned<IFileIO> inputfileio;
+    Owned<IFileIO> inputFileIO;
     CThorContiguousRowBuffer inputBuffer;    // more: move to derived classes.
     Owned<IEngineRowAllocator> outputAllocator;
     RtlDynamicRowBuilder allocatedBuilder;
@@ -446,19 +729,11 @@ bool LocalDiskRowReader::matches(const char * format, bool streamRemote, IRowRea
 
 bool LocalDiskRowReader::setInputFile(IFile * inputFile, const char * _logicalFilename, unsigned _partNumber, offset_t _baseOffset, offset_t startOffset, offset_t length, const FieldFilterArray & _expectedFilter)
 {
-    bool blockcompressed = providerOptions->getPropBool("@blockCompressed", false);
-    bool forceCompressed = providerOptions->getPropBool("@forceCompressed", false);
-
     logicalFilename.set(_logicalFilename);
     filePart = _partNumber;
     fileBaseOffset = _baseOffset;
 
-    size32_t readBufferSize = providerOptions->getPropInt("readBufferSize", defaultReadBufferSize);
-    MemoryBuffer encryptionKey;
-    if (providerOptions->hasProp("encryptionKey"))
-        providerOptions->getPropBin("encryptionKey", encryptionKey);
-
-    if (!createInputStream(inputStream, inputfileio, inputFile, providerOptions))
+    if (!createBufferedInputStream(inputStream, inputFileIO, inputFile, providerOptions))
         return false;
 
     expectedFilter.kill();
@@ -597,7 +872,7 @@ bool BinaryDiskRowReader::setInputFile(IFile * inputFile, const char * _logicalF
     if (keyedTranslator)
         keyedTranslator->translate(actualFilter);
 
-    unsigned __int64 filesize = inputfileio->size();
+    unsigned __int64 filesize = inputFileIO->size();
     if (!compressed && getFixedDiskRecordSize() && ((offset_t)-1 != filesize) && (filesize % getFixedDiskRecordSize()) != 0)
     {
         StringBuffer s;
@@ -1865,14 +2140,14 @@ bool RemoteDiskRowReader::setInputFile(const RemoteFilename & rfilename, const c
         Owned<IFile> iFile = createIFile(rfilename);
 
         // remote side does projection/translation/filtering
-        inputfileio.setown(remoteFileIO.getClear());
-        if (!inputfileio)
+        inputFileIO.setown(remoteFileIO.getClear());
+        if (!inputFileIO)
             return false;
     }
 
     //MORE: Allow a previously created input stream to be reused to avoid reallocating the buffer
-    size32_t readBufferSize = providerOptions->getPropInt("readBufferSize", defaultReadBufferSize);
-    inputStream.setown(createFileSerialStream(inputfileio, 0, (offset_t)-1, readBufferSize));
+    size32_t readBufferSize = providerOptions->getPropInt("@sizeIoBuffer", defaultReadBufferSize);
+    inputStream.setown(createFileSerialStream(inputFileIO, 0, (offset_t)-1, readBufferSize));
 
     inputBuffer.setStream(inputStream);
     eogPending = false;

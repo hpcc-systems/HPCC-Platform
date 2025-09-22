@@ -110,6 +110,7 @@ static const char* const PropSessionLoginURL = "@loginurl";
  */
 
 interface IEspSecureContext;
+interface IDataMaskingProfile;
 
 esp_http_decl IEspContext* createEspContext(IEspSecureContextEx* secureContext = nullptr);
 
@@ -152,6 +153,7 @@ esp_http_decl void setBuildVersion(const char* buildVersion);
 esp_http_decl const char* getBuildVersion();
 esp_http_decl void setBuildLevel(const char* buildLevel);
 esp_http_decl IEspServer* queryEspServer();
+esp_http_decl IDataMaskingProfile* queryDataMaskingProfile(const char* profileName, int version);
 
 #define SDSSESSION_CONNECT_TIMEOUTMS (180*1000)
 interface IRemoteConnection;

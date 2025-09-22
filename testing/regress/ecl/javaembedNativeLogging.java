@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2025 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2025 HPCC Systems.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,13 +15,22 @@
     limitations under the License.
 ############################################################################## */
 
-IMPORT Std;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-// HPCC-32793
+public class javaembedNativeLogging
+{
+    private static final Logger logger = LogManager.getLogger(javaembedNativeLogging.class);
 
-// Assumes execution on mythor1 thor cluster
+    public static String testLogging(String arg)
+    {
+        logger.trace("This is a trace message.");
+        logger.debug("This is a debug message."); // Will not be logged with root level "info"
+        logger.info("This is an info message.");
+        logger.warn("This is a warning message.");
+        logger.error("This is an error message.");
+        logger.fatal("This is a fatal message!");
 
-ds1 := NOFOLD(DATASET(10000, TRANSFORM({UNSIGNED4 n}, SELF.n := RANDOM()), DISTRIBUTED));
-
-// Data: Build data on a different thor cluster
-EXECUTE('mythor2', ds1);
+        return arg;
+    }
+}

@@ -90,9 +90,11 @@ that is copied verbatim into the relevant ConfigMap, while config: allows the co
 specified inline.
 
 In addition, global config info (same for every component) is generated into a global.json file and made
-available via ConfigMap mechanism. So far, this only contains 
+available via ConfigMap mechanism. So far, this only contains
 
-  "version": {{ .root.Values.global.image.version | quote }}
+```json
+   "version": "{{ .root.Values.global.image.version | quote }}"
+```
 
 but we can add more.
 

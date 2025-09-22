@@ -53,6 +53,7 @@
 #include <stdio.h>
 #endif
 #include <algorithm>
+#include <thread>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -670,6 +671,7 @@ public:
     bool        set_nonblock(bool on=true);
     bool        set_nagle(bool on);
     void        set_linger(int lingersecs); 
+    virtual void set_quick_ack(bool on) override;
     void        set_keep_alive(bool set);
     void        logConnectionInfo(unsigned timeoutms, unsigned conn_mstime);
     virtual void set_inherit(bool inherit=false);
@@ -1064,6 +1066,14 @@ bool CSocket::set_nagle(bool on)
         nagling = !on;
     }
     return ret;
+}
+
+void CSocket::set_quick_ack(bool on)
+{
+#ifdef TCP_QUICKACK
+    int flag = (int)on;
+    setsockopt(sock, IPPROTO_TCP, TCP_QUICKACK, &flag, sizeof(flag));
+#endif
 }
 
 void CSocket::set_inherit(bool inherit)
@@ -5629,9 +5639,9 @@ public:
                     break;
                 if (n < 0)
                 {
-                    CriticalBlock block(sect);
                     if (err != JSE_INTR)
                     {
+                        CriticalBlock block(sect);
                         if (dummysockopen)
                         {
                             LOGERR(err,12,"CSocketEpollThread epoll error"); // should cache error ?

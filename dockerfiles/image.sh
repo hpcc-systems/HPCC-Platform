@@ -123,6 +123,12 @@ finalize_platform_core_image() {
     fi
 
     docker tag hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc incr-core:$MODE
+    
+    # Create additional name tag if specified
+    if [ -n "$NAME_TAG" ]; then
+        echo "--- Creating additional tag: $NAME_TAG ---"
+        docker tag hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc hpccsystems/platform-core:$NAME_TAG
+    fi
 }
 
 finalize_platform_core_image_from_folder() {
@@ -143,6 +149,13 @@ finalize_platform_core_image_from_folder() {
     docker commit $CONTAINER hpccsystems/platform-core:build
     echo "--- Remove '$CONTAINER' container ---"
     docker rm -f $CONTAINER
+    
+    # Create additional name tag if specified
+    if [ -n "$NAME_TAG" ]; then
+        echo "--- Creating additional tag: $NAME_TAG ---"
+        docker tag hpccsystems/platform-core:build hpccsystems/platform-core:$NAME_TAG
+    fi
+    
     echo "docker run --entrypoint /bin/bash -it platform-core:build"
     echo "platform-core:build"
 }
@@ -168,6 +181,12 @@ finalize_platform_core_image_from_deb() {
     docker exec --user root $CONTAINER /bin/bash -c "eclcc -pch"
     docker commit $CONTAINER hpccsystems/platform-core:$filename
     docker rm -f $CONTAINER
+    
+    # Create additional name tag if specified
+    if [ -n "$NAME_TAG" ]; then
+        echo "--- Creating additional tag: $NAME_TAG ---"
+        docker tag hpccsystems/platform-core:$filename hpccsystems/platform-core:$NAME_TAG
+    fi
 }
 
 clean() {
@@ -389,6 +408,7 @@ status() {
     echo "RELEASE_BASE_IMAGE: $RELEASE_BASE_IMAGE"
     echo "HPCC_BUILD: $HPCC_BUILD"
     echo "ARCH: $ARCH"
+    echo "NAME_TAG: $NAME_TAG"
 }
 
 # Print usage information
@@ -406,6 +426,7 @@ usage() {
     echo "                          will preserve build state per branch"
     echo "  -r, --reconfigure       reconfigure CMake before building"
     echo "  -a, --architecture      override default architecture (x64 or arm64)"
+    echo "  -n, --name-tag          create an additional tag with the specified name for the final image"
 }
 
 # Set default values
@@ -417,6 +438,7 @@ BUILD_OS="ubuntu-22.04"
 RELEASE_BASE_IMAGE="ubuntu:22.04" # Matches vcpkg base image (does not need to be an exact match)
 TAG_BUILD=0
 ARCH=""
+NAME_TAG=""
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]
@@ -461,6 +483,11 @@ case $key in
         ;;
     -a|--architecture)
         ARCH="$2"
+        shift # past argument
+        shift # past value
+        ;;
+    -n|--name-tag)
+        NAME_TAG="$2"
         shift # past argument
         shift # past value
         ;;

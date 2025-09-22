@@ -1,4 +1,4 @@
-import * as Observable from "dojo/store/Observable";
+import { Observable } from "src-dojo/index";
 import { SimpleQueryEngine } from "./util/SimpleQueryEngine";
 import { BaseRow, QueryRequest, QueryOptions, ThenableResponse, BaseStore } from "./Store";
 

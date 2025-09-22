@@ -1,47 +1,20 @@
 ## This folder contains lightweight Elastic Stack deployment chart and HPCC Systems preferred values
 
-<table>
-  <thead>
-    <tr>
-      <td align="left">
-        :zap: <b>Note:</b> Elastic Stack components prior to 7.16.0 have been reported to be affected by the high-severity vulnerability (CVE-2021-44228) impacting multiple versions of the Apache Log4j 2 utility
-      </td>
-    </tr>
-  </thead>
+> :zap: **Note:** Elastic Stack components prior to 7.16.0 have been reported to be affected by the high-severity vulnerability (CVE-2021-44228) impacting multiple versions of the Apache Log4j 2 utility.
 
-  <tbody>
-    <tr>
-      <td>
-        <ul>
-          <li>Users of elastic4hpcclogs are strongly encouraged to update to chart version 1.2.0 which references Elastic Stack 7.16.1</li>
-          <li>Learn more about Elastic's response to the vulnerability: https://discuss.elastic.co/t/apache-log4j2-remote-code-execution-rce-vulnerability-cve-2021-44228-esa-2021-31/291476</li>
-        </ul>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <ul>
-          <li>elastic4hpcclogs chart version 1.2.2 references Elastic Stack 7.16.3 (Log4j 2.17.1) which "By default, Elasticsearch and Logstash have no known vulnerabilities to CVE-2021-44832."</li>
-        </ul>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <ul>
-          <li>elastic4hpcclogs chart version 1.2.1 references Elastic Stack 7.16.2 (Log4j 2.17.0) which reportedly fully mitigates CVE-2021-44228 and should avoid false positives in vulnerability scanners.</li>
-          <li>Learn more about Elastic's 7.16.2 release and their response to the vulnerability: https://discuss.elastic.co/t/apache-log4j2-remote-code-execution-rce-vulnerability-cve-2021-44228-esa-2021-31/291476</li>
-        </ul>
-      </td>
-    </tr>
-  </tbody>
-</table>
+Key version guidance:
+* elastic4hpcclogs 1.2.2 references Elastic Stack 7.16.3 (Log4j 2.17.1) which by default has no known vulnerabilities to CVE-2021-44832.
+* elastic4hpcclogs 1.2.1 references Elastic Stack 7.16.2 (Log4j 2.17.0) which mitigates CVE-2021-44228 and avoids false positives in scanners.
+* elastic4hpcclogs 1.2.0 references Elastic Stack 7.16.1.
+* Users of older versions are strongly encouraged to upgrade.
+* More details: https://discuss.elastic.co/t/apache-log4j2-remote-code-execution-rce-vulnerability-cve-2021-44228-esa-2021-31/291476
 
 This chart describes a local, minimal Elastic Stack instance for HPCC Systems component log processing.
 Once successfully deployed, HPCC component logs produced within the same namespace should be automatically indexed
 on the Elastic Search end-point. Users can query those logs by issuing Elastic Search RESTful API queries, or via
 the Kibana UI (after creating a simple index pattern).
 
-Out of the box, the Filebeat forwards the HPCC component logs to a generically named index: 'hpcc-logs-'<DateStamp> and specifically into a field labeled 'message'. It also aggregates k8s, Docker, and system metadata to
+Out of the box, the Filebeat forwards the HPCC component logs to a generically named index: 'hpcc-logs-'\<DateStamp\> and specifically into a field labeled 'message'. It also aggregates k8s, Docker, and system metadata to
 help the user query the log entries of their interest.
 
 A Kibana index pattern is created automatically based on the default filebeat index layout.
@@ -52,12 +25,12 @@ This chart is dependent on the Elastic Stack Helm charts for ElasticSearch, File
 #### Dependency update
 ##### HELM Command
 Helm provides a convenient command to automatically pull appropriate dependencies to the /charts directory:
-> helm dependency update <HPCC-Systems Git clone location>/helm/managed/logging/elastic/
+> helm dependency update \<HPCC-Systems Git clone location\>/helm/managed/logging/elastic/
 
 ##### HELM Install parameter
 Otherwise, provide the "--dependency-update" argument in the helm install command
 For example:
-> helm install myelastic <HPCC-Systems Git clone location>/helm/managed/logging/elastic/ --dependency-update
+> helm install myelastic \<HPCC-Systems Git clone location\>/helm/managed/logging/elastic/ --dependency-update
 
 ### Log Query Improvements
 User are encouraged to make use of Elsatic Search "Ingest Pipelines" to improve log query performance and tailor the structure of the log record to meet their needs. The pipelines can be applied to specific indices via Elastic Search API, or via Kibana's UI.

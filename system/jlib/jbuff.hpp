@@ -42,6 +42,7 @@ public:
     void *              reallocate(size_t _len);
     inline const void * get() const         { return ptr; }
     inline byte         getByte(size_t offset) const { return ((const byte *)ptr)[offset]; }
+    inline byte *       bytes() const       { return (byte *)ptr; }
     inline size_t       length() const      { return len; }
     inline void *       mem() const         { return ptr; }
     void                set(size_t _len, const void * _ptr);

@@ -26,6 +26,7 @@
 
 #include "jrowstream.hpp"
 #include "rtlkey.hpp"
+#include "rtldynfield.hpp"
 
 #define PARQUET_FILE_TYPE_NAME "parquet"
 
@@ -61,6 +62,51 @@ public:
 };
 
 THORHELPER_API IRowReadFormatMapping * createRowReadFormatMapping(RecordTranslationMode mode, const char * format, unsigned actualCrc, IOutputMetaData & actual, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, IOutputMetaData & projected, const IPropertyTree * formatOptions);
+
+// Format options are mapped from the ecl to the property tree without turning them into attributes.
+// So CSV(header(1))  would have getPropInt64("header") == 1
+//
+// Any other format properties that correspond to user options are passed similarly.
+//
+// Internal format options (e.g. whether the rows are grouped) are passed as attributes.
+//
+// User defined provider options (when implemented) will be passed as key value pairs - not attributes
+//
+// Internal provider options (e.g. readBufferSize) are passed as attributes, except for binary valuues (e.g. encryptionKeys)
+
+interface IHThorGenericDiskReadBaseArg;
+interface IHThorGenericDiskWriteArg;
+interface IStoragePlane;
+interface IDistributedFile;
+class THORHELPER_API FileAccessOptions
+{
+public:
+    FileAccessOptions();
+    explicit FileAccessOptions(const FileAccessOptions & original); // clone - ready for subsequent modification
+
+    bool isCompressed() const;
+    void setCompression(bool enable, const char * method);
+
+    void updateFromFile(IDistributedFile * file);
+    void updateFromGraphNode(const IPropertyTree * node);
+    void updateFromReadHelper(IHThorGenericDiskReadBaseArg & helper);
+    void updateFromStoragePlane(const IStoragePlane * storagePlane, IFOmode mode);
+    void updateFromStoragePlane(const char * storagePlaneName, IFOmode mode);
+
+    void updateFromWriteHelper(IHThorGenericDiskWriteArg & helper, const char * defaultStoragePlaneName);
+
+//MORE: These members should probably be made private, and accessor methods added for extracting values from the format/provider options.
+//      or (better) the logic for setting properties for publishing in dali should become a member function.
+public:
+    StringAttr format;
+    RecordTranslationMode recordTranslationMode = RecordTranslationMode::Unspecified;
+    Owned<IPropertyTree> formatOptions;
+    Owned<IPropertyTree> providerOptions;
+    Owned<IOutputMetaData> actualDiskMeta;
+    unsigned formatCrc = 0;
+};
+
+THORHELPER_API void updatePlaneFromHelper(StringBuffer & plane, IHThorDiskWriteArg & helper);
 
 //--------------------------------------------------------------------------------------------------------------------
 
@@ -114,5 +160,9 @@ public:
 extern THORHELPER_API IDiskRowReader * createLocalDiskReader(const char * format, IRowReadFormatMapping * mapping, const IPropertyTree * providerOptions, IEngineRowAllocator * optOutputAllocator);
 extern THORHELPER_API IDiskRowReader * createRemoteDiskReader(const char * format, IRowReadFormatMapping * mapping, const IPropertyTree * providerOptions, IEngineRowAllocator * optOutputAllocator);
 extern THORHELPER_API IDiskRowReader * createDiskReader(const char * format, bool streamRemote, IRowReadFormatMapping * mapping, const IPropertyTree * providerOptions, IEngineRowAllocator * optOutputAllocator);
+
+//MORE: These should probably move into jlib
+extern THORHELPER_API IBufferedSerialInputStream * createBufferedInputStream(IFileIO * io, const IPropertyTree * providerOptions);
+extern THORHELPER_API bool createBufferedInputStream(Shared<IBufferedSerialInputStream> & inputStream, Shared<IFileIO> & inputfileio, IFile * inputFile, const IPropertyTree * providerOptions);
 
 #endif

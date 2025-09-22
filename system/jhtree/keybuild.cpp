@@ -112,6 +112,36 @@ class LegacyIndexCompressor : public CInterfaceOf<IIndexCompressor>
     }
 };
 
+class HybridIndexCompressor : public CInterfaceOf<IIndexCompressor>
+{
+protected:
+    Owned<IIndexCompressor> leafCompressor;
+    Owned<IIndexCompressor> branchCompressor;
+public:
+    HybridIndexCompressor(unsigned keyedSize, const CKeyHdr* keyHdr, IHThorIndexWriteArg *helper, const char * compression)
+    {
+        leafCompressor.setown(new LegacyIndexCompressor());
+        branchCompressor.setown(new InplaceIndexCompressor(keyedSize, keyHdr, helper, compression));
+    }
+
+    virtual const char *queryName() const override { return "Hybrid"; }
+    virtual CWriteNode *createNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode) const override
+    {
+        if (isLeafNode)
+            return leafCompressor->createNode(_fpos, _keyHdr, isLeafNode);
+        else
+            return branchCompressor->createNode(_fpos, _keyHdr, isLeafNode);
+    }
+    virtual offset_t queryBranchMemorySize() const override
+    {
+        return branchCompressor->queryBranchMemorySize();
+    }
+    virtual offset_t queryLeafMemorySize() const override
+    {
+        return leafCompressor->queryLeafMemorySize();
+    }
+};
+
 class CKeyBuilder : public CInterfaceOf<IKeyBuilder>
 {
 protected:
@@ -131,6 +161,11 @@ protected:
     CRC32 headCRC;
     bool doCrc = false;
 
+    static unsigned getKeyedSize(unsigned rawSize, unsigned _keyedSize)
+    {
+        return _keyedSize != (unsigned) -1 ? _keyedSize : rawSize;
+    }
+
 private:
     unsigned __int64 duplicateCount;
     RelaxedAtomic<__uint64> numLeaves{0};
@@ -149,9 +184,7 @@ private:
 
 public:
     CKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned _keyedSize, unsigned __int64 _startSequence,  IHThorIndexWriteArg *_helper, const char * defaultCompression, bool _enforceOrder, bool _isTLK)
-        : out(_out),
-          enforceOrder(_enforceOrder),
-          isTLK(_isTLK)
+        : out(_out), enforceOrder(_enforceOrder), isTLK(_isTLK)
     {
         sequence = _startSequence;
         keyHdr.setown(new CWriteKeyHdr());
@@ -227,13 +260,17 @@ public:
                 indexCompressor.setown(new PocIndexCompressor);
             else if (strieq(compression, "inplace") || startsWithIgnoreCase(compression, "inplace:"))
                 indexCompressor.setown(new InplaceIndexCompressor(keyedSize, keyHdr, _helper, compression));
+            else if (strieq(compression, "hybrid") || startsWithIgnoreCase(compression, "hybrid:"))
+            {
+                indexCompressor.setown(new HybridIndexCompressor(keyedSize, keyHdr, _helper, compression));
+            }
             else
                 throw makeStringExceptionV(0, "Unrecognised index compression format %s", compression);
         }
         else
             indexCompressor.setown(new LegacyIndexCompressor);
     }
-
+    
     ~CKeyBuilder()
     {
         for (;;)
@@ -247,24 +284,27 @@ public:
 
     void buildLevel(NodeInfoArray &thisLevel, NodeInfoArray &parents)
     {
-        unsigned int leaf = 0;
+        // We should only be building branch nodes here
+        assertex(levels > 0);
+
+        unsigned int nodeIndex = 0;
         CWriteNode *node = NULL;
-        node = indexCompressor->createNode(nextPos, keyHdr, levels==0);
+        node = indexCompressor->createNode(nextPos, keyHdr, false); 
         nextPos += keyHdr->getNodeSize();
         numBranches++;
-        while (leaf<thisLevel.ordinality())
+        while (nodeIndex<thisLevel.ordinality())
         {
-            CNodeInfo &info = thisLevel.item(leaf);
+            CNodeInfo &info = thisLevel.item(nodeIndex);
             if (!node->add(info.pos, info.value, info.size, info.sequence))
             {
                 flushNode(node, parents);
                 node->Release();
-                node = indexCompressor->createNode(nextPos, keyHdr, levels==0);
+                node = indexCompressor->createNode(nextPos, keyHdr, false);
                 nextPos += keyHdr->getNodeSize();
                 numBranches++;
                 verifyex(node->add(info.pos, info.value, info.size, info.sequence));
             }
-            leaf++;
+            nodeIndex++;
         }
         flushNode(node, parents);
         flushNode(NULL, parents);
@@ -701,7 +741,6 @@ extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, unsigned f
 {
     return new CKeyBuilder(_out, flags, rawSize, nodeSize, keyFieldSize, startSequence, helper, defaultCompression, enforceOrder, isTLK);
 }
-
 
 class PartNodeInfo : public CInterface
 {

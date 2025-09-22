@@ -4797,7 +4797,6 @@ void writeSharedObject(const char *srcpath, const MemoryBuffer &obj, const char 
 void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *filename, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml, bool protect)
 {
     StringBuffer dllpath, dllname;
-    StringBuffer srcname(filename);
 
     unsigned crc = 0;
     Owned<IPropertyTree> srcxml;
@@ -4825,13 +4824,14 @@ void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *fi
         }
     }
 
-    if (!srcname.length())
-        srcname.append(name).append(SharedObjectExtension);
-    writeSharedObject(srcname.str(), obj, dir, dllpath, dllname);
+    NewWsWorkunit wu(context, wuid);
+    wuid.set(wu->queryWuid()); // Update the wuid to the new unique value
 
-    NewWsWorkunit wu(context, wuid); //duplicate wuid made unique
+    //Write the dll to a filename based on the unique wuid
+    StringBuffer baseDllName;
+    baseDllName.append(SharedObjectPrefix).append(wuid).append(SharedObjectExtension);
+    writeSharedObject(baseDllName.str(), obj, dir, dllpath, dllname);
 
-    wuid.set(wu->queryWuid());
     wu->setClusterName(cluster);
     wu->commit();
 

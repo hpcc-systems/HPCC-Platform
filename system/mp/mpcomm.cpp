@@ -372,6 +372,10 @@ public:
 
     unsigned flush(CBufferQueueNotify &nfy)
     {
+        // ordinality() is valid to be call outside of a critical section - and is very common to be empty
+        if (likely(received.ordinality() == 0))
+            return 0;
+
         unsigned count = 0;
         CriticalBlock block(sect);
         ForEachQueueItemInRev(i,received) {
@@ -610,7 +614,7 @@ class CMPConnectThread: public Thread
                     {
                         closedOrHandled = true;
                         // process() will remove itself from handler, and need to avoid it doing so while in 'crit'
-                        // since the maintenance thread could also be tyring to manipulate handlers and calling closeIfTimedout()
+                        // since the maintenance thread could also be trying to manipulate handlers and calling closeIfTimedout()
                         b.leave();
                         selectHandler.process(*this);
                     }

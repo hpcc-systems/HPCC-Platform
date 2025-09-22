@@ -15,16 +15,13 @@
     limitations under the License.
 ############################################################################## */
 
-IMPORT Std;
+#ifndef TCPTRS_HPP__
+#define TCPTRS_HPP__
 
-// HPCC-32793
+#include "jsocket.hpp"
+#include "udplib.hpp"
+#include "udpsha.hpp"
 
-// Assumes execution on mythor1 thor cluster
+ISendManager *createTcpSendManager(int server_flow_port, int data_port, int client_flow_port, int queue_size_pr_server, int queues_pr_server, const IpAddress &_myIP, TokenBucket *rateLimiter, bool encryptionInTransit);
 
-ds := NOFOLD(DATASET(10000, TRANSFORM({UNSIGNED4 n}, SELF.n := RANDOM()), DISTRIBUTED));
-
-// Action: Write the dataset to a different thor cluster
-EXECUTE('mythor2', OUTPUT(ds, {ds}, '~test::data', OVERWRITE, COMPRESSED));
-
-// Action: Using the agent process, create a superfile
-EXECUTE(NOTHOR, Std.File.CreateSuperFile('~test::my_superfile'));
+#endif

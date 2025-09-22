@@ -15,6 +15,7 @@ import { BreadcrumbInfo, OverflowBreadcrumb } from "./controls/OverflowBreadcrum
 
 const LineageIcon = bundleIcon(Folder20Filled, Folder20Regular);
 const SelectedLineageIcon = bundleIcon(FolderOpen20Filled, FolderOpen20Regular);
+const TRANSITION_DURATION = 0;
 
 export interface MetricGraphData {
     metricGraph: MetricGraph;
@@ -128,7 +129,7 @@ export const MetricsGraph: React.FunctionComponent<MetricsGraphProps> = ({
 
     // Data ---
     React.useEffect(() => {
-        if (isLayoutComplete(layoutStatus) && lineage.find(item => item.name === lineageSelection) === undefined) {
+        if (isLayoutComplete(layoutStatus) && lineage.length && lineage.find(item => item.name === lineageSelection) === undefined) {
             onLineageSelectionChange(lineage[lineage.length - 1]?.name);
         }
     }, [layoutStatus, lineage, lineageSelection, onLineageSelectionChange]);
@@ -149,27 +150,35 @@ export const MetricsGraph: React.FunctionComponent<MetricsGraphProps> = ({
 
     React.useEffect(() => {
         let cancelled = false;
-        if (metricGraphWidgetReady) {
-            const sameSVG = metricGraphWidget.svg() === svg;
-            setIsRenderComplete(sameSVG);
+        if (metricGraphWidgetReady && isLayoutComplete(layoutStatus)) {
+            const currentSVG = metricGraphWidget.svg();
+            const sameSVG = currentSVG === svg;
+            const currentSelection = metricGraphWidget.selection().sort();
+            const newSelection = selectedMetrics.filter(m => selection?.indexOf(m.id) >= 0).map(m => m.name).filter(sel => !!sel).sort();
+            const sameSelection = currentSelection.join() === newSelection.join();
+            if (sameSVG && sameSelection) {
+                setIsRenderComplete(sameSVG);
+                return;
+            }
+            if (!sameSVG) {
+                metricGraphWidget.svg(svg);
+            }
             metricGraphWidget
-                .svg(svg)
                 .renderPromise()
                 .then(() => {
-                    if (!cancelled) {
-                        const newSel = selectedMetrics.filter(m => selection?.indexOf(m.id) >= 0).map(m => m.name).filter(sel => !!sel);
+                    if (!cancelled && !sameSelection) {
                         metricGraphWidget
-                            .selection(newSel)
+                            .selection(newSelection)
                             ;
                         if (trackSelection && selectedMetricsSource !== "metricGraphWidget") {
-                            if (newSel.length) {
+                            if (newSelection.length) {
                                 if (sameSVG) {
-                                    metricGraphWidget.centerOnSelection();
+                                    metricGraphWidget.centerOnSelection(TRANSITION_DURATION);
                                 } else {
-                                    metricGraphWidget.zoomToSelection(0);
+                                    metricGraphWidget.zoomToSelection(TRANSITION_DURATION);
                                 }
                             } else {
-                                metricGraphWidget.zoomToFit(0);
+                                metricGraphWidget.zoomToFit(TRANSITION_DURATION);
                             }
                         }
                         metricGraphWidget.lazyRender();
@@ -183,7 +192,7 @@ export const MetricsGraph: React.FunctionComponent<MetricsGraphProps> = ({
         return () => {
             cancelled = true;
         };
-    }, [metricGraphWidget, metricGraphWidgetReady, selectedMetrics, selectedMetricsSource, selection, svg, trackSelection]);
+    }, [layoutStatus, metricGraphWidget, metricGraphWidgetReady, selectedMetrics, selectedMetricsSource, selection, svg, trackSelection]);
 
     const onReady = React.useCallback(() => {
         setMetricGraphWidgetReady(true);

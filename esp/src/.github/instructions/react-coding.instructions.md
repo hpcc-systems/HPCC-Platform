@@ -17,7 +17,8 @@ Apply the [general coding guidelines](./general-coding.instructions.md) to all c
 ## React Guidelines
 - Use functional components with hooks (avoid class components).
 - Follow the React hooks rules (no conditional or nested hooks).
-- Use `React.FC` type for components with children, and define prop types explicitly.
+- Use `React.FunctionComponent` type for components with children, and define prop types explicitly.
+- Prefer `useStyles` over inline styles for consistency and performance.
 - Keep components small, focused, and reusable; follow single-responsibility principle.
 - Use CSS modules or CSS-in-JS for component-level styling; avoid global styles.
 - Use `useCallback`, `useMemo`, and `React.memo` for performance optimization.

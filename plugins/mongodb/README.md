@@ -1,270 +1,231 @@
 # MongoDB plugin for ECL
 
-The MongoDB plugin allows an ECL user to embed MongoDB function calls into their code and run it
-on the HPCC Platform. The plugin supports inserting a dataset into a database using `insert_many`, and can
-build ECL datasets from MongoDB result documents returned by the `find`, `update`, `delete`, `aggregate`, and `runCommand` methods.
+The MongoDB plugin allows an ECL user to embed MongoDB function calls into their code and run them on the HPCC Platform. It supports inserting a dataset into a database using `insert_many`, and can build ECL datasets from MongoDB result documents returned by the `find`, `update`, `delete`, `aggregate`, and `runCommand` methods.
 
-The embedded script that gets passed to the plugin can be used to create complex documents to support almost every
-MongoDB command.
+The embedded script passed to the plugin can be used to create complex BSON documents to support almost every MongoDB command.
 
-It is important to use the same keys as the ones in MongoDB when declaring a return type or when creating a BSON document. Otherwise, the plugin will look for a field that might not exist to return when building the resulting dataset.
+Important: Use the same keys that exist in MongoDB when declaring a return type or when creating a BSON document. Otherwise, the plugin will look for a field that may not exist when building the resulting dataset.
 
 ## Installation
 
 The plugin uses vcpkg and can be installed by creating a separate build directory from the platform and running the following commands:
-```
+
+```bash
 cd ./mongodb-build
 cmake -DMONGODBEMBED=ON ../HPCC-Platform
-make -j3 package
-sudo dpkg -i ./hpccsystems-plugin-mongodbembed_<version>.deb
+make -j$(nproc)
+package
+sudo dpkg -i ./hpccsystems-plugin-mongodbembed_\<version\>.deb
 ```
 
 ## Documentation
 
-[Doxygen](https://www.doxygen.nl/index.html) can be used to create nice HTML documentation for the code. Call/caller graphs are also generated for functions if you have [dot](https://www.graphviz.org/download/) installed and available on your path.
+[Doxygen](https://www.doxygen.nl/index.html) can be used to create HTML documentation for the code (call/caller graphs are also generated if [Graphviz dot](https://www.graphviz.org/download/) is installed and on your path).
 
-Assuming `doxygen` is on your path, you can build the documentation via:
-```
+```bash
 cd plugins/mongodb
 doxygen Doxyfile
 ```
 
-The Documentation can then be accessed via `mongodb/docs/html/index.html`.
+Open `plugins/mongodb/docs/html/index.html` in a browser to view the generated documentation.
 
 ## Usage
 
-To start using the plugin in your ECL code you must import mongodb before you create the EMBED statement.
-```
+To start using the plugin in ECL code, import the library:
+
+```ecl
 IMPORT MongoDB;
 ```
 
-You then need to define a function for interfacing with MongoDB. Within the EMBED statement is where you can write code to interact with the MongoDB database or collection that you have passed into the EMBED options. The plugin only supports one line and one operation per EMBED statement. If you wish to chain multiple operations together the aggregate function is supported and can take an aggregation pipeline as long as it is valid BSON.
+Define a function with an `EMBED(mongodb ...)` statement. Only one MongoDB operation per embed statement is supported (for multiple chained operations use an aggregation pipeline).
 
 ### Options
 
-To create the uri for the MongoDB connection instance the ECL user needs to pass in the username, password, server name, or just the port to use for connecting to the cluster. The plugin takes all of these and creates a shared connection instance for many threads to have access to the MongoDB databases. The plugin can connect to multiple MongoDB clusters with different connection options and user credentials all from the same workunit. The ECL user can also define the batch size of the result rows.
+To create the URI for the MongoDB connection the ECL user passes the username, password, server name (for clusters) or just the port (for local), plus optional batch size and connection options. The plugin constructs a shared connection instance. Multiple MongoDB clusters (different credentials/options) can be used within the same workunit. Batch size controls the MongoDB cursor fetch size (default 100).
 
 | Option | Description |
 | ------ | ----------- |
-| user   | Username of user with read and write priveleges to MongoDB server. |
-| password | Password of user with read and write priveleges to MongoDB server. |
-| server | Server connection string for connecting to MongoDB Atlas. (cluster0.qdvfhrk.mongodb.net) |
-| port | Port number for connecting to a local MongoDB server. |
-| database | Name of the database to issue commands to. (Required) |
-| collection | Name of the collection to issue commands to. (Required) |
-| batchSize | Batch size of cursor to result records. The default batch size is 100 meaning the cursor fetches 100 documents at a time from MongoDB. |
-| limit| Limit the number of documents returned from the find command (To limit the documents returned from an aggregation use the [$limit stage](https://www.mongodb.com/docs/manual/reference/operator/aggregation/limit/)). The default is no limit. For more information on how limit works visit the [Manual](https://www.mongodb.com/docs/manual/reference/method/cursor.limit/#behavior).
-| connectionOptions | A string of connection options used to make the connection to the cluster. Currently only one set of connection options will be used per workunit. |
+| `user` | Username with read/write privileges. |
+| `password` | Password for the above user. |
+| `server` | Server connection string for MongoDB Atlas (e.g. `cluster0.example.mongodb.net`). |
+| `port` | Port number for connecting to a local MongoDB server. |
+| `database` | Database name (Required). |
+| `collection` | Collection name (Required). |
+| `batchSize` | Cursor batch size (default 100). |
+| `limit` | Limit number of documents returned by `find` (no default limit). |
+| `connectionOptions` | Ampersand separated options applied to the connection (one set per workunit). |
 
 #### Connection Options
 
-To specify connection options to the MongoDB cluster use the connectionOptions option in the embed statement. The format for the connection options is ampersand separated options like so: \<option0\>&\<option1\>
+Specify additional connection options via the `connectionOptions` clause in the embed statement using ampersand separators: `option0&option1`.
 
-**Important note:** when connecting to a MongoDB Cluster and not a local instance the retryWrites=true and w=majority options are already set according to MongoDB examples.
-
-```
-connectionOptions('ssl=true&connectTimeoutMS=1000') // For connecting to MongoDB Clusters and local mongod instance
-```
-
-#### URI options
-
-For specifying timeout settings and other options supported by MongoDB add them to the end of the connection string like this:
-```
-&connectTimeoutMS=30000
-```
-Multiple options are seperated by '&', and more information about additional operations can be found in the [Manual](https://www.mongodb.com/docs/v5.2/reference/connection-string/#connection-string-options).
-
-#### Connecting to the cluster
-
-```
-getConnection() := EMBED(mongodb : user(user), password(pwd), server(server), database(dbname),  collection(collname), batchSize(100))
+Example:
+```ecl
+getConnection() := EMBED(mongodb : user(user), password(pwd), server(server), database(dbname), collection(collname), batchSize(100), connectionOptions('ssl=true&connectTimeoutMS=1000'))
+	find({});
 ENDEMBED;
 ```
 
-For connecting to a local MongoDB instance you just need to pass in the port number that the server is listening on.
+When connecting to a MongoDB Cluster (not a local instance) `retryWrites=true` and `w=majority` are already set following MongoDB examples.
 
+#### URI Options
+
+Timeout and other URI-supported options can be appended to the connection string: `&connectTimeoutMS=30000`. Multiple options are separated by `&`. See the [Manual](https://www.mongodb.com/docs/v5.2/reference/connection-string/#connection-string-options).
+
+#### Connecting to a Cluster vs Local
+
+Cluster connection:
+```ecl
+getConnection() := EMBED(mongodb : user(user), password(pwd), server(server), database(dbname), collection(collname), batchSize(100))
+	find({});
+ENDEMBED;
 ```
-getConnection() := EMBED(mongodb : port(port), database(dbname),  collection(collname))
+
+Local connection (port only):
+```ecl
+getConnection() := EMBED(mongodb : port(port), database(dbname), collection(collname))
+	find({});
 ENDEMBED;
 ```
 
 ### Parameters
 
-To use function parameters within the MongoDB statement, prefix them with a '\$' inside the embedded script. The '\$' is also reserved in MongoDB, but it does not interfere with the parameters as long as you don't also use a word reserved for a MongoDB command. More information on MongoDB operators can be found in the [Manual](https://www.mongodb.com/docs/manual/reference/operator/query/).
+Function parameters inside the MongoDB script are referenced with a `$` prefix. `$` is also used by MongoDB operators, but they do not conflict unless you use a reserved operator name as a parameter.
 
-```
-dataset({STRING _id}) getCount(REAL salary) := EMBED(mongodb : user(user), password(pwd), server(server), database(dbname),  collection(collname), batchSize(100))
-    find({ salary: { $gt: $salary}});
+```ecl
+dataset({STRING _id}) getCount(REAL salary) := EMBED(mongodb : user(user), password(pwd), server(server), database(dbname), collection(collname), batchSize(100))
+	find({ salary: { $gt: $salary }});
 ENDEMBED;
 ```
 
 ### Limitations
 
-There are a few limitations placed by MongoDB on the amount of data you are allowed to transer if you are using a shared cluster. In a single 7-day rolling period you are allowed to transfer:
+MongoDB Atlas shared cluster transfer limits (7‑day rolling):
+* M0: 10 GB in / 10 GB out
+* M2: 20 GB in / 20 GB out
+* M5: 50 GB in / 50 GB out
 
-* M0: 10 GB in and 10 GB out per period
-* M2: 20 GB in and 20 GB out per period
-* M5: 50 GB in and 50 GB out per period
+See the [Atlas limitations](https://www.mongodb.com/docs/atlas/reference/free-shared-limitations/).
 
-For a more detailed list of the limitations on MongoDB clusters: [Manual](https://www.mongodb.com/docs/atlas/reference/free-shared-limitations/)
+### Type Conversions
 
-### Type conversions
-
-Not every ECL or MongoDB datatype translates seemlessly to the other side.
-
-| ECL datatypes | MongoDB equivalent |
-| ------------- | ------------------ |
+| ECL | MongoDB |
+| --- | ------- |
 | BOOLEAN | b_bool |
 | REAL | b_double |
 | INTEGER | b_int64 |
-| UINTEGER | b_int64 |
+| UINTEGER | b_int64 (converted) |
 | UTF8 | b_utf8 |
-| QSting, VString, String | b_utf8 |
-| DECIMAL | b_decimal128|
+| QSTRING/VSTRING/STRING | b_utf8 |
+| DECIMAL | b_decimal128 |
 
-| MongoDB datatypes | ECL equivalent |
-| ----------------- | -------------- |
-| b_date | STRING, INTEGER |
-| b_regex |  {String pattern, String options} |
-| b_timestamp | {Unsigned t, Unsigned i} |
+| MongoDB | ECL |
+| ------- | --- |
+| b_date | STRING or INTEGER |
+| b_regex | `{STRING pattern, STRING options}` |
+| b_timestamp | `{UNSIGNED t, UNSIGNED i}` |
 
-The MongoDB date datatype can be converted to an integer in MongoDB or it will automatically be converted to a STRING by the plugin. Typically Dates before 1970 get returned by MongoDB as INTEGERS.
+Unsigned Integers are unsupported in MongoDB and are converted to signed 64-bit integers.
 
-Due to regex and timestamp types being returned by MongoDB as objects, ECL records that map to these types are defined in the mongodb.ecllib file for your use. For information about the regex and timestamp types: [Manual](https://www.mongodb.com/docs/manual/reference/mongodb-extended-json/#bson-data-types-and-associated-representations)
-
-Unsigned Integers are unsupported in MongoDB. This means that in order to insert UINTEGERs into the database the plugin converts them to b_int64 which is a 64 bit signed integer.
+Regex and timestamp helper record layouts are provided in `mongodb.ecllib`.
 
 ### Inserting Documents
 
-The plugin supports inserting documents one at a time using `insert_one` and inserting multiple documents at once using insert_many. To insert a document you just need to call insert() inside the embedded script and the plugin will call `insert_one` if you pass in a single record or scalar values. If you pass in a dataset the plugin will automatically call `insert_many` for you. For more information on inserting documents: [Manual](https://www.mongodb.com/docs/manual/tutorial/insert-documents/)
+`insert_one` vs `insert_many` is selected automatically. Passing a dataset triggers `insert_many`; a single record or scalars triggers `insert_one`.
 
-```
-dataset(mongodb.insertManyResultRecord) insertMany(dataset(layoutEmployee) employees) := EMBED(mongodb : user(user), password(pwd), server(server), database(db),  collection(coll))
-    insert({$employees});
+```ecl
+dataset(mongodb.insertManyResultRecord) insertMany(dataset(layoutEmployee) employees) := EMBED(mongodb : user(user), password(pwd), server(server), database(db), collection(coll))
+	insert({$employees});
 ENDEMBED;
 insertMany(ds);
 
-insertOne(STRING first, STRING last, REAL salary) := EMBED(mongodb : user(user), password(pwd), server(server), database(db),  collection(coll))
-    insert({first: $first, last: $last, salary: $salary});
+insertOne(STRING first, STRING last, REAL salary) := EMBED(mongodb : user(user), password(pwd), server(server), database(db), collection(coll))
+	insert({first: $first, last: $last, salary: $salary});
 ENDEMBED;
-insertOne();
+insertOne('John','Doe',12345.6);
 ```
-
-The first example inserts a dataset with the layoutEmployee record and the second example creates a bson document and inserts some scalar values into it then adds it to the collection. 
 
 ### Finding Documents
 
-The plugin allows the ECL user to choose between find_one and find_many. They both take a single document as the filter for the find operation. For more information on finding documents: [Manual](https://www.mongodb.com/docs/manual/reference/method/db.collection.find/)
+Supports `find_one` and `find` (many). Optional projection.
 
-```
-dataset({STRING first, STRING last, REAL salary}) findOne() := EMBED(mongodb : user(user), password(pwd), server(server), database(db),  collection(coll))
-    find_one({first: "John", last: "Doe"});
+```ecl
+dataset({STRING first, STRING last, REAL salary}) findOne() := EMBED(mongodb : user(user), password(pwd), server(server), database(db), collection(coll))
+	find_one({first: 'John', last: 'Doe'});
 ENDEMBED;
-findOne();
 
-dataset({STRING first, STRING last, REAL salary}) findMany() := EMBED(mongodb : user(user), password(pwd), server(server), database(db),  collection(coll))
-    find({first: "John", last: "Doe"});
+dataset({STRING first, STRING last, REAL salary}) findMany() := EMBED(mongodb : user(user), password(pwd), server(server), database(db), collection(coll))
+	find({first: 'John', last: 'Doe'});
 ENDEMBED;
-findMany();
 ```
 
-There is support for providing a projection to the find function. If no projection is given then MongoDB returns all fields from the document, and the ECL engine must look through every field trying to find the ones declared in the return type by the ECL user.
-
-```
-dataset({STRING first, STRING last, REAL salary}) findMany(INTEGER include) := EMBED(mongodb : user(user), password(pwd), server(server), database(db),  collection(coll))
-    find({first: "John", last: "Doe"}, {first: $include, last: $include, salary: $include});
+Projection example:
+```ecl
+dataset({STRING first, STRING last, REAL salary}) findMany(INTEGER include) := EMBED(mongodb : user(user), password(pwd), server(server), database(db), collection(coll))
+	find({first: 'John', last: 'Doe'}, {first: $include, last: $include, salary: $include});
 ENDEMBED;
-findMany(1);
 ```
 
 ### Updating Documents
 
-The plugin can update one or many documents which is specified by the user. it returns a single Record with two fields holding the number of documents that were matched by the filter and another holding the number of documents that were modified by the operation. The update methods can take either two documents or a document and a pipeline. A pipeline follows the structure [{doc}, ... ]. For more information on updating documents: [Manual](https://www.mongodb.com/docs/manual/tutorial/update-documents/)
+Returns counts of matched and modified documents. Supports document or pipeline updates.
 
-```
-dataset(mongodb.updateResultRecord) updateOne(REAL raise) := EMBED(mongodb : user(user), password(pwd), server(server), database(db),  collection(coll))
-    update_one({}, {$inc: {"salary": $raise}});
+```ecl
+dataset(mongodb.updateResultRecord) updateOne(REAL raise) := EMBED(mongodb : user(user), password(pwd), server(server), database(db), collection(coll))
+	update_one({}, {$inc: {salary: $raise}});
 ENDEMBED;
-updateOne(1000);
 
-dataset(mongodb.updateResultRecord) updateMany(REAL min, REAL raise) := EMBED(mongodb : user(user), password(pwd), server(server), database(db),  collection(coll))
-    update_many({"salary": {$lte: $min}}, {$inc: {"salary": $raise}});
+dataset(mongodb.updateResultRecord) updateMany(REAL min, REAL raise) := EMBED(mongodb : user(user), password(pwd), server(server), database(db), collection(coll))
+	update_many({salary: {$lte: $min}}, {$inc: {salary: $raise}});
 ENDEMBED;
-updateMany(100000, 3000);
 ```
-
-The first example updates the first document that matches the find filter. In this example the find filter is empty, so all of the documents are returned. The raise argument gets inserted into the document as a real instead of a string.
-
-In the second example a filter is passed that will return all the documents that are below the min argument passed to the function. Then it will increase the salary of every document matching the filter by the raise argument passed into the function.
-
 
 ### Deleting Documents
 
-The plugin can delete one or many documents which is specified by the user. It returns a document with a single field holding the number of deleted documents. The delete function takes a single document as a filter for the delete operation. For more information on removing documents: [Manual](https://www.mongodb.com/docs/manual/tutorial/remove-documents/)
+`delete_one` and `delete_many` supported.
 
-
-```
-dataset({mongodb.deleteResultRecord}) deleteOne(REAL min) := EMBED(mongodb : user(user), password(pwd), server(server), database(db),  collection(coll))
-    deleteOne({first:"James", "salary": {$lte: $min}});
+```ecl
+dataset({mongodb.deleteResultRecord}) deleteOne(REAL min) := EMBED(mongodb : user(user), password(pwd), server(server), database(db), collection(coll))
+	delete_one({first:'James', salary: {$lte: $min}});
 ENDEMBED;
-delete_one(75000);
 
-dataset({mongodb.deleteResultRecord}) deleteMany(REAL max) := EMBED(mongodb : user(user), password(pwd), server(server), database(db),  collection(coll))
-    delete_many({"salary": {$gt: $max}});
+dataset({mongodb.deleteResultRecord}) deleteMany(REAL max) := EMBED(mongodb : user(user), password(pwd), server(server), database(db), collection(coll))
+	delete_many({salary: {$gt: $max}});
 ENDEMBED;
-deleteMany(200000);
 ```
 
-### Aggregation pipelines
+### Aggregation Pipelines
 
-Aggregation pipelines offer a lot of functionality and there is way too much for me to show you here, but the plugin should work with any kind of aggregation pipeline that is passed in as long as it is valid bson. The aggregate command takes a single pipeline of the form [{doc}, ... ].
+Pass a pipeline array `[{...}, ...]` to `aggregate`.
 
-
-```
-dataset({STRING first, STRING last, REAL salary}) aggregate(REAl max, REAL min, INTEGER order) := EMBED(mongodb : user(user), password(pwd), server(server), database(db),  collection(coll), batchSize(100))
-    aggregate([{$match: { salary: {$gte: $min, $lt: $max}}}, {$sort: {salary: $order}}]);
+```ecl
+dataset({STRING first, STRING last, REAL salary}) aggregate(REAL max, REAL min, INTEGER order) := EMBED(mongodb : user(user), password(pwd), server(server), database(db), collection(coll), batchSize(100))
+	aggregate([{$match: {salary: {$gte: $min, $lt: $max}}}, {$sort: {salary: $order}}]);
 ENDEMBED;
-aggregate(200000, 75000, 1);
 ```
-In this example there are two stages in the pipeline. The first stage is a match operation and will find all the documents that have a salary greater than or equal to the min and less than the max. Then every document that gets returned from the first stage gets sorted by salary in the second stage. The order needs to be an integer and is 1 for ascending and -1 for descending.
 
-More information and examples of MongoDB aggregation operations can be found here: [Manual](https://www.mongodb.com/docs/manual/aggregation/)
+### runCommand
 
-### MongoDB runCommand function
+Run database-level commands with `runCommand` returning operation-specific documents.
 
-The runCommand function allows the user to run some commands at a database level instead of at the collection level. It has a single argument of a bson document. For each runCommand operation there is a unique return value. To get the data from the operation the record structure of the dataset must match the operation specific output of the value document. For more information on runCommand: [Manual](https://www.mongodb.com/docs/manual/reference/method/db.runCommand/)
-
-
-```
-dataset(layoutEmployee) findInfo(BOOLEAN mybool) := EMBED(mongodb : user(user), password(pwd), server(server), port(port), database(db),  collection('test1'))
-    runCommand(
-        {
-            findAndModify: "test1",
-            query: {first: "Anne", last: "Smith"},
-            remove: $mybool
-        }
-    );
+```ecl
+dataset(layoutEmployee) findInfo(BOOLEAN mybool) := EMBED(mongodb : user(user), password(pwd), server(server), database(db), collection('test1'))
+	runCommand({ findAndModify: 'test1', query: {first: 'Anne', last: 'Smith'}, remove: $mybool });
 ENDEMBED;
-findInfo(true);
 ```
-
-In this example the findAndModify command is ran on the test1 collection. Then it removes all the documents matching the query filter if remove is true.
 
 ### Creating an Index
 
-Indexes can be useful for speeding up common queries on large collections that have similar fields. For more information on the create_index function: [Manual](https://www.mongodb.com/docs/manual/reference/method/db.collection.createIndex/)
-
-
-```
-createIndex(INTEGER asc) := EMBED(mongodb : user(user), password(pwd), server(server), database('mydb'),  collection('test2'))
-    create_index({ "first": $asc, "last": $asc});
+```ecl
+createIndex(INTEGER asc) := EMBED(mongodb : user(user), password(pwd), server(server), database('mydb'), collection('test2'))
+	create_index({ first: $asc, last: $asc });
 ENDEMBED;
-createIndex(1);
 
-createIndex(INTEGER asc, BOOLEAN myBool) := EMBED(mongodb : user(user), password(pwd), server(server), database('mydb'),  collection('test2'))
-    create_index({ "first": $asc, "last": $asc}, {name: "Person", unique: $myBool});
+createIndex(INTEGER asc, BOOLEAN myBool) := EMBED(mongodb : user(user), password(pwd), server(server), database('mydb'), collection('test2'))
+	create_index({ first: $asc, last: $asc }, { name: 'Person', unique: $myBool });
 ENDEMBED;
-createIndex(1, true);
 ```
 
-In this example an index is created with the keys first and last and in ascending order.
+---
+
+This README has been consolidated to remove duplicated sections and to escape any placeholder angle brackets where present. All MongoDB examples use single quotes inside ECL to avoid JSON-like double quote conflicts, and no raw HTML tags are present that would confuse the Vue template parser.

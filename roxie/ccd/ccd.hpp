@@ -54,21 +54,8 @@
 
 #define ROXIE_STATEFILE_VERSION 2
 
-// Have not yet tested impact of new IBYTI handling in non-containerized systems
-
-#define NEW_IBYTI
-
-#if defined(_CONTAINERIZED) || defined (NEW_IBYTI)
-// Both containerized mode and new IBYTI mode assume subchannels are passed in header.
-// It SHOULD also work, and may be beneficial, in non-containerized systems but has not as yet been confirmed.
-#define SUBCHANNELS_IN_HEADER
-#endif
-
 extern IException *MakeRoxieException(int code, const char *format, ...) __attribute__((format(printf, 2, 3)));
-void openMulticastSocket();
-
-void setMulticastEndpoints(unsigned numChannels);
-
+void openWorkerRequestSocket();
 
 #define OUTOFBAND_SEQUENCE    0x8000        // indicates an out-of-band reply
 #define OVERFLOWSEQUENCE_MAX 0x7fffu        // Max value before we want to wrap (to avoid collision with flag)
@@ -106,9 +93,9 @@ static constexpr int queryMaxPriorityValue = QUERY_SLA_PRIORITY_VALUE;
 #define ROXIE_ACTIVITY_SPECIAL_LAST    0x3fffffffu
 
 
-#define SUBCHANNEL_MASK 3
-#define SUBCHANNEL_BITS 2    // allows for up to 7-way redundancy in a 16-bit short retries flag, high bits used for indicators/flags
-#define MAX_SUBCHANNEL  7    // (16-2) / SUBCHANNEL_BITS
+#define SUBCHANNEL_BITS 3U                              // allow for 2^N-1 retries from the server to the worker
+#define SUBCHANNEL_MASK ((1U << SUBCHANNEL_BITS) -1)
+#define MAX_SUBCHANNEL  ((16 - 2) / SUBCHANNEL_BITS)    // up to 4-way redundancy in a 16-bit short retries flag, 2 high bits used for indicators/flags
 
 #define ROXIE_FASTLANE      0x8000u         // mask in retries indicating agent reply goes on the fast queue
 #define ROXIE_BROADCAST     0x4000u         // mask in retries indicating original request was a broadcast
@@ -169,9 +156,7 @@ public:
 
     std::atomic<ruid_t> uid = 0;        // unique id
     ServerIdentifier serverId;
-#ifdef SUBCHANNELS_IN_HEADER
     ServerIdentifier subChannels[MAX_SUBCHANNEL];
-#endif
     unsigned filler = 0; // keeps valgrind happy
 
     RoxiePacketHeader() = default;
@@ -198,7 +183,6 @@ public:
         return bitpos / SUBCHANNEL_BITS;
     }
 
-#ifdef SUBCHANNELS_IN_HEADER
     unsigned mySubChannel() const // NOTE - 0 based
     {
         if (localAgent)
@@ -224,7 +208,6 @@ public:
     }
 
     void clearSubChannels();
-#endif
 
     inline unsigned getSequenceId() const
     {
@@ -376,10 +359,8 @@ extern unsigned mtu_size;
 extern StringBuffer fileNameServiceDali;
 extern StringBuffer roxieName;
 extern StringBuffer allowedPipePrograms;
-#ifdef _CONTAINERIZED
 extern StringBuffer defaultPlane;
 extern StringBuffer defaultIndexBuildPlane;
-#endif
 extern bool trapTooManyActiveQueries;
 extern unsigned maxEmptyLoopIterations;
 extern unsigned maxGraphLoopIterations;
@@ -401,13 +382,8 @@ extern bool ignoreFileSizeMismatches;
 extern int fileTimeFuzzySeconds;
 extern SinkMode defaultSinkMode;
 extern bool limitWaitingWorkers;
-
-#if defined(_CONTAINERIZED) || defined(SUBCHANNELS_IN_HEADER)
-static constexpr bool roxieMulticastEnabled = false;
 extern unsigned myChannel;
-#else
-extern bool roxieMulticastEnabled;   // enable use of multicast for sending requests to agents
-#endif
+
 extern bool preloadOnceData;
 extern bool reloadRetriesFailed;
 extern bool selfTestMode;

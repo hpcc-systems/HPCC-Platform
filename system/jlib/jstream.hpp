@@ -109,17 +109,18 @@ extern jlib_decl ICrcSerialOutputStream * createCrcOutputStream(ISerialOutputStr
 extern jlib_decl IBufferedSerialOutputStream * createBufferedOutputStream(ISerialOutputStream * output, size32_t blockWriteSize);
 extern jlib_decl IBufferedSerialOutputStream * createThreadedBufferedOutputStream(ISerialOutputStream * output, size32_t blockWriteSize);
 extern jlib_decl ISerialOutputStream * createCompressingOutputStream(IBufferedSerialOutputStream * output, ICompressor * compressor);
-extern jlib_decl ISerialOutputStream * createSerialOutputStream(IFileIO * output);
+extern jlib_decl ISerialOutputStream * createSerialOutputStream(IFileIO * output, offset_t offset=0);
 
 extern jlib_decl IBufferedSerialInputStream * createBufferedSerialInputStream(MemoryBuffer & source);
 extern jlib_decl IBufferedSerialOutputStream * createBufferedSerialOutputStream(StringBuffer & target);
 extern jlib_decl IBufferedSerialOutputStream * createBufferedSerialOutputStream(MemoryBuffer & target);
 
 
-inline IBufferedSerialOutputStream * createBufferedOutputStream(ISerialOutputStream * output, size32_t blockWriteSize, bool threaded)
+inline IBufferedSerialOutputStream * createBufferedOutputStream(ISerialOutputStream * output, size32_t blockWriteSize, int threading)
 {
     //Threaded version is currently slower unless data is hard to compress or a very large buffer size is being used.
-    if (threaded)
+    if (threading != 0)
+         // In the future pass threading as a parameter to indicate the number of extra buffers to use by the output thread
         return createThreadedBufferedOutputStream(output, blockWriteSize);
     else
         return createBufferedOutputStream(output, blockWriteSize);

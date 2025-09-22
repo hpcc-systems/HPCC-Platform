@@ -254,7 +254,7 @@ public:
     //
     virtual bool set_nagle(bool on) // returns old state
     {
-        throw MakeStringException(-1, "CSecureSocket::set_nagle: not implemented");
+        return m_socket->set_nagle(on);
     }
 
     // set 'linger' time - time close will linger so that outstanding unsent data will be transmited
@@ -262,6 +262,11 @@ public:
     virtual void set_linger(int lingersecs)  
     {
         m_socket->set_linger(lingersecs);
+    }
+
+    virtual void set_quick_ack(bool on)
+    {
+        m_socket->set_quick_ack(on);
     }
 
     //

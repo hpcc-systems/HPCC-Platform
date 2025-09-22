@@ -226,6 +226,11 @@ public:
         getPlaneHosts(planeHosts, config);
         ForEachItemIn(h, planeHosts)
             hosts.emplace_back(planeHosts.item(h));
+
+        compression.set(config->queryProp("@compression", defaults->queryProp("@compression")));
+
+        bool defaultCompressed = defaults->getPropBool("@compressLogicalFiles");
+        compressed = compression || config->getPropBool("@compressLogicalFiles", defaultCompressed);
     }
 
     virtual const char * queryPrefix() const override { return prefix.c_str(); }
@@ -336,10 +341,21 @@ public:
 
     const char * queryCategory() const { return category.c_str(); }
 
+    virtual bool compressOnWrite() const override
+    {
+        return compressed;
+    }
+
+    virtual const char * queryCompression() const
+    {
+        return compression;
+    }
+
 private:
     std::string name;
     std::string prefix;
     std::string category;
+    StringAttr compression;
     unsigned devices{1};
     std::array<unsigned __int64, PlaneAttributeCount> attributeValues;
     Linked<const IPropertyTree> config;
@@ -348,6 +364,7 @@ private:
     std::vector<std::string> hosts;
     mutable bool cachedLocalPlane{false};
     mutable bool isLocal{false};
+    bool compressed{false};
 };
 
 // {prefix, {key1: value1, key2: value2, ...}}
@@ -461,12 +478,15 @@ static const CStoragePlane * doFindStoragePlaneFromPath(const char * path, bool 
 
 static const CStoragePlane * doFindStoragePlaneByName(const char * name, bool required)
 {
-    auto it = storagePlaneMap.find(name);
-    if (it != storagePlaneMap.end())
-        return it->second;
+    if (!isEmptyString(name))
+    {
+        auto it = storagePlaneMap.find(name);
+        if (it != storagePlaneMap.end())
+            return it->second;
+    }
 
     if (required)
-        throw makeStringExceptionV(99, "Unknown storage plane %s", name);
+        throw makeStringExceptionV(99, "Unknown storage plane '%s'", name);
 
     return nullptr;
 }
@@ -525,6 +545,7 @@ const IStoragePlane * getStoragePlaneFromPath(const char *filePath, bool require
 }
 
 //MORE: Revisit every call to this function to see if it can be replaced with a more specialized call
+//This will not support inheriting values from the defaults.
 const IPropertyTree * getStoragePlaneConfig(const char * name, bool required)
 {
     CriticalBlock b(storagePlaneMapCrit);

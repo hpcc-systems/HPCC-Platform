@@ -41,6 +41,7 @@ set (    SRCS
          hqlcset.cpp 
          hqlctrans.cpp
          hqlecl.cpp 
+         hqlexprtak.cpp
          hqlgraph.cpp 
          hqlhoist.cpp
          hqlhtcpp.cpp 

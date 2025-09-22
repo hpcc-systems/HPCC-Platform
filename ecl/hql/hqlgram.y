@@ -39,6 +39,11 @@
 #undef YYSTYPE
 #define YYSTYPE attribute
 
+#if defined(__clang__) || defined(__GNUC__)
+//Disable the warning for the whole file.  It does not work if it only surrounds the #includes
+#pragma GCC diagnostic ignored "-Wclass-memaccess"
+#endif
+
 #include "platform.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -188,6 +193,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   DISTRIBUTION
   DYNAMIC
   EBCDIC
+  ECLAGENT
   ECLCRC
   ELSE
   ELSEIF
@@ -210,7 +216,6 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   EVENTNAME
   EXCEPT
   EXCLUSIVE
-  EXECUTE
   EXISTS
   EXP
   EXPIRE
@@ -2882,11 +2887,15 @@ actionStmt
                             parser->reportError(ERR_EXPECTED, $3, "OUTPUT cannot be applied to an action");
                             $$.inherit($3);
                         }
-    | EXECUTE '(' NOTHOR ',' actionStmt ')'
+    | EVALUATE '(' ECLAGENT ',' actionStmt ')'
                         {
-                            $$.setExpr(createValue(no_nothor, makeVoidType(), $5.getExpr()), $1);
+                            // $$.setExpr(createValue(no_nothor, makeVoidType(), $5.getExpr()), $1);
+                            IHqlExpression * action = $5.getExpr();
+                            Linked<ITypeInfo> type = action->queryType();
+                            IHqlExpression * indep = createValue(no_independent, makeNullType(), createConstant(ECL_AGENT_CLUSTER_NAME));
+                            $$.setExpr(createValue(no_colon, type.getClear(), { action, indep }, true), $1);
                         }
-    | EXECUTE '(' expression ',' actionStmt ')'
+    | EVALUATE '(' expression ',' actionStmt ')'
                         {
                             // Syntactic sugar for:
                             //      actionStmt : INDEPENDENT(expression)
@@ -8446,11 +8455,15 @@ dataSet
                             IHqlExpression * from = $3.getExpr();
                             $$.setExpr(createDataset(no_choosen, ds, createComma(createConstant(CHOOSEN_ALL_LIMIT), from)));
                         }
-    | EXECUTE '(' NOTHOR ',' dataSet ')'
+    | EVALUATE '(' ECLAGENT ',' dataSet ')'
                         {
-                            $$.setExpr(createDataset(no_nothor, $5.getExpr()), $1);
+                            // $$.setExpr(createDataset(no_nothor, $5.getExpr()), $1);
+                            IHqlExpression * ds = $5.getExpr();
+                            Linked<ITypeInfo> type = ds->queryType();
+                            IHqlExpression * indep = createValue(no_independent, makeNullType(), createConstant(ECL_AGENT_CLUSTER_NAME));
+                            $$.setExpr(createDataset(no_colon, { ds, indep }), $1);
                         }
-    | EXECUTE '(' expression ',' dataSet ')'
+    | EVALUATE '(' expression ',' dataSet ')'
                         {
                             // Syntactic sugar for:
                             //      dataSet : INDEPENDENT(expression)

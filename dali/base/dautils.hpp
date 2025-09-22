@@ -596,4 +596,17 @@ public:
 
 extern da_decl IFileReadPropertiesUpdater * createFileReadPropertiesUpdater(IUserDescriptor * udesc);
 
+/**
+ * Given a temporary logical filename for hthor, attach scopes to it
+ * so that thor processes can find it (or hthor can find a thor-created
+ * temp filename published to Dali)
+ *
+ * @param   out     Reference to a string buffer that will be destructively
+ *                  modified to contain the result
+ * @param   wuid    The current workunit ID
+ * @param   lfn     The logical filename
+ * @param   user    The current user's username, or NULL
+ */
+extern da_decl StringBuffer & mangleTemporaryFileName(StringBuffer & out, const char * lfn, const char * wuid, const char * user, bool isPaused = false, bool jobUsesCheckpoints = false);
+
 #endif

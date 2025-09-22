@@ -24,22 +24,6 @@
 #include "eventiterator.h"
 #include "unittests.hpp"
 
-// The code being tested throws many unexpected exceptions that the test framework does not handle
-// properly. The start and end macros handle these exceptions by converting them to test failures.
-#define START_TEST \
-    try \
-    {
-
-#define END_TEST \
-    } \
-    catch (IException* e) \
-    { \
-        StringBuffer msg; \
-        e->errorMessage(msg); \
-        e->Release(); \
-        CPPUNIT_FAIL(msg.str()); \
-    }
-
 // Event visiting endpoint used by unit tests to verify that visitation links processing known
 // input produce expected results.
 //
@@ -62,7 +46,8 @@ private:
 // Extracts `input`, `expect`, and `link` property tree sections from `testData`, passing them to
 // `testEventVisitationLinks(input, expect, links)` for processing. The markup may be XML, JSON,
 // or 'YAML' format.
-extern void testEventVisitationLinks(const char* testData);
+extern void testEventVisitationLinks(const char* testData, bool strictParsing);
+inline void testEventVisitationLinks(const char* testData) { testEventVisitationLinks(testData, true); }
 
 // Uses a `CEventVisitationLinkTester` instance to iterate over the `input` events, verifying that
 // the events received by the tester match the `expected` events after modification by visitation
@@ -72,7 +57,7 @@ extern void testEventVisitationLinks(const char* testData);
 // and the last link receives the input events.
 //
 // At this time, only model links are supported. Filters may be supported by a future update.
-extern void testEventVisitationLinks(const IPropertyTree& input, const IPropertyTree& expect, IPropertyTreeIterator& links);
+extern void testEventVisitationLinks(const IPropertyTree& input, const IPropertyTree& expect, IPropertyTreeIterator& links, bool strictParsing);
 
 extern IPropertyTree* createTestConfiguration(const char* configText);
 

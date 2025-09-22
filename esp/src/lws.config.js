@@ -23,6 +23,10 @@ console.log("IP:  " + ip);
 console.log("Port:  " + port);
 
 let rewrite = [
+    { from: "/esp/files/stub.htm", to: "/stub.htm" },
+    { from: "/esp/files/index.html", to: "/index.html" },
+    { from: "/esp/files/Login.html", to: "/Login.html" },
+    { from: "/esp/files/GetUserName.html", to: "/GetUserName.html" },
     { from: "/esp/titlebar(.*)", to: protocol + "://" + ip + ":" + port + "/esp/titlebar$1" },
     { from: "/esp/login", to: protocol + "://" + ip + ":" + port + "/esp/login" },
     { from: "/esp/logout", to: protocol + "://" + ip + ":" + port + "/esp/logout" },

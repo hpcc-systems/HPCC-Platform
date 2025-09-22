@@ -24,6 +24,14 @@ export function useNavWide(): { navWide: boolean, setNavWide: (value: boolean) =
     return { navWide, setNavWide };
 }
 
+export function useLightTheme(): { theme: Theme, themeV9: ThemeV9 } {
+
+    return {
+        theme: lightTheme,
+        themeV9: lightThemeV9,
+    };
+}
+
 export function useUserTheme(): { theme: Theme, themeV9: ThemeV9, setTheme: (value: "light" | "dark") => void, isDark: boolean } {
 
     const [theme, setTheme] = useUserStore(THEME, "light", true);

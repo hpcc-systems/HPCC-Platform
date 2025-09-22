@@ -250,24 +250,8 @@ public:
         }
         if (temporary)
         {
-            StringBuffer tail;
-            tmp.append(queryDfsXmlBranchName(DXB_Internal)).append("::");
-            const char *user = job.queryUser();
-            if (user && *user)
-                tmp.append(user).append("::");
-            if (paused)
-            {
-                tmp.append(PAUSETMPSCOPE);
-                CDfsLogicalFileName dfslfn;
-                dfslfn.set(logicalname);
-                dfslfn.getTail(tail);
-                logicalname = tail.str();
-            }
-            else
-                tmp.append(job.queryUseCheckpoints() ? CHECKPOINTSCOPE : TMPSCOPE);
-            tmp.append("::");
-
-            mangleLFN(job, logicalname, tmp);
+            // Mangling function shared with hthor
+            mangleTemporaryFileName(tmp, logicalname, job.queryWuid(), job.queryUser(), paused, job.queryUseCheckpoints());
         }
         else
         {

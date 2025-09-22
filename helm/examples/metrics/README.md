@@ -17,7 +17,7 @@ a description of its available settings. Use the file as is, or customize for yo
 
 For example, the following adds the Prometheus configuration as the collection system.
 
-```code
+```bash
 helm install mycluster ./hpcc -f <path>/prometheus_metrics.yml
 ```
 ### Prometheus Collection System
@@ -30,11 +30,11 @@ the port to listen on, and the url path on which to serve Prometheus formatted m
 HPCC Systems provides a convenient Helm chart which deploys and configures a local Prometheus Kube Stack instance for the purpose of HPCC component metrics processing. Enabling of the Prometheus metrics collection system as detailed above is required.
 
 - Add HPCC helm repository helm repo
-    ```code
+  ```bash
     > helm repo add hpcc https://hpcc-systems.github.io/helm-chart/
     ```
 - Deploy prometheus4hpccmetrics
-    ```code
+  ```bash
     > helm install mypromstack hpcc/prometheus4hpccmetrics
      NAME: mypromstack
      LAST DEPLOYED: Fri Nov  5 10:44:17 2021
@@ -43,7 +43,7 @@ HPCC Systems provides a convenient Helm chart which deploys and configures a loc
      REVISION: 1
     ```
 - Confirm Prometheus Stack pods are in ready state
-    ```code
+  ```bash
     > kubectl get pods
     NAME                                                  READY   STATUS    RESTARTS   AGE
     mypromstack-grafana-57bbff469b-lf4z7                  2/2     Running   0          102s
@@ -55,7 +55,7 @@ HPCC Systems provides a convenient Helm chart which deploys and configures a loc
     prometheus-mypromstack-kube-prometheu-prometheus-0    2/2     Running   0          95s
     ```
 - Confirm Prometheus stack services have deployed successfully
-    ```code
+  ```bash
     > kubectl get svc
     NAME                                    TYPE           CLUSTER-IP     EXTERNAL-IP     PORT(S)             AGE
     kubernetes                              ClusterIP      <Removed>      <none>          443/TCP             24h
@@ -69,13 +69,13 @@ HPCC Systems provides a convenient Helm chart which deploys and configures a loc
 - Prometheus exposes available metrics and various tools via dashboard on port 9090 (address will vary - see svc listing)
 - Confirm HPCC Metrics services are targeted by Prometheus
   - Find the "hpcc-per-pod-metrics" section under Status -> Targets (on the Prometheus dashboard)
-      ```code
+  ```bash
       Endpoint	State	Labels	Last Scrape	Scrape Duration	Error
       http://<removed>:8767/metrics	UP	containername="eclwatch"job="hpcc-per-pod-metrics"	8m 47s ago	1.048ms
       ```
 - Confirm HPCC metrics are scraped from above services
    - On the 'Graph' section of the dashboard, search for known HPCC metrics such as 'esp_requests_active'
-      ```code
+  ```bash
       esp_requests_active{containername="eclqueries", job="hpcc-per-pod-metrics"}	3
       esp_requests_active{containername="eclservices",  job="hpcc-per-pod-metrics"}	0
       esp_requests_active{containername="eclwatch", job="hpcc-per-pod-metrics"}	3
@@ -91,7 +91,7 @@ On a self-managed Prometheus set-up, an "additionalScrapeConfigs" entry is neces
 
 For example, the following Prometheus scrape job can be applied to Prometheus deployments as part of the 'additionalScrapeConfigs' configuration:
 
-```code
+```bash
     - job_name: 'hpcc-per-pod-metrics'
       scrape_interval: 5s
       metrics_path: /metrics
@@ -120,7 +120,7 @@ HPCC metrics can be easily routed to Azure Insights for application level monito
 
 - Enable HPCC's Prometheus metrics on the target HPCC deployment.
   - For example (utilizing prometheus_metrics.yml values file provided in hpcc-systems/HPCC-Platform github repo:
-    ```code
+  ```bash
     helm install mycluster ./hpcc -f helm/examples/metrics/prometheus_metrics.yml
     ```
 - Enable Azure's Insights on the target AKS cluster
@@ -128,35 +128,35 @@ HPCC metrics can be easily routed to Azure Insights for application level monito
   - Detailed Azure documentation: [Enable Container insights](https://docs.microsoft.com/en-us/azure/azure-monitor/containers/container-insights-onboard)
   - On Azure portal, select target AKS cluster -> Monitoring -> Insights -> Enable
   - From command line, create log-analytics workspace [optional - default workspace otherwise]
-    ```code
+  ```bash
     az monitor log-analytics workspace create  -g myresourcegroup -n myworkspace --query-access Enabled
     ```
   - Enable on target AKS cluster (referencing workspace resource id from previous step)
-    ```code
+  ```bash
     az aks enable-addons -g myresourcegroup  -n myaks -a monitoring --workspace-resource-id "/subscriptions/xyz/resourcegroups/myresourcegroup/providers/microsoft.operationalinsights/workspaces/myworkspace"
     ```
  - Configure Per-pod metrics scraping
    - Apply provided [Log Analytics agent ConfigMap](https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/examples/metrics/container-azm-ms-agentconfig-prometheusperpod.yaml)  - which enables per-pod Prometheus metrics scraping
-     ```code
+  ```bash
      kubectl apply -f <hpcc-systems/HPCC-Platform repo path>/helm/examples/metrics/container-azm-ms-agentconfig-prometheusperpod.yaml
      ```
    - Alternatively, manually copy [default ConfigMap yaml](https://raw.githubusercontent.com/microsoft/Docker-Provider/ci_prod/kubernetes/container-azm-ms-agentconfig.yaml) locally and set monitor_kubernetes_pods = true in the prometheus-data-collection-settings section. Then apply that file as above.
 
    - Confirm the value was applied - the following command should reflect the above value
-     ```code
+  ```bash
      kubectl get ConfigMap  -n kube-system container-azm-ms-agentconfig --output jsonpath='{.data.prometheus-data-collection-settings}'
      ```
 
   - Fetch available metrics
     - From Azure portal, select target AKS cluster -> Monitoring -> Logs, in Kusto Query field, enter the following:
-      ```code
+  ```bash
       InsightsMetrics
       | where Namespace == "prometheus"
       | extend tags=parse_json(Tags)
       | summarize count() by Name
       ```
     - Sample output:
-      ```code
+  ```bash
       esp_requests_active	1,200
       dali_nq_requests_received	1,440
       dali_sds_requests_completed	1,440
@@ -167,13 +167,13 @@ HPCC metrics can be easily routed to Azure Insights for application level monito
       esp_soap_requests_received	1,200
   - Query specific HPCC metric
     - Replace previous query with following:
-      ```code
+  ```bash
       InsightsMetrics
       | where Namespace == "prometheus"
       | where Name == "esp_requests_active"
       ```
     - Sample output:
-      ```code
+  ```bash
       11/5/2021, 9:02:00.000 PM	prometheus	esp_requests_active	0	{"app":"eclservices","namespace":"default","pod_name":"eclservices-778477d679-vgpj2"}
       11/5/2021, 9:02:00.000 PM	prometheus	esp_requests_active	3	{"app":"eclservices","namespace":"default","pod_name":"eclservices-778477d679-vgpj2"}
       ```
@@ -200,7 +200,7 @@ values using native types. Without dynamic mapping, the ElasticSearch default ma
 values to unsigned 64-bit integers. 
 
 To create an index with dynamic mapping, use the following object, or other means, when creating the index:
-```code json
+```json
 {
   "mappings": {
     "dynamic_templates": [
@@ -249,7 +249,7 @@ your HPCC helm chart values.yml file, or add it as command line settings at char
 To enable the ElasticSearch sink on the command line, use the following to add the ElasticSearch 
 settings:
 
-```code
+```bash
 helm install mycluster ./hpcc -f <path>/elasticsearch_metrics.yml
 ```
 An example _yml_ file can be found in the repository at helm/examples/metrics/elasticsearch_metrics.yml.
@@ -303,8 +303,8 @@ metrics. The following settings describe what must be configured in ElasticSearc
 The _*SuffixMappingName_ values are object names in the index _dynamic_templates_ object of the
 index's _mappings_ object. These MUST be configured in the index. The mapping name objects contain
 a _match_ member whose value is used as the suffix for the related HPCC metric type. The format
-is expected to be "*<string>" where "*" is part of the defined match pattern syntax defined by
-ElasticSearch and "<string>" is the suffix appended to each HPCC metric based on type. For example,
+is expected to be "*\<string\>" where "*" is part of the defined match pattern syntax defined by
+ElasticSearch and "\<string\>" is the suffix appended to each HPCC metric based on type. For example,
 If a _match_ value is defined as "*_count", then the sink would add "_count" to the end of each
 metric when indexing measurements during a report. This ensures that each HPCC metric is stored in 
 the index with the correct type. Please refer to the ElasticSearch documentation for more information 
@@ -322,17 +322,17 @@ since there is no support in the config manager.
 
 Add the following to the environment.xml configuration file (note that some values may not be required): 
 
-```code xml
+```xml
 <Environment>
     <Software>
         <metrics name="mymetricsconfig">
             <sinks name="myelasticsink" type="elastic">
                 <settings period="30" ignoreZeroMetrics="1">
-                    <host domain="<domainname>" port="<port>" protocol="http|https" 
-                            certificateFilePath="<path to cert file>">
-                        <authentication type="basic" username="<username>" password="<password>"/>
+          <host domain="\<domainname\>" port="\<port\>" protocol="http|https" 
+              certificateFilePath="\<path to cert file\>">
+            <authentication type="basic" username="\<username\>" password="\<password\>"/>
                     </host>
-                    <index name="<index>" countSuffixMappingName="<name>" histogramSuffixMappingName="<name>" gaugeSuffixMappingName="<name>/> 
+          <index name="\<index\>" countSuffixMappingName="\<name\>" histogramSuffixMappingName="\<name\>" gaugeSuffixMappingName="\<name\>"/> 
                 <settings/>
             </sinks>
         </metrics>

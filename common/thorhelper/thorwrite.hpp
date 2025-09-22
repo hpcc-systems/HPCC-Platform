@@ -26,6 +26,7 @@
 
 #include "jrowstream.hpp"
 #include "rtlkey.hpp"
+#include "thorread.hpp"
 
 //--------------------------------------------------------------------------------------------------------------------
 
@@ -52,6 +53,10 @@ public:
 };
 THORHELPER_API IRowWriteFormatMapping * createRowWriteFormatMapping(RecordTranslationMode mode, const char * format, IOutputMetaData & projected, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, const IPropertyTree * formatOptions);
 
-//--------------------------------------------------------------------------------------------------------------------
+THORHELPER_API void getDefaultWritePlane(StringBuffer & plane, unsigned helperFlags);
+
+//MORE: These should probably move into jlib
+THORHELPER_API IBufferedSerialOutputStream * createBufferedOutputStream(IFileIO * io, const IPropertyTree * providerOptions);
+THORHELPER_API bool createBufferedOutputStream(Shared<IBufferedSerialOutputStream> & outputStream, Shared<IFileIO> & outputfileio, IFile * outputFile, const IPropertyTree * providerOptions);
 
 #endif // __THORWRITE_HPP_

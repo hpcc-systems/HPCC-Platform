@@ -164,14 +164,9 @@ start processing at the same time if they had capacity to do so.
 
 This implementation does not seem particularly smart - in particular it's typing up worker threads even
 though they are not actually working, and may result in the throughput of the Roxie agent being reduced. For
-that reason an alternative implementation (controlled by the NEW_IBYTI flag) was created during the cloud
-transition which tracks what incoming packets are waiting for IBYTI expiry via a separate queue, and they are
-only allocated to a worker thread once the IBYTI delay times out.
-
-So far the NEW_IBYTI flag has only been set on containerized systems (simply to avoid rocking the boat on the
-bare-metal systems), but we may turn on in bare metal too going forward (and if so, the old version of the code
-can be removed sooner or later).
-
+that reason an alternative implementation was created during the cloud transition which tracks what incoming
+packets are waiting for IBYTI expiry via a separate queue, and they are only allocated to a worker thread
+once the IBYTI delay times out.
 
 ## Testing Roxie code
 
@@ -330,9 +325,9 @@ all agents on a channel at the same time, but since most cloud providers do not 
 avoid multicast and send explicitly to the agent IPs. In bare metal systems these IPs are known via the topology file, and do not change. In cloud
 systems the topology server provides the IPs of all agents for a channel.
 
-In cloud systems, the list of IPs that a message was sent to is included in the message header, so that the IBYTI messages can be sent without requiring
+The list of IPs that a message was sent to is included in the message header, so that the IBYTI messages can be sent without requiring
 that all agents/servers have the same topology information at any given moment (they will stay in sync because of topology server, but may be
-temporarily out of sync when nodes are added/removed, until next time topology info is retrieved). This is controled by the SUBCHANNELS_IN_HEADER define.
+temporarily out of sync when nodes are added/removed, until next time topology info is retrieved).
 
 Packets back from agents to server go via the udplib message-passing code. This can best be described by looking at the sending and receiving sides
 separately.

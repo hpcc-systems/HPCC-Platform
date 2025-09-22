@@ -79,6 +79,7 @@ bool udpRemoveDuplicatePermits = true;
 bool udpEncryptOnSendThread = false;
 
 unsigned multicastTTL = 1;
+bool useTcpTransport = false;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {

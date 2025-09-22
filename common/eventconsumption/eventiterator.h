@@ -67,9 +67,11 @@ public:
     virtual uint32_t queryBytesRead() const override;
 public:
     CPropertyTreeEvents(const IPropertyTree& events);
+    CPropertyTreeEvents(const IPropertyTree& events, bool strictParsing);
 protected:
     Linked<const IPropertyTree> events;
     Owned<IPropertyTreeIterator> eventsIt;
+    bool strictParsing{true};
 };
 
 // Dispatch the contents of an event iterator to an event visitor.

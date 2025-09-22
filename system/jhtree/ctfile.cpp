@@ -482,8 +482,6 @@ size32_t CLegacyWriteNode::compressValue(const char *keyData, size32_t size, cha
     return size-pack+1;
 }
 
-//=========================================================================================================
-
 CBlobWriteNode::CBlobWriteNode(offset_t _fpos, CKeyHdr *_keyHdr) : CWriteNodeBase(_fpos, _keyHdr)
 {
     hdr.nodeType = NodeBlob;
@@ -993,11 +991,6 @@ void CJHLegacySearchNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _
         loadExpandTime = expansionTimer.elapsedNs();
 }
 
-void PayloadReference::clear()
-{
-    data.reset();
-}
-
 offset_t CJHSearchNode::prevNodeFpos() const
 {
     offset_t ll;
@@ -1037,6 +1030,7 @@ bool CJHLegacySearchNode::fetchPayload(unsigned int index, char *dst, PayloadRef
     if (recording)
     {
         std::shared_ptr<byte []> sharedPayload;
+        bool isFirstUse = false;
 
         {
             CriticalBlock block(payloadExpandCs);
@@ -1047,10 +1041,11 @@ bool CJHLegacySearchNode::fetchPayload(unsigned int index, char *dst, PayloadRef
                 //Allocate a dummy payload so we can track whether it is hit or not
                 sharedPayload = std::shared_ptr<byte []>(new byte[1]);
                 expandedPayload = sharedPayload;
+                isFirstUse = true;
             }
         }
 
-        queryRecorder().recordIndexPayload(keyHdr->getKeyId(), getFpos(), 0, getMemSize());
+        queryRecorder().recordIndexPayload(keyHdr->getKeyId(), getFpos(), isFirstUse, 0);
 
         //Ensure the payload stays alive for the duration of this call, and is likely preserved until
         //the next call.  Always replacing is as efficient as conditional - since we are using a move operator.
@@ -1140,7 +1135,10 @@ void CJHLegacySearchNode::dump(FILE *out, int length, unsigned rowCount, bool ra
         fprintf(out, "==========\n");
 }
 
-//=========================================================================================================
+void PayloadReference::clear()
+{
+    data.reset();
+}
 
 CJHVarTreeNode::CJHVarTreeNode()
 {

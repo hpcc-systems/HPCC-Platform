@@ -296,9 +296,8 @@ protected:
     unsigned helperFlags;
     bool incomplete;
     bool grouped;
-    bool blockcompressed;
+    bool compressed;
     bool encrypted;
-    bool outputPlaneCompressed = false;
     bool useGenericReadWrites = false;
     CachedOutputMetaData serializedOutputMeta;
     offset_t uncompressedBytesWritten;
@@ -311,8 +310,7 @@ protected:
     Owned<IRowInterfaces> rowIf;
     StringBuffer mangledHelperFileName;
     OwnedConstRoxieRow nextrow; // needed for grouped spill
-    Owned<IPropertyTree> formatOptions; // used by generic I/O
-    Owned<IPropertyTree> providerOptions; // used by generic I/O
+    FileAccessOptions fileAccessOptions;
 
     virtual bool isOutputTransformed() { return false; }
     virtual void setFormat(IFileDescriptor * desc);
@@ -2993,14 +2991,12 @@ protected:
     IOutputMetaData *expectedDiskMeta = nullptr;
     IOutputMetaData *projectedDiskMeta = nullptr;
     IConstArrayOf<IFieldFilter> fieldFilters;  // These refer to the expected layout
-    Owned<IPropertyTree> formatOptions;
-    Owned<IPropertyTree> providerOptions;
+    FileAccessOptions baseFileAccessOptions;
     unsigned partNum = 0;
     unsigned helperFlags;
     RecordTranslationMode recordTranslationModeHint = RecordTranslationMode::Unspecified;
     bool useRawStream = false; // Constant for the lifetime of the activity
     bool grouped = false;
-    bool outputGrouped = false;
     bool opened = false;
     bool finishedParts = false;
     bool isCodeSigned = false;
@@ -3063,7 +3059,7 @@ public:
 protected:
     bool openFirstPart();
     void initStream(IDiskRowReader * reader, const char * filename);
-    InputFileInfo * extractFileInformation(IDistributedFile * fileDesc, const IPropertyTree * curFormatOptions, const IPropertyTree * curProviderOptions);
+    InputFileInfo * extractFileInformation(IDistributedFile * fileDesc, const FileAccessOptions & baseFileAccessOptions);
     bool openFilePart(const char * filename);
     bool openFilePart(ILocalOrDistributedFile * localFile, IDistributedFilePart * filePart, unsigned whichPart);
     void setEmptyStream();

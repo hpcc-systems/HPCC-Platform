@@ -113,11 +113,7 @@ bool oneShotRoxie = false;
 unsigned minPayloadSize = 800;
 
 unsigned udpMulticastBufferSize = 262142;
-#if !defined(_CONTAINERIZED) && !defined(SUBCHANNELS_IN_HEADER)
-bool roxieMulticastEnabled = true;
-#else
 unsigned myChannel;
-#endif
 
 IPropertyTree *topology;
 MapStringTo<int> *preferredClusters;
@@ -195,10 +191,9 @@ unsigned mtu_size = 1400; // upper limit on outbound buffer size - allow some he
 StringBuffer fileNameServiceDali;
 StringBuffer roxieName;
 StringBuffer allowedPipePrograms;
-#ifdef _CONTAINERIZED
 StringBuffer defaultPlane;
 StringBuffer defaultIndexBuildPlane;
-#endif
+
 bool trapTooManyActiveQueries;
 unsigned maxEmptyLoopIterations;
 unsigned maxGraphLoopIterations;
@@ -722,6 +717,12 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         saveTopology(topology->getPropBool("@lockDali", false));
         originalTopologyHash = currentTopologyHash = getTopologyHash();
 
+        // Allow the command line to override the location of local secrets, so that roxie can be run from the build directory,
+        // but still pick up secrets from a deployed instance
+        const char * secretPath = topology->queryProp("@secretpath");
+        if (secretPath)
+            setSecretMount(secretPath);
+
         // Any settings we read from topology that must NOT be overridden in workunit debug fields should be read at this point, before the following section
         getAllowedPipePrograms(allowedPipePrograms, true);
 
@@ -885,17 +886,32 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         }
 #endif
 
-        //Add roxieMode configuration option, which can be used to set the defaults for various other options
-        bool isBatchRoxie = false;
-        const char * roxieMode = topology->queryProp("@roxieMode");
-        if (roxieMode && strieq(roxieMode, "batch"))
-            isBatchRoxie = true;
+        //The following meta-options affect the defaults for various other options:
+        const char * roxieMode = topology->queryProp("@roxieMode", "interactive");
+        const char * protocol = topology->queryProp("@transportProtocol", "tcp");
+        IPropertyTree * pageCache = topology->queryPropTree("pageCache");
 
-        //Configure defaults based on whether the system is being used for batch or interactive queries
-        if (isBatchRoxie)
-        {
-            acknowledgeAllRequests = false;
-        }
+        bool isBatchRoxie = strisame(roxieMode, "batch");
+        useTcpTransport = strisame(protocol, "tcp");
+        bool usingRemoteStorage = (pageCache != nullptr);
+
+        // --- These options have the following effects on the defaults:
+
+        // If the system is used for batch throughput is more important.  If using tcp messages are unlikely to get lost.
+        acknowledgeAllRequests = !isBatchRoxie && !useTcpTransport;
+
+        // If using TCP then send larger packets - it reduces the allocations and increases throughput
+        mtu_size = useTcpTransport ? 8193 : 0;  // 0 means it will use the options below
+
+        // If using tcp then messages are unlikely to get lost, and for batch the response time is less relevant
+        // so increase the default timeout to avoid sending too many messages when the system is overloaded
+        if (useTcpTransport || isBatchRoxie)
+            packetAcknowledgeTimeout = 500;
+
+        //Enabling the localNVMeCache will also by default enable remote file related optimizations
+        bool mimicLegacyCompression = topology->getPropBool("@mimicLegacyCompression", !usingRemoteStorage);
+
+        // --- End of options dependent on batch/transport/remote roxie
 
         if (!topology->hasProp("@resolveLocally"))
             topology->setPropBool("@resolveLocally", !topology->hasProp("@daliServers"));
@@ -1149,9 +1165,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 
         udpFlowSocketsSize = topology->getPropInt("@udpFlowSocketsSize", udpFlowSocketsSize);
         udpLocalWriteSocketSize = topology->getPropInt("@udpLocalWriteSocketSize", udpLocalWriteSocketSize);
-#if !defined(_CONTAINERIZED) && !defined(SUBCHANNELS_IN_HEADER)
-        roxieMulticastEnabled = topology->getPropBool("@roxieMulticastEnabled", true);   // enable use of multicast for sending requests to agents
-#endif
 
         udpResendLostPackets = topology->getPropBool("@udpResendLostPackets", true);
         udpAssumeSequential = topology->getPropBool("@udpAssumeSequential", false);
@@ -1286,7 +1299,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         actResetLogPeriod = topology->getPropInt("@actResetLogPeriod", 300);
         watchActivityId = topology->getPropInt("@watchActivityId", 0);
         delaySubchannelPackets = topology->getPropBool("@delaySubchannelPackets", false);
-        IBYTIbufferSize = topology->getPropInt("@IBYTIbufferSize", roxieMulticastEnabled ? 0 : 10);
+        IBYTIbufferSize = topology->getPropInt("@IBYTIbufferSize", 10);
         IBYTIbufferLifetime = topology->getPropInt("@IBYTIbufferLifetime", initIbytiDelay);
         traceTranslations = topology->getPropBool("@traceTranslations", true);
         defaultTimeActivities = topology->getPropBool("@timeActivities", true);
@@ -1373,14 +1386,12 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             setNodeFetchThresholdNs(topology->getPropInt64("@nodeFetchThresholdNs"));
         setIndexWarningThresholds(topology);
 
-        //Enabling the localNVMeCache will also by default enable remote file related optimizations
-        offset_t localNVMeCacheSize = topology->getPropInt64("@localNVMeCacheSize", 0);
-        bool usingRemoteStorage = (localNVMeCacheSize != 0);
-
-        unsigned inplaceSizeFactor = topology->getPropInt("@inplaceSizeFactor", usingRemoteStorage ? 0 : 100);
-        unsigned lz4SpeedFactor = topology->getPropInt("@lz4SpeedFactor", usingRemoteStorage ? 0 : 600);             // If lz4 is 5x faster then value should be 500
-        unsigned zStdSpeedFactor = topology->getPropInt("@zStdSpeedFactor", usingRemoteStorage ? 0 : 350);
+        unsigned inplaceSizeFactor = topology->getPropInt("@inplaceSizeFactor", mimicLegacyCompression ? 100 : 0);
+        unsigned lz4SpeedFactor = topology->getPropInt("@lz4SpeedFactor", mimicLegacyCompression ? 600 : 0);             // If lz4 is 5x faster then value should be 500
+        unsigned zStdSpeedFactor = topology->getPropInt("@zStdSpeedFactor", mimicLegacyCompression ? 350 : 0);
         setIndexScaling(inplaceSizeFactor, lz4SpeedFactor, zStdSpeedFactor);
+        if (pageCache)
+            initializeDiskPageCache(pageCache);
 
         unsigned __int64 affinity = topology->getPropInt64("@affinity", 0);
         updateAffinity(affinity);
@@ -1389,27 +1400,26 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         minimumInterestingActivityCycles = nanosec_to_cycle(minimumInterestingActivityMs * 1'000'000);
 
         minFreeDiskSpace = topology->getPropInt64("@minFreeDiskSpace", (1024 * 0x100000)); // default to 1 GB
-        mtu_size = topology->getPropInt("@mtuPayload", 0);
+        //Use a different option to configure the tcp packet size - so that cloned default settings don't affect tcp
+        if (useTcpTransport)
+            mtu_size = topology->getPropInt("@tcpMaxPacketSize", mtu_size);
+        else
+            mtu_size = topology->getPropInt("@mtuPayload", mtu_size);
         if (mtu_size)
         {
-            if (mtu_size < 1400 || mtu_size > 9000)
+            if (!useTcpTransport && (mtu_size < 1400 || mtu_size > 9000))
                 throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid settings - mtuPayload should be between 1400 and 9000");
-            unsigned alignment = 0x400;
-            while (alignment*2 < mtu_size)
-                alignment *= 2;
-            roxiemem::setDataAlignmentSize(alignment);  // smallest power of two under mtuSize
-
         }
         else if (topology->getPropBool("@jumboFrames", false))
-        {
             mtu_size = 9000;    // upper limit on outbound buffer size - allow some header room too
-            roxiemem::setDataAlignmentSize(0x2000);
-        }
         else
-        {
             mtu_size = 1400;    // upper limit on outbound buffer size - allow some header room too
-            roxiemem::setDataAlignmentSize(0x400);
-        }
+
+        unsigned alignment = 0x400;
+        while (alignment*2 < mtu_size)
+            alignment *= 2;
+        roxiemem::setDataAlignmentSize(alignment);  // smallest power of two under mtuSize
+
 #ifndef _CONTAINERIZED
         perfMonHook.setown(roxiemem::createRoxieMemStatsPerfMonHook());  // Note - we create even if pinterval is 0, as can be enabled via control message
         unsigned pinterval = topology->getPropInt("@systemMonitorInterval",1000*60);
@@ -1472,27 +1482,12 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             myRoles.push_back(me);
         }
 #else
-        // Set multicast base addresses - must be done before generating agent channels
-        if (roxieMulticastEnabled && !localAgent)
-        {
-            if (topology->queryProp("@multicastBase"))
-                multicastBase.ipset(topology->queryProp("@multicastBase"));
-            else
-                throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - multicastBase not set");
-            if (topology->queryProp("@multicastLast"))
-                multicastLast.ipset(topology->queryProp("@multicastLast"));
-            else
-                throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - multicastLast not set");
-        }
         readStaticTopology();
 #endif
         // Now we know all the channels, we can open and subscribe the multicast channels
         if (!localAgent)
-        {
-            openMulticastSocket();
-            if (roxieMulticastEnabled)
-                setMulticastEndpoints(numChannels);
-        }
+            openWorkerRequestSocket();
+
         setDaliServixSocketCaching(true);  // enable daliservix caching
         enableForceRemoteReads(); // forces file reads to be remote reads if they match environment setting 'forceRemotePattern' pattern.
 
@@ -1824,7 +1819,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
     stopRoxieEventRecording(nullptr);
     cleanupPlugins();
     unloadHpccProtocolPlugin();
-    closeMulticastSockets();
+    closeWorkerRequestSockets();
     releaseAgentDynamicFileCache();
     releaseRoxieStateCache();
     setDaliServixSocketCaching(false);  // make sure it cleans up or you get bogus memleak reports

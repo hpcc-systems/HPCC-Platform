@@ -70,3 +70,23 @@ useDropZoneRestriction=true
 # NB: for now this only applies to the last cached server 
 #dafsConnectFailRetrySeconds=10
 
+# Log4j Configuration for Java Embed Logging
+# By default, Java log redirection is disabled.
+#
+# To enable Java log redirection:
+#   1. Uncomment and set 'log4jLevel' to the desired log level.
+#   2. Optionally, customize 'log4jPattern' for log formatting.
+#
+# log4jLevel   : REQUIRED. Filters logs by level.
+#                Available options:
+#                  OFF, FATAL, ERROR, WARN, INFO, DEBUG, TRACE, ALL
+#                See: https://logging.apache.org/log4j/2.x/manual/customloglevels.html
+#
+# log4jPattern : OPTIONAL. Sets the log output format.
+#                *WARNING* An invalid pattern will cause log4j to silently fail to redirect logs to HPCC
+#                Default: [%t] - %msg%n
+#                See: https://logging.apache.org/log4j/2.x/manual/pattern-layout.html
+#
+# Example usage:
+# log4jLevel=WARN
+# log4jPattern=[%-5level] %msg%n

@@ -179,8 +179,10 @@ Filters:
                               event list.
                               Event type names, accepted values are derived
                               from the EventType enumeration:
-                                - IndexLookup
+                                - IndexCacheHit
+                                - IndexCacheMiss
                                 - IndexLoad
+                                - IndexPayload
                                 - IndexEviction
                                 - DaliChangeMode
                                 - DaliCommit
@@ -193,6 +195,7 @@ Filters:
                                 - DaliSubscribe
                                 - FileInformation
                                 - RecordingActive
+                                - IndexPayload
                               Event context names are also accepted. An event
                               context is a built-in grouping of related events
                               including:
@@ -207,10 +210,13 @@ Filters:
                                   - DaliGetElements
                                   - DaliSubscribe
                                 - Index
-                                  - IndexLookup
+                                  - IndexCacheHit
+                                  - IndexCacheMiss
                                   - IndexLoad
+                                  - IndexPayload
                                   - IndexEviction
                                   - FileInformation
+                                  - IndexPayload
                                 - Other
                                   - RecordingActive
     --attribute:<attr>=<val>  Skip events the include the specified attribute
@@ -240,7 +246,7 @@ Filters:
                                 - FileOffset: numeric
                                 - NodeKind: numeric, 0 or 1
                                 - ReadTime: numeric
-                                - ElapsedTime: numeric
+                                - ExpandTime: numeric
                                 - InMemorySize: numeric
                                 - InCache: Boolean
                                 - Path: string

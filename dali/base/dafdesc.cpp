@@ -3675,7 +3675,13 @@ void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned copy
 
     if (!plane->hasProp("@prefix"))
     {
-        if (dir.length())
+        // If a storage plane does not have a prefix, but a storage api type is defined, then generate a prefix
+        const char * storageApiType = plane->queryProp("storageapi/@type");
+        if (storageApiType)
+        {
+            // @prefix is set later in applyPlaneTransformations
+        }
+        else if (dir.length())
             plane->setProp("@prefix", dir);
         else
             plane->setProp("@prefix", queryBaseDirectory(groupType, copy));
@@ -3788,6 +3794,41 @@ static void generateHosts(IPropertyTree * storage, GroupInfoArray & groups)
     }
 }
 
+void applyPlaneTransformations(IPropertyTree * storage)
+{
+    IPropertyTree * defaults = storage->queryPropTree("defaults");
+    Owned<IPropertyTreeIterator> planes = storage->getElements("planes");
+    ForEach(*planes)
+    {
+        IPropertyTree & plane = planes->query();
+        // If a storage plane does not have a prefix, but a storage api type is defined, then generate a prefix
+        const char * prefix = plane.queryProp("@prefix");
+        const char * name = plane.queryProp("@name");
+        if (!prefix)
+        {
+            const char * storageApiType = plane.queryProp("storageapi/@type");
+            if (storageApiType)
+            {
+                StringBuffer newPrefix;
+                newPrefix.append(storageApiType).append(":").append(name).append("/data");
+                plane.setProp("@prefix", newPrefix.str());
+            }
+        }
+
+        // Clone any interesting defaults into the plane - fill out at a later date
+        if (defaults)
+        {
+            const char * category = plane.queryProp("@category");
+            if (strsame(category, "data"))
+            {
+                const char * compression = defaults->queryProp("@compression");
+                if (!plane.hasProp("@compression") && compression)
+                    plane.setProp("@compression", compression);
+            }
+        }
+    }
+}
+
 static CConfigUpdateHook configUpdateHook;
 static std::atomic<unsigned> normalizeHostGroupUpdateCBId{(unsigned)-1};
 static CriticalSection storageCS;
@@ -3856,6 +3897,8 @@ static void doInitializeStorageGroups(bool createPlanesFromGroups, IPropertyTree
 
     //Ensure that host groups that are defined in terms of other host groups are expanded out so they have an explicit list of hosts
     normalizeHostGroups(newGlobalConfiguration);
+
+    applyPlaneTransformations(storage);
 
     //The following can be removed once the storage planes have better integration
     setupContainerizedStorageLocations();

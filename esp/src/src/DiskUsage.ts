@@ -3,7 +3,7 @@ import { Palette } from "@hpcc-js/common";
 import { WsMachineEx, MachineService, DFUXRefService, WsDFUXRef } from "@hpcc-js/comms";
 import { ColumnFormat, Table } from "@hpcc-js/dgrid";
 import { FlexGrid } from "@hpcc-js/layout";
-import * as dojoOn from "dojo/on";
+import { on as dojoOn } from "src-dojo/index";
 import nlsHPCC from "./nlsHPCC";
 
 Palette.rainbow("DiskUsage", ["green", "green", "green", "green", "green", "green", "green", "green", "orange", "red", "red"]);
@@ -150,6 +150,31 @@ export class Summary extends FlexGrid {
 
     //  Events
     click(gauge: Gauge, details: DetailsT) {
+    }
+}
+
+export class ClusterGauge extends Gauge {
+    constructor(readonly _targetCluster: string) {
+        super();
+        this
+            .title(_targetCluster)
+            .showTick(true);
+    }
+
+    refresh(bypassCachedResult: boolean = false) {
+        machineService.GetTargetClusterUsageEx([this._targetCluster], bypassCachedResult).then(response => {
+            const details = response && response[0];
+            if (details) {
+                this
+                    .value((details.max || 0) / 100)
+                    .valueDescription(nlsHPCC.Max)
+                    .tickValue((details.mean || 0) / 100)
+                    .tickValueDescription(nlsHPCC.Mean)
+                    .tooltip(details.ComponentUsagesDescription)
+                    .render();
+            }
+        });
+        return this;
     }
 }
 

@@ -11574,6 +11574,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case DOTDOT: msg.append(".."); break;
     case DYNAMIC: msg.append("DYNAMIC"); break;
     case EBCDIC: msg.append("EBCDIC"); break;
+    case ECLAGENT: msg.append("ECLAGENT"); break;
     case ECLCRC: msg.append("ECLCRC"); break;
     case ELSE: msg.append("ELSE"); break;
     case ELSEIF: msg.append("ELSEIF"); break;
@@ -11595,7 +11596,6 @@ static void getTokenText(StringBuffer & msg, int token)
     case EVENTEXTRA: msg.append("EVENTEXTRA"); break;
     case EVENTNAME: msg.append("EVENTNAME"); break;
     case EXCEPT: msg.append("EXCEPT"); break;
-    case EXECUTE: msg.append("EXECUTE"); break;
     case EXCLUSIVE: msg.append("EXCLUSIVE"); break;
     case EXISTS: msg.append("EXISTS"); break;
     case EXP: msg.append("expression"); break;
@@ -12036,7 +12036,7 @@ void HqlGram::simplifyExpected(int *expected)
                        GROUP, GROUPED, KEYED, UNGROUP, JOIN, PULL, ROLLUP, ITERATE, PROJECT, NORMALIZE, PIPE, DENORMALIZE, CASE, MAP, 
                        HTTPCALL, SOAPCALL, LIMIT, PARSE, FAIL, MERGE, PRELOAD, ROW, TOPN, ALIAS, LOCAL, NOFOLD, NOCOMBINE, NOHOIST, NOTHOR, IF, GLOBAL, __COMMON__, __COMPOUND__, TOK_ASSERT, _EMPTY_,
                        COMBINE, ROWS, REGROUP, XMLPROJECT, SKIP, LOOP, CLUSTER, NOLOCAL, REMOTE, PROCESS, ALLNODES, THISNODE, GRAPH, MERGEJOIN, STEPPED, NONEMPTY, HAVING,
-                       TOK_CATCH, '@', SECTION, WHEN, IFF, COGROUP, HINT, INDEX, PARTITION, AGGREGATE, SUBSORT, TOK_ERROR, CHOOSE, TRACE, QUANTILE, UNORDERED, PREFETCH, GETSECRET, EXECUTE, 0);
+                       TOK_CATCH, '@', SECTION, WHEN, IFF, COGROUP, HINT, INDEX, PARTITION, AGGREGATE, SUBSORT, TOK_ERROR, CHOOSE, TRACE, QUANTILE, UNORDERED, PREFETCH, GETSECRET, EVALUATE, 0);
     simplify(expected, EXP, ABS, SIN, COS, TAN, SINH, COSH, TANH, ACOS, ASIN, ATAN, ATAN2, 
                        COUNT, CHOOSE, MAP, CASE, IF, HASH, HASH32, HASH64, HASHMD5, CRC, LN, TOK_LOG, POWER, RANDOM, ROUND, ROUNDUP, SQRT, 
                        TRUNCATE, LENGTH, TRIM, INTFORMAT, REALFORMAT, ASSTRING, TRANSFER, MAX, MIN, EVALUATE, SUM,

@@ -470,6 +470,7 @@ public:
                 switch (attr.queryTypeClass())
                 {
                 case EATCtext:
+                case EATCtimestamp:
                     doVisitAttribute(attr.queryId(), attr.queryTextValue());
                     break;
                 case EATCnumeric:

@@ -376,6 +376,8 @@ public:
     //
     virtual void set_linger(int lingersecs) = 0;  
 
+    // Set a flag (linux only) to ensure that acks are not delayed
+    virtual void set_quick_ack(bool on) = 0;
 
     //
     // Cancel accept operation and close socket

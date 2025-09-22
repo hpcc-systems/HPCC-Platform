@@ -20,6 +20,7 @@
 #include "eventconsumption.h"
 #include "eventoperation.h"
 #include "eventvisitor.h"
+#include <set>
 
 constexpr static byte defaultGranularityBits = 0; // 1 page per bucket
 
@@ -29,11 +30,11 @@ public:
     virtual bool ready() const override;
     virtual bool doOp() override;
 public:
-    void setObservedEvent(EventType _observedEvent);
+    void addObservedEvent(EventType observedEvent);
     void setGranularity(byte bits);
     void setLimit(byte _limit);
 protected:
-    EventType observedEvent{EventNone};
+    std::set<EventType> observedEvents;
     byte granularityBits{defaultGranularityBits};
     byte limit{10};
 };

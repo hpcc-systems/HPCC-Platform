@@ -83,6 +83,12 @@ data:
 {{- if eq .me.application "eclwatch" }}
  {{- include "hpcc.generateWarnings" (dict "root" .root) | nindent 6 }}
  {{- include "hpcc.generateInfrastructureInfo" (dict "root" .root) | nindent 6 }}
+      configuredComponents:
+ {{- $results := dict -}}
+ {{- include "hpcc.populateComponentNames" (dict "root" .root "results" $results) -}}
+ {{- range $component := $results.componentNames }}
+      - name: {{ $component }}
+ {{- end }}
 {{- end }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
@@ -162,6 +168,15 @@ spec:
 {{ include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addEphemeralVolumeMounts" . | indent 8 }}
+{{- $results := dict -}}
+{{- include "hpcc.populateComponentNames" (dict "root" $ "results" $results) -}}
+{{- if eq $application "eclwatch" }}
+ {{- range $component := $results.componentNames }}
+  {{- if ne $component "eclwatch" }}
+   {{- include "hpcc.addComponentConfigMapVolumeMount" (dict "name" $component) | nindent 8 }}
+  {{- end }}
+ {{- end }}
+{{- end }}
 {{ include "hpcc.addVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addVaultClientCertificateVolumeMounts" $commonCtx | indent 8 }}
@@ -175,6 +190,13 @@ spec:
 {{- include "hpcc.addPostRunContainer" $commonCtx | nindent 6 }}
       volumes:
 {{ include "hpcc.addEphemeralVolumes" . | indent 6 }}
+{{- if eq $application "eclwatch" }}
+ {{- range $component := $results.componentNames }}
+  {{- if ne $component "eclwatch" }}
+  {{- include "hpcc.addConfigMapVolume" (dict "name" $component) | nindent 6 }}
+  {{- end }}
+ {{- end }}
+{{- end }}
 {{ include "hpcc.addVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addSecretVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addVaultClientCertificateVolumes" $commonCtx | indent 6 }}

@@ -193,7 +193,7 @@ in the same way (spill, dll, temp).
 
 Sasha services used to define their storage plane within a nested storage attribute:
 
-```sasha:
+```yaml
   wu-archiver:
     storage:
       plane: sasha
@@ -201,7 +201,7 @@ Sasha services used to define their storage plane within a nested storage attrib
 
 This is now simplified to:
 
-```sasha:
+```yaml
   wu-archiver:
     plane: sasha
 ```
