@@ -162,7 +162,7 @@ jobs:
             -name "GitHub" \
             -source "https://nuget.pkg.github.com/hpcc-systems/index.json" \
             -storepasswordincleartext \
-            -username "${{ github.actor }}" \
+            -username "${{ github.repository_owner }}" \
             -password "${{ secrets.GITHUB_TOKEN }}"
 
       - name: Calculate vars
