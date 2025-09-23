@@ -94,7 +94,7 @@ bool CTransformer::setPartition(RemoteFilename & remoteInputName, offset_t _star
     CTransformerBase::setPartition(remoteInputName, _startOffset, _length);
     // could be cache for local, nocache for mirror
     input.setown(inputFile->open(IFOread,IFEnocache));
-    if (compressedInput) {                          
+    if (compressedInput) {
         Owned<IExpander> expander;
         if (decryptKey&&*decryptKey) {
             StringBuffer key;
@@ -123,7 +123,7 @@ size32_t CTransformer::getBlock(IFileIOStream * out)
 
 //----------------------------------------------------------------------------
 
-CNullTransformer::CNullTransformer(size32_t buffersize) : CTransformer(buffersize) 
+CNullTransformer::CNullTransformer(size32_t buffersize) : CTransformer(buffersize)
 {
     doInputCRC = false;
 }
@@ -145,7 +145,7 @@ void CNullTransformer::setInputCRC(crc32_t _inputCRC)
 
 //----------------------------------------------------------------------------
 
-CFixedToVarTransformer::CFixedToVarTransformer(size32_t _recordSize,size32_t buffersize, bool _bigendian) 
+CFixedToVarTransformer::CFixedToVarTransformer(size32_t _recordSize,size32_t buffersize, bool _bigendian)
     : CTransformer(buffersize)
 {
     recordSize = _recordSize;
@@ -154,7 +154,7 @@ CFixedToVarTransformer::CFixedToVarTransformer(size32_t _recordSize,size32_t buf
 }
 
 
-//Coded slightly strangely, so that we avoid an extra memcpy() - except for the bytes 
+//Coded slightly strangely, so that we avoid an extra memcpy() - except for the bytes
 //that don't quite fit in this block.
 size32_t CFixedToVarTransformer::getN(byte * buffer, size32_t maxLength)
 {
@@ -164,7 +164,7 @@ size32_t CFixedToVarTransformer::getN(byte * buffer, size32_t maxLength)
     size32_t sizeToGet = (maxLength / targetRecordSize) * recordSize;
     size32_t sizeGot = read(sizeToGet, buffer);
 
-    //Now add the varLenType 
+    //Now add the varLenType
     unsigned numGot = sizeGot/recordSize;
     assertex(numGot*recordSize==sizeGot);
     for (unsigned cur=numGot;cur--!=0;)
@@ -172,7 +172,7 @@ size32_t CFixedToVarTransformer::getN(byte * buffer, size32_t maxLength)
         byte * curSource = buffer + recordSize * cur;
         byte * curTarget = buffer + targetRecordSize * cur;
         memmove(curTarget + sizeof(varLenType), curSource, recordSize);
-        _WINCPYREV(curTarget, &recordSize, sizeof(varLenType));  
+        _WINCPYREV(curTarget, &recordSize, sizeof(varLenType));
     }
 
     return numGot * targetRecordSize;
@@ -187,7 +187,7 @@ offset_t CFixedToVarTransformer::tell()
 //---------------------------------------------------------------------------
 
 
-CVarToFixedTransformer::CVarToFixedTransformer(unsigned _recordSize,size32_t buffersize, bool _bigendian) 
+CVarToFixedTransformer::CVarToFixedTransformer(unsigned _recordSize,size32_t buffersize, bool _bigendian)
     : CTransformer(buffersize)
 {
     recordSize = _recordSize;
@@ -251,7 +251,7 @@ offset_t CVarToFixedTransformer::tell()
 
 //----------------------------------------------------------------------------
 
-CBlockToVarTransformer::CBlockToVarTransformer(bool _bigendian) 
+CBlockToVarTransformer::CBlockToVarTransformer(bool _bigendian)
     : CTransformer(EFX_BLOCK_SIZE)
 {
     assertex(sizeof(blockLenType) == 4);
@@ -296,7 +296,7 @@ offset_t CBlockToVarTransformer::tell()
 
 //----------------------------------------------------------------------------
 
-CVarToBlockTransformer::CVarToBlockTransformer(bool _bigendian) 
+CVarToBlockTransformer::CVarToBlockTransformer(bool _bigendian)
     : CTransformer(EFX_BLOCK_SIZE)
 {
     savedSize = 0;
@@ -310,7 +310,7 @@ CVarToBlockTransformer::~CVarToBlockTransformer()
     delete [] savedBuffer;
 }
 
-//Coded slightly strangely, so that we avoid an extra memcpy() - except for the bytes 
+//Coded slightly strangely, so that we avoid an extra memcpy() - except for the bytes
 //that don't quite fit in this block.
 size32_t CVarToBlockTransformer::getN(byte * buffer, size32_t maxLength)
 {
@@ -846,7 +846,7 @@ ITransformer * createTransformer(const FileFormat & srcFormat, const FileFormat 
         case FFTutf8: case FFTutf8n:
             switch (tgtFormat.type)
             {
-            case FFTutf8n: 
+            case FFTutf8n:
             case FFTutf8:
                 transformer = new CNullTransformer(buffersize);
                 break;
@@ -874,7 +874,7 @@ ITransformer * createTransformer(const FileFormat & srcFormat, const FileFormat 
     if (!transformer)
         transformer = new CGeneralTransformer(srcFormat, tgtFormat);
 //      throwError(DFTERR_BadSrcTgtCombination);
-    
+
     return transformer;
 }
 
@@ -1039,7 +1039,7 @@ void TransferServer::deserializeAction(MemoryBuffer & msg, unsigned action)
         msg.read(copyCompressed);
     if (msg.remaining())
         msg.read(transferBufferSize);
-    if (msg.remaining()) 
+    if (msg.remaining())
         msg.read(encryptKey).read(decryptKey);
     if (msg.remaining())
     {
@@ -1093,7 +1093,7 @@ void TransferServer::transferChunk(unsigned chunkIndex)
     const unsigned __int64 startOutOffset = out->tell();
     if (startOutOffset != curPartition.outputOffset+curProgress.outputLength)
         throwError4(DFTERR_OutputOffsetMismatch, out->tell(), curPartition.outputOffset+curProgress.outputLength, "start", chunkIndex);
-    
+
     size32_t fixedTextLength = (size32_t)curPartition.fixedText.length();
     if (fixedTextLength || curPartition.inputName.isNull())
     {
@@ -1114,8 +1114,8 @@ void TransferServer::transferChunk(unsigned chunkIndex)
             transformer.setown(createIndexTransformer(srcFormat, tgtFormat, keyCompression));
         else
             transformer.setown(createTransformer(srcFormat, tgtFormat, transferBufferSize));
-        if (!transformer->setPartition(curPartition.inputName, 
-                                       curPartition.inputOffset+curProgress.inputLength, 
+        if (!transformer->setPartition(curPartition.inputName,
+                                       curPartition.inputOffset+curProgress.inputLength,
                                        curPartition.inputLength-curProgress.inputLength,
                                        compressedInput,
                                        decryptKey))
@@ -1146,7 +1146,7 @@ void TransferServer::transferChunk(unsigned chunkIndex)
 
 void TransferServer::createOutputStream(IFileIO * outio)
 {
-    size32_t bufferSize = getBlockedSequentialIO(outio);
+    size32_t bufferSize = getBlockedSequentialIO(outio, (size32_t)-1);
     out.setown(createBufferedIOStream(outio, bufferSize));
 }
 
