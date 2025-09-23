@@ -128,7 +128,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
         CRuntimeSummaryStatisticCollection podStats;
         std::vector<std::string> nodeNames; // ordered list of the unique node names
         bool collectAttempted = false;
-        
+
     public:
         CPodInfo() : podStats(podStatistics)
         {
@@ -189,7 +189,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
             reportExceptionToWorkunit(*wu, e);
         }
     } podInfo;
-    
+
     Owned<IDeMonServer> demonServer;
     std::atomic<unsigned> activeTasks;
     StringAttr          currentWuid;
@@ -1407,8 +1407,93 @@ void auditThorJobEvent(const char *eventName, const char *wuid, const char *grap
     LOG(MCauditInfo, "%s", msg.c_str());
 }
 
+// Configuration change detection for graceful restart
+static std::atomic<bool> configChangeDetected{false};
+static StringAttr currentConfigSHA;
+static CriticalSection configSHAcs;
+
+// Compute SHA hash of the current configuration
+static void computeConfigSHA(StringBuffer &shaStr)
+{
+    shaStr.clear();
+    try
+    {
+        Owned<IPropertyTree> componentConfig = getComponentConfigSP();
+        Owned<IPropertyTree> globalConfig = getGlobalConfigSP();
+
+        StringBuffer configXML;
+        if (componentConfig)
+        {
+            toXML(componentConfig, configXML, 0, XML_SortTags | XML_Format);
+            configXML.append('\n');
+        }
+        if (globalConfig)
+        {
+            toXML(globalConfig, configXML, 0, XML_SortTags | XML_Format);
+        }
+
+        if (configXML.length())
+        {
+            // Calculate hash64 of the configuration XML
+            hash64_t configHash = rtlHash64Data(configXML.length(), configXML.str(), 0);
+            shaStr.appendf("%" I64F "x", configHash);
+        }
+    }
+    catch (IException *e)
+    {
+        IWARNLOG(e, "Failed to compute configuration SHA");
+        e->Release();
+    }
+}
+
+static void configUpdateNotifyHandler(const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
+{
+    PROGLOG("DJPS configUpdateNotifyHandler() called");
+
+    // Compute SHA of current (new) configuration
+    StringBuffer newConfigSHA;
+    computeConfigSHA(newConfigSHA);
+    PROGLOG("DJPS newConfigSHA: %s", newConfigSHA.str());
+
+    // Check and update the stored SHA, only if SHA actually changed (content change, not just file touch)
+    {
+        CriticalBlock b(configSHAcs);
+        if (newConfigSHA.length() && !streq(currentConfigSHA.str(), newConfigSHA.str()))
+        {
+            configChangeDetected.store(true);
+            currentConfigSHA.set(newConfigSHA.str());
+
+            PROGLOG("Configuration SHA changed from '%s' to '%s' - Thor will gracefully restart after current job completes",
+                    currentConfigSHA.str(),
+                    newConfigSHA.str());
+        }
+    }
+}
+
 void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphName)
 {
+    // Install configuration change detection handler for graceful restart
+    unsigned configUpdateHookId{0};
+    if (isContainerized())
+    {
+        configUpdateHookId = installConfigUpdateHook(configUpdateNotifyHandler, false);
+        if (configUpdateHookId)
+        {
+            PROGLOG("Configuration change monitoring enabled for graceful restart");
+
+            // Initialize the configuration SHA baseline
+            StringBuffer initialConfigSHA;
+            computeConfigSHA(initialConfigSHA);
+            {
+                CriticalBlock b(configSHAcs);
+                currentConfigSHA.set(initialConfigSHA.str());
+            }
+            PROGLOG("Initial configuration SHA: %s", initialConfigSHA.str());
+        }
+        else
+            IWARNLOG("Failed to install configuration change monitoring");
+    }
+
     aborting = 0;
     unsigned multiThorMemoryThreshold = globals->getPropInt("@multiThorMemoryThreshold")*0x100000;
     try
@@ -1605,6 +1690,14 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                     }
 
                     currentGraphName.clear();
+
+                    // Check for configuration changes and exit gracefully if detected
+                    if (configChangeDetected.load())
+                    {
+                        PROGLOG("Configuration change detected - exiting gracefully to allow pod restart with new configuration");
+                        break;
+                    }
+
                     unsigned lingerRemaining;
                     if (lingerTimer.timedout(&lingerRemaining))
                         break;
@@ -1669,6 +1762,11 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
         FLLOG(MCexception(e), e,"ThorMaster");
         e->Release();
     }
+
+    // Cleanup configuration change monitoring
+    if (isContainerized() && configUpdateHookId)
+        removeConfigUpdateHook(configUpdateHookId);
+
     if (multiThorMemoryThreshold)
         setMultiThorMemoryNotify(0,NULL);
 }
