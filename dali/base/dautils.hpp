@@ -623,7 +623,8 @@ interface INamedGroupStore;
 extern da_decl void remapGroupsToDafilesrv(IPropertyTree *file, bool foreign, bool secure);
 extern da_decl unsigned getPreferredDaFsServerPort();
 #ifdef NULL_DALIUSER_STACKTRACE
-extern da_decl void logNullUser(IUserDescriptor *userDesc);
+#define logNullUser(userDesc) doLogNullUser(userDesc, __func__);
+extern da_decl void doLogNullUser(IUserDescriptor * userDesc, const char *location);
 #else
 inline void logNullUser(IUserDescriptor *userDesc) { }
 #endif
