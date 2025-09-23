@@ -2798,7 +2798,7 @@
         },
         "multiJobLinger": {
           "type": "boolean",
-          "description": "[Optional] If lingerPeriod set, allows Thor to process more graphs from any job",
+          "description": "[DEPRECATED] If lingerPeriod set, allows Thor to process more graphs from any job",
           "default": true
         },
         "maxGraphStartupTime": {
