@@ -39,6 +39,7 @@
 #include "thexception.hpp"
 #include "jhtree.hpp"
 #include "thalloc.hpp"
+#include "jplane.hpp"
 
 #ifdef _DEBUG
 //#define TRACE_UNIQUE
@@ -2601,7 +2602,14 @@ public:
         // NB: this TLK is an in-memory TLK serialized from the master - the name is for tracing by the key code only
         VStringBuffer name("index");
         name.append(queryId()).append("_tlk");
-        lookup = new CKeyLookup(*this, helper, createKeyIndex(name.str(), 0, *iFileIO, (unsigned) -1, true, 0)); // MORE - crc is not 0...
+
+        constexpr size32_t bufferSize1mb = 0x100000;
+        size32_t bufferSize = bufferSize1mb;
+        unsigned __int64 value;
+        if (iFileIO && iFileIO->queryFile() && findPlaneAttrFromPath(iFileIO->queryFile()->queryFilename(), BlockedSequentialIO, bufferSize1mb, value))
+            bufferSize = (size32_t)value;
+
+        lookup = new CKeyLookup(*this, helper, createKeyIndex(name.str(), 0, *iFileIO, (unsigned) -1, true, bufferSize)); // MORE - crc is not 0...
         ihash = lookup;
     }
     virtual void stop() override
