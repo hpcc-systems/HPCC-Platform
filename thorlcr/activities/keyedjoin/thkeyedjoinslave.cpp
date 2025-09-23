@@ -2454,6 +2454,15 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         }
         return tlkKeyIndexes.ordinality();
     }
+    size32_t getBlockedRandomBufferSize(IFileIO *fileIO)
+    {
+        constexpr size32_t bufferSize1mb = 0x100000;
+        size32_t bufferSize = bufferSize1mb;
+        unsigned __int64 value;
+        if (fileIO && fileIO->queryFile() && findPlaneAttrFromPath(fileIO->queryFile()->queryFilename(), BlockedRandomIO, bufferSize1mb, value))
+            bufferSize = (size32_t)value;
+        return bufferSize;
+    }
     IKeyIndex *createPartKeyIndex(unsigned partNo, unsigned copy)
     {
         IPartDescriptor &filePart = allIndexParts.item(partNo);
@@ -2469,13 +2478,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             * The underlying IFileIO can later be closed by fhe file caching mechanism.
             */
         Owned<IFileIO> lazyIFileIO = queryThor().queryFileCache().lookupIFileIO(*this, indexName, filePart, nullptr);
-
-        constexpr size32_t bufferSize1mb = 0x100000;
-        size32_t bufferSize = bufferSize1mb;
-        unsigned __int64 value;
-        if (lazyIFileIO && lazyIFileIO->queryFile() && findPlaneAttrFromPath(lazyIFileIO->queryFile()->queryFilename(), BlockedSequentialIO, bufferSize1mb, value))
-            bufferSize = (size32_t)value;
-
+        size32_t bufferSize = getBlockedRandomBufferSize(lazyIFileIO);
         return createKeyIndex(filename, crc, *lazyIFileIO, (unsigned) -1, false, bufferSize);
     }
     IKeyManager *createPartKeyManager(unsigned partNo, unsigned copy, IContextLogger *ctx)
@@ -3110,13 +3113,7 @@ public:
                     Owned<IFileIO> iFileIO = createIFileI(lenArray.item(p), tlkMb.toByteArray()+posArray.item(p));
                     StringBuffer name("TLK");
                     name.append('_').append(container.queryId()).append('_');
-
-                    constexpr size32_t bufferSize1mb = 0x100000;
-                    size32_t bufferSize = bufferSize1mb;
-                    unsigned __int64 value;
-                    if (iFileIO && iFileIO->queryFile() && findPlaneAttrFromPath(iFileIO->queryFile()->queryFilename(), BlockedSequentialIO, bufferSize1mb, value))
-                        bufferSize = (size32_t)value;
-
+                    size32_t bufferSize = getBlockedRandomBufferSize(iFileIO);
                     Owned<IKeyIndex> tlkKeyIndex = createKeyIndex(name.append(p).str(), 0, *iFileIO, (unsigned) -1, true, bufferSize); // MORE - not the right crc
                     tlkKeyIndexes.append(*tlkKeyIndex.getClear());
                 }
