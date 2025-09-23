@@ -1195,8 +1195,287 @@ thor:
     <sect2 id="HPCC_SecurityValues" role="brk">
       <title>Security Values</title>
 
-      <para>This section will look at the <emphasis>values.yaml</emphasis>
-      sections dealing with the system security components.</para>
+      <para>This section outlines the contents of the
+      <emphasis>values.yaml</emphasis> file pertaining to system security
+      components.</para>
+
+      <sect3 id="Cntr-Certificates">
+        <title>Certificates</title>
+
+        <para>The certificates section can be used to enable the cert-manager
+        to generate TLS certificates for each component in the HPCC Systems
+        deployment.</para>
+
+        <programlisting>certificates:
+  enabled: false
+  issuers:
+    local:
+      name: hpcc-local-issuer</programlisting>
+
+        <para>In the delivered YAML file certificates are not enabled, as
+        illustrated above. You must first install the cert-manager to use this
+        feature.</para>
+      </sect3>
+
+      <sect3 id="SSLTLSForESP">
+        <title>SSL/TLS Configuration for ESP</title>
+
+        <para>Configuring SSL/TLS for ESP services in containerized
+        deployments differs significantly from bare-metal installations. In
+        Kubernetes environments, SSL/TLS can be implemented through multiple
+        approaches, each with different benefits and use cases.</para>
+
+        <sect4 id="SSLTLSApproaches">
+          <title>SSL/TLS Implementation Approaches</title>
+
+          <para>There are three primary approaches for implementing SSL/TLS in
+          containerized ESP deployments:</para>
+
+          <itemizedlist mark="bullet">
+            <listitem>
+              <para><emphasis role="bold">Ingress Controller SSL
+              Termination</emphasis> - SSL is terminated at the ingress
+              controller level, with internal traffic remaining unencrypted.
+              This is the most common and recommended approach for most
+              deployments.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">ESP Pod-Level SSL</emphasis> - SSL
+              termination occurs within the ESP pod itself, requiring
+              certificates to be mounted into the container. This provides
+              end-to-end encryption but requires more complex certificate
+              management.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Service Mesh SSL</emphasis> -
+              SSL/TLS is handled by a service mesh like Istio, providing
+              automatic certificate management and mTLS between
+              services.</para>
+            </listitem>
+          </itemizedlist>
+        </sect4>
+
+        <sect4 id="IngressSSLTermination">
+          <title>Ingress Controller SSL Termination</title>
+
+          <para>The most straightforward approach is to configure SSL
+          termination at the ingress controller level. This approach leverages
+          Kubernetes ingress resources and integrates well with cert-manager
+          for automatic certificate provisioning.</para>
+
+          <para>Example values.yaml configuration for ingress-based
+          SSL:</para>
+
+          <programlisting>esp:
+- name: eclwatch
+  application: eclwatch
+  replicas: 1
+  service:
+    port: 8010
+    servicePort: 8010
+    protocol: http
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: nginx
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    hosts:
+    - host: eclwatch.example.com
+      paths:
+      - path: /
+        pathType: Prefix
+    tls:
+    - secretName: eclwatch-tls
+      hosts:
+      - eclwatch.example.com
+
+certificates:
+  enabled: true
+  issuers:
+    letsencrypt-prod:
+      name: letsencrypt-prod
+      spec:
+        acme:
+          server: https://acme-v02.api.letsencrypt.org/directory
+          email: admin@example.com
+          privateKeySecretRef:
+            name: letsencrypt-prod
+          solvers:
+          - http01:
+              ingress:
+                class: nginx</programlisting>
+
+          <para>This configuration:</para>
+
+          <itemizedlist mark="bullet">
+            <listitem>
+              <para>Enables SSL termination at the NGINX ingress
+              controller</para>
+            </listitem>
+
+            <listitem>
+              <para>Uses cert-manager with Let's Encrypt for automatic
+              certificate provisioning</para>
+            </listitem>
+
+            <listitem>
+              <para>Redirects all HTTP traffic to HTTPS</para>
+            </listitem>
+
+            <listitem>
+              <para>Stores the certificate in a Kubernetes secret named
+              'eclwatch-tls'</para>
+            </listitem>
+          </itemizedlist>
+        </sect4>
+
+        <sect4 id="ESPPodLevelSSL">
+          <title>ESP Pod-Level SSL Configuration</title>
+
+          <para>For scenarios requiring end-to-end encryption or when ingress
+          controllers cannot be used, SSL can be configured directly at the
+          ESP pod level. This approach requires mounting certificates into the
+          ESP containers and configuring ESP to use HTTPS.</para>
+
+          <para>First, create a Kubernetes secret containing your SSL
+          certificates:</para>
+
+          <programlisting>kubectl create secret tls esp-tls-secret \
+  --cert=path/to/certificate.crt \
+  --key=path/to/private.key</programlisting>
+
+          <para>Then configure ESP to use SSL in your values.yaml:</para>
+
+          <programlisting>esp:
+- name: eclwatch
+  application: eclwatch
+  replicas: 1
+  service:
+    port: 18010
+    servicePort: 18010
+    protocol: https
+  https:
+    enabled: true
+    certificateSecretName: esp-tls-secret
+    # Optional: specify passphrase for encrypted private keys
+    # passphrase: "your-passphrase"
+  volumes:
+  - name: esp-certs
+    secret:
+      secretName: esp-tls-secret
+  volumeMounts:
+  - name: esp-certs
+    mountPath: /etc/ssl/esp
+    readOnly: true</programlisting>
+
+          <para><emphasis role="bold">Important Security
+          Notes:</emphasis></para>
+
+          <itemizedlist mark="bullet">
+            <listitem>
+              <para>Certificate files should be owned by the container's hpcc
+              user with appropriate permissions</para>
+            </listitem>
+
+            <listitem>
+              <para>Private keys should have restrictive permissions (0400 or
+              0600)</para>
+            </listitem>
+
+            <listitem>
+              <para>Use Kubernetes secrets for certificate storage rather than
+              embedding in container images</para>
+            </listitem>
+
+            <listitem>
+              <para>Consider using init containers to set proper file
+              permissions if needed</para>
+            </listitem>
+          </itemizedlist>
+        </sect4>
+
+        <sect4 id="CertManagerIntegration">
+          <title>Integration with cert-manager</title>
+
+          <para>When using cert-manager for automatic certificate management,
+          you can configure ESP services to automatically receive and use
+          certificates. This works with both ingress-level and pod-level SSL
+          configurations.</para>
+
+          <para>Example cert-manager Certificate resource for ESP:</para>
+
+          <programlisting>apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: esp-certificate
+  namespace: hpcc
+spec:
+  secretName: esp-tls-secret
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+  - eclwatch.example.com
+  - ws-ecl.example.com</programlisting>
+
+          <para>This Certificate resource will automatically provision and
+          renew SSL certificates, storing them in the specified Kubernetes
+          secret for use by ESP pods.</para>
+        </sect4>
+
+        <sect4 id="SSLTLSTroubleshooting">
+          <title>SSL/TLS Troubleshooting</title>
+
+          <para>Common issues and solutions when configuring SSL/TLS for ESP
+          in containerized deployments:</para>
+
+          <variablelist>
+            <varlistentry>
+              <term>Certificate Not Found</term>
+
+              <listitem>
+                <para>Verify the certificate secret exists in the correct
+                namespace and contains both 'tls.crt' and 'tls.key' keys. Use
+                <command>kubectl describe secret &lt;secret-name&gt;</command>
+                to inspect.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>Permission Denied</term>
+
+              <listitem>
+                <para>Ensure certificate files are readable by the hpcc user
+                in the container. Consider using an init container to set
+                proper ownership and permissions.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>cert-manager Issues</term>
+
+              <listitem>
+                <para>Check cert-manager logs and Certificate resource status.
+                Ensure DNS is properly configured for ACME challenges when
+                using Let's Encrypt.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>Ingress SSL Redirect Loops</term>
+
+              <listitem>
+                <para>Verify ingress annotations for SSL redirect are
+                correctly configured. Check if the ingress controller is
+                properly handling SSL termination.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+        </sect4>
+      </sect3>
 
       <sect3 id="ValYAML_Secrets">
         <title>Secrets</title>
