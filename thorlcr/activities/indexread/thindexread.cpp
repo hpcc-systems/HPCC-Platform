@@ -38,8 +38,6 @@ protected:
     bool partitionKey = false;
     StringBuffer fileName;
     unsigned fileStatsTableStart = NotFound;
-    size32_t configSequentialIOSize{unknownConfigValue};
-    size32_t configRandomIOSize{unknownConfigValue};
 
     rowcount_t aggregateToLimit()
     {
@@ -182,7 +180,11 @@ protected:
                         rfn.getPath(remotePath);
                         unsigned crc = 0;
                         lastPart->getCrc(crc);
-                        size32_t blockedIOSize = getEffectiveBlockSize(remotePath);
+                        constexpr size32_t bufferSize1mb = 0x100000;
+                        size32_t blockedIOSize = bufferSize1mb;
+                        unsigned __int64 value;
+                        if (findPlaneAttrFromPath(remotePath, BlockedRandomIO, bufferSize1mb, value))
+                            blockedIOSize = (size32_t)value;
                         keyIndex.setown(createKeyIndex(remotePath.str(), crc, false, blockedIOSize));
                         break;
                     }
@@ -222,16 +224,6 @@ protected:
             superSubIndex++;
             f = &iter->query();
         }
-    }
-
-    size32_t getEffectiveBlockSize(const StringBuffer &physicalFileName)
-    {
-        constexpr size32_t bufferSize1mb = 0x100000;
-        size32_t blockedIOSize = bufferSize1mb;
-        StringBuffer planeName;
-        if (findPlaneFromPath(physicalFileName, planeName))
-            blockedIOSize = getPlaneAttributeValue(planeName, BlockedRandomIO, configRandomIOSize);
-        return blockedIOSize;
     }
 
 public:

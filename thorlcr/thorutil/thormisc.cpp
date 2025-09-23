@@ -1735,8 +1735,9 @@ bool hasTLK(IDistributedFile &file, CActivityBase *activity)
         StringBuffer planeName;
         constexpr size32_t bufferSize1mb = 0x100000;
         size32_t bufferSize = bufferSize1mb;
-        if (findPlaneFromPath(filename, planeName))
-            bufferSize = (size32_t)getPlaneAttributeValue(planeName, BlockedSequentialIO, bufferSize);
+        unsigned __int64 value;
+        if (findPlaneAttrFromPath(filename, BlockedSequentialIO, bufferSize1mb, value))
+            bufferSize = (size32_t)value;
         Owned<IKeyIndex> index = createKeyIndex(filename, 0, false, bufferSize);
         dbgassertex(index);
         if (index->isTopLevelKey())
