@@ -201,6 +201,12 @@ template <class C, class BASE> class CopyMapStringToMyClassViaBase : public Copy
   public:
     CopyMapStringToMyClassViaBase() : CopyMapStringToIInterface() {};
     CopyMapStringToMyClassViaBase(bool _ignorecase) : CopyMapStringToIInterface(_ignorecase) {};
+    static inline C * mapToValue(IMapping * _map)
+      {
+      CopyMappingStringToIInterface * map = (CopyMappingStringToIInterface *)_map;
+      IInterface ** x = &map->getValue();
+      return x ? (C *)(BASE *)*x : NULL;
+      }
     C *getValue(const char *k) const
       {
       IInterface **x = CopyMapStringToIInterface::getValue(k);
