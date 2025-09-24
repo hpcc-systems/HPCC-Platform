@@ -434,9 +434,14 @@ ClusterWriteHandler *createClusterWriteHandler(IAgentContext &agent, IHThorIndex
     return clusterHandler.getClear();
 }
 
+bool usingClusterHopping(IConstWorkUnit * wu)
+{
+    return (wu && wu->getDebugValueBool("usingClusterHopping", false));
+}
+
 unsigned temporaryFileMask(IConstWorkUnit * wu)
 {
-    if (wu && wu->getDebugValueBool("usingClusterHopping", false))
+    if (usingClusterHopping(wu))
         return TDXtemporary;
     else
         return TDXtemporary|TDXjobtemp;
@@ -507,7 +512,7 @@ void CHThorDiskWriteActivity::stop()
 void CHThorDiskWriteActivity::resolve()
 {
     OwnedRoxieString rawname = helper.getFileName();
-    if ((helperFlags & TDXjobtemp) && agent.queryWorkUnit()->getDebugValueBool("usingClusterHopping", false))
+    if ((helperFlags & TDXjobtemp) && usingClusterHopping(agent.queryWorkUnit()))
     {
         mangleTemporaryFileName(mangledHelperFileName, rawname, agent.queryWuid(), agent.queryWorkUnit()->queryUser());
     }
@@ -8575,7 +8580,7 @@ void CHThorDiskReadBaseActivity::checkFileType(IDistributedFile *file)
 void CHThorDiskReadBaseActivity::resolve()
 {
     OwnedRoxieString fileName(helper.getFileName());
-    if (helper.getFlags() & TDXjobtemp)
+    if ((helper.getFlags() & TDXjobtemp) && usingClusterHopping(agent.queryWorkUnit()))
     {
         mangleTemporaryFileName(mangledHelperFileName, fileName, agent.queryWuid(), agent.queryWorkUnit()->queryUser());
     }
