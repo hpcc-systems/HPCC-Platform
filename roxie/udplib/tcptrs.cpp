@@ -68,7 +68,12 @@ public:
         if (useIOUring)
         {
             Owned<IPropertyTree> config = createPTreeFromXMLString("<iouring poll='1'/>");
-            Owned<IAsyncProcessor> asyncSender = createURingProcessor(config, true);
+
+            // Use a separate thread for completion - so that if a partial packet is sent, the rest of the packet
+            // will be sent without having to wait for the next request to send a packet.
+            // It also means that disconnects will be detected and retried more quickly.
+            bool useThreadForCompletion = true;
+            Owned<IAsyncProcessor> asyncSender = createURingProcessor(config, useThreadForCompletion);
             if (asyncSender)
             {
                 sender.setAsyncProcessor(asyncSender);
