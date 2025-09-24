@@ -1,7 +1,9 @@
 import * as React from "react";
-import { CommandBarButton, Callout, DirectionalHint, Stack, Text, DefaultButton, PrimaryButton, Separator, IStackStyles, IButtonStyles, FontWeights, useTheme, IconButton } from "@fluentui/react";
+import { CommandBarButton, Callout, DirectionalHint, Text, DefaultButton, PrimaryButton, Separator, IButtonStyles, FontWeights, useTheme, IconButton } from "@fluentui/react";
+import { makeStyles } from "@fluentui/react-components";
 import nlsHPCC from "src/nlsHPCC";
 import { DateTimeInput } from "./Fields";
+import { Flex } from "../../layouts/Flex";
 
 export interface DateRange {
     startDate?: Date | string;
@@ -82,6 +84,49 @@ const formatRelativeTime = (startDate: Date | string | undefined, endDate: Date 
 
     return nlsHPCC.CustomRange;
 };
+
+const useStyles = makeStyles({
+    dateButton: {
+        padding: "4px 8px",
+        borderRadius: "2px",
+        minWidth: "200px"
+    },
+    optionButton: {
+        fontSize: "12px",
+        height: "28px",
+        minWidth: "auto",
+        padding: "0 12px"
+    },
+    textTruncate: {
+        fontSize: "14px",
+        fontWeight: FontWeights.regular,
+        flex: 1,
+        marginRight: "2px",
+        textOverflow: "ellipsis",
+        overflow: "hidden",
+        whiteSpace: "nowrap"
+    },
+    chevronButton: {
+        width: "16px",
+        height: "16px"
+    },
+    sectionTitle: {
+        fontWeight: FontWeights.semibold,
+        fontSize: "14px"
+    },
+    fieldLabel: {
+        fontSize: "12px",
+        fontWeight: FontWeights.regular
+    },
+    calloutRoot: {
+        padding: 0,
+        "& .ms-Callout-main": {
+            padding: "16px",
+            minWidth: "400px",
+            maxWidth: "500px"
+        }
+    }
+});
 
 export const SuperDatePicker: React.FunctionComponent<SuperDatePickerProps> = ({
     startDate,
@@ -171,71 +216,53 @@ export const SuperDatePicker: React.FunctionComponent<SuperDatePickerProps> = ({
         return nlsHPCC.SelectDateRange;
     }, [startDate, endDate]);
 
-    const stackStyles: IStackStyles = {
-        root: {
-            padding: "4px 8px",
-            border: `1px solid ${theme.palette.neutralTertiary}`,
-            borderRadius: "2px",
-            backgroundColor: theme.palette.white,
-            cursor: disabled ? "not-allowed" : "pointer",
-            opacity: disabled ? 0.6 : 1,
-            minWidth: "200px"
-        }
-    };
+    const styles = useStyles();
 
     const buttonStyles: IButtonStyles = {
         root: {
-            height: "32px",
+            height: 32,
             minWidth: "auto",
             padding: "0 8px"
         }
     };
 
-    return <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 8 }}>
-        <div ref={datePickerButtonRef}>
-            <Stack
-                horizontal
-                verticalAlign="center"
-                horizontalAlign="space-between"
-                styles={stackStyles}
+    return <Flex direction="row" align="center" gap={8}>
+        <Flex ref={datePickerButtonRef} direction="row">
+            <Flex
+                direction="row"
+                align="center"
+                justify="between"
+                gap={4}
+                className={styles.dateButton}
+                style={{
+                    border: `1px solid ${theme.palette.neutralTertiary}`,
+                    backgroundColor: theme.palette.white,
+                    cursor: disabled ? "not-allowed" : "pointer",
+                    opacity: disabled ? 0.6 : 1
+                }}
                 onClick={disabled ? undefined : handleShowCallout}
             >
                 <Text
-                    styles={{
-                        root: {
-                            fontSize: "14px",
-                            color: disabled ? theme.palette.neutralTertiary : theme.palette.neutralPrimary,
-                            fontWeight: FontWeights.regular,
-                            flex: 1,
-                            marginRight: 4,
-                            textOverflow: "ellipsis",
-                            overflow: "hidden",
-                            whiteSpace: "nowrap"
-                        }
-                    }}
+                    styles={{ root: { color: disabled ? theme.palette.neutralTertiary : theme.palette.neutralPrimary } }}
+                    className={styles.textTruncate}
                 >
                     {currentDisplayText}
                 </Text>
                 <IconButton
                     iconProps={{ iconName: "ChevronDown" }}
-                    styles={{
-                        root: {
-                            width: "16px",
-                            height: "16px",
-                            color: disabled ? theme.palette.neutralTertiary : theme.palette.neutralSecondary
-                        }
-                    }}
+                    styles={{ root: { color: disabled ? theme.palette.neutralTertiary : theme.palette.neutralSecondary } }}
+                    className={styles.chevronButton}
                     disabled={disabled}
                 />
-            </Stack>
-        </div>
+            </Flex>
+        </Flex>
 
         {showRefreshButton && (
             <CommandBarButton text={nlsHPCC.Refresh} iconProps={{ iconName: "Refresh" }} onClick={onRefresh} disabled={disabled} styles={buttonStyles} />
         )}
 
         {showAutoRefresh && (
-            <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 4 }}>
+            <Flex direction="row" align="center" gap={4}>
                 <CommandBarButton
                     text={autoRefresh ? `${nlsHPCC.AutoRefresh}: ${nlsHPCC.On.toUpperCase()}` : `${nlsHPCC.AutoRefresh}: ${nlsHPCC.Off.toUpperCase()}`}
                     iconProps={{ iconName: autoRefresh ? "Play" : "Pause" }}
@@ -250,7 +277,7 @@ export const SuperDatePicker: React.FunctionComponent<SuperDatePickerProps> = ({
                         }
                     }}
                 />
-            </Stack>
+            </Flex>
         )}
 
         <Callout
@@ -259,98 +286,74 @@ export const SuperDatePicker: React.FunctionComponent<SuperDatePickerProps> = ({
             directionalHint={DirectionalHint.bottomLeftEdge}
             hidden={!isCalloutVisible}
             onDismiss={() => setIsCalloutVisible(false)}
-            styles={{
-                root: {
-                    padding: 0
-                },
-                calloutMain: {
-                    padding: "16px",
-                    minWidth: "400px",
-                    maxWidth: "500px"
-                }
-            }}
+            className={styles.calloutRoot}
         >
-            <Stack tokens={{ childrenGap: 12 }}>
-                <Stack tokens={{ childrenGap: 8 }}>
-                    <Text styles={{ root: { fontWeight: FontWeights.semibold, fontSize: "14px" } }}>
+            <Flex direction="column" gap={12}>
+                <Flex direction="column" gap={12}>
+                    <Text className={styles.sectionTitle}>
                         {nlsHPCC.QuickSelect}
                     </Text>
-                    <Stack horizontal wrap tokens={{ childrenGap: 8 }}>
+                    <Flex direction="row" wrap gap={8}>
                         {defaultQuickOptions.map((option) => (
                             <DefaultButton
                                 key={option.value}
                                 text={option.label}
                                 onClick={() => handleQuickSelect(option)}
-                                styles={{
-                                    root: {
-                                        fontSize: "12px",
-                                        height: "28px",
-                                        minWidth: "auto",
-                                        padding: "0 12px"
-                                    }
-                                }}
+                                className={styles.optionButton}
                             />
                         ))}
-                    </Stack>
-                </Stack>
+                    </Flex>
+                </Flex>
 
                 <Separator />
 
-                <Stack tokens={{ childrenGap: 8 }}>
-                    <Text styles={{ root: { fontWeight: FontWeights.semibold, fontSize: "14px" } }}>
+                <Flex direction="column" gap={12}>
+                    <Text className={styles.sectionTitle}>
                         {nlsHPCC.CustomRange}
                     </Text>
-                    <Stack horizontal tokens={{ childrenGap: 12 }} verticalAlign="end">
-                        <Stack tokens={{ childrenGap: 4 }} styles={{ root: { flex: 1 } }}>
-                            <Text styles={{ root: { fontSize: "12px", fontWeight: FontWeights.regular } }}>
+                    <Flex direction="row" gap={12} align="center">
+                        <Flex direction="column" gap={4} grow fullWidth>
+                            <Text className={styles.fieldLabel}>
                                 {nlsHPCC.FromDate}
                             </Text>
                             <DateTimeInput value={tempStartDate} onChange={setTempStartDate} style={{ width: "100%" }} />
-                        </Stack>
-                        <Stack tokens={{ childrenGap: 4 }} styles={{ root: { flex: 1 } }}>
-                            <Text styles={{ root: { fontSize: "12px", fontWeight: FontWeights.regular } }}>
+                        </Flex>
+                        <Flex direction="column" gap={4} grow fullWidth>
+                            <Text className={styles.fieldLabel}>
                                 {nlsHPCC.ToDate}
                             </Text>
                             <DateTimeInput value={tempEndDate} onChange={setTempEndDate} style={{ width: "100%" }} />
-                        </Stack>
-                    </Stack>
-                </Stack>
+                        </Flex>
+                    </Flex>
+                </Flex>
 
                 {showAutoRefresh && (
                     <>
                         <Separator />
-                        <Stack tokens={{ childrenGap: 8 }}>
-                            <Text styles={{ root: { fontWeight: FontWeights.semibold, fontSize: "14px" } }}>
+                        <Flex direction="column" gap={12}>
+                            <Text className={styles.sectionTitle}>
                                 {nlsHPCC.AutoRefresh}
                             </Text>
-                            <Stack horizontal wrap tokens={{ childrenGap: 8 }}>
+                            <Flex direction="row" wrap gap={8}>
                                 {autoRefreshOptions.map((option) => (
                                     <DefaultButton
                                         key={option.value}
                                         text={option.label}
                                         onClick={() => handleAutoRefreshIntervalChange(option.value)}
-                                        styles={{
-                                            root: {
-                                                fontSize: "12px",
-                                                height: "28px",
-                                                minWidth: "auto",
-                                                padding: "0 12px",
-                                                backgroundColor: autoRefreshInterval === option.value ? theme.palette.themeLighter : undefined,
-                                                borderColor: autoRefreshInterval === option.value ? theme.palette.themePrimary : undefined
-                                            }
-                                        }}
+                                        className={styles.optionButton}
+                                        styles={autoRefreshInterval === option.value ? { root: { backgroundColor: theme.palette.themeLighter, outline: `1px solid ${theme.palette.themePrimary}` } } : undefined}
                                     />
                                 ))}
-                            </Stack>
-                        </Stack>
+                            </Flex>
+                        </Flex>
                     </>
                 )}
 
-                <Stack horizontal horizontalAlign="end" tokens={{ childrenGap: 8 }}>
+                <Flex direction="row" justify="end" gap={8}>
                     <DefaultButton text={nlsHPCC.Cancel} onClick={() => setIsCalloutVisible(false)} />
                     <PrimaryButton text={nlsHPCC.Apply} onClick={handleCustomDateApply} />
-                </Stack>
-            </Stack>
+                </Flex>
+            </Flex>
         </Callout>
-    </Stack>;
+    </Flex>;
 };
