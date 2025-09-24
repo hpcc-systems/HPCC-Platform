@@ -18,6 +18,7 @@
 #ifdef _USE_CPPUNIT
 
 #include "eventunittests.hpp"
+#include "eventfilter.h"
 #include "eventmodeling.h"
 
 static const char* queryEventAttributeStateName(CEventAttribute::State state)
@@ -56,8 +57,11 @@ bool CEventVisitationLinkTester::visitEvent(CEvent& actualEvent)
             CPPUNIT_ASSERT_EQUAL_MESSAGE(msg.str(), std::string(expectAttr.queryTextValue()), std::string(actualAttr.queryTextValue()));
             break;
         case EATCnumeric:
-        case EATCtimestamp:
             CPPUNIT_ASSERT_EQUAL_MESSAGE(msg.str(), expectAttr.queryNumericValue(), actualAttr.queryNumericValue());
+            break;
+        case EATCtimestamp:
+            if (expectAttr.queryNumericValue() != actualAttr.queryNumericValue())
+                CPPUNIT_ASSERT_EQUAL_MESSAGE(msg.str(), std::string(expectAttr.queryTextValue()), std::string(actualAttr.queryTextValue()));
             break;
         case EATCboolean:
             CPPUNIT_ASSERT_EQUAL_MESSAGE(msg.str(), expectAttr.queryBooleanValue(), actualAttr.queryBooleanValue());
@@ -72,7 +76,34 @@ bool CEventVisitationLinkTester::visitEvent(CEvent& actualEvent)
 void CEventVisitationLinkTester::departFile(uint32_t bytesRead)
 {
     CEvent noEvent;
-    CPPUNIT_ASSERT(!expect->nextEvent(noEvent));
+    if (expect->nextEvent(noEvent))
+    {
+        VStringBuffer tmp("unexpected next event %s", queryEventName(noEvent.queryType()));
+        for (CEventAttribute& attr : noEvent.assignedAttributes)
+        {
+            tmp.appendf(" %s:", queryEventAttributeName(attr.queryId()));
+            switch (attr.queryTypeClass())
+            {
+            case EATCtext:
+                tmp.appendf("'%s'", attr.queryTextValue());
+                break;
+            case EATCnumeric:
+                tmp.appendf("%" I64F "d", attr.queryNumericValue());
+                break;
+            case EATCboolean:
+                tmp.appendf("%s", attr.queryBooleanValue() ? "true" : "false");
+                break;
+            case EATCtimestamp:
+                tmp.appendf("'%s'", attr.queryTextValue());
+                break;
+            default:
+                tmp.appendf("<unknown type>");
+                break;
+            }
+        }
+        CPPUNIT_FAIL(tmp.str());
+    }
+    // CPPUNIT_ASSERT(!expect->nextEvent(noEvent));
 }
 
 CEventVisitationLinkTester::CEventVisitationLinkTester(IEventIterator& _expect)
@@ -129,12 +160,14 @@ void testEventVisitationLinks(const IPropertyTree& inputTree, const IPropertyTre
     ForEach(visitationLinks)
     {
         IPropertyTree& linkTree = visitationLinks.query();
-
-        // MORE: support filter configurations, as well as any other visitation links, so entire
-        // visitation chain can be tested as `input -> (link)+ -> expect`.
-
-        Owned<IEventVisitationLink> link = createEventModel(linkTree);
-        CPPUNIT_ASSERT_MESSAGE("failed to create test visitation link", link != nullptr);
+        const char* kind = linkTree.queryProp("@kind");
+        CPPUNIT_ASSERT_MESSAGE("missing link kind", !isEmptyString(kind));
+        Owned<IEventVisitationLink> link;
+        if (strieq(kind, "event-filter"))
+            link.setown(createEventFilter(linkTree));
+        else
+            link.setown(createEventModel(linkTree));
+        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("failed to create test visitation link for kind '%s'", kind).str(), link != nullptr);
         link->setNextLink(*visitor);
         visitor.setown(link.getClear());
     }
