@@ -20,6 +20,7 @@
 #include "bloom.hpp"
 #include "jmisc.hpp"
 #include "jhinplace.hpp"
+#include "jhblockcompressed.hpp"
 
 struct CRC32HTE
 {
@@ -120,7 +121,7 @@ protected:
 public:
     HybridIndexCompressor(unsigned keyedSize, const CKeyHdr* keyHdr, IHThorIndexWriteArg *helper, const char * compression)
     {
-        leafCompressor.setown(new LegacyIndexCompressor());
+        leafCompressor.setown(new BlockCompressedIndexCompressor(keyedSize, helper, compression));
         branchCompressor.setown(new InplaceIndexCompressor(keyedSize, keyHdr, helper, compression));
     }
 

@@ -37,8 +37,9 @@ protected:
 
     inline size32_t getKeyLen() const { return keyLen; }
 
+    char* expandBlock(const void* src, size32_t &decompressedSize, CompressionMethod compressionMethod);
 public:
-//These are the key functions that need to be implemented for a node that can be searched
+    //These are the key functions that need to be implemented for a node that can be searched
     inline size32_t getNumKeys() const { return hdr.numKeys; }
     virtual bool getKeyAt(unsigned int num, char *dest) const override;         // Retrieve keyed fields
     virtual bool fetchPayload(unsigned int num, char *dest, PayloadReference & activePayload) const override;     // Retrieve payload fields. Note destination is assumed to already contain keyed fields
@@ -50,27 +51,25 @@ public:
     virtual int locateGE(const char * search, unsigned minIndex) const override;
     virtual int locateGT(const char * search, unsigned minIndex) const override;
 
-// Loading etc
     virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy) override;
     virtual void dump(FILE *out, int length, unsigned rowCount, bool raw) const override;
-
 protected:
-    //The following are used for faking payload events
+    mutable CriticalSection expandPayloadCS;
     mutable std::weak_ptr<byte[]> expandedPayload;
 };
 
 class jhtree_decl CBlockCompressedWriteNode : public CWriteNode
 {
 private:
-    KeyCompressor lzwcomp;
-    unsigned keyLen = 0;
-    size32_t memorySize = 0;
+    KeyCompressor compressor;
     char *lastKeyValue = nullptr;
     unsigned __int64 lastSequence = 0;
+    size32_t keyLen = 0;
+    size32_t memorySize;
+    CompressionMethod compressionMethod = COMPRESS_METHOD_ZSTDS;
 
-    size32_t compressValue(const char *keyData, size32_t size, char *result);
 public:
-    CBlockCompressedWriteNode(offset_t fpos, CKeyHdr *keyHdr, bool isLeafNode);
+    CBlockCompressedWriteNode(offset_t fpos, CKeyHdr *keyHdr, bool isLeafNode, CompressionMethod compressionMethod);
     ~CBlockCompressedWriteNode();
 
     virtual bool add(offset_t pos, const void *data, size32_t size, unsigned __int64 sequence) override;
@@ -78,6 +77,49 @@ public:
     virtual const void *getLastKeyValue() const override { return lastKeyValue; }
     virtual unsigned __int64 getLastSequence() const override { return lastSequence; }
     virtual size32_t getMemorySize() const override { return memorySize; }
+};
+
+class BlockCompressedIndexCompressor : public CInterfaceOf<IIndexCompressor>
+{
+    CompressionMethod compressionMethod = COMPRESS_METHOD_ZSTDS;
+public:
+    BlockCompressedIndexCompressor(unsigned keyedSize, IHThorIndexWriteArg *helper, const char* options)
+    {
+        auto processOption = [this](const char * option, const char * value)
+        {
+            CompressionMethod method = translateToCompMethod(option, COMPRESS_METHOD_NONE);
+            if (method != COMPRESS_METHOD_NONE)
+            {
+                compressionMethod = method;
+            }
+            else if (strieq(option, "compression"))
+            {
+                compressionMethod = translateToCompMethod(value, COMPRESS_METHOD_ZSTDS);
+                ICompressHandler * handler = queryCompressHandler(compressionMethod);
+                if (handler == nullptr)
+                    throw MakeStringException(0, "Unsupported compression method: %u", compressionMethod);
+            }
+        };
+
+        processOptionString(options, processOption);
+    }
+
+    virtual const char *queryName() const override { return "Block"; }
+
+    virtual CWriteNode *createNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode) const override
+    {
+        return new CBlockCompressedWriteNode(_fpos, _keyHdr, isLeafNode, compressionMethod);
+    }
+
+    virtual offset_t queryBranchMemorySize() const override
+    {
+        return 0;
+    }
+
+    virtual offset_t queryLeafMemorySize() const override
+    {
+        return 0;
+    }
 };
 
 #endif
