@@ -24,6 +24,7 @@
 #include "jlog.hpp"
 #include "jencrypt.hpp"
 #include "jsecrets.hpp"
+#include "jiouring.hpp"
 #include "roxie.hpp"
 #ifdef _WIN32
 #include <winsock.h>
@@ -40,18 +41,48 @@
 
 using roxiemem::DataBuffer;
 
+class DataBufferTcpSender : public CTcpSender
+{
+public:
+    DataBufferTcpSender(bool _lowLatency) : CTcpSender(_lowLatency) {}
+
+protected:
+    virtual void releaseBuffer(void * buffer) override
+    {
+        DataBuffer * cast = static_cast<DataBuffer *>(buffer);
+        cast->Release();
+    };
+};
+
 class CTcpSendManager : implements ISendManager, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
 
-    static constexpr bool lowLatency = false; // Do not set to true because there after often multiple packets sent in quick succession (e.g. stats then data)
-    CTcpSendManager(int server_flow_port, int data_port, int client_flow_port, int q_size, int _numQueues, const IpAddress &_myIP, TokenBucket *_bucket, bool _encrypted)
+    static constexpr bool lowLatency = false; // Do not set to true because there are often multiple packets sent in quick succession (e.g. stats then data)
+    CTcpSendManager(int server_flow_port, int data_port, int client_flow_port, int q_size, int _numQueues, const IpAddress &_myIP, TokenBucket *_bucket, bool _encrypted, bool useIOUring)
         : sender(lowLatency), numQueues(_numQueues), myIP(_myIP), bucket(_bucket), dataPort(data_port), encrypted(_encrypted)
     {
         myId = myIP.getHostText(myIdStr).str();
-    }
 
+        if (useIOUring)
+        {
+            Owned<IPropertyTree> config = createPTreeFromXMLString("<iouring poll='1'/>");
+
+            // Use a separate thread for completion - so that if a partial packet is sent, the rest of the packet
+            // will be sent without having to wait for the next request to send a packet.
+            // It also means that disconnects will be detected and retried more quickly.
+            bool useThreadForCompletion = true;
+            Owned<IAsyncProcessor> asyncSender = createURingProcessor(config, useThreadForCompletion);
+            if (asyncSender)
+            {
+                sender.setAsyncProcessor(asyncSender);
+
+                //MORE: I am not sure if this is actually worthwhile - need to perform some performance tests
+                roxiemem::registerRoxieMemory(*asyncSender);
+            }
+        }
+    }
 
     ~CTcpSendManager()
     {
@@ -81,8 +112,7 @@ public:
         // IUdpReceiverEntry is an opaque interface - cast to the unrelated actual class.  Better would be to derive
         // CSocketTarget from IUdpReceiverEntry, but that requires refactoring to resolve dll dependencies
         CSocketTarget * socket = reinterpret_cast<CSocketTarget *>(&receiver);
-        socket->write(buffer->data, length);
-        buffer->Release();
+        socket->writeAsync(buffer->data, length, buffer);
     }
 
     virtual IMessagePacker *createMessagePacker(ruid_t ruid, unsigned sequence, const void *messageHeader, unsigned headerSize, const ServerIdentifier &destNode, int queue) override
@@ -124,7 +154,7 @@ protected:
     }
 
 protected:
-    CTcpSender sender;
+    DataBufferTcpSender sender;
     unsigned numQueues;
     IpAddress myIP;
     StringBuffer myIdStr;
@@ -135,8 +165,8 @@ protected:
     std::atomic<unsigned> msgSeq{0};
 };
 
-ISendManager *createTcpSendManager(int server_flow_port, int data_port, int client_flow_port, int queue_size_pr_server, int queues_pr_server, const IpAddress &_myIP, TokenBucket *rateLimiter, bool encryptionInTransit)
+ISendManager *createTcpSendManager(int server_flow_port, int data_port, int client_flow_port, int queue_size_pr_server, int queues_pr_server, const IpAddress &_myIP, TokenBucket *rateLimiter, bool encryptionInTransit, bool useIOUring)
 {
     assertex(!_myIP.isNull());
-    return new CTcpSendManager(server_flow_port, data_port, client_flow_port, queue_size_pr_server, queues_pr_server, _myIP, rateLimiter, encryptionInTransit);
+    return new CTcpSendManager(server_flow_port, data_port, client_flow_port, queue_size_pr_server, queues_pr_server, _myIP, rateLimiter, encryptionInTransit, useIOUring);
 }

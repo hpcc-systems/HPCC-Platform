@@ -1857,8 +1857,9 @@ namespace openssl {
 
 static void encryptError(const char *what)
 {
-    VStringBuffer s("openssl::aesEncrypt: %s", what);
-    throw makeStringException(0, s.str());
+    char errorMessage[256];
+    ERR_error_string_n(ERR_get_error(), errorMessage, sizeof(errorMessage));
+    throw makeStringExceptionV(0, "openssl::aesEncrypt: unexpected failure in %s: %s", what, errorMessage);
 }
 
 MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *plaintext, size_t plaintext_len, MemoryBuffer &output)
@@ -1962,8 +1963,9 @@ extern jlib_decl size_t aesEncryptInPlace(const void *key, size_t keylen, void *
 
 static void decryptError(const char *what)
 {
-    VStringBuffer s("openssl::aesDecrypt: unexpected failure in %s", what);
-    throw makeStringException(0, s.str());
+    char errorMessage[256];
+    ERR_error_string_n(ERR_get_error(), errorMessage, sizeof(errorMessage));
+    throw makeStringExceptionV(0, "openssl::aesDecrypt: unexpected failure in %s: %s", what, errorMessage);
 }
 
 MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *ciphertext, size_t ciphertext_len, MemoryBuffer &output)

@@ -35,6 +35,10 @@
 #include <assert.h>
 #include "jarray.hpp"
 
+static constexpr size32_t oneKB = 1024;
+static constexpr size32_t oneMB = 1024 * 1024;
+static constexpr size32_t oneGB = 1024 * 1024 * 1024;
+
 #define _elements_in(a) (sizeof(a)/sizeof((a)[0]))
 #define _memclr(s, n)      memset(s, 0, n)
 #define _clear(a)          memset(&a, 0, sizeof(a))
