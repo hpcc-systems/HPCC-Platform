@@ -1614,6 +1614,16 @@ void StringArray::appendListUniq(const char *list, const char *delim, bool trimS
     DelimToStringArray(list, *this, delim, true, trimSpaces);
 }
 
+bool StringArray::contains(const char * search, bool nocase) const
+{
+    ForEachItemIn(i, *this)
+    {
+        if (nocase ? strieq(search, item(i)) : streq(search, item(i)))
+            return true;
+    }
+    return false;
+}
+
 StringBuffer &StringArray::getString(StringBuffer &ret, const char *delim) const
 {
     ForEachItemIn(i, *this)
