@@ -557,6 +557,43 @@ extern da_decl bool expandExternalPath(StringBuffer &dir, StringBuffer &tail, co
 extern da_decl bool validFNameChar(char c); 
 extern da_decl void addStripeDirectory(StringBuffer &out, const char *directory, const char *planePrefix, unsigned partNum, unsigned lfnHash, unsigned numStripes);
 
+// [append,get]LfnHashFromPath are a set of functions for getting a logical filename hash
+// from a path. The path should not include the prefix or stripe directory. If the filepath
+// contains a dir-per-part directory, getLfnHashFromPath should be used on the scope directories
+// before the dir-per-part directory, and appendLfnHashFromPath should be used on the tail after
+// the dir-per-part directory
+// e.g. a file path /var/lib/HPCCSystems/hpcc-data/d1/somescope/otherscope/1/afile._1_of_2
+// unsigned lfnHash = getLfnHashFromPath(20, "somescope/otherscope");
+// lfnHash = appendLfnHashFromPath(5, "afile", lfnHash);
+// or e.g. a file path /var/lib/HPCCSystems/hpcc-data/somescope/otherscope/afile._1_of_2
+// unsigned lfnHash = getLfnHashFromPath(26, "somescope/otherscope/afile");
+inline unsigned appendLfnHashFromPath(size32_t len, const char *path, unsigned initval)
+{
+    initval = hashc((const unsigned char *)"::", 2, initval);
+    return hashc((const unsigned char *)path, len, initval);
+}
+inline unsigned getLfnHashFromPath(size32_t len, const char *path, unsigned hashval = 0)
+{
+    while (len>0)
+    {
+        const char *slash = (const char *) memchr(path, PATHSEPCHAR, len);
+        if (!slash)
+        {
+            // Hash the rest of len
+            hashval = hashc((const unsigned char *)path, len, hashval);
+            break;
+        }
+        else
+        {
+            // Hash until path separator and hash logical filename separator separately
+            hashval = hashc((const unsigned char *)path, slash-path, hashval);
+            hashval = hashc((const unsigned char *)"::", 2, hashval);
+            len -= (slash-path)+1;
+            path = slash+1;
+        }
+    }
+    return hashval;
+}
 inline unsigned getFilenameHash(size32_t len, const char *filename)
 {
     return hashc((const unsigned char *)filename, len, 0);
