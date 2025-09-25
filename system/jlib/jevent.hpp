@@ -357,6 +357,9 @@ public:
 public:
     CEvent();
     void reset(EventType _type);
+    // Reset the event type while retaining attribute values common to both the
+    // original and new event types.
+    void changeEventType(EventType newType);
 
 private:
     const std::initializer_list<EventAttr>& queryOrderedAttributeIds() const;
