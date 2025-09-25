@@ -3687,8 +3687,9 @@ protected:
         // Time deserializeFromStream() method
         Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(streamBuffer);
         Owned<IPropertyTree> streamDeserialized = createPTree();
+        PTreeDeserializeContext ctx;
         timer.reset();
-        streamDeserialized->deserializeFromStream(*in);
+        streamDeserialized->deserializeFromStream(*in, ctx);
         __uint64 deserializeFromStreamElapsedNs = timer.elapsedNs();
 
         // Create PTree from Binary tests

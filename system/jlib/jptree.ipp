@@ -33,6 +33,18 @@
 
 #define ANE_APPEND -1
 #define ANE_SET -2
+
+// PTree deserialization context class
+class jlib_decl PTreeDeserializeContext
+{
+public:
+    PTreeDeserializeContext() {}
+    ~PTreeDeserializeContext() {}
+    
+    // This class can be extended in the future to hold state during deserialization
+    // For now, it serves as a placeholder for the context parameter
+};
+
 ///////////////////
 class MappingStringToOwned : public MappingStringTo<IInterfacePtr,IInterfacePtr>
 {
@@ -755,7 +767,7 @@ public:
     virtual unsigned getAttributeCount() const override;
 
     virtual void serializeToStream(IBufferedSerialOutputStream &out) const override;
-    virtual void deserializeFromStream(IBufferedSerialInputStream &src) override;
+    virtual void deserializeFromStream(IBufferedSerialInputStream &src, PTreeDeserializeContext &ctx) override;
 // serializable impl.
     virtual void serialize(MemoryBuffer &tgt) override;
     virtual void deserialize(MemoryBuffer &src) override;
@@ -771,7 +783,7 @@ protected:
     virtual void removingElement(IPropertyTree *tree, unsigned pos) { }
     virtual IPropertyTree *create(const char *name=nullptr, IPTArrayValue *value=nullptr, ChildMap *children=nullptr, bool existing=false) = 0;
     virtual IPropertyTree *create(MemoryBuffer &mb) = 0;
-    virtual IPropertyTree *create(IBufferedSerialInputStream &in) = 0;
+    virtual IPropertyTree *create(IBufferedSerialInputStream &in, PTreeDeserializeContext &ctx) = 0;
     virtual IPropertyTree *ownPTree(IPropertyTree *tree);
 
     virtual bool removeAttribute(const char *k) = 0;
@@ -875,10 +887,10 @@ public:
         tree->deserialize(mb);
         return tree;
     }
-    virtual IPropertyTree *create(IBufferedSerialInputStream &in) override
+    virtual IPropertyTree *create(IBufferedSerialInputStream &in, PTreeDeserializeContext &ctx) override
     {
         IPropertyTree *tree = new CAtomPTree();
-        tree->deserializeFromStream(in);
+        tree->deserializeFromStream(in, ctx);
         return tree;
     }
 };
@@ -916,10 +928,10 @@ public:
         tree->deserialize(mb);
         return tree;
     }
-    virtual IPropertyTree *create(IBufferedSerialInputStream &in) override
+    virtual IPropertyTree *create(IBufferedSerialInputStream &in, PTreeDeserializeContext &ctx) override
     {
         IPropertyTree *tree = new LocalPTree();
-        tree->deserializeFromStream(in);
+        tree->deserializeFromStream(in, ctx);
         return tree;
     }
 

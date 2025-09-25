@@ -61,6 +61,9 @@ interface IAttributeIterator : extends IInterface
 interface IPropertyTree;
 interface IPropertyTreeIterator : extends IIteratorOf<IPropertyTree> { };
 
+// Forward declaration for deserialization context
+class PTreeDeserializeContext;
+
 typedef unsigned IPTIteratorCodes;
 #define iptiter_null 0x00
 #define iptiter_sort 0x01
@@ -146,7 +149,7 @@ interface jlib_decl IPropertyTree : extends serializable
     virtual unsigned getAttributeCount() const = 0;
 
     virtual void serializeToStream(IBufferedSerialOutputStream &out) const = 0;
-    virtual void deserializeFromStream(IBufferedSerialInputStream &in) = 0;
+    virtual void deserializeFromStream(IBufferedSerialInputStream &in, PTreeDeserializeContext &ctx) = 0;
 
 private:
     void setProp(const char *, int); // dummy to catch accidental use of setProp when setPropInt() intended
