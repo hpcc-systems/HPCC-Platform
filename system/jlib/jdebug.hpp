@@ -681,7 +681,7 @@ interface IMemoryMonitor : extends IInterface
 };
 
 // Factory functions for creating memory monitors
-extern jlib_decl IMemoryMonitor *createMemoryMonitor(const char *path, unsigned thresholdMB, unsigned intervalSecs, unsigned incrementMB = 200);
+extern jlib_decl IMemoryMonitor *createMemoryMonitor(const char *path, unsigned totalMB, unsigned thresholdMB, unsigned intervalSecs, unsigned incrementMB);
 // pick up settings from IPT
 extern jlib_decl IMemoryMonitor *createMemoryMonitor(const char *dstPath, unsigned totalMB, const IPropertyTree *mcdSettings);
 

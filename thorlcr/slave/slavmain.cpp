@@ -1780,7 +1780,7 @@ public:
             getConfigurationDirectory(globals->queryPropTree("Directories"), "debug", "thor", globals->queryProp("@name"), coreDumpPath);
             k8s::addInstanceContextPaths(coreDumpPath);
             addPathSepChar(coreDumpPath).append("coredumps");
-            unsigned workerTotalMemMB = globals->getPropInt("@workerTotalMem"); assertex(workerTotalMemMB);
+            unsigned workerTotalMemMB = globals->getPropInt("workerMemory/@total"); assertex(workerTotalMemMB);
             memoryMonitor.setown(createMemoryMonitor(coreDumpPath, workerTotalMemMB, mcdSettings));
         }
 
@@ -2416,7 +2416,6 @@ void slaveMain(bool &jobListenerStopped, ILogMsgHandler *logHandler)
     getHardwareInfo(hdwInfo);
     if (hdwInfo.totalMemory < masterMemMB)
         OWARNLOG("Slave has less memory than master node");
-    globals->setPropInt("@workerTotalMem", hdwInfo.totalMemory);
 
     CThorResourceSlave slaveResource;
     CJobListener jobListener(jobListenerStopped);

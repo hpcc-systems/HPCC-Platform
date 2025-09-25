@@ -136,4 +136,5 @@ See memoryCoreDump example above.
 Defaulted off.
 If enabled, monitors total memory usage once per 'intervalSecs' and if above 'thresholdMB' creates a core dump.
 Further core files will be created if 'incrementMB' is set, and memory increases by more than that amount.
-mode=auto will auto-config 'thresholdMB' to 95% of total memory, and 'incrementMB' to 1% of thresholdMB.
+mode=auto will auto-config 'thresholdMB' to 95% of total memory, and 'incrementMB' to 4% of total memory,
+meaning there will be at most 2 cores produced, one if detected >95% and another if detected >99%.
