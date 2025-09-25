@@ -154,7 +154,8 @@ public:
 
     virtual void getTargetPlatform(StringBuffer & result) override
     {
-        workunit->getDebugValue("targetClusterType", StringBufferAdaptor(result));
+        StringBufferAdaptor adaptor(result);
+        workunit->getDebugValue("targetClusterType", adaptor);
     }
 protected:
     Linked<IWorkUnit> workunit;

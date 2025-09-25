@@ -205,7 +205,10 @@ inline bool isNullBlock(unsigned block)
 template <typename VALUE_TYPE, typename ALIGN_TYPE>
 inline VALUE_TYPE align_pow2(VALUE_TYPE value, ALIGN_TYPE alignment)
 {
-    return (value + alignment -1) & ~((VALUE_TYPE)(alignment) -1);
+    using WideType = decltype(value + alignment);
+    WideType align = static_cast<WideType>(alignment);
+    WideType mask = align - 1;
+    return static_cast<VALUE_TYPE>((static_cast<WideType>(value) + mask) & ~mask);
 }
 
 #define PAGES(x, alignment)    (((x) + ((alignment)-1)) / (alignment))           // hope the compiler converts to a shift

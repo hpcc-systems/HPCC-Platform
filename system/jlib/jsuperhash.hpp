@@ -429,7 +429,7 @@ class ThreadSafeOwningSimpleHashTableOf : public ThreadSafeSimpleHashTableOf<ET,
 {
     typedef ThreadSafeOwningSimpleHashTableOf<ET, FP> SELF;
 public:
-    ~ThreadSafeOwningSimpleHashTableOf() { SELF::_releaseAll(); }
+    ~ThreadSafeOwningSimpleHashTableOf() { this->_releaseAll(); }
     virtual void onRemove(void *et) { ((ET *)et)->Release(); }
 };
 

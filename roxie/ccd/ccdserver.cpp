@@ -12792,7 +12792,10 @@ public:
             {
                 IConstWorkUnit *workunit = serverContext->queryWorkUnit();
                 if (workunit)
-                    workunit->getDebugValue("defaultIndexCompression", StringBufferAdaptor(defaultIndexCompression));
+                {
+                    StringBufferAdaptor defaultIndexCompressionAdaptor(defaultIndexCompression);
+                    workunit->getDebugValue("defaultIndexCompression", defaultIndexCompressionAdaptor);
+                }
             }
 
             Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper.getKeyedSize(), 0, &helper, defaultIndexCompression, true, false);

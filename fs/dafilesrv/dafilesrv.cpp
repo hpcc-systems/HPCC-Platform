@@ -170,9 +170,9 @@ public:
     void start()
     {
         SERVICE_TABLE_ENTRY ServiceTable[2];
-        ServiceTable[0].lpServiceName = DAFS_SERVICE_NAME;
+        ServiceTable[0].lpServiceName = (LPSTR)DAFS_SERVICE_NAME;
         ServiceTable[0].lpServiceProc = (LPSERVICE_MAIN_FUNCTION)ServiceMain;
-
+    
         ServiceTable[1].lpServiceName = NULL;
         ServiceTable[1].lpServiceProc = NULL;
         // Start the control dispatcher thread for our service

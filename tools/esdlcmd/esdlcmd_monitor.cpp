@@ -270,7 +270,8 @@ public:
         VStringBuffer templatefile("monitor_template_%s.xml", optMethod.str());
         if (!optOutDirPath.isEmpty())
             recursiveCreateDirectory(optOutDirPath);
-        saveAsFile(optOutDirPath.isEmpty()?".":optOutDirPath, templatefile, monTemplate);
+        const char *outdir = optOutDirPath.isEmpty() ? "." : optOutDirPath.str();
+        saveAsFile(outdir, templatefile, monTemplate);
         return 0;
     }
 
@@ -1002,8 +1003,7 @@ public:
 
         if (!optOutDirPath.isEmpty())
             recursiveCreateDirectory(optOutDirPath);
-        StringAttr outdir(optOutDirPath.isEmpty()?".":optOutDirPath);
-
+        const char *outdir = optOutDirPath.isEmpty() ? "." : optOutDirPath.str();
         VStringBuffer filename("esdl_rollup_monitor_%s.xml", optMethod.str());
         saveAsFile(outdir, filename, xml);
 
