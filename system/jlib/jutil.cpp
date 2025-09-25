@@ -3439,6 +3439,22 @@ void hold(const char *msg)
 }
 
 
+// Reads digits from a null-terminated string
+// Returns the number if possible, zero if the string is not a number
+unsigned readDigits(const char *name)
+{
+    unsigned num = 0;
+    while (*name)
+    {
+        if (isdigit(*name))
+            num = num * 10 + (*name - '0');
+        else
+            return 0;
+        name++;
+    }
+    return num;
+}
+
 
 unsigned readDigits(char const * & str, unsigned numDigits, bool throwOnFailure)
 {

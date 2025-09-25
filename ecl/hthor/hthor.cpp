@@ -645,9 +645,10 @@ void CHThorDiskWriteActivity::open()
     }
     if(compressed)
     {
+        CompressionMethod compMethod = (helperFlags & (TDXjobtemp|TDWpersist)) ? COMPRESS_METHOD_ZSTD : COMPRESS_METHOD_LZ4;
         size32_t compBlockSize = 0; // i.e. default
         size32_t blockedIoSize = -1; // i.e. default
-        io.setown(createCompressedFileWriter(file, extend, true, ecomp, COMPRESS_METHOD_LZ4, compBlockSize, blockedIoSize, IFEnone));
+        io.setown(createCompressedFileWriter(file, extend, true, ecomp, compMethod, compBlockSize, blockedIoSize, IFEnone));
     }
     else
         io.setown(file->open(extend ? IFOwrite : IFOcreate));

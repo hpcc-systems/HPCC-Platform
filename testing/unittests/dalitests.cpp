@@ -3561,6 +3561,7 @@ class DaliJobQueueTester : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(DaliJobQueueTester);
         CPPUNIT_TEST(testInit);
+        CPPUNIT_TEST(testFlood);
         CPPUNIT_TEST(testCppServer);
         CPPUNIT_TEST(testSingle);
         CPPUNIT_TEST(testDouble);
@@ -3790,6 +3791,7 @@ class DaliJobQueueTester : public CppUnit::TestFixture
         virtual void processAll() override
         {
             Owned<IJobQueue> childQueue = createJobQueue(childQueueName);
+            childQueue->connect(true);
             for (;;)
             {
                 Owned<IJobQueueItem> item = queue->dequeue();
@@ -3810,7 +3812,7 @@ class DaliJobQueueTester : public CppUnit::TestFixture
                 child->start(true);
                 child->join();
                 output.append(child->output);
-                log.append(child->log);
+                log.append(child->log).append("#");
             }
         }
     };
@@ -3851,6 +3853,7 @@ class DaliJobQueueTester : public CppUnit::TestFixture
                 JobProcessor * cur = nullptr;
                 //All listening threads must have a unique queue objects
                 Owned<IJobQueue> localQueue = createJobQueue(mainQueueName);
+                localQueue->connect(true);
 
                 switch (processor)
                 {
@@ -4097,6 +4100,17 @@ class DaliJobQueueTester : public CppUnit::TestFixture
         { 200, nullptr, 0, 0 },
     };
 
+    static constexpr std::initializer_list<JobEntry> CppPairTest = {
+        {  0, "a", 20, 0 },
+        { 30, "b", 20, 0},
+        { 30, "c", 20, 0},
+        { 30, "d", 20, 0},
+        { 0,  "e", 20, 0},
+        { 60, "f", 20, 0},
+        { 0,  "g", 20, 0},
+        { 10, "h", 20, 0},
+        { 10, "i", 20, 0},
+    };
 
     //MODEL The way that cpp server should work - an agent that listens to the main queue, and jobs that listen to the main queue and a child queue
     //Timings are very temperamental - and if there are a choice of threads to restart processing then it isn't well defined which one will pick it up
@@ -4109,6 +4123,9 @@ class DaliJobQueueTester : public CppUnit::TestFixture
         runTestCase("cpp, 3 c++", Cpp1Test, { CppServerProcessor, CppServerProcessor, CppServerProcessor }, { "abcdeg*", "fhij*", "" });
         runTestCase("cpp2, 3 c++", Cpp2Test, { CppServerProcessor, CppServerProcessor, CppServerProcessor }, { "abeg*", "cfhi*", "d*" });
         runTestCase("cpp3, 2 c++", Cpp3Test, { CppServerProcessor, CppServerProcessor }, { "ac*hjk*", "bdefgi*" });
+        //Send in a 3 requests all handled by a single server, then pairs
+        runTestCase("cpp, 2 c++", CppPairTest, { CppServerProcessor, CppServerProcessor }, { "abcdgi", "efh" });
+
     }
     void testSingle()
     {
@@ -4143,8 +4160,32 @@ class DaliJobQueueTester : public CppUnit::TestFixture
         runTestCase("drip wu, 3 std", dripFeedTest, { StandardProcessor, StandardProcessor, StandardProcessor }, {});
         runTestCase("drip2 wu, 3 std", drip2FeedTest, { StandardProcessor, StandardProcessor, StandardProcessor }, {});
         runTestCase("drip wu, 3 prio", dripFeedTest, { PriorityProcessor, PriorityProcessor, PriorityProcessor }, { "abcdefghij", "", "" });
+        runTestCase("drip wu, 10 prio", dripFeedTest, { PriorityProcessor, PriorityProcessor, PriorityProcessor, PriorityProcessor, PriorityProcessor, PriorityProcessor, PriorityProcessor, PriorityProcessor, PriorityProcessor, PriorityProcessor }, { "abcdefghij", "", "", "", "", "", "", "", "", ""});
+        runTestCase("drip wu, 20 prio", dripFeedTest, { PriorityProcessor, PriorityProcessor, PriorityProcessor, PriorityProcessor, PriorityProcessor, PriorityProcessor, PriorityProcessor, PriorityProcessor, PriorityProcessor, PriorityProcessor, PriorityProcessor, PriorityProcessor, PriorityProcessor, PriorityProcessor, PriorityProcessor, PriorityProcessor, PriorityProcessor, PriorityProcessor, PriorityProcessor, PriorityProcessor }, { });
         runTestCase("drip2 wu, 3 prio", drip2FeedTest, { PriorityProcessor, PriorityProcessor, PriorityProcessor }, { "acegikmo", "bdfhjln", ""});
     }
+
+    static constexpr std::initializer_list<JobEntry> floodTest = {
+        { 0, "a01", 20, 0 }, { 0, "a02", 20, 0 }, { 0, "a03", 20, 0 }, { 0, "a04", 20, 0 }, { 0, "a05", 20, 0 },
+        { 0, "a06", 20, 0 }, { 0, "a07", 20, 0 }, { 0, "a08", 20, 0 }, { 0, "a09", 20, 0 }, { 0, "a10", 20, 0 },
+        { 0, "a11", 20, 0 }, { 0, "a12", 20, 0 }, { 0, "a13", 20, 0 }, { 0, "a14", 20, 0 }, { 0, "a15", 20, 0 },
+        { 0, "a16", 20, 0 }, { 0, "a17", 20, 0 }, { 0, "a18", 20, 0 }, { 0, "a19", 20, 0 }, { 0, "a20", 20, 0 },
+        { 100, "b", 20, 0},
+        { 0, "c01", 20, 0 }, { 0, "c02", 20, 0 }, { 0, "c03", 20, 0 }, { 0, "c04", 20, 0 }, { 0, "c05", 20, 0 },
+        { 0, "c06", 20, 0 }, { 0, "c07", 20, 0 }, { 0, "c08", 20, 0 }, { 0, "c09", 20, 0 }, { 0, "c10", 20, 0 },
+        { 0, "c11", 20, 0 }, { 0, "c12", 20, 0 }, { 0, "c13", 20, 0 }, { 0, "c14", 20, 0 }, { 0, "c15", 20, 0 },
+        { 0, "c16", 20, 0 }, { 0, "c17", 20, 0 }, { 0, "c18", 20, 0 }, { 0, "c19", 20, 0 }, { 0, "c20", 20, 0 },
+    };
+
+    // Send in 20 requests, each of which take 20ms to process, then send in 20 more requests
+    void testFlood()
+    {
+        runTestCase("flood wu, 3 std", floodTest, { StandardProcessor, StandardProcessor, StandardProcessor }, {});
+        runTestCase("flood wu, 3 prio", floodTest, { PriorityProcessor, PriorityProcessor, PriorityProcessor }, {} );
+        runTestCase("flood wu, 3 cpp", floodTest, { CppServerProcessor, CppServerProcessor, CppServerProcessor }, {} );
+    }
+
+
 
     //MORE Tests:
     //Many requests at a time in waves
