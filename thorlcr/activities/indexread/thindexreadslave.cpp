@@ -548,7 +548,7 @@ public:
                 count += indexInput->checkCount(keyedLimit-count); // part max, is total limit [keyedLimit] minus total so far [count]
             else
                 count += indexInput->getCount();
-            if (helper->getFlags() & TIRaggregateexists)
+            if (count > 0 && helper->getFlags() & TIRaggregateexists)
                 break; // Early termination for EXISTS queries
             bool limitHit = count > keyedLimit;
             if (keyManager)
