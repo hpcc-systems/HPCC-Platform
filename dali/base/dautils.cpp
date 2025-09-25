@@ -3872,6 +3872,7 @@ StringBuffer & mangleTemporaryFileName(StringBuffer & out, const char * lfn, con
     out.clear();
     if (lfn)
     {
+        StringBuffer tail;
         if (*lfn == '~')
         {
             out.append("~");
@@ -3883,7 +3884,6 @@ StringBuffer & mangleTemporaryFileName(StringBuffer & out, const char * lfn, con
         if (isPaused)
         {
             out.append("thorpause");
-            StringBuffer tail;
             CDfsLogicalFileName dfslfn;
             dfslfn.set(lfn);
             dfslfn.getTail(tail);
