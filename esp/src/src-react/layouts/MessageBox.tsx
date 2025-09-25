@@ -52,6 +52,7 @@ interface MessageBoxProps {
     setShow: (_: boolean) => void;
     footer?: React.ReactNode;
     children?: React.ReactNode;
+    disableClose?: boolean;
 }
 
 export const MessageBox: React.FunctionComponent<MessageBoxProps> = ({
@@ -63,7 +64,8 @@ export const MessageBox: React.FunctionComponent<MessageBoxProps> = ({
     onDismiss,
     setShow,
     footer,
-    children
+    children,
+    disableClose = false
 }) => {
 
     const theme = useTheme();
@@ -74,17 +76,18 @@ export const MessageBox: React.FunctionComponent<MessageBoxProps> = ({
     }), [theme.palette.themePrimary, minWidth]);
 
     const close = React.useCallback(() => {
+        if (disableClose) return;
         if (onDismiss) {
             onDismiss();
         }
         setShow(false);
-    }, [onDismiss, setShow]);
+    }, [disableClose, onDismiss, setShow]);
 
     return <Modal isOpen={show} onDismiss={close} isModeless={modeless} dragOptions={dragOptions}
         isBlocking={blocking} containerClassName={contentStyles.container} styles={modalStyles}>
         <Stack tokens={headerTokens} horizontal horizontalAlign="space-between" verticalAlign="center" styles={{ root: contentStyles.header }} className="draggable">
             <h2>{title}</h2>
-            <IconButton iconProps={cancelIcon} ariaLabel={nlsHPCC.CloseModal} onClick={close} styles={iconButtonStyles} />
+            <IconButton iconProps={cancelIcon} ariaLabel={nlsHPCC.CloseModal} onClick={close} styles={iconButtonStyles} disabled={disableClose} />
         </Stack>
         <div className={contentStyles.body}>
             {children}
