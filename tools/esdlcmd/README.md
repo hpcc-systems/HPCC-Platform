@@ -175,7 +175,7 @@ Recommended child of `<em:Manifest>` that enables ESDL definition-specific logic
 The element is not required since it is possible to embed a complete `Definitions` element hierarchy in the manifest.
 
 #### Include
-Optional element that imports the contents of another file into the output in place of itself. The outcome of the import depends on the context in which this element is used. See [EsdlDefinition](#esdldefinition), [Scripts](@scripts), and [Transform](#transform) for more information.
+Optional element that imports the contents of another file into the output in place of itself. The outcome of the import depends on the context in which this element is used. See [EsdlDefinition](#esdldefinition), [Scripts](#scripts), and [Transform](#transform) for more information.
 
 | Attribute   | Required? | Value  | Usage |
 | - | :-: | - | - |

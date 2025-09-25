@@ -153,16 +153,6 @@ The ECL Standard Library is a collection of pre-built functions, modules, and ut
 [Coding Style Guide](../ecllibrary/StyleGuide.md)
 Style guide for ECL library code.
 
-## ECL Watch
-
-Instructions for ECL Watch.
-
-[Coding and Contribution Instructions](../esp/src/.github/instructions/general.instructions.md)
-General coding and contribution instructions for ECL Watch.
-
-[React-specific Coding Instructions](../esp/src/.github/instructions/react-coding.instructions.md)
-React-specific coding instructions for ECL Watch.
-
 ## ECLCC
 
 Information on the ECL Compiler (ECLCC) and its operational aspects.
