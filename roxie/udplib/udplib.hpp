@@ -37,6 +37,7 @@ typedef unsigned ruid_t;   // at 1000/sec recycle every 49 days
 #define RUID_FIRST 3
 
 typedef unsigned RecordLengthType;
+constexpr RecordLengthType EndOfCursorMarker = ~(RecordLengthType)0U;
 #define MAX_RECORD_LENGTH 0xffffffff
 
 class UDPLIB_API ServerIdentifier
@@ -108,7 +109,7 @@ class RoxiePacketHeader;
 interface IMessageUnpackCursor : extends IInterface
 {
     virtual const void *getNext(int length) = 0;
-    virtual RecordLengthType *getNextLength() = 0;
+    virtual RecordLengthType getNextLength() = 0;
     virtual bool atEOF() const = 0;
     virtual bool isSerialized() const = 0;
     //    if one tries to read past the last record then NULL will be returned, 

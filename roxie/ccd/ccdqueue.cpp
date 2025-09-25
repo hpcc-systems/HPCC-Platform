@@ -3208,14 +3208,14 @@ public:
         return true;
     }
 
-    virtual RecordLengthType *getNextLength() override
+    virtual RecordLengthType getNextLength() override
     {
         if (pos==datalen)
-            return NULL;
+            return EndOfCursorMarker;
         assertex(pos + sizeof(RecordLengthType) <= datalen);
         void * cur = ((char *) data) + pos;
         pos += sizeof(RecordLengthType);
-        return (RecordLengthType *) cur;
+        return *(RecordLengthType *) cur;
     }
 
     virtual const void * getNext(int length)
@@ -3299,12 +3299,13 @@ public:
         return res;
     }
 
-    virtual RecordLengthType *getNextLength() override
+    virtual RecordLengthType getNextLength() override
     {
         if (!currentBuffer) 
-            return nullptr;
+            return EndOfCursorMarker;
+
         assertex (currentBufferRemaining >= sizeof(RecordLengthType));
-        RecordLengthType *res = (RecordLengthType *) currentBuffer;
+        RecordLengthType res = *(RecordLengthType *) currentBuffer;
         currentBuffer += sizeof(RecordLengthType);
         currentBufferRemaining -= sizeof(RecordLengthType);
         checkNext(); // Note that length is never separated from data... but length can be zero so still need to do this...
@@ -3783,10 +3784,10 @@ public:
                             case ROXIE_FILECALLBACK:
                             {
                                 Owned<IMessageUnpackCursor> callbackData = mr->getCursor(rowManager);
-                                RecordLengthType *rowlen = callbackData->getNextLength();
-                                if (rowlen)
+                                RecordLengthType rowlen = callbackData->getNextLength();
+                                if (rowlen != EndOfCursorMarker)
                                 {
-                                    OwnedConstRoxieRow row = callbackData->getNext(*rowlen);
+                                    OwnedConstRoxieRow row = callbackData->getNext(rowlen);
                                     const char *rowdata = (const char *) row.get();
                                     // bool isOpt = * (bool *) rowdata;
                                     // bool isLocal = * (bool *) (rowdata+1);

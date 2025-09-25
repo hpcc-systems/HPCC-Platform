@@ -3577,7 +3577,7 @@ public:
         return ret;
     }
 
-    virtual RecordLengthType *getNextLength() override
+    virtual RecordLengthType getNextLength() override
     {
         throwUnexpected();
     }
@@ -3631,19 +3631,17 @@ public:
 
 void throwRemoteException(IMessageUnpackCursor *extra)
 {
-    RecordLengthType *rowlen = extra->getNextLength();
-    if (rowlen)
-    {
-        char *xml = (char *) extra->getNext(*rowlen);
-        Owned<IPropertyTree> p = createPTreeFromXMLString(xml, ipt_fast);
-        ReleaseRoxieRow(xml);
-        unsigned code = p->getPropInt("Code", 0);
-        const char *msg = p->queryProp("Message");
-        if (!msg)
-            msg = xml;
-        throw MakeStringException(code, "%s", msg);
-    }
-    throwUnexpected();
+    RecordLengthType rowlen = extra->getNextLength();
+    assertex(rowlen != EndOfCursorMarker);
+
+    char *xml = (char *) extra->getNext(rowlen);
+    Owned<IPropertyTree> p = createPTreeFromXMLString(xml, ipt_fast);
+    ReleaseRoxieRow(xml);
+    unsigned code = p->getPropInt("Code", 0);
+    const char *msg = p->queryProp("Message");
+    if (!msg)
+        msg = xml;
+    throw MakeStringException(code, "%s", msg);
 }
 
 unsigned getPriorityMask(int priority)
@@ -4415,15 +4413,14 @@ public:
             return mu->getNext(meta.getFixedSize());
         else
         {
-            RecordLengthType *rowlen = mu->getNextLength();
-            if (rowlen)
+            RecordLengthType rowlen = mu->getNextLength();
+            if (rowlen != EndOfCursorMarker)
             {
-                RecordLengthType len = *rowlen;
-                const void *agentRec = mu->getNext(len);
+                const void *agentRec = mu->getNext(rowlen);
                 if (deserializer && mu->isSerialized())
                 {
                     RtlDynamicRowBuilder rowBuilder(rowAllocator);
-                    tempRowBuffer.setBuffer(len, const_cast<void *>(agentRec), false);
+                    tempRowBuffer.setBuffer(rowlen, const_cast<void *>(agentRec), false);
                     size_t outsize = deserializer->deserialize(rowBuilder, rowSource);
                     ReleaseRoxieRow(agentRec);
                     return rowBuilder.finalizeRowClear(outsize);
@@ -5147,17 +5144,14 @@ public:
                                 activity.queryLogCtx().CTXLOG("Redundant callback on query %s", header.toString(s).str());
                             }
                             Owned<IMessageUnpackCursor> callbackData = mr->getCursor(rowManager);
-                            RecordLengthType *rowlen = callbackData->getNextLength();
-                            if (rowlen)
-                            {
-                                OwnedConstRoxieRow row = callbackData->getNext(*rowlen);
-                                const char *rowdata = (const char *) row.get();
-                                // bool isOpt = * (bool *) rowdata;
-                                // bool isLocal = * (bool *) (rowdata+1);
-                                ROQ->sendAbortCallback(header, rowdata+2, activity.queryLogCtx());
-                            }
-                            else
-                                throwUnexpected();
+                            RecordLengthType rowlen = callbackData->getNextLength();
+                            assertex(rowlen != EndOfCursorMarker);
+
+                            OwnedConstRoxieRow row = callbackData->getNext(rowlen);
+                            const char *rowdata = (const char *) row.get();
+                            // bool isOpt = * (bool *) rowdata;
+                            // bool isLocal = * (bool *) (rowdata+1);
+                            ROQ->sendAbortCallback(header, rowdata+2, activity.queryLogCtx());
                             break;
                         }
                         // MORE - ROXIE_ALIVE perhaps should go here too
@@ -5175,11 +5169,11 @@ public:
                     {
                     case ROXIE_DEBUGCALLBACK:
                         {
-                        Owned<IMessageUnpackCursor> callbackData = mr->getCursor(rowManager);
-                        RecordLengthType *rowlen = callbackData->getNextLength();
-                        if (rowlen)
-                        {
-                            OwnedConstRoxieRow row = callbackData->getNext(*rowlen);
+                            Owned<IMessageUnpackCursor> callbackData = mr->getCursor(rowManager);
+                            RecordLengthType rowlen = callbackData->getNextLength();
+                            assertex(rowlen != EndOfCursorMarker);
+
+                            OwnedConstRoxieRow row = callbackData->getNext(rowlen);
                             char *rowdata = (char *) row.get();
                             if (ctxTraceLevel > 5)
                             {
@@ -5187,34 +5181,31 @@ public:
                                 activity.queryLogCtx().CTXLOG("Callback on query %s for debug", header.toString(s).str());
                             }
                             MemoryBuffer agentInfo;
-                            agentInfo.setBuffer(*rowlen, rowdata, false);
+                            agentInfo.setBuffer(rowlen, rowdata, false);
                             unsigned debugSequence;
                             agentInfo.read(debugSequence);
                             Owned<IRoxieQueryPacket> reply = original->getDebugResponse(debugSequence);
                             if (!reply)
-                                reply.setown(activity.queryContext()->queryDebugContext()->onDebugCallback(header, *rowlen, rowdata));
+                                reply.setown(activity.queryContext()->queryDebugContext()->onDebugCallback(header, rowlen, rowdata));
                             if (reply)
                             {
                                 original->setDebugResponse(debugSequence, reply);
                                 ROQ->sendPacket(reply, activity.queryLogCtx());
                             }
 
-                        }
-                        else
-                            throwUnexpected();
-                        // MORE - somehow we need to make sure agent gets a reply even if I'm not waiting (in udp layer)
-                        // Leave original message on pending queue in original location - this is not a reply to it.
-                        break;
+                            // MORE - somehow we need to make sure agent gets a reply even if I'm not waiting (in udp layer)
+                            // Leave original message on pending queue in original location - this is not a reply to it.
+                            break;
                         }
 
                     case ROXIE_FILECALLBACK:
                         {
-                        // we need to send back to the agent a message containing the file info requested.
-                        Owned<IMessageUnpackCursor> callbackData = mr->getCursor(rowManager);
-                        RecordLengthType *rowlen = callbackData->getNextLength();
-                        if (rowlen)
-                        {
-                            OwnedConstRoxieRow row = callbackData->getNext(*rowlen);
+                            // we need to send back to the agent a message containing the file info requested.
+                            Owned<IMessageUnpackCursor> callbackData = mr->getCursor(rowManager);
+                            RecordLengthType rowlen = callbackData->getNextLength();
+                            assertex(rowlen != EndOfCursorMarker);
+
+                            OwnedConstRoxieRow row = callbackData->getNext(rowlen);
                             const char *rowdata = (const char *) row.get();
                             bool isOpt = * (bool *) rowdata;
                             bool isLocal = * (bool *) (rowdata+1);
@@ -5225,13 +5216,12 @@ public:
                                 activity.queryLogCtx().CTXLOG("Callback on query %s file %s", header.toString(s).str(),(const char *) lfn);
                             }
                             activity.queryContext()->onFileCallback(header, lfn, isOpt, isLocal, defaultPrivilegedUser);
+
+                            // MORE - somehow we need to make sure agent gets a reply even if I'm not waiting (in udp layer)
+                            // Leave original message on pending queue in original location - this is not a reply to it.
+                            break;
                         }
-                        else
-                            throwUnexpected();
-                        // MORE - somehow we need to make sure agent gets a reply even if I'm not waiting (in udp layer)
-                        // Leave original message on pending queue in original location - this is not a reply to it.
-                        break;
-                        }
+
                     case ROXIE_KEYEDLIMIT_EXCEEDED:
                         activity.queryLogCtx().CTXLOG("ROXIE_KEYEDLIMIT_EXCEEDED");
                         errorHandler->onLimitExceeded(true);    // NOTE - should throw exception!
@@ -5247,52 +5237,50 @@ public:
                         Owned<IMessageUnpackCursor> extra = mr->getCursor(rowManager);
                         for (;;)
                         {
-                            RecordLengthType *rowlen = extra->getNextLength();
-                            if (rowlen)
-                            {
-                                char *logInfo = (char *) extra->getNext(*rowlen);
-                                MemoryBuffer buf;
-                                buf.setBuffer(*rowlen, logInfo, false);
-                                switch ((TracingCategory) *logInfo)
-                                {
-                                case LOG_TRACING:
-                                case LOG_ERROR:
-                                    activity.queryLogCtx().CTXLOGl(new LogItem(buf));
-                                    break;
-                                case LOG_STATVALUES:
-                                    buf.skip(1);
-                                    activity.mergeStats(buf);
-                                    break;
-                                case LOG_CHILDCOUNT:
-                                case LOG_CHILDSTATS:
-                                    //These need rethinking - all child stats should be serialized in a single block, and should be merged into
-                                    //the information for an activity, ready for reporting later
-                                    unsigned graphId, childId;
-                                    buf.skip(1);
-                                    buf.read(graphId);
-                                    buf.read(childId);
-                                    if (*logInfo == LOG_CHILDCOUNT)
-                                    {
-                                        unsigned idx;
-                                        unsigned childProcessed;
-                                        unsigned childStrands;
-                                        buf.read(idx);
-                                        buf.read(childProcessed);
-                                        buf.read(childStrands);
-                                        //activity.queryContext()->noteProcessed(graphId, childId, idx, childProcessed, childStrands);
-                                    }
-                                    else
-                                    {
-                                        CRuntimeStatisticCollection childStats(allStatistics);
-                                        childStats.deserialize(buf);
-                                        //activity.queryContext()->mergeActivityStats(childStats, graphId, childId);
-                                        activity.mergeStats(0, childStats);
-                                    }
-                                }
-                                ReleaseRoxieRow(logInfo);
-                            }
-                            else
+                            RecordLengthType rowlen = extra->getNextLength();
+                            if (rowlen == EndOfCursorMarker)
                                 break;
+
+                            char *logInfo = (char *) extra->getNext(rowlen);
+                            MemoryBuffer buf;
+                            buf.setBuffer(rowlen, logInfo, false);
+                            switch ((TracingCategory) *logInfo)
+                            {
+                            case LOG_TRACING:
+                            case LOG_ERROR:
+                                activity.queryLogCtx().CTXLOGl(new LogItem(buf));
+                                break;
+                            case LOG_STATVALUES:
+                                buf.skip(1);
+                                activity.mergeStats(buf);
+                                break;
+                            case LOG_CHILDCOUNT:
+                            case LOG_CHILDSTATS:
+                                //These need rethinking - all child stats should be serialized in a single block, and should be merged into
+                                //the information for an activity, ready for reporting later
+                                unsigned graphId, childId;
+                                buf.skip(1);
+                                buf.read(graphId);
+                                buf.read(childId);
+                                if (*logInfo == LOG_CHILDCOUNT)
+                                {
+                                    unsigned idx;
+                                    unsigned childProcessed;
+                                    unsigned childStrands;
+                                    buf.read(idx);
+                                    buf.read(childProcessed);
+                                    buf.read(childStrands);
+                                    //activity.queryContext()->noteProcessed(graphId, childId, idx, childProcessed, childStrands);
+                                }
+                                else
+                                {
+                                    CRuntimeStatisticCollection childStats(allStatistics);
+                                    childStats.deserialize(buf);
+                                    //activity.queryContext()->mergeActivityStats(childStats, graphId, childId);
+                                    activity.mergeStats(0, childStats);
+                                }
+                            }
+                            ReleaseRoxieRow(logInfo);
                         }
                         break;
                     }
@@ -24119,7 +24107,7 @@ public:
         {
             return false;
         }
-        virtual RecordLengthType *getNextLength() override
+        virtual RecordLengthType getNextLength() override
         {
             throwUnexpected();
         }

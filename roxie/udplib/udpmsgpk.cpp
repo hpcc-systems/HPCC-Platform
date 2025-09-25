@@ -389,17 +389,19 @@ public:
         return res;
     }
 
-    virtual RecordLengthType *getNextLength() override
+    virtual RecordLengthType getNextLength() override
     {
-        if (!dataBuff) 
-            return nullptr;
+        if (unlikely(!dataBuff))
+            return EndOfCursorMarker;
+
         UdpPacketHeader *pktHdr = (UdpPacketHeader*) dataBuff->data;
         unsigned packetDataLimit = pktHdr->length - pktHdr->metalength;
         assertex ((packetDataLimit  - current_pos) >= sizeof(RecordLengthType));
-        RecordLengthType *res = (RecordLengthType *) &dataBuff->data[current_pos];
+        RecordLengthType res = *(RecordLengthType *) &dataBuff->data[current_pos];
         current_pos += sizeof(RecordLengthType);
         // Note that length is never separated from data... but length can be zero so still need to do this...
         // MORE - could common up this code with getNext above
+
         while (current_pos >= packetDataLimit)
         {
             dataBuff = pkSequencer->next(dataBuff);
@@ -414,7 +416,6 @@ public:
         }
         return res;
     }
-
 };
 
  
