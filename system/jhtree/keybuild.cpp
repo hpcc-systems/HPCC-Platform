@@ -261,9 +261,9 @@ public:
             else if (strieq(compression, "inplace") || startsWithIgnoreCase(compression, "inplace:"))
                 indexCompressor.setown(new InplaceIndexCompressor(keyedSize, keyHdr, _helper, compression));
             else if (strieq(compression, "hybrid") || startsWithIgnoreCase(compression, "hybrid:"))
-            {
                 indexCompressor.setown(new HybridIndexCompressor(keyedSize, keyHdr, _helper, compression));
-            }
+            else if (strieq(compression, "legacy"))
+                indexCompressor.setown(new LegacyIndexCompressor);
             else
                 throw makeStringExceptionV(0, "Unrecognised index compression format %s", compression);
         }
