@@ -212,6 +212,8 @@ Best practices for managing secrets securely within the system.
 
 - [Vault Secrets Client Cert Vault Authentication](../helm/examples/secrets/README-vaultsecretsusingclientcertvaultauthentication.md)
 
+- [Vault Secrets using appRole vault authentication](../helm/examples/secrets/README-vaultsecretsusingapprolevaultauthentication.md)
+
 ## Thor
 
 The Thor engine is the data refinery component of the HPCC Systems Platform, designed for high-performance, parallel data processing. It is responsible for executing complex data transformations and analytics at scale.
