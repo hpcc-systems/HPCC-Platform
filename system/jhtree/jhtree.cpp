@@ -1176,9 +1176,6 @@ StringBuffer &CKeyStore::getMetrics(StringBuffer &xml)
 //MORE: This should be called sparingly because it locks all access via the hash table
 void CKeyStore::recordEventIndexInformation()
 {
-    if (!recordingEvents())
-        return;
-
     EventRecorder & recorder = queryRecorder();
     synchronized block(mutex);
     Owned<CKeyIndexMRUCache::CMRUIterator> iter = keyIndexCache.getIterator();

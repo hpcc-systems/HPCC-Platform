@@ -927,6 +927,7 @@ public:
 
     static inline unsigned check(const char * testName, offset_t offset, const char * data, size32_t delta)
     {
+        CPPUNIT_ASSERT(data != nullptr);
         unsigned j = 0;
         for (;;)
         {
@@ -1001,17 +1002,18 @@ public:
     void testStringListPeek(IBufferedSerialInputStream & in)
     {
         offset_t offset = 0;
-        std::vector<const char *> matches;
+        std::vector<size32_t> matches;
         unsigned skipLen = 0;
-        peekStringList(matches, in, skipLen);
+        const char * base = peekStringList(matches, in, skipLen);
 
         unsigned delta = 0;
-        for (const char * next : matches)
+        for (size32_t next : matches)
         {
-            unsigned len = check("testStringListPeek", offset, next, delta);
+            unsigned len = check("testStringListPeek", offset, base + next, delta);
             offset += len+1;
             delta++;
         }
+        assertex(skipLen == offset);
         in.skip(skipLen);
         CPPUNIT_ASSERT(in.eos());
     }
@@ -1029,28 +1031,32 @@ public:
 
         {
             CCycleTimer timer;
-            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(buffer.reset(0));
+            MemoryBuffer clone(buffer.length(), buffer.toByteArray());
+            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(clone);
             testVarStringRead(*in, minFileLength);
             DBGLOG("Buffer:testVarStringRead took %lluus", timer.elapsedNs()/1000);
         }
 
         {
             CCycleTimer timer;
-            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(buffer.reset(0));
+            MemoryBuffer clone(buffer.length(), buffer.toByteArray());
+            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(clone);
             testVarStringPeek(*in, minFileLength);
             DBGLOG("Buffer:testVarStringPeek took %lluus", timer.elapsedNs()/1000);
         }
 
         {
             CCycleTimer timer;
-            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(buffer.reset(0));
+            MemoryBuffer clone(buffer.length(), buffer.toByteArray());
+            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(clone);
             testKVStringPeek(*in, minFileLength);
             DBGLOG("Buffer:testKVStringPeek took %lluus", timer.elapsedNs()/1000);
         }
 
         {
             CCycleTimer timer;
-            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(buffer.reset(0));
+            MemoryBuffer clone(buffer.length(), buffer.toByteArray());
+            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(clone);
             testStringListPeek(*in);
             DBGLOG("Buffer:testStringListPeek took %lluus", timer.elapsedNs()/1000);
         }

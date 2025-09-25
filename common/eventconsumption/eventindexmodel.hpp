@@ -48,8 +48,8 @@ enum class ExpansionMode
 // The index event model configuration conforms to this structure:
 //   kind: index-event
 //   storage:
-//     cache-read: nanosecond time to read one page
-//     cache-capacity: maximum bytes to use for the cache
+//     cacheReadTime: nanosecond time to read one page
+//     cacheCapacity: maximum bytes to use for the cache
 //     plane:
 //     - name: unique, non-empty, identifier
 //       readTime: nanosecond time to read one page
@@ -58,16 +58,23 @@ enum class ExpansionMode
 //       plane: name of place in which the file resides, if different from the default
 //       branchPlane: name of place in which index branches reside, if different from the default
 //       leafPlane: name of place in which index leaves reside, if different from the default
-//   expansion:
+//   memory:
 //     node:
 //     - kind: node kind
 //       sizeFactor: floating point multiplier for estimated node size
-//       sizeToTimeFactor: floating point multiplier for estimated node expansion time
-//       mode: choice of `ll`, `ld`, or `dd`
+//       sizeToTimeFactor: floating point multiplier for estimated node expansionMode time
+//       expansionMode: choice of `ll`, `ld`, or `dd`
+//       cacheCapacity: maximum bytes to use for the cache
+//     observed:
+//     - FileId: unique index file identifier
+//       FileOffset: index page offset
+//       NodeKind: node kind
+//       InMemorySize: size of the node in bytes
+//       ExpandTime: time in nanoseconds to expand the node
 //
 // - `kind` is optional; as the first model the value is implied.
-// - `cache-read` is optional; if zero, empty, or omitted, the cache is disabled.
-// - `cache-capacity` is optional; if zero, empty, or omitted, the cache is unlimited.
+// - `cacheReadTime` is optional; if zero, empty, or omitted, the cache is disabled.
+// - `cacheCapacity` is optional; if zero, empty, or omitted, the cache is unlimited.
 // - The first `plane` declared is assumed to be the default plane for files not explicitly assigned
 //   an alternate choice.
 // - `file` is optional; omission implies all files exist in the default plane.
@@ -79,17 +86,13 @@ enum class ExpansionMode
 //   the file's default storage plane.
 // - `file/leafPlane` is optional; omission, or empty, implies the file's index leaves reside in the
 //   file's default storage plane.
-// - `expansion` is optional; omission prevents any expansion modeling.
-// - `expansion/mode` is optional; omission and empty are equivalent to `ll`. Accepted options are:
-//   - `ll`: model input and output are both on-load
-//   - `ld`: model input is on-load and output is on-demand
-//   - `dd`: model input and output are both on-demand
-// - `expansion/node` is optional; omission prevents estimating algorithm performance. If present,
+// - `memory` is optional; omission prevents any memory modeling.
+// - `memory/node` is optional; omission prevents estimating algorithm performance. If present,
 //   one instance for each type of index node is required.
-// - `expansion/node/kind` is a required choice of `branch` or `leaf`.
-// - `expansion/node/sizeFactor` is a required positive floating point multiplier for algorithm
+// - `memory/node/kind` is a required choice of `branch` or `leaf`.
+// - `memory/node/sizeFactor` is a required positive floating point multiplier for algorithm
 //   performance estimation. The on disk page size is multiplied by this value.
-// - `expansion/node/sizeToTimeFactor` is a required positive floating point multiplier for
+// - `memory/node/sizeToTimeFactor` is a required positive floating point multiplier for
 //   algorithm performance estimation. The estimated size is multipled by this factor to estimate
 //   the expansion time.
 // - `expansion/node/mode` is optional; omission and empty are equivalent to `ll`. The value is
@@ -97,6 +100,15 @@ enum class ExpansionMode
 //   - `ll`: model input and output are both on-load
 //   - `ld`: model input is on-load and output is on-demand
 //   - `dd`: model input and output are both on-demand
+// - `memory/observed` is an optional mechanism to pre-populate the memory caches. It enables
+//   unit test case scenarios to be set up without requiring explicit events to be visited.
+// - `memory/observed/NodeKind` is expected and corresponds to input event NodeKind values.
+// - `memory/observed/FileId` is expected only when history is used for the node kind.
+// - `memory/observed/FileOffset` is expected only when history is used for the node kind.
+// - `memory/observed/InMemorySize` is expected only when the node cache for the node kind is
+//   enabled, which implies that history is also used for the node kind.
+// - `memory/observed/ExpandTime` is expected only when the node cache for the node kind is
+//   enabled, which implies that history is also used for the node kind.
 
 // Encapsulation of all modeled information about given file page. Note that the file path is not
 // included as the model does not retain that information.
@@ -115,6 +127,7 @@ struct ModeledPage
     Size expanded;
     __uint64 expansionTime{0};
     ExpansionMode expansionMode{ExpansionMode::OnLoad};
+    bool cacheHit{false};
 };
 
 class IndexHashKey
@@ -135,6 +148,60 @@ public:
     {
         return hashc_fnv1a((byte*)&key, sizeof(key), fnvInitialHash32);
     }
+};
+
+interface IndexMRUCacheReporter
+{
+    virtual void reportDropped(const IndexHashKey& key, __uint64 size) = 0;
+};
+
+class IndexMRUNullCacheReporter : public IndexMRUCacheReporter
+{
+public:
+    virtual void reportDropped(const IndexHashKey& key, __uint64 size) override {}
+};
+
+// Abstract base class implementing a most recently used cache of index pages for modeling purposes.
+// The cache tracks which index pages are in memory. Subclasses associate a relevant size with each
+// page. No page data is stored in the cache.
+//
+// For example, a storage page cache assumes a fixed page size while a node cache relies on
+// expension data for each page.
+//
+// Subclasses must implement:
+// - enabled: returns true if the cache is configured for use in the model
+// - size: returns the size of a page in bytes
+// - description: returns a string description of the cache for use in error messages
+class IndexMRUCache
+{
+public:
+    class Value
+    {
+    public:
+        const IndexHashKey key; // enables mapping from MRU to hash table on MRU removals
+        struct Value* prev{nullptr};
+        struct Value* next{nullptr};
+        Value(const IndexHashKey& _key) : key(_key) {}
+    };
+    using Hash = std::unordered_map<const IndexHashKey, std::unique_ptr<Value>, IndexHashKeyHash>;
+public:
+    virtual ~IndexMRUCache() = default;
+    virtual void configure(const IPropertyTree& config);
+    inline bool exists(__uint64 fileId, __uint64 offset) { return exists({fileId, offset}); }
+    bool exists(const IndexHashKey& key);
+    inline bool insert(__uint64 fileId, __uint64 offset, IndexMRUCacheReporter& reporter) { return insert({fileId, offset}, reporter); }
+    bool insert(const IndexHashKey& key, IndexMRUCacheReporter& reporter);
+protected:
+    virtual bool enabled() const = 0;
+    virtual __uint64 size(const IndexHashKey& key) = 0;
+    virtual const char* description() const = 0;
+private:
+    void reserve(__uint64 needed, IndexMRUCacheReporter& reporter);
+public:
+    __uint64 used{0};
+    __uint64 capacity{0};
+    Hash entries;
+    DListOf<Value> mru;
 };
 
 // Encapsulation of the configuration's `storage` element.
@@ -174,33 +241,20 @@ private:
     friend bool operator < (const File& left, const char* right); // required to search a set by path
     friend bool operator < (const char* left, const File& right); // required to search a set by path
 
-    class PageCache
+    class PageCache : public IndexMRUCache
     {
     public:
         static constexpr __uint64 DefaultPageSize = 8192; // 8K page size
-        class Value
-        {
-        public:
-            const IndexHashKey key; // enables mapping from MRU to hash table on MRU removals
-            struct Value* prev{nullptr};
-            struct Value* next{nullptr};
-            Value(const IndexHashKey& _key) : key(_key) {}
-        };
-        using Hash = std::unordered_map<const IndexHashKey, std::unique_ptr<Value>, IndexHashKeyHash>;
     public:
-        void configure(const IPropertyTree& config);
+        virtual void configure(const IPropertyTree& config) override;
         inline __uint64 getReadTimeIfExists(__uint64 fileId, __uint64 offset) { return getReadTimeIfExists({fileId, offset}); }
         __uint64 getReadTimeIfExists(const IndexHashKey& key);
-        inline bool insert(__uint64 fileId, __uint64 offset) { return insert({fileId, offset}); }
-        bool insert(const IndexHashKey& key);
-    private:
-        void reserve(__uint64 size);
+    protected:
+        virtual bool enabled() const override;
+        virtual __uint64 size(const IndexHashKey& key) override;
+        virtual const char* description() const override;
     public:
-        __uint64 used{0};
-        __uint64 capacity{0};
         __uint64 readTime{0};
-        Hash hash;
-        DListOf<Value> mru;
     };
 
     // An ordered set of storage planes, with key transparency enabled.
@@ -244,8 +298,8 @@ private:
     ObservedFiles observedFiles;
 };
 
-// Encapsulation of the configuration's `expansion` element.
-class Expansion
+// Encapsulation of the configuration's `memory` element.
+class MemoryModel
 {
 public:
     static constexpr size_t NumKinds = 2;
@@ -263,12 +317,31 @@ public:
     };
     using ActualHistory = std::unordered_map<IndexHashKey, ActualValue, IndexHashKeyHash>;
     using EstimatedHistory = std::unordered_set<IndexHashKey, IndexHashKeyHash>;
+    class NodeCache : public IndexMRUCache
+    {
+    public:
+        virtual void configure(const IPropertyTree& config) override;
+    public:
+        virtual bool enabled() const override;
+        virtual __uint64 size(const IndexHashKey& key) override;
+        virtual const char* description() const override;
+    public:
+        NodeCache(MemoryModel& _parent, __uint64 _kind);
+    private:
+        MemoryModel& parent;
+        __uint64 kind{0};
+    };
+
 public:
+    MemoryModel();
     void configure(const IPropertyTree& config);
+
+    inline bool caching(const CEvent& event) const { return caching(event.hasAttribute(EvAttrNodeKind) ? event.queryNumericValue(EvAttrNodeKind) : 1); }
+    bool caching(__uint64 nodeKind) const { assertex(nodeKind < NumKinds); return caches[nodeKind].enabled(); }
 
     // Record, if necessary, that indicated index node has been observed. Intended to be called only
     // for IndexCacheHit and IndexCacheMiss events, but not enforced.
-    bool observePage(const CEvent& event);
+    void observePage(const CEvent& event);
 
     // Determines if the indicated index node has been observed in a previous event. Called for index
     // events that do not include data needed for historical caching, such as IndexEviction and
@@ -281,18 +354,23 @@ public:
     // IndexLoad.
     bool refreshObservedPage(const CEvent& event);
 
-    // Applies the expansion configuration to the indicated index node, updading `page` with the
+    // Applies the memory configuration to the indicated index node, updading `page` with the
     // modeled sizes (both compressed and expanded) and the time to expand.
     void describePage(const CEvent& event, ModeledPage& page) const;
 
+    // Update the node cache with the indicated page. The page must have been described first.
+    void cachePage(ModeledPage& page, IndexMRUCacheReporter& reporter);
+
 protected:
     inline bool usingHistory(const CEvent& event) const { return usingHistory(event.hasAttribute(EvAttrNodeKind) ? event.queryNumericValue(EvAttrNodeKind) : 1); }
-    inline bool usingHistory(__uint64 nodeKind) const { assertex(nodeKind < NumKinds); return (modes[nodeKind] != ExpansionMode::OnLoad); }
+    inline bool usingHistory(__uint64 nodeKind) const { assertex(nodeKind < NumKinds); return ((ExpansionMode::OnLoadToOnDemand == modes[nodeKind] && !estimating) || caches[nodeKind].enabled()); }
     void refreshPage(ActualHistory::iterator& it, const CEvent& event);
+    __uint64 nodeEntrySize(const IndexHashKey& key, __uint64) const;
 public:
     ActualHistory actualHistory;
     EstimatedHistory estimatedHistory;
     Estimate estimates[NumKinds];
     ExpansionMode modes[NumKinds] = {ExpansionMode::OnLoad,};
     bool estimating{false};
+    mutable NodeCache caches[NumKinds]; // testing presence in the cache can modify the cache
 };
