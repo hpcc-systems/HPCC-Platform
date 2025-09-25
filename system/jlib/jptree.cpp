@@ -3045,7 +3045,7 @@ void PTree::serializeToStream(IBufferedSerialOutputStream &tgt) const
     serializeCutOff(tgt, -1, 0);
 }
 
-void PTree::deserializeFromStream(IBufferedSerialInputStream &src)
+void PTree::deserializeFromStream(IBufferedSerialInputStream &src, PTreeDeserializeContext &ctx)
 {
     deserializeSelf(src);
 
@@ -3055,7 +3055,7 @@ void PTree::deserializeFromStream(IBufferedSerialInputStream &src)
         {
         case NextByteStatus::nextByteIsNonZero:
         {
-            IPropertyTree *child = create(src);
+            IPropertyTree *child = create(src, ctx);
             addPropTree(child->queryName(), child);
             break;
         }
@@ -4524,8 +4524,9 @@ IPropertyTree *createPTree(MemoryBuffer &src, byte flags)
 
 IPropertyTree *createPTreeFromBinary(IBufferedSerialInputStream &src, byte flags)
 {
+    PTreeDeserializeContext ctx;
     IPropertyTree *tree = createPTree(nullptr, flags);
-    tree->deserializeFromStream(src);
+    tree->deserializeFromStream(src, ctx);
     return tree;
 }
 
@@ -4534,8 +4535,9 @@ IPropertyTree *createPTreeFromBinary(IBufferedSerialInputStream &src, IPTreeNode
     if (!nodeCreator)
         return createPTreeFromBinary(src, ipt_none);
 
+    PTreeDeserializeContext ctx;
     IPropertyTree *tree = nodeCreator->create(nullptr); // The nullptr is a dummy name value, it will be overwritten by deserializeFromStream
-    tree->deserializeFromStream(src);
+    tree->deserializeFromStream(src, ctx);
     return tree;
 }
 
