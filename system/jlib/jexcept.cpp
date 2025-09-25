@@ -902,7 +902,7 @@ static void *SEHrestore;
 #ifdef EXTENDED_EXCEPTION_TRACE
 
 
-static LPTSTR GetExceptionString( DWORD dwCode )
+static const char * GetExceptionString( DWORD dwCode )
 {
 #define EXCEPTION( x ) case EXCEPTION_##x: return #x;
     

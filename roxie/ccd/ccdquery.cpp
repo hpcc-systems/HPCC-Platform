@@ -1901,7 +1901,9 @@ unsigned checkWorkunitVersionConsistency(const IConstWorkUnit *wu)
     {
         // Any workunit compiled using eclcc 7.12.0-7.12.18 is not compatible
         StringBuffer buildVersion, eclVersion;
-        wu->getBuildVersion(StringBufferAdaptor(buildVersion), StringBufferAdaptor(eclVersion));
+        StringBufferAdaptor buildVersionAdaptor(buildVersion);
+        StringBufferAdaptor eclVersionAdaptor(eclVersion);
+        wu->getBuildVersion(buildVersionAdaptor, eclVersionAdaptor);
         const char *version = strstr(buildVersion, "7.12.");
 
         //Avoid matching a version number in the path that was used to build (enclosed in [] at the end)

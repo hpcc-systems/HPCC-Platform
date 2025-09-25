@@ -1219,7 +1219,7 @@ void ReferencedFileList::cloneFileInfo(StringBuffer &publisherWuid, const char *
                 publisher.setown(factory->updateWorkUnit(publisherWuid, true));
                 if (publisher)
                 {
-                    publisher->setJobName(jobName.isEmpty() ? "copy published files" : jobName);
+                    publisher->setJobName(jobName.isEmpty() ? "copy published files" : jobName.get());
                     IDFUprogress *progress = publisher->queryUpdateProgress();
                     if (progress)
                         progress->setState(DFUstate_finished); //don't just delete because empty, automated systems might be tracking
@@ -1247,7 +1247,7 @@ void ReferencedFileList::cloneFileInfo(StringBuffer &publisherWuid, const char *
             }
 
             publisher->setQueue(dfuQueueName);
-            publisher->setJobName(jobName.isEmpty() ? "copy published files" : jobName);
+            publisher->setJobName(jobName.isEmpty() ? "copy published files" : jobName.get());
             publisherWuid.set(publisher->queryId());
 
             if (keyCompression)

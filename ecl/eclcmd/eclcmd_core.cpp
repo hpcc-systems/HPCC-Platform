@@ -2012,7 +2012,10 @@ public:
             urlTail.append("&IncludeThorSlaveLog=on");
         if (!optProblemDesc.isEmpty())
             urlTail.append("&ProblemDescription=").append(optProblemDesc.get());
-        EclCmdURL eclCmdURL("WsWorkunits", !streq(optServer, ".") ? optServer : "localhost", optPort, optSSL, urlTail.str());
+
+        // ensure both branches have the same type by selecting a const char*
+        const char *serverForUrl = (optServer.length() && !streq(optServer.get(), ".")) ? optServer.get() : "localhost";
+        EclCmdURL eclCmdURL("WsWorkunits", serverForUrl, optPort, optSSL, urlTail.str());
 
         //Create CURL command
         StringBuffer curlCommand("curl -v -X post");

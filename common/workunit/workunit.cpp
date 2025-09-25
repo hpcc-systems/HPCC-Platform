@@ -1613,7 +1613,8 @@ private:
                 curScopeName.clear();
                 if (wfid != 0)
                     curScopeName.append(WorkflowScopePrefix).append(wfid).append(':');
-                graph.getName(StringBufferAdaptor(curScopeName));
+                StringBufferAdaptor adapter(curScopeName);
+                graph.getName(adapter);
                 scopeType = SSTgraph;
                 return true;
             }
@@ -8213,7 +8214,8 @@ bool CLocalWorkUnit::resolveFilePrefix(StringBuffer & prefix, const char * queue
 {
     if (hasApplicationValue("prefix", queue))
     {
-        getApplicationValue("prefix", queue, StringBufferAdaptor(prefix));
+        StringBufferAdaptor adapter(prefix);
+        getApplicationValue("prefix", queue, adapter);
         return true;
     }
 
@@ -8221,7 +8223,8 @@ bool CLocalWorkUnit::resolveFilePrefix(StringBuffer & prefix, const char * queue
     Owned<IConstWUClusterInfo> ci = getTargetClusterInfo(queue);
     if (ci)
     {
-        ci->getScope(StringBufferAdaptor(prefix));
+        StringBufferAdaptor adaptor(prefix);
+        ci->getScope(adaptor);
         return true;
     }
 #endif

@@ -903,7 +903,8 @@ UChar *EclAgent::getResultVarUnicode(const char * stepname, unsigned sequence)
 {
     PROTECTED_GETRESULT(stepname, sequence, "VarUnicode", "unicode",
         MemoryBuffer result;
-        r->getResultUnicode(MemoryBuffer2IDataVal(result));
+        MemoryBuffer2IDataVal adaptor(result);
+        r->getResultUnicode(adaptor);
         result.append((UChar)0);
         return (UChar *)result.detach();
     );
@@ -966,7 +967,8 @@ void EclAgent::getResultUnicode(unsigned & tlen, UChar * & tgt, const char * ste
 {
     PROTECTED_GETRESULT(stepname, sequence, "Unicode", "unicode",
         MemoryBuffer result;
-        r->getResultUnicode(MemoryBuffer2IDataVal(result));
+        MemoryBuffer2IDataVal adaptor(result);
+        r->getResultUnicode(adaptor);
         tlen = result.length()/2;
         tgt = (UChar *)result.detach();
     );
@@ -1878,7 +1880,9 @@ void EclAgent::doProcess()
             {
                 // Any workunit compiled using eclcc 7.12.0-7.12.18 is not compatible
                 StringBuffer buildVersion, eclVersion;
-                w->getBuildVersion(StringBufferAdaptor(buildVersion), StringBufferAdaptor(eclVersion));
+                StringBufferAdaptor adapter(buildVersion);
+                StringBufferAdaptor adapter2(eclVersion);
+                w->getBuildVersion(adapter, adapter2);
                 const char *version = strstr(buildVersion, "7.12.");
 
                 //Avoid matching a version number in the path that was used to build (enclosed in [] at the end)

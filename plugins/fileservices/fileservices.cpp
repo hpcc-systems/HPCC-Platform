@@ -300,7 +300,8 @@ StringBuffer & constructLogicalName(IConstWorkUnit * wu, const char * partialLog
     else if (wu)
     {
         StringBuffer prefix;
-        wu->getScope(StringBufferAdaptor(prefix));
+        StringBufferAdaptor adapter(prefix);
+        wu->getScope(adapter);
         if (prefix.length())
             result.append(prefix).append("::");
     }
