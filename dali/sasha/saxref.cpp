@@ -998,7 +998,9 @@ public:
         log(false, "Max memory = %d MB", maxMb);
 
         StringBuffer userName;
-        serverConfig->getProp("@sashaUser", userName);
+        serverConfig->getProp("@user", userName);
+        if (userName.isEmpty()) // for backward compatibility
+            serverConfig->getProp("@sashaUser", userName);
         udesc.setown(createUserDescriptor());
         udesc->set(userName.str(), nullptr);
 
