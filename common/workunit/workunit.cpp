@@ -2616,20 +2616,25 @@ protected:
 };
 
 // Aggregrate Thor or hThor costs
-cost_type aggregateCost(const IConstWorkUnit * wu, const char *scope, bool excludeHThor)
+cost_type aggregateCost(const IConstWorkUnit * wu, const char *scope, StatisticKind sk, unsigned maxDepth, bool excludeHThor)
 {
     // depth 1: workflow, depth 2: graph, depth 3: subgraph
     WuScopeFilter filter;
     if (scope && *scope) // All costs under specified scope (used to calculate all costs for a workflow)
     {
         filter.addScope(scope);
-        filter.setIncludeNesting(3);
-        filter.addOutputStatistic(StCostExecute);
-        filter.addRequiredStat(StCostExecute);
+        filter.setIncludeNesting(maxDepth);
+        filter.addOutputStatistic(sk);
+        filter.addRequiredStat(sk);
         filter.setIncludeMatch(false); // always re-calculate the cost from the children
     }
     else
-        filter.addFilter("stat[CostExecute],depth[1..3],nested[0],where[CostExecute]");
+    {
+        filter.addOutputStatistic(sk);
+        filter.setDepth(1, maxDepth);
+        filter.setIncludeNesting(0);
+        filter.addRequiredStat(sk);
+    }
     filter.addSource("global");
     filter.finishedFilter();
     Owned<IConstWUScopeIterator> it = &wu->getScopeIterator(filter);
@@ -2641,7 +2646,7 @@ cost_type aggregateCost(const IConstWorkUnit * wu, const char *scope, bool exclu
         {
             it->playProperties(aggregator);
             stat_type value;
-            if (it->getStat(StCostExecute, value))
+            if (it->getStat(sk, value))
                 it->nextSibling();
             else
                 it->next();
@@ -2654,7 +2659,7 @@ cost_type aggregateCost(const IConstWorkUnit * wu, const char *scope, bool exclu
         for (it->first(); it->isValid(); )
         {
             stat_type value = 0;
-            if (it->getStat(StCostExecute, value))
+            if (it->getStat(sk, value))
             {
                 totalCost += value;
                 it->nextSibling();
@@ -8587,7 +8592,7 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool a
     p->setProp("@hash", fromP->queryProp("@hash"));
     p->setProp("@costExecute", fromP->queryProp("@costExecute"));
     p->setProp("@costFileAccess", fromP->queryProp("@costFileAccess"));
-    p->setProp("@costSavingPotential", fromP->queryProp("@costSavingPotential"));
+    p->setPropInt64("@costSavingPotential", fromP->getPropInt64("@costSavingPotential"));
     p->setPropBool("@cloneable", true);
     p->setPropBool("@isClone", true);
     resetWorkflow();  // the source Workflow section may have had some parts already executed...
