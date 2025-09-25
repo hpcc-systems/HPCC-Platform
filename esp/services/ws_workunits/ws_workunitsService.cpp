@@ -4794,7 +4794,7 @@ void writeSharedObject(const char *srcpath, const MemoryBuffer &obj, const char 
     throw MakeStringException(ECLWATCH_CANNOT_COPY_DLL, "Failed copying shared object %s", srcpath);
 }
 
-void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *filename, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml, bool protect)
+void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml, bool protect)
 {
     StringBuffer dllpath, dllname;
 
@@ -4866,9 +4866,6 @@ void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *fi
 
 void CWsWorkunitsEx::deploySharedObjectReq(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEspWUDeployWorkunitResponse & resp, const char *dir, const char *xml)
 {
-    if (isEmpty(req.getFileName()))
-       throw MakeStringException(ECLWATCH_INVALID_INPUT, "File name required when deploying a shared object.");
-
     const char *cluster = req.getCluster();
     if (isEmpty(cluster))
        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Cluster name required when deploying a shared object.");
@@ -4882,7 +4879,7 @@ void CWsWorkunitsEx::deploySharedObjectReq(IEspContext &context, IEspWUDeployWor
     }
 
     StringBuffer wuid;
-    deploySharedObject(context, wuid, req.getFileName(), cluster, req.getName(), *uncompressed, dir, xml, req.getProtect());
+    deploySharedObject(context, wuid, cluster, req.getName(), *uncompressed, dir, xml, req.getProtect());
 
     WsWuInfo winfo(context, wuid.str());
     winfo.getCommon(resp.updateWorkunit(), WUINFO_All);
