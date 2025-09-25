@@ -299,6 +299,9 @@
         "stubInstanceResources": {
           "$ref": "#/definitions/stubInstanceResources"
         },
+        "schedulingTimeoutSecs": {
+          "$ref": "#/definitions/schedulingTimeoutSecs"
+        },
         "image": {
           "$ref": "#/definitions/image"
         },
@@ -1578,6 +1581,9 @@
           "type": "boolean",
           "description": "If enabled all updates of the git repositories are protected by holding a lock in dali"
         },
+        "schedulingTimeoutSecs": {
+          "$ref": "#/definitions/schedulingTimeoutSecs"
+        },
         "terminationGracePeriodSeconds": {
           "$ref": "#/definitions/terminationGracePeriodSeconds"
         },
@@ -1828,6 +1834,9 @@
         },
         "expert": {
           "$ref": "#/definitions/expert"
+        },
+        "schedulingTimeoutSecs": {
+          "$ref": "#/definitions/schedulingTimeoutSecs"
         },
         "terminationGracePeriodSeconds": {
           "$ref": "#/definitions/terminationGracePeriodSeconds"
@@ -2821,6 +2830,9 @@
         "plugins": {
           "$ref": "#/definitions/plugins"
         },
+        "schedulingTimeoutSecs": {
+          "$ref": "#/definitions/schedulingTimeoutSecs"
+        },
         "terminationGracePeriodSeconds": {
           "$ref": "#/definitions/terminationGracePeriodSeconds"
         }
@@ -3686,6 +3698,11 @@
         }
       },
       "required": [ "name", "type", "target" ]
+    },
+    "schedulingTimeoutSecs": {
+      "type": "integer",
+      "description": "The maximum time to wait for a pending k8s job to be scheduled",
+      "default": 600
     },
     "terminationGracePeriodSeconds": {
       "type": "integer",
