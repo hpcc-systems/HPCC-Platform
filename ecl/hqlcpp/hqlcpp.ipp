@@ -1206,18 +1206,8 @@ public:
     ClusterType restoreTargetClusterTypes();
     void ensureDiskAccessAllowed(IHqlExpression * expr);
     void checkAbort();
-    void saveOverriddenOption(const char * name)
-    {
-        std::string lowerName = name;
-        std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), ::tolower);
-        overriddenDebugOptions.push_back(lowerName);
-    }
-    bool isOptionOverridden(const char * name) const
-    {
-        std::string lowerName = name;
-        std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), ::tolower);
-        return std::find(overriddenDebugOptions.begin(), overriddenDebugOptions.end(), lowerName) != overriddenDebugOptions.end();
-    }
+    void saveOverriddenOption(const char * name);
+    bool isOptionOverridden(const char * name) const;
 
 public:
     //various helper functions.
@@ -2152,7 +2142,7 @@ protected:
     HqlExprArray        internalFunctionExternals;
     UniqueSequenceCounter spillSequence;
     std::vector<IHqlStmt *> metaPassStmts;
-    std::vector<std::string> overriddenDebugOptions;
+    StringArray         overriddenDebugOptions;
     
 #ifdef SPOT_POTENTIAL_COMMON_ACTIVITIES
     LocationArray       savedActivityLocations;
