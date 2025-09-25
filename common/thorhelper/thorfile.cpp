@@ -396,3 +396,13 @@ void buildUserMetadata(Owned<IPropertyTree> & metadata, IHThorIndexWriteArg & he
         metadata->setProp(name.str(), value.str());
     }
 }
+
+const char * getIndexCompressionType(IHThorIndexWriteArg * helper, const char * defaultCompression)
+{
+    const char * compression = !isEmptyString(defaultCompression) ? defaultCompression : "legacy";
+    if (helper && (helper->getFlags() & TIWcompressdefined))
+        compression = helper->queryCompression();
+    
+    // Return the effective compression type - this matches the logic in CKeyBuilder
+    return compression;
+}
