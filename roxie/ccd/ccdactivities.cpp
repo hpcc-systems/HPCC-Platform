@@ -119,7 +119,7 @@ CActivityFactory::CActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFac
         recordTranslationModeHint = getTranslationMode(recordTranslationModeHintText, true);
 }
 
-void CActivityFactory::addChildQuery(unsigned id, ActivityArray *childQuery) 
+void CActivityFactory::addChildQuery(unsigned id, ActivityArray *childQuery)
 {
     childQueries.append(*childQuery);
     childQueryIndexes.append(id);
@@ -183,7 +183,7 @@ public:
         return CActivityFactory::queryId();
     }
 
-    virtual ThorActivityKind getKind() const 
+    virtual ThorActivityKind getKind() const
     {
         return CActivityFactory::getKind();
     }
@@ -427,7 +427,7 @@ public:
         return true;
     }
 
-    virtual void doCheck(IMessagePacker *output) 
+    virtual void doCheck(IMessagePacker *output)
     {
         // MORE - unsophisticated default - if this approach seems fruitful then we can add something more thorough
         void *recBuffer = output->getBuffer(sizeof(bool), false);
@@ -435,7 +435,7 @@ public:
         memcpy(recBuffer, &ret, sizeof(bool));
     }
 
-    virtual void abort() 
+    virtual void abort()
     {
         if (doTrace(traceRoxiePackets) || doTrace(traceAborts))
         {
@@ -481,8 +481,8 @@ public:
         return ::serializeRow(serializer, output, unserialized);
     }
 
-    virtual const char *loadResource(unsigned id) 
-    { 
+    virtual const char *loadResource(unsigned id)
+    {
         return queryContext->queryCodeContext()->loadResource(id);
     }
 
@@ -490,7 +490,7 @@ public:
 
     virtual void setResultBool(const char *name, unsigned sequence, bool value) { throwUnexpected(); }
     virtual void setResultData(const char *name, unsigned sequence, int len, const void * data) { throwUnexpected(); }
-    virtual void setResultDecimal(const char * stepname, unsigned sequence, int len, int precision, bool isSigned, const void *val) { throwUnexpected(); } 
+    virtual void setResultDecimal(const char * stepname, unsigned sequence, int len, int precision, bool isSigned, const void *val) { throwUnexpected(); }
     virtual void setResultInt(const char *name, unsigned sequence, __int64 value, unsigned size) { throwUnexpected(); }
     virtual void setResultRaw(const char *name, unsigned sequence, int len, const void * data) { throwUnexpected(); }
     virtual void setResultReal(const char * stepname, unsigned sequence, double value) { throwUnexpected(); }
@@ -968,7 +968,7 @@ public:
             postFilter.addFilter(*filter);
     }
 
-    virtual void abort() 
+    virtual void abort()
     {
         CRoxieAgentActivity::abort();
         CriticalBlock p(pcrit);
@@ -999,7 +999,7 @@ public:
     }
 
     virtual void doProcess(IMessagePacker * output) = 0;
-        
+
     virtual void setPartNo(bool filechanged)
     {
         throwUnexpected();
@@ -1117,7 +1117,7 @@ public:
 
 };
 
-class CRoxieCsvReadActivity : public CRoxieDiskReadBaseActivity 
+class CRoxieCsvReadActivity : public CRoxieDiskReadBaseActivity
 {
 public:
     friend class CsvRecordProcessor;
@@ -1168,7 +1168,7 @@ public:
     }
 };
 
-class CRoxieXmlReadActivity : public CRoxieDiskReadBaseActivity 
+class CRoxieXmlReadActivity : public CRoxieDiskReadBaseActivity
 {
 public:
     friend class XmlRecordProcessor;
@@ -1290,9 +1290,9 @@ protected:
 public:
     IMPLEMENT_IINTERFACE
     RecordProcessor(IDirectReader *_reader) : reader(_reader) {}
-    virtual void abort() 
+    virtual void abort()
     {
-        aborted = true; 
+        aborted = true;
     }
 };
 
@@ -1441,7 +1441,7 @@ public:
                     processed++;
                     if (processed > rowLimit)
                     {
-                        owner.limitExceeded(); 
+                        owner.limitExceeded();
                         return;
                     }
                     if (processed == stopAfter)
@@ -1528,7 +1528,7 @@ public:
                     processed++;
                     if (processed > rowLimit)
                     {
-                        owner.limitExceeded(); 
+                        owner.limitExceeded();
                         return;
                     }
                     if (processed == stopAfter)
@@ -2035,7 +2035,7 @@ public:
         helper->setCallback(NULL);
     }
 
-    virtual void processRow(CDummyMessagePacker &d) 
+    virtual void processRow(CDummyMessagePacker &d)
     {
         CriticalBlock c(parCrit);
         MemoryBuffer &m = d.data;
@@ -2050,7 +2050,7 @@ public:
             {
                 RecordLengthType *rowLen = (RecordLengthType *) m.readDirect(sizeof(RecordLengthType));
                 if (!*rowLen)
-                    break; 
+                    break;
                 RtlDynamicRowBuilder rowBuilder(rowAllocator);
                 size_t outsize = deserializer->deserialize(rowBuilder, rowSource);
                 dbgassertex(outsize==(size_t) *rowLen);
@@ -2074,7 +2074,7 @@ public:
                 {
                     RecordLengthType *rowLen = (RecordLengthType *) m.readDirect(sizeof(RecordLengthType));
                     if (!*rowLen)
-                        break; 
+                        break;
                     len = *rowLen;
                 }
                 row = m.readDirect(len);
@@ -2322,7 +2322,7 @@ public:
             {
                 RecordLengthType *rowLen = (RecordLengthType *) m.readDirect(sizeof(RecordLengthType));
                 if (!*rowLen)
-                    break; 
+                    break;
                 RecordLengthType len = *rowLen;
                 if (deserializer)
                 {
@@ -2546,7 +2546,7 @@ protected:
     }
 
     CRoxieKeyedActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieKeyedActivityFactory *_aFactory)
-        : CRoxieAgentActivity(_logctx, _packet, _hFactory, _aFactory), 
+        : CRoxieAgentActivity(_logctx, _packet, _hFactory, _aFactory),
         translators(_aFactory->translators),
         keyArray(_aFactory->keyArray),
         createSegmentMonitorsPending(true)
@@ -2761,7 +2761,7 @@ public:
         resentInfo.read(keyprocessed);
         resentInfo.read(lastPartNo.partNo);
         resentInfo.read(lastPartNo.fileNo);
-        setPartNo(true);  
+        setPartNo(true);
         tlk->deserializeCursorPos(resentInfo);
         assertex(resentInfo.remaining() == 0);
     }
@@ -2840,9 +2840,9 @@ public:
 /* Notes on Global smart stepping implementation:
 
   When smart stepping, I get from the Roxie server:
-   1 or more seek positions 
+   1 or more seek positions
    some flags
-  
+
   I can read from the index in an order that matches the seek positions order (because of index merger), and which match my hard filter (they may not match my postfilter)
   I can skip forwards in the index to the first record GE a skip position
   I am not going to try to implement a (possible future) flag to return mismatches after any but the last of the seek positions (yet)
@@ -2851,9 +2851,9 @@ public:
       where M is 1 if SSEFonlyReturnFirstSeekMatch flag set, otherwise all...
 
   THEN once we are beyond the last provided seek:
-    if returnMismatches flag set,                 
+    if returnMismatches flag set,
        current row = (next row matching keyed filter)
-       if someNewAsYetUnnamedAndUnimplementedFlag flag set 
+       if someNewAsYetUnnamedAndUnimplementedFlag flag set
            //if the post filter matches then there may be scope for returning all records which match the seek fields of that first match
            // But not very likely to help unless terms correlated, and may well hinder
            return current row and all following rows matching keyed filter, seek data from current row, and postfilter
@@ -2880,7 +2880,7 @@ public:
         {
             if (!checkLimit(keyedLimit))
             {
-                limitExceeded(true); 
+                limitExceeded(true);
                 return NULL;
             }
 
@@ -2971,7 +2971,7 @@ public:
                                 if (limit && processed > limit)
                                 {
                                     noteStats(keyprocessed-keyprocessedBefore, skipped);
-                                    limitExceeded(false); 
+                                    limitExceeded(false);
                                     break;
                                 }
                                 if (processed > stopAfter)
@@ -3003,7 +3003,7 @@ public:
                                         continuationNeeded = true;
                                         lastRowCompleteMatch = false;
                                     }
-                                }                           
+                                }
                                 else
                                 {
                                     skipped++;
@@ -3062,26 +3062,26 @@ public:
             return output.getClear();
     }
 
-    virtual IIndexReadActivityInfo *queryIndexReadActivity() 
+    virtual IIndexReadActivityInfo *queryIndexReadActivity()
     {
         return this;
     }
 
-    virtual IKeyArray *getKeySet() const 
+    virtual IKeyArray *getKeySet() const
     {
         return keyArray.getLink();
     }
-    virtual const IResolvedFile *getVarFileInfo() const 
+    virtual const IResolvedFile *getVarFileInfo() const
     {
-        return varFileInfo.getLink(); 
+        return varFileInfo.getLink();
     }
     virtual ITranslatorSet *getTranslators() const override
     {
         return translators.getLink();
     }
-    virtual void mergeSegmentMonitors(IIndexReadContext *irc) const 
+    virtual void mergeSegmentMonitors(IIndexReadContext *irc) const
     {
-        indexHelper->createSegmentMonitors(irc); // NOTE: they will merge; 
+        indexHelper->createSegmentMonitors(irc); // NOTE: they will merge;
     }
     virtual IRoxieServerActivity *queryActivity() { throwUnexpected(); }
     virtual const RemoteActivityId &queryRemoteId() const { throwUnexpected(); }
@@ -3111,7 +3111,7 @@ public:
             steppingOffset = 0;
         }
     }
-    
+
     virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IRoxieQueryPacket *packet) const
     {
         return new CRoxieIndexReadActivity(logctx, packet, helperFactory, this, steppingOffset);
@@ -3154,14 +3154,14 @@ public:
     virtual IMessagePacker *process()
     {
         MTIME_SECTION(queryActiveTimer(), "CRoxieIndexNormalizeActivity ::process");
-        unsigned __int64 keyedLimit = normalizeHelper->getKeyedLimit(); 
+        unsigned __int64 keyedLimit = normalizeHelper->getKeyedLimit();
         unsigned __int64 rowLimit = normalizeHelper->getRowLimit();
 
         if (!resent && (keyedLimit != (unsigned __int64) -1) && (indexHelper->getFlags() & TIRcountkeyedlimit) != 0) // Don't recheck the limit every time!
         {
             if (!checkLimit(keyedLimit))
             {
-                limitExceeded(true); 
+                limitExceeded(true);
                 return NULL;
             }
 
@@ -3208,7 +3208,7 @@ public:
                                 processed++;
                                 if (processed > rowLimit)
                                 {
-                                    limitExceeded(false); 
+                                    limitExceeded(false);
                                     break;
                                 }
                                 if (processed > stopAfter)
@@ -3341,6 +3341,8 @@ public:
                         callback.finishedRow();
                     }
                     callback.setManager(nullptr, nullptr);
+                    if (countHelper->getFlags() & TIRaggregateexists)
+                        inputsDone = inputCount; // Early termination for EXISTS queries
                 }
                 else
                 {
@@ -4237,7 +4239,7 @@ public:
             assertex(indexActivityFactory != NULL);
             rootIndexActivity.setown(indexActivityFactory->createActivity(logctx, indexPacket));
             rootIndex = rootIndexActivity->queryIndexReadActivity();
-    
+
             varFileInfo.setown(rootIndex->getVarFileInfo());
             translators.setown(rootIndex->getTranslators());
             keyArray.setown(rootIndex->getKeySet());
@@ -4290,7 +4292,7 @@ IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
 
     unsigned keepLimit = helper->getKeepLimit();
     unsigned joinFlags = helper->getJoinFlags();
-    if (joinFlags & (JFtransformMaySkip | JFfetchMayFilter)) 
+    if (joinFlags & (JFtransformMaySkip | JFfetchMayFilter))
         keepLimit = 0;
     if ((joinFlags & (JFexclude|JFleftouter)) == (JFexclude|JFleftouter) && (!(joinFlags & JFfetchMayFilter)))  // For left-only joins, all we care about is existence of a match. Return as soon as we know that there is one
         keepLimit = 1;
@@ -4322,7 +4324,7 @@ IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
                 rootIndex->mergeSegmentMonitors(tlk);
             tlk->finishSegmentMonitors();
 
-            if (!resent && (atmost != (unsigned) -1) && ((atmost > preabortKeyedJoinsThreshold) || (joinFlags & JFcountmatchabortlimit) || (keepLimit != 0)))  
+            if (!resent && (atmost != (unsigned) -1) && ((atmost > preabortKeyedJoinsThreshold) || (joinFlags & JFcountmatchabortlimit) || (keepLimit != 0)))
             {
                 unsigned __int64 precount = tlk->checkCount(atmost);
                 if (precount > atmost)
@@ -4638,7 +4640,7 @@ protected:
 
 public:
     CRoxieRemoteActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_aFactory, unsigned _remoteId)
-        : CRoxieAgentActivity(_logctx, _packet, _hFactory, _aFactory), 
+        : CRoxieAgentActivity(_logctx, _packet, _hFactory, _aFactory),
         remoteId(_remoteId)
     {
         remoteHelper = (IHThorRemoteArg *) basehelper;
@@ -4693,7 +4695,7 @@ public:
                 if (processed > rowLimit)
                 {
                     ReleaseRoxieRow(next);
-                    limitExceeded(); 
+                    limitExceeded();
                     break;
                 }
 
