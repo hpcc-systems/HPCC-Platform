@@ -3408,7 +3408,6 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIPTTest, "JlibIPTTest");
 #include "platform.h"
 #include "jfile.ipp"
 #include "jptree.hpp"
-#include "jptree.ipp"
 #include "jiface.hpp"
 #include "jio.hpp"
 #include "jstring.hpp"
@@ -3680,16 +3679,14 @@ protected:
         CPPUNIT_ASSERT(memcmp(memoryBuffer.toByteArray(), streamBuffer.toByteArray(), memoryBufferSize) == 0);
 
         // Time deserialize() method
-        Owned<IPropertyTree> memoryBufferDeserialized = createPTree();
         timer.reset();
-        memoryBufferDeserialized->deserialize(memoryBuffer);
+        Owned<IPropertyTree> memoryBufferDeserialized = createPTree(memoryBuffer);
         __uint64 deserializeElapsedNs = timer.elapsedNs();
 
         // Time deserializeFromStream() method
         Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(streamBuffer);
-        Owned<IPropertyTree> streamDeserialized = createPTree();
         timer.reset();
-        streamDeserialized->deserializeFromStream(*in);
+        Owned<IPropertyTree> streamDeserialized = createPTreeFromBinary(*in, ipt_none);
         __uint64 deserializeFromStreamElapsedNs = timer.elapsedNs();
 
         // Create PTree from Binary tests

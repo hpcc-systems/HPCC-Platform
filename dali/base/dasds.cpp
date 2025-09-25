@@ -2492,12 +2492,14 @@ enum IncCmd { None, PropDelete, AttrDelete, PropChange, PropNew, PropExisting, C
 CRemoteTreeBase::CRemoteTreeBase(const char *name, IPTArrayValue *value, ChildMap *children)
     : SDS_PTREE(name, ipt_none, value, children)
 {
-    serverId = 0;
 }
 
 CRemoteTreeBase::CRemoteTreeBase(MemoryBuffer &mb)
 {
-    serverId = 0;
+}
+
+CRemoteTreeBase::CRemoteTreeBase(IBufferedSerialInputStream &in, PTreeDeserializeContext &ctx)
+{
 }
 
 void CRemoteTreeBase::deserializeRT(MemoryBuffer &src)
@@ -2680,6 +2682,7 @@ public:
 #endif
 
     CServerRemoteTree(MemoryBuffer &mb) : CRemoteTreeBase(mb) { init(); }
+    CServerRemoteTree(IBufferedSerialInputStream &in, PTreeDeserializeContext &ctx) : CRemoteTreeBase(in, ctx) { init(); }
     CServerRemoteTree(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL)
         : CRemoteTreeBase(name, value, children) { init(); }
 
@@ -2761,11 +2764,9 @@ public:
         return new CServerRemoteTree(mb);
     }
 
-    virtual IPropertyTree *create(IBufferedSerialInputStream &in) override
+    virtual IPropertyTree *create(IBufferedSerialInputStream &in, PTreeDeserializeContext &ctx) override
     {
-        Owned<CServerRemoteTree> tree = new CServerRemoteTree();
-        tree->deserializeFromStream(in);
-        return tree.getClear();
+        return new CServerRemoteTree(in, ctx);
     }
 
     virtual void createChildMap() override { children = new COrphanHandler(); }
