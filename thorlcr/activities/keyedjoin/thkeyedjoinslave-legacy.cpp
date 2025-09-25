@@ -1239,7 +1239,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         {
             currentPart = &partKeyIndexes.item(partNo);
             if (setPartInKeyManager)
-                partManager->setKey(currentPart);
+                partManager->setKey(currentPart, keyRecInfo);
             owner.helper->createSegmentMonitors(partManager, row);
             partManager->finishSegmentMonitors();
             partManager->reset();
@@ -1434,7 +1434,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                             {
                                 tlkManager->releaseSegmentMonitors();
                                 currentTlk = owner.tlkKeySet->queryPart(nextTlk);
-                                tlkManager->setKey(currentTlk);
+                                tlkManager->setKey(currentTlk, keyRecInfo);
                                 owner.helper->createSegmentMonitors(tlkManager, indexReadFieldsRow.getSelf());
                                 tlkManager->finishSegmentMonitors();
                                 tlkManager->reset();
@@ -1500,7 +1500,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                         {
                             nextTlk = 0;
                             currentTlk = owner.tlkKeySet->queryPart(nextTlk);
-                            tlkManager->setKey(currentTlk);
+                            tlkManager->setKey(currentTlk, keyRecInfo);
                             owner.helper->createSegmentMonitors(tlkManager, indexReadFieldsRow.getSelf());
                             tlkManager->finishSegmentMonitors();
                             tlkManager->reset();
