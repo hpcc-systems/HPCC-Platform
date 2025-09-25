@@ -434,9 +434,14 @@ ClusterWriteHandler *createClusterWriteHandler(IAgentContext &agent, IHThorIndex
     return clusterHandler.getClear();
 }
 
+bool usingClusterHopping(IConstWorkUnit * wu)
+{
+    return (wu && wu->getDebugValueBool("usingClusterHopping", false));
+}
+
 unsigned temporaryFileMask(IConstWorkUnit * wu)
 {
-    if (wu && wu->getDebugValueBool("usingClusterHopping", false))
+    if (usingClusterHopping(wu))
         return TDXtemporary;
     else
         return TDXtemporary|TDXjobtemp;
@@ -507,7 +512,7 @@ void CHThorDiskWriteActivity::stop()
 void CHThorDiskWriteActivity::resolve()
 {
     OwnedRoxieString rawname = helper.getFileName();
-    if ((helperFlags & TDXjobtemp) && agent.queryWorkUnit()->getDebugValueBool("usingClusterHopping", false))
+    if ((helperFlags & TDXjobtemp) && usingClusterHopping(agent.queryWorkUnit()))
     {
         mangleTemporaryFileName(mangledHelperFileName, rawname, agent.queryWuid(), agent.queryWorkUnit()->queryUser());
     }
@@ -640,9 +645,10 @@ void CHThorDiskWriteActivity::open()
     }
     if(compressed)
     {
+        CompressionMethod compMethod = (helperFlags & (TDXjobtemp|TDWpersist)) ? COMPRESS_METHOD_ZSTD : COMPRESS_METHOD_LZ4;
         size32_t compBlockSize = 0; // i.e. default
         size32_t blockedIoSize = -1; // i.e. default
-        io.setown(createCompressedFileWriter(file, extend, true, ecomp, COMPRESS_METHOD_LZ4, compBlockSize, blockedIoSize, IFEnone));
+        io.setown(createCompressedFileWriter(file, extend, true, ecomp, compMethod, compBlockSize, blockedIoSize, IFEnone));
     }
     else
         io.setown(file->open(extend ? IFOwrite : IFOcreate));
@@ -8575,7 +8581,7 @@ void CHThorDiskReadBaseActivity::checkFileType(IDistributedFile *file)
 void CHThorDiskReadBaseActivity::resolve()
 {
     OwnedRoxieString fileName(helper.getFileName());
-    if (helper.getFlags() & TDXjobtemp)
+    if ((helper.getFlags() & TDXjobtemp) && usingClusterHopping(agent.queryWorkUnit()))
     {
         mangleTemporaryFileName(mangledHelperFileName, fileName, agent.queryWuid(), agent.queryWorkUnit()->queryUser());
     }

@@ -3739,22 +3739,40 @@ void remapGroupsToDafilesrv(IPropertyTree *file, bool foreign, bool secure)
 }
 
 #ifdef NULL_DALIUSER_STACKTRACE
-static time_t lastNullUserLogEntry = (time_t)0;
 static CriticalSection nullUserLogCS;
-void logNullUser(IUserDescriptor * userDesc)
+static std::map<std::string, time_t> nullUserLogMap;
+void doLogNullUser(IUserDescriptor * userDesc, const char *location)
 {
     StringBuffer userName;
     if (userDesc)
         userDesc->getUserName(userName);
     if (nullptr == userDesc || userName.isEmpty())
     {
-        CriticalBlock block(nullUserLogCS);
         time_t timeNow = time(nullptr);
-        if (difftime(timeNow, lastNullUserLogEntry) >= 60)
+        bool doLog = false;
+
         {
-            IERRLOG("UNEXPECTED USER (NULL)");
+            CriticalBlock block(nullUserLogCS);
+            auto it = nullUserLogMap.find(location);
+            if (it != nullUserLogMap.end())
+            {
+                if (difftime(timeNow, it->second) >= 60)
+                {
+                    it->second = timeNow;
+                    doLog = true;
+                }
+            }
+            else
+            {
+                nullUserLogMap.emplace(location, timeNow);
+                doLog = true;
+            }
+        }
+
+        if (doLog)
+        {
+            IERRLOG("UNEXPECTED USER (NULL) at %s", location);
             PrintStackReport();
-            lastNullUserLogEntry = timeNow;
         }
     }
 }
@@ -3872,6 +3890,7 @@ StringBuffer & mangleTemporaryFileName(StringBuffer & out, const char * lfn, con
     out.clear();
     if (lfn)
     {
+        StringBuffer tail;
         if (*lfn == '~')
         {
             out.append("~");
@@ -3883,7 +3902,6 @@ StringBuffer & mangleTemporaryFileName(StringBuffer & out, const char * lfn, con
         if (isPaused)
         {
             out.append("thorpause");
-            StringBuffer tail;
             CDfsLogicalFileName dfslfn;
             dfslfn.set(lfn);
             dfslfn.getTail(tail);

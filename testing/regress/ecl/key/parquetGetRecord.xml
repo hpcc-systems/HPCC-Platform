@@ -1,0 +1,110 @@
+<Dataset name='RecordStructure'>
+ <Row><RecordStructure>cc1Rec := RECORD
+    UNSIGNED8 p_child_child_u1 {XPATH(&apos;CHILD-CHILD-U1&apos;)};
+    UTF8 d1;
+    BOOLEAN b1;
+END;
+reffieldRec := RECORD
+    BOOLEAN b1;
+    cc1Rec cc1;
+    SET OF DATA1 sd1;
+    INTEGER8 p_aaa_2 {XPATH(&apos;AAA&apos;)};
+    INTEGER8 p_aaa_1;
+    INTEGER8 p_aaa;
+END;
+parquetRecord := RECORD
+    BOOLEAN boolfield;
+    INTEGER1 p_int_1_field {XPATH(&apos;INT-1-FIELD&apos;)};
+    INTEGER2 int2field;
+    INTEGER4 int4field;
+    INTEGER8 int8field;
+    UNSIGNED1 p_unsigned_1_field {XPATH(&apos;UNSIGNED-1-FIELD&apos;)};
+    UNSIGNED2 uint2field;
+    UNSIGNED4 uint4field;
+    UNSIGNED8 uint8field;
+    REAL4 real4field;
+    REAL8 real8field;
+    DECIMAL10_2 p_decimal_field {XPATH(&apos;DECIMAL-FIELD&apos;)};
+    UTF8 stringfield;
+    UTF8 varstringfield;
+    UTF8 qstringfield;
+    UTF8 utf8field;
+    UTF8 unicodefield;
+    DATA datafield;
+    SET OF INTEGER8 p_set_int_field {XPATH(&apos;SET-INT-FIELD&apos;)};
+    SET OF UTF8 p_setstringfield {XPATH(&apos;setStringField&apos;)};
+    reffieldRec reffield;
+    INTEGER8 p_aaa_2 {XPATH(&apos;AAA&apos;)};
+    INTEGER8 p_aaa_1;
+    INTEGER8 p_aaa;
+    INTEGER8 p_bbb_2 {XPATH(&apos;BBB&apos;)};
+    INTEGER8 p_bbb;
+    INTEGER8 p_bbb_1;
+END;
+</RecordStructure></Row>
+</Dataset>
+<Dataset name='createWorkunitResultExceptions'>
+</Dataset>
+<Dataset name='submitWorkunitResult'>
+ <Row><StateID>3</StateID><Exceptions></Exceptions></Row>
+</Dataset>
+<Dataset name='finalResult'>
+ <Row><Result>&lt;XmlSchema name=&quot;myschema&quot;&gt;&lt;xs:schema xmlns:xs=&quot;http://www.w3.org/2001/XMLSchema&quot; xmlns:hpcc=&quot;urn:hpccsystems:xsd:appinfo&quot; elementFormDefault=&quot;qualified&quot; attributeFormDefault=&quot;unqualified&quot;&gt;
+&lt;xs:element name=&quot;Dataset&quot;&gt;&lt;xs:complexType&gt;&lt;xs:sequence minOccurs=&quot;0&quot; maxOccurs=&quot;unbounded&quot;&gt;
+&lt;xs:element name=&quot;Row&quot;&gt;&lt;xs:complexType&gt;&lt;xs:sequence&gt;
+&lt;xs:element name=&quot;boolfield&quot; type=&quot;xs:boolean&quot;/&gt;
+&lt;xs:element name=&quot;INT-1-FIELD&quot; type=&quot;xs:integer&quot;/&gt;
+&lt;xs:element name=&quot;int2field&quot; type=&quot;xs:integer&quot;/&gt;
+&lt;xs:element name=&quot;int4field&quot; type=&quot;xs:integer&quot;/&gt;
+&lt;xs:element name=&quot;int8field&quot; type=&quot;xs:integer&quot;/&gt;
+&lt;xs:element name=&quot;UNSIGNED-1-FIELD&quot; type=&quot;xs:nonNegativeInteger&quot;/&gt;
+&lt;xs:element name=&quot;uint2field&quot; type=&quot;xs:nonNegativeInteger&quot;/&gt;
+&lt;xs:element name=&quot;uint4field&quot; type=&quot;xs:nonNegativeInteger&quot;/&gt;
+&lt;xs:element name=&quot;uint8field&quot; type=&quot;xs:nonNegativeInteger&quot;/&gt;
+&lt;xs:element name=&quot;real4field&quot; type=&quot;xs:double&quot;/&gt;
+&lt;xs:element name=&quot;real8field&quot; type=&quot;xs:double&quot;/&gt;
+&lt;xs:element name=&quot;DECIMAL-FIELD&quot; type=&quot;decimal10_2&quot;/&gt;
+&lt;xs:element name=&quot;stringfield&quot; type=&quot;xs:string&quot;/&gt;
+&lt;xs:element name=&quot;varstringfield&quot; type=&quot;xs:string&quot;/&gt;
+&lt;xs:element name=&quot;qstringfield&quot; type=&quot;xs:string&quot;/&gt;
+&lt;xs:element name=&quot;utf8field&quot; type=&quot;xs:string&quot;/&gt;
+&lt;xs:element name=&quot;unicodefield&quot; type=&quot;xs:string&quot;/&gt;
+&lt;xs:element name=&quot;datafield&quot; type=&quot;xs:hexBinary&quot;/&gt;
+&lt;xs:element name=&quot;SET-INT-FIELD&quot; minOccurs=&quot;0&quot; maxOccurs=&quot;unbounded&quot; type=&quot;xs:integer&quot;/&gt;
+&lt;xs:element name=&quot;setStringField&quot; minOccurs=&quot;0&quot; maxOccurs=&quot;unbounded&quot; type=&quot;xs:string&quot;/&gt;
+&lt;xs:element name=&quot;reffield&quot;&gt;
+&lt;xs:complexType&gt;&lt;xs:sequence&gt;
+&lt;xs:element name=&quot;b1&quot; type=&quot;xs:boolean&quot;/&gt;
+&lt;xs:element name=&quot;cc1&quot;&gt;
+&lt;xs:complexType&gt;&lt;xs:sequence&gt;
+&lt;xs:element name=&quot;CHILD-CHILD-U1&quot; type=&quot;xs:nonNegativeInteger&quot;/&gt;
+&lt;xs:element name=&quot;d1&quot; type=&quot;xs:string&quot;/&gt;
+&lt;xs:element name=&quot;b1&quot; type=&quot;xs:boolean&quot;/&gt;
+&lt;/xs:sequence&gt;
+&lt;/xs:complexType&gt;
+&lt;/xs:element&gt;
+&lt;xs:element name=&quot;sd1&quot;&gt;
+&lt;xs:complexType&gt;&lt;xs:sequence&gt;&lt;xs:element name=&quot;All&quot; minOccurs=&quot;0&quot;/&gt;
+&lt;xs:element name=&quot;Item&quot; minOccurs=&quot;0&quot; maxOccurs=&quot;unbounded&quot; type=&quot;data1&quot;/&gt;
+&lt;/xs:sequence&gt;&lt;/xs:complexType&gt;&lt;/xs:element&gt;
+&lt;xs:element name=&quot;AAA&quot; type=&quot;xs:integer&quot;/&gt;
+&lt;xs:element name=&quot;p_aaa_1&quot; type=&quot;xs:integer&quot;/&gt;
+&lt;xs:element name=&quot;p_aaa&quot; type=&quot;xs:integer&quot;/&gt;
+&lt;/xs:sequence&gt;
+&lt;/xs:complexType&gt;
+&lt;/xs:element&gt;
+&lt;xs:element name=&quot;AAA&quot; type=&quot;xs:integer&quot;/&gt;
+&lt;xs:element name=&quot;p_aaa_1&quot; type=&quot;xs:integer&quot;/&gt;
+&lt;xs:element name=&quot;p_aaa&quot; type=&quot;xs:integer&quot;/&gt;
+&lt;xs:element name=&quot;BBB&quot; type=&quot;xs:integer&quot;/&gt;
+&lt;xs:element name=&quot;p_bbb&quot; type=&quot;xs:integer&quot;/&gt;
+&lt;xs:element name=&quot;p_bbb_1&quot; type=&quot;xs:integer&quot;/&gt;
+&lt;/xs:sequence&gt;&lt;/xs:complexType&gt;&lt;/xs:element&gt;
+&lt;/xs:sequence&gt;&lt;/xs:complexType&gt;&lt;/xs:element&gt;
+&lt;xs:simpleType name=&quot;decimal10_2&quot;&gt;&lt;xs:restriction base=&quot;xs:decimal&quot;&gt;&lt;xs:totalDigits value=&quot;10&quot;/&gt;&lt;xs:fractionDigits value=&quot;2&quot; fixed=&quot;true&quot;/&gt;&lt;/xs:restriction&gt;&lt;/xs:simpleType&gt;
+&lt;xs:simpleType name=&quot;data1&quot;&gt;&lt;xs:restriction base=&quot;xs:hexBinary&quot;&gt;&lt;xs:length value=&quot;1&quot;/&gt;&lt;/xs:restriction&gt;&lt;/xs:simpleType&gt;
+&lt;/xs:schema&gt;&lt;/XmlSchema&gt;
+&lt;Dataset xmlSchema=&quot;myschema&quot;&gt;
+ &lt;Row&gt;&lt;boolfield&gt;true&lt;/boolfield&gt;&lt;INT-1-FIELD&gt;127&lt;/INT-1-FIELD&gt;&lt;int2field&gt;32767&lt;/int2field&gt;&lt;int4field&gt;2147483647&lt;/int4field&gt;&lt;int8field&gt;9223372036854775807&lt;/int8field&gt;&lt;UNSIGNED-1-FIELD&gt;255&lt;/UNSIGNED-1-FIELD&gt;&lt;uint2field&gt;65535&lt;/uint2field&gt;&lt;uint4field&gt;4294967295&lt;/uint4field&gt;&lt;uint8field&gt;18446744073709551615&lt;/uint8field&gt;&lt;real4field&gt;3.141590118408203&lt;/real4field&gt;&lt;real8field&gt;2.718281828459045&lt;/real8field&gt;&lt;DECIMAL-FIELD&gt;123.45&lt;/DECIMAL-FIELD&gt;&lt;stringfield&gt;Test String&lt;/stringfield&gt;&lt;varstringfield&gt;Test VarString&lt;/varstringfield&gt;&lt;qstringfield&gt;TEST QSTRING&lt;/qstringfield&gt;&lt;utf8field&gt;Test UTF8 String&lt;/utf8field&gt;&lt;unicodefield&gt;Test Unicode String&lt;/unicodefield&gt;&lt;datafield&gt;0123456789ABCDEF&lt;/datafield&gt;&lt;SET-INT-FIELD&gt;1&lt;/SET-INT-FIELD&gt;&lt;SET-INT-FIELD&gt;2&lt;/SET-INT-FIELD&gt;&lt;SET-INT-FIELD&gt;3&lt;/SET-INT-FIELD&gt;&lt;SET-INT-FIELD&gt;4&lt;/SET-INT-FIELD&gt;&lt;SET-INT-FIELD&gt;5&lt;/SET-INT-FIELD&gt;&lt;setStringField&gt;apple&lt;/setStringField&gt;&lt;setStringField&gt;banana&lt;/setStringField&gt;&lt;setStringField&gt;cherry&lt;/setStringField&gt;&lt;reffield&gt;&lt;b1&gt;true&lt;/b1&gt;&lt;cc1&gt;&lt;CHILD-CHILD-U1&gt;255&lt;/CHILD-CHILD-U1&gt;&lt;d1&gt;test&lt;/d1&gt;&lt;b1&gt;false&lt;/b1&gt;&lt;/cc1&gt;&lt;sd1&gt;&lt;Item&gt;A1&lt;/Item&gt;&lt;Item&gt;74&lt;/Item&gt;&lt;/sd1&gt;&lt;AAA&gt;42&lt;/AAA&gt;&lt;p_aaa_1&gt;-42&lt;/p_aaa_1&gt;&lt;p_aaa&gt;314159&lt;/p_aaa&gt;&lt;/reffield&gt;&lt;AAA&gt;42&lt;/AAA&gt;&lt;p_aaa_1&gt;-42&lt;/p_aaa_1&gt;&lt;p_aaa&gt;314159&lt;/p_aaa&gt;&lt;BBB&gt;42&lt;/BBB&gt;&lt;p_bbb&gt;-42&lt;/p_bbb&gt;&lt;p_bbb_1&gt;314159&lt;/p_bbb_1&gt;&lt;/Row&gt;
+&lt;/Dataset&gt;</Result><Exceptions></Exceptions></Row>
+</Dataset>

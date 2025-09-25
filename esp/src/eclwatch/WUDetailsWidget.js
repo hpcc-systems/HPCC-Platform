@@ -367,7 +367,7 @@ define([
             this.checkIfClustersAllowed();
             this.checkThorLogStatus();
             this.statusNode = dom.byId(this.id + "WUStatus");
-            srcReact.themedRender(srcReact.WUStatus, { wuid: params.Wuid }, this.statusNode);
+            srcReact.lightThemedRender(srcReact.WUStatus, { wuid: params.Wuid }, this.statusNode);
 
             this.protected.on("click", function (evt) {
                 context._onSave();

@@ -105,6 +105,9 @@ void cancelReplicates(CActivityBase *activity, IPartDescriptor &partDesc);
 #define TW_External 0x04
 #define TW_RenameToPrimary 0x08
 #define TW_Temporary 0x10
+#define TW_JobTemp 0x20
+#define TW_Persist 0x40
+
 interface IPartDescriptor;
 IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc, unsigned twFlags, bool &compress, ICompressor *ecomp, ICopyFileProgress *iProgress, bool *aborted, StringBuffer *_locationName=NULL);
 

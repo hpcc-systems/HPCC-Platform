@@ -330,7 +330,8 @@ void CDiskWriteSlaveActivityBase::open()
     }
     processed = THORDATALINK_STARTED;
 
-    bool extend = 0 != (diskHelperBase->getFlags() & TDWextend);
+    unsigned helperFlags = diskHelperBase->getFlags();
+    bool extend = 0 != (helperFlags & TDWextend);
     if (extend)
         ActPrintLog("Extending file %s", fName.get());
 
@@ -346,8 +347,12 @@ void CDiskWriteSlaveActivityBase::open()
         twFlags |= TW_RenameToPrimary;
     if (extend||(external&&!query))
         twFlags |= TW_Extend;
-    if (diskHelperBase->getFlags() & TDXtemporary)
+    if (helperFlags & TDXtemporary)
         twFlags |= TW_Temporary;
+    if (helperFlags & TDXjobtemp)
+        twFlags |= TW_JobTemp;
+    if (helperFlags & TDWpersist)
+        twFlags |= TW_Persist;
 
     Owned<IFileIO> partOutputIO = createMultipleWrite(this, *partDesc, twFlags, compress, ecomp, this, &abortSoon, (external&&!query) ? &tempExternalName : NULL);
 
