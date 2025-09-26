@@ -14,6 +14,7 @@
 #include "jmetrics.hpp"
 #include "jlog.hpp"
 #include <regex>
+#include <cmath>
 
 using namespace hpccMetrics;
 
@@ -46,6 +47,9 @@ void HistogramMetric::recordMeasurement(__uint64 measurement)
 {
     CriticalBlock block(cs);
     sum += measurement;                // sum of all measurements
+    count++;                           // total count of measurements
+    double dMeasurement = static_cast<double>(measurement);
+    sumSquares += dMeasurement * dMeasurement;  // sum of squares for std dev
     findBucket(measurement).count++;   // count by buckets
 }
 
@@ -86,6 +90,23 @@ HistogramMetric::Bucket &HistogramMetric::findBucket(__uint64 measurement)
         }
     }
     return inf;
+}
+
+
+double HistogramMetric::queryRunningAverage() const
+{
+    CriticalBlock block(cs);
+    return count > 0 ? static_cast<double>(sum) / count : 0.0;
+}
+
+
+double HistogramMetric::queryStandardDeviation() const
+{
+    CriticalBlock block(cs);
+    if (count <= 1) return 0.0;
+    double mean = static_cast<double>(sum) / count;
+    double variance = (sumSquares - sum * mean) / count;
+    return variance > 0.0 ? sqrt(variance) : 0.0;
 }
 
 

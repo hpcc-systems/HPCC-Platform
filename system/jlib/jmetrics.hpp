@@ -23,6 +23,7 @@
 #include <memory>
 #include <thread>
 #include <unordered_set>
+#include <cmath>
 #include "jiface.hpp"
 #include "jptree.hpp"
 #include "platform.h"
@@ -113,6 +114,16 @@ interface IMetric
      * Query the unique id for the metric
      */
     virtual unsigned int queryId() const = 0;
+
+    /*
+     * Query the running average value for the metric
+     */
+    virtual double queryRunningAverage() const = 0;
+
+    /*
+     * Query the standard deviation for the metric
+     */
+    virtual double queryStandardDeviation() const = 0;
 };
 
 
@@ -132,6 +143,8 @@ public:
     virtual std::vector<__uint64> queryHistogramValues() const override { return {}; }
     virtual std::vector<__uint64> queryHistogramBucketLimits() const override { return {}; }
     unsigned int queryId() const { return myId; }
+    virtual double queryRunningAverage() const override { return 0.0; }
+    virtual double queryStandardDeviation() const override { return 0.0; }
 
 
 protected:
@@ -160,12 +173,39 @@ class jlib_decl MetricVal : public MetricBase
 {
 public:
     virtual __uint64 queryValue() const override { return value; }
+    virtual double queryRunningAverage() const override 
+    { 
+        CriticalBlock block(statsCritSec);
+        return count > 0 ? sum / count : 0.0; 
+    }
+    virtual double queryStandardDeviation() const override
+    {
+        CriticalBlock block(statsCritSec);
+        if (count <= 1) return 0.0;
+        double mean = sum / count;
+        double variance = (sumSquares - sum * mean) / count;
+        return variance > 0.0 ? sqrt(variance) : 0.0;
+    }
 
 protected:
     MetricVal(const char *_name, const char *_desc, MetricType _metricType, StatisticMeasure _units, const MetricMetaData &_metaData) :
         MetricBase(_name, _desc, _metricType, _units, _metaData) {}
 
+    void updateStats(__uint64 newValue)
+    {
+        CriticalBlock block(statsCritSec);
+        count++;
+        double dValue = static_cast<double>(newValue);
+        sum += dValue;
+        sumSquares += dValue * dValue;
+    }
+
+protected:
     RelaxedAtomic<__uint64> value{0};
+    mutable CriticalSection statsCritSec;
+    __uint64 count{0};
+    double sum{0.0};
+    double sumSquares{0.0};
 };
 
 
@@ -179,12 +219,15 @@ public:
         MetricVal{_name, _description, MetricType::METRICS_COUNTER, _units, _metaData}  { }
     void inc(uint64_t val)
     {
-        value.fetch_add(val);
+        __uint64 newValue = value.fetch_add(val) + val;
+        updateStats(newValue);
     }
 
     void fastInc(uint16_t val)
     {
         value.fastAdd(val);
+        __uint64 newValue = value.load();
+        updateStats(newValue);
     }
 };
 
@@ -200,12 +243,15 @@ public:
 
     void adjust(int64_t delta)
     {
-        value += delta;
+        __uint64 newValue = value += delta;
+        updateStats(newValue);
     }
 
     void fastAdjust(int64_t delta)
     {
         value.fastAdd(delta);
+        __uint64 newValue = value.load();
+        updateStats(newValue);
     }
 
     /*
@@ -214,6 +260,7 @@ public:
     void set(int64_t val)
     {
         value = val;
+        updateStats(static_cast<__uint64>(val));
     }
 };
 
@@ -275,6 +322,8 @@ public:
     void recordMeasurement(__uint64 measurement);
     virtual std::vector<__uint64> queryHistogramValues() const override;
     virtual std::vector<__uint64> queryHistogramBucketLimits() const override;
+    virtual double queryRunningAverage() const override;
+    virtual double queryStandardDeviation() const override;
 
 protected:
     struct Bucket
@@ -291,6 +340,8 @@ protected:
     mutable CriticalSection cs;
     Bucket inf{0};
     __uint64 sum{0};
+    __uint64 count{0};
+    double sumSquares{0.0};
 };
 
 

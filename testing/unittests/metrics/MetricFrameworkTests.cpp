@@ -20,6 +20,7 @@
 #include <cppunit/TestFixture.h>
 #include "unittests.hpp"
 #include <algorithm>
+#include <cmath>
 
 #include "jmetrics.hpp"
 
@@ -78,6 +79,7 @@ public:
         CPPUNIT_TEST(Test_metric_meta_data);
         CPPUNIT_TEST(Test_gauge_by_counters_metric);
         CPPUNIT_TEST(Test_histogram_metric);
+        CPPUNIT_TEST(Test_running_average_and_std_dev);
         CPPUNIT_TEST(Test_validate_unique_metric_ids);
     CPPUNIT_TEST_SUITE_END();
 
@@ -548,6 +550,62 @@ protected:
 
         bool result = ((expectedValue >= (value - error)) && (expectedValue <= (value + error)));
         CPPUNIT_ASSERT(result);
+    }
+
+    void Test_running_average_and_std_dev()
+    {
+        // Test Counter Metric running average and standard deviation
+        std::shared_ptr<CounterMetric> pCounter = std::make_shared<CounterMetric>("testcounter.runningavg", "Test counter for running average", SMeasureCount);
+
+        // Initially should be 0 for empty metric
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, pCounter->queryRunningAverage(), 0.0001);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, pCounter->queryStandardDeviation(), 0.0001);
+
+        // Add some values to test calculations
+        pCounter->inc(10);  // First value: 10
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(10.0, pCounter->queryRunningAverage(), 0.0001);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, pCounter->queryStandardDeviation(), 0.0001); // std dev is 0 for single value
+
+        pCounter->inc(20);  // Second value: 30 (cumulative), values are [10, 30]  
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(20.0, pCounter->queryRunningAverage(), 0.0001); // (10 + 30) / 2 = 20
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(10.0, pCounter->queryStandardDeviation(), 0.0001); // sqrt(((10-20)^2 + (30-20)^2) / 2) = sqrt(200/2) = 10
+
+        pCounter->inc(10);  // Third value: 40 (cumulative), values are [10, 30, 40]
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(26.666667, pCounter->queryRunningAverage(), 0.0001); // (10 + 30 + 40) / 3 = 80/3
+
+        // Test Gauge Metric running average and standard deviation
+        std::shared_ptr<GaugeMetric> pGauge = std::make_shared<GaugeMetric>("testgauge.runningavg", "Test gauge for running average", SMeasureCount);
+
+        // Initially should be 0 for empty metric
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, pGauge->queryRunningAverage(), 0.0001);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, pGauge->queryStandardDeviation(), 0.0001);
+
+        pGauge->set(5);   // Set to 5
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(5.0, pGauge->queryRunningAverage(), 0.0001);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, pGauge->queryStandardDeviation(), 0.0001);
+
+        pGauge->adjust(5); // Adjust to 10
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(7.5, pGauge->queryRunningAverage(), 0.0001); // (5 + 10) / 2
+
+        // Test Histogram Metric running average and standard deviation
+        std::vector<__uint64> bucketLimits{10, 20, 30};
+        std::shared_ptr<HistogramMetric> pHistogram = std::make_shared<HistogramMetric>("testhistogram.runningavg", "Test histogram for running average", SMeasureTimeNs, bucketLimits);
+
+        // Initially should be 0 for empty metric
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, pHistogram->queryRunningAverage(), 0.0001);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, pHistogram->queryStandardDeviation(), 0.0001);
+
+        // Record some measurements
+        pHistogram->recordMeasurement(5);   // Below first bucket
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(5.0, pHistogram->queryRunningAverage(), 0.0001);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, pHistogram->queryStandardDeviation(), 0.0001);
+
+        pHistogram->recordMeasurement(15);  // Between first and second bucket
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(10.0, pHistogram->queryRunningAverage(), 0.0001); // (5 + 15) / 2
+
+        pHistogram->recordMeasurement(25);  // Between second and third bucket
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(15.0, pHistogram->queryRunningAverage(), 0.0001); // (5 + 15 + 25) / 3
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(8.164966, pHistogram->queryStandardDeviation(), 0.0001); // std dev of [5, 15, 25]
     }
 
     void Test_validate_unique_metric_ids()
