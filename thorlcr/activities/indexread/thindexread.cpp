@@ -24,6 +24,7 @@
 #include "thdiskbase.ipp"
 #include "thindexread.ipp"
 
+static constexpr size32_t unknownConfigValue = (size32_t)-1;
 class CIndexReadBase : public CMasterActivity
 {
 protected:
@@ -179,7 +180,12 @@ protected:
                         rfn.getPath(remotePath);
                         unsigned crc = 0;
                         lastPart->getCrc(crc);
-                        keyIndex.setown(createKeyIndex(remotePath.str(), crc, false, 0));
+                        constexpr size32_t bufferSize1mb = 0x100000;
+                        size32_t blockedIOSize = bufferSize1mb;
+                        unsigned __int64 value;
+                        if (findPlaneAttrFromPath(remotePath, BlockedRandomIO, bufferSize1mb, value))
+                            blockedIOSize = (size32_t)value;
+                        keyIndex.setown(createKeyIndex(remotePath.str(), crc, false, blockedIOSize));
                         break;
                     }
                 }
