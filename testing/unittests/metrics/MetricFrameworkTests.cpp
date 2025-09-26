@@ -80,6 +80,7 @@ public:
         CPPUNIT_TEST(Test_gauge_by_counters_metric);
         CPPUNIT_TEST(Test_histogram_metric);
         CPPUNIT_TEST(Test_running_average_and_std_dev);
+        CPPUNIT_TEST(Test_optional_aggregated_stats);
         CPPUNIT_TEST(Test_validate_unique_metric_ids);
     CPPUNIT_TEST_SUITE_END();
 
@@ -554,8 +555,8 @@ protected:
 
     void Test_running_average_and_std_dev()
     {
-        // Test Counter Metric running average and standard deviation
-        std::shared_ptr<CounterMetric> pCounter = std::make_shared<CounterMetric>("testcounter.runningavg", "Test counter for running average", SMeasureCount);
+        // Test Counter Metric running average and standard deviation (with stats enabled)
+        std::shared_ptr<CounterMetric> pCounter = std::make_shared<CounterMetric>("testcounter.runningavg", "Test counter for running average", SMeasureCount, MetricMetaData(), true);
 
         // Initially should be 0 for empty metric
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, pCounter->queryRunningAverage(), 0.0001);
@@ -574,8 +575,8 @@ protected:
         double expectedAvg = (10.0 + 30.0 + 40.0) / 3.0; // 26.666667
         CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedAvg, pCounter->queryRunningAverage(), 0.0001);
 
-        // Test Gauge Metric running average and standard deviation
-        std::shared_ptr<GaugeMetric> pGauge = std::make_shared<GaugeMetric>("testgauge.runningavg", "Test gauge for running average", SMeasureCount);
+        // Test Gauge Metric running average and standard deviation (with stats enabled)
+        std::shared_ptr<GaugeMetric> pGauge = std::make_shared<GaugeMetric>("testgauge.runningavg", "Test gauge for running average", SMeasureCount, MetricMetaData(), true);
 
         // Initially should be 0 for empty metric
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, pGauge->queryRunningAverage(), 0.0001);
@@ -588,9 +589,9 @@ protected:
         pGauge->adjust(5); // Adjust to 10
         CPPUNIT_ASSERT_DOUBLES_EQUAL(7.5, pGauge->queryRunningAverage(), 0.0001); // (5 + 10) / 2
 
-        // Test Histogram Metric running average and standard deviation
+        // Test Histogram Metric running average and standard deviation (with stats enabled)
         std::vector<__uint64> bucketLimits{10, 20, 30};
-        std::shared_ptr<HistogramMetric> pHistogram = std::make_shared<HistogramMetric>("testhistogram.runningavg", "Test histogram for running average", SMeasureTimeNs, bucketLimits);
+        std::shared_ptr<HistogramMetric> pHistogram = std::make_shared<HistogramMetric>("testhistogram.runningavg", "Test histogram for running average", SMeasureTimeNs, bucketLimits, MetricMetaData(), true);
 
         // Initially should be 0 for empty metric
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, pHistogram->queryRunningAverage(), 0.0001);
@@ -607,6 +608,62 @@ protected:
         pHistogram->recordMeasurement(25);  // Between second and third bucket
         CPPUNIT_ASSERT_DOUBLES_EQUAL(15.0, pHistogram->queryRunningAverage(), 0.0001); // (5 + 15 + 25) / 3
         CPPUNIT_ASSERT_DOUBLES_EQUAL(8.164966, pHistogram->queryStandardDeviation(), 0.0001); // std dev of [5, 15, 25]
+    }
+
+    void Test_optional_aggregated_stats()
+    {
+        // Test that stats are disabled by default (backward compatibility)
+        std::shared_ptr<CounterMetric> pCounterNoStats = std::make_shared<CounterMetric>("testcounter.nostats", "Test counter without stats", SMeasureCount);
+        
+        pCounterNoStats->inc(10);
+        pCounterNoStats->inc(20);
+        
+        // Should return 0.0 when aggregated stats are disabled
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, pCounterNoStats->queryRunningAverage(), 0.0001);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, pCounterNoStats->queryStandardDeviation(), 0.0001);
+        
+        // Test that stats work when explicitly enabled
+        std::shared_ptr<CounterMetric> pCounterWithStats = std::make_shared<CounterMetric>("testcounter.withstats", "Test counter with stats", SMeasureCount, MetricMetaData(), true);
+        
+        pCounterWithStats->inc(10); // value = 10
+        pCounterWithStats->inc(20); // value = 30
+        
+        // Should calculate stats when enabled
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(20.0, pCounterWithStats->queryRunningAverage(), 0.0001); // (10 + 30) / 2
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(10.0, pCounterWithStats->queryStandardDeviation(), 0.0001);
+        
+        // Test Gauge metric with stats disabled
+        std::shared_ptr<GaugeMetric> pGaugeNoStats = std::make_shared<GaugeMetric>("testgauge.nostats", "Test gauge without stats", SMeasureCount);
+        pGaugeNoStats->set(100);
+        pGaugeNoStats->adjust(50);
+        
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, pGaugeNoStats->queryRunningAverage(), 0.0001);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, pGaugeNoStats->queryStandardDeviation(), 0.0001);
+        
+        // Test Gauge metric with stats enabled
+        std::shared_ptr<GaugeMetric> pGaugeWithStats = std::make_shared<GaugeMetric>("testgauge.withstats", "Test gauge with stats", SMeasureCount, MetricMetaData(), true);
+        pGaugeWithStats->set(100);
+        pGaugeWithStats->adjust(50); // value = 150
+        
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(125.0, pGaugeWithStats->queryRunningAverage(), 0.0001); // (100 + 150) / 2
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(25.0, pGaugeWithStats->queryStandardDeviation(), 0.0001);
+        
+        // Test Histogram metric with stats disabled
+        std::vector<__uint64> bucketLimits{10, 20, 30};
+        std::shared_ptr<HistogramMetric> pHistogramNoStats = std::make_shared<HistogramMetric>("testhistogram.nostats", "Test histogram without stats", SMeasureTimeNs, bucketLimits);
+        pHistogramNoStats->recordMeasurement(5);
+        pHistogramNoStats->recordMeasurement(15);
+        
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, pHistogramNoStats->queryRunningAverage(), 0.0001);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, pHistogramNoStats->queryStandardDeviation(), 0.0001);
+        
+        // Test Histogram metric with stats enabled
+        std::shared_ptr<HistogramMetric> pHistogramWithStats = std::make_shared<HistogramMetric>("testhistogram.withstats", "Test histogram with stats", SMeasureTimeNs, bucketLimits, MetricMetaData(), true);
+        pHistogramWithStats->recordMeasurement(5);
+        pHistogramWithStats->recordMeasurement(15);
+        
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(10.0, pHistogramWithStats->queryRunningAverage(), 0.0001); // (5 + 15) / 2
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(5.0, pHistogramWithStats->queryStandardDeviation(), 0.0001);
     }
 
     void Test_validate_unique_metric_ids()

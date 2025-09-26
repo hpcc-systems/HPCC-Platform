@@ -32,8 +32,8 @@ MODULE_EXIT()
 // MetricBase static member
 std::atomic<unsigned int> MetricBase::metricId = 0;
 
-HistogramMetric::HistogramMetric(const char *_name, const char *_desc, StatisticMeasure _units, const std::vector<__uint64> &_bucketLimits, const MetricMetaData &_metaData) :
-    MetricBase(_name, _desc, MetricType::METRICS_HISTOGRAM, _units, _metaData)
+HistogramMetric::HistogramMetric(const char *_name, const char *_desc, StatisticMeasure _units, const std::vector<__uint64> &_bucketLimits, const MetricMetaData &_metaData, bool _enableAggregatedStats) :
+    MetricBase(_name, _desc, MetricType::METRICS_HISTOGRAM, _units, _metaData), enableAggregatedStats(_enableAggregatedStats)
 {
     buckets.reserve(_bucketLimits.size());
     for (auto &b: _bucketLimits)
@@ -47,10 +47,12 @@ void HistogramMetric::recordMeasurement(__uint64 measurement)
 {
     CriticalBlock block(cs);
     sum += measurement;                // sum of all measurements
-    count++;                           // total count of measurements
-    double dMeasurement = static_cast<double>(measurement);
-    sumSquares += dMeasurement * dMeasurement;  // sum of squares for std dev
     findBucket(measurement).count++;   // count by buckets
+    if (enableAggregatedStats) {
+        count++;                       // total count of measurements for stats
+        double dMeasurement = static_cast<double>(measurement);
+        sumSquares += dMeasurement * dMeasurement;  // sum of squares for std dev
+    }
 }
 
 
@@ -95,6 +97,7 @@ HistogramMetric::Bucket &HistogramMetric::findBucket(__uint64 measurement)
 
 double HistogramMetric::queryRunningAverage() const
 {
+    if (!enableAggregatedStats) return 0.0;
     CriticalBlock block(cs);
     return count > 0 ? static_cast<double>(sum) / count : 0.0;
 }
@@ -102,6 +105,7 @@ double HistogramMetric::queryRunningAverage() const
 
 double HistogramMetric::queryStandardDeviation() const
 {
+    if (!enableAggregatedStats) return 0.0;
     CriticalBlock block(cs);
     if (count <= 1) return 0.0;
     double mean = static_cast<double>(sum) / count;
@@ -110,8 +114,8 @@ double HistogramMetric::queryStandardDeviation() const
 }
 
 
-ScaledHistogramMetric::ScaledHistogramMetric(const char *_name, const char *_desc, StatisticMeasure _units, const std::vector<__uint64> &_bucketLimits, double _limitsToMeasurementUnitsScaleFactor, const MetricMetaData &_metaData) :
-    HistogramMetric{_name, _desc, _units, _bucketLimits, _metaData}
+ScaledHistogramMetric::ScaledHistogramMetric(const char *_name, const char *_desc, StatisticMeasure _units, const std::vector<__uint64> &_bucketLimits, double _limitsToMeasurementUnitsScaleFactor, const MetricMetaData &_metaData, bool _enableAggregatedStats) :
+    HistogramMetric{_name, _desc, _units, _bucketLimits, _metaData, _enableAggregatedStats}
 {
     for (auto &b: buckets)
     {
@@ -528,6 +532,50 @@ std::shared_ptr<ScaledHistogramMetric> hpccMetrics::registerCyclesToNsScaledHist
 {
     double nsToCyclesScaleFactor = 1.0 / getCycleToNanoScale();
     std::shared_ptr<ScaledHistogramMetric> pMetric = std::shared_ptr<ScaledHistogramMetric>(new ScaledHistogramMetric(name, desc, SMeasureTimeNs, bucketLimits, nsToCyclesScaleFactor, metaData));
+    queryMetricsManager().addMetric(pMetric);
+    return pMetric;
+}
+
+
+// Overloaded versions with enableAggregatedStats parameter
+std::shared_ptr<CounterMetric> hpccMetrics::registerCounterMetric(const char *name, const char* desc, StatisticMeasure units, const MetricMetaData &metaData, bool enableAggregatedStats)
+{
+    std::shared_ptr<CounterMetric> pMetric = std::shared_ptr<CounterMetric>(new CounterMetric(name, desc, units, metaData, enableAggregatedStats));
+    queryMetricsManager().addMetric(pMetric);
+    return pMetric;
+}
+
+
+std::shared_ptr<GaugeMetric> hpccMetrics::registerGaugeMetric(const char *name, const char* desc, StatisticMeasure units, const MetricMetaData &metaData, bool enableAggregatedStats)
+{
+    std::shared_ptr<GaugeMetric> pMetric = std::shared_ptr<GaugeMetric>(new GaugeMetric(name, desc, units, metaData, enableAggregatedStats));
+    queryMetricsManager().addMetric(pMetric);
+    return pMetric;
+}
+
+
+std::shared_ptr<GaugeMetricFromCounters> hpccMetrics::registerGaugeFromCountersMetric(const char *name, const char* desc, StatisticMeasure units,
+                                                                         const std::shared_ptr<CounterMetric> &pBeginCounter, const std::shared_ptr<CounterMetric> &pEndCounter,
+                                                                         const MetricMetaData &metaData, bool enableAggregatedStats)
+{
+    std::shared_ptr<GaugeMetricFromCounters> pMetric = std::shared_ptr<GaugeMetricFromCounters>(new GaugeMetricFromCounters(name, desc, units, pBeginCounter, pEndCounter, metaData, enableAggregatedStats));
+    queryMetricsManager().addMetric(pMetric);
+    return pMetric;
+}
+
+
+std::shared_ptr<HistogramMetric> hpccMetrics::registerHistogramMetric(const char *name, const char* desc, StatisticMeasure units, const std::vector<__uint64> &bucketLimits, const MetricMetaData &metaData, bool enableAggregatedStats)
+{
+    std::shared_ptr<HistogramMetric> pMetric = std::shared_ptr<HistogramMetric>(new HistogramMetric(name, desc, units, bucketLimits, metaData, enableAggregatedStats));
+    queryMetricsManager().addMetric(pMetric);
+    return pMetric;
+}
+
+
+std::shared_ptr<ScaledHistogramMetric> hpccMetrics::registerScaledHistogramMetric(const char *name, const char* desc, StatisticMeasure units, const std::vector<__uint64> &bucketLimits,
+                                                                               double limitsToMeasurementUnitsScaleFactor, const MetricMetaData &metaData, bool enableAggregatedStats)
+{
+    std::shared_ptr<ScaledHistogramMetric> pMetric = std::shared_ptr<ScaledHistogramMetric>(new ScaledHistogramMetric(name, desc, units, bucketLimits, limitsToMeasurementUnitsScaleFactor, metaData, enableAggregatedStats));
     queryMetricsManager().addMetric(pMetric);
     return pMetric;
 }
