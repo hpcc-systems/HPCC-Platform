@@ -2746,7 +2746,7 @@ public:
         return new CServerRemoteTree(mb);
     }
 
-    IPropertyTree *create(IBufferedSerialInputStream &in) override
+    virtual IPropertyTree *create(IBufferedSerialInputStream &in) override
     {
         CServerRemoteTree *tree = new CServerRemoteTree();
         tree->deserializeFromStream(in);
