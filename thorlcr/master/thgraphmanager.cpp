@@ -1154,6 +1154,8 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         cost_type cost = money2cost_type(calculateThorCost(nanoToMilli(graphTimeNs), queryNodeClusterWidth()));
         if (cost)
             wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphScope, StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
+        runWorkunitAnalyser(workunit, getComponentConfigSP(), wfid, graphName, false, calculateThorCostPerHour(queryNodeClusterWidth()));
+
         if (globals->getPropBool("@watchdogProgressEnabled"))
             queryDeMonServer()->updateAggregates(wu);
         // clear engine session, otherwise agent may consider a failure beyond this point for an unrelated job caused by this instance
@@ -1179,7 +1181,6 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
 
     fatalHdlr->clear();
 
-    runWorkunitAnalyser(workunit, getComponentConfigSP(), graphName, false, calculateThorCostPerHour(queryNodeClusterWidth()));
     setWuid(NULL);
     return allDone;
 }
