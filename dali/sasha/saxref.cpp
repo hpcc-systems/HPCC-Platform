@@ -1180,6 +1180,10 @@ public:
         cDirDesc *p = findDirectory(pdir.str());
         if (!p)
             return NULL;
+        // When the cDirDesc hierarchy is built, stripe directories are excluded from the path (see scanDirectories' casyncfor::Do),
+        // so prevent incorrect traversal into striped directory structures and return root instead
+        if (isPlaneStriped&&p==root&&tail[0]=='d'&&readDigits(tail+1)!=0)
+            return p;
         return p->lookupDir(tail,NULL);
     }
 
