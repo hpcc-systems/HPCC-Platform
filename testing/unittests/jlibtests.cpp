@@ -3412,6 +3412,7 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIPTTest, "JlibIPTTest");
 #include "jio.hpp"
 #include "jstring.hpp"
 #include <string>
+#include "jstats.h"
 
 IPropertyTree *createCompatibilityConfigPropertyTree()
 {
@@ -4375,6 +4376,9 @@ class JlibStatsTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(JlibStatsTest);
         CPPUNIT_TEST(test);
+        CPPUNIT_TEST(Test_thresholdStatPointer);
+        CPPUNIT_TEST(Test_thresholdStat);
+        CPPUNIT_TEST(Test_thresholdStatReset);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -4400,6 +4404,100 @@ public:
         CPPUNIT_ASSERT_EQUAL(U64C(1608899696789000), readCheckStatisticValue("2020-12-25T12:34:56.789Z!", SMeasureTimestampUs));
         CPPUNIT_ASSERT_EQUAL(std::string("2020-12-25T12:34:56.789Z"), std::string(formatStatistic(temp.clear(), U64C(1608899696789000), SMeasureTimestampUs)));
         CPPUNIT_ASSERT_EQUAL(U64C(1608899696789000), readCheckStatisticValue("1608899696789000!", SMeasureTimestampUs));
+    }
+
+    void Test_thresholdStatPointer()
+    {
+        // Create a shared ThresholdStat instance for this component
+        auto thresholdStat = makeSharedThresholdStat();
+
+        // Record some values
+        thresholdStat->recordValue(100);
+        thresholdStat->recordValue(120);
+        thresholdStat->recordValue(80);
+
+        // Query statistics
+        double avg = thresholdStat->queryRunningAverage();
+        double stddev = thresholdStat->queryStandardDeviation();
+
+        // Check if a new value is an outlier (e.g., more than 2 stddev from mean)
+        __uint64 newValue = 200;
+        double deviations = thresholdStat->getDeviations(newValue);
+        CPPUNIT_ASSERT (fabs(deviations) > 2.0); // 200 is more than 2 stddev from mean
+    }
+    void Test_thresholdStat()
+    {
+        // Test ThresholdStat for tracking numeric values with statistical aggregation
+        std::shared_ptr<ThresholdStat> pThreshold = std::make_shared<ThresholdStat>();
+
+        // Initially should be empty
+        CPPUNIT_ASSERT_EQUAL((__uint64)0, pThreshold->queryCount()); // count is 0
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, pThreshold->queryRunningAverage(), 0.0001);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, pThreshold->queryStandardDeviation(), 0.0001);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, pThreshold->getDeviations(100), 0.0001); // no data yet
+
+        // Record first value
+        pThreshold->recordValue(100);
+        CPPUNIT_ASSERT_EQUAL((__uint64)1, pThreshold->queryCount()); // count is 1
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(100.0, pThreshold->queryRunningAverage(), 0.0001);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, pThreshold->queryStandardDeviation(), 0.0001); // std dev is 0 for single value
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, pThreshold->getDeviations(100), 0.0001); // stddev is 0, so returns 0
+
+        // Record second value
+        pThreshold->recordValue(200);
+        CPPUNIT_ASSERT_EQUAL((__uint64)2, pThreshold->queryCount()); // count is 2
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(150.0, pThreshold->queryRunningAverage(), 0.0001); // (100 + 200) / 2
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(50.0, pThreshold->queryStandardDeviation(), 0.0001); // sqrt(((100-150)^2 + (200-150)^2) / 2)
+
+        // Test getDeviations with value at the mean
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, pThreshold->getDeviations(150), 0.0001); // 150 is at mean, 0 deviations
+
+        // Test getDeviations with value 1 stddev above mean
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(1.0, pThreshold->getDeviations(200), 0.0001); // (200-150)/50 = 1.0
+
+        // Test getDeviations with value 1 stddev below mean
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(-1.0, pThreshold->getDeviations(100), 0.0001); // (100-150)/50 = -1.0
+
+        // Record third value
+        pThreshold->recordValue(150);
+        CPPUNIT_ASSERT_EQUAL((__uint64)3, pThreshold->queryCount()); // count is 3
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(150.0, pThreshold->queryRunningAverage(), 0.0001); // (100 + 200 + 150) / 3
+        double expectedStdDev = sqrt(((100.0-150.0)*(100.0-150.0) + (200.0-150.0)*(200.0-150.0) + (150.0-150.0)*(150.0-150.0)) / 3.0);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedStdDev, pThreshold->queryStandardDeviation(), 0.0001);
+    }
+
+    void Test_thresholdStatReset()
+    {
+        // Create a ThresholdStatistic with unit StatisticMeasure::Count
+        std::shared_ptr<ThresholdStat> pThreshold = std::make_shared<ThresholdStat>();
+
+        // Record some values
+        pThreshold->recordValue(10);
+        pThreshold->recordValue(20);
+        pThreshold->recordValue(30);
+
+        // Check that statistics are non-zero
+        CPPUNIT_ASSERT(pThreshold->queryCount() == 3);
+        CPPUNIT_ASSERT(pThreshold->queryRunningAverage() > 0.0);
+        CPPUNIT_ASSERT(pThreshold->queryStandardDeviation() > 0.0);
+
+        // Reset the metric
+        pThreshold->reset();
+
+        // After reset, statistics should be zero
+        CPPUNIT_ASSERT(pThreshold->queryCount() == 0);
+        CPPUNIT_ASSERT(pThreshold->queryRunningAverage() == 0.0);
+        CPPUNIT_ASSERT(pThreshold->queryStandardDeviation() == 0.0);
+
+        // Record some values
+        pThreshold->recordValue(10);
+        pThreshold->recordValue(20);
+        pThreshold->recordValue(30);
+
+        // Check that statistics are non-zero
+        CPPUNIT_ASSERT(pThreshold->queryCount() == 3);
+        CPPUNIT_ASSERT(pThreshold->queryRunningAverage() > 0.0);
+        CPPUNIT_ASSERT(pThreshold->queryStandardDeviation() > 0.0);
     }
 };
 
