@@ -927,7 +927,7 @@ thor:
   #worker:
   #  cost:
   #    perCpu: 0.113
-  #eclAgent:
+  #eclagent:
   #  cost:
   #    perCpu: 0.053
   #egress: engineEgress

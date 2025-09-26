@@ -14227,9 +14227,9 @@ static double getCostCpuHour(const char * subComponentName = nullptr)
     {
         VStringBuffer subComponentSection("%s/cost/@perCpu", subComponentName);
         double costCpuHour = getComponentConfigSP()->getPropReal(subComponentSection.str(), -1.0);
-        if (costCpuHour >= 0.0)
-            return costCpuHour;
-        // don't have sub component cost, drop-through to use component/global cost values
+        if (costCpuHour < 0.0)
+            return 0.0;
+        return costCpuHour;
     }
     double costCpuHour = 0.0;
     if (getComponentConfigSP()->hasProp("cost/@perCpu"))

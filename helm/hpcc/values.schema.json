@@ -2902,9 +2902,6 @@
         "eclagent": {
           "$ref": "#/definitions/thorSubComponent"
         },
-        "cost": {
-          "$ref" : "#/definitions/componentCost"
-        },
         "expert": {
           "$ref": "#/definitions/expert"
         },
