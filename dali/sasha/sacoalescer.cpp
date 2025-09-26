@@ -29,6 +29,8 @@ MODULE_EXIT()
 
 void coalesceDatastore(IPropertyTree *coalesceProps, bool force)
 {
+    assertex(coalesceProps);
+
     try
     {
         StringBuffer dataPath, backupPath;
@@ -48,14 +50,16 @@ void coalesceDatastore(IPropertyTree *coalesceProps, bool force)
 
         offset_t minDeltaSize = force?0:coalesceProps->getPropInt64("@minDeltaSize", DEFAULT_MINDELTASIZE);
 
+        bool saveBinary = confProps.getPropBool("Client/@saveBinary", false);
+        bool saveAsync = confProps.getPropBool("Client/@saveAsync", true);
+
         for (;;) {
             PROGLOG("COALESCER: dataPath=%s, backupPath=%s, minDeltaSize = %" I64F "dK", dataPath.str(), backupPath.str(), (unsigned __int64) minDeltaSize);
             unsigned configFlags = SH_External|SH_CheckNewDelta;
             configFlags |= coalesceProps->getPropBool("@recoverFromIncErrors", false) ? SH_RecoverFromIncErrors : 0;
             configFlags |= coalesceProps->getPropBool("@backupErrorFiles", true) ? SH_BackupErrorFiles : 0;
-            bool saveBinary = querySDS().queryProperties().getPropBool("Client/@saveBinary", false);
             bool stopped;
-            Owned<IStoreHelper> iStoreHelper = createStoreHelper(NULL, dataPath, backupPath.str(), configFlags, keepStores, 5000, &stopped, saveBinary);
+            Owned<IStoreHelper> iStoreHelper = createStoreHelper(NULL, dataPath, backupPath.str(), configFlags, keepStores, 5000, &stopped, saveBinary, saveAsync);
             unsigned baseEdition = iStoreHelper->queryCurrentEdition();
 
             if (minDeltaSize)
