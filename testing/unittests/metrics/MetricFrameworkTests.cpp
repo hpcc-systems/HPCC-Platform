@@ -566,12 +566,13 @@ protected:
         CPPUNIT_ASSERT_DOUBLES_EQUAL(10.0, pCounter->queryRunningAverage(), 0.0001);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, pCounter->queryStandardDeviation(), 0.0001); // std dev is 0 for single value
 
-        pCounter->inc(20);  // Second value: 30 (cumulative), values are [10, 30]  
+        pCounter->inc(20);  // Second value: 30 (cumulative), values tracked are [10, 30]  
         CPPUNIT_ASSERT_DOUBLES_EQUAL(20.0, pCounter->queryRunningAverage(), 0.0001); // (10 + 30) / 2 = 20
         CPPUNIT_ASSERT_DOUBLES_EQUAL(10.0, pCounter->queryStandardDeviation(), 0.0001); // sqrt(((10-20)^2 + (30-20)^2) / 2) = sqrt(200/2) = 10
 
-        pCounter->inc(10);  // Third value: 40 (cumulative), values are [10, 30, 40]
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(26.666667, pCounter->queryRunningAverage(), 0.0001); // (10 + 30 + 40) / 3 = 80/3
+        pCounter->inc(10);  // Third value: 40 (cumulative), values tracked are [10, 30, 40]
+        double expectedAvg = (10.0 + 30.0 + 40.0) / 3.0; // 26.666667
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedAvg, pCounter->queryRunningAverage(), 0.0001);
 
         // Test Gauge Metric running average and standard deviation
         std::shared_ptr<GaugeMetric> pGauge = std::make_shared<GaugeMetric>("testgauge.runningavg", "Test gauge for running average", SMeasureCount);

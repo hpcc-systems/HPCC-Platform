@@ -25,6 +25,7 @@
 #include <unordered_set>
 #include <cmath>
 #include "jiface.hpp"
+#include "jmutex.hpp"
 #include "jptree.hpp"
 #include "platform.h"
 #include "jstatcodes.h"
