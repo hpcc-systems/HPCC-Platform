@@ -22,9 +22,12 @@
 #include "jlib.hpp"
 #include "jexcept.hpp"
 #include "jmutex.hpp"
+#include "jatomic.hpp"
 #include <vector>
 #include <initializer_list>
 #include <map>
+#include <cmath>
+#include <memory>
 
 #include "jstatcodes.h"
 
@@ -1043,4 +1046,82 @@ inline double calcCost(double ratePerHour, unsigned __int64 ms) { return ratePer
 inline double calcCostNs(double ratePerHour, unsigned __int64 ns) { return ratePerHour * ns / 1000000000 / 3600; }
 extern jlib_decl StringBuffer & formatMoney(StringBuffer &out, unsigned __int64 value);
 
+/*
+ * ThresholdStat
+ *
+ * Standalone metric type designed for tracking numeric values such as transaction latency,
+ * response times, or other measurements where statistical analysis is needed.
+ *
+ * This metric uses Welford’s online algorithm for running mean and variance, providing
+ * numerically stable and efficient calculation of average and standard deviation without
+ * storing historical data. It supports outlier detection via deviation calculations and
+ * can be cleared to reset all statistics.
+ */
+
+/*
+ * Performance Design Notes:
+ * - Uses RelaxedAtomic<__uint64> for count to enable lock-free queryCount() operations
+ * - recordValue(double) accepts native floating-point values without conversion overhead
+ * - Critical sections protect both count increment and mean/M2 updates to ensure Welford's
+ *   algorithm correctness - count and statistical updates must be applied in sequential order
+ * - Supports implicit conversion from integer types for caller convenience
+ * - Memory layout groups related fields together without forced alignment since mean/M2
+ *   are always accessed together under the same lock
+ *
+ * Thread Safety:
+ * - queryCount() is lock-free and safe for concurrent access
+ * - recordValue() uses critical section to ensure sequential application of Welford updates
+ * - Other query operations use minimal critical sections for mathematical correctness
+ * - Multiple threads can safely record values and query statistics concurrently
+ */
+class ThresholdStat
+{
+public:
+    __uint64 queryCount() const  // Lock-free operation using RelaxedAtomic
+    {
+        return count.load();
+    }
+
+    void recordValue(double value)  // Accepts double directly, supports implicit conversion from integers
+    {
+        CriticalBlock block(cs);
+        __uint64 newCount = count.add_fetch(1);
+        double delta = value - mean;
+        mean += delta / newCount;
+        double delta2 = value - mean;
+        M2 += delta * delta2;
+    }
+
+    // Performance optimization: Get multiple statistics in single lock
+    void queryStatistics(__uint64 & outCount, double & outMean, double & outStdDev) const
+    {
+        CriticalBlock block(cs);  // Single lock for coordinated reads
+
+        outCount = count.load();
+
+        outMean = mean;
+        outStdDev = (outCount > 1) ? sqrt(M2 / outCount) : 0.0;
+    }
+
+    void clear()
+    {
+        CriticalBlock block(cs);
+        count.store(0);
+        mean = 0.0;
+        M2 = 0.0;
+    }
+
+private:
+    // Memory layout: group frequently accessed data together
+    RelaxedAtomic<__uint64> count{0};  // Most frequently accessed, keep first
+    mutable CriticalSection cs;        // Only for coordinated mean/M2 updates
+    // Welford algorithm state - accessed together under same lock
+    double mean{0.0};                  // Running mean
+    double M2{0.0};                    // Running sum of squared differences
+};
+
+inline std::shared_ptr<ThresholdStat> makeSharedThresholdStat()
+{
+    return std::shared_ptr<ThresholdStat>(new ThresholdStat());
+}
 #endif
