@@ -19,8 +19,13 @@
 #define AZURE_API_UTILS_HPP
 
 #include "jlib.hpp"
+#include "jlog.hpp"
+
 #include <azure/core.hpp>
 #include <azure/core/http/http.hpp>
+#include <azure/storage/blobs.hpp>
+#include <azure/storage/files/shares.hpp>
+
 #include <exception>
 
 /*

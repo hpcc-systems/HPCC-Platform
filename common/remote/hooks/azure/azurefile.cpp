@@ -29,7 +29,6 @@
 #include "azureapiutils.hpp"
 
 #include <azure/core.hpp>
-#include <azure/storage/files/shares.hpp>
 #include <azure/core/base64.hpp>
 
 using namespace Azure::Storage;
