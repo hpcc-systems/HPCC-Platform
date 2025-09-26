@@ -99,7 +99,7 @@ bool ElasticMetricSink::getHostConfig(const IPropertyTree *pSettingsTree)
         PROGLOG("Retrieving ElasticSearch host authentication username/password from secrets tree '%s', from vault '%s'",
                credentialsSecretKey.str(), !credentialsVaultId.isEmpty() ? credentialsVaultId.str() : "");
 
-        Owned<const IPropertyTree> secretTree(getSecret("authn", credentialsSecretKey.str(), credentialsVaultId, nullptr));
+        Owned<const IPropertyTree> secretTree(getSecret("system", credentialsSecretKey.str(), credentialsVaultId, nullptr));
         if (secretTree == nullptr)
         {
             WARNLOG("ElasticMetricSink: Unable to load secret tree '%s', from vault '%s'", credentialsSecretKey.str(),
