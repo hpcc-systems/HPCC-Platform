@@ -26,6 +26,9 @@
 #include "jmutex.hpp"
 #include "jtime.hpp"
 #include "jutil.hpp"
+#include "jthread.hpp"
+#include "jsem.hpp"
+#include "jlog.hpp"
 #include <stdio.h>
 #include <time.h>
 #include <atomic>
@@ -46,6 +49,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/klog.h>
+#include <sys/wait.h>
+#include <signal.h>
 #include <dirent.h>
 #endif
 #ifdef __APPLE__
@@ -4420,3 +4425,272 @@ jlib_decl bool printLsOf(unsigned pid)
     return true;
 }
 
+//---------------------------------------------------------------------------------------------------------------------
+// Memory monitoring and core dump functionality
+void generateCoreDump()
+{
+#ifdef __linux__
+    pid_t parentPid = getpid();
+
+    // Reaper process creation
+    pid_t reaperPid = fork();
+    if (reaperPid == 0)
+    {
+        // Reaper: set new pgid for self, so when coredump thread suspends parent, we aren't suspended too
+        if (setpgid(0, 0) == -1)
+            WARNLOG("generateCoreDump: Reaper pid %d failed to set PGID", reaperPid);
+
+        pid_t coreDumpPid = fork();
+        if (0 == coreDumpPid)
+        {
+            signal(SIGABRT, SIG_DFL);
+            raise(SIGABRT);
+            _exit(1); // shouldn't reach here
+        }
+        else if (coreDumpPid < 0)
+        {
+            WARNLOG("generateCoreDump: Failed to fork core dump process");
+            _exit(1); // shouldn't reach here
+        }
+
+        // Reaper: waits for coreDumpPid
+        int status;
+        waitpid(coreDumpPid, &status, 0);
+        WARNLOG("generateCoreDump: Core dump pid %d exited with status %d", coreDumpPid, status);
+        // Reaper: resume parent pid
+        if (kill(parentPid, SIGCONT) == -1)
+        {
+            int errsv = errno;
+            WARNLOG("generateCoreDump: Failed to send SIGCONT to parent pid %d, errno=%d (%s)", parentPid, errsv, strerror(errsv));
+        }
+
+        _exit(0);
+    }
+    else if (reaperPid < 0)
+    {
+        WARNLOG("generateCoreDump: Failed to fork reaper process");
+        return;
+    }
+
+    // Parent suspends itself, waiting for SIGCONT from reaper
+    WARNLOG("generateCoreDump: suspending self with SIGSTOP");
+    if (kill(parentPid, SIGSTOP) == -1)
+    {
+        int errsv = errno;
+        WARNLOG("generateCoreDump: Failed to send SIGSTOP to parent pid %d, errno=%d (%s)", parentPid, errsv, strerror(errsv));
+    }
+    // Parent waits for reaper to exit
+    int status;
+    waitpid(reaperPid, &status, 0);
+    WARNLOG("generateCoreDump: Reaper pid %d exited with status %d", reaperPid, status);
+#else
+    WARNLOG("generateCoreDump: Core dump generation not supported\n");
+#endif
+}
+
+
+class CMemoryMonitor : public CSimpleInterfaceOf<IMemoryMonitor>, public IThreaded
+{
+private:
+    CThreaded threaded;
+    StringAttr dstPath;
+    unsigned totalMB{0};
+    unsigned thresholdMB{0};
+    unsigned intervalSecs{10};
+    unsigned incrementMB{100};
+    unsigned currentThresholdMB{0};
+    Semaphore stopSemaphore;
+    std::atomic<bool> stopped{true};
+
+    unsigned checkAndCoreDump()
+    {
+        ProcessInfo memInfo(ReadMemoryInfo);
+        unsigned currentMemMB = (unsigned)(memInfo.getActiveResidentMemory() / (1024 * 1024));
+        if (currentMemMB < currentThresholdMB)
+            return 0;
+        WARNLOG("Memory monitor: memory usage (%u MB) exceeded threshold (%u MB) - generating core dump", currentMemMB, currentThresholdMB);
+        char cwd[_MAX_DIR];
+        if (dstPath)
+        {
+            if (!recursiveCreateDirectory(dstPath))
+            {
+                WARNLOG("Failed to create directory for core dumps: %s", dstPath.get());
+                return 0;
+            }
+            // change cwd to target dir.
+            // NB: copying is an alternative, but would need to cope with large sparse files to be efficient
+            if (nullptr == getcwd(cwd, _MAX_DIR))
+            {
+                WARNLOG("Memory monitor: failed to get current directory");
+                return 0;
+            }
+            if (0 != chdir(dstPath))
+            {
+                WARNLOG("Memory monitor: failed to set current directory to %s", dstPath.get());
+                return 0;
+            }
+        }
+        CCycleTimer timer;
+        generateCoreDump();
+        WARNLOG("Memory monitor: core dump generated in %u ms", timer.elapsedMs());
+        if (dstPath)
+        {
+            if (0 != chdir(cwd))
+                WARNLOG("Memory monitor: failed to set current directory to %s", cwd);
+        }
+        return currentMemMB;
+    }
+public:
+    CMemoryMonitor(const char *_dstPath, unsigned _totalMB, unsigned _thresholdMB, unsigned _intervalSecs, unsigned _incrementMB)
+        : threaded("CMemoryMonitor", this), dstPath(_dstPath), totalMB(_totalMB), thresholdMB(_thresholdMB), intervalSecs(_intervalSecs), incrementMB(_incrementMB)
+    {
+    }
+    ~CMemoryMonitor()
+    {
+        stop();
+    }
+    virtual void start() override
+    {
+        assertex((thresholdMB > 0) && (thresholdMB < totalMB) && (intervalSecs > 0));
+        if (stopped)
+        {
+            stopped = false;
+            PROGLOG("Memory monitor: started - threshold=%u MB, interval=%u seconds",
+                    thresholdMB, intervalSecs);
+            currentThresholdMB = thresholdMB;
+            threaded.start(false);
+        }
+    }
+    virtual void stop() override
+    {
+        if (!stopped)
+        {
+            stopped = true;
+            stopSemaphore.signal();
+            threaded.join();
+            stopSemaphore.reinit(0); // in case thread didn't consume signal
+            checkAndCoreDump(); // check one last time
+        }
+    }
+    // IThreaded impl.
+    virtual void threadmain() override
+    {
+        while (!stopped)
+        {
+            try
+            {
+                unsigned currentMemMB = checkAndCoreDump();
+                if (currentMemMB) // if 0, no core dump was generated
+                {
+                    if (!incrementMB)
+                        break;
+                    currentThresholdMB = currentMemMB + incrementMB;
+                    if (currentThresholdMB > totalMB)
+                    {
+                        // If current usage is <99% set one last threshold
+                        unsigned nineNinePct = totalMB * 99 / 100;
+                        if (currentMemMB >= nineNinePct)
+                            break;
+                        currentThresholdMB = nineNinePct;
+                    }
+                }
+            }
+            catch (IException *e)
+            {
+                StringBuffer errMsg;
+                e->errorMessage(errMsg);
+                OERRLOG("Memory monitor: error - %s", errMsg.str());
+                e->Release();
+            }
+
+            // Wait for the monitoring interval or until stop is signaled
+            if (!stopped)
+            {
+                if (stopSemaphore.wait(intervalSecs * 1000))
+                    break; // Stop was signaled
+            }
+        }
+        PROGLOG("Memory monitor: stopped");
+    }
+};
+
+IMemoryMonitor *createMemoryMonitor(const char *dstPath, unsigned totalMB, unsigned thresholdMB, unsigned intervalSecs, unsigned incrementMB)
+{
+    try
+    {
+        // trace core_pattern to help diagnose reasons for core dumps not being created
+        OwnedIFile corePatternFile = createIFile("/proc/sys/kernel/core_pattern");
+        if (corePatternFile->exists())
+        {
+            StringBuffer corePattern;
+            corePattern.loadFile(corePatternFile);
+            WARNLOG("core_pattern = %s", corePattern.str());
+        }
+        return new CMemoryMonitor(dstPath, totalMB, thresholdMB, intervalSecs, incrementMB);
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e, "Failed to create memory monitor");
+        e->Release();
+    }
+    return nullptr;
+}
+
+IMemoryMonitor *createMemoryMonitor(const char *dstPath, unsigned totalMB, const IPropertyTree *mcdSettings)
+{
+    assertex(totalMB);
+    unsigned memoryThresholdMB = 0;
+    unsigned memoryIncrementMB = 0;
+    const char *mode = mcdSettings->queryProp("@mode");
+    if (streq("auto", mode))
+    {
+        constexpr unsigned defaultMemoryThresholdPct = 95; // auto set threshold to 95% of totalMB.
+        constexpr unsigned defaultNextIncrementPct = 4; // i.e next threshold will be at 99% (95% + 4%) of totalMB.
+        memoryThresholdMB = mcdSettings->getPropInt("@thresholdMB", NotFound);
+        if (NotFound != memoryThresholdMB)
+            WARNLOG("mode=auto, but thresholdMB is set. thresholdMB takes precedence");
+        else
+        {
+            // Set threshold based on defaultMemoryThresholdPct. Bear in mind roxiemem is normally ~80% of workerTotalMem
+            // we want this at a fairly high level to avoid false positives, but not so high that we run out of memory
+            memoryThresholdMB = totalMB * defaultMemoryThresholdPct / 100;
+        }
+        memoryIncrementMB = mcdSettings->getPropInt("@incrementMB", NotFound);
+        if (NotFound != memoryIncrementMB)
+        {
+            if (memoryThresholdMB + memoryIncrementMB > totalMB)
+            {
+                WARNLOG("mode=auto, incrementMB is set, but memoryThresholdMB + incrementMB >= workerTotalMemMB. Ignoring incrementMB");
+                memoryIncrementMB = 0;
+            }
+        }
+        else
+        {
+            // With defaults it means there will only be at most one other core dump (when crosses 99% of totalMB)
+            memoryIncrementMB = totalMB * defaultNextIncrementPct / 100;
+        }
+    }
+    else if (streq("on", mode))
+    {
+        memoryThresholdMB = mcdSettings->getPropInt("@thresholdMB");
+        if (memoryThresholdMB) // if not disabled
+        {
+            memoryIncrementMB = mcdSettings->getPropInt("@incrementMB");
+            if (memoryThresholdMB + memoryIncrementMB > totalMB)
+            {
+                WARNLOG("mode=on, incrementMB is set, but memoryThresholdMB + incrementMB >= workerTotalMemMB. Ignoring incrementMB");
+                memoryIncrementMB = 0;
+            }
+        }
+    }
+    else if (!streq("off", mode))
+        WARNLOG("Unrecognized memoryCoreDumpMode: %s, ignoring", mode);
+
+    if (!memoryThresholdMB)
+        return nullptr;
+
+    constexpr unsigned defaultMemoryIntervalSecs = 10;
+    unsigned memoryIntervalSecs = mcdSettings->getPropInt("@intervalSecs", defaultMemoryIntervalSecs);
+    WARNLOG("Monitoring memory usage (total=%uMB), interval: %u secs, threshold: %uMB, increment: %uMB (path: %s)", totalMB, memoryIntervalSecs, memoryThresholdMB, memoryIncrementMB, dstPath);
+    return createMemoryMonitor(dstPath, totalMB, memoryThresholdMB, memoryIntervalSecs, memoryIncrementMB);
+}

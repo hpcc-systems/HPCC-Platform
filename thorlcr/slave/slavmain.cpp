@@ -21,12 +21,14 @@
 #include <unordered_map>
 
 #include "jlib.hpp"
+#include "jcontainerized.hpp"
 #include "jexcept.hpp"
 #include "jthread.hpp"
 #include "jprop.hpp"
 #include "jiter.ipp"
 #include "jlzw.hpp"
 #include "jflz.hpp"
+#include "jdebug.hpp"
 
 #include "jhtree.hpp"
 #include "mpcomm.hpp"
@@ -1769,6 +1771,19 @@ public:
         if (globals->getPropBool("@watchdogEnabled"))
             watchdog.setown(createProgressHandler(globals->getPropBool("@useUDPWatchdog")));
 
+        // JCSMORE consider moving this somewhere to make generic/available to other processes
+        Owned<IMemoryMonitor> memoryMonitor;
+        const IPropertyTree *mcdSettings = globals->queryPropTree("expert/memoryCoreDump");
+        if (mcdSettings)
+        {
+            StringBuffer coreDumpPath;
+            getConfigurationDirectory(globals->queryPropTree("Directories"), "debug", "thor", globals->queryProp("@name"), coreDumpPath);
+            k8s::addInstanceContextPaths(coreDumpPath);
+            addPathSepChar(coreDumpPath).append("coredumps");
+            unsigned workerTotalMemMB = globals->getPropInt("workerMemory/@total"); assertex(workerTotalMemMB);
+            memoryMonitor.setown(createMemoryMonitor(coreDumpPath, workerTotalMemMB, mcdSettings));
+        }
+
         CMessageBuffer msg;
         stopped = false;
         bool doReply;
@@ -1992,6 +2007,9 @@ public:
                             perf->start(job->queryWuid(), subGraphId, perfInterval);
                         }
 
+                        if (memoryMonitor)
+                            memoryMonitor->start();
+
                         VStringBuffer xpath("node[@id='%" GIDPF "u']", subGraphId);
                         Owned<IPropertyTree> graphNode = job->queryGraphXGMML()->getPropTree(xpath.str());
                         job->addSubGraph(*graphNode);
@@ -2029,6 +2047,9 @@ public:
                     }
                     case GraphEnd:
                     {
+                        if (memoryMonitor)
+                            memoryMonitor->stop();
+
                         StringAttr jobKey;
                         msg.read(jobKey);
                         CJobSlave *job = jobs.find(jobKey.get());

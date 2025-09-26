@@ -15,6 +15,11 @@ global:
       probes: 9
     regex:
       cacheSize: 500
+    memoryCoreDump:
+      mode: auto # { auto, on, off }
+      intervalSecs: 10
+      #thresholdMB: 7500 # supersedes 'auto' mode if set
+      #incrementMB: 100
 ```
 
 NB: Some components (e.g. DfuServer and Thor) also have an 'expert' settings area (see values schema) that can be used for relavent settings
@@ -125,3 +130,11 @@ Controls error behaviour of jfile stat() calls.
 1 = ignore EACCES - suppre exception, returns false.
 2 = ignore all other errors - suppress exception, return false. This was the legacy behaviour.
 Default: 0
+
+## memoryCoreDump (mode: string, intervalSecs: unsigned, thresholdMB: unsigned, incrementMB: unsigned)
+See memoryCoreDump example above.
+Defaulted off.
+If enabled, monitors total memory usage once per 'intervalSecs' and if above 'thresholdMB' creates a core dump.
+Further core files will be created if 'incrementMB' is set, and memory increases by more than that amount.
+mode=auto will auto-config 'thresholdMB' to 95% of total memory, and 'incrementMB' to 4% of total memory,
+meaning there will be at most 2 cores produced, one if detected >95% and another if detected >99%.
