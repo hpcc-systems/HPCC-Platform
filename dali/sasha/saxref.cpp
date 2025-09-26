@@ -1180,6 +1180,8 @@ public:
         cDirDesc *p = findDirectory(pdir.str());
         if (!p)
             return NULL;
+        if (isPlaneStriped&&p==root&&tail[0]=='d'&&readDigits(tail+1)!=0)
+            return p;
         return p->lookupDir(tail,NULL);
     }
 
