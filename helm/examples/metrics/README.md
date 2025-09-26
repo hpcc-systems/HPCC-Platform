@@ -340,3 +340,36 @@ Add the following to the environment.xml configuration file (note that some valu
 </Environment>
 ```
 See section above for additional settings that can be added to the ElasticSearch sink.
+
+#### Using Kubernetes Secrets
+In order to use Kubernetes secrets to store authentication credentials, use the following steps. 
+
+First, create the secret in the Kubernetes cluster using the following command. Note the password is
+in clear text and is stored in the secret in clear text. Therefore, it does not need to be decrypted 
+before use. 
+
+```code
+kubectl create secret generic elasticsecret --from-literal=username=<username> --from-literal=password=<password>
+```
+
+If using a certification where you must map the cert file into the pod, use the following to create a secret
+that maps the certificate file into the pod:
+
+```code
+kubectl create secret generic elastic-ca-cert --from-file=<cert-name>=<filepath to cert>
+```
+
+Then, in the yaml config for the sink, use the following to reference the secret for the cert file:
+
+```code
+certificateFilePath: "/opt/HPCCSystems/secrets/system/elastic-ca-cert/<cert-name>"
+```
+
+Additionally, use the following yaml snippet in a helm chart values file to map the secrets into cluster pods:
+
+```code
+secrets:
+  system:
+    elastic-ca-cert: "elastic-ca-cert"
+    elasticsecret: "elasticsecret" 
+```
