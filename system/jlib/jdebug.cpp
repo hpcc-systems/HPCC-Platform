@@ -4432,7 +4432,7 @@ void generateCoreDump()
 #ifdef __linux__
     pid_t parentPid = getpid();
 
-    // Reaper process R creation
+    // Reaper process creation
     pid_t reaperPid = fork();
     if (reaperPid == 0)
     {
@@ -4443,12 +4443,6 @@ void generateCoreDump()
         pid_t coreDumpPid = fork();
         if (0 == coreDumpPid)
         {
-            // Core dump process: suspend parent before core dumping, to minimize chance parent is adding to memory pressure while dumping
-            if (kill(parentPid, SIGSTOP) == -1)
-            {
-                int errsv = errno;
-                WARNLOG("generateCoreDump: Failed to send SIGSTOP to parent pid %d, errno=%d (%s)", parentPid, errsv, strerror(errsv));
-            }
             signal(SIGABRT, SIG_DFL);
             raise(SIGABRT);
             _exit(1); // shouldn't reach here
@@ -4478,14 +4472,14 @@ void generateCoreDump()
         return;
     }
 
-    // Parent suspends itself, waiting for SIGCONT from B
+    // Parent suspends itself, waiting for SIGCONT from reaper
     WARNLOG("generateCoreDump: suspending self with SIGSTOP");
     if (kill(parentPid, SIGSTOP) == -1)
     {
         int errsv = errno;
         WARNLOG("generateCoreDump: Failed to send SIGSTOP to parent pid %d, errno=%d (%s)", parentPid, errsv, strerror(errsv));
     }
-    // Parent waits for reaper R to exit
+    // Parent waits for reaper to exit
     int status;
     waitpid(reaperPid, &status, 0);
     WARNLOG("generateCoreDump: Reaper pid %d exited with status %d", reaperPid, status);
