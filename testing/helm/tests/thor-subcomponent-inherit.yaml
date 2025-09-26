@@ -1,0 +1,28 @@
+# Test inheritance of thor-level (deprecated) cost to subcomponents without explicit override
+
+global:
+  cost:
+    currencyCode: USD
+    perCpu: 0.50
+
+thor:
+- name: thor
+  cost:   # Only worker overrides; manager and eclagent should inherit this value
+    perCpu: 1.80
+  worker:
+    cost:
+      perCpu: 2.40
+  prefix: thor
+  numWorkers: 2
+  maxJobs: 2
+  maxGraphs: 2
+  numWorkersPerPod: 1
+  managerResources:
+    cpu: "1"
+    memory: "1G"
+  workerResources:
+    cpu: "1"
+    memory: "1G"
+  eclAgentResources:
+    cpu: "1"
+    memory: "1G"

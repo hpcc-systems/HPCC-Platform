@@ -2764,7 +2764,7 @@
     "thor": {
       "type": "object",
       "required": [ "name", "maxJobs", "maxGraphs" ],
-      "additionalProperties": { "type": ["integer", "string", "boolean"] },
+      "additionalProperties": { "type": ["integer", "string", "boolean", "object"] },
       "properties": {
         "name": {
           "type": "string",
@@ -2903,7 +2903,9 @@
           "$ref": "#/definitions/thorSubComponent"
         },
         "cost": {
-          "$ref" : "#/definitions/componentCost"
+          "$ref" : "#/definitions/componentCost",
+          "description": "deprecated cost section, use manager, worker, and eclagent sections",
+          "type": "object"
         },
         "expert": {
           "$ref": "#/definitions/expert"
