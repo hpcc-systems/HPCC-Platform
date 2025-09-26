@@ -374,7 +374,18 @@ AzureFile::AzureFile(const char *_azureFileName) : fullName(_azureFileName)
 
 SharedFileClient AzureFile::getFileClient() const
 {
-    return std::make_shared<ShareFileClient>(getFileUrl(), getSharedKeyCredentials());
+    if (useManagedIdentity)
+    {
+        // For managed identity, create client without credentials
+        // The Azure SDK will automatically use managed identity when no explicit credentials are provided
+        // and the application is running in an Azure environment (VM, App Service, etc.)
+        return std::make_shared<ShareFileClient>(getFileUrl());
+    }
+    else
+    {
+        auto cred = getSharedKeyCredentials();
+        return std::make_shared<ShareFileClient>(getFileUrl(), cred);
+    }
 }
 
 std::shared_ptr<StorageSharedKeyCredential> AzureFile::getSharedKeyCredentials() const
@@ -411,7 +422,18 @@ std::string AzureFile::getFileUrl() const
 
 std::shared_ptr<ShareClient> AzureFile::getShareClient() const
 {
-    return std::make_shared<ShareClient>(getShareUrl(accountName, shareName), getSharedKeyCredentials());
+    if (useManagedIdentity)
+    {
+        // For managed identity, create client without credentials
+        // The Azure SDK will automatically use managed identity when no explicit credentials are provided
+        // and the application is running in an Azure environment (VM, App Service, etc.)
+        return std::make_shared<ShareClient>(getShareUrl(accountName, shareName));
+    }
+    else
+    {
+        auto cred = getSharedKeyCredentials();
+        return std::make_shared<ShareClient>(getShareUrl(accountName, shareName), cred);
+    }
 }
 
 void AzureFile::ensureMetaData()
