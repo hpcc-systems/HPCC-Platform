@@ -4574,7 +4574,7 @@ public:
             stopped = true;
             stopSemaphore.signal();
             threaded.join();
-            stopSemaphore.reinit(0); // if case thread didn't consume signal
+            stopSemaphore.reinit(0); // in case thread didn't consume signal
             checkAndCoreDump(); // check one last time
         }
     }
@@ -4594,7 +4594,7 @@ public:
                     if (currentThresholdMB > totalMB)
                     {
                         // If current usage is <99% set one last threshold
-                        unsigned nineNinePct = totalMB / 100 * 99;
+                        unsigned nineNinePct = totalMB * 99 / 100;
                         if (currentMemMB >= nineNinePct)
                             break;
                         currentThresholdMB = nineNinePct;
@@ -4659,7 +4659,7 @@ IMemoryMonitor *createMemoryMonitor(const char *dstPath, unsigned totalMB, const
         {
             // Set threshold based on defaultMemoryThresholdPct. Bear in mind roxiemem is normally ~80% of workerTotalMem
             // we want this at a fairly high level to avoid false positives, but not so high that we run out of memory
-            memoryThresholdMB = totalMB / 100 * defaultMemoryThresholdPct;
+            memoryThresholdMB = totalMB * defaultMemoryThresholdPct / 100;
         }
         memoryIncrementMB = mcdSettings->getPropInt("@incrementMB", NotFound);
         if (NotFound != memoryIncrementMB)
@@ -4673,7 +4673,7 @@ IMemoryMonitor *createMemoryMonitor(const char *dstPath, unsigned totalMB, const
         else
         {
             // With defaults it means there will only be at most one other core dump (when crosses 99% of totalMB)
-            memoryIncrementMB = totalMB / 100 * defaultNextIncrementPct;
+            memoryIncrementMB = totalMB * defaultNextIncrementPct / 100;
         }
     }
     else if (streq("on", mode))
