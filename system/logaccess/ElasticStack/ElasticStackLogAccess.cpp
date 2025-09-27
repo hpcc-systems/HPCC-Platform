@@ -20,6 +20,7 @@
 #include <iostream>
 #include <json/json.h>
 #include <json/writer.h>
+#include "jsecrets.hpp"
 
 
 #ifdef _CONTAINERIZED
@@ -115,16 +116,40 @@ ElasticStackLogAccess::ElasticStackLogAccess(const std::vector<std::string> &hos
         //Client::SSLOption::VerifyPeer - verify the peer's SSL certificate.
         m_bVerifyPeer = m_pluginCfg->getPropBool("connection/ssl/@verifyPeer", true);
 
-        elasticlient::Client::SSLOption sslOptions
+        if (!isEmptyString(m_caInfo) && !isEmptyString(m_sCertFile) && !isEmptyString(m_skeyFile))
         {
-            elasticlient::Client::SSLOption::VerifyHost{m_bVerifyHost},
-            elasticlient::Client::SSLOption::VerifyPeer{m_bVerifyPeer},
-            elasticlient::Client::SSLOption::CaInfo{m_caInfo.str()},
-            elasticlient::Client::SSLOption::CertFile{m_sCertFile.str()},
-            elasticlient::Client::SSLOption::KeyFile{m_skeyFile.str()}
-        };
-
-        m_esClient.setClientOption(sslOptions);
+            m_esClient.setClientOption(elasticlient::Client::SSLOption{
+                elasticlient::Client::SSLOption::VerifyHost{m_bVerifyHost},
+                elasticlient::Client::SSLOption::VerifyPeer{m_bVerifyPeer},
+                elasticlient::Client::SSLOption::CaInfo{m_caInfo.str()},
+                elasticlient::Client::SSLOption::CertFile{m_sCertFile.str()},
+                elasticlient::Client::SSLOption::KeyFile{m_skeyFile.str()}
+            });
+        }
+        else if (!isEmptyString(m_caInfo) && !isEmptyString(m_sCertFile))
+        {
+            m_esClient.setClientOption(elasticlient::Client::SSLOption{
+                elasticlient::Client::SSLOption::VerifyHost{m_bVerifyHost},
+                elasticlient::Client::SSLOption::VerifyPeer{m_bVerifyPeer},
+                elasticlient::Client::SSLOption::CaInfo{m_caInfo.str()},
+                elasticlient::Client::SSLOption::CertFile{m_sCertFile.str()}
+            });
+        }
+        else if (!isEmptyString(m_caInfo))
+        {
+            m_esClient.setClientOption(elasticlient::Client::SSLOption{
+                elasticlient::Client::SSLOption::VerifyHost{m_bVerifyHost},
+                elasticlient::Client::SSLOption::VerifyPeer{m_bVerifyPeer},
+                elasticlient::Client::SSLOption::CaInfo{m_caInfo.str()}
+            });
+        }
+        else
+        {
+            m_esClient.setClientOption(elasticlient::Client::SSLOption{
+                elasticlient::Client::SSLOption::VerifyHost{m_bVerifyHost},
+                elasticlient::Client::SSLOption::VerifyPeer{m_bVerifyPeer}
+            });
+        }
     }
 
     m_globalIndexTimestampField.set(DEFAULT_TS_NAME);
@@ -451,6 +476,18 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
             appendJSONStringValue(debugReport, "ConnectionString", m_esConnectionStr.str(), true);
             appendJSONValue(debugReport, "httpReqTimeoutMs", m_reqTimeOutMs);
             appendJSONValue(debugReport, "connTimeoutMs", m_connTimeOutMs);
+            debugReport.appendf(", \"credentials\": {");
+            if (m_pluginCfg)
+            {
+                StringBuffer credentialsSecretKey;
+                m_pluginCfg->getProp("credentials/@secretName", credentialsSecretKey);
+                appendJSONStringValue(debugReport, "secretName", credentialsSecretKey.str(), true);
+
+                StringBuffer credentialsVaultId;
+                m_pluginCfg->getProp("credentials/@vaultId", credentialsVaultId);
+                appendJSONStringValue(debugReport, "vaultId", credentialsVaultId.str(), true);
+            }
+            debugReport.append(" }"); //close credentials
             debugReport.appendf(", \"ssl\": {");
             appendJSONStringValue(debugReport, "CertFile", m_sCertFile.str(), true);
             appendJSONStringValue(debugReport, "KeyFile", m_skeyFile.str(), true);
@@ -645,7 +682,7 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
                 appendJSONStringValue(sampleQuery, "type", "byComponent", false);
                 appendJSONStringValue(sampleQuery, "value", "eclwatch", false);
                 queryOptions.setFilter(getComponentLogAccessFilter("eclwatch"));
-
+                queryOptions.setReturnColsMode(RETURNCOLS_MODE_all);
                 struct LogAccessTimeRange range;
                 CDateTime endtt;
                 endtt.setNow();
@@ -1335,14 +1372,14 @@ cpr::Response ElasticStackLogAccess::performESQuery(const LogAccessConditions & 
         std::string queryString;
         std::string queryIndex;
         populateQueryStringAndQueryIndex(queryString, queryIndex, options);
-
+DBGLOG("^^^^^^performESQuery: queryIndex: %s queryString: '%s'", queryIndex.c_str(), queryString.c_str());
         return m_esClient.search(queryIndex.c_str(), DEFAULT_ES_DOC_TYPE, queryString);
     }
     catch (std::runtime_error &e)
     {
         const char * wha = e.what();
         throw makeStringExceptionV(-1, "%s: fetchLog: Error searching doc: %s", COMPONENT_NAME, wha);
-    }
+    }   
     catch (IException * e)
     {
         StringBuffer mess;
@@ -1417,6 +1454,32 @@ IRemoteLogAccessStream * ElasticStackLogAccess::getLogReader(const LogAccessCond
 extern "C" IRemoteLogAccess * createInstance(IPropertyTree & logAccessPluginConfig)
 {
     //constructing ES Connection string(s) here b/c ES Client explicit ctr requires conn string array
+    StringBuffer username;
+    StringBuffer password;
+
+    StringBuffer credentialsSecretKey;
+    logAccessPluginConfig.getProp("connection/credentials/@secretName", credentialsSecretKey);  // vault/secrets key
+    if (!credentialsSecretKey.isEmpty())
+    {
+        StringBuffer credentialsVaultId;
+        logAccessPluginConfig.getProp("connection/credentials/@vaultId", credentialsVaultId);//optional HashiCorp vault ID
+
+        PROGLOG("%s: Retrieving host authentication username/password from secrets tree '%s', from vault '%s'",
+               COMPONENT_NAME, credentialsSecretKey.str(), !credentialsVaultId.isEmpty() ? credentialsVaultId.str() : "N/A");
+
+        Owned<const IPropertyTree> secretTree(getSecret("esp", credentialsSecretKey.str(), credentialsVaultId, nullptr));
+        if (secretTree == nullptr)
+        {
+            WARNLOG("%s: Unable to load secret tree '%s', from vault '%s'",
+                COMPONENT_NAME, credentialsSecretKey.str(), !credentialsVaultId.isEmpty() ? credentialsVaultId.str() : "N/A");
+        }
+
+        if (!getSecretKeyValue(username, secretTree, "username") || !getSecretKeyValue(password, secretTree, "password"))
+        {
+            WARNLOG("ElasticMetricSink: Missing username and/or password from secrets tree '%s', vault '%s'",
+                    credentialsSecretKey.str(), !credentialsVaultId.isEmpty() ? credentialsVaultId.str() : "n/a");
+        }
+    }
 
     const char * protocol = logAccessPluginConfig.queryProp("connection/@protocol");
     const char * host = logAccessPluginConfig.queryProp("connection/@host");
@@ -1425,6 +1488,10 @@ extern "C" IRemoteLogAccess * createInstance(IPropertyTree & logAccessPluginConf
     std::string elasticSearchConnString;
     elasticSearchConnString = isEmptyString(protocol) ? DEFAULT_ES_PROTOCOL : protocol;
     elasticSearchConnString.append("://");
+    if (!isEmptyString(username) && !isEmptyString(password))
+    {
+        elasticSearchConnString.append(username).append(":").append(password).append("@");
+    }
     elasticSearchConnString.append(isEmptyString(host) ? DEFAULT_ES_HOST : host);
     elasticSearchConnString.append(":").append((!port || !*port) ? DEFAULT_ES_PORT : port);
     elasticSearchConnString.append("/"); // required!
