@@ -249,7 +249,7 @@ unsigned getReplicationLevel(unsigned channel)
 // A callback interface for processing Roxie worker requests
 interface IRoxieWorkerRequestReceiver
 {
-    virtual void processMessage(MemoryBuffer & message) = 0;
+    virtual void processMessage(const void * data, size32_t length) = 0;
 };
 
 interface IRoxieWorkerCommunicator : public IInterface
@@ -321,8 +321,7 @@ public:
                 unsigned l;
                 workerRequestSocket->readtms(buffer, sizeof(RoxiePacketHeader), maxPacketSize, l, defaultTimeout);
 
-                mb.setLength(l);
-                receiver->processMessage(mb);
+                receiver->processMessage(buffer, l);
             }
             catch (IException *E)
             {
@@ -427,7 +426,7 @@ public:
 
     virtual void processMessageContents(CReadSocketHandler * ownedSocketHandler)
     {
-        receiver.processMessage(ownedSocketHandler->queryBuffer());
+        receiver.processMessage(ownedSocketHandler->queryBuffer().toByteArray(), ownedSocketHandler->queryBuffer().length());
         ownedSocketHandler->Release();
     }
 
@@ -954,21 +953,22 @@ extern IRoxieQueryPacket *createRoxiePacket(MemoryBuffer &m)
     return createRoxiePacket(m.detachOwn(), length, true);
 }
 
-extern IRoxieQueryPacket *deserializeCallbackPacket(MemoryBuffer &m)
+static IRoxieQueryPacket *deserializeCallbackPacket(const void * data, size32_t length)
 {
     // Direct decryption of special packets - others are only decrypted after being dequeued
     if (encryptInTransit)
     {
-        RoxiePacketHeader *header = (RoxiePacketHeader *) m.toByteArray();
+        RoxiePacketHeader *header = (RoxiePacketHeader *) data;
         assertex(header != nullptr);
         assertex(header->activityId == ROXIE_FILECALLBACK || header->activityId == ROXIE_DEBUGCALLBACK);
-        assertex(m.length() >= header->packetlength);
+        assertex(length >= header->packetlength);
         unsigned encryptedLen = header->packetlength - sizeof(RoxiePacketHeader);
         const void *encryptedData = (const void *)(header+1);
-        MemoryBuffer decrypted;
-        decrypted.append(sizeof(RoxiePacketHeader), header);
-        decrypted.ensureCapacity(encryptedLen);  // May be up to 16 bytes smaller...
         const MemoryAttr &udpkey = getSecretUdpKey(true);
+
+        MemoryBuffer decrypted;
+        decrypted.ensureCapacity(length);       // May be up to 16 bytes smaller...
+        decrypted.append(sizeof(RoxiePacketHeader), header);
         aesDecrypt(udpkey.get(), udpkey.length(), encryptedData, encryptedLen, decrypted);
         unsigned length = decrypted.length();
         RoxiePacketHeader *newHeader = (RoxiePacketHeader *) decrypted.detachOwn();
@@ -977,8 +977,7 @@ extern IRoxieQueryPacket *deserializeCallbackPacket(MemoryBuffer &m)
     }
     else
     {
-        unsigned length = m.length(); // don't make assumptions about evaluation order of parameters...
-        return createRoxiePacket(m.detachOwn(), length, true);
+        return createRoxiePacket((void*)data, length, false);
     }
 }
 
@@ -2674,7 +2673,7 @@ public:
         }
     }
 
-    void processMessage(MemoryBuffer &mb, RoxiePacketHeader &header, RoxieQueue &queue)
+    void processMessage(const void * data, size32_t length, RoxiePacketHeader &header, RoxieQueue &queue)
     {
         CriticalBlock block(ibytiCrit);
 
@@ -2693,7 +2692,7 @@ public:
 
                 Owned<const ITopologyServer> topology = getTopology();
                 const std::vector<unsigned> channels = topology->queryChannels();
-                Owned<ISerializedRoxieQueryPacket> packet = createSerializedRoxiePacket(mb);
+                Owned<ISerializedRoxieQueryPacket> packet = createSerializedRoxiePacket((void *)data, length, false);
                 for (unsigned i = 1; i < channels.size(); i++)
                     queue.enqueue(packet->cloneSerializedPacket(channels[i]), 0);
                 header.retries |= ROXIE_BROADCAST;
@@ -2704,7 +2703,7 @@ public:
 
             if (header.activityId == ROXIE_FILECALLBACK || header.activityId == ROXIE_DEBUGCALLBACK )
             {
-                Owned<IRoxieQueryPacket> packet = deserializeCallbackPacket(mb);
+                Owned<IRoxieQueryPacket> packet = deserializeCallbackPacket(data, length);
                 if (doTrace(traceRoxiePackets))
                 {
                     StringBuffer s;
@@ -2723,7 +2722,7 @@ public:
             else
             {
                 unsigned mySubchannel = header.mySubChannel();
-                Owned<ISerializedRoxieQueryPacket> packet = createSerializedRoxiePacket(mb);
+                Owned<ISerializedRoxieQueryPacket> packet = createSerializedRoxiePacket((void *)data, length, false);
                 unsigned retries = header.thisChannelRetries(mySubchannel);
                 if (retries >= SUBCHANNEL_MASK)
                     return; // I already failed unrecoverably on this request - ignore it
@@ -2835,13 +2834,13 @@ public:
         }
     }
 
-    virtual void processMessage(MemoryBuffer & mb)
+    virtual void processMessage(const void * data, size32_t length) override
     {
         try
         {
-            RoxiePacketHeader &header = *(RoxiePacketHeader *) mb.toByteArray();
-            if (mb.length() != header.packetlength)
-                DBGLOG("sock->read returned %u but packetlength was %u", mb.length(), header.packetlength);
+            RoxiePacketHeader &header = *(RoxiePacketHeader *) data;
+            if (length != header.packetlength)
+                DBGLOG("sock->read returned %u but packetlength was %u", length, header.packetlength);
             if (doTrace(traceRoxiePackets))
             {
                 StringBuffer s;
@@ -2851,10 +2850,10 @@ public:
             WorkerReceiverTracker::TimeDivision division(timeTracker, WorkerReceiverTracker::processing);
             switch (header.activityId & ROXIE_PRIORITY_MASK)
             {
-                case ROXIE_SLA_PRIORITY: processMessage(mb, header, slaQueue); break;
-                case ROXIE_HIGH_PRIORITY: processMessage(mb, header, hiQueue); break;
-                case ROXIE_LOW_PRIORITY: processMessage(mb, header, loQueue); break;
-                default: processMessage(mb, header, bgQueue); break;
+                case ROXIE_SLA_PRIORITY: processMessage(data, length, header, slaQueue); break;
+                case ROXIE_HIGH_PRIORITY: processMessage(data, length, header, hiQueue); break;
+                case ROXIE_LOW_PRIORITY: processMessage(data, length, header, loQueue); break;
+                default: processMessage(data, length, header, bgQueue); break;
             }
         }
         catch (IException *E)

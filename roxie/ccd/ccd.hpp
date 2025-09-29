@@ -459,8 +459,7 @@ extern void doUNIMPLEMENTED(unsigned line, const char *file);
 
 extern IRoxieQueryPacket *createRoxiePacket(void *data, unsigned length, bool ownData);
 extern IRoxieQueryPacket *createRoxiePacket(MemoryBuffer &donor); // note: donor is empty after call
-// Direct deserialize callbeck packets from received network data
-extern IRoxieQueryPacket *deserializeCallbackPacket(MemoryBuffer &donor); // note: donor is empty after call
+
 // Delayed deserialize from received network data
 extern ISerializedRoxieQueryPacket *createSerializedRoxiePacket(MemoryBuffer &donor); // note: donor is empty after call
 extern ISerializedRoxieQueryPacket *createSerializedRoxiePacket(void * data, unsigned length, bool ownData);
