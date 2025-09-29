@@ -102,7 +102,7 @@ export const ECLArchiveTree: React.FunctionComponent<ECLArchiveTreeProps> = ({
             {
                 Array.from(flatTree.items(), flatTreeItem => {
                     const { fileTimePct, content, ...treeItemProps } = flatTreeItem.getTreeItemProps();
-                    return <TreeItem {...treeItemProps} onClick={onClick}>
+                    return <TreeItem key={flatTreeItem.value.toString()} {...treeItemProps} onClick={onClick}>
                         <TreeItemLayout
                             iconBefore={
                                 flatTreeItem.itemType === "branch" ?
