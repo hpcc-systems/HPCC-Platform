@@ -2221,7 +2221,6 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
 {
     if (!name || !*name)
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "File name required");
-    PROGLOG("doGetFileDetails: %s", name);
 
     double version = context.getClientVersion();
     if ((version >= 1.38) && !isEmptyString(querySet) && !isEmptyString(query))
@@ -2738,7 +2737,6 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
             }
         }
     }
-    PROGLOG("doGetFileDetails: %s done", name);
 }
 
 bool CWsDfuEx::getQueryFile(const char *logicalName, const char *querySet, const char *queryID, IEspDFUFileDetail &fileDetails)
@@ -3961,12 +3959,14 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
 
     bool allMatchingFilesReceived = true;
     unsigned totalFiles = 0;
-    PROGLOG("DFUQuery: getLogicalFilesSorted");
+    
+    unsigned start = msTick();
     Owned<IPropertyTreeIterator> it = queryDistributedFileDirectory().getLogicalFilesSorted(udesc, sortOrder, filterBuf.str(),
         localFilterBuf, fields.data(), pageStart, pageSize, &cacheHint, &totalFiles, &allMatchingFilesReceived);
+    context.addTraceSummaryValue(LogMin, "getLogicalFilesSorted_ms", msTick() - start);
+    
     if(!it)
         throw MakeStringException(ECLWATCH_CANNOT_GET_FILE_ITERATOR,"Cannot get information from file system.");
-    PROGLOG("DFUQuery: getLogicalFilesSorted done");
 
     IArrayOf<IEspDFULogicalFile> logicalFiles;
     ForEach(*it)
