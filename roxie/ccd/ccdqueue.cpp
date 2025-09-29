@@ -424,10 +424,9 @@ public:
         return new CReadSocketHandler(*this, sock, sizeof(RoxiePacketHeader), maxInitialReadSize);
     }
 
-    virtual void processMessageContents(CReadSocketHandler * ownedSocketHandler)
+    virtual void processMessageContents(CReadSocketHandler & socketHandler)
     {
-        receiver.processMessage(ownedSocketHandler->queryBuffer().toByteArray(), ownedSocketHandler->queryBuffer().length());
-        ownedSocketHandler->Release();
+        receiver.processMessage(socketHandler.queryBuffer().toByteArray(), socketHandler.queryBuffer().length());
     }
 
 protected:

@@ -104,7 +104,7 @@ public:
 
 // Must be implemented by a derived class
     virtual CReadSocketHandler *createSocketHandler(ISocket *sock) = 0;
-    virtual void processMessageContents(CReadSocketHandler * ownedSocketHandler) = 0;
+    virtual void processMessageContents(CReadSocketHandler & ownedSocketHandler) = 0;
 
 protected:
     void clearupSocketHandlers();
@@ -156,7 +156,7 @@ public:
     virtual bool onlyProcessFirstRead() const override;
     virtual unsigned getMessageSize(const void * header) const override;
     virtual CReadSocketHandler *createSocketHandler(ISocket *sock) override;
-    virtual void processMessageContents(CReadSocketHandler * ownedSocketHandler) override;
+    virtual void processMessageContents(CReadSocketHandler & ownedSocketHandler) override;
 };
 
 

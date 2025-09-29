@@ -226,15 +226,18 @@ void CReadSelectHandler::closeConnection(CReadSocketHandler &socketHandler, IJSO
 
 void CReadSelectHandler::processMessage(CReadSocketHandler & socketHandler)
 {
-    Linked<CReadSocketHandler> handler = &socketHandler;
     if (onlyProcessFirstRead())
     {
-        CriticalBlock b(handlersCS);
-        selectHandler->remove(socketHandler.querySocket());
-        handlers.remove(&socketHandler);
+        Linked<CReadSocketHandler> handler = &socketHandler;
+        {
+            CriticalBlock b(handlersCS);
+            selectHandler->remove(socketHandler.querySocket());
+            handlers.remove(&socketHandler);
+        }
+        processMessageContents(*handler);
     }
-
-    processMessageContents(handler.getClear());
+    else
+        processMessageContents(socketHandler);
 }
 
 void CReadSelectHandler::clearupSocketHandlers()
@@ -348,7 +351,8 @@ void CSocketConnectionListener::startPort(unsigned short port)
                     }
                     virtual void threadmain() override
                     {
-                        owner.processMessageContents(handler.getClear());
+                        owner.processMessageContents(*handler);
+                        handler.clear();
                     }
                     virtual bool stop() override
                     {
@@ -484,9 +488,8 @@ CReadSocketHandler *ConcreteConnectionLister::createSocketHandler(ISocket *sock)
     return new CReadSocketHandler(*this, sock, 64, 0x10000);
 }
 
-void ConcreteConnectionLister::processMessageContents(CReadSocketHandler * ownedSocketHandler)
+void ConcreteConnectionLister::processMessageContents(CReadSocketHandler & ownedSocketHandler)
 {
-    ownedSocketHandler->Release();
 }
 
 //---------------------------------------------------------------------------------------------------------------------

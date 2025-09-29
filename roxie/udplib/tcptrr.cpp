@@ -127,10 +127,9 @@ class CTcpReceiveManager : implements IReceiveManager, public CInterface
             return new CReadSocketHandler(*this, sock, sizeof(UdpPacketHeader), maxInitialReadSize);
         }
 
-        virtual void processMessageContents(CReadSocketHandler * ownedSocketHandler)
+        virtual void processMessageContents(CReadSocketHandler & socketHandler)
         {
-            receiver.processMessage(ownedSocketHandler->queryBuffer());
-            ownedSocketHandler->Release();
+            receiver.processMessage(socketHandler.queryBuffer());
         }
 
     protected:
