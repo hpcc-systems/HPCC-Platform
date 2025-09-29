@@ -48,7 +48,8 @@ interface ISocketMessageProcessor
 {
     virtual bool onlyProcessFirstRead() const = 0;                      // Does this only handle one read request, or are multiple messages processed
     virtual unsigned getMessageSize(const void * header) const = 0;     // For variable length messages, given the header, how big is the rest?
-    virtual void processMessage(CReadSocketHandler & socket) = 0;
+    virtual void processMessages(CReadSocketHandler & socket) = 0;
+    virtual void stopProcessing(CReadSocketHandler & socket) = 0;       // Remove from the processor
     virtual void closeConnection(CReadSocketHandler & socket, IJSOCK_Exception * exception) = 0;
 };
 
@@ -74,6 +75,9 @@ public:
     void prepareForNextRead();
 
 protected:
+    const bool onlyProcessFirstRead;
+    const bool processMultipleMessages;
+    bool closedOrHandled = false;
     ISocketMessageProcessor & processor;
     Linked<ISocket> sock;
     StringBuffer peerHostText;
@@ -85,7 +89,6 @@ protected:
     size32_t maxReadSize = 0;           // The maximum that should be read when incoming size is not known
     size32_t requiredSize = 0;          // How much data should be read - set for fixed or variable size
     CriticalSection crit;
-    bool closedOrHandled = false;
 };
 
 //This class uses a select handler to maintain a list of sockets that are being listened to
@@ -100,7 +103,8 @@ public:
 
 // implementation of ISocketMessageProcessor
     virtual void closeConnection(CReadSocketHandler &socketHandler, IJSOCK_Exception *exception) override;
-    virtual void processMessage(CReadSocketHandler & socketHandler) override;
+    virtual void processMessages(CReadSocketHandler & socketHandler) override;
+    virtual void stopProcessing(CReadSocketHandler & socket) override;
 
 // Must be implemented by a derived class
     virtual CReadSocketHandler *createSocketHandler(ISocket *sock) = 0;

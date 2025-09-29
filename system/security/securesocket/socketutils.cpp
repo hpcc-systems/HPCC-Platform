@@ -40,7 +40,8 @@
 //---------------------------------------------------------------------------------------------------------------------
 
 CReadSocketHandler::CReadSocketHandler(ISocketMessageProcessor & _processor, ISocket *_sock, size32_t _minSize, size32_t _maxSize)
- : processor(_processor), sock(_sock), minSize(_minSize), maxReadSize(_maxSize)
+ :  onlyProcessFirstRead(_processor.onlyProcessFirstRead()), processMultipleMessages(false),
+    processor(_processor), sock(_sock), minSize(_minSize), maxReadSize(_maxSize)
 {
     lastActivityCycles = get_cycles_now();
     SocketEndpoint peerEP;
@@ -104,18 +105,26 @@ bool CReadSocketHandler::notifySelected(ISocket *sock, unsigned selected)
             if (requiredSize && (readSoFar >= requiredSize))
             {
                 assertex(readSoFar == requiredSize);
-                bool oneShort = processor.onlyProcessFirstRead();
-                if (oneShort)
+
+                    // Ensure that this socket handler does not get destroyed when processing the message as a
+                    // side-effect of removing it from the processor
+                Linked<CReadSocketHandler> savedHandler = this;
+
+                if (onlyProcessFirstRead)
                 {
                     // process() will remove itself from handler, and need to avoid it doing so while in 'crit'
                     // since the maintenance thread could also be tyring to manipulate handlers and calling closeIfTimedout()
                     closedOrHandled = true;
                     b.leave();
-                }
-                processor.processMessage(*this);
 
-                if (!oneShort)
+                    processor.stopProcessing(*this);
+                    processor.processMessages(*this);
+                }
+                else
+                {
+                    processor.processMessages(*this);
                     prepareForNextRead();
+                }
             }
         }
         catch (IJSOCK_Exception *e)
@@ -224,20 +233,16 @@ void CReadSelectHandler::closeConnection(CReadSocketHandler &socketHandler, IJSO
     handler->querySocket()->close();
 }
 
-void CReadSelectHandler::processMessage(CReadSocketHandler & socketHandler)
+void CReadSelectHandler::processMessages(CReadSocketHandler & socketHandler)
 {
-    if (onlyProcessFirstRead())
-    {
-        Linked<CReadSocketHandler> handler = &socketHandler;
-        {
-            CriticalBlock b(handlersCS);
-            selectHandler->remove(socketHandler.querySocket());
-            handlers.remove(&socketHandler);
-        }
-        processMessageContents(*handler);
-    }
-    else
-        processMessageContents(socketHandler);
+    processMessageContents(socketHandler);
+}
+
+void CReadSelectHandler::stopProcessing(CReadSocketHandler & socket)
+{
+    CriticalBlock b(handlersCS);
+    selectHandler->remove(socket.querySocket());
+    handlers.remove(&socket);
 }
 
 void CReadSelectHandler::clearupSocketHandlers()
