@@ -8463,6 +8463,7 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool a
     copyTree(p, fromP, "Libraries");
     copyTree(p, fromP, "Results");
     copyTree(p, fromP, "Graphs");
+    copyTree(p, fromP, "Summaries");
     copyTree(p, fromP, "Workflow");
     copyTree(p, fromP, "WebServicesInfo");
     if (copyStats)
