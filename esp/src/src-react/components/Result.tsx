@@ -1,5 +1,4 @@
 import * as React from "react";
-import * as ReactDOM from "react-dom";
 import { Checkbox, CommandBar, ContextualMenuItemType, DefaultButton, Dialog, DialogFooter, DialogType, ICommandBarItemProps, MessageBar, MessageBarType, PrimaryButton, SpinButton, Spinner, Stack } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import { Result as CommsResult, XSDXMLNode } from "@hpcc-js/comms";
@@ -7,6 +6,7 @@ import { scopedLogger } from "@hpcc-js/util";
 import { WUResult } from "@hpcc-js/eclwatch";
 import nlsHPCC from "src/nlsHPCC";
 import { csvEncode } from "src/Utility";
+import { ReactRoot } from "src/react/render";
 import { useWorkunit, useMyAccount, useConfirm } from "../hooks/index";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
@@ -43,7 +43,7 @@ function eclTypeTPL(type: string, isSet: boolean) {
 function valueTPL(value: string | number | boolean) {
     switch (typeof value) {
         case "string":
-            return `'${value.split("'").join("\\'").trimRight()}'`;
+            return `'${value.split("'").join("\\'").trimEnd()}'`;
         case "number":
             return value;
         case "boolean":
@@ -158,13 +158,19 @@ class ResultWidget extends WUResult {
 
     confirmDownload(column: boolean = false): Promise<{ downloadTotal: number, dedup: boolean }> {
         if (!column && this._result.Total <= 1000) return Promise.resolve({ downloadTotal: this._result.Total, dedup: false });
-        return new Promise(resolve => {
-            const element = document.createElement("div");
-            ReactDOM.render(<DownloadDialog
-                totalRows={this._result.Total}
-                column={column}
-                onClose={(downloadTotal, dedup) => resolve({ downloadTotal, dedup })}
-            />, element);
+        return new Promise<{ downloadTotal: number, dedup: boolean }>(resolve => {
+            const div = document.createElement("div");
+            document.body.appendChild(div);
+            const root = ReactRoot.create(div);
+            root.themedRender(DownloadDialog, {
+                totalRows: this._result.Total,
+                column: column,
+                onClose: (downloadTotal: number, dedup: boolean) => {
+                    resolve({ downloadTotal, dedup });
+                    root.dispose();
+                    div.remove();
+                }
+            });
         });
     }
 
