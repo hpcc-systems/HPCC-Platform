@@ -43,6 +43,8 @@ CReadSocketHandler::CReadSocketHandler(ISocketMessageProcessor & _processor, ISo
  :  onlyProcessFirstRead(_processor.onlyProcessFirstRead()), processMultipleMessages(false),
     processor(_processor), sock(_sock), minSize(_minSize), maxReadSize(_maxSize)
 {
+    assertex(!(onlyProcessFirstRead && processMultipleMessages)); // If only processing the first read then we can't process multiple messages
+
     lastActivityCycles = get_cycles_now();
     SocketEndpoint peerEP;
     sock->getPeerEndpoint(peerEP);
@@ -95,16 +97,12 @@ bool CReadSocketHandler::notifySelected(ISocket *sock, unsigned selected)
             if (processMultipleMessages && (toRead < maxReadSize))
                 toRead = maxReadSize;
 
-            buffer.ensureCapacity(toRead);
-
-            size32_t rd = 0;
-            byte * target = (byte *)buffer.bufferBase();
-
+            // Buffer is only used as a block of memory - could switch to a MemoryAttr and use ensure
+            byte * target = (byte *)buffer.ensureCapacity(toRead);
             size32_t maxToRead = toRead-readSoFar;
+            size32_t rd = 0;
             sock->readtms(target+readSoFar, 0, maxToRead, rd, 60000); // long enough!
-            buffer.reserve(rd); // increment the current length
             readSoFar += rd;
-            dbgassertex(target == buffer.bufferBase()); // Check that the reserve has not reallocated the buffer
 
             if (!requiredSize && (readSoFar >= minSize))
                 requiredSize = processor.getMessageSize(target);
@@ -144,7 +142,6 @@ bool CReadSocketHandler::notifySelected(ISocket *sock, unsigned selected)
                     size32_t remaining = readSoFar - offset;
                     if (remaining)
                         memmove(target, target + offset, remaining);
-                    buffer.setWritePos(readSoFar);
 
                     // And reset the state about the number of bytes read so far
                     readSoFar = remaining;
