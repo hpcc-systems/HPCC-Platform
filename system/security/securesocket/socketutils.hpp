@@ -130,7 +130,7 @@ protected:
 class SECURESOCKET_API CSocketConnectionListener : protected CReadSelectHandler, public Thread
 {
 public:
-    CSocketConnectionListener(unsigned port, unsigned _processPoolSize, bool _useTLS, unsigned _inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets);
+    CSocketConnectionListener(unsigned port, bool _useTLS, unsigned _inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets);
 
     void startPort(unsigned short port);
     void stop();
@@ -140,9 +140,7 @@ public:
 
 private:
     Owned<ISocket> listenSocket;
-    Owned<IThreadPool> threadPool;
     Owned<ISecureSocketContext> secureContextServer;
-    unsigned processPoolSize;
     bool useTLS;
     std::atomic<bool> aborting{false};
 };

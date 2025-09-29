@@ -106,7 +106,7 @@ class CTcpReceiveManager : implements IReceiveManager, public CInterface
     {
     public:
         PacketListener(CTcpReceiveManager & _receiver)
-        : CSocketConnectionListener(0, 0, false, 0, 0), receiver(_receiver)
+        : CSocketConnectionListener(0, false, 0, 0), receiver(_receiver)
         {
             maxInitialReadSize = roxiemem::DATA_ALIGNMENT_SIZE;
         }

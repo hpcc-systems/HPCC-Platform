@@ -402,7 +402,7 @@ class RoxieTcpListener : public CSocketConnectionListener
 {
 public:
     RoxieTcpListener(IRoxieWorkerRequestReceiver & _receiver)
-     : CSocketConnectionListener(0, 0, false, 0, 0), receiver(_receiver)
+     : CSocketConnectionListener(0, false, 0, 0), receiver(_receiver)
     {
     }
 

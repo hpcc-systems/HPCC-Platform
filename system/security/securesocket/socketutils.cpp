@@ -284,8 +284,8 @@ void CReadSelectHandler::clearupSocketHandlers()
 //---------------------------------------------------------------------------------------------------------------------
 
 
-CSocketConnectionListener::CSocketConnectionListener(unsigned port, unsigned _processPoolSize, bool _useTLS, unsigned _inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets)
-    : CReadSelectHandler(_inactiveCloseTimeoutMs, _maxListenHandlerSockets), Thread("CSocketConnectionListener"), processPoolSize(_processPoolSize), useTLS(_useTLS)
+CSocketConnectionListener::CSocketConnectionListener(unsigned port, bool _useTLS, unsigned _inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets)
+    : CReadSelectHandler(_inactiveCloseTimeoutMs, _maxListenHandlerSockets), Thread("CSocketConnectionListener"), useTLS(_useTLS)
 {
     if (port)
         startPort(port);
@@ -293,7 +293,7 @@ CSocketConnectionListener::CSocketConnectionListener(unsigned port, unsigned _pr
     if (useTLS)
         secureContextServer.setown(createSecureSocketContextSecretSrv("local", nullptr, true));
 
-    PROGLOG("CSocketConnectionListener TLS: %s acceptThreadPoolSize: %u", useTLS ? "on" : "off", processPoolSize);
+    PROGLOG("CSocketConnectionListener TLS: %s", useTLS ? "on" : "off");
 }
 
 bool CSocketConnectionListener::checkSelfDestruct(const void *p,size32_t sz)
@@ -324,51 +324,6 @@ void CSocketConnectionListener::startPort(unsigned short port)
         listenSocket.setown(ISocket::create(port, listenQueueSize));
     }
 
-    if (processPoolSize)
-    {
-        class CSocketConnectionListenerFactory : public CInterfaceOf<IThreadFactory>
-        {
-            CSocketConnectionListener &owner;
-        public:
-            CSocketConnectionListenerFactory(CSocketConnectionListener &_owner) : owner(_owner)
-            {
-            }
-        // IThreadFactory
-            IPooledThread *createNew() override
-            {
-                class CMPConnectionThread : public CInterfaceOf<IPooledThread>
-                {
-                    CSocketConnectionListener &owner;
-                    Owned<CReadSocketHandler> handler;
-                public:
-                    CMPConnectionThread(CSocketConnectionListener &_owner) : owner(_owner)
-                    {
-                    }
-                // IPooledThread
-                    virtual void init(void *param) override
-                    {
-                        handler.setown((CReadSocketHandler *)param);
-                    }
-                    virtual void threadmain() override
-                    {
-                        owner.processMessageContents(*handler);
-                        handler.clear();
-                    }
-                    virtual bool stop() override
-                    {
-                        return true;
-                    }
-                    virtual bool canReuse() const override
-                    {
-                        return true;
-                    }
-                };
-                return new CMPConnectionThread(owner);
-            }
-        };
-        Owned<IThreadFactory> factory = new CSocketConnectionListenerFactory(*this);
-        threadPool.setown(createThreadPool("MPConnectPool", factory, false, nullptr, processPoolSize, INFINITE));
-    }
     Thread::start(false);
 }
 
@@ -457,17 +412,11 @@ void CSocketConnectionListener::stop()
         // ensure CSocketConnectionListener::run() has exited, and is not accepting more sockets
         if (!join(1000*60*5))   // should be pretty instant
             printf("CSocketConnectionListener::stop timed out\n");
-
-        if (processPoolSize)
-        {
-            if (!threadPool->joinAll(true, 1000*60*5))
-                printf("CSocketConnectionListener::stop threadPool->joinAll timed out\n");
-        }
     }
 }
 
 // Demo only to check all virtuals are well defined
-ConcreteConnectionLister::ConcreteConnectionLister(unsigned port) : CSocketConnectionListener(port, 0, false, 0, 0)
+ConcreteConnectionLister::ConcreteConnectionLister(unsigned port) : CSocketConnectionListener(port, false, 0, 0)
 {
 
 }
