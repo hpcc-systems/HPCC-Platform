@@ -1,5 +1,6 @@
 import * as React from "react";
-import { CommandBarButton, Callout, DirectionalHint, Stack, Text, DefaultButton, PrimaryButton, Separator, IStackStyles, IButtonStyles, FontWeights, useTheme, IconButton } from "@fluentui/react";
+import { CommandBarButton, Callout, DirectionalHint, Text, DefaultButton, PrimaryButton, Separator, IStackStyles, IButtonStyles, FontWeights, useTheme, IconButton } from "@fluentui/react";
+import { StackShim } from "@fluentui/react-migration-v8-v9";
 import nlsHPCC from "src/nlsHPCC";
 import { DateTimeInput } from "./Fields";
 
@@ -191,9 +192,9 @@ export const SuperDatePicker: React.FunctionComponent<SuperDatePickerProps> = ({
         }
     };
 
-    return <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 8 }}>
+    return <StackShim horizontal verticalAlign="center" tokens={{ childrenGap: 8 }}>
         <div ref={datePickerButtonRef}>
-            <Stack
+            <StackShim
                 horizontal
                 verticalAlign="center"
                 horizontalAlign="space-between"
@@ -227,7 +228,7 @@ export const SuperDatePicker: React.FunctionComponent<SuperDatePickerProps> = ({
                     }}
                     disabled={disabled}
                 />
-            </Stack>
+            </StackShim>
         </div>
 
         {showRefreshButton && (
@@ -235,7 +236,7 @@ export const SuperDatePicker: React.FunctionComponent<SuperDatePickerProps> = ({
         )}
 
         {showAutoRefresh && (
-            <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 4 }}>
+            <StackShim horizontal verticalAlign="center" tokens={{ childrenGap: 4 }}>
                 <CommandBarButton
                     text={autoRefresh ? `${nlsHPCC.AutoRefresh}: ${nlsHPCC.On.toUpperCase()}` : `${nlsHPCC.AutoRefresh}: ${nlsHPCC.Off.toUpperCase()}`}
                     iconProps={{ iconName: autoRefresh ? "Play" : "Pause" }}
@@ -250,7 +251,7 @@ export const SuperDatePicker: React.FunctionComponent<SuperDatePickerProps> = ({
                         }
                     }}
                 />
-            </Stack>
+            </StackShim>
         )}
 
         <Callout
@@ -270,12 +271,12 @@ export const SuperDatePicker: React.FunctionComponent<SuperDatePickerProps> = ({
                 }
             }}
         >
-            <Stack tokens={{ childrenGap: 12 }}>
-                <Stack tokens={{ childrenGap: 8 }}>
+            <StackShim tokens={{ childrenGap: 12 }}>
+                <StackShim tokens={{ childrenGap: 8 }}>
                     <Text styles={{ root: { fontWeight: FontWeights.semibold, fontSize: "14px" } }}>
                         {nlsHPCC.QuickSelect}
                     </Text>
-                    <Stack horizontal wrap tokens={{ childrenGap: 8 }}>
+                    <StackShim horizontal wrap tokens={{ childrenGap: 8 }}>
                         {defaultQuickOptions.map((option) => (
                             <DefaultButton
                                 key={option.value}
@@ -291,39 +292,39 @@ export const SuperDatePicker: React.FunctionComponent<SuperDatePickerProps> = ({
                                 }}
                             />
                         ))}
-                    </Stack>
-                </Stack>
+                    </StackShim>
+                </StackShim>
 
                 <Separator />
 
-                <Stack tokens={{ childrenGap: 8 }}>
+                <StackShim tokens={{ childrenGap: 8 }}>
                     <Text styles={{ root: { fontWeight: FontWeights.semibold, fontSize: "14px" } }}>
                         {nlsHPCC.CustomRange}
                     </Text>
-                    <Stack horizontal tokens={{ childrenGap: 12 }} verticalAlign="end">
-                        <Stack tokens={{ childrenGap: 4 }} styles={{ root: { flex: 1 } }}>
+                    <StackShim horizontal tokens={{ childrenGap: 12 }} verticalAlign="end">
+                        <StackShim tokens={{ childrenGap: 4 }} styles={{ root: { flex: 1 } }}>
                             <Text styles={{ root: { fontSize: "12px", fontWeight: FontWeights.regular } }}>
                                 {nlsHPCC.FromDate}
                             </Text>
                             <DateTimeInput value={tempStartDate} onChange={setTempStartDate} style={{ width: "100%" }} />
-                        </Stack>
-                        <Stack tokens={{ childrenGap: 4 }} styles={{ root: { flex: 1 } }}>
+                        </StackShim>
+                        <StackShim tokens={{ childrenGap: 4 }} styles={{ root: { flex: 1 } }}>
                             <Text styles={{ root: { fontSize: "12px", fontWeight: FontWeights.regular } }}>
                                 {nlsHPCC.ToDate}
                             </Text>
                             <DateTimeInput value={tempEndDate} onChange={setTempEndDate} style={{ width: "100%" }} />
-                        </Stack>
-                    </Stack>
-                </Stack>
+                        </StackShim>
+                    </StackShim>
+                </StackShim>
 
                 {showAutoRefresh && (
                     <>
                         <Separator />
-                        <Stack tokens={{ childrenGap: 8 }}>
+                        <StackShim tokens={{ childrenGap: 8 }}>
                             <Text styles={{ root: { fontWeight: FontWeights.semibold, fontSize: "14px" } }}>
                                 {nlsHPCC.AutoRefresh}
                             </Text>
-                            <Stack horizontal wrap tokens={{ childrenGap: 8 }}>
+                            <StackShim horizontal wrap tokens={{ childrenGap: 8 }}>
                                 {autoRefreshOptions.map((option) => (
                                     <DefaultButton
                                         key={option.value}
@@ -341,16 +342,16 @@ export const SuperDatePicker: React.FunctionComponent<SuperDatePickerProps> = ({
                                         }}
                                     />
                                 ))}
-                            </Stack>
-                        </Stack>
+                            </StackShim>
+                        </StackShim>
                     </>
                 )}
 
-                <Stack horizontal horizontalAlign="end" tokens={{ childrenGap: 8 }}>
+                <StackShim horizontal horizontalAlign="end" tokens={{ childrenGap: 8 }}>
                     <DefaultButton text={nlsHPCC.Cancel} onClick={() => setIsCalloutVisible(false)} />
                     <PrimaryButton text={nlsHPCC.Apply} onClick={handleCustomDateApply} />
-                </Stack>
-            </Stack>
+                </StackShim>
+            </StackShim>
         </Callout>
-    </Stack>;
+    </StackShim>;
 };

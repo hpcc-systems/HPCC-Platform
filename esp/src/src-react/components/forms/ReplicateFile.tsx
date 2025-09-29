@@ -1,5 +1,6 @@
 import * as React from "react";
-import { DefaultButton, IDropdownOption, PrimaryButton, Spinner, Stack, TextField, } from "@fluentui/react";
+import { DefaultButton, IDropdownOption, PrimaryButton, Spinner, TextField, } from "@fluentui/react";
+import { StackShim } from "@fluentui/react-migration-v8-v9";
 import { useForm, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
 import * as FileSpray from "src/FileSpray";
@@ -74,7 +75,7 @@ export const ReplicateFile: React.FunctionComponent<ReplicateFileProps> = ({
             <PrimaryButton text={nlsHPCC.Replicate} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
         </>}>
-        <Stack>
+        <StackShim>
             <Controller
                 control={control} name="sourceLogicalName"
                 render={({
@@ -131,6 +132,6 @@ export const ReplicateFile: React.FunctionComponent<ReplicateFileProps> = ({
                     required: `${nlsHPCC.SelectA} ${nlsHPCC.Cluster}`
                 }}
             />
-        </Stack>
+        </StackShim>
     </MessageBox>;
 };

@@ -1,7 +1,8 @@
 import * as React from "react";
-import { ToggleButton } from "@fluentui/react-components";
+import { IconButton, IContextualMenuItem, Link, mergeStyleSets } from "@fluentui/react";
+import { ToggleButton, makeStyles, tokens } from "@fluentui/react-components";
+import { StackShim, StackItemShim } from "@fluentui/react-migration-v8-v9";
 import { NavDrawer, NavDrawerBody, NavDrawerFooter, NavItem } from "@fluentui/react-nav-preview";
-import { makeStyles, tokens } from "@fluentui/react-components";
 import {
     Home20Filled, Home20Regular, TextGrammarLightning20Filled, TextGrammarLightning20Regular,
     DatabaseWindow20Filled, DatabaseWindow20Regular,
@@ -11,7 +12,6 @@ import {
     WeatherSunnyRegular, WeatherMoonRegular,
     bundleIcon, FluentIcon
 } from "@fluentui/react-icons";
-import { IconButton, IContextualMenuItem, Link, mergeStyleSets, Stack } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
 import { containerized, bare_metal } from "src/BuildInfo";
 import { navCategory } from "../util/history";
@@ -456,10 +456,10 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
     }, [favorites]);
 
     return <div style={{ backgroundColor: theme.palette.themeLighter }}>
-        <Stack horizontal horizontalAlign="space-between">
-            <Stack.Item align="center" grow={1}>
-                <Stack horizontal>
-                    <Stack.Item grow={0} className={navStyles.wrapper}>
+        <StackShim horizontal horizontalAlign="space-between">
+            <StackItemShim align="center" grow={1}>
+                <StackShim horizontal>
+                    <StackItemShim grow={0} className={navStyles.wrapper}>
                         {subMenuItems[mainNav]?.map((row, idx) => {
                             const restrictedRoutes = ["security"];
                             if (envHasAuth) {
@@ -481,18 +481,18 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
                                 {row.headerText}
                             </Link>;
                         })}
-                    </Stack.Item>
+                    </StackItemShim>
                     {!!subNav &&
-                        <Stack.Item grow={1} style={{ lineHeight: "24px" }}>
+                        <StackItemShim grow={1} style={{ lineHeight: "24px" }}>
                             {hashPath.includes("/files/")
                                 ? <Breadcrumbs hashPath={hashPath} ignoreN={2} />
                                 : <Breadcrumbs hashPath={hashPath} ignoreN={1} />
                             }
-                        </Stack.Item>
+                        </StackItemShim>
                     }
-                </Stack>
-            </Stack.Item>
-            <Stack.Item align="center" grow={0}>
+                </StackShim>
+            </StackItemShim>
+            <StackItemShim align="center" grow={0}>
                 {nextPrev?.next && <IconButton title={nlsHPCC.NextWorkunit} iconProps={{ iconName: "Movers" }} onClick={() => nextPrev.next()} />}
                 {nextPrev?.previous && <IconButton title={nlsHPCC.PreviousWorkunit} iconProps={{ iconName: "Sell" }} onClick={() => nextPrev.previous()} />}
                 <IconButton title={nlsHPCC.History} iconProps={{ iconName: "History" }} menuProps={{ items: history }} />
@@ -511,7 +511,7 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
                     }}
                     styles={{ splitButtonMenuButton: { backgroundColor: theme.palette.themeLighter, border: "none" } }}
                 />
-            </Stack.Item>
-        </Stack>
+            </StackItemShim>
+        </StackShim>
     </div>;
 };
