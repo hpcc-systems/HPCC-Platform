@@ -424,9 +424,9 @@ public:
         return new CReadSocketHandler(*this, sock, sizeof(RoxiePacketHeader), maxInitialReadSize);
     }
 
-    virtual void processMessageContents(CReadSocketHandler & socketHandler)
+    virtual void processMessage(const void * data, size32_t len) override
     {
-        receiver.processMessage(socketHandler.queryBuffer().toByteArray(), socketHandler.queryBuffer().length());
+        receiver.processMessage(data, len);
     }
 
 protected:

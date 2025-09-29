@@ -48,7 +48,7 @@ interface ISocketMessageProcessor
 {
     virtual bool onlyProcessFirstRead() const = 0;                      // Does this only handle one read request, or are multiple messages processed
     virtual unsigned getMessageSize(const void * header) const = 0;     // For variable length messages, given the header, how big is the rest?
-    virtual void processMessages(CReadSocketHandler & socket) = 0;
+    virtual void processMessage(const void * data, size32_t len) = 0;
     virtual void stopProcessing(CReadSocketHandler & socket) = 0;       // Remove from the processor
     virtual void closeConnection(CReadSocketHandler & socket, IJSOCK_Exception * exception) = 0;
 };
@@ -70,9 +70,9 @@ public:
 
     bool close();
     bool closeIfTimedout(cycle_t now, cycle_t timeoutCycles);
+
     // ISocketSelectNotify impl.
     virtual bool notifySelected(ISocket *sock, unsigned selected) override;
-    void prepareForNextRead();
 
 protected:
     const bool onlyProcessFirstRead;
@@ -103,12 +103,10 @@ public:
 
 // implementation of ISocketMessageProcessor
     virtual void closeConnection(CReadSocketHandler &socketHandler, IJSOCK_Exception *exception) override;
-    virtual void processMessages(CReadSocketHandler & socketHandler) override;
     virtual void stopProcessing(CReadSocketHandler & socket) override;
 
 // Must be implemented by a derived class
     virtual CReadSocketHandler *createSocketHandler(ISocket *sock) = 0;
-    virtual void processMessageContents(CReadSocketHandler & ownedSocketHandler) = 0;
 
 protected:
     void clearupSocketHandlers();
@@ -158,7 +156,7 @@ public:
     virtual bool onlyProcessFirstRead() const override;
     virtual unsigned getMessageSize(const void * header) const override;
     virtual CReadSocketHandler *createSocketHandler(ISocket *sock) override;
-    virtual void processMessageContents(CReadSocketHandler & ownedSocketHandler) override;
+    virtual void processMessage(const void * data, size32_t len) override;
 };
 
 

@@ -90,11 +90,18 @@ bool CReadSocketHandler::notifySelected(ISocket *sock, unsigned selected)
             // If the handler is not one-shot, and it can support multiple messages, then it should be possible
             // to read maxSize, and then process a sequence of messages instead.  That would be more efficient.
             size32_t toRead = requiredSize ? requiredSize : minSize;
+
+            // If we can process multiple messages, then read as much as we can, up to maxReadSize
+            if (processMultipleMessages && (toRead < maxReadSize))
+                toRead = maxReadSize;
+
             buffer.ensureCapacity(toRead);
 
             size32_t rd = 0;
             byte * target = (byte *)buffer.bufferBase();
-            sock->readtms(target+readSoFar, 0, toRead-readSoFar, rd, 60000); // long enough!
+
+            size32_t maxToRead = toRead-readSoFar;
+            sock->readtms(target+readSoFar, 0, maxToRead, rd, 60000); // long enough!
             buffer.reserve(rd); // increment the current length
             readSoFar += rd;
             dbgassertex(target == buffer.bufferBase()); // Check that the reserve has not reallocated the buffer
@@ -104,26 +111,46 @@ bool CReadSocketHandler::notifySelected(ISocket *sock, unsigned selected)
 
             if (requiredSize && (readSoFar >= requiredSize))
             {
-                assertex(readSoFar == requiredSize);
-
-                    // Ensure that this socket handler does not get destroyed when processing the message as a
-                    // side-effect of removing it from the processor
+                // Ensure that this socket handler does not get destroyed when processing the message as a
+                // side-effect of removing it from the processor
                 Linked<CReadSocketHandler> savedHandler = this;
 
+                assertex(processMultipleMessages || readSoFar == requiredSize);
                 if (onlyProcessFirstRead)
                 {
+
                     // process() will remove itself from handler, and need to avoid it doing so while in 'crit'
                     // since the maintenance thread could also be tyring to manipulate handlers and calling closeIfTimedout()
                     closedOrHandled = true;
                     b.leave();
 
                     processor.stopProcessing(*this);
-                    processor.processMessages(*this);
+                    processor.processMessage(target, readSoFar);
                 }
                 else
                 {
-                    processor.processMessages(*this);
-                    prepareForNextRead();
+                    //Walk the data that has been received, processing all the complete messages
+                    size32_t offset = 0;
+                    while (offset < readSoFar - minSize)
+                    {
+                        size32_t msgSize = processor.getMessageSize(target + offset);
+                        if (msgSize > readSoFar - offset)
+                            break;
+                        processor.processMessage(target + offset, msgSize);
+                        offset += msgSize;
+                    }
+
+                    //Now prepare for the next request - copy any remaining data to the start of the buffer
+                    size32_t remaining = readSoFar - offset;
+                    if (remaining)
+                        memmove(target, target + offset, remaining);
+                    buffer.setWritePos(readSoFar);
+
+                    // And reset the state about the number of bytes read so far
+                    readSoFar = remaining;
+                    requiredSize = (minSize == maxReadSize) ? minSize : 0;
+                    if (readSoFar >= minSize)
+                        requiredSize = processor.getMessageSize(target);
                 }
             }
         }
@@ -139,14 +166,6 @@ bool CReadSocketHandler::notifySelected(ISocket *sock, unsigned selected)
 
     return false;
 }
-
-void CReadSocketHandler::prepareForNextRead()
-{
-    readSoFar = 0;
-    requiredSize = (minSize == maxReadSize) ? minSize : 0;
-    buffer.clear();
-}
-
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -231,11 +250,6 @@ void CReadSelectHandler::closeConnection(CReadSocketHandler &socketHandler, IJSO
         handlers.remove(&socketHandler);
     }
     handler->querySocket()->close();
-}
-
-void CReadSelectHandler::processMessages(CReadSocketHandler & socketHandler)
-{
-    processMessageContents(socketHandler);
 }
 
 void CReadSelectHandler::stopProcessing(CReadSocketHandler & socket)
@@ -442,7 +456,7 @@ CReadSocketHandler *ConcreteConnectionLister::createSocketHandler(ISocket *sock)
     return new CReadSocketHandler(*this, sock, 64, 0x10000);
 }
 
-void ConcreteConnectionLister::processMessageContents(CReadSocketHandler & ownedSocketHandler)
+void ConcreteConnectionLister::processMessage(const void * data, size32_t len)
 {
 }
 
