@@ -585,8 +585,13 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CRoxieQueryPacketBase(const void *_data, int lengthRemaining) : data((RoxiePacketHeader *) _data)
+    CRoxieQueryPacketBase(const void *_data, int lengthRemaining, bool ownData) : data((RoxiePacketHeader *) _data)
     {
+        if (!ownData)
+        {
+            data = (RoxiePacketHeader *) malloc(lengthRemaining);
+            memcpy(data, _data, lengthRemaining);
+        }
         assertex(lengthRemaining >= (int) sizeof(RoxiePacketHeader));
         data->packetlength = lengthRemaining;
         const byte *finger = (const byte *) (data + 1);
@@ -646,7 +651,7 @@ protected:
     
 public:
     IMPLEMENT_IINTERFACE;
-    CRoxieQueryPacket(const void *_data, int length) : CRoxieQueryPacketBase(_data, length)
+    CRoxieQueryPacket(const void *_data, int length, bool ownData) : CRoxieQueryPacketBase(_data, length, ownData)
     {
         const byte *finger = (const byte *) (data + 1) + traceLength;
         int lengthRemaining = length - sizeof(RoxiePacketHeader) - traceLength;
@@ -734,7 +739,7 @@ public:
         memcpy(newdata, data, length);
         newdata->channel = channel;
         newdata->retries |= ROXIE_BROADCAST;
-        return createRoxiePacket(newdata, length);
+        return createRoxiePacket(newdata, length, true);
     }
 
     virtual IRoxieQueryPacket *insertSkipData(size32_t skipDataLen, const void *skipData) const
@@ -753,28 +758,24 @@ public:
         *(unsigned *) (newdata + headSize) = skipDataLen; // add length field for new data
         memcpy(newdata + headSize + sizeof(unsigned), skipData, skipDataLen); // copy in new data
         memcpy(newdata + headSize + sizeof(unsigned) + skipDataLen, ((char *) data) + headSize, data->packetlength - headSize); // copy in remaining old data
-        return createRoxiePacket(newdata, newDataSize);
+        return createRoxiePacket(newdata, newDataSize, true);
     }
 
     virtual ISerializedRoxieQueryPacket *serialize() const override
     {
         unsigned length = data->packetlength;
+        if (!encryptInTransit)
+            return createSerializedRoxiePacket(data, length, false);
+
         MemoryBuffer mb;
-        if (encryptInTransit)
-        {
-            const byte *plainData = (const byte *) (data+1);
-            plainData += traceLength;
-            unsigned plainLen = length - sizeof(RoxiePacketHeader) - traceLength;
-            mb.append(sizeof(RoxiePacketHeader)+traceLength, data);  // Header and traceInfo are unencrypted
-            const MemoryAttr &udpkey = getSecretUdpKey(true);
-            aesEncrypt(udpkey.get(), udpkey.length(), plainData, plainLen, mb);   // Encrypt everything else
-            RoxiePacketHeader *newHeader = (RoxiePacketHeader *) mb.toByteArray();
-            newHeader->packetlength = mb.length();
-        }
-        else
-        {
-            mb.append(length, data);
-        }
+        const byte *plainData = (const byte *) (data+1);
+        plainData += traceLength;
+        unsigned plainLen = length - sizeof(RoxiePacketHeader) - traceLength;
+        mb.append(sizeof(RoxiePacketHeader)+traceLength, data);  // Header and traceInfo are unencrypted
+        const MemoryAttr &udpkey = getSecretUdpKey(true);
+        aesEncrypt(udpkey.get(), udpkey.length(), plainData, plainLen, mb);   // Encrypt everything else
+        RoxiePacketHeader *newHeader = (RoxiePacketHeader *) mb.toByteArray();
+        newHeader->packetlength = mb.length();
         return createSerializedRoxiePacket(mb);
     }
 
@@ -818,7 +819,7 @@ class CNocryptRoxieQueryPacket: public CRoxieQueryPacket, implements ISerialized
     unsigned __int64 enqueuedTime = 0;
 public:
     IMPLEMENT_IINTERFACE;
-    CNocryptRoxieQueryPacket(const void *_data, int length) : CRoxieQueryPacket(_data, length)
+    CNocryptRoxieQueryPacket(const void *_data, int length, bool ownData) : CRoxieQueryPacket(_data, length, ownData)
     {
     }
 
@@ -844,7 +845,7 @@ public:
         memcpy(newdata, data, length);
         newdata->channel = channel;
         newdata->retries |= ROXIE_BROADCAST;
-        return new CNocryptRoxieQueryPacket(newdata, length);
+        return new CNocryptRoxieQueryPacket(newdata, length, true);
     }
 
     virtual ISerializedRoxieQueryPacket *serialize() const override
@@ -871,7 +872,7 @@ class CSerializedRoxieQueryPacket : public CRoxieQueryPacketBase, implements ISe
     unsigned __int64 enqueuedTime = 0;
 public:
     IMPLEMENT_IINTERFACE;
-    CSerializedRoxieQueryPacket(const void *_data, int length) : CRoxieQueryPacketBase(_data, length)
+    CSerializedRoxieQueryPacket(const void *_data, int length, bool ownData) : CRoxieQueryPacketBase(_data, length, ownData)
     {
     }
 
@@ -897,7 +898,7 @@ public:
         memcpy(newdata, data, length);
         newdata->channel = channel;
         newdata->retries |= ROXIE_BROADCAST;
-        return new CSerializedRoxieQueryPacket(newdata, length);
+        return new CSerializedRoxieQueryPacket(newdata, length, true);
     }
 
     virtual IRoxieQueryPacket *deserialize() const override
@@ -931,25 +932,26 @@ public:
 
 };
 
-extern IRoxieQueryPacket *createRoxiePacket(void *_data, unsigned _len)
+extern IRoxieQueryPacket *createRoxiePacket(void *_data, unsigned _len, bool ownData)
 {
     if (!encryptInTransit)
-        return new CNocryptRoxieQueryPacket(_data, _len);
+        return new CNocryptRoxieQueryPacket(_data, _len, ownData);
     if ((unsigned short)_len != _len)
     {
         StringBuffer s;
         RoxiePacketHeader *header = (RoxiePacketHeader *) _data;
         header->toString(s);
-        free(_data);
+        if (ownData)
+            free(_data);
         throw MakeStringException(ROXIE_PACKET_ERROR, "Packet length %d exceeded maximum sending packet %s", _len, s.str());
     }
-    return new CRoxieQueryPacket(_data, _len);
+    return new CRoxieQueryPacket(_data, _len, ownData);
 }
 
 extern IRoxieQueryPacket *createRoxiePacket(MemoryBuffer &m)
 {
     unsigned length = m.length(); // don't make assumptions about evaluation order of parameters...
-    return createRoxiePacket(m.detachOwn(), length);
+    return createRoxiePacket(m.detachOwn(), length, true);
 }
 
 extern IRoxieQueryPacket *deserializeCallbackPacket(MemoryBuffer &m)
@@ -971,22 +973,30 @@ extern IRoxieQueryPacket *deserializeCallbackPacket(MemoryBuffer &m)
         unsigned length = decrypted.length();
         RoxiePacketHeader *newHeader = (RoxiePacketHeader *) decrypted.detachOwn();
         newHeader->packetlength = length;
-        return createRoxiePacket(newHeader, length);
+        return createRoxiePacket(newHeader, length, true);
     }
     else
     {
         unsigned length = m.length(); // don't make assumptions about evaluation order of parameters...
-        return createRoxiePacket(m.detachOwn(), length);
+        return createRoxiePacket(m.detachOwn(), length, true);
     }
+}
+
+extern ISerializedRoxieQueryPacket *createSerializedRoxiePacket(void * data, unsigned length, bool ownData)
+{
+    if (encryptInTransit)
+        return new CSerializedRoxieQueryPacket(data, length, ownData);
+    else
+        return new CNocryptRoxieQueryPacket(data, length, ownData);
 }
 
 extern ISerializedRoxieQueryPacket *createSerializedRoxiePacket(MemoryBuffer &m)
 {
     unsigned length = m.length(); // don't make assumptions about evaluation order of parameters...
     if (encryptInTransit)
-        return new CSerializedRoxieQueryPacket(m.detachOwn(), length);
+        return new CSerializedRoxieQueryPacket(m.detachOwn(), length, true);
     else
-        return new CNocryptRoxieQueryPacket(m.detachOwn(), length); 
+        return new CNocryptRoxieQueryPacket(m.detachOwn(), length, true);
 }
 
 //=================================================================================
