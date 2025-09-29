@@ -40,7 +40,7 @@
 //---------------------------------------------------------------------------------------------------------------------
 
 CReadSocketHandler::CReadSocketHandler(ISocketMessageProcessor & _processor, ISocket *_sock, size32_t _minSize, size32_t _maxSize)
- :  onlyProcessFirstRead(_processor.onlyProcessFirstRead()), processMultipleMessages(false),
+ :  onlyProcessFirstRead(_processor.onlyProcessFirstRead()), processMultipleMessages(!_processor.onlyProcessFirstRead()),
     processor(_processor), sock(_sock), minSize(_minSize), maxReadSize(_maxSize)
 {
     assertex(!(onlyProcessFirstRead && processMultipleMessages)); // If only processing the first read then we can't process multiple messages
@@ -127,8 +127,10 @@ bool CReadSocketHandler::notifySelected(ISocket *sock, unsigned selected)
                 }
                 else
                 {
+                    static unsigned maxMessages = 1;
                     //Walk the data that has been received, processing all the complete messages
                     size32_t offset = 0;
+                    unsigned numMessages = 0;
                     while (offset < readSoFar - minSize)
                     {
                         size32_t msgSize = processor.getMessageSize(target + offset);
@@ -136,6 +138,13 @@ bool CReadSocketHandler::notifySelected(ISocket *sock, unsigned selected)
                             break;
                         processor.processMessage(target + offset, msgSize);
                         offset += msgSize;
+                        numMessages++;
+                    }
+
+                    if (numMessages > maxMessages)
+                    {
+                        maxMessages = numMessages;
+                        DBGLOG("Max messages in one read: %u", maxMessages);
                     }
 
                     //Now prepare for the next request - copy any remaining data to the start of the buffer
@@ -450,7 +459,8 @@ unsigned ConcreteConnectionLister::getMessageSize(const void * header) const
 CReadSocketHandler *ConcreteConnectionLister::createSocketHandler(ISocket *sock)
 {
     //Header size is 64B, max variable to read is 64K
-    return new CReadSocketHandler(*this, sock, 64, 0x10000);
+    size32_t maxInitialReadSize = 0x10000;
+    return new CReadSocketHandler(*this, sock, 64, maxInitialReadSize);
 }
 
 void ConcreteConnectionLister::processMessage(const void * data, size32_t len)
