@@ -1,5 +1,6 @@
 import * as React from "react";
-import { Checkbox, CommandBar, ContextualMenuItemType, DefaultButton, Dialog, DialogFooter, DialogType, ICommandBarItemProps, MessageBar, MessageBarType, PrimaryButton, SpinButton, Spinner, Stack } from "@fluentui/react";
+import { Checkbox, CommandBar, ContextualMenuItemType, DefaultButton, Dialog, DialogFooter, DialogType, ICommandBarItemProps, MessageBar, MessageBarType, PrimaryButton, SpinButton, Spinner } from "@fluentui/react";
+import { StackShim } from "@fluentui/react-migration-v8-v9";
 import { useConst } from "@fluentui/react-hooks";
 import { Result as CommsResult, XSDXMLNode } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
@@ -126,7 +127,7 @@ const DownloadDialog: React.FunctionComponent<DownloadDialogProps> = ({
         onDismiss={handleCancel}
         dialogContentProps={dialogContentProps}
     >
-        <Stack tokens={stackTokens}>
+        <StackShim tokens={stackTokens}>
             <SpinButton
                 defaultValue={`${totalRows} `}
                 label={"Download:"}
@@ -140,7 +141,7 @@ const DownloadDialog: React.FunctionComponent<DownloadDialogProps> = ({
             {column ?
                 <Checkbox label="De-duplicate" boxSide="end" defaultChecked onChange={onDedup} /> :
                 undefined}
-        </Stack>
+        </StackShim>
         <DialogFooter>
             <PrimaryButton onClick={handleOk} text="Ok" />
             <DefaultButton onClick={handleCancel} text="Cancel" />

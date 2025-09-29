@@ -1,5 +1,6 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, IDropdownOption, mergeStyleSets, PrimaryButton, Spinner, Stack, TextField, } from "@fluentui/react";
+import { Checkbox, DefaultButton, IDropdownOption, mergeStyleSets, PrimaryButton, Spinner, TextField, } from "@fluentui/react";
+import { StackShim } from "@fluentui/react-migration-v8-v9";
 import { useForm, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
 import * as FileSpray from "src/FileSpray";
@@ -127,7 +128,7 @@ export const CopyFile: React.FunctionComponent<CopyFileProps> = ({
             <PrimaryButton text={nlsHPCC.Copy} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
         </>}>
-        <Stack>
+        <StackShim>
             <Controller
                 control={control} name="destGroup"
                 render={({
@@ -167,9 +168,9 @@ export const CopyFile: React.FunctionComponent<CopyFileProps> = ({
                     }}
                 />
             }
-        </Stack>
+        </StackShim>
         {logicalFiles.length > 1 &&
-            <Stack>
+            <StackShim>
                 <table className={`${componentStyles.twoColumnTable} ${componentStyles.selectionTable}`}>
                     <thead>
                         <tr>
@@ -200,9 +201,9 @@ export const CopyFile: React.FunctionComponent<CopyFileProps> = ({
                         })}
                     </tbody>
                 </table>
-            </Stack>
+            </StackShim>
         }
-        <Stack>
+        <StackShim>
             <table className={componentStyles.twoColumnTable}>
                 <tbody>
                     <tr>
@@ -298,6 +299,6 @@ export const CopyFile: React.FunctionComponent<CopyFileProps> = ({
                     </tr>
                 </tbody>
             </table>
-        </Stack>
+        </StackShim>
     </MessageBox>;
 };
