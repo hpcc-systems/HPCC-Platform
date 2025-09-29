@@ -173,7 +173,7 @@ export function useBanner({ showForm, setShowForm }: useBannerProps): [React.Fun
                 dismissButtonAriaLabel="Close"
                 isMultiline={false}
                 truncated={true}
-                overflowButtonAriaLabel="See More"
+                expandButtonProps={{ ariaLabel: "See More" }}
                 style={{
                     color: bannerColor,
                     fontSize: `${bannerSize}px`,

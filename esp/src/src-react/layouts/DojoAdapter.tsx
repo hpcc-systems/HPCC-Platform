@@ -1,5 +1,4 @@
 import * as React from "react";
-import * as ReactDOM from "react-dom";
 import { useConst, useId } from "@fluentui/react-hooks";
 import { registry } from "src-dojo/index";
 import nlsHPCC from "src/nlsHPCC";
@@ -87,8 +86,7 @@ export const DojoAdapter: React.FunctionComponent<DojoAdapterProps> = ({
                 });
                 //  ---
 
-                const domNode = ReactDOM.findDOMNode(divRef) as Element;
-                domNode.innerHTML = "";
+                divRef.innerHTML = "";
             }
             widget = null;  //  Avoid race condition  ---
         };
