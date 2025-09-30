@@ -58,6 +58,9 @@ The package arrow provides CMake targets:
     find_package(ArrowAcero CONFIG REQUIRED)
     target_link_libraries(main PRIVATE "$<IF:$<BOOL:${ARROW_BUILD_STATIC}>,ArrowAcero::arrow_acero_static,ArrowAcero::arrow_acero_shared>")
 
+    find_package(ArrowCompute CONFIG REQUIRED)
+    target_link_libraries(main PRIVATE "$<IF:$<BOOL:${ARROW_BUILD_STATIC}>,ArrowCompute::arrow_compute_static,ArrowCompute::arrow_compute_shared>")
+
 curl is compatible with built-in CMake targets:
 
     find_package(CURL REQUIRED)
@@ -332,6 +335,11 @@ The package pcre2 is compatible with built-in CMake targets:
     # TARGETS: PCRE2::8BIT PCRE2::16BIT PCRE2::32BIT PCRE2::POSIX
     find_package(pcre2 CONFIG REQUIRED)
     target_link_libraries(main PRIVATE PCRE2::8BIT PCRE2::16BIT PCRE2::32BIT PCRE2::POSIX)
+
+picojson is header-only and can be used from CMake via:
+
+  find_path(PICOJSON_INCLUDE_DIRS "picojson/picojson.h")
+  target_include_directories(main PRIVATE ${PICOJSON_INCLUDE_DIRS})
 
 sqlite3 provides pkgconfig bindings.
 sqlite3 provides CMake targets:
