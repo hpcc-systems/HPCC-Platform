@@ -70,10 +70,22 @@ void IndexMRUCache::reserve(__uint64 needed, IndexMRUCacheReporter &reporter)
 
 class CIndexEventModel : public CInterfaceOf<IEventModel>
 {
-public: // IEventModel
+public: // IEventVisitationLink
     IMPLEMENT_IEVENTVISITATIONLINK;
 
-    virtual bool visitEvent(CEvent &event) override
+    virtual void configure(const IPropertyTree& config) override
+    {
+        const IPropertyTree* node = config.queryBranch("storage");
+        if (!node)
+            throw makeStringException(-1, "index event model configuration missing required <storage> element");
+        storage.configure(*node);
+        node = config.queryBranch("memory");
+        if (node)
+            memory.configure(*node);
+    }
+
+public: // IEventModel
+    virtual bool visitEvent(CEvent& event) override
     {
         if (!nextLink)
             return false;
@@ -112,19 +124,6 @@ public: // IEventModel
                 return false;
         }
         // Visitation is never aborted by the model.
-        return true;
-    }
-
-public:
-    bool configure(const IPropertyTree &config)
-    {
-        const IPropertyTree *node = config.queryBranch("storage");
-        if (!node)
-            return false;
-        storage.configure(*node);
-        node = config.queryBranch("memory");
-        if (node)
-            memory.configure(*node);
         return true;
     }
 
@@ -374,7 +373,7 @@ public:
     {
         constexpr const char *testData = R"!!!(
             <test>
-                <link type="index-events">
+                <link kind="index-events">
                     <storage>
                     <plane name="a" readTime="500"/>
                     </storage>
@@ -397,14 +396,14 @@ public:
         constexpr const char *testData = R"!!!(
         {
             "link": {
+                "@kind": "index-events",
                 "storage": {
                     "@cacheReadTime": 0,
                     "plane": {
                         "@name": "a",
                         "@readTime": 500
                     }
-                },
-                "@type": "index-events"
+                }
             },
             "input": {
                 "event": [
@@ -458,7 +457,7 @@ public:
     {
         constexpr const char *testData = R"!!!(
 link:
-- type: index-events
+- kind: index-events
   storage:
     cacheReadTime: 100
     cacheCapacity: 8192
@@ -563,7 +562,7 @@ expect:
         // because the cache is large enough to hold both pages.
         constexpr const char *testData = R"!!!(
             <test>
-                <link type="index-events">
+                <link kind="index-events">
                     <storage cacheReadTime="100" cacheCapacity="16384">
                         <plane name="a" readTime="500"/>
                     </storage>
@@ -593,7 +592,7 @@ expect:
     {
         constexpr const char *testData = R"!!!(
             <test>
-                <link type="index-events">
+                <link kind="index-events">
                     <storage>
                         <plane name="a" readTime="500"/>
                     </storage>
@@ -637,7 +636,7 @@ expect:
     {
         constexpr const char *testData = R"!!!(
             <test>
-                <link type="index-events">
+                <link kind="index-events">
                     <storage>
                         <plane name="a" readTime="500"/>
                     </storage>
@@ -675,7 +674,7 @@ expect:
     {
         constexpr const char *testData = R"!!!(
             <test>
-                <link type="index-events">
+                <link kind="index-events">
                     <storage>
                         <plane name="a" readTime="500"/>
                     </storage>
@@ -707,7 +706,7 @@ expect:
     {
         constexpr const char *testData = R"!!!(
             <test>
-                <link type="index-events">
+                <link kind="index-events">
                     <storage>
                         <plane name="a" readTime="500"/>
                     </storage>
@@ -739,7 +738,7 @@ expect:
     {
         constexpr const char *testData = R"!!!(
             <test>
-                <link type="index-events">
+                <link kind="index-events">
                     <storage>
                         <plane name="a" readTime="500"/>
                     </storage>
@@ -776,7 +775,7 @@ expect:
     {
         constexpr const char *testData = R"!!!(
             <test>
-                <link type="index-events">
+                <link kind="index-events">
                     <storage>
                         <plane name="a" readTime="500"/>
                     </storage>
@@ -807,7 +806,7 @@ expect:
     {
         constexpr const char *testData = R"!!!(
             <test>
-                <link type="index-events">
+                <link kind="index-events">
                     <storage>
                         <plane name="a" readTime="500"/>
                     </storage>
@@ -838,7 +837,7 @@ expect:
     {
         constexpr const char *testData = R"!!!(
             <test>
-                <link type="index-events">
+                <link kind="index-events">
                     <storage>
                         <plane name="a" readTime="500"/>
                     </storage>
@@ -862,7 +861,7 @@ expect:
     {
         constexpr const char *testData = R"!!!(
             <test>
-                <link type="index-events">
+                <link kind="index-events">
                     <storage>
                         <plane name="a" readTime="500"/>
                     </storage>
@@ -886,7 +885,7 @@ expect:
     {
         constexpr const char *testData = R"!!!(
             <test>
-                <link type="index-events">
+                <link kind="index-events">
                     <storage>
                         <plane name="a" readTime="500"/>
                     </storage>
@@ -911,7 +910,7 @@ expect:
     {
         constexpr const char *testData = R"!!!(
             <test>
-                <link type="index-events">
+                <link kind="index-events">
                     <storage>
                         <plane name="a" readTime="500"/>
                     </storage>
@@ -936,7 +935,7 @@ expect:
     {
         constexpr const char *testData = R"!!!(
             <test>
-                <link type="index-events">
+                <link kind="index-events">
                     <storage>
                         <plane name="a" readTime="500"/>
                     </storage>
