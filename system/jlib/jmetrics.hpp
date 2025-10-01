@@ -115,7 +115,19 @@ interface IMetric
      * Query the unique id for the metric
      */
     virtual unsigned int queryId() const = 0;
+};
 
+
+/*
+ * IInternalMetric
+ *
+ * Extended interface for internal metrics that track numeric values and provide
+ * statistical aggregation capabilities (running average and standard deviation).
+ * This interface is used for metrics like transaction latency where statistical
+ * analysis over time is needed.
+ */
+interface IInternalMetric : public IMetric
+{
     /*
      * Query the running average value for the metric
      */
@@ -125,6 +137,11 @@ interface IMetric
      * Query the standard deviation for the metric
      */
     virtual double queryStandardDeviation() const = 0;
+
+    /*
+     * Record a new measurement value for statistical tracking
+     */
+    virtual void recordValue(__uint64 value) = 0;
 };
 
 
@@ -144,8 +161,6 @@ public:
     virtual std::vector<__uint64> queryHistogramValues() const override { return {}; }
     virtual std::vector<__uint64> queryHistogramBucketLimits() const override { return {}; }
     unsigned int queryId() const { return myId; }
-    virtual double queryRunningAverage() const override { return 0.0; }
-    virtual double queryStandardDeviation() const override { return 0.0; }
 
 
 protected:
@@ -174,43 +189,12 @@ class jlib_decl MetricVal : public MetricBase
 {
 public:
     virtual __uint64 queryValue() const override { return value; }
-    virtual double queryRunningAverage() const override 
-    { 
-        if (!enableAggregatedStats) return 0.0;
-        CriticalBlock block(statsCritSec);
-        return count > 0 ? sum / count : 0.0; 
-    }
-    virtual double queryStandardDeviation() const override
-    {
-        if (!enableAggregatedStats) return 0.0;
-        CriticalBlock block(statsCritSec);
-        if (count <= 1) return 0.0;
-        double mean = sum / count;
-        double variance = (sumSquares - sum * mean) / count;
-        return variance > 0.0 ? sqrt(variance) : 0.0;
-    }
 
 protected:
-    MetricVal(const char *_name, const char *_desc, MetricType _metricType, StatisticMeasure _units, const MetricMetaData &_metaData, bool _enableAggregatedStats = false) :
-        MetricBase(_name, _desc, _metricType, _units, _metaData), enableAggregatedStats(_enableAggregatedStats) {}
+    MetricVal(const char *_name, const char *_desc, MetricType _metricType, StatisticMeasure _units, const MetricMetaData &_metaData) :
+        MetricBase(_name, _desc, _metricType, _units, _metaData) {}
 
-    void updateStats(__uint64 newValue)
-    {
-        if (!enableAggregatedStats) return;
-        CriticalBlock block(statsCritSec);
-        count++;
-        double dValue = static_cast<double>(newValue);
-        sum += dValue;
-        sumSquares += dValue * dValue;
-    }
-
-protected:
     RelaxedAtomic<__uint64> value{0};
-    bool enableAggregatedStats;
-    mutable CriticalSection statsCritSec;
-    __uint64 count{0};
-    double sum{0.0};
-    double sumSquares{0.0};
 };
 
 
@@ -220,19 +204,16 @@ protected:
 class jlib_decl CounterMetric : public MetricVal
 {
 public:
-    CounterMetric(const char *_name, const char *_description, StatisticMeasure _units, const MetricMetaData &_metaData = MetricMetaData(), bool _enableAggregatedStats = false) :
-        MetricVal{_name, _description, MetricType::METRICS_COUNTER, _units, _metaData, _enableAggregatedStats}  { }
+    CounterMetric(const char *_name, const char *_description, StatisticMeasure _units, const MetricMetaData &_metaData = MetricMetaData()) :
+        MetricVal{_name, _description, MetricType::METRICS_COUNTER, _units, _metaData}  { }
     void inc(uint64_t val)
     {
-        __uint64 newValue = value.fetch_add(val) + val;
-        updateStats(newValue);
+        value.fetch_add(val);
     }
 
     void fastInc(uint16_t val)
     {
         value.fastAdd(val);
-        __uint64 newValue = value.load();
-        updateStats(newValue);
     }
 };
 
@@ -243,20 +224,17 @@ public:
 class jlib_decl GaugeMetric : public MetricVal
 {
 public:
-    GaugeMetric(const char *_name, const char *_description, StatisticMeasure _units, const MetricMetaData &_metaData = MetricMetaData(), bool _enableAggregatedStats = false) :
-        MetricVal{_name, _description, MetricType::METRICS_GAUGE, _units, _metaData, _enableAggregatedStats}  { }
+    GaugeMetric(const char *_name, const char *_description, StatisticMeasure _units, const MetricMetaData &_metaData = MetricMetaData()) :
+        MetricVal{_name, _description, MetricType::METRICS_GAUGE, _units, _metaData}  { }
 
     void adjust(int64_t delta)
     {
-        __uint64 newValue = value += delta;
-        updateStats(newValue);
+        value += delta;
     }
 
     void fastAdjust(int64_t delta)
     {
         value.fastAdd(delta);
-        __uint64 newValue = value.load();
-        updateStats(newValue);
     }
 
     /*
@@ -265,7 +243,6 @@ public:
     void set(int64_t val)
     {
         value = val;
-        updateStats(static_cast<__uint64>(val));
     }
 };
 
@@ -275,8 +252,8 @@ class jlib_decl GaugeMetricFromCounters : public MetricVal
 public:
     GaugeMetricFromCounters(const char *_name, const char *_description, StatisticMeasure _units,
                             const std::shared_ptr<CounterMetric> &_pBeginCounter, const std::shared_ptr<CounterMetric> &_pEndCounter,
-                            const MetricMetaData &_metaData = MetricMetaData(), bool _enableAggregatedStats = false) :
-        MetricVal{_name, _description, MetricType::METRICS_GAUGE, _units, _metaData, _enableAggregatedStats},
+                            const MetricMetaData &_metaData = MetricMetaData()) :
+        MetricVal{_name, _description, MetricType::METRICS_GAUGE, _units, _metaData},
         pBeginCounter{_pBeginCounter},
         pEndCounter{_pEndCounter}
     {
@@ -313,11 +290,64 @@ protected:
 };
 
 
+/*
+ * InternalMetric
+ *
+ * Metric type specifically designed to track numeric values such as transaction latency,
+ * response times, or other measurements where statistical analysis (running average and
+ * standard deviation) is needed.
+ *
+ * This metric records individual values and maintains running statistics using an online
+ * algorithm that tracks count, sum, and sum-of-squares without storing all historical data.
+ */
+class jlib_decl InternalMetric : public MetricBase, public IInternalMetric
+{
+public:
+    InternalMetric(const char *_name, const char *_desc, StatisticMeasure _units, const MetricMetaData &_metaData = MetricMetaData());
+
+    virtual __uint64 queryValue() const override
+    {
+        CriticalBlock block(cs);
+        return count;
+    }
+
+    virtual double queryRunningAverage() const override
+    {
+        CriticalBlock block(cs);
+        return count > 0 ? sum / count : 0.0;
+    }
+
+    virtual double queryStandardDeviation() const override
+    {
+        CriticalBlock block(cs);
+        if (count <= 1) return 0.0;
+        double mean = sum / count;
+        double variance = (sumSquares - sum * mean) / count;
+        return variance > 0.0 ? sqrt(variance) : 0.0;
+    }
+
+    virtual void recordValue(__uint64 value) override
+    {
+        CriticalBlock block(cs);
+        count++;
+        double dValue = static_cast<double>(value);
+        sum += dValue;
+        sumSquares += dValue * dValue;
+    }
+
+protected:
+    mutable CriticalSection cs;
+    __uint64 count{0};
+    double sum{0.0};
+    double sumSquares{0.0};
+};
+
+
 
 class jlib_decl HistogramMetric : public MetricBase
 {
 public:
-    HistogramMetric(const char *_name, const char *_desc, StatisticMeasure _units, const std::vector<__uint64> &_bucketLimits, const MetricMetaData &_metaData = MetricMetaData(), bool _enableAggregatedStats = false);
+    HistogramMetric(const char *_name, const char *_desc, StatisticMeasure _units, const std::vector<__uint64> &_bucketLimits, const MetricMetaData &_metaData = MetricMetaData());
 
     virtual __uint64 queryValue() const override
     {
@@ -327,8 +357,6 @@ public:
     void recordMeasurement(__uint64 measurement);
     virtual std::vector<__uint64> queryHistogramValues() const override;
     virtual std::vector<__uint64> queryHistogramBucketLimits() const override;
-    virtual double queryRunningAverage() const override;
-    virtual double queryStandardDeviation() const override;
 
 protected:
     struct Bucket
@@ -345,16 +373,13 @@ protected:
     mutable CriticalSection cs;
     Bucket inf{0};
     __uint64 sum{0};
-    bool enableAggregatedStats;
-    __uint64 count{0};
-    double sumSquares{0.0};
 };
 
 
 class jlib_decl ScaledHistogramMetric : public HistogramMetric
 {
 public:
-    ScaledHistogramMetric(const char *_name, const char *_desc, StatisticMeasure _units, const std::vector<__uint64> &_bucketLimits, double _limitsToMeasurementUnitsScaleFactor, const MetricMetaData &_metaData = MetricMetaData(), bool _enableAggregatedStats = false);
+    ScaledHistogramMetric(const char *_name, const char *_desc, StatisticMeasure _units, const std::vector<__uint64> &_bucketLimits, double _limitsToMeasurementUnitsScaleFactor, const MetricMetaData &_metaData = MetricMetaData());
 
     virtual std::vector<__uint64> queryHistogramBucketLimits() const override;
     virtual __uint64 queryValue() const override
@@ -452,24 +477,18 @@ protected:
 };
 
 jlib_decl std::shared_ptr<CounterMetric> registerCounterMetric(const char *name, const char* desc, StatisticMeasure units, const MetricMetaData &metaData = MetricMetaData());
-jlib_decl std::shared_ptr<CounterMetric> registerCounterMetric(const char *name, const char* desc, StatisticMeasure units, const MetricMetaData &metaData, bool enableAggregatedStats);
 jlib_decl std::shared_ptr<GaugeMetric> registerGaugeMetric(const char *name, const char* desc, StatisticMeasure units, const MetricMetaData &metaData = MetricMetaData());
-jlib_decl std::shared_ptr<GaugeMetric> registerGaugeMetric(const char *name, const char* desc, StatisticMeasure units, const MetricMetaData &metaData, bool enableAggregatedStats);
 jlib_decl std::shared_ptr<GaugeMetricFromCounters> registerGaugeFromCountersMetric(const char *name, const char* desc, StatisticMeasure units,
                                                                          const std::shared_ptr<CounterMetric> &pBeginCounter, const std::shared_ptr<CounterMetric> &pEndCounter,
                                                                          const MetricMetaData &metaData = MetricMetaData());
-jlib_decl std::shared_ptr<GaugeMetricFromCounters> registerGaugeFromCountersMetric(const char *name, const char* desc, StatisticMeasure units,
-                                                                         const std::shared_ptr<CounterMetric> &pBeginCounter, const std::shared_ptr<CounterMetric> &pEndCounter,
-                                                                         const MetricMetaData &metaData, bool enableAggregatedStats);
 
 jlib_decl std::shared_ptr<HistogramMetric> registerHistogramMetric(const char *name, const char* desc, StatisticMeasure units, const std::vector<__uint64> &bucketLimits, const MetricMetaData &metaData = MetricMetaData());
-jlib_decl std::shared_ptr<HistogramMetric> registerHistogramMetric(const char *name, const char* desc, StatisticMeasure units, const std::vector<__uint64> &bucketLimits, const MetricMetaData &metaData, bool enableAggregatedStats);
 jlib_decl std::shared_ptr<ScaledHistogramMetric> registerScaledHistogramMetric(const char *name, const char* desc, StatisticMeasure units, const std::vector<__uint64> &bucketLimits,
                                                                                double limitsToMeasurementUnitsScaleFactor, const MetricMetaData &metaData = MetricMetaData());
-jlib_decl std::shared_ptr<ScaledHistogramMetric> registerScaledHistogramMetric(const char *name, const char* desc, StatisticMeasure units, const std::vector<__uint64> &bucketLimits,
-                                                                               double limitsToMeasurementUnitsScaleFactor, const MetricMetaData &metaData, bool enableAggregatedStats);
 
 jlib_decl std::shared_ptr<ScaledHistogramMetric> registerCyclesToNsScaledHistogramMetric(const char *name, const char* desc, const std::vector<__uint64> &bucketLimits, const MetricMetaData &metaData = MetricMetaData());
+
+jlib_decl std::shared_ptr<InternalMetric> registerInternalMetric(const char *name, const char* desc, StatisticMeasure units, const MetricMetaData &metaData = MetricMetaData());
 
 //
 // Convenience function templates to create metrics and add to the manager
