@@ -2085,7 +2085,6 @@ class CCompressedFileReader final : public CCompressedFileBase
     MemoryBuffer iobuffer;          // buffer used for reading
     MemoryBuffer indexbuf;          // non-empty once index read
     Owned<IExpander> expander;
-    MemoryAttr compressedInputBlock;
 
     //Each block in the file consists of a sequence of compressed chunks
     offset_t startBlockExpandedPos = (offset_t)-1;  // The offset of the start of the current compressed block
