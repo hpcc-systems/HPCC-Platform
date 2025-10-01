@@ -3,7 +3,7 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluen
 import { TreeItemValue } from "@fluentui/react-components";
 import { convertedSize } from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
-import { HelperRow, useWorkunitHelpersTree } from "../hooks/workunit";
+import { HelperRow, useWorkunitHelpersTree, useWorkunit } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { DockPanel, DockPanelItem, ResetableDockPanel } from "../layouts/DockPanel";
 import { getESPBaseURL } from "../util/espUrl";
@@ -11,6 +11,7 @@ import { pushUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
 import { FlatTreeItem, FlatTreeEx } from "./controls/FlatTreeEx";
 import { FetchEditor } from "./SourceEditor";
+import { SlaveLogs } from "./forms/SlaveLogs";
 
 function getURL(wuid: string, item: HelperRow, option?: number) {
     let params = "";
@@ -83,12 +84,13 @@ interface HelpersProps {
     wuid: string;
     parentUrl?: string;
     selectedTreeValue?: string;
+    thorLogsAvailable?: boolean;
 }
-
 export const Helpers: React.FunctionComponent<HelpersProps> = ({
     wuid,
     parentUrl = `/workunits/${wuid}/helpers`,
-    selectedTreeValue
+    selectedTreeValue,
+    thorLogsAvailable = false
 }) => {
     selectedTreeValue = selectedTreeValue?.split("::").join("/");
 
@@ -100,6 +102,9 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
     const [treeItems, setTreeItems] = React.useState<FlatTreeItemEx[]>([]);
     const [openItems, setOpenItems] = React.useState<Iterable<TreeItemValue>>([]);
     const [selectedTreeItem, setSelectedTreeItem] = React.useState<FlatTreeItemEx>();
+    const [showThorSlaveLogs, setShowThorSlaveLogs] = React.useState(false);
+
+    const { workunit } = useWorkunit(wuid, true);
 
     const setSelectedItem = React.useCallback((treeItemValue: string | number) => {
         pushUrl(`${parentUrl}/${("" + treeItemValue).split("/").join("::")}`);
@@ -184,8 +189,13 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
                     window.open(getURL(wuid, item, 3));
                 });
             }
+        },
+        { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        {
+            key: "slaveLogs", text: nlsHPCC.SlaveLogs, disabled: !thorLogsAvailable,
+            onClick: () => setShowThorSlaveLogs(true)
         }
-    ], [checkedItems.length, checkedRows, refreshData, treeItemLeafNodes, wuid]);
+    ], [checkedItems.length, checkedRows, refreshData, thorLogsAvailable, treeItemLeafNodes, wuid]);
 
     const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
         {
@@ -205,17 +215,22 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
         }
     }, [dockpanel]);
 
-    return <HolyGrail
-        header={<CommandBar items={buttons} farItems={rightButtons} />}
-        main={
-            <DockPanel hideSingleTabs onCreate={setDockpanel}>
-                <DockPanelItem key="helpersTable" title="Helpers">
-                    <FlatTreeEx treeItems={treeItems} openTreeValues={openItems} setOpenTreeValues={setOpenItems} checkedTreeValues={checkedItems} setCheckedTreeValues={setCheckedItems} setSelectedTreeValue={setSelectedItem} selectedTreeValue={selectedTreeValue} />
-                </DockPanelItem>
-                <DockPanelItem key="helperEditor" title="Helper" padding={4} location="split-right" relativeTo="helpersTable">
-                    <FetchEditor url={selectedTreeItem?.type === "dll" ? "" : selectedTreeItem?.url} noDataMsg={selectedTreeItem?.type === "dll" ? nlsHPCC.CannotDisplayBinaryData : ""}></FetchEditor>
-                </DockPanelItem>
-            </DockPanel>
-        }
-    />;
+    return (
+        <>
+            <HolyGrail
+                header={<CommandBar items={buttons} farItems={rightButtons} />}
+                main={
+                    <DockPanel hideSingleTabs onCreate={setDockpanel}>
+                        <DockPanelItem key="helpersTable" title="Helpers">
+                            <FlatTreeEx treeItems={treeItems} openTreeValues={openItems} setOpenTreeValues={setOpenItems} checkedTreeValues={checkedItems} setCheckedTreeValues={setCheckedItems} setSelectedTreeValue={setSelectedItem} selectedTreeValue={selectedTreeValue} />
+                        </DockPanelItem>
+                        <DockPanelItem key="helperEditor" title="Helper" padding={4} location="split-right" relativeTo="helpersTable">
+                            <FetchEditor url={selectedTreeItem?.type === "dll" ? "" : selectedTreeItem?.url} noDataMsg={selectedTreeItem?.type === "dll" ? nlsHPCC.CannotDisplayBinaryData : ""}></FetchEditor>
+                        </DockPanelItem>
+                    </DockPanel>
+                }
+            />
+            <SlaveLogs wuid={wuid} showForm={showThorSlaveLogs} setShowForm={setShowThorSlaveLogs} />
+        </>
+    );
 };
