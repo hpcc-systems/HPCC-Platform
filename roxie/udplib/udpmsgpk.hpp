@@ -38,9 +38,9 @@ private:
     CriticalSection     queueCrit{SYNC_LOCATION};
     InterruptableSemaphore sem{SYNC_LOCATION};
     ruid_t ruid;
-    std::atomic<unsigned> totalBytesReceived = {0};
-    std::atomic<unsigned> totalDuplicates = {0};
-    std::atomic<unsigned> totalResends = {0};
+    RelaxedAtomic<unsigned> totalBytesReceived = {0};
+    RelaxedAtomic<unsigned> totalDuplicates = {0};
+    RelaxedAtomic<unsigned> totalResends = {0};
 
     void collate(roxiemem::DataBuffer *dataBuff);
 public:
