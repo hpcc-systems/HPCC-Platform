@@ -152,10 +152,10 @@ public:
             nameLen = 255;
         }
         unsigned mapLen = (numParts*4+7)/8;
-        return new(nameLen, mapLen, numParts) cFileDesc(name, nameLen, mapLen, numParts, isDirPerPart, fnLen);
+        return new(nameLen, mapLen) cFileDesc(name, nameLen, mapLen, numParts, isDirPerPart, fnLen);
     }
 
-    static void *operator new(size_t baseSize, unsigned nameLen, unsigned mapLen, unsigned numParts)
+    static void *operator new(size_t baseSize, unsigned nameLen, unsigned mapLen)
     {
         void *ptr = malloc(baseSize+nameLen+mapLen);
         if (!ptr) throw std::bad_alloc();
