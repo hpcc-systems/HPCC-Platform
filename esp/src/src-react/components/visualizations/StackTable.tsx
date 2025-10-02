@@ -1,6 +1,7 @@
 import * as React from "react";
 
-import { FontSizes, FontWeights, IStackItemStyles, IStackStyles, ITooltipProps, Stack, TooltipHost } from "@fluentui/react";
+import { FontSizes, FontWeights, IStackItemStyles, IStackStyles, ITooltipProps, TooltipHost } from "@fluentui/react";
+import { StackShim, StackItemShim } from "@fluentui/react-migration-v8-v9";
 import { useId } from "@fluentui/react-hooks";
 
 interface StackTableProps {
@@ -35,7 +36,7 @@ export const StackTable: React.FunctionComponent<StackTableProps> = ({
     headerStyles = {
         root: {
             height: FontSizes.medium,
-            fontWeight: FontWeights.bold 
+            fontWeight: FontWeights.bold
         }
     },
     labelStyles = {
@@ -45,7 +46,7 @@ export const StackTable: React.FunctionComponent<StackTableProps> = ({
     },
     valueStyles = {
         root: {
-            height:  FontSizes.small,
+            height: FontSizes.small,
             paddingLeft: 6,
             minWidth: 50,
             maxWidth: 200,
@@ -58,93 +59,93 @@ export const StackTable: React.FunctionComponent<StackTableProps> = ({
 
     const tooltipProps: ITooltipProps = {
         onRenderContent: () => (
-            <Stack style={{ margin: 10, padding: 0 }}>
+            <StackShim style={{ margin: 10, padding: 0 }}>
                 {
                     data
                         .filter((n, i) => i >= rowCount)
                         .map((row, rowIdx) => {
-                            return <Stack.Item key={rowIdx}>
-                                    <Stack horizontal styles={tableRowStyles}>
+                            return <StackItemShim key={rowIdx}>
+                                <StackShim horizontal styles={tableRowStyles}>
                                     {
                                         row.map((n, i) => {
-                                            return <Stack.Item
+                                            return <StackItemShim
                                                 key={i}
                                                 grow={i === 0 ? 1 : 0}
                                                 styles={i === 0 ? labelStyles : valueStyles}
                                             >
                                                 {n}
-                                            </Stack.Item>
+                                            </StackItemShim>
                                                 ;
                                         })
                                     }
-                                </Stack>
-                            </Stack.Item>
-                            ;
+                                </StackShim>
+                            </StackItemShim>
+                                ;
                         })
                 }
-            </Stack>
+            </StackShim>
         ),
     };
-    const labelStackItem = label === "" ? undefined : <Stack.Item
-            key="label"
-            grow={0}
-            styles={headerStyles}
-        >
-            {label}
-        </Stack.Item>
+    const labelStackItem = label === "" ? undefined : <StackItemShim
+        key="label"
+        grow={0}
+        styles={headerStyles}
+    >
+        {label}
+    </StackItemShim>
         ;
 
-    const dataStackItem = <Stack.Item key="data" grow={1}>
-            {
-                data
-                    .filter((n, i) => i < rowCount)
-                    .map((row, rowIdx) => {
-                        return <Stack.Item key={rowIdx}>
-                        <Stack horizontal styles={tableRowStyles}>
+    const dataStackItem = <StackItemShim key="data" grow={1}>
+        {
+            data
+                .filter((n, i) => i < rowCount)
+                .map((row, rowIdx) => {
+                    return <StackItemShim key={rowIdx}>
+                        <StackShim horizontal styles={tableRowStyles}>
                             {
                                 row.map((n, i) => {
-                                    return <Stack.Item
+                                    return <StackItemShim
                                         key={i}
                                         grow={i === 0 ? 1 : 0}
                                         styles={i === 0 ? labelStyles : valueStyles}
                                     >
                                         {n}
-                                    </Stack.Item>
+                                    </StackItemShim>
                                         ;
                                 })
                             }
-                        </Stack>
-                        </Stack.Item>
+                        </StackShim>
+                    </StackItemShim>
                         ;
-                    })
-            }
-        </Stack.Item>
+                })
+        }
+    </StackItemShim>
         ;
 
-    const footerStackItem = data.length <= rowCount ? undefined : <Stack.Item 
-            key="tooltip-wrapper"
-            grow={0}
+    const footerStackItem = data.length <= rowCount ? undefined : <StackItemShim
+        key="tooltip-wrapper"
+        grow={0}
+    >
+        <TooltipHost
+            id={tooltipId}
+            tooltipProps={tooltipProps}
         >
-            <TooltipHost
-                id={tooltipId}
-                tooltipProps={tooltipProps}
-            >
-                <Stack horizontal styles={tableRowStyles}>
-                    <Stack.Item key="label" grow={1} styles={labelStyles}>
-                        {overflowLabel}
-                    </Stack.Item>
-                    <Stack.Item key="value" grow={0} styles={valueStyles}>
-                        {overflowValue}
-                    </Stack.Item>
-                </Stack>
-            </TooltipHost>
-        </Stack.Item>
+            <StackShim horizontal styles={tableRowStyles}>
+                <StackItemShim key="label" grow={1} styles={labelStyles}>
+                    {overflowLabel}
+                </StackItemShim>
+                <StackItemShim key="value" grow={0} styles={valueStyles}>
+                    {overflowValue}
+                </StackItemShim>
+            </StackShim>
+        </TooltipHost>
+    </StackItemShim>
         ;
-    
-    return <Stack styles={tableStyles}>
-            {labelStackItem}
-            {dataStackItem}
-            {footerStackItem}
-        </Stack>
+
+    return <StackShim styles={tableStyles}>
+        {labelStackItem}
+        {dataStackItem}
+        {footerStackItem}
+    </StackShim>
         ;
 };

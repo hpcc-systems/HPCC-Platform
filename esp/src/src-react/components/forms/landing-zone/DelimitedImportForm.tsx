@@ -1,5 +1,6 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, Dropdown, IDropdownOption, mergeStyleSets, PrimaryButton, Spinner, Stack, TextField } from "@fluentui/react";
+import { Checkbox, DefaultButton, Dropdown, IDropdownOption, mergeStyleSets, PrimaryButton, Spinner, TextField } from "@fluentui/react";
+import { StackShim } from "@fluentui/react-migration-v8-v9";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
 import * as FileSpray from "src/FileSpray";
@@ -185,7 +186,7 @@ export const DelimitedImportForm: React.FunctionComponent<DelimitedImportFormPro
             <PrimaryButton text={nlsHPCC.Import} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
         </>}>
-        <Stack>
+        <StackShim>
             <Controller
                 control={control} name="destGroup"
                 render={({
@@ -246,8 +247,8 @@ export const DelimitedImportForm: React.FunctionComponent<DelimitedImportFormPro
                     }
                 }}
             />
-        </Stack>
-        <Stack>
+        </StackShim>
+        <StackShim>
             <table className={`${componentStyles.twoColumnTable} ${componentStyles.selectionTable}`}>
                 <thead>
                     <tr>
@@ -305,8 +306,8 @@ export const DelimitedImportForm: React.FunctionComponent<DelimitedImportFormPro
                     })}
                 </tbody>
             </table>
-        </Stack>
-        <Stack>
+        </StackShim>
+        <StackShim>
             <table><tbody>
                 <tr>
                     <td><Controller
@@ -411,8 +412,8 @@ export const DelimitedImportForm: React.FunctionComponent<DelimitedImportFormPro
                     /></td>
                 </tr>
             </tbody></table>
-        </Stack>
-        <Stack>
+        </StackShim>
+        <StackShim>
             <table className={componentStyles.twoColumnTable}>
                 <tbody><tr>
                     <td><Controller
@@ -498,6 +499,6 @@ export const DelimitedImportForm: React.FunctionComponent<DelimitedImportFormPro
                         /></td>
                     </tr></tbody>
             </table>
-        </Stack>
+        </StackShim>
     </MessageBox>;
 };
