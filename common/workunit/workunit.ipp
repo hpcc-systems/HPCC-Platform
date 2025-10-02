@@ -312,6 +312,7 @@ public:
     virtual cost_type getExecuteCost() const;
     virtual cost_type getFileAccessCost() const;
     virtual cost_type getCompileCost() const;
+    virtual cost_type getCostSavingPotential() const;
     void clearExceptions(const char *source=nullptr);
     void commit();
     IWUException *createException();
