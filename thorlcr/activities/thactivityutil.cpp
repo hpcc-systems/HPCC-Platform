@@ -772,7 +772,7 @@ public:
 // GH->JCS. It would be better if this wrapped the base IFileIO, rather than the compressed IFileIO - otherwise each write goes through
 //          an extra layer of virtual calls.
 
-IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc, unsigned twFlags, bool &compress, ICompressor *ecomp, ICopyFileProgress *iProgress, bool *aborted, StringBuffer *_outLocationName)
+IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc, unsigned twFlags, bool &compress, ICompressor *ecomp, ICopyFileProgress *iProgress, bool *aborted, StringBuffer *_outLocationName, CompressionMethod * compMethodResult)
 {
     StringBuffer outLocationNameI;
     StringBuffer &outLocationName = _outLocationName?*_outLocationName:outLocationNameI;
@@ -817,9 +817,10 @@ IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc,
 
     OwnedIFile file = createIFile(outLocationName.str());
     Owned<IFileIO> fileio;
+    CompressionMethod compMethod = COMPRESS_METHOD_NONE;
     if (compress)
     {
-        unsigned compMethod = COMPRESS_METHOD_LZ4;
+        compMethod = COMPRESS_METHOD_LZ4;
         // rowdif used if recordSize > 0, else fallback to compMethod
         IFEflags fileIOExtaFlags = IFEnone;
         if (!ecomp)
@@ -854,6 +855,7 @@ IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc,
         if (!fileio)
         {
             compress = false;
+            compMethod = COMPRESS_METHOD_NONE;
             Owned<IThorException> e = MakeActivityWarning(activity, TE_LargeBufferWarning, "Could not write file '%s' compressed", outLocationName.str());
             activity->fireException(e);
             fileio.setown(file->open((twFlags & TW_Extend)&&file->exists()?IFOwrite:IFOcreate));
@@ -863,17 +865,14 @@ IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc,
         fileio.setown(file->open((twFlags & TW_Extend)&&file->exists()?IFOwrite:IFOcreate));
     if (!fileio)
         throw MakeActivityException(activity, TE_FileCreationFailed, "Failed to create file for write (%s) error = %d", outLocationName.str(), GetLastError());
+
+    if (compMethodResult)
+        *compMethodResult = compMethod;
+
     StringBuffer compStr;
     if (compress)
     {
-        ICompressedFileIO *icompfio = QUERYINTERFACE(fileio.get(), ICompressedFileIO);
-        if (icompfio)
-        {
-            unsigned compMeth2 = icompfio->method();
-            compStr.append(translateFromCompMethod(compMeth2));
-        }
-        else
-            compStr.append("unknown");
+        compStr.append(translateFromCompMethod(compMethod));
     }
     else
         compStr.append("false");
