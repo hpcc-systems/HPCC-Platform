@@ -24,7 +24,7 @@
 #include "jfile.hpp"
 #include <stdio.h>
 
-enum CompressionMethod
+enum CompressionMethod : byte 
 {
     //These values are persisted - they should not be changed
     COMPRESS_METHOD_NONE,
