@@ -87,20 +87,22 @@ public:
 
 class CRoxieLazyFileIO : implements ILazyFileIO, implements IDelayedFile, public CInterface
 {
+    friend class CRoxieFileCache;
 protected:
     IArrayOf<IFile> sources;
     Owned<IFile> logical;
-    Owned<IFileIO> current;
+    Linked<IFileIO> current;
     Owned<IMemoryMappedFile> mmapped;
     mutable CriticalSection crit;
     offset_t fileSize;
-    unsigned currentIdx;
-    std::atomic<unsigned __int64> lastAccess;
+    unsigned currentIdx{0};
+    std::atomic<unsigned __int64> lastAccess{0};
     CDateTime fileDate;
     std::atomic<bool> copying = false;
     bool isCompressed = false;
     std::atomic<bool> remote = false;
     std::atomic<bool> open = false;
+    std::atomic<bool> initialised = false;
     bool isKey = false;
     IRoxieFileCache *cached = nullptr;
     unsigned fileIdx = 0;
@@ -108,23 +110,22 @@ protected:
     CRuntimeStatisticCollection fileStats;
 
 #ifdef FAIL_20_READ
-    unsigned readCount;
+    unsigned readCount = 0;
 #endif
 
 public:
     IMPLEMENT_IINTERFACE;
 
+    CRoxieLazyFileIO() : current(&failure), fileStats(diskLocalStatistics)
+    {
+    }
+
     CRoxieLazyFileIO(IFile *_logical, offset_t size, const CDateTime &_date, bool _isCompressed, bool _isKey, unsigned _crc)
         : logical(_logical), fileSize(size), isCompressed(_isCompressed), isKey(_isKey), crc(_crc), fileStats(diskLocalStatistics)
     {
         fileDate.set(_date);
-        currentIdx = 0;
         current.set(&failure);
-        open = false;
-#ifdef FAIL_20_READ
-        readCount = 0;
-#endif
-        lastAccess = 0;
+        initialised = true;
     }
     
     ~CRoxieLazyFileIO()
@@ -146,6 +147,17 @@ public:
     virtual unsigned getCrc() const override
     {
         return crc;
+    }
+
+    void init(IFile *_logical, offset_t size, const CDateTime &_date, bool _isCompressed, bool _isKey, unsigned _crc)
+    {
+        logical.set(_logical);
+        fileSize = size;
+        isCompressed = _isCompressed;
+        isKey = _isKey;
+        crc = _crc;
+        fileDate.set(_date);
+        initialised = true;
     }
 
     void setCache(IRoxieFileCache *cache, unsigned _fileIdx)
@@ -904,15 +916,13 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
 {
     friend class CcdFileTest;
     mutable ICopyArrayOf<ILazyFileIO> todo; // Might prefer a queue but probably doesn't really matter.
-#ifdef _CONTAINERIZED
     mutable ICopyArrayOf<ILazyFileIO> buddyCopying;
     mutable bool buddyChecking = false;
-#endif
     bool reportedFilesToCopy = false;
     InterruptableSemaphore toCopy;
     InterruptableSemaphore toClose;
     InterruptableSemaphore cidtSleep;
-    mutable CopyMapStringToMyClass<ILazyFileIO> files;
+    mutable CopyMapStringToMyClassViaBase<CRoxieLazyFileIO, ILazyFileIO> files;
     mutable CriticalSection crit;
     bool started;
     bool aborting;
@@ -930,7 +940,8 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
     UnsignedShortArray cacheIndexChannels;
     CacheReportingBuffer *activeCacheReportingBuffer = nullptr;
 
-    RoxieFileStatus fileUpToDate(IFile *f, offset_t size, const CDateTime &modified, bool isCompressed, bool autoDisconnect=true)
+    // Static to clarify that this does not use any member variables
+    static RoxieFileStatus checkFileUpToDate(IFile *f, offset_t size, const CDateTime &modified, bool isCompressed, bool autoDisconnect)
     {
         // Ensure that SockFile does not keep these sockets open (or we will run out, or at least empty our LRU cache)
         // If useRemoteResources is not set, all checks for fileUpToDate are likely to be followed quickly by calls to copy,
@@ -981,6 +992,11 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
         }
         else
             return FileNotFound;
+    }
+
+    virtual RoxieFileStatus fileUpToDate(IFile *f, offset_t size, const CDateTime &modified, bool isCompressed, bool autoDisconnect=true) override
+    {
+        return checkFileUpToDate(f, size, modified, isCompressed, autoDisconnect);
     }
 
     int runCacheInfoDump()
@@ -1059,7 +1075,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
 
     unsigned trackCache(const char *filename, unsigned channel)
     {
-        // NOTE - called from openFile, with crit already held
+        // NOTE - called with crit already held
         if (!activeCacheReportingBuffer)
             return (unsigned) -1;
         cacheIndexes.append(filename);
@@ -1073,7 +1089,19 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
             activeCacheReportingBuffer->noteRead(fileIdx, pos, len, CacheInfoEntry::PageTypeDisk);
     }
 
-    ILazyFileIO *openFile(const char *lfn, unsigned partNo, unsigned channel, const char *localLocation,
+    ILazyFileIO *openFile( const char *lfn, unsigned partNo, unsigned channel, const char *localLocation,
+                           IPartDescriptor *pdesc,
+                           const StringArray &localEnoughLocationInfo,
+                           const StringArray &remoteLocationInfo,
+                           offset_t size, const CDateTime &modified)
+    {
+        Owned<CRoxieLazyFileIO> ret = new CRoxieLazyFileIO();
+        doOpenFile(ret, lfn, partNo, channel, localLocation, pdesc, localEnoughLocationInfo, remoteLocationInfo, size, modified);
+        return ret.getClear();
+    }
+
+    // Static to clarify that this does not use any member variables
+    static void doOpenFile( CRoxieLazyFileIO *ret, const char *lfn, unsigned partNo, unsigned channel, const char *localLocation,
                            IPartDescriptor *pdesc,
                            const StringArray &localEnoughLocationInfo,
                            const StringArray &remoteLocationInfo,
@@ -1095,8 +1123,9 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                 isKey = true;
         }
 
-        Owned<CRoxieLazyFileIO> ret = new CRoxieLazyFileIO(local.getLink(), size, modified, isCompressed, isKey, crc);
-        RoxieFileStatus fileStatus = fileUpToDate(local, size, modified, isCompressed);
+        ret->init(local, size, modified, isCompressed, isKey, crc);
+
+        RoxieFileStatus fileStatus = checkFileUpToDate(local, size, modified, isCompressed, true);
         if (fileStatus == FileIsValid)
         {
             ret->addSource(local.getLink());
@@ -1116,7 +1145,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                 {
                     const char *localEnoughName = localEnoughLocationInfo.item(plane_idx);
                     Owned<IFile> localEnoughFile = createIFile(localEnoughName);
-                    RoxieFileStatus status = fileUpToDate(localEnoughFile, size, modified, isCompressed);
+                    RoxieFileStatus status = checkFileUpToDate(localEnoughFile, size, modified, isCompressed, true);
                     if (status==FileIsValid)
                     {
                         if (miscDebugTraceLevel > 5)
@@ -1149,7 +1178,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                 {
                     const char *remoteName = localLocations.item(roxie_idx);
                     Owned<IFile> remote = createIFile(remoteName);
-                    RoxieFileStatus status = fileUpToDate(remote, size, modified, isCompressed);
+                    RoxieFileStatus status = checkFileUpToDate(remote, size, modified, isCompressed, true);
                     if (status==FileIsValid)
                     {
                         if (miscDebugTraceLevel > 5)
@@ -1187,7 +1216,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                         Owned<IFile> remote = createIFile(remoteName);
                         if (doTrace(traceRoxieFiles))
                             DBGLOG("checking remote location %s", remoteName);
-                        RoxieFileStatus status = fileUpToDate(remote, size, modified, isCompressed);
+                        RoxieFileStatus status = checkFileUpToDate(remote, size, modified, isCompressed, true);
                         if (status==FileIsValid)
                         {
                             if (miscDebugTraceLevel > 5)
@@ -1240,9 +1269,6 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                 }
             }
         }
-        ret->setCache(this, trackCache(local->queryFilename(), channel));
-        files.setValue(local->queryFilename(), (ILazyFileIO *)ret);
-        return ret.getClear();
     }
 
     static bool doCopyFile(ILazyFileIO *f, const char *targetFilename, const char *destPath, const char *msg, CFflags copyFlags=CFnone)
@@ -1448,7 +1474,7 @@ public:
         HashIterator h(files);
         ForEach(h)
         {
-            ILazyFileIO *f = files.mapToValue(&h.query());
+            CRoxieLazyFileIO *f = files.mapToValue(&h.query());
             f->removeCache(this);
         }
         delete activeCacheReportingBuffer;
@@ -1574,10 +1600,8 @@ public:
                 CriticalBlock b(crit);
                 if (todo.ordinality()==0 && reportedFilesToCopy)
                 {
-#ifdef _CONTAINERIZED
                     DBGLOG("No more data files for this node to copy");
                     if (!buddyCopying.length() && !buddyChecking)
-#endif
                     {
                         DBGLOG("No more data files to copy");
                         reportedFilesToCopy = false;
@@ -1766,7 +1790,6 @@ public:
                 todo.remove(idx);
             }
         }
-#ifdef _CONTAINERIZED
         ForEachItemInRev(idx2, buddyCopying)
         {
             if (file == &buddyCopying.item(idx2))
@@ -1774,7 +1797,6 @@ public:
                 buddyCopying.remove(idx2);
             }
         }
-#endif
     }
 
     virtual ILazyFileIO *lookupFile(const char *lfn, RoxieFileType fileType,
@@ -1809,49 +1831,93 @@ public:
             pdesc->getFilename(replicationLevel, rfn);
             rfn.getLocalPath(localLocation);
         }
-        Owned<ILazyFileIO> ret;
-        try
-        {
-            CLeavableCriticalBlock b(crit);
-            ILazyFileIO * match = files.getValue(localLocation);
-            if (match && match->isAliveAndLink())
-            {
-                Owned<ILazyFileIO> f = match;
-                if ((dfsSize != (offset_t) -1 && dfsSize != f->getSize()) ||
-                    (!dfsDate.isNull() && !dfsDate.equals(*f->queryDateTime(), false)))
-                {
-                    releaseAgentDynamicFileCache();  // Agent dynamic file cache or...
-                    if (fileType == ROXIE_KEY)       // ...jhtree cache can keep files active and thus prevent us from loading a new version
-                        clearKeyStoreCacheEntry(f);  // Will release iff that is the only link
-                    f.clear(); // Note - needs to be done before calling getValue() again, hence the need to make it separate from the f.set below
-                    f.set(files.getValue(localLocation));
-                    if (f)  // May have been cleared above...
-                    {
-                        StringBuffer modifiedDt;
-                        if (!dfsDate.isNull())
-                            dfsDate.getString(modifiedDt);
-                        StringBuffer fileDt;
-                        f->queryDateTime()->getString(fileDt);
-                        if (fileErrorList.find(lfn) == 0)
-                        {
-                            switch (fileType)
-                            {
-                                case ROXIE_KEY:
-                                    fileErrorList.setValue(lfn, "Key");
-                                    break;
 
-                                case ROXIE_FILE:
-                                    fileErrorList.setValue(lfn, "File");
-                                    break;
-                            }
-                        }
-                        throw MakeStringException(ROXIE_MISMATCH, "Different version of %s already loaded: sizes = %" I64F "d %" I64F "d  Date = %s  %s", lfn, dfsSize, f->getSize(), modifiedDt.str(), fileDt.str());
-                    }
+        // This loop is only here to cope with the situation where filenames are dynamic, and the information about
+        // the file does not match the cache - in which case various caches are dropped and we try again if it is
+        // no longer resolved in the cache.
+        Owned<CRoxieLazyFileIO> resolved;
+        do
+        {
+            {
+                CLeavableCriticalBlock b(crit);
+                CRoxieLazyFileIO * match = files.getValue(localLocation);
+                if (match && match->isAliveAndLink())
+                {
+                    resolved.setown(match);
                 }
                 else
-                    return f.getClear();
+                {
+                    //NOTE: resolved->initialised will be false - which is tested outside the critical section
+                    resolved.setown(new CRoxieLazyFileIO());
+                    files.setValue(localLocation, resolved.get());
+                    resolved->setCache(this, trackCache(localLocation, channel));
+                }
             }
 
+            if (!resolved->initialised)
+            {
+                // Obtain a lock for that particular file instance, and check again if it has been initialised
+                // This allows multiple threads to resolve the same file at the same time, but only one to initialise it
+                // and avoid blocking other threads resolving different filenames
+                CriticalBlock block(resolved->crit);
+                if (!resolved->initialised)
+                {
+                    initializeNewFileInstance(resolved, lfn, fileType, pdesc, remotePDesc, numParts, channel, startFileCopy, partNo, localLocation, dfsSize, dfsDate);
+                    //No possibility of a mismatch if the entry has just been initialised => return immediately
+                    return resolved.getLink();
+                }
+            }
+
+            // Check the file sizes and dates are consistent - and return the file if they match
+            if ((dfsSize == (offset_t) -1 || dfsSize == resolved->getSize()) &&
+                (dfsDate.isNull() || dfsDate.equals(*resolved->queryDateTime(), false)))
+                return resolved.getClear();
+
+            //If the information doesn't match, we need to release the file and try again
+            releaseAgentDynamicFileCache();  // Agent dynamic file cache or...
+            if (fileType == ROXIE_KEY)       // ...jhtree cache can keep files active and thus prevent us from loading a new version
+                clearKeyStoreCacheEntry(resolved);  // Will release iff that is the only link
+
+            resolved.clear(); // Note - needs to be done before calling getValue() again, hence the need to make it separate from the resolved.set below
+            {
+                CLeavableCriticalBlock b(crit);
+                resolved.set(files.getValue(localLocation));
+            }
+        } while (!resolved);
+
+        // The file information does not match the cache - throw an exception
+        StringBuffer modifiedDt;
+        if (!dfsDate.isNull())
+            dfsDate.getString(modifiedDt);
+        StringBuffer fileDt;
+        resolved->queryDateTime()->getString(fileDt);
+        if (fileErrorList.find(lfn) == 0)
+        {
+            switch (fileType)
+            {
+                case ROXIE_KEY:
+                    fileErrorList.setValue(lfn, "Key");
+                    break;
+
+                case ROXIE_FILE:
+                    fileErrorList.setValue(lfn, "File");
+                    break;
+            }
+        }
+        throw MakeStringException(ROXIE_MISMATCH, "Different version of %s already loaded: sizes = %" I64F "d %" I64F "d  Date = %s  %s", lfn, dfsSize, resolved->getSize(), modifiedDt.str(), fileDt.str());
+    }
+
+    void initializeNewFileInstance( CRoxieLazyFileIO *ret,
+                                    const char *lfn, RoxieFileType fileType,
+                                    IPartDescriptor *pdesc,
+                                    IPartDescriptor *remotePDesc,
+                                    unsigned numParts, unsigned channel,
+                                    bool startFileCopy,
+                                    unsigned partNo, const char *localLocation,
+                                    offset_t dfsSize, const CDateTime &dfsDate)
+    {
+        try
+        {
             StringArray localEnoughLocations; //files from these locations won't be copied to the default plane
             StringArray remoteLocations;
             const char *peerCluster = pdesc->queryOwner().queryProperties().queryProp("@cloneFromPeerCluster");
@@ -1880,7 +1946,7 @@ public:
             if (remotePDesc)
                 appendRemoteLocations(remotePDesc, remoteLocations, NULL, NULL, false);    // Then any remote on remote dali
 
-            ret.setown(openFile(lfn, partNo, channel, localLocation, pdesc, localEnoughLocations, remoteLocations, dfsSize, dfsDate));
+            doOpenFile(ret, lfn, partNo, channel, localLocation, pdesc, localEnoughLocations, remoteLocations, dfsSize, dfsDate);
 
             if (startFileCopy)
             {
@@ -1888,71 +1954,75 @@ public:
                 {
                     if (copyResources) // MORE - should always copy peer files
                     {
-#ifdef _CONTAINERIZED
-                        // In containerized mode, Roxie file copies are restricted to have only one node do the copying (first node on a channel,
-                        // random node for single-part). But any node that has
-                        //    (a) files being read remotely and
-                        //    (b) no files to copy and
-                        //    (c) a small delay will go through all remote files and check if they are now available locally
-                        // There is an assumption that a "pull" roxie does not have replicas that we don't know about
-                        //     - more than one "pull" roxie copying to the same plane at the same time
-                        //     - replicas=1 should be set on the "pull" roxie (we may be able to relax that using info from toposerver)
-                        //     - can't use localAgent mode on a "pull" roxie
-                        bool iShouldCopy = (replicationLevel==0);
-                        if (numParts==1 || (partNo==numParts && fileType==ROXIE_KEY))
+                        unsigned replicationLevel = getReplicationLevel(channel);
+                        CLeavableCriticalBlock block(crit);
+                        if (isContainerized())
                         {
-                            // We distribute the responsibility for copying the TLK/single-part files
-                            unsigned whoShouldCopy = (rtlHash32VStr(lfn, HASH32_INIT) % numChannels) + 1;
-                            if (whoShouldCopy != myChannel)
-                                iShouldCopy = false;
-                        }
-                        if (!reportedFilesToCopy)
-                            DBGLOG("Received files to copy");
-
-                        reportedFilesToCopy = true;
-                        if (iShouldCopy)
-                        {
-                            if (!useRemoteResources)
+                            // In containerized mode, Roxie file copies are restricted to have only one node do the copying (first node on a channel,
+                            // random node for single-part). But any node that has
+                            //    (a) files being read remotely and
+                            //    (b) no files to copy and
+                            //    (c) a small delay will go through all remote files and check if they are now available locally
+                            // There is an assumption that a "pull" roxie does not have replicas that we don't know about
+                            //     - more than one "pull" roxie copying to the same plane at the same time
+                            //     - replicas=1 should be set on the "pull" roxie (we may be able to relax that using info from toposerver)
+                            //     - can't use localAgent mode on a "pull" roxie
+                            bool iShouldCopy = (replicationLevel==0);
+                            if (numParts==1 || (partNo==numParts && fileType==ROXIE_KEY))
                             {
-                                b.leave();
+                                // We distribute the responsibility for copying the TLK/single-part files
+                                unsigned whoShouldCopy = (rtlHash32VStr(lfn, HASH32_INIT) % numChannels) + 1;
+                                if (whoShouldCopy != myChannel)
+                                    iShouldCopy = false;
+                            }
+                            if (!reportedFilesToCopy)
+                                DBGLOG("Received files to copy");
+
+                            reportedFilesToCopy = true;
+                            if (iShouldCopy)
+                            {
+                                if (!useRemoteResources)
+                                {
+                                    block.leave();
+                                    ret->checkOpen();
+                                    doCopy(ret, false, CFflush_rdwr);
+                                    return;
+                                }
+
+                                todo.append(*ret);
+                                toCopy.signal();
+                            }
+                            else
+                            {
+                                if (traceRemoteFiles)
+                                    DBGLOG("Add file %s to buddyCopying list", ret->queryFilename());
+                                buddyCopying.append(*ret);   // We expect someone else to copy it for us
+                            }
+                        }
+                        else
+                        {
+                            // Single-part files and top-level keys are copied immediately rather than being read remotely while background copying
+                            // This is to avoid huge contention on the source dafilesrv if the Roxie is live.
+                            if (numParts==1 || (partNo==numParts && fileType==ROXIE_KEY) || !useRemoteResources)
+                            {
+                                block.leave();
                                 ret->checkOpen();
                                 doCopy(ret, false, CFflush_rdwr);
-                                return ret.getLink();
+                                return;
                             }
 
-                            todo.append(*ret);
+                            // Copies are popped from end of the todo list
+                            // By putting the replicates on the front we ensure they are done after the primaries
+                            // and are therefore likely to result in local rather than remote copies.
+                            if (!reportedFilesToCopy)
+                                DBGLOG("Received files to copy");
+                            reportedFilesToCopy = true;
+                            if (replicationLevel)
+                                todo.add(*ret, 0);
+                            else
+                                todo.append(*ret);
                             toCopy.signal();
                         }
-                        else
-                        {
-                            if (traceRemoteFiles)
-                                DBGLOG("Add file %s to buddyCopying list", ret->queryFilename());
-                            buddyCopying.append(*ret);   // We expect someone else to copy it for us
-                        }
-#else
-                        // Single-part files and top-level keys are copied immediately rather than being read remotely while background copying
-                        // This is to avoid huge contention on the source dafilesrv if the Roxie is live.
-                        if (numParts==1 || (partNo==numParts && fileType==ROXIE_KEY) || !useRemoteResources)
-                        {
-                            b.leave();
-                            ret->checkOpen();
-                            doCopy(ret, false, CFflush_rdwr);
-                            return ret.getLink();
-                        }
-
-                        // Copies are popped from end of the todo list
-                        // By putting the replicates on the front we ensure they are done after the primaries
-                        // and are therefore likely to result in local rather than remote copies.
-                        if (!reportedFilesToCopy)
-                            DBGLOG("Received files to copy");
-                        reportedFilesToCopy = true;
-                        if (replicationLevel)
-                            todo.add(*ret, 0);
-                        else
-                            todo.append(*ret);
-                        toCopy.signal();
-#endif
-
                     }
                 }
             }
@@ -1979,7 +2049,6 @@ public:
             }
             throw;
         }
-        return ret.getLink();
     }
 
     virtual ILazyFileIO *lookupLocalFile(const char *filename)
