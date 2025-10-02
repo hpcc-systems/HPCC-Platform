@@ -147,6 +147,7 @@ define([
             });
         },
 
+        comingSoonRoot: undefined,
         startup: function (args) {
             this.inherited(arguments);
             domStyle.set(dom.byId(this.id + "StackController_stub_Plugins").parentNode.parentNode, {
@@ -162,7 +163,8 @@ define([
             registry.byId(this.id + "Debug").set("hidden", false);
             /* */
             var teaserNode = dom.byId(this.id + "teaser");
-            srcReact.render(ComingSoonModule.ComingSoon, { style: { color: "white" } }, teaserNode);
+            this.comingSoonRoot = srcReact.ReactRoot.create(teaserNode);
+            this.comingSoonRoot.render(ComingSoonModule.ComingSoon, { style: { color: "white" } }, teaserNode);
 
             const DAY = 1000 * 60 * 60 * 24;
             platformModule.fetchCheckFeatures().then(function (features) {
@@ -188,6 +190,11 @@ define([
                     Exceptions: [{ Source: "", Message: message }]
                 });
             });
+        },
+
+        destroy: function (args) {
+            this.comingSoonRoot?.dispose();
+            this.inherited(arguments);
         },
 
         //  Implementation  ---
@@ -549,20 +556,20 @@ define([
         },
 
         _onECLWatchV9: function (evt) {
-            var teaserNode = dom.byId(this.id + "teaser");
-            srcReact.render(ComingSoonModule.ComingSoon, { style: { color: "white" }, value: true }, teaserNode);
+            this.comingSoonRoot.render(ComingSoonModule.ComingSoon, { style: { color: "white" }, value: true });
         },
 
         _onAboutLoaded: false,
         _onAbout: function (evt) {
             var placeholderNode = dom.byId(this.id + "DialogPlaceholder");
-            srcReact.lightThemedRender(AboutModule.About, {
+            const root = srcReact.ReactRoot.create(placeholderNode);
+            root.lightThemedRender(AboutModule.About, {
                 eclwatchVersion: "5",
                 show: true,
                 onClose: function () {
-                    srcReact.unrender(placeholderNode);
+                    root.dispose();
                 }
-            }, placeholderNode);
+            });
         },
 
         _onShowLock: function (evt) {

@@ -1,14 +1,25 @@
 import * as React from "react";
-import * as ReactDOM from "react-dom";
-import { Theme, ThemeProvider } from "@fluentui/react";
+import { ReactNode } from "react";
+import { Theme } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
-import { FluentProvider, Theme as ThemeV9 } from "@fluentui/react-components";
+import { Theme as ThemeV9 } from "@fluentui/react-components";
 import { HTMLWidget, Widget, Utility } from "@hpcc-js/common";
 import { DockPanel as HPCCDockPanel, IClosable, WidgetAdapter } from "@hpcc-js/phosphor";
 import { compare2 } from "@hpcc-js/util";
+import { ReactRoot } from "src/react/render";
 import { lightTheme, lightThemeV9 } from "../themes";
 import { useUserTheme } from "../hooks/theme";
 import { AutosizeHpccJSComponent } from "./HpccJSAdapter";
+
+export interface PlaceholderProps {
+    children?: ReactNode;
+}
+
+export const Placeholder: React.FunctionComponent<PlaceholderProps> = ({
+    children
+}) => {
+    return <>{children}</>;
+};
 
 export class ReactWidget extends HTMLWidget {
 
@@ -17,6 +28,7 @@ export class ReactWidget extends HTMLWidget {
     protected _children = <div></div>;
 
     protected _div;
+    protected _root: ReactRoot;
 
     constructor() {
         super();
@@ -38,9 +50,9 @@ export class ReactWidget extends HTMLWidget {
         return this;
     }
 
-    children(): JSX.Element;
-    children(_: JSX.Element): this;
-    children(_?: JSX.Element): this | JSX.Element {
+    children(): React.JSX.Element;
+    children(_: React.JSX.Element): this;
+    children(_?: React.JSX.Element): this | React.JSX.Element {
         if (arguments.length === 0) return this._children;
         this._children = _;
         return this;
@@ -49,6 +61,7 @@ export class ReactWidget extends HTMLWidget {
     enter(domNode, element) {
         super.enter(domNode, element);
         this._div = element.append("div");
+        this._root = ReactRoot.create(this._div.node());
     }
 
     update(domNode, element) {
@@ -57,18 +70,12 @@ export class ReactWidget extends HTMLWidget {
             .style("width", `${this.width()}px`)
             .style("height", `${this.height()}px`)
             ;
-
-        ReactDOM.render(
-            <FluentProvider theme={this._themeV9} style={{ height: "100%" }}>
-                <ThemeProvider theme={this._theme} style={{ height: "100%" }}>{this._children}</ThemeProvider>
-            </FluentProvider>,
-            this._div.node()
-        );
+        this._root?.themedRender(Placeholder, { children: this._children });
     }
 
     exit(domNode, element) {
-        setTimeout(() => ReactDOM.unmountComponentAtNode(this._div.node()), 0);
-        super.enter(domNode, element);
+        this._root?.dispose();
+        super.exit(domNode, element);
     }
 
     render(callback?: (w: Widget) => void): this {
@@ -172,7 +179,7 @@ interface DockPanelItemProps {
     relativeTo?: string;
     closable?: boolean | IClosable;
     padding?: number;
-    children: JSX.Element;
+    children: React.JSX.Element;
 }
 
 export const DockPanelItem: React.FunctionComponent<DockPanelItemProps> = ({
