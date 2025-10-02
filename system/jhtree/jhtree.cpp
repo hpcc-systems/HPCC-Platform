@@ -662,7 +662,7 @@ public:
     }
 };
 
-class CNodeMapping : public HTMapping<CNodeCacheEntry, CKeyIdAndPos>
+class CNodeMapping final : public HTMapping<CNodeCacheEntry, CKeyIdAndPos>
 {
 public:
     CNodeMapping(CKeyIdAndPos &fp, CNodeCacheEntry &et) : HTMapping<CNodeCacheEntry, CKeyIdAndPos>(et, fp) { }
@@ -3351,10 +3351,10 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
         CNodeCacheEntry * cacheEntry;
 
         CLeavableCriticalBlock block(cacheLock);
+        curCache.numHits.fastAdd(1);
         cacheEntry = curCache.query(hashcode, &key);
         if (likely(cacheEntry))
         {
-            curCache.numHits.fastAdd(1);
             const CJHTreeNode * fastPathMatch = cacheEntry->queryNode();
             if (likely(fastPathMatch))
             {
@@ -3376,6 +3376,7 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
             cacheEntry = new CNodeCacheEntry;
             curCache.replace(key, *cacheEntry, &delayedReleaser);
             alreadyExists = false;
+            curCache.numHits.fastAdd(-1);
             curCache.numAdds.fastAdd(1);
         }
 
