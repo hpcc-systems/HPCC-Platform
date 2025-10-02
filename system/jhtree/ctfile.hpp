@@ -40,9 +40,9 @@
 #define USE_TRAILING_HEADER  0x80 // Real index header node located at end of file
 #define HTREE_COMPRESSED_KEY 0x40
 #define HTREE_QUICK_COMPRESSED_KEY 0x48
-#define KEYBUILD_VERSION 2  // unsigned short. NB: This should upped if a change would make existing keys incompatible with current build.
-                            // We can read indexes at versions 1 or 2
-                            // We build indexes with version set to 1 if they are compatible with version 1 readers, otherwise 2
+#define KEYBUILD_VERSION 3  // unsigned short. NB: This should upped if a change would make existing keys incompatible with current build.
+                            // We can read indexes at versions 1, 2 or 3
+                            // We build indexes with version set to 1 if they are compatible with version 1 readers, 2 for inplace indexes, and 3 for hybrid indexes
 #define KEYBUILD_MAXLENGTH 0x7FFF
 
 // structure to be read into - NO VIRTUALS.

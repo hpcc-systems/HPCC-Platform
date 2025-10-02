@@ -8506,6 +8506,7 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool a
     copyTree(p, fromP, "Libraries");
     copyTree(p, fromP, "Results");
     copyTree(p, fromP, "Graphs");
+    copyTree(p, fromP, "Summaries");
     copyTree(p, fromP, "Workflow");
     copyTree(p, fromP, "WebServicesInfo");
     if (copyStats)
@@ -14500,7 +14501,6 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
     {
         CCycleTimer elapsedTimer;
 
-        bool multiJobLinger = config.getPropBool("@multiJobLinger", defaultThorMultiJobLinger);
         bool thisThor = true;
         const char *queue = config.queryProp("@queue");
         const char *tgt = workunit.queryClusterName();
@@ -14516,34 +14516,22 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
             }
         }
 
-        // NB: executeGraphOnLingeringThor looks for existing Thor instance that has been used for the same job,
-        // and communicates with it directly
-        if (!multiJobLinger && executeGraphOnLingeringThor(workunit, wfid, graphName))
+        // Queue the graph, the thor agent will pick it up and launch a new Thor (up to maxGraphs),
+        // or an existing idle Thor listening on the same queue will pick it up.
+
+        VStringBuffer queueName("%s.thor", queue);
+        DBGLOG("Queueing wuid=%s, graph=%s, on queue=%s, timelimit=%u seconds", wuid.str(), graphName, queueName.str(), timelimit);
+
         {
-            if (!thisThor)
-                throw makeStringExceptionV(0, "multiJobLinger mode required to target other thor instances. Target: %s", tgt);
-            PROGLOG("Existing lingering Thor handled graph: %s", graphName);
+            Owned<IWorkUnit> w = &workunit.lock();
+            addTimeStamp(w, wfid, graphName, StWhenQueued);
         }
-        else
-        {
-            // If no existing Thor instance, or for a multi linger configuration,
-            // queue the graph, either the thor agent will pick it up and launch a new Thor (up to maxGraphs),
-            // or an existing idle Thor listening on the same queue will pick it up.
 
-            VStringBuffer queueName("%s.thor", queue);
-            DBGLOG("Queueing wuid=%s, graph=%s, on queue=%s, timelimit=%u seconds", wuid.str(), graphName, queueName.str(), timelimit);
-
-            {
-                Owned<IWorkUnit> w = &workunit.lock();
-                addTimeStamp(w, wfid, graphName, StWhenQueued);
-            }
-
-            Owned<IJobQueue> queue = createJobQueue(queueName);
-            IJobQueueItem *item = createJobQueueItem(jobName);
-            item->setOwner(owner);
-            item->setPriority(priority);
-            queue->enqueue(item);
-        }
+        Owned<IJobQueue> jobQueue = createJobQueue(queueName);
+        IJobQueueItem *item = createJobQueueItem(jobName);
+        item->setOwner(owner);
+        item->setPriority(priority);
+        jobQueue->enqueue(item);
 
         // NB: overall max runtime if guillotine set handled by abortmonitor
         unsigned runningTimeLimit = workunit.getDebugValueInt("maxRunTime", 0);
@@ -14870,98 +14858,6 @@ TraceFlags wuLoadTraceFlags(const IPropertyTree * wuInfo, const std::initializer
     }
     return dft;
 }
-
-#ifdef _CONTAINERIZED
-bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, unsigned wfid, const char *graphName)
-{
-    // NB: this routine is not used in a multiJobLinger mode Thor.
-
-    // check if lingering thor instance is up.
-    // Returns true if successfully submitted graph to a lingering Thor.
-
-    /* If code was dependent on reading a workunit in parallel, the whole area of
-     * workunit locking and reading will need revisiting, because at the moment the
-     * workunit reading code does not lock at all.
-     *
-     * Thor instances will wait for graphs from same job only, and will be
-     * notified to quit by the agent when the last graph is complete.
-     *
-     * This code is called from the client (agent) when it wants to execute a Thor graph.
-     * This function checks to see if there any registered lingering Thor instances available.
-     *
-     * Lingering Thor's register with the workunit itself when they become idle
-     * If they have not been contacted within the 'lingerPeriod' they shutdown and remove
-     * their registered instance from the workunit.
-     *
-     * The client will check if there is a lingering Thor registered with the workunit.
-     * If it finds one, it will then remove that entry and attempt to post the graph to
-     * that lingering Thor.
-     * If the Thor acknowledges the request, this function exits with success.
-     * If it fails, or there are no more lingering Thor instances, it returns with false
-     * to indicate that the graph was not submitted to a lingering Thor.
-     * The client will then queue the wuid/graph normally, which will invoke a new Thor
-     * instance.
-     */
-
-    try
-    {
-        /* NB: forcing a reload here to ensure Debug values are recent.
-        * Could be improved by refreshing only the specific area of interest (i.e. Debug/ in this case).
-        * The area of persisting a non-locked connection to workunits should be resivisted..
-        */
-        workunit.forceReload();
-
-        Owned<IStringIterator> iter = &workunit.getDebugValues("thorinstance_*");
-        ForEach(*iter)
-        {
-            /* NB: Thor's set their running endpoint into Debug values of workunit
-            * Check to see if workunit has any Thor's available lingering instances.
-            */
-            SCMStringBuffer thorInstance;
-            iter->str(thorInstance);
-            SCMStringBuffer thorInstanceValue;
-            if (workunit.getDebugValueBool(thorInstance.s, false))
-            {
-                {
-                    Owned<IWorkUnit> w = &workunit.lock();
-                    w->setDebugValue(thorInstance.s, "0", true);
-                }
-                /* NB: there's a window where Thor could shutdown here.
-                * In that case, the sendRecv will fail and it will fall through to queueing.
-                */
-                const char *instanceName = strchr(thorInstance.str(), '_') + 1;
-
-                Owned<INode> masterNode = createINode(instanceName);
-                CMessageBuffer msg;
-                VStringBuffer jobStr("%u/%s/%s", wfid, workunit.queryWuid(), graphName?graphName:"");
-                msg.append(jobStr);
-                if (queryWorldCommunicator().sendRecv(msg, masterNode, MPTAG_THOR, 10000))
-                {
-                    bool ok;
-                    msg.read(ok);
-                    if (graphName) // if graphName==nullptr, continue around to tell any other lingering Thor's to quit also.
-                    {
-                        if (ok)
-                            return true;
-                    }
-                }
-            }
-        }
-    }
-    catch (IException *e)
-    {
-        EXCLOG(e, "executeGraphOnLingeringThor");
-        e->Release();
-    }
-    return false;
-}
-#else
-bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, unsigned wfid, const char *graphName)
-{
-    throwUnexpected();
-}
-#endif
-
 
 //The names of the debug options used to serialize trace info - lower case to ensure they also work on the property tree (in thor slaves)
 static constexpr const char * traceDebugOptions[] = { "globalid", "callerid", "ottraceparent", "ottracestate" };

@@ -318,6 +318,7 @@ export = {
         ErrorAbortingUpload: "Error Aborting Upload",
         Errorparsingserverresult: "Error parsing server result",
         Errors: "Error(s)",
+        ErrorLoadingConfigurationFile: "Error loading configuration file",
         ErrorsStatus: "Errors/Status",
         ErrorUploadingFile: "Error uploading file(s). Try checking permissions.",
         ErrorWarnings: "Error/Warning(s)",

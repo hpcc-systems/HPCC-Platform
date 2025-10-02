@@ -2037,8 +2037,10 @@ public:
                 }
             }
         }
+
+        //Round the buffer size so that it will be a whole multiple of the number of blocks
         if (bufferSize && (bufferSize != (size32_t)-1))
-            numBlocksToBuffer = bufferSize / trailer.blockSize;
+            numBlocksToBuffer = (bufferSize + (trailer.blockSize/2))/ trailer.blockSize;
         if (numBlocksToBuffer < 1)
             numBlocksToBuffer = 1;
         sizeIoBuffer = trailer.blockSize*numBlocksToBuffer;
@@ -2094,7 +2096,6 @@ class CCompressedFileReader final : public CCompressedFileBase
     MemoryBuffer iobuffer;          // buffer used for reading
     MemoryBuffer indexbuf;          // non-empty once index read
     Owned<IExpander> expander;
-    MemoryAttr compressedInputBlock;
 
     //Each block in the file consists of a sequence of compressed chunks
     offset_t startBlockExpandedPos = (offset_t)-1;  // The offset of the start of the current compressed block

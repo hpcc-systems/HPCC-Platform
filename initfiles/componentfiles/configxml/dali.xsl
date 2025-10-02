@@ -154,7 +154,7 @@
         <xsl:attribute name="caseInsensitive">0</xsl:attribute>
         <xsl:copy-of select="@asyncBackup | @deltaSaveThresholdSecs | @deltaTransactionMaxMemMB | @deltaTransactionQueueLimit |
                              @externalSizeThreshold | @enableSNMP | @enableSysLog | @keepStores | @leakStore | @lightweightCoalesce |
-                             @msgLevel | @nobackup | @recoverFromIncErrors | @saveBinary | @snmpSendWarnings | @snmpErrorMsgLevel | @useNFSBackupMount"/>
+                             @msgLevel | @nobackup | @recoverFromIncErrors | @saveBinary | @saveAsync | @snmpSendWarnings | @snmpErrorMsgLevel | @useNFSBackupMount"/>
         <xsl:if test="string(@IdlePeriod) != ''">
             <xsl:attribute name="lCIdlePeriod">
                 <xsl:value-of select="@IdlePeriod"/>

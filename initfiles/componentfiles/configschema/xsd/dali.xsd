@@ -54,6 +54,9 @@
                     <xs:attribute name="saveBinary" type="xs:boolean"
                                   hpcc:displayName="Enable Saving Store in Binary Format" hpcc:presetValue="false"
                                   hpcc:tooltip="Switch on to save the store in binary format"/>
+                    <xs:attribute name="saveAsync" type="xs:boolean"
+                                  hpcc:displayName="Enable Saving Store Asynchronously in XML and Binary formats" hpcc:presetValue="true"
+                                  hpcc:tooltip="Switch on to save the store asynchronously in XML and Binary formats"/>
                 </xs:attributeGroup>
                 <xs:attributeGroup name="backup" hpcc:groupByName="Backup" hpcc:docid="da.t3">
                     <xs:attribute name="backupComputer" hpcc:displayName="Backup Computer" type="nodeName"

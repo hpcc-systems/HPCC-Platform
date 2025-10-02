@@ -130,7 +130,7 @@ void MemoryModel::configure(const IPropertyTree& config)
         key.fileId = (__uint64)entry.getPropInt64("@FileId");
         key.offset = (__uint64)entry.getPropInt64("@FileOffset");
         if (estimating)
-            estimatedHistory.insert(key);
+            (void)estimatedHistory.insert(key);
         else
         {
             ActualValue& value = actualHistory[key];
@@ -138,7 +138,7 @@ void MemoryModel::configure(const IPropertyTree& config)
             value.time = (__uint64)entry.getPropInt64("@ExpandTime");
         }
         if (caches[nodeKind].enabled())
-            caches[nodeKind].insert(key, reporter);
+            (void)caches[nodeKind].insert(key, reporter);
     }
 }
 
@@ -154,7 +154,7 @@ void MemoryModel::observePage(const CEvent& event)
     if (estimating)
     {
         // Estimated values are pre-calculated. Track the key reference only.
-        estimatedHistory.insert(key);
+        (void)estimatedHistory.insert(key);
     }
     else
     {
@@ -321,7 +321,7 @@ void MemoryModel::describePage(const CEvent& event, ModeledPage& page) const
 
 void MemoryModel::cachePage(ModeledPage& page, IndexMRUCacheReporter& reporter)
 {
-    caches[page.nodeKind].insert(page.fileId, page.offset, reporter);
+    (void)caches[page.nodeKind].insert(page.fileId, page.offset, reporter);
 }
 
 __uint64 MemoryModel::nodeEntrySize(const IndexHashKey& key, __uint64 kind) const
