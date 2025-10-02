@@ -14,6 +14,12 @@ import { Attribute } from "../util/metricArchive";
 Palette.rainbow("StdDevs", ["#ffffff", "#ffffff", "#fff3cd", "#ffeaa7", "#fdcb6e", "#e17055", "#e17055"]);
 Palette.rainbow("StdDevsDark", ["#222222", "#222222", "#3d3520", "#4a3c1a", "#5a4a2e", "#6b2323", "#6b2323"]);
 
+const DFU_WORKUNIT_REGEX = /^D\d{8}-\d{6}(?:-\d+)?$/;
+const ECL_WORKUNIT_REGEX = /^W\d{8}-\d{6}(?:-\d+)?$/;
+
+const isDfuWu = (workunitId: string): boolean => DFU_WORKUNIT_REGEX.test(workunitId);
+const isEclWu = (workunitId: string): boolean => ECL_WORKUNIT_REGEX.test(workunitId);
+
 class TableEx extends Table {
     constructor() {
         super();
@@ -126,6 +132,15 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
                         } else {
                             rowValue = row.Value;
                         } break;
+                    case "id":
+                        if (isDfuWu(row.Value)) {
+                            rowValue = `<a href="#/dfuworkunits/${row.Value}/summary">${row.Value}</a>`;
+                        } else if (isEclWu(row.Value)) {
+                            rowValue = `<a href="#/workunits/${row.Value}/summary">${row.Value}</a>`;
+                        } else {
+                            rowValue = row.Value;
+                        }
+                        break;
                     case "name":
                         const splitMetricName = row.Value.split(":");
                         const lastMetricNode = splitMetricName.pop();
