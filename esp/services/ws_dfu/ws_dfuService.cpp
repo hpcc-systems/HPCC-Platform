@@ -2348,6 +2348,13 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
                 else
                     FileDetails.setKeyType("Distributed");
             }
+
+            if (version >= 1.67)
+            {
+                const char *compressionType = df->queryAttributes().queryProp("@compressionType");
+                if (compressionType && *compressionType)
+                    FileDetails.setCompressionType(compressionType);
+            }
         }
     }
     if (version >= 1.53)
