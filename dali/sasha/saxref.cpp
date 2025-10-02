@@ -173,7 +173,7 @@ public:
         while (misplaced)
         {
             cMisplacedRec *next = misplaced->next;
-            free(misplaced);
+            delete misplaced;
             misplaced = next;
         }
     }
@@ -539,7 +539,7 @@ public:
                 }
                 mp = mp->next;
             }
-            mp = (cMisplacedRec *)malloc(sizeof(cMisplacedRec));
+            mp = new cMisplacedRec();
             mp->init(drv,pf,node,numnodes);
             mp->next = file->misplaced;
             file->misplaced = mp;
