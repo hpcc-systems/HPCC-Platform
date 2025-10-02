@@ -164,14 +164,18 @@ public:
 
     static void operator delete(void *ptr)
     {
-        // Clean up misplaced records
-        cMisplacedRec * mp = static_cast<cFileDesc *>(ptr)->misplaced;
-        while (mp) {
-            cMisplacedRec *next = mp->next;
-            free(mp);
-            mp = next;
-        }
         free(ptr);
+    }
+
+    ~cFileDesc()
+    {
+        // Clean up misplaced records
+        while (misplaced)
+        {
+            cMisplacedRec *next = misplaced->next;
+            free(misplaced);
+            misplaced = next;
+        }
     }
 
 
