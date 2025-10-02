@@ -25,6 +25,7 @@
 #include "thmfilemanager.hpp"
 #include "eclhelper.hpp"
 #include "thexception.hpp"
+#include "jlzw.hpp"
 
 #include "eclhelper.hpp" // tmp for IHThorArg interface
 #include "thdiskbase.ipp"
@@ -299,6 +300,14 @@ void CWriteMasterBase::publish()
     }
     if (TDWrestricted & diskHelperBase->getFlags())
         props.setPropBool("restricted", true );
+
+    if (compMethod)
+    {
+        const char *compressionType = translateFromCompMethod(compMethod);
+        if (!isEmptyString(compressionType))
+            props.setProp("@compressionType", compressionType);
+    }
+
     props.setPropInt64(getDFUQResultFieldName(DFUQResultField::numDiskWrites), statsCollection.getStatisticSum(StNumDiskWrites));
     props.setPropInt64(getDFUQResultFieldName(DFUQResultField::writeCost), diskAccessCost);
     container.queryTempHandler()->registerFile(fileName, container.queryOwner().queryGraphId(), diskHelperBase->getTempUsageCount(), TDXtemporary & diskHelperBase->getFlags(), getDiskOutputKind(diskHelperBase->getFlags()), &clusters);
@@ -483,6 +492,17 @@ void CWriteMasterBase::slaveDone(size32_t slaveIdx, MemoryBuffer &mb)
         modifiedTime.getString(timeStr);
         props.setProp("@modified", timeStr.str());
         props.setPropInt64("@recordCount", slaveProcessed);
+
+        // Get compression method from slave (if available)
+        byte serializedCompMethod = 0;
+        if (mb.remaining())
+            mb.read(serializedCompMethod);
+        // It is possible that serializedCompMethod is not set if no file was created - so only set if non zero
+        if (serializedCompMethod)
+        {
+            dbgassertex(!compMethod || ((CompressionMethod)serializedCompMethod == compMethod));
+            compMethod = (CompressionMethod)serializedCompMethod;
+        }
     }
 }
 

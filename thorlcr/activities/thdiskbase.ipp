@@ -51,6 +51,8 @@ class CWriteMasterBase : public CMasterActivity
     bool published;
     StringAttr fileName;
     CDfsLogicalFileName dlfn;
+    CompressionMethod compMethod = COMPRESS_METHOD_NONE;
+
 protected:
     StringArray clusters;
     Owned<IFileDescriptor> fileDesc;
