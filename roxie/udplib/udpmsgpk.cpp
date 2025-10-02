@@ -77,6 +77,12 @@ class PackageSequencer : public CInterface, implements IInterface
     InterruptableSemaphore dataAvailable; // MORE - need to work out when to interrupt it!
     bool encrypted = false;
 
+    // Currently next() is not called until all the packets have been received because CMessageCollator::collate
+    // only pushes it onto the queue once it is complete.  I am not sure that this was the original intention,
+    // but there is no need to use a semaphore if that is the case.
+    // Set this flag to true to allow processing streaming output.
+    static constexpr bool supportStreamedOutput = false;
+
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -109,7 +115,9 @@ public:
                 return nullptr;
         }
 
-        dataAvailable.wait(); // MORE - when do I interrupt? Should I time out? Will potentially block indefinitely if sender restarts (leading to an abandoned packet) or stalls.
+        if (supportStreamedOutput)
+            dataAvailable.wait(); // MORE - when do I interrupt? Should I time out? Will potentially block indefinitely if sender restarts (leading to an abandoned packet) or stalls.
+
         DataBuffer *ret;
         if (after)
             ret = after->msgNext;
@@ -247,11 +255,10 @@ public:
                     }
 
                     lastContiguousPacket = finger;
-                    dataAvailable.signal();
+                    if (supportStreamedOutput)
+                        dataAvailable.signal();
                     if (fingerHdr->pktSeq & UDP_PACKET_COMPLETE)
-                    {
                         res = true;
-                    }
                 }
                 else
                     break;
@@ -521,7 +528,8 @@ unsigned CMessageCollator::queryResends() const
 bool CMessageCollator::attach_databuffer(DataBuffer *dataBuff)
 {
     UdpPacketHeader *pktHdr = (UdpPacketHeader*) dataBuff->data;
-    totalBytesReceived += pktHdr->length;
+    //This is always called from a single thread - so avoid an atomic increment
+    totalBytesReceived.fastAdd(pktHdr->length);
     if (pktHdr->node.isNull())   // Indicates a packet that has been identified as a duplicate to be logged and discarded
     {
         noteDuplicate((pktHdr->pktSeq & UDP_PACKET_RESENT) != 0);
@@ -549,7 +557,8 @@ bool CMessageCollator::attach_data(const void *data, unsigned len)
     // Simple code can allocate databuffer, copy data in, then call attach_databuffer
     // MORE - we can attach as we create may be more sensible (and simplify roxiemem rather if it was the ONLY way)
     activity = true;
-    totalBytesReceived += len;
+    //This is always called from a single thread - so avoid an atomic increment
+    totalBytesReceived.fastAdd(len);
     if (memLimitExceeded || roxiemem::memPoolExhausted())
     {
         DBGLOG("UdpCollator: mem limit exceeded");
@@ -611,6 +620,7 @@ void CMessageCollator::collate(DataBuffer *dataBuff)
         }
     }
 
+    //At this point the packet sequence is complete - push it ready for processing
     queueCrit.enter();
     if (pkSqncr->isOutOfBand())
         queue.push_front(pkSqncr);
