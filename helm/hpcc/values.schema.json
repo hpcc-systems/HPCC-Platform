@@ -959,6 +959,16 @@
       },
       "additionalProperties": false
     },
+    "thorSubComponent": {
+      "description": "Thor sub-component with resource and cost configuration",
+      "type": "object",
+      "properties": {
+        "cost": {
+          "$ref": "#/definitions/componentCost"
+        }
+      },
+      "additionalProperties": false
+    },
     "secrets": {
       "oneOf": [
         {
@@ -2743,7 +2753,7 @@
     "thor": {
       "type": "object",
       "required": [ "name", "maxJobs", "maxGraphs" ],
-      "additionalProperties": { "type": ["integer", "string", "boolean"] },
+      "additionalProperties": { "type": ["integer", "string", "boolean", "object"] },
       "properties": {
         "name": {
           "type": "string",
@@ -2872,8 +2882,19 @@
         "stubResources": {
           "$ref": "#/definitions/resources"
         },
+        "manager": {
+          "$ref": "#/definitions/thorSubComponent"
+        },
+        "worker": {
+          "$ref": "#/definitions/thorSubComponent"
+        },
+        "eclagent": {
+          "$ref": "#/definitions/thorSubComponent"
+        },
         "cost": {
-          "$ref" : "#/definitions/componentCost"
+          "$ref" : "#/definitions/componentCost",
+          "description": "deprecated cost section, use manager, worker, and eclagent sections",
+          "type": "object"
         },
         "expert": {
           "$ref": "#/definitions/expert"
