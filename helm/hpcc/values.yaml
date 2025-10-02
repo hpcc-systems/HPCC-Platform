@@ -701,6 +701,7 @@ esp:
     #- name: linkname
     #  description: "some description"
     #  url: "http://abc.com/def?g=1"
+    #  resourceType: TRACES | LOGS | METRICS
     ## CIDRS allowed to access this service.
     #loadBalancerSourceRanges: [1.2.3.4/32, 5.6.7.8/32]
     ## route traffic to local VM only. Also preserves source IPs
