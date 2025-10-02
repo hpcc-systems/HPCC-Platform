@@ -107,6 +107,8 @@ define([
         return str;
     }
 
+    const configErrors = [/Page Not Found/i, /Error/i];
+
     var nlsHPCC = nlsHPCCMod.default;
     return declare("HPCCPlatformWidget", [_TabContainerWidget], {
         templateString: template,
@@ -483,6 +485,15 @@ define([
                     },
                     handleAs: "text"
                 }).then(function (response) {
+                    if (configErrors.some(reg => reg.test(response))) {
+                        dojo.publish("hpcc/brToaster", {
+                            Severity: "Info",
+                            Source: "eclwatch/HPCCPlatformWidget.js",
+                            Exceptions: [{ Source: "", Message: context.i18n.ErrorLoadingConfigurationFile }]
+                        });
+                        response = context.i18n.ErrorLoadingConfigurationFile;
+                    }
+
                     context.configText = context.formatXml(response);
                     context.configSourceCM = new CodeMirror.XMLEditor();
 
@@ -492,6 +503,12 @@ define([
                         window.clearTimeout(t);
                     }, 50);
                     context.configSourceCM.text(context.configText);
+                }).catch(function (err) {
+                    dojo.publish("hpcc/brToaster", {
+                        Severity: "Warning",
+                        Source: "eclwatch/HPCCPlatformWidget.js",
+                        Exceptions: [{ Source: "", Message: err }]
+                    });
                 });
             }
             this.stackContainer.selectChild(this.widget._Config);

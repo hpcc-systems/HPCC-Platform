@@ -17,6 +17,114 @@ An extension of `IEventVisitationLink`, this abstraction describes visitors whos
 
 #### CEventFilter
 
+A concrete implementation of `IEventFilter` that classifies all incoming events as either wanted or unwanted. Events that are wanted are propagates, unchanged, to the next linked visitor. Unwanted events are not propagated.
+
+Filter terms define conditions used to identify wanted events. Conditions may be applied based on event type and event attribute values. All events are considered wanted until at least one filter term is applied.
+
+##### Filter by Event
+
+An event type term identifies either a single event type or a single event context, implicitly identifying every event type associated with that context.
+
+Event terms may be specified by the `EventType` enumeration, the `EventCtx` enumeration, or a comma-delimited list of event type and/or context names. The list format is described as follows:
+
+        term-list ::= term ( ',' term )*
+        term ::= ( [ type-comparison ] type-term | [ context-comparison ] context-term )
+        type-comparison ::= '[' ( "eq" | "neq" | "except" ) ']'
+        type-term ::= <event-type-name>
+        context-comparison ::= '[' ( "in" | "out" | "except" ) ']'
+        context-term ::= <event-context-name>
+
+Values of `type-comparison`, `type-term`, `context-comparison`, and `context-term` are case insensitive.
+
+By default, all identified types are accumulated into a collection of accepted event types. Optional comparison tokens alter how the term value is interpreted. Events with types in the accumulated type collection are retained, while others are suppressed. Accepted comparisons include:
+- `eq` (default): the term type is accumulated
+- `neq`: all types except the term type are accumulated
+- `in` (default): all event types with the term context are accumulated
+- `out`: all event types without the term context are accumulated
+- `except`: removes the term value from the accumulated collection
+  - If the term value is a type, the type is removed if it was previously accumulated.
+  - If the term value is a context, all previously accumulated types of the context are removed.
+
+An example using `out` might be `[not]dali`. The effect is to accept all events not in the dali event context.
+
+An example using `except` might be `index,[except]IndexPayload`. The effect of this list is to accept all index context events except for IndexPayload.
+
+##### Filter by Attribute
+
+An event attribute term identifies a single attribute, a set of expected values, and an optional condition relating an event value to expected values. Multiple terms are permitted for one attribute, in which case at least one term must be satisfied. Terms are permitted for multiple attributes, in which case a term for each attribute must be satisfied.
+
+Terms related to attributes not present in an event are implicitly satisfied. Rules for satisfying terms vary by the attribute data type.
+
+###### Text
+
+A comma-delimited list of terms is defined for text attributes, using the following format:
+
+        term-list ::= term ( ',' term )*
+        term ::= [ comparison ] <pattern>
+        comparison ::= '[' ( "wild" | "eq" | "neq" | "lt" | "lte" | "gte" | "gt" ) ']'
+
+In the absence of `comparison`, the term text is used as a wilcard matching pattern. Case-insensitive comparisons include:
+- `wild` (default): attribute value is a wildcard match of the term pattern
+- `eq`: attribute value matches pattern
+- `neq`: attribute value does not match pattern
+- `lt`: attribute value is less than the term pattern
+- `lte`: attribute value is less than or equal to the term pattern
+- `gte`: attribute value is greater than or equal to the term pattern
+- `gt`: attribute value is greater than the term pattern
+
+The default `wild` comparison is the only comparison that considers wildcard substitutions. All others perform simple case-insensitive string comparisons.
+
+###### Boolean
+
+A comma-delimited list of terms is defined for text attributes, using the following format:
+
+        term-list ::= term ( ',' term )
+        term ::= <value>
+
+A term list is supported by common code. With only two possible values, nothing is gained by adding two terms with different value.
+
+###### Numeric
+
+A comma-delimited list of terms is defined for numeric attributes, using the following format:
+
+        term-list ::= term ( ',' term )*
+        term ::= [ comparison ] ( single-value | range | at-most | at-least )
+        comparison ::= '[' ( "eq" | "neq" | "lt" | "lte" | "gte" | "gt" | "in" | "out" ) ']'
+        single-value ::= <number>
+        range ::= single-value '-' single-value
+        at-most ::= '-' single-value
+        at-least ::= single-value '-'
+
+Every term is treated implicitly treated as a range defined as `[term-minimum..term-maximum]`. The `term-minimum` must be less than or equal to the `term-maximum`. Four forms of range specification are accepted:
+- `single-value`: the value is the range minimum and maximum
+- `range`: the left value is the range minimum and the right value is the range maximum
+- `at-most`: the range minimum is 0 and the range maximum is the value
+- `at-least`: the range minimum is the value and the range maximum is `UINT64_MAX`
+
+In the absence of `comparison`, the attribute value must not be less than the term range minimum and not more than the term range maximum. Comparisons include:
+- `eq`: attribute value is equal to the single-value term range.
+- `neq`: attribute value is not equal to the single-value term range
+- `lt`: attribute value is less than term-minimum
+- `lte`: attribute value is less than or equal to term-minimum
+- `gte`: attribute value is greater than or equal to term-maximum
+- `gt`: attribute value is greater than term-maximum
+- `in` (default): attribute value is a member of the term range
+- `out`: attribute value is not a member of the term range
+
+###### Timestamp
+
+A comma-delimited list of terms is defined for timestamp attributes, using an variation of the [numeric](#numeric) format:
+
+        single-value ::= ( <nanoseconds> | <timestamp> )
+
+All numeric comparisons are supported. A `timestamp` value will be converted to a `nanosecond` value using `CDateTime`, then numeric comparisons are applied.
+
+###### Special Cases
+
+1. Index Events
+
+All index context events include the `FileId` attribute. The `FileInformation` meta event includes the `Path` attribute. All index events can filter `FileId` using either the actual numeric value or the related `Path` value from a previously seen `FileInformation` meta event. A `FileId` term with a file path pattern follows [text](#text) rules while a term with a file identifier follows [numeric](#numeric) rules.
+
 ### IEventModel
 
 An extension of `IEventVisitationLink`, this abstraction describes visitors whose purpose is to more broadly transform the event stream. Possible changes include:

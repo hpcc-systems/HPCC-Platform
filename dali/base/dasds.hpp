@@ -276,7 +276,7 @@ enum
     SH_BackupErrorFiles     = 0x0004,
     SH_CheckNewDelta        = 0x0008,
 };
-extern da_decl IStoreHelper *createStoreHelper(const char *storeName, const char *location, const char *remoteBackupLocation, unsigned configFlags, unsigned keepStores=0, unsigned delay=5000, const bool *abort=nullptr, bool saveBinary=false);
+extern da_decl IStoreHelper *createStoreHelper(const char *storeName, const char *location, const char *remoteBackupLocation, unsigned configFlags, unsigned keepStores=0, unsigned delay=5000, const bool *abort=nullptr, bool saveBinary=false, bool saveAsync=true);
 extern da_decl bool applyXmlDeltas(IPropertyTree &root, IIOStream &stream, bool stopOnError=false);
 extern da_decl bool traceAllTransactions(); // server only
 extern da_decl bool traceSlowTransactions(unsigned thresholdMs); // server only
