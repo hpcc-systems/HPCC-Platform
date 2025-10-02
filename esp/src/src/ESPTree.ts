@@ -5,8 +5,14 @@ import { Memory } from "./store/Memory";
 const TreeItem = declare([ESPUtil.Singleton], {
 
     constructor(args) {
-        this.__hpcc_type = "none";
-        args.__hpcc_id = this.__hpcc_type + "::" + args.__hpcc_id;  //  args get set to "this" in base class Stateful ---
+        // Preserve subclass provided __hpcc_type if already set (Dojo mixes subclass props first, then calls base constructors)
+        if (!this.__hpcc_type) {
+            this.__hpcc_type = "none";
+        }
+        // Prefix the id with the resolved type for uniqueness, but don't overwrite type itself.
+        if (args && args.__hpcc_id) {
+            args.__hpcc_id = this.__hpcc_type + "::" + args.__hpcc_id;  // args mutated before Stateful applies
+        }
     },
 
     getUniqueID() {

@@ -670,5 +670,20 @@ extern jlib_decl bool areTransparentHugePagesEnabled(HugePageMode mode);
 extern jlib_decl HugePageMode queryTransparentHugePagesMode();
 extern jlib_decl memsize_t getHugePageSize();
 
+// Core dump generation.
+extern jlib_decl void generateCoreDump(bool useVforkAndGcore, bool suspendParent);
+
+// Memory monitoring interface
+interface IMemoryMonitor : extends IInterface
+{
+    virtual void start() = 0;
+    virtual void stop() = 0;
+};
+
+// Factory functions for creating memory monitors
+extern jlib_decl IMemoryMonitor *createMemoryMonitor(const char *path, unsigned totalMB, unsigned thresholdMB, unsigned intervalSecs, unsigned incrementMB, bool useVforkAndGcore, bool suspendParent);
+// pick up settings from IPT
+extern jlib_decl IMemoryMonitor *createMemoryMonitor(const char *dstPath, unsigned totalMB, const IPropertyTree *mcdSettings);
+
 #endif
 

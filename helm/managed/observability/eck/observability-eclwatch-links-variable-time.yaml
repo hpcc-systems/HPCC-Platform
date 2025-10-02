@@ -1,0 +1,39 @@
+# This is an example of a minimal ESP configuration wich declares links to the
+# ECK observability stack. The links are used by eclwatch to provide direct navigation
+# to the observability stack.
+esp:
+- name: eclwatch
+  ## Pre-configured esp applications include eclwatch, eclservices, and eclqueries
+  application: eclwatch
+  auth: none
+  replicas: 1
+  service:
+    port: 8888
+    servicePort: 8010
+    visibility: local
+    links:
+    - name: Traces on ECK stack
+      description: "View Traces on ECK stack"
+      url: "https://localhost:5601/app/apm/traces/explorer/waterfall?comparisonEnabled=false&detailTab=timeline&environment=ENVIRONMENT_ALL&kuery=&query=&rangeFrom={query_start_timestamp}&rangeTo={query_end_timestamp}&showCriticalPath=false&traceId={trace_id}"
+      resourceType: TRACES
+- name: eclservices
+  application: eclservices
+  auth: none
+  replicas: 1
+  service:
+    servicePort: 8010
+    visibility: cluster
+- name: eclqueries
+  application: eclqueries
+  auth: none
+  replicas: 1
+  service:
+    visibility: local
+    servicePort: 8002
+- name: dfs
+  application: dfs
+  auth: none
+  replicas: 1
+  service:
+    visibility: local
+    servicePort: 8520

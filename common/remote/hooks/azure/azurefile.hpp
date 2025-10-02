@@ -20,21 +20,11 @@
 
 #include "jfile.hpp"
 
-#ifdef AZURE_FILE_EXPORTS
-#define AZURE_FILE_API DECL_EXPORT
-#else
-#define AZURE_FILE_API DECL_IMPORT
-#endif
-
-
 /*
- * Direct access to files in Azure blobs
- * Installs hooks into createIFile, spotting filenames of the form azure://url
+ * Provides Azure File Share implementation for filenames of the form azurefile:<storagePlane>/<shareName>/<path>
+ * File hooks are installed by azureapi.hpp which handles both blob and file storage
  */
 
-extern "C" {
-  extern AZURE_FILE_API void installFileHook();
-  extern AZURE_FILE_API void removeFileHook();
-};
+IFile * createAzureFile(const char * filename);
 
 #endif

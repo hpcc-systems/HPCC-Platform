@@ -1347,16 +1347,47 @@ CEvent::CEvent()
         attributes[i].setup(EventAttr(i));
 }
 
+class EventAttributeStates
+{
+public:
+    CEventAttribute::State states[EventMax][EvAttrMax];
+    EventAttributeStates()
+    {
+        for (unsigned evIdx = EventNone; evIdx < EventMax; evIdx++)
+        {
+            // Set all attributes to unused
+            for (unsigned attrIdx = EvAttrNone; attrIdx < EvAttrMax; attrIdx++)
+                states[evIdx][attrIdx] = CEventAttribute::Unused;
+            // Update defined attributes
+            for (EventAttr id : eventInformation[evIdx].attributes)
+                states[evIdx][id] = CEventAttribute::Defined;
+        }
+    }
+};
+static EventAttributeStates eventAttributeStates;
+
 void CEvent::reset(EventType _type)
 {
     assertex(_type < EventMax);
     type = _type;
-    // Reset the attribute states in two steps to avoid searching the event attributes
-    // once for each attribute.
-    for (unsigned i=1; i < EvAttrMax; i++)
-        attributes[i].reset(CEventAttribute::Unused);
-    for (EventAttr attr : eventInformation[type].attributes)
-        attributes[attr].reset(CEventAttribute::Defined);
+    for (unsigned idx = EvAttrNone; idx < EvAttrMax; idx++)
+        attributes[idx].reset(eventAttributeStates.states[type][idx]);
+}
+
+void CEvent::changeEventType(EventType newType)
+{
+    if (EventNone == type)
+        reset(newType);
+    else if (newType != type)
+    {
+        for (unsigned idx = EvAttrNone; idx < EvAttrMax; idx++)
+        {
+            CEventAttribute& attr = attributes[idx];
+            if (eventAttributeStates.states[newType][idx] != eventAttributeStates.states[type][idx])
+                attr.reset(eventAttributeStates.states[newType][idx]);
+        }
+        type = newType;
+    }
 }
 
 const std::initializer_list<EventAttr>& CEvent::queryOrderedAttributeIds() const

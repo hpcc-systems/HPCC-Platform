@@ -46,7 +46,7 @@ private:
     const char *daliServers;
     const char *apptype;
     Owned<IJobQueue> queue;
-    Owned<IJobQueue> lingerQueue; // used if thor agent for a thor configured with multiJobLinger=true
+    Owned<IJobQueue> lingerQueue; // used for thor agent linger queue support
     Linked<IPropertyTree> config;
     Owned<IThreadPool> pool; // for containerized only
     std::atomic<bool> running = { false };
@@ -132,12 +132,9 @@ int CEclAgentExecutionServer::run()
                 // old mechanism used to test a separate queue that only Thor instances listened to (<name>.lingerthor)
                 // by queuing to it for a short period, and if not pulled off, launching a new instance. (see queueJobIfQueueWaiting)
                 // In new client priority implementation, the agent will not pull it off the queue in the 1st place.
-                if (config->getPropBool("@multiJobLinger", defaultThorMultiJobLinger))
-                {
-                    StringBuffer lingerQueueName;
-                    getClusterLingerThorQueueName(lingerQueueName, agentName);
-                    lingerQueue.setown(createJobQueue(lingerQueueName));
-                }
+                StringBuffer lingerQueueName;
+                getClusterLingerThorQueueName(lingerQueueName, agentName);
+                lingerQueue.setown(createJobQueue(lingerQueueName));
             }
         }
         else

@@ -109,9 +109,23 @@ bool CWsResourcesEx::onWebLinksQuery(IEspContext& context, IEspWebLinksQueryRequ
 {
     try
     {
+        double version = context.getClientVersion();
         //Get Web links defined in ComponentConfig() service/links.
         IArrayOf<IConstConfiguredWebLink>& configuredWebLinks = resp.getConfiguredWebLinks();
+
+#ifndef DEBUG_WEBLINKS
         Owned<IPropertyTreeIterator> serviceLinkItr = getComponentConfig()->getElements("service/links");
+#else
+        const char * simulatedlinksYaml = R"!!(links:
+- name: RJPTraces on ECK stack
+  description: "RJPView Traces on ECK stack"
+  url: "https://localhost:5601/app/apm/traces/explorer/waterfall?comparisonEnabled=false&detailTab=timeline&environment=ENVIRONMENT_ALL&kuery=&query=&rangeFrom=now-15m&rangeTo=now&showCriticalPath=false&traceId={trace_id}&waterfallItemId="
+  resourceType: TRACES
+)!!";
+        Owned<IPropertyTree> testTree = createPTreeFromYAMLString(simulatedlinksYaml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+        Owned<IPropertyTreeIterator> serviceLinkItr = testTree->getElements("links");
+#endif
+
         ForEach(*serviceLinkItr)
         {
             IPropertyTree& serviceLinkTree = serviceLinkItr->query();
@@ -119,6 +133,14 @@ bool CWsResourcesEx::onWebLinksQuery(IEspContext& context, IEspWebLinksQueryRequ
             configuredWebLink->setName(serviceLinkTree.queryProp("@name"));
             configuredWebLink->setDescription(serviceLinkTree.queryProp("@description"));
             configuredWebLink->setURL(serviceLinkTree.queryProp("@url"));
+
+            if (version >= 1.04)
+            {
+                StringBuffer resourceType;
+                resourceType.set(serviceLinkTree.queryProp("@resourceType"));
+                configuredWebLink->setResourceType(resourceType.length() ? resourceType.toUpperCase().str() : "UNKNOWN");
+            }
+
             configuredWebLinks.append(*configuredWebLink.getLink());
         }
 
@@ -170,7 +192,7 @@ bool CWsResourcesEx::onWebLinksQuery(IEspContext& context, IEspWebLinksQueryRequ
                 annotation->setName(decodedAnnotationName);
                 annotationList.append(*annotation.getLink());
             }
-            double version = context.getClientVersion();
+
             if (version >= 1.02)
                 getServiceConnection(outputItemTree, discoveredWebLink->updateConnection());
             discoveredWebLinks.append(*discoveredWebLink.getLink());

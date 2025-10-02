@@ -831,6 +831,10 @@ IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc,
                 activity->getOpt(THOROPT_COMPRESS_SPILL_TYPE, compType);
                 compMethod = getCompMethod(compType);
             }
+            else if (twFlags & (TW_JobTemp|TW_Persist))
+            {
+                compMethod = COMPRESS_METHOD_ZSTD;
+            }
             // force
             StringBuffer compressionType;
             if (activity->getOpt(THOROPT_COMPRESS_FORMAT, compressionType))
@@ -866,16 +870,7 @@ IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc,
         if (icompfio)
         {
             unsigned compMeth2 = icompfio->method();
-            if (COMPRESS_METHOD_FASTLZ == compMeth2)
-                compStr.append("flz");
-            else if (COMPRESS_METHOD_LZ4 == compMeth2)
-                compStr.append("lz4");
-            else if (COMPRESS_METHOD_LZW == compMeth2)
-                compStr.append("lzw");
-            else if (COMPRESS_METHOD_ROWDIF == compMeth2)
-                compStr.append("rdiff");
-            else
-                compStr.append("unknown");
+            compStr.append(translateFromCompMethod(compMeth2));
         }
         else
             compStr.append("unknown");

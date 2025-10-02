@@ -12653,6 +12653,7 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
     offset_t branchMemorySize = 0;
     offset_t leafMemorySize = 0;
     unsigned nodeSize = 0;
+    StringBuffer defaultIndexCompression;
 
     void updateWorkUnitResult()
     {
@@ -12806,7 +12807,6 @@ public:
             if (!needsSeek)
                 out.setown(createNoSeekIOStream(out));
 
-            StringBuffer defaultIndexCompression;
             IRoxieServerContext * serverContext = ctx->queryServerContext();
             if (serverContext)
             {
@@ -12958,6 +12958,10 @@ public:
             keyedSize = helper.queryDiskRecordSize()->getFixedSize();
         properties.setPropInt64("@keyedSize", keyedSize);
         properties.setPropInt("@nodeSize", nodeSize);
+
+        // Set the compression type that was actually used
+        const char *compressionType = getIndexCompressionType(&helper, defaultIndexCompression);
+        properties.setProp("@compressionType", compressionType);
 
         WorkunitUpdate workUnit = ctx->updateWorkUnit();
         if (workUnit)

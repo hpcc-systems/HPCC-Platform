@@ -83,138 +83,47 @@ int CJHBlockCompressedSearchNode::locateGT(const char * search, unsigned minInde
     return a;
 }
 
+char *CJHBlockCompressedSearchNode::expandBlock(const void *src, size32_t &decompressedSize, CompressionMethod compressionMethod)
+{
+    ICompressHandler * handler = queryCompressHandler(compressionMethod);
+    if (!handler)
+        throw makeStringExceptionV(JHTREE_KEY_UNKNOWN_COMPRESSION, "Unknown payload compression method %d", (int)compressionMethod);
+
+    const char * options = nullptr;
+    Owned<IExpander> exp = handler->getExpander(options);
+
+    int len=exp->init(src);
+    if (len==0)
+    {
+        decompressedSize = 0;
+        return NULL;
+    }
+    char *outkeys=(char *) allocMem(len);
+    exp->expand(outkeys);
+    decompressedSize = len;
+    return outkeys;
+}
+
 void CJHBlockCompressedSearchNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _fpos, bool needCopy)
 {
     CJHSearchNode::load(_keyHdr, rawData, _fpos, needCopy);
-    keyLen = _keyHdr->getMaxKeyLength();
+
+    keyLen = keyHdr->getMaxKeyLength();
     keyCompareLen = _keyHdr->getNodeKeyLength();
-    if (hdr.nodeType == NodeBranch)
-        keyLen = keyHdr->getNodeKeyLength();
     keyRecLen = keyLen + sizeof(offset_t);
-    char keyType = keyHdr->getKeyType();
+
     const char *keys = ((const char *) rawData) + sizeof(hdr);
-    if (hdr.nodeType==NodeLeaf)
-    {
-        firstSequence = *(unsigned __int64 *) keys;
-        keys += sizeof(unsigned __int64);
-        _WINREV(firstSequence);
-    }
 
-    CCycleTimer expansionTimer(isLeaf());
-    if (hdr.nodeType==NodeLeaf && (keyType & HTREE_COMPRESSED_KEY))
-    {
-        inMemorySize = keyHdr->getNodeSize();
-        if ((keyType & (HTREE_QUICK_COMPRESSED_KEY|HTREE_VARSIZE))==HTREE_QUICK_COMPRESSED_KEY)
-            keyBuf = nullptr;
-        else
-            keyBuf = expandData(keys, inMemorySize);
-    }
-    else
-    {
-        if (hdr.numKeys) 
-        {
-            bool handleVariable = keyHdr->isVariable() && isLeaf();
-            KEYRECSIZE_T workRecLen;
-            MemoryBuffer keyBufMb;
-            const char *source = keys;
-            char *target;
-            // do first row
-            if (handleVariable) {
-                memcpy(&workRecLen, source, sizeof(workRecLen));
-                _WINREV(workRecLen);
-                size32_t tmpSz = sizeof(workRecLen) + sizeof(offset_t);
-                target = (char *)keyBufMb.reserve(tmpSz+workRecLen);
-                memcpy(target, source, tmpSz);
-                source += tmpSz;
-                target += tmpSz;
-            }
-            else {
-                target = (char *)keyBufMb.reserveTruncate(hdr.numKeys * keyRecLen);
-                workRecLen = keyRecLen - sizeof(offset_t);
-                memcpy(target, source, sizeof(offset_t));
-                source += sizeof(offset_t);
-                target += sizeof(offset_t);
-            }
+    firstSequence = *(unsigned __int64 *) keys;
+    keys += sizeof(unsigned __int64);
+    _WINREV(firstSequence);
+    
+    CompressionMethod compressionMethod = *(CompressionMethod*) keys;
+    keys += sizeof(CompressionMethod);
 
-            // this is where next row gets data from
-            const char *prev, *next = NULL;
-            unsigned prevOffset = 0;
-            if (handleVariable)
-                prevOffset = target-((char *)keyBufMb.bufferBase());
-            else
-                next = target;
-
-            unsigned char pack1 = *source++;
-            assert(0==pack1); // 1st time will be always be 0
-            KEYRECSIZE_T left = workRecLen;
-            while (left--) {
-                *target = *source;
-                source++;
-                target++;
-            }
-            // do subsequent rows
-            for (int i = 1; i < hdr.numKeys; i++) {
-                if (handleVariable) {
-                    memcpy(&workRecLen, source, sizeof(workRecLen));
-                    _WINREV(workRecLen);
-                    target = (char *)keyBufMb.reserve(sizeof(workRecLen)+sizeof(offset_t)+workRecLen);
-                    size32_t tmpSz = sizeof(workRecLen)+sizeof(offset_t);
-                    memcpy(target, source, tmpSz);
-                    target += tmpSz;
-                    source += tmpSz;
-                }
-                else
-                {
-                    memcpy(target, source, sizeof(offset_t));
-                    source += sizeof(offset_t);
-                    target += sizeof(offset_t);
-                }
-                pack1 = *source++;
-                assert(pack1<=workRecLen);            
-                if (handleVariable) {
-                    prev = ((char *)keyBufMb.bufferBase())+prevOffset;
-                    // for next
-                    prevOffset = target-((char *)keyBufMb.bufferBase());
-                }
-                else {
-                    prev = next;
-                    next = target;
-                }
-                left = workRecLen - pack1;
-                while (pack1--) {
-                    *target = *prev;
-                    prev++;
-                    target++;
-                }
-                while (left--) {
-                    *target = *source;
-                    source++;
-                    target++;
-                }
-            }
-            inMemorySize = keyBufMb.length();
-            keyBuf = (char *)keyBufMb.detach();
-            assertex(keyBuf);
-        }
-        else {
-            keyBuf = NULL;
-            inMemorySize = 0;
-            if (hdr.nodeType == NodeBranch)
-            {
-                if ((hdr.leftSib == 0) && (hdr.rightSib == 0))
-                {
-                    //Sanity check to catch error where a section of the file has unexpectedly been zeroed.
-                    //which is otherwise tricky to track down.
-                    //This can only legally happen if there is an index with 0 entries
-                    if (keyHdr->getNumRecords() != 0)
-                        throw MakeStringException(0, "Zeroed index node detected at offset %llu", getFpos());
-                }
-            }
-        }
-    }
-
-    if (isLeaf())
-        loadExpandTime = expansionTimer.elapsedNs();
+    CCycleTimer expansionTimer(true);
+    keyBuf = expandBlock(keys, inMemorySize, compressionMethod);
+    loadExpandTime = expansionTimer.elapsedNs();
 }
 
 int CJHBlockCompressedSearchNode::compareValueAt(const char *src, unsigned int index) const
@@ -222,37 +131,10 @@ int CJHBlockCompressedSearchNode::compareValueAt(const char *src, unsigned int i
     return memcmp(src, keyBuf + index*keyRecLen + (keyHdr->hasSpecialFileposition() ? sizeof(offset_t) : 0), keyCompareLen);
 }
 
-//This critical section will be shared by all legacy nodes, but it is only used when recording events, so the potential contention is not a problem.
-static CriticalSection payloadExpandCs;
-
 bool CJHBlockCompressedSearchNode::fetchPayload(unsigned int index, char *dst, PayloadReference & activePayload) const
 {
     if (index >= hdr.numKeys) return false;
     if (!dst) return true;
-
-    bool recording = recordingEvents();
-    if (recording)
-    {
-        std::shared_ptr<byte []> sharedPayload;
-
-        {
-            CriticalBlock block(payloadExpandCs);
-
-            sharedPayload = expandedPayload.lock();
-            if (!sharedPayload)
-            {
-                //Allocate a dummy payload so we can track whether it is hit or not
-                sharedPayload = std::shared_ptr<byte []>(new byte[1]);
-                expandedPayload = sharedPayload;
-            }
-        }
-
-        queryRecorder().recordIndexPayload(keyHdr->getKeyId(), getFpos(), 0, getMemSize());
-
-        //Ensure the payload stays alive for the duration of this call, and is likely preserved until
-        //the next call.  Always replacing is as efficient as conditional - since we are using a move operator.
-        activePayload.data = std::move(sharedPayload);
-    }
 
     const char * p = keyBuf + index*keyRecLen;
     if (keyHdr->hasSpecialFileposition())
@@ -339,8 +221,10 @@ void CJHBlockCompressedSearchNode::dump(FILE *out, int length, unsigned rowCount
 
 //=========================================================================================================
 
-CBlockCompressedWriteNode::CBlockCompressedWriteNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode) : CWriteNode(_fpos, _keyHdr, isLeafNode)
+CBlockCompressedWriteNode::CBlockCompressedWriteNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode, const CBlockCompressedBuildContext& ctx) : 
+    CWriteNode(_fpos, _keyHdr, isLeafNode), context(ctx)
 {
+    hdr.compressionType = BlockCompression;
     keyLen = keyHdr->getMaxKeyLength();
     if (!isLeafNode)
     {
@@ -357,66 +241,32 @@ CBlockCompressedWriteNode::~CBlockCompressedWriteNode()
 
 bool CBlockCompressedWriteNode::add(offset_t pos, const void *indata, size32_t insize, unsigned __int64 sequence)
 {
-    char keyType = keyHdr->getKeyType();
-    if (isLeaf() && !hdr.numKeys)
+    if (hdr.numKeys == 0)
     {
         unsigned __int64 rsequence = sequence;
         _WINREV(rsequence);
         memcpy(keyPtr, &rsequence, sizeof(rsequence));
         keyPtr += sizeof(rsequence);
         hdr.keyBytes += sizeof(rsequence);
-    }
-    if (isLeaf() && (keyType & HTREE_COMPRESSED_KEY))
-    {
-        // For HTREE_COMPRESSED_KEY hdr.keyBytes is only updated on the first row (above),
-        // and then in the finalize() call after the compressor has been closed.
-        if (0 == hdr.numKeys)
-        {
-            bool isVariable = keyHdr->isVariable();
-            //Adjust the fixed key size to include the fileposition field which is written by writekey.
-            size32_t fixedKeySize = isVariable ? 0 : keyLen + sizeof(offset_t);
-            bool rowCompressed = (keyType&HTREE_QUICK_COMPRESSED_KEY)==HTREE_QUICK_COMPRESSED_KEY;
-            lzwcomp.open(keyPtr, maxBytes-hdr.keyBytes, isVariable, rowCompressed, fixedKeySize);
-        }
-        if (0xffff == hdr.numKeys || 0 == lzwcomp.writekey(pos, (const char *)indata, insize))
-            return false;
-    }
-    else
-    {
-        if (0xffff == hdr.numKeys)
-            return false;
-        assertex (indata);
-        //assertex(insize==keyLen);
-        const void *data;
-        int size;
 
-        char *result = (char *) alloca(insize+1);  // Gets bigger if no leading common!
-        size = compressValue((const char *) indata, insize, result);
-        data = result;
+        memcpy(keyPtr, &context.compressionMethod, sizeof(context.compressionMethod));
+        keyPtr += sizeof(context.compressionMethod);
+        hdr.keyBytes += sizeof(context.compressionMethod);
 
-        int bytes = sizeof(pos) + size;
-        if (keyHdr->isVariable())
-            bytes += sizeof(KEYRECSIZE_T);
-        if (hdr.keyBytes + bytes >= maxBytes)    // probably could be '>' (loses byte)
-            return false;
+        //Adjust the fixed key size to include the fileposition field which is written by writekey.
+        bool isVariable = keyHdr->isVariable();
+        size32_t fixedKeySize = isVariable ? 0 : keyLen + sizeof(offset_t);
 
-        if (keyHdr->isVariable() && isLeaf())
-        {
-            KEYRECSIZE_T _insize = insize;
-            _WINREV(_insize);
-            memcpy(keyPtr, &_insize, sizeof(_insize));
-            keyPtr += sizeof(_insize);
-        }
-        _WINREV(pos);
-        memcpy(keyPtr, &pos, sizeof(pos));
-        keyPtr += sizeof(pos);
-        memcpy(keyPtr, data, size);
-        keyPtr += size;
-        hdr.keyBytes += bytes;
+        ICompressHandler * handler = queryCompressHandler(context.compressionMethod);
+        compressor.open(keyPtr, maxBytes-hdr.keyBytes, handler, context.compressionOptions, isVariable, fixedKeySize);
     }
+
+    if (0xffff == hdr.numKeys || 0 == compressor.writekey(pos, (const char *)indata, insize))
+        return false;
 
     if (insize>keyLen)
         throw MakeStringException(0, "key+payload (%u) exceeds max length (%u)", insize, keyLen);
+
     memcpy(lastKeyValue, indata, insize);
     lastSequence = sequence;
     hdr.numKeys++;
@@ -426,28 +276,38 @@ bool CBlockCompressedWriteNode::add(offset_t pos, const void *indata, size32_t i
 
 void CBlockCompressedWriteNode::finalize()
 {
-    if (isLeaf() && (keyHdr->getKeyType() & HTREE_COMPRESSED_KEY))
-    {
-        lzwcomp.close();
-        if (hdr.numKeys)
-            hdr.keyBytes = lzwcomp.buflen() + sizeof(unsigned __int64); // rsequence
-    }
-}
-
-size32_t CBlockCompressedWriteNode::compressValue(const char *keyData, size32_t size, char *result)
-{
-    unsigned int pack = 0;
+    compressor.close();
     if (hdr.numKeys)
-    {
-        for (; pack<size && pack<255; pack++)
-        {
-            if (keyData[pack] != lastKeyValue[pack])
-                break;
-        }
-    }
-
-    result[0] = pack;
-    memcpy(&result[1], keyData+pack, size-pack);
-    return size-pack+1;
+        hdr.keyBytes = compressor.buflen() + sizeof(unsigned __int64) + sizeof(CompressionMethod); // rsequence
 }
 
+BlockCompressedIndexCompressor::BlockCompressedIndexCompressor(unsigned keyedSize, IHThorIndexWriteArg *helper, const char* options)
+{
+    CompressionMethod compressionMethod = COMPRESS_METHOD_ZSTDS;
+    StringBuffer compressionOptions;
+
+    auto processOption = [this] (const char * option, const char * value)
+    {
+        CompressionMethod method = translateToCompMethod(option, COMPRESS_METHOD_NONE);
+        if (method != COMPRESS_METHOD_NONE)
+        {
+            context.compressionMethod = method;
+            if (!streq(value, "1"))
+                context.compressionOptions.append(',').append(value);
+        }
+        else if (strieq(option, "compression"))
+        {
+            context.compressionMethod = translateToCompMethod(value, COMPRESS_METHOD_ZSTDS);
+        }
+        else if (strieq(option, "compressopt"))
+        {
+            context.compressionOptions.append(',').append(value);
+        }
+    };
+
+    processOptionString(options, processOption);
+
+    context.compressionHandler = queryCompressHandler(compressionMethod);
+    if (!context.compressionHandler)
+        throw MakeStringException(0, "Unknown compression method %d", (int)compressionMethod);
+}

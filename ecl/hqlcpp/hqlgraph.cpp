@@ -285,12 +285,6 @@ void LogicalGraphCreator::connectActivities(IHqlExpression * fromExpr, IHqlExpre
     }
     LogicalGraphInfo * from = queryExtra(fromExpr);
     LogicalGraphInfo * to = queryExtra(toExpr);
-    if (kind == dependencyAtom)
-    {
-        LogicalGraphInfo * temp = from;
-        from = to;
-        to = temp;
-    }
 
     if (from->subGraphId == to->subGraphId)
         addSimpleGraphEdge(curSubGraph(), from->id, to->id, from->outputCount++, 0, kind, label, nWay);

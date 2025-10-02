@@ -251,11 +251,13 @@ class jlib_decl StringArray : public ArrayOf<const char *, const char *, StringP
     };
     typedef ArrayOf<const char *, const char *, StringPointerArrayMapper> PARENT;
 public:
+    using PARENT::contains;
     void appendArray(const StringArray & other);
     // Appends a list in a string delimited by 'delim'
     void appendList(const char *list, const char *delim, bool trimSpaces = true);
     // Appends a list in a string delimited by 'delim' without duplicates
     void appendListUniq(const char *list, const char *delim, bool trimSpaces = true);
+    bool contains(const char * search, bool nocase) const;
     StringBuffer &getString(StringBuffer &ret, const char *delim) const; // get CSV string of array contents
     void sortAscii(bool nocase=false);
     void sortAsciiReverse(bool nocase=false);
@@ -644,6 +646,7 @@ struct HPCCBuildInfo
 extern jlib_decl HPCCBuildInfo hpccBuildInfo;
 extern jlib_decl bool checkCreateDaemon(unsigned argc, const char * * argv);
 
+extern jlib_decl unsigned readDigits(const char *name);
 extern jlib_decl unsigned readDigits(char const * & str, unsigned numDigits, bool throwOnFailure = true);
 
 //Createpassword of specified length, containing UpperCaseAlphas, LowercaseAlphas, numerics and symbols

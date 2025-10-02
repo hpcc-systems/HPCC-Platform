@@ -1238,6 +1238,7 @@ public:
         StringBuffer queueNames;
         getQueues(queueNames, true);
         queue.setown(createJobQueue(queueNames));
+        queue->connect(true);
     }
 
     void run()
@@ -1398,7 +1399,7 @@ public:
                 }
                 if (newQueues)
                 {
-                    queue->connect(false);
+                    queue->connect(true);
                     serverstatus.queryProperties()->setProp("@queue", queueNames.get());
                     serverstatus.commitProperties();
                     DBGLOG("eclccServer (%d threads) waiting for requests on queue(s) %s", poolSize, queueNames.get());

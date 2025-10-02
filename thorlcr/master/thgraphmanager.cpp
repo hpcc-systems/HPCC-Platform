@@ -1193,7 +1193,7 @@ static int exitCode = -1;
 void setExitCode(int code) { exitCode = code; }
 int queryExitCode() { return exitCode; }
 
-static Owned<IJobQueue> thorQueue; // used if multiJobLinger is in use, and here so abortThor can cancel
+static Owned<IJobQueue> thorQueue; // used for job queueing, and here so abortThor can cancel
 static unsigned aborting = 99;
 void abortThor(IException *e, unsigned errCode, bool abortCurrentJob)
 {
@@ -1447,34 +1447,23 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
             {
                 unsigned lingerPeriod = globals->getPropInt("@lingerPeriod", defaultThorLingerPeriod)*1000;
                 dbgassertex(lingerPeriod>=1000); // NB: the schema or the default ensure the linger period is non-zero
-                bool multiJobLinger = globals->getPropBool("@multiJobLinger", defaultThorMultiJobLinger);
-                StringBuffer instance("thorinstance_"); // only used when multiJobLinger = false
 
                 // NB: in k8s a Thor instance is explicitly started to run a specific wuid/graph
                 // it will not listen/receive another job/graph until the 1st explicit request the job
                 // started to is complete.
 
-                if (multiJobLinger)
+                StringBuffer queueNames;
+                getClusterThorQueueName(queueNames, globals->queryProp("@name"));
+                if (disableQueuePriority)
                 {
-                    StringBuffer queueNames;
-                    getClusterThorQueueName(queueNames, globals->queryProp("@name"));
-                    if (disableQueuePriority)
-                    {
-                        queueNames.append(",");
-                        getClusterLingerThorQueueName(queueNames, globals->queryProp("@name"));
-                    }
-                    PROGLOG("multiJobLinger: on. Queue names: %s", queueNames.str());
-                    thorQueue.setown(createJobQueue(queueNames));
-                    thorQueue->connect(false);
+                    queueNames.append(",");
+                    getClusterLingerThorQueueName(queueNames, globals->queryProp("@name"));
                 }
+                PROGLOG("Thor queue names: %s", queueNames.str());
+                thorQueue.setown(createJobQueue(queueNames));
+                thorQueue->connect(false);
 
                 StringBuffer currentWfId; // not filled/not used until recvNextGraph() is called.
-                if (!multiJobLinger)
-                {
-                    // We avoid using getEndpointHostText here and get an IP instead, because the client pod communicating directly with this Thor manager,
-                    // will not have the ability to resolve this pods hostname.
-                    queryMyNode()->endpoint().getEndpointIpText(instance);
-                }
                 StringBuffer currentGraphName(graphName);
                 StringBuffer currentWuid(wuid);
 
@@ -1573,8 +1562,6 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                                     jobManager->execute(workunit, currentWuid, currentGraphName, dummyAgentEp);
 
                                     Owned<IWorkUnit> w = &workunit->lock();
-                                    if (!multiJobLinger)
-                                        w->setDebugValue(instance, "1", true);
 
                                     if (jobManager->queryExitException())
                                     {
@@ -1619,7 +1606,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                         int ret = recvNextGraph(lingerRemaining, currentWuid.str(), currentWfId, wuid, currentGraphName, priority);
                         if (ret > 0)
                         {
-                            currentWuid.set(wuid); // NB: will always be same if !multiJobLinger
+                            currentWuid.set(wuid);
                             break; // success
                         }
                         else if (ret < 0)
@@ -1634,22 +1621,6 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                     if (0 == currentGraphName.length())
                     {
                         recordGlobalMetrics("Queue", { {"component", "thor" }, { "name", thorname } }, { StNumWaits, StTimeWaitFailure, StCostWait }, { 1, waitTimeNs, costWait });
-                        if (!multiJobLinger)
-                        {
-                            // De-register the idle lingering entry.
-                            Owned<IWorkUnitFactory> factory;
-                            Owned<IConstWorkUnit> workunit;
-                            factory.setown(getWorkUnitFactory());
-                            workunit.setown(factory->openWorkUnit(currentWuid));
-                            //Unlikely, but the workunit could have been deleted while we were lingering
-                            //currentWuid can also be blank if the workunit this started for died before thor started
-                            //processing the graph.  This test covers both (unlikely) situations.
-                            if (workunit)
-                            {
-                                Owned<IWorkUnit> w = &workunit->lock();
-                                w->setDebugValue(instance, "0", true);
-                            }
-                        }
                         break;
                     }
 

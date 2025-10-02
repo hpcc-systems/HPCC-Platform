@@ -1955,11 +1955,6 @@ void EclAgent::doProcess()
         logException((IException *) NULL);
     }
 
-#ifdef _CONTAINERIZED
-    // signal to any lingering Thor's that job is complete and they can quit before timeout.
-    executeGraphOnLingeringThor(*wuRead, 0, nullptr);
-#endif
-
     DBGLOG("Process complete");
     // Add some timing stats
     bool deleteJobTemps = true;

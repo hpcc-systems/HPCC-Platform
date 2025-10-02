@@ -437,7 +437,47 @@ ESPresponse [exceptions_inline] GetBuildInfoResponse
     ESParray<ESPstruct NamedValue> BuildInfo;
 };
 
-ESPservice [auth_feature("DEFERRED"), noforms, version("1.27"), default_client_version("1.27"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
+// ----- Global Metrics (migrated from ws_machine) -----
+ESPstruct DateTimeRange
+{
+    // Inclusive range, Format: yyyy-mm-ddThh:mm:ss[.nnnnnnnnn]
+    xsdDateTime Start;
+    xsdDateTime End;
+};
+
+ESPstruct Dimension
+{
+    string Name;
+    string Value;
+};
+
+ESPrequest [nil_remove] GetGlobalMetricsRequest
+{
+    string Category;                            // 'All' or empty/missing for all Categories
+    ESParray<ESPstruct Dimension> Dimensions;   // empty/missing for all Dimensions
+    ESPstruct DateTimeRange DateTimeRange;
+};
+
+ESPstruct Stat
+{
+    string Name;
+    string Value; // Holds unsigned long long (64-bit unsigned int)
+};
+
+ESPstruct GlobalMetric
+{
+    string Category;
+    ESParray<ESPstruct Dimension, Dimension> Dimensions;
+    ESPstruct DateTimeRange DateTimeRange;
+    ESParray<ESPstruct Stat, Stat> Stats;
+};
+
+ESPresponse [exceptions_inline, nil_remove] GetGlobalMetricsResponse
+{
+    ESParray<ESPstruct GlobalMetric, GlobalMetric> GlobalMetrics;
+};
+
+ESPservice [auth_feature("DEFERRED"), noforms, version("1.28"), default_client_version("1.28"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
 {
     ESPmethod Index(SMCIndexRequest, SMCIndexResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/index.xslt")] Activity(ActivityRequest, ActivityResponse);
@@ -471,6 +511,7 @@ ESPservice [auth_feature("DEFERRED"), noforms, version("1.27"), default_client_v
     ESPmethod [auth_feature("NONE")] GetStatusServerInfo(GetStatusServerInfoRequest, GetStatusServerInfoResponse);
 //this one doesn't seem to do any feature level check, Kevin/Tony?
     ESPmethod [auth_feature("NONE")] LockQuery(LockQueryRequest, LockQueryResponse);
+    ESPmethod [min_ver("1.28")] GetGlobalMetrics(GetGlobalMetricsRequest, GetGlobalMetricsResponse);
 };
 
 SCMexportdef(WSSMC);

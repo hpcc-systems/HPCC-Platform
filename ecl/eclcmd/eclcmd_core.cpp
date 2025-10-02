@@ -164,6 +164,7 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, unsigned wai
     }
     if (protect)
         req->setProtect(true);
+
     Owned<IClientWUDeployWorkunitResponse> resp;
     try
     {
@@ -172,10 +173,15 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, unsigned wai
     catch (IException *E)
     {
         StringBuffer msg;
+        E->errorMessage(msg);
         int code = E->errorCode();
+
+        if (cmd.optVerbose)
+            fprintf(stdout, "Deploy workunit failed with exception %u:%s\n", code, msg.str());
+
         //ESP doesn't want to process requests that are too large, and so disconnects before reading
         //  this causes issues capturing the error returned... check if that may have been the issue
-        if (code==SOAP_AUTHENTICATION_ERROR || (code==SOAP_SERVER_ERROR && streq(E->errorMessage(msg).str(), "401: Unauthorized Access")))
+        if (code==SOAP_AUTHENTICATION_ERROR || (code==SOAP_SERVER_ERROR && streq(msg.str(), "401: Unauthorized Access")))
             throw;
         if (useCompression) //newer build, not a maxRequestEntityLength issue
             throw;
@@ -235,6 +241,9 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, unsigned wai
 
         return isCompiled;
     }
+
+    if (cmd.optVerbose)
+        fprintf(stdout, "Deploy failed\n");
     return false;
 }
 

@@ -15,6 +15,13 @@ global:
       probes: 9
     regex:
       cacheSize: 500
+    memoryCoreDump:
+      mode: auto # { auto, on, off }
+      intervalSecs: 10
+      #thresholdMB: 7500 # supersedes 'auto' mode if set
+      #incrementMB: 100
+      #useVforkAndGcore: true # (default: false) uses vfork()+exec(gcore), instead of fork()+abort()
+      #suspendParent: true # (default: false). Suspend parent process during core dump (involves intermediate reaper process)
 ```
 
 NB: Some components (e.g. DfuServer and Thor) also have an 'expert' settings area (see values schema) that can be used for relavent settings
@@ -130,3 +137,12 @@ Default: 0
 
 Plane supports physical file part renaming.
 Default: based on plane configuration. Planes based with 'pvc' and/or storageapi default to false. All others to true.
+
+## memoryCoreDump (mode: string, intervalSecs: unsigned, thresholdMB: unsigned, incrementMB: unsigned, useVforkAndGcore: boolean, suspendParent: boolean)
+
+See memoryCoreDump example above.
+Defaulted off.
+If enabled, monitors total memory usage once per 'intervalSecs' and if above 'thresholdMB' creates a core dump.
+Further core files will be created if 'incrementMB' is set, and memory increases by more than that amount.
+mode=auto will auto-config 'thresholdMB' to 95% of total memory, and 'incrementMB' to 4% of total memory,
+meaning there will be at most 2 cores produced, one if detected >95% and another if detected >99%.

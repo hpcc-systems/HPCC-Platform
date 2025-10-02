@@ -1604,6 +1604,16 @@ void HqlCppTranslator::checkAbort()
         throw MakeStringException(HQLERR_ErrorAlreadyReported, "Aborting");
 }
 
+void HqlCppTranslator::saveOverriddenOption(const char * name)
+{
+    overriddenDebugOptions.append(name);
+}
+
+bool HqlCppTranslator::isOptionOverridden(const char * name) const
+{
+    return overriddenDebugOptions.contains(name, true);
+}
+
 // Option: (Name, value, ?overridden, default()) 
 // problems:
 // default value can depend on another option (e.g., cluster type/supports lcr).

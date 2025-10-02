@@ -34,6 +34,7 @@
 // Implementations may use the IMPLEMENT_IEVENTVISITATIONLINK macro to simplify implementation.
 interface IEventVisitationLink : extends IEventVisitor
 {
+    virtual void configure(const IPropertyTree& config) = 0;
     virtual void setNextLink(IEventVisitor& visitor) = 0;
 };
 

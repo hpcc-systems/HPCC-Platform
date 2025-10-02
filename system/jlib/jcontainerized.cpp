@@ -286,7 +286,13 @@ void runJob(const char *componentName, const char *wuid, const char *jobName, co
 {
     Owned<IPropertyTree> compConfig = getComponentConfig();
     KeepJobs keepJob = translateKeepJobs(compConfig->queryProp("@keepJobs"));
-    unsigned pendingTimeoutSecs = compConfig->getPropInt("@pendingTimeoutSecs", defaultPendingTimeSecs);
+    unsigned __int64 val = getConfigInt64("@schedulingTimeoutSecs", UINT64_MAX);
+    if (UINT64_MAX == val)
+    {
+        // '@pendingTimeoutSecs' kept for backward compatibility
+        val = getConfigInt64("@pendingTimeoutSecs", defaultPendingTimeSecs);
+    }
+    unsigned pendingTimeoutSecs = static_cast<unsigned>(val);
 
     bool removeNetwork = applyYaml(componentName, wuid, jobName, "networkpolicy", extraParams, true, true);
     applyYaml(componentName, wuid, jobName, "job", extraParams, false, KeepJobs::none == keepJob);

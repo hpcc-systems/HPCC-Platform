@@ -1614,6 +1614,16 @@ void StringArray::appendListUniq(const char *list, const char *delim, bool trimS
     DelimToStringArray(list, *this, delim, true, trimSpaces);
 }
 
+bool StringArray::contains(const char * search, bool nocase) const
+{
+    ForEachItemIn(i, *this)
+    {
+        if (nocase ? strieq(search, item(i)) : streq(search, item(i)))
+            return true;
+    }
+    return false;
+}
+
 StringBuffer &StringArray::getString(StringBuffer &ret, const char *delim) const
 {
     ForEachItemIn(i, *this)
@@ -3428,6 +3438,22 @@ void hold(const char *msg)
     WARNLOG("Released: %s", msg);
 }
 
+
+// Reads digits from a null-terminated string
+// Returns the number if possible, zero if the string is not a number
+unsigned readDigits(const char *name)
+{
+    unsigned num = 0;
+    while (*name)
+    {
+        if (isdigit(*name))
+            num = num * 10 + (*name - '0');
+        else
+            return 0;
+        name++;
+    }
+    return num;
+}
 
 
 unsigned readDigits(char const * & str, unsigned numDigits, bool throwOnFailure)

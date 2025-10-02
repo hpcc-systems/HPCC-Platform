@@ -230,6 +230,7 @@ public:
 
     virtual bool onGetStatusServerInfo(IEspContext &context, IEspGetStatusServerInfoRequest &req, IEspGetStatusServerInfoResponse &resp);
     virtual bool onLockQuery(IEspContext &context, IEspLockQueryRequest &req, IEspLockQueryResponse &resp);
+    virtual bool onGetGlobalMetrics(IEspContext &context, IEspGetGlobalMetricsRequest &req, IEspGetGlobalMetricsResponse &resp);
 private:
     void addCapabilities( IPropertyTree* pFeatureNode, const char* access, IArrayOf<IEspCapability>& capabilities);
     void addServerJobQueue(IArrayOf<IEspServerJobQueue>& jobQueues, const char* queueName, const char* serverName,

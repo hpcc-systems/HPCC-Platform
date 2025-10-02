@@ -85,17 +85,17 @@ jobs:
           if [[ $point -eq 0 ]]; then
             if [[ $minor -eq 0 ]]; then
               major=$((major - 1))
-              previous_rc=$(git tag --create-reflog --sort=-v:refname | grep -E "^community_$major\.[0-9]*\.[0-9]*-rc" | head -n 1 | cut -d_ -f2 )
-              previous_gold=$(git tag --create-reflog --sort=-v:refname | grep -E "^community_$major\.[0-9]*\.[0-9]*-[0-9]" | head -n 1 | cut -d_ -f2 )
+              previous_rc=$(git tag --sort=-v:refname | grep -E "^community_$major\.[0-9]*\.[0-9]*-rc" | head -n 1 | cut -d_ -f2 2>/dev/null)
+              previous_gold=$(git tag --sort=-v:refname | grep -E "^community_$major\.[0-9]*\.[0-9]*-[0-9]" | head -n 1 | cut -d_ -f2 2>/dev/null)
             else
               minor=$((minor - 2))
-              previous_rc=$(git tag --create-reflog --sort=-v:refname | grep -E "^community_$major\.$minor\.[0-9]*-rc" | head -n 1 | cut -d_ -f2 )
-              previous_gold=$(git tag --create-reflog --sort=-v:refname | grep -E "^community_$major\.$minor\.[0-9]*-[0-9]" | head -n 1 | cut -d_ -f2 )
+              previous_rc=$(git tag --sort=-v:refname | grep -E "^community_$major\.$minor\.[0-9]*-rc" | head -n 1 | cut -d_ -f2 2>/dev/null)
+              previous_gold=$(git tag --sort=-v:refname | grep -E "^community_$major\.$minor\.[0-9]*-[0-9]" | head -n 1 | cut -d_ -f2 2>/dev/null)
             fi
           else
             point=$((point - 2))
-            previous_rc=$(git tag --create-reflog --sort=-v:refname | grep -E "^community_$major\.$minor\.$point-rc" | head -n 1 | cut -d_ -f2 )
-            previous_gold=$(git tag --create-reflog --sort=-v:refname | grep -E "^community_$major\.$minor\.$point-[0-9]" | head -n 1 | cut -d_ -f2)
+            previous_rc=$(git tag --sort=-v:refname | grep -E "^community_$major\.$minor\.$point-rc" | head -n 1 | cut -d_ -f2 2>/dev/null)
+            previous_gold=$(git tag --sort=-v:refname | grep -E "^community_$major\.$minor\.$point-[0-9]" | head -n 1 | cut -d_ -f2 2>/dev/null)
           fi
           echo "current_version=$version" >> $GITHUB_OUTPUT
           echo "previous_rc_version=$previous_rc" >> $GITHUB_OUTPUT

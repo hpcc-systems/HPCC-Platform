@@ -2995,15 +2995,15 @@ IPropertyTree *getXPathMatchTree(IPropertyTree &parent, const char *xpath)
 
 void PTree::serializeAttributes(IBufferedSerialOutputStream &tgt) const
 {
-    Owned<IAttributeIterator> aIter = getAttributes();
-    if (aIter->first())
+    AttrValue *attr = getNextAttribute(nullptr);
+    if (attr)
     {
         do
         {
-            append(tgt, aIter->queryName());
-            append(tgt, aIter->queryValue());
-        }
-        while (aIter->next());
+            append(tgt, attr->key.get());
+            append(tgt, attr->value.get());
+            attr = getNextAttribute(attr);
+        } while (attr);
     }
     append(tgt, ""); // attribute terminator. i.e. blank attr name.
 }
@@ -3045,7 +3045,7 @@ void PTree::serializeToStream(IBufferedSerialOutputStream &tgt) const
     serializeCutOff(tgt, -1, 0);
 }
 
-void PTree::deserializeFromStream(IBufferedSerialInputStream &src)
+void PTree::deserializeFromStream(IBufferedSerialInputStream &src, PTreeDeserializeContext &ctx)
 {
     deserializeSelf(src);
 
@@ -3055,7 +3055,7 @@ void PTree::deserializeFromStream(IBufferedSerialInputStream &src)
         {
         case NextByteStatus::nextByteIsNonZero:
         {
-            IPropertyTree *child = create(src);
+            IPropertyTree *child = create(src, ctx);
             addPropTree(child->queryName(), child);
             break;
         }
@@ -3097,7 +3097,10 @@ void PTree::deserializeSelf(IBufferedSerialInputStream &src)
         std::pair<const char *, const char *> attrPair = peekKeyValuePair(src, len);
         if (attrPair.second == nullptr)
             throwUnexpectedX("PTree deserialization error: end of stream, expected attribute value");
-        setProp(attrPair.first, attrPair.second);
+
+        constexpr bool attributeNameNotEncoded = false; // Deserialized attribute name is in its original unencoded form
+        setAttribute(attrPair.first, attrPair.second, attributeNameNotEncoded);
+
         src.skip(len + 1); // +1 to skip over second null terminator.
     }
 
@@ -4524,8 +4527,9 @@ IPropertyTree *createPTree(MemoryBuffer &src, byte flags)
 
 IPropertyTree *createPTreeFromBinary(IBufferedSerialInputStream &src, byte flags)
 {
+    PTreeDeserializeContext ctx;
     IPropertyTree *tree = createPTree(nullptr, flags);
-    tree->deserializeFromStream(src);
+    tree->deserializeFromStream(src, ctx);
     return tree;
 }
 
@@ -4534,8 +4538,9 @@ IPropertyTree *createPTreeFromBinary(IBufferedSerialInputStream &src, IPTreeNode
     if (!nodeCreator)
         return createPTreeFromBinary(src, ipt_none);
 
+    PTreeDeserializeContext ctx;
     IPropertyTree *tree = nodeCreator->create(nullptr); // The nullptr is a dummy name value, it will be overwritten by deserializeFromStream
-    tree->deserializeFromStream(src);
+    tree->deserializeFromStream(src, ctx);
     return tree;
 }
 

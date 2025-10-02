@@ -23,6 +23,8 @@ bool CPropertyTreeEvents::nextEvent(CEvent& event)
         return false;
     const IPropertyTree& node = eventsIt->query();
     const char* typeStr = node.queryProp("@type");
+    if (isEmptyString(typeStr))
+        throw makeStringException(-1, "missing event type");
     EventType type = queryEventType(typeStr);
     if (EventNone == type)
     {

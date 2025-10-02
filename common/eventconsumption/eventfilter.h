@@ -20,6 +20,21 @@
 #include "eventconsumption.h"
 #include "eventvisitor.h"
 
+enum class FilterTermComparison : byte
+{
+    Default,
+    Equal,
+    NotEqual,
+    LessThan,
+    LessThanOrEqual,
+    GreaterThan,
+    GreaterThanOrEqual,
+    ElementOf,
+    NotElementOf,
+    Wildcard,
+    Except,
+};
+
 // Extension of IEventVisitationLink that supports filtering of visited events. Implementations
 // expect to be linked to another visitor, forwarding all visits not blocked by the specified
 // constraints to the next linked visitor.
@@ -30,10 +45,14 @@
 // Events that do not include a constrained attribute are not blocked.
 interface IEventFilter : extends IEventVisitationLink
 {
+    // Optionally setup a filter using the contents of a property tree.
+    virtual void configure(const IPropertyTree& config) = 0;
     // Filter on a single event type. All events are accepted by default.
-    virtual bool acceptEvent(EventType type) = 0;
+    virtual bool acceptEvent(EventType type, FilterTermComparison comp) = 0;
+    inline bool acceptEvent(EventType type) { return acceptEvent(type, FilterTermComparison::Default); };
     // Filter on all events of a given context. All events are accepted by default.
-    virtual bool acceptEvents(EventContext context) = 0;
+    virtual bool acceptEvents(EventContext context, FilterTermComparison comp) = 0;
+    inline bool acceptEvents(EventContext context) { return acceptEvents(context, FilterTermComparison::Default); };
     // Filter on a comma-delimited list of event type names and/or event context names. All events
     // are accepted by default.
     virtual bool acceptEvents(const char* types) = 0;
@@ -58,3 +77,4 @@ interface IEventFilter : extends IEventVisitationLink
 
 // Obtain a new instance of a standard event filter.
 extern event_decl IEventFilter* createEventFilter();
+extern event_decl IEventFilter* createEventFilter(const IPropertyTree& config);

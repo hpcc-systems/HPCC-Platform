@@ -63,6 +63,8 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
     const [submitDisabled, setSubmitDisabled] = React.useState(false);
     const [uploadPct, setUploadPct] = React.useState<number>(0);
 
+    const uploadXHRRef = React.useRef<XMLHttpRequest | null>(null);
+
     const { handleSubmit, control, reset } = useForm<FileListFormValues>({ defaultValues });
     const { theme } = useUserTheme();
 
@@ -89,6 +91,23 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
         }
     }, [removeBeforeUnload, setShowForm]);
 
+    const cancelUpload = React.useCallback(() => {
+        if (uploadXHRRef.current) {
+            try {
+                uploadXHRRef.current.abort();
+                logger.warning(nlsHPCC.UploadCancelled);
+            } catch (err) {
+                logger.error(nlsHPCC.ErrorAbortingUpload + ": " + err);
+            } finally {
+                uploadXHRRef.current = null;
+            }
+        }
+        removeBeforeUnload();
+        setSubmitDisabled(false);
+        setUploadPct(0);
+        closeForm();
+    }, [closeForm, removeBeforeUnload]);
+
     const doSubmit = React.useCallback((data) => {
         const uploadFiles = (folderPath, selection) => {
             const formData = new FormData();
@@ -103,6 +122,7 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
             // have to use XMLHttpRequest over native fetch to capture upload progress
             const xhr = new XMLHttpRequest();
             xhr.open("POST", uploadUrl, true);
+            uploadXHRRef.current = xhr;
 
             xhr.upload.onprogress = (evt) => {
                 if (evt.lengthComputable) {
@@ -117,6 +137,7 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
             xhr.onload = () => {
                 removeBeforeUnload();
                 setSubmitDisabled(false);
+                uploadXHRRef.current = null;
                 try {
                     const response = JSON.parse(xhr.responseText || "{}");
                     const exceptions = response?.Exceptions?.Exception ?? [];
@@ -134,8 +155,8 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                         }
                         reset(defaultValues);
                     }
-                } catch (evt) {
-                    logger.error(nlsHPCC.ErrorUploadingFile);
+                } catch (err) {
+                    logger.error(nlsHPCC.ErrorUploadingFile + ": " + err);
                 } finally {
                     setUploadPct(0);
                 }
@@ -144,7 +165,15 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
             xhr.onerror = () => {
                 removeBeforeUnload();
                 setSubmitDisabled(false);
+                uploadXHRRef.current = null;
                 logger.error(nlsHPCC.ErrorUploadingFile);
+                setUploadPct(0);
+            };
+
+            xhr.onabort = () => {
+                removeBeforeUnload();
+                setSubmitDisabled(false);
+                uploadXHRRef.current = null;
                 setUploadPct(0);
             };
 
@@ -182,7 +211,7 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                 console.log(err);
             }
         )();
-    }, [closeForm, handleSubmit, machine, onSubmit, os, pathSep, reset, selection]);
+    }, [addBeforeUnload, closeForm, handleSubmit, machine, onSubmit, os, pathSep, removeBeforeUnload, reset, selection]);
 
     const componentStyles = mergeStyleSets(
         FormStyles.componentStyles,
@@ -212,7 +241,7 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
         }
     );
 
-    return <MessageBox title={nlsHPCC.FileUploader} show={showForm} setShow={closeForm}
+    return <MessageBox title={nlsHPCC.FileUploader} show={showForm} setShow={closeForm} disableClose={submitDisabled}
         footer={<>
             {submitDisabled &&
                 // TODO: need to figure out why there's some theme clashing issue here
@@ -226,7 +255,11 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
             }
             <PrimaryButton text={nlsHPCC.Upload} onClick={handleSubmit(doSubmit)} disabled={submitDisabled} />
             {submitDisabled &&
-                <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
+                <DefaultButton text={nlsHPCC.Cancel} onClick={() => {
+                    if (window.confirm(nlsHPCC.CancelUploadConfirm)) {
+                        cancelUpload();
+                    }
+                }} />
             }
         </>}>
         <Stack>

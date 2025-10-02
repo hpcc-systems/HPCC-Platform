@@ -253,8 +253,8 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                     <ECLArchive
                         wuid={wuid}
                         parentUrl={`${parentUrl}/${wuid}/eclsummary`}
-                        selection={state?.eclsummary?.lineageSelection}
-                        lineNum={state?.eclsummary?.selection ? state?.eclsummary?.selection[0] : null}
+                        selection={state?.eclsummary?.lineageSelection ?? state?.eclsummary}
+                        lineNum={state?.eclsummary?.selection ? state?.eclsummary?.selection[0] : undefined}
                     />
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "xml"} size={size}>

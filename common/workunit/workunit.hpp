@@ -1824,7 +1824,6 @@ inline bool isGlobalScope(const char * scope) { return scope && (streq(scope, GL
 extern WORKUNIT_API bool isValidPriorityValue(const char * priority);
 extern WORKUNIT_API bool isValidMemoryValue(const char * memoryUnit);
 
-constexpr bool defaultThorMultiJobLinger = true;
 constexpr unsigned defaultThorLingerPeriod = 60;
 
 constexpr bool defaultAnalyzeWhenComplete = isContainerized() ? false : true;
@@ -1840,7 +1839,6 @@ extern WORKUNIT_API TraceFlags wuLoadTraceFlags(IConstWorkUnit * wu, const std::
 // useful when workunit info is serialize to a property tree (e.g. in Thor workers)
 extern WORKUNIT_API TraceFlags wuLoadTraceFlags(const IPropertyTree * wuInfo, const std::initializer_list<TraceOption> & optNames, TraceFlags dft);
 
-extern WORKUNIT_API bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, unsigned wfid, const char *graphName);
 extern WORKUNIT_API bool workunitGraphCacheEnabled;
 
 
