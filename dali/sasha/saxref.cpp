@@ -143,7 +143,7 @@ public:
     // bitset markedd[N];
 
 
-    static std::unique_ptr<cFileDesc> create(const char *name, unsigned numParts, bool isDirPerPart, unsigned fnLen)
+    static cFileDesc *create(const char *name, unsigned numParts, bool isDirPerPart, unsigned fnLen)
     {
         size_t nameLen = strlen(name);
         if (nameLen>255)
@@ -152,10 +152,10 @@ public:
             nameLen = 255;
         }
         unsigned mapLen = (numParts*4+7)/8;
-        return std::unique_ptr<cFileDesc>(new(nameLen, mapLen, numParts) cFileDesc(name, nameLen, mapLen, numParts, isDirPerPart, fnLen));
+        return new(nameLen, mapLen, numParts) cFileDesc(name, nameLen, mapLen, numParts, isDirPerPart, fnLen);
     }
 
-    static void* operator new(size_t baseSize, unsigned nameLen, unsigned mapLen, unsigned numParts)
+    static void *operator new(size_t baseSize, unsigned nameLen, unsigned mapLen, unsigned numParts)
     {
         void *ptr = malloc(baseSize+nameLen+mapLen);
         if (!ptr) throw std::bad_alloc();
@@ -301,7 +301,7 @@ public:
     byte name[1];                     // first byte length  NB this is the tail name
     // char namestr[*name]
 
-    static std::unique_ptr<cDirDesc> create(const char * name)
+    static cDirDesc *create(const char * name)
     {
         size32_t nameLen = strlen(name);
         if (nameLen>255)
@@ -309,10 +309,10 @@ public:
             OWARNLOG(LOGPFX "Directory name %s longer than 255 chars, truncating",name);
             nameLen = 255;
         }
-        return std::unique_ptr<cDirDesc>(new(nameLen) cDirDesc(name, nameLen));
+        return new(nameLen) cDirDesc(name, nameLen);
     }
 
-    static void* operator new(size_t baseSize, unsigned nameLen)
+    static void *operator new(size_t baseSize, unsigned nameLen)
     {
         void *ptr = malloc(baseSize+nameLen);
         if (!ptr) throw std::bad_alloc();
@@ -359,9 +359,8 @@ public:
 
         // NB: Creation only happens during scanDirectories, this function should be called from [thread-safe] lookupDir()
         // lookupDirNonThreadSafe is also called in findDirectory during scanLogicalFiles. It will not reach here, and does not need to be thread safe )
-        auto uniqueDirPtr = cDirDesc::create(name);
-        cDirDesc *ret = uniqueDirPtr.get();
-        dirs[name] = std::move(uniqueDirPtr);
+        cDirDesc *ret = cDirDesc::create(name);
+        dirs.emplace(name, ret);
         return ret;
     }
 
@@ -527,9 +526,8 @@ public:
             file = it->second.get();
         } else {
             // dirPerPart is set to false during scanDirectories, and later updated in listOrphans by mergeDirPerPartDirs
-            auto uniqueFilePtr = cFileDesc::create(fn,nf,false,filenameLen);
-            file = uniqueFilePtr.get();
-            files[fn] = std::move(uniqueFilePtr);
+            file = cFileDesc::create(fn,nf,false,filenameLen);
+            files.emplace(fn, file);
         }
 
         if (misplaced) {
@@ -1030,7 +1028,7 @@ public:
     CNewXRefManager(IPropertyTree *plane,unsigned maxMb=DEFAULT_MAXMEMORY)
     {
         iswin = false; // set later
-        root = cDirDesc::create("");
+        root.reset(cDirDesc::create(""));
         verbose = true;
         iphash = NULL;
         ipnum = NULL;
@@ -1203,7 +1201,7 @@ public:
 
     void clear()
     {
-        root = cDirDesc::create("");
+        root.reset(cDirDesc::create(""));
     }
 
     cDirDesc *findDirectory(const char *name)
