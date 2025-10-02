@@ -456,44 +456,6 @@ ESPresponse [encode(0), nil_remove, exceptions_inline] GetNodeGroupUsageResponse
     [min_ver("1.17")] string UsageTime;
 };
 
-ESPstruct DateTimeRange
-{
-    // Inclusive range, Format: yyyy-mm-ddThh:mm:ss[.nnnnnnnnn]
-    xsdDateTime Start;
-    xsdDateTime End;
-};
-
-ESPstruct Dimension
-{
-    string Name;
-    string Value;
-};
-
-ESPrequest [nil_remove] GetGlobalMetricsRequest
-{
-    string Category;                            // 'All' or empty/missing for all Categories
-    ESParray<ESPstruct Dimension> Dimensions;   // empty/missing for all Dimensions
-    ESPstruct DateTimeRange DateTimeRange;
-};
-
-ESPstruct Stat
-{
-    string Name;
-    string Value; // Holds unsigned long long (64-bit unsigned int)
-};
-
-ESPstruct GlobalMetric
-{
-    string Category;
-    ESParray<ESPstruct Dimension, Dimension> Dimensions;
-    ESPstruct DateTimeRange DateTimeRange;
-    ESParray<ESPstruct Stat, Stat> Stats;
-};
-
-ESPresponse [exceptions_inline, nil_remove] GetGlobalMetricsResponse
-{
-    ESParray<ESPstruct GlobalMetric, GlobalMetric> GlobalMetrics;
-};
 
 //-------- service ---------
 ESPservice [auth_feature("DEFERRED"), version("1.19"), generated_client_version("0.0")] ws_machine
@@ -517,7 +479,6 @@ ESPservice [auth_feature("DEFERRED"), version("1.19"), generated_client_version(
     ESPmethod [resp_xsl_default("./smc_xslt/ws_machine/metrics.xslt"), exceptions_inline("./smc_xslt/exceptions.xslt")]
        GetMetrics(MetricsRequest, MetricsResponse);
 
-    ESPmethod [min_ver("1.19")] GetGlobalMetrics(GetGlobalMetricsRequest,GetGlobalMetricsResponse);
 };
 
 

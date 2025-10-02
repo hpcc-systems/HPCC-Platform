@@ -86,18 +86,40 @@ Details on HPCC trace configuration can be found in [helm/examples/tracing/READM
 
 > **Note:** Choose one of the next two steps:
 
+From the root directory of the `HPCC-Platform` clone:
+
 ```sh
 #Choose this option if HPCC-Platform is currently NOT deployed
 #deploy fresh HPCC cluster
-helm install myhpcc hpcc/hpcc -f ./otlp-http-collector-k8s.yaml
+helm install myhpcc hpcc/hpcc -f helm/managed/observability/eck/otlp-http-collector-k8s.yaml
 ```
 
 ```sh
 #Choose this option if HPCC-Platform is already deployed
 #upgrade pre-existing HPCC cluster
 #Note: this command assumes the existing cluster is named myhpcc, use the actual cluster name
-helm upgrade myhpcc hpcc/hpcc -f ./otlp-http-collector-k8s.yaml
+helm upgrade myhpcc hpcc/hpcc -f helm/managed/observability/eck/otlp-http-collector-k8s.yaml
 ```
+
+We can configure ECLWatch to expose links to specific trace graphs on Kibana/APM by providing an 'external link' values file.
+
+This project provides 2 sample values files which links ECLWatch with either a trace query link on the last 15minutes (observability-eclwatch-links-last15mins.yaml) or a custom time range (observability-eclwatch-links-variable-time.yaml).
+
+To enable the ECK(Elastic/Kibana) links on ECLWatch provide either of the aforementioned values files as such:
+
+From the HPCC Platform root directory, run one of:
+
+```sh
+helm upgrade myhpcc helm/hpcc -f helm/managed/observability/eck/observability-eclwatch-links-last15mins.yaml
+
+# or
+
+helm upgrade myhpcc helm/hpcc -f helm/managed/observability/eck/observability-eclwatch-links-variable-time.yaml
+```
+
+Of note: the sample commands assume a pre-existing and pre-deployed HPCC cluster named 'myhpcc' is available. If not, perform a 'helm install' command otherwise. If a pre-deployed cluster does exist, but under a different name, simply replace 'myhpcc' in the above command with the correct name.
+
+Also, the 'observability-eclwatch-links' values files overwrite the entire ESP component. If the target HPCC cluster has specific ESP configuration needs, they would need to be reflected in the values file.
 
 ---
 

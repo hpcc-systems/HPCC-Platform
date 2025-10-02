@@ -18,6 +18,7 @@
 #include <queue>
 #include <list>
 #include <unordered_map>
+#include <future>
 
 #include "platform.h"
 #include "jhash.hpp"
@@ -1337,20 +1338,17 @@ public:
     void addDelta(char *path, IPropertyTree *delta)
     {
         CTransactionItem *item = new CTransactionItem(path, delta);
-        CriticalBlock b(pendingCrit);
         addToQueue(item);
     }
     CTransactionItem *addExt(char *name, size32_t length, void *content)
     {
         CTransactionItem *item = new CTransactionItem(name, length, content, true);
-        CriticalBlock b(pendingCrit);
         addToQueue(LINK(item));
         return item;
     }
     void removeExt(char *name)
     {
         CTransactionItem *item = new CTransactionItem(name);
-        CriticalBlock b(pendingCrit);
         addToQueue(item);
     }
     void flush()
@@ -1438,11 +1436,17 @@ public:
                         break;
                     }
                     pendingSz = 0;
-                    // Hold blockedSaveCrit before releasing pendingCrit, because need to ensure this saves ahead
-                    // of other transactions building up in addToQueue
-                    CHECKEDCRITICALBLOCK(blockedSaveCrit, fakeCritTimeout); // because if Dali is saving state (::blockingSave), it will clear pending
-                    b.leave();
 
+                    b.leave(); // NB: addToQueue could add to pending between here and regaining lock below
+                    // NB: ensure consistent lock ordering of blockedSaveCrit and pendingCrit
+                    CHECKEDCRITICALBLOCK(blockedSaveCrit, fakeCritTimeout); // because if Dali is saving state (::blockingSave), it will clear pending
+                    b.enter();
+                    // check if new items added in window above
+                    while (pending.size())
+                    {
+                        todo.push(std::move(pending.front()));
+                        pending.pop();
+                    }
                     // Because blockedSaveCrit is held, it will also block 'synchronous save' (see addToQueue)
                     // i.e. if stuck here, the transactions will start building up, and trigger a 'Forced synchronous save',
                     // which will in turn block. This must complete!
@@ -2260,21 +2264,27 @@ void CBinaryFileExternal::write(const char *name, IPropertyTree &tree)
 
 void CDeltaWriter::addToQueue(CTransactionItem *item)
 {
-    pending.push(item);
-    // add actual size for externals, and nominal '100 byte' value for delta transactions
-    // it will act. as a rough guide to appoaching size threshold. It is not worth
-    // synchronously preparing and serializing here (which will be done asynchronously later)
-    pendingSz += (CTransactionItem::f_addext == item->type) ? item->ext.dataLength : 100;
-    size_t items = pending.size();
-    if ((pendingSz < transactionMaxMem) && (items < transactionQueueLimit))
+    bool needsSyncSave = false;
     {
-        if (lastSaveTime && ((get_cycles_now() - lastSaveTime) < thresholdDuration))
-            return;
+        CriticalBlock b(pendingCrit);
+        pending.push(item);
+        // add actual size for externals, and nominal '100 byte' value for delta transactions
+        // it will act. as a rough guide to appoaching size threshold. It is not worth
+        // synchronously preparing and serializing here (which will be done asynchronously later)
+        pendingSz += (CTransactionItem::f_addext == item->type) ? item->ext.dataLength : 100;
+        size_t items = pending.size();
+        if ((pendingSz < transactionMaxMem) && (items < transactionQueueLimit))
+        {
+            if (lastSaveTime && ((get_cycles_now() - lastSaveTime) < thresholdDuration))
+                return;
 
-        if (!writeRequested)
-            requestAsyncWrite();
+            if (!writeRequested)
+                requestAsyncWrite();
+        }
+        else // here if exceeded transationQueueLimit, transactionMaxMem or exceeded time threshold (deltaSaveThresholdSecs)
+            needsSyncSave = true;
     }
-    else // here if exceeded transationQueueLimit, transactionMaxMem or exceeded time threshold (deltaSaveThresholdSecs)
+    if (needsSyncSave)
     {
         if (aborted) // critical situation if delta writer is no longer running (there will have been previous errors)
             DISLOG("CDeltaWriter thread was aborted! Dali is compromised. Save, shutdown or restart ASAP.");
@@ -2283,8 +2293,13 @@ void CDeltaWriter::addToQueue(CTransactionItem *item)
         // force a synchronous save
         CCycleTimer timer;
         PROGLOG("Forcing synchronous save of %u transactions (pendingSz=%zu)", (unsigned)pending.size(), pendingSz);
+
+        // NB: ensure consistent lock ordering of blockedSaveCrit and pendingCrit
         CHECKEDCRITICALBLOCK(blockedSaveCrit, fakeCritTimeout); // because if Dali is saving state (::blockingSave), it will clear pending
-        if (save(pending)) // if temporarily blocked, continue, meaning queue limit will overrun a bit (blocking window is short)
+        CriticalBlock b(pendingCrit);
+        size_t items = pending.size();
+        // NB: items could be 0. It's possible that the delta writer has caught up and flushed pending already
+        if (items && save(pending)) // if temporarily blocked, continue, meaning queue limit will overrun a bit (blocking window is short)
         {
             pendingSz = 0;
             timeThrottled += timer.elapsedCycles();
@@ -5260,6 +5275,7 @@ class CStoreHelper : implements IStoreHelper, public CInterface
     unsigned keepStores{0};
     SessionId mySessId{0};
     bool saveBinary{false};
+    bool saveAsync{false};
 
     void clearStoreInfo(const char *base, const char *location, unsigned edition, CStoreInfo *storeInfo=NULL)
     {
@@ -5473,7 +5489,7 @@ class CStoreHelper : implements IStoreHelper, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    CStoreHelper(const char *_storeName, const char *_location, const char *_remoteBackupLocation, unsigned _configFlags, unsigned _keepStores, unsigned _delay, const bool *_abort, bool _saveBinary) : storeName(_storeName), location(_location), remoteBackupLocation(_remoteBackupLocation), configFlags(_configFlags), abort(_abort), delay(_delay), keepStores(_keepStores), saveBinary(_saveBinary)
+    CStoreHelper(const char *_storeName, const char *_location, const char *_remoteBackupLocation, unsigned _configFlags, unsigned _keepStores, unsigned _delay, const bool *_abort, bool _saveBinary, bool _saveAsync) : storeName(_storeName), location(_location), remoteBackupLocation(_remoteBackupLocation), configFlags(_configFlags), abort(_abort), delay(_delay), keepStores(_keepStores), saveBinary(_saveBinary), saveAsync(_saveAsync)
     {
         mySessId = daliClientActive()?myProcessSession():0;
         if (!keepStores) keepStores = DEFAULT_KEEP_LASTN_STORES;
@@ -5698,59 +5714,71 @@ public:
         return res;
     }
 
-    unsigned saveStoreToFile(const IPropertyTree *root, IFileIO *iFileIOTmpStore, StoreFormat format)
+    IFile *saveStoreToFile(const IPropertyTree *root, StoreFormat format, unsigned &crc)
     {
         const bool isBinary = (format == StoreFormat::BINARY);
         LOG(MCdebugProgress, "Saving store to %s", isBinary ? "binary" : "XML");
         assertex(root);
-        assertex(iFileIOTmpStore);
 
-        // iFileIOTmpStore is passed in so that it can be used by the caller after the saveStoreToBinaryFile() call,
-        // for error processing and rename etc
-        IFile *iFile = iFileIOTmpStore->queryFile();
+        StringBuffer tmpStoreName;
+        Owned<IFileIO> iFileIOTmpStore(createUniqueFile(location, VStringBuffer("dali_store_tmp%s", isBinary ? ".bin" : ".xml").str(), nullptr, tmpStoreName));
+        Owned<IFile> iFile = LINK(iFileIOTmpStore->queryFile());
         dbgassertex(iFile);
-        const char *fileName = iFile->queryFilename();
-        dbgassertex(fileName);
         StringBuffer planeName;
         size32_t bufferSize = bufferSize1mb;
-        if (findPlaneFromPath(fileName, planeName))
-            bufferSize = (size32_t)getPlaneAttributeValue(planeName, BlockedSequentialIO, bufferSize);
+        try
+        {
+            if (findPlaneFromPath(location, planeName))
+                bufferSize = (size32_t)getPlaneAttributeValue(planeName, BlockedSequentialIO, bufferSize);
 
-        unsigned crc = 0;
-        if (isBinary)
-        {
-            Owned<ISerialOutputStream> serialStream = createSerialOutputStream(iFileIOTmpStore);
-            Owned<ICrcSerialOutputStream> crcSerialStream = createCrcOutputStream(serialStream);
-            Owned<IBufferedSerialOutputStream> bufOutStream = createBufferedOutputStream(crcSerialStream, bufferSize);
-            root->serializeToStream(*bufOutStream);
-            bufOutStream->flush();
-            bufOutStream.clear();
-            crcSerialStream->flush();
-            crc = crcSerialStream->queryCrc();
-            crcSerialStream.clear();
-            serialStream->flush();
-            serialStream.clear();
-        }
-        else
-        {
-            OwnedIFileIOStream fstream = createIOStream(iFileIOTmpStore);
-            Owned<ICrcIOStream> crcPipeStream = createCrcPipeStream(fstream);
-            Owned<IIOStream> ios = createBufferedIOStream(crcPipeStream, bufferSize);
+            if (isBinary)
+            {
+                Owned<ISerialOutputStream> serialStream = createSerialOutputStream(iFileIOTmpStore);
+                Owned<ICrcSerialOutputStream> crcSerialStream = createCrcOutputStream(serialStream);
+                Owned<IBufferedSerialOutputStream> bufOutStream = createBufferedOutputStream(crcSerialStream, bufferSize);
+                root->serializeToStream(*bufOutStream);
+                bufOutStream->flush();
+                bufOutStream.clear();
+                crcSerialStream->flush();
+                crc = crcSerialStream->queryCrc();
+                crcSerialStream.clear();
+                serialStream->flush();
+                serialStream.clear();
+            }
+            else
+            {
+                OwnedIFileIOStream fstream = createIOStream(iFileIOTmpStore);
+                Owned<ICrcIOStream> crcPipeStream = createCrcPipeStream(fstream);
+                Owned<IIOStream> ios = createBufferedIOStream(crcPipeStream, bufferSize);
 
 #ifdef _DEBUG
-            toXML(root, *ios); // formatted (default)
+                toXML(root, *ios); // formatted (default)
 #else
-            toXML(root, *ios, 0, 0);
+                toXML(root, *ios, 0, 0);
 #endif
-            ios->flush();
-            ios.clear();
-            fstream.clear();
-            crcPipeStream->flush();
-            crc = crcPipeStream->queryCrc();
-            crcPipeStream.clear();
+                ios->flush();
+                ios.clear();
+                fstream.clear();
+                crcPipeStream->flush();
+                crc = crcPipeStream->queryCrc();
+                crcPipeStream.clear();
+            }
+            iFileIOTmpStore->close();
         }
-        iFileIOTmpStore->close();
-        return crc;
+        catch (IException *e)
+        {
+            iFile->remove();
+            EXCLOG(e);
+            throw;
+        }
+        catch (DALI_CATCHALL)
+        {
+            iFile->remove();
+            DISLOG("%s", VStringBuffer("Unknown exception - Error saving %s store", isBinary ? "binary" : "XML").str());
+            throw;
+        }
+
+        return iFile.getClear();
     }
     virtual void saveStore(IPropertyTree *root, unsigned *_newEdition) override
     {
@@ -5761,52 +5789,52 @@ public:
         unsigned edition = storeInfo.edition;
         unsigned newEdition = nextEditionN(edition);
         bool savesCompleted = false;
+
+        OwnedIFile iXmlFileTmpStore;
         try
         {
-            // Save store as XML
-            StringBuffer tmpStoreName;
-            constexpr const char *temporaryXmlFileSaveName = "dali_store_tmp.xml";
-            OwnedIFileIO iXmlFileIOTmpStore = createUniqueFile(location, temporaryXmlFileSaveName, NULL, tmpStoreName);
-            OwnedIFile iXmlFileTmpStore = createIFile(tmpStoreName);
-            unsigned xmlCrc{0};
-            try
-            {
-                xmlCrc = saveStoreToFile(root, iXmlFileIOTmpStore, StoreFormat::XML);
-            }
-            catch (IException *e)
-            {
-                StringBuffer errMsg;
-                EXCLOG(e, errMsg.append("Failed to save XML temporary store to : ").append(temporaryXmlFileSaveName).str());
-                e->Release();
-                iXmlFileTmpStore->remove();
-                return;
-            }
-
-            // Save store as binary
             OwnedIFile iBinaryFileTmpStore;
+            unsigned xmlCrc{0};
             unsigned binaryCrc{0};
-            unsigned *binaryCrcPtr{nullptr};
+
+            // Execute save operations
             if (saveBinary)
             {
-                StringBuffer tmpStoreName;
-                constexpr const char *temporaryBinaryFileSaveName = "dali_store_tmp.bin";
-                OwnedIFileIO iBinaryFileIOTmpStore = createUniqueFile(location, temporaryBinaryFileSaveName, NULL, tmpStoreName);
-                iBinaryFileTmpStore.setown(createIFile(tmpStoreName));
+                std::future<IFile *> xmlStoreSavedFuture;
+                if (saveAsync)
+                {
+                    // Save the XML in the background
+                    auto asyncXmlSaveFunc = [this, &xmlCrc, root]() -> IFile *
+                    {
+                        LOG(MCdebugProgress, "Saving XML store asynch");
+                        return saveStoreToFile(root, StoreFormat::XML, xmlCrc);
+                    };
+                    xmlStoreSavedFuture = std::async(std::launch::async, asyncXmlSaveFunc);
+                }
+                else // if synchronous save XML 1st
+                    iXmlFileTmpStore.setown(saveStoreToFile(root, StoreFormat::XML, xmlCrc));
+
                 try
                 {
-                    binaryCrc = saveStoreToFile(root, iBinaryFileIOTmpStore, StoreFormat::BINARY);
-                    binaryCrcPtr = &binaryCrc;
+                    iBinaryFileTmpStore.setown(saveStoreToFile(root, StoreFormat::BINARY, binaryCrc));
                 }
                 catch (IException *e)
                 {
-                    StringBuffer errMsg;
-                    EXCLOG(e, errMsg.append("Failed to save binary temporary store to : ").append(temporaryBinaryFileSaveName).str());
+                    OWARNLOG(e, "Exception - Error saving Binary store");
                     e->Release();
-                    iBinaryFileTmpStore->remove();
+                    // Any binary save failure is ignored as only the XML save is critical
                 }
+                catch (DALI_CATCHALL)
+                {
+                    OWARNLOG("Unknown exception - Error saving Binary store");
+                    // Any binary save failure is ignored as only the XML save is critical
+                }
+
+                if (saveAsync)
+                    iXmlFileTmpStore.setown(xmlStoreSavedFuture.get());
             }
-            // Binary CRC pointer will be set only if the binary store was saved
-            bool binaryStoreSaved = binaryCrcPtr != nullptr;
+            else
+                iXmlFileTmpStore.setown(saveStoreToFile(root, StoreFormat::XML, xmlCrc));
 
             // Rename temporary store files to new store files using edition number
             StringBuffer newXmlStoreName;
@@ -5823,7 +5851,8 @@ public:
             if (storeInfo.edition != edition)
             {
                 WARNLOG("Another process has updated the edition whilst saving the store: %s", newXmlStoreNamePath.str());
-                iXmlFileTmpStore->remove();
+                if (iXmlFileTmpStore)
+                    iXmlFileTmpStore->remove();
                 if (iBinaryFileTmpStore)
                     iBinaryFileTmpStore->remove();
                 return;
@@ -5839,12 +5868,13 @@ public:
                 StringBuffer errMsg;
                 EXCLOG(e, errMsg.append("Failed to rename new xml store to : ").append(newXmlStoreNamePath).append(". Has already been created by another process?").str());
                 e->Release();
-                iXmlFileTmpStore->remove();
+                if (iXmlFileTmpStore)
+                    iXmlFileTmpStore->remove();
                 if (iBinaryFileTmpStore)
                     iBinaryFileTmpStore->remove();
                 return;
             }
-            if (binaryStoreSaved)
+            if (iBinaryFileTmpStore)
             {
                 try
                 {
@@ -5871,7 +5901,7 @@ public:
                 }
                 catch (IException *e)
                 {
-                    StringBuffer s("Exception(1) - Error saving store file");
+                    StringBuffer s("Exception - Error renaming delta whilst saving store file");
                     DISLOG(e, s.str());
                     e->Release();
                     return;
@@ -5884,13 +5914,13 @@ public:
                     }
                     catch (IException *e)
                     {
-                        OERRLOG(e, "Failure handling backup");
+                        OERRLOG(e, "Exception - Error renaming backup delta whilst saving store file");
                         e->Release();
                     }
                 }
             }
             clearStoreInfo(storeFileName, location, 0, NULL);
-            writeStoreInfo(storeFileName, location, newEdition, &xmlCrc, binaryCrcPtr, &storeInfo); // binaryCrcPtr could be nullptr if the binary store save failed
+            writeStoreInfo(storeFileName, location, newEdition, &xmlCrc, iBinaryFileTmpStore ? &binaryCrc : nullptr, &storeInfo);
 
             try
             {
@@ -5900,7 +5930,7 @@ public:
                     StringBuffer rLxml(remoteBackupLocation);
                     constructStoreName(storeName, newEdition, rLxml, ".xml");
                     copyFile(rLxml.str(), newXmlStoreNamePath.str());
-                    if (binaryStoreSaved)
+                    if (iBinaryFileTmpStore)
                     {
                         StringBuffer rLbinary(remoteBackupLocation);
                         constructStoreName(storeName, newEdition, rLbinary, ".bin");
@@ -5908,7 +5938,7 @@ public:
                     }
 
                     clearStoreInfo(storeFileName, remoteBackupLocation, 0, NULL);
-                    writeStoreInfo(storeFileName, remoteBackupLocation, newEdition, &xmlCrc, binaryCrcPtr, &storeInfo); // binaryCrcPtr could be nullptr if the binary store save failed
+                    writeStoreInfo(storeFileName, remoteBackupLocation, newEdition, &xmlCrc, (iBinaryFileTmpStore ? &binaryCrc : nullptr), &storeInfo);
                     PROGLOG("Copy store done");
                 }
             }
@@ -5923,13 +5953,15 @@ public:
                 *_newEdition = newEdition;
             savesCompleted = true;
 
-            LOG(MCdebugProgress, "Store saved");
+            LOG(MCdebugProgress, "Store %u saved", newEdition);
         }
         catch (IException *e)
         {
-            StringBuffer s("Exception(1) - Error saving store file");
+            StringBuffer s("Exception - Error saving store file");
             DISLOG(e, s.str());
             e->Release();
+            if (iXmlFileTmpStore)
+                iXmlFileTmpStore->remove();
         }
         if (savesCompleted)
         {
@@ -6040,10 +6072,10 @@ public:
 friend struct CheckDeltaBlock;
 };
 
-IStoreHelper *createStoreHelper(const char *storeName, const char *location, const char *remoteBackupLocation, unsigned configFlags, unsigned keepStores, unsigned delay, const bool *abort, bool saveBinary)
+IStoreHelper *createStoreHelper(const char *storeName, const char *location, const char *remoteBackupLocation, unsigned configFlags, unsigned keepStores, unsigned delay, const bool *abort, bool saveBinary, bool saveAsync)
 {
     if (!storeName) storeName = "dalisds";
-    return new CStoreHelper(storeName, location, remoteBackupLocation, configFlags, keepStores, delay, abort, saveBinary);
+    return new CStoreHelper(storeName, location, remoteBackupLocation, configFlags, keepStores, delay, abort, saveBinary, saveAsync);
 }
 
 ///////////////
@@ -6145,6 +6177,8 @@ CCovenSDSManager::CCovenSDSManager(ICoven &_coven, const char *_dataPath, const 
     clientProps->setPropBool("@serverGetIdsAvailable", true);
     bool saveBinary = config->getPropBool("@saveBinary", isDebugBuild());
     clientProps->setPropBool("@saveBinary", saveBinary);
+    bool saveAsync = config->getPropBool("@saveAsync", true);
+    clientProps->setPropBool("@saveAsync", saveAsync);
     IPropertyTree *throttle = clientProps->setPropTree("Throttle", createPTree());
     throttle->setPropInt("@limit", CLIENT_THROTTLE_LIMIT);
     throttle->setPropInt("@delay", CLIENT_THROTTLE_DELAY);
@@ -6189,7 +6223,7 @@ CCovenSDSManager::CCovenSDSManager(ICoven &_coven, const char *_dataPath, const 
 
     unsigned configFlags = config->getPropBool("@recoverFromIncErrors", true) ? SH_RecoverFromIncErrors : 0;
     configFlags |= config->getPropBool("@backupErrorFiles", true) ? SH_BackupErrorFiles : 0;
-    iStoreHelper = createStoreHelper(storeBase, dataPath, remoteBackupLocation, configFlags, keepLastN, 100, &server.queryStopped(), saveBinary);
+    iStoreHelper = createStoreHelper(storeBase, dataPath, remoteBackupLocation, configFlags, keepLastN, 100, &server.queryStopped(), saveBinary, saveAsync);
     doTimeComparison = false;
     if (config->getPropBool("@lightweightCoalesce", true))
         coalesce.setown(new CLightCoalesceThread(*config, iStoreHelper));

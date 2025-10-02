@@ -2037,8 +2037,10 @@ public:
                 }
             }
         }
+
+        //Round the buffer size so that it will be a whole multiple of the number of blocks
         if (bufferSize && (bufferSize != (size32_t)-1))
-            numBlocksToBuffer = bufferSize / trailer.blockSize;
+            numBlocksToBuffer = (bufferSize + (trailer.blockSize/2))/ trailer.blockSize;
         if (numBlocksToBuffer < 1)
             numBlocksToBuffer = 1;
         sizeIoBuffer = trailer.blockSize*numBlocksToBuffer;
