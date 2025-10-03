@@ -1208,23 +1208,25 @@ enum
 //flags for thor index write
 enum 
 {
-    TIWoverwrite        = 0x0001,
-    TIWbackup           = 0x0002,
-    TIWunused           = 0x0004,       // no longer used
-    TIWvarfilename      = 0x0008,       // filename is dependant on the context.
-    TIWsmall            = 0x0010,
-    TIWupdate           = 0x0020,
-    TIWlocal            = 0x0040,       // i.e., no tlk
-    TIWrowcompress      = 0x0080,
-    TIWnolzwcompress    = 0x0100,
-    TIWnooverwrite      = 0x0200,
-    TIWupdatecrc        = 0x0400,
-    TIWhaswidth         = 0x0800,
-    TIWexpires          = 0x1000,
-    TIWmaxlength        = 0x2000,       // explicit maxlength
-    TIWcompressdefined  = 0x4000,       // compression is defined via string value
-    TIWrestricted       = 0x200000,     // value matches the equivalent TDW flag (same value as TDW* caused problems as some index related code uses TDW* flags)
+    TIWoverwrite        = 0x00000001,
+    TIWbackup           = 0x00000002,
+    TIWunused           = 0x00000004,       // no longer used
+    TIWvarfilename      = 0x00000008,       // filename is dependant on the context.
+    TIWsmall            = 0x00000010,
+    TIWupdate           = 0x00000020,
+    TIWlocal            = 0x00000040,       // i.e., no tlk
+    TIWrowcompress      = 0x00000080,
+    TIWnolzwcompress    = 0x00000100,
+    TIWnooverwrite      = 0x00000200,
+    TIWupdatecrc        = 0x00000400,
+    TIWhaswidth         = 0x00000800,
+    TIWexpires          = 0x00001000,
+    TIWmaxlength        = 0x00002000,       // explicit maxlength
+    TIWcompressdefined  = 0x00004000,       // compression is defined via string value
+    TIWzerofilepos      = 0x00008000,       // last field is always zero
+    TIWrestricted       = 0x00200000,     // value matches the equivalent TDW flag (same value as TDW* caused problems as some index related code uses TDW* flags)
 };
+static_assert((unsigned)TIWrestricted == (unsigned)TDWrestricted, "TIWrestricted and TDWrestricted must have the same value");
 
 //flags for thor dataset/temp tables
 enum
