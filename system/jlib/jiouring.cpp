@@ -49,6 +49,7 @@ public:
     virtual void enqueueCallbackCommand(IAsyncCallback & callback) override;
     virtual void enqueueCallbackCommands(const std::vector<IAsyncCallback *> & callbacks) override;
     virtual void enqueueSocketConnect(ISocket * socket, const struct sockaddr * addr, size32_t addrlen, IAsyncCallback & callback) override;
+    virtual void enqueueSocketRead(ISocket * socket, void * buf, size32_t len, IAsyncCallback & callback) override;
     virtual void enqueueSocketWrite(ISocket * socket, const void * buf, size32_t len, IAsyncCallback & callback) override;
 
     virtual void lockMemory(const void * buffer, size_t len) override;
@@ -183,6 +184,26 @@ void URingProcessor::enqueueSocketConnect(ISocket * socket, const struct sockadd
 
     io_uring_sqe_set_data(sqe, &callback);
     //On completion, need to process the equivalent of ISocket::post_connect()
+
+    submitRequests();
+}
+
+void URingProcessor::enqueueSocketRead(ISocket * socket, void * buf, size32_t len, IAsyncCallback & callback)
+{
+    CLeavableCriticalBlock block(requestCrit, isMultiThreaded);
+
+    io_uring_sqe * sqe = allocRequest(block);
+    offset_t offset = 0;
+    if (isFixedBuffer(len, buf))
+    {
+        size32_t memoryOffset = (const byte *)buf - startLockedMemory;
+        unsigned bufferIndex = memoryOffset / oneGB;
+        io_uring_prep_read_fixed(sqe, socket->OShandle(), buf, len, offset, bufferIndex);
+    }
+    else
+        io_uring_prep_read(sqe, socket->OShandle(), buf, len, offset);
+
+    io_uring_sqe_set_data(sqe, &callback);
 
     submitRequests();
 }

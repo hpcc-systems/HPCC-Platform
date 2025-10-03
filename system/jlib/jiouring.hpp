@@ -36,6 +36,7 @@ interface IAsyncProcessor : public IInterface
     virtual void enqueueCallbackCommand(IAsyncCallback & callback) = 0;
     virtual void enqueueCallbackCommands(const std::vector<IAsyncCallback *> & callbacks) = 0;
     virtual void enqueueSocketConnect(ISocket * socket, const struct sockaddr * addr, size32_t addrlen, IAsyncCallback & callback) = 0;
+    virtual void enqueueSocketRead(ISocket * socket, void * buf, size32_t len, IAsyncCallback & callback) = 0;
     virtual void enqueueSocketWrite(ISocket * socket, const void * buf, size32_t len, IAsyncCallback & callback) = 0;
 
 // Functions for managing the completion queue - particularly non-threaded urings
