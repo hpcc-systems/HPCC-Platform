@@ -112,11 +112,60 @@ struct cMisplacedRec
 };
 
 
+// A simple allocator to track memory usage and throw an exception if the
+// requested size exceeds @memoryLimit or resources/@memory in containerized
+struct xrefAllocator
+{
+    xrefAllocator(unsigned _maxMB)
+    {
+        maxBytes = _maxMB * 0x100000;
+    }
+
+    ~xrefAllocator()
+    {
+        if (usedBytes != 0)
+            OWARNLOG(LOGPFX "xrefAllocator::~xrefAllocator : Memory leak detected: %d bytes", usedBytes.load());
+    }
+
+    cMisplacedRec *createMisplacedRec()
+    {
+        unsigned sz = sizeof(cMisplacedRec);
+        if ((sz+usedBytes)>maxBytes)
+            throw makeStringExceptionV(0, "xrefAllocator::createMisplacedRec : Requested size too large: req: %d, used: %d, max: %d", sz, usedBytes.load(), maxBytes);
+
+        usedBytes += sz;
+        return new cMisplacedRec();
+    }
+
+    void *alloc(unsigned sz)
+    {
+        if ((sz+usedBytes)>maxBytes)
+            throw makeStringExceptionV(0, "xrefAllocator::alloc : Requested size too large: req: %d, used: %d, max: %d", sz, usedBytes.load(), maxBytes);
+
+        void *ret = malloc(sz);
+        if (ret == nullptr) throw std::bad_alloc();
+
+        usedBytes += sz;
+        return ret;
+    }
+
+    void release(unsigned sz)
+    {
+        if (sz > usedBytes)
+            throw makeStringExceptionV(0, "xrefAllocator::release : Attempt to release more memory than used: req: %d, used: %d", sz, usedBytes.load());
+        usedBytes -= sz;
+    }
+
+    unsigned maxBytes = 0;
+    std::atomic<unsigned> usedBytes = 0;
+};
+
 
 struct cFileDesc // no virtuals
 {
 private:
-    cFileDesc(const char *_name, unsigned nameLen, unsigned mapLen, unsigned numParts, bool d, unsigned fnLen)
+    cFileDesc(const char *_name, unsigned nameLen, unsigned mapLen, unsigned numParts, bool d, unsigned fnLen, xrefAllocator *_allocator)
+        : allocator(_allocator)
     {
         N = (unsigned short)numParts;
         isDirPerPart = d;
@@ -129,6 +178,7 @@ private:
     }
 
 public:
+    xrefAllocator *allocator = nullptr;
     unsigned hash;
     unsigned short N;                     // num parts
     bool isDirPerPart;                    // directory-per-part number present in physical path
@@ -143,7 +193,7 @@ public:
     // bitset markedd[N];
 
 
-    static cFileDesc *create(const char *name, unsigned numParts, bool isDirPerPart, unsigned fnLen)
+    static cFileDesc *create(const char *name, unsigned numParts, bool isDirPerPart, unsigned fnLen, xrefAllocator *allocator)
     {
         size_t nameLen = strlen(name);
         if (nameLen>255)
@@ -151,14 +201,14 @@ public:
             OWARNLOG(LOGPFX "File name %s longer than 255 chars, truncating",name);
             nameLen = 255;
         }
-        unsigned mapLen = (numParts*4+7)/8;
-        return new(nameLen, mapLen) cFileDesc(name, nameLen, mapLen, numParts, isDirPerPart, fnLen);
+        // numParts==NotFound is used for files without a part mask. Treat them as single files
+        unsigned mapLen = numParts==NotFound ? 1 :(numParts*4+7)/8;
+        return new(nameLen, mapLen, allocator) cFileDesc(name, nameLen, mapLen, numParts, isDirPerPart, fnLen, allocator);
     }
 
-    static void *operator new(size_t baseSize, unsigned nameLen, unsigned mapLen)
+    static void *operator new(size_t baseSize, unsigned nameLen, unsigned mapLen, xrefAllocator *allocator)
     {
-        void *ptr = malloc(baseSize+nameLen+mapLen);
-        if (!ptr) throw std::bad_alloc();
+        void *ptr = allocator->alloc(baseSize+nameLen+mapLen);
         return ptr;
     }
 
@@ -173,9 +223,13 @@ public:
         while (misplaced)
         {
             cMisplacedRec *next = misplaced->next;
+            allocator->release(sizeof(cMisplacedRec));
             delete misplaced;
             misplaced = next;
         }
+        size32_t nameLen = name[0];
+        size32_t mapLen = N==(unsigned short)NotFound ? 1 : (N*4+7)/8; // N==(unsigned short)NotFound is used for files without a part mask. Treat them as single files
+        allocator->release(sizeof(cFileDesc)+nameLen+mapLen);
     }
 
 
@@ -271,7 +325,8 @@ public:
 struct cDirDesc
 {
 private:
-    cDirDesc(const char *_name, size32_t sl)
+    cDirDesc(const char *_name, size32_t sl, xrefAllocator *_allocator)
+        : allocator(_allocator)
     {
         name[0] = (byte)sl;
         memcpy(name+1,_name,sl);
@@ -286,6 +341,7 @@ private:
     }
 
 public:
+    xrefAllocator *allocator = nullptr;
     unsigned hash;
     std::unordered_map<std::string, std::unique_ptr<cDirDesc>> dirs;
     std::unordered_map<std::string, std::unique_ptr<cFileDesc>> files;
@@ -301,7 +357,7 @@ public:
     byte name[1];                     // first byte length  NB this is the tail name
     // char namestr[*name]
 
-    static cDirDesc *create(const char * name)
+    static cDirDesc *create(const char * name, xrefAllocator *allocator)
     {
         size32_t nameLen = strlen(name);
         if (nameLen>255)
@@ -309,19 +365,24 @@ public:
             OWARNLOG(LOGPFX "Directory name %s longer than 255 chars, truncating",name);
             nameLen = 255;
         }
-        return new(nameLen) cDirDesc(name, nameLen);
+        return new(nameLen, allocator) cDirDesc(name, nameLen, allocator);
     }
 
-    static void *operator new(size_t baseSize, unsigned nameLen)
+    static void *operator new(size_t baseSize, unsigned nameLen, xrefAllocator *allocator)
     {
-        void *ptr = malloc(baseSize+nameLen);
-        if (!ptr) throw std::bad_alloc();
+        void *ptr = allocator->alloc(baseSize+nameLen);
         return ptr;
     }
 
     static void operator delete(void *ptr)
     {
         free(ptr);
+    }
+
+    ~cDirDesc()
+    {
+        size32_t nameLen = name[0];
+        allocator->release(sizeof(cDirDesc)+nameLen);
     }
 
 
@@ -348,26 +409,26 @@ public:
         return buf.append((size32_t)name[0],(const char *)name+1);
     }
 
-    cDirDesc *lookupDirNonThreadSafe(const char *name, bool create)
+    cDirDesc *lookupDirNonThreadSafe(const char *name, xrefAllocator *allocator)
     {
         auto it = dirs.find(name);
         if (it != dirs.end())
             return it->second.get();
 
-        if (!create)
+        if (!allocator)
             return nullptr;
 
         // NB: Creation only happens during scanDirectories, this function should be called from [thread-safe] lookupDir()
         // lookupDirNonThreadSafe is also called in findDirectory during scanLogicalFiles. It will not reach here, and does not need to be thread safe )
-        cDirDesc *ret = cDirDesc::create(name);
+        cDirDesc *ret = cDirDesc::create(name, allocator);
         dirs.emplace(name, ret);
         return ret;
     }
 
-    cDirDesc *lookupDir(const char *name, bool create)
+    cDirDesc *lookupDir(const char *name, xrefAllocator *allocator)
     {
         CriticalBlock block(dirsCrit);
-        return lookupDirNonThreadSafe(name, create);
+        return lookupDirNonThreadSafe(name, allocator);
     }
 
     const char *decodeName(unsigned drv,const char *name,unsigned node, unsigned numnodes,
@@ -509,7 +570,7 @@ public:
             return numParts!=grp.ordinality() || partNum>=grp.ordinality() || !grp.queryNode(partNum).endpoint().equals(ep);
     }
 
-    cFileDesc *addFile(unsigned drv,const char *name,const char *filePath,unsigned filePathOffset,unsigned node, const SocketEndpoint &ep, IGroup &grp, unsigned numnodes, unsigned stripeNum, unsigned numStripedDevices)
+    cFileDesc *addFile(unsigned drv,const char *name,const char *filePath,unsigned filePathOffset,unsigned node,const SocketEndpoint &ep,IGroup &grp,unsigned numnodes,unsigned stripeNum,unsigned numStripedDevices,xrefAllocator *allocator)
     {
         unsigned nf;          // num parts
         unsigned pf;          // part num
@@ -526,7 +587,7 @@ public:
             file = it->second.get();
         } else {
             // dirPerPart is set to false during scanDirectories, and later updated in listOrphans by mergeDirPerPartDirs
-            file = cFileDesc::create(fn,nf,false,filenameLen);
+            file = cFileDesc::create(fn,nf,false,filenameLen,allocator);
             files.emplace(fn, file);
         }
 
@@ -539,7 +600,7 @@ public:
                 }
                 mp = mp->next;
             }
-            mp = new cMisplacedRec();
+            mp = allocator->createMisplacedRec();
             mp->init(drv,pf,node,numnodes);
             mp->next = file->misplaced;
             file->misplaced = mp;
@@ -1005,6 +1066,7 @@ public:
 
 class CNewXRefManager: public CNewXRefManagerBase
 {
+    xrefAllocator allocator;
     std::unique_ptr<cDirDesc> root;
     bool iswin;                     // set by scanDirectories
     IpAddress *iphash;
@@ -1026,9 +1088,10 @@ public:
     unsigned numStripedDevices = 1;
 
     CNewXRefManager(IPropertyTree *plane,unsigned maxMb=DEFAULT_MAXMEMORY)
+        : allocator(maxMb)
     {
         iswin = false; // set later
-        root.reset(cDirDesc::create(""));
+        root.reset(cDirDesc::create("", &allocator));
         verbose = true;
         iphash = NULL;
         ipnum = NULL;
@@ -1036,7 +1099,7 @@ public:
         lostbranch.setown(createPTree("Lost"));
         orphansbranch.setown(createPTree("Orphans"));
         dirbranch.setown(createPTree("Directories"));
-        log(false, "Max memory = %d MB, WARNING parameter ignored (now using dynamic allocation)", maxMb);
+        log(false, "Max memory = %d MB", maxMb);
 
         StringBuffer userName;
         serverConfig->getProp("@user", userName);
@@ -1201,7 +1264,7 @@ public:
 
     void clear()
     {
-        root.reset(cDirDesc::create(""));
+        root.reset(cDirDesc::create("", &allocator));
     }
 
     cDirDesc *findDirectory(const char *name)
@@ -1222,7 +1285,7 @@ public:
         // so prevent incorrect traversal into striped directory structures and return root instead
         if (isPlaneStriped&&p==root.get()&&tail[0]=='d'&&readDigits(tail+1)!=0)
             return p;
-        return p->lookupDirNonThreadSafe(tail, false);
+        return p->lookupDirNonThreadSafe(tail, nullptr);
     }
 
     bool dirFiltered(const char *filename)
@@ -1323,7 +1386,7 @@ public:
                 iter->getModifiedTime(dt);
                 if (!fileFiltered(path.str(),dt)) {
                     try {
-                        pdir->addFile(drv,fname.str(),path.str(),filePathOffset,node,ep,*grp,numnodes,stripeNum,numStripedDevices);
+                        pdir->addFile(drv,fname.str(),path.str(),filePathOffset,node,ep,*grp,numnodes,stripeNum,numStripedDevices,&allocator);
                         processedFiles++;
                     }
                     catch (IException *e) {
@@ -1341,7 +1404,7 @@ public:
             addPathSepChar(path).append(dirs.item(i));
             if (file.get()&&!resetRemoteFilename(file,path.str())) // sneaky way of avoiding cache
                 file.clear();
-            if (!scanDirectory(node,ep,path,drv,pdir->lookupDir(dirs.item(i),true),file,level+1,filePathOffset,stripeNum))
+            if (!scanDirectory(node,ep,path,drv,pdir->lookupDir(dirs.item(i),&allocator),file,level+1,filePathOffset,stripeNum))
                 return false;
             path.setLength(dsz);
         }
