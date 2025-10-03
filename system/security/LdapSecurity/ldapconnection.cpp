@@ -2072,8 +2072,7 @@ public:
             return false;
         }
 
-        const char* sysuser = m_ldapconfig->getSysUser();
-        if(sysuser && *sysuser && (strcmp(username, sysuser) == 0))
+        if(isSuperUser(&user))
         {
             ForEachItemIn(x, resources)
             {
