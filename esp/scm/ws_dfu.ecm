@@ -213,6 +213,7 @@ ESPStruct [nil_remove] DFUFileDetail
     [min_ver("1.62")] double AccessCost;
     [min_ver("1.63")] string ExpirationDate;
     [min_ver("1.65")] ESPstruct DFUIndexInfo ExtendedIndexInfo;
+    [min_ver("1.67")] string CompressionType;
 };
 
 ESPStruct DFUSpaceItem
@@ -1012,8 +1013,8 @@ ESPresponse [exceptions_inline, nil_remove] DFUMetaInquiryResponse
 //  ===========================================================================
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.66"),
-    default_client_version("1.66"),
+    version("1.67"),
+    default_client_version("1.67"),
     noforms,
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {
