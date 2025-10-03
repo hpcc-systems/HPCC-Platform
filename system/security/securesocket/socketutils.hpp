@@ -48,7 +48,8 @@ interface ISocketMessageProcessor
 {
     virtual bool onlyProcessFirstRead() const = 0;                      // Does this only handle one read request, or are multiple messages processed
     virtual unsigned getMessageSize(const void * header) const = 0;     // For variable length messages, given the header, how big is the rest?
-    virtual void processMessage(CReadSocketHandler & socket) = 0;
+    virtual void processMessage(const void * data, size32_t len) = 0;
+    virtual void stopProcessing(CReadSocketHandler & socket) = 0;       // Remove from the processor
     virtual void closeConnection(CReadSocketHandler & socket, IJSOCK_Exception * exception) = 0;
 };
 
@@ -69,11 +70,14 @@ public:
 
     bool close();
     bool closeIfTimedout(cycle_t now, cycle_t timeoutCycles);
+
     // ISocketSelectNotify impl.
     virtual bool notifySelected(ISocket *sock, unsigned selected) override;
-    void prepareForNextRead();
 
 protected:
+    const bool onlyProcessFirstRead;
+    const bool processMultipleMessages;
+    bool closedOrHandled = false;
     ISocketMessageProcessor & processor;
     Linked<ISocket> sock;
     StringBuffer peerHostText;
@@ -85,7 +89,6 @@ protected:
     size32_t maxReadSize = 0;           // The maximum that should be read when incoming size is not known
     size32_t requiredSize = 0;          // How much data should be read - set for fixed or variable size
     CriticalSection crit;
-    bool closedOrHandled = false;
 };
 
 //This class uses a select handler to maintain a list of sockets that are being listened to
@@ -100,11 +103,10 @@ public:
 
 // implementation of ISocketMessageProcessor
     virtual void closeConnection(CReadSocketHandler &socketHandler, IJSOCK_Exception *exception) override;
-    virtual void processMessage(CReadSocketHandler & socketHandler) override;
+    virtual void stopProcessing(CReadSocketHandler & socket) override;
 
 // Must be implemented by a derived class
     virtual CReadSocketHandler *createSocketHandler(ISocket *sock) = 0;
-    virtual void processMessageContents(CReadSocketHandler * ownedSocketHandler) = 0;
 
 protected:
     void clearupSocketHandlers();
@@ -130,7 +132,7 @@ protected:
 class SECURESOCKET_API CSocketConnectionListener : protected CReadSelectHandler, public Thread
 {
 public:
-    CSocketConnectionListener(unsigned port, unsigned _processPoolSize, bool _useTLS, unsigned _inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets);
+    CSocketConnectionListener(unsigned port, bool _useTLS, unsigned _inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets);
 
     void startPort(unsigned short port);
     void stop();
@@ -140,9 +142,7 @@ public:
 
 private:
     Owned<ISocket> listenSocket;
-    Owned<IThreadPool> threadPool;
     Owned<ISecureSocketContext> secureContextServer;
-    unsigned processPoolSize;
     bool useTLS;
     std::atomic<bool> aborting{false};
 };
@@ -156,7 +156,7 @@ public:
     virtual bool onlyProcessFirstRead() const override;
     virtual unsigned getMessageSize(const void * header) const override;
     virtual CReadSocketHandler *createSocketHandler(ISocket *sock) override;
-    virtual void processMessageContents(CReadSocketHandler * ownedSocketHandler) override;
+    virtual void processMessage(const void * data, size32_t len) override;
 };
 
 
