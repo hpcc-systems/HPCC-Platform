@@ -421,7 +421,7 @@ public:
     {
         //Header size is 64B, max variable to read is 64K
         size32_t maxInitialReadSize = 0x10000; // 64K
-        return new CReadSocketHandler(*this, sock, sizeof(RoxiePacketHeader), maxInitialReadSize);
+        return new CReadSocketHandler(*this, asyncReader, sock, sizeof(RoxiePacketHeader), maxInitialReadSize);
     }
 
     virtual void processMessage(const void * data, size32_t len) override

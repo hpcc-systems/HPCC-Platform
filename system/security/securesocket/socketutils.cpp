@@ -42,15 +42,15 @@
 
 //---------------------------------------------------------------------------------------------------------------------
 
-CReadSocketHandler::CReadSocketHandler(ISocketMessageProcessor & _processor, ISocket *_sock, size32_t _minSize, size32_t _maxSize)
+CReadSocketHandler::CReadSocketHandler(ISocketMessageProcessor & _processor, IAsyncProcessor * _asyncReader, ISocket *_socket, size32_t _minSize, size32_t _maxSize)
  :  onlyProcessFirstRead(_processor.onlyProcessFirstRead()), processMultipleMessages(!_processor.onlyProcessFirstRead()),
-    processor(_processor), sock(_sock), minSize(_minSize), maxReadSize(_maxSize)
+    processor(_processor), asyncReader(_asyncReader), socket(_socket), minSize(_minSize), maxReadSize(_maxSize)
 {
     assertex(!(onlyProcessFirstRead && processMultipleMessages)); // If only processing the first read then we can't process multiple messages
-
+    assertex(!(asyncReader && !processMultipleMessages));           // Async code must process multiple messages - because reading size is not limited
     lastActivityCycles = get_cycles_now();
     SocketEndpoint peerEP;
-    sock->getPeerEndpoint(peerEP);
+    socket->getPeerEndpoint(peerEP);
     peerEP.getHostText(peerHostText); // always used by handleAcceptedSocket
     peerEndpointText.append(peerHostText); // only used if tracing an error
     if (peerEP.port)
@@ -134,37 +134,7 @@ bool CReadSocketHandler::notifySelected(ISocket *sock, unsigned selected)
                 }
                 else
                 {
-                    //Walk the data that has been received, processing all the complete messages
-                    size32_t offset = 0;
-                    [[maybe_unused]] unsigned numMessages = 0;
-                    while (offset <= readSoFar - minSize)
-                    {
-                        size32_t msgSize = processor.getMessageSize(target + offset);
-                        if (msgSize > readSoFar - offset)
-                            break;
-                        processor.processMessage(target + offset, msgSize);
-                        offset += msgSize;
-                        numMessages++;
-                    }
-
-#ifdef TRACE_MAX_MESSAGES
-                    if (numMessages > maxMessages)
-                    {
-                        maxMessages = numMessages;
-                        DBGLOG("Max messages in one read: %u", maxMessages);
-                    }
-#endif
-
-                    //Now prepare for the next request - copy any remaining data to the start of the buffer
-                    size32_t remaining = readSoFar - offset;
-                    if (remaining)
-                        memmove(target, target + offset, remaining);
-
-                    // And reset the state about the number of bytes read so far
-                    readSoFar = remaining;
-                    requiredSize = (minSize == maxReadSize) ? minSize : 0;
-                    if (readSoFar >= minSize)
-                        requiredSize = processor.getMessageSize(target);
+                    processPendingMessages();
                 }
             }
         }
@@ -181,17 +151,110 @@ bool CReadSocketHandler::notifySelected(ISocket *sock, unsigned selected)
     return false;
 }
 
+void CReadSocketHandler::processPendingMessages()
+{
+    byte * target = (byte *)buffer.bufferBase();
+    //Walk the data that has been received, processing all the complete messages
+    size32_t offset = 0;
+    [[maybe_unused]] unsigned numMessages = 0;
+    while (offset <= readSoFar - minSize)
+    {
+        size32_t msgSize = processor.getMessageSize(target + offset);
+        if (msgSize > readSoFar - offset)
+            break;
+        processor.processMessage(target + offset, msgSize);
+        offset += msgSize;
+        numMessages++;
+    }
+
+#ifdef TRACE_MAX_MESSAGES
+    if (numMessages > maxMessages)
+    {
+        maxMessages = numMessages;
+        DBGLOG("Max messages in one read: %u", maxMessages);
+    }
+#endif
+
+    //Now prepare for the next request - copy any remaining data to the start of the buffer
+    size32_t remaining = readSoFar - offset;
+    if (remaining)
+        memmove(target, target + offset, remaining);
+
+    // And reset the state about the number of bytes read so far
+    readSoFar = remaining;
+    requiredSize = (minSize == maxReadSize) ? minSize : 0;
+    if (readSoFar >= minSize)
+        requiredSize = processor.getMessageSize(target);
+}
+
+void CReadSocketHandler::startAsyncRead()
+{
+    // Only read as much data as we know we need - because sends may have been combined into a single packet.
+    // If the handler is not one-shot, and it can support multiple messages, then it should be possible
+    // to read maxSize, and then process a sequence of messages instead.  That would be more efficient.
+    size32_t toRead = requiredSize ? requiredSize : minSize;
+
+    // If we can process multiple messages, then read as much as we can, up to maxReadSize
+    if (toRead < maxReadSize)
+        toRead = maxReadSize;
+
+    // Buffer is only used as a block of memory - could switch to a MemoryAttr and use ensure
+    byte * target = (byte *)buffer.ensureCapacity(toRead);
+    size32_t maxToRead = toRead-readSoFar;
+    asyncReader->enqueueSocketRead(socket, target+readSoFar, maxToRead, *this);
+}
+
+void CReadSocketHandler::onAsyncComplete(int result)
+{
+    //This is called on the completion of an async read
+    if (result < 0)
+    {
+        Owned<IJSOCK_Exception> exception = createJSocketException(result, "Read error", __FILE__, __LINE__);
+        processor.closeConnection(*this, exception);
+        return;
+    }
+
+    if (result == 0)
+    {
+        Owned<IJSOCK_Exception> exception = createJSocketException(JSOCKERR_graceful_close, "Connection closed", __FILE__, __LINE__);
+        processor.closeConnection(*this, exception);
+        return;
+    }
+
+    readSoFar += result;
+
+    if (!requiredSize && (readSoFar >= minSize))
+        requiredSize = processor.getMessageSize((byte *)buffer.bufferBase());
+
+    if (requiredSize && (readSoFar >= requiredSize))
+    {
+        processPendingMessages();
+    }
+
+    startAsyncRead();
+}
+
 //---------------------------------------------------------------------------------------------------------------------
 
 //This class uses a select handler to maintain a list of sockets that are being listened to
 //It has the option for closing sockets that have been idle for too long
-CReadSelectHandler::CReadSelectHandler(unsigned inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets)
+CReadSelectHandler::CReadSelectHandler(unsigned inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets, bool useIOUring)
 : maxListenHandlerSockets(_maxListenHandlerSockets ? _maxListenHandlerSockets : ~0U)
 {
-    constexpr unsigned socketsPerThread = 50;
-    selectHandler.setown(createSocketEpollHandler("CSocketConnectionListener", socketsPerThread));
-    //selectHandler.setown(createSocketSelectHandler());
-    selectHandler->start();
+    if (useIOUring)
+    {
+        Owned<IPropertyTree> config = createPTreeFromXMLString("<iouring poll='1'/>");
+        // Update queue depth to allow the max number of connections
+        bool useThreadForCompletion = true;
+        asyncReader.setown(createURingProcessor(config, useThreadForCompletion));
+    }
+    else
+    {
+        constexpr unsigned socketsPerThread = 50;
+        selectHandler.setown(createSocketEpollHandler("CSocketConnectionListener", socketsPerThread));
+        //selectHandler.setown(createSocketSelectHandler());
+        selectHandler->start();
+    }
 
     timeoutCycles = millisec_to_cycle(inactiveCloseTimeoutMs);
     if (timeoutCycles)
@@ -240,10 +303,14 @@ void CReadSelectHandler::add(ISocket *sock)
     {
         CriticalBlock b(handlersCS);
         constexpr unsigned mode = SELECTMODE_READ;
-        selectHandler->add(sock, mode, socketHandler); // NB: sock and handler linked by select handler
+        if (selectHandler)
+            selectHandler->add(sock, mode, socketHandler); // NB: sock and handler linked by select handler
         handlers.emplace_back(socketHandler);
         numHandlers = handlers.size();
     }
+    if (asyncReader)
+        socketHandler->startAsyncRead();
+
     if (0 == (numHandlers % 100)) // for info. log at each 100 boundary
         DBGLOG("handlers = %u", (unsigned)numHandlers);
 }
@@ -317,8 +384,9 @@ void CReadSelectHandler::clearupSocketHandlers()
 //---------------------------------------------------------------------------------------------------------------------
 
 
+static constexpr bool useIOUring = true;
 CSocketConnectionListener::CSocketConnectionListener(unsigned port, bool _useTLS, unsigned _inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets)
-    : CReadSelectHandler(_inactiveCloseTimeoutMs, _maxListenHandlerSockets), Thread("CSocketConnectionListener"), useTLS(_useTLS)
+    : CReadSelectHandler(_inactiveCloseTimeoutMs, _maxListenHandlerSockets, useIOUring), Thread("CSocketConnectionListener"), useTLS(_useTLS)
 {
     if (port)
         startPort(port);
@@ -468,7 +536,7 @@ CReadSocketHandler *ConcreteConnectionLister::createSocketHandler(ISocket *sock)
 {
     //Header size is 64B, max variable to read is 64K
     size32_t maxInitialReadSize = 0x10000;
-    return new CReadSocketHandler(*this, sock, 64, maxInitialReadSize);
+    return new CReadSocketHandler(*this, asyncReader, sock, 64, maxInitialReadSize);
 }
 
 void ConcreteConnectionLister::processMessage(const void * data, size32_t len)
