@@ -64,7 +64,6 @@ public:
     CReadSocketHandler(ISocketMessageProcessor & _processor, IAsyncProcessor * _asyncReader, ISocket *_sock, size32_t _minSize, size32_t _maxSize);
 
     ISocket *querySocket() { return socket; }
-    MemoryBuffer & queryBuffer() { return buffer; }
     cycle_t queryLastActivityTime() const { return lastActivityCycles; }
     size32_t queryReadSoFar() const { return readSoFar; }
     const char *queryPeerHostText() const { return peerHostText; }
@@ -92,7 +91,7 @@ protected:
     Linked<ISocket> socket;
     StringBuffer peerHostText;
     StringBuffer peerEndpointText;
-    MemoryBuffer buffer;
+    MemoryAttr buffer;
     cycle_t lastActivityCycles = 0;
     size32_t readSoFar = 0;
     size32_t minSize = 0;               // The minimum size to read before the request is valid

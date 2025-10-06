@@ -55,7 +55,7 @@ CReadSocketHandler::CReadSocketHandler(ISocketMessageProcessor & _processor, IAs
     peerEndpointText.append(peerHostText); // only used if tracing an error
     if (peerEP.port)
         peerEndpointText.append(':').append(peerEP.port);
-    buffer.ensureCapacity(maxReadSize);
+    buffer.ensure(maxReadSize);
 }
 
 
@@ -105,7 +105,7 @@ bool CReadSocketHandler::notifySelected(ISocket *sock, unsigned selected)
                 toRead = maxReadSize;
 
             // Buffer is only used as a block of memory - could switch to a MemoryAttr and use ensure
-            byte * target = (byte *)buffer.ensureCapacity(toRead);
+            byte * target = (byte *)buffer.ensure(toRead);
             size32_t maxToRead = toRead-readSoFar;
             size32_t rd = 0;
             sock->readtms(target+readSoFar, 0, maxToRead, rd, 60000); // long enough!
@@ -153,7 +153,7 @@ bool CReadSocketHandler::notifySelected(ISocket *sock, unsigned selected)
 
 void CReadSocketHandler::processPendingMessages()
 {
-    byte * target = (byte *)buffer.bufferBase();
+    byte * target = buffer.bytes();
     //Walk the data that has been received, processing all the complete messages
     size32_t offset = 0;
     [[maybe_unused]] unsigned numMessages = 0;
@@ -198,8 +198,8 @@ void CReadSocketHandler::startAsyncRead()
     if (toRead < maxReadSize)
         toRead = maxReadSize;
 
-    // Buffer is only used as a block of memory - could switch to a MemoryAttr and use ensure
-    byte * target = (byte *)buffer.ensureCapacity(toRead);
+    buffer.ensure(toRead);
+    byte * target = buffer.bytes();
     size32_t maxToRead = toRead-readSoFar;
     asyncReader->enqueueSocketRead(socket, target+readSoFar, maxToRead, *this);
 }
@@ -224,7 +224,7 @@ void CReadSocketHandler::onAsyncComplete(int result)
     readSoFar += result;
 
     if (!requiredSize && (readSoFar >= minSize))
-        requiredSize = processor.getMessageSize((byte *)buffer.bufferBase());
+        requiredSize = processor.getMessageSize(buffer.bytes());
 
     if (requiredSize && (readSoFar >= requiredSize))
     {
