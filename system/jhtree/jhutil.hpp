@@ -63,7 +63,7 @@ public:
     typedef SuperHashIteratorOf<MAPPING> CMRUIterator;
 
     CMRUCacheOf<KEY, ENTRY, MAPPING, TABLE>() : table(*this) { }
-    void replace(KEY key, ENTRY &entry)
+    void replace(const KEY & key, ENTRY &entry)
     {
         if (full())
             makeSpace(nullptr);
@@ -72,7 +72,7 @@ public:
         table.replace(*mapping);
         mruList.enqueueHead(mapping);
     }
-    void replace(KEY key, ENTRY &entry, IRemovedMappingCallback * callback)
+    void replace(const KEY & key, ENTRY &entry, IRemovedMappingCallback * callback)
     {
         if (full())
             makeSpace(callback);
@@ -80,6 +80,16 @@ public:
         MAPPING * mapping = new MAPPING(key, entry); // owns entry
         table.replace(*mapping);
         mruList.enqueueHead(mapping);
+    }
+    MAPPING * replace(const KEY & key, IRemovedMappingCallback * callback)
+    {
+        if (full())
+            makeSpace(callback);
+
+        MAPPING * mapping = new MAPPING(key); // owns entry
+        table.replace(*mapping);
+        mruList.enqueueHead(mapping);
+        return mapping;
     }
     unsigned getKeyHash(const KEY & key) const
     {
@@ -102,6 +112,15 @@ public:
         if (doPromote)
             promote(mapping);
         return &mapping->query(); // MAPPING must impl. query()
+    }
+    MAPPING *queryMapping(unsigned hashcode, KEY * key, bool doPromote=true)
+    {
+        MAPPING *mapping = table.find(hashcode, *key);
+        if (!mapping) return NULL;
+
+        if (doPromote)
+            promote(mapping);
+        return mapping;
     }
     ENTRY *get(KEY key, bool doPromote=true)
     {
