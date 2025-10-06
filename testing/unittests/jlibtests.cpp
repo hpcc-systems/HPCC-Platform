@@ -38,10 +38,7 @@
 #include "jsecrets.hpp"
 #include "jutil.hpp"
 #include "junicode.hpp"
-
-#ifdef _USE_ZLIB
 #include "zcrypt.hpp"
-#endif
 
 #include "opentelemetry/sdk/common/attribute_utils.h"
 #include "opentelemetry/sdk/resource/resource.h"
@@ -3772,10 +3769,10 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeSerializationDeserializationTest, "PT
  * Tests XML deserialization/serialization performance using gzipped data file
  */
 
-class PTreeSerializationDeserializationXmlTimingTest : public CppUnit::TestFixture
+class PTreeSerializationDeserializationXmlTimingStressTest : public CppUnit::TestFixture
 {
-    CPPUNIT_TEST_SUITE(PTreeSerializationDeserializationXmlTimingTest);
-    CPPUNIT_TEST(testXmlTimingWithNormalVsLowMem);
+    CPPUNIT_TEST_SUITE(PTreeSerializationDeserializationXmlTimingStressTest);
+    CPPUNIT_TEST(testCombinedXmlAndBinaryTimingWithNormalVsLowMem);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -3789,71 +3786,41 @@ protected:
         byte flags;
     };
 
-    TimingResults performXmlTimingTestWithResults(const char *testName, const char *xmlData, const unsigned xmlDataLen, const char *gzFilePath, int iterations)
+    TimingResults performBinaryTimingTestWithResults(const char *testName, const MemoryBuffer &binaryDataBuffer, int iterations, byte flags)
     {
         assertex(testName);
-        assertex(xmlData);
-
-        // Create the HPCC compressed file
-        StringBuffer tempCompressedPath;
-        tempCompressedPath.appendf("%s.hpcc_compressed", gzFilePath);
-        {
-            Owned<IFile> tempFile = createIFile(tempCompressedPath.str());
-            // Clean up any existing temp file first
-            if (tempFile->exists())
-            {
-                try
-                {
-                    tempFile->remove();
-                }
-                catch (...)
-                {
-                    // Ignore cleanup errors, but warn
-                    DBGLOG("Warning: Failed to remove existing temp file %s", tempCompressedPath.str());
-                }
-            }
-            Owned<ICompressedFileIO> compressedWriter = createCompressedFileWriter(tempFile, false, true, nullptr, COMPRESS_METHOD_LZ4, 0, (size32_t)-1, IFEnone);
-            if (!compressedWriter)
-                throw MakeStringException(-1, "Failed to create compressed file writer for temp file \"%s\"", tempCompressedPath.str());
-            size32_t written = compressedWriter->write(0, xmlDataLen, xmlData);
-            if (written != xmlDataLen)
-                throw MakeStringException(-1, "Failed to write all XML data to compressed file (wrote %u of %u bytes)", written, xmlDataLen);
-            compressedWriter.clear();
-        }
-
-        // Now read from the HPCC compressed file
-        Owned<IFile> compressedFile = createIFile(tempCompressedPath.str());
-        if (!compressedFile->exists())
-            throw MakeStringException(-1, "Temp compressed file \"%s\" does not exist", tempCompressedPath.str());
-
-        Owned<ICompressedFileIO> compressedIO = createCompressedFileReader(compressedFile, nullptr, useDefaultIoBufferSize, false, IFEnone);
-        if (!compressedIO)
-            throw MakeStringException(-1, "Compressed file reader failed for temp file \"%s\"", tempCompressedPath.str());
+        unsigned binaryDataLen = binaryDataBuffer.length();
+        assertex(binaryDataLen > 0);
 
         CCycleTimer timer;
         __uint64 totalDeserializeNs{0};
         __uint64 totalSerializeNs{0};
 
-        // Test deserialization using the HPCC compressed file
+        MemoryBuffer streamBufferIn;
+        MemoryBuffer streamBufferOut;
         for (int i = 0; i < iterations; i++)
         {
+            streamBufferIn.clear();
+            streamBufferIn.append(binaryDataLen, binaryDataBuffer.toByteArray());
+            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(streamBufferIn);
             timer.reset();
-            Owned<IPropertyTree> tree = createPTree(*compressedIO);
+            Owned<IPropertyTree> deserializedTree = createPTreeFromBinary(*in, flags);
             __uint64 deserializeElapsedNs = timer.elapsedNs();
+            Owned<IPropertyTree> copyDeserializedTree = createPTreeFromIPT(deserializedTree);
             totalDeserializeNs += deserializeElapsedNs;
 
+            streamBufferOut.clear();
+            Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(streamBufferOut);
             timer.reset();
-            StringBuffer xmlOutput;
-            toXML(tree, xmlOutput);
+            deserializedTree->serializeToStream(*out);
+            out->flush();
             __uint64 serializeElapsedNs = timer.elapsedNs();
             totalSerializeNs += serializeElapsedNs;
-        }
 
-        // Clean up temp file
-        try {
-            compressedFile->remove();
-        } catch (...) {
-            // Ignore cleanup errors
+            // Validation - serialized data matches
+            CPPUNIT_ASSERT_EQUAL(binaryDataLen, streamBufferOut.length());
+            CPPUNIT_ASSERT_EQUAL(streamBufferIn.length(), streamBufferOut.length());
+            CPPUNIT_ASSERT(areMatchingPTrees(copyDeserializedTree, deserializedTree));
         }
 
         TimingResults results;
@@ -3862,7 +3829,7 @@ protected:
         results.totalDeserializeTimeMs = totalDeserializeNs / 1e6;
         results.totalSerializeTimeMs = totalSerializeNs / 1e6;
         results.testName = testName;
-        results.flags = ipt_none;
+        results.flags = flags;
 
         return results;
     }
@@ -3901,21 +3868,107 @@ protected:
         return results;
     }
 
-    void readAndDecompressGzFile(const char *filePath, StringBuffer &output)
+    const char *getBinaryFilePath()
     {
-        Owned<IFile> gzFile = createIFile(filePath);
-        if (!gzFile->exists())
-            throw MakeStringException(-1, "Gzipped file %s does not exist", filePath);
+        const char *envPath = getenv("DALI_TEST_BINARY_FILE");
+        constexpr const char *defaultPath = "~/HPCC-Platform/testing/unittests/dalisds1.bin.gz";
+        return envPath ? envPath : defaultPath;
+    }
 
-        size32_t fileSize = (size32_t)gzFile->size();
-        MemoryBuffer compressedData;
+    const char *getXmlFilePath()
+    {
+        const char *envPath = getenv("DALI_TEST_XML_FILE");
+        constexpr const char *defaultPath = "~/HPCC-Platform/testing/unittests/dalisds1.xml.gz";
+        return envPath ? envPath : defaultPath;
+    }
 
-        Owned<IFileIO> fileIO = gzFile->open(IFOread);
-        compressedData.reserveTruncate(fileSize);
-        size32_t bytesRead = fileIO->read(0, fileSize, compressedData.bufferBase());
-        compressedData.setLength(bytesRead);
+    const char *expandTilde(const char *path, StringBuffer &expanded)
+    {
+        if (!path || !path[0])
+            return path;
 
-        gunzip((const byte *)compressedData.toByteArray(), compressedData.length(), output);
+        if (path[0] == '~' && (path[1] == '/' || path[1] == '\0'))
+        {
+            const char *home = getenv("HOME");
+            if (home)
+            {
+                expanded.append(home);
+                if (path[1] == '/')
+                    expanded.append(path + 1);
+                return expanded.str();
+            }
+        }
+        return path;
+    }
+
+    void readXmlFile(const char *filePath, StringBuffer &output)
+    {
+        StringBuffer expandedPath;
+        const char *actualPath = expandTilde(filePath, expandedPath);
+        if (!actualPath)
+            throw MakeStringException(-1, "XML file path is null");
+        Owned<IFile> xmlFile = createIFile(actualPath);
+        if (!xmlFile->exists())
+            throw MakeStringException(-1, "XML file \"%s\" does not exist", actualPath);
+
+        size32_t fileSize = (size32_t)xmlFile->size();
+        MemoryBuffer fileData;
+        Owned<IFileIO> fileIO = xmlFile->open(IFOread);
+        fileData.reserveTruncate(fileSize);
+        size32_t bytesRead = fileIO->read(0, fileSize, fileData.bufferBase());
+        fileData.setLength(bytesRead);
+
+        const char *ext = pathExtension(filePath);
+        if (ext && streq(ext, ".gz"))
+            gunzip((const byte *)fileData.toByteArray(), fileData.length(), output);
+        else
+            output.append(fileData.length(), fileData.toByteArray());
+    }
+
+    void createBinaryDataFromXml(const char *xmlFilePath, MemoryBuffer &binaryData)
+    {
+        StringBuffer xmlData;
+        try
+        {
+            readXmlFile(xmlFilePath, xmlData);
+        }
+        catch(IException *e)
+        {
+            throw;
+        }
+        Owned<IPropertyTree> tree = createPTreeFromXMLString(xmlData);
+        binaryData.clear();
+        Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(binaryData);
+        tree->serializeToStream(*out);
+        out->flush();
+    }
+
+    bool readBinaryFile(const char *filePath, MemoryBuffer &output)
+    {
+        StringBuffer expandedPath;
+        const char *actualPath = expandTilde(filePath, expandedPath);
+        if (!actualPath)
+            return false;
+        Owned<IFile> binaryFile = createIFile(actualPath);
+        if (!binaryFile->exists())
+            return false;
+
+        size32_t fileSize = (size32_t)binaryFile->size();
+        Owned<IFileIO> fileIO = binaryFile->open(IFOread);
+        output.reserveTruncate(fileSize);
+        size32_t bytesRead = fileIO->read(0, fileSize, output.bufferBase());
+        output.setLength(bytesRead);
+
+        const char *ext = pathExtension(actualPath);
+        if (ext && streq(ext, ".gz"))
+        {
+            StringBuffer tempOutput;
+            gunzip((const byte *)output.toByteArray(), output.length(), tempOutput);
+            output.clear();
+            output.append(tempOutput.length(), tempOutput.str());
+        }
+
+        return true;
     }
 
     void performXmlTimingTest(const char *testName, const char *xmlData, int iterations, byte flags = ipt_none)
@@ -3967,526 +4020,78 @@ protected:
     }
 
 public:
-    void testXmlTimingWithNormalVsLowMem()
+    void testCombinedXmlAndBinaryTimingWithNormalVsLowMem()
     {
+        constexpr const int iterations{10};
+
+        // Load XML data
         StringBuffer xmlData;
-        constexpr const char *gzFilePath = "/home/dave/HPCC-Platform/testing/unittests/dalisds1.xml.gz";
-        readAndDecompressGzFile(gzFilePath, xmlData);
-
-        const int iterations{10};
-        DBGLOG("=== XML TIMING COMPARISON TEST ===");
+        readXmlFile(getXmlFilePath(), xmlData);
         unsigned xmlDataLen = (unsigned)strlen(xmlData.str());
+
+        // Load Binary data
+        //  If the binary file does not exist then create it from the XML file
+        MemoryBuffer binaryData;
+        if (!readBinaryFile(getBinaryFilePath(), binaryData))
+            createBinaryDataFromXml(getXmlFilePath(), binaryData);
+        unsigned binaryDataLen = (unsigned)binaryData.length();
+
+        DBGLOG("=== COMBINED XML & BINARY TIMING COMPARISON TEST ===");
         DBGLOG("XML data size: %u bytes", xmlDataLen);
+        DBGLOG("Binary data size: %u bytes", binaryDataLen);
         DBGLOG("Iterations: %d", iterations);
+        TimingResults xmlNormalResults = performXmlTimingTestWithResults("XML Normal", xmlData.str(), iterations, ipt_none);
+        TimingResults xmlLowMemResults = performXmlTimingTestWithResults("XML Low Memory", xmlData.str(), iterations, ipt_lowmem);
+        TimingResults binaryNormalResults = performBinaryTimingTestWithResults("Binary Normal", binaryData, iterations, ipt_none);
+        TimingResults binaryLowMemResults = performBinaryTimingTestWithResults("Binary Low Memory", binaryData, iterations, ipt_lowmem);
 
-        TimingResults normalResults = performXmlTimingTestWithResults("Normal", xmlData.str(), iterations, ipt_none);
-        TimingResults lowMemResults = performXmlTimingTestWithResults("Low Memory", xmlData.str(), iterations, ipt_lowmem);
-        TimingResults compressedResults = performXmlTimingTestWithResults("Compressed", xmlData.str(), xmlDataLen, gzFilePath, iterations);
+        // Calculate differences and Binary vs XML comparisons
+        double xmlLowMemDeserializeDiff = ((xmlLowMemResults.avgDeserializeTimeMs - xmlNormalResults.avgDeserializeTimeMs) / xmlNormalResults.avgDeserializeTimeMs) * 100;
+        double xmlLowMemSerializeDiff = ((xmlLowMemResults.avgSerializeTimeMs - xmlNormalResults.avgSerializeTimeMs) / xmlNormalResults.avgSerializeTimeMs) * 100;
+        double binaryLowMemDeserializeDiff = ((binaryLowMemResults.avgDeserializeTimeMs - binaryNormalResults.avgDeserializeTimeMs) / binaryNormalResults.avgDeserializeTimeMs) * 100;
+        double binaryLowMemSerializeDiff = ((binaryLowMemResults.avgSerializeTimeMs - binaryNormalResults.avgSerializeTimeMs) / binaryNormalResults.avgSerializeTimeMs) * 100;
+        double binaryVsXmlNormalDeserialize = ((binaryNormalResults.avgDeserializeTimeMs - xmlNormalResults.avgDeserializeTimeMs) / xmlNormalResults.avgDeserializeTimeMs) * 100;
+        double binaryVsXmlNormalSerialize = ((binaryNormalResults.avgSerializeTimeMs - xmlNormalResults.avgSerializeTimeMs) / xmlNormalResults.avgSerializeTimeMs) * 100;
+        double binaryVsXmlLowMemDeserialize = ((binaryLowMemResults.avgDeserializeTimeMs - xmlLowMemResults.avgDeserializeTimeMs) / xmlLowMemResults.avgDeserializeTimeMs) * 100;
+        double binaryVsXmlLowMemSerialize = ((binaryLowMemResults.avgSerializeTimeMs - xmlLowMemResults.avgSerializeTimeMs) / xmlLowMemResults.avgSerializeTimeMs) * 100;
 
-        DBGLOG("┌────────────────────────────────────────────────────────┐");
-        DBGLOG("│        XML TIMING COMPARISON RESULTS (%u bytes)  │", (unsigned)strlen(xmlData.str()));
-        DBGLOG("├────────────────────┬─────────────────┬─────────────────┤");
-        DBGLOG("│ Mode               │ Avg Deserialize │ Avg Serialize   │");
-        DBGLOG("│                    │ (ms)            │ (ms)            │");
-        DBGLOG("├────────────────────┼─────────────────┼─────────────────┤");
-        DBGLOG("│ %-15s    │ %15.6f │ %15.6f │",
-               "Normal",
-               normalResults.avgDeserializeTimeMs,
-               normalResults.avgSerializeTimeMs);
-        DBGLOG("│ %-15s    │ %15.6f │ %15.6f │",
-               "Low Memory",
-               lowMemResults.avgDeserializeTimeMs,
-               lowMemResults.avgSerializeTimeMs);
-        DBGLOG("│ %-15s    │ %15.6f │ %15.6f │",
-               "Compressed",
-               compressedResults.avgDeserializeTimeMs,
-               compressedResults.avgSerializeTimeMs);
-        DBGLOG("├────────────────────┼─────────────────┼─────────────────┤");
-
-        double lowMemDeserializeDiff = ((lowMemResults.avgDeserializeTimeMs - normalResults.avgDeserializeTimeMs) / normalResults.avgDeserializeTimeMs) * 100;
-        double lowMemSerializeDiff = ((lowMemResults.avgSerializeTimeMs - normalResults.avgSerializeTimeMs) / normalResults.avgSerializeTimeMs) * 100;
-        double compressedDeserializeDiff = ((compressedResults.avgDeserializeTimeMs - normalResults.avgDeserializeTimeMs) / normalResults.avgDeserializeTimeMs) * 100;
-        double compressedSerializeDiff = ((compressedResults.avgSerializeTimeMs - normalResults.avgSerializeTimeMs) / normalResults.avgSerializeTimeMs) * 100;
-
-        DBGLOG("│ %-15s    │ %+14.2f%% │ %+14.2f%% │",
-               "LowMem Diff",
-               lowMemDeserializeDiff,
-               lowMemSerializeDiff);
-        DBGLOG("│ %-15s    │ %+14.2f%% │ %+14.2f%% │",
-               "Compressed Diff",
-               compressedDeserializeDiff,
-               compressedSerializeDiff);
-        DBGLOG("└────────────────────┴─────────────────┴─────────────────┘");
+        // Display combined results table with all comparisons
+        DBGLOG("┌──────────────────────┬─────────────────┬─────────────────┐");
+        DBGLOG("│ Format & Mode        │ Avg Deserialize │ Avg Serialize   │");
+        DBGLOG("│                      │ (ms)            │ (ms)            │");
+        DBGLOG("├──────────────────────┼─────────────────┼─────────────────┤");
+        DBGLOG("│ XML Normal           │ %15.6f │ %15.6f │",
+               xmlNormalResults.avgDeserializeTimeMs,
+               xmlNormalResults.avgSerializeTimeMs);
+        DBGLOG("│ XML Low Memory       │ %15.6f │ %15.6f │",
+               xmlLowMemResults.avgDeserializeTimeMs,
+               xmlLowMemResults.avgSerializeTimeMs);
+        DBGLOG("│ XML LowMem Diff      │ %+14.2f%% │ %+14.2f%% │",
+               xmlLowMemDeserializeDiff,
+               xmlLowMemSerializeDiff);
+        DBGLOG("├──────────────────────┼─────────────────┼─────────────────┤");
+        DBGLOG("│ Binary Normal        │ %15.6f │ %15.6f │",
+               binaryNormalResults.avgDeserializeTimeMs,
+               binaryNormalResults.avgSerializeTimeMs);
+        DBGLOG("│ Binary Low Memory    │ %15.6f │ %15.6f │",
+               binaryLowMemResults.avgDeserializeTimeMs,
+               binaryLowMemResults.avgSerializeTimeMs);
+        DBGLOG("│ Binary LowMem Diff   │ %+14.2f%% │ %+14.2f%% │",
+               binaryLowMemDeserializeDiff,
+               binaryLowMemSerializeDiff);
+        DBGLOG("├──────────────────────┼─────────────────┼─────────────────┤");
+        DBGLOG("│ Binary vs XML Normal │ %+14.2f%% │ %+14.2f%% │",
+               binaryVsXmlNormalDeserialize,
+               binaryVsXmlNormalSerialize);
+        DBGLOG("│ Binary vs XML LowMem │ %+14.2f%% │ %+14.2f%% │",
+               binaryVsXmlLowMemDeserialize,
+               binaryVsXmlLowMemSerialize);
+        DBGLOG("└──────────────────────┴─────────────────┴─────────────────┘");
     }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION(PTreeSerializationDeserializationXmlTimingTest);
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeSerializationDeserializationXmlTimingTest, "PTreeSerializationDeserializationXmlTimingTest");
-
-/*
- * Dali server XML vs Binary store performance comparison test
- *
- * Compares Dali server performance between XML and Binary storage formats by measuring load/save times
- */
-
-class DaliServerXMLvsBinaryStorePerformanceComparisonTest : public CppUnit::TestFixture
-{
-    CPPUNIT_TEST_SUITE(DaliServerXMLvsBinaryStorePerformanceComparisonTest);
-    CPPUNIT_TEST(testDaliServerXMLvsBinaryStorePerformanceComparison);
-    CPPUNIT_TEST_SUITE_END();
-
-public:
-    // Dali server store performance comparison test between XML and Binary formats
-    void testDaliServerXMLvsBinaryStorePerformanceComparison()
-    {
-        const char *defaultHpccPath{"~/hpccRelease"};
-        const char *hpccPath = getenv("HPCC_RELEASE_PATH");
-        if (!hpccPath)
-            hpccPath = defaultHpccPath;
-
-        // Expand tilde if path starts with ~/
-        StringBuffer expandedPath;
-        if (hpccPath[0] == '~' && hpccPath[1] == '/')
-        {
-            const char *homeDir = getenv("HOME");
-            if (homeDir)
-            {
-                expandedPath.append(homeDir).append(hpccPath + 1); // Skip the ~
-                hpccPath = expandedPath.str();
-            }
-        }
-
-        DBGLOG("=== DALI SERVER STORE PERFORMANCE COMPARISON TEST ===");
-        DBGLOG("Using HPCC path: %s", hpccPath);
-
-        try
-        {
-            // Stop all HPCC engines
-            DBGLOG("Stopping HPCC engines...");
-            StringBuffer stopCmd;
-            stopCmd.appendf("%s/etc/init.d/hpcc-init stop; cd %s/etc/init.d/; ./dafilesrv stop", hpccPath, hpccPath);
-            int stopResult = system(stopCmd.str());
-            if (stopResult)
-                DBGLOG("WARNING: Failed to stop HPCC engines (exit code: %d)", stopResult);
-
-            // Test XML storage
-            deleteBinaryDaliFiles(hpccPath); // Prevent any existing binary Dali store files being loaded
-            DaliTimingResults xmlResults = runDaliStorageTest(hpccPath, false);
-
-            // Test Binary storage
-            DaliTimingResults binaryResults = runDaliStorageTest(hpccPath, true);
-
-            // Display comparison table
-            displayDaliTimingComparison(xmlResults, binaryResults);
-        }
-        catch (IException *e)
-        {
-            StringBuffer msg;
-            e->errorMessage(msg);
-            e->Release();
-            CPPUNIT_FAIL(msg.str());
-        }
-        catch (...)
-        {
-            CPPUNIT_FAIL("Unexpected exception in Dali server store performance test");
-        }
-    }
-
-private:
-    struct DaliTimingResults
-    {
-        double avgLoadTimeMs;
-        double avgSaveTimeMs;
-        bool saveToBinaryStore;
-    };
-
-    // Helper function to delete existing binary Dali store files
-    void deleteBinaryDaliFiles(const char *hpccPath)
-    {
-        StringBuffer checkCmd, deleteCmd;
-        checkCmd.appendf("ls %s/var/lib/HPCCSystems/hpcc-data/dali/dalisds*.bin 2>/dev/null", hpccPath);
-        deleteCmd.appendf("rm -f %s/var/lib/HPCCSystems/hpcc-data/dali/dalisds*.bin", hpccPath);
-
-        // Check if binary files exist
-        int checkResult = system(checkCmd.str());
-        bool binFilesExist = (checkResult == 0);
-
-        // Attempt to delete
-        int deleteResult = system(deleteCmd.str());
-
-        // If binary files existed and delete failed, abort the test
-        if (binFilesExist && deleteResult)
-        {
-            StringBuffer msg;
-            msg.appendf("Failed to delete existing binary Dali store files");
-            throw MakeStringException(-1, "%s", msg.str());
-        }
-    }
-
-    // Helper function to convert saveToBinaryStore flag to storage type string
-    const char *getStorageTypeName(bool saveToBinaryStore) const
-    {
-        return saveToBinaryStore ? "Binary" : "XML";
-    }
-
-    DaliTimingResults runDaliStorageTest(const char *hpccPath, bool saveToBinaryStore)
-    {
-        DBGLOG("Testing %s storage format...", getStorageTypeName(saveToBinaryStore));
-
-        // Update environment.xml
-        updateEnvironmentXml(hpccPath, saveToBinaryStore);
-
-        std::vector<double> loadTimes;
-        std::vector<double> saveTimes;
-
-        // Run 11 iterations (use last 10)
-        for (int i{0}; i < 11; i++)
-        {
-            DBGLOG("Iteration %d/%d for %s storage", i + 1, 11, getStorageTypeName(saveToBinaryStore));
-
-            // Start mydali
-            StringBuffer startCmd;
-            startCmd.appendf("%s/etc/init.d/hpcc-init start -c mydali", hpccPath);
-            int startResult = system(startCmd.str());
-            if (startResult)
-            {
-                StringBuffer msg;
-                msg.appendf("Start command returned %d", startResult);
-                throw MakeStringException(-1, "%s", msg.str());
-            }
-
-            // Give it time to fully start and load
-            sleep(5);
-
-            // Stop mydali
-            StringBuffer stopCmd;
-            stopCmd.appendf("%s/etc/init.d/hpcc-init stop -c mydali", hpccPath);
-            int stopResult = system(stopCmd.str());
-            if (stopResult)
-            {
-                StringBuffer msg;
-                msg.appendf("Stop command returned %d", stopResult);
-                throw MakeStringException(-1, "%s", msg.str());
-            }
-
-            // Give it time to fully stop and save
-            sleep(2);
-
-            // Extract timing from last iteration if not first run
-            if (i > 0)
-            {
-                double loadTime{0.0};
-                double saveTime{0.0};
-                if (extractDaliTimings(hpccPath, saveToBinaryStore, loadTime, saveTime))
-                {
-                    loadTimes.push_back(loadTime);
-                    saveTimes.push_back(saveTime);
-                    DBGLOG("Extracted times - Load: %.0f ms, Save: %.0f ms", loadTime, saveTime);
-                }
-                else
-                {
-                    StringBuffer msg;
-                    msg.appendf("Failed to extract timing for iteration %d in %s storage test", i, getStorageTypeName(saveToBinaryStore));
-                    throw MakeStringException(-1, "%s", msg.str());
-                }
-            }
-        }
-
-        // Calculate averages from last 10 runs
-        double avgLoad{0.0};
-        double avgSave{0.0};
-        if (!loadTimes.empty())
-        {
-            for (double time : loadTimes)
-                avgLoad += time;
-            avgLoad /= loadTimes.size();
-        }
-        if (!saveTimes.empty())
-        {
-            for (double time : saveTimes)
-                avgSave += time;
-            avgSave /= saveTimes.size();
-        }
-
-        DaliTimingResults results;
-        results.avgLoadTimeMs = avgLoad;
-        results.avgSaveTimeMs = avgSave;
-        results.saveToBinaryStore = saveToBinaryStore;
-
-        DBGLOG("Completed %s storage test - Avg Load: %.3f ms, Avg Save: %.3f ms",
-               getStorageTypeName(saveToBinaryStore), avgLoad, avgSave);
-
-        return results;
-    }
-
-    void updateEnvironmentXml(const char *hpccPath, bool saveToBinaryStore)
-    {
-        StringBuffer envPath;
-        envPath.appendf("%s/etc/HPCCSystems/environment.xml", hpccPath);
-
-        Owned<IFile> envFile = createIFile(envPath.str());
-        if (!envFile->exists())
-        {
-            StringBuffer msg;
-            msg.appendf("Environment file not found: %s", envPath.str());
-            throw MakeStringException(-1, "%s", msg.str());
-        }
-
-        StringBuffer xmlContent;
-        Owned<IFileIO> fileIO = envFile->open(IFOread);
-        size32_t fileSize = (size32_t)envFile->size();
-        xmlContent.ensureCapacity(fileSize + 1);
-        size32_t bytesRead = fileIO->read(0, fileSize, (void *)xmlContent.str());
-        xmlContent.setLength(bytesRead);
-        fileIO.clear();
-
-        // Parse and modify the XML
-        Owned<IPropertyTree> envTree = createPTreeFromXMLString(xmlContent.str());
-
-        // Find DaliServerProcess and update saveBinary attribute
-        Owned<IPropertyTreeIterator> daliServers = envTree->getElements(".//DaliServerProcess");
-        bool found{false};
-        ForEach(*daliServers)
-        {
-            IPropertyTree &daliServer = daliServers->query();
-            daliServer.setPropBool("@saveBinary", saveToBinaryStore);
-            found = true;
-        }
-        if (!found)
-            throw MakeStringException(-1, "DaliServerProcess not found in environment.xml");
-
-        // Write back the modified XML
-        StringBuffer modifiedXml;
-        toXML(envTree, modifiedXml, 0, XML_Format);
-
-        Owned<IFileIO> writeIO = envFile->open(IFOcreate);
-        writeIO->write(0, modifiedXml.length(), modifiedXml.str());
-        writeIO.clear();
-
-        DBGLOG("Updated environment.xml with saveBinary=%s", saveToBinaryStore ? "true" : "false");
-    }
-
-    const char *findMostRecentPatternBackwards(const char *logContent, size_t logLength, const char *pattern)
-    {
-        if (!logContent || !pattern)
-            return nullptr;
-
-        size_t patternLen = strlen(pattern);
-        if (patternLen == 0 || patternLen > logLength || logLength == 0)
-            return nullptr;
-
-        for (const char *pos = logContent + logLength - patternLen; pos >= logContent; pos--)
-        {
-            if (strncmp(pos, pattern, patternLen) == 0)
-                return pos;
-        }
-        return nullptr;
-    }
-
-    bool extractDaliTimings(const char *hpccPath, bool saveToBinaryStore, double &loadTime, double &saveTime)
-    {
-        StringBuffer logPath;
-        logPath.appendf("%s/var/log/HPCCSystems/mydali/server/DaServer.log", hpccPath);
-        Owned<IFile> logFile = createIFile(logPath.str());
-        if (!logFile->exists())
-        {
-            StringBuffer msg;
-            msg.appendf("Log file not found: %s", logPath.str());
-            ERRLOG("%s", msg.str());
-            return false;
-        }
-
-        StringBuffer logContent;
-        Owned<IFileIO> fileIO = logFile->open(IFOread);
-        size32_t fileSize = (size32_t)logFile->size();
-        logContent.ensureCapacity(fileSize + 1);
-        size32_t bytesRead = fileIO->read(0, fileSize, (void *)logContent.str());
-        logContent.setLength(bytesRead);
-        size_t logLength = logContent.length();
-
-        const char *loadStartPattern{nullptr};
-        const char *saveStartPattern{nullptr};
-        if (saveToBinaryStore)
-        {
-            loadStartPattern = "Loading Binary store";
-            saveStartPattern = "Saving store to binary";
-        }
-        else
-        {
-            loadStartPattern = "Loading XML store";
-            saveStartPattern = "Saving store to XML";
-        }
-
-        // Find most recent occurrences by searching backwards for the most recent logs
-        // Since we're traversing from end to beginning, find completion events first
-        const char *lastLoadComplete = findMostRecentPatternBackwards(logContent.str(), logLength, "Load progress - 100.00% complete");
-        const char *lastLoadStart{nullptr};
-        if (lastLoadComplete)
-        {
-            size_t searchLength = lastLoadComplete - logContent.str();
-            if (searchLength <= logLength)
-                lastLoadStart = findMostRecentPatternBackwards(logContent.str(), searchLength, loadStartPattern);
-        }
-
-        const char *lastSaveComplete = findMostRecentPatternBackwards(logContent.str(), logLength, "Copying store to backup location");
-        const char *lastSaveStart{nullptr};
-        if (lastSaveComplete)
-        {
-            size_t searchLength = lastSaveComplete - logContent.str();
-            if (searchLength <= logLength)
-                lastSaveStart = findMostRecentPatternBackwards(logContent.str(), searchLength, saveStartPattern);
-        }
-
-        bool foundLoad{false};
-        bool foundSave{false};
-
-        // Parse load timing if both patterns found
-        if (lastLoadStart && lastLoadComplete)
-        {
-            foundLoad = parseTimingFromLogEntries(logContent.str(), lastLoadStart, lastLoadComplete, "Load", loadTime);
-        }
-        else
-        {
-            StringBuffer msg;
-            msg.appendf("Load timing patterns not found in log file - lastLoadStart: %s, lastLoadComplete: %s",
-                        lastLoadStart ? "found" : "missing", lastLoadComplete ? "found" : "missing");
-            ERRLOG("%s", msg.str());
-            return false;
-        }
-
-        // Parse save timing if both patterns found
-        if (lastSaveStart && lastSaveComplete)
-        {
-            foundSave = parseTimingFromLogEntries(logContent.str(), lastSaveStart, lastSaveComplete, "Save", saveTime);
-        }
-        else
-        {
-            StringBuffer msg;
-            msg.appendf("Save patterns not found - lastSaveStart: %s, lastSaveComplete: %s",
-                        lastSaveStart ? "found" : "missing", lastSaveComplete ? "found" : "missing");
-            ERRLOG("%s", msg.str());
-            return false;
-        }
-
-        return foundLoad && foundSave;
-    }
-
-    const char *findLogLineStartBackwards(const char *logContent, const char *positionInLine)
-    {
-        const char *lineStart = positionInLine;
-        while (lineStart > logContent && *(lineStart - 1) != '\n')
-            lineStart--;
-        if (lineStart != positionInLine)
-            lineStart++;
-        return lineStart;
-    }
-
-    bool parseTimingFromLogEntries(const char *logContent, const char *startEntry, const char *completeEntry, const char *operationType, double &timingResult)
-    {
-        // The startEntry and completeEntry point to the message text, but we need to find
-        // the beginning of each log line to get the timestamp
-        // Format: "00000009 USR 2025-09-30 08:48:52.759  5177  5177 "Loading..."
-        // Format: "0000EEF5 PRG 2025-08-22 08:14:43.792  6583  6583 "Saving..."
-
-        const char *startLineBegin = findLogLineStartBackwards(logContent, startEntry);
-        const char *completeLineBegin = findLogLineStartBackwards(logContent, completeEntry);
-
-        const char *startTimePos{nullptr};
-        const char *startTimePosUSR = strstr(startLineBegin, "USR ");
-        const char *startTimePosPRG = strstr(startLineBegin, "PRG ");
-        if (!startTimePosUSR && !startTimePosPRG)
-        {
-            StringBuffer msg;
-            msg.appendf("Could not find USR/PRG markers in %s patterns", operationType);
-            CPPUNIT_FAIL(msg.str());
-            return false;
-        }
-        else if (startTimePosUSR && startTimePosPRG)
-        {
-            auto distanceUSR = startTimePosUSR - startLineBegin;
-            auto distancePRG = startTimePosPRG - startLineBegin;
-            startTimePos = distanceUSR < distancePRG ? startTimePosUSR : startTimePosPRG;
-        }
-        else if (startTimePosPRG)
-            startTimePos = startTimePosPRG;
-        else
-            startTimePos = startTimePosUSR;
-
-        const char *completeTimePos = strstr(completeLineBegin, "USR ");
-        if (!completeTimePos)
-            completeTimePos = strstr(completeLineBegin, "PRG ");
-
-        if (!completeTimePos)
-        {
-            StringBuffer msg;
-            msg.appendf("Could not find USR/PRG markers in %s completeTimePos patterns", operationType);
-            CPPUNIT_FAIL(msg.str());
-            return false;
-        }
-
-        startTimePos += 4;    // Skip "USR " or "PRG "
-        completeTimePos += 4; // Skip "USR " or "PRG "
-
-        // Parse timestamps: YYYY-MM-DD HH:MM:SS.mmm
-        int startYear, startMonth, startDay, startHour, startMin, startSec, startMs;
-        int completeYear, completeMonth, completeDay, completeHour, completeMin, completeSec, completeMs;
-
-        if (sscanf(startTimePos, "%d-%d-%d %d:%d:%d.%d",
-                   &startYear, &startMonth, &startDay, &startHour, &startMin, &startSec, &startMs) != 7 ||
-            sscanf(completeTimePos, "%d-%d-%d %d:%d:%d.%d",
-                   &completeYear, &completeMonth, &completeDay, &completeHour, &completeMin, &completeSec, &completeMs) != 7)
-        {
-            StringBuffer msg;
-            msg.appendf("Failed to parse %s timestamps", operationType);
-            CPPUNIT_FAIL(msg.str());
-            return false;
-        }
-
-        // Calculate time difference in milliseconds
-        double startTimeMs = startSec * 1000.0 + startMs + startMin * 60000.0 + startHour * 3600000.0;
-        double completeTimeMs = completeSec * 1000.0 + completeMs + completeMin * 60000.0 + completeHour * 3600000.0;
-
-        // Handle day boundary (simplified - assumes same day or next day)
-        if (completeTimeMs < startTimeMs)
-            completeTimeMs += 24 * 3600000.0; // Add 24 hours
-
-        timingResult = completeTimeMs - startTimeMs;
-
-        return true;
-    }
-
-    void displayDaliTimingComparison(const DaliTimingResults &xmlResults, const DaliTimingResults &binaryResults)
-    {
-        DBGLOG("┌─────────────────────────────────────────────────────┐");
-        DBGLOG("│          DALI STORE PERFORMANCE COMPARISON          │");
-        DBGLOG("├─────────────────┬─────────────────┬─────────────────┤");
-        DBGLOG("│ Storage Type    │ Avg Load Time   │ Avg Save Time   │");
-        DBGLOG("│                 │ (ms)            │ (ms)            │");
-        DBGLOG("├─────────────────┼─────────────────┼─────────────────┤");
-        DBGLOG("│ %-15s │ %15.3f │ %15.3f │",
-               getStorageTypeName(xmlResults.saveToBinaryStore),
-               xmlResults.avgLoadTimeMs,
-               xmlResults.avgSaveTimeMs);
-        DBGLOG("│ %-15s │ %15.3f │ %15.3f │",
-               getStorageTypeName(binaryResults.saveToBinaryStore),
-               binaryResults.avgLoadTimeMs,
-               binaryResults.avgSaveTimeMs);
-        DBGLOG("├─────────────────┼─────────────────┼─────────────────┤");
-
-        // Calculate performance differences
-        double loadDiff = ((binaryResults.avgLoadTimeMs - xmlResults.avgLoadTimeMs) / xmlResults.avgLoadTimeMs) * 100;
-        double saveDiff = ((binaryResults.avgSaveTimeMs - xmlResults.avgSaveTimeMs) / xmlResults.avgSaveTimeMs) * 100;
-
-        DBGLOG("│ %-15s │ %+14.2f%% │ %+14.2f%% │",
-               "Difference",
-               loadDiff,
-               saveDiff);
-        DBGLOG("└─────────────────┴─────────────────┴─────────────────┘");
-    }
-};
-
-CPPUNIT_TEST_SUITE_REGISTRATION(DaliServerXMLvsBinaryStorePerformanceComparisonTest);
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(DaliServerXMLvsBinaryStorePerformanceComparisonTest, "DaliServerXMLvsBinaryStorePerformanceComparisonTest");
+CPPUNIT_TEST_SUITE_REGISTRATION(PTreeSerializationDeserializationXmlTimingStressTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeSerializationDeserializationXmlTimingStressTest, "PTreeSerializationDeserializationXmlTimingStressTest");
 
 #include "jmutex.hpp"
 #include <shared_mutex>
