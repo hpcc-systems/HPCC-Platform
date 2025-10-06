@@ -612,8 +612,24 @@ void CSocketTarget::writeAsync(const void * data, size32_t len, void * ownedBuff
 void CSocketTarget::startAsyncWrite()
 {
     state = State::Writing;
-    WriteRequest & request = requests[headRequestIndex];
-    sender.asyncSender->enqueueSocketWrite(socket, request.data, request.len, *this);
+    if (numRequests > 1)
+    {
+        unsigned numToWrite = std::min(numRequests, maxBufferWrites);
+        for (unsigned i = 0; i < numToWrite; i++)
+        {
+            WriteRequest & request = requests[wrapIndex(headRequestIndex + i)];
+            sendInfo[i].iov_base = (void *)request.data;
+            sendInfo[i].iov_len = request.len;
+        }
+
+        sender.asyncSender->enqueueSocketWriteMany(socket, sendInfo, numToWrite, *this);
+    }
+    else
+    {
+        // According to the docs write() is more efficient if there is only a single request
+        WriteRequest & request = requests[headRequestIndex];
+        sender.asyncSender->enqueueSocketWrite(socket, request.data, request.len, *this);
+    }
 }
 
 void CSocketTarget::startAsyncConnect()
@@ -667,33 +683,40 @@ void CSocketTarget::onAsyncComplete(int result)
         case State::Writing:
             if (result >= 0)
             {
-                WriteRequest & request = requests[headRequestIndex];
-                // How much of the data has been consumed?
-                // When writev is supported this may consume multiple buffers...
-                if (request.len == result)
+                // Iterate until we have marked all the consummed data - this could be from multiple buffers
+                while (result)
                 {
-                    //All of the data is consumed
-                    sender.releaseBuffer(buffers[headRequestIndex]);
-                    headRequestIndex = wrapIndex(headRequestIndex + 1);
-                    if (threadsWaiting)
+                    assertex(numRequests);
+
+                    WriteRequest & request = requests[headRequestIndex];
+                    if (result >= request.len)
                     {
-                        newSpaceToSignal = 1;
-                        threadsWaiting -= newSpaceToSignal;
+                        //All of the data is consumed
+                        result -= request.len;
+                        sender.releaseBuffer(buffers[headRequestIndex]);
+                        headRequestIndex = wrapIndex(headRequestIndex + 1);
+                        if (threadsWaiting)
+                        {
+                            newSpaceToSignal++;
+                            threadsWaiting--;
+                        }
+                        numRequests--;
                     }
-                    numRequests--;
-                    if (numRequests != 0)
-                        startAsyncWrite();
                     else
-                        state = State::Connected;
+                    {
+                        //MORE: Add a trace flag to log this
+                        //WARNLOG("Short write on socket %u of %zu", result, request.len);
+
+                        //A partial write - need to adjust the size of the request and resubmit
+                        request.len -= result;
+                        request.data = (const byte *)request.data + result;
+                        break;
+                    }
                 }
-                else
-                {
-                    OERRLOG("Short write on socket %u of %zu", result, request.len);
-                    //A partial write - need to adjust the size of the request and resubmit
-                    request.len -= result;
-                    request.data = (const byte *)request.data + result;
+                if (numRequests != 0)
                     startAsyncWrite();
-                }
+                else
+                    state = State::Connected;
             }
             else
             {
