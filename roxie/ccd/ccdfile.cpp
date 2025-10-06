@@ -94,7 +94,7 @@ protected:
     Linked<IFileIO> current;
     Owned<IMemoryMappedFile> mmapped;
     mutable CriticalSection crit;
-    offset_t fileSize;
+    offset_t fileSize{0};
     unsigned currentIdx{0};
     std::atomic<unsigned __int64> lastAccess{0};
     CDateTime fileDate;
