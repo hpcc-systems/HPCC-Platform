@@ -179,6 +179,7 @@ class CTcpSender;
 class SECURESOCKET_API CSocketTarget : public CInterface, public IAsyncCallback
 {
     static constexpr unsigned maxQueueDepth = 40;
+    static constexpr unsigned maxBufferWrites  = 5;
 
     enum class State
     {
@@ -231,6 +232,7 @@ protected:
     WriteRequest requests[maxQueueDepth];
     unsigned headRequestIndex = 0;
     unsigned numRequests = 0;
+    iovec sendInfo[maxBufferWrites];
 };
 
 // MORE: This needs extending so that the items in the hash table know their ip address,

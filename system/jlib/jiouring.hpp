@@ -21,6 +21,16 @@
 #include <vector>
 #include "jptree.hpp"
 
+#if defined(__linux__)
+#include <sys/uio.h>
+#else
+//Define the iovec structure for windows/
+struct iovec {
+    void   *iov_base;  /* Starting address */
+    size_t  iov_len;   /* Size of the memory pointed to by iov_base. */
+};
+#endif
+
 interface IAsyncProcessor;
 interface IAsyncCallback
 {
@@ -37,6 +47,7 @@ interface IAsyncProcessor : public IInterface
     virtual void enqueueCallbackCommands(const std::vector<IAsyncCallback *> & callbacks) = 0;
     virtual void enqueueSocketConnect(ISocket * socket, const struct sockaddr * addr, size32_t addrlen, IAsyncCallback & callback) = 0;
     virtual void enqueueSocketWrite(ISocket * socket, const void * buf, size32_t len, IAsyncCallback & callback) = 0;
+    virtual void enqueueSocketWriteMany(ISocket * socket, const iovec * buffers, unsigned numBuffers, IAsyncCallback & callback) = 0;
 
 // Functions for managing the completion queue - particularly non-threaded urings
     virtual void checkForCompletions() = 0;
