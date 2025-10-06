@@ -632,10 +632,8 @@ constexpr StatisticKind fetchTimeId[CacheMax] = { StCycleNodeFetchCycles, StCycl
 ///////////////////////////////////////////////////////////////////////////////
 
 // For some reason #pragma pack does not seem to work here. Force all elements to 8 bytes
-class CNodeCacheEntry : public CInterface
+class CNodeCacheEntry
 {
-public:
-    CriticalSection cs;
 private:
     std::atomic<const CJHTreeNode *> node{nullptr};
 public:
@@ -662,16 +660,39 @@ public:
     }
 };
 
-class CNodeMapping final : public HTMapping<CNodeCacheEntry, CKeyIdAndPos>
+class CNodeMapping final : public CInterface
 {
 public:
-    CNodeMapping(CKeyIdAndPos &fp, CNodeCacheEntry &et) : HTMapping<CNodeCacheEntry, CKeyIdAndPos>(et, fp) { }
-    ~CNodeMapping() { this->et.Release(); }
+    CNodeMapping(const CKeyIdAndPos & _fp) : fp(_fp) { }
     const CJHTreeNode *queryNode()
     {
-        return queryElement().queryNode();
+        return et.queryNode();
     }
-    CNodeCacheEntry &query() { return queryElement(); }
+    inline bool isReady() const
+    {
+        return et.isReady();
+    }
+    inline const CJHTreeNode *queryNode() const
+    {
+        return et.queryNode();
+    }
+    inline const CJHTreeNode *getNode() const
+    {
+        return et.getNode();
+    }
+    inline void noteReady(const CJHTreeNode *_node)
+    {
+        et.noteReady(_node);
+    }
+
+    const void *queryFindParam() const { return &fp; }
+    const CKeyIdAndPos &queryFindValue() const { return fp; }
+    const CNodeCacheEntry & queryElement() const { return et; }
+
+    CKeyIdAndPos fp;
+    CNodeCacheEntry et;
+
+    CriticalSection cs;
 
 //The following pointers are used to maintain the position in the LRU cache
     CNodeMapping * prev = nullptr;
@@ -714,7 +735,7 @@ public:
         CNodeMapping *mapping = reinterpret_cast<CNodeMapping *>(_mapping);
         unsigned keyId = mapping->queryFindValue().keyId;
         // Save the node onto a list, so it will be released when this object is released.
-        CJHTreeNode * node = const_cast<CJHTreeNode *>(mapping->query().getNode());
+        CJHTreeNode * node = const_cast<CJHTreeNode *>(mapping->getNode());
         // The key id needs to be stored separately because the node does not currently contain it.
         if (numFixed < maxFixed)
         {
@@ -3345,15 +3366,17 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
     //  Lock, add if missing, unlock.  Lock a page-dependent-cr load() release lock.
     //There will be the same number of critical section locks, but loading a page will contend on a different lock - so it should reduce contention.
     CriticalSection & cacheLock = curCache.lock;
-    Owned<CNodeCacheEntry> ownedCacheEntry; // ensure node gets cleaned up if it fails to load
+    Owned<CNodeMapping> ownedCacheEntry; // ensure node gets cleaned up if it fails to load
     bool alreadyExists = true;
     {
         DelayedCacheEntryReleaser delayedReleaser;
-        CNodeCacheEntry * cacheEntry;
+        CNodeMapping * cacheEntry;
 
         CLeavableCriticalBlock block(cacheLock);
+        // Increment numHits here, rather than inside the if, because the address of curCache is already in a register -
+        // so the code for the fastpath is more concise.
         curCache.numHits.fastAdd(1);
-        cacheEntry = curCache.query(hashcode, &key);
+        cacheEntry = curCache.queryMapping(hashcode, &key);
         if (likely(cacheEntry))
         {
             const CJHTreeNode * fastPathMatch = cacheEntry->queryNode();
@@ -3374,11 +3397,11 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
         }
         else
         {
-            cacheEntry = new CNodeCacheEntry;
-            curCache.replace(key, *cacheEntry, &delayedReleaser);
-            alreadyExists = false;
+            // Undo to optimistic increment of the number of hits, and increment the adds
             curCache.numHits.fastAdd(-1);
             curCache.numAdds.fastAdd(1);
+            cacheEntry = curCache.replace(key, &delayedReleaser);
+            alreadyExists = false;
         }
 
         //same as ownedcacheEntry.set(cacheEntry), but avoids a null check or two
