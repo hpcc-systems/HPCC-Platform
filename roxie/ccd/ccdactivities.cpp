@@ -4279,7 +4279,9 @@ IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
     MTIME_SECTION(queryActiveTimer(), "CRoxieKeyedJoinIndexActivity::process");
     Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
     CachedOutputMetaData joinFieldsMeta(helper->queryJoinFieldsRecordSize());
-    Owned<IEngineRowAllocator> joinFieldsAllocator = getRowAllocator(joinFieldsMeta, basefactory->queryId());
+
+    //Fixed size output records are written directly to the output stream, so we don't need a row allocator for them
+    Owned<IEngineRowAllocator> joinFieldsAllocator = joinFieldsMeta.isVariableSize() ? getRowAllocator(joinFieldsMeta, basefactory->queryId()) : nullptr;
     OptimizedKJRowBuilder rowBuilder(joinFieldsAllocator, joinFieldsMeta, output);
 
     unsigned __int64 rowLimit = helper->getRowLimit();
