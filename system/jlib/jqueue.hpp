@@ -454,7 +454,7 @@ public:
             //Initial code from remove() - simplified since pHead != element, and no decrement of entries
             ELEMENT * next = element->next;
             ELEMENT * prev = element->prev;
-            assertex(prev); // not at the head of the list, so must have a predecessor
+            dbgassertex(prev); // not at the head of the list, so must have a predecessor
             if (likely(next))
             {
                 next->prev = prev;
