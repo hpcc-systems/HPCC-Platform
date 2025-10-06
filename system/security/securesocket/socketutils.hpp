@@ -157,19 +157,6 @@ private:
     std::atomic<bool> aborting{false};
 };
 
-// Demo only to check all virtuals are well defined
-class ConcreteConnectionLister : public CSocketConnectionListener
-{
-public:
-    ConcreteConnectionLister(unsigned port);
-
-    virtual bool onlyProcessFirstRead() const override;
-    virtual unsigned getMessageSize(const void * header) const override;
-    virtual CReadSocketHandler *createSocketHandler(ISocket *sock) override;
-    virtual void processMessage(const void * data, size32_t len) override;
-};
-
-
 struct HashSocketEndpoint
 {
     unsigned operator()(const SocketEndpoint & ep) const { return ep.hash(0x12345678); }

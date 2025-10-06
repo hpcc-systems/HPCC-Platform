@@ -516,33 +516,6 @@ void CSocketConnectionListener::stop()
     }
 }
 
-// Demo only to check all virtuals are well defined
-ConcreteConnectionLister::ConcreteConnectionLister(unsigned port) : CSocketConnectionListener(port, false, 0, 0)
-{
-
-}
-
-bool ConcreteConnectionLister::onlyProcessFirstRead() const
-{
-    return false;
-}
-
-unsigned ConcreteConnectionLister::getMessageSize(const void * header) const
-{
-    return *(const unsigned *)header;
-}
-
-CReadSocketHandler *ConcreteConnectionLister::createSocketHandler(ISocket *sock)
-{
-    //Header size is 64B, max variable to read is 64K
-    size32_t maxInitialReadSize = 0x10000;
-    return new CReadSocketHandler(*this, asyncReader, sock, 64, maxInitialReadSize);
-}
-
-void ConcreteConnectionLister::processMessage(const void * data, size32_t len)
-{
-}
-
 //---------------------------------------------------------------------------------------------------------------------
 
 CSocketTarget::CSocketTarget(CTcpSender & _sender, const SocketEndpoint & _ep) : sender(_sender), ep(_ep)
