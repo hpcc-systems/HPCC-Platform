@@ -895,7 +895,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 
         bool isBatchRoxie = strisame(roxieMode, "batch");
         useTcpTransport = strisame(protocol, "tcp");
-        bool usingRemoteStorage = (pageCache != nullptr);
+        [[maybe_unused]] bool usingRemoteStorage = (pageCache != nullptr);
 
         // --- These options have the following effects on the defaults:
 
