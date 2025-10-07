@@ -354,7 +354,7 @@ public:
     virtual unsigned getFieldOffset(unsigned idx) const override { return recInfo.getFixedOffset(idx); }
     virtual bool canMatch() const override;
     virtual bool isUnfiltered() const override;
-
+    virtual void updateIndexFormat(const RtlRecord & actualRecInfo) override;
 
 protected:
     IndexRowFilter(const IndexRowFilter &_from, const char *fixedVals, unsigned sortFieldOffset);
@@ -365,6 +365,7 @@ protected:
     unsigned keyedSize = 0;
     unsigned keySegCount = 0;
     bool unfiltered = true;
+    bool finished = false;
 };
 
 #endif
