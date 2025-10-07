@@ -908,8 +908,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         if (useTcpTransport || isBatchRoxie)
             packetAcknowledgeTimeout = 500;
 
-        //Enabling the localNVMeCache will also by default enable remote file related optimizations
-        bool mimicLegacyCompression = topology->getPropBool("@mimicLegacyCompression", !usingRemoteStorage);
+        //Enable this option to mimic that the latency of legacy index compression
+        bool mimicLegacyCompression = topology->getPropBool("@mimicLegacyCompression", false);
 
         // --- End of options dependent on batch/transport/remote roxie
 
