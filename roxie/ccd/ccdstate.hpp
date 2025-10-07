@@ -55,6 +55,8 @@ interface IRoxiePackage : public IHpccPackage
 {
     // Lookup information in package to resolve existing logical file name
     virtual const IResolvedFile *lookupFileName(const char *fileName, bool opt, bool useCache, bool cacheResults, IConstWorkUnit *wu, bool ignoreForeignPrefix, bool isPrivilegedUser) const = 0;
+    // Lookup an expanded filename (any mangling from the filename scope is complete)
+    virtual IResolvedFile *lookupExpandedFileName(const char *fileName, bool useCache, bool cacheResult, AccessMode accessMode, bool alwaysCreate, bool checkCompulsory, bool isPrivilegedUser) const = 0;
     // Lookup information in package to create new logical file name
     virtual IRoxieWriteHandler *createWriteHandler(const char *fileName, bool overwrite, bool extend, const StringArray &clusters, IConstWorkUnit *wu, bool isPrivilegedUser) const = 0;
     // Lookup information in package about what in-memory indexes should be built for file
