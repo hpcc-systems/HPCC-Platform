@@ -97,6 +97,7 @@ spec:
 {{- if hasKey $dali "labels" }}
 {{ toYaml $dali.labels | indent 8 }}
 {{- end }}
+        {{- include "hpcc.addServiceAccountLabels" (dict "root" $ "serviceAccount" "dali") | indent 8 }}
       annotations:
         {{- include "hpcc.generateAnnotations" $commonCtx | indent 8 }}
         {{- if hasKey $.Values.global "metrics" }}
