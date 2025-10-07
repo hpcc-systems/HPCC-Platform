@@ -2197,6 +2197,12 @@
           "minimum": 0,
           "description": "Minimum number of remote files to keep open"
         },
+        "numResolveFilenameThreads": {
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "description": "Use up to n threads for resolving files when query loading"
+        },
         "packetAcknowledgeTimeout": {
           "type": "integer",
           "default": 100,
