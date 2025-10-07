@@ -25,6 +25,8 @@
 #include <vector>
 #include <initializer_list>
 #include <map>
+#include <cmath>
+#include <memory>
 
 #include "jstatcodes.h"
 
@@ -1043,4 +1045,82 @@ inline double calcCost(double ratePerHour, unsigned __int64 ms) { return ratePer
 inline double calcCostNs(double ratePerHour, unsigned __int64 ns) { return ratePerHour * ns / 1000000000 / 3600; }
 extern jlib_decl StringBuffer & formatMoney(StringBuffer &out, unsigned __int64 value);
 
+/*
+ * ThresholdMetric
+ *
+ * Standalone metric type designed for tracking numeric values such as transaction latency,
+ * response times, or other measurements where statistical analysis is needed.
+ *
+ * This metric uses Welford’s online algorithm for running mean and variance, providing
+ * numerically stable and efficient calculation of average and standard deviation without
+ * storing historical data. It supports outlier detection via deviation calculations and
+ * can be reset to clear all statistics.
+ */
+class ThresholdStat
+{
+public:
+    ThresholdStat() {}
+
+    __uint64 queryCount() const
+    {
+        CriticalBlock block(cs);
+        return count;
+    }
+
+    void recordValue(__uint64 value)
+    {
+        CriticalBlock block(cs);
+        double x = static_cast<double>(value);
+        count++;
+        double delta = x - mean;
+        mean += delta / count;
+        double delta2 = x - mean;
+        M2 += delta * delta2;
+    }
+
+    double queryRunningAverage() const
+    {
+        CriticalBlock block(cs);
+        return mean;
+    }
+
+    double queryStandardDeviation() const
+    {
+        CriticalBlock block(cs);
+        return (count > 1) ? sqrt(M2 / count) : 0.0;
+    }
+
+    double getDeviations(__uint64 sampleValue) const
+    {
+        CriticalBlock block(cs);
+        if (count < 2)
+            return 0.0;
+
+        double stddev = queryStandardDeviation();
+
+        if (stddev == 0.0)
+            return 0.0;
+
+        return (static_cast<double>(sampleValue) - mean) / stddev;
+    }
+
+    virtual void reset()
+    {
+        CriticalBlock block(cs);
+        count = 0;
+        mean = 0.0;
+        M2 = 0.0;
+    }
+
+protected:
+    mutable CriticalSection cs;
+    __uint64 count{0};
+    double mean{0.0};
+    double M2{0.0};
+};
+
+inline std::shared_ptr<ThresholdStat> makeSharedThresholdStat()
+{
+    return std::make_shared<ThresholdStat>();
+}
 #endif
