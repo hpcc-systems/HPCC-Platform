@@ -2616,20 +2616,25 @@ protected:
 };
 
 // Aggregrate Thor or hThor costs
-cost_type aggregateCost(const IConstWorkUnit * wu, const char *scope, bool excludeHThor)
+cost_type aggregateCost(const IConstWorkUnit * wu, const char *scope, StatisticKind sk, unsigned maxDepth, bool excludeHThor)
 {
     // depth 1: workflow, depth 2: graph, depth 3: subgraph
     WuScopeFilter filter;
     if (scope && *scope) // All costs under specified scope (used to calculate all costs for a workflow)
     {
         filter.addScope(scope);
-        filter.setIncludeNesting(3);
-        filter.addOutputStatistic(StCostExecute);
-        filter.addRequiredStat(StCostExecute);
+        filter.setIncludeNesting(maxDepth);
+        filter.addOutputStatistic(sk);
+        filter.addRequiredStat(sk);
         filter.setIncludeMatch(false); // always re-calculate the cost from the children
     }
     else
-        filter.addFilter("stat[CostExecute],depth[1..3],nested[0],where[CostExecute]");
+    {
+        filter.addOutputStatistic(sk);
+        filter.setDepth(1, maxDepth);
+        filter.setIncludeNesting(0);
+        filter.addRequiredStat(sk);
+    }
     filter.addSource("global");
     filter.finishedFilter();
     Owned<IConstWUScopeIterator> it = &wu->getScopeIterator(filter);
@@ -2641,7 +2646,7 @@ cost_type aggregateCost(const IConstWorkUnit * wu, const char *scope, bool exclu
         {
             it->playProperties(aggregator);
             stat_type value;
-            if (it->getStat(StCostExecute, value))
+            if (it->getStat(sk, value))
                 it->nextSibling();
             else
                 it->next();
@@ -2654,7 +2659,7 @@ cost_type aggregateCost(const IConstWorkUnit * wu, const char *scope, bool exclu
         for (it->first(); it->isValid(); )
         {
             stat_type value = 0;
-            if (it->getStat(StCostExecute, value))
+            if (it->getStat(sk, value))
             {
                 totalCost += value;
                 it->nextSibling();
@@ -3748,6 +3753,7 @@ public:
         costExecute = p.getPropInt64("@costExecute");
         costFileAccess = p.getPropInt64("@costFileAccess");
         costCompile = p.getPropInt64("@costCompile");
+        costSavingPotential = p.getPropInt64("@costSavingPotential");
     }
     virtual const char *queryWuid() const { return wuid.str(); }
     virtual const char *queryUser() const { return user.str(); }
@@ -3765,6 +3771,7 @@ public:
     virtual cost_type getExecuteCost() const { return costExecute; }
     virtual cost_type getFileAccessCost() const { return costFileAccess; }
     virtual cost_type getCompileCost() const { return costCompile; }
+    virtual cost_type getCostSavingPotential() const { return costSavingPotential; }
     virtual IJlibDateTime & getTimeScheduled(IJlibDateTime & val) const
     {
         if (timeScheduled.length())
@@ -3783,9 +3790,10 @@ protected:
     WUPriorityClass priority;
     int priorityLevel;
     bool _isProtected;
-    unsigned __int64 costExecute;
-    unsigned __int64 costFileAccess;
-    unsigned __int64 costCompile;
+    unsigned __int64 costExecute = 0;
+    unsigned __int64 costFileAccess = 0;
+    unsigned __int64 costCompile = 0;
+    unsigned __int64 costSavingPotential = 0;
 };
 
 extern IConstWorkUnitInfo *createConstWorkUnitInfo(IPropertyTree &p)
@@ -4447,6 +4455,8 @@ public:
             { return c->getFileAccessCost(); }
     virtual cost_type getCompileCost() const
             { return c->getCompileCost(); }
+    virtual cost_type getCostSavingPotential() const
+            { return c->getCostSavingPotential(); }
     virtual bool getSummary(SummaryType type, SummaryMap &map) const override
             { return c->getSummary(type, map); }
     virtual void import(IPropertyTree *wuTree, IPropertyTree *graphProgressTree)
@@ -8583,6 +8593,7 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool a
     p->setProp("@hash", fromP->queryProp("@hash"));
     p->setProp("@costExecute", fromP->queryProp("@costExecute"));
     p->setProp("@costFileAccess", fromP->queryProp("@costFileAccess"));
+    p->setPropInt64("@costSavingPotential", fromP->getPropInt64("@costSavingPotential"));
     p->setPropBool("@cloneable", true);
     p->setPropBool("@isClone", true);
     resetWorkflow();  // the source Workflow section may have had some parts already executed...
@@ -9184,10 +9195,18 @@ void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char *
     }
     if (scopeType == SSTglobal)
     {
-        if (kind == StCostExecute)
+        switch(kind)
+        {
+        case StCostExecute:
             p->setPropInt64("@costExecute", value);
-        else if (kind == StCostFileAccess)
+            break;
+        case StCostFileAccess:
             p->setPropInt64("@costFileAccess", value);
+            break;
+        case StCostSavingPotential:
+            p->setPropInt64("@costSavingPotential", value);
+            break;
+        }
     }
     if (kind == StCostCompile)
         p->setPropInt64("@costCompile", value);
@@ -12950,6 +12969,12 @@ cost_type CLocalWorkUnit::getCompileCost() const
 {
     CriticalBlock block(crit);
     return p->getPropInt64("@costCompile");
+}
+
+cost_type CLocalWorkUnit::getCostSavingPotential() const
+{
+    CriticalBlock block(crit);
+    return p->getPropInt64("@costSavingPotential");
 }
 
 #if 0
