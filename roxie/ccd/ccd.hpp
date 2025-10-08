@@ -375,6 +375,7 @@ extern PTreeReaderOptions defaultXmlReadFlags;
 extern bool mergeAgentStatistics;
 extern bool defaultNoSeekBuildIndex;
 extern unsigned parallelQueryLoadThreads;
+extern unsigned numResolveFilenameThreads;
 extern bool adhocRoxie;
 extern bool alwaysFailOnLeaks;
 extern bool ignoreFileDateMismatches;
