@@ -130,7 +130,8 @@ void waitJob(const char *componentName, const char *resourceType, const char *jo
                 DBGLOG("kubectl output (from %s): %s", waitJob.str(), output.str());
                 VStringBuffer checkJobExitStatus("kubectl get jobs %s '-o=jsonpath={range .status.conditions[*]}{.type}: {.status} - {.message}|{end}'", jobName.str());
                 runKubectlCommand(componentName, checkJobExitStatus, nullptr, &output.clear());
-                if (strstr(output.str(), "Failed: "))
+                // Check for failure: k8s <1.31 uses "Failed: True", k8s >=1.31 uses "FailureTarget: True"
+                if (strstr(output.str(), "Failed: True") || strstr(output.str(), "FailureTarget: True"))
                 {
                     VStringBuffer errMsg("Job %s failed [%s].", jobName.str(), output.str());
                     VStringBuffer checkInitContainerExitCodes("kubectl get pods --selector=job-name=%s '-o=jsonpath={range .items[*].status.initContainerStatuses[*]}{.state.terminated.exitCode},{\"initContainer\"},{.name}{\"|\"}{end}'", jobName.str());
@@ -146,16 +147,30 @@ void waitJob(const char *componentName, const char *resourceType, const char *jo
                     }
                     throw makeStringException(0, errMsg);
                 }
-                else
+                // Check for success: k8s <1.31 uses "Complete: True", k8s >=1.31 produces "SuccessCriteriaMet: True" 1st
+                // followed by "Complete: True"
+                else if (strstr(output.str(), "Complete: True") || strstr(output.str(), "SuccessCriteriaMet: True"))
                 {
-                    DBGLOG("kubectl output (from %s): %s", checkJobExitStatus.str(), output.str());
-                    if (0 != output.length())
-                        break; // assume success, either .status.conditions type of "Complete" or "Succeeded"
+                    DBGLOG("SUCCESS: kubectl output (from %s): %s", checkJobExitStatus.str(), output.str());
+                    break; // job succeeded
+                }
+                else if (0 != output.length())
+                {
+                    // Unknown or unexpected job status condition
+                    DBGLOG("UNKNOWN: kubectl output (from %s): %s", checkJobExitStatus.str(), output.str());
+                    // Non-empty status but not a recognized success or failure condition
+                    if (getExpertOptBool("k8sFailOnUnknownErr", true))
+                        throw makeStringExceptionV(0, "Job %s completed with unknown status condition [%s]", jobName.str(), output.str());
                     else
                     {
-                        // no .status.conditions
-                        // cycle around, check .status.active again
+                        WARNLOG("Job %s completed with unknown status condition [%s] - assuming success based on expert/@k8sFailOnUnknownErr=false", jobName.str(), output.str());
+                        break; // assume success when expert setting disables strict checking
                     }
+                }
+                else
+                {
+                    // no .status.conditions
+                    // cycle around, check .status.active again
                 }
             }
             runKubectlCommand(nullptr, getScheduleStatus, nullptr, &output.clear());
