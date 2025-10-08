@@ -124,7 +124,7 @@ class CTcpReceiveManager : implements IReceiveManager, public CInterface
 
         virtual CReadSocketHandler *createSocketHandler(ISocket *sock) override
         {
-            return new CReadSocketHandler(*this, sock, sizeof(UdpPacketHeader), maxInitialReadSize);
+            return new CReadSocketHandler(*this, asyncReader, sock, sizeof(UdpPacketHeader), maxInitialReadSize);
         }
 
         virtual void processMessage(const void * data, size32_t len) override
