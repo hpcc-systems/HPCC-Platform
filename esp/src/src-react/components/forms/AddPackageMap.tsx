@@ -1,5 +1,6 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, Dropdown, IDropdownOption, PrimaryButton, Spinner, Stack, TextField, } from "@fluentui/react";
+import { Checkbox, DefaultButton, Dropdown, IDropdownOption, PrimaryButton, Spinner, TextField, } from "@fluentui/react";
+import { StackShim } from "@fluentui/react-migration-v8-v9";
 import { useForm, Controller } from "react-hook-form";
 import { FileSprayService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
@@ -111,7 +112,7 @@ export const AddPackageMap: React.FunctionComponent<AddPackageMapProps> = ({
             <PrimaryButton text={nlsHPCC.Submit} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
         </>}>
-        <Stack>
+        <StackShim>
             <Controller
                 control={control} name="Info"
                 render={({
@@ -221,6 +222,6 @@ export const AddPackageMap: React.FunctionComponent<AddPackageMapProps> = ({
                     }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.Overwrite} />}
                 />
             </div>
-        </Stack>
+        </StackShim>
     </MessageBox>;
 };

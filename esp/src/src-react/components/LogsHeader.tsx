@@ -1,5 +1,6 @@
 import * as React from "react";
-import { CommandBar, ICommandBarItemProps, Stack, Label, CommandBarButton, useTheme } from "@fluentui/react";
+import { CommandBar, ICommandBarItemProps, Label, CommandBarButton, useTheme } from "@fluentui/react";
+import { StackShim } from "@fluentui/react-migration-v8-v9";
 import nlsHPCC from "src/nlsHPCC";
 import { DateTimeInput } from "./forms/Fields";
 
@@ -26,39 +27,39 @@ export const LogsHeader: React.FunctionComponent<LogsHeaderProps> = ({
 }) => {
     const theme = useTheme();
 
-    return <Stack horizontal verticalAlign="center" styles={{ root: { padding: "0px 6px", borderBottom: `1px solid ${theme.palette.neutralLight}` } }}>
-        <Stack horizontal tokens={{ childrenGap: 16 }} styles={{ root: { flex: 1, alignItems: "center" } }}>
+    return <StackShim horizontal verticalAlign="center" styles={{ root: { padding: "0px 6px", borderBottom: `1px solid ${theme.palette.neutralLight}` } }}>
+        <StackShim horizontal tokens={{ childrenGap: 16 }} styles={{ root: { flex: 1, alignItems: "center" } }}>
             <CommandBarButton
                 text={nlsHPCC.Filter}
                 style={{ padding: 8 }}
                 iconProps={{ iconName: hasFilter ? "FilterSolid" : "Filter" }}
                 onClick={onShowFilter}
             />
-            <Stack horizontal tokens={{ childrenGap: 8 }} verticalAlign="center">
+            <StackShim horizontal tokens={{ childrenGap: 8 }} verticalAlign="center">
                 <Label>{nlsHPCC.FromDate}:</Label>
                 <DateTimeInput
                     value={startDate}
                     onChange={onStartDateChange}
                     style={{ padding: "4px 8px", border: `1px solid ${theme.palette.neutralTertiary}`, borderRadius: "2px" }}
                 />
-            </Stack>
-            <Stack horizontal tokens={{ childrenGap: 8 }} verticalAlign="center">
+            </StackShim>
+            <StackShim horizontal tokens={{ childrenGap: 8 }} verticalAlign="center">
                 <Label>{nlsHPCC.ToDate}:</Label>
                 <DateTimeInput
                     value={endDate}
                     onChange={onEndDateChange}
                     style={{ padding: "4px 8px", border: `1px solid ${theme.palette.neutralTertiary}`, borderRadius: "2px" }}
                 />
-            </Stack>
+            </StackShim>
             <CommandBarButton
                 text={nlsHPCC.Refresh}
                 style={{ padding: 8 }}
                 iconProps={{ iconName: "Refresh" }}
                 onClick={onRefresh}
             />
-        </Stack>
+        </StackShim>
         <div>
             <CommandBar items={[]} farItems={copyButtons} />
         </div>
-    </Stack>;
+    </StackShim>;
 };

@@ -1,5 +1,6 @@
 import * as React from "react";
-import { mergeStyleSets, IDragOptions, IIconProps, ContextualMenu, IconButton, Modal, Stack, useTheme, IStackTokens, IModalStyles } from "@fluentui/react";
+import { mergeStyleSets, IDragOptions, IIconProps, ContextualMenu, IconButton, Modal, useTheme, IStackTokens, IModalStyles } from "@fluentui/react";
+import { StackShim } from "@fluentui/react-migration-v8-v9";
 import nlsHPCC from "src/nlsHPCC";
 
 const headerTokens: IStackTokens = {
@@ -85,15 +86,15 @@ export const MessageBox: React.FunctionComponent<MessageBoxProps> = ({
 
     return <Modal isOpen={show} onDismiss={close} isModeless={modeless} dragOptions={dragOptions}
         isBlocking={blocking} containerClassName={contentStyles.container} styles={modalStyles}>
-        <Stack tokens={headerTokens} horizontal horizontalAlign="space-between" verticalAlign="center" styles={{ root: contentStyles.header }} className="draggable">
+        <StackShim tokens={headerTokens} horizontal horizontalAlign="space-between" verticalAlign="center" styles={{ root: contentStyles.header }} className="draggable">
             <h2>{title}</h2>
             <IconButton iconProps={cancelIcon} ariaLabel={nlsHPCC.CloseModal} onClick={close} styles={iconButtonStyles} disabled={disableClose} />
-        </Stack>
+        </StackShim>
         <div className={contentStyles.body}>
             {children}
         </div>
-        <Stack tokens={footerTokens} horizontal horizontalAlign="end">
+        <StackShim tokens={footerTokens} horizontal horizontalAlign="end">
             {footer}
-        </Stack>
+        </StackShim>
     </Modal>;
 };
