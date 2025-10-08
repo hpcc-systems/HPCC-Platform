@@ -1079,8 +1079,6 @@ public:
                 return nullptr;
             }
             dataLinkIncrement();
-            if (helper->getFlags() & TIRaggregateexists) // Early termination for EXISTS queries - stop after first row
-                eoi = true;
             return row.getClear();
         }
         eoi = true;
@@ -1381,8 +1379,6 @@ public:
                                 break;
                             ++progress;
                             totalCount += helper->numValid(key);
-                            if (totalCount > 0 && helper->getFlags() & TIRaggregateexists) // Early termination for EXISTS queries
-                                break;
                             if (totalCount > rowLimit)
                                 break;
                             if (keyManager)
@@ -1392,8 +1388,6 @@ public:
                         }
                         if (keyManager)
                             resetManager(keyManager);
-                        if (totalCount > 0 && helper->getFlags() & TIRaggregateexists) // Early termination for EXISTS queries
-                            break;
                         if ((totalCount > choosenLimit))
                             break;
                     }
@@ -1648,8 +1642,6 @@ public:
             hadElement = true;
             helper->processRow(row, r);
             callback.finishedRow();
-            if (helper->getFlags() & TIRaggregateexists) // Early termination for EXISTS queries
-                break;
         }
         if (container.queryLocalOrGrouped())
         {
