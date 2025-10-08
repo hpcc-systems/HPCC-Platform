@@ -144,7 +144,7 @@ define([
         },
 
         destroy: function (args) {
-            srcReact.unrender(this.statusNode);
+            this.statusNodeRoot?.dispose();
             this.zapDialog.destroyRecursive();
             this.inherited(arguments);
         },
@@ -367,7 +367,8 @@ define([
             this.checkIfClustersAllowed();
             this.checkThorLogStatus();
             this.statusNode = dom.byId(this.id + "WUStatus");
-            srcReact.lightThemedRender(srcReact.WUStatus, { wuid: params.Wuid }, this.statusNode);
+            this.statusNodeRoot = srcReact.ReactRoot.create(this.statusNode);
+            this.statusNodeRoot.lightThemedRender(srcReact.WUStatus, { wuid: params.Wuid });
 
             this.protected.on("click", function (evt) {
                 context._onSave();

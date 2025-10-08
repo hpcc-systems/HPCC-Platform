@@ -59,7 +59,7 @@ define([
         },
 
         destroy: function (args) {
-            srcReact.unrender(this.recentFilterNode);
+            this.recentFilterNodeRoot?.dispose();
             this.inherited(arguments);
         },
 
@@ -149,9 +149,10 @@ define([
             var recentFilterLoaded = false;
             if (this.userName !== null) {
                 this.recentFilterNode = dom.byId(this.id + "RecentFilters");
+                this.recentFilterNodeRoot = srcReact.ReactRoot.create(this.recentFilterNode);
 
                 if (params.widget && !recentFilterLoaded) {
-                    srcReact.render(srcReact.RecentFilters, { ws_key: params.ws_key, widget: params.widget, filter: {} }, this.recentFilterNode);
+                    this.recentFilterNodeRoot.lightThemedRender(srcReact.RecentFilters, { ws_key: params.ws_key, widget: params.widget, filter: {} });
                     recentFilterLoaded = true;
                 }
             }
@@ -189,7 +190,7 @@ define([
             this.recentFilterNode = dom.byId(this.id + "RecentFilters");
 
             if (this.params.widget) {
-                srcReact.render(srcReact.RecentFilters, { ws_key: this.params.ws_key, widget: this.params.widget, filter: retVal }, this.recentFilterNode);
+                this.recentFilterNodeRoot.lightThemedRender(srcReact.RecentFilters, { ws_key: this.params.ws_key, widget: this.params.widget, filter: retVal });
             }
         },
 
