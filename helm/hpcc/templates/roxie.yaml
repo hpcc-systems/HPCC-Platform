@@ -136,6 +136,7 @@ spec:
 {{-    if hasKey $toposerver "labels" }}
 {{      toYaml $toposerver.labels | indent 8 }}
 {{-    end }}
+        {{- include "hpcc.addServiceAccountLabels" (dict "root" $ "serviceAccount" "default") | indent 8 }}
       annotations:
         checksum/config: {{ $topoconfigSHA }}
 {{-    include "hpcc.generateAnnotations" (dict "root" $commonCtx.root "me" $toposerver) | indent 8 }}
@@ -259,6 +260,7 @@ spec:
 {{-     if hasKey $roxie "labels" }}
 {{       toYaml $roxie.labels | indent 8 }}
 {{-     end }}
+        {{- include "hpcc.addServiceAccountLabels" (dict "root" $ "serviceAccount" "default") | indent 8 }}
       annotations:
         checksum/config: {{ $configSHA }}
 {{-     include "hpcc.generateAnnotations" $commonCtx | indent 8 }}
@@ -365,6 +367,7 @@ spec:
 {{-     if hasKey $roxie "labels" }}
 {{       toYaml $roxie.labels | indent 8 }}
 {{-     end }}
+        {{- include "hpcc.addServiceAccountLabels" (dict "root" $ "serviceAccount" "default") | indent 8 }}
       annotations:
         checksum/config: {{ $configSHA }}
 {{-     include "hpcc.generateAnnotations" $commonCtx | indent 8 }}

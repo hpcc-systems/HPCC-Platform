@@ -53,6 +53,7 @@ spec:
         {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "dafilesrv" "name" "dafilesrv" "instance" .name) | indent 8 }}
         server: {{ .name | quote }}
         {{- include "hpcc.generateHelmVersion" . | nindent 8 }}
+        {{- include "hpcc.addServiceAccountLabels" (dict "root" $ "serviceAccount" "default") | indent 8 }}
       annotations:
         checksum/config: {{ $configSHA }}
         {{- include "hpcc.generateAnnotations" $commonCtx | indent 8 }}

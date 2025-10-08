@@ -58,6 +58,7 @@ spec:
 {{- if hasKey $sasha "labels" }}
 {{ toYaml $sasha.labels | indent 8 }}
 {{- end }}
+        {{- include "hpcc.addServiceAccountLabels" (dict "root" $ "serviceAccount" "default") | indent 8 }}
       annotations:
         checksum/config: {{ $configSHA }}
         {{- include "hpcc.generateAnnotations" $commonCtx | indent 8 }}
