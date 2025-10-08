@@ -20,9 +20,13 @@ on:
         description: 'Operating System'
         required: false
         default: 'windows-2022'
-      clienttools-asset-name:
+      clienttools-community-asset-name:
         type: string
-        description: 'Clienttools Asset name'
+        description: 'Clienttools Community Asset name'
+        required: true
+      clienttools-internal-asset-name:
+        type: string
+        description: 'Clienttools Internal Asset name'
         required: true
       documentation-asset-name:
         type: string
@@ -68,7 +72,6 @@ jobs:
           tar -xf fop-2.9-bin.tar.gz -C fop --strip-components=1
           curl -o fop/fop/saxon-he-12.4.jar https://repo1.maven.org/maven2/net/sf/saxon/Saxon-HE/12.4/saxon-he-12.4.jar
 
-
       - name: Checkout HPCC-Platform
         uses: actions/checkout@v4
         with:
@@ -100,7 +103,13 @@ jobs:
       - name: Fetch clienttools artifacts
         uses: actions/download-artifact@v4
         with:
-          name: ${{ inputs.clienttools-asset-name }}
+          name: ${{ inputs.clienttools-community-asset-name }}
+          merge-multiple: true
+
+      - name: Fetch clienttools internal artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.clienttools-internal-asset-name }}
           merge-multiple: true
 
       - name: "Create EN_US CHM file"
@@ -162,13 +171,21 @@ jobs:
         run: |
           ls -la
 
-      - name: Build ECLIDE
+      - name: Build Community ECLIDE
         shell: "bash"
         run: |
           cd ECLIDE
           mkdir -p ./build
           cd ./build
           cmake -A Win32 -S ../ -B .
+          cmake --build . --config RelWithDebInfo --target package --parallel $NUMBER_OF_PROCESSORS
+
+      - name: Build Internal ECLIDE
+        shell: "bash"
+        run: |
+          cd ECLIDE
+          cd ./build
+          cmake -A Win32 -S ../ -B . -DHPCC_AUDIENCE=internal
           cmake --build . --config RelWithDebInfo --target package --parallel $NUMBER_OF_PROCESSORS
 
       - name: Sign ECLIDE Package
