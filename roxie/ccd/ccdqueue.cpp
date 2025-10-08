@@ -433,7 +433,6 @@ protected:
     IRoxieWorkerRequestReceiver & receiver;
 };
 
-
 class RoxieTcpWorkerCommunicator : public CInterfaceOf<IRoxieWorkerCommunicator>
 {
 public:
@@ -464,13 +463,14 @@ public:
 
     virtual size32_t sendToWorker(const void * data, size32_t len, const SocketEndpoint &ep)
     {
-        return sender.sendToTarget(data, len, ep);
+        CSocketTarget * sock = sender.queryWorkerSocket(ep);
+        return sock->writeSync(data, len);
     }
 
 protected:
     std::unique_ptr<RoxieTcpListener> listener;
     CTcpSender sender;
-    size32_t maxPacketSize = 0x40000; // Allow up to 256K.
+    size32_t maxPacketSize = 0x40000; // Allow up to 256KB.
     std::atomic<bool> running = { false };
 };
 
@@ -2918,8 +2918,9 @@ public:
         bool udpSendFlowOnDataPort = topology->getPropBool("@udpSendFlowOnDataPort", true);
         unsigned dataPort = topology->getPropInt("@dataPort", CCD_DATA_PORT);
         unsigned clientFlowPort = topology->getPropInt("@clientFlowPort", CCD_CLIENT_FLOW_PORT);
+        bool useIOUringForSend = topology->getPropBool("@workerSendUseIOUring", false);
         receiveManager.setown(createReceiveManager(serverFlowPort, dataPort, clientFlowPort, udpQueueSize, encryptionInTransit));
-        sendManager.setown(createSendManager(udpSendFlowOnDataPort ? dataPort : serverFlowPort, dataPort, clientFlowPort, udpSendQueueSize, fastLaneQueue ? 3 : 2, myNode.getIpAddress(), bucket, encryptionInTransit));
+        sendManager.setown(createSendManager(udpSendFlowOnDataPort ? dataPort : serverFlowPort, dataPort, clientFlowPort, udpSendQueueSize, fastLaneQueue ? 3 : 2, myNode.getIpAddress(), bucket, encryptionInTransit, useIOUringForSend));
     }
 
     virtual void abortPendingData(const SocketEndpoint &ep) override
