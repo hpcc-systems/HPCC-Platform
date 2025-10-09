@@ -345,6 +345,12 @@ void SegMonitorList::append(FFoption option, const IFieldFilter * filter)
     throwUnexpected();
 }
 
+void SegMonitorList::updateIndexFormat(const RtlRecord & actualRecInfo)
+{
+    keySegCount = recInfo.getNumKeyedFields();
+    modified = true;
+}
+
 ///
 static UnexpectedVirtualFieldCallback unexpectedFieldCallback;
 class jhtree_decl CKeyLevelManager : implements IKeyManager, public CInterface
@@ -377,7 +383,7 @@ public:
             filter.setown(new SegMonitorList(_recInfo));
         keyCursor = NULL;
         keyedSize = 0;
-        setKey(_key);
+        setKey(_key, _recInfo);
     }
 
     ~CKeyLevelManager()
@@ -391,7 +397,13 @@ public:
         return keyCursor ? 1 : 0;
     }
 
-    void setKey(IKeyIndexBase * _key)
+    void clearKey()
+    {
+        ::Release(keyCursor);
+        keyCursor = NULL;
+    }
+
+    void setKey(IKeyIndexBase * _key, const RtlRecord & actualRecInfo)
     {
         ::Release(keyCursor);
         keyCursor = NULL;
@@ -400,10 +412,8 @@ public:
             assertex(_key->numParts()==1);
             IKeyIndex *ki = _key->queryPart(0);
             keyCursor = ki->getCursor(filter, logExcessiveSeeks);
-            if (keyedSize)
-                assertex(keyedSize == ki->keyedSize());
-            else
-                keyedSize = ki->keyedSize();
+            keyedSize = ki->keyedSize();
+            filter->updateIndexFormat(actualRecInfo);
             partitionFieldMask = ki->getPartitionFieldMask();
             indexParts = ki->numPartitions();
 
@@ -2862,6 +2872,28 @@ void IndexRowFilter::reset()
     lastFull = -1;
     keyedSize = 0;
     unfiltered = true;
+    finished = false;
+}
+
+void IndexRowFilter::updateIndexFormat(const RtlRecord & actualRecInfo)
+{
+    keySegCount = actualRecInfo.getNumKeyedFields();
+    if (finished)
+    {
+        //This covers the highly unusual situation where one key has a field in the keyed portion, and another
+        //key has the same field in the payload portion.  Adjust the number of wild field filters to match.
+        while (numFilterFields() > keySegCount)
+        {
+            //Check the extra filter was wild - otherwise this would give different results
+            assertex(filters.tos().isWild());
+            filters.pop();
+        }
+        while (numFilterFields() < keySegCount)
+        {
+            unsigned idx = numFilterFields();
+            append(FFkeyed, createWildFieldFilter(idx, *recInfo.queryType(idx)));
+        }
+    }
 }
 
 void IndexRowFilter::checkSize(size32_t _keyedSize, char const * keyname) const
@@ -2886,6 +2918,7 @@ void IndexRowFilter::finish(size32_t _keyedSize)
         append(FFkeyed, createWildFieldFilter(idx, *recInfo.queryType(idx)));
     }
     assertex(numFilterFields() == keySegCount);
+    finished = true;
 }
 
 void IndexRowFilter::describe(StringBuffer &out) const
@@ -3381,14 +3414,14 @@ public:
     : CKeyLevelManager(_recInfo, NULL, _ctx, _newFilters, _logExcessiveSeeks), sortFieldOffset(_sortFieldOffset)
     {
         init();
-        setKey(_keyset);
+        setKey(_keyset, _recInfo);
     }
 
     CKeyMerger(const RtlRecord &_recInfo, IKeyIndex *_onekey, unsigned _sortFieldOffset, IContextLogger *_ctx, bool _newFilters, bool _logExcessiveSeeks)
     : CKeyLevelManager(_recInfo, NULL, _ctx, _newFilters, _logExcessiveSeeks), sortFieldOffset(_sortFieldOffset)
     {
         init();
-        setKey(_onekey);
+        setKey(_onekey, _recInfo);
     }
 
     ~CKeyMerger()
@@ -3556,7 +3589,13 @@ public:
         CKeyLevelManager::setLayoutTranslator(trans);
     }
 
-    virtual void setKey(IKeyIndexBase *_keyset)
+    virtual void clearKey() override
+    {
+        keyset.clear();
+        killBuffers();
+    }
+
+    virtual void setKey(IKeyIndexBase *_keyset, const RtlRecord & actualRecInfo) override
     {
         keyset.set(_keyset);
         if (_keyset && _keyset->numParts())
@@ -3564,6 +3603,12 @@ public:
             IKeyIndex *ki = _keyset->queryPart(0);
             keyedSize = ki->keyedSize();
             numkeys = _keyset->numParts();
+            for (unsigned i=1; i < numkeys; i++)
+            {
+                IKeyIndex * part = _keyset->queryPart(i);
+                if (part->keyedSize() != keyedSize)
+                    throw MakeStringException(0, "Key size mismatch on key %s v %s - key size is %u, expected %u", part->queryFileName(), ki->queryFileName(), part->keyedSize(), keyedSize);
+            }
             if (sortFieldOffset > keyedSize)
                 throw MakeStringException(0, "Index sort order can only include keyed fields");
         }
@@ -4011,7 +4056,7 @@ class IKeyManagerSlowTest : public CppUnit::TestFixture
             ASSERT(!tlk1->lookup(true)); 
 
             Owned <IKeyManager> tlk2 = createKeyMerger(meta->queryRecordAccessor(true), NULL, 7, NULL, false, false);
-            tlk2->setKey(keyset);
+            tlk2->setKey(keyset, meta->queryRecordAccessor(true));
             tlk2->deserializeCursorPos(mb);
             tlk2->append(createKeySegmentMonitor(false, sset1.getLink(), 0, 0, 7));
             tlk2->append(createKeySegmentMonitor(false, sset2.getLink(), 1, 7, 3));
@@ -4027,7 +4072,7 @@ class IKeyManagerSlowTest : public CppUnit::TestFixture
             ASSERT(!tlk2->lookup(true)); 
 
             Owned <IKeyManager> tlk3 = createKeyMerger(meta->queryRecordAccessor(true), NULL, 7, NULL, false, false);
-            tlk3->setKey(keyset);
+            tlk3->setKey(keyset, meta->queryRecordAccessor(true));
             tlk3->append(createKeySegmentMonitor(false, sset1.getLink(), 0, 0, 7));
             tlk3->append(createKeySegmentMonitor(false, sset2.getLink(), 1, 7, 3));
             tlk3->finishSegmentMonitors();
@@ -4040,7 +4085,7 @@ class IKeyManagerSlowTest : public CppUnit::TestFixture
             ASSERT(!tlk3->lookup(true)); 
 
             Owned <IKeyManager> tlk4 = createKeyMerger(meta->queryRecordAccessor(true), NULL, 7, NULL, false, false);
-            tlk4->setKey(keyset);
+            tlk4->setKey(keyset, meta->queryRecordAccessor(true));
             tlk4->append(createKeySegmentMonitor(false, sset1.getLink(), 0, 0, 7));
             tlk4->append(createKeySegmentMonitor(false, sset3.getLink(), 1, 7, 3));
             tlk4->finishSegmentMonitors();
@@ -4232,7 +4277,7 @@ protected:
                 both->addIndex(index2.getLink());
                 Owned<IStringSet> sset3 = createStringSet(10);
                 tlk3.setown(createKeyMerger(recInfo, NULL, 0, NULL, false, false));
-                tlk3->setKey(both);
+                tlk3->setKey(both, recInfo);
                 sset3->addRange("0000000001", "0000000100");
                 tlk3->append(createKeySegmentMonitor(false, sset3.getClear(), 0, 0, 10));
                 tlk3->finishSegmentMonitors();

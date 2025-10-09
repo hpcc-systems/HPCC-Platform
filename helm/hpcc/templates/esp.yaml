@@ -141,6 +141,7 @@ spec:
 {{- if hasKey . "labels" }}
 {{ toYaml .labels | indent 8 }}
 {{- end }}
+        {{- include "hpcc.addServiceAccountLabels" (dict "root" $ "serviceAccount" "esp-service") | indent 8 }}
       annotations:
         checksum/config: {{ $configSHA }}
         {{- include "hpcc.generateAnnotations" $commonCtx | indent 8 }}

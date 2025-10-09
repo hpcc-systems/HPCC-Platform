@@ -253,6 +253,7 @@ public:
         if (watchdog)
             watchdog->removeWorker(ep);
         Owned<IThorException> te = MakeThorOperatorException(TE_AbortException, "The machine %s and/or the worker was shutdown. Aborting Thor", url.str());
+        te->setSlave(worker+1);
         abortThor(te, TEC_WorkerInit);
     }
     void registerNode(unsigned worker)
