@@ -392,3 +392,104 @@ void resetGlobalMetrics(const char * category, const MetricsDimensionList & optD
         root->removeTree(&toRemove.item(i));
 }
 #endif
+
+class GlobalMetricPublisher : public Thread
+{
+public:
+    GlobalMetricPublisher(const char * _category, const MetricsDimensionList & _dimensions, const CRuntimeStatisticCollection & _stats, unsigned _publishPeriodMs)
+    : Thread("GlobalMetricPublisher"), category(_category), dimensions(_dimensions), publishPeriodMs(_publishPeriodMs), stats(_stats), prevStats(_stats.queryMapping())
+    {
+    }
+
+    // Publish the difference between the current stats and the previous stats - avoid publishing if nothing changes
+    void publish()
+    {
+        CRuntimeStatisticCollection diffStats(stats.queryMapping());
+
+        bool seenChange = false;
+        {
+            CriticalBlock b(crit);
+            for (unsigned i = 0; i < stats.ordinality(); i++)
+            {
+                stat_type newValue = stats.getValue(i);
+                stat_type prevValue = prevStats.getValue(i);
+                stat_type delta = newValue - prevValue;
+
+                if (delta)
+                {
+                    prevStats.setValue(i, newValue);
+                    diffStats.setValue(i, delta);
+                    seenChange = true;
+                }
+            }
+        }
+
+        if (seenChange)
+            publish(diffStats);
+    }
+
+    virtual int run()
+    {
+        while (!stopSem.wait(publishPeriodMs))
+        {
+            publish();
+        }
+
+        //Publish any remaining stats e.g. when a component is closing down
+        publish();
+        return 0;
+    }
+
+    void stop()
+    {
+        stopSem.signal();
+        join();
+    }
+
+protected:
+    virtual void publish(const CRuntimeStatisticCollection & diffStats) = 0;
+
+protected:
+    CriticalSection crit;
+    Semaphore stopSem;
+    const char * category;
+    MetricsDimensionList dimensions;
+    unsigned publishPeriodMs;
+    const CRuntimeStatisticCollection &stats;
+    CRuntimeStatisticCollection prevStats;
+};
+
+class DaliGlobalMetricPublisher : public GlobalMetricPublisher
+{
+public:
+    DaliGlobalMetricPublisher(const char * _category, const MetricsDimensionList & _dimensions, const CRuntimeStatisticCollection & _stats, unsigned _publishPeriodMs)
+    : GlobalMetricPublisher(_category, _dimensions, _stats, _publishPeriodMs)
+    {
+    }
+
+protected:
+    virtual void publish(const CRuntimeStatisticCollection & diffStats) override
+    {
+        recordGlobalMetrics(category, dimensions, diffStats, nullptr);
+    }
+};
+
+
+static Owned<GlobalMetricPublisher> publisher;
+void startDaliRecordGlobalMetricPublisher(const char * category, const MetricsDimensionList &  dimensions, const CRuntimeStatisticCollection & stats, unsigned publishPeriodMs)
+{
+    if (!publisher)
+    {
+        publisher.setown(new DaliGlobalMetricPublisher(category, dimensions, stats, publishPeriodMs));
+        publisher->start(false);
+    }
+}
+
+void stopRecordGlobalMetricPublisher()
+{
+    if (publisher)
+    {
+        publisher->stop();
+        publisher.clear();
+    }
+}

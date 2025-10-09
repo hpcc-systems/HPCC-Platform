@@ -53,5 +53,7 @@ extern da_decl void setGlobalMetricNowTime(const char * time);
 extern da_decl void resetGlobalMetrics(const char * optCategory, const MetricsDimensionList & optDimensions);
 #endif
 
+extern da_decl void startDaliRecordGlobalMetricPublisher(const char * category, const MetricsDimensionList &  dimensions, const CRuntimeStatisticCollection & stats, unsigned publishPeriodMs);
+extern da_decl void stopRecordGlobalMetricPublisher();
 
 #endif
