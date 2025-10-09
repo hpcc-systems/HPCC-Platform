@@ -66,6 +66,7 @@ data:
 {{- if hasKey .me "labels" }}
 {{ toYaml .me.labels | indent 12 }}
 {{- end }}
+            {{- include "hpcc.addServiceAccountLabels" (dict "root" $ "serviceAccount" "default") | indent 12 }}
           annotations:
             {{- include "hpcc.generateAnnotations" . | indent 12 }}
         spec:
@@ -154,6 +155,7 @@ spec:
 {{- if hasKey . "labels" }}
 {{ toYaml .labels | indent 8 }}
 {{- end }}
+        {{- include "hpcc.addServiceAccountLabels" (dict "root" $ "serviceAccount" (.useChildProcesses | default false | ternary "default" "agent")) | indent 8 }}
       annotations:
         checksum/config: {{ $configSHA }}
         {{- include "hpcc.generateAnnotations" $commonCtx | indent 8 }}

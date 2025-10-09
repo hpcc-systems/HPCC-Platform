@@ -23751,6 +23751,8 @@ public:
                         {
                             unsigned fileNo = 0;
                             IKeyIndex *thisKey = thisBase->queryPart(fileNo);
+                            const IDynamicTransform * trans = translators->queryTranslator(fileNo);
+                            const RtlRecord & actualRecInfo = translators->queryActualLayout(fileNo)->queryRecordAccessor(true);
                             if (!thisKey->isTopLevelKey())
                             {
                                 if (keyedLimit != (unsigned __int64) -1)
@@ -23758,8 +23760,8 @@ public:
                                     if ((indexHelper.getFlags() & TIRcountkeyedlimit) != 0)
                                     {
                                         Owned<IKeyManager> countKey;
-                                        countKey.setown(createLocalKeyManager(indexHelper.queryDiskRecordSize()->queryRecordAccessor(true), thisKey, this, indexHelper.hasNewSegmentMonitors(), !isBlind()));
-                                        countKey->setLayoutTranslator(translators->queryTranslator(fileNo));
+                                        countKey.setown(createLocalKeyManager(actualRecInfo, thisKey, this, indexHelper.hasNewSegmentMonitors(), !isBlind()));
+                                        countKey->setLayoutTranslator(trans);
                                         createSegmentMonitors(countKey);
                                         unsigned __int64 count = countKey->checkCount(keyedLimit);
                                         if (count > keyedLimit)
@@ -23773,14 +23775,14 @@ public:
                             }
                             if (seekGEOffset && !thisKey->isTopLevelKey())
                             {
-                                tlk.setown(createSingleKeyMerger(indexHelper.queryDiskRecordSize()->queryRecordAccessor(true), thisKey, seekGEOffset, this, indexHelper.hasNewSegmentMonitors(), !isBlind()));
-                                tlk->setLayoutTranslator(translators->queryTranslator(fileNo));
+                                tlk.setown(createSingleKeyMerger(actualRecInfo, thisKey, seekGEOffset, this, indexHelper.hasNewSegmentMonitors(), !isBlind()));
+                                tlk->setLayoutTranslator(trans);
                             }
                             else
                             {
-                                tlk.setown(createLocalKeyManager(indexHelper.queryDiskRecordSize()->queryRecordAccessor(true), thisKey, this, indexHelper.hasNewSegmentMonitors(), !isBlind()));
+                                tlk.setown(createLocalKeyManager(actualRecInfo, thisKey, this, indexHelper.hasNewSegmentMonitors(), !isBlind()));
                                 if (!thisKey->isTopLevelKey())
-                                    tlk->setLayoutTranslator(translators->queryTranslator(fileNo));
+                                    tlk->setLayoutTranslator(trans);
                                 else
                                     tlk->setLayoutTranslator(nullptr);
                             }
@@ -23829,14 +23831,14 @@ public:
                                         // so we disable the local processing in that case
                                         if (noLocal)
                                             remote.getMem(1, fileNo, 0);  // 1 because it's a single part key
-                                        else if (processSingleKey(thisKey, translators->queryTranslator(fileNo)))
+                                        else if (processSingleKey(thisKey, translators->queryTranslator(fileNo), translators->queryActualLayout(fileNo)->queryRecordAccessor(true)))
                                             break;
                                     }
                                 }
                                 if (++fileNo < thisBase->numParts())
                                 {
                                     thisKey = thisBase->queryPart(fileNo);
-                                    tlk->setKey(thisKey);
+                                    tlk->setKey(thisKey, translators->queryActualLayout(fileNo)->queryRecordAccessor(true));
                                     if (!thisKey->isTopLevelKey())
                                         tlk->setLayoutTranslator(translators->queryTranslator(fileNo));
                                     else
@@ -23847,7 +23849,7 @@ public:
                                     break;
                             }
                             tlk->releaseSegmentMonitors();
-                            tlk->setKey(NULL);
+                            tlk->clearKey();
                         }
                     }
                 }
@@ -23867,7 +23869,7 @@ public:
         key->finishSegmentMonitors();
     }
 
-    virtual bool processSingleKey(IKeyIndex *key, const IDynamicTransform * trans) = 0;
+    virtual bool processSingleKey(IKeyIndex *key, const IDynamicTransform * trans, const RtlRecord & actualRecordInfo) = 0;
 
     virtual void reset()
     {
@@ -24040,7 +24042,7 @@ public:
         Owned<IKeyIndexSet> keySet;
         Owned<IKeyManager> tlk;
         CRoxieServerIndexReadActivity &owner;
-        LazyLocalKeyReader(CRoxieServerIndexReadActivity &_owner, IKeyIndex *key, const IDynamicTransform * trans)
+        LazyLocalKeyReader(CRoxieServerIndexReadActivity &_owner, IKeyIndex *key, const IDynamicTransform * trans, const RtlRecord & actualRecordInfo)
             : owner(_owner)
         {
             keyedCount = 0;
@@ -24049,9 +24051,9 @@ public:
             keySet.setown(createKeyIndexSet());
             keySet->addIndex(LINK(key));
             if (owner.seekGEOffset)
-                tlk.setown(createKeyMerger(owner.indexHelper.queryDiskRecordSize()->queryRecordAccessor(true), keySet, owner.seekGEOffset, &owner, owner.indexHelper.hasNewSegmentMonitors(), !owner.isBlind()));
+                tlk.setown(createKeyMerger(actualRecordInfo, keySet, owner.seekGEOffset, &owner, owner.indexHelper.hasNewSegmentMonitors(), !owner.isBlind()));
             else
-                tlk.setown(createLocalKeyManager(owner.indexHelper.queryDiskRecordSize()->queryRecordAccessor(true), keySet->queryPart(0), &owner, owner.indexHelper.hasNewSegmentMonitors(), !owner.isBlind()));
+                tlk.setown(createLocalKeyManager(actualRecordInfo, keySet->queryPart(0), &owner, owner.indexHelper.hasNewSegmentMonitors(), !owner.isBlind()));
             if (!key->isTopLevelKey())
                 tlk->setLayoutTranslator(trans);
             owner.indexHelper.createSegmentMonitors(tlk);
@@ -24125,10 +24127,10 @@ public:
         }
     };
 
-    virtual bool processSingleKey(IKeyIndex *key, const IDynamicTransform * trans) override
+    virtual bool processSingleKey(IKeyIndex *key, const IDynamicTransform * trans, const RtlRecord & actualRecordInfo) override
     {
         ensureRowAllocator();
-        remote.injectResult(new LazyLocalKeyReader(*this, key, trans));
+        remote.injectResult(new LazyLocalKeyReader(*this, key, trans, actualRecordInfo));
         return false;
     }
 
@@ -24480,7 +24482,8 @@ public:
         unsigned __int64 result = 0;
         for (unsigned i = 0; i < numParts; i++)
         {
-            Owned<IKeyManager> countTlk = createLocalKeyManager(indexHelper.queryDiskRecordSize()->queryRecordAccessor(true), keyIndexSet->queryPart(i), this, indexHelper.hasNewSegmentMonitors(), !isBlind());
+            IOutputMetaData * actualIndexFormat = translators->queryActualLayout(i);
+            Owned<IKeyManager> countTlk = createLocalKeyManager(actualIndexFormat->queryRecordAccessor(true), keyIndexSet->queryPart(i), this, indexHelper.hasNewSegmentMonitors(), !isBlind());
             countTlk->setLayoutTranslator(translators->queryTranslator(i));
             indexHelper.createSegmentMonitors(countTlk);
             countTlk->finishSegmentMonitors();
@@ -24510,15 +24513,17 @@ public:
                 onEOF();
                 return NULL;
             }
+            const IDynamicTransform * trans = translators->queryTranslator(0);
+            IOutputMetaData * actualIndexFormat = translators->queryActualLayout(0);
             if (numParts > 1 || seekGEOffset)
             {
-                tlk.setown(createKeyMerger(indexHelper.queryDiskRecordSize()->queryRecordAccessor(true), keyIndexSet, seekGEOffset, this, indexHelper.hasNewSegmentMonitors(), !isBlind()));
-                tlk->setLayoutTranslator(translators->queryTranslator(0));
+                tlk.setown(createKeyMerger(actualIndexFormat->queryRecordAccessor(true), keyIndexSet, seekGEOffset, this, indexHelper.hasNewSegmentMonitors(), !isBlind()));
+                tlk->setLayoutTranslator(trans);
             }
             else
             {
-                tlk.setown(createLocalKeyManager(indexHelper.queryDiskRecordSize()->queryRecordAccessor(true), keyIndexSet->queryPart(0), this, indexHelper.hasNewSegmentMonitors(), !isBlind()));
-                tlk->setLayoutTranslator(translators->queryTranslator(0));
+                tlk.setown(createLocalKeyManager(actualIndexFormat->queryRecordAccessor(true), keyIndexSet->queryPart(0), this, indexHelper.hasNewSegmentMonitors(), !isBlind()));
+                tlk->setLayoutTranslator(trans);
             }
             indexHelper.createSegmentMonitors(tlk);
             tlk->finishSegmentMonitors();
@@ -24796,7 +24801,7 @@ public:
             processAllKeys();
     }
 
-    virtual bool processSingleKey(IKeyIndex *key, const IDynamicTransform * trans) override
+    virtual bool processSingleKey(IKeyIndex *key, const IDynamicTransform * trans, const RtlRecord & actualRecordInfo) override
     {
         unsigned __int64 count = 0;
         if (countHelper.hasFilter())
@@ -25049,7 +25054,7 @@ public:
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual bool processSingleKey(IKeyIndex *key, const IDynamicTransform * trans) override
+    virtual bool processSingleKey(IKeyIndex *key, const IDynamicTransform * trans, const RtlRecord & actualRecordInfo) override
     {
         RtlDynamicRowBuilder rowBuilder(rowAllocator, false);
         while (tlk->lookup(true))
@@ -25214,7 +25219,7 @@ public:
             groupSegCount = 0;
     }
 
-    virtual bool processSingleKey(IKeyIndex *key, const IDynamicTransform * trans) override
+    virtual bool processSingleKey(IKeyIndex *key, const IDynamicTransform * trans, const RtlRecord & actualRecordInfo) override
     {
         Owned<CRowArrayMessageResult> result = new CRowArrayMessageResult();
         singleAggregator.start(rowAllocator, ctx->queryCodeContext(), activityId);
@@ -25356,7 +25361,7 @@ public:
             processAllKeys();
     }
 
-    virtual bool processSingleKey(IKeyIndex *key, const IDynamicTransform * trans) override
+    virtual bool processSingleKey(IKeyIndex *key, const IDynamicTransform * trans, const RtlRecord & actualRecordInfo) override
     {
         unsigned keyedCount = 0;
         RtlDynamicRowBuilder rowBuilder(rowAllocator, false);
@@ -26164,7 +26169,6 @@ public:
     CRoxieServerFullKeyedJoinHead(IRoxieAgentContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, IKeyArray * _keySet, ITranslatorSet *_translators, IOutputMetaData *_indexReadMeta, IJoinProcessor *_joinHandler, bool _isLocal)
         : CRoxieServerActivity(_ctx, _factory, _probeManager),
           helper((IHThorKeyedJoinArg &)basehelper), 
-          tlk(createLocalKeyManager(helper.queryIndexRecordSize()->queryRecordAccessor(true), NULL, this, helper.hasNewSegmentMonitors(), !isBlind())),
           keySet(_keySet),
           translators(_translators),
           remote(_ctx, this, _remoteId, 0, helper, *this, true, true, false),
@@ -26274,6 +26278,11 @@ public:
                 keySet.setown(varFileInfo->getKeyArray(false, isLocal ? factory->queryQueryFactory().queryChannel() : 0));
             }
         }
+        if (!tlk)
+        {
+            IOutputMetaData * actualIndexFormat = translators ? translators->queryActualLayout(0) : helper.queryIndexRecordSize();
+            tlk.setown(createLocalKeyManager(actualIndexFormat->queryRecordAccessor(true), NULL, this, helper.hasNewSegmentMonitors(), !isBlind()));
+        }
         puller.start(parentExtractSize, parentExtract, paused, ctx->queryOptions().fullKeyedJoinPreload, false, ctx);
     }
 
@@ -26325,7 +26334,7 @@ public:
                     IKeyIndex *thisKey = thisBase->queryPart(fileNo);
                     try
                     {
-                        tlk->setKey(thisKey);
+                        tlk->setKey(thisKey, translators->queryActualLayout(fileNo)->queryRecordAccessor(true));
                         if (!thisKey->isTopLevelKey())
                             tlk->setLayoutTranslator(translators->queryTranslator(fileNo));
                         else
@@ -26409,7 +26418,7 @@ public:
                             if (++fileNo < thisBase->numParts())
                             {
                                 thisKey = thisBase->queryPart(fileNo);
-                                tlk->setKey(thisKey);
+                                tlk->setKey(thisKey, translators->queryActualLayout(fileNo)->queryRecordAccessor(true));
                                 if (!thisKey->isTopLevelKey())
                                     tlk->setLayoutTranslator(translators->queryTranslator(fileNo));
                                 else
@@ -26420,12 +26429,12 @@ public:
                                 break;
                         }
                         tlk->releaseSegmentMonitors();
-                        tlk->setKey(NULL);
+                        tlk->clearKey();
                     }
                     catch (...)
                     {
                         tlk->releaseSegmentMonitors();
-                        tlk->setKey(NULL);
+                        tlk->clearKey();
                         throw;
                     }
                 }
@@ -27077,7 +27086,6 @@ public:
         IOutputMetaData *_indexReadMeta, unsigned _joinFlags, bool _isSimple, bool _isLocal)
         : CRoxieServerKeyedJoinBase(_ctx, _factory, _probeManager, _remoteId, _joinFlags, false, _isSimple, _isLocal),
           indexReadMeta(_indexReadMeta),
-          tlk(createLocalKeyManager(helper.queryIndexRecordSize()->queryRecordAccessor(true), NULL, this, helper.hasNewSegmentMonitors(), !isBlind())),
           translators(_translators),
           keySet(_keySet)
     {
@@ -27138,6 +27146,11 @@ public:
                 keySet.setown(varFileInfo->getKeyArray(false, isLocal ? factory->queryQueryFactory().queryChannel() : 0));
             }
         }
+        if (!tlk)
+        {
+            IOutputMetaData * actualIndexFormat = translators ? translators->queryActualLayout(0) : helper.queryIndexRecordSize();
+            tlk.setown(createLocalKeyManager(actualIndexFormat->queryRecordAccessor(true), NULL, this, helper.hasNewSegmentMonitors(), !isBlind()));
+        }
         puller.start(parentExtractSize, parentExtract, paused, ctx->queryOptions().keyedJoinPreload, isSimple, ctx);
 
     }
@@ -27179,7 +27192,7 @@ public:
                 {
                     unsigned fileNo = 0;
                     IKeyIndex *thisKey = thisBase->queryPart(fileNo);
-                    tlk->setKey(thisKey);
+                    tlk->setKey(thisKey, translators->queryActualLayout(fileNo)->queryRecordAccessor(true));
                     if (thisKey && !thisKey->isTopLevelKey())
                         tlk->setLayoutTranslator(translators->queryTranslator(fileNo));
                     else
@@ -27280,7 +27293,7 @@ public:
                             if (++fileNo < thisBase->numParts())
                             {
                                 thisKey = thisBase->queryPart(fileNo);
-                                tlk->setKey(thisKey);
+                                tlk->setKey(thisKey, translators->queryActualLayout(fileNo)->queryRecordAccessor(true));
                                 if (thisKey && !thisKey->isTopLevelKey())
                                     tlk->setLayoutTranslator(translators->queryTranslator(fileNo));
                                 else
@@ -27291,12 +27304,12 @@ public:
                                 break;
                         }
                         tlk->releaseSegmentMonitors();
-                        tlk->setKey(NULL);
+                        tlk->clearKey();
                     }
                     catch (...)
                     {
                         tlk->releaseSegmentMonitors();
-                        tlk->setKey(NULL);
+                        tlk->clearKey();
                         throw;
                     }
                 }

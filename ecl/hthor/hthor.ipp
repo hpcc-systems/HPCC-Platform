@@ -150,7 +150,7 @@ protected:
     IHThorInput **inputArray;
 };
 
-static bool verifyFormatCrc(unsigned helperCrc, IDistributedFile * df, char const * super, bool isIndex, bool fail)
+static bool verifyFormatCrc(unsigned helperCrc, IDistributedFile * df, char const * super, bool isIndex, bool fail, bool logMismatch)
 {
     IPropertyTree &props = df->queryAttributes();
     if(props.hasProp("@formatCrc"))
@@ -164,7 +164,8 @@ static bool verifyFormatCrc(unsigned helperCrc, IDistributedFile * df, char cons
                 msg.append(" (in super").append(isIndex ? "index" : "file").append(" ").append(super).append(")");
             if(fail)
                 throw MakeStringException(0, "%s", msg.str());
-            UWARNLOG("%s", msg.str());
+            if (logMismatch)
+                UWARNLOG("%s", msg.str());
             //MORE: Should we add a warning, similar to the following:
             //agent.addWuException(msg.str(), WRN_UseLayoutTranslation, SeverityWarning, "hthor");
             return false;
@@ -181,13 +182,13 @@ static bool verifyFormatCrcSuper(unsigned helperCrc, IDistributedFile * df, bool
     {
         Owned<IDistributedFileIterator> superIterator = super->getSubFileIterator(true);
         for(superIterator->first(); superIterator->isValid(); superIterator->next())
-            if(!verifyFormatCrc(helperCrc, &superIterator->query(), super->queryLogicalName(), isIndex, fail))
+            if(!verifyFormatCrc(helperCrc, &superIterator->query(), super->queryLogicalName(), isIndex, fail, false))
                 return false;
         return true;
     }
     else
     {
-        return verifyFormatCrc(helperCrc, df, NULL, isIndex, fail);
+        return verifyFormatCrc(helperCrc, df, NULL, isIndex, fail, false);
     }
 }
 

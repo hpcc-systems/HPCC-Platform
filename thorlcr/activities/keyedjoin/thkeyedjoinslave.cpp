@@ -2449,7 +2449,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             IKeyIndex *tlkKeyIndex = &tlkKeyIndexes.item(i);
             const RtlRecord &keyRecInfo = helper->queryIndexRecordSize()->queryRecordAccessor(true);
             Owned<IKeyManager> tlkManager = createLocalKeyManager(keyRecInfo, nullptr, nullptr, helper->hasNewSegmentMonitors(), false);
-            tlkManager->setKey(tlkKeyIndex);
+            tlkManager->setKey(tlkKeyIndex, keyRecInfo);
             keyManagers.append(*tlkManager.getClear());
         }
         return tlkKeyIndexes.ordinality();
