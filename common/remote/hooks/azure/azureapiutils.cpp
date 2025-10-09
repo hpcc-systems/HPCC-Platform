@@ -65,3 +65,19 @@ void handleRequestException(const std::exception& e, const char * op, unsigned a
 
     handleRequestBackoff(msg, attempt, maxRetries);
 }
+
+void handleRequestException(const Azure::Core::RequestFailedException& e, const char * op, unsigned attempt, unsigned maxRetries, const char * filename)
+{
+    VStringBuffer msg("%s failed (attempt %u/%u) for file %s: %s (%d)",
+                      op, attempt, maxRetries, filename, e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+
+    handleRequestBackoff(msg, attempt, maxRetries);
+}
+
+void handleRequestException(const std::exception& e, const char * op, unsigned attempt, unsigned maxRetries, const char * filename)
+{
+    VStringBuffer msg("%s failed (attempt %u/%u) for file %s: %s",
+                      op, attempt, maxRetries, filename, e.what());
+
+    handleRequestBackoff(msg, attempt, maxRetries);
+}
