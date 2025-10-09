@@ -283,7 +283,7 @@ void testNxN()
     if (maxPacketsPerSender > udpQueueSize)
         maxPacketsPerSender = udpQueueSize;
     Owned <ISendManager> sendMgr;
-    sendMgr.setown(createSendManager(7000, 7001, 7002, 100, udpNumQs, myNode.getIpAddress(), nullptr, false));
+    sendMgr.setown(createSendManager(7000, 7001, 7002, 100, udpNumQs, myNode.getIpAddress(), nullptr, false, false));
     Receiver receiver;
 
     IMessagePacker **packers = new IMessagePacker *[numNodes];
@@ -1122,7 +1122,7 @@ int main(int argc, char * argv[] )
 
     if (modeType & SND_MODE_BIT)
     {
-        sendMgr = createSendManager(7000, 7001, 7002, 7003, multiCast, 100, udpNumQs, 100, NULL, myIndex);
+        sendMgr = createSendManager(7000, 7001, 7002, 7003, multiCast, 100, udpNumQs, 100, NULL, myIndex, false);
         Sleep(5000);
 
         char locBuff[100000];

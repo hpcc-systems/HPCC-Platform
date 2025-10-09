@@ -496,6 +496,17 @@
           "type": "object",
           "additionalProperties": { "type": ["integer", "string", "boolean", "object", "array"] },
           "description": "External infrastructure information"
+        },
+        "serviceAccounts": {
+          "type": "object",
+          "properties": {
+            "default": { "$ref": "#/definitions/serviceAccount" },
+            "agent": { "$ref": "#/definitions/serviceAccount" },
+            "thoragent": { "$ref": "#/definitions/serviceAccount" },
+            "esp-service": { "$ref": "#/definitions/serviceAccount" },
+            "dali": { "$ref": "#/definitions/serviceAccount" }
+          },
+          "description": "ServiceAccount-specific configurations including annotations and pod labels for identity management integrations like Azure Workload Identity"
         }
       },
       "additionalProperties": false
@@ -3811,6 +3822,22 @@
     "jobTempPlane": {
       "type": "string",
       "description": "Default plane for persisted temporary job files"
+    },
+    "serviceAccount": {
+      "type": "object",
+      "properties": {
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Annotations to add to the ServiceAccount"
+        },
+        "podLabels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Labels to add to pods using this ServiceAccount (e.g., for Azure Workload Identity)"
+        }
+      },
+      "description": "Configuration for a specific ServiceAccount"
     }
 }
 }
