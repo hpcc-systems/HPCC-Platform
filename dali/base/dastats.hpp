@@ -31,9 +31,11 @@
 
 #include "jstats.h"
 
-using MetricsDimensionList = std::vector<std::pair<const char *, const char *>>; // The list of dimeensions are likely to be fixed for each call so use a initializer_list
+using MetricsDimensionList = std::vector<std::pair<const char *, const char *>>; // The list of dimensions are likely to be fixed for each call so use a initializer_list
+
 extern da_decl void recordGlobalMetrics(const char * category, const MetricsDimensionList &  dimensions, const CRuntimeStatisticCollection & stats, const StatisticsMapping * optMapping);
 extern da_decl void recordGlobalMetrics(const char * category, const MetricsDimensionList &  dimensions, const std::initializer_list<StatisticKind> & stats, const std::initializer_list<stat_type> & values);
+extern da_decl void recordGlobalMetrics(const char * category, const MetricsDimensionList & dimensions, const std::vector<StatisticKind> & stats, const std::vector<stat_type> & deltas);
 
 using GlobalStatisticsList = std::vector<std::pair<StatisticKind, stat_type>>;
 interface IGlobalMetricRecorder
