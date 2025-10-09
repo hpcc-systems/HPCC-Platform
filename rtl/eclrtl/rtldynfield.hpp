@@ -141,6 +141,7 @@ interface IDynamicTransform : public IInterface
     virtual bool keyedTranslated() const = 0;
     virtual bool needsNonVirtualTranslate() const = 0;
     virtual bool hasNewFields() const = 0;
+    virtual const RtlRecord & querySourceMeta() const = 0;
 };
 
 interface IKeyTranslator : public IInterface

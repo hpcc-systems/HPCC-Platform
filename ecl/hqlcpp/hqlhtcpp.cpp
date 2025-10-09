@@ -10867,6 +10867,12 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
         singlePart = true;
         widthExpr = NULL;
     }
+    bool lastFieldAlwaysZero = false;
+    if (hasFileposition)
+    {
+        IHqlExpression * lastField = queryLastField(record);
+        lastFieldAlwaysZero = lastField && lastField->hasAttribute(_implicitFpos_Atom);
+    }
 
     LinkedHqlExpr serializedRecord = record;
     unsigned numPayload = numPayloadFields(expr);
@@ -10886,6 +10892,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
     if (!hasTLK && !singlePart)           flags.append("|TIWlocal");
     if (expr->hasAttribute(expireAtom))   flags.append("|TIWexpires");
     if (expr->hasAttribute(maxLengthAtom))   flags.append("|TIWmaxlength");
+    if (lastFieldAlwaysZero)              flags.append("|TIWzerofilepos");
+
     if (compressAttr)
     {
         if (!compressAttr->queryChild(0)->isAttribute())

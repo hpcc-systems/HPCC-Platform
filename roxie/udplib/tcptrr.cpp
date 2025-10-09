@@ -106,9 +106,9 @@ class CTcpReceiveManager : implements IReceiveManager, public CInterface
     {
     public:
         PacketListener(CTcpReceiveManager & _receiver)
-        : CSocketConnectionListener(0, 0, false, 0, 0), receiver(_receiver)
+        : CSocketConnectionListener(0, false, 0, 0), receiver(_receiver)
         {
-            maxInitialReadSize = roxiemem::DATA_ALIGNMENT_SIZE;
+            maxInitialReadSize = roxiemem::DATA_ALIGNMENT_SIZE * 4;
         }
 
         virtual bool onlyProcessFirstRead() const override
@@ -127,10 +127,9 @@ class CTcpReceiveManager : implements IReceiveManager, public CInterface
             return new CReadSocketHandler(*this, sock, sizeof(UdpPacketHeader), maxInitialReadSize);
         }
 
-        virtual void processMessageContents(CReadSocketHandler * ownedSocketHandler)
+        virtual void processMessage(const void * data, size32_t len) override
         {
-            receiver.processMessage(ownedSocketHandler->queryBuffer());
-            ownedSocketHandler->Release();
+            receiver.processMessage(data, len);
         }
 
     protected:
@@ -249,9 +248,9 @@ public:
         return msgColl;
     }
 
-    void processMessage(MemoryBuffer & message)
+    void processMessage(const void * data, size32_t len)
     {
-        const UdpPacketHeader * header = (const UdpPacketHeader *)message.bytes();
+        const UdpPacketHeader * header = (const UdpPacketHeader *)data;
         unsigned packetLength = header->length;
         dbgassertex(packetLength <= roxiemem::DATA_ALIGNMENT_SIZE);
 

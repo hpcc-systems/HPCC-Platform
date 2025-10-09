@@ -36,12 +36,18 @@
 #include "jprop.hpp"
 #include "jregexp.hpp"
 #include "jdebug.hpp"
+#include "jiouring.hpp"
+
+//#define TRACE_MAX_MESSAGES
 
 //---------------------------------------------------------------------------------------------------------------------
 
 CReadSocketHandler::CReadSocketHandler(ISocketMessageProcessor & _processor, ISocket *_sock, size32_t _minSize, size32_t _maxSize)
- : processor(_processor), sock(_sock), minSize(_minSize), maxReadSize(_maxSize)
+ :  onlyProcessFirstRead(_processor.onlyProcessFirstRead()), processMultipleMessages(!_processor.onlyProcessFirstRead()),
+    processor(_processor), sock(_sock), minSize(_minSize), maxReadSize(_maxSize)
 {
+    assertex(!(onlyProcessFirstRead && processMultipleMessages)); // If only processing the first read then we can't process multiple messages
+
     lastActivityCycles = get_cycles_now();
     SocketEndpoint peerEP;
     sock->getPeerEndpoint(peerEP);
@@ -73,6 +79,10 @@ bool CReadSocketHandler::closeIfTimedout(cycle_t now, cycle_t timeoutCycles)
     return false;
 }
 
+#ifdef TRACE_MAX_MESSAGES
+static unsigned maxMessages{1};
+#endif
+
 // ISocketSelectNotify impl.
 bool CReadSocketHandler::notifySelected(ISocket *sock, unsigned selected)
 {
@@ -89,33 +99,73 @@ bool CReadSocketHandler::notifySelected(ISocket *sock, unsigned selected)
             // If the handler is not one-shot, and it can support multiple messages, then it should be possible
             // to read maxSize, and then process a sequence of messages instead.  That would be more efficient.
             size32_t toRead = requiredSize ? requiredSize : minSize;
-            buffer.ensureCapacity(toRead);
 
+            // If we can process multiple messages, then read as much as we can, up to maxReadSize
+            if (processMultipleMessages && (toRead < maxReadSize))
+                toRead = maxReadSize;
+
+            // Buffer is only used as a block of memory - could switch to a MemoryAttr and use ensure
+            byte * target = (byte *)buffer.ensureCapacity(toRead);
+            size32_t maxToRead = toRead-readSoFar;
             size32_t rd = 0;
-            byte * target = (byte *)buffer.bufferBase();
-            sock->readtms(target+readSoFar, 0, toRead-readSoFar, rd, 60000); // long enough!
-            buffer.reserve(rd); // increment the current length
+            sock->readtms(target+readSoFar, 0, maxToRead, rd, 60000); // long enough!
             readSoFar += rd;
-            dbgassertex(target == buffer.bufferBase()); // Check that the reserve has not reallocated the buffer
 
             if (!requiredSize && (readSoFar >= minSize))
                 requiredSize = processor.getMessageSize(target);
 
             if (requiredSize && (readSoFar >= requiredSize))
             {
-                assertex(readSoFar == requiredSize);
-                bool oneShort = processor.onlyProcessFirstRead();
-                if (oneShort)
+                // Ensure that this socket handler does not get destroyed when processing the message as a
+                // side-effect of removing it from the processor
+                Linked<CReadSocketHandler> savedHandler = this;
+
+                assertex(processMultipleMessages || readSoFar == requiredSize);
+                if (onlyProcessFirstRead)
                 {
+
                     // process() will remove itself from handler, and need to avoid it doing so while in 'crit'
-                    // since the maintenance thread could also be tyring to manipulate handlers and calling closeIfTimedout()
+                    // since the maintenance thread could also be trying to manipulate handlers and calling closeIfTimedout()
                     closedOrHandled = true;
                     b.leave();
-                }
-                processor.processMessage(*this);
 
-                if (!oneShort)
-                    prepareForNextRead();
+                    processor.stopProcessing(*this);
+                    processor.processMessage(target, readSoFar);
+                }
+                else
+                {
+                    //Walk the data that has been received, processing all the complete messages
+                    size32_t offset = 0;
+                    [[maybe_unused]] unsigned numMessages = 0;
+                    while (offset <= readSoFar - minSize)
+                    {
+                        size32_t msgSize = processor.getMessageSize(target + offset);
+                        if (msgSize > readSoFar - offset)
+                            break;
+                        processor.processMessage(target + offset, msgSize);
+                        offset += msgSize;
+                        numMessages++;
+                    }
+
+#ifdef TRACE_MAX_MESSAGES
+                    if (numMessages > maxMessages)
+                    {
+                        maxMessages = numMessages;
+                        DBGLOG("Max messages in one read: %u", maxMessages);
+                    }
+#endif
+
+                    //Now prepare for the next request - copy any remaining data to the start of the buffer
+                    size32_t remaining = readSoFar - offset;
+                    if (remaining)
+                        memmove(target, target + offset, remaining);
+
+                    // And reset the state about the number of bytes read so far
+                    readSoFar = remaining;
+                    requiredSize = (minSize == maxReadSize) ? minSize : 0;
+                    if (readSoFar >= minSize)
+                        requiredSize = processor.getMessageSize(target);
+                }
             }
         }
         catch (IJSOCK_Exception *e)
@@ -130,14 +180,6 @@ bool CReadSocketHandler::notifySelected(ISocket *sock, unsigned selected)
 
     return false;
 }
-
-void CReadSocketHandler::prepareForNextRead()
-{
-    readSoFar = 0;
-    requiredSize = (minSize == maxReadSize) ? minSize : 0;
-    buffer.clear();
-}
-
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -224,17 +266,11 @@ void CReadSelectHandler::closeConnection(CReadSocketHandler &socketHandler, IJSO
     handler->querySocket()->close();
 }
 
-void CReadSelectHandler::processMessage(CReadSocketHandler & socketHandler)
+void CReadSelectHandler::stopProcessing(CReadSocketHandler & socket)
 {
-    Linked<CReadSocketHandler> handler = &socketHandler;
-    if (onlyProcessFirstRead())
-    {
-        CriticalBlock b(handlersCS);
-        selectHandler->remove(socketHandler.querySocket());
-        handlers.remove(&socketHandler);
-    }
-
-    processMessageContents(handler.getClear());
+    CriticalBlock b(handlersCS);
+    selectHandler->remove(socket.querySocket());
+    handlers.remove(&socket);
 }
 
 void CReadSelectHandler::clearupSocketHandlers()
@@ -281,8 +317,8 @@ void CReadSelectHandler::clearupSocketHandlers()
 //---------------------------------------------------------------------------------------------------------------------
 
 
-CSocketConnectionListener::CSocketConnectionListener(unsigned port, unsigned _processPoolSize, bool _useTLS, unsigned _inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets)
-    : CReadSelectHandler(_inactiveCloseTimeoutMs, _maxListenHandlerSockets), Thread("CSocketConnectionListener"), processPoolSize(_processPoolSize), useTLS(_useTLS)
+CSocketConnectionListener::CSocketConnectionListener(unsigned port, bool _useTLS, unsigned _inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets)
+    : CReadSelectHandler(_inactiveCloseTimeoutMs, _maxListenHandlerSockets), Thread("CSocketConnectionListener"), useTLS(_useTLS)
 {
     if (port)
         startPort(port);
@@ -290,7 +326,7 @@ CSocketConnectionListener::CSocketConnectionListener(unsigned port, unsigned _pr
     if (useTLS)
         secureContextServer.setown(createSecureSocketContextSecretSrv("local", nullptr, true));
 
-    PROGLOG("CSocketConnectionListener TLS: %s acceptThreadPoolSize: %u", useTLS ? "on" : "off", processPoolSize);
+    PROGLOG("CSocketConnectionListener TLS: %s", useTLS ? "on" : "off");
 }
 
 bool CSocketConnectionListener::checkSelfDestruct(const void *p,size32_t sz)
@@ -321,50 +357,6 @@ void CSocketConnectionListener::startPort(unsigned short port)
         listenSocket.setown(ISocket::create(port, listenQueueSize));
     }
 
-    if (processPoolSize)
-    {
-        class CSocketConnectionListenerFactory : public CInterfaceOf<IThreadFactory>
-        {
-            CSocketConnectionListener &owner;
-        public:
-            CSocketConnectionListenerFactory(CSocketConnectionListener &_owner) : owner(_owner)
-            {
-            }
-        // IThreadFactory
-            IPooledThread *createNew() override
-            {
-                class CMPConnectionThread : public CInterfaceOf<IPooledThread>
-                {
-                    CSocketConnectionListener &owner;
-                    Owned<CReadSocketHandler> handler;
-                public:
-                    CMPConnectionThread(CSocketConnectionListener &_owner) : owner(_owner)
-                    {
-                    }
-                // IPooledThread
-                    virtual void init(void *param) override
-                    {
-                        handler.setown((CReadSocketHandler *)param);
-                    }
-                    virtual void threadmain() override
-                    {
-                        owner.processMessageContents(handler.getClear());
-                    }
-                    virtual bool stop() override
-                    {
-                        return true;
-                    }
-                    virtual bool canReuse() const override
-                    {
-                        return true;
-                    }
-                };
-                return new CMPConnectionThread(owner);
-            }
-        };
-        Owned<IThreadFactory> factory = new CSocketConnectionListenerFactory(*this);
-        threadPool.setown(createThreadPool("MPConnectPool", factory, false, nullptr, processPoolSize, INFINITE));
-    }
     Thread::start(false);
 }
 
@@ -453,17 +445,11 @@ void CSocketConnectionListener::stop()
         // ensure CSocketConnectionListener::run() has exited, and is not accepting more sockets
         if (!join(1000*60*5))   // should be pretty instant
             printf("CSocketConnectionListener::stop timed out\n");
-
-        if (processPoolSize)
-        {
-            if (!threadPool->joinAll(true, 1000*60*5))
-                printf("CSocketConnectionListener::stop threadPool->joinAll timed out\n");
-        }
     }
 }
 
 // Demo only to check all virtuals are well defined
-ConcreteConnectionLister::ConcreteConnectionLister(unsigned port) : CSocketConnectionListener(port, 0, false, 0, 0)
+ConcreteConnectionLister::ConcreteConnectionLister(unsigned port) : CSocketConnectionListener(port, false, 0, 0)
 {
 
 }
@@ -481,48 +467,255 @@ unsigned ConcreteConnectionLister::getMessageSize(const void * header) const
 CReadSocketHandler *ConcreteConnectionLister::createSocketHandler(ISocket *sock)
 {
     //Header size is 64B, max variable to read is 64K
-    return new CReadSocketHandler(*this, sock, 64, 0x10000);
+    size32_t maxInitialReadSize = 0x10000;
+    return new CReadSocketHandler(*this, sock, 64, maxInitialReadSize);
 }
 
-void ConcreteConnectionLister::processMessageContents(CReadSocketHandler * ownedSocketHandler)
+void ConcreteConnectionLister::processMessage(const void * data, size32_t len)
 {
-    ownedSocketHandler->Release();
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 
-size32_t CSocketTarget::write(const void * data, size32_t len)
+CSocketTarget::CSocketTarget(CTcpSender & _sender, const SocketEndpoint & _ep) : sender(_sender), ep(_ep)
 {
-    //MORE: Add retry logic.
-    //MORE: How do we prevent this blocking other threads though e.g. when sending a request to all nodes in a
-    //      channel and one channel is down -.do we use non-blocking and note when something is not sent?
-    if (!socket)
+}
+
+void CSocketTarget::connect()
+{
+    // Must be called within a critical section....
+    try
     {
         socket.setown(ISocket::connect_timeout(ep, 5000));
-        if (lowLatency)
-            socket->set_nagle(false);
+        if (socket)
+        {
+            // Keep track of the number of connections - a useful stat, and to distinguish between initial connection and reconnection.
+            numConnects++;
+            if (sender.lowLatency)
+                socket->set_nagle(false);
+        }
     }
+    catch (IException * e)
+    {
+        socket.clear();
+        e->Release();
+    }
+}
+
+unsigned CSocketTarget::dropPendingRequests()
+{
+    for (unsigned i = 0; i < numRequests; i++)
+    {
+        unsigned index = wrapIndex(headRequestIndex + i);
+        void * buffer = buffers[index];
+        sender.releaseBuffer(buffer);
+    }
+    numRequests = 0;
+    unsigned numToSignal = threadsWaiting;
+    threadsWaiting = 0;
+    return numToSignal;
+}
+
+ISocket * CSocketTarget::getSocket()
+{
+    CriticalBlock b(crit);
+    return LINK(querySocket());
+}
+
+ISocket * CSocketTarget::querySocket()
+{
+    if (!socket)
+        connect();
+    return socket;
+}
+
+size32_t CSocketTarget::writeSync(const void * data, size32_t len)
+{
+    Owned<ISocket> target = getSocket();
+    if (!target)
+        return 0;
 
     try
     {
-        //GH->MK as discussed this need to move to the read.
-        if (lowLatency)
-            socket->set_quick_ack(true);
-        return socket->write(data, len);
+        return target->write(data, len);
     }
     catch (IException * e)
     {
         //Force a reconnect next time - could add retry loop and logic...
+        CriticalBlock b(crit);
         socket.clear();
         throw;
     }
 }
 
-size32_t CTcpSender::sendToTarget(const void * data, size32_t len, const SocketEndpoint &ep)
+void CSocketTarget::waitForRequestSpace(CLeavableCriticalBlock & block)
 {
-    CSocketTarget * sock = queryWorkerSocket(ep);
-    return sock->write(data, len);
+    threadsWaiting++;
+    block.leave();
+    waitSem.wait();
+    block.enter();
 }
+
+void CSocketTarget::writeAsync(const void * data, size32_t len, void * ownedBuffer)
+{
+    if (!sender.asyncSender)
+    {
+        writeSync(data, len);
+        sender.releaseBuffer(ownedBuffer);
+        return;
+    }
+
+    CLeavableCriticalBlock block(crit);
+    for(;;)
+    {
+        //If reconnecting, drop the packets until the connection has succeeded.
+        if (unlikely((state == State::Aborting) || (state == State::Reconnecting)))
+        {
+            sender.releaseBuffer(ownedBuffer);
+            return;
+        }
+
+        //Ensure there is space to record the next item to send..
+        //Maybe this should always expand rather than block???
+        if (likely(numRequests != maxQueueDepth))
+            break;
+
+        waitForRequestSpace(block);
+    }
+
+    //First of all, record the new request in the list of pending items
+    unsigned nextRequestIndex = wrapIndex(headRequestIndex + numRequests);
+
+    requests[nextRequestIndex].len = len;
+    requests[nextRequestIndex].data = data;
+    buffers[nextRequestIndex] = ownedBuffer;
+    numRequests++;
+
+    //Check for completions - because it may mean this request can be processed immediately
+    sender.asyncSender->checkForCompletions();
+
+    //Depending on the current state, we may need to start a new async operation
+    switch (state)
+    {
+    case State::Unconnected:
+        startAsyncConnect();
+        break;
+    case State::Connected:
+        startAsyncWrite();
+        break;
+    default:
+        //Need to wait for the async operation to complete.
+        break;
+    }
+}
+
+void CSocketTarget::startAsyncWrite()
+{
+    state = State::Writing;
+    WriteRequest & request = requests[headRequestIndex];
+    sender.asyncSender->enqueueSocketWrite(socket, request.data, request.len, *this);
+}
+
+void CSocketTarget::startAsyncConnect()
+{
+    state = numConnects ? State::Reconnecting : State::Connecting;
+
+    //MORE: Need to code a clean async connect - that would involve
+    // * adding an ISocket call to create an unconnected socket
+    // * add an async connect call to the ISocket interface
+    // * add a callback to the ISocket interface to process the post connect and then call back to this classes' callback
+    // for the moment connect synchronously, and revisit in a later PR
+    connect();
+
+    //Process as if an async connect had completed
+    int result = socket ? 0 : -1;
+    onAsyncComplete(result);
+}
+
+void CSocketTarget::onAsyncComplete(int result)
+{
+    unsigned newSpaceToSignal = 0;
+
+    {
+        CriticalBlock block(crit); // It is possible that a caller has already locked this critical section
+        switch (state)
+        {
+        case State::Connecting:
+        case State::Reconnecting:
+            if (result < 0)
+            {
+                // If connecting for the first time failed there may be requests queued.  At the moment they are not dropped
+                // but uncomment the following line if that is the desired behaviour
+                // If reconnecting all items will be dropped already.
+                // waitSem.signal(dropPendingRequests());
+
+                // What should this do?  Schedule a delay and then try and reconnect?
+                // For the moment set the state so that it will try to connect on the next request
+                state = State::Unconnected;
+            }
+            else
+            {
+                if (numRequests != 0)
+                    startAsyncWrite();
+                else
+                    state = State::Connected;
+            }
+            break;
+        case State::ConnectWaiting:
+            startAsyncConnect();
+            break;
+        case State::Writing:
+            if (result >= 0)
+            {
+                WriteRequest & request = requests[headRequestIndex];
+                // How much of the data has been consumed?
+                // When writev is supported this may consume multiple buffers...
+                if (request.len == result)
+                {
+                    //All of the data is consumed
+                    sender.releaseBuffer(buffers[headRequestIndex]);
+                    headRequestIndex = wrapIndex(headRequestIndex + 1);
+                    if (threadsWaiting)
+                    {
+                        newSpaceToSignal = 1;
+                        threadsWaiting -= newSpaceToSignal;
+                    }
+                    numRequests--;
+                    if (numRequests != 0)
+                        startAsyncWrite();
+                    else
+                        state = State::Connected;
+                }
+                else
+                {
+                    OERRLOG("Short write on socket %u of %zu", result, request.len);
+                    //A partial write - need to adjust the size of the request and resubmit
+                    request.len -= result;
+                    request.data = (const byte *)request.data + result;
+                    startAsyncWrite();
+                }
+            }
+            else
+            {
+                int errcode = -result;
+                if (errcode == EAGAIN)
+                {
+                    startAsyncWrite();
+                }
+                else
+                {
+                    //connection lost.  Throw away all pending writes and start connecting again
+                    newSpaceToSignal = dropPendingRequests();
+                    startAsyncConnect();
+                }
+            }
+            break;
+        }
+    }
+    if (newSpaceToSignal)
+        waitSem.signal(newSpaceToSignal);
+}
+
 
 CSocketTarget * CTcpSender::queryWorkerSocket(const SocketEndpoint &ep)
 {
@@ -531,7 +724,12 @@ CSocketTarget * CTcpSender::queryWorkerSocket(const SocketEndpoint &ep)
     if (match != workerSockets.end())
         return match->second.get();
 
-    Owned<CSocketTarget> workerSocket = new CSocketTarget(ep, lowLatency);
+    Owned<CSocketTarget> workerSocket = new CSocketTarget(*this, ep);
     workerSockets.emplace(ep, workerSocket);
     return workerSocket;
+}
+
+void CTcpSender::releaseBuffer(void * buffer)
+{
+    throwUnimplementedX("CTcpSender::releaseBuffer must be implemented by derived class to support async writes");
 }

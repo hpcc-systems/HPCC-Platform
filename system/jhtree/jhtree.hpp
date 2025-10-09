@@ -232,6 +232,7 @@ public:
     virtual bool matchesBuffer(const void *buffer, unsigned lastSeg, unsigned &matchSeg) const override;
     virtual unsigned getFieldOffset(unsigned idx) const override { return recInfo.getFixedOffset(idx); }
     virtual bool canMatch() const override;
+    virtual void updateIndexFormat(const RtlRecord & actualRecInfo) override;
 };
 
 interface IIndexLookup : extends IInterface // similar to a small subset of IKeyManager
@@ -256,7 +257,8 @@ interface IKeyManager : public IInterface, extends IIndexReadContext
     virtual unsigned __int64 getCount() = 0;
     virtual unsigned __int64 getCurrentRangeCount(unsigned groupSegCount) = 0;
     virtual bool nextRange(unsigned groupSegCount) = 0;
-    virtual void setKey(IKeyIndexBase * _key) = 0;
+    virtual void clearKey() = 0;
+    virtual void setKey(IKeyIndexBase * _key, const RtlRecord & actualRecInfo) = 0;
     virtual void setChooseNLimit(unsigned __int64 _rowLimit) = 0; // for choosen type functionality
     virtual unsigned __int64 checkCount(unsigned __int64 limit) = 0;
     virtual void serializeCursorPos(MemoryBuffer &mb) = 0;

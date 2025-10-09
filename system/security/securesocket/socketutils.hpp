@@ -32,6 +32,8 @@
 #include "jthread.hpp"
 #include "jqueue.tpp"
 #include "jtime.hpp"
+#include "jiouring.hpp"
+
 #include <thread>
 #include <list>
 #include <vector>
@@ -48,7 +50,8 @@ interface ISocketMessageProcessor
 {
     virtual bool onlyProcessFirstRead() const = 0;                      // Does this only handle one read request, or are multiple messages processed
     virtual unsigned getMessageSize(const void * header) const = 0;     // For variable length messages, given the header, how big is the rest?
-    virtual void processMessage(CReadSocketHandler & socket) = 0;
+    virtual void processMessage(const void * data, size32_t len) = 0;
+    virtual void stopProcessing(CReadSocketHandler & socket) = 0;       // Remove from the processor
     virtual void closeConnection(CReadSocketHandler & socket, IJSOCK_Exception * exception) = 0;
 };
 
@@ -69,11 +72,14 @@ public:
 
     bool close();
     bool closeIfTimedout(cycle_t now, cycle_t timeoutCycles);
+
     // ISocketSelectNotify impl.
     virtual bool notifySelected(ISocket *sock, unsigned selected) override;
-    void prepareForNextRead();
 
 protected:
+    const bool onlyProcessFirstRead;
+    const bool processMultipleMessages;
+    bool closedOrHandled = false;
     ISocketMessageProcessor & processor;
     Linked<ISocket> sock;
     StringBuffer peerHostText;
@@ -85,7 +91,6 @@ protected:
     size32_t maxReadSize = 0;           // The maximum that should be read when incoming size is not known
     size32_t requiredSize = 0;          // How much data should be read - set for fixed or variable size
     CriticalSection crit;
-    bool closedOrHandled = false;
 };
 
 //This class uses a select handler to maintain a list of sockets that are being listened to
@@ -100,11 +105,10 @@ public:
 
 // implementation of ISocketMessageProcessor
     virtual void closeConnection(CReadSocketHandler &socketHandler, IJSOCK_Exception *exception) override;
-    virtual void processMessage(CReadSocketHandler & socketHandler) override;
+    virtual void stopProcessing(CReadSocketHandler & socket) override;
 
 // Must be implemented by a derived class
     virtual CReadSocketHandler *createSocketHandler(ISocket *sock) = 0;
-    virtual void processMessageContents(CReadSocketHandler * ownedSocketHandler) = 0;
 
 protected:
     void clearupSocketHandlers();
@@ -130,7 +134,7 @@ protected:
 class SECURESOCKET_API CSocketConnectionListener : protected CReadSelectHandler, public Thread
 {
 public:
-    CSocketConnectionListener(unsigned port, unsigned _processPoolSize, bool _useTLS, unsigned _inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets);
+    CSocketConnectionListener(unsigned port, bool _useTLS, unsigned _inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets);
 
     void startPort(unsigned short port);
     void stop();
@@ -140,9 +144,7 @@ public:
 
 private:
     Owned<ISocket> listenSocket;
-    Owned<IThreadPool> threadPool;
     Owned<ISecureSocketContext> secureContextServer;
-    unsigned processPoolSize;
     bool useTLS;
     std::atomic<bool> aborting{false};
 };
@@ -156,7 +158,7 @@ public:
     virtual bool onlyProcessFirstRead() const override;
     virtual unsigned getMessageSize(const void * header) const override;
     virtual CReadSocketHandler *createSocketHandler(ISocket *sock) override;
-    virtual void processMessageContents(CReadSocketHandler * ownedSocketHandler) override;
+    virtual void processMessage(const void * data, size32_t len) override;
 };
 
 
@@ -166,33 +168,90 @@ struct HashSocketEndpoint
 };
 
 
-class SECURESOCKET_API CSocketTarget : public CInterface
+class CTcpSender;
+// Support writing data to a single target
+// Data can either be written synchronously using the write() function or asynchronously using the writeAsync() function
+//
+// Asynchronous operation uses a state machine to process connecting and writing.
+// Because write() (and writev2 etc.) can sometimes write less data than requested, writes to the same socket need
+// to be serialized.  If there is an active write in progress the next write is queued.  If too many requests are
+// queued then the thread will block and wait for space to become available.
+class SECURESOCKET_API CSocketTarget : public CInterface, public IAsyncCallback
 {
-public:
-    CSocketTarget(const SocketEndpoint & _ep, bool _lowLatency) : ep(_ep), lowLatency(_lowLatency) {}
+    static constexpr unsigned maxQueueDepth = 40;
 
-    size32_t write(const void * data, size32_t len);
+    enum class State
+    {
+        Unconnected,    // Object has been created
+        Connecting,     // initial connection
+        Reconnecting,   // Connection has been lost and we are trying to reconnect
+        Connected,      // Connection has been established, no write in progress
+        Writing,        // Data is being written to the socket
+        ConnectWaiting, // Failed to connect - trying again later
+        Aborting        // Abort any pending transactions - program is terminating
+    };
+    struct WriteRequest
+    {
+        size_t len;
+        const void * data;
+    };
+public:
+    CSocketTarget(CTcpSender & _sender, const SocketEndpoint & _ep);
+
+    size32_t writeSync(const void * data, size32_t len);
+    void writeAsync(const void * data, size32_t len, void * ownedBuffer); // calls writeSync if no async processor is set
 
 protected:
+    inline unsigned wrapIndex(unsigned index) { return index < maxQueueDepth ? index : index - maxQueueDepth; }
+
+    ISocket * getSocket();      // Thread safe
+    ISocket * querySocket();    // Must be called in a critical section
+
+    void connect();             // Synchronous connect
+    unsigned dropPendingRequests();
+    void startAsyncWrite();
+    void startAsyncConnect();
+
+    void waitForRequestSpace(CLeavableCriticalBlock & block);
+
+// interface IAsyncCallback
+    virtual void onAsyncComplete(int result) override;
+
+
+protected:
+    CriticalSection crit;
+    CTcpSender & sender;
     const SocketEndpoint ep;
-    const bool lowLatency;
     Owned<ISocket> socket;
+    unsigned threadsWaiting{0};
+    unsigned numConnects{0};
+    Semaphore waitSem;
+    State state{State::Unconnected};
+    void * buffers[maxQueueDepth];
+    WriteRequest requests[maxQueueDepth];
+    unsigned headRequestIndex = 0;
+    unsigned numRequests = 0;
 };
 
 // MORE: This needs extending so that the items in the hash table know their ip address,
 // and can automatically reconnect if they are disconnected.
 class SECURESOCKET_API CTcpSender
 {
+    friend class CSocketTarget;
 public:
     CTcpSender(bool _lowLatency) : lowLatency(_lowLatency) {}
 
     CSocketTarget * queryWorkerSocket(const SocketEndpoint &ep);
-    size32_t sendToTarget(const void * data, size32_t len, const SocketEndpoint &ep);
+    void setAsyncProcessor(IAsyncProcessor * _asyncSender) { asyncSender.set(_asyncSender); }
+
+protected:
+    virtual void releaseBuffer(void * buffer);      // Default implementation throws an exception - i.e. aync send is not supported
 
 protected:
     CriticalSection crit;
+    std::unordered_map<SocketEndpoint, Owned<CSocketTarget>, HashSocketEndpoint> workerSockets;
+    Owned<IAsyncProcessor> asyncSender;
     const bool lowLatency;
-    std::unordered_map<SocketEndpoint, Owned<CSocketTarget>, HashSocketEndpoint > workerSockets;
 };
 
 #endif

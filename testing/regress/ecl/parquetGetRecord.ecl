@@ -28,7 +28,13 @@ compressionType := #IFDEFINED(root.compressionType, 'UNCOMPRESSED');
 ESP_URL := Std.File.GetEspURL();
 USERNAME := '';
 USER_PW := '';
-CLUSTER_NAME := #IFDEFINED(root.clusterName, 'thor');
+CLUSTER_NAME_TMP := #IFDEFINED(root.clusterName, 'thor');
+// roxie does not listen to queue in containerized environment and test will timeout
+#if (__CONTAINERIZED__ AND CLUSTER_NAME_TMP = 'roxie')
+    CLUSTER_NAME := 'roxie-workunit';
+#else
+    CLUSTER_NAME := CLUSTER_NAME_TMP;
+#end
 
 //------------------------------------------------------------------------------
 

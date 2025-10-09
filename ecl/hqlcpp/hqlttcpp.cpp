@@ -6709,7 +6709,11 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
         {
             if (info.queryCluster())
             {
-                OwnedHqlExpr cluster = createValue(no_cluster, makeVoidType(), LINK(setValue), LINK(info.queryCluster()), createConstant((__int64)translator.getTargetClusterType()));
+                StringBuffer clusterName;
+                getStringValue(clusterName, info.queryCluster());
+                bool isECLAgentCluster = strsame(clusterName.str(), ECL_AGENT_CLUSTER_NAME);
+                ClusterType newClusterType = (isECLAgentCluster ? HThorCluster : ThorLCRCluster);
+                OwnedHqlExpr cluster = createValue(no_cluster, makeVoidType(), LINK(setValue), LINK(info.queryCluster()), createConstant((__int64)newClusterType));
                 inheritDependencies(cluster);
                 setValue.set(cluster);
             }
