@@ -142,10 +142,12 @@ void coalesceDatastore(IPropertyTree *coalesceProps, bool force)
                 root = loadStoreType(StoreFormat::XML, iStoreHelper, storeFilename);
             }
             Owned<IPropertyTree> _root;
-            if (!root)
+            if (root)
             {
                 _root.setown(root);
-
+            }
+            else
+            {
                 if (baseEdition==0) {
                     PROGLOG("Creating base store");
                     _root.setown(createPTree("SDS"));

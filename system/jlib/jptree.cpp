@@ -4551,7 +4551,7 @@ IPropertyTree *createPTreeFromBinaryFile(const char *filename, size32_t bufferSi
         throw MakeStringException(0, "Could not locate filename: %s", filename);
 
     Owned<ISerialInputStream> stream = createSerialInputStream(ifileio);
-    Owned<IBufferedSerialInputStream> bufferedStream = createBufferedInputStream(stream, 0x10000); // 64KB buffer
+    Owned<IBufferedSerialInputStream> bufferedStream = createBufferedInputStream(stream, bufferSize);
     IPropertyTree *root = createPTreeFromBinary(*bufferedStream, nodeCreator);
     bufferedStream.clear();
 
