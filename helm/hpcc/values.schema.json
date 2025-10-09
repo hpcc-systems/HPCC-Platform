@@ -3835,7 +3835,7 @@
           "additionalProperties": { "type": "string" },
           "description": "Annotations to add to the ServiceAccount"
         },
-        "podLabels": {
+        "labels": {
           "type": "object",
           "additionalProperties": { "type": "string" },
           "description": "Labels to add to pods using this ServiceAccount (e.g., for Azure Workload Identity)"
