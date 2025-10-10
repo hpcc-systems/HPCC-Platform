@@ -1,5 +1,5 @@
 import * as React from "react";
-import { DetailsListLayoutMode, Dropdown, IColumn as _IColumn, ICommandBarItemProps, IDetailsHeaderProps, IDetailsListStyles, mergeStyleSets, Selection, Stack, TooltipHost, TooltipOverflowMode, IRenderFunction, IDetailsRowProps, SelectionMode, ConstrainMode, ISelection, ScrollablePane, ShimmeredDetailsList, Sticky } from "@fluentui/react";
+import { DetailsListLayoutMode, Dropdown, IColumn as _IColumn, ICommandBarItemProps, IDetailsHeaderProps, IDetailsList, IDetailsListStyles, mergeStyleSets, Selection, Stack, TooltipHost, TooltipOverflowMode, IRenderFunction, IDetailsRowProps, SelectionMode, ConstrainMode, ISelection, ScrollablePane, ShimmeredDetailsList, Sticky } from "@fluentui/react";
 import { Pagination } from "@fluentui/react-experiments/lib/Pagination";
 import { useConst } from "@fluentui/react-hooks";
 import { BaseStore, Memory, QueryRequest, QuerySortItem } from "src/store/Memory";
@@ -233,6 +233,8 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
     const [loaded, setLoaded] = React.useState(false);
     const [columnWidths] = useNonReactiveEphemeralPageStore("columnWidths");
 
+    const listRef = React.useRef<IDetailsList | null>(null);
+
     const selectionHandler = useConst(() => {
         return isISelection(setSelection) ? setSelection : new Selection({
             canSelectItem: (item: any, index?: number) => canSelectRow ? canSelectRow(item, index ?? -1) : true,
@@ -252,11 +254,12 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
     }, [], [query, sorted]);
 
     const refreshTable = useDeepCallback((clearSelection = false) => {
-        if (isNaN(start) || isNaN(count)) return;
+        if (isNaN(start) || isNaN(count) || !listRef) return;
         setLoaded(false);
         if (clearSelection) {
             selectionHandler.setItems([], true);
         }
+        const topRowIdx = listRef.current?.getStartItemIndexInView();
         const storeQuery = store.query({ ...query }, { start, count, sort: sorted ? [sorted] : undefined }, abortController.current.signal);
         storeQuery.total.then(total => {
             setTotal(total);
@@ -266,8 +269,9 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
             setLoaded(true);
             setItems(items);
             selectedIndices.forEach(index => selectionHandler.setIndexSelected(index, true, false));
+            listRef.current?.scrollToIndex(topRowIdx);
         });
-    }, [count, selectionHandler, start, store], [query, sorted]);
+    }, [count, listRef, selectionHandler, start, store], [query, sorted]);
 
     React.useEffect(() => {
         // eslint-disable-next-line @typescript-eslint/no-unused-expressions
@@ -352,6 +356,7 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
     return <div style={{ position: "relative", height: "100%" }}>
         <ScrollablePane>
             <ShimmeredDetailsList
+                componentRef={listRef}
                 compact={true}
                 enableShimmer={!loaded}
                 items={items}
