@@ -2752,6 +2752,17 @@ StringBuffer & ncnameUnescape(char const * in, StringBuffer & out)
 }
 
 
+void convertHexToData(size32_t lenTarget, void * target, size32_t len, const char * text)
+{
+    assertex(len % 2 == 0);
+    assertex(lenTarget * 2 >= len);
+    byte * dest = (byte *)target;
+    for (unsigned i=0; i < len; i+=2)
+    {
+        unsigned char next = hex2num(text[i]) << 4 | hex2num(text[i+1]);
+        dest[i/2] = next;
+    }
+}
 
 bool startsWith(const char* src, const char* prefix)
 {
