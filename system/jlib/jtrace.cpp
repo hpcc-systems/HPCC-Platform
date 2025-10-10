@@ -1145,10 +1145,29 @@ protected:
 
 };
 
-class CNullSpan final : public CInterfaceOf<ISpan>
+static constexpr const char * NullTraceId   = "00000000000000000000000000000000";
+static constexpr const char * NullSpanId    = "0000000000000000";
+static constexpr const char * NullGlobalId  = "11111111111111111111111";
+static constexpr const char * NullCallerId  = "";
+static constexpr const char * NullLocalId   = "11111111111111111111111";
+class CPseudoSpan final : public CInterfaceOf<ISpan>
 {
 public:
-    CNullSpan() = default;
+    CPseudoSpan()
+    : traceId(NullTraceId), spanId(NullSpanId), globalId(NullGlobalId), callerId(NullCallerId), localId(NullLocalId)
+    {
+    }
+    CPseudoSpan(const char * _traceId, const char * _spanId, const char * _globalId, const char * _callerId, const char * _localId)
+    {
+        assertex(_traceId && _spanId && _globalId && _callerId && _localId);
+        assertex(strlen(_traceId) == lenTraceId);
+        assertex(strlen(_spanId) == lenSpanId);
+        traceId.set(_traceId);
+        spanId.set(_spanId);
+        globalId.set(_globalId);
+        callerId.set(_callerId);
+        localId.set(_localId);
+    }
 
     virtual void setSpanAttribute(const char * key, const char * val) override {}
     virtual void setSpanAttribute(const char *name, __uint64 value) override {}
@@ -1168,20 +1187,27 @@ public:
     virtual void recordError(const SpanError & error) override {};
     virtual void setSpanStatusSuccess(bool spanSucceeded, const char * statusMessage) override {}
 
-    virtual const char * queryTraceId() const override { return "00000000000000000000000000000000"; }
-    virtual const char * querySpanId() const override { return "0000000000000000"; }
+    virtual const char * queryTraceId() const override { return traceId.get(); }
+    virtual const char * querySpanId() const override { return spanId.get(); }
 
     // Note: GlobalID & LocalID are created from lnuid, which creates 23 char UIDs (16 rand bytes in base58), and uses "1" for zeroes
-    virtual const char* queryGlobalId() const override { return "11111111111111111111111"; }
-    virtual const char* queryCallerId() const override { return ""; }
-    virtual const char* queryLocalId() const override { return "11111111111111111111111"; }
+    virtual const char* queryGlobalId() const override { return globalId.get(); }
+    virtual const char* queryCallerId() const override { return callerId.get(); }
+    virtual const char* queryLocalId() const override { return localId.get(); }
 
     virtual ISpan * createClientSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp = nullptr) override { return getNullSpan(); }
     virtual ISpan * createInternalSpan(const char * name, const SpanTimeStamp * spanStartTimeStamp = nullptr) override { return getNullSpan(); }
 
 private:
-    CNullSpan(const CNullSpan&) = delete;
-    CNullSpan& operator=(const CNullSpan&) = delete;
+    CPseudoSpan(const CPseudoSpan&) = delete;
+    CPseudoSpan& operator=(const CPseudoSpan&) = delete;
+
+protected:
+    StringAttr traceId;
+    StringAttr spanId;
+    StringAttr globalId;
+    StringAttr callerId;
+    StringAttr localId;
 };
 
 
@@ -1893,6 +1919,13 @@ ActiveSpanScope::~ActiveSpanScope()
 
 //---------------------------------------------------------------------------------------------------------------------
 
+ISpan * createPseudoSpan(const char * traceId, const char * spanId)
+{
+    return new CPseudoSpan(traceId, spanId, NullGlobalId, NullCallerId, NullLocalId);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
 OwnedActiveSpanScope::OwnedActiveSpanScope(ISpan * _ptr) : span(_ptr)
 {
     if (_ptr)
@@ -1968,7 +2001,7 @@ MODULE_EXIT()
     theTraceManager.destroy();
 }
 
-static Owned<ISpan> nullSpan = new CNullSpan();
+static Owned<ISpan> nullSpan = new CPseudoSpan();
 
 ISpan * getNullSpan()
 {

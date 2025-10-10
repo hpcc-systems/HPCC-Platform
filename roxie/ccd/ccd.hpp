@@ -504,13 +504,20 @@ extern unsigned __int64 getTopologyHash();
 extern unsigned __int64 currentTopologyHash;
 extern unsigned __int64 originalTopologyHash;
 
+//NOTE: Any extra data that is serialized needs to be processed in the folowing places:
+// 1. ccdserver - to serialize the data
+// 2. ccdqueue - to deserialize the data
+// 3. ccdqueue - to calculate the length of the trace data in CRoxieQueryPacketBase
+// 4. ccdcontext - deserializing the debug data
+
+#define LOGGING_NONE            0x00
 #define LOGGING_INTERCEPTED     0x01
 #define LOGGING_TIMEACTIVITIES  0x02
 #define LOGGING_DEBUGGERACTIVE  0x04
 #define LOGGING_BLIND           0x08
 #define LOGGING_TRACELEVELSET   0x10
 #define LOGGING_CHECKINGHEAP    0x20
-#define LOGGING_FLAGSPRESENT    0x40
+#define LOGGING_TRACEID         0x40
 #define LOGGING_WUID            0x80
 
 class LogItem : public CInterface
@@ -826,6 +833,7 @@ class AgentContextLogger : public StringContextLogger
     bool checkingHeap;
     IpAddress ip;
     StringAttr wuid;
+    OwnedActiveSpanScope agentSpan;
 public:
     AgentContextLogger();
     AgentContextLogger(ISerializedRoxieQueryPacket *packet);
