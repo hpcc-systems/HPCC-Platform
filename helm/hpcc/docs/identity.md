@@ -49,30 +49,30 @@ global:
     default:
       annotations:
         azure.workload.identity/client-id: "00000000-0000-0000-0000-000000000000"
-      podLabels:
+      labels:
         azure.workload.identity/use: "true"
 
     agent:
       annotations:
         azure.workload.identity/client-id: "11111111-1111-1111-1111-111111111111"
-      podLabels:
+      labels:
         azure.workload.identity/use: "true"
 
     thoragent:
       annotations:
         azure.workload.identity/client-id: "22222222-2222-2222-2222-222222222222"
-      podLabels:
+      labels:
         azure.workload.identity/use: "true"
 
     esp-service:
       annotations:
         azure.workload.identity/client-id: "33333333-3333-3333-3333-333333333333"
-      podLabels:
+      labels:
         azure.workload.identity/use: "true"
 
     dali:
       annotations:
         azure.workload.identity/client-id: "44444444-4444-4444-4444-444444444444"
-      podLabels:
+      labels:
         azure.workload.identity/use: "true"
 ```

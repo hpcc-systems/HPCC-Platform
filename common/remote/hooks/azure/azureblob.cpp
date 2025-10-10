@@ -760,16 +760,33 @@ void AzureBlob::ensureMetaData()
 void AzureBlob::gatherMetaData()
 {
     auto blobClient = getBlobClient();
-    try
+    constexpr unsigned maxRetries = 4;
+    unsigned attempt = 0;
+    for (;;)
     {
-        Azure::Response<Models::BlobProperties> properties = blobClient->GetProperties();
-        Models::BlobProperties & props = properties.Value;
-        setProperties(props.BlobSize, props.LastModified, props.CreatedOn);
-    }
-    catch (const Azure::Core::RequestFailedException& e)
-    {
-        fileExists = false;
-        fileSize = 0;
+        try
+        {
+            Azure::Response<Models::BlobProperties> properties = blobClient->GetProperties();
+            Models::BlobProperties & props = properties.Value;
+            setProperties(props.BlobSize, props.LastModified, props.CreatedOn);
+            break;
+        }
+        catch (const Azure::Core::RequestFailedException& e)
+        {
+            if (e.StatusCode == Azure::Core::Http::HttpStatusCode::NotFound)
+            {
+                fileExists = false;
+                fileSize = unknownFileSize;
+                break;
+            }
+            attempt++;
+            handleRequestException(e, "AzureBlob::gatherMetaData", attempt, maxRetries, queryFilename());
+        }
+        catch (const std::exception& e)
+        {
+            attempt++;
+            handleRequestException(e, "AzureBlob::gatherMetaData", attempt, maxRetries, queryFilename());
+        }
     }
 }
 

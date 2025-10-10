@@ -98,7 +98,7 @@ data:
 {{- if hasKey .me "labels" }}
 {{ toYaml .me.labels | indent 12 }}
 {{- end }}
-            {{- include "hpcc.addServiceAccountLabels" (dict "root" $ "serviceAccount" "agent") | indent 12 }}
+            {{- include "hpcc.addServiceAccountLabels" (dict "root" .root "serviceAccount" "agent") | indent 12 }}
           annotations:
             {{- include "hpcc.generateAnnotations" . | indent 12 }}
         spec:
@@ -171,7 +171,7 @@ data:
 {{- if hasKey $thorScope "labels" }}
 {{ toYaml $thorScope.labels | indent 12 }}
 {{- end }}
-            {{- include "hpcc.addServiceAccountLabels" (dict "root" $ "serviceAccount" "thoragent") | indent 12 }}
+            {{- include "hpcc.addServiceAccountLabels" (dict "root" .root "serviceAccount" "thoragent") | indent 12 }}
           annotations:
             {{- include "hpcc.generateAnnotations" . | indent 12 }}
         spec:
@@ -244,7 +244,7 @@ data:
 {{- if hasKey $thorScope "labels" }}
 {{ toYaml $thorScope.labels | indent 12 }}
 {{- end }}
-            {{- include "hpcc.addServiceAccountLabels" (dict "root" $ "serviceAccount" "default") | indent 12 }}
+            {{- include "hpcc.addServiceAccountLabels" (dict "root" .root "serviceAccount" "default") | indent 12 }}
           annotations:
             {{- include "hpcc.generateAnnotations" . | indent 12 }}
         spec:
