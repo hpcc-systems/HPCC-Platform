@@ -1,5 +1,5 @@
 import * as React from "react";
-import { DetailsListLayoutMode, Dropdown, IColumn as _IColumn, ICommandBarItemProps, IDetailsHeaderProps, IDetailsListStyles, mergeStyleSets, Selection, Stack, TooltipHost, TooltipOverflowMode, IRenderFunction, IDetailsRowProps, SelectionMode, ConstrainMode, ISelection, ScrollablePane, ShimmeredDetailsList, Sticky } from "@fluentui/react";
+import { DetailsListLayoutMode, Dropdown, IColumn as _IColumn, ICommandBarItemProps, IDetailsHeaderProps, IDetailsList, IDetailsListStyles, mergeStyleSets, Selection, Stack, TooltipHost, TooltipOverflowMode, IRenderFunction, IDetailsRowProps, SelectionMode, ConstrainMode, ISelection, ScrollablePane, ShimmeredDetailsList, Sticky } from "@fluentui/react";
 import { Pagination } from "@fluentui/react-experiments/lib/Pagination";
 import { useConst } from "@fluentui/react-hooks";
 import { BaseStore, Memory, QueryRequest, QuerySortItem } from "src/store/Memory";
@@ -196,6 +196,8 @@ export function useFluentStoreState({ page }: FluentStoreStateProps): FluentStor
     return { selection, setSelection, pageNum, setPageNum, pageSize, setPageSize, total, setTotal, refreshTable };
 }
 
+const SCROLL_DEBOUNCE_MS = 300;
+
 interface FluentStoreGridProps {
     store: any,
     query?: QueryRequest,
@@ -233,6 +235,11 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
     const [loaded, setLoaded] = React.useState(false);
     const [columnWidths] = useNonReactiveEphemeralPageStore("columnWidths");
 
+    const listRef = React.useRef<IDetailsList | null>(null);
+    const [topRowIdx, setTopRowIdx] = React.useState(0);
+    const topRowIdxRef = React.useRef(topRowIdx);
+    const scrollTimeoutRef = React.useRef<number | undefined>(undefined);
+
     const selectionHandler = useConst(() => {
         return isISelection(setSelection) ? setSelection : new Selection({
             canSelectItem: (item: any, index?: number) => canSelectRow ? canSelectRow(item, index ?? -1) : true,
@@ -266,8 +273,9 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
             setLoaded(true);
             setItems(items);
             selectedIndices.forEach(index => selectionHandler.setIndexSelected(index, true, false));
+            listRef.current?.scrollToIndex?.(topRowIdxRef.current);
         });
-    }, [count, selectionHandler, start, store], [query, sorted]);
+    }, [count, listRef, selectionHandler, start, store], [query, sorted]);
 
     React.useEffect(() => {
         // eslint-disable-next-line @typescript-eslint/no-unused-expressions
@@ -349,9 +357,42 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
         columnWidths.set(column.key, newWidth);
     }, [columnWidths]);
 
+    React.useEffect(() => {
+        topRowIdxRef.current = topRowIdx;
+    }, [topRowIdx]);
+
+    React.useEffect(() => {
+        if (!listRef) return;
+
+        const scrollablePaneEl = document.querySelector(".ms-ScrollablePane--contentContainer");
+        const handleScrollEnd = () => {
+            if (scrollTimeoutRef?.current) {
+                window.clearTimeout(scrollTimeoutRef.current);
+            }
+            scrollTimeoutRef.current = window.setTimeout(() => {
+                const idx = listRef.current?.getStartItemIndexInView();
+                if (idx !== topRowIdxRef.current) {
+                    // seems like the DetailsList header is masking a row, hence the "idx+1" here
+                    setTopRowIdx(idx + 1);
+                }
+                scrollTimeoutRef.current = undefined;
+            }, SCROLL_DEBOUNCE_MS);
+        };
+        scrollablePaneEl?.addEventListener("scrollend", handleScrollEnd);
+
+        return () => {
+            scrollablePaneEl?.removeEventListener("scrollend", handleScrollEnd);
+            if (scrollTimeoutRef.current) {
+                window.clearTimeout(scrollTimeoutRef.current);
+                scrollTimeoutRef.current = undefined;
+            }
+        };
+    }, [listRef]);
+
     return <div style={{ position: "relative", height: "100%" }}>
         <ScrollablePane>
             <ShimmeredDetailsList
+                componentRef={listRef}
                 compact={true}
                 enableShimmer={!loaded}
                 items={items}
