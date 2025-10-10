@@ -1483,6 +1483,7 @@ static void computeConfigSHA(StringBuffer &shaStr)
         e->Release();
     }
 }
+/*
 static void computeConfigSHA(StringBuffer &shaStr, IPropertyTree *componentConfig, IPropertyTree *globalConfig)
 {
     if (!componentConfig)
@@ -1525,9 +1526,9 @@ static void computeConfigSHA(StringBuffer &shaStr, IPropertyTree *componentConfi
         e->Release();
     }
 }
+*/
+//static CConfigUpdateHook configUpdateHook;
 
-static CConfigUpdateHook configUpdateHook;
-/*
 static void configUpdateNotifyHandler(const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
 {
     PROGLOG("DJPS configUpdateNotifyHandler() called");
@@ -1545,20 +1546,19 @@ static void configUpdateNotifyHandler(const IPropertyTree *oldComponentConfigura
             configChangeDetected.store(true);
             currentConfigSHA.set(newConfigSHA.str());
 
-            PROGLOG("Configuration SHA changed from '%s' to '%s' - Thor will gracefully restart after current job completes",
+            PROGLOG("DJPS Configuration SHA changed from '%s' to '%s' - Thor will gracefully restart after current job completes",
                     currentConfigSHA.str(),
                     newConfigSHA.str());
         }
     }
 }
-*/
+
 void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphName)
 {
     // Install configuration change detection handler for graceful restart
-//    unsigned configUpdateHookId{0};
+    unsigned configUpdateHookId{0};
     if (isContainerized())
     {
-/*
         configUpdateHookId = installConfigUpdateHook(configUpdateNotifyHandler, false);
         if (configUpdateHookId)
         {
@@ -1575,7 +1575,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
         }
         else
             IWARNLOG("Failed to install configuration change monitoring");
-*/
+/*
         auto modifyFunc = [](IPropertyTree * newComponentConfiguration, IPropertyTree * newGlobalConfiguration)
         {
             PROGLOG("DJPS modifyFunc() called");
@@ -1602,13 +1602,13 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                 }
             }
         };
-
+*/
         // Initialize the configuration SHA baseline
         computeConfigSHA(currentConfigSHA);
         PROGLOG("DJPS Initial configuration SHA: %s", currentConfigSHA.str());
-        PROGLOG("DJPS configUpdateHook.installModifierOnce(modifyFunc, false); before");
-        configUpdateHook.installModifierOnce(modifyFunc, false);
-        PROGLOG("DJPS Configuration change monitoring enabled for graceful restart");
+//        PROGLOG("DJPS configUpdateHook.installModifierOnce(modifyFunc, false); before");
+//        configUpdateHook.installModifierOnce(modifyFunc, false);
+//        PROGLOG("DJPS Configuration change monitoring enabled for graceful restart");
     }
 
     aborting = 0;
@@ -1852,9 +1852,9 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
     }
 
     // Cleanup configuration change monitoring
-//    if (configUpdateHookId)
-//        removeConfigUpdateHook(configUpdateHookId);
-    configUpdateHook.clear();
+    if (configUpdateHookId)
+        removeConfigUpdateHook(configUpdateHookId);
+//    configUpdateHook.clear();
 
     if (multiThorMemoryThreshold)
         setMultiThorMemoryNotify(0,NULL);
