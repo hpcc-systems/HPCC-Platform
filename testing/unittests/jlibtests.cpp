@@ -38,11 +38,14 @@
 #include "jsecrets.hpp"
 #include "jutil.hpp"
 #include "junicode.hpp"
+#include "zcrypt.hpp"
 
 #include "opentelemetry/sdk/common/attribute_utils.h"
 #include "opentelemetry/sdk/resource/resource.h"
 
 #include "unittests.hpp"
+
+#include "jptree.hpp"
 
 static const unsigned oneMinute = 60000; // msec
 
@@ -3760,7 +3763,336 @@ public:
 CPPUNIT_TEST_SUITE_REGISTRATION(PTreeSerializationDeserializationTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeSerializationDeserializationTest, "PTreeSerializationDeserializationTest");
 
-#include "jdebug.hpp"
+/*
+ * PTree serialization and deserialization XML timing test
+ *
+ * Tests XML deserialization/serialization performance using gzipped data file
+ */
+
+class PTreeSerializationDeserializationXmlTimingStressTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(PTreeSerializationDeserializationXmlTimingStressTest);
+    CPPUNIT_TEST(testCombinedXmlAndBinaryTimingWithNormalVsLowMem);
+    CPPUNIT_TEST_SUITE_END();
+
+protected:
+    struct TimingResults
+    {
+        double avgDeserializeTimeMs;
+        double avgSerializeTimeMs;
+        double totalDeserializeTimeMs;
+        double totalSerializeTimeMs;
+        const char *testName;
+        byte flags;
+    };
+
+    TimingResults performBinaryTimingTestWithResults(const char *testName, const MemoryBuffer &binaryDataBuffer, int iterations, byte flags)
+    {
+        assertex(testName);
+        unsigned binaryDataLen = binaryDataBuffer.length();
+        assertex(binaryDataLen > 0);
+
+        CCycleTimer timer;
+        __uint64 totalDeserializeNs{0};
+        __uint64 totalSerializeNs{0};
+
+        MemoryBuffer streamBufferIn;
+        MemoryBuffer streamBufferOut;
+        for (int i = 0; i < iterations; i++)
+        {
+            streamBufferIn.clear();
+            streamBufferIn.append(binaryDataLen, binaryDataBuffer.toByteArray());
+            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(streamBufferIn);
+            timer.reset();
+            Owned<IPropertyTree> deserializedTree = createPTreeFromBinary(*in, flags);
+            __uint64 deserializeElapsedNs = timer.elapsedNs();
+            Owned<IPropertyTree> copyDeserializedTree = createPTreeFromIPT(deserializedTree);
+            totalDeserializeNs += deserializeElapsedNs;
+
+            streamBufferOut.clear();
+            Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(streamBufferOut);
+            timer.reset();
+            deserializedTree->serializeToStream(*out);
+            out->flush();
+            __uint64 serializeElapsedNs = timer.elapsedNs();
+            totalSerializeNs += serializeElapsedNs;
+
+            // Validation - serialized data matches
+            CPPUNIT_ASSERT_EQUAL(binaryDataLen, streamBufferOut.length());
+            CPPUNIT_ASSERT_EQUAL(streamBufferIn.length(), streamBufferOut.length());
+            CPPUNIT_ASSERT(areMatchingPTrees(copyDeserializedTree, deserializedTree));
+        }
+
+        TimingResults results;
+        results.avgDeserializeTimeMs = (totalDeserializeNs / iterations) / 1e6;
+        results.avgSerializeTimeMs = (totalSerializeNs / iterations) / 1e6;
+        results.totalDeserializeTimeMs = totalDeserializeNs / 1e6;
+        results.totalSerializeTimeMs = totalSerializeNs / 1e6;
+        results.testName = testName;
+        results.flags = flags;
+
+        return results;
+    }
+
+    TimingResults performXmlTimingTestWithResults(const char *testName, const char *xmlData, int iterations, byte flags)
+    {
+        assertex(testName);
+        assertex(xmlData);
+
+        CCycleTimer timer;
+        __uint64 totalDeserializeNs{0};
+        __uint64 totalSerializeNs{0};
+
+        for (int i = 0; i < iterations; i++)
+        {
+            timer.reset();
+            Owned<IPropertyTree> tree = createPTreeFromXMLString(xmlData, flags);
+            __uint64 deserializeElapsedNs = timer.elapsedNs();
+            totalDeserializeNs += deserializeElapsedNs;
+
+            timer.reset();
+            StringBuffer xmlOutput;
+            toXML(tree, xmlOutput);
+            __uint64 serializeElapsedNs = timer.elapsedNs();
+            totalSerializeNs += serializeElapsedNs;
+        }
+
+        TimingResults results;
+        results.avgDeserializeTimeMs = (totalDeserializeNs / iterations) / 1e6;
+        results.avgSerializeTimeMs = (totalSerializeNs / iterations) / 1e6;
+        results.totalDeserializeTimeMs = totalDeserializeNs / 1e6;
+        results.totalSerializeTimeMs = totalSerializeNs / 1e6;
+        results.testName = testName;
+        results.flags = flags;
+
+        return results;
+    }
+
+    const char *getBinaryFilePath()
+    {
+        const char *envPath = getenv("DALI_TEST_BINARY_FILE");
+        constexpr const char *defaultPath = "~/HPCC-Platform/testing/unittests/dalisds1.bin.gz";
+        return envPath ? envPath : defaultPath;
+    }
+
+    const char *getXmlFilePath()
+    {
+        const char *envPath = getenv("DALI_TEST_XML_FILE");
+        constexpr const char *defaultPath = "~/HPCC-Platform/testing/unittests/dalisds1.xml.gz";
+        return envPath ? envPath : defaultPath;
+    }
+
+    const char *expandTilde(const char *path, StringBuffer &expanded)
+    {
+        if (!path || !path[0])
+            return path;
+
+        if (path[0] == '~' && (path[1] == '/' || path[1] == '\0'))
+        {
+            const char *home = getenv("HOME");
+            if (home)
+            {
+                expanded.append(home);
+                if (path[1] == '/')
+                    expanded.append(path + 1);
+                return expanded.str();
+            }
+        }
+        return path;
+    }
+
+    void readXmlFile(const char *filePath, StringBuffer &output)
+    {
+        StringBuffer expandedPath;
+        const char *actualPath = expandTilde(filePath, expandedPath);
+        if (!actualPath)
+            throw MakeStringException(-1, "XML file path is null");
+        Owned<IFile> xmlFile = createIFile(actualPath);
+        if (!xmlFile->exists())
+            throw MakeStringException(-1, "XML file \"%s\" does not exist", actualPath);
+
+        size32_t fileSize = (size32_t)xmlFile->size();
+        MemoryBuffer fileData;
+        Owned<IFileIO> fileIO = xmlFile->open(IFOread);
+        fileData.reserveTruncate(fileSize);
+        size32_t bytesRead = fileIO->read(0, fileSize, fileData.bufferBase());
+        fileData.setLength(bytesRead);
+
+        const char *ext = pathExtension(filePath);
+        if (ext && streq(ext, ".gz"))
+            gunzip((const byte *)fileData.toByteArray(), fileData.length(), output);
+        else
+            output.append(fileData.length(), fileData.toByteArray());
+    }
+
+    void createBinaryDataFromXml(const char *xmlFilePath, MemoryBuffer &binaryData)
+    {
+        StringBuffer xmlData;
+        try
+        {
+            readXmlFile(xmlFilePath, xmlData);
+        }
+        catch(IException *e)
+        {
+            throw;
+        }
+        Owned<IPropertyTree> tree = createPTreeFromXMLString(xmlData);
+        binaryData.clear();
+        Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(binaryData);
+        tree->serializeToStream(*out);
+        out->flush();
+    }
+
+    bool readBinaryFile(const char *filePath, MemoryBuffer &output)
+    {
+        StringBuffer expandedPath;
+        const char *actualPath = expandTilde(filePath, expandedPath);
+        if (!actualPath)
+            return false;
+        Owned<IFile> binaryFile = createIFile(actualPath);
+        if (!binaryFile->exists())
+            return false;
+
+        size32_t fileSize = (size32_t)binaryFile->size();
+        Owned<IFileIO> fileIO = binaryFile->open(IFOread);
+        output.reserveTruncate(fileSize);
+        size32_t bytesRead = fileIO->read(0, fileSize, output.bufferBase());
+        output.setLength(bytesRead);
+
+        const char *ext = pathExtension(actualPath);
+        if (ext && streq(ext, ".gz"))
+        {
+            StringBuffer tempOutput;
+            gunzip((const byte *)output.toByteArray(), output.length(), tempOutput);
+            output.clear();
+            output.append(tempOutput.length(), tempOutput.str());
+        }
+
+        return true;
+    }
+
+    void performXmlTimingTest(const char *testName, const char *xmlData, int iterations, byte flags = ipt_none)
+    {
+        CCycleTimer timer;
+        __uint64 totalDeserializeNs{0};
+        __uint64 totalSerializeNs{0};
+
+        const char *flagsDesc = (flags == ipt_none) ? "" : " (with flags)";
+        DBGLOG("=== XML TIMING TEST STARTED FOR: %s%s ===", testName, flagsDesc);
+        if (flags != ipt_none)
+            DBGLOG("Flags: 0x%02X", flags);
+        DBGLOG("Running %d iterations", iterations);
+        DBGLOG("XML data size: %u bytes", (unsigned)strlen(xmlData));
+
+        for (int i{0}; i < iterations; i++)
+        {
+            // Deserialize XML to IPropertyTree with specified flags
+            timer.reset();
+            Owned<IPropertyTree> tree = createPTreeFromXMLString(xmlData, flags);
+            __uint64 deserializeElapsedNs = timer.elapsedNs();
+            totalDeserializeNs += deserializeElapsedNs;
+
+            // Serialize IPropertyTree back to XML
+            timer.reset();
+            StringBuffer xmlOutput;
+            toXML(tree, xmlOutput);
+            __uint64 serializeElapsedNs = timer.elapsedNs();
+            totalSerializeNs += serializeElapsedNs;
+
+            DBGLOG("Iteration %d: Deserialize=%.6f ms, Serialize=%.6f ms, Output size=%u bytes",
+                   i + 1,
+                   deserializeElapsedNs / 1e6,
+                   serializeElapsedNs / 1e6,
+                   xmlOutput.length());
+        }
+
+        double avgDeserializeTimeMs = (totalDeserializeNs / iterations) / 1e6;
+        double avgSerializeTimeMs = (totalSerializeNs / iterations) / 1e6;
+        double totalDeserializeTimeMs = totalDeserializeNs / 1e6;
+        double totalSerializeTimeMs = totalSerializeNs / 1e6;
+
+        DBGLOG("=== TIMING RESULTS SUMMARY ===");
+        DBGLOG("Total deserialize time: %.6f ms", totalDeserializeTimeMs);
+        DBGLOG("Total serialize time: %.6f ms", totalSerializeTimeMs);
+        DBGLOG("Average deserialize time: %.6f ms", avgDeserializeTimeMs);
+        DBGLOG("Average serialize time: %.6f ms", avgSerializeTimeMs);
+        DBGLOG("=== XML TIMING TEST COMPLETED ===");
+    }
+
+public:
+    void testCombinedXmlAndBinaryTimingWithNormalVsLowMem()
+    {
+        constexpr const int iterations{10};
+
+        // Load XML data
+        StringBuffer xmlData;
+        readXmlFile(getXmlFilePath(), xmlData);
+        unsigned xmlDataLen = (unsigned)strlen(xmlData.str());
+
+        // Load Binary data
+        //  If the binary file does not exist then create it from the XML file
+        MemoryBuffer binaryData;
+        if (!readBinaryFile(getBinaryFilePath(), binaryData))
+            createBinaryDataFromXml(getXmlFilePath(), binaryData);
+        unsigned binaryDataLen = (unsigned)binaryData.length();
+
+        DBGLOG("=== COMBINED XML & BINARY TIMING COMPARISON TEST ===");
+        DBGLOG("XML data size: %u bytes", xmlDataLen);
+        DBGLOG("Binary data size: %u bytes", binaryDataLen);
+        DBGLOG("Iterations: %d", iterations);
+        TimingResults xmlNormalResults = performXmlTimingTestWithResults("XML Normal", xmlData.str(), iterations, ipt_none);
+        TimingResults xmlLowMemResults = performXmlTimingTestWithResults("XML Low Memory", xmlData.str(), iterations, ipt_lowmem);
+        TimingResults binaryNormalResults = performBinaryTimingTestWithResults("Binary Normal", binaryData, iterations, ipt_none);
+        TimingResults binaryLowMemResults = performBinaryTimingTestWithResults("Binary Low Memory", binaryData, iterations, ipt_lowmem);
+
+        // Calculate differences and Binary vs XML comparisons
+        double xmlLowMemDeserializeDiff = ((xmlLowMemResults.avgDeserializeTimeMs - xmlNormalResults.avgDeserializeTimeMs) / xmlNormalResults.avgDeserializeTimeMs) * 100;
+        double xmlLowMemSerializeDiff = ((xmlLowMemResults.avgSerializeTimeMs - xmlNormalResults.avgSerializeTimeMs) / xmlNormalResults.avgSerializeTimeMs) * 100;
+        double binaryLowMemDeserializeDiff = ((binaryLowMemResults.avgDeserializeTimeMs - binaryNormalResults.avgDeserializeTimeMs) / binaryNormalResults.avgDeserializeTimeMs) * 100;
+        double binaryLowMemSerializeDiff = ((binaryLowMemResults.avgSerializeTimeMs - binaryNormalResults.avgSerializeTimeMs) / binaryNormalResults.avgSerializeTimeMs) * 100;
+        double binaryVsXmlNormalDeserialize = ((binaryNormalResults.avgDeserializeTimeMs - xmlNormalResults.avgDeserializeTimeMs) / xmlNormalResults.avgDeserializeTimeMs) * 100;
+        double binaryVsXmlNormalSerialize = ((binaryNormalResults.avgSerializeTimeMs - xmlNormalResults.avgSerializeTimeMs) / xmlNormalResults.avgSerializeTimeMs) * 100;
+        double binaryVsXmlLowMemDeserialize = ((binaryLowMemResults.avgDeserializeTimeMs - xmlLowMemResults.avgDeserializeTimeMs) / xmlLowMemResults.avgDeserializeTimeMs) * 100;
+        double binaryVsXmlLowMemSerialize = ((binaryLowMemResults.avgSerializeTimeMs - xmlLowMemResults.avgSerializeTimeMs) / xmlLowMemResults.avgSerializeTimeMs) * 100;
+
+        // Display combined results table with all comparisons
+        DBGLOG("┌──────────────────────┬─────────────────┬─────────────────┐");
+        DBGLOG("│ Format & Mode        │ Avg Deserialize │ Avg Serialize   │");
+        DBGLOG("│                      │ (ms)            │ (ms)            │");
+        DBGLOG("├──────────────────────┼─────────────────┼─────────────────┤");
+        DBGLOG("│ XML Normal           │ %15.6f │ %15.6f │",
+               xmlNormalResults.avgDeserializeTimeMs,
+               xmlNormalResults.avgSerializeTimeMs);
+        DBGLOG("│ XML Low Memory       │ %15.6f │ %15.6f │",
+               xmlLowMemResults.avgDeserializeTimeMs,
+               xmlLowMemResults.avgSerializeTimeMs);
+        DBGLOG("│ XML LowMem Diff      │ %+14.2f%% │ %+14.2f%% │",
+               xmlLowMemDeserializeDiff,
+               xmlLowMemSerializeDiff);
+        DBGLOG("├──────────────────────┼─────────────────┼─────────────────┤");
+        DBGLOG("│ Binary Normal        │ %15.6f │ %15.6f │",
+               binaryNormalResults.avgDeserializeTimeMs,
+               binaryNormalResults.avgSerializeTimeMs);
+        DBGLOG("│ Binary Low Memory    │ %15.6f │ %15.6f │",
+               binaryLowMemResults.avgDeserializeTimeMs,
+               binaryLowMemResults.avgSerializeTimeMs);
+        DBGLOG("│ Binary LowMem Diff   │ %+14.2f%% │ %+14.2f%% │",
+               binaryLowMemDeserializeDiff,
+               binaryLowMemSerializeDiff);
+        DBGLOG("├──────────────────────┼─────────────────┼─────────────────┤");
+        DBGLOG("│ Binary vs XML Normal │ %+14.2f%% │ %+14.2f%% │",
+               binaryVsXmlNormalDeserialize,
+               binaryVsXmlNormalSerialize);
+        DBGLOG("│ Binary vs XML LowMem │ %+14.2f%% │ %+14.2f%% │",
+               binaryVsXmlLowMemDeserialize,
+               binaryVsXmlLowMemSerialize);
+        DBGLOG("└──────────────────────┴─────────────────┴─────────────────┘");
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(PTreeSerializationDeserializationXmlTimingStressTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeSerializationDeserializationXmlTimingStressTest, "PTreeSerializationDeserializationXmlTimingStressTest");
+
 #include "jmutex.hpp"
 #include <shared_mutex>
 
