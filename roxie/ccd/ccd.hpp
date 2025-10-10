@@ -504,7 +504,7 @@ extern unsigned __int64 getTopologyHash();
 extern unsigned __int64 currentTopologyHash;
 extern unsigned __int64 originalTopologyHash;
 
-//NOTE: Any extra data that is seriailzied needs to be processed in 3 places
+//NOTE: Any extra data that is serialized needs to be processed in 3 places
 // 1. ccdserver - to serialize the data
 // 2. ccdqueue - to deserialize the data
 // 3. ccdqueue - to calculate the length of the trace data in CRoxieQueryPacketBase

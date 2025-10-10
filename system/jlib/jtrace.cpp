@@ -1145,11 +1145,16 @@ protected:
 
 };
 
+static constexpr const char * NullTraceId   = "00000000000000000000000000000000";
+static constexpr const char * NullSpanId    = "0000000000000000";
+static constexpr const char * NullGlobalId  = "11111111111111111111111";
+static constexpr const char * NullCallerId  = "";
+static constexpr const char * NullLocalId   = "11111111111111111111111";
 class CPseudoSpan final : public CInterfaceOf<ISpan>
 {
 public:
     CPseudoSpan()
-    : traceId("00000000000000000000000000000000"), spanId("0000000000000000"), globalId("11111111111111111111111"), callerId(""), localId("11111111111111111111111")
+    : traceId(NullTraceId), spanId(NullSpanId), globalId(NullGlobalId), callerId(NullCallerId), localId(NullLocalId)
     {
     }
     CPseudoSpan(const char * _traceId, const char * _spanId, const char * _globalId, const char * _callerId, const char * _localId)
@@ -1916,7 +1921,7 @@ ActiveSpanScope::~ActiveSpanScope()
 
 ISpan * createPseudoSpan(const char * traceId, const char * spanId)
 {
-    return new CPseudoSpan(traceId, spanId, "11111111111111111111111", "", "11111111111111111111111");
+    return new CPseudoSpan(traceId, spanId, NullGlobalId, NullCallerId, NullLocalId);
 }
 
 //---------------------------------------------------------------------------------------------------------------------

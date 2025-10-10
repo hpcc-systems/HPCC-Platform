@@ -919,6 +919,7 @@ void AgentContextLogger::set(ISerializedRoxieQueryPacket *packet)
                 traceInfo += bytesSpanId;
                 agentSpan.setown(createPseudoSpan(traceId, spanId));
                 setActiveSpan(agentSpan);
+                traceLength -= bytesTraceId + bytesSpanId;
             }
 
             // Passing the wuid via the logging context prefix is a lot of a hack...
@@ -1981,7 +1982,7 @@ static void throwPacketTooLarge(IRoxieQueryPacket *x, unsigned maxPacketSize)
             traceLength--;
         }
 
-        //Append the rest of the context - but ensure any control charcaters are converted into something printable
+        //Append the rest of the context - but ensure any control characters are converted into something printable
         encodeJSON(traceInfoText, traceLength, (const char *) traceInfo);
     }
     throw MakeStringException(ROXIE_PACKET_ERROR, "Maximum packet length %d exceeded sending packet %s (context length %u, continuation length %u, smart step length %u, trace length %u, total length %u",
