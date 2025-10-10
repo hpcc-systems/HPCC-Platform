@@ -35,6 +35,7 @@ RUN apt-get clean -y && \
     git \
     locales \
     jq \
+    libjemalloc2 \
     openssh-client \
     openssh-server \
     python3 \ 
