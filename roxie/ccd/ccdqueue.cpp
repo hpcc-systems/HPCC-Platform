@@ -460,28 +460,35 @@ public:
         else
         {
             assertex(lengthRemaining > 1);
+
             traceInfo = finger;
-            lengthRemaining--;
-            if (*finger++ & LOGGING_DEBUGGERACTIVE)
+            const byte * end = finger + lengthRemaining;
+            byte traceFlags = *finger++;
+            if (traceFlags & LOGGING_TRACELEVELSET)
+                finger++;
+            if (traceFlags & LOGGING_DEBUGGERACTIVE)
             {
                 assertex(lengthRemaining >= (int) sizeof(unsigned short));
                 unsigned short debugLen = *(unsigned short *) finger;
                 finger += debugLen + sizeof(unsigned short);
-                lengthRemaining -= debugLen + sizeof(unsigned short);
             }
+
+            unsigned numStrings = 1;
+            if (traceFlags & LOGGING_TRACEID)
+               numStrings += 2;
+
             for (;;)
             {
-                assertex(lengthRemaining>0);
-                if (!*finger)
+                assertex(finger != end);
+                byte next = *finger++;
+                if (next == 0)
                 {
-                    lengthRemaining--;
-                    finger++;
-                    break;
+                    if (--numStrings == 0)
+                        break;
                 }
-                lengthRemaining--;
-                finger++;
             }
             traceLength = finger - traceInfo;
+            lengthRemaining = end - finger;
         }
     }
 
@@ -881,44 +888,51 @@ void AgentContextLogger::set(ISerializedRoxieQueryPacket *packet)
         StringBuffer s;
         if (traceInfo)
         {
+            //Extract the extra meta information serialized in queryChannelBuffer() in ccdserver.cpp
             unsigned traceLength = packet->getTraceLength();
             unsigned char loggingFlags = *traceInfo;
-            if (loggingFlags & LOGGING_FLAGSPRESENT) // should always be true.... but this flag is handy to avoid flags byte ever being NULL
+            traceInfo++;
+            traceLength--;
+            if (loggingFlags & LOGGING_INTERCEPTED)
+                intercept = true;
+            if (loggingFlags & LOGGING_TRACELEVELSET)
             {
-                traceInfo++;
+                ctxTraceLevel = (*traceInfo++ - 1); // avoid null byte here in case anyone still thinks there's just a null-terminated string
                 traceLength--;
-                if (loggingFlags & LOGGING_INTERCEPTED)
-                    intercept = true;
-                if (loggingFlags & LOGGING_TRACELEVELSET)
-                {
-                    ctxTraceLevel = (*traceInfo++ - 1); // avoid null byte here in case anyone still thinks there's just a null-terminated string
-                    traceLength--;
-                }
-                if (loggingFlags & LOGGING_BLIND)
-                    blind = true;
-                if (loggingFlags & LOGGING_CHECKINGHEAP)
-                    checkingHeap = true;
-                if (loggingFlags & LOGGING_DEBUGGERACTIVE)
-                {
-                    assertex(traceLength > sizeof(unsigned short));
-                    debuggerActive = true;
-                    unsigned short debugLen = *(unsigned short *) traceInfo;
-                    traceInfo += debugLen + sizeof(unsigned short);
-                    traceLength -= debugLen + sizeof(unsigned short);
-                }
-                // Passing the wuid via the logging context prefix is a lot of a hack...
-                if (loggingFlags & LOGGING_WUID)
-                {
-                    unsigned wuidLen = 0;
-                    while (wuidLen < traceLength)
-                    {
-                        if (traceInfo[wuidLen]=='@'||traceInfo[wuidLen]==':')
-                            break;
-                        wuidLen++;
-                    }
-                    wuid.set((const char *) traceInfo, wuidLen);
-                }
             }
+            if (loggingFlags & LOGGING_BLIND)
+                blind = true;
+            if (loggingFlags & LOGGING_CHECKINGHEAP)
+                checkingHeap = true;
+            if (loggingFlags & LOGGING_DEBUGGERACTIVE)
+            {
+                assertex(traceLength > sizeof(unsigned short));
+                debuggerActive = true;
+                unsigned short debugLen = *(unsigned short *) traceInfo;
+                traceInfo += debugLen + sizeof(unsigned short);
+                traceLength -= debugLen + sizeof(unsigned short);
+            }
+            if (loggingFlags & LOGGING_TRACEID)
+            {
+                const char * traceId = (const char *) traceInfo;
+                traceInfo += strlen(traceId) + 1;
+                const char * spanId = (const char *) traceInfo;
+                traceInfo += strlen(spanId) + 1;
+            }
+
+            // Passing the wuid via the logging context prefix is a lot of a hack...
+            if (loggingFlags & LOGGING_WUID)
+            {
+                unsigned wuidLen = 0;
+                while (wuidLen < traceLength)
+                {
+                    if (traceInfo[wuidLen]=='@'||traceInfo[wuidLen]==':')
+                        break;
+                    wuidLen++;
+                }
+                wuid.set((const char *) traceInfo, wuidLen);
+            }
+
             s.append(traceLength, (const char *) traceInfo);
             s.append("|");
         }
@@ -1022,7 +1036,7 @@ void sendUnloadMessage(hash64_t hash, const char *id, const IRoxieContextLogger 
 
     MemoryBuffer mb;
     mb.append(sizeof(RoxiePacketHeader), &header);
-    mb.append((char) LOGGING_FLAGSPRESENT);
+    mb.append((char) LOGGING_NONE);
     mb.append(id);
     if (doTrace(traceRoxiePackets))
         DBGLOG("UNLOAD sent for query %s", id);
@@ -1950,26 +1964,25 @@ protected:
 
 static void throwPacketTooLarge(IRoxieQueryPacket *x, unsigned maxPacketSize)
 {
-    StringBuffer t;
+    StringBuffer traceInfoText;
     unsigned traceLength = x->getTraceLength();
     if (traceLength)
     {
         const byte *traceInfo = x->queryTraceInfo();
         unsigned char loggingFlags = *traceInfo;
-        if (loggingFlags & LOGGING_FLAGSPRESENT) // should always be true.... but this flag is handy to avoid flags byte ever being NULL
+        traceInfo++;
+        traceLength--;
+        if (loggingFlags & LOGGING_TRACELEVELSET)
         {
             traceInfo++;
             traceLength--;
-            if (loggingFlags & LOGGING_TRACELEVELSET)
-            {
-                traceInfo++;
-                traceLength--;
-            }
-            t.append(traceLength, (const char *) traceInfo);
         }
+
+        //Append the rest of the context - but ensure any control charcaters are converted into something printable
+        encodeJSON(traceInfoText, traceLength, (const char *) traceInfo);
     }
     throw MakeStringException(ROXIE_PACKET_ERROR, "Maximum packet length %d exceeded sending packet %s (context length %u, continuation length %u, smart step length %u, trace length %u, total length %u",
-                            maxPacketSize, t.str(),
+                            maxPacketSize, traceInfoText.str(),
                             x->getContextLength(), x->getContinuationLength(), x->getSmartStepInfoLength(), x->getTraceLength(), x->queryHeader().packetlength);
 }
 
