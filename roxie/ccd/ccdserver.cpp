@@ -4446,10 +4446,16 @@ private:
         {
             if (!contextCached)
             {
+                //The following serialized the extra meta/tracing information that is associated with a request from the
+                //server to the worker.  Previously it ensured 0 was never sent, but no logic relies on that anymore.
                 logInfo.clear();
-                unsigned char loggingFlags = LOGGING_FLAGSPRESENT | LOGGING_TRACELEVELSET;
                 unsigned char ctxTraceLevel = activity.queryLogCtx().queryTraceLevel() + 1; // Avoid passing a 0
                 const QueryOptions &options = ctx->queryOptions();
+                ISpan * activeSpan = queryThreadedActiveSpan();
+                // Trace and span id is 24 bytes.  Should we always send it or not, or only if recordingEvents?
+                bool serializeTraceId = activeSpan && activeSpan->isValid();
+
+                unsigned char loggingFlags = LOGGING_TRACELEVELSET;
                 if (activity.queryLogCtx().isIntercepted())
                     loggingFlags |= LOGGING_INTERCEPTED;
                 if (options.timeActivities)
@@ -4460,21 +4466,40 @@ private:
                     loggingFlags |= LOGGING_CHECKINGHEAP;
                 if (ctx->queryWorkUnit())
                     loggingFlags |= LOGGING_WUID;
+                if (serializeTraceId)
+                    loggingFlags |= LOGGING_TRACEID;
+                if (debugContext)
+                    loggingFlags |= LOGGING_DEBUGGERACTIVE;
+
+                logInfo.append(loggingFlags).append(ctxTraceLevel);
+
                 if (debugContext)
                 {
-                    loggingFlags |= LOGGING_DEBUGGERACTIVE;
-                    logInfo.append(loggingFlags).append(ctxTraceLevel);
                     MemoryBuffer bpInfo;
                     debugContext->serialize(bpInfo);
                     bpInfo.append((__uint64)(memsize_t) &activity);
                     logInfo.append((unsigned short) bpInfo.length());
                     logInfo.append(bpInfo.length(), bpInfo.toByteArray());
                 }
-                else
-                    logInfo.append(loggingFlags).append(ctxTraceLevel);
+
+                if (loggingFlags & LOGGING_TRACEID)
+                {
+                    //Serialize in binary to minimize the data transferred
+                    char traceId[bytesTraceId];
+                    char spanId[bytesSpanId];
+                    convertHexToData(bytesTraceId, traceId, lenTraceId, activeSpan->queryTraceId());
+                    convertHexToData(bytesSpanId, spanId, lenSpanId, activeSpan->querySpanId());
+                    logInfo.append(bytesTraceId, traceId);
+                    logInfo.append(bytesSpanId, spanId);
+                }
+
                 StringBuffer logPrefix;
                 activity.queryLogCtx().getLogPrefix(logPrefix);
                 logInfo.append(logPrefix);
+
+                // Serialize activity specific context
+                // MORE: This should compress the data? Parent contexts can get large
+                // and for keyed joins it would only be compressed a single time.
                 activity.serializeCreateStartContext(cachedContext.clear());
                 activity.serializeExtra(cachedContext);
                 if (activity.queryVarFileInfo())

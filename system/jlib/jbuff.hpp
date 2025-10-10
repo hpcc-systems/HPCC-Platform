@@ -139,6 +139,7 @@ public:
     MemoryBuffer &  append(unsigned char value);
     MemoryBuffer &  append(bool value);
     MemoryBuffer &  append(const char * value);
+    MemoryBuffer &  appendCStr(const char * value);
     MemoryBuffer &  append(const unsigned char * value);
     MemoryBuffer &  append(size32_t len, const void * value);
     MemoryBuffer &  append(double value);
