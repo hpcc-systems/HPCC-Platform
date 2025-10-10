@@ -886,16 +886,14 @@ void AgentContextLogger::set(ISerializedRoxieQueryPacket *packet)
         if (traceInfo)
         {
             //Extract the extra meta information serialized in queryChannelBuffer() in ccdserver.cpp
-            unsigned traceLength = packet->getTraceLength();
-            unsigned char loggingFlags = *traceInfo;
-            traceInfo++;
-            traceLength--;
+            const byte * endTraceInfo = traceInfo + packet->getTraceLength();
+            unsigned char loggingFlags = *traceInfo++;
             if (loggingFlags & LOGGING_INTERCEPTED)
                 intercept = true;
             if (loggingFlags & LOGGING_TRACELEVELSET)
             {
-                ctxTraceLevel = (*traceInfo++ - 1); // avoid null byte here in case anyone still thinks there's just a null-terminated string
-                traceLength--;
+                // legacy: avoid null byte here in case anyone still thinks there's just a null-terminated string
+                ctxTraceLevel = (*traceInfo++ - 1);
             }
             if (loggingFlags & LOGGING_BLIND)
                 blind = true;
@@ -903,14 +901,15 @@ void AgentContextLogger::set(ISerializedRoxieQueryPacket *packet)
                 checkingHeap = true;
             if (loggingFlags & LOGGING_DEBUGGERACTIVE)
             {
-                assertex(traceLength > sizeof(unsigned short));
+                assertex(traceInfo + sizeof(unsigned short) <= endTraceInfo);
                 debuggerActive = true;
                 unsigned short debugLen = *(unsigned short *) traceInfo;
+                assertex(traceInfo + sizeof(unsigned short) + debugLen <= endTraceInfo);
                 traceInfo += debugLen + sizeof(unsigned short);
-                traceLength -= debugLen + sizeof(unsigned short);
             }
             if (loggingFlags & LOGGING_TRACEID)
             {
+                assertex(traceInfo + bytesTraceId + bytesSpanId <= endTraceInfo);
                 StringBuffer traceId;
                 StringBuffer spanId;
                 appendDataAsHex(traceId, bytesTraceId, (const char *) traceInfo);
@@ -919,14 +918,13 @@ void AgentContextLogger::set(ISerializedRoxieQueryPacket *packet)
                 traceInfo += bytesSpanId;
                 agentSpan.setown(createPseudoSpan(traceId, spanId));
                 setActiveSpan(agentSpan);
-                traceLength -= bytesTraceId + bytesSpanId;
             }
 
             // Passing the wuid via the logging context prefix is a lot of a hack...
             if (loggingFlags & LOGGING_WUID)
             {
                 unsigned wuidLen = 0;
-                while (wuidLen < traceLength)
+                while (traceInfo + wuidLen < endTraceInfo)
                 {
                     if (traceInfo[wuidLen]=='@'||traceInfo[wuidLen]==':')
                         break;
@@ -935,7 +933,7 @@ void AgentContextLogger::set(ISerializedRoxieQueryPacket *packet)
                 wuid.set((const char *) traceInfo, wuidLen);
             }
 
-            s.append(traceLength, (const char *) traceInfo);
+            s.append(endTraceInfo - traceInfo, (const char *) traceInfo);
             s.append("|");
         }
         channel = header.channel;
