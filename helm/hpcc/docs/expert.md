@@ -89,6 +89,15 @@ The default value is 500.  Set to zero to disable the cache.
 This value is applied at the process level:  Each Thor worker, Roxie process, and hthor worker receives
 its own cache.  Threads/channels within a process share that process's cache.
 
+## useJemalloc (boolean)
+
+If set to true, components will use jemalloc memory allocator via LD_PRELOAD.
+jemalloc can provide better memory allocation performance and lower fragmentation compared to the default glibc allocator.
+This setting can be applied globally or on a per-component basis via the component's expert section.
+Default: false
+
+Note: This requires that libjemalloc is installed in the container image at /usr/lib/x86_64-linux-gnu/libjemalloc.so.2
+
 
 # Plane Expert Settings
 
