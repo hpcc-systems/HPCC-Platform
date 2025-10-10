@@ -21,6 +21,7 @@ usage() {
   echo "    -a                 Always collect post-mortem info, even if the process exits cleanly"
   echo "    -v                 Run the process under valgrind"
   echo "    -p                 This is a postrun sidecar container"
+  echo "    -j                 Use jemalloc via LD_PRELOAD"
 }
 
 PMD_DIRECTORYBASE=
@@ -31,6 +32,7 @@ PMD_CONTAINERNAME=
 PMD_ALWAYS=false
 PMD_VALGRIND=false
 PMD_POSTRUN=false
+PMD_JEMALLOC=false
 
 
 while [ "$#" -gt 0 ]; do
@@ -53,6 +55,8 @@ while [ "$#" -gt 0 ]; do
       v) PMD_VALGRIND=true
          ;;
       p) PMD_POSTRUN=true
+         ;;
+      j) PMD_JEMALLOC=true
          ;;
       *) echo "Unknown option: ${arg:1:1}"
          usage
@@ -115,6 +119,11 @@ if [ "$PMD_POSTRUN" = "true" ]; then
     sleep ${secs}
     #echo "HPCC-LOCAL-LOG: Continuing..."
   fi
+fi
+
+# Set LD_PRELOAD for jemalloc if requested
+if [ "$PMD_JEMALLOC" = "true" ]; then
+  export LD_PRELOAD="libjemalloc.so.2:${LD_PRELOAD}"
 fi
 
 # Execute the main program, defaulting postmortem logging on (can be overriden by program's config file)

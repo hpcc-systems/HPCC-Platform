@@ -22,6 +22,7 @@ global:
       #incrementMB: 100
       #useVforkAndGcore: true # (default: false) uses vfork()+exec(gcore), instead of fork()+abort()
       #suspendParent: true # (default: false). Suspend parent process during core dump (involves intermediate reaper process)
+    useJemalloc: true
 ```
 
 NB: Some components (e.g. DfuServer and Thor) also have an 'expert' settings area (see values schema) that can be used for relavent settings
@@ -88,6 +89,32 @@ See the regex example above.  If set, this should be added at the global level.
 The default value is 500.  Set to zero to disable the cache.
 This value is applied at the process level:  Each Thor worker, Roxie process, and hthor worker receives
 its own cache.  Threads/channels within a process share that process's cache.
+
+## useJemalloc (boolean)
+
+If set to true, components will use jemalloc memory allocator via LD_PRELOAD.
+jemalloc can provide better memory allocation performance and lower fragmentation compared to the default glibc allocator.
+This setting can be applied globally or on a per-component basis via the component's expert section.
+Default: false
+
+Note: jemalloc is automatically disabled when valgrind is enabled for a component, as valgrind requires its own memory management.
+
+Example of enabling jemalloc globally:
+```
+global:
+  expert:
+    useJemalloc: true
+```
+
+Example of enabling jemalloc for a specific Thor component:
+```
+thor:
+- name: mythor
+  expert:
+    useJemalloc: true
+```
+
+Note: This requires that libjemalloc is installed in the container image at /usr/lib/x86_64-linux-gnu/libjemalloc.so.2
 
 
 # Plane Expert Settings
