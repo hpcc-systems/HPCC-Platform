@@ -36,6 +36,7 @@
 #include "dautils.hpp"
 #include "dadfs.hpp"
 #include "jmetrics.hpp"
+#include "jstream.hpp"
 
 #define DEBUG_DIR "debug"
 #define DEFAULT_KEEP_LASTN_STORES 10 // should match default in dali.xsd
@@ -1996,7 +1997,6 @@ public:
     void restart(IException * e);
 
     void loadStore(const bool *abort=NULL);
-    CServerRemoteTree *loadStoreType(StoreFormat storeFormat, size32_t bufferSize, const bool *abort);
     void saveStore(const char *store, SaveStoreFlags flags);
     void checkEnvironment(IPropertyTree *oldEnv, IPropertyTree *newEnv);
     bool unlock(__int64 treeId, ConnectionId connectionId, bool delayDelete=false);
@@ -5266,6 +5266,7 @@ class CStoreHelper : implements IStoreHelper, public CInterface
     unsigned delay{0};
     unsigned keepStores{0};
     SessionId mySessId{0};
+    size32_t bufferSize{0};
     bool saveBinary{false};
     bool saveAsync{false};
 
@@ -5430,6 +5431,76 @@ class CStoreHelper : implements IStoreHelper, public CInterface
         }
     }
 
+    IPropertyTree *loadStoreType(StoreFormat storeFormat, IPTreeNodeCreator *nodeCreator, const bool *abort)
+    {
+        StringBuffer storeFilename(location);
+        unsigned storedCrc = 0;
+        getCurrentStoreFilename(storeFilename, storeFormat, &storedCrc);
+
+        bool isBinary = (storeFormat == StoreFormat::BINARY);
+        try
+        {
+            Owned<IPropertyTree> result;
+
+            OwnedIFile iFileStore = createIFile(storeFilename);
+            OwnedIFileIO iFileIOStore = iFileStore->open(IFOread);
+            if (!iFileIOStore)
+                throw MakeSDSException(SDSExcpt_OpenStoreFailed, "%s", storeFilename.str());
+
+            offset_t fSize = iFileIOStore->size();
+            PROGLOG("Loading %s store %u (size=%.2f MB, storedCrc=%x)", isBinary ? "Binary" : "XML", queryCurrentEdition(), ((double)fSize) / 0x100000, storedCrc);
+
+            Owned<ISerialInputStream> serialStream = createSerialInputStream(iFileIOStore);
+            Owned<ISerialInputStream> progressStream = createProgressStream(serialStream, 0, fSize, "Load progress", 60);
+            Owned<ICrcSerialInputStream> crcSerialStream = createCrcInputStream(progressStream);
+            Owned<IBufferedSerialInputStream> bufInStream = createBufferedInputStream(crcSerialStream, bufferSize);
+
+            if (isBinary)
+                result.setown(createPTreeFromBinary(*bufInStream, nodeCreator));
+            else
+            {
+                Owned<IPTreeMaker> treeMaker = createPTreeMaker(ipt_none, nullptr, nodeCreator);
+
+                class CSerialInputStreamWrapper : public CSimpleInterfaceOf<ISimpleReadStream>
+                {
+                    ISerialInputStream *stream;
+
+                public:
+                    CSerialInputStreamWrapper(ISerialInputStream *_stream) : stream(_stream) {}
+                    virtual size32_t read(size32_t len, void *data) override
+                    {
+                        return stream->read(len, data);
+                    }
+                };
+
+                Owned<ISimpleReadStream> wrapper = new CSerialInputStreamWrapper(bufInStream);
+                result.setown(createPTree(*wrapper, ipt_none, ptr_ignoreWhiteSpace, treeMaker));
+            }
+
+            unsigned crc = crcSerialStream->queryCrc();
+
+            if (storedCrc && storedCrc != crc)
+                IWARNLOG("Error processing store %s - CRC ERROR (file size=%" I64F "d, validation crc=%x, calculated crc=%x)", storeFilename.str(), iFileIOStore->size(), storedCrc, crc);
+
+            return result.getClear();
+        }
+        catch (IException *e)
+        {
+            if (!abort)
+                IERRLOG(e, VStringBuffer("Exception - loading store file : %s", storeFilename.str()));
+            if (SDSExcpt_OpenStoreFailed != e->errorCode())
+                throw;
+            e->Release();
+        }
+        catch (DALI_CATCHALL)
+        {
+            IException *e = MakeStringException(0, "Unknown exception - loading %s store file : %s", isBinary ? "Binary" : "XML", storeFilename.str());
+            DISLOG(e);
+            throw;
+        }
+        return nullptr;
+    }
+
     struct CheckDeltaBlock
     {
         CheckDeltaBlock(CStoreHelper &_storeHelper) : storeHelper(_storeHelper)
@@ -5540,12 +5611,33 @@ public:
             ForEach(*dIter)
                 dIter->query().remove();
         }
+        StringBuffer planeName;
+        if (findPlaneFromPath(location, planeName))
+            bufferSize = (size32_t)getPlaneAttributeValue(planeName, BlockedSequentialIO, bufferSize);
     }
     virtual StringBuffer &getDetachedDeltaName(StringBuffer &detachName)
     {
         refreshDeltaInfo();
         constructStoreName(DELTADETACHED, deltaInfo.edition, detachName, ".xml");
         return detachName;
+    }
+    virtual IPropertyTree *loadStore(IPTreeNodeCreator *nodeCreator, const bool *abort) override
+    {
+        // Try loading binary store first if it exists
+        IPropertyTree *root = nullptr;
+        try
+        {
+            root = loadStoreType(StoreFormat::BINARY, nodeCreator, abort);
+        }
+        catch (IException *e)
+        {
+            // Log the exception but do not re-throw or exit to allow fall back to loading the XML store
+            EXCLOG(e);
+            e->Release();
+        }
+        if (!root)
+            root = loadStoreType(StoreFormat::XML, nodeCreator, abort);
+        return root;
     }
     virtual bool loadDelta(const char *filename, IFile *iFile, IPropertyTree *root)
     {
@@ -6346,83 +6438,6 @@ void CCovenSDSManager::checkEnvironment(IPropertyTree *oldEnv, IPropertyTree *ne
     }
 }
 
-CServerRemoteTree *CCovenSDSManager::loadStoreType(StoreFormat storeFormat, size32_t bufferSize, const bool *abort)
-{
-    StringBuffer storeFilename(dataPath);
-    unsigned storedCrc = 0;
-    iStoreHelper->getCurrentStoreFilename(storeFilename, storeFormat, &storedCrc);
-
-    class CNodeCreate : public CSimpleInterfaceOf<IPTreeNodeCreator>
-    {
-    public:
-        virtual IPropertyTree *create(const char *tag) { return createServerTree(tag); }
-    };
-    Owned<IPTreeNodeCreator> nodeCreator = new CNodeCreate();
-
-    bool isBinary = (storeFormat == StoreFormat::BINARY);
-    try
-    {
-        Owned<IPropertyTree> result;
-
-        OwnedIFile iFileStore = createIFile(storeFilename);
-        OwnedIFileIO iFileIOStore = iFileStore->open(IFOread);
-        if (!iFileIOStore)
-            throw MakeSDSException(SDSExcpt_OpenStoreFailed, "%s", storeFilename.str());
-
-        offset_t fSize = iFileIOStore->size();
-        PROGLOG("Loading %s store %u (size=%.2f MB, storedCrc=%x)", isBinary ? "Binary" : "XML", iStoreHelper->queryCurrentEdition(), ((double)fSize) / 0x100000, storedCrc);
-
-        Owned<ISerialInputStream> serialStream = createSerialInputStream(iFileIOStore);
-        Owned<ISerialInputStream> progressStream = createProgressStream(serialStream, 0, fSize, "Load progress", 60);
-        Owned<ICrcSerialInputStream> crcSerialStream = createCrcInputStream(progressStream);
-        Owned<IBufferedSerialInputStream> bufInStream = createBufferedInputStream(crcSerialStream, bufferSize);
-        if (isBinary)
-            result.setown(createPTreeFromBinary(*bufInStream, nodeCreator));
-        else
-        {
-            Owned<IPTreeMaker> treeMaker = createPTreeMaker(ipt_none, nullptr, nodeCreator);
-
-            class CSerialInputStreamWrapper : public CSimpleInterfaceOf<ISimpleReadStream>
-            {
-                ISerialInputStream *stream;
-
-            public:
-                CSerialInputStreamWrapper(ISerialInputStream *_stream) : stream(_stream) {}
-                virtual size32_t read(size32_t len, void *data) override
-                {
-                    return stream->read(len, data);
-                }
-            };
-
-            Owned<ISimpleReadStream> wrapper = new CSerialInputStreamWrapper(bufInStream);
-            result.setown(createPTree(*wrapper, ipt_none, ptr_ignoreWhiteSpace, treeMaker));
-        }
-
-        bufInStream.clear();
-        unsigned crc = crcSerialStream->queryCrc();
-
-        if (storedCrc && storedCrc != crc)
-            IWARNLOG("Error processing store %s - CRC ERROR (file size=%" I64F "d, validation crc=%x, calculated crc=%x)", storeFilename.str(), iFileIOStore->size(), storedCrc, crc);
-
-        return static_cast<CServerRemoteTree *>(result.getClear());
-    }
-    catch (IException *e)
-    {
-        if (!abort)
-            IERRLOG(e, VStringBuffer("Exception - loading store file : %s", storeFilename.str()));
-        if (SDSExcpt_OpenStoreFailed != e->errorCode())
-            throw;
-        e->Release();
-    }
-    catch (DALI_CATCHALL)
-    {
-        IException *e = MakeStringException(0, "Unknown exception - loading %s store file : %s", isBinary ? "Binary" : "XML", storeFilename.str());
-        DISLOG(e);
-        throw;
-    }
-    return nullptr;
-}
-
 void CCovenSDSManager::loadStore(const bool *abort)
 {
     if (root) root->Release();
@@ -6432,24 +6447,14 @@ void CCovenSDSManager::loadStore(const bool *abort)
     {
         CHECKEDCRITICALBLOCK(saveStoreCrit, fakeCritTimeout);
 
-        StringBuffer planeName;
-        size32_t bufferSize = bufferSize1mb;
-        if (findPlaneFromPath(dataPath.str(), planeName))
-            bufferSize = (size32_t)getPlaneAttributeValue(planeName, BlockedSequentialIO, bufferSize);
+        class CNodeCreate : public CSimpleInterfaceOf<IPTreeNodeCreator>
+        {
+        public:
+            virtual IPropertyTree *create(const char *tag) { return createServerTree(tag); }
+        };
+        Owned<IPTreeNodeCreator> nodeCreator = new CNodeCreate();
 
-        // Try loading binary store first if it exists
-        try
-        {
-            root = loadStoreType(StoreFormat::BINARY, bufferSize, abort);
-        }
-        catch (IException *e)
-        {
-            // Log the exception but do not re-throw or exit to allow fall back to loading the XML store
-            EXCLOG(e);
-            e->Release();
-        }
-        if (!root)
-            root = loadStoreType(StoreFormat::XML, bufferSize, abort);
+        root = (CServerRemoteTree *)iStoreHelper->loadStore(nodeCreator, abort);
         if (!root)
         {
             LOG(MCdebugInfo, "Store %d does not exist, creating new store", iStoreHelper->queryCurrentEdition());

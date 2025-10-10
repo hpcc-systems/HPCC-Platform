@@ -85,26 +85,21 @@ void coalesceDatastore(IPropertyTree *coalesceProps, bool force)
             }
 
 
-            StringBuffer storeFilename(dataPath);
-            iStoreHelper->getCurrentStoreFilename(storeFilename, StoreFormat::XML);
             StringBuffer memStr;
             getSystemTraceInfo(memStr.clear());
             MLOG("COALESCE: %s", memStr.str());
-            Owned<IPropertyTree> _root;
-            OwnedIFile storeIFile = createIFile(storeFilename.str());
-            if (storeIFile->exists())
+
+            Owned<IPropertyTree> _root = iStoreHelper->loadStore(nullptr, nullptr);
+
+            if (!_root)
             {
-                PROGLOG("Loading store: %s, size=%" I64F "d", storeFilename.str(), storeIFile->size());
-                _root.setown(createPTreeFromXMLFile(storeFilename.str()));
-                PROGLOG("Loaded: %s", storeFilename.str());
-            }
-            else
-            {
-                if (baseEdition==0) {
+                if (baseEdition==0)
+                {
                     PROGLOG("Creating base store");
                     _root.setown(createPTree("SDS"));
                 }
-                else {
+                else
+                {
                     OERRLOG("Base store %d not found, exiting",baseEdition);
                     break; // don't think much point continuing is there?
                 }
@@ -136,6 +131,8 @@ void coalesceDatastore(IPropertyTree *coalesceProps, bool force)
                 if (!noError && 0 != (SH_BackupErrorFiles & configFlags))
                 {
                     iStoreHelper->backup(detachPath.str());
+                    StringBuffer storeFilename(dataPath);
+                    iStoreHelper->getCurrentStoreFilename(storeFilename, StoreFormat::XML);
                     iStoreHelper->backup(storeFilename.str());
                     if (deltaE.get())
                         throw LINK(deltaE);

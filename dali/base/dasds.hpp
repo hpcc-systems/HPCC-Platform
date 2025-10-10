@@ -256,6 +256,7 @@ enum class StoreFormat
 interface IStoreHelper : extends IInterface
 {
     virtual StringBuffer &getDetachedDeltaName(StringBuffer &detachName) = 0;
+    virtual IPropertyTree *loadStore(IPTreeNodeCreator *nodeCreator, const bool *abort) = 0;
     virtual bool loadDelta(const char *filename, IFile *iFile, IPropertyTree *root) = 0;
     virtual bool loadDeltas(IPropertyTree *root, bool *errors=NULL) = 0;
     virtual bool detachCurrentDelta() = 0;
