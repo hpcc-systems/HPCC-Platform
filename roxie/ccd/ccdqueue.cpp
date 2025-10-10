@@ -918,6 +918,8 @@ void AgentContextLogger::set(ISerializedRoxieQueryPacket *packet)
                 traceInfo += strlen(traceId) + 1;
                 const char * spanId = (const char *) traceInfo;
                 traceInfo += strlen(spanId) + 1;
+                agentSpan.setown(createPseudoSpan(traceId, spanId));
+                setActiveSpan(agentSpan);
             }
 
             // Passing the wuid via the logging context prefix is a lot of a hack...
@@ -950,6 +952,8 @@ void AgentContextLogger::set(ISerializedRoxieQueryPacket *packet)
     {
         StringContextLogger::set("");
         channel = 0;
+        agentSpan.clear();
+        setActiveSpan(nullptr);
     }
 }
 

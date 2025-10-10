@@ -277,6 +277,7 @@ interface ITraceManager : extends IInterface
  extern jlib_decl ISpan * createBackdatedInternalSpan(const char * name, stat_type elapsedNs);
 
 extern jlib_decl ISpan * queryNullSpan();
+extern jlib_decl ISpan * createPseudoSpan(const char * traceId, const char * spanId); // Create an object that looks like a span, but does not use open telemetry
 extern jlib_decl ISpan * getNullSpan();
 extern jlib_decl void initTraceManager(const char * componentName, const IPropertyTree * componentConfig, const IPropertyTree * globalConfig);
 extern jlib_decl ITraceManager & queryTraceManager();

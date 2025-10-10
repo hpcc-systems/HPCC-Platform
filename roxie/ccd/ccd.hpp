@@ -833,6 +833,7 @@ class AgentContextLogger : public StringContextLogger
     bool checkingHeap;
     IpAddress ip;
     StringAttr wuid;
+    OwnedActiveSpanScope agentSpan;
 public:
     AgentContextLogger();
     AgentContextLogger(ISerializedRoxieQueryPacket *packet);
