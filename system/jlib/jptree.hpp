@@ -240,6 +240,7 @@ jlib_decl void addPTreeItem(IPropertyTree *ptree, const char * name, const char 
 jlib_decl IPropertyTree *createPTree(MemoryBuffer &src, byte flags=ipt_none);
 jlib_decl IPropertyTree *createPTreeFromBinary(IBufferedSerialInputStream &src, byte flags=ipt_none);
 jlib_decl IPropertyTree *createPTreeFromBinary(IBufferedSerialInputStream &src, IPTreeNodeCreator *nodeCreator=nullptr);
+jlib_decl IPropertyTree *createPTreeFromBinaryFile(const char *filename, size32_t bufferSize, IPTreeNodeCreator *nodeCreator=nullptr);
 
 jlib_decl IPropertyTree *createPTree(byte flags=ipt_none);
 jlib_decl IPropertyTree *createPTree(const char *name, byte flags=ipt_none);
