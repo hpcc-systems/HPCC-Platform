@@ -31,6 +31,8 @@ static constexpr const char *kLegacyCallerIdHttpHeaderName = "HPCC-Caller-Id";
 static constexpr const char *kGlobalIdOtelAttributeName = "id.global";
 static constexpr const char *kCallerIdOtelAttributeName = "id.caller";
 static constexpr const char *kLocalIdIdOtelAttributeName = "id.local";
+static constexpr size32_t lenTraceId = 32;
+static constexpr size32_t lenSpanId = 16;
 
 enum class SpanLogFlags : unsigned
 {

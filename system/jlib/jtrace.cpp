@@ -1154,6 +1154,9 @@ public:
     }
     CPseudoSpan(const char * _traceId, const char * _spanId, const char * _globalId, const char * _callerId, const char * _localId)
     {
+        assertex(_traceId && _spanId && _globalId && _callerId && _localId);
+        assertex(strlen(_traceId) == lenTraceId);
+        assertex(strlen(_spanId) == lenSpanId);
         traceId.set(_traceId);
         spanId.set(_spanId);
         globalId.set(_globalId);

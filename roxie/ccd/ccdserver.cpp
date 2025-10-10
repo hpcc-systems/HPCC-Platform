@@ -4481,8 +4481,8 @@ private:
 
                 if (loggingFlags & LOGGING_TRACEID)
                 {
-                    logInfo.appendCStr(activeSpan->queryTraceId());
-                    logInfo.appendCStr(activeSpan->querySpanId());
+                    logInfo.append(lenTraceId, activeSpan->queryTraceId());
+                    logInfo.append(lenSpanId, activeSpan->querySpanId());
                 }
 
                 StringBuffer logPrefix;

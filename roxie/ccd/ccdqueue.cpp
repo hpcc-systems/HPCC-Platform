@@ -474,9 +474,6 @@ public:
             }
 
             unsigned numStrings = 1;
-            if (traceFlags & LOGGING_TRACEID)
-               numStrings += 2;
-
             for (;;)
             {
                 assertex(finger != end);
@@ -914,10 +911,10 @@ void AgentContextLogger::set(ISerializedRoxieQueryPacket *packet)
             }
             if (loggingFlags & LOGGING_TRACEID)
             {
-                const char * traceId = (const char *) traceInfo;
-                traceInfo += strlen(traceId) + 1;
-                const char * spanId = (const char *) traceInfo;
-                traceInfo += strlen(spanId) + 1;
+                StringBuffer traceId(lenTraceId, (const char *) traceInfo);
+                traceInfo += lenTraceId;
+                StringBuffer spanId(lenSpanId, (const char *) traceInfo);
+                traceInfo += lenSpanId;
                 agentSpan.setown(createPseudoSpan(traceId, spanId));
                 setActiveSpan(agentSpan);
             }
