@@ -1414,8 +1414,29 @@ void auditThorJobEvent(const char *eventName, const char *wuid, const char *grap
 
 // Configuration change detection for graceful restart
 static std::atomic<bool> configChangeDetected{false};
-static StringAttr currentConfigSHA;
+static StringBuffer currentConfigSHA;
 static CriticalSection configSHAcs;
+
+// Helper function to log long strings in chunks
+static void logStringInChunks(const char *str, const char *prefix = "")
+{
+    if (!str || !*str)
+        return;
+
+    constexpr size_t chunkSize = 80;
+    size_t len = strlen(str);
+    size_t offset = 0;
+
+    while (offset < len)
+    {
+        size_t remaining = len - offset;
+        size_t chunkLen = (remaining < chunkSize) ? remaining : chunkSize;
+        StringBuffer chunk;
+        chunk.append(chunkLen, str + offset);
+        PROGLOG("%s%s", prefix, chunk.str());
+        offset += chunkLen;
+    }
+}
 
 // Compute SHA hash of the current configuration
 static void computeConfigSHA(StringBuffer &shaStr)
@@ -1424,33 +1445,89 @@ static void computeConfigSHA(StringBuffer &shaStr)
     try
     {
         Owned<IPropertyTree> componentConfig = getComponentConfigSP();
+        if (!componentConfig)
+            PROGLOG("DJPS: No component config!");
         Owned<IPropertyTree> globalConfig = getGlobalConfigSP();
+        if (!globalConfig)
+            PROGLOG("DJPS: No global config!");
 
-        StringBuffer configXML;
+        StringBuffer componentConfigXML;
         if (componentConfig)
         {
-            toXML(componentConfig, configXML, 0, XML_SortTags | XML_Format);
-            configXML.append('\n');
+            toXML(componentConfig, componentConfigXML, 0, 0);
+            PROGLOG("DJPS componentConfigXML: %u", componentConfigXML.length());
+            logStringInChunks(componentConfigXML.str(), "DJPS componentConfigXML: ");
         }
+        StringBuffer globalConfigXML;
         if (globalConfig)
         {
-            toXML(globalConfig, configXML, 0, XML_SortTags | XML_Format);
+            toXML(globalConfig, globalConfigXML, 0, 0);
+            PROGLOG("DJPS globalConfigXML: %u", globalConfigXML.length());
+            logStringInChunks(globalConfigXML.str(), "DJPS globalConfigXML: ");
         }
 
-        if (configXML.length())
+        if (componentConfigXML.length() || globalConfigXML.length())
         {
-            // Calculate hash64 of the configuration XML
+            StringBuffer configXML;
+            configXML.append(componentConfigXML);
+            configXML.append(globalConfigXML);
+            PROGLOG("DJPS configXML: %u", configXML.length());
+            logStringInChunks(configXML.str(), "DJPS configXML: ");
             hash64_t configHash = rtlHash64Data(configXML.length(), configXML.str(), 0);
             shaStr.appendf("%" I64F "x", configHash);
         }
     }
     catch (IException *e)
     {
-        IWARNLOG(e, "Failed to compute configuration SHA");
+        IWARNLOG(e, "DJPS Failed to compute configuration SHA");
+        e->Release();
+    }
+}
+static void computeConfigSHA(StringBuffer &shaStr, IPropertyTree *componentConfig, IPropertyTree *globalConfig)
+{
+    if (!componentConfig)
+        PROGLOG("DJPS: No component config!");
+    if (!globalConfig)
+        PROGLOG("DJPS: No global config!");
+
+    shaStr.clear();
+    try
+    {
+        StringBuffer componentConfigXML;
+        if (componentConfig)
+        {
+            toXML(componentConfig, componentConfigXML, 0, 0);
+            PROGLOG("DJPS componentConfigXML: %u", componentConfigXML.length());
+            logStringInChunks(componentConfigXML.str(), "DJPS componentConfigXML: ");
+        }
+        StringBuffer globalConfigXML;
+        if (globalConfig)
+        {
+            toXML(globalConfig, globalConfigXML, 0, 0);
+            PROGLOG("DJPS globalConfigXML: %u", globalConfigXML.length());
+            logStringInChunks(globalConfigXML.str(), "DJPS globalConfigXML: ");
+        }
+
+        if (componentConfigXML.length() || globalConfigXML.length())
+        {
+            StringBuffer configXML;
+            configXML.append(componentConfigXML);
+            configXML.append(globalConfigXML);
+            PROGLOG("DJPS configXML: %u", configXML.length());
+            logStringInChunks(configXML.str(), "DJPS configXML: ");
+            hash64_t configHash = rtlHash64Data(configXML.length(), configXML.str(), 0);
+            shaStr.appendf("%" I64F "x", configHash);
+        }
+    }
+    catch (IException *e)
+    {
+        IWARNLOG(e, "DJPS Failed to compute configuration SHA");
         e->Release();
     }
 }
 
+static CConfigUpdateHook configUpdateHook;
+/*
 static void configUpdateNotifyHandler(const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
 {
     PROGLOG("DJPS configUpdateNotifyHandler() called");
@@ -1474,17 +1551,18 @@ static void configUpdateNotifyHandler(const IPropertyTree *oldComponentConfigura
         }
     }
 }
-
+*/
 void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphName)
 {
     // Install configuration change detection handler for graceful restart
-    unsigned configUpdateHookId{0};
+//    unsigned configUpdateHookId{0};
     if (isContainerized())
     {
+/*
         configUpdateHookId = installConfigUpdateHook(configUpdateNotifyHandler, false);
         if (configUpdateHookId)
         {
-            PROGLOG("Configuration change monitoring enabled for graceful restart");
+            PROGLOG("Configuration change monitoring enabled for graceful restart with CB ID: %u", configUpdateHookId);
 
             // Initialize the configuration SHA baseline
             StringBuffer initialConfigSHA;
@@ -1497,6 +1575,40 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
         }
         else
             IWARNLOG("Failed to install configuration change monitoring");
+*/
+        auto modifyFunc = [](IPropertyTree * newComponentConfiguration, IPropertyTree * newGlobalConfiguration)
+        {
+            PROGLOG("DJPS modifyFunc() called");
+
+            StringBuffer newIncomingConfigSHA;
+            computeConfigSHA(newIncomingConfigSHA, newComponentConfiguration, newGlobalConfiguration);
+            PROGLOG("DJPS newIncomingConfigSHA: %s", newIncomingConfigSHA.str());
+
+            // Compute SHA of current (new) configuration
+            StringBuffer newConfigSHA;
+            computeConfigSHA(newConfigSHA);
+            PROGLOG("DJPS newConfigSHA: %s", newConfigSHA.str());
+
+            // Check and update the stored SHA, only if SHA actually changed (content change, not just file touch)
+            {
+                CriticalBlock b(configSHAcs);
+                if (newConfigSHA.length() && !strsame(currentConfigSHA.str(), newConfigSHA.str()))
+                {
+                    configChangeDetected = true;
+                    PROGLOG("Configuration SHA changed from '%s' to '%s' - Thor will gracefully restart after current job completes",
+                            currentConfigSHA.str(),
+                            newConfigSHA.str());
+                    currentConfigSHA.set(newConfigSHA.str());
+                }
+            }
+        };
+
+        // Initialize the configuration SHA baseline
+        computeConfigSHA(currentConfigSHA);
+        PROGLOG("DJPS Initial configuration SHA: %s", currentConfigSHA.str());
+        PROGLOG("DJPS configUpdateHook.installModifierOnce(modifyFunc, false); before");
+        configUpdateHook.installModifierOnce(modifyFunc, false);
+        PROGLOG("DJPS Configuration change monitoring enabled for graceful restart");
     }
 
     aborting = 0;
@@ -1684,7 +1796,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                     currentGraphName.clear();
 
                     // Check for configuration changes and exit gracefully if detected
-                    if (configChangeDetected.load())
+                    if (configChangeDetected)
                     {
                         PROGLOG("Configuration change detected - exiting gracefully to allow pod restart with new configuration");
                         break;
@@ -1740,8 +1852,9 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
     }
 
     // Cleanup configuration change monitoring
-    if (isContainerized() && configUpdateHookId)
-        removeConfigUpdateHook(configUpdateHookId);
+//    if (configUpdateHookId)
+//        removeConfigUpdateHook(configUpdateHookId);
+    configUpdateHook.clear();
 
     if (multiThorMemoryThreshold)
         setMultiThorMemoryNotify(0,NULL);
