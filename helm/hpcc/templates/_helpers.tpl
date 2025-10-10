@@ -3022,8 +3022,8 @@ Pass in dict with .root and .serviceAccount (e.g., "default", "agent", "thoragen
   {{- if hasKey .root.Values.global "serviceAccounts" -}}
    {{- if hasKey .root.Values.global.serviceAccounts .serviceAccount -}}
     {{- $saConfig := index .root.Values.global.serviceAccounts .serviceAccount -}}
-    {{- if hasKey $saConfig "podLabels" -}}
-     {{- range $key, $value := $saConfig.podLabels }}
+    {{- if hasKey $saConfig "labels" -}}
+     {{- range $key, $value := $saConfig.labels }}
 {{ $key }}: {{ $value | quote }}
      {{- end -}}
     {{- end -}}
