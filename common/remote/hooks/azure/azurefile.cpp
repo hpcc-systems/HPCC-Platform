@@ -452,16 +452,33 @@ void AzureFile::ensureMetaData()
 void AzureFile::gatherMetaData()
 {
     auto fileClient = getFileClient();
-    try
+    constexpr unsigned maxRetries = 4;
+    unsigned attempt = 0;
+    for (;;)
     {
-        Azure::Response<Models::FileProperties> response = fileClient->GetProperties();
-        Models::FileProperties &props = response.Value;
-        setProperties(props.FileSize, props.SmbProperties.LastWrittenOn, props.SmbProperties.CreatedOn);
-    }
-    catch (const Azure::Core::RequestFailedException& e)
-    {
-        fileExists = false;
-        fileSize = 0;
+        try
+        {
+            Azure::Response<Models::FileProperties> response = fileClient->GetProperties();
+            Models::FileProperties &props = response.Value;
+            setProperties(props.FileSize, props.SmbProperties.LastWrittenOn, props.SmbProperties.CreatedOn);
+            break;
+        }
+        catch (const Azure::Core::RequestFailedException& e)
+        {
+            if (e.StatusCode == Azure::Core::Http::HttpStatusCode::NotFound)
+            {
+                fileExists = false;
+                fileSize = unknownFileSize;
+                break;
+            }
+            attempt++;
+            handleRequestException(e, "AzureFile::gatherMetaData", attempt, maxRetries, queryFilename());
+        }
+        catch (const std::exception& e)
+        {
+            attempt++;
+            handleRequestException(e, "AzureFile::gatherMetaData", attempt, maxRetries, queryFilename());
+        }
     }
 }
 

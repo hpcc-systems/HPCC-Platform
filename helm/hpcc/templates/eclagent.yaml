@@ -67,7 +67,7 @@ data:
 {{- if hasKey .me "labels" }}
 {{ toYaml .me.labels | indent 12 }}
 {{- end }}
-            {{- include "hpcc.addServiceAccountLabels" (dict "root" $ "serviceAccount" "agent") | indent 12 }}
+            {{- include "hpcc.addServiceAccountLabels" (dict "root" .root "serviceAccount" "agent") | indent 12 }}
           annotations:
             {{- include "hpcc.generateAnnotations" . | indent 12 }}
         spec:
