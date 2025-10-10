@@ -33,6 +33,8 @@ static constexpr const char *kCallerIdOtelAttributeName = "id.caller";
 static constexpr const char *kLocalIdIdOtelAttributeName = "id.local";
 static constexpr size32_t lenTraceId = 32;
 static constexpr size32_t lenSpanId = 16;
+static constexpr size32_t bytesTraceId = lenTraceId/2;
+static constexpr size32_t bytesSpanId = lenSpanId/2;
 
 enum class SpanLogFlags : unsigned
 {

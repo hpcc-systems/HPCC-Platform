@@ -4481,8 +4481,13 @@ private:
 
                 if (loggingFlags & LOGGING_TRACEID)
                 {
-                    logInfo.append(lenTraceId, activeSpan->queryTraceId());
-                    logInfo.append(lenSpanId, activeSpan->querySpanId());
+                    //Serialize in binary to minimize the data transferred
+                    char traceId[bytesTraceId];
+                    char spanId[bytesSpanId];
+                    convertHexToData(bytesTraceId, traceId, lenTraceId, activeSpan->queryTraceId());
+                    convertHexToData(bytesSpanId, spanId, lenSpanId, activeSpan->querySpanId());
+                    logInfo.append(bytesTraceId, traceId);
+                    logInfo.append(bytesSpanId, spanId);
                 }
 
                 StringBuffer logPrefix;

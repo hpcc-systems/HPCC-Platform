@@ -682,4 +682,6 @@ extern jlib_decl const void * jmemmem(size_t lenHaystack, const void * haystack,
 // For preventing command injection, sanitize the argument to be passed to the system command
 extern jlib_decl StringBuffer& sanitizeCommandArg(const char* arg, StringBuffer& sanitized);
 
+extern jlib_decl void convertHexToData(size32_t lenTarget, void * target, size32_t len, const char * text);
+
 #endif

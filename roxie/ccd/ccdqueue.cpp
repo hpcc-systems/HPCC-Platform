@@ -911,10 +911,12 @@ void AgentContextLogger::set(ISerializedRoxieQueryPacket *packet)
             }
             if (loggingFlags & LOGGING_TRACEID)
             {
-                StringBuffer traceId(lenTraceId, (const char *) traceInfo);
-                traceInfo += lenTraceId;
-                StringBuffer spanId(lenSpanId, (const char *) traceInfo);
-                traceInfo += lenSpanId;
+                StringBuffer traceId;
+                StringBuffer spanId;
+                appendDataAsHex(traceId, bytesTraceId, (const char *) traceInfo);
+                traceInfo += bytesTraceId;
+                appendDataAsHex(spanId, bytesSpanId, (const char *) traceInfo);
+                traceInfo += bytesSpanId;
                 agentSpan.setown(createPseudoSpan(traceId, spanId));
                 setActiveSpan(agentSpan);
             }
