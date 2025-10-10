@@ -1066,7 +1066,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                         key={fieldID}
                         href={field.href}
                         target={field.newTab ? "_blank" : ""}
-                        style={{ paddingLeft: 8 }}>{field.value || ""}</Link>
+                    >{field.value || ""}</Link>
                 });
                 break;
             case "links":
@@ -1077,7 +1077,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                         key={`${fieldID}_${idx}`}
                         href={link.href}
                         target={link.newTab ? "_blank" : ""}
-                        style={{ paddingLeft: 8 }}>{link.value || ""}</Link>
+                        style={idx > 0 ? { paddingLeft: 6 } : {}}>{link.value || ""}</Link>
                     )
                 });
                 break;
