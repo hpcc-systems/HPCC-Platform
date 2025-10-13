@@ -373,10 +373,19 @@ public:
 
 IAsyncProcessor * createURingProcessor(const IPropertyTree * config, bool threaded)
 {
-    if (threaded)
-        return new URingThreadedProcessor(config);
-    else
-        return new URingUnthreadedProcessor(config);
+    try
+    {
+        if (threaded)
+            return new URingThreadedProcessor(config);
+        else
+            return new URingUnthreadedProcessor(config);
+    }
+    catch (IException * _e)
+    {
+        Owned<IException> e = _e;
+        EXCLOG(e, "Failed to create URing processor");
+        return nullptr;
+    }
 }
 
 
