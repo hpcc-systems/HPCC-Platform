@@ -6246,27 +6246,6 @@ void CWsDfuEx::dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileNa
 }
 
 // NB: deprecated from ver >= 1.50
-bool CWsDfuEx::onDFUFileAccess(IEspContext &context, IEspDFUFileAccessRequest &req, IEspDFUFileAccessResponse &resp)
-{
-    try
-    {
-        IConstDFUFileAccessRequestBase &requestBase = req.getRequestBase();
-
-        bool returnTextResponse = CFileAccessRole_External == requestBase.getAccessRole();
-
-        CDfsLogicalFileName lfn;
-        lfn.set(requestBase.getName());
-        lfn.setCluster(requestBase.getCluster());
-
-        dFUFileAccessCommon(context, lfn, 0, requestBase.getJobId(), requestBase.getExpirySeconds(), returnTextResponse, 0, resp);
-    }
-    catch (IException *e)
-    {
-        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
-    }
-    return true;
-}
-
 bool CWsDfuEx::onDFUFileAccessV2(IEspContext &context, IEspDFUFileAccessV2Request &req, IEspDFUFileAccessResponse &resp)
 {
     try
@@ -6375,107 +6354,6 @@ void CWsDfuEx::exportRecordDefinitionBinaryType(const char *recordDefinition, Me
 }
 
 // NB: deprecated from ver >= 1.50
-bool CWsDfuEx::onDFUFileCreate(IEspContext &context, IEspDFUFileCreateRequest &req, IEspDFUFileCreateResponse &resp)
-{
-    try
-    {
-#ifdef _CONTAINERIZED
-        UNIMPLEMENTED_X("CONTAINERIZED(CWsDfuEx::onDFUFileCreate)");
-#else
-        IConstDFUFileAccessRequestBase &requestBase = req.getRequestBase();
-        const char *fileName = requestBase.getName();
-        const char *clusterName = requestBase.getCluster();
-        const char *recordDefinition = req.getECLRecordDefinition();
-        StringBuffer requestId(requestBase.getJobId());
-        unsigned expirySecs = requestBase.getExpirySeconds();
-        bool returnTextResponse = true;
-
-        if (isEmptyString(fileName))
-             throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "DFUFileCreate: No Name defined.");
-        if (isEmptyString(clusterName))
-             throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "DFUFileCreate: No Cluster defined.");
-        if (isEmptyString(recordDefinition))
-             throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "DFUFileCreate: No ECLRecordDefinition defined.");
-
-        StringBuffer userId;
-        context.getUserID(userId);
-        Owned<IUserDescriptor> userDesc;
-        if (!userId.isEmpty())
-        {
-            userDesc.setown(createUserDescriptor());
-            userDesc->set(userId.str(), context.queryPassword(), context.querySignature());
-        }
-
-        ClusterType clusterType = getClusterTypeByClusterName(clusterName);
-        if (clusterType == NoCluster)
-             throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "DFUFileCreate: Cluster %s not found.", clusterName);
-
-        CDfsLogicalFileName lfn;
-        lfn.set(fileName);
-        StringBuffer normalizedFileName(lfn.get());
-
-        checkLogicalName(normalizedFileName, userDesc, false, true, false, nullptr);
-
-        const char *clusterTypeEx = clusterTypeString(clusterType, false);
-        StringBuffer groupName;
-        Owned<IGroup> group = getDFUFileIGroup(clusterName, clusterType, clusterTypeEx, req.getPartLocations(), groupName);
-
-        StringBuffer tempFileName(normalizedFileName);
-        tempFileName.append(DFUFileCreate_FileNamePostfix);
-
-        //create FileId
-        StringBuffer fileId;
-        fileId.set(groupName.str()).append(DFUFileIdSeparator).append(clusterName).append(DFUFileIdSeparator).append(tempFileName.str());
-        resp.setFileId(fileId.str());
-
-        if (requestId.isEmpty())
-            requestId.appendf("Create %s on %s", normalizedFileName.str(), clusterName);
-
-        Owned<IFileDescriptor> fileDesc = createFileDescriptor(tempFileName, clusterTypeString(clusterType, false), groupName, group);
-        fileDesc->queryProperties().setProp("@job", requestId);
-        if (!userId.isEmpty())
-            fileDesc->queryProperties().setProp("@owner", userId);
-
-        MemoryBuffer layoutBin;
-        exportRecordDefinitionBinaryType(recordDefinition, layoutBin);
-        if (0 == layoutBin.length())
-            throw makeStringExceptionV(ECLWATCH_INVALID_ECLRECDEF, "DFUFileCreate: Failed to parse ECL record definition: %s.", recordDefinition);
-        fileDesc->queryProperties().setPropBin("_rtlType", layoutBin.length(), layoutBin.toByteArray());
-        fileDesc->queryProperties().setProp("ECL", recordDefinition);
-
-        // NB: if file has copies on >1 cluster, they must share the same key
-        StringBuffer keyPairName;
-        unsigned port;
-        bool secure;
-
-        std::vector<std::string> groups;
-        groups.push_back(groupName.str());
-        getFileDafilesrvConfiguration(keyPairName, port, secure, normalizedFileName, groups);
-
-        Owned<IPropertyTree> metaInfo = createDFUFileMetaInfo(tempFileName, fileDesc, requestId, "WRITE", expirySecs, userDesc, keyPairName, port, secure, maxFileAccessExpirySeconds);
-        metaInfo->setProp("clusterName", clusterName);
-
-        StringBuffer metaInfoBlob;
-        encodeDFUFileMeta(metaInfoBlob, metaInfo, env);
-
-        IEspDFUFileAccessInfo &accessInfo = resp.updateAccessInfo();
-        accessInfo.setMetaInfoBlob(metaInfoBlob);
-
-        getFilePartsInfo(context, nullptr, *fileDesc, true, accessInfo);
-        getJsonTypeInfo(*fileDesc, accessInfo);
-
-        accessInfo.setExpiryTime(metaInfo->queryProp("expiryTime"));
-        accessInfo.setFileAccessPort(metaInfo->getPropInt("port"));
-        accessInfo.setFileAccessSSL(metaInfo->getPropBool("secure"));
-#endif
-    }
-    catch (IException *e)
-    {
-        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
-    }
-    return true;
-}
-
 bool CWsDfuEx::onDFUFileCreateV2(IEspContext &context, IEspDFUFileCreateV2Request &req, IEspDFUFileCreateResponse &resp)
 {
     try

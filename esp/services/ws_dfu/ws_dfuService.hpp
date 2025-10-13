@@ -188,10 +188,6 @@ public:
     virtual bool onDFUFileAccessV2(IEspContext &context, IEspDFUFileAccessV2Request &req, IEspDFUFileAccessResponse &resp);
     virtual bool onDFUFileCreateV2(IEspContext &context, IEspDFUFileCreateV2Request &req, IEspDFUFileCreateResponse &resp);
 
-    // NB: the following 3 methods are deprecated from ver >= 1.50
-    virtual bool onDFUFileAccess(IEspContext &context, IEspDFUFileAccessRequest &req, IEspDFUFileAccessResponse &resp);
-    virtual bool onDFUFileCreate(IEspContext &context, IEspDFUFileCreateRequest &req, IEspDFUFileCreateResponse &resp);
-
 private:
     void setFileIterateFilter(unsigned maxFiles, StringBuffer &filterBuf);
     void setFileTypeFilter(const char* fileType, StringBuffer& filterBuf);
