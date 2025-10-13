@@ -6245,7 +6245,6 @@ void CWsDfuEx::dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileNa
     LOG(MCauditInfo,",FileAccess,EspProcess,READ,%s,%s,%s,jobid=%s,expirySecs=%d", cluster.str(), userID.str(), fileName.str(), requestId, expirySecs);
 }
 
-// NB: deprecated from ver >= 1.50
 bool CWsDfuEx::onDFUFileAccessV2(IEspContext &context, IEspDFUFileAccessV2Request &req, IEspDFUFileAccessResponse &resp)
 {
     try
@@ -6353,7 +6352,6 @@ void CWsDfuEx::exportRecordDefinitionBinaryType(const char *recordDefinition, Me
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "exportRecordDefinitionBinaryType: Failed in exportBinaryType.");
 }
 
-// NB: deprecated from ver >= 1.50
 bool CWsDfuEx::onDFUFileCreateV2(IEspContext &context, IEspDFUFileCreateV2Request &req, IEspDFUFileCreateResponse &resp)
 {
     try
