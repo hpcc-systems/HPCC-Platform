@@ -856,25 +856,6 @@ ESPresponse [exceptions_inline, nil_remove] EraseHistoryResponse
     ESParray<ESPStruct History, Origin> History;
 };
 
-// NB: DFUFileAccessRequestBase - depr_ver("1.50")
-ESPStruct DFUFileAccessRequestBase
-{
-    string Name;
-    string Cluster;
-    string JobId;
-    int ExpirySeconds(60);
-    ESPenum FileAccessRole AccessRole;
-    ESPenum SecAccessType AccessType;
-    bool ReturnJsonTypeInfo(false);
-    bool ReturnBinTypeInfo(false);
-};
-
-// NB: DFUFileAccessRequestBase - depr_ver("1.50")
-ESPrequest DFUFileAccessRequest
-{
-    EspStruct DFUFileAccessRequestBase RequestBase;
-};
-
 ESPrequest DFUFileAccessV2Request
 {
     string Name;                        // the logical file name
@@ -947,13 +928,6 @@ ESPresponse [exceptions_inline] DFUFileAccessResponse
     [min_ver("1.51")] ESPenum DFUFileType Type;        // e.g. flat, csv, xml
 };
 
-
-ESPrequest [nil_remove] DFUFileCreateRequest
-{
-    string ECLRecordDefinition;
-    ESParray<string> PartLocations;
-    EspStruct DFUFileAccessRequestBase RequestBase;
-};
 
 ESPrequest [nil_remove] DFUFileCreateV2Request
 {
@@ -1049,10 +1023,6 @@ ESPservice [
 
     ESPmethod [auth_feature("DfuAccess:READ"), min_ver("1.50")] DFUFileAccessV2(DFUFileAccessV2Request, DFUFileAccessResponse);
     ESPmethod [auth_feature("DfuAccess:FULL"), min_ver("1.50")] DFUFileCreateV2(DFUFileCreateV2Request, DFUFileCreateResponse);
-
-// NB: these methods are deprecated from ver >= 1.50
-    ESPmethod [auth_feature("DfuAccess:READ"), min_ver("1.39")] DFUFileAccess(DFUFileAccessRequest, DFUFileAccessResponse);
-    ESPmethod [auth_feature("DfuAccess:FULL"), min_ver("1.39")] DFUFileCreate(DFUFileCreateRequest, DFUFileCreateResponse);
 };
 
 SCMexportdef(WSDFU);

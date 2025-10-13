@@ -96,29 +96,6 @@ static const char *advanceToNextAvailableDFUServiceURL(unsigned &currentURL)
     return dfuServiceUrls[currentURL].c_str();
 }
 
-static IClientDFUFileAccessResponse *doLookupDFUFileDeprecated(IClientWsDfu *dfuClient, const char *logicalName, const char *requestId, unsigned expirySecs)
-{
-    Owned<IClientDFUFileAccessRequest> dfuReq = dfuClient->createDFUFileAccessRequest();
-
-    CDfsLogicalFileName lfn;
-    lfn.set(logicalName);
-
-    StringBuffer cluster, lfnName;
-    lfn.getCluster(cluster);
-    lfn.get(lfnName); // remove cluster if present
-
-    IEspDFUFileAccessRequestBase &requestBase = dfuReq->updateRequestBase();
-    requestBase.setName(lfnName);
-    requestBase.setCluster(cluster);
-    requestBase.setExpirySeconds(expirySecs);
-    requestBase.setJobId(requestId);
-    requestBase.setAccessRole(CFileAccessRole_External);
-    requestBase.setAccessType(CSecAccessType_Read);
-    requestBase.setReturnBinTypeInfo(true);
-
-    return dfuClient->DFUFileAccess(dfuReq);
-}
-
 static IClientDFUFileAccessResponse *doLookupDFUFile(IClientWsDfu *dfuClient, const char *logicalName, const char *requestId, unsigned expirySecs)
 {
     Owned<IClientDFUFileAccessV2Request> dfuReq = dfuClient->createDFUFileAccessV2Request();
@@ -141,60 +118,20 @@ static IClientDFUFileAccessResponse *doLookupDFUFile(IClientWsDfu *dfuClient, co
     return dfuClient->DFUFileAccessV2(dfuReq);
 }
 
-static IDFUFileAccess *doLookupDFUFileHandleLegacy(const char *serviceUrl, const char *logicalName, const char *requestId, unsigned expirySecs, const char *user, const char *password)
+static IDFUFileAccess *doLookupDFUFileHandle(const char *serviceUrl, const char *logicalName, const char *requestId, unsigned expirySecs, const char *user, const char *password)
 {
     Owned<IClientWsDfu> dfuClient = createWsDfuClient();
     dfuClient->addServiceUrl(serviceUrl);
     dfuClient->setUsernameToken(user, password, "");
-    Owned<IClientDFUFileAccessResponse> dfuResp;
-    try
-    {
-        dfuResp.setown(doLookupDFUFile(dfuClient, logicalName, requestId, expirySecs));
-    }
-    catch (IException *e)
-    {
-        /* NB: there should really be a different IException class and a specific error code
-         * The server knows it's an unsupported method.
-         */
-        if (SOAP_SERVER_ERROR != e->errorCode())
-            throw;
-        // fall through and try deprecated method
-        e->Release();
-    }
-    if (!dfuResp)
-        dfuResp.setown(doLookupDFUFileDeprecated(dfuClient, logicalName, requestId, expirySecs));
+    
+    Owned<IClientDFUFileAccessResponse> dfuResp = doLookupDFUFile(dfuClient, logicalName, requestId, expirySecs);
 
     const IMultiException *excep = &dfuResp->getExceptions(); // NB: warning despite getXX name, this does not Link
     if (excep->ordinality() > 0)
         throw LINK((IMultiException *)excep); // NB - const IException.. not caught in general..
 
     Owned<IDFUFileAccess> ret = createDFUFileAccess(dfuResp->getAccessInfo().getMetaInfoBlob());
-
-    if (!ret->queryEngineInterface()->queryMeta()) // as a result of legacy WsDFU version
-    {
-        const MemoryBuffer &binLayout = dfuResp->getAccessInfo().getRecordTypeInfoBin();
-        if (0 == binLayout.length())
-            throw makeStringExceptionV(0, "lookupDFUFile(%s) - layout missing", logicalName);
-        ret->queryEngineInterface()->setLayoutBin(binLayout.length(), binLayout.bytes());
-    }
     return ret.getClear();
-}
-
-static IClientDFUFileCreateResponse *doCreateDFUFileDeprecated(IClientWsDfu *dfuClient, const char *logicalName, const char *cluster, DFUFileType type, const char *recDef, const char *requestId, unsigned expirySecs)
-{
-    Owned<IClientDFUFileCreateRequest> dfuReq = dfuClient->createDFUFileCreateRequest();
-
-    dfuReq->setECLRecordDefinition(recDef);
-    IEspDFUFileAccessRequestBase &requestBase = dfuReq->updateRequestBase();
-    requestBase.setName(logicalName);
-    requestBase.setCluster(cluster);
-    requestBase.setExpirySeconds(expirySecs);
-    requestBase.setJobId(requestId);
-    requestBase.setAccessRole(CFileAccessRole_External);
-    requestBase.setAccessType(CSecAccessType_Write);
-    requestBase.setReturnBinTypeInfo(true);
-
-    return dfuClient->DFUFileCreate(dfuReq);
 }
 
 static IClientDFUFileCreateResponse *doCreateDFUFile(IClientWsDfu *dfuClient, const char *logicalName, const char *cluster, DFUFileType type, const char *recDef, const char *requestId, unsigned expirySecs, bool compressed)
@@ -227,49 +164,22 @@ static IClientDFUFileCreateResponse *doCreateDFUFile(IClientWsDfu *dfuClient, co
     return dfuClient->DFUFileCreateV2(dfuReq);
 }
 
-static IDFUFileAccess *doCreateDFUFileHandleLegacy(const char *serviceUrl, const char *logicalName, const char *cluster, DFUFileType type, const char *recDef, const char *requestId, unsigned expirySecs, bool compressed, const char *user, const char *password)
+static IDFUFileAccess *doCreateDFUFileHandle(const char *serviceUrl, const char *logicalName, const char *cluster, DFUFileType type, const char *recDef, const char *requestId, unsigned expirySecs, bool compressed, const char *user, const char *password)
 {
     Owned<IClientWsDfu> dfuClient = createWsDfuClient();
     dfuClient->addServiceUrl(serviceUrl);
     dfuClient->setUsernameToken(user, password, "");
 
-    Owned<IClientDFUFileCreateResponse> dfuResp;
-    try
-    {
-        dfuResp.setown(doCreateDFUFile(dfuClient, logicalName, cluster, type, recDef, requestId, expirySecs, compressed));
-    }
-    catch (IException *e)
-    {
-        /* NB: there should really be a different IException class and a specific error code
-         * The server knows it's an unsupported method.
-         */
-        if (SOAP_SERVER_ERROR != e->errorCode())
-            throw;
-        // fall through and try deprecated method
-        e->Release();
-    }
-    if (!dfuResp)
-    {
-        if (compressed)
-            WARNLOG("createDFUFile(%s), legacy esp server does not support creating compressed files", logicalName);
-        dfuResp.setown(doCreateDFUFileDeprecated(dfuClient, logicalName, cluster, type, recDef, requestId, expirySecs));
-    }
+    Owned<IClientDFUFileCreateResponse> dfuResp = doCreateDFUFile(dfuClient, logicalName, cluster, type, recDef, requestId, expirySecs, compressed);
 
     const IMultiException *excep = &dfuResp->getExceptions(); // NB: warning despite getXX name, this does not Link
     if (excep->ordinality() > 0)
         throw LINK((IMultiException *)excep); // NB: - const IException.. not caught in general..
 
     Owned<IDFUFileAccess> ret = createDFUFileAccess(dfuResp->getAccessInfo().getMetaInfoBlob(), dfuResp->getFileId());
-    // NB: patch up record definition if server didn't return it (because legacy WsDFU version)
+    // NB: patch up record definition if server didn't return it
     if (!ret->queryEngineInterface()->queryProperties().hasProp("ECL"))
         ret->queryEngineInterface()->queryProperties().setProp("ECL", recDef);
-    if (!ret->queryEngineInterface()->queryMeta()) // as a result of legacy WsDFU version
-    {
-        const MemoryBuffer &binLayout = dfuResp->getAccessInfo().getRecordTypeInfoBin();
-        if (0 == binLayout.length())
-            throw makeStringExceptionV(0, "createDFUFile(%s) - layout missing", logicalName);
-        ret->queryEngineInterface()->setLayoutBin(binLayout.length(), binLayout.bytes());
-    }
 
     return ret.getClear();
 }
@@ -284,15 +194,15 @@ static void doPublishDFUFile(const char *serviceUrl, IDFUFileAccess *dfuFile, bo
 
     dfuReq->setFileId(dfuFile->queryFileId());
 
-    dfuReq->setOverwrite(overwrite); // NB: WsDfu min_ver 1.50
+    dfuReq->setOverwrite(overwrite);
     IFileDescriptor &fileDesc = dfuFile->queryEngineInterface()->queryFileDescriptor();
 
     MemoryBuffer mb;
     fileDesc.serialize(mb);
-    dfuReq->setFileDescriptorBlob(mb); // NB: WsDfu min_ver 1.50
+    dfuReq->setFileDescriptorBlob(mb);
 
     const char *eclRecDef = fileDesc.queryProperties().queryProp("ECL");
-    dfuReq->setECLRecordDefinition(eclRecDef); // NB: WsDfu depv_ver < 1.50
+    dfuReq->setECLRecordDefinition(eclRecDef);
 
     Owned<IClientDFUFilePublishResponse> dfuResp = dfuClient->DFUFilePublish(dfuReq);
 
@@ -326,7 +236,7 @@ IDFUFileAccess *lookupDFUFile(const char *logicalName, const char *requestId, un
              * forwarded to Dali, and it managed the live/stale locks.
              */
 
-            return doLookupDFUFileHandleLegacy(espServiceUrl, logicalName, requestId, expirySecs, user, password);
+            return doLookupDFUFileHandle(espServiceUrl, logicalName, requestId, expirySecs, user, password);
         }
         catch (IJSOCK_Exception *e)
         {
@@ -375,7 +285,7 @@ IDFUFileAccess *createDFUFile(const char *logicalName, const char *cluster, DFUF
     {
         try
         {
-            return doCreateDFUFileHandleLegacy(espServiceUrl, logicalName, cluster, type, recDef, requestId, expirySecs, compressed, user, password);
+            return doCreateDFUFileHandle(espServiceUrl, logicalName, cluster, type, recDef, requestId, expirySecs, compressed, user, password);
         }
         catch (IJSOCK_Exception *e)
         {
