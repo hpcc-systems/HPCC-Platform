@@ -39,7 +39,7 @@ ElasticMetricSink::ElasticMetricSink(const char *name, const IPropertyTree *pSet
     }
     else
     {
-        WARNLOG("ElasticMetricSink: Unable to complete initialization, sink not collecting");
+        OWARNLOG("ElasticMetricSink: Unable to complete initialization, sink not collecting");
     }
 }
 
@@ -50,103 +50,119 @@ bool ElasticMetricSink::getHostConfig(const IPropertyTree *pSettingsTree)
     StringBuffer hostProtocol;
     StringBuffer hostPort;
 
-    Owned<IPropertyTree> pHostConfigTree = pSettingsTree->getPropTree("host");
-    if (pHostConfigTree)
+    try
     {
-        pHostConfigTree->getProp("@domain", hostDomain);
-
-        if (!pHostConfigTree->getProp("@protocol", hostProtocol))
-            hostProtocol.append("https");
-
-        if (!pHostConfigTree->getProp("@port", hostPort))
-            hostPort.append("9200");
-    }
-
-    // Validate the host configuration minimal settings are present
-    if (hostDomain.isEmpty() || hostProtocol.isEmpty())
-    {
-        WARNLOG("ElasticMetricSink: Host configuration missing domain and/or protocol");
-        return false;
-    }
-
-    // build url for use with httplib Client
-    elasticHostUrl.append(hostProtocol).append("://").append(hostDomain);
-    if (!hostPort.isEmpty())
-        elasticHostUrl.append(":").append(hostPort);
-
-    // Read optional certificate file path
-    pHostConfigTree->getProp("@certificateFilePath", certificateFilePath);
-
-    // Get authentication settings, if present
-    Owned<IPropertyTree> pAuthConfigTree = pHostConfigTree->getPropTree("authentication");
-    if (!pAuthConfigTree)
-        return true;
-
-    // Retrieve the authentication type and validate (only basic is supported)
-    if (!pAuthConfigTree->getProp("@type", authenticationType) || !streq(authenticationType, "basic"))
-    {
-        WARNLOG("ElasticMetricSink: Only basic authentication is supported");
-        return false;
-    }
-
-    StringBuffer credentialsSecretKey;
-    pAuthConfigTree->getProp("@credentialsSecret", credentialsSecretKey);  // vault/secrets key
-    if (!credentialsSecretKey.isEmpty())
-    {
-        StringBuffer credentialsVaultId;
-        pAuthConfigTree->getProp("@credentialsVaultId", credentialsVaultId);//optional HashiCorp vault ID
-
-        PROGLOG("Retrieving ElasticSearch host authentication username/password from secrets tree '%s', from vault '%s'",
-               credentialsSecretKey.str(), !credentialsVaultId.isEmpty() ? credentialsVaultId.str() : "");
-
-        Owned<const IPropertyTree> secretTree(getSecret("system", credentialsSecretKey.str(), credentialsVaultId, nullptr));
-        if (secretTree == nullptr)
+        Owned<IPropertyTree> pHostConfigTree = pSettingsTree->getPropTree("host");
+        if (pHostConfigTree)
         {
-            WARNLOG("ElasticMetricSink: Unable to load secret tree '%s', from vault '%s'", credentialsSecretKey.str(),
-                    !credentialsVaultId.isEmpty() ? credentialsVaultId.str() : "n/a");
+            pHostConfigTree->getProp("@domain", hostDomain);
+
+            if (!pHostConfigTree->getProp("@protocol", hostProtocol))
+                hostProtocol.append("https");
+
+            if (!pHostConfigTree->getProp("@port", hostPort))
+                hostPort.append("9200");
+        }
+
+        // Validate the host configuration minimal settings are present
+        if (hostDomain.isEmpty() || hostProtocol.isEmpty())
+        {
+            OWARNLOG("ElasticMetricSink: Host configuration missing domain and/or protocol");
             return false;
         }
 
-        // authentication type defines the secret key name/value pairs to retrieve
-        if (streq(authenticationType, "basic"))
+        // build url for use with httplib Client
+        elasticHostUrl.append(hostProtocol).append("://").append(hostDomain);
+        if (!hostPort.isEmpty())
+            elasticHostUrl.append(":").append(hostPort);
+
+        // Read optional certificate file path
+        pHostConfigTree->getProp("@certificateFilePath", certificateFilePath);
+
+        // Get authentication settings, if present
+        Owned<IPropertyTree> pAuthConfigTree = pHostConfigTree->getPropTree("authentication");
+        if (!pAuthConfigTree)
+            return true;
+
+        // Retrieve the authentication type and validate (only basic is supported)
+        if (!pAuthConfigTree->getProp("@type", authenticationType) || !streq(authenticationType, "basic"))
         {
-            if (!getSecretKeyValue(username, secretTree, "username") || !getSecretKeyValue(password, secretTree, "password"))
+            OWARNLOG("ElasticMetricSink: Only basic authentication is supported");
+            return false;
+        }
+
+        StringBuffer credentialsSecretKey;
+        pAuthConfigTree->getProp("@credentialsSecret", credentialsSecretKey);  // vault/secrets key
+        if (!credentialsSecretKey.isEmpty())
+        {
+            StringBuffer credentialsVaultId;
+            pAuthConfigTree->getProp("@credentialsVaultId", credentialsVaultId);//optional HashiCorp vault ID
+
+            PROGLOG("Retrieving ElasticSearch host authentication username/password from secrets tree '%s', from vault '%s'",
+                   credentialsSecretKey.str(), !credentialsVaultId.isEmpty() ? credentialsVaultId.str() : "");
+
+            Owned<const IPropertyTree> secretTree(getSecret("system", credentialsSecretKey.str(), credentialsVaultId, nullptr));
+            if (secretTree == nullptr)
             {
-                WARNLOG("ElasticMetricSink: Missing username and/or password from secrets tree '%s', vault '%s'",
-                        credentialsSecretKey.str(), !credentialsVaultId.isEmpty() ? credentialsVaultId.str() : "n/a");
+                OWARNLOG("ElasticMetricSink: Unable to load secret tree '%s', from vault '%s'", credentialsSecretKey.str(),
+                        !credentialsVaultId.isEmpty() ? credentialsVaultId.str() : "n/a");
                 return false;
             }
+
+            // authentication type defines the secret key name/value pairs to retrieve
+            if (streq(authenticationType, "basic"))
+            {
+                if (!getSecretKeyValue(username, secretTree, "username") || !getSecretKeyValue(password, secretTree, "password"))
+                {
+                    OWARNLOG("ElasticMetricSink: Missing username and/or password from secrets tree '%s', vault '%s'",
+                            credentialsSecretKey.str(), !credentialsVaultId.isEmpty() ? credentialsVaultId.str() : "n/a");
+                    return false;
+                }
+            }
         }
+        else
+        {
+            // if basic auth, username and password are stored directly in the configuration
+            if (streq(authenticationType, "basic"))
+            {
+                StringBuffer encryptedPassword;
+                if (!pAuthConfigTree->getProp("@username", username) || !pAuthConfigTree->getProp("@password", encryptedPassword))
+                {
+                    OWARNLOG("ElasticMetricSink: Missing username and/or password from configuration");
+                    return false;
+                }
+                decrypt(password, encryptedPassword.str()); //MD5 encrypted in config
+            }
+        }
+
+        // Read optional timeout values
+        connectTimeout = pHostConfigTree->getPropInt("@connectionTimeout", connectTimeout);
+        readTimeout = pHostConfigTree->getPropInt("@readTimeout", readTimeout);
+        writeTimeout = pHostConfigTree->getPropInt("@writeTimeout", writeTimeout);
+
+        // Ensure timeouts are not longer than the collection period
+        if (connectTimeout > (int)collectionPeriodSeconds)
+            OWARNLOG("ElasticMetricSink: Connection timeout is longer than the collection period %d", collectionPeriodSeconds);
+
+        if (readTimeout > (int)collectionPeriodSeconds)
+            OWARNLOG("ElasticMetricSink: Read timeout is longer than the collection period %d", collectionPeriodSeconds);
+
+        if (writeTimeout > (int)collectionPeriodSeconds)
+            OWARNLOG("ElasticMetricSink: Write timeout is longer than the collection period %d", collectionPeriodSeconds);
     }
-    else
+    catch (IException *e)
     {
-        // if basic auth, username and password are stored directly in the configuration
-        if (streq(authenticationType, "basic"))
-        {
-            StringBuffer encryptedPassword;
-            if (!pAuthConfigTree->getProp("@username", username) || !pAuthConfigTree->getProp("@password", encryptedPassword))
-            {
-                WARNLOG("ElasticMetricSink: Missing username and/or password from configuration");
-                return false;
-            }
-            decrypt(password, encryptedPassword.str()); //MD5 encrypted in config
-        }
+        Owned<IException> ex = e;
+        StringBuffer errorMsg;
+        ex->errorMessage(errorMsg);
+        OWARNLOG("ElasticMetricSink: Exception during initialization, error=%d, message=%s", e->errorCode(), errorMsg.str());
+        return false;
     }
-
-    // Read optional timeout values
-    connectTimeout = pHostConfigTree->getPropInt("@connectionTimeout", connectTimeout);
-    readTimeout = pHostConfigTree->getPropInt("@readTimeout", readTimeout);
-    writeTimeout = pHostConfigTree->getPropInt("@writeTimeout", writeTimeout);
-
-    // Ensure timeouts are not longer than the collection period
-    if (connectTimeout > (int)collectionPeriodSeconds)
-        WARNLOG("ElasticMetricSink: Connection timeout is longer than the collection period %d", collectionPeriodSeconds);
-
-    if (readTimeout > (int)collectionPeriodSeconds)
-        WARNLOG("ElasticMetricSink: Read timeout is longer than the collection period %d", collectionPeriodSeconds);
-
-    if (writeTimeout > (int)collectionPeriodSeconds)
-        WARNLOG("ElasticMetricSink: Write timeout is longer than the collection period %d", collectionPeriodSeconds);
+    catch (...)
+    {
+        OWARNLOG("ElasticMetricSink: Unknown exception during initialization");
+        return false;
+    }
 
     return true;
 }
@@ -157,13 +173,13 @@ bool ElasticMetricSink::getIndexConfig(const IPropertyTree *pSettingsTree)
     Owned<IPropertyTree> pIndexConfigTree = pSettingsTree->getPropTree("index");
     if (!pIndexConfigTree)
     {
-        WARNLOG("ElasticMetricSink: Index configuration missing");
+        OWARNLOG("ElasticMetricSink: Index configuration missing");
         return false;
     }
 
     if (!pIndexConfigTree->getProp("@name", indexName))
     {
-        WARNLOG("ElasticMetricSink: Index configuration missing name");
+        OWARNLOG("ElasticMetricSink: Index configuration missing name");
         return false;
     }
 
@@ -197,13 +213,13 @@ bool ElasticMetricSink::getDynamicMappingSuffixesFromIndex(const IPropertyTree *
     if (res == nullptr)
     {
         httplib::Error err = res.error();
-        WARNLOG("ElasticMetricSink: Unable to connect to ElasticSearch host '%s', httplib Error = %d", elasticHostUrl.str(), err);
+        OWARNLOG("ElasticMetricSink: Unable to connect to ElasticSearch host '%s', httplib Error = %d", elasticHostUrl.str(), err);
         return false;
     }
 
     if (res->status != 200)
     {
-        WARNLOG("ElasticMetricSink: Error response status = %d, unable to retrieve mapping for index '%s'", res->status, indexName.str());
+        OWARNLOG("ElasticMetricSink: Error response status = %d, unable to retrieve mapping for index '%s'", res->status, indexName.str());
         return false;
     }
 
@@ -212,21 +228,21 @@ bool ElasticMetricSink::getDynamicMappingSuffixesFromIndex(const IPropertyTree *
     auto indexConfig = data[indexName.str()];
     if (indexConfig.is_null())
     {
-        WARNLOG("ElasticMetricSink: Unable to load configuration for Index '%s'", indexName.str());
+        OWARNLOG("ElasticMetricSink: Unable to load configuration for Index '%s'", indexName.str());
         return false;
     }
 
     auto mappings = indexConfig["mappings"];
     if (mappings.is_null())
     {
-        WARNLOG("ElasticMetricSink: Required 'mappings' section does not exist in Index '%s'", indexName.str());
+        OWARNLOG("ElasticMetricSink: Required 'mappings' section does not exist in Index '%s'", indexName.str());
         return false;
     }
 
     auto dynamicTemplates = mappings["dynamic_templates"];
     if (dynamicTemplates.is_null())
     {
-        WARNLOG("ElasticMetricSink: Required 'dynamic_templates' section does not exist in Index '%s'", indexName.str());
+        OWARNLOG("ElasticMetricSink: Required 'dynamic_templates' section does not exist in Index '%s'", indexName.str());
         return false;
     }
 
@@ -246,7 +262,7 @@ bool ElasticMetricSink::getDynamicMappingSuffixesFromIndex(const IPropertyTree *
                 {
                     if (!convertPatternToSuffix(matchValue.get<std::string>().c_str(), countMetricSuffix))
                     {
-                        WARNLOG("ElasticMetricSink: Invalid count suffix pattern");
+                        OWARNLOG("ElasticMetricSink: Invalid count suffix pattern");
                         return false;
                     }
                 }
@@ -254,7 +270,7 @@ bool ElasticMetricSink::getDynamicMappingSuffixesFromIndex(const IPropertyTree *
                 {
                     if (!convertPatternToSuffix(matchValue.get<std::string>().c_str(), histogramMetricSuffix))
                     {
-                        WARNLOG("ElasticMetricSink: Invalid histogram suffix pattern");
+                        OWARNLOG("ElasticMetricSink: Invalid histogram suffix pattern");
                         return false;
                     }
                 }
@@ -262,7 +278,7 @@ bool ElasticMetricSink::getDynamicMappingSuffixesFromIndex(const IPropertyTree *
                 {
                     if (!convertPatternToSuffix(matchValue.get<std::string>().c_str(), gaugeMetricSuffix))
                     {
-                        WARNLOG("ElasticMetricSink: Invalid gauge suffix pattern");
+                        OWARNLOG("ElasticMetricSink: Invalid gauge suffix pattern");
                         return false;
                     }
                 }
@@ -416,11 +432,11 @@ void ElasticMetricSink::doCollection()
         if (resp == nullptr)
         {
             httplib::Error err = resp.error();
-            WARNLOG("ElasticMetricSink: Unable to connect to ElasticSearch host '%s, httplib Error = %d", elasticHostUrl.str(), err);
+            OWARNLOG("ElasticMetricSink: Unable to connect to ElasticSearch host '%s, httplib Error = %d", elasticHostUrl.str(), err);
         }
         else if (resp->status != 200 && resp->status != 201)
         {
-            WARNLOG("ElasticMetricSink: Error response status = %d reporting metrics to Index '%s'", resp->status, indexName.str());
+            OWARNLOG("ElasticMetricSink: Error response status = %d reporting metrics to Index '%s'", resp->status, indexName.str());
         }
     }
 }
@@ -441,13 +457,13 @@ bool ElasticMetricSink::validateIndex()
     if (res == nullptr)
     {
         httplib::Error err = res.error();
-        WARNLOG("ElasticMetricSink: Unable to connect to ElasticSearch host '%s, httplib Error = %d", elasticHostUrl.str(), err);
+        OWARNLOG("ElasticMetricSink: Unable to connect to ElasticSearch host '%s, httplib Error = %d", elasticHostUrl.str(), err);
         return false;
     }
 
     else if (res->status != 200)
     {
-        WARNLOG("ElasticMetricSink: Error response status = %d accessing Index '%s'", res->status, indexName.str());
+        OWARNLOG("ElasticMetricSink: Error response status = %d accessing Index '%s'", res->status, indexName.str());
         return false;
     }
 
