@@ -856,8 +856,9 @@ public:
     }
 };
 
-// Maximum cost/benefit seen for 4 buckets, which does not skew the LRU list too much
-static constexpr unsigned cacheBits = 2;
+// Maximum cost/benefit seen for 16 buckets, which does not skew the LRU list too much
+// See HPCC-35152 for a discussion of the tradeoffs
+static constexpr unsigned cacheBits = 4;
 static constexpr unsigned cacheBuckets = 1U << cacheBits;
 static constexpr unsigned cacheShift = 32 - cacheBits;
 
