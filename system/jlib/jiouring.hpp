@@ -21,7 +21,7 @@
 #include <vector>
 #include "jptree.hpp"
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__) || defined(EMSCRIPTEN)
 #include <sys/uio.h>
 #else
 //Define the iovec structure for windows/
