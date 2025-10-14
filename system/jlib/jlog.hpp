@@ -999,7 +999,8 @@ inline void DBGLOG(char const * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCdebugInfo, format, args);
+// DJPS    VALOG(MCdebugInfo, format, args);
+    VALOG(MCuserProgress, format, args);
     va_end(args);
 }
 

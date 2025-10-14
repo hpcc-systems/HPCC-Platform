@@ -655,10 +655,40 @@ int main( int argc, const char *argv[]  )
     loadManagers(); // actually just a dummy call to ensure dll linked
     InitModuleObjects();
     NoQuickEditSection xxx;
+    StringBuffer configFilePath;
     {
         bool monitorConfig = false; // Do not allow updates to the config file, otherwise the slave may not be in sync.
         //MORE: What about updates to storage planes - they will not be passed through to the slaves
         globals.setown(loadConfiguration(thorDefaultConfigYaml, argv, "thor", "THOR", "thor.xml", nullptr, nullptr, monitorConfig));
+
+        // Extract and store the config file path from command line arguments
+        for (int i = 1; i < argc; i++)
+        {
+            const char *arg = argv[i];
+            if (startsWith(arg, "--config="))
+            {
+                configFilePath.append(arg + 9); // skip "--config="
+                break;
+            }
+            else if (streq(arg, "--config") && (i + 1 < argc))
+            {
+                configFilePath.append(argv[i + 1]);
+                break;
+            }
+        }
+        if (configFilePath.length())
+        {
+            // Make absolute if relative
+            if (!isAbsolutePath(configFilePath.str()))
+            {
+                StringBuffer absPath;
+                appendCurrentDirectory(absPath, false);
+                addNonEmptyPathSepChar(absPath);
+                absPath.append(configFilePath);
+                configFilePath.swapWith(absPath);
+            }
+            globals->setProp("@configFilePath", configFilePath.str());
+        }
     }
     updateTraceFlags(loadTraceFlags(globals, thorTraceOptions, queryTraceFlags()), true);
 #ifdef _DEBUG
@@ -701,6 +731,7 @@ int main( int argc, const char *argv[]  )
     removeSentinelFile(sentinelFile);
 
     EnableSEHtoExceptionMapping();
+    PROGLOG("========== DJPS: NEW CODE VERSION WITH CONFIG POLLING - BUILD TIMESTAMP %s %s ==========", __DATE__, __TIME__);
 #ifndef __64BIT__
     // Restrict stack sizes on 32-bit systems
     Thread::setDefaultStackSize(0x10000);   // NB under windows requires linker setting (/stack:)
