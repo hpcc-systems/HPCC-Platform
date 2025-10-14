@@ -719,7 +719,6 @@ int main( int argc, const char *argv[]  )
     removeSentinelFile(sentinelFile);
 
     EnableSEHtoExceptionMapping();
-    PROGLOG("========== DJPS: NEW CODE VERSION WITH CONFIG POLLING - BUILD TIMESTAMP %s %s ==========", __DATE__, __TIME__);
 #ifndef __64BIT__
     // Restrict stack sizes on 32-bit systems
     Thread::setDefaultStackSize(0x10000);   // NB under windows requires linker setting (/stack:)

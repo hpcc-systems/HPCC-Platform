@@ -1410,7 +1410,7 @@ void auditThorJobEvent(const char *eventName, const char *wuid, const char *grap
 // Configuration change detection for graceful restart
 static std::atomic<bool> configChangeDetected{false};
 static StringBuffer currentConfigSHA;
-static CriticalSection configSHAcs;
+//static CriticalSection configSHAcs;
 /*
 // Helper function to log long strings in chunks
 static void logStringInChunks(const char *str, const char *prefix = "")
@@ -1444,7 +1444,7 @@ static void computeConfigSHAFromDisk(StringBuffer &shaStr, const char *configFil
         Owned<IPropertyTree> diskConfig = createPTreeFromYAMLFile(configFilePath, ipt_none, ptr_ignoreWhiteSpace, nullptr);
         if (!diskConfig)
         {
-            PROGLOG("DJPS: Failed to load config from disk: %s", configFilePath);
+            PROGLOG("DJPS Failed to load config from disk: %s", configFilePath);
             return;
         }
 
@@ -1473,7 +1473,7 @@ static void computeConfigSHAFromDisk(StringBuffer &shaStr, const char *configFil
         e->Release();
     }
 }
-
+/*
 // Compute SHA hash of the current configuration
 static void computeConfigSHA(StringBuffer &shaStr)
 {
@@ -1482,10 +1482,10 @@ static void computeConfigSHA(StringBuffer &shaStr)
     {
         Owned<IPropertyTree> componentConfig = getComponentConfigSP();
         if (!componentConfig)
-            PROGLOG("DJPS: No component config!");
+            PROGLOG("DJPS No component config!");
         Owned<IPropertyTree> globalConfig = getGlobalConfigSP();
         if (!globalConfig)
-            PROGLOG("DJPS: No global config!");
+            PROGLOG("DJPS No global config!");
 
         StringBuffer componentConfigXML;
         if (componentConfig)
@@ -1537,7 +1537,8 @@ static void computeConfigSHA(StringBuffer &shaStr)
         e->Release();
     }
 }
-
+*/
+/*
 static void computeConfigSHA(StringBuffer &shaStr, IPropertyTree *componentConfig, IPropertyTree *globalConfig)
 {
     if (!componentConfig)
@@ -1598,90 +1599,9 @@ static void computeConfigSHA(StringBuffer &shaStr, IPropertyTree *componentConfi
         e->Release();
     }
 }
-
-static CConfigUpdateHook configUpdateHook;
-
-static void configUpdateNotifyHandler(const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
-{
-    PROGLOG("DJPS configUpdateNotifyHandler() called");
-
-    // Compute SHA of current (new) configuration
-    StringBuffer newConfigSHA;
-    computeConfigSHA(newConfigSHA);
-    PROGLOG("DJPS newConfigSHA: %s", newConfigSHA.str());
-
-    // Check and update the stored SHA, only if SHA actually changed (content change, not just file touch)
-    {
-        CriticalBlock b(configSHAcs);
-        if (newConfigSHA.length() && !streq(currentConfigSHA.str(), newConfigSHA.str()))
-        {
-            configChangeDetected = true;
-            PROGLOG("DJPS Configuration SHA changed from '%s' to '%s' - Thor will gracefully restart after current job completes",
-                    currentConfigSHA.str(),
-                    newConfigSHA.str());
-            currentConfigSHA.set(newConfigSHA.str());
-        }
-    }
-}
-
+*/
 void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphName)
 {
-    // Install configuration change detection handler for graceful restart
-    unsigned configUpdateHookId{0};
-    if (isContainerized())
-    {
-        configUpdateHookId = installConfigUpdateHook(configUpdateNotifyHandler, false);
-        if (configUpdateHookId)
-        {
-            PROGLOG("Configuration change monitoring enabled for graceful restart with CB ID: %u", configUpdateHookId);
-
-            // Initialize the configuration SHA baseline
-            StringBuffer initialConfigSHA;
-            computeConfigSHA(initialConfigSHA);
-            {
-                CriticalBlock b(configSHAcs);
-                currentConfigSHA.set(initialConfigSHA.str());
-            }
-            PROGLOG("Initial configuration SHA: %s", initialConfigSHA.str());
-        }
-        else
-            IWARNLOG("Failed to install configuration change monitoring");
-
-        auto modifyFunc = [](IPropertyTree * newComponentConfiguration, IPropertyTree * newGlobalConfiguration)
-        {
-            PROGLOG("DJPS modifyFunc() called");
-
-            StringBuffer newIncomingConfigSHA;
-            computeConfigSHA(newIncomingConfigSHA, newComponentConfiguration, newGlobalConfiguration);
-            PROGLOG("DJPS newIncomingConfigSHA: %s", newIncomingConfigSHA.str());
-
-            // Compute SHA of current (new) configuration
-            StringBuffer newConfigSHA;
-            computeConfigSHA(newConfigSHA);
-            PROGLOG("DJPS newConfigSHA: %s", newConfigSHA.str());
-
-            // Check and update the stored SHA, only if SHA actually changed (content change, not just file touch)
-            {
-                CriticalBlock b(configSHAcs);
-                if (newConfigSHA.length() && !strsame(currentConfigSHA.str(), newConfigSHA.str()))
-                {
-                    configChangeDetected = true;
-                    PROGLOG("Configuration SHA changed from '%s' to '%s' - Thor will gracefully restart after current job completes",
-                            currentConfigSHA.str(),
-                            newConfigSHA.str());
-                    currentConfigSHA.set(newConfigSHA.str());
-                }
-            }
-        };
-
-        // Initialize the configuration SHA baseline
-        computeConfigSHA(currentConfigSHA);
-        PROGLOG("DJPS Initial configuration SHA: %s", currentConfigSHA.str());
-        PROGLOG("DJPS configUpdateHook.installModifierOnce(modifyFunc, false); before");
-        configUpdateHook.installModifierOnce(modifyFunc, false);
-        PROGLOG("DJPS Configuration change monitoring enabled for graceful restart");
-    }
-
     aborting = 0;
     unsigned multiThorMemoryThreshold = globals->getPropInt("@multiThorMemoryThreshold")*0x100000;
     try
@@ -1768,6 +1688,42 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                     IWARNLOG("baseImageVersion or runtimeImageVersion missing from environment");
                     platformVersioningAvailable = false;
                 }
+
+                // Compute initial configuration SHA from disk before entering job loop
+                // This ensures the baseline uses the same method as the polling check
+                {
+                    const char *configFile = nullptr;
+
+                    // First try the stored config file path (extracted from --config at startup)
+                    configFile = globals->queryProp("@configFilePath");
+
+                    // Fall back to environment variable (set by Kubernetes)
+                    if (!configFile)
+                        configFile = getenv("CONFIG_FILE");
+
+                    // Fall back to constructing path from cluster name for containerized deployments
+                    StringBuffer configPath;
+                    if (!configFile && isContainerized())
+                    {
+                        const char *clusterName = globals->queryProp("@name");
+                        if (clusterName)
+                            configPath.appendf("/etc/config/%s.yaml", clusterName);
+                        else
+                            configPath.append("/etc/config/thor.yaml");
+                        configFile = configPath.str();
+                    }
+
+                    if (configFile && *configFile)
+                    {
+                        computeConfigSHAFromDisk(currentConfigSHA, configFile);
+                        PROGLOG("DJPS: Initial configuration SHA computed from disk (%s): %s", configFile, currentConfigSHA.str());
+                    }
+                    else
+                    {
+                        WARNLOG("DJPS: Unable to determine config file path for initial SHA computation");
+                    }
+                }
+
                 PROGLOG("DJPS: Entering main job processing loop (polling will occur after each job completes)");
                 while (true)
                 {
@@ -1913,25 +1869,30 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                                 configPath.append("/etc/config/thor.yaml");
                             configFile = configPath.str();
                         }
-                        PROGLOG("DJPS: configFile2: %s", configFile ? configFile : "nullptr");
+                        PROGLOG("DJPS configFile2: %s", configFile ? configFile : "nullptr");
 
                         if (!configFile)
                         {
-                            PROGLOG("DJPS: Unable to determine config file path for polling - skipping config change detection");
+                            PROGLOG("DJPS Unable to determine config file path for polling - skipping config change detection");
                             configFile = ""; // prevent null pointer access
                         }
 
                         StringBuffer newConfigSHA;
                         if (configFile && *configFile)
-                            computeConfigSHAFromDisk(newConfigSHA, configFile);
                         {
-                            CriticalBlock b(configSHAcs);
+                            computeConfigSHAFromDisk(newConfigSHA, configFile);
+                            PROGLOG("DJPS: Polling SHA comparison - current: '%s', new from disk: '%s', file: %s",
+                                    currentConfigSHA.str(), newConfigSHA.str(), configFile);
                             if (newConfigSHA.length() && !streq(currentConfigSHA.str(), newConfigSHA.str()))
                             {
                                 PROGLOG("Polling detected configuration SHA change from '%s' to '%s' by reading %s",
                                         currentConfigSHA.str(), newConfigSHA.str(), configFile);
                                 currentConfigSHA.set(newConfigSHA.str());
                                 configChangeDetected = true;
+                            }
+                            else
+                            {
+                                PROGLOG("DJPS: No configuration change detected - SHA values match");
                             }
                         }
                     }
@@ -2009,10 +1970,6 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
     }
 
     // Cleanup configuration change monitoring
-    if (configUpdateHookId)
-        removeConfigUpdateHook(configUpdateHookId);
-    configUpdateHook.clear();
-
     if (multiThorMemoryThreshold)
         setMultiThorMemoryNotify(0,NULL);
 }
