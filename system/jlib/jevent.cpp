@@ -168,8 +168,6 @@ static constexpr EventAttrInformation attrInformation[] = {
     DEFINE_ATTR(ConnectId, u8),
     DEFINE_ATTR(Enabled, bool),
     DEFINE_ATTR(FileSize, u8),
-    DEFINE_ATTR(RecordedTimestamp, timestamp),
-    DEFINE_ATTR(RecordedOption, string),
     DEFINE_ATTR(EventTimestamp, timestamp),
     DEFINE_ATTR(EventTraceId, string),
     DEFINE_ATTR(EventThreadId, u8),

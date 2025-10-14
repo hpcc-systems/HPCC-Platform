@@ -124,8 +124,6 @@ protected:
             {
             case EvAttrNone: // not an attribute
             case EvAttrMax: // not an attribute
-            case EvAttrRecordedOption: // not an event attribute
-            case EvAttrRecordedTimestamp: // not an event attribute
                 return false;
             default:
                 if (attr > EvAttrMax) // should never happen
@@ -260,11 +258,6 @@ Filters:
                                 - EventThreadId: numeric
                                 - EventStackTrace: string
                                 - DataSize: numeric
-                              A limited number of attributes are unfilterable
-                              because they represent file header information
-                              and are not recorded with an event. These include:
-                                - RecordedTimestamp
-                                - RecordedOption
 )!!!";
         size32_t usageStrLength = size32_t(strlen(usageStr));
         out.put(usageStrLength, usageStr);
