@@ -220,6 +220,7 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
                 "Format": { label: nlsHPCC.Format, type: "string", value: file?.Format, readonly: true },
                 "IsCompressed": { label: nlsHPCC.IsCompressed, type: "checkbox", value: file?.IsCompressed, readonly: true },
                 "CompressedFileSizeString": { label: nlsHPCC.CompressedFileSize, type: "string", value: file?.CompressedFileSize ? Utility.safeFormatNum(file?.CompressedFileSize) : "", readonly: true },
+                "CompressionType": { label: nlsHPCC.CompressionType, type: "string", value: file?.CompressionType, readonly: true },
                 "Filesize": { label: nlsHPCC.FileSize, type: "string", value: file?.Filesize, readonly: true },
                 "PercentCompressed": { label: nlsHPCC.PercentCompressed, type: "string", value: file?.PercentCompressed, readonly: true },
                 "Modified": { label: nlsHPCC.Modified, type: "string", value: file?.Modified, readonly: true },
