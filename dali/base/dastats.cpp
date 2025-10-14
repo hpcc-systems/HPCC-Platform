@@ -269,6 +269,16 @@ void recordGlobalMetrics(const char * category, const MetricsDimensionList & dim
     recordGlobalMetrics(category, dimensions, attributes, deltas);
 }
 
+void recordGlobalMetrics(const char * category, const MetricsDimensionList & dimensions, const std::vector<StatisticKind> & stats, const std::vector<stat_type> & deltas)
+{
+    std::vector<std::string> attributes;
+    attributes.reserve(stats.size());
+    for (auto & stat : stats)
+        attributes.emplace_back(getStatisticAttribute(stat));
+
+    recordGlobalMetrics(category, dimensions, attributes, deltas);
+}
+
 //---------------------------------------------------------------------------------------------------------------------
 
 static void getInstanceFilter(StringBuffer & xpath, const MetricsDimensionList & optDimensions)

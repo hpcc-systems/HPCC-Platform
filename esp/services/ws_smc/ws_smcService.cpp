@@ -3092,6 +3092,16 @@ public:
         CPPUNIT_ASSERT_MESSAGE("Response object type unexpected", impl != nullptr); 
         CGetGlobalMetricsResponse::serializer(nullptr, *impl, out, true); 
     }
+
+    void assertResponseMatchesExpected(IEspGetGlobalMetricsResponse &resp, const char * expected) {
+        StringBuffer out;
+        serializeResponse(resp, out);
+        Owned<IPropertyTree> responseTree = createPTreeFromXMLString(out.str());
+        Owned<IPropertyTree> expectedTree = createPTreeFromXMLString(expected);
+        VStringBuffer message("Response XML does not match expected. \nExpected:\n%s\nActual:\n%s", expected, out.str());
+        CPPUNIT_ASSERT_MESSAGE(message.str(), areMatchingPTrees(responseTree, expectedTree));
+    }
+
     static constexpr const char * expectedAllCategories = "<GetGlobalMetricsResponse><GlobalMetrics>" 
         "<GlobalMetric><Category>categoryTwo</Category><DateTimeRange><Start>1999070112</Start><End>1999070112</End></DateTimeRange><Stats><Stat><Name>TimeLocalExecute</Name><Value>444</Value></Stat></Stats></GlobalMetric>" 
         "<GlobalMetric><Category>categoryTwo</Category><Dimensions><Dimension><Name>user</Name><Value>alice</Value></Dimension></Dimensions><DateTimeRange><Start>1999070112</Start><End>1999070112</End></DateTimeRange><Stats><Stat><Name>TimeLocalExecute</Name><Value>555</Value></Stat><Stat><Name>CostExecute</Name><Value>7</Value></Stat></Stats></GlobalMetric>" 
@@ -3105,38 +3115,30 @@ public:
         Owned<IEspGetGlobalMetricsRequest> req = createRequestFromXML(requestXML); 
         Owned<IEspGetGlobalMetricsResponse> resp = createGetGlobalMetricsResponse(); 
         handleGetGlobalMetrics(*req, *resp); 
-        StringBuffer out; 
-        serializeResponse(*resp, out); 
-        CPPUNIT_ASSERT_EQUAL(std::string(expectedAllCategories), std::string(out.str())); 
+        assertResponseMatchesExpected(*resp, expectedAllCategories);
     }
     void testAllCategoriesImplicit() { 
         static const char * requestXML = "<GetGlobalMetricsRequest><DateTimeRange><Start>1999-01-01T00:00:00</Start><End>2099-01-01T00:00:00</End></DateTimeRange></GetGlobalMetricsRequest>"; 
         Owned<IEspGetGlobalMetricsRequest> req = createRequestFromXML(requestXML); 
         Owned<IEspGetGlobalMetricsResponse> resp = createGetGlobalMetricsResponse(); 
-        handleGetGlobalMetrics(*req, *resp); 
-        StringBuffer out; 
-        serializeResponse(*resp, out); 
-        CPPUNIT_ASSERT_EQUAL(std::string(expectedAllCategories), std::string(out.str())); 
+        handleGetGlobalMetrics(*req, *resp);
+        assertResponseMatchesExpected(*resp, expectedAllCategories);
     }
     void testSingleCategoryAndDimensions() { 
         static const char * requestXML = "<GetGlobalMetricsRequest><Category>categoryOne</Category><Dimensions><Dimension><Name>user</Name><Value>bob</Value></Dimension></Dimensions><DateTimeRange><Start>1999-01-01T00:00:00</Start><End>2099-01-01T00:00:00</End></DateTimeRange></GetGlobalMetricsRequest>"; 
         Owned<IEspGetGlobalMetricsRequest> req = createRequestFromXML(requestXML); 
         Owned<IEspGetGlobalMetricsResponse> resp = createGetGlobalMetricsResponse(); 
         handleGetGlobalMetrics(*req, *resp); 
-        StringBuffer out; 
-        serializeResponse(*resp, out); 
         static const char * expected = "<GetGlobalMetricsResponse><GlobalMetrics><GlobalMetric><Category>categoryOne</Category><Dimensions><Dimension><Name>user</Name><Value>bob</Value></Dimension><Dimension><Name>cluster</Name><Value>thor1</Value></Dimension></Dimensions><DateTimeRange><Start>1999070112</Start><End>1999070112</End></DateTimeRange><Stats><Stat><Name>TimeLocalExecute</Name><Value>333</Value></Stat></Stats></GlobalMetric></GlobalMetrics></GetGlobalMetricsResponse>"; 
-        CPPUNIT_ASSERT_EQUAL(std::string(expected), std::string(out.str())); 
+        assertResponseMatchesExpected(*resp, expected);
     }
     void testDimensionAcrossCategories() { 
         static const char * requestXML = "<GetGlobalMetricsRequest><Dimensions><Dimension><Name>user</Name><Value>alice</Value></Dimension></Dimensions><DateTimeRange><Start>1999-01-01T00:00:00</Start><End>2099-01-01T00:00:00</End></DateTimeRange></GetGlobalMetricsRequest>"; 
         Owned<IEspGetGlobalMetricsRequest> req = createRequestFromXML(requestXML); 
         Owned<IEspGetGlobalMetricsResponse> resp = createGetGlobalMetricsResponse(); 
         handleGetGlobalMetrics(*req, *resp); 
-        StringBuffer out; 
-        serializeResponse(*resp, out); 
         static const char * expected = "<GetGlobalMetricsResponse><GlobalMetrics><GlobalMetric><Category>categoryTwo</Category><Dimensions><Dimension><Name>user</Name><Value>alice</Value></Dimension></Dimensions><DateTimeRange><Start>1999070112</Start><End>1999070112</End></DateTimeRange><Stats><Stat><Name>TimeLocalExecute</Name><Value>555</Value></Stat><Stat><Name>CostExecute</Name><Value>7</Value></Stat></Stats></GlobalMetric><GlobalMetric><Category>categoryOne</Category><Dimensions><Dimension><Name>user</Name><Value>alice</Value></Dimension></Dimensions><DateTimeRange><Start>1999070112</Start><End>1999070112</End></DateTimeRange><Stats><Stat><Name>TimeLocalExecute</Name><Value>222</Value></Stat><Stat><Name>CostExecute</Name><Value>5</Value></Stat></Stats></GlobalMetric></GlobalMetrics></GetGlobalMetricsResponse>"; 
-        CPPUNIT_ASSERT_EQUAL(std::string(expected), std::string(out.str())); 
+        assertResponseMatchesExpected(*resp, expected);
     }
 };
 CPPUNIT_TEST_SUITE_REGISTRATION(DaliWsSMCGlobalMetricsTest);
