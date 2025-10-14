@@ -619,9 +619,9 @@ public:
                 Owned<IUserDescriptor> udesc=createUserDescriptor();
                 mb.read(key).read(obj);
                 udesc->deserialize(mb);
-                StringBuffer ipAddrStr;
-                mb.getSender().getIpText(ipAddrStr);
-                logNullUserWithSource(udesc, ipAddrStr.str());//stack trace if NULL user
+                StringBuffer sourceHost;
+                mb.getSender().getHostText(sourceHost);
+                logNullUserWithSource(udesc, sourceHost.str());//stack trace if NULL user
                 unsigned auditflags = 0;
                 if (mb.length()-mb.getPos()>=sizeof(auditflags))
                     mb.read(auditflags);

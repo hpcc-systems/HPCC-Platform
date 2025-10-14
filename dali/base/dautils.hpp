@@ -628,7 +628,7 @@ extern da_decl unsigned getPreferredDaFsServerPort();
 extern da_decl void doLogNullUser(IUserDescriptor * userDesc, const char *location);
 #else
 inline void logNullUser(IUserDescriptor *userDesc) { }
-inline void querySessionManager(IUserDescriptor *userDesc) { }
+inline void logNullUserWithSource(IUserDescriptor *userDesc, const char *source) { }
 #endif
 
 interface IFileReadPropertiesUpdater : extends IInterface
