@@ -596,7 +596,11 @@ public:
             unsigned lfnHash = 0;
             if (dirPerPartNum)
             {
-                lfnHash = getLfnHashFromPath(dirPerPartPtr-filePath,filePath);
+                // Catch dir-per-part files found in the root directory e.g. /prefix/1/afile._1_of_1
+                if (dirPerPartPtr < filePath)
+                    lfnHash = 0; // Nothing to hash
+                else
+                    lfnHash = getLfnHashFromPath(dirPerPartPtr-filePath,filePath);
                 filename++; // Skip past leading slash
                 lfnHash = appendLfnHashFromPath(ext-filename, filename, lfnHash);
             }
