@@ -624,9 +624,11 @@ extern da_decl void remapGroupsToDafilesrv(IPropertyTree *file, bool foreign, bo
 extern da_decl unsigned getPreferredDaFsServerPort();
 #ifdef NULL_DALIUSER_STACKTRACE
 #define logNullUser(userDesc) doLogNullUser(userDesc, __func__);
+#define logNullUserWithSource(userDesc, source) doLogNullUser(userDesc, source);
 extern da_decl void doLogNullUser(IUserDescriptor * userDesc, const char *location);
 #else
 inline void logNullUser(IUserDescriptor *userDesc) { }
+inline void querySessionManager(IUserDescriptor *userDesc) { }
 #endif
 
 interface IFileReadPropertiesUpdater : extends IInterface

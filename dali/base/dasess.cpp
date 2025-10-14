@@ -619,7 +619,9 @@ public:
                 Owned<IUserDescriptor> udesc=createUserDescriptor();
                 mb.read(key).read(obj);
                 udesc->deserialize(mb);
-                logNullUser(udesc);//stack trace if NULL user
+                StringBuffer ipAddrStr;
+                mb.getSender().getIpText(ipAddrStr);
+                logNullUserWithSource(udesc, ipAddrStr.str());//stack trace if NULL user
                 unsigned auditflags = 0;
                 if (mb.length()-mb.getPos()>=sizeof(auditflags))
                     mb.read(auditflags);
@@ -1429,7 +1431,6 @@ public:
 #ifdef _NO_LDAP
         return SecAccess_Unavailable;
 #else
-        logNullUser(udesc);//stack trace if NULL user
         if ((ldapconn->getLDAPflags()&(DLF_SAFE|DLF_ENABLED))!=(DLF_SAFE|DLF_ENABLED))
             return ldapconn->getPermissions(key,obj,udesc,flags);
         ldapwaiting++;
