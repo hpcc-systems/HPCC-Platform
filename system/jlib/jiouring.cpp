@@ -49,7 +49,9 @@ public:
     virtual void enqueueCallbackCommand(IAsyncCallback & callback) override;
     virtual void enqueueCallbackCommands(const std::vector<IAsyncCallback *> & callbacks) override;
     virtual void enqueueSocketConnect(ISocket * socket, const struct sockaddr * addr, size32_t addrlen, IAsyncCallback & callback) override;
+    virtual void enqueueSocketRead(ISocket * socket, void * buf, size32_t len, IAsyncCallback & callback) override;
     virtual void enqueueSocketWrite(ISocket * socket, const void * buf, size32_t len, IAsyncCallback & callback) override;
+    virtual void enqueueSocketWriteMany(ISocket * socket, const iovec * buffers, unsigned numBuffers, IAsyncCallback & callback) override;
 
     virtual void lockMemory(const void * buffer, size_t len) override;
 
@@ -187,6 +189,26 @@ void URingProcessor::enqueueSocketConnect(ISocket * socket, const struct sockadd
     submitRequests();
 }
 
+void URingProcessor::enqueueSocketRead(ISocket * socket, void * buf, size32_t len, IAsyncCallback & callback)
+{
+    CLeavableCriticalBlock block(requestCrit, isMultiThreaded);
+
+    io_uring_sqe * sqe = allocRequest(block);
+    offset_t offset = 0;
+    if (isFixedBuffer(len, buf))
+    {
+        size32_t memoryOffset = (const byte *)buf - startLockedMemory;
+        unsigned bufferIndex = memoryOffset / oneGB;
+        io_uring_prep_read_fixed(sqe, socket->OShandle(), buf, len, offset, bufferIndex);
+    }
+    else
+        io_uring_prep_read(sqe, socket->OShandle(), buf, len, offset);
+
+    io_uring_sqe_set_data(sqe, &callback);
+
+    submitRequests();
+}
+
 void URingProcessor::enqueueSocketWrite(ISocket * socket, const void * buf, size32_t len, IAsyncCallback & callback)
 {
     CLeavableCriticalBlock block(requestCrit, isMultiThreaded);
@@ -201,6 +223,21 @@ void URingProcessor::enqueueSocketWrite(ISocket * socket, const void * buf, size
     }
     else
         io_uring_prep_write(sqe, socket->OShandle(), buf, len, offset);
+
+    io_uring_sqe_set_data(sqe, &callback);
+
+    submitRequests();
+}
+
+void URingProcessor::enqueueSocketWriteMany(ISocket * socket, const iovec * buffers, unsigned numBuffers, IAsyncCallback & callback)
+{
+    CLeavableCriticalBlock block(requestCrit, isMultiThreaded);
+
+    io_uring_sqe * sqe = allocRequest(block);
+
+    offset_t offset = 0;
+    unsigned flags = 0;
+    io_uring_prep_writev2(sqe, socket->OShandle(), buffers, numBuffers, offset, flags);
 
     io_uring_sqe_set_data(sqe, &callback);
 
@@ -373,10 +410,19 @@ public:
 
 IAsyncProcessor * createURingProcessor(const IPropertyTree * config, bool threaded)
 {
-    if (threaded)
-        return new URingThreadedProcessor(config);
-    else
-        return new URingUnthreadedProcessor(config);
+    try
+    {
+        if (threaded)
+            return new URingThreadedProcessor(config);
+        else
+            return new URingUnthreadedProcessor(config);
+    }
+    catch (IException * _e)
+    {
+        Owned<IException> e = _e;
+        EXCLOG(e, "Failed to create URing processor");
+        return nullptr;
+    }
 }
 
 

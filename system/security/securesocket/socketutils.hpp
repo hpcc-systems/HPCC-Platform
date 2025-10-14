@@ -58,33 +58,40 @@ interface ISocketMessageProcessor
 // This class is used to process reads that are notified from a select/epoll handler
 // There is a minimum and maximum message size, and the option to only process a single
 // message, or continue processing multiple messages.
-class SECURESOCKET_API CReadSocketHandler : public CInterfaceOf<ISocketSelectNotify>
+class SECURESOCKET_API CReadSocketHandler : public CInterfaceOf<ISocketSelectNotify>, implements IAsyncCallback
 {
 public:
-    CReadSocketHandler(ISocketMessageProcessor & _processor, ISocket *_sock, size32_t _minSize, size32_t _maxSize);
+    CReadSocketHandler(ISocketMessageProcessor & _processor, IAsyncProcessor * _asyncReader, ISocket *_sock, size32_t _minSize, size32_t _maxSize);
 
-    ISocket *querySocket() { return sock; }
-    MemoryBuffer & queryBuffer() { return buffer; }
+    ISocket *querySocket() { return socket; }
     cycle_t queryLastActivityTime() const { return lastActivityCycles; }
     size32_t queryReadSoFar() const { return readSoFar; }
     const char *queryPeerHostText() const { return peerHostText; }
     const char *queryPeerEndpointText() const { return peerEndpointText; }
 
+    void startAsyncRead();
     bool close();
     bool closeIfTimedout(cycle_t now, cycle_t timeoutCycles);
 
     // ISocketSelectNotify impl.
     virtual bool notifySelected(ISocket *sock, unsigned selected) override;
 
+// interface IAsyncCallback
+    virtual void onAsyncComplete(int result) override;
+
+protected:
+    void processPendingMessages();
+
 protected:
     const bool onlyProcessFirstRead;
     const bool processMultipleMessages;
     bool closedOrHandled = false;
     ISocketMessageProcessor & processor;
-    Linked<ISocket> sock;
+    IAsyncProcessor * asyncReader;
+    Linked<ISocket> socket;
     StringBuffer peerHostText;
     StringBuffer peerEndpointText;
-    MemoryBuffer buffer;
+    MemoryAttr buffer;
     cycle_t lastActivityCycles = 0;
     size32_t readSoFar = 0;
     size32_t minSize = 0;               // The minimum size to read before the request is valid
@@ -98,7 +105,7 @@ protected:
 class SECURESOCKET_API CReadSelectHandler : public ISocketMessageProcessor
 {
 public:
-    CReadSelectHandler(unsigned inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets);
+    CReadSelectHandler(unsigned inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets, bool useIOUring);
     ~CReadSelectHandler();
 
     void add(ISocket *sock);
@@ -115,6 +122,7 @@ protected:
 
 protected:
     Owned<ISocketSelectHandler> selectHandler;
+    Owned<IAsyncProcessor> asyncReader;
 
     // NB: Linked vs Owned, because methods will implicitly construct an object of this type
     // which can be problematic/confusing, for example if Owned and std::list->remove is called
@@ -149,19 +157,6 @@ private:
     std::atomic<bool> aborting{false};
 };
 
-// Demo only to check all virtuals are well defined
-class ConcreteConnectionLister : public CSocketConnectionListener
-{
-public:
-    ConcreteConnectionLister(unsigned port);
-
-    virtual bool onlyProcessFirstRead() const override;
-    virtual unsigned getMessageSize(const void * header) const override;
-    virtual CReadSocketHandler *createSocketHandler(ISocket *sock) override;
-    virtual void processMessage(const void * data, size32_t len) override;
-};
-
-
 struct HashSocketEndpoint
 {
     unsigned operator()(const SocketEndpoint & ep) const { return ep.hash(0x12345678); }
@@ -179,6 +174,7 @@ class CTcpSender;
 class SECURESOCKET_API CSocketTarget : public CInterface, public IAsyncCallback
 {
     static constexpr unsigned maxQueueDepth = 40;
+    static constexpr unsigned maxBufferWrites  = 5;
 
     enum class State
     {
@@ -231,6 +227,7 @@ protected:
     WriteRequest requests[maxQueueDepth];
     unsigned headRequestIndex = 0;
     unsigned numRequests = 0;
+    iovec sendInfo[maxBufferWrites];
 };
 
 // MORE: This needs extending so that the items in the hash table know their ip address,
