@@ -426,19 +426,29 @@ Add ConfigMap volume mount to eclwatch for another component
 {{/*
 Populates a dictionary with component names from the values dict.
 Pass in dict with root and results (the dict to populate).
+Optionally pass excludeApplications (list of application types to exclude).
 The results dict will have a "componentNames" key containing the list.
 
 Used to give eclwatch a list of configured components and their configmap names.
 */}}
 {{- define "hpcc.populateComponentNames" -}}
 {{- $componentNames := list -}}
+{{- $excludeApplications := .excludeApplications | default list -}}
 {{- /* Most components are in a top-level array */ -}}
 {{- range $sectionName, $section := .root.Values -}}
  {{- if hasPrefix "[]" (typeOf $section) -}}
   {{- range $component := $section -}}
    {{- if hasKey $component "name" -}}
     {{- if not $component.disabled -}}
-     {{- $componentNames = append $componentNames $component.name -}}
+     {{- $shouldExclude := false -}}
+     {{- if hasKey $component "application" -}}
+      {{- if has $component.application $excludeApplications -}}
+       {{- $shouldExclude = true -}}
+      {{- end -}}
+     {{- end -}}
+     {{- if not $shouldExclude -}}
+      {{- $componentNames = append $componentNames $component.name -}}
+     {{- end -}}
     {{- end -}}
    {{- end -}}
   {{- end -}}
