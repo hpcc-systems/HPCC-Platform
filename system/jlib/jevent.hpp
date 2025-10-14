@@ -77,8 +77,6 @@ enum EventAttr : byte
     EvAttrConnectId,
     EvAttrEnabled,
     EvAttrFileSize,
-    EvAttrRecordedTimestamp,
-    EvAttrRecordedOption,
     EvAttrEventTimestamp,
     EvAttrEventTraceId,
     EvAttrEventThreadId,

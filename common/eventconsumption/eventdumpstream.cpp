@@ -493,16 +493,10 @@ public:
     }
 
 protected:
+    // No attributes to be skipped at this time. Retain for possible future use.
     bool skipAttribute(unsigned id) const
     {
-        switch (id)
-        {
-        case EvAttrRecordedTimestamp:
-        case EvAttrRecordedOption:
-            return true;
-        default:
-            return false;
-        }
+       return false;
     }
 
     virtual void recordAttribute(EventAttr id, const char*, const char* value, bool) override
