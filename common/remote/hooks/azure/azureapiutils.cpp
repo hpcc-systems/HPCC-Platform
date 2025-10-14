@@ -28,9 +28,28 @@
 
 bool areManagedIdentitiesEnabled()
 {
-    //Use a local static to avoid re-evaluation.  Performance is not critical - so once overhead is acceptable.
-    static bool enabled = std::getenv("MSI_ENDPOINT") || std::getenv("IDENTITY_ENDPOINT");
-    return enabled;
+    const char *msiEndpoint = std::getenv("MSI_ENDPOINT");
+    const char *identityEndpoint = std::getenv("IDENTITY_ENDPOINT");
+    const char *workloadClientId = std::getenv("AZURE_CLIENT_ID");
+    const char *workloadTokenFile = std::getenv("AZURE_FEDERATED_TOKEN_FILE");
+    const char *workloadTenantId = std::getenv("AZURE_TENANT_ID");
+
+    // Check for legacy managed identity endpoints
+    if ((msiEndpoint && *msiEndpoint) || (identityEndpoint && *identityEndpoint))
+        return true;
+
+    // Check Workload Identity variables
+    bool hasClientId = workloadClientId && *workloadClientId;
+    bool hasTokenFile = workloadTokenFile && *workloadTokenFile;
+    bool hasTenantId = workloadTenantId && *workloadTenantId;
+
+    if (hasClientId && hasTokenFile && hasTenantId)
+        return true;
+
+    if (hasClientId || hasTokenFile || hasTenantId)
+        OWARNLOG("Azure Workload Identity environment variables must include AZURE_CLIENT_ID, AZURE_TENANT_ID, and AZURE_FEDERATED_TOKEN_FILE; managed identity remains disabled.");
+
+    return false;
 }
 
 bool isBase64Char(char c)
