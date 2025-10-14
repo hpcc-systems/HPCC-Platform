@@ -703,7 +703,7 @@ public:
         return lookupElements(xpath.str(), "MemIndex");
     }
 
-    virtual const IResolvedFile *lookupFileName(const char *_fileName, bool opt, bool useCache, bool cacheResult, IConstWorkUnit *wu, bool ignoreForeignPrefix, bool isPrivilegedUser) const
+    virtual const IResolvedFile *lookupFileName(const char *_fileName, bool opt, bool useCache, bool cacheResult, IConstWorkUnit *wu, bool ignoreForeignPrefix, bool isPrivilegedUser) const override
     {
         StringBuffer fileName;
         expandLogicalFilename(fileName, _fileName, wu, false, ignoreForeignPrefix);
@@ -995,13 +995,124 @@ public:
         return active;
     }
 
+    const IRoxiePackage * queryPackage(const IPropertyTree *query, const IRoxiePackageMap &packages)
+    {
+        const char *id = query->queryProp("@id");
+        if (!id || !*id)
+            throw MakeStringException(ROXIE_QUERY_MODIFICATION, "dll and id must be specified");
+
+        const IHpccPackage *package = NULL;
+        const char *packageName = query->queryProp("@package");
+        if (packageName && *packageName)
+        {
+            package = packages.queryPackage(packageName); // if a package is specified, require exact match
+            if (!package)
+                throw MakeStringException(ROXIE_QUERY_MODIFICATION, "Package %s specified by query %s not found", packageName, id);
+        }
+        else
+        {
+            package = packages.queryPackage(id);  // Look for an exact match, then a fuzzy match, using query name as the package id
+            if(!package) package = packages.matchPackage(id);
+            if (!package) package = &queryRootRoxiePackage();
+        }
+        return dynamic_cast<const IRoxiePackage *>(package);
+    }
+
     virtual void load(const IPropertyTree *querySet, const IRoxiePackageMap &packages, hash64_t &hash, bool forceRetry)
     {
         unsigned numQueries = const_cast<IPropertyTree *>(querySet)->getCount("Query");
         if (numQueries)
         {
             std::vector<hash64_t> queryHashes(numQueries);
-            asyncFor(numQueries, parallelQueryLoadThreads, [this, querySet, &packages, &queryHashes, forceRetry](unsigned i)
+            std::vector<Owned<const IQueryDll>> queryDlls(numQueries);
+
+            if (numResolveFilenameThreads)
+            {
+                //Load all the dlls in parallel, gathering a list of filenames for each package
+                //Currently keep a single critical section for all packages - could be optimized if necessary
+                CriticalSection filenameCrit;
+                std::map<const IRoxiePackage *, SummaryMap> filenameSummaryMap;
+
+                asyncFor(numQueries, parallelQueryLoadThreads, [this, querySet, &queryDlls, &filenameCrit, &filenameSummaryMap, &packages](unsigned i)
+                {
+                    VStringBuffer xpath("Query[%u]", i+1);
+                    const IPropertyTree *query = querySet->queryPropTree(xpath);
+                    const char *dllName = query->queryProp("@dll");
+                    try
+                    {
+                        if (!dllName)
+                            return;
+
+                        const IQueryDll * dll = createQueryDll(dllName);
+                        queryDlls[i].setown(dll);
+
+                        //Now gather a list of filenames from the cached information
+                        IConstWorkUnit * wu = dll->queryWorkUnit();
+                        const IRoxiePackage *package = queryPackage(query, packages);
+                        if (!wu || !package)
+                            return;
+
+                        //The filename resolution depends on the package - so we need to create a unique list for each package
+                        // Gather all the filenames from the workunit
+                        SummaryMap wuFilenameSummary;
+                        wu->getSummary(SummaryType::ReadIndex, wuFilenameSummary);
+                        wu->getSummary(SummaryType::ReadFile, wuFilenameSummary);
+
+                        // Now expand each of the filenames and add them to a unique list for each package
+                        CriticalBlock block(filenameCrit);
+                        SummaryMap & filenameSummary = filenameSummaryMap[package];
+                        StringBuffer expandedFilename;
+                        for (auto &entry : wuFilenameSummary)
+                        {
+                            bool ignoreForeignPrefix = true;
+                            expandedFilename.clear();
+                            expandLogicalFilename(expandedFilename, entry.first.c_str(), wu, false, ignoreForeignPrefix);
+
+                            SummaryFlags flags = entry.second;
+                            auto match = filenameSummary.find(expandedFilename.str());
+                            if (match == filenameSummary.end())
+                                filenameSummary[expandedFilename.str()] = flags;
+                            else
+                                match->second &= flags;
+                        }
+                    }
+                    catch (IException *E)
+                    {
+                        ::Release(E);
+                    }
+                });
+
+                // Expand the nested maps of packages and filenames into a linear list that is easy to walk in parallel.
+                std::vector<std::pair<const IRoxiePackage *, const SummaryMap::value_type *>> filenames;
+                for (auto & packageFilenames : filenameSummaryMap)
+                {
+                    for (auto &entry : packageFilenames.second)
+                        filenames.emplace_back(packageFilenames.first, &entry);
+                }
+
+                // Now resolve the filenames in parallel - on a system with remote files most of the time is spent retrieving the file sizes.
+                // The files will be added to the cache - so that the subsequent query load will match immediately
+                asyncFor(filenames.size(), numResolveFilenameThreads, [this, &filenames ](unsigned i)
+                {
+                    try
+                    {
+                        const auto & entry = filenames[i];
+                        const IRoxiePackage * package = entry.first;
+                        const SummaryMap::value_type * filenameEntry = entry.second;
+                        const char * filename = filenameEntry->first.c_str();
+                        SummaryFlags flags = filenameEntry->second;
+                        //bool isOpt = (flags & SummaryFlags::IsOpt) != 0;
+                        bool isCodeSigned = (flags & SummaryFlags::IsSigned) != 0;
+                        Owned<const IResolvedFile> resolved = package->lookupExpandedFileName(filename, true, true, AccessMode::readRandom, false, true, isCodeSigned);
+                    }
+                    catch (IException *E)
+                    {
+                        ::Release(E);
+                    }
+                });
+            }
+
+            asyncFor(numQueries, parallelQueryLoadThreads, [this, querySet, &packages, &queryHashes, &queryDlls, forceRetry](unsigned i)
             {
                 queryHashes[i] = 0;
                 VStringBuffer xpath("Query[%u]", i+1);
@@ -1013,23 +1124,14 @@ public:
                 {
                     if (!id || !*id || !dllName || !*dllName)
                         throw MakeStringException(ROXIE_QUERY_MODIFICATION, "dll and id must be specified");
-                    Owned<const IQueryDll> queryDll = createQueryDll(dllName);
-                    const IHpccPackage *package = NULL;
-                    const char *packageName = query->queryProp("@package");
-                    if (packageName && *packageName)
-                    {
-                        package = packages.queryPackage(packageName); // if a package is specified, require exact match
-                        if (!package)
-                            throw MakeStringException(ROXIE_QUERY_MODIFICATION, "Package %s specified by query %s not found", packageName, id);
-                    }
-                    else
-                    {
-                        package = packages.queryPackage(id);  // Look for an exact match, then a fuzzy match, using query name as the package id
-                        if(!package) package = packages.matchPackage(id);
-                        if (!package) package = &queryRootRoxiePackage();
-                    }
-                    assertex(package && QUERYINTERFACE(package, const IRoxiePackage));
-                    IQueryFactory *qf = loadQueryFromDll(id, queryDll.getClear(), *QUERYINTERFACE(package, const IRoxiePackage), query, forceRetry);
+                    Owned<const IQueryDll> queryDll = queryDlls[i].getClear();
+                    if (!queryDll)
+                        queryDll.setown(createQueryDll(dllName));
+
+                    const IRoxiePackage *package = queryPackage(query, packages);
+                    assertex(package);
+
+                    IQueryFactory *qf = loadQueryFromDll(id, queryDll.getClear(), *package, query, forceRetry);
                     queryHashes[i] = qf->queryHash();
                     addQuery(id, qf);
                 }
