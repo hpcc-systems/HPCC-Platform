@@ -1411,7 +1411,7 @@ void auditThorJobEvent(const char *eventName, const char *wuid, const char *grap
 static std::atomic<bool> configChangeDetected{false};
 static StringBuffer currentConfigSHA;
 static CriticalSection configSHAcs;
-
+/*
 // Helper function to log long strings in chunks
 static void logStringInChunks(const char *str, const char *prefix = "")
 {
@@ -1432,6 +1432,47 @@ static void logStringInChunks(const char *str, const char *prefix = "")
         offset += chunkLen;
     }
 }
+*/
+// Compute SHA hash by reading configuration file directly from disk
+// This allows detection of ConfigMap changes without relying on in-memory cached config
+static void computeConfigSHAFromDisk(StringBuffer &shaStr, const char *configFilePath)
+{
+    shaStr.clear();
+    try
+    {
+        // Read the YAML configuration file from disk
+        Owned<IPropertyTree> diskConfig = createPTreeFromYAMLFile(configFilePath, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+        if (!diskConfig)
+        {
+            PROGLOG("DJPS: Failed to load config from disk: %s", configFilePath);
+            return;
+        }
+
+        // Convert to XML and compute hash
+        StringBuffer configXML;
+        toXML(diskConfig, configXML, 0, 0);
+
+        // Log vm.dirty_bytes value from expert/sysctl section
+        Owned<IPropertyTreeIterator> sysctlIter = diskConfig->getElements("expert/sysctl");
+        ForEach(*sysctlIter)
+        {
+            const char *sysctlValue = sysctlIter->query().queryProp(nullptr);
+            if (sysctlValue && strstr(sysctlValue, "vm.dirty_bytes"))
+                PROGLOG("DJPS diskConfig sysctl value: %s", sysctlValue);
+        }
+
+        if (configXML.length())
+        {
+            hash64_t configHash = rtlHash64Data(configXML.length(), configXML.str(), 0);
+            shaStr.appendf("%" I64F "x", configHash);
+        }
+    }
+    catch (IException *e)
+    {
+        IWARNLOG(e, "DJPS Failed to compute configuration SHA from disk");
+        e->Release();
+    }
+}
 
 // Compute SHA hash of the current configuration
 static void computeConfigSHA(StringBuffer &shaStr)
@@ -1450,15 +1491,33 @@ static void computeConfigSHA(StringBuffer &shaStr)
         if (componentConfig)
         {
             toXML(componentConfig, componentConfigXML, 0, 0);
-            PROGLOG("DJPS componentConfigXML: %u", componentConfigXML.length());
-            logStringInChunks(componentConfigXML.str(), "DJPS componentConfigXML: ");
+//            PROGLOG("DJPS componentConfigXML: %u", componentConfigXML.length());
+//            logStringInChunks(componentConfigXML.str(), "DJPS componentConfigXML: ");
+
+            // Log vm.dirty_bytes value from expert/sysctl section
+            Owned<IPropertyTreeIterator> sysctlIter = componentConfig->getElements("expert/sysctl");
+            ForEach(*sysctlIter)
+            {
+                const char *sysctlValue = sysctlIter->query().queryProp(nullptr);
+                if (sysctlValue && strstr(sysctlValue, "vm.dirty_bytes"))
+                    PROGLOG("DJPS componentConfig sysctl value: %s", sysctlValue);
+            }
         }
         StringBuffer globalConfigXML;
         if (globalConfig)
         {
             toXML(globalConfig, globalConfigXML, 0, 0);
-            PROGLOG("DJPS globalConfigXML: %u", globalConfigXML.length());
-            logStringInChunks(globalConfigXML.str(), "DJPS globalConfigXML: ");
+//            PROGLOG("DJPS globalConfigXML: %u", globalConfigXML.length());
+//            logStringInChunks(globalConfigXML.str(), "DJPS globalConfigXML: ");
+
+            // Log vm.dirty_bytes value from expert/sysctl section
+            Owned<IPropertyTreeIterator> sysctlIter = globalConfig->getElements("expert/sysctl");
+            ForEach(*sysctlIter)
+            {
+                const char *sysctlValue = sysctlIter->query().queryProp(nullptr);
+                if (sysctlValue && strstr(sysctlValue, "vm.dirty_bytes"))
+                    PROGLOG("DJPS globalConfig sysctl value: %s", sysctlValue);
+            }
         }
 
         if (componentConfigXML.length() || globalConfigXML.length())
@@ -1466,8 +1525,8 @@ static void computeConfigSHA(StringBuffer &shaStr)
             StringBuffer configXML;
             configXML.append(componentConfigXML);
             configXML.append(globalConfigXML);
-            PROGLOG("DJPS configXML: %u", configXML.length());
-            logStringInChunks(configXML.str(), "DJPS configXML: ");
+//            PROGLOG("DJPS configXML: %u", configXML.length());
+//            logStringInChunks(configXML.str(), "DJPS configXML: ");
             hash64_t configHash = rtlHash64Data(configXML.length(), configXML.str(), 0);
             shaStr.appendf("%" I64F "x", configHash);
         }
@@ -1478,7 +1537,7 @@ static void computeConfigSHA(StringBuffer &shaStr)
         e->Release();
     }
 }
-/*
+
 static void computeConfigSHA(StringBuffer &shaStr, IPropertyTree *componentConfig, IPropertyTree *globalConfig)
 {
     if (!componentConfig)
@@ -1493,15 +1552,33 @@ static void computeConfigSHA(StringBuffer &shaStr, IPropertyTree *componentConfi
         if (componentConfig)
         {
             toXML(componentConfig, componentConfigXML, 0, 0);
-            PROGLOG("DJPS componentConfigXML: %u", componentConfigXML.length());
-            logStringInChunks(componentConfigXML.str(), "DJPS componentConfigXML: ");
+//            PROGLOG("DJPS componentConfigXML: %u", componentConfigXML.length());
+//            logStringInChunks(componentConfigXML.str(), "DJPS componentConfigXML: ");
+
+            // Log vm.dirty_bytes value from expert/sysctl section
+            Owned<IPropertyTreeIterator> sysctlIter = componentConfig->getElements("expert/sysctl");
+            ForEach(*sysctlIter)
+            {
+                const char *sysctlValue = sysctlIter->query().queryProp(nullptr);
+                if (sysctlValue && strstr(sysctlValue, "vm.dirty_bytes"))
+                    PROGLOG("DJPS componentConfig (param) sysctl value: %s", sysctlValue);
+            }
         }
         StringBuffer globalConfigXML;
         if (globalConfig)
         {
             toXML(globalConfig, globalConfigXML, 0, 0);
-            PROGLOG("DJPS globalConfigXML: %u", globalConfigXML.length());
-            logStringInChunks(globalConfigXML.str(), "DJPS globalConfigXML: ");
+//            PROGLOG("DJPS globalConfigXML: %u", globalConfigXML.length());
+//            logStringInChunks(globalConfigXML.str(), "DJPS globalConfigXML: ");
+
+            // Log vm.dirty_bytes value from expert/sysctl section
+            Owned<IPropertyTreeIterator> sysctlIter = globalConfig->getElements("expert/sysctl");
+            ForEach(*sysctlIter)
+            {
+                const char *sysctlValue = sysctlIter->query().queryProp(nullptr);
+                if (sysctlValue && strstr(sysctlValue, "vm.dirty_bytes"))
+                    PROGLOG("DJPS globalConfig (param) sysctl value: %s", sysctlValue);
+            }
         }
 
         if (componentConfigXML.length() || globalConfigXML.length())
@@ -1509,8 +1586,8 @@ static void computeConfigSHA(StringBuffer &shaStr, IPropertyTree *componentConfi
             StringBuffer configXML;
             configXML.append(componentConfigXML);
             configXML.append(globalConfigXML);
-            PROGLOG("DJPS configXML: %u", configXML.length());
-            logStringInChunks(configXML.str(), "DJPS configXML: ");
+//            PROGLOG("DJPS configXML: %u", configXML.length());
+//            logStringInChunks(configXML.str(), "DJPS configXML: ");
             hash64_t configHash = rtlHash64Data(configXML.length(), configXML.str(), 0);
             shaStr.appendf("%" I64F "x", configHash);
         }
@@ -1521,8 +1598,8 @@ static void computeConfigSHA(StringBuffer &shaStr, IPropertyTree *componentConfi
         e->Release();
     }
 }
-*/
-//static CConfigUpdateHook configUpdateHook;
+
+static CConfigUpdateHook configUpdateHook;
 
 static void configUpdateNotifyHandler(const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
 {
@@ -1538,12 +1615,11 @@ static void configUpdateNotifyHandler(const IPropertyTree *oldComponentConfigura
         CriticalBlock b(configSHAcs);
         if (newConfigSHA.length() && !streq(currentConfigSHA.str(), newConfigSHA.str()))
         {
-            configChangeDetected.store(true);
-            currentConfigSHA.set(newConfigSHA.str());
-
+            configChangeDetected = true;
             PROGLOG("DJPS Configuration SHA changed from '%s' to '%s' - Thor will gracefully restart after current job completes",
                     currentConfigSHA.str(),
                     newConfigSHA.str());
+            currentConfigSHA.set(newConfigSHA.str());
         }
     }
 }
@@ -1570,7 +1646,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
         }
         else
             IWARNLOG("Failed to install configuration change monitoring");
-/*
+
         auto modifyFunc = [](IPropertyTree * newComponentConfiguration, IPropertyTree * newGlobalConfiguration)
         {
             PROGLOG("DJPS modifyFunc() called");
@@ -1597,13 +1673,13 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                 }
             }
         };
-*/
+
         // Initialize the configuration SHA baseline
         computeConfigSHA(currentConfigSHA);
         PROGLOG("DJPS Initial configuration SHA: %s", currentConfigSHA.str());
-//        PROGLOG("DJPS configUpdateHook.installModifierOnce(modifyFunc, false); before");
-//        configUpdateHook.installModifierOnce(modifyFunc, false);
-//        PROGLOG("DJPS Configuration change monitoring enabled for graceful restart");
+        PROGLOG("DJPS configUpdateHook.installModifierOnce(modifyFunc, false); before");
+        configUpdateHook.installModifierOnce(modifyFunc, false);
+        PROGLOG("DJPS Configuration change monitoring enabled for graceful restart");
     }
 
     aborting = 0;
@@ -1636,12 +1712,17 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
         Owned<CJobManager> jobManager = new CJobManager(logHandler);
         const char * thorname = globals->queryProp("@name");
         double thorRate = getThorRate(queryNodeClusterWidth());  // This doesn't feel quite right to call a global function to get the width, but ok for now.
+        PROGLOG("DJPS: About to check if containerized - isContainerized()=%s", isContainerized() ? "true" : "false");
         try
         {
             if (!isContainerized())
+            {
+                PROGLOG("DJPS: Running in bare-metal mode (jobManager->run())");
                 jobManager->run();
+            }
             else
             {
+                PROGLOG("DJPS: Running in containerized mode - config polling will be enabled");
                 unsigned lingerPeriod = globals->getPropInt("@lingerPeriod", defaultThorLingerPeriod)*1000;
                 dbgassertex(lingerPeriod>=1000); // NB: the schema or the default ensure the linger period is non-zero
                 bool multiJobLinger = globals->getPropBool("@multiJobLinger", defaultThorMultiJobLinger);
@@ -1687,6 +1768,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                     IWARNLOG("baseImageVersion or runtimeImageVersion missing from environment");
                     platformVersioningAvailable = false;
                 }
+                PROGLOG("DJPS: Entering main job processing loop (polling will occur after each job completes)");
                 while (true)
                 {
                     {
@@ -1796,12 +1878,63 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                                     }
                                     saveWuidToFile(""); // clear wuid file. Signifies that no wuid is running.
                                     lingerTimer.reset(lingerPeriod);
+                                    PROGLOG("DJPS: Job execution completed, proceeding to config polling check");
                                 }
                             }
                         }
                     }
 
                     currentGraphName.clear();
+
+                    // Poll for configuration changes by comparing SHA (since file monitoring is disabled)
+                    // This allows detection of ConfigMap updates even without inotify file watching
+                    // Read config directly from disk to detect changes made via 'kubectl edit cm'
+                    PROGLOG("DJPS: Poll for configuration changes by comparing SHA");
+                    {
+                        // Try to get config file path from multiple sources
+                        const char *configFile = nullptr;
+
+                        // First try the stored config file path (extracted from --config at startup)
+                        configFile = globals->queryProp("@configFilePath");
+
+                        // Fall back to environment variable (set by Kubernetes)
+                        if (!configFile)
+                            configFile = getenv("CONFIG_FILE");
+                        PROGLOG("DJPS: configFile1: %s", configFile ? configFile : "nullptr");
+
+                        // Fall back to constructing path from cluster name for containerized deployments
+                        StringBuffer configPath;
+                        if (!configFile && isContainerized())
+                        {
+                            const char *clusterName = globals->queryProp("@name");
+                            if (clusterName)
+                                configPath.appendf("/etc/config/%s.yaml", clusterName);
+                            else
+                                configPath.append("/etc/config/thor.yaml");
+                            configFile = configPath.str();
+                        }
+                        PROGLOG("DJPS: configFile2: %s", configFile ? configFile : "nullptr");
+
+                        if (!configFile)
+                        {
+                            PROGLOG("DJPS: Unable to determine config file path for polling - skipping config change detection");
+                            configFile = ""; // prevent null pointer access
+                        }
+
+                        StringBuffer newConfigSHA;
+                        if (configFile && *configFile)
+                            computeConfigSHAFromDisk(newConfigSHA, configFile);
+                        {
+                            CriticalBlock b(configSHAcs);
+                            if (newConfigSHA.length() && !streq(currentConfigSHA.str(), newConfigSHA.str()))
+                            {
+                                PROGLOG("Polling detected configuration SHA change from '%s' to '%s' by reading %s",
+                                        currentConfigSHA.str(), newConfigSHA.str(), configFile);
+                                currentConfigSHA.set(newConfigSHA.str());
+                                configChangeDetected = true;
+                            }
+                        }
+                    }
 
                     // Check for configuration changes and exit gracefully if detected
                     if (configChangeDetected)
@@ -1878,7 +2011,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
     // Cleanup configuration change monitoring
     if (configUpdateHookId)
         removeConfigUpdateHook(configUpdateHookId);
-//    configUpdateHook.clear();
+    configUpdateHook.clear();
 
     if (multiThorMemoryThreshold)
         setMultiThorMemoryNotify(0,NULL);
