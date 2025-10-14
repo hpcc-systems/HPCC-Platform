@@ -1477,7 +1477,7 @@ static void computeConfigSHA(StringBuffer &shaStr)
         e->Release();
     }
 }
-/*
+
 static void computeConfigSHA(StringBuffer &shaStr, IPropertyTree *componentConfig, IPropertyTree *globalConfig)
 {
     if (!componentConfig)
@@ -1520,8 +1520,8 @@ static void computeConfigSHA(StringBuffer &shaStr, IPropertyTree *componentConfi
         e->Release();
     }
 }
-*/
-//static CConfigUpdateHook configUpdateHook;
+
+static CConfigUpdateHook configUpdateHook;
 
 static void configUpdateNotifyHandler(const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
 {
@@ -1569,7 +1569,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
         }
         else
             IWARNLOG("Failed to install configuration change monitoring");
-/*
+
         auto modifyFunc = [](IPropertyTree * newComponentConfiguration, IPropertyTree * newGlobalConfiguration)
         {
             PROGLOG("DJPS modifyFunc() called");
@@ -1596,13 +1596,13 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                 }
             }
         };
-*/
+
         // Initialize the configuration SHA baseline
         computeConfigSHA(currentConfigSHA);
         PROGLOG("DJPS Initial configuration SHA: %s", currentConfigSHA.str());
-//        PROGLOG("DJPS configUpdateHook.installModifierOnce(modifyFunc, false); before");
-//        configUpdateHook.installModifierOnce(modifyFunc, false);
-//        PROGLOG("DJPS Configuration change monitoring enabled for graceful restart");
+        PROGLOG("DJPS configUpdateHook.installModifierOnce(modifyFunc, false); before");
+        configUpdateHook.installModifierOnce(modifyFunc, false);
+        PROGLOG("DJPS Configuration change monitoring enabled for graceful restart");
     }
 
     aborting = 0;
@@ -1877,7 +1877,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
     // Cleanup configuration change monitoring
     if (configUpdateHookId)
         removeConfigUpdateHook(configUpdateHookId);
-//    configUpdateHook.clear();
+    configUpdateHook.clear();
 
     if (multiThorMemoryThreshold)
         setMultiThorMemoryNotify(0,NULL);
