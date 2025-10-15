@@ -1170,10 +1170,10 @@ public:
         ptr.store(result, std::memory_order_release);
         return result;
     }
-    inline bool isSet() const                 { return ptr != nullptr; }
+    inline bool isSet() const                 { return ptr.load(std::memory_order_acquire) != nullptr; }
     inline void set(CLASS * _ptr)
     {
-        if (ptr != _ptr)
+        if (ptr.load(std::memory_order_acquire) != _ptr)
         {
             LINK(_ptr);
             this->setown(_ptr);
@@ -1206,6 +1206,12 @@ public:
     inline void setown(CLASS * _ptr)
     {
         CLASS * temp = ptr.exchange(_ptr);
+        ::Release(temp);
+    }
+    inline void setownNonAtomic(CLASS * _ptr)
+    {
+        CLASS * temp = ptr.load(std::memory_order_acquire);
+        ptr.store(_ptr, std::memory_order_release);
         ::Release(temp);
     }
     inline CLASS * swap(CLASS * _ptr)
