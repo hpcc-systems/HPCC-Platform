@@ -1360,7 +1360,7 @@ public:
     }
 
 
-    bool scanDirectory(unsigned node,const SocketEndpoint &ep,StringBuffer &path, unsigned drv, cDirDesc *pdir, IFile *cachefile, unsigned level, unsigned filePathOffset, unsigned stripeNum, cDirDesc *parent)
+    bool scanDirectory(unsigned node, const SocketEndpoint &ep, StringBuffer &path, unsigned drv, cDirDesc *pdir, IFile *cachefile, unsigned filePathOffset, unsigned stripeNum, cDirDesc *parent)
     {
         checkHeartbeat("Directory scan");
         size32_t dsz = path.length();
@@ -1395,39 +1395,8 @@ public:
             if (iswin)
                 fname.toLowerCase();
             addPathSepChar(path).append(fname);
-            if (iter->isDir())  {
-                // NB: Check if a subdirectory is a stripe directory under certain conditions
-                // Stripe directories must be under root. The level is 0 if root
-                // Only look for stripe directories if the plane details say it is striped
-                if ((level == 0) && isPlaneStriped) {
-                    const char *dir = fname.str();
-                    bool isDirStriped = dir[0] == 'd' && dir[1] != '\0'; // Directory may be striped if it starts with 'd' and longer than one character
-                    if (isDirStriped) {
-                        dir++;
-                        while (*dir) {
-                            if (!isdigit(*(dir++))) {
-                                isDirStriped = false;
-                                break;
-                            }
-                        }
-                        if (isDirStriped) {
-                            // To properly match all file parts, we need to remove the stripe directory from the path
-                            // so that the cDirDesc hierarchy matches the logical scope hierarchy
-                            // /var/lib/HPCCSystems/hpcc-data/d1/somescope/otherscope/afile.1_of_2
-                            // /var/lib/HPCCSystems/hpcc-data/d2/somescope/otherscope/afile.2_of_2
-                            // These files would never be matched if we didn't build up the cDirDesc structure without the stripe directory
-                            if (!scanDirectory(node,ep,path,drv,pdir,NULL,level+1,filePathOffset,stripeNum,parent))
-                                return false;
-
-                            path.setLength(dsz);
-                            continue;
-                        }
-                    }
-                    // Top-level directory is not striped, but isPlaneStriped is true. Throw an error, but continue processing directory as normal
-                    OERRLOG(LOGPFX "Top-level directory striping mismatch for %s: isPlaneStriped=%d", path.str(), isPlaneStriped);
-                }
+            if (iter->isDir())
                 dirs.append(fname.str());
-            }
             else {
                 CDateTime dt;
                 nsz += iter->getFileSize();
@@ -1452,7 +1421,7 @@ public:
             addPathSepChar(path).append(dirs.item(i));
             if (file.get()&&!resetRemoteFilename(file,path.str())) // sneaky way of avoiding cache
                 file.clear();
-            if (!scanDirectory(node,ep,path,drv,pdir->lookupDir(dirs.item(i),&allocator),file,level+1,filePathOffset,stripeNum,pdir))
+            if (!scanDirectory(node,ep,path,drv,pdir->lookupDir(dirs.item(i),&allocator),file,filePathOffset,stripeNum,pdir))
                 return false;
             path.setLength(dsz);
         }
@@ -1511,7 +1480,7 @@ public:
                     addPathSepChar(path).append('d').append(i+1);
 
                     parent.log(false,"Scanning %s directory %s",parent.storagePlane->queryProp("@name"),path.str());
-                    if (!parent.scanDirectory(0,localEP,path,0,parent.root.get(),NULL,1,path.length(),i+1,nullptr))
+                    if (!parent.scanDirectory(0,localEP,path,0,parent.root.get(),NULL,path.length(),i+1,nullptr))
                     {
                         ok = false;
                         return;
@@ -1522,7 +1491,7 @@ public:
                     StringBuffer hostStr;
                     SocketEndpoint ep = parent.rawgrp->queryNode(i).endpoint();
                     parent.log(false,"Scanning %s directory %s",ep.getEndpointHostText(hostStr).str(),path.str());
-                    if (!parent.scanDirectory(i,ep,path,0,NULL,NULL,0,path.length(),0,nullptr)) {
+                    if (!parent.scanDirectory(i,ep,path,0,NULL,NULL,path.length(),0,nullptr)) {
                         ok = false;
                         return;
                     }
@@ -1532,7 +1501,7 @@ public:
                         setReplicateFilename(path,1);
                         ep = parent.rawgrp->queryNode(i).endpoint();
                         parent.log(false,"Scanning %s directory %s",ep.getEndpointHostText(hostStr.clear()).str(),path.str());
-                        if (!parent.scanDirectory(i,ep,path,1,NULL,NULL,0,path.length(),0,nullptr)) {
+                        if (!parent.scanDirectory(i,ep,path,1,NULL,NULL,path.length(),0,nullptr)) {
                             ok = false;
                         }
                     }
