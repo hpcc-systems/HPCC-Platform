@@ -422,6 +422,18 @@ unsigned RtlRecord::getNumKeyedFields() const
     return ret;
 }
 
+size32_t RtlRecord::getKeyedSize() const
+{
+    unsigned fieldIndex = 0;
+    for (const RtlFieldInfo * const * finger = originalFields; *finger; finger++)
+    {
+        if ((*finger)->flags & RFTMispayloadfield)
+            break;
+        fieldIndex++;
+    }
+    return fixedOffsets[fieldIndex];
+}
+
 void RtlRecord::calcRowOffsets(size_t * variableOffsets, const void * _row, unsigned numFieldsUsed) const
 {
     const byte * row = static_cast<const byte *>(_row);
