@@ -1680,7 +1680,7 @@ public:
             bool ret = false;
             if (file->getInfo(isdir,sz,dt)&&!isdir)
                 ret = true;
-#ifdef _DEBUG
+#if 0
             StringBuffer dbgname;
             rfn.getPath(dbgname);
             PROGLOG("checkOrphanPhysicalFile(%s) = %s",dbgname.str(),ret?"true":"false");
@@ -1766,7 +1766,7 @@ public:
         if (!f)
             return;
         // first check if any orhans at all (maybe could do this faster)
-#ifdef _DEBUG
+#if 0
         StringBuffer dbgname;
         f->getNameMask(dbgname);
         PROGLOG("listOrphans TEST FILE(%s)",dbgname.str());
@@ -2011,7 +2011,7 @@ public:
                 return;
             basedir.append(rootdir);
         }
-#ifdef _DEBUG
+#if 0
         StringBuffer dbgname;
         d->getName(dbgname);
         PROGLOG("listOrphans TEST DIR(%s)",dbgname.str());
