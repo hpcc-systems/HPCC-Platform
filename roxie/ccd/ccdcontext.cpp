@@ -1185,7 +1185,7 @@ class CRoxieContextBase : implements IRoxieAgentContext, implements ICodeContext
 protected:
     Owned<IWUGraphStats> graphStats;   // This needs to be destroyed very late (particularly, after the childgraphs)
     mutable Owned<IRowAllocatorMetaActIdCache> allocatorMetaCache;
-    Owned<IRowManager> rowManager; // NOTE: the order of destruction here is significant. For leak check to work destroy this BEFORE allAllocators, but after most other things
+    mutable AtomicShared<IRowManager> privateRowManager; // NOTE: the order of destruction here is significant. For leak check to work destroy this BEFORE allAllocators, but after most other things
     Owned <IDebuggableContext> debugContext;
     const IQueryFactory *factory;
     Owned<IProbeManager> probeManager; // must be destroyed after childGraphs
@@ -1208,11 +1208,10 @@ protected:
 
     const IRoxieContextLogger &logctx;
 
-
 protected:
     bool exceptionLogged;
-    std::atomic<bool> aborted;
-    CriticalSection abortLock; // NOTE: we don't bother to get lock when just reading to see whether to abort
+    std::atomic<bool> aborted{false};
+    mutable CriticalSection abortLock; // NOTE: we don't bother to get lock when just reading to see whether to abort
     Owned<IException> exception;
 
     static void _toXML(IPropertyTree *tree, StringBuffer &xgmml, unsigned indent)
@@ -1263,6 +1262,35 @@ protected:
         }
     }
 
+    IRowManager * ensureRowManager() const
+    {
+        //Reuse the abort lock critical section because it is unlikely to cause unrelated contention
+        CriticalBlock b(abortLock);
+        IRowManager * result = privateRowManager.query();
+        if (result)
+            return result;
+
+        //This interface should really be passed as const... but cast to non-const
+        const roxiemem::ITimeLimiter * castThis = this;
+        roxiemem::ITimeLimiter * timeLimiter = const_cast<roxiemem::ITimeLimiter *>(castThis);
+        result = roxiemem::createRowManager(options.memoryLimit, timeLimiter, logctx, allocatorMetaCache, false);
+        privateRowManager.setownNonAtomic(result);
+        return result;
+    }
+
+    inline IRowManager * queryEnsureRowManager() const
+    {
+        IRowManager * result = privateRowManager.query();
+        if (likely(result))
+            return result;
+        return ensureRowManager();
+    }
+
+    inline bool createdRowManager() const
+    {
+        return privateRowManager.isSet();
+    }
+
 public:
     IMPLEMENT_IINTERFACE;
     CRoxieContextBase(const IQueryFactory *_factory, const IRoxieContextLogger &_logctx)
@@ -1274,14 +1302,12 @@ public:
         deserializedResultStore = NULL;
         rereadResults = NULL;
         xmlStoredDatasetReadFlags = ptr_none;
-        aborted = false;
         exceptionLogged = false;
         totAgentsReplyLen = 0;
         totAgentsDuplicates = 0;
         totAgentsResends = 0;
 
         allocatorMetaCache.setown(createRowAllocatorCache(this));
-        rowManager.setown(roxiemem::createRowManager(options.memoryLimit, this, logctx, allocatorMetaCache, false));
         //MORE: If checking heap required then should have
         //rowManager.setown(createCheckingHeap(rowManager)) or something similar.
     }
@@ -1734,7 +1760,7 @@ public:
 
     virtual IRowManager &queryRowManager()
     {
-        return *rowManager;
+        return *queryEnsureRowManager();
     }
 
     virtual void addAgentsReplyLen(unsigned len, unsigned duplicates, unsigned resends)
@@ -1848,12 +1874,12 @@ public:
 
     virtual const char *cloneVString(const char *str) const
     {
-        return rowManager->cloneVString(str);
+        return queryEnsureRowManager()->cloneVString(str);
     }
 
     virtual const char *cloneVString(size32_t len, const char *str) const
     {
-        return rowManager->cloneVString(len, str);
+        return queryEnsureRowManager()->cloneVString(len, str);
     }
 
     virtual void getRowXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags)
@@ -1882,9 +1908,9 @@ public:
     virtual IEngineRowAllocator *createAllocator(IRowAllocatorMetaActIdCache * cache, IOutputMetaData *meta, unsigned activityId, unsigned id, roxiemem::RoxieHeapFlags flags) const
     {
         if (options.checkingHeap)
-            return createCrcRoxieRowAllocator(cache, *rowManager, meta, activityId, id, flags);
+            return createCrcRoxieRowAllocator(cache, *queryEnsureRowManager(), meta, activityId, id, flags);
         else
-            return createRoxieRowAllocator(cache, *rowManager, meta, activityId, id, flags);
+            return createRoxieRowAllocator(cache, *queryEnsureRowManager(), meta, activityId, id, flags);
     }
 
     virtual void getResultRowset(size32_t & tcount, const byte * * & tgt, const char * stepname, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) override
@@ -2716,7 +2742,6 @@ public:
         : CRoxieContextBase(_factory, _logctx), serverQueryFactory(_factory), results(NULL)
     {
         init();
-        rowManager->setMemoryLimit(options.memoryLimit);
         workflow.setown(_factory->createWorkflowMachine(workUnit, true, logctx, options));
         context.setown(createPTree(ipt_caseInsensitive|ipt_fast));
     }
@@ -2726,12 +2751,12 @@ public:
     {
         init();
         workUnit.set(_workUnit);
-        rowManager->setMemoryLimit(options.memoryLimit);
         workflow.setown(_factory->createWorkflowMachine(workUnit, false, logctx, options));
         context.setown(createPTree(ipt_caseInsensitive|ipt_fast));
 
         //MORE: Use various debug settings to override settings:
-        rowManager->setActivityTracking(workUnit->getDebugValueBool("traceRoxiePeakMemory", false));
+        if (workUnit->getDebugValueBool("traceRoxiePeakMemory", false))
+            queryEnsureRowManager()->setActivityTracking(true);
 
         startWorkUnit();
     }
@@ -2781,15 +2806,15 @@ public:
         }
 
         // MORE some of these might be appropriate in wu case too?
-        rowManager->setActivityTracking(context->getPropBool("_TraceMemory", false));
-        rowManager->setMemoryLimit(options.memoryLimit);
+        if (context->hasProp("_TraceMemory"))
+            queryEnsureRowManager()->setActivityTracking(context->getPropBool("_TraceMemory", false));
 
         workflow.setown(_factory->createWorkflowMachine(workUnit, false, logctx, options));
     }
 
-    virtual roxiemem::IRowManager &queryRowManager()
+    virtual roxiemem::IRowManager &queryRowManager() final override
     {
-        return *rowManager;
+        return *queryEnsureRowManager();
     }
 
     virtual IRowAllocatorMetaActIdCache & queryAllocatorCache() override
@@ -2870,7 +2895,9 @@ public:
     }
     virtual memsize_t getMemoryUsage()
     {
-        return rowManager->getMemoryUsage();
+        if (!createdRowManager())
+            return 0;
+        return queryEnsureRowManager()->getMemoryUsage();
     }
 
     virtual unsigned getAgentsReplyLen() const
@@ -2960,7 +2987,8 @@ public:
         gatherer->updateStatistic(StTimeElapsed, elapsedTimer.elapsedNs(), StatsMergeReplace);
 
         WuStatisticTarget statsTarget(w, "roxie");
-        rowManager->reportPeakStatistics(statsTarget, 0);
+        if (createdRowManager())
+            queryEnsureRowManager()->reportPeakStatistics(statsTarget, 0);
     }
 
     virtual void done(bool failed) override
@@ -2975,9 +3003,9 @@ public:
                 probeManager.clear();
                 ::Release(deserializedResultStore);
                 deserializedResultStore = nullptr;
-                if (rowManager && rowManager->allocated())
+                if (createdRowManager() && queryEnsureRowManager()->allocated())
                 {
-                    rowManager->reportLeaks();
+                    queryEnsureRowManager()->reportLeaks();
                     failed = true;
                     Owned <IException> E = makeStringException(ROXIE_INTERNAL_ERROR, "Row leaks detected");
                     ::addWuException(workUnit, E);
