@@ -628,10 +628,10 @@ public:
                     {
                         if (!it->second->isDirPerPart)
                         {
-                        // Not a dir-per-part file, add part to found file
-                        file = it->second.get();
-                        return filesCrit;
-                    }
+                            // Not a dir-per-part file, add part to found file
+                            file = it->second.get();
+                            return filesCrit;
+                        }
                         // Likely this file part is dir-per-part, so don't accidentally add to this file
                     }
                 }
@@ -831,6 +831,11 @@ public:
         return PeriodicTimer::hasElapsed();
     }
 
+    cycle_t queryStartCycles() const
+    {
+        return startCycles;
+    }
+
     void reset(unsigned seconds, bool suppressFirst, const char *_clustname)
     {
         clustname = _clustname;
@@ -957,6 +962,22 @@ public:
         processedFiles = 0;
         heartbeatTimer.reset(60, true, clustname.get()); // 1 minute interval
         log(true, "%s heartbeat started (interval: 1 minute)", op);
+    }
+
+    void finishHeartbeat(const char * op)
+    {
+        int64_t elapsedNS = cycle_to_nanosec(get_cycles_now() - heartbeatTimer.queryStartCycles());
+        unsigned elapsedMinutes = elapsedNS / oneSecondNS / 60;
+        unsigned elapsedHours = elapsedMinutes / 60;
+        unsigned elapsedDays = elapsedHours / 24;
+        unsigned remainingHours = elapsedHours % 24;
+        unsigned remainingMinutes = elapsedMinutes % 60;
+        if (elapsedDays > 0)
+            log(true, "%s complete. Total time: %ud %uh %um, Total dirs: %lu, Total files: %lu", op, elapsedDays, remainingHours, remainingMinutes, processedDirs.load(), processedFiles.load());
+        else if (elapsedHours > 0)
+            log(true, "%s complete. Total time: %uh %um, Total dirs: %lu, Total files: %lu", op, elapsedHours, remainingMinutes, processedDirs.load(), processedFiles.load());
+        else
+            log(true, "%s complete. Total time: %um, Total dirs: %lu, Total files: %lu", op, elapsedMinutes, processedDirs.load(), processedFiles.load());
     }
 
     void checkHeartbeat(const char * op)
@@ -1529,7 +1550,7 @@ public:
         startHeartbeat("Directory scan"); // Initialize heartbeat mechanism
         afor.For(numMaxThreads,numThreads,true,numThreads>1);
         if (afor.ok)
-            log(true,"Directory scan complete");
+            finishHeartbeat("Directory scan");
         else
             log(true,"Errors occurred during scan");
         return afor.ok;
@@ -2086,7 +2107,7 @@ public:
         listOrphans(NULL,basedir,scope,abort,recentCutoffDays);
         if (abort)
             return;
-        log(true,"Orphan scan complete");
+        finishHeartbeat("Orphan scan");
         sorteddirs.sort(compareDirs);   // NB sort reverse
         while (!abort&&sorteddirs.ordinality())
             dirbranch->addPropTree("Directory",&sorteddirs.popGet());
