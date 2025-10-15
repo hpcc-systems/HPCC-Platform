@@ -26665,7 +26665,7 @@ public:
         rootIndex = NULL;
         atmostsTriggered = 0;
         // Allocate blocks of CJoinGroup objects to reduce overhead and potential contention between threads
-        unsigned allocatorFlags = roxiemem::RHFblocked;
+        unsigned allocatorFlags = roxiemem::RHFblocked|roxiemem::RHFscanning;
         joinGroupAllocator.setown(ctx->queryRowManager().createFixedRowHeap(sizeof(CJoinGroup), activityId, allocatorFlags));
 
         //Output rows are only created on a single thread, so it is safe to use a blocked allocator - reducing contention
