@@ -881,8 +881,6 @@ public:
 // See HPCC-35152 for a discussion of the tradeoffs
 static constexpr unsigned cacheBits = 4;
 static constexpr unsigned cacheBuckets = 1U << cacheBits;
-static constexpr unsigned cacheShift = 32 - cacheBits;
-
 
 class CNodeMRUCache
 {
@@ -3357,7 +3355,11 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
     CCacheReservation cacheReservation;
     CKeyIdAndPos key(iD, pos);
     unsigned hashcode = typeCache.getKeyHash(key);
-    unsigned subCache = cacheBits == 0 ? 0 : hashcode >> cacheShift;
+    //Include many bits in the subcache selection to try and ensure an even distribution
+    unsigned mangledCode = hashcode ^ (hashcode >> cacheBits);
+    mangledCode = mangledCode ^ (hashcode >> (2 * cacheBits));
+    mangledCode = mangledCode ^ (hashcode >> (4 * cacheBits));
+    unsigned subCache = mangledCode & (cacheBuckets - 1);
     CNodeMRUSubCache & curCache = typeCache.cache[subCache];
 
     //Previously, this was implemented as:
