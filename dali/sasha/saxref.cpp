@@ -609,13 +609,13 @@ public:
             return numParts!=grp.ordinality() || partNum>=grp.ordinality() || !grp.queryNode(partNum).endpoint().equals(ep);
     }
 
-    CriticalSection &getFile(cFileDesc *&file, cDirDesc *parent, const char *filename, unsigned filenameLen, unsigned partNum, unsigned numParts)
+    CriticalSection &prepareFileAndReturnLock(cFileDesc *&file, cDirDesc *parent, const char *filename, unsigned filenameLen, unsigned partNum, unsigned numParts)
     {
         // In containerized systems, it is common for the file to have a directory for each part (dir-per-part)
         // We know a file is a dir-per-part file if [1] the directory name is numeric and matches the part number
         // and [2] the file found has a mask (e.g. ._5_of_10), where '5' matches the directory name
         // If [1] and [2] are true, set isDirPerPart to true and add file to parent directory instead of current directory
-        if (isContainerized()&&(numParts!=NotFound))
+        if (isContainerized()&&(numParts!=NotFound)&&parent)
         {
             auto namePtr = (char const *)(name+1);
             unsigned dirPerPartNum = readDigits(namePtr, (size32_t)(name[0]), false);
@@ -705,7 +705,7 @@ public:
         bool misplaced = isMisplaced(pf,nf,ep,grp,filePath,filePathOffset,stripeNum,numStripedDevices);
 
         cFileDesc *file = nullptr;
-        CriticalBlock block(getFile(file,parent,fn,filenameLen,pf,nf));
+        CriticalBlock block(prepareFileAndReturnLock(file,parent,fn,filenameLen,pf,nf));
 
         if (misplaced) {
             cMisplacedRec *mp = file->misplaced;
