@@ -25,6 +25,7 @@
 #include "jtime.hpp"
 
 #include "dafdesc.hpp"
+#include "dadfs.hpp"
 #include "rtlkey.hpp"
 #include "eclhelper.hpp" // tmp for IHThor..Arg interfaces.
 
@@ -161,6 +162,12 @@ void CDiskPartHandlerBase::open()
             }
         }
     }
+
+    // The following call will likely read the size of the file.  That adds some latency when reading remote
+    // (especially when using the api?).  Worth thinking about whether there is a better alternative.
+    offset_t expectedSize, actualSize;
+    if (!doesPhysicalMatchMeta(*partDesc, *iFile, expectedSize, actualSize))
+        throw MakeActivityException(&activity, 0, "File size mismatch: file %s was supposed to be %" I64F "d bytes but appears to be %" I64F "d bytes", iFile->queryFilename(), expectedSize, actualSize);
 }
 
 void CDiskPartHandlerBase::stop()
