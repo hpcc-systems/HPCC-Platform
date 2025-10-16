@@ -3602,4 +3602,142 @@ void cleanStaleGroups(const char *groupPattern, bool dryRun)
     }
 }
 
+void fileread(const char *srcPath, const char *dstPath, offset_t numBytes)
+{
+    // Read N bytes from source file and write to destination file
+    // Supports any file type (local, Azure blob, S3, etc.)
+    // Displays progress and file metadata
+
+    try
+    {
+        installDefaultFileHooks(getComponentConfigSP());
+        PROGLOG("fileread: Reading from %s", srcPath);
+        PROGLOG("  Writing to: %s", dstPath);
+        if (numBytes > 0)
+            PROGLOG("  Bytes to read: %" I64F "d", numBytes);
+
+        // Create the source file object
+        Owned<IFile> srcFile = createIFile(srcPath);
+        if (!srcFile)
+        {
+            UERRLOG("ERROR: Failed to create source file object");
+            return;
+        }
+
+        // Check if source file exists
+        if (!srcFile->exists())
+        {
+            UERRLOG("ERROR: Source file does not exist: %s", srcPath);
+            return;
+        }
+
+        // Get source file size
+        offset_t srcFileSize = srcFile->size();
+        PROGLOG("  Source file size: %" I64F "d bytes", srcFileSize);
+
+        // Determine how many bytes to read
+        offset_t bytesToRead = numBytes;
+        if (bytesToRead == 0 || bytesToRead > srcFileSize)
+            bytesToRead = srcFileSize;
+
+        PROGLOG("  Will read: %" I64F "d bytes", bytesToRead);
+
+        // Get file timestamps
+        CDateTime createTime, modifiedTime, accessedTime;
+        if (srcFile->getTime(&createTime, &modifiedTime, &accessedTime))
+        {
+            StringBuffer createStr, modifiedStr, accessStr;
+            createTime.getString(createStr);
+            modifiedTime.getString(modifiedStr);
+            accessedTime.getString(accessStr);
+            PROGLOG("  Created: %s", createStr.str());
+            PROGLOG("  Modified: %s", modifiedStr.str());
+            PROGLOG("  Accessed: %s", accessStr.str());
+        }
+
+        // Open source file for reading
+        Owned<IFileIO> srcFileIO = srcFile->open(IFOread);
+        if (!srcFileIO)
+        {
+            UERRLOG("ERROR: Failed to open source file for reading");
+            return;
+        }
+
+        // Create destination file
+        Owned<IFile> dstFile = createIFile(dstPath);
+        Owned<IFileIO> dstFileIO = dstFile->open(IFOcreate);
+        if (!dstFileIO)
+        {
+            UERRLOG("ERROR: Failed to create destination file: %s", dstPath);
+            return;
+        }
+
+        // Read and write in chunks
+        constexpr size32_t oneMB = 0x100000;
+        const size32_t chunkSize = oneMB;
+        MemoryBuffer memoryBuffer;
+        byte *buffer = (byte *)memoryBuffer.reserveTruncate(chunkSize);
+
+        CCycleTimer timer;
+        offset_t totalBytesRead = 0;
+        offset_t pos = 0;
+        unsigned reportInterval = 10; // Report every 10MB
+        offset_t nextReport = reportInterval * oneMB;
+
+        while (totalBytesRead < bytesToRead)
+        {
+            size32_t toRead = (size32_t)std::min((offset_t)chunkSize, bytesToRead - totalBytesRead);
+            size32_t bytesRead = srcFileIO->read(pos, toRead, buffer);
+
+            if (bytesRead == 0)
+            {
+                WARNLOG("Unexpected end of file at offset %" I64F "d", pos);
+                break;
+            }
+
+            dstFileIO->write(pos, bytesRead, buffer);
+
+            totalBytesRead += bytesRead;
+            pos += bytesRead;
+
+            // Progress reporting
+            if (totalBytesRead >= nextReport || totalBytesRead == bytesToRead)
+            {
+                double mbRead = (double)totalBytesRead / oneMB;
+                double mbTotal = (double)bytesToRead / oneMB;
+                double pct = (double)totalBytesRead * 100.0 / bytesToRead;
+                unsigned elapsedMs = timer.elapsedMs();
+                double mbps = elapsedMs > 0 ? (mbRead * 1000.0 / elapsedMs) : 0.0;
+
+                PROGLOG("  Progress: %.2f MB / %.2f MB (%.1f%%) - %.2f MB/s",
+                        mbRead, mbTotal, pct, mbps);
+
+                nextReport = ((totalBytesRead / (reportInterval * oneMB)) + 1) * (reportInterval * oneMB);
+            }
+        }
+
+        unsigned elapsedMs = timer.elapsedMs();
+        double seconds = elapsedMs / 1000.0;
+        double mbRead = (double)totalBytesRead / oneMB;
+        double mbps = seconds > 0 ? (mbRead / seconds) : 0.0;
+
+        PROGLOG("fileread: SUCCESS");
+        PROGLOG("  Total bytes read: %" I64F "d", totalBytesRead);
+        PROGLOG("  Time elapsed: %.2f seconds", seconds);
+        PROGLOG("  Average speed: %.2f MB/s", mbps);
+        PROGLOG("  Output written to: %s", dstPath);
+    }
+    catch (IException *e)
+    {
+        StringBuffer msg;
+        e->errorMessage(msg);
+        UERRLOG("fileread: EXCEPTION - %s", msg.str());
+        e->Release();
+    }
+    catch (...)
+    {
+        UERRLOG("fileread: UNKNOWN EXCEPTION");
+    }
+}
+
 } // namespace daadmin

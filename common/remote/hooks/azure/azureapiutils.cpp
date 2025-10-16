@@ -21,16 +21,107 @@
 #include "jexcept.hpp"
 #include "jstring.hpp"
 #include "jlog.hpp"
+#include "jfile.hpp"
+#include "jmutex.hpp"
+#include "jplane.hpp"
+#include "jsecrets.hpp"
 #include <cstdlib>
+
+using namespace std::chrono;
 
 // Common utility functions shared by both blob and file implementations
 //---------------------------------------------------------------------------------------------------------------------
 
 bool areManagedIdentitiesEnabled()
 {
-    //Use a local static to avoid re-evaluation.  Performance is not critical - so once overhead is acceptable.
-    static bool enabled = std::getenv("MSI_ENDPOINT") || std::getenv("IDENTITY_ENDPOINT");
-    return enabled;
+    // Check for Azure AD Workload Identity or legacy managed identity
+    static bool hasWorkloadIdentity = std::getenv("AZURE_CLIENT_ID") &&
+                                     std::getenv("AZURE_TENANT_ID") &&
+                                     std::getenv("AZURE_FEDERATED_TOKEN_FILE");
+
+    static bool hasManagedIdentity = std::getenv("MSI_ENDPOINT") || std::getenv("IDENTITY_ENDPOINT");
+
+    return hasWorkloadIdentity || hasManagedIdentity;
+}
+
+std::shared_ptr<Azure::Storage::StorageSharedKeyCredential> getAzureSharedKeyCredential(const char * accountName, const char * secretName)
+{
+    StringBuffer key;
+    getSecretValue(key, "storage", secretName, "key", true);
+    //Trim trailing whitespace/newlines in case the secret has been entered by hand e.g. on bare metal
+    size32_t len = key.length();
+    for (;;)
+    {
+        if (!len)
+            break;
+        if (isBase64Char(key.charAt(len-1)))
+            break;
+        len--;
+    }
+    key.setLength(len);
+
+    try
+    {
+        return std::make_shared<Azure::Storage::StorageSharedKeyCredential>(accountName, key.str());
+    }
+    catch (const Azure::Core::RequestFailedException& e)
+    {
+        IException * error = makeStringExceptionV(-1, "Azure access: %s (%d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+        throw error;
+    }
+}
+
+std::shared_ptr<Azure::Core::Credentials::TokenCredential> getAzureManagedIdentityCredential()
+{
+    // Azure SDK credential objects handle token refresh automatically
+    const char * federatedTokenFile = std::getenv("AZURE_FEDERATED_TOKEN_FILE");
+    if (federatedTokenFile)
+    {
+        // Workload Identity
+        const char * clientId = std::getenv("AZURE_CLIENT_ID");
+        const char * tenantId = std::getenv("AZURE_TENANT_ID");
+        try
+        {
+#ifdef AZURE_HAS_WORKLOAD_IDENTITY_CREDENTIAL
+            DBGLOG("Using Azure Workload Identity authentication (clientId=%s, tenantId=%s, tokenFile=%s)",
+                clientId ? clientId : "<none>", tenantId ? tenantId : "<none>", federatedTokenFile);
+            return std::make_shared<Azure::Identity::WorkloadIdentityCredential>();
+#else
+            // SDK doesn't have WorkloadIdentityCredential - check if workload identity environment is configured
+            DBGLOG("Using DefaultAzureCredential for Workload Identity (SDK < 1.6.0) (clientId=%s, tenantId=%s, tokenFile=%s)",
+                clientId ? clientId : "<none>", tenantId ? tenantId : "<none>", federatedTokenFile);
+            return std::make_shared<Azure::Identity::DefaultAzureCredential>();
+#endif
+        }
+        catch (const Azure::Core::RequestFailedException& e)
+        {
+            throw makeStringExceptionV(-1, "Azure authentication failed: %s (%d)",
+                e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+        }
+    }
+    // else fall through
+
+    // Use ManagedIdentityCredential for legacy managed identity
+    // Only pass clientId if MSI/IDENTITY endpoints are set (true managed identity scenario)
+    const char * msiEndpoint = std::getenv("MSI_ENDPOINT");
+    const char * identityEndpoint = std::getenv("IDENTITY_ENDPOINT");
+    const char * clientId = (msiEndpoint || identityEndpoint) ? std::getenv("AZURE_CLIENT_ID") : nullptr;
+    DBGLOG("Using Azure Managed Identity authentication (clientId=%s, MSI_ENDPOINT=%s, IDENTITY_ENDPOINT=%s)",
+           clientId ? clientId : "<none>",
+           msiEndpoint ? msiEndpoint : "<none>",
+           identityEndpoint ? identityEndpoint : "<none>");
+    try
+    {
+        if (clientId)
+            return std::make_shared<Azure::Identity::ManagedIdentityCredential>(clientId);
+        else
+            return std::make_shared<Azure::Identity::ManagedIdentityCredential>();
+    }
+    catch (const Azure::Core::RequestFailedException& e)
+    {
+        throw makeStringExceptionV(-1, "Azure Managed Identity authentication failed: %s (%d)",
+            e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+    }
 }
 
 bool isBase64Char(char c)
