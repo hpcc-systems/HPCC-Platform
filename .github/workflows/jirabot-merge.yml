@@ -153,7 +153,7 @@ jobs:
                     # In the case of new major / minor branches we won't have any non-rc tags yet
                     # So we should instead use the branch version
                     if latestVersion[0] < branchVersion[0] or (latestVersion[0] == branchVersion[0] and latestVersion[1] < branchVersion[1]):
-                        return [branchVersion[0], branchVersion[1], 0]
+                        return [buildVersionString([branchVersion[0], branchVersion[1], 0])]
 
                     # Get latest release in branch
                     latestBranchVer = getLatestSemVer(projectConfig, branchVersion[0], branchVersion[1])
