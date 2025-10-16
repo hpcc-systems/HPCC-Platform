@@ -1,5 +1,6 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, mergeStyleSets, PrimaryButton, Spinner, Stack, TextField, } from "@fluentui/react";
+import { Checkbox, DefaultButton, mergeStyleSets, PrimaryButton, Spinner, TextField, } from "@fluentui/react";
+import { StackShim } from "@fluentui/react-migration-v8-v9";
 import { useConst } from "@fluentui/react-hooks";
 import { useForm, Controller } from "react-hook-form";
 import { FileSprayService, FileSprayStates } from "@hpcc-js/comms";
@@ -126,7 +127,7 @@ export const RenameFile: React.FunctionComponent<RenameFileProps> = ({
             <PrimaryButton text={nlsHPCC.Rename} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
         </>}>
-        <Stack>
+        <StackShim>
             {logicalFiles?.length === 1 &&
                 <Controller
                     control={control} name="targetRenameFile.0.name"
@@ -147,7 +148,7 @@ export const RenameFile: React.FunctionComponent<RenameFileProps> = ({
                 />
             }
             {logicalFiles?.length > 1 &&
-                <Stack>
+                <StackShim>
                     <table className={`${componentStyles.twoColumnTable} ${componentStyles.selectionTable}`}>
                         <thead>
                             <tr>
@@ -178,7 +179,7 @@ export const RenameFile: React.FunctionComponent<RenameFileProps> = ({
                             })}
                         </tbody>
                     </table>
-                </Stack>
+                </StackShim>
             }
             <div style={{ paddingTop: "15px" }}>
                 <Controller
@@ -188,6 +189,6 @@ export const RenameFile: React.FunctionComponent<RenameFileProps> = ({
                     }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.Overwrite} />}
                 />
             </div>
-        </Stack>
+        </StackShim>
     </MessageBox>;
 };

@@ -1,5 +1,6 @@
 import * as React from "react";
-import { IconButton, IIconProps, Stack, mergeStyleSets } from "@fluentui/react";
+import { IconButton, IIconProps, mergeStyleSets } from "@fluentui/react";
+import { StackShim, StackItemShim } from "@fluentui/react-migration-v8-v9";
 import { useUserTheme } from "../hooks/theme";
 import { updateFullscreen } from "../util/history";
 
@@ -40,12 +41,12 @@ export const FullscreenStack: React.FunctionComponent<FullscreenProps> = ({
     children
 }) => {
 
-    return <Stack horizontal>
-        <Stack.Item grow>
+    return <StackShim horizontal>
+        <StackItemShim grow>
             {children}
-        </Stack.Item>
-        <Stack.Item align="center">
+        </StackItemShim>
+        <StackItemShim align="center">
             <IconButton iconProps={fullscreen ? RestoreIcon : FullscreenIcon} onClick={() => updateFullscreen(!fullscreen)} />
-        </Stack.Item>
-    </Stack>;
+        </StackItemShim>
+    </StackShim>;
 };

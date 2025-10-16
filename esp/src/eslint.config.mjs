@@ -42,6 +42,15 @@ export default tseslint.config(
             "@typescript-eslint/no-namespace": "off",
             "@typescript-eslint/no-this-alias": "off",
             "@typescript-eslint/no-unused-vars": "off",
+            "no-restricted-imports": ["error", {
+                "paths": [
+                    {
+                        name: "@fluentui/react",
+                        importNames: ["Stack", "StackItem"],
+                        message: "Use StackShim / StackItemShim from @fluentui/react-migration-v8-v9 instead."
+                    }
+                ]
+            }],
 
             ...reactHooks.configs.recommended.rules,
             'react-refresh/only-export-components': [
