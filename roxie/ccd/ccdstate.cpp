@@ -1092,7 +1092,7 @@ public:
 
                 // Now resolve the filenames in parallel - on a system with remote files most of the time is spent retrieving the file sizes.
                 // The files will be added to the cache - so that the subsequent query load will match immediately
-                asyncFor(filenames.size(), numResolveFilenameThreads, [this, &filenames ](unsigned i)
+                asyncFor(filenames.size(), numResolveFilenameThreads, [&filenames ](unsigned i)
                 {
                     try
                     {
