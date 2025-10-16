@@ -394,15 +394,30 @@ public:
             publishPodNames(workunit, graphName, &connectedWorkers);
         }
 
-        //Check that nothing has caused the global configuration to be refreshed - otherwise inconsistent values may be used by the slave
-        assertex(globals == getComponentConfigSP());
+        // Capture both component and global config at this point to serialize to workers.
+        // In containerized mode with monitoring enabled, file watching may have triggered a config refresh
+        // during startup due to K8s ConfigMap mount operations. We want to serialize a consistent snapshot
+        // of configuration to workers. The manager will continue using 'globals' (which doesn't change),
+        // but getComponentConfigSP()/getGlobalConfigSP() may return updated pointers after refresh.
+        // Config changes detected after this point will trigger graceful restart between jobs.
+        Linked<IPropertyTree> componentConfigToSend = globals;
+        Linked<IPropertyTree> globalConfigToSend;
+        {
+            // Get the current global config pointer before any potential refresh
+            IPropertyTree *gc = getGlobalConfigSP();
+            globalConfigToSend.set(gc);
+            ::Release(gc);
+        }
+
+        PROGLOG("DJPS: Config pointers at worker init - globals=%p, componentConfigToSend=%p, getComponentConfigSP=%p",
+                (void*)globals.get(), (void*)componentConfigToSend.get(), (void*)getComponentConfigSP());
 
         PROGLOG("Workers connected, initializing..");
         msg.clear();
         msg.append(THOR_VERSION_MAJOR).append(THOR_VERSION_MINOR);
         processGroup->serialize(msg);
-        globals->serialize(msg);
-        getGlobalConfigSP()->serialize(msg);
+        componentConfigToSend->serialize(msg);
+        globalConfigToSend->serialize(msg);
         msg.append(managerWorkerMpTag);
         msg.append(kjServiceMpTag);
         if (!queryNodeComm().send(msg, RANK_ALL_OTHER, MPTAG_THORREGISTRATION, MP_ASYNC_SEND))
@@ -645,9 +660,13 @@ int main( int argc, const char *argv[]  )
     InitModuleObjects();
     NoQuickEditSection xxx;
     {
-        bool monitorConfig = true; // Do not allow updates to the config file, otherwise the slave may not be in sync.
-        //MORE: What about updates to storage planes - they will not be passed through to the slaves
+        // In containerized mode, enable config monitoring for graceful restart detection.
+        // The config update hook in thorMain checks for changes and triggers restart after job completion.
+        // In bare-metal, monitoring is disabled to prevent config changes during job execution.
+        bool monitorConfig = isContainerized();
         globals.setown(loadConfiguration(thorDefaultConfigYaml, argv, "thor", "THOR", "thor.xml", nullptr, nullptr, monitorConfig));
+        PROGLOG("DJPS: Initial config loaded - monitorConfig=%s, globals=%p, getComponentConfigSP=%p",
+                boolToStr(monitorConfig), (void*)globals.get(), (void*)getComponentConfigSP());
     }
     updateTraceFlags(loadTraceFlags(globals, thorTraceOptions, queryTraceFlags()), true);
 #ifdef _DEBUG
