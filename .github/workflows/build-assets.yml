@@ -107,6 +107,7 @@ jobs:
         os: [ ubuntu-24.04, ubuntu-22.04, ubuntu-20.04, rockylinux-8 ]
         container: [ true, false ]
         build-docker-image: [ false ]
+        architecture: [ "", "-arm" ]
         include:
           - os: ubuntu-22.04
             container: true
@@ -114,12 +115,17 @@ jobs:
         exclude:
           - os: rockylinux-8
             container: true
+          - os: rockylinux-8
+            architecture: "-arm"
+          - os: ubuntu-20.04
+            architecture: "-arm"
       fail-fast: false
     
     uses: ./.github/workflows/build-docker-community.yml
     with:
       os: ${{ matrix.os }}
       container: ${{ matrix.container }}
+      architecture: ${{ matrix.architecture }}
       build-docker-image: ${{ matrix.build-docker-image }}
       community_ref: ${{ needs.preamble.outputs.community_ref }}
     secrets: inherit
@@ -135,6 +141,7 @@ jobs:
         os: [ ubuntu-24.04, ubuntu-22.04, ubuntu-20.04, rockylinux-8, centos-7 ]
         container: [ true, false ]
         build-docker-image: [ false ]
+        architecture: [ "", "-arm" ]
         include:
           - os: ubuntu-22.04
             container: true
@@ -144,11 +151,18 @@ jobs:
             container: true
           - os: rockylinux-8
             container: true
+          - os: rockylinux-8
+            architecture: "-arm"
+          - os: ubuntu-20.04
+            architecture: "-arm"
+          - os: centos-7
+            architecture: "-arm"
       fail-fast: false
     uses: ./.github/workflows/build-docker-internal.yml
     with:
       os: ${{ matrix.os }}
       container: ${{ matrix.container }}
+      architecture: ${{ matrix.architecture }}
       community_ref: ${{ needs.preamble.outputs.community_ref }}
       build-docker-image: ${{ matrix.build-docker-image }}
     secrets: inherit
@@ -162,6 +176,7 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-24.04, ubuntu-22.04 ]
+        architecture: [ "", "-arm" ]
       fail-fast: false
     uses: ./.github/workflows/build-docker-enterprise.yml
     with:
@@ -191,10 +206,15 @@ jobs:
     permissions:
       contents: write
       actions: write
-    uses: ./.github/workflows/build-clienttools-macos-13.yml
+    strategy:
+      matrix:
+        cmake-config-options: [ "-DCMAKE_OSX_ARCHITECTURES=x86_64 -DCPACK_SYSTEM_NAME=Darwin-x86_64 -DUSE_PYTHON3=OFF", "" ]
+      fail-fast: false
+    uses: ./.github/workflows/build-clienttools-macos-14.yml
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
       make-latest: ${{ needs.preamble.outputs.is_latest != 'false' }}
+      cmake-config-options: ${{ matrix.cmake-config-options }}
     secrets: inherit
 
   build-clienttools-internal-macos:
@@ -202,11 +222,16 @@ jobs:
     permissions:
       contents: read
       actions: write
-    uses: ./.github/workflows/build-clienttools-macos-13.yml
+    strategy:
+      matrix:
+        cmake-config-options: [ "-DCMAKE_OSX_ARCHITECTURES=x86_64 -DCPACK_SYSTEM_NAME=Darwin-x86_64 -DUSE_PYTHON3=OFF", "" ]
+      fail-fast: false
+    uses: ./.github/workflows/build-clienttools-macos-14.yml
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
       ln-ref: ${{ needs.preamble.outputs.internal_ref }}
       make-latest: ${{ needs.preamble.outputs.is_latest != 'false' }}
+      cmake-config-options: ${{ matrix.cmake-config-options }}
     secrets: inherit
 
   build-clienttools-community-windows:

@@ -26,6 +26,11 @@ on:
         required: false
         type: string
         default: ''
+      architecture:
+        description: 'Architecture, either -arm or empty string'
+        required: false
+        type: string
+        default: ''
 
   workflow_dispatch:
     inputs:
@@ -52,11 +57,16 @@ on:
         description: 'Extra CMake options'
         required: false
         default: ''
+      architecture:
+        type: string
+        description: 'Architecture, either -arm or empty string'
+        required: false
+        default: ''
 
 jobs:
   build:
     name: Build Community Platform
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04${{ inputs.architecture }}
     steps:
       - name: Free additional disk space (remove Android SDK + Tools)
         continue-on-error: true
@@ -121,8 +131,8 @@ jobs:
           echo "vcpkg_sha_short=$vcpkg_sha_short" >> $GITHUB_OUTPUT
           docker_build_label=hpccsystems/platform-build-${{ inputs.os }}
           echo "docker_build_label=$docker_build_label" >> $GITHUB_OUTPUT
-          echo "docker_tag=$docker_build_label:$vcpkg_sha_short" >> $GITHUB_OUTPUT
-          echo "docker_tag_candidate_base=$docker_build_label:$candidate_base_branch" >> $GITHUB_OUTPUT
+          echo "docker_tag=$docker_build_label:$vcpkg_sha_short${{ inputs.architecture }}" >> $GITHUB_OUTPUT
+          echo "docker_tag_candidate_base=$docker_build_label:$candidate_base_branch${{ inputs.architecture }}" >> $GITHUB_OUTPUT
 
       - name: Print Vars
         run: echo "${{ toJson(steps.vars.outputs)}}"
@@ -146,7 +156,7 @@ jobs:
           push: ${{ github.repository_owner == 'hpcc-systems' }}
           load: ${{ github.repository_owner != 'hpcc-systems' }}
           build-args: |
-            VCPKG_REF=${{ steps.vars.outputs.vcpkg_sha_short }}
+            VCPKG_REF=${{ steps.vars.outputs.vcpkg_sha_short }}${{ inputs.architecture }}
           tags: |
             ${{ steps.vars.outputs.docker_tag_candidate_base }}
           cache-from: |
@@ -170,11 +180,6 @@ jobs:
             # docker run --rm --mount ${{ steps.vars.outputs.mount_platform }} --mount ${{ steps.vars.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ steps.vars.outputs.cmake_docker_config }} -D$plugin=ON -DCONTAINERIZED=OFF -DCPACK_STRIP_FILES=ON"
             # docker run --rm --mount ${{ steps.vars.outputs.mount_platform }} --mount ${{ steps.vars.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
           done
-          cd ${{ steps.vars.outputs.folder_build }}
-          packages=($(ls -1 hpccsystems-*))
-          for i in "${packages[@]}"; do
-            md5sum "$i" > "$i.md5sum"
-          done
 
       - name: CMake Containerized Packages
         if: ${{ inputs.container }}
@@ -189,6 +194,15 @@ jobs:
           docker run --rm --mount ${{ steps.vars.outputs.mount_platform }} --mount ${{ steps.vars.outputs.mount_build }} ${{ steps.vars.outputs.docker_tag_candidate_base }} "${{ steps.vars.outputs.gpg_import }} && \
             cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ steps.vars.outputs.cmake_docker_config }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGN_MODULES_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGN_MODULES_KEYID }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=ON ${{ inputs.cmake-options-extra }} && \
             cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
+          cd ${{ steps.vars.outputs.folder_build }}
+
+      - name: Generate md5sums
+        run: |
+          cd ${{ steps.vars.outputs.folder_build }}
+          packages=($(ls -1 hpccsystems-*))
+          for i in "${packages[@]}"; do
+            md5sum "$i" > "$i.md5sum"
+          done
   
       - name: Upload Assets
         uses: ncipollo/release-action@v1.16.0
