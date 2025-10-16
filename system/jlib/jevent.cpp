@@ -605,7 +605,7 @@ void EventRecorder::recordRecordingActive(bool enabled)
         return;
 
     if (unlikely(outputToLog))
-        TRACEEVENT("{ \"name\": \"RecordingActive\", \"enabled\": %s }", boolToStr(enabled));
+        TRACEEVENT("{ \"name\": \"RecordingActive\", \"Enabled\": %s }", boolToStr(enabled));
 
     size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(enabled);
     offset_type writeOffset = reserveEvent(requiredSize);
@@ -623,7 +623,7 @@ void EventRecorder::recordIndexCacheHit(unsigned fileid, offset_t offset, byte n
         return;
 
     if (unlikely(outputToLog))
-        TRACEEVENT("{ \"name\": \"IndexCacheHit\", \"file\": %u, \"offset\": %llu, \"kind\": %d, \"size\": %u, \"expandTime\": %llu }", fileid, offset, nodeKind, size, expandTime);
+        TRACEEVENT("{ \"name\": \"IndexCacheHit\", \"FileId\": %u, \"FileOffset\": %llu, \"NodeKind\": %d, \"InMemorySize\": %u, \"ExpandTime\": %llu }", fileid, offset, nodeKind, size, expandTime);
 
     size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, offset, nodeKind, size, expandTime);
     offset_type writeOffset = reserveEvent(requiredSize);
@@ -643,7 +643,7 @@ void EventRecorder::recordIndexCacheMiss(unsigned fileid, offset_t offset, byte 
         return;
 
     if (unlikely(outputToLog))
-        TRACEEVENT("{ \"name\": \"IndexCacheMiss\", \"file\": %u, \"offset\": %llu, \"kind\": %d }", fileid, offset, nodeKind);
+        TRACEEVENT("{ \"name\": \"IndexCacheMiss\", \"FileId\": %u, \"FileOffset\": %llu, \"NodeKind\": %d }", fileid, offset, nodeKind);
 
     size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, offset, nodeKind);
     offset_type writeOffset = reserveEvent(requiredSize);
@@ -661,7 +661,7 @@ void EventRecorder::recordIndexLoad(unsigned fileid, offset_t offset, byte nodeK
         return;
 
     if (unlikely(outputToLog))
-        TRACEEVENT("{ \"name\": \"IndexLoad\", \"file\": %u, \"offset\": %llu, \"kind\": %d, \"size\": %u, \"expandTime\": %llu, \"readTime\": %llu }", fileid, offset, nodeKind, size, expandTime, readTime);
+        TRACEEVENT("{ \"name\": \"IndexLoad\", \"FileId\": %u, \"FileOffset\": %llu, \"NodeKind\": %d, \"InMemorySize\": %u, \"ExpandTime\": %llu, \"ReadTime\": %llu }", fileid, offset, nodeKind, size, expandTime, readTime);
 
     if (unlikely(createSpans))
     {
@@ -692,7 +692,7 @@ void EventRecorder::recordIndexEviction(unsigned fileid, offset_t offset, byte n
         return;
 
     if (unlikely(outputToLog))
-        TRACEEVENT("{ \"name\": \"IndexEviction\", \"file\": %u, \"offset\": %llu, \"kind\": %d, \"size\": %u }", fileid, offset, nodeKind, size);
+        TRACEEVENT("{ \"name\": \"IndexEviction\", \"FileId\": %u, \"FileOffset\": %llu, \"NodeKind\": %d, \"InMemorySize\": %u }", fileid, offset, nodeKind, size);
 
     size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, offset, nodeKind, size);
     offset_type writeOffset = reserveEvent(requiredSize);
@@ -716,7 +716,7 @@ void EventRecorder::recordIndexPayload(unsigned fileid, offset_t offset, bool fi
         return;
 
     if (unlikely(outputToLog))
-        TRACEEVENT("{ \"name\": \"IndexPayload\", \"file\": %u, \"offset\": %llu, \"firstUse\": %s, \"expandTime\": %llu }", fileid, offset, boolToStr(firstUse), expandTime);
+        TRACEEVENT("{ \"name\": \"IndexPayload\", \"FileId\": %u, \"FileOffset\": %llu, \"FirstUse\": %s, \"ExpandTime\": %llu }", fileid, offset, boolToStr(firstUse), expandTime);
 
     size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, offset, firstUse, expandTime);
     offset_type writeOffset = reserveEvent(requiredSize);
@@ -735,7 +735,7 @@ void EventRecorder::recordDaliEvent(EventType event, const char * path, __int64 
         return;
 
     if (unlikely(outputToLog))
-        TRACEEVENT("{ \"name\": \"%s\", \"path\": \"%s\", \"id\": %llu, \"elapsedNs\": %llu, \"dataSize\": %u }", queryEventName(event), path, id, elapsedNs, dataSize);
+        TRACEEVENT("{ \"name\": \"%s\", \"Path\": \"%s\", \"ConnectId\": %llu, \"ElapsedTime\": %llu, \"DataSize\": %u }", queryEventName(event), path, id, elapsedNs, dataSize);
 
     if (unlikely(createSpans))
     {
@@ -762,7 +762,7 @@ void EventRecorder::recordDaliEvent(EventType event, __int64 id, stat_type elaps
         return;
 
     if (unlikely(outputToLog))
-        TRACEEVENT("{ \"name\": \"%s\", \"id\": %llu, \"elapsedNs\": %llu, \"dataSize\": %u }", queryEventName(event), id, elapsedNs, dataSize);
+        TRACEEVENT("{ \"name\": \"%s\", \"ConnectId\": %llu, \"ElapsedTime\": %llu, \"DataSize\": %u }", queryEventName(event), id, elapsedNs, dataSize);
 
     if (unlikely(createSpans))
     {
@@ -789,7 +789,7 @@ void EventRecorder::recordFileInformation(unsigned fileid, const char * filename
         return;
 
     if (unlikely(outputToLog))
-        TRACEEVENT("{ \"name\": \"MetaFileInformation\", \"file\": %u, \"path\": \"%s\" }", fileid, filename);
+        TRACEEVENT("{ \"name\": \"MetaFileInformation\", \"FileId\": %u, \"Path\": \"%s\" }", fileid, filename);
 
     size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, filename);
     offset_type writeOffset = reserveEvent(requiredSize);

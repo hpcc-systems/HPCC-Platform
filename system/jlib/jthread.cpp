@@ -308,6 +308,9 @@ int Thread::begin()
     starting.signal();
     suspend.wait();
 #endif
+    if (doTrace(traceThreadStartup))
+        DBGLOG("Thread::start(%s) with id %u", getName(), tidlog);
+
     int ret=-1;
     try {
         ret = run();
@@ -322,6 +325,9 @@ int Thread::begin()
         handleException(MakeStringException(0, "Unknown exception in Thread %s", getName()));
     }
 #endif
+
+    if (doTrace(traceThreadStartup))
+        DBGLOG("Thread::stop(%s) with id %u", getName(), tidlog);
     callThreadTerminationHooks(false);
 #ifdef _WIN32
 #ifndef _DEBUG

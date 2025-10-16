@@ -425,6 +425,7 @@ constexpr TraceFlags traceKafka = TraceFlags::flag7;
 constexpr TraceFlags traceJava = TraceFlags::flag8;
 constexpr TraceFlags traceOptimizations = TraceFlags::flag9;        // code generator, but IHqlExpressions also used by esp/engines
 constexpr TraceFlags traceDaFsClient = TraceFlags::flag10;          // dafilesrv client tracing
+constexpr TraceFlags traceThreadStartup = TraceFlags::flag11;       // thread startup tracing
 
 // Specific to Roxie
 constexpr TraceFlags traceRoxieLock = TraceFlags::flag16;
@@ -476,6 +477,7 @@ constexpr std::initializer_list<TraceOption> roxieTraceOptions
     TRACEOPT(traceFilters),
     TRACEOPT(traceKafka),
     TRACEOPT(traceJava),
+    TRACEOPT(traceThreadStartup),
     TRACEOPT(traceRoxieLock), 
     TRACEOPT(traceQueryHashes), 
     TRACEOPT(traceSubscriptions),
