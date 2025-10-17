@@ -19,9 +19,6 @@ const tableGroupStyles = mergeStyleSets({
             },
             ".ms-TextField-field[readonly]": {
                 padding: 0
-            },
-            ".ms-Link": {
-                paddingLeft: "0 !important"
             }
         }
     }

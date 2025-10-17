@@ -256,7 +256,8 @@ export function TpGetServerVersion() {
             const idxStart = response.indexOf(`<${BuildVersion}>`);
             const idxEnd = response.indexOf(`</${BuildVersion}>`);
             if (idxStart >= 0 && idxEnd >= 0) {
-                return response.substr(idxStart + BuildVersion.length + 2, idxEnd - (idxStart + BuildVersion.length + 2));
+                const valueStart = idxStart + BuildVersion.length + 2;
+                return response.substring(valueStart, idxEnd);
             }
         }
         return "";
