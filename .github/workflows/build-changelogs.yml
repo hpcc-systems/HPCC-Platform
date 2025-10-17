@@ -82,21 +82,49 @@ jobs:
           minor=$(echo $version | cut -d. -f2)
           point=$(echo $version | cut -d. -f3 | cut -d- -f1)
           type=$(echo $version | cut -d- -f2)
-          if [[ $point -eq 0 ]]; then
-            if [[ $minor -eq 0 ]]; then
-              major=$((major - 1))
-              previous_rc=$(git tag --sort=-v:refname | grep -E "^community_$major\.[0-9]*\.[0-9]*-rc" | head -n 1 | cut -d_ -f2 2>/dev/null)
-              previous_gold=$(git tag --sort=-v:refname | grep -E "^community_$major\.[0-9]*\.[0-9]*-[0-9]" | head -n 1 | cut -d_ -f2 2>/dev/null)
-            else
-              minor=$((minor - 2))
-              previous_rc=$(git tag --sort=-v:refname | grep -E "^community_$major\.$minor\.[0-9]*-rc" | head -n 1 | cut -d_ -f2 2>/dev/null)
-              previous_gold=$(git tag --sort=-v:refname | grep -E "^community_$major\.$minor\.[0-9]*-[0-9]" | head -n 1 | cut -d_ -f2 2>/dev/null)
+          
+          # For RC releases beyond rc1, derive the previous RC in the same version series
+          if [[ "$type" =~ ^rc([0-9]+)$ ]]; then
+            rc_num=${BASH_REMATCH[1]}
+            if (( rc_num > 1 )); then
+              prev_rc_num=$((rc_num - 1))
+              prev_rc_tag="community_${major}.${minor}.${point}-rc${prev_rc_num}"
+              previous_rc=$(git tag --list "$prev_rc_tag" | head -n 1 | cut -d_ -f2 2>/dev/null)
             fi
-          else
-            point=$((point - 2))
-            previous_rc=$(git tag --sort=-v:refname | grep -E "^community_$major\.$minor\.$point-rc" | head -n 1 | cut -d_ -f2 2>/dev/null)
-            previous_gold=$(git tag --sort=-v:refname | grep -E "^community_$major\.$minor\.$point-[0-9]" | head -n 1 | cut -d_ -f2 2>/dev/null)
           fi
+
+          if [[ "$type" != rc* ]]; then
+            previous_gold=$(git tag --sort=-v:refname | grep -E "^community_$major\.$minor\.$point-[0-9]+$" | tail -n +2 | head -n 1 | cut -d_ -f2 2>/dev/null)
+          fi
+          
+          # Find previous gold version
+          if [[ -z "$previous_gold" ]]; then
+            if [[ $point -eq 0 ]]; then
+              if [[ $minor -eq 0 ]]; then
+                major_prev=$((major - 1))
+                previous_gold=$(git tag --sort=-v:refname | grep -E "^community_$major_prev\.[0-9]*\.[0-9]*-[0-9]+$" | head -n 1 | cut -d_ -f2 2>/dev/null)
+                # For rc1, find previous RC from previous version
+                if [[ "$type" == "rc1" ]] || [[ -z "$previous_rc" ]]; then
+                  previous_rc=$(git tag --sort=-v:refname | grep -E "^community_$major_prev\.[0-9]*\.[0-9]*-rc[0-9]+$" | head -n 1 | cut -d_ -f2 2>/dev/null)
+                fi
+              else
+                minor_prev=$((minor - 2))
+                previous_gold=$(git tag --sort=-v:refname | grep -E "^community_$major\.$minor_prev\.[0-9]*-[0-9]+$" | head -n 1 | cut -d_ -f2 2>/dev/null)
+                # For rc1, find previous RC from previous version
+                if [[ "$type" == "rc1" ]] || [[ -z "$previous_rc" ]]; then
+                  previous_rc=$(git tag --sort=-v:refname | grep -E "^community_$major\.$minor_prev\.[0-9]*-rc[0-9]+$" | head -n 1 | cut -d_ -f2 2>/dev/null)
+                fi
+              fi
+            else
+              point_prev=$((point - 2))
+              previous_gold=$(git tag --sort=-v:refname | grep -E "^community_$major\.$minor\.$point_prev-[0-9]+$" | head -n 1 | cut -d_ -f2 2>/dev/null)
+              # For rc1, find previous RC from previous version
+              if [[ "$type" == "rc1" ]] || [[ -z "$previous_rc" ]]; then
+                previous_rc=$(git tag --sort=-v:refname | grep -E "^community_$major\.$minor\.$point_prev-rc[0-9]+$" | head -n 1 | cut -d_ -f2 2>/dev/null)
+              fi
+            fi
+          fi
+          
           echo "current_version=$version" >> $GITHUB_OUTPUT
           echo "previous_rc_version=$previous_rc" >> $GITHUB_OUTPUT
           echo "previous_gold_version=$previous_gold" >> $GITHUB_OUTPUT
