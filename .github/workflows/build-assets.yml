@@ -243,7 +243,7 @@ jobs:
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
       upload-package: true
-      asset-name: 'clienttools-for-eclide'
+      asset-name: 'clienttools-community-for-eclide'
       make-latest: ${{ needs.preamble.outputs.is_latest != 'false' }}
     secrets: inherit
 
@@ -256,11 +256,12 @@ jobs:
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
       ln-ref: ${{ needs.preamble.outputs.internal_ref }}
+      asset-name: 'clienttools-internal-for-eclide'
       make-latest: ${{ needs.preamble.outputs.is_latest != 'false' }}
     secrets: inherit
 
   build-bare-metal-eclide:
-    needs: [ preamble, build-clienttools-community-windows, build-documentation ]
+    needs: [ preamble, build-clienttools-community-windows, build-clienttools-internal-windows, build-documentation ]
     permissions:
       contents: write
       actions: write
@@ -268,7 +269,8 @@ jobs:
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
       eclide-ref: ${{ needs.preamble.outputs.eclide_ref }}
-      clienttools-asset-name: 'clienttools-for-eclide'
+      clienttools-community-asset-name: 'clienttools-community-for-eclide'
+      clienttools-internal-asset-name: 'clienttools-internal-for-eclide'
       documentation-asset-name: 'html-help-documents'
       make-latest: ${{ needs.preamble.outputs.is_latest != 'false' }}
     secrets: inherit

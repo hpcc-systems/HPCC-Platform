@@ -11,6 +11,7 @@ interface useFileResponse {
     protectedBy: WsDfu.DFUFileProtect[];
     isProtected: boolean;
     lastUpdate: number;
+    superfiles: WsDfu.DFULogicalFile[];
     refreshData: () => void
 }
 
@@ -20,6 +21,7 @@ export function useFile(cluster: string, name: string): useFileResponse {
     const [protectedBy, setProtectedBy] = React.useState<WsDfu.DFUFileProtect[]>([]);
     const [isProtected, setIsProtected] = React.useState(false);
     const [lastUpdate, setLastUpdate] = React.useState(Date.now());
+    const [superfiles, setSuperfiles] = React.useState<WsDfu.DFULogicalFile[]>([]);
     const [count, increment] = useCounter();
 
     React.useEffect(() => {
@@ -33,10 +35,12 @@ export function useFile(cluster: string, name: string): useFileResponse {
                     setFile(file);
                     setProtectedBy(response?.ProtectList?.DFUFileProtect || []);
                     setIsProtected(response.ProtectList?.DFUFileProtect?.length > 0 || false);
+                    setSuperfiles(response?.Superfiles?.DFULogicalFile ?? []);
                     setLastUpdate(Date.now());
                     handle = file.watch(() => {
                         setProtectedBy(response?.ProtectList?.DFUFileProtect || []);
                         setIsProtected(response.ProtectList?.DFUFileProtect?.length > 0 || false);
+                        setSuperfiles(response?.Superfiles?.DFULogicalFile ?? []);
                         setLastUpdate(Date.now());
                     });
                 }
@@ -49,7 +53,7 @@ export function useFile(cluster: string, name: string): useFileResponse {
         };
     }, [cluster, count, name]);
 
-    return { file, protectedBy, isProtected, lastUpdate, refreshData: increment };
+    return { file, protectedBy, isProtected, lastUpdate, superfiles, refreshData: increment };
 }
 
 export function useDefFile(cluster: string, name: string, format: WsDfu.DFUDefFileFormat): [string, () => void] {
