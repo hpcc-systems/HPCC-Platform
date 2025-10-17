@@ -283,3 +283,200 @@ The number of nanoseconds required to expand the node one time. For nodes also r
             @InMemorySize
 
 If algorithm estimation is enabled, the value is replaced. If the node will not be referenced by model input events, the value can be any positive integral value. Otherwise, the value must match the first non-zero `InMemorySize` value observed in an input event. Node sizes are not expected to change between observations, and the model does not account for unexpected changes. Once a node is in the cache with size `X`, it must always have size `X`.
+
+# CEventConsumingOp
+
+An abstract base class for handling requests to traverse and act upon an event data file. It provides common handling of an input event file name, an output stream for text output, a single occurrence of event filters, and a single event model.
+
+Whether events are filtered before or after an event model is hard coded. Filtering applies after a model so model-generated events can be filtered. Subclasses needing more control are responsible for hiding the relevant base methods.
+
+## CIndexPlotOp
+
+Produces one or more 2D or 3D chart data sets from an input event data file using a configured index event model and explicit model modifications.
+
+A 2D chart data set accepts model modifications for the X-axis. A 3D chart data set accepts model modifications for the Y-axis. The value of each data set cell is computed by traversing the input file after applying cell-specific configuration changes to the model. A 2D chart with 5 X values will traverse the input file 5 times. A 3D chart with 5 X values and 6 Y values will traverse the input file 30 times.
+
+Most plot options are specified using a property tree. This includes optional event filtering and an index events model. THe inherited filter and model handling is suppressed. The configuration format is:
+
+    @name
+
+Recommended identifier denoting the operation for which the configuration applies. As the initial operation supporting this configuration scheme, the value is optional. Given the potential for other operations to use this scheme, the value `index.plot` should be used. Any other value is invalid.
+
+    @input
+
+Optional file path to a binary event file. Event input is required, and may be specified here or using the base class interface.
+
+    @valueSelector
+
+Required designation of which value will be accumulated for each plot. Must be one of these case insensitive choices:
+- readTimme: the ReadTime attribute from IndexLoad events is accumulated
+- expandTime: the ExpandTime attribute from IndexLoad events is accumulated
+- elapsedTime: the sum of the ReadTime and ExpandTime attributes from IndexLoad events is accumulated
+- cacheMisses: the number of IndexCacheMiss events is counted
+
+    link/
+
+Required repeatable element specifying a valid visitation link configuration. Each supported visitiation link configuration is described elsewhere in this document. This section focuses on values needed by the operation.
+
+    link/@kind
+    link/@id
+
+A link kind controls which visitation link class to create. Its id distinguishes instances of link configurations with the same kind. Although unlikely, configuring both pre-model and post-model event filters is permitted. Both values are conditionally required.
+
+If `@kind` is omitted, an [index model](#cindexeventmodel) configuration is assumed. To configure an [event filter](#ceventfilter), the value must be given as `event-filter`.
+
+An `@id` is required only when `@kind` does not uniquely identify the link configuration instance and the operation intends to manipulate the configuration.
+
+A link configuration node is identified by combining the two values using a dotted notation like `<kind> [ '.' <id> ]`.
+
+    plot/
+
+Optional and repeatable element where each instance descibes link configuration changes to be made for every value in a plot. This enables one invocation of the operation to produce multiple chart data sets, each showing the same data relationship but with different modeled pre-conditions. While a 2D chart configuration could be converted to a 3D chart to show the same data in one chart, a 3D chart cannot add another axis.
+
+    plot/
+        delta/
+
+Required and repeatable element where each instance describes a single link configuration change to be made for every cell in a chart data set.
+
+    plot/
+        delta/
+            @linkId
+
+Optional designation of the link configuration targeted by the change. If omitted, `index-events` is assumed.
+
+    plot/
+        delta/
+            @xpath
+
+Required link configuration datum targeted by the change.
+
+    plot/
+        delta/
+            @value
+
+Optional changed value. Omission removes the targeted datum, while presence updates it.
+
+    x-axis/
+
+Required element describing link configuration changes required to compute each X-axis value in a chart data set.
+
+    x-axis/
+        iteration/
+
+Required element describing link configuration changes required to compute a single X-axis value of a chart data set.
+
+    x-axis/
+        iteration/
+            @label
+
+Optional human readable description of the changes. When not-empty, the value is used as a column header in chart data sets.
+
+Optional human readable description of the changes.
+- When not-empty, the value is used as a row header in chart data sets.
+- When empty, the row header text depends on the described change:
+  - If one `delta` is defined, `delta/@value` is used as the header text. If the value is can be converted to a byte count, the byte count is used.
+  - The use of multiple `delta`s makes the header text "ambiguous".
+
+    x-axis/
+        iteration/
+            delta/
+
+Required and repeatable element where each instance descibes a single link configuration change to be made for each cell in a column.
+
+    x-axis/
+        iteration/
+            delta/
+                @linkId
+
+Optional designation of the link configuration targeted by the change. If omitted, `index-events` is assumed.
+
+    x-axis/
+        iteration/
+            delta/
+                @xpath
+
+Required link configuration datum targeted by the change.
+
+    x-axis/
+        iteration/
+            delta/
+                @value
+
+Optional changed value. Omission removes the targeted datum, while presence updates it.
+
+    y-axis/
+
+Optional element describing link configuration changes required to compute each Y-axis value in a 3D chart data set.
+
+    y-axis/
+        iteration/
+
+Required element describing link configuration changes required to compute a single Y-axis value of a chart data set.
+
+    y-axis/
+        iteration/
+            @label
+
+Optional human readable description of the changes.
+- When not-empty, the value is used as a row header in chart data sets.
+- When empty, the row header text depends on the described change:
+  - If one `delta` is defined, `delta/@value` is used as the header text. If the value is can be converted to a byte count, the byte count is used.
+  - The use of multiple `delta`s makes the header text "ambiguous".
+
+    y-axis/
+        iteration/
+            delta/
+
+Required and repeatable element where each instance descibes a single link configuration change to be made for each cell in a row.
+
+    y-axis/
+        iteration/
+            delta/
+                @linkId
+
+Optional designation of the link configuration targeted by the change. If omitted, `index-events` is assumed.
+
+    y-axis/
+        iteration/
+            delta/
+                @xpath
+
+Required link configuration datum targeted by the change.
+
+    y-axis/
+        iteration/
+            delta/
+                @value
+
+Optional changed value. Omission removes the targeted datum, while presence updates it.
+
+    constraint/
+
+**UNIMPLEMENTED**: *This is described as a proposed solution to the problem of making a link configuration value dependent upon each and every axis value. For example, setting the page cache capacity to be relative to both the leaf and branch node cache capacities when chart axes are the node cache capacities.*
+
+Optional element describing link configuration changes to be made after all plot, x-axis, and y-axis changes have been made. Changes described in this element do not change the number chart data sets produced. Described changes should not affect axis values, but such changes are not prevented.
+
+    constraint/
+        @label
+
+Recommended text string used to identify the intent of the constraint.
+
+    constraint/
+        delta/
+            @linkId
+
+Optional designation of the link configuration targeted by the change. If omitted, `index-events` is assumed.
+
+    constraint/
+        delta/
+            @xpath
+
+Required link configuration datum targeted by the change.
+
+    constraint/
+        delta/
+            @value
+
+Optional changed value. Omission removes the targeted datum. Presence updates the targeted datum. The value string is parsed for limited mathematical computations.
+
+As an example, setting the page cache size relative to node cache size would use a value such as `64 MiB - {//memory/node[kind="0"]/@cacheCapacity} - {//memory/node[kind="1"]/@cacheCapacity}`.
