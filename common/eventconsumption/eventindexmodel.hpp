@@ -45,71 +45,6 @@ enum class ExpansionMode
     OnDemand
 };
 
-// The index event model configuration conforms to this structure:
-//   kind: index-event
-//   storage:
-//     cacheReadTime: nanosecond time to read one page
-//     cacheCapacity: maximum bytes to use for the cache
-//     plane:
-//     - name: unique, non-empty, identifier
-//       readTime: nanosecond time to read one page
-//     file:
-//     - path: empty or unique index file path
-//       plane: name of place in which the file resides, if different from the default
-//       branchPlane: name of place in which index branches reside, if different from the default
-//       leafPlane: name of place in which index leaves reside, if different from the default
-//   memory:
-//     node:
-//     - kind: node kind
-//       sizeFactor: floating point multiplier for estimated node size
-//       sizeToTimeFactor: floating point multiplier for estimated node expansionMode time
-//       expansionMode: choice of `ll`, `ld`, or `dd`
-//       cacheCapacity: maximum bytes to use for the cache
-//     observed:
-//     - FileId: unique index file identifier
-//       FileOffset: index page offset
-//       NodeKind: node kind
-//       InMemorySize: size of the node in bytes
-//       ExpandTime: time in nanoseconds to expand the node
-//
-// - `kind` is optional; as the first model the value is implied.
-// - `cacheReadTime` is optional; if zero, empty, or omitted, the cache is disabled.
-// - `cacheCapacity` is optional; if zero, empty, or omitted, the cache is unlimited.
-// - The first `plane` declared is assumed to be the default plane for files not explicitly assigned
-//   an alternate choice.
-// - `file` is optional; omission implies all files exist in the default plane.
-// - `file/path` is optional; omission, or empty, assigns the storage plane for all files not
-//   explicitly configured.
-// - `file/plane` is optional; omission, or empty, implies the file resides in the default storage
-//   plane.
-// - `file/branchPlane` is optional; omission, or empty, implies the file's index branches reside in
-//   the file's default storage plane.
-// - `file/leafPlane` is optional; omission, or empty, implies the file's index leaves reside in the
-//   file's default storage plane.
-// - `memory` is optional; omission prevents any memory modeling.
-// - `memory/node` is optional; omission prevents estimating algorithm performance. If present,
-//   one instance for each type of index node is required.
-// - `memory/node/kind` is a required choice of `branch` or `leaf`.
-// - `memory/node/sizeFactor` is a required positive floating point multiplier for algorithm
-//   performance estimation. The on disk page size is multiplied by this value.
-// - `memory/node/sizeToTimeFactor` is a required positive floating point multiplier for
-//   algorithm performance estimation. The estimated size is multipled by this factor to estimate
-//   the expansion time.
-// - `expansion/node/mode` is optional; omission and empty are equivalent to `ll`. The value is
-//   ignored for branch nodes, which are always treated as `ll`. Accepted options are:
-//   - `ll`: model input and output are both on-load
-//   - `ld`: model input is on-load and output is on-demand
-//   - `dd`: model input and output are both on-demand
-// - `memory/observed` is an optional mechanism to pre-populate the memory caches. It enables
-//   unit test case scenarios to be set up without requiring explicit events to be visited.
-// - `memory/observed/NodeKind` is expected and corresponds to input event NodeKind values.
-// - `memory/observed/FileId` is expected only when history is used for the node kind.
-// - `memory/observed/FileOffset` is expected only when history is used for the node kind.
-// - `memory/observed/InMemorySize` is expected only when the node cache for the node kind is
-//   enabled, which implies that history is also used for the node kind.
-// - `memory/observed/ExpandTime` is expected only when the node cache for the node kind is
-//   enabled, which implies that history is also used for the node kind.
-
 // Encapsulation of all modeled information about given file page. Note that the file path is not
 // included as the model does not retain that information.
 struct ModeledPage
@@ -278,10 +213,10 @@ public:
     // file specification, is not supported.
     void observeFile(__uint64 fileId, const char* path);
 
-    // Fill in the page data with storage information known about the file and offset. An enabled
+    // Fill in the page data with storage information known about the event's page. An enabled
     // page cache will be updated when the page was not the most recently used. A file ID not
     // previously obseved will use information from the default file specification.
-    void useAndDescribePage(__uint64 fileId, __uint64 offset, __uint64 nodeKind, ModeledPage& page);
+    void useAndDescribePage(const CEvent& event, ModeledPage& page);
 
 private:
     void configurePlanes(const IPropertyTree& config);

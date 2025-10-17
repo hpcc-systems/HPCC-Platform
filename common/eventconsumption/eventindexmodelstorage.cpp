@@ -76,6 +76,9 @@ void Storage::configure(const IPropertyTree& config)
 
 void Storage::observeFile(__uint64 fileId, const char* path)
 {
+    // don't observe files when no modeling is configured
+    if (planes.empty())
+        return;
     const File& mappedFile = lookupFile(path);
     const File*& observation = observedFiles[fileId];
     if (!observation)
@@ -87,21 +90,29 @@ void Storage::observeFile(__uint64 fileId, const char* path)
         assertex(&mappedFile == observation);
 }
 
-void Storage::useAndDescribePage(__uint64 fileId, __uint64 offset, __uint64 nodeKind, ModeledPage& page)
+void Storage::useAndDescribePage(const CEvent& event, ModeledPage& page)
 {
-    const File& file = lookupFile(fileId);
-    page.fileId = fileId;
-    page.offset = offset;
-    page.nodeKind = nodeKind;
-    page.readTime = cache.getReadTimeIfExists(fileId, offset);
+    page.fileId = event.queryNumericValue(EvAttrFileId);
+    page.offset = event.queryNumericValue(EvAttrFileOffset);
+    page.nodeKind = event.queryNumericValue(EvAttrNodeKind);
+    page.readTime = cache.getReadTimeIfExists(page.fileId, page.offset);
     if (!page.readTime)
     {
-        const Plane& plane = file.lookupPlane(nodeKind);
-        page.readTime = plane.readTime;
+        if (planes.empty())
+        {
+            if (event.hasAttribute(EvAttrReadTime))
+                page.readTime = event.queryNumericValue(EvAttrReadTime);
+        }
+        else
+        {
+            const File& file = lookupFile(page.fileId);
+            const Plane& plane = file.lookupPlane(page.nodeKind);
+            page.readTime = plane.readTime;
+        }
         // MORE: if multiple pages should be loaded, add all to the cache, with the requested page
         // added last.
         IndexMRUNullCacheReporter nullreporter;
-        (void)cache.insert(fileId, offset, nullreporter);
+        (void)cache.insert(page.fileId, page.offset, nullreporter);
     }
 }
 
@@ -121,8 +132,6 @@ void Storage::configurePlanes(const IPropertyTree& config)
         else if (!defaultPlane)
             defaultPlane = &*planeIt;
     }
-    if (planes.empty())
-        throw makeStringException(-1, "missing storage plane configurations");
 }
 
 const Storage::Plane& Storage::lookupPlane(const char* name, const char* forFile) const
@@ -144,6 +153,8 @@ void Storage::configureFiles(const IPropertyTree& config)
 {
     bool haveDefault = false;
     Owned<IPropertyTreeIterator> it = config.getElements("file");
+    if (it->first() && planes.empty())
+        throw makeStringException(-1, "storage file configuration requires at least one plane configuration");
     ForEach(*it)
     {
         File file;
@@ -177,7 +188,7 @@ void Storage::configureFiles(const IPropertyTree& config)
         if (isEmptyString(file.path.get()))
             haveDefault = true;
     }
-    if (!haveDefault)
+    if (!haveDefault && !planes.empty())
         configuredFiles.insert(File(nullptr, lookupPlane(nullptr, nullptr)));
 }
 
