@@ -67,6 +67,40 @@ When a new RC is tagged, a new branch `candidate-<major>.<minor>.<point>` is cre
 
 When submitting a pull request (PR), it should be targeted to the lowest version that should contain the fix. Changes to `master` will be included in the next major or minor release. All fixes from previous versions are automatically merged forward (upmerged) to later versions, including `master`, before the next round of RCs are created.
 
+## Point Build Support Policy and Upgrade Recommendations
+
+### Support Policy for Point Builds
+
+**Point builds older than 2 months will not be supported.** This policy ensures efficient use of support resources by avoiding wasted effort investigating issues on outdated systems that may have already been resolved in newer releases.
+
+All deployments should be kept reasonably up-to-date with the latest available point builds to ensure:
+- Access to the most recent bug fixes and security patches
+- Optimal support experience when issues arise
+- Reduced risk of encountering known problems that have already been addressed
+
+### Upgrade Recommendations
+
+When upgrading from an older Major.Minor version to a newer Major.Minor version, **you are strongly encouraged to upgrade directly to the latest point build** of the target Major.Minor version rather than upgrading to an earlier point build first.
+
+For example:
+- ✅ **Recommended**: Upgrade from 9.8.96 directly to 9.14.26 (latest point build)
+- ❌ **Not recommended**: Upgrade from 9.8.96 to 9.14.8, then later to 9.14.26
+
+### Rationale
+
+Point builds are designed to be **low-risk upgrades** that contain only:
+- Safe, small, and self-contained fixes
+- Security patches for dependencies and base images
+- **Zero new features** that could introduce compatibility issues
+
+This design philosophy means there should be a **low threshold for upgrading** to newer point builds. The benefits of staying current far outweigh the minimal risks associated with point build upgrades.
+
+By following this policy, we can:
+- Focus support efforts on current, well-maintained systems
+- Avoid investigating issues that have already been resolved
+- Ensure users benefit from the latest stability and security improvements
+- Maintain efficient and effective support operations
+
 ## Patches and images
 
 We aim to produce new point releases once a week.  The point releases will contain

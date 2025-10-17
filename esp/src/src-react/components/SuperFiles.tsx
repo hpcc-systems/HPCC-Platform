@@ -25,7 +25,7 @@ export const SuperFiles: React.FunctionComponent<SuperFilesProps> = ({
     sort = defaultSort
 }) => {
 
-    const { file, refreshData } = useFile(cluster, logicalFile);
+    const { superfiles, refreshData } = useFile(cluster, logicalFile);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [data, setData] = React.useState<any[]>([]);
     const {
@@ -84,10 +84,8 @@ export const SuperFiles: React.FunctionComponent<SuperFilesProps> = ({
     }, [selection]);
 
     React.useEffect(() => {
-        if (file?.Superfiles?.DFULogicalFile) {
-            setData(file?.Superfiles?.DFULogicalFile);
-        }
-    }, [file]);
+        setData(superfiles ?? []);
+    }, [superfiles]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}

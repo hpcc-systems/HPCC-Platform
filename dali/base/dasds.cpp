@@ -2766,7 +2766,9 @@ public:
 
     virtual IPropertyTree *create(IBufferedSerialInputStream &in, PTreeDeserializeContext &ctx) override
     {
-        return new CServerRemoteTree(in, ctx);
+        Owned<CServerRemoteTree> tree = new CServerRemoteTree();
+        tree->deserializeFromStream(in, ctx);
+        return tree.getClear();
     }
 
     virtual void createChildMap() override { children = new COrphanHandler(); }

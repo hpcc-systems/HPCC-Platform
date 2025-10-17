@@ -1,9 +1,8 @@
-import * as React from "react";
-import * as ReactDOM from "react-dom";
 import { initializeIcons } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import { cookieKeyValStore } from "src/KeyValStore";
 import { needsRedirectV9 } from "src/Session";
+import { ReactRoot } from "src/react/render";
 import { ECLWatchLogger } from "./hooks/logging";
 import { replaceUrl } from "./util/history";
 
@@ -46,10 +45,8 @@ async function loadUI() {
         }
         import("./components/forms/Login").then(_ => {
             try {
-                ReactDOM.render(
-                    <_.Login />,
-                    document.getElementById("placeholder")
-                );
+                const root = ReactRoot.create(document.getElementById("placeholder"));
+                root.render(_.Login, {});
                 document.getElementById("loadingOverlay").remove();
             } catch (e) {
                 logger.error(e);
@@ -58,10 +55,8 @@ async function loadUI() {
     } else {
         import("./components/Frame").then(_ => {
             try {
-                ReactDOM.render(
-                    <_.Frame />,
-                    document.getElementById("placeholder")
-                );
+                const root = ReactRoot.create(document.getElementById("placeholder"));
+                root.render(_.Frame, {});
                 document.getElementById("loadingOverlay").remove();
             } catch (e) {
                 logger.error(e);

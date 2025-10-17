@@ -57,7 +57,7 @@ class MonitoredChildMap : public ChildMap
 public:
     MonitoredChildMap(CClientRemoteTree &_owner) : ChildMap(), owner(_owner) { }
 
-    
+
     virtual bool replace(const char *name, IPropertyTree *tree)
     {
         // suppress notification of old node - old node has been preserved.
@@ -77,7 +77,7 @@ public:
             __int64 sId = child->queryServerId();
             if (sId)
                 owner.registerDeleted(child->queryName(), 0, sId);
-            else 
+            else
             {
                 IPTArrayValue *value = child->queryValue();
                 if (value)
@@ -563,7 +563,7 @@ bool CClientRemoteTree::Release() const
 {
     //Note: getLinkCount() is not thread safe.
     if (1 < getLinkCount())  //NH -> JCS - you sure this is best way to do this?
-    {           
+    {
         bool res = CRemoteTreeBase::Release();
         connection.Release(); // if this tree is not being destroyed then decrement usage count on connection
         return res;
@@ -604,7 +604,7 @@ bool CClientRemoteTree::renameTree(IPropertyTree *child, const char *newName)
         ~DisableStateChanges() { reset(); }
         void reset() { c.setStateChanges(changes); }
     } dc(connection);
-     
+
     Linked<IPropertyTree> tmp = child;
     StringAttr oldName = child->queryName();
     if (removeTree(child))
@@ -643,7 +643,7 @@ IPropertyTree *CClientRemoteTree::_queryBranch(const char *xpath)
             else
                 path.set(xpath);
         }
-        
+
         CConnectionLock b(connection);
         bool r;
         { CDisableLazyFetchBlock b2(connection);
@@ -721,7 +721,7 @@ IPropertyTree *CClientRemoteTree::_queryBranch(const char *xpath)
             }
         }
     }
-    
+
     return queryPropTree(xpath);
 }
 
@@ -785,9 +785,11 @@ IPropertyTree *CClientRemoteTree::create(MemoryBuffer &mb)
     return tree;
 }
 
-IPropertyTree * CClientRemoteTree::create(IBufferedSerialInputStream &in, PTreeDeserializeContext &ctx)
+IPropertyTree *CClientRemoteTree::create(IBufferedSerialInputStream &in, PTreeDeserializeContext &ctx)
 {
-    UNIMPLEMENTED;
+    Owned<CClientRemoteTree> tree = new CClientRemoteTree(connection);
+    tree->deserializeFromStream(in, ctx);
+    return tree.getClear();
 }
 
 void CClientRemoteTree::createChildMap()
@@ -1282,7 +1284,7 @@ void CClientRemoteTree::clearCommitChanges(MemoryBuffer *mb)
 
 /////////////////////
 
-CClientSDSManager::CClientSDSManager() 
+CClientSDSManager::CClientSDSManager()
 {
     CDaliVersion serverVersionNeeded("2.1"); // to ensure backward compatibility
     childrenCanBeMissing = queryDaliServerVersion().compare(serverVersionNeeded) >= 0;
@@ -1363,9 +1365,9 @@ CRemoteTreeBase *CClientSDSManager::get(CRemoteConnection &connection, __int64 s
         throw MakeSDSException(SDSExcpt_FailedToCommunicateWithServer);
 
     SdsReply replyMsg;
-    
+
     mb.read((int &)replyMsg);
-    
+
     CClientRemoteTree *tree = NULL;
     switch (replyMsg)
     {
@@ -1407,7 +1409,7 @@ void CClientSDSManager::getChildren(CRemoteTreeBase &parent, CRemoteConnection &
 
     SdsReply replyMsg;
     mb.read((int &)replyMsg);
-    
+
     switch (replyMsg)
     {
         case DAMP_SDSREPLY_OK:
@@ -1468,7 +1470,7 @@ static void matchServerTree(CClientRemoteTree *local, IPropertyTree &matchTree, 
                 matchedLocals.append(*local);
                 matched.append(matchTree);
             }
-            mb.append(matchTree.getPropInt64("@serverId"));     
+            mb.append(matchTree.getPropInt64("@serverId"));
             mb.append(allTail ? (unsigned)0 : (unsigned)1);
         }
     }
@@ -1500,9 +1502,9 @@ void CClientSDSManager::ensureLocal(CRemoteConnection &connection, CRemoteTreeBa
     if (!sendRequest(remoteGetMb))
         throw MakeSDSException(SDSExcpt_FailedToCommunicateWithServer, "ensureLocal");
 
-    SdsReply replyMsg;  
+    SdsReply replyMsg;
     remoteGetMb.read((int &)replyMsg);
-        
+
     switch (replyMsg)
     {
         case DAMP_SDSREPLY_OK:
@@ -1548,9 +1550,9 @@ void CClientSDSManager::getChildrenFor(CRTArray &childLessList, CRemoteConnectio
     if (!sendRequest(mb))
         throw MakeSDSException(SDSExcpt_FailedToCommunicateWithServer, "getChildrenFor");
 
-    SdsReply replyMsg;  
+    SdsReply replyMsg;
     mb.read((int &)replyMsg);
-        
+
     switch (replyMsg)
     {
         case DAMP_SDSREPLY_OK:
@@ -1599,7 +1601,7 @@ IPropertyTreeIterator *CClientSDSManager::getElements(CRemoteConnection &connect
 
     SdsReply replyMsg;
     mb.read((int &)replyMsg);
-    
+
     CClientRemoteTree *tree = NULL;
     switch (replyMsg)
     {
@@ -1738,7 +1740,7 @@ void CClientSDSManager::changeMode(CRemoteConnection &connection, unsigned mode,
         throw MakeSDSException(SDSExcpt_FailedToCommunicateWithServer, "changing mode");
 
     SdsReply replyMsg;
-    
+
     mb.read((int &)replyMsg);
     switch (replyMsg)
     {
@@ -1788,7 +1790,7 @@ IRemoteConnections *CClientSDSManager::connect(IMultipleConnector *mConnect, Ses
     }
 
     SdsReply replyMsg;
-    
+
     Owned<CRemoteConnections> remoteConnections = new CRemoteConnections();
 
     unsigned c;
@@ -1848,9 +1850,9 @@ IRemoteConnection *CClientSDSManager::connect(const char *xpath, SessionId id, u
         throw MakeSDSException(SDSExcpt_FailedToCommunicateWithServer, ", connecting to %s", xpath);
 
     SdsReply replyMsg;
-    
+
     mb.read((int &)replyMsg);
-    
+
     CRemoteConnection *conn = NULL;
     switch (replyMsg)
     {
@@ -1951,7 +1953,7 @@ StringBuffer &CClientSDSManager::getInfo(SdsDiagCommand cmd, StringBuffer &out)
     if (!queryCoven().sendRecv(mb, RANK_RANDOM, MPTAG_DALI_SDS_REQUEST))
         throw MakeSDSException(SDSExcpt_FailedToCommunicateWithServer, "querying sds diagnositc info");
 
-    SdsReply replyMsg;  
+    SdsReply replyMsg;
     mb.read((int &)replyMsg);
     switch (replyMsg)
     {
@@ -2036,7 +2038,7 @@ IPropertyTree &CClientSDSManager::queryProperties() const
     mb.append((int)DAMP_SDSCMD_GETPROPS);
     if (!queryCoven().sendRecv(mb, RANK_RANDOM, MPTAG_DALI_SDS_REQUEST))
         throw MakeSDSException(SDSExcpt_FailedToCommunicateWithServer, "querying sds diagnostic info");
-    SdsReply replyMsg;  
+    SdsReply replyMsg;
     mb.read((int &)replyMsg);
     switch (replyMsg)
     {
@@ -2066,7 +2068,7 @@ IPropertyTree *CClientSDSManager::getXPaths(__int64 serverId, const char *xpath,
 
     SdsReply replyMsg;
     mb.read((int &)replyMsg);
-    
+
     switch (replyMsg)
     {
         case DAMP_SDSREPLY_OK:
@@ -2097,7 +2099,7 @@ IPropertyTreeIterator *CClientSDSManager::getXPathsSortLimit(const char *baseXPa
 
     SdsReply replyMsg;
     mb.read((int &)replyMsg);
-    
+
     switch (replyMsg)
     {
         case DAMP_SDSREPLY_OK:
@@ -2127,7 +2129,7 @@ void CClientSDSManager::getExternalValueFromServerId(__int64 serverId, MemoryBuf
 
     SdsReply replyMsg;
     mb.read((int &)replyMsg);
-    
+
     switch (replyMsg)
     {
         case DAMP_SDSREPLY_OK:
@@ -2149,7 +2151,7 @@ IPropertyTreeIterator *CClientSDSManager::getElementsRaw(const char *xpath, INod
     bool ok;
     if (remotedali) {
         Owned<IGroup> grp = createIGroup(1,&remotedali);
-        Owned<ICommunicator> comm = createCommunicator(grp,false); 
+        Owned<ICommunicator> comm = createCommunicator(grp,false);
         try {
             ok = comm->sendRecv(mb,RANK_RANDOM, MPTAG_DALI_SDS_REQUEST, timeout);
         }
@@ -2168,7 +2170,7 @@ IPropertyTreeIterator *CClientSDSManager::getElementsRaw(const char *xpath, INod
 
     SdsReply replyMsg;
     mb.read((int &)replyMsg);
-    
+
     switch (replyMsg)
     {
         case DAMP_SDSREPLY_OK:
@@ -2244,7 +2246,7 @@ unsigned CClientSDSManager::queryCount(const char *xpath)
         throw MakeSDSException(SDSExcpt_FailedToCommunicateWithServer, ", queryCount(%s)", xpath);
 
     unsigned count=0;
-    SdsReply replyMsg;    
+    SdsReply replyMsg;
     mb.read((int &)replyMsg);
     if (DAMP_SDSREPLY_OK == replyMsg)
         mb.read(count);
