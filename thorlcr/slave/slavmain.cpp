@@ -1800,7 +1800,6 @@ public:
                 {
                     case QueryInit:
                     {
-                        PROGLOG("DJPS: Worker received QueryInit message");
                         MemoryBuffer mb;
                         decompressToBuffer(mb, msg);
                         msg.swapWith(mb);
@@ -1812,17 +1811,12 @@ public:
                         msg.read(wuid);
                         saveWuidToFile(wuid);
                         msg.read(graphName);
-                        PROGLOG("DJPS: Worker read wuid=%s, graphName=%s", wuid.str(), graphName.str());
 
                         Owned<ILoadedDllEntry> querySo;
-                        bool workerSaveQueryDlls = getExpertOptBool("saveQueryDlls");
-                        PROGLOG("DJPS: Worker checking saveQueryDlls - value=%s, globals=%p, getComponentConfigSP=%p",
-                                boolToStr(workerSaveQueryDlls), (void*)globals.get(), (void*)getComponentConfigSP());
-                        if (!workerSaveQueryDlls)
+                        if (!getExpertOptBool("saveQueryDlls"))
                         {
                             StringAttr soName;
                             msg.read(soName);
-                            PROGLOG("DJPS: Worker taking non-saveQueryDlls path - soName=%s", soName.str());
                             querySo.setown(createDllEntry(soName.str(), false, NULL, false));
                             soPath.append(soName);
                         }
@@ -1839,8 +1833,6 @@ public:
                             masterEp.port = 0;
                             rfn.setPath(masterEp, remoteSoPath);
                             rfn.getTail(soPathTail);
-                            PROGLOG("DJPS: Worker received SO info - sendSo=%s, remoteSoPath=%s, soPathTail=%s, globals=%p, getComponentConfigSP=%p",
-                                    boolToStr(sendSo), remoteSoPath.str(), soPathTail.str(), (void*)globals.get(), (void*)getComponentConfigSP());
                             if (sendSo)
                             {
                                 size32_t size;
@@ -1849,7 +1841,6 @@ public:
                                 if (soPath.length())
                                     addPathSepChar(soPath);
                                 soPath.append(soPathTail);
-                                PROGLOG("DJPS: Worker writing SO file - size=%u, soPath=%s", size, soPath.str());
                                 const byte *queryPtr = msg.readDirect(size);
                                 Owned<IFile> iFile = createIFile(soPath.str());
                                 try
@@ -1858,7 +1849,6 @@ public:
                                     Owned<IFileIO> iFileIO = iFile->open(IFOwrite);
                                     iFileIO->write(0, size, queryPtr);
                                     iFileIO->close();
-                                    PROGLOG("DJPS: Worker successfully wrote SO file: %s", soPath.str());
                                 }
                                 catch (IException *e)
                                 {
@@ -2359,7 +2349,7 @@ public:
         }
         write();
     }
-
+    
 // IFileInProgressHandler
     virtual void add(const char *fip)
     {

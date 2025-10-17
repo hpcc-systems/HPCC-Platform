@@ -187,7 +187,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
         CRuntimeSummaryStatisticCollection podStats;
         std::vector<std::string> nodeNames; // ordered list of the unique node names
         bool collectAttempted = false;
-
+        
     public:
         CPodInfo() : podStats(podStatistics)
         {
@@ -248,7 +248,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
             reportExceptionToWorkunit(*wu, e);
         }
     } podInfo;
-
+    
     Owned<IDeMonServer> demonServer;
     std::atomic<unsigned> activeTasks;
     StringAttr          currentWuid;
@@ -1113,10 +1113,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     bool sendSo = false;
     Owned<ILoadedDllEntry> querySo;
     StringBuffer soPath;
-    bool saveQueryDlls = getExpertOptBool("saveQueryDlls");
-    PROGLOG("DJPS: executeGraph - saveQueryDlls=%s, globals=%p, getComponentConfigSP=%p",
-            boolToStr(saveQueryDlls), (void*)globals.get(), (void*)getComponentConfigSP());
-    if (!saveQueryDlls)
+    if (!getExpertOptBool("saveQueryDlls"))
     {
         DBGLOG("Loading query name: %s", soName.str());
         querySo.setown(queryDllServer().loadDll(soName.str(), DllLocationLocal));
@@ -1151,13 +1148,10 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
                 e->Release();
             }
             sendSo = getExpertOptBool("dllsToSlaves", true);
-            PROGLOG("DJPS: New SO saved, dllsToSlaves=%s, sendSo=%s, globals=%p, getComponentConfigSP=%p",
-                    boolToStr(getExpertOptBool("dllsToSlaves", true)), boolToStr(sendSo), (void*)globals.get(), (void*)getComponentConfigSP());
         }
         querySo.setown(createDllEntry(compoundPath.str(), false, NULL, false));
         soPath.swapWith(compoundPath);
     }
-    PROGLOG("DJPS: About to createThorGraph with sendSo=%s", boolToStr(sendSo));
 
     SCMStringBuffer eclstr;
     StringAttr user(workunit.queryUser());

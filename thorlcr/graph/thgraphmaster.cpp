@@ -1746,7 +1746,6 @@ void CJobMaster::sendQuery()
     if (getExpertOptBool("saveQueryDlls"))
     {
         tmp.append(sendSo);
-        PROGLOG("DJPS: Serializing SO info - sendSo=%s, soName=%s", boolToStr(sendSo), soName);
         if (sendSo)
         {
             CTimeMon atimer;
@@ -1755,7 +1754,7 @@ void CJobMaster::sendQuery()
             size32_t sz = (size32_t)iFileIO->size();
             tmp.append(sz);
             read(iFileIO, 0, sz, tmp);
-            PROGLOG("DJPS: Loaded SO file for serialization - size=%u bytes, took %d ms", sz, atimer.elapsed());
+            DBGLOG("Loading query for serialization to slaves took %d ms", atimer.elapsed());
         }
         queryJobManager().addCachedSo(soName);
     }
