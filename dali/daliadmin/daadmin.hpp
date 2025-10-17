@@ -100,5 +100,6 @@ extern DALIADMIN_API void cleanJobQueues(bool dryRun);
 extern DALIADMIN_API void cleanGeneratedDlls(bool dryRun, bool backup);
 extern DALIADMIN_API void cleanStaleGroups(const char *groupPattern, bool dryRun);
 
+extern DALIADMIN_API void fileread(const char *srcPath, const char *dstPath, offset_t numBytes);
 
 } // namespace daadmin

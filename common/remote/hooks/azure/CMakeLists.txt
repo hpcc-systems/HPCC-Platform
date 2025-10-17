@@ -29,6 +29,14 @@ endif()
 find_package(azure-storage-blobs-cpp CONFIG REQUIRED)
 find_package(azure-storage-files-shares-cpp CONFIG REQUIRED)
 find_package(azure-storage-common-cpp CONFIG REQUIRED)
+find_package(azure-identity-cpp CONFIG REQUIRED)
+
+# Check if WorkloadIdentityCredential is available (added in azure-identity-cpp 1.6.0)
+if(azure-identity-cpp_VERSION VERSION_GREATER_EQUAL "1.6.0")
+    set(AZURE_HAS_WORKLOAD_IDENTITY_CREDENTIAL TRUE)
+else()
+    set(AZURE_HAS_WORKLOAD_IDENTITY_CREDENTIAL FALSE)
+endif()
 
 project( azureapi )
 SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STRICT_CXX_FLAGS}")
@@ -51,6 +59,13 @@ include_directories (
 
 ADD_DEFINITIONS( -D_USRDLL -DAZURE_API_EXPORTS )
 
+if(AZURE_HAS_WORKLOAD_IDENTITY_CREDENTIAL)
+    ADD_DEFINITIONS( -DAZURE_HAS_WORKLOAD_IDENTITY_CREDENTIAL )
+    message(STATUS "Azure WorkloadIdentityCredential support: ENABLED")
+else()
+    message(STATUS "Azure WorkloadIdentityCredential support: DISABLED (SDK < 1.6.0)")
+endif()
+
 HPCC_ADD_LIBRARY( azurefile SHARED ${SRCS}  )
 install ( TARGETS azurefile DESTINATION filehooks CALC_DEPS)
 
@@ -60,4 +75,5 @@ target_link_libraries ( azurefile
         Azure::azure-storage-common
         Azure::azure-storage-blobs
         Azure::azure-storage-files-shares
+        Azure::azure-identity
     )

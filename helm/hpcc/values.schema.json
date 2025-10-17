@@ -799,14 +799,6 @@
               "type": "string",
               "enum": ["azurefile", "azureblob"]
             },
-            "account": {
-              "description": "Cloud storage account name",
-              "type": "string"
-            },
-            "secret": {
-              "description": "Secret id",
-              "type": "string"
-            },
             "managed": {
               "description": "Use managed identity for authentication",
               "type": "boolean"

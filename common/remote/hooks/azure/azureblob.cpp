@@ -28,6 +28,7 @@
 #include "azureapiutils.hpp"
 
 #include <azure/core/base64.hpp>
+#include <azure/identity.hpp>
 
 using namespace Azure::Storage;
 using namespace Azure::Storage::Blobs;
@@ -543,9 +544,10 @@ AzureBlob::AzureBlob(const char *_azureFileName) : fullName(_azureFileName)
 
         StringBuffer planeName(slash-filename, filename);
         Owned<const IPropertyTree> plane = getStoragePlaneConfig(planeName, true);
-        IPropertyTree * storageapi = plane->queryPropTree("storageapi");
+        const IPropertyTree * storageapi = plane->queryPropTree("storageapi");
         if (!storageapi)
             throw makeStringExceptionV(99, "No storage api defined for plane %s", planeName.str());
+        filename = slash+1; // advance past slash
 
         const char * api = storageapi->queryProp("@type");
         if (!api)
@@ -561,41 +563,36 @@ AzureBlob::AzureBlob(const char *_azureFileName) : fullName(_azureFileName)
             throw makeStringExceptionV(99, "Managed identity is not enabled for this environment");
 
         unsigned numDevices = plane->getPropInt("@numDevices", 1);
+        unsigned device = 1;
         if (numDevices != 1)
         {
-            if (slash[1] != 'd')
+            //The device from the path is used to identify which device is in use
+            //but it is then stripped from the path
+            if (filename[0] != 'd')
                 throw makeStringExceptionV(99, "Expected a device number in the filename %s", fullName.str());
 
             char * endDevice = nullptr;
-            unsigned device = strtod(slash+2, &endDevice);
+            device = strtod(filename+1, &endDevice);
             if ((device == 0) || (device > numDevices))
                 throw makeStringExceptionV(99, "Device %d out of range for plane %s", device, planeName.str());
 
             if (!endDevice || (*endDevice != '/'))
                 throw makeStringExceptionV(99, "Unexpected end of device partition %s", fullName.str());
 
-            VStringBuffer childPath("containers[%d]", device);
-            IPropertyTree * deviceInfo = storageapi->queryPropTree(childPath);
-            if (deviceInfo)
-            {
-                accountName.set(deviceInfo->queryProp("@account"));
-                secretName.set(deviceInfo->queryProp("@secret"));
-            }
-
-            //If device-specific information is not provided all defaults come from the storage plane
-            if (!accountName)
-                accountName.set(storageapi->queryProp("@account"));
-            if (!secretName)
-                secretName.set(storageapi->queryProp("@secret"));
-
             filename = endDevice+1;
         }
-        else
-        {
-            accountName.set(storageapi->queryProp("@account"));
-            secretName.set(storageapi->queryProp("@secret"));
-            filename = slash+1;
-        }
+
+        VStringBuffer childPath("containers[%u]", device);
+        const IPropertyTree * deviceInfo = storageapi->queryPropTree(childPath);
+        if (!deviceInfo)
+            throw makeStringExceptionV(99, "Missing container specification for device %u in plane %s", device, planeName.str());
+
+        containerName.set(deviceInfo->queryProp("@name"));
+        accountName.set(deviceInfo->queryProp("@account"));
+        secretName.set(deviceInfo->queryProp("@secret"));
+
+        if (isEmptyString(containerName))
+            throw makeStringExceptionV(99, "Missing container name for plane %s", planeName.str());
 
         if (isEmptyString(accountName))
             throw makeStringExceptionV(99, "Missing account name for plane %s", planeName.str());
@@ -603,13 +600,7 @@ AzureBlob::AzureBlob(const char *_azureFileName) : fullName(_azureFileName)
         if (!useManagedIdentity && isEmptyString(secretName))
             throw makeStringExceptionV(99, "Missing secret name for plane %s", planeName.str());
 
-        //I am not at all sure we need to split this apart, only to join in back together again.
-        slash = strchr(filename, '/');
-        if (!slash)
-            throw makeStringExceptionV(99, "Missing container in azureblob: file reference '%s'", filename);
-
-        containerName.set(filename, slash-filename);
-        blobName.set(slash+1);
+        blobName.set(filename);
     }
     else
         throw makeStringExceptionV(99, "Unexpected prefix on azure filename %s", fullName.str());
@@ -619,29 +610,7 @@ AzureBlob::AzureBlob(const char *_azureFileName) : fullName(_azureFileName)
 
 std::shared_ptr<StorageSharedKeyCredential> AzureBlob::getSharedKeyCredentials() const
 {
-    StringBuffer key;
-    getSecretValue(key, "storage", secretName, "key", true);
-    //Trim trailing whitespace/newlines in case the secret has been entered by hand e.g. on bare metal
-    size32_t len = key.length();
-    for (;;)
-    {
-        if (!len)
-            break;
-        if (isBase64Char(key.charAt(len-1)))
-            break;
-        len--;
-    }
-    key.setLength(len);
-
-    try
-    {
-        return std::make_shared<StorageSharedKeyCredential>(accountName.str(), key.str());
-    }
-    catch (const Azure::Core::RequestFailedException& e)
-    {
-        IException * error = makeStringExceptionV(-1, "Azure access: %s (%d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
-        throw error;
-    }
+    return getAzureSharedKeyCredential(accountName.str(), secretName.str());
 }
 
 std::string AzureBlob::getBlobUrl() const
@@ -655,22 +624,11 @@ std::shared_ptr<BlobContainerClient> AzureBlob::getBlobContainerClient() const
 
     if (useManagedIdentity)
     {
-        // For managed identity, create client without credentials
-        // The Azure SDK will automatically use managed identity when no explicit credentials are provided
-        // and the application is running in an Azure environment (VM, App Service, etc.)
-        try
-        {
-            return std::make_shared<BlobContainerClient>(blobContainerUrl);
-        }
-        catch (const Azure::Core::RequestFailedException& e)
-        {
-            throw makeStringExceptionV(-1, "Azure access error: Failed to authenticate using Managed Identity. Reason: %s (%d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
-        }
+        return std::make_shared<BlobContainerClient>(blobContainerUrl, getAzureManagedIdentityCredential());
     }
     else
     {
-        auto cred = getSharedKeyCredentials();
-        return std::make_shared<BlobContainerClient>(blobContainerUrl, cred);
+        return std::make_shared<BlobContainerClient>(blobContainerUrl, getSharedKeyCredentials());
     }
 }
 
@@ -678,15 +636,11 @@ SharedBlobClient AzureBlob::getBlobClient() const
 {
     if (useManagedIdentity)
     {
-        // For managed identity, create client without credentials
-        // The Azure SDK will automatically use managed identity when no explicit credentials are provided
-        // and the application is running in an Azure environment (VM, App Service, etc.)
-        return std::make_shared<Azure::Storage::Blobs::BlockBlobClient>(getBlobUrl());
+        return std::make_shared<Azure::Storage::Blobs::BlockBlobClient>(getBlobUrl(), getAzureManagedIdentityCredential());
     }
     else
     {
-        auto cred = getSharedKeyCredentials();
-        return std::make_shared<Azure::Storage::Blobs::BlockBlobClient>(getBlobUrl(), cred);
+        return std::make_shared<Azure::Storage::Blobs::BlockBlobClient>(getBlobUrl(), getSharedKeyCredentials());
     }
 }
 
