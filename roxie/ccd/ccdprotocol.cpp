@@ -1644,7 +1644,7 @@ private:
             throw MakeStringException(ROXIE_DATA_ERROR, "Malformed request");
     }
 
-    void sanitizeQuery(Owned<IPropertyTree> &queryPT, StringAttr &queryName, StringBuffer &saniText, HttpHelper &httpHelper, const char *&uid, bool &isBlind, bool &isDebug, IProperties * inlineTraceHeaders)
+    void sanitizeQuery(Owned<IPropertyTree> &queryPT, StringAttr &queryName, StringBuffer &saniText, HttpHelper &httpHelper, const char *&uid, bool &isBlind, bool &isDebug, IProperties * inlineHeaders)
     {
         if (queryPT)
         {
@@ -1654,14 +1654,26 @@ private:
                 uid = queryPT->queryProp("_TransactionId");
             isBlind = queryPT->getPropBool("@blind", false) || queryPT->getPropBool("_blind", false);
             isDebug = queryPT->getPropBool("@debug");
-            if (queryPT->hasProp("_trace") && inlineTraceHeaders)
+
+            if (inlineHeaders)
             {
-                if (queryPT->hasProp("_trace/traceparent"))
-                    inlineTraceHeaders->setProp("traceparent", queryPT->queryProp("_trace/traceparent"));
-                if (queryPT->hasProp("_trace/Global-Id"))
-                    inlineTraceHeaders->setProp("Global-Id", queryPT->queryProp("_trace/Global-Id"));
-                if (queryPT->hasProp("_trace/Caller-Id"))
-                    inlineTraceHeaders->setProp("Caller-Id", queryPT->queryProp("_trace/Caller-Id"));
+                if (queryPT->hasProp("_trace"))
+                {
+                    if (queryPT->hasProp("_trace/traceparent"))
+                        inlineHeaders->setProp("traceparent", queryPT->queryProp("_trace/traceparent"));
+                    if (queryPT->hasProp("_trace/Global-Id"))
+                        inlineHeaders->setProp("Global-Id", queryPT->queryProp("_trace/Global-Id"));
+                    if (queryPT->hasProp("_trace/Caller-Id"))
+                        inlineHeaders->setProp("caller.id", queryPT->queryProp("_trace/Caller-Id"));
+                }
+
+                if (queryPT->hasProp("_client"))
+                {
+                    if (queryPT->hasProp("_client/X-Forwarded-For"))
+                        inlineHeaders->setProp("client.address", queryPT->queryProp("_client/X-Forwarded-For"));
+                    if (queryPT->hasProp("_client/X-Client-ID"))
+                        inlineHeaders->setProp("client.id", queryPT->queryProp("_client/X-Client-ID"));
+                }
             }
 
             toXML(queryPT, saniText, 0, isBlind ? (XML_SingleQuoteAttributeValues | XML_Sanitize) : XML_SingleQuoteAttributeValues);
@@ -1931,10 +1943,49 @@ readAnother:
                 }
 
                 uid = NULL;
-                Owned<IProperties> inlineTraceHeaders = createProperties(true);
-                sanitizeQuery(queryPT, queryName, sanitizedText, httpHelper, uid, isBlind, isDebug, inlineTraceHeaders);
+                Owned<IProperties> inlineHeaders = createProperties(true);
+                sanitizeQuery(queryPT, queryName, sanitizedText, httpHelper, uid, isBlind, isDebug, inlineHeaders);
 
-                msgctx->startSpan(uid, querySetName, queryName, isHTTP ? httpHelper.queryRequestHeaders() : inlineTraceHeaders);
+                // Update peer address to use original client IP if available from proxy headers
+                StringBuffer originalClientIP;
+                StringBuffer clientId;
+
+                if (isHTTP)
+                {
+                    // For HTTP requests, extract directly from headers
+                    const char *forwardedFor = httpHelper.queryRequestHeader("X-Forwarded-For");
+                    if (!isEmptyString(forwardedFor))
+                    {
+                        const char *comma = strchr(forwardedFor, ',');
+                        if (comma)
+                            originalClientIP.append(comma - forwardedFor, forwardedFor);
+                        else
+                            originalClientIP.append(forwardedFor);
+                        originalClientIP.trim();
+                    }
+                }
+                else
+                {
+                    // For non-HTTP requests, extract from inline headers
+                    const char *clientAddress = inlineHeaders->queryProp("client.address");
+                    if (!isEmptyString(clientAddress))
+                    {
+                        const char *comma = strchr(clientAddress, ',');
+                        if (comma)
+                            originalClientIP.append(comma - clientAddress, clientAddress);
+                        else
+                            originalClientIP.append(clientAddress);
+                        originalClientIP.trim();
+                    }
+                }
+
+                if (peerStr.isEmpty() && !originalClientIP.isEmpty()
+                 || (!peerStr.isEmpty() && !originalClientIP.isEmpty() && !streq(originalClientIP.str(), peerStr.str())))
+                {
+                    peerStr.clear().append(originalClientIP);
+                }
+
+                msgctx->startSpan(uid, querySetName, queryName, isHTTP ? httpHelper.queryRequestHeaders() : inlineHeaders);
 
                 if (!uid)
                     uid = "-";
