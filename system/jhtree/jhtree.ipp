@@ -164,6 +164,7 @@ public:
     virtual const BloomFilter * queryBloom(unsigned i) const override;
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override {}
     virtual IKeyIndexPrewarmer * createPrewarmer() override;
+    virtual void ensureReady() override;
 
     // KeyIndex implementation virtuals...
     virtual const char *queryFileName() const = 0;

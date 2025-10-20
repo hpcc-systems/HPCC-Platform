@@ -149,6 +149,7 @@ bool defaultStartInputsSequentially = false;
 bool defaultNoSeekBuildIndex = false;
 unsigned parallelQueryLoadThreads = 0;               // Number of threads to use for parallel loading of queries. 0 means don't (may cause CPU starvation on other vms)
 unsigned numResolveFilenameThreads = 0;
+bool preopenActiveIndexes = false;
 bool alwaysFailOnLeaks = false;
 bool ignoreFileDateMismatches = false;
 bool ignoreFileSizeMismatches = false;
@@ -1347,6 +1348,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             numResolveFilenameThreads = parallelQueryLoadThreads * 4;
 
         numResolveFilenameThreads = topology->getPropInt("@numResolveFilenameThreads", numResolveFilenameThreads);
+        preopenActiveIndexes = topology->getPropBool("@preopenActiveIndexes", preopenActiveIndexes);
+        
         alwaysFailOnLeaks = topology->getPropBool("@alwaysFailOnLeaks", false);
         ignoreFileDateMismatches = topology->getPropBool("@ignoreFileDateMismatches", false);
         ignoreFileSizeMismatches = topology->getPropBool("@ignoreFileSizeMismatches", false);
