@@ -645,7 +645,7 @@ int main( int argc, const char *argv[]  )
     InitModuleObjects();
     NoQuickEditSection xxx;
     {
-        bool monitorConfig = false; // Do not allow updates to the config file, otherwise the slave may not be in sync.
+        bool monitorConfig = true; // Do not allow updates to the config file, otherwise the slave may not be in sync.
         //MORE: What about updates to storage planes - they will not be passed through to the slaves
         globals.setown(loadConfiguration(thorDefaultConfigYaml, argv, "thor", "THOR", "thor.xml", nullptr, nullptr, monitorConfig));
     }
