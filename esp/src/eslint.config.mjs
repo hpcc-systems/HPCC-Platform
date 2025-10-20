@@ -1,10 +1,14 @@
 import js from '@eslint/js'
+import { defineConfig } from 'eslint/config';
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
+import { fileURLToPath } from 'node:url'
 
-export default tseslint.config(
+const tsconfigRootDir = fileURLToPath(new URL('.', import.meta.url))
+
+export default defineConfig(
     {
         ignores: ['dist']
     },
@@ -14,6 +18,10 @@ export default tseslint.config(
         languageOptions: {
             ecmaVersion: 2020,
             globals: globals.browser,
+            parserOptions: {
+                project: ['./tsconfig.eslint.json'],
+                tsconfigRootDir,
+            },
         },
         plugins: {
             'react-hooks': reactHooks,
@@ -42,6 +50,7 @@ export default tseslint.config(
             "@typescript-eslint/no-namespace": "off",
             "@typescript-eslint/no-this-alias": "off",
             "@typescript-eslint/no-unused-vars": "off",
+            '@typescript-eslint/no-deprecated': 'warn',
 
             ...reactHooks.configs.recommended.rules,
             'react-refresh/only-export-components': [

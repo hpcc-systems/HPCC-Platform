@@ -274,7 +274,7 @@ protected:
     Linked<IException> originalException;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-    CThorException(LogMsgAudience _audience,int code, const char *str) 
+    CThorException(LogMsgAudience _audience,int code, const char *str)
         : audience(_audience), errorcode(code), msg(str), action(tea_null), graphId(0), id(0), slave(0), line(0), column(0), severity(SeverityInformation), kind(TAKnone) { };
     CThorException(MemoryBuffer &mb)
     {
@@ -633,9 +633,9 @@ public:
     {
         num = 0;
     }
-    const char *queryTempDir() 
-    { 
-        return subDirPath; 
+    const char *queryTempDir()
+    {
+        return subDirPath;
     }
     void clearTempDirectory(bool log)
     {
@@ -879,7 +879,7 @@ void setupGroups(INode *_masterNode, IGroup *_processGroup, IGroup *_slaveGroup)
 
     nodeComm.setown(createCommunicator(nodeGroup));
 }
-    
+
 void setupCluster(INode *_masterNode, IGroup *_processGroup, unsigned channelsPerSlave, unsigned portBase, unsigned portInc)
 {
     IArrayOf<INode> slaveGroupNodes;
@@ -1179,7 +1179,7 @@ StringBuffer &getPartFilename(IPartDescriptor &partDesc, unsigned copy, StringBu
 
 void CFifoFileCache::deleteFile(IFile &ifile)
 {
-    try 
+    try
     {
         if (!ifile.remove())
             FLLOG(MCoperatorWarning, "CFifoFileCache: Failed to remove file (missing) : %s", ifile.queryFilename());
@@ -1270,7 +1270,7 @@ public:
 
         for (;;)
         {
-            while (!memDeserializer.eos()) 
+            while (!memDeserializer.eos())
             {
                 RtlDynamicRowBuilder rowBuilder(activity.queryRowAllocator());
                 size32_t sz = activity.queryRowDeserializer()->deserialize(rowBuilder, memDeserializer);
@@ -1327,7 +1327,7 @@ class CRowServer : public CSimpleInterface, implements IThreaded, implements IRo
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CRowServer(CActivityBase *_activity, IRowStream *_seq, ICommunicator &_comm, mptag_t _mpTag) 
+    CRowServer(CActivityBase *_activity, IRowStream *_seq, ICommunicator &_comm, mptag_t _mpTag)
         : activity(_activity), seq(_seq), comm(_comm), mpTag(_mpTag), threaded("CRowServer")
     {
         fetchBuffSize = DEFAULT_ROWSERVER_BUFF_SIZE;
@@ -1410,8 +1410,8 @@ IEngineRowStream *createUngroupStream(IRowStream *input)
         ~CUngroupStream() { input->Release(); }
         virtual const void *nextRow() override
         {
-            const void *ret = input->nextRow(); 
-            if (ret) 
+            const void *ret = input->nextRow();
+            if (ret)
                 return ret;
             else
                 return input->nextRow();
@@ -1676,7 +1676,7 @@ void CThorPerfTracer::start(const char *_workunit, unsigned _subGraphId, double 
     subGraphId = _subGraphId;
     DBGLOG("Starting perf trace of subgraph %u, with interval %.3g seconds", subGraphId, interval);
     perf.setInterval(interval);
-    perf.start();    
+    perf.start();
 }
 
 void CThorPerfTracer::stop()
@@ -1732,7 +1732,9 @@ bool hasTLK(IDistributedFile &file, CActivityBase *activity)
         part.getFilename(rfn);
         StringBuffer filename;
         rfn.getPath(filename);
-        Owned<IKeyIndex> index = createKeyIndex(filename, 0, false, 0);
+        unsigned __int64 blockedIOSize{0};
+        verifyex(findPlaneAttrFromPath(filename, BlockedSequentialIO, 0, blockedIOSize)); // should never happen - error if plane not found
+        Owned<IKeyIndex> index = createKeyIndex(filename, 0, false, (size32_t)blockedIOSize);
         dbgassertex(index);
         if (index->isTopLevelKey())
         {
