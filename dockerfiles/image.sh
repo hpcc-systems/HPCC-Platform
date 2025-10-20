@@ -23,6 +23,7 @@ globals() {
 
     GIT_REF=$(git rev-parse --short=8 HEAD)
     GIT_BRANCH=$(git branch --show-current)
+    IMAGE_BRANCH_TAG=$(echo "$GIT_BRANCH" | sed 's/[^a-zA-Z0-9_.]/-/g')
 
     pushd $ROOT_DIR/vcpkg
     VCPKG_REF=$(git rev-parse --short=8 HEAD)
@@ -36,7 +37,7 @@ globals() {
     CMAKE_OPTIONS="-G Ninja -DCPACK_THREADS=$(docker info --format '{{.NCPU}}') -DUSE_OPTIONAL=OFF -DCONTAINERIZED=ON -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON"
 
     if [ "$TAG_BUILD" -eq 1 ]; then
-        HPCC_BUILD="hpcc_build_$MODE-$GIT_BRANCH"
+        HPCC_BUILD="hpcc_build_$MODE-$IMAGE_BRANCH_TAG"
         if ! docker volume inspect "$HPCC_BUILD" >/dev/null 2>&1; then
             if docker volume inspect "hpcc_build_$MODE" >/dev/null 2>&1; then
                 docker volume create --name "$HPCC_BUILD"
@@ -100,7 +101,7 @@ finalize_platform_core_image() {
         $image_name "tail -f /dev/null")
     docker exec --user root $CONTAINER /bin/bash -c "$cmd"
     docker exec --user root $CONTAINER /bin/bash -c "eclcc -pch"
-    docker commit $CONTAINER hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc
+    docker commit $CONTAINER hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc
     docker rm -f $CONTAINER
 
     if [ "$MODE" = "debug" ] || [ "$MODE" = "relwithdebinfo" ]; then
@@ -109,7 +110,7 @@ finalize_platform_core_image() {
         local CONTAINER=$(docker run -d \
             --mount source=$ROOT_DIR,target=/hpcc-dev/HPCC-Platform-local,type=bind,readonly \
             --mount source=$HPCC_BUILD,target=/hpcc-dev/build,type=volume \
-            hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc "tail -f /dev/null")
+            hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc "tail -f /dev/null")
         docker exec --user root --workdir /hpcc-dev $CONTAINER /bin/bash -c "rm -rf /hpcc-dev/HPCC-Platform && mkdir /hpcc-dev/HPCC-Platform && chown -R hpcc:hpcc /hpcc-dev/HPCC-Platform"
         docker exec --workdir /hpcc-dev $CONTAINER /bin/bash -c "git config --global --add safe.directory /hpcc-dev/HPCC-Platform-local"
         docker exec --workdir /hpcc-dev $CONTAINER /bin/bash -c "git config --global --add safe.directory /hpcc-dev/HPCC-Platform-local/.git"
@@ -118,16 +119,16 @@ finalize_platform_core_image() {
         docker exec --workdir /hpcc-dev/HPCC-Platform-local $CONTAINER /bin/bash -c "git ls-files --modified --exclude-standard -z | xargs -0 -I {} cp {} /hpcc-dev/HPCC-Platform/{}"
         docker exec --workdir /hpcc-dev/HPCC-Platform $CONTAINER /bin/bash -c "rm -rf ./.git"
         docker exec --user root --workdir /hpcc-dev $CONTAINER /bin/bash -c "find /hpcc-dev/HPCC-Platform -exec touch -r /hpcc-dev/build/CMakeCache.txt {} +"
-        docker commit $CONTAINER hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc
+        docker commit $CONTAINER hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc
         docker rm -f $CONTAINER
     fi
 
-    docker tag hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc incr-core:$MODE
+    docker tag hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc incr-core:$MODE
     
     # Create additional name tag if specified
     if [ -n "$NAME_TAG" ]; then
         echo "--- Creating additional tag: $NAME_TAG ---"
-        docker tag hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc hpccsystems/platform-core:$NAME_TAG
+        docker tag hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc hpccsystems/platform-core:$NAME_TAG
     fi
 }
 
@@ -272,12 +273,12 @@ sync_files() {
 
 check_cache() {
     local crc=$1
-    echo "--- Check cache hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc ---"
-    image_count=$(docker images --quiet hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc | wc -l)
+    echo "--- Check cache hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc ---"
+    image_count=$(docker images --quiet hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc | wc -l)
     if [ $image_count -gt 0 ]; then
         echo "--- Image already exists  --- "
-        echo "docker run --entrypoint /bin/bash -it hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc"
-        echo "hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc"
+        echo "docker run --entrypoint /bin/bash -it hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc"
+        echo "hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc"
         rm $RSYNC_TMP_FILE
         exit 0
     fi
@@ -340,8 +341,8 @@ build() {
             "cmake --install /hpcc-dev/build --prefix /opt/HPCCSystems"
     fi
 
-    echo "docker run --entrypoint /bin/bash -it hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc"
-    echo "hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc"
+    echo "docker run --entrypoint /bin/bash -it hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc"
+    echo "hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc"
     exit 0
 }
 

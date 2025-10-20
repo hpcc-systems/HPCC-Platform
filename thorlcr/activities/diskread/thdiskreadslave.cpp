@@ -356,10 +356,6 @@ void CDiskRecordPartHandler::open()
 
         rwFlags |= DEFAULT_RWFLAGS;
 
-        offset_t expectedSize, actualSize;
-        if (!doesPhysicalMatchMeta(*partDesc, *iFile, expectedSize, actualSize))
-            throw MakeActivityException(&activity, 0, "File size mismatch: file %s was supposed to be %" I64F "d bytes but appears to be %" I64F "d bytes", iFile->queryFilename(), expectedSize, actualSize);
-
         if (compressed)
         {
             rwFlags |= rw_compress;

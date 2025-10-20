@@ -34,7 +34,7 @@ type CustomLabelProps = ITextFieldProps & IDropdownProps & IOnRenderComboBoxLabe
     tooltip: string;
 }
 
-const CustomLabel = (props: CustomLabelProps): JSX.Element => {
+const CustomLabel = (props: CustomLabelProps): React.JSX.Element => {
     return <Stack horizontal verticalAlign="center" tokens={stackTokens}>
         <Label htmlFor={props.name} disabled={props.disabled} id={props.id} style={{ fontWeight: 600, display: "block", padding: "5px 0" }}>{props.label}</Label>
         <TooltipHost content={props.tooltip}>

@@ -47,7 +47,7 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
     sort = {},
     queryParams = {}
 }) => {
-    const { file } = useFile(cluster, logicalFile);
+    const { file, superfiles } = useFile(cluster, logicalFile);
     React.useEffect(() => {
         if (file?.NodeGroup && cluster === undefined && !file?.isSuperfile) {
             replaceUrl(`/files/${file.NodeGroup}/${logicalFile}`);
@@ -83,7 +83,7 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
         } : {
             id: "superfiles",
             label: nlsHPCC.Superfiles,
-            count: file?.Superfiles?.DFULogicalFile.length ?? 0
+            count: superfiles?.length ?? 0
         }, {
             id: "parts",
             label: nlsHPCC.FileParts,
@@ -109,7 +109,7 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
         }];
         // eslint complains that the ...DFUFileProctect.length dep is unnecessary,
         // but if excluded the count for "protectby" does not update correctly
-    }, [file, file?.ProtectList?.DFUFileProtect?.length]); //eslint-disable-line react-hooks/exhaustive-deps
+    }, [file, file?.ProtectList?.DFUFileProtect?.length, superfiles?.length]); //eslint-disable-line react-hooks/exhaustive-deps
 
     const classes = useStyles();
 

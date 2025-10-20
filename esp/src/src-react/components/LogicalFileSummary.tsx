@@ -35,7 +35,7 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
     tab = "summary"
 }) => {
 
-    const { file, isProtected, protectedBy, refreshData } = useFile(cluster, logicalFile);
+    const { file, isProtected, protectedBy, superfiles, refreshData } = useFile(cluster, logicalFile);
     const { currentUser } = useMyAccount();
     const [description, setDescription] = React.useState("");
     const [_protected, setProtected] = React.useState(false);
@@ -208,7 +208,7 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
             <TableGroup fields={{
                 "Wuid": { label: nlsHPCC.Workunit, type: "link", value: file?.Wuid, href: `#/${isDFUWorkunit ? "dfu" : ""}workunits/${file?.Wuid}`, readonly: true, },
                 "Owner": { label: nlsHPCC.Owner, type: "string", value: file?.Owner, readonly: true },
-                "SuperOwner": { label: nlsHPCC.SuperFile, type: "links", links: file?.Superfiles?.DFULogicalFile?.map(row => ({ label: "", type: "link", value: row.Name, href: `#/files/${row.NodeGroup !== null ? row.NodeGroup : undefined}/${row.Name}` })) },
+                "SuperOwner": { label: nlsHPCC.SuperFile, type: "links", links: superfiles?.map(row => ({ label: "", type: "link", value: row.Name, href: `#/files/${row.NodeGroup !== null ? row.NodeGroup : undefined}/${row.Name}` })) },
                 "NodeGroup": { label: nlsHPCC.ClusterName, type: "string", value: file?.NodeGroup, readonly: true },
                 "Description": { label: nlsHPCC.Description, type: "string", value: description },
                 "JobName": { label: nlsHPCC.JobName, type: "string", value: file?.JobName, readonly: true },
