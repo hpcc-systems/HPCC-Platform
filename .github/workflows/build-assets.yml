@@ -256,6 +256,7 @@ jobs:
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
       ln-ref: ${{ needs.preamble.outputs.internal_ref }}
+      upload-package: true
       asset-name: 'clienttools-internal-for-eclide'
       make-latest: ${{ needs.preamble.outputs.is_latest != 'false' }}
     secrets: inherit
