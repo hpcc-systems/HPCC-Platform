@@ -889,7 +889,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 
         //The following meta-options affect the defaults for various other options:
         const char * roxieMode = topology->queryProp("@roxieMode", "interactive");
-        const char * protocol = topology->queryProp("@transportProtocol", "tcp");
+        const char * protocol = topology->queryProp("@transportProtocol", "udp");
         IPropertyTree * pageCache = topology->queryPropTree("pageCache");
 
         bool isBatchRoxie = strisame(roxieMode, "batch");
