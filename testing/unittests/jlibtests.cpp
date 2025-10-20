@@ -27,6 +27,10 @@
 #include <random>
 #include <vector>
 
+#ifdef CALLGRIND_PROFILING
+#include <valgrind/callgrind.h>
+#endif
+
 #include "jsem.hpp"
 #include "jfile.hpp"
 #include "jdebug.hpp"
@@ -3772,7 +3776,8 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeSerializationDeserializationTest, "PT
 class PTreeSerializationDeserializationXmlTimingStressTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(PTreeSerializationDeserializationXmlTimingStressTest);
-    CPPUNIT_TEST(testCombinedXmlAndBinaryTimingWithNormalVsLowMem);
+//    CPPUNIT_TEST(testCombinedXmlAndBinaryTimingWithNormalVsLowMem);
+    CPPUNIT_TEST(testBinaryLowMemDeserializationForProfiling);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -3971,6 +3976,46 @@ protected:
         return true;
     }
 
+    bool readBinaryFileRaw(const char *filePath, MemoryBuffer &output)
+    {
+        // Read file without decompression - for profiling tests
+        StringBuffer expandedPath;
+        const char *actualPath = expandTilde(filePath, expandedPath);
+        if (!actualPath)
+            return false;
+        Owned<IFile> binaryFile = createIFile(actualPath);
+        if (!binaryFile->exists())
+            return false;
+
+        size32_t fileSize = (size32_t)binaryFile->size();
+        Owned<IFileIO> fileIO = binaryFile->open(IFOread);
+        output.reserveTruncate(fileSize);
+        size32_t bytesRead = fileIO->read(0, fileSize, output.bufferBase());
+        output.setLength(bytesRead);
+
+        return true;
+    }
+
+    bool decompressIfNeeded(const char *filePath, MemoryBuffer &data)
+    {
+        // Decompress if file has .gz extension
+        StringBuffer expandedPath;
+        const char *actualPath = expandTilde(filePath, expandedPath);
+        if (!actualPath)
+            return false;
+
+        const char *ext = pathExtension(actualPath);
+        if (ext && streq(ext, ".gz"))
+        {
+            StringBuffer tempOutput;
+            gunzip((const byte *)data.toByteArray(), data.length(), tempOutput);
+            data.clear();
+            data.append(tempOutput.length(), tempOutput.str());
+        }
+
+        return true;
+    }
+
     void performXmlTimingTest(const char *testName, const char *xmlData, int iterations, byte flags = ipt_none)
     {
         CCycleTimer timer;
@@ -4087,6 +4132,103 @@ public:
                binaryVsXmlLowMemDeserialize,
                binaryVsXmlLowMemSerialize);
         DBGLOG("└──────────────────────┴─────────────────┴─────────────────┘");
+    }
+
+    void testBinaryLowMemDeserializationForProfiling()
+    {
+        // This test is designed specifically for profiling tools
+        // It focuses solely on binary deserialization with low memory flags
+        // Run with: perf record -g ./unittests --test testBinaryLowMemDeserializationForProfiling
+        // Or with callgrind: valgrind --tool=callgrind ./unittests -e PTreeSerializationDeserializationXmlTimingStressTest
+
+        constexpr const int iterations{1};  // More iterations for better profiling data
+        constexpr const byte flags = ipt_lowmem;
+
+        // Load Binary data - DECOMPRESS BEFORE PROFILING STARTS
+        MemoryBuffer binaryData;
+        const char *binaryPath = getBinaryFilePath();
+        try
+        {
+            // Read raw file (without automatic decompression)
+            if (!readBinaryFileRaw(binaryPath, binaryData))
+                createBinaryDataFromXml(getXmlFilePath(), binaryData);
+
+            // Decompress outside the profiled section to exclude gunzip from profiling
+            if (!decompressIfNeeded(binaryPath, binaryData))
+                CPPUNIT_FAIL("Failed to decompress binary data");
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+        catch (...)
+        {
+            CPPUNIT_FAIL("Failed to load test data files");
+        }
+
+        unsigned binaryDataLen = binaryData.length();
+        if (binaryDataLen == 0)
+            CPPUNIT_FAIL("Binary data is empty - test data files not found or empty");
+
+        DBGLOG("=== BINARY LOW MEMORY DESERIALIZATION PROFILING TEST ===");
+        DBGLOG("Binary data size: %u bytes (decompressed)", binaryDataLen);
+        DBGLOG("Iterations: %d", iterations);
+        DBGLOG("Flags: 0x%02X (ipt_lowmem)", flags);
+        DBGLOG("Decompression completed BEFORE profiling begins");
+        DBGLOG("This test is optimized for profiling - running deserialization only");
+
+        CCycleTimer timer;
+        __uint64 totalDeserializeNs{0};
+
+        MemoryBuffer streamBufferIn;
+        try
+        {
+            for (int i = 0; i < iterations; i++)
+            {
+                streamBufferIn.clear();
+                streamBufferIn.append(binaryDataLen, binaryData.toByteArray());
+                Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(streamBufferIn);
+
+                timer.reset();
+                #ifdef CALLGRIND_PROFILING
+                CALLGRIND_START_INSTRUMENTATION;
+                CALLGRIND_TOGGLE_COLLECT;
+                #endif
+                Owned<IPropertyTree> deserializedTree = createPTreeFromBinary(*in, flags);
+                #ifdef CALLGRIND_PROFILING
+                CALLGRIND_TOGGLE_COLLECT;
+                CALLGRIND_STOP_INSTRUMENTATION;
+                #endif
+                __uint64 deserializeElapsedNs = timer.elapsedNs();
+                totalDeserializeNs += deserializeElapsedNs;
+
+                // Keep a reference to prevent optimization
+                CPPUNIT_ASSERT(deserializedTree != nullptr);
+            }
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+        catch (...)
+        {
+            CPPUNIT_FAIL("Unexpected exception during deserialization");
+        }
+
+        double avgDeserializeTimeMs = (totalDeserializeNs / iterations) / 1e6;
+        double totalDeserializeTimeMs = totalDeserializeNs / 1e6;
+
+        DBGLOG("=== PROFILING TEST RESULTS ===");
+        DBGLOG("Total deserialize time: %.6f ms", totalDeserializeTimeMs);
+        DBGLOG("Average deserialize time: %.6f ms", avgDeserializeTimeMs);
+        DBGLOG("Iterations per second: %.2f", 1000.0 / avgDeserializeTimeMs);
+        DBGLOG("=== PROFILING TEST COMPLETED ===");
     }
 };
 
