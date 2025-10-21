@@ -4442,7 +4442,7 @@ class PTreeXmlTimingStressTest : public PTreeTimingTestBase
 public:
     void testXmlTimingWithNormalVsLowMem()
     {
-        constexpr const int iterations{10};
+        constexpr const int iterations{100};
 
         // Load XML data
         StringBuffer xmlData;
@@ -4489,7 +4489,7 @@ class PTreeBinaryTimingStressTest : public PTreeTimingTestBase
 public:
     void testBinaryTimingWithNormalVsLowMem()
     {
-        constexpr const int iterations{10};
+        constexpr const int iterations{100};
 
         // Load Binary data
         //  If the binary file does not exist then create it from the XML file
@@ -4538,7 +4538,7 @@ class PTreeCombinedTimingStressTest : public PTreeTimingTestBase
 public:
     void testCombinedXmlAndBinaryTimingWithNormalVsLowMem()
     {
-        constexpr const int iterations{10};
+        constexpr const int iterations{100};
 
         // Load XML data
         StringBuffer xmlData;
