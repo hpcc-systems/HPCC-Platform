@@ -200,7 +200,7 @@ class CRegistryServer : public CSimpleInterface
                 Owned<IException> e = deserializeException(msg);
                 if (e.get())
                     IERRLOG(e, "Worker unregistered with exception");
-                registry.deregisterNode(sender-1);
+                registry.deregisterNode(sender-1, e);
             }
             running = false;
         }
@@ -237,7 +237,7 @@ public:
         CriticalBlock b(regCrit);
         return LINK(registryServer);
     }
-    void deregisterNode(unsigned worker)
+    void deregisterNode(unsigned worker, IException *workerException)
     {
         const SocketEndpoint &ep = queryNodeGroup().queryNode(worker+1).endpoint();
         StringBuffer url;
@@ -252,7 +252,15 @@ public:
         --workersRegistered;
         if (watchdog)
             watchdog->removeWorker(ep);
-        Owned<IThorException> te = MakeThorOperatorException(TE_AbortException, "The machine %s and/or the worker was shutdown. Aborting Thor", url.str());
+        Owned<IThorException> te;
+        if (workerException)
+        {
+            StringBuffer msg;
+            workerException->errorMessage(msg);
+            te.setown(MakeThorOperatorException(TE_AbortException, "%s. Aborting Thor", msg.str()));
+        }
+        else
+            te.setown(MakeThorOperatorException(TE_AbortException, "The machine %s and/or the worker was shutdown. Aborting Thor", url.str()));
         te->setSlave(worker+1);
         abortThor(te, TEC_WorkerInit);
     }

@@ -316,7 +316,14 @@ bool ControlHandler(ahType type)
     if (!jobListenerStopped)
     {
         if (masterNode)
-            unregOK = UnregisterSelf(NULL);
+        {
+            Owned<IException> e;
+            if (ahInterrupt == type)
+                e.setown(makeStringException(0, "Worker received SIGINT (CTRL-C)"));
+            else
+                e.setown(makeStringException(0, "Worker received SIGTERM"));
+            unregOK = UnregisterSelf(e);
+        }
         abortSlave();
     }
     if (recvShutdown)
