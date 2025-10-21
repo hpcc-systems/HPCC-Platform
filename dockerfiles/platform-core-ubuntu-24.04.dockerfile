@@ -57,7 +57,8 @@ RUN if [ ${USE_CPPUNIT} -eq 1 ] ; then apt-get install -y libcppunit-1.15-0 ; fi
 RUN apt-get install -y \
     dnsutils \
     gdb \
-    nano 
+    nano \
+    tini 
 
 RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.29.7/bin/linux/amd64/kubectl && \
     chmod +x ./kubectl && \

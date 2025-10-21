@@ -2038,7 +2038,7 @@ lifecycle:
 {{- if hasKey . "extraArgs" -}}
  {{- $args = concat $args .extraArgs -}}
 {{- end }}
-command: ["check_executes.sh"]
+command: ["/usr/bin/tini", "--", "check_executes.sh"]
 args: [ {{ join " " $args }} ]
 {{- end -}}
 {{- define "hpcc.addCertificateImpl" }}
