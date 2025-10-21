@@ -158,7 +158,7 @@ An optional identifier that must be `index-events` when present.
 
     storage/
 
-Required container for storage plane and page cache configuration settings.
+Optional container for storage plane and page cache configuration settings.
 
     storage/
         @cacheReadTime
@@ -171,7 +171,7 @@ Optional page cache controls. Setting a positive read time enables the page cach
     storage/
         plane/
 
-Required and repeatable element container for a single storage plane. The first occurrence becomes the default plane for any file that is not explicitly assigned a plane.
+Optional and repeatable element container for a single storage plane. The first occurrence becomes the default plane for any file that is not explicitly assigned a plane.
 
     storage/
         plane/
@@ -188,7 +188,7 @@ Required number of nanoseconds needed to load a single 8KB page from the storage
     storage/
         file/
 
-Optional repeatable element enabling one or all files to be explicitly associated with a storage plane.
+Optional repeatable element enabling one or all files to be explicitly associated with a storage plane. Must be omitted when `storage/plane` is omitted.
 
     storage/
         file/
