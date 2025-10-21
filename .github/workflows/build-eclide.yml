@@ -185,6 +185,7 @@ jobs:
         run: |
           cd ECLIDE
           cd ./build
+          rm -rf ./CMakeCache.txt ./CMakeFiles
           cmake -A Win32 -S ../ -B . -DHPCC_AUDIENCE=internal
           cmake --build . --config RelWithDebInfo --target package --parallel $NUMBER_OF_PROCESSORS
 
