@@ -244,7 +244,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                     <Resources wuid={wuid} parentUrl={`${parentUrl}/${wuid}/resources`} selectedResource={state?.resources} />
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "helpers"} size={size}>
-                    <Helpers wuid={wuid} parentUrl={`${parentUrl}/${wuid}/helpers`} selectedTreeValue={state?.helpers} />
+                    <Helpers wuid={wuid} parentUrl={`${parentUrl}/${wuid}/helpers`} selectedTreeValue={state?.helpers} thorLogsAvailable={!!workunit?.ThorLogList} />
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "logs"} size={size}>
                     <Logs wuid={wuid} filter={queryParams.logs} setLogCount={setLogCount} />
