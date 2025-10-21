@@ -1197,7 +1197,7 @@ protected:
         RoxiePacketHeader header(id, ruid, channel, 0);
         MemoryBuffer b;
         b.append(sizeof(header), &header);
-        b.append ((char) LOGGING_FLAGSPRESENT);
+        b.append ((char) LOGGING_NONE);
         b.append("PROXY"); // MORE - a better log prefix might be good...
         request.serialize(b);
 
