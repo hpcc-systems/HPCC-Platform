@@ -3776,7 +3776,7 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeSerializationDeserializationTest, "PT
 class PTreeSerializationDeserializationXmlTimingStressTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(PTreeSerializationDeserializationXmlTimingStressTest);
-//    CPPUNIT_TEST(testCombinedXmlAndBinaryTimingWithNormalVsLowMem);
+    CPPUNIT_TEST(testCombinedXmlAndBinaryTimingWithNormalVsLowMem);
     CPPUNIT_TEST(testBinaryLowMemDeserializationForProfiling);
     CPPUNIT_TEST_SUITE_END();
 
@@ -4232,6 +4232,390 @@ public:
     }
 };
 
+// Base class with shared functionality for PTree timing tests
+class PTreeTimingTestBase : public CppUnit::TestFixture
+{
+protected:
+    struct TimingResults
+    {
+        double avgDeserializeTimeMs;
+        double avgSerializeTimeMs;
+        double totalDeserializeTimeMs;
+        double totalSerializeTimeMs;
+        const char *testName;
+        byte flags;
+    };
+
+    const char *getBinaryFilePath()
+    {
+        const char *envPath = getenv("DALI_TEST_BINARY_FILE");
+        constexpr const char *defaultPath = "~/HPCC-Platform/testing/unittests/dalisds1.bin.gz";
+        return envPath ? envPath : defaultPath;
+    }
+
+    const char *getXmlFilePath()
+    {
+        const char *envPath = getenv("DALI_TEST_XML_FILE");
+        constexpr const char *defaultPath = "~/HPCC-Platform/testing/unittests/dalisds1.xml.gz";
+        return envPath ? envPath : defaultPath;
+    }
+
+    const char *expandTilde(const char *path, StringBuffer &expanded)
+    {
+        if (!path || !path[0])
+            return path;
+
+        if (path[0] == '~' && (path[1] == '/' || path[1] == '\0'))
+        {
+            const char *home = getenv("HOME");
+            if (home)
+            {
+                expanded.append(home);
+                if (path[1] == '/')
+                    expanded.append(path + 1);
+                return expanded.str();
+            }
+        }
+        return path;
+    }
+
+    void readXmlFile(const char *filePath, StringBuffer &output)
+    {
+        StringBuffer expandedPath;
+        const char *actualPath = expandTilde(filePath, expandedPath);
+        if (!actualPath)
+            throw MakeStringException(-1, "XML file path is null");
+        Owned<IFile> xmlFile = createIFile(actualPath);
+        if (!xmlFile->exists())
+            throw MakeStringException(-1, "XML file \"%s\" does not exist", actualPath);
+
+        size32_t fileSize = (size32_t)xmlFile->size();
+        MemoryBuffer fileData;
+        Owned<IFileIO> fileIO = xmlFile->open(IFOread);
+        fileData.reserveTruncate(fileSize);
+        size32_t bytesRead = fileIO->read(0, fileSize, fileData.bufferBase());
+        fileData.setLength(bytesRead);
+
+        const char *ext = pathExtension(filePath);
+        if (ext && streq(ext, ".gz"))
+            gunzip((const byte *)fileData.toByteArray(), fileData.length(), output);
+        else
+            output.append(fileData.length(), fileData.toByteArray());
+    }
+
+    void createBinaryDataFromXml(const char *xmlFilePath, MemoryBuffer &binaryData)
+    {
+        StringBuffer xmlData;
+        try
+        {
+            readXmlFile(xmlFilePath, xmlData);
+        }
+        catch(IException *e)
+        {
+            throw;
+        }
+        Owned<IPropertyTree> tree = createPTreeFromXMLString(xmlData);
+        binaryData.clear();
+        Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(binaryData);
+        tree->serializeToStream(*out);
+        out->flush();
+    }
+
+    bool readBinaryFile(const char *filePath, MemoryBuffer &output)
+    {
+        StringBuffer expandedPath;
+        const char *actualPath = expandTilde(filePath, expandedPath);
+        if (!actualPath)
+            return false;
+        Owned<IFile> binaryFile = createIFile(actualPath);
+        if (!binaryFile->exists())
+            return false;
+
+        size32_t fileSize = (size32_t)binaryFile->size();
+        Owned<IFileIO> fileIO = binaryFile->open(IFOread);
+        output.reserveTruncate(fileSize);
+        size32_t bytesRead = fileIO->read(0, fileSize, output.bufferBase());
+        output.setLength(bytesRead);
+
+        const char *ext = pathExtension(actualPath);
+        if (ext && streq(ext, ".gz"))
+        {
+            StringBuffer tempOutput;
+            gunzip((const byte *)output.toByteArray(), output.length(), tempOutput);
+            output.clear();
+            output.append(tempOutput.length(), tempOutput.str());
+        }
+
+        return true;
+    }
+
+    TimingResults performBinaryTimingTestWithResults(const char *testName, const MemoryBuffer &binaryDataBuffer, int iterations, byte flags)
+    {
+        assertex(testName);
+        unsigned binaryDataLen = binaryDataBuffer.length();
+        assertex(binaryDataLen > 0);
+
+        CCycleTimer timer;
+        __uint64 totalDeserializeNs{0};
+        __uint64 totalSerializeNs{0};
+
+        MemoryBuffer streamBufferIn;
+        MemoryBuffer streamBufferOut;
+        for (int i = 0; i < iterations; i++)
+        {
+            streamBufferIn.clear();
+            streamBufferIn.append(binaryDataLen, binaryDataBuffer.toByteArray());
+            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(streamBufferIn);
+            timer.reset();
+            Owned<IPropertyTree> deserializedTree = createPTreeFromBinary(*in, flags);
+            __uint64 deserializeElapsedNs = timer.elapsedNs();
+            Owned<IPropertyTree> copyDeserializedTree = createPTreeFromIPT(deserializedTree);
+            totalDeserializeNs += deserializeElapsedNs;
+
+            streamBufferOut.clear();
+            Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(streamBufferOut);
+            timer.reset();
+            deserializedTree->serializeToStream(*out);
+            out->flush();
+            __uint64 serializeElapsedNs = timer.elapsedNs();
+            totalSerializeNs += serializeElapsedNs;
+
+            // Validation - serialized data matches
+            CPPUNIT_ASSERT_EQUAL(binaryDataLen, streamBufferOut.length());
+            CPPUNIT_ASSERT_EQUAL(streamBufferIn.length(), streamBufferOut.length());
+            CPPUNIT_ASSERT(areMatchingPTrees(copyDeserializedTree, deserializedTree));
+        }
+
+        TimingResults results;
+        results.avgDeserializeTimeMs = (totalDeserializeNs / iterations) / 1e6;
+        results.avgSerializeTimeMs = (totalSerializeNs / iterations) / 1e6;
+        results.totalDeserializeTimeMs = totalDeserializeNs / 1e6;
+        results.totalSerializeTimeMs = totalSerializeNs / 1e6;
+        results.testName = testName;
+        results.flags = flags;
+
+        return results;
+    }
+
+    TimingResults performXmlTimingTestWithResults(const char *testName, const char *xmlData, int iterations, byte flags)
+    {
+        assertex(testName);
+        assertex(xmlData);
+
+        CCycleTimer timer;
+        __uint64 totalDeserializeNs{0};
+        __uint64 totalSerializeNs{0};
+
+        for (int i = 0; i < iterations; i++)
+        {
+            timer.reset();
+            Owned<IPropertyTree> tree = createPTreeFromXMLString(xmlData, flags);
+            __uint64 deserializeElapsedNs = timer.elapsedNs();
+            totalDeserializeNs += deserializeElapsedNs;
+
+            timer.reset();
+            StringBuffer xmlOutput;
+            toXML(tree, xmlOutput);
+            __uint64 serializeElapsedNs = timer.elapsedNs();
+            totalSerializeNs += serializeElapsedNs;
+        }
+
+        TimingResults results;
+        results.avgDeserializeTimeMs = (totalDeserializeNs / iterations) / 1e6;
+        results.avgSerializeTimeMs = (totalSerializeNs / iterations) / 1e6;
+        results.totalDeserializeTimeMs = totalDeserializeNs / 1e6;
+        results.totalSerializeTimeMs = totalSerializeNs / 1e6;
+        results.testName = testName;
+        results.flags = flags;
+
+        return results;
+    }
+};
+
+// Separate test suite for XML-only timing tests
+class PTreeXmlTimingStressTest : public PTreeTimingTestBase
+{
+    CPPUNIT_TEST_SUITE(PTreeXmlTimingStressTest);
+    CPPUNIT_TEST(testXmlTimingWithNormalVsLowMem);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void testXmlTimingWithNormalVsLowMem()
+    {
+        constexpr const int iterations{10};
+
+        // Load XML data
+        StringBuffer xmlData;
+        readXmlFile(getXmlFilePath(), xmlData);
+        unsigned xmlDataLen = (unsigned)strlen(xmlData.str());
+
+        // Run XML timing tests
+        TimingResults xmlNormalResults = performXmlTimingTestWithResults("XML Normal", xmlData.str(), iterations, ipt_none);
+        TimingResults xmlLowMemResults = performXmlTimingTestWithResults("XML Low Memory", xmlData.str(), iterations, ipt_lowmem);
+
+        // Calculate differences
+        double lowMemDeserializeDiff = ((xmlLowMemResults.avgDeserializeTimeMs - xmlNormalResults.avgDeserializeTimeMs) / xmlNormalResults.avgDeserializeTimeMs) * 100;
+        double lowMemSerializeDiff = ((xmlLowMemResults.avgSerializeTimeMs - xmlNormalResults.avgSerializeTimeMs) / xmlNormalResults.avgSerializeTimeMs) * 100;
+
+        // Display results
+        fprintf(stdout, "\n=== XML TIMING COMPARISON TEST ===\n");
+        fprintf(stdout, "XML data size: %u bytes\n", xmlDataLen);
+        fprintf(stdout, "Iterations: %d\n", iterations);
+        fprintf(stdout, "┌──────────────────────┬─────────────────┬─────────────────┐\n");
+        fprintf(stdout, "│ Mode                 │ Avg Deserialize │ Avg Serialize   │\n");
+        fprintf(stdout, "│                      │ (ms)            │ (ms)            │\n");
+        fprintf(stdout, "├──────────────────────┼─────────────────┼─────────────────┤\n");
+        fprintf(stdout, "│ XML Normal           │ %15.6f │ %15.6f │\n",
+               xmlNormalResults.avgDeserializeTimeMs,
+               xmlNormalResults.avgSerializeTimeMs);
+        fprintf(stdout, "│ XML Low Memory       │ %15.6f │ %15.6f │\n",
+               xmlLowMemResults.avgDeserializeTimeMs,
+               xmlLowMemResults.avgSerializeTimeMs);
+        fprintf(stdout, "│ XML LowMem Diff      │ %+14.2f%% │ %+14.2f%% │\n",
+               lowMemDeserializeDiff,
+               lowMemSerializeDiff);
+        fprintf(stdout, "└──────────────────────┴─────────────────┴─────────────────┘\n");
+        fflush(stdout);
+    }
+};
+
+// Separate test suite for Binary-only timing tests
+class PTreeBinaryTimingStressTest : public PTreeTimingTestBase
+{
+    CPPUNIT_TEST_SUITE(PTreeBinaryTimingStressTest);
+    CPPUNIT_TEST(testBinaryTimingWithNormalVsLowMem);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void testBinaryTimingWithNormalVsLowMem()
+    {
+        constexpr const int iterations{10};
+
+        // Load Binary data
+        //  If the binary file does not exist then create it from the XML file
+        MemoryBuffer binaryData;
+        if (!readBinaryFile(getBinaryFilePath(), binaryData))
+            createBinaryDataFromXml(getXmlFilePath(), binaryData);
+        unsigned binaryDataLen = (unsigned)binaryData.length();
+
+        // Run Binary timing tests
+        TimingResults binaryNormalResults = performBinaryTimingTestWithResults("Binary Normal", binaryData, iterations, ipt_none);
+        TimingResults binaryLowMemResults = performBinaryTimingTestWithResults("Binary Low Memory", binaryData, iterations, ipt_lowmem);
+
+        // Calculate differences
+        double lowMemDeserializeDiff = ((binaryLowMemResults.avgDeserializeTimeMs - binaryNormalResults.avgDeserializeTimeMs) / binaryNormalResults.avgDeserializeTimeMs) * 100;
+        double lowMemSerializeDiff = ((binaryLowMemResults.avgSerializeTimeMs - binaryNormalResults.avgSerializeTimeMs) / binaryNormalResults.avgSerializeTimeMs) * 100;
+
+        // Display results
+        fprintf(stdout, "\n=== BINARY TIMING COMPARISON TEST ===\n");
+        fprintf(stdout, "Binary data size: %u bytes\n", binaryDataLen);
+        fprintf(stdout, "Iterations: %d\n", iterations);
+        fprintf(stdout, "┌──────────────────────┬─────────────────┬─────────────────┐\n");
+        fprintf(stdout, "│ Mode                 │ Avg Deserialize │ Avg Serialize   │\n");
+        fprintf(stdout, "│                      │ (ms)            │ (ms)            │\n");
+        fprintf(stdout, "├──────────────────────┼─────────────────┼─────────────────┤\n");
+        fprintf(stdout, "│ Binary Normal        │ %15.6f │ %15.6f │\n",
+               binaryNormalResults.avgDeserializeTimeMs,
+               binaryNormalResults.avgSerializeTimeMs);
+        fprintf(stdout, "│ Binary Low Memory    │ %15.6f │ %15.6f │\n",
+               binaryLowMemResults.avgDeserializeTimeMs,
+               binaryLowMemResults.avgSerializeTimeMs);
+        fprintf(stdout, "│ Binary LowMem Diff   │ %+14.2f%% │ %+14.2f%% │\n",
+               lowMemDeserializeDiff,
+               lowMemSerializeDiff);
+        fprintf(stdout, "└──────────────────────┴─────────────────┴─────────────────┘\n");
+        fflush(stdout);
+    }
+};
+
+// Keep the original combined test suite (now inherits from base)
+class PTreeCombinedTimingStressTest : public PTreeTimingTestBase
+{
+    CPPUNIT_TEST_SUITE(PTreeCombinedTimingStressTest);
+    CPPUNIT_TEST(testCombinedXmlAndBinaryTimingWithNormalVsLowMem);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void testCombinedXmlAndBinaryTimingWithNormalVsLowMem()
+    {
+        constexpr const int iterations{10};
+
+        // Load XML data
+        StringBuffer xmlData;
+        readXmlFile(getXmlFilePath(), xmlData);
+        unsigned xmlDataLen = (unsigned)strlen(xmlData.str());
+
+        // Load Binary data
+        //  If the binary file does not exist then create it from the XML file
+        MemoryBuffer binaryData;
+        if (!readBinaryFile(getBinaryFilePath(), binaryData))
+            createBinaryDataFromXml(getXmlFilePath(), binaryData);
+        unsigned binaryDataLen = (unsigned)binaryData.length();
+
+        // Run all timing tests
+        TimingResults xmlNormalResults = performXmlTimingTestWithResults("XML Normal", xmlData.str(), iterations, ipt_none);
+        TimingResults xmlLowMemResults = performXmlTimingTestWithResults("XML Low Memory", xmlData.str(), iterations, ipt_lowmem);
+        TimingResults binaryNormalResults = performBinaryTimingTestWithResults("Binary Normal", binaryData, iterations, ipt_none);
+        TimingResults binaryLowMemResults = performBinaryTimingTestWithResults("Binary Low Memory", binaryData, iterations, ipt_lowmem);
+
+        // Calculate all comparisons
+        double xmlLowMemDeserializeDiff = ((xmlLowMemResults.avgDeserializeTimeMs - xmlNormalResults.avgDeserializeTimeMs) / xmlNormalResults.avgDeserializeTimeMs) * 100;
+        double xmlLowMemSerializeDiff = ((xmlLowMemResults.avgSerializeTimeMs - xmlNormalResults.avgSerializeTimeMs) / xmlNormalResults.avgSerializeTimeMs) * 100;
+        double binaryLowMemDeserializeDiff = ((binaryLowMemResults.avgDeserializeTimeMs - binaryNormalResults.avgDeserializeTimeMs) / binaryNormalResults.avgDeserializeTimeMs) * 100;
+        double binaryLowMemSerializeDiff = ((binaryLowMemResults.avgSerializeTimeMs - binaryNormalResults.avgSerializeTimeMs) / binaryNormalResults.avgSerializeTimeMs) * 100;
+        double binaryVsXmlNormalDeserialize = ((binaryNormalResults.avgDeserializeTimeMs - xmlNormalResults.avgDeserializeTimeMs) / xmlNormalResults.avgDeserializeTimeMs) * 100;
+        double binaryVsXmlNormalSerialize = ((binaryNormalResults.avgSerializeTimeMs - xmlNormalResults.avgSerializeTimeMs) / xmlNormalResults.avgSerializeTimeMs) * 100;
+        double binaryVsXmlLowMemDeserialize = ((binaryLowMemResults.avgDeserializeTimeMs - xmlLowMemResults.avgDeserializeTimeMs) / xmlLowMemResults.avgDeserializeTimeMs) * 100;
+        double binaryVsXmlLowMemSerialize = ((binaryLowMemResults.avgSerializeTimeMs - xmlLowMemResults.avgSerializeTimeMs) / xmlLowMemResults.avgSerializeTimeMs) * 100;
+
+        // Display combined results
+        fprintf(stdout, "\n=== COMBINED XML & BINARY TIMING COMPARISON TEST ===\n");
+        fprintf(stdout, "XML data size: %u bytes\n", xmlDataLen);
+        fprintf(stdout, "Binary data size: %u bytes\n", binaryDataLen);
+        fprintf(stdout, "Iterations: %d\n", iterations);
+        fprintf(stdout, "┌──────────────────────┬─────────────────┬─────────────────┐\n");
+        fprintf(stdout, "│ Format & Mode        │ Avg Deserialize │ Avg Serialize   │\n");
+        fprintf(stdout, "│                      │ (ms)            │ (ms)            │\n");
+        fprintf(stdout, "├──────────────────────┼─────────────────┼─────────────────┤\n");
+        fprintf(stdout, "│ XML Normal           │ %15.6f │ %15.6f │\n",
+               xmlNormalResults.avgDeserializeTimeMs,
+               xmlNormalResults.avgSerializeTimeMs);
+        fprintf(stdout, "│ XML Low Memory       │ %15.6f │ %15.6f │\n",
+               xmlLowMemResults.avgDeserializeTimeMs,
+               xmlLowMemResults.avgSerializeTimeMs);
+        fprintf(stdout, "│ XML LowMem Diff      │ %+14.2f%% │ %+14.2f%% │\n",
+               xmlLowMemDeserializeDiff,
+               xmlLowMemSerializeDiff);
+        fprintf(stdout, "├──────────────────────┼─────────────────┼─────────────────┤\n");
+        fprintf(stdout, "│ Binary Normal        │ %15.6f │ %15.6f │\n",
+               binaryNormalResults.avgDeserializeTimeMs,
+               binaryNormalResults.avgSerializeTimeMs);
+        fprintf(stdout, "│ Binary Low Memory    │ %15.6f │ %15.6f │\n",
+               binaryLowMemResults.avgDeserializeTimeMs,
+               binaryLowMemResults.avgSerializeTimeMs);
+        fprintf(stdout, "│ Binary LowMem Diff   │ %+14.2f%% │ %+14.2f%% │\n",
+               binaryLowMemDeserializeDiff,
+               binaryLowMemSerializeDiff);
+        fprintf(stdout, "├──────────────────────┼─────────────────┼─────────────────┤\n");
+        fprintf(stdout, "│ Binary vs XML Normal │ %+14.2f%% │ %+14.2f%% │\n",
+               binaryVsXmlNormalDeserialize,
+               binaryVsXmlNormalSerialize);
+        fprintf(stdout, "│ Binary vs XML LowMem │ %+14.2f%% │ %+14.2f%% │\n",
+               binaryVsXmlLowMemDeserialize,
+               binaryVsXmlLowMemSerialize);
+        fprintf(stdout, "└──────────────────────┴─────────────────┴─────────────────┘\n");
+        fflush(stdout);
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(PTreeXmlTimingStressTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeXmlTimingStressTest, "PTreeXmlTimingStressTest");
+CPPUNIT_TEST_SUITE_REGISTRATION(PTreeBinaryTimingStressTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeBinaryTimingStressTest, "PTreeBinaryTimingStressTest");
+CPPUNIT_TEST_SUITE_REGISTRATION(PTreeCombinedTimingStressTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeCombinedTimingStressTest, "PTreeCombinedTimingStressTest");
+
+// Keep the original combined test name for backward compatibility
 CPPUNIT_TEST_SUITE_REGISTRATION(PTreeSerializationDeserializationXmlTimingStressTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeSerializationDeserializationXmlTimingStressTest, "PTreeSerializationDeserializationXmlTimingStressTest");
 
