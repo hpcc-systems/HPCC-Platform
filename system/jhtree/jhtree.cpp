@@ -1488,7 +1488,10 @@ CJHTreeNode *CKeyIndex::_createNode(const NodeHdr &nodeHdr) const
             UNIMPLEMENTED;
         case BlockCompression:
             assertex(nodeHdr.nodeType== NodeLeaf);    // Should only be using the new format for leaf nodes
-            return new CJHBlockCompressedSearchNode();
+            if (keyHdr->isVariable())
+                return new CJHBlockCompressedVarNode();
+            else
+                return new CJHBlockCompressedSearchNode();
         default:
             throwUnexpected();
         }
