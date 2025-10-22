@@ -1096,10 +1096,12 @@ public:
 
                 resolvedFiles.reset(new Owned<const IResolvedFile> [filenames.size()]);
                 stat_type gatherNs = resolveTimer.elapsedNs();
+                RelaxedAtomic<unsigned> numActiveIndexes{0};
+                RelaxedAtomic<unsigned> numIndexesOpened{0};
 
                 // Now resolve the filenames in parallel - on a system with remote files most of the time is spent retrieving the file sizes.
                 // The files will be added to the cache - so that the subsequent query load will match immediately
-                asyncFor(filenames.size(), numResolveFilenameThreads, [this, &filenames, &resolvedFiles, &packages ](unsigned i)
+                asyncFor(filenames.size(), numResolveFilenameThreads, [this, &filenames, &resolvedFiles, &packages, &numIndexesOpened, &numActiveIndexes](unsigned i)
                 {
                     try
                     {
@@ -1114,10 +1116,15 @@ public:
                         resolvedFiles[i].setown(resolved);
 
                         //MORE: Would this be better as a separate async loop?
-                        if (!lazyOpen && resolved && resolved->isKey())
+                        // This code does not check lazyOpen - because the purpose of that flag is to avoid opening files that are not needed.
+                        // this code checks that the package is active - so the files are needed.
+                        unsigned numOpened = 0;
+                        unsigned numActive = 0;
+                        if (resolved && resolved->isKey())
                         {
                             if (preopenActiveIndexes && packages.isActive())
                             {
+                                numActive++;
                                 Owned<IKeyArray> keySet = resolved->getKeyArray(isOpt, channelNo);
                                 for (unsigned partNo = 0; partNo < keySet->length(); partNo++)
                                 {
@@ -1127,11 +1134,16 @@ public:
                                         unsigned fileNo = 0;
                                         IKeyIndex *thisKey = thisBase->queryPart(fileNo);
                                         if (thisKey)
+                                        {
                                             thisKey->ensureReady();
+                                            numOpened++;
+                                        }
                                     }
                                 }
                             }
                         }
+                        numIndexesOpened.add(numOpened);
+                        numActiveIndexes.add(numActive);
                     }
                     catch (IException *E)
                     {
@@ -1141,7 +1153,7 @@ public:
 
 
                 stat_type resolveNs = resolveTimer.elapsedNs();
-                PROGLOG("Resolve %u files on %u threads - gather %lluns, resolve %lluns", (unsigned)filenames.size(), numResolveFilenameThreads, gatherNs, resolveNs);
+                PROGLOG("Resolve %u files %u active %u parts opened on %u threads - gather %lluns, resolve %lluns", (unsigned)filenames.size(), numActiveIndexes.load(), numIndexesOpened.load(), numResolveFilenameThreads, gatherNs, resolveNs);
             }
 
             asyncFor(numQueries, parallelQueryLoadThreads, [this, querySet, &packages, &queryHashes, &queryDlls, forceRetry](unsigned i)
