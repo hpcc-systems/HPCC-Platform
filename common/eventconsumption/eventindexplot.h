@@ -67,9 +67,9 @@ protected:
 
     using LinkSpecs = std::vector<LinkSpec>;
 
-    // Ordered oollection of iterations applicable to one event traversal. Contents will be:
+    // Ordered collection of iterations applicable to one event traversal. Contents will be:
     // 1. optional plot iterations applicable to every traversal
-    // 2. Y-axis iterations (#d plots only)
+    // 2. Y-axis iterations (3D plots only)
     // 3. X-axis iterations
     using LinkChanges = std::vector<const Iteration*>;
 

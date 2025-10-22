@@ -172,7 +172,7 @@ void CIndexPlotOp::setOpConfig(const IPropertyTree& _config)
 
     valueSelector = parseValueSelector(command->queryProp("@valueSelector"));
     if (ValueSelector::Unknown == valueSelector)
-        throw makeStringExceptionV(0, "invalid (or missing) value selector plot value selector '%s'", command->queryProp("valueSelector"));
+        throw makeStringExceptionV(0, "invalid (or missing) plot value selector '%s'", command->queryProp("valueSelector"));
 }
 
 CIndexPlotOp::ValueSelector CIndexPlotOp::parseValueSelector(const char* selector)
@@ -227,7 +227,8 @@ void CIndexPlotOp::parseIterations(IPropertyTreeIterator* iterIter, Iterations& 
             delta.value.set(deltaTree.queryProp("@value"));
             iteration.deltas.push_back(delta);
         }
-
+        if (iteration.deltas.empty())
+            throw makeStringExceptionV(0, "Iteration %s must have at least one delta", iteration.name.get());
         iterations.push_back(iteration);
     }
 }
@@ -340,7 +341,7 @@ bool CIndexPlotOp::doXAxis(LinkChanges& linkChanges, size_t yAxisIdx)
             chain.setown(link.getClear());
         }
 
-        // visit the input events to procuce one plot value
+        // visit the input events to produce one plot value
         cellValue = 0;
         if (!traverseEvents(inputPath, *chain))
             return false;
@@ -353,7 +354,7 @@ bool CIndexPlotOp::doXAxis(LinkChanges& linkChanges, size_t yAxisIdx)
         }
 
         // output the cell value
-        outputCell(cellData.append(cellValue), (is3D || cellIdx % xAxis.size() == 0));
+        outputCell(cellData.append(cellValue), (is3D || cellIdx % xAxis.size() != 0));
 
         // prepare for next iteration
         cellIdx++;

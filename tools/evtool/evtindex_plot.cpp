@@ -83,7 +83,7 @@ R"!!!(--config=<filename> [<filename>]
     virtual void usageSynopsis(IBufferedSerialOutputStream& out) override
     {
         constexpr const char* usageStr = R"!!!(
-Generate 2D and 3D plot data from index events using the specifiedconfiguration.
+Generate 2D and 3D plot data from index events using the specified configuration.
 )!!!";
         size32_t usageStrLength = size32_t(strlen(usageStr));
         out.put(usageStrLength, usageStr);

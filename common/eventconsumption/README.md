@@ -296,7 +296,7 @@ Produces one or more 2D or 3D chart data sets from an input event data file usin
 
 A 2D chart data set accepts model modifications for the X-axis. A 3D chart data set accepts model modifications for the Y-axis. The value of each data set cell is computed by traversing the input file after applying cell-specific configuration changes to the model. A 2D chart with 5 X values will traverse the input file 5 times. A 3D chart with 5 X values and 6 Y values will traverse the input file 30 times.
 
-Most plot options are specified using a property tree. This includes optional event filtering and an index events model. THe inherited filter and model handling is suppressed. The configuration format is:
+Most plot options are specified using a property tree. This includes optional event filtering and an index events model. The inherited filter and model handling is suppressed. The configuration format is:
 
     @name
 
@@ -309,7 +309,7 @@ Optional file path to a binary event file. Event input is required, and may be s
     @valueSelector
 
 Required designation of which value will be accumulated for each plot. Must be one of these case insensitive choices:
-- readTimme: the ReadTime attribute from IndexLoad events is accumulated
+- readTime: the ReadTime attribute from IndexLoad events is accumulated
 - expandTime: the ExpandTime attribute from IndexLoad events is accumulated
 - elapsedTime: the sum of the ReadTime and ExpandTime attributes from IndexLoad events is accumulated
 - cacheMisses: the number of IndexCacheMiss events is counted
@@ -331,7 +331,7 @@ A link configuration node is identified by combining the two values using a dott
 
     plot/
 
-Optional and repeatable element where each instance descibes link configuration changes to be made for every value in a plot. This enables one invocation of the operation to produce multiple chart data sets, each showing the same data relationship but with different modeled pre-conditions. While a 2D chart configuration could be converted to a 3D chart to show the same data in one chart, a 3D chart cannot add another axis.
+Optional and repeatable element where each instance describes link configuration changes to be made for every value in a plot. This enables one invocation of the operation to produce multiple chart data sets, each showing the same data relationship but with different modeled pre-conditions. While a 2D chart configuration could be converted to a 3D chart to show the same data in one chart, a 3D chart cannot add another axis.
 
     plot/
         delta/
@@ -381,7 +381,7 @@ Optional human readable description of the changes.
         iteration/
             delta/
 
-Required and repeatable element where each instance descibes a single link configuration change to be made for each cell in a column.
+Required and repeatable element where each instance describes a single link configuration change to be made for each cell in a column.
 
     x-axis/
         iteration/
@@ -427,7 +427,7 @@ Optional human readable description of the changes.
         iteration/
             delta/
 
-Required and repeatable element where each instance descibes a single link configuration change to be made for each cell in a row.
+Required and repeatable element where each instance describes a single link configuration change to be made for each cell in a row.
 
     y-axis/
         iteration/
