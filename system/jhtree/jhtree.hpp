@@ -108,6 +108,7 @@ interface jhtree_decl IKeyIndex : public IKeyIndexBase
     virtual offset_t queryFirstBranchOffset() = 0;
     virtual const BloomFilter * queryBloom(unsigned i) const = 0;
     virtual IKeyIndexPrewarmer * createPrewarmer() = 0;
+    virtual void ensureReady() = 0; // Ensure the index is loaded and rady for
 };
 
 interface IKeyIndexPrewarmer : extends IInterface
