@@ -319,6 +319,9 @@
             <xsl:attribute name="disableDefaultUser">
               <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]/@disableDefaultUser"/>
             </xsl:attribute>
+            <xsl:attribute name="hpccAdminSecretKey">
+              <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]/@hpccAdminSecretKey"/>
+            </xsl:attribute>
             <xsl:variable name="ldapServerNode" select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]"/>
             <xsl:if test="not($ldapServerNode)">
               <xsl:message terminate="yes">
