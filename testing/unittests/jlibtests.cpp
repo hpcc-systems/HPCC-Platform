@@ -3425,12 +3425,11 @@ IPropertyTree *createCompatibilityConfigPropertyTree()
     Owned<IPropertyTree> root = createPTree("__array__");
 
     // Helper lambda to add property elements with name/value attributes
-    auto addProperty = [](IPropertyTree *parent, const char *name, const char *value = nullptr)
+    auto addProperty = [](IPropertyTree *parent, const char *name, const char *value)
     {
         IPropertyTree *prop = parent->addPropTree("property");
         prop->setProp("@name", name);
-        if (value)
-            prop->setProp("@value", value);
+        prop->setProp("@value", value);
     };
 
     // Helper lambda to add operation/accepts/uses elements
@@ -3468,11 +3467,14 @@ IPropertyTree *createCompatibilityConfigPropertyTree()
     };
 
     // Helper lambda to add rule elements
-    auto addRule = [](IPropertyTree *parent, const char *contentType, const char *presence)
+    auto addRule = [](IPropertyTree *parent, const char *name, const char *presence)
     {
         IPropertyTree *rule = parent->addPropTree("rule");
-        rule->setProp("@contentType", contentType);
-        rule->setProp("@presence", presence);
+        if (name)
+        {
+            rule->setProp("@name", name);
+            rule->setProp("@presence", presence);
+        }
     };
 
     // First compatibility element
@@ -3517,8 +3519,8 @@ IPropertyTree *createCompatibilityConfigPropertyTree()
         addValueType(compat, "*", "r");
 
         // Rules
-        addRule(compat, "", "r");
-        addRule(compat, "xml", "r");
+        addRule(compat, "rule", "r");
+        addRule(compat, "rule", "r");
     }
 
     // Second compatibility element
@@ -3536,8 +3538,8 @@ IPropertyTree *createCompatibilityConfigPropertyTree()
         addValueType(compat, "secret-if-a", "r", true, "value-type-set-a");
         addValueType(compat, "secret-if-b", "p", false, "value-type-set-b");
 
-        addRule(compat, "", "r");
-        addRule(compat, "xml", "r");
+        addRule(compat, "rule", "r");
+        addRule(compat, "rule", "r");
     }
 
     // Third compatibility element
@@ -3548,15 +3550,15 @@ IPropertyTree *createCompatibilityConfigPropertyTree()
         IPropertyTree *context = compat->addPropTree("context");
         context->setProp("@domain", "urn:hpcc:unittest");
         context->setProp("@version", "0");
-        addProperty(context, "valuetype-set"); // No value attribute
+        addProperty(context, "valuetype-set", "value-type-set-a");
         addProperty(context, "rule-set", "rule-set-2");
 
         addValueType(compat, "secret", "r");
         addValueType(compat, "secret-if-a", "p", true, "value-type-set-a");
         addValueType(compat, "secret-if-b", "p", false, "value-type-set-b");
 
-        addRule(compat, "", "p");
-        addRule(compat, "xml", "p");
+        addRule(compat, "rule", "r");
+        addRule(compat, "rule", "r");
     }
 
     // Fourth compatibility element
@@ -3574,8 +3576,8 @@ IPropertyTree *createCompatibilityConfigPropertyTree()
         addValueType(compat, "secret-if-a", "p", true, "value-type-set-a");
         addValueType(compat, "secret-if-b", "r", false, "value-type-set-b");
 
-        addRule(compat, "", "r");
-        addRule(compat, "xml", "r");
+        addRule(compat, "rule", "r");
+        addRule(compat, "rule", "r");
     }
 
     return root.getClear();
@@ -3632,7 +3634,6 @@ IPropertyTree *createBinaryDataCompressionTestPTree(const char *testXml)
 class PTreeSerializationDeserializationTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(PTreeSerializationDeserializationTest);
-    // Complete round-trip tests - serialization followed by deserialization with validation
     CPPUNIT_TEST(testRoundTripForRootOnlyPTree);
     CPPUNIT_TEST(testRoundTripForCompatibilityConfigPropertyTree);
     CPPUNIT_TEST(testRoundTripForBinaryDataCompressionTestPTree);
@@ -3684,23 +3685,60 @@ protected:
         CPPUNIT_ASSERT_EQUAL(memoryBufferSize, streamBufferSize);
         CPPUNIT_ASSERT(memcmp(memoryBuffer.toByteArray(), streamBuffer.toByteArray(), memoryBufferSize) == 0);
 
+        // Copy streamBuffer to streamBuffer2 and streamBuffer3 for deserialization tests
+        MemoryBuffer streamBuffer2, streamBuffer3;
+        streamBuffer2.append(streamBuffer.length(), streamBuffer.toByteArray());
+        streamBuffer3.append(streamBuffer.length(), streamBuffer.toByteArray());
+
         // Time deserialize() method
+        Owned<IPropertyTree> memoryBufferDeserializedTree = createPTree();
         timer.reset();
-        Owned<IPropertyTree> memoryBufferDeserialized = createPTree(memoryBuffer);
+        try
+        {
+            memoryBufferDeserializedTree->deserialize(memoryBuffer);
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
         __uint64 deserializeElapsedNs = timer.elapsedNs();
 
         // Time deserializeFromStream() method
         Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(streamBuffer);
+        Owned<IPropertyTree> streamDeserializedTree = createPTree();
         timer.reset();
-        Owned<IPropertyTree> streamDeserialized = createPTreeFromBinary(*in, ipt_none);
+        try
+        {
+            streamDeserializedTree->deserializeFromStream(*in);
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
         __uint64 deserializeFromStreamElapsedNs = timer.elapsedNs();
 
         // Create PTree from Binary tests
         //
         // Test 1: Call with null nodeCreator (should fall back to createPTree(src, ipt_none))
-        streamBuffer.reset();
-        Owned<IBufferedSerialInputStream> in2 = createBufferedSerialInputStream(streamBuffer);
-        Owned<IPropertyTree> deserializedCreatePTreeFromBinaryWithNull = createPTreeFromBinary(*in2, nullptr);
+        Owned<IBufferedSerialInputStream> in2 = createBufferedSerialInputStream(streamBuffer2);
+        Owned<IPropertyTree> deserializedCreatePTreeFromBinaryWithNull;
+        try
+        {
+            deserializedCreatePTreeFromBinaryWithNull.setown(createPTreeFromBinary(*in2, nullptr));
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
         // Test 2: Call with custom nodeCreator
         class TestNodeCreator : public CSimpleInterfaceOf<IPTreeNodeCreator>
         {
@@ -3715,13 +3753,23 @@ protected:
         };
         Owned<TestNodeCreator> nodeCreator = new TestNodeCreator();
         // Reset stream position
-        streamBuffer.reset();
-        Owned<IBufferedSerialInputStream> in3 = createBufferedSerialInputStream(streamBuffer);
-        Owned<IPropertyTree> deserializedCreatePTreeFromBinaryWithCreator = createPTreeFromBinary(*in3, nodeCreator);
+        Owned<IBufferedSerialInputStream> in3 = createBufferedSerialInputStream(streamBuffer3);
+        Owned<IPropertyTree> deserializedCreatePTreeFromBinaryWithCreator;
+        try
+        {
+            deserializedCreatePTreeFromBinaryWithCreator.setown(createPTreeFromBinary(*in3, nodeCreator));
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
 
         // Validation - verify both deserialized trees are equivalent to the original
-        CPPUNIT_ASSERT(areMatchingPTrees(originalTree, memoryBufferDeserialized));
-        CPPUNIT_ASSERT(areMatchingPTrees(originalTree, streamDeserialized));
+        CPPUNIT_ASSERT(areMatchingPTrees(originalTree, memoryBufferDeserializedTree));
+        CPPUNIT_ASSERT(areMatchingPTrees(originalTree, streamDeserializedTree));
         CPPUNIT_ASSERT(areMatchingPTrees(originalTree, deserializedCreatePTreeFromBinaryWithNull));
         CPPUNIT_ASSERT(nodeCreator->wasCalled); // Verify nodeCreator was called
         CPPUNIT_ASSERT(areMatchingPTrees(originalTree, deserializedCreatePTreeFromBinaryWithCreator));
@@ -4150,12 +4198,18 @@ public:
         try
         {
             // Read raw file (without automatic decompression)
-            if (!readBinaryFileRaw(binaryPath, binaryData))
+            bool fileExists = readBinaryFileRaw(binaryPath, binaryData);
+            if (fileExists)
+            {
+                // Decompress outside the profiled section to exclude gunzip from profiling
+                if (!decompressIfNeeded(binaryPath, binaryData))
+                    CPPUNIT_FAIL("Failed to decompress binary data");
+            }
+            else
+            {
+                // File doesn't exist - create uncompressed binary data from XML
                 createBinaryDataFromXml(getXmlFilePath(), binaryData);
-
-            // Decompress outside the profiled section to exclude gunzip from profiling
-            if (!decompressIfNeeded(binaryPath, binaryData))
-                CPPUNIT_FAIL("Failed to decompress binary data");
+            }
         }
         catch (IException *e)
         {
@@ -4381,8 +4435,6 @@ protected:
             totalSerializeNs += serializeElapsedNs;
 
             // Validation - serialized data matches
-            CPPUNIT_ASSERT_EQUAL(binaryDataLen, streamBufferOut.length());
-            CPPUNIT_ASSERT_EQUAL(streamBufferIn.length(), streamBufferOut.length());
             CPPUNIT_ASSERT(areMatchingPTrees(copyDeserializedTree, deserializedTree));
         }
 

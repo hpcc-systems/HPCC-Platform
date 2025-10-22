@@ -568,6 +568,82 @@ const char * peekStringList(std::vector<size32_t> & matchOffsets, IBufferedSeria
     }
 }
 
+const char * peekAttributeStringList(std::vector<size32_t> & matches, IBufferedSerialInputStream & in, size32_t & len)
+{
+    size32_t scanned = 0;
+    size32_t startNext = 0;
+    for (;;)
+    {
+        size32_t got;
+        const char * start = (const char *)in.peek(scanned+1,got);
+        if (got <= scanned)
+        {
+            len = scanned;
+            if (startNext == scanned)
+            {
+                //End of file, but the last string was null terminated...
+                return start;
+            }
+            return nullptr;
+        }
+
+        for (size32_t offset = scanned; offset < got; offset++)
+        {
+            char next = start[offset];
+            if (!next)
+            {
+                if (offset == startNext)
+                {
+                    // Found an empty string or a null terminator
+                    bool moreData = false;
+                    // Check if there's more data available
+                    if (offset + 1 < got - 1)
+                    {
+                        bool currentExpectedDataIsValue = matches.size() % 2 != 0;
+                        if (currentExpectedDataIsValue)
+                        {
+                            // Value is empty string so we next expect Name or null terminator
+                            switch (start[offset + 1])
+                            {
+                            case '\0':
+                                moreData = true; // Process the empty string
+                                break;
+                            case '@':
+                                if (offset + 2 < got - 1)
+                                    if (isValidXPathStartChr(start[offset + 2]))
+                                        moreData = true; // Process a valid name
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            // Name is empty string - not allowed!
+                        }
+                    }
+                    if (moreData)
+                    {
+                        // More data available - add empty string and continue
+                        matches.push_back(startNext);
+                        startNext = offset + 1;
+                    }
+                    else
+                    {
+                        // No more data in current buffer - treat as null terminator
+                        len = offset + 1;
+                        return start;
+                    }
+                }
+                else
+                {
+                    matches.push_back(startNext);
+                    startNext = offset + 1;
+                }
+            }
+        }
+        scanned = got;
+    }
+}
+
 //---------------------------------------------------------------------------
 
 class CFileSerialInputStream final : public CInterfaceOf<ISerialInputStream>
