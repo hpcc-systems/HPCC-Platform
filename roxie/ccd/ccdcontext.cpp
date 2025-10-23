@@ -3972,7 +3972,7 @@ public:
             if (targetClusterType==RoxieCluster)
             {
                 if (!streq(oldCluster, newCluster))
-                    throw MakeStringException(-1, "Error - cannot switch cluster if not targetting thor jobs");
+                    throw MakeStringException(-1, "Error - cannot switch cluster if targeting roxie");
             }
             clusterNames.append(oldCluster);
             WorkunitUpdate wu = updateWorkUnit();

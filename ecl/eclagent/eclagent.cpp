@@ -1584,6 +1584,11 @@ void EclAgent::selectCluster(const char *newCluster)
         if (!streq(oldCluster, newCluster) && !wuRead->getDebugValueBool("usingClusterHopping", false))
             throw MakeStringException(-1, "Error - cannot switch cluster in hthor jobs");
     }
+    else if (getClusterType(clusterType) == RoxieCluster)
+    {
+        if (!streq(oldCluster, newCluster))
+            throw MakeStringException(-1, "Error - cannot switch cluster in roxie jobs");
+    }
     if (!streq(oldCluster, newCluster))
     {
         WorkunitUpdate wu = updateWorkUnit();
