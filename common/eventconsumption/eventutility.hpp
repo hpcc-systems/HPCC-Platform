@@ -67,7 +67,7 @@ inline bool operator&(StrToBytesFlags a, StrToBytesFlags b)
  * @return Converted size in bytes, or max SizeType value on error (if ThrowOnError not set)
  * @throws makeStringException on invalid input, negative values, or overflow (if ThrowOnError set)
  */
-template<typename SizeType = size_t>
+template<typename SizeType = __uint64>
 SizeType strToBytes(const char* str, StrToBytesFlags flags = StrToBytesFlags::Default)
 {
     constexpr SizeType errorValue = std::numeric_limits<SizeType>::max();
@@ -92,7 +92,7 @@ SizeType strToBytes(const char* str, StrToBytesFlags flags = StrToBytesFlags::De
 
     // Pre-calculated multipliers for efficiency (avoids runtime calculations)
     // Index: 0=KB, 1=MB, 2=GB, 3=TB, 4=PB, 5=EB, 6=ZB (Bytes uses default multiplier value of 1)
-    static constexpr size_t binaryMultipliers[] = {
+    static constexpr __uint64 binaryMultipliers[] = {
         1024ULL,                                    // KB
         1024ULL * 1024,                            // MB
         1024ULL * 1024 * 1024,                     // GB
@@ -101,7 +101,7 @@ SizeType strToBytes(const char* str, StrToBytesFlags flags = StrToBytesFlags::De
         1024ULL * 1024 * 1024 * 1024 * 1024 * 1024, // EB
         1024ULL * 1024 * 1024 * 1024 * 1024 * 1024 * 1024 // ZB
     };
-    static constexpr size_t decimalMultipliers[] = {
+    static constexpr __uint64 decimalMultipliers[] = {
         1000ULL,                                    // KB
         1000ULL * 1000,                            // MB
         1000ULL * 1000 * 1000,                     // GB
@@ -111,7 +111,7 @@ SizeType strToBytes(const char* str, StrToBytesFlags flags = StrToBytesFlags::De
         1000ULL * 1000 * 1000 * 1000 * 1000 * 1000 * 1000 // ZB
     };
     bool useBinaryUnits = flags & StrToBytesFlags::UseBinaryUnits;
-    size_t multiplier = 1;
+    __uint64 multiplier = 1;
 
     // Helper function to check for whitespace only
     // Uses error handling based on flags
@@ -128,7 +128,7 @@ SizeType strToBytes(const char* str, StrToBytesFlags flags = StrToBytesFlags::De
     // Helper function to parse unit suffix and return appropriate multiplier
     // Supports 'B'/'iB' suffix, treats "K" and "KB" as synonyms
     // Returns 0 on error if exceptions disabled
-    auto getUnitMultiplier = [&](const char* ptr, size_t unitIndex) -> size_t {
+    auto getUnitMultiplier = [&](const char* ptr, size_t unitIndex) -> __uint64 {
         bool explicitBinary = false;  // Found 'i' suffix (KiB, MiB, etc.)
 
         if (toupper(*ptr) == 'I') {
@@ -145,7 +145,7 @@ SizeType strToBytes(const char* str, StrToBytesFlags flags = StrToBytesFlags::De
         // Determine which multiplier set to use
         bool shouldUseBinary = explicitBinary || useBinaryUnits;
 
-        const size_t* unitMultipliers = shouldUseBinary ? binaryMultipliers : decimalMultipliers;
+        const __uint64* unitMultipliers = shouldUseBinary ? binaryMultipliers : decimalMultipliers;
         return unitMultipliers[unitIndex];
     };
 

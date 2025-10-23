@@ -330,7 +330,7 @@ bool CIndexPlotOp::doXAxis(LinkChanges& linkChanges, size_t yAxisIdx)
         chain.set(this);
         for (const LinkSpec& linkSpec : links)
         {
-            const IPropertyTree& linkTree = *(linkSpec.modified ? linkSpec.modified : linkSpec.original);
+            const IPropertyTree& linkTree = (linkSpec.modified ? *linkSpec.modified : *linkSpec.original);
             const char* kind = linkTree.queryProp("@kind");
             Owned<IEventVisitationLink> link;
             if (strieq(kind, "event-filter"))
