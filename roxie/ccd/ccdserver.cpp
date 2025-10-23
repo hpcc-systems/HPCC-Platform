@@ -1251,7 +1251,7 @@ public:
 
     virtual void gatherStatistics(IStatisticGatherer * statsBuilder) const override
     {
-        if (!factory)
+        if (!factory || numStarts == 0)
             return;
 
         //Collate the stats for this activity from various different sources.
