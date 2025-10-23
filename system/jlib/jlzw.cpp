@@ -2248,6 +2248,8 @@ class CCompressedFileReader final : public CCompressedFileBase
                         dst += rs;
                     }
                 }
+                startChunkExpandedPos = startBlockExpandedPos;
+                nextChunkExpandedPos = startBlockExpandedPos + fullBlockSize;
             }
             else { // lzw or fastlz or lz4
                 assertex(expander.get());
