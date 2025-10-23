@@ -111,6 +111,47 @@ static const SmartStepExtra dummySmartStepExtra(SSEFreadAhead, NULL);
 
 //=================================================================================
 
+#define NEW_RESTARTABLE_THREAD
+#ifdef NEW_RESTARTABLE_THREAD
+class RestartableThread : public CInterface, public IThreaded
+{
+    CThreadedPersistent thread;
+    CriticalSection crit;
+    StringAttr name;
+public:
+    RestartableThread(const char *_name) : thread(_name, this)
+    {
+    }
+
+    virtual void start(const char *namePrefix, bool inheritThreadContext) final
+    {
+        thread.start(inheritThreadContext);
+        #if 0
+        StringBuffer s(namePrefix);
+        s.append(name);
+        {
+            CriticalBlock b(crit);
+            assertex(!thread);
+            thread.setown(new MyThread(this, s));
+            thread->start();
+        }
+        #endif
+    }
+
+    virtual void join() final
+    {
+        thread.join(INFINITE, false);
+    }
+
+    virtual void threadmain() override
+    {
+        run();
+    }
+
+    virtual int run() = 0;
+
+};
+#else
 class RestartableThread : public CInterface
 {
     class MyThread : public Thread
@@ -159,9 +200,8 @@ public:
     }
 
     virtual int run() = 0;
-
-};
-
+}
+#endif
 //================================================================================
 
 //The following don't link their arguments because that creates a circular reference
@@ -28478,7 +28518,7 @@ public:
 #ifdef PARALLEL_EXECUTE
         else if (!probeManager && !graphDefinition.isSequential() && sinkMode != SinkMode::Sequential)
         {
-            if (sinkMode == SinkMode::ParallelPersistent || sinkMode == SinkMode::AutomaticPersistent)
+            if (sinkMode == SinkMode::ParallelPersistent || sinkMode == SinkMode::AutomaticPersistent || true)
             {
                 if (!threads.ordinality())
                 {
