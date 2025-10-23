@@ -3070,39 +3070,46 @@ void PTree::deserializeFromStream(IBufferedSerialInputStream &src)
     }
 }
 
+static std::vector<size32_t> attrStringOffsets = []()
+{
+    std::vector<size32_t> vec;
+    // Reserve capacity to reduce allocations
+    vec.reserve(50);
+    return vec;
+}();
+
 void PTree::deserializeSelf(IBufferedSerialInputStream &src)
 {
-    size32_t len{0};
-    const char *name = queryZeroTerminatedString(src, len);
-    if (len == 0)
+    size32_t skipLen{0};
+    const char *name = queryZeroTerminatedString(src, skipLen);
+    if (skipLen == 0)
         throwUnexpectedX("PTree deserialization error: end of stream, expected name");
     setName(name);
-    src.skip(len + 1); // Skip over name and null terminator
+    src.skip(skipLen + 1); // Skip over name and null terminator
 
     read(src, flags);
 
     // Read attributes until we encounter a zero byte (attribute list terminator)
-    for (;;)
+    attrStringOffsets.clear();
+    const char * base = peekAttributeStringList(attrStringOffsets, src, skipLen);
+    if (base) // there is at least one attribute to process
     {
-        NextByteStatus status = isNextByteZero(src);
-        if (status == NextByteStatus::nextByteIsZero)
-        {
-            src.skip(1); // Skip over null terminator.
-            break;
-        }
-        if (status == NextByteStatus::endOfStream)
-            throwUnexpectedX("PTree deserialization error: end of stream, expected attribute name");
-
-        // NextByteStatus::nextByteIsNonZero - read the attribute key-value pair
-        std::pair<const char *, const char *> attrPair = peekKeyValuePair(src, len);
-        if (attrPair.second == nullptr)
+        size_t numStringOffsets = attrStringOffsets.size();
+        if (numStringOffsets % 2 != 0)
             throwUnexpectedX("PTree deserialization error: end of stream, expected attribute value");
 
         constexpr bool attributeNameNotEncoded = false; // Deserialized attribute name is in its original unencoded form
-        setAttribute(attrPair.first, attrPair.second, attributeNameNotEncoded);
+        for (size_t i = 0; i < numStringOffsets; i += 2)
+        {
+            const char *attrName = base + attrStringOffsets[i];
+            const char *attrValue = base + attrStringOffsets[i + 1];
+            setAttribute(attrName, attrValue, attributeNameNotEncoded);
+        }
 
-        src.skip(len + 1); // +1 to skip over second null terminator.
+        src.skip(skipLen); // Skip over all attributes and the terminator
     }
+    else
+        throwUnexpectedX("PTree deserialization error: end of stream, expected attribute name");
 
     if (value)
         delete value;
