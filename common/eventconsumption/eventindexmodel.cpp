@@ -16,14 +16,14 @@
 ############################################################################## */
 
 #include "eventindexmodel.hpp"
+#include "eventutility.hpp"
 #include <vector>
 
 void IndexMRUCache::configure(const IPropertyTree &config)
 {
-    // MORE: ESP logging defines two variations of parsing a size string consisting of a number
-    // followed by a unit speifier (e.g., 'M' for megabytes). Consider borrowing one to make this
-    // property more flexible.
-    capacity = __uint64(config.getPropInt64("@cacheCapacity", capacity));
+    const char* capacityStr = config.queryProp("@cacheCapacity");
+    if (!isEmptyString(capacityStr))
+        capacity = strToBytes<__uint64>(capacityStr, StrToBytesFlags::ThrowOnError);
 }
 
 bool IndexMRUCache::exists(const IndexHashKey &key)
@@ -460,7 +460,7 @@ link:
 - kind: index-events
   storage:
     cacheReadTime: 100
-    cacheCapacity: 8192
+    cacheCapacity: 8kib
     plane:
     - name: a
       readTime: 500
@@ -563,7 +563,7 @@ expect:
         constexpr const char *testData = R"!!!(
             <test>
                 <link kind="index-events">
-                    <storage cacheReadTime="100" cacheCapacity="16384">
+                    <storage cacheReadTime="100" cacheCapacity="16 KiB">
                         <plane name="a" readTime="500"/>
                     </storage>
                 </link>
@@ -866,7 +866,7 @@ expect:
                         <plane name="a" readTime="500"/>
                     </storage>
                     <memory>
-                        <node kind="0" cacheCapacity="1024000"/>
+                        <node kind="0" cacheCapacity=" 1000 Kib "/>
                         <observed FileId="1" FileOffset="0" NodeKind="0" InMemorySize="30000" ExpandTime="2500"/>
                     </memory>
                 </link>
@@ -915,7 +915,7 @@ expect:
                         <plane name="a" readTime="500"/>
                     </storage>
                     <memory>
-                        <node kind="0" cacheCapacity="1024000"/>
+                        <node kind="0" cacheCapacity=" 1024 kb"/>
                         <observed FileId="1" FileOffset="0" NodeKind="0" InMemorySize="30000" ExpandTime="2500"/>
                     </memory>
                 </link>
@@ -940,7 +940,7 @@ expect:
                         <plane name="a" readTime="500"/>
                     </storage>
                     <memory>
-                        <node kind="0" cacheCapacity="60000"/>
+                        <node kind="0" cacheCapacity="60kb "/>
                         <observed FileId="1" FileOffset="0" NodeKind="0" InMemorySize="30000" ExpandTime="2500"/>
                         <observed FileId="1" FileOffset="8192" NodeKind="0" InMemorySize="30000" ExpandTime="2500"/>
                     </memory>

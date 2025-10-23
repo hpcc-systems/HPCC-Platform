@@ -191,7 +191,7 @@ Statistics for each active bucket in each index file are also included. These
 include the lowest event count, the average event count per active bucket, and
 the highest event count.
 
-THe "//file/bucket" array may be used to generate a heat map of index activity.
+The "//file/bucket" array may be used to generate a heat map of index activity.
 Absent a total bucket count for each index file, the final dimension of a heat
 map must be determined separately. Absent a total leaf bucket count, a heat map
 cannot reliably differentiate leaf and branch inactivity, if such behavior is
