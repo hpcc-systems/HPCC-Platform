@@ -277,6 +277,7 @@ enum class SinkMode : byte
     Automatic = 3,          // Combine simple sinks into a single sequential sink, execute remaining sinks in parallel using default threading (default)
     AutomaticPersistent = 4,// Combine simple sinks into a single sequential sink, execute remaining sinks in parallel using persistent threads
     AutomaticParallel = 5,  // Combine simple sinks into a single parallel sink, execute remaining sinks in parallel using standard threads
+    AutomaticPooled = 6,    // Combine simple sinks into a single parallel sink, execute remaining sinks in parallel using pooled threads
 };
 
 
