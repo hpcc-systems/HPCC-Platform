@@ -1,0 +1,34 @@
+# Configures HPCC logAccess to target elastic4hpcclogs deployment
+global:
+  logAccess:
+      name: "Elastic4HPCCObservability"
+      type: "elasticstack"
+      connection:
+          protocol: "https"
+          host: "elasticsearch-es-http.default.svc.cluster.local"
+          port: 9200
+          connTimeoutMs: 2000
+          httpReqTimeoutMs: 3000
+          credentials:
+            secretName: "elastic4hpcclogs-elastic-user"
+          ssl:
+            caInfoPath: "/opt/HPCCSystems/secrets/esp/eck-apm-tls-crt/tls.crt"
+            verifyHost: false
+            verifyPeer: false
+      logMaps:
+        - type: "global"                             #These settings apply to all log mappings
+          storeName: "filebeat"                      #Logs are expected to be housed in ES indexes prefixed 'filebeat-'
+          searchColumn: "message"                    #The 'message' field is to be targeted for wilcard text searches
+          timeStampColumn: "@timestamp"              #The '@timestamp' field contains time log entry timestamp
+          columnMode: "ALL"
+          columnType: "string"
+        - type: "pod"
+          searchColumn: "kubernetes.pod.name"
+          columnMode: "DEFAULT"
+          columnType: "string"
+
+secrets:
+  esp:
+    elastic4hpcclogs-elastic-user: "elastic4hpcclogs-elastic-user" # Secret holding credentials
+    eck-apm-tls-crt: eck-apm-eck-apm-server-apm-http-certs-public # Secret holding the CA certificate
+    es-http-ca-internal: elasticsearch-es-http-ca-internal # Secret holding the CA certificate
