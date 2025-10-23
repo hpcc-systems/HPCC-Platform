@@ -767,7 +767,11 @@ protected:
 
 };
 
-typedef OwningSimpleHashTableOf<CNodeMapping, CKeyIdAndPos> CNodeTable;
+class CNodeTable : public OwningSimpleHashTableOf<CNodeMapping, CKeyIdAndPos>
+{
+    virtual unsigned getTableLimit(unsigned max) override { return max / 2; }
+};
+
 class CNodeMRUSubCache final : public CMRUCacheOf<CKeyIdAndPos, CNodeCacheEntry, CNodeMapping, CNodeTable>
 {
     std::atomic<size_t> sizeInMem{0};
