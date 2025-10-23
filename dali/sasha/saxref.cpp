@@ -216,7 +216,15 @@ public:
 
     static cFileDesc *create(const char *name, unsigned numParts, bool isDirPerPart, unsigned fnLen, XRefAllocator *allocator)
     {
-        if (numParts > 0xfff)
+        unsigned mapLen;
+        if (numParts==NotFound)
+        {
+            // numParts==NotFound is used for files without a part mask. Treat them as single files
+            mapLen = 1;
+        }
+        else if (numParts<=0xfff)
+            mapLen = (numParts*4+7)/8;
+        else
             throw makeStringExceptionV(0, "cFileDesc::create : numParts too large: %d (max 4096)", numParts);
 
         size_t nameLen = strlen(name);
@@ -225,8 +233,6 @@ public:
             OWARNLOG(LOGPFX "File name %s longer than 255 chars, truncating",name);
             nameLen = 255;
         }
-        // numParts==NotFound is used for files without a part mask. Treat them as single files
-        unsigned mapLen = numParts==NotFound ? 1 :(numParts*4+7)/8;
         return new(nameLen, mapLen, allocator) cFileDesc(name, nameLen, mapLen, numParts, isDirPerPart, fnLen, allocator);
     }
 
