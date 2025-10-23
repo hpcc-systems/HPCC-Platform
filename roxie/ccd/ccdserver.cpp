@@ -111,6 +111,32 @@ static const SmartStepExtra dummySmartStepExtra(SSEFreadAhead, NULL);
 
 //=================================================================================
 
+class PooledRestartableThread : public CInterface, public IThreaded
+{
+    CPooledPersistent thread;
+public:
+    PooledRestartableThread(const char *_name) : thread(_name, this)
+    {
+    }
+
+    virtual void start(const char *namePrefix, bool inheritThreadContext) final
+    {
+        thread.start(inheritThreadContext);
+    }
+
+    virtual void join() final
+    {
+        thread.join(INFINITE, false);
+    }
+
+    virtual void threadmain() override
+    {
+        run();
+    }
+
+    virtual int run() = 0;
+
+};
 class RestartableThread : public CInterface
 {
     class MyThread : public Thread
@@ -159,7 +185,6 @@ public:
     }
 
     virtual int run() = 0;
-
 };
 
 //================================================================================
@@ -545,6 +570,8 @@ extern SinkMode getSinkMode(const char *val)
         return SinkMode::Sequential;
     else if (strieq(val, "parallel"))
         return SinkMode::Parallel;
+    else if (strieq(val, "pooled"))
+        return SinkMode::AutomaticPooled;
     else if (strieq(val, "automatic-parallel"))
         return SinkMode::AutomaticParallel;
     else if (strieq(val, "automatic-persistent"))
@@ -28293,6 +28320,41 @@ protected:
         unsigned parentExtractSize = 0;
     };
 
+    class SinkPooledThread : public CInterface, implements IThreaded
+    {
+    public:
+        SinkPooledThread(IActivityGraph &_parent, IRoxieServerActivity &_sink)
+        : thread("SinkPooledThread", this), parent(_parent), sink(_sink)
+        {}
+        virtual void threadmain() override
+        {
+            try
+            {
+                sink.execute(parentExtractSize, parentExtract);
+            }
+            catch (IException *E)
+            {
+                parent.noteException(E);
+                throw;
+            }
+        }
+        void start(unsigned _parentExtractSize, const byte * _parentExtract)
+        {
+            parentExtract = _parentExtract;
+            parentExtractSize = _parentExtractSize;
+            thread.start(true);
+        }
+        inline void join()
+        {
+            thread.join(INFINITE);
+        }
+    private:
+        CPooledPersistent thread;
+        IActivityGraph &parent;
+        IRoxieServerActivity &sink;
+        const byte * parentExtract = nullptr;
+        unsigned parentExtractSize = 0;
+    };
     // NOTE - destructor order is significant - need to destroy graphCodeContext and graphAgentContext last
 
     IArrayOf<IRoxieServerActivity> activities;
@@ -28587,6 +28649,37 @@ public:
                     IRoxieServerActivityCopyArray &sinks;
                 } afor(sinks, *this, parentExtractSize, parentExtract);
                 afor.For(sinks.ordinality(), sinks.ordinality());
+            }
+            else if (sinkMode == SinkMode::AutomaticPooled)
+            {
+                CIArrayOf<SinkPooledThread> pooledThreads;
+                for (unsigned i = 0; i < sinks.ordinality()-1; i++)
+                {
+                    pooledThreads.append(*new SinkPooledThread(*this, sinks.item(i)));
+                    pooledThreads.item(i).start(parentExtractSize, parentExtract);
+                }
+                try
+                {
+                    sinks.item(sinks.ordinality()-1).execute(parentExtractSize, parentExtract);
+                }
+                catch (IException *E)
+                {
+                    noteException(E);
+                    E->Release();
+                }
+                for (unsigned i = 0; i < sinks.ordinality()-1; i++)
+                {
+                    try
+                    {
+                        pooledThreads.item(i).join();
+                    }
+                    catch (IException *E)
+                    {
+                        noteException(E);
+                        E->Release();
+                    }
+                }
+                checkAbort();
             }
             else
                 throwUnexpected();
