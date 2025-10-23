@@ -536,15 +536,27 @@ bool EventRecorder::pauseRecording(bool pause, bool recordChange)
 //See notes above about reseving and committing events
 EventRecorder::offset_type EventRecorder::reserveEvent(size32_t size)
 {
-    offset_type offset;
+    for(;;)
     {
-        CriticalBlock block(cs);
-        offset = nextOffset;
-        nextOffset += size;
-        pendingEventCounts[getBlockFromOffset(offset)]++;
-        numEvents++;
+        {
+            CriticalBlock block(cs);
+            offset_t endOffset = nextOffset + size;
+            if (likely(endOffset <= nextWriteOffset + OutputBufferSize))
+            {
+                offset_t offset = nextOffset;
+                nextOffset += size;
+                pendingEventCounts[getBlockFromOffset(offset)]++;
+                numEvents++;
+                return offset;
+            }
+
+            //Increment the number of threads waiting for space to add an event
+            writersWaiting++;
+        }
+
+        //Wait for space to become available
+        okToWriteSem.wait();
     }
-    return offset;
 }
 
 void EventRecorder::commitEvent(offset_type startOffset, size32_t size)
@@ -1017,8 +1029,7 @@ void EventRecorder::checkDataWrite(offset_type offset, size_t size)
     offset_t endOffset = offset + size;
     if (unlikely((endOffset > nextWriteOffset + OutputBufferSize) && !corruptOutput))
     {
-        //Internal consistency check which should never occur.  It can occur if blocking/discarding
-        //is not implemented and the compression takes too long (e.g. lz4hc)
+        //Internal consistency check which should never occur now that blocking is implemented.
         OERRLOG("writeBlock: fileOffset %llu, nextWriteOffset %llu", endOffset, nextWriteOffset);
         //Avoid writing any more data to the output and delete when the recording is stopped
         //aborting recording at this point is too complex
@@ -1054,13 +1065,23 @@ void EventRecorder::writeByte(offset_type & offset, byte value)
 
 void EventRecorder::writeBlock(offset_type startOffset, size32_t size)
 {
-    //MORE: Make this asynchronous - on a background thread.
     if (!corruptOutput)
     {
         size32_t blockOffset = nextWriteOffset & bufferMask;
         outputStream->put(size, (const byte *)buffer.get() + blockOffset);
     }
     nextWriteOffset += size;
+
+    unsigned numToSignal;
+    {
+        CriticalBlock block(cs);
+        numToSignal = writersWaiting;
+        writersWaiting = 0;
+    }
+
+    //Let all the writes know there is space available - they will all likely have room
+    if (numToSignal)
+        okToWriteSem.signal(numToSignal);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
