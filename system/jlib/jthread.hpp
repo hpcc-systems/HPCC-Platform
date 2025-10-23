@@ -57,6 +57,8 @@ extern jlib_decl ISpan * setThreadedActiveSpan(ISpan * span);
 
 //--------------------------------------------------------------
 
+typedef unsigned PooledThreadHandle;
+
 interface jlib_decl IThread : public IInterface
 {
     virtual void start(bool inheritThreadContext) = 0;
@@ -184,6 +186,21 @@ public:
 };
 
 // Similar to above, but the underlying thread always remains running. This can make repeated start + join's significantly quicker
+class jlib_decl CPooledPersistent
+{
+    Owned<IException> exception;
+    IThreaded *owner;
+    PooledThreadHandle handle = 0;
+    bool joined = true;
+    void threadmain();
+public:
+    CPooledPersistent(const char *name, IThreaded *_owner);
+    ~CPooledPersistent();
+    void start(bool inheritThreadContext);
+    bool join(unsigned timeout, bool throwException = true);
+};
+
+
 class jlib_decl CThreadedPersistent
 {
     class CAThread : public Thread
@@ -272,7 +289,6 @@ interface IThreadFactory: extends IInterface                // factory for creat
 };
 
 typedef IIteratorOf<IPooledThread> IPooledThreadIterator;
-typedef unsigned PooledThreadHandle;
 
 interface IThreadPool : extends IInterface
 {
