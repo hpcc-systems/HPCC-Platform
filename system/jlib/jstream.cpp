@@ -572,11 +572,13 @@ const char * peekAttributeStringList(std::vector<size32_t> & matches, IBufferedS
 {
     size32_t scanned = 0;
     size32_t startNext = 0;
+    bool expectingValue = false;
+
     for (;;)
     {
         size32_t got;
-        const char * start = (const char *)in.peek(scanned+1,got);
-        if (got <= scanned)
+        const char * start = (const char *)in.peek(scanned+1, got);
+        if (unlikely(got <= scanned))
         {
             len = scanned;
             if (startNext == scanned)
@@ -587,59 +589,59 @@ const char * peekAttributeStringList(std::vector<size32_t> & matches, IBufferedS
             return nullptr;
         }
 
-        for (size32_t offset = scanned; offset < got; offset++)
+        const char * searchStart = start + scanned;
+        size32_t searchLen = got - scanned;
+
+        // null-byte scanning in the newly available portion
+        const char * nullPos;
+        while ((nullPos = (const char *)memchr(searchStart, '\0', searchLen)) != nullptr)
         {
-            char next = start[offset];
-            if (!next)
+            size32_t offset = nullPos - start;
+
+            if (unlikely(offset == startNext))
             {
-                if (offset == startNext)
+                // Found a null terminator or an empty string at the start of a field
+                // Determine if this is valid based on what we're expecting
+                size32_t secondCharOffset = offset + 1;
+                size32_t thirdCharOffset = offset + 2;
+
+                if (thirdCharOffset < got)
                 {
-                    // Found an empty string or a null terminator
-                    bool moreData = false;
-                    // Check if there's more data available
-                    if (offset + 1 < got - 1)
+                    if (expectingValue)
                     {
-                        bool currentExpectedDataIsValue = matches.size() % 2 != 0;
-                        if (currentExpectedDataIsValue)
+                        char nextChar = start[secondCharOffset];
+                        if (nextChar == '\0' ||
+                            (nextChar == '@' && isValidXPathStartChr(start[thirdCharOffset]))) // @ could be the size of CPTValue so check char after it
                         {
-                            // Value is empty string so we next expect Name or null terminator
-                            switch (start[offset + 1])
-                            {
-                            case '\0':
-                                moreData = true; // Process the empty string
-                                break;
-                            case '@':
-                                if (offset + 2 < got - 1)
-                                    if (isValidXPathStartChr(start[offset + 2]))
-                                        moreData = true; // Process a valid name
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            // Name is empty string - not allowed!
+                            // Valid empty value
+                            matches.push_back(startNext);
+                            expectingValue = false;
+                            startNext = secondCharOffset;
+
+                            searchStart = nullPos + 1;
+                            searchLen = got - secondCharOffset;
+                            continue;
                         }
                     }
-                    if (moreData)
-                    {
-                        // More data available - add empty string and continue
-                        matches.push_back(startNext);
-                        startNext = offset + 1;
-                    }
-                    else
-                    {
-                        // No more data in current buffer - treat as null terminator
-                        len = offset + 1;
-                        return start;
-                    }
+                    // else: Empty name is not allowed - fall through to terminator handling
                 }
-                else
-                {
-                    matches.push_back(startNext);
-                    startNext = offset + 1;
-                }
+
+                // Either not enough data to decide, or invalid empty field, treat as list terminator
+                len = offset + 1;
+                return start;
+            }
+            else
+            {
+                matches.push_back(startNext);
+                expectingValue = !expectingValue;
+                startNext = offset + 1;
+
+                searchStart = nullPos + 1;
+                searchLen = got - startNext;
             }
         }
+
+        // No more nulls found in current buffer, need to peek more data
         scanned = got;
     }
 }

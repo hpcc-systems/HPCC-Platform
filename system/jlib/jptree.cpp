@@ -3070,7 +3070,13 @@ void PTree::deserializeFromStream(IBufferedSerialInputStream &src, PTreeDeserial
     }
 }
 
-static std::vector<size32_t> attrStringOffsets;
+static std::vector<size32_t> attrStringOffsets = []()
+{
+    std::vector<size32_t> vec;
+    // Reserve capacity to reduce allocations
+    vec.reserve(50);
+    return vec;
+}();
 
 void PTree::deserializeSelf(IBufferedSerialInputStream &src)
 {
