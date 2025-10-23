@@ -541,9 +541,12 @@ static bool attributeNameAndValueValidator(const char * start, size32_t secondCh
 {
     if (expectingValue)
     {
+        // Current null is possibly a empty string Attribute Value.
         if (thirdCharOffset < got)
         {
             char nextChar = start[secondCharOffset];
+            // nextChar could be a null denoting eos; or the numeric value of the size of CPTValue followed by a null char; or an Attribute Name.
+            // So we need to valid that the nextChar is valid for an Attribute Name.
             return nextChar == '\0' || (nextChar == '@' && isValidXPathStartChr(start[thirdCharOffset]));
         }
         // else no more data for third character
