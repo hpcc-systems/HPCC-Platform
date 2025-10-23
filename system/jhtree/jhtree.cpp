@@ -347,8 +347,23 @@ void SegMonitorList::append(FFoption option, const IFieldFilter * filter)
 
 void SegMonitorList::updateIndexFormat(const RtlRecord & actualRecInfo)
 {
-    keySegCount = recInfo.getNumKeyedFields();
-    modified = true;
+    if (keySegCount == actualRecInfo.getNumKeyedFields())
+        return;
+
+    keySegCount = actualRecInfo.getNumKeyedFields();
+    if (!modified)
+    {
+        //This covers the highly unusual situation where one key has a field in the keyed portion, and another
+        //key has the same field in the payload portion.  Adjust the number of wild field filters to match.
+        while (segMonitors.ordinality() > keySegCount)
+        {
+            //Check the extra filter was wild - otherwise this would give different results
+            assertex(segMonitors.tos().isWild());
+            segMonitors.pop();
+        }
+        modified = true;
+        finish(actualRecInfo.getKeyedSize());
+    }
 }
 
 ///

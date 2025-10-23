@@ -228,6 +228,8 @@ public:
 
     inline unsigned getNumFields() const { return numFields; }
     unsigned getNumKeyedFields() const;
+    size32_t getKeyedSize() const;
+
     inline unsigned getNumVarFields() const { return numVarFields; }
     inline unsigned getNumIfBlocks() const { return numIfBlocks; }
     inline const RtlFieldInfo * queryField(unsigned field) const { return fields[field]; }
