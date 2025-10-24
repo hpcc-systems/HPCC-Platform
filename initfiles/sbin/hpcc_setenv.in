@@ -55,7 +55,7 @@ function pidwait_fn () {
     local PID=$1
     local WATCH_PID=$( cat $PID )
     local PROCESS=$2
-    local TIMEOUT=$(($3*1000))
+    local OTIMEOUT=$(($3*1000))
     local FORCE=$4
 
     if ps -p $WATCH_PID -o command= | grep -v "${PROCESS}" &>/dev/null ; then
@@ -63,9 +63,11 @@ function pidwait_fn () {
     fi
 
     kill $WATCH_PID > /dev/null 2>&1
+
+    local TIMEOUT=$OTIMEOUT
     while [[ -d /proc/$WATCH_PID ]] && [[ $TIMEOUT -gt 0 ]]; do
       sleep 0.2
-      local TIMEOUT=$(($TIMEOUT-200))
+      TIMEOUT=$(($TIMEOUT-200))
     done
 
     if [[ $TIMEOUT -le 0 ]] && ps -p $WATCH_PID -o command= | grep "${PROCESS}" &>/dev/null ; then
@@ -73,6 +75,11 @@ function pidwait_fn () {
       if [[ $FORCE -eq 1 ]]; then
         kill -SIGKILL $WATCH_PID > /dev/null 2>&1
         log "killing ${PROCESS} (pid: $WATCH_PID) with SIGKILL"
+        TIMEOUT=$OTIMEOUT
+        while [[ -d /proc/$WATCH_PID ]] && [[ $TIMEOUT -gt 0 ]]; do
+          sleep 0.2
+          TIMEOUT=$(($TIMEOUT-200))
+        done
         rm -f $PID > /dev/null 2>&1
         return 0
       fi
