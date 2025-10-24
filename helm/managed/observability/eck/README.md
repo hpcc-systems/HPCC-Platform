@@ -1,6 +1,6 @@
 # elastic4hpccobservability
 
-**elastic4hpccobservability** is a self-contained observability solution for the HPCC Platform. It leverages the Elastic Stack (Elasticsearch, Kibana, APM Server) and OpenTelemetry Collector to provide tracing and logging observability data for HPCC clusters. This project delivers a streamlined, secure, and automated way to deploy, configure, and access observability infrastructure for testing and development using Helm charts. This chart makes several assumptions including no modifications are made to the base HPCC Platform helm deployment. Customization of the HPCC Platform cluster might require counterpart changes to this chart.
+**elastic4hpccobservability** is a self-contained observability solution for the HPCC Platform. It leverages the Elastic Stack (Elasticsearch, Kibana, APM Server) and OpenTelemetry Collector to provide tracing and logging observability data for HPCC clusters. This project delivers a streamlined, secure, and automated way to deploy, configure, and access observability infrastructure for testing and development using Helm charts. This chart makes several assumptions, including that no modifications are made to the base HPCC Platform helm deployment. Customization of the HPCC Platform cluster might require counterpart changes to this chart.
 
 ---
 
@@ -67,7 +67,16 @@ HPCC-Platform/helm/managed/observability/eck/> helm dependency build .
 helm install elastic-operator elastic/eck-operator -n elastic-system --create-namespace
 ```
 
-### 3. Install the Observability Chart
+### 3. Create service Account (optional)
+This step is only necessary to annotate HPCC component logs with kubernetes metadata which is useful when using logs to debug issues.
+
+From the `HPCC-Platform/helm/managed/observability/eck/` directory:
+
+```sh
+HPCC-Platform/helm/managed/observability/eck/>kubectl apply -f ./service-account.yaml
+```
+
+### 4. Install the Observability Chart
 
 > **Note:** The release must be named `eck-apm`.
 
@@ -78,15 +87,13 @@ From the `HPCC-Platform/helm/managed/observability/eck/` directory:
 HPCC-Platform/helm/managed/observability/eck> helm install eck-apm .
 ```
 
-### 4. Configure HPCC to Export Traces
+### 5. Configure HPCC to Export Traces
 
 Inject the sample [jtrace configuration values file](https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/managed/observability/eck/otlp-http-collector-k8s.yaml) onto your HPCC cluster.
 
 Details on HPCC trace configuration can be found in [helm/examples/tracing/README](https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/examples/tracing/README.md).
 
-> **Note:** Choose one of the next two steps:
-
-From the root directory of the `HPCC-Platform` clone:
+From the HPCC Platform root directory, run one of:
 
 ```sh
 #Choose this option if HPCC-Platform is currently NOT deployed
@@ -151,6 +158,24 @@ Also, the 'observability-eclwatch-links' values files overwrite the entire ESP c
 - This query can be changed to expand or focus the log information presented
 - The view can be customized to display fields of interest such as the log message, the source pod name, etc.
 - Otherwise, logs can be queried via Elastic's query language (KQL) by navigating to "Discover" from the hamburger button.
+
+##### Configure HPCC Log Access
+In order to enable ECLWatch logviewers to fetch logs from the ECK stack, provide logaccess configuration values targeting the filebeat index on Elastic Search
+
+- Create a Kubernetes secret containing the username and password for the target Elastic. Set the username to 'elastic' and the password fetched from the 'elasticsearch-es-elastic-user' secret
+
+    ```sh
+    kubectl get secret elasticsearch-es-elastic-user -o=jsonpath='{.data.elastic}' | base64 --decode; echo
+    ```
+
+   ```sh
+   kubectl create secret generic elastic4hpcclogs-elastic-user --from-literal=username=elastic --from-literal=password=<password from above>
+   ```
+- Provide the name of the newly created secret, and approprite cert secrets. See sample values file './elastic4hpccobservability-https-logaccess.yaml'
+```sh 
+helm upgrade myhpcc hpcc/hpcc -f helm/managed/observability/eck/otlp-http-collector-k8s.yaml -f helm/managed/observability/eck/elastic4hpccobservability-https-logaccess.yaml
+```
+
 ---
 
 ## Debugging & Validation

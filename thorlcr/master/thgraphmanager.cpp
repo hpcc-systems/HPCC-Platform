@@ -351,9 +351,6 @@ public:
     IException *queryExitException() { return exitException; }
     void clearExitException() { exitException.clear(); }
 
-// IExceptionHandler
-    bool fireException(IException *e);
-
 // IJobManager
     virtual void stop();
     virtual void replyException(CJobMaster &job, IException *e);
@@ -364,6 +361,7 @@ public:
     virtual void updateWorkUnitLog(IWorkUnit &workunit);
     virtual void setExceptionCtx(IThorException *e);
     virtual void deltaPostmortemInProgress(int v);
+    virtual bool fireException(IException *e) override; // and IExceptionHandler
 };
 
 // CJobManager impl.
