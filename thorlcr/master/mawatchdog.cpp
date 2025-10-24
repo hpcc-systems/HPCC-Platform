@@ -162,7 +162,13 @@ void CMasterWatchdog::checkMachineStatus()
             else
             {
                 mstate->markdead = true;
-                DBGLOG("Watchdog : Marking Machine as Down! [%s]", epstr.str());
+                Owned<IThorException> te = MakeThorOperatorException(TE_AbortException, "Watchdog : Marking Machine as Down!");
+                te->setSlave(mstate->workerNum+1);
+                te->setAction(tea_warning);
+                DBGLOG(te);
+                Owned<IJobManager> jM = getJobManager();
+                if (jM)
+                    jM->fireException(te);
                 //removeWorker(mstate->ep); // more TBD
             }
         }

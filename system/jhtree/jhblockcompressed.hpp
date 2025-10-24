@@ -56,6 +56,21 @@ public:
     virtual void dump(FILE *out, int length, unsigned rowCount, bool raw) const override;
 };
 
+class CJHBlockCompressedVarNode : public CJHBlockCompressedSearchNode 
+{
+    const char **recArray = nullptr;
+public:
+    CJHBlockCompressedVarNode();
+    ~CJHBlockCompressedVarNode();
+
+    virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy) override;
+    virtual bool getKeyAt(unsigned int num, char *dest) const;         // Retrieve keyed fields
+    virtual bool fetchPayload(unsigned int num, char *dest, PayloadReference & activePayload) const;       // Retrieve payload fields. Note destination is assumed to already contain keyed fields
+    virtual size32_t getSizeAt(unsigned int num) const;
+    virtual offset_t getFPosAt(unsigned int num) const;
+    virtual int compareValueAt(const char *src, unsigned int index) const;
+};
+
 struct CBlockCompressedBuildContext
 {
     ICompressHandler* compressionHandler = nullptr;
