@@ -27,6 +27,7 @@
 #include <azure/core/http/http.hpp>
 #include <azure/storage/blobs.hpp>
 #include <azure/storage/files/shares.hpp>
+#include <azure/core/http/curl_transport.hpp>
 #include <azure/identity.hpp>
 
 #include <exception>
@@ -41,6 +42,7 @@ constexpr const char * azureFilePrefix = "azurefile:";
 // Helper functions for creating Azure credentials
 std::shared_ptr<Azure::Storage::StorageSharedKeyCredential> getAzureSharedKeyCredential(const char * accountName, const char * secretName);
 std::shared_ptr<Azure::Core::Credentials::TokenCredential> getAzureManagedIdentityCredential();
+std::shared_ptr<Azure::Core::Http::HttpTransport> getHttpTransport();
 
 bool areManagedIdentitiesEnabled();
 bool isBase64Char(char c);

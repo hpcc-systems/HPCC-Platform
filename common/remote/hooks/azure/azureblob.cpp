@@ -28,7 +28,10 @@
 #include "azureapiutils.hpp"
 
 #include <azure/core/base64.hpp>
+#include <azure/core/http/curl_transport.hpp>
+#include <azure/core/http/policies/policy.hpp>
 #include <azure/identity.hpp>
+#include <map>
 
 using namespace Azure::Storage;
 using namespace Azure::Storage::Blobs;
@@ -43,7 +46,6 @@ using namespace std::chrono;
  */
 
 static constexpr unsigned maxAzureBlockCount = 50000;
-
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -266,7 +268,8 @@ protected:
     time_t lastModified = 0;
     time_t createdOn = 0;
     std::string blobUrl;
-    CriticalSection cs;
+    mutable CriticalSection cs;
+    mutable std::shared_ptr<Azure::Storage::Blobs::BlockBlobClient> cachedBlobClient;  // Cache client for reuse per-file
 };
 
 
@@ -316,6 +319,24 @@ size32_t AzureBlobReadIO::read(offset_t pos, size32_t len, void * data)
     options.Range = Azure::Core::Http::HttpRange();
     options.Range.Value().Offset = pos;
     options.Range.Value().Length = len;
+
+    // Configure parallel transfer options for better performance
+    // length should never be > 4MB, but just in case...
+    if (len > 16 * 1024 * 1024)  // 16MB threshold for parallel transfers
+    {
+        // Only use parallel transfers for larger requests to avoid overhead
+        options.TransferOptions.Concurrency = 16;  // Increase from default 5 to 16 parallel connections
+        options.TransferOptions.ChunkSize = 8 * 1024 * 1024;  // Increase chunk size from 4MB to 8MB
+        options.TransferOptions.InitialChunkSize = 64 * 1024 * 1024;  // Reduce initial chunk from 256MB to 64MB for better parallelism
+    }
+    else
+    {
+        // For smaller reads, use single-threaded approach to reduce overhead
+        options.TransferOptions.Concurrency = 1;
+        options.TransferOptions.ChunkSize = len;  // Download in single chunk
+        options.TransferOptions.InitialChunkSize = len;
+    }
+
     uint8_t * buffer = reinterpret_cast<uint8_t*>(data);
     long int sizeRead = 0;
 
@@ -622,26 +643,55 @@ std::shared_ptr<BlobContainerClient> AzureBlob::getBlobContainerClient() const
 {
     std::string blobContainerUrl = getContainerUrl(accountName, containerName);
 
+    // Create optimized client options for better performance
+    Azure::Storage::Blobs::BlobClientOptions clientOptions;
+
+    // Configure HTTP transport policy for connection reuse and performance
+    Azure::Core::Http::Policies::RetryOptions retryOptions;
+    retryOptions.MaxRetries = 3;  // Reduce retries for faster failure detection
+    retryOptions.RetryDelay = std::chrono::milliseconds(100);  // Faster retry intervals
+    retryOptions.MaxRetryDelay = std::chrono::milliseconds(1000);
+    clientOptions.Retry = retryOptions;
+
+    // Use shared transport instance for connection pooling across all blob operations
+    clientOptions.Transport.Transport = getHttpTransport();
+
     if (useManagedIdentity)
     {
-        return std::make_shared<BlobContainerClient>(blobContainerUrl, getAzureManagedIdentityCredential());
+        return std::make_shared<BlobContainerClient>(blobContainerUrl, getAzureManagedIdentityCredential(), clientOptions);
     }
     else
     {
-        return std::make_shared<BlobContainerClient>(blobContainerUrl, getSharedKeyCredentials());
+        return std::make_shared<BlobContainerClient>(blobContainerUrl, getSharedKeyCredentials(), clientOptions);
     }
 }
 
 SharedBlobClient AzureBlob::getBlobClient() const
 {
+    // Return cached client if available (per-file caching only)
+    CriticalBlock block(cs);
+    if (cachedBlobClient)
+        return cachedBlobClient;
+
+    // Create optimized client options for better performance
+    Azure::Storage::Blobs::BlobClientOptions clientOptions;
+
+    // Configure HTTP transport policy for connection reuse and performance
+    Azure::Core::Http::Policies::RetryOptions retryOptions;
+    retryOptions.MaxRetries = 3;  // Reduce retries for faster failure detection
+    retryOptions.RetryDelay = std::chrono::milliseconds(100);  // Faster retry intervals
+    retryOptions.MaxRetryDelay = std::chrono::milliseconds(1000);
+    clientOptions.Retry = retryOptions;
+
+    // Use shared transport instance for connection pooling across all blob operations
+    clientOptions.Transport.Transport = getHttpTransport();
+
+    // Create account-specific credentials with caching
     if (useManagedIdentity)
-    {
-        return std::make_shared<Azure::Storage::Blobs::BlockBlobClient>(getBlobUrl(), getAzureManagedIdentityCredential());
-    }
+        cachedBlobClient = std::make_shared<Azure::Storage::Blobs::BlockBlobClient>(getBlobUrl(), getAzureManagedIdentityCredential(), clientOptions);
     else
-    {
-        return std::make_shared<Azure::Storage::Blobs::BlockBlobClient>(getBlobUrl(), getSharedKeyCredentials());
-    }
+        cachedBlobClient = std::make_shared<Azure::Storage::Blobs::BlockBlobClient>(getBlobUrl(), getSharedKeyCredentials(), clientOptions);
+    return cachedBlobClient;
 }
 
 bool AzureBlob::createDirectory()
