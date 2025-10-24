@@ -530,33 +530,7 @@ extern jlib_decl std::pair<const char *, const char *> peekKeyValuePair(IBuffere
     }
 }
 
-using NextValueValidator = std::function<bool(const char * start, size32_t secondCharOffset, size32_t thirdCharOffset, size32_t got, bool expectingValue)>;
-
-static bool rejectAllValidator(const char * start, size32_t secondCharOffset, size32_t thirdCharOffset, size32_t got, bool expectingValue)
-{
-    return false;
-}
-
-static bool attributeNameAndValueValidator(const char * start, size32_t secondCharOffset, size32_t thirdCharOffset, size32_t got, bool expectingValue)
-{
-    if (expectingValue)
-    {
-        // Current null is possibly a empty string Attribute Value.
-        if (thirdCharOffset < got)
-        {
-            char nextChar = start[secondCharOffset];
-            // nextChar could be a null denoting eos; or the numeric value of the size of CPTValue followed by a null char; or an Attribute Name.
-            // So we need to valid that the nextChar is valid for an Attribute Name.
-            return nextChar == '\0' || (nextChar == '@' && isValidXPathStartChr(start[thirdCharOffset]));
-        }
-        // else no more data for third character
-    }
-    // else empty name is not allowed
-
-    return false;
-}
-
-const char * peekStringList(std::vector<size32_t> & matches, IBufferedSerialInputStream & in, size32_t & len, NextValueValidator isValidNextValue)
+const char * peekStringList(std::vector<size32_t> & matchOffsets, IBufferedSerialInputStream & in, size32_t & len)
 {
     size32_t scanned = 0;
     size32_t startNext = 0;
@@ -592,17 +566,29 @@ const char * peekStringList(std::vector<size32_t> & matches, IBufferedSerialInpu
                 size32_t secondCharOffset = offset + 1;
                 size32_t thirdCharOffset = offset + 2;
 
-                if (isValidNextValue(start, secondCharOffset, thirdCharOffset, got, expectingValue))
+                if (expectingValue)
                 {
-                    // Valid empty value
-                    matches.push_back(startNext);
-                    expectingValue = false;
-                    startNext = secondCharOffset;
+                    // Current null is possibly a empty string Attribute Value.
+                    if (thirdCharOffset < got)
+                    {
+                        char nextChar = start[secondCharOffset];
+                        // nextChar could be a null denoting eos; or the numeric value of the size of CPTValue followed by a null char; or an Attribute Name.
+                        // So we need to valid that the nextChar is valid for an Attribute Name.
+                        if (nextChar == '\0' || (nextChar == '@' && isValidXPathStartChr(start[thirdCharOffset])))
+                        {
+                            // Valid empty value
+                            matchOffsets.push_back(startNext);
+                            expectingValue = false;
+                            startNext = secondCharOffset;
 
-                    searchStart = nullPos + 1;
-                    searchLen = got - secondCharOffset;
-                    continue;
+                            searchStart = nullPos + 1;
+                            searchLen = got - secondCharOffset;
+                            continue;
+                        }
+                    }
+                    // else no more data for third character
                 }
+                // else empty name is not allowed
 
                 // Either not enough data to decide, or invalid empty field, treat as list terminator
                 len = offset + 1;
@@ -610,7 +596,7 @@ const char * peekStringList(std::vector<size32_t> & matches, IBufferedSerialInpu
             }
             else
             {
-                matches.push_back(startNext);
+                matchOffsets.push_back(startNext);
                 expectingValue = !expectingValue;
                 startNext = offset + 1;
 
@@ -622,16 +608,6 @@ const char * peekStringList(std::vector<size32_t> & matches, IBufferedSerialInpu
         // No more nulls found in current buffer, need to peek more data
         scanned = got;
     }
-}
-
-const char * peekStringList(std::vector<size32_t> & matches, IBufferedSerialInputStream & in, size32_t & len)
-{
-    return peekStringList(matches, in, len, rejectAllValidator);
-}
-
-const char * peekAttributeStringList(std::vector<size32_t> & matches, IBufferedSerialInputStream & in, size32_t & len)
-{
-    return peekStringList(matches, in, len, attributeNameAndValueValidator);
 }
 
 //---------------------------------------------------------------------------

@@ -3091,13 +3091,16 @@ void PTree::deserializeSelf(IBufferedSerialInputStream &src)
 
     // Read attributes until we encounter a zero byte (attribute list terminator)
     attrStringOffsets.clear();
-    const char * base = peekAttributeStringList(attrStringOffsets, src, skipLen);
+    const char * base = peekStringList(attrStringOffsets, src, skipLen);
     if (base) // there is at least one attribute to process
     {
+/*
         size_t numStringOffsets = attrStringOffsets.size();
         if (numStringOffsets % 2 != 0)
             throwUnexpectedX("PTree deserialization error: end of stream, expected attribute value");
-
+*/
+        setAttribute(base, attrStringOffsets);
+/* DJPS
         constexpr bool attributeNameNotEncoded = false; // Deserialized attribute name is in its original unencoded form
         for (size_t i = 0; i < numStringOffsets; i += 2)
         {
@@ -3105,6 +3108,7 @@ void PTree::deserializeSelf(IBufferedSerialInputStream &src)
             const char *attrValue = base + attrStringOffsets[i + 1];
             setAttribute(attrName, attrValue, attributeNameNotEncoded);
         }
+*/
 
         src.skip(skipLen); // Skip over all attributes and the terminator
     }
@@ -3888,6 +3892,59 @@ void LocalPTree::setAttribute(const char *inputkey, const char *val, bool encode
         AttrStr::destroy(goer);
 }
 
+void LocalPTree::setAttribute(const char *base, const std::vector<size32_t> &offsets)
+{
+    size_t numStringOffsets = offsets.size();
+    if (numStringOffsets % 2 != 0)
+        throwUnexpectedX("setAttribute error: offsets vector must contain pairs of key/value offsets");
+
+    for (size_t i = 0; i < numStringOffsets; i += 2)
+    {
+        const char *inputkey = base + offsets[i];
+        const char *val = base + offsets[i + 1];
+
+        if (!inputkey)
+            continue;
+        const char *key = inputkey;
+        // Note: encoded is always false for deserialized attributes
+        if (!validateXMLTag(key+1))
+            throw MakeIPTException(-1, "Invalid xml attribute: %s", key);
+        if (!val)
+            val = "";  // cannot have NULL value
+        AttrValue *v = findAttribute(key);
+        AttrStr *goer = nullptr;
+        if (v)
+        {
+            if (streq(v->value.get(), val))
+                continue;
+            goer = v->value.getPtr();
+        }
+        else
+        {
+            attrs = (AttrValue *)realloc(attrs, (numAttrs+1)*sizeof(AttrValue));
+            v = new(&attrs[numAttrs++]) AttrValue;  // Initialize new AttrValue
+            if (!v->key.set(inputkey)) //AttrStr will not return encoding marker when get() is called
+                v->key.setPtr(isnocase() ? AttrStr::createNC(inputkey) : AttrStr::create(inputkey));
+        }
+        if (arrayOwner)
+        {
+            CQualifierMap *map = arrayOwner->queryMap();
+            if (map)
+            {
+                if (goer)
+                    map->replaceEntryIfMapped(key, v->value.get(), val, this);
+                else
+                    map->insertEntryIfMapped(key, val, this);
+            }
+        }
+
+        if (!v->value.set(val))
+            v->value.setPtr(AttrStr::create(val));
+        if (goer)
+            AttrStr::destroy(goer);
+    }
+}
+
 #ifdef TRACE_STRING_SIZE
 std::atomic<__int64> AttrStr::totsize { 0 };
 std::atomic<__int64> AttrStr::maxsize { 0 };
@@ -4099,6 +4156,73 @@ void CAtomPTree::setAttribute(const char *key, const char *val, bool encoded)
             v->value.setPtr(attrHT->addval(val));
         numAttrs++;
         attrs = newattrs;
+    }
+}
+
+void CAtomPTree::setAttribute(const char *base, const std::vector<size32_t> &offsets)
+{
+    size_t numStringOffsets = offsets.size();
+    if (numStringOffsets % 2 != 0)
+        throwUnexpectedX("setAttribute error: offsets vector must contain pairs of key/value offsets");
+
+    CriticalBlock block(hashcrit);
+    for (size_t i = 0; i < numStringOffsets; i += 2)
+    {
+        const char *key = base + offsets[i];
+        const char *val = base + offsets[i + 1];
+
+        if (!key)
+            continue;
+        if (!validateXMLTag(key+1))
+            throw MakeIPTException(-1, "Invalid xml attribute: %s", key);
+        if (!val)
+            val = "";  // cannot have NULL value
+        AttrValue *v = findAttribute(key);
+        if (v)
+        {
+            if (streq(v->value.get(), val))
+                continue;
+            if (arrayOwner)
+            {
+                CQualifierMap *map = arrayOwner->queryMap();
+                if (map)
+                    map->replaceEntryIfMapped(key, v->value.get(), val, this);
+            }
+
+            AttrStr * goer = v->value.getPtr();
+            if (!v->value.set(val))
+            {
+                if (goer)
+                    attrHT->removeval(goer);
+                v->value.setPtr(attrHT->addval(val));
+            }
+            else if (goer)
+            {
+                attrHT->removeval(goer);
+            }
+        }
+        else
+        {
+            AttrValue *newattrs = newAttrArray(numAttrs+1);
+            if (attrs)
+            {
+                memcpy(newattrs, attrs, numAttrs*sizeof(AttrValue));
+                freeAttrArray(attrs, numAttrs);
+            }
+            if (arrayOwner)
+            {
+                CQualifierMap *map = arrayOwner->queryMap();
+                if (map)
+                    map->insertEntryIfMapped(key, val, this);
+            }
+            v = &newattrs[numAttrs];
+            if (!v->key.set(key))
+                v->key.setPtr(attrHT->addkey(key, isnocase()));
+            if (!v->value.set(val))
+                v->value.setPtr(attrHT->addval(val));
+            numAttrs++;
+            attrs = newattrs;
+        }
     }
 }
 
