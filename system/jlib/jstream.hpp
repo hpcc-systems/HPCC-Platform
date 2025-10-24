@@ -70,7 +70,8 @@ extern jlib_decl const char * queryZeroTerminatedString(IBufferedSerialInputStre
 //return a key value pair - if the key is a null string then return null for the value
 extern jlib_decl std::pair<const char *, const char *> peekKeyValuePair(IBufferedSerialInputStream & in, size32_t & len);
 
-//Return a vector of offsets of the starts of null terminated strings - terminated by a null string or end of file.
+//Return a vector of offsets of the starts of null terminated Attribute Name/Value strings (Value can be empty string)
+// - terminated by a null string or end of file.
 //Returns a pointer to the base string if valid.
 extern jlib_decl const char * peekStringList(std::vector<size32_t> & matches, IBufferedSerialInputStream & in, size32_t & len);
 
