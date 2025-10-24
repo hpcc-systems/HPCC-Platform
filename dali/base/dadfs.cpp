@@ -2230,6 +2230,8 @@ static const DFUQFieldInfo dfuqFieldInfos[] =
     {DFUQResultField::writeCost,       "@writeCost",        DFUQResultFieldType::floatType},
     {DFUQResultField::expireDays,      "@expireDays",       DFUQResultFieldType::numericType},
     {DFUQResultField::subfilenames,    "@subfilenames",     DFUQResultFieldType::stringType},
+    {DFUQResultField::blockCompressed, "@blockCompressed",  DFUQResultFieldType::boolType},
+    {DFUQResultField::rowCompressed,   "@rowCompressed",    DFUQResultFieldType::boolType},
     {DFUQResultField::includeAll,      "includeAll",        DFUQResultFieldType::unknown}
 };
 const size_t dfuqFieldInfosCount = sizeof(dfuqFieldInfos)/sizeof(dfuqFieldInfos[0]);

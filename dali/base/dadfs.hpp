@@ -307,6 +307,8 @@ enum class DFUQResultField : unsigned
     writeCost,
     expireDays,
     subfilenames,
+    blockCompressed,    // blockCompressed and rowCompressed need to be included for use
+    rowCompressed,      // by the dafdesc.cpp isCompressed function
     includeAll,
     term,               // NB: only used by client code, not passed to server. Signifies end of a list of fields
     fieldMask = 0xff,
