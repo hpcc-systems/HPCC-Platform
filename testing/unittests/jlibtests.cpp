@@ -3417,6 +3417,7 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIPTTest, "JlibIPTTest");
 #include "jio.hpp"
 #include "jstring.hpp"
 #include <string>
+#include <vector>
 
 IPropertyTree *createCompatibilityConfigPropertyTree()
 {
@@ -3635,6 +3636,9 @@ class PTreeSerializationDeserializationTest : public CppUnit::TestFixture
     CPPUNIT_TEST(testRoundTripForRootOnlyPTree_lowmem);
     CPPUNIT_TEST(testRoundTripForCompatibilityConfigPropertyTree_lowmem);
     CPPUNIT_TEST(testRoundTripForBinaryDataCompressionTestPTree_lowmem);
+    // Direct tests for vector-based setAttribute (tests both new and update paths)
+    CPPUNIT_TEST(testSetAttributeWithVector);
+    CPPUNIT_TEST(testSetAttributeWithVector_lowmem);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -3802,6 +3806,153 @@ public:
     void testRoundTripForBinaryDataCompressionTestPTree_lowmem()
     {
         performRoundTripTest(__func__, createBinaryDataCompressionTestPTree(), ipt_lowmem);
+    }
+
+    // Direct tests for vector-based setAttribute function
+    // Tests both new attribute insertion and existing attribute update code paths
+    void testSetAttributeWithVector()
+    {
+        testSetAttributeWithVectorImpl(ipt_none);
+    }
+
+    void testSetAttributeWithVector_lowmem()
+    {
+        testSetAttributeWithVectorImpl(ipt_lowmem);
+    }
+
+private:
+    void testSetAttributeWithVectorImpl(byte flags)
+    {
+        try
+        {
+            // Create a simple tree for testing
+            Owned<IPropertyTree> tree = createPTree("TestRoot", flags);
+
+            // Cast to PTree* to access the internal setAttribute(base, vector) method
+            PTree *ptree = dynamic_cast<PTree*>(tree.get());
+            CPPUNIT_ASSERT_MESSAGE("Failed to cast IPropertyTree to PTree", ptree != nullptr);
+
+            // Build a string buffer containing key/value pairs and a vector of offsets
+            // Format matches what peekStringList produces in deserializeSelf:
+            // - String buffer contains null-terminated strings
+            // - Vector contains pairs: [key_offset, value_offset, key_offset, value_offset, ...]
+
+            MemoryBuffer attrData;
+            std::vector<size32_t> offsets;
+
+            // Test 1: Add new attributes (tests "new attribute" code path)
+            DBGLOG("=== Test 1: Adding new attributes ===");
+
+            // Add attribute: @newAttr1="newValue1"
+            offsets.push_back(attrData.length());
+            attrData.append("@newAttr1").append('\0');
+
+            offsets.push_back(attrData.length());
+            attrData.append("newValue1").append('\0');
+
+            // Add attribute: @newAttr2="newValue2"
+            offsets.push_back(attrData.length());
+            attrData.append("@newAttr2").append('\0');
+
+            offsets.push_back(attrData.length());
+            attrData.append("newValue2").append('\0');
+
+            DBGLOG("Calling setAttribute with %u offsets", (unsigned)offsets.size());            // Call setAttribute with the vector (testing new attribute insertion)
+            const char *base = (const char *)attrData.toByteArray();
+            ptree->setAttribute(base, offsets);
+
+            DBGLOG("setAttribute completed for new attributes");
+
+            // Verify new attributes were added using areMatchingPTrees
+            Owned<IPropertyTree> expected1 = createPTree("TestRoot", flags);
+            expected1->setProp("@newAttr1", "newValue1");
+            expected1->setProp("@newAttr2", "newValue2");
+            CPPUNIT_ASSERT_MESSAGE("Test 1: Tree doesn't match expected after adding new attributes", areMatchingPTrees(expected1, tree));
+
+            DBGLOG("Test 1 passed");
+
+            // Test 2: Update existing attributes (tests "update existing attribute" code path)
+            DBGLOG("=== Test 2: Updating existing attributes ===");
+            attrData.clear();
+            offsets.clear();
+
+            // Update attribute: @newAttr1="updatedValue1"
+            offsets.push_back(attrData.length());
+            attrData.append("@newAttr1").append('\0');
+
+            offsets.push_back(attrData.length());
+            attrData.append("updatedValue1").append('\0');
+
+            // Add one more new attribute: @newAttr3="newValue3"
+            offsets.push_back(attrData.length());
+            attrData.append("@newAttr3").append('\0');
+
+            offsets.push_back(attrData.length());
+            attrData.append("newValue3").append('\0');
+
+            DBGLOG("Calling setAttribute to update 1 existing + add 1 new");
+
+            // Call setAttribute again (testing both update and new attribute paths)
+            base = (const char *)attrData.toByteArray();
+            ptree->setAttribute(base, offsets);
+
+            DBGLOG("setAttribute completed for updates");
+
+            // Verify updates using areMatchingPTrees
+            Owned<IPropertyTree> expected2 = createPTree("TestRoot", flags);
+            expected2->setProp("@newAttr1", "updatedValue1");  // Updated value
+            expected2->setProp("@newAttr2", "newValue2");      // Unchanged from Test 1
+            expected2->setProp("@newAttr3", "newValue3");      // Newly added
+            CPPUNIT_ASSERT_MESSAGE("Test 2: Tree doesn't match expected after updating attributes", areMatchingPTrees(expected2, tree));
+
+            DBGLOG("Test 2 passed");
+
+            // Test 3: Update attributes that were added via setProp (exercises the existing attribute update path)
+            DBGLOG("=== Test 3: Testing setAttribute on pre-existing attributes ===");
+
+            // Add attributes using traditional setProp method
+            tree->setProp("@preExisting", "original");
+
+            // Now update it using setAttribute with vector
+            attrData.clear();
+            offsets.clear();
+
+            offsets.push_back(attrData.length());
+            attrData.append("@preExisting").append('\0');
+            offsets.push_back(attrData.length());
+            attrData.append("modified").append('\0');
+
+            DBGLOG("Calling setAttribute to update pre-existing attribute");
+
+            base = (const char *)attrData.toByteArray();
+            ptree->setAttribute(base, offsets);
+
+            // Verify the update worked using areMatchingPTrees
+            Owned<IPropertyTree> expected3 = createPTree("TestRoot", flags);
+            expected3->setProp("@newAttr1", "updatedValue1");
+            expected3->setProp("@newAttr2", "newValue2");
+            expected3->setProp("@newAttr3", "newValue3");
+            expected3->setProp("@preExisting", "modified");  // Updated via setAttribute
+            CPPUNIT_ASSERT_MESSAGE("Test 3: Tree doesn't match expected after updating pre-existing attribute", areMatchingPTrees(expected3, tree));
+
+            DBGLOG("Test 3 passed");
+            DBGLOG("=== testSetAttributeWithVector completed successfully ===");
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(StringBuffer("IException in testSetAttributeWithVector: ").append(msg).str());
+        }
+        catch (std::exception &e)
+        {
+            CPPUNIT_FAIL(StringBuffer("std::exception in testSetAttributeWithVector: ").append(e.what()).str());
+        }
+        catch (...)
+        {
+            CPPUNIT_FAIL("Unknown exception in testSetAttributeWithVector");
+        }
     }
 };
 
