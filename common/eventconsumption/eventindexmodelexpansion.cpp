@@ -58,6 +58,24 @@ static void parseExpansionMode(const char* modeStr, ExpansionMode& expansionMode
         throw makeStringExceptionV(-1, "invalid index model expansion mode '%s'", modeStr);
 }
 
+bool MemoryModel::isCacheEnabled() const
+{
+    for (unsigned idx = 0; idx < NumKinds; ++idx)
+    {
+        if (caches[idx].enabled())
+            return true;
+    }
+    return false;
+}
+
+__uint64 MemoryModel::getCacheSize() const
+{
+    __uint64 total = 0;
+    for (unsigned idx = 0; idx < NumKinds; ++idx)
+        total += caches[idx].capacity;
+    return total;
+}
+
 MemoryModel::MemoryModel()
     : caches{NodeCache(*this, 0), NodeCache(*this, 1)}
 {

@@ -26,6 +26,20 @@ void IndexMRUCache::configure(const IPropertyTree &config)
         capacity = strToBytes<__uint64>(capacityStr, StrToBytesFlags::ThrowOnError);
 }
 
+void IndexMRUCache::resize(__uint64 newCapacity)
+{
+    if (!enabled())
+        return;
+    if (newCapacity >= used)
+        capacity = newCapacity;
+    else
+    {
+        IndexMRUNullCacheReporter reporter;
+        capacity = newCapacity;
+        reserve(used - newCapacity, reporter);
+    }
+}
+
 bool IndexMRUCache::exists(const IndexHashKey &key)
 {
     if (!enabled())
@@ -82,6 +96,18 @@ public: // IEventVisitationLink
         node = config.queryBranch("memory");
         if (node)
             memory.configure(*node);
+        const char* maxCacheCapacityStr = config.queryProp("@maxCacheCapacity");
+        if (!isEmptyString(maxCacheCapacityStr))
+        {
+            __uint64 maxCacheCapacity = strToBytes<__uint64>(maxCacheCapacityStr, StrToBytesFlags::ThrowOnError);
+            if (maxCacheCapacity && storage.isCacheEnabled() && !storage.getCacheSize())
+            {
+                __uint64 memoryCacheCapacity = memory.getCacheSize();
+                if (memoryCacheCapacity > maxCacheCapacity)
+                    throw makeStringExceptionV(-1, "max cache capacity %llu is less than actual memory cache capacity %llu", maxCacheCapacity, memoryCacheCapacity);
+                storage.resizeCache(maxCacheCapacity - memoryCacheCapacity);
+            }
+        }
     }
 
 public: // IEventModel
@@ -327,7 +353,7 @@ protected:
         std::vector<CEvent>& events;
         __uint64 nextTimestamp;
     };
-std::set<Suppression> suppressions;
+    std::set<Suppression> suppressions;
     Storage storage;
     MemoryModel memory;
 };
@@ -342,6 +368,13 @@ IEventModel *createIndexEventModel(const IPropertyTree &config)
 #ifdef _USE_CPPUNIT
 
 #include "eventunittests.hpp"
+
+class TestIndexEventModel : public CIndexEventModel
+{
+public:
+    Storage& getStorage() { return storage; }
+    MemoryModel& getMemory() { return memory; }
+};
 
 class IndexEventModelTests : public CppUnit::TestFixture
 {
@@ -366,6 +399,7 @@ class IndexEventModelTests : public CppUnit::TestFixture
     CPPUNIT_TEST(testCacheMissNotInModeledCache);
     CPPUNIT_TEST(testCacheMissInModeledCache);
     CPPUNIT_TEST(testNodeCacheEvictions);
+    CPPUNIT_TEST(testMaxCacheCapacity);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -957,6 +991,122 @@ expect:
             </test>
         )!!!";
         testEventVisitationLinks(testData);
+    }
+
+    void testMaxCacheCapacity()
+    {
+        {
+            // maxCacheCapacity not specified ==> no page cache capacity
+            constexpr const char* testConfig = R"!!!(
+storage:
+  cacheReadTime: 100
+  plane:
+    name: placeholder
+    readTime: 500
+memory:
+  node:
+    kind: 0
+    cacheCapacity: 24 Mib
+  node:
+    kind: 1
+    cacheCapacity: 32 Mib
+)!!!";
+            TestIndexEventModel model;
+            Owned<IPropertyTree> config = createPTreeFromYAMLString(testConfig);
+            model.configure(*config);
+            CPPUNIT_ASSERT_EQUAL(strToBytes("0", StrToBytesFlags::ThrowOnError), model.getStorage().getCacheSize());
+            CPPUNIT_ASSERT_EQUAL(strToBytes("56 mib", StrToBytesFlags::ThrowOnError), model.getMemory().getCacheSize());
+        }
+        {
+            // storage/@cacheReadTime not specified ==> no page cache capacity
+            constexpr const char* testConfig = R"!!!(
+maxCacheCapacity: 64 Mib
+storage:
+  plane:
+    name: placeholder
+    readTime: 500
+memory:
+  node:
+    kind: 0
+    cacheCapacity: 24 Mib
+  node:
+    kind: 1
+    cacheCapacity: 32 Mib
+)!!!";
+            TestIndexEventModel model;
+            Owned<IPropertyTree> config = createPTreeFromYAMLString(testConfig);
+            model.configure(*config);
+            CPPUNIT_ASSERT_EQUAL(strToBytes("0", StrToBytesFlags::ThrowOnError), model.getStorage().getCacheSize());
+            CPPUNIT_ASSERT_EQUAL(strToBytes("56 mib", StrToBytesFlags::ThrowOnError), model.getMemory().getCacheSize());
+        }
+        {
+            // node caches too large ==> exception
+            constexpr const char* testConfig = R"!!!(
+maxCacheCapacity: 64 Mib
+storage:
+  cacheReadTime: 100
+  plane:
+    name: placeholder
+    readTime: 500
+memory:
+  node:
+    kind: 0
+    cacheCapacity: 33 Mib
+  node:
+    kind: 1
+    cacheCapacity: 32 Mib
+)!!!";
+            TestIndexEventModel model;
+            Owned<IPropertyTree> config = createPTreeFromYAMLString(testConfig);
+            CPPUNIT_ASSERT_THROWS_IEXCEPTION(model.configure(*config), "expected exception for cache size exceeding maxCacheCapacity");
+        }
+        {
+            // storage/@cacheCapacity set explicitly ==> use it
+            constexpr const char* testConfig = R"!!!(
+maxCacheCapacity: 64 Mib
+storage:
+  cacheReadTime: 100
+  cacheCapacity: 12 mib
+  plane:
+    name: placeholder
+    readTime: 500
+memory:
+  node:
+    kind: 0
+    cacheCapacity: 24 Mib
+  node:
+    kind: 1
+    cacheCapacity: 32 Mib
+)!!!";
+            TestIndexEventModel model;
+            Owned<IPropertyTree> config = createPTreeFromYAMLString(testConfig);
+            model.configure(*config);
+            CPPUNIT_ASSERT_EQUAL(strToBytes("12 mib", StrToBytesFlags::ThrowOnError), model.getStorage().getCacheSize());
+            CPPUNIT_ASSERT_EQUAL(strToBytes("56 mib", StrToBytesFlags::ThrowOnError), model.getMemory().getCacheSize());
+        }
+        {
+            // page cache constraint in effect
+            constexpr const char* testConfig = R"!!!(
+maxCacheCapacity: 64 Mib
+storage:
+  cacheReadTime: 100
+  plane:
+    name: placeholder
+    readTime: 500
+memory:
+  node:
+    kind: 0
+    cacheCapacity: 24 Mib
+  node:
+    kind: 1
+    cacheCapacity: 32 Mib
+)!!!";
+            TestIndexEventModel model;
+            Owned<IPropertyTree> config = createPTreeFromYAMLString(testConfig);
+            model.configure(*config);
+            CPPUNIT_ASSERT_EQUAL(strToBytes("8 mib", StrToBytesFlags::ThrowOnError), model.getStorage().getCacheSize());
+            CPPUNIT_ASSERT_EQUAL(strToBytes("56 mib", StrToBytesFlags::ThrowOnError), model.getMemory().getCacheSize());
+        }
     }
 };
 

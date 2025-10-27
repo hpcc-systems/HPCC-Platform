@@ -156,6 +156,12 @@ Model options are specified using a property tree. The configuration conforms to
 
 An optional identifier that must be `index-events` when present.
 
+    @maxCacheCapacity
+
+Optional upper limit to the amount of memory used by all model caches that model live system caches. This includes the storage page cache and all memory node caches. It excludes internal caches needed to enable modeling, such as historical observations.
+
+For the value to be applied in the model, the storage page cache must be configured with a read time and not a capacity. The effect, then, is that the page cache capacity will be updated to the difference between the limit and the sum of all memory node caches. It is an error for the node cache sizes to reach or exceed the limit.
+
     storage/
 
 Required container for storage plane and page cache configuration settings.
@@ -449,34 +455,3 @@ Required link configuration datum targeted by the change.
                 @value
 
 Optional changed value. Omission removes the targeted datum, while presence updates it.
-
-    constraint/
-
-**UNIMPLEMENTED**: *This is described as a proposed solution to the problem of making a link configuration value dependent upon each and every axis value. For example, setting the page cache capacity to be relative to both the leaf and branch node cache capacities when chart axes are the node cache capacities.*
-
-Optional element describing link configuration changes to be made after all plot, x-axis, and y-axis changes have been made. Changes described in this element do not change the number chart data sets produced. Described changes should not affect axis values, but such changes are not prevented.
-
-    constraint/
-        @label
-
-Recommended text string used to identify the intent of the constraint.
-
-    constraint/
-        delta/
-            @linkId
-
-Optional designation of the link configuration targeted by the change. If omitted, `index-events` is assumed.
-
-    constraint/
-        delta/
-            @xpath
-
-Required link configuration datum targeted by the change.
-
-    constraint/
-        delta/
-            @value
-
-Optional changed value. Omission removes the targeted datum. Presence updates the targeted datum. The value string is parsed for limited mathematical computations.
-
-As an example, setting the page cache size relative to node cache size would use a value such as `64 MiB - {//memory/node[kind="0"]/@cacheCapacity} - {//memory/node[kind="1"]/@cacheCapacity}`.
