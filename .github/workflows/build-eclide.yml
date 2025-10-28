@@ -164,6 +164,8 @@ jobs:
           $currentDirectory = Get-Location
           $certificatePath = Join-Path -Path $currentDirectory -ChildPath $pfxPath
           [IO.File]::WriteAllBytes("$certificatePath", $encodedBytes)
+          $passphrasePath = Join-Path -Path $currentDirectory -ChildPath "passphrase.txt"
+          Set-Content -Path $passphrasePath -Value "${{ secrets.SIGNING_CERTIFICATE_PASSPHRASE }}"
           CertUtil -p ${{ secrets.SIGNING_CERTIFICATE_PASSPHRASE }} hpcc_code_signing.pfx
 
       - name: Check workspace
@@ -177,8 +179,8 @@ jobs:
           cd ECLIDE
           mkdir -p ./build
           cd ./build
-          cmake -A Win32 -S ../ -B .
-          cmake --build . --config RelWithDebInfo --target package --parallel $NUMBER_OF_PROCESSORS
+          cmake -A Win32 -S ../ -B . 
+          cmake --build . --config RelWithDebInfo --target SIGN --parallel $NUMBER_OF_PROCESSORS
 
       - name: Build Internal ECLIDE
         shell: "bash"
@@ -186,13 +188,7 @@ jobs:
           cd ECLIDE
           cd ./build
           cmake -A Win32 -S ../ -B . -DHPCC_AUDIENCE=internal
-          cmake --build . --config RelWithDebInfo --target package --parallel $NUMBER_OF_PROCESSORS
-
-      - name: Sign ECLIDE Package
-        shell: "pwsh"
-        run: |
-          cd ./ECLIDE/build
-          C:\"Program Files (x86)"\"Microsoft SDKs"\ClickOnce\SignTool\signtool.exe sign /debug /f ../../sign/hpcc_code_signing.pfx /p ${{ secrets.SIGNING_CERTIFICATE_PASSPHRASE}} /t http://timestamp.digicert.com /fd SHA256 hpccsystems-eclide*.exe
+          cmake --build . --config RelWithDebInfo --target SIGN --parallel $NUMBER_OF_PROCESSORS
 
       - name: Upload Assets
         uses: ncipollo/release-action@v1.16.0

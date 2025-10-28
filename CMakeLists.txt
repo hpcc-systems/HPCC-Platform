@@ -538,17 +538,34 @@ if(TOP_LEVEL_PROJECT)
 
             set(CPACK_NSIS_MODIFY_PATH "ON")
 
-            if (EXISTS "${SIGN_DIRECTORY}/passphrase.txt")
+            # Signing Configuration  ---
+            if (EXISTS "${PROJECT_SOURCE_DIR}/../sign/passphrase.txt")
+                file(STRINGS "${PROJECT_SOURCE_DIR}/../sign/passphrase.txt" PFX_PASSWORD LIMIT_COUNT 1)
+                message("-- Using passphrase from file: ${PROJECT_SOURCE_DIR}/../sign/passphrase.txt")
+            endif ()
 
-                file(STRINGS "${SIGN_DIRECTORY}/passphrase.txt" PFX_PASSWORD LIMIT_COUNT 1)
+            if (PFX_PASSWORD)
+                set(CPACK_NSIS_FINALIZE_CMD "signtool sign /f \\\"${PROJECT_SOURCE_DIR}/../sign/hpcc_code_signing.pfx\\\" /fd SHA256 /p \\\"${PFX_PASSWORD}\\\" /tr http://timestamp.digicert.com /td SHA256")
+                
+                set(CPACK_NSIS_DEFINES "
+                    !define MUI_STARTMENUPAGE_DEFAULTFOLDER \\\"${CPACK_PACKAGE_VENDOR}\\\\${version}\\\\${CPACK_NSIS_DISPLAY_NAME}\\\"
+                    !define MUI_FINISHPAGE_NOAUTOCLOSE
+                    !finalize '${CPACK_NSIS_FINALIZE_CMD} \\\"%1\\\"'
+                    !uninstfinalize '${CPACK_NSIS_FINALIZE_CMD} \\\"%1\\\"'
+                ")
 
                 add_custom_target(SIGN
-                    COMMAND signtool sign /f "${SIGN_DIRECTORY}/hpcc_code_signing.pfx" /fd "SHA256" /p "${PFX_PASSWORD}" /tr "http://timestamp.digicert.com" "${CMAKE_BINARY_DIR}/${PACKAGE_FILE_NAME_PREFIX}*.exe"
+                    COMMAND signtool sign /f "${PROJECT_SOURCE_DIR}/../sign/hpcc_code_signing.pfx" /fd "SHA256" /p "${PFX_PASSWORD}" /tr "http://timestamp.digicert.com" /td "SHA256" "${CMAKE_BINARY_DIR}/${CPACK_PACKAGE_NAME}*.exe"
                     COMMENT "Digital Signature"
                 )
                 add_dependencies(SIGN PACKAGE)
                 set_property(TARGET SIGN PROPERTY FOLDER "CMakePredefinedTargets")
-            endif()
+            else ()
+                set(CPACK_NSIS_DEFINES "
+                    !define MUI_STARTMENUPAGE_DEFAULTFOLDER \\\"${CPACK_PACKAGE_VENDOR}\\\\${version}\\\\${CPACK_NSIS_DISPLAY_NAME}\\\"
+                    !define MUI_FINISHPAGE_NOAUTOCLOSE
+                ")
+            endif ()
         endif()
     endif(PLATFORM OR PLUGIN)
 endif(TOP_LEVEL_PROJECT)
