@@ -117,6 +117,8 @@ interface IResolvedFile : extends ISimpleSuperFileEnquiry
     virtual unsigned getNumParts() const = 0;
     virtual IInMemoryIndexManager *getIndexManager(bool isOpt, unsigned channel, IOutputMetaData *disklayout, bool preload) const = 0;
     virtual offset_t getFileSize() const = 0;
+    virtual unsigned getNumTotalParts() const = 0; // how many parts in total does this file/subfile have
+    virtual unsigned getNumLocalParts(unsigned channel) const = 0; // how many parts will be local for a given channel?
 
     virtual const CDateTime &queryTimeStamp() const = 0;
     virtual unsigned queryCheckSum() const = 0;
