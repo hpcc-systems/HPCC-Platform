@@ -3003,7 +3003,7 @@ class CLazyKeyIndex final : implements IKeyIndex, public CInterface
         {
             Owned<IMemoryMappedFile> mapped = useMemoryMappedIndexes ? delayedFile->getMappedFile() : nullptr;
             if (mapped)
-                realKey.setown(queryKeyStore()->load(keyfile, crc, mapped, isTLK));
+                realKey.setown(queryKeyStore()->load(keyfile, crc, mapped, isTLK, blockedIOSize));
             else
             {
                 iFileIO.setown(delayedFile->getFileIO());
