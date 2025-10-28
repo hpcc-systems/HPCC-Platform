@@ -47,6 +47,23 @@ using namespace std::chrono;
 
 static constexpr unsigned maxAzureBlockCount = 50000;
 
+static constexpr bool defaultTraceEnabled = false;                                    // tracing disabled
+static constexpr unsigned __int64 defaultParallelThreshold = 16 * 1024 * 1024;        // 16MB in bytes
+static constexpr unsigned defaultParallelConcurrency = 16;                            // 16 concurrent connections
+static constexpr unsigned __int64 defaultParallelChunkSize = 4 * 1024 * 1024;         // 4MB in bytes
+static constexpr unsigned __int64 defaultParallelInitialChunkSize = 4 * 1024 * 1024;  // 4MB in bytes
+
+
+static struct AzureAPIConfig
+{
+    bool traceEnabled = defaultTraceEnabled;
+    unsigned __int64 parallelThreshold = defaultParallelThreshold;
+    unsigned parallelConcurrency = defaultParallelConcurrency;
+    unsigned __int64 parallelChunkSize = defaultParallelChunkSize;
+    unsigned __int64 parallelInitialChunkSize = defaultParallelInitialChunkSize;
+} globalAzureAPIConfig;
+
+
 //---------------------------------------------------------------------------------------------------------------------
 
 using SharedBlobClient = std::shared_ptr<Azure::Storage::Blobs::BlockBlobClient>;
@@ -139,7 +156,7 @@ private:
 class AzureBlob final : implements CInterfaceOf<IFile>
 {
 public:
-    AzureBlob(const char *_azureFileName);
+    AzureBlob(const char *_azureFileName, AzureAPIConfig &&_config);
     virtual bool exists() override
     {
         ensureMetaData();
@@ -242,6 +259,7 @@ public:
 public:
     SharedBlobClient getBlobClient() const;
     void invalidateMeta() { haveMeta = false; }
+    const AzureAPIConfig & queryConfig() const { return config; }
 
 protected:
     std::shared_ptr<StorageSharedKeyCredential> getSharedKeyCredentials() const;
@@ -270,6 +288,7 @@ protected:
     std::string blobUrl;
     mutable CriticalSection cs;
     mutable std::shared_ptr<Azure::Storage::Blobs::BlockBlobClient> cachedBlobClient;  // Cache client for reuse per-file
+    AzureAPIConfig config;
 };
 
 
@@ -320,14 +339,13 @@ size32_t AzureBlobReadIO::read(offset_t pos, size32_t len, void * data)
     options.Range.Value().Offset = pos;
     options.Range.Value().Length = len;
 
-    // Configure parallel transfer options for better performance
-    // length should never be > 4MB, but just in case...
-    if (len > 16 * 1024 * 1024)  // 16MB threshold for parallel transfers
+    // Configure parallel transfer options based on global configuration
+    if (len >= file->queryConfig().parallelThreshold)
     {
-        // Only use parallel transfers for larger requests to avoid overhead
-        options.TransferOptions.Concurrency = 16;  // Increase from default 5 to 16 parallel connections
-        options.TransferOptions.ChunkSize = 8 * 1024 * 1024;  // Increase chunk size from 4MB to 8MB
-        options.TransferOptions.InitialChunkSize = 64 * 1024 * 1024;  // Reduce initial chunk from 256MB to 64MB for better parallelism
+        // Use parallel transfers for larger requests
+        options.TransferOptions.Concurrency = file->queryConfig().parallelConcurrency;
+        options.TransferOptions.ChunkSize = file->queryConfig().parallelChunkSize;
+        options.TransferOptions.InitialChunkSize = file->queryConfig().parallelInitialChunkSize;
     }
     else
     {
@@ -372,6 +390,15 @@ size32_t AzureBlobReadIO::read(offset_t pos, size32_t len, void * data)
     stats.ioReads.fastAdd(1);
     stats.ioReadCycles.fastAdd(timer.elapsedCycles());
     stats.ioReadBytes.fastAdd(sizeRead);
+
+    if (file->queryConfig().traceEnabled)
+    {
+        unsigned elapsed = timer.elapsedMs();
+        DBGLOG("Azure read: pos=%llu, len=%u, read=%ld, time=%ums, throughput=%.2f MB/s",
+            pos, len, sizeRead, elapsed,
+            elapsed > 0 ? (sizeRead / (1024.0 * 1024.0)) / (elapsed / 1000.0) : 0.0);
+    }
+
     return sizeRead;
 }
 
@@ -553,7 +580,7 @@ static std::string getBlobUrl(const char *account, const char * container, const
     return url.append("/").append(blob);
 }
 
-AzureBlob::AzureBlob(const char *_azureFileName) : fullName(_azureFileName)
+AzureBlob::AzureBlob(const char *_azureFileName, AzureAPIConfig &&_config) : fullName(_azureFileName), config(std::move(_config))
 {
     if (startsWith(fullName, azureBlobPrefix))
     {
@@ -825,7 +852,46 @@ void AzureBlob::setProperties(int64_t _blobSize, Azure::DateTime _lastModified, 
 
 //---------------------------------------------------------------------------------------------------------------------
 
+static CriticalSection azureConfigCS;
+static CConfigUpdateHook reloadConfigHook;
+static void updateFunc(const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
+{
+    CriticalBlock block(azureConfigCS);
+
+    Owned<IPropertyTree> azureConfig = getGlobalConfigSP()->getPropTree("expert/azureapi");
+    if (azureConfig)
+    {
+        // Load parallelThresholdK in KB and convert to bytes
+        unsigned thresholdK = azureConfig->getPropInt("@parallelThresholdK", defaultParallelThreshold / 1024);
+        globalAzureAPIConfig.parallelThreshold = (unsigned __int64)thresholdK * 1024;
+
+        // Load parallelConcurrency
+        globalAzureAPIConfig.parallelConcurrency = azureConfig->getPropInt("@parallelConcurrency", defaultParallelConcurrency);
+
+        // Load parallelChunkSizeK in KB and convert to bytes
+        unsigned chunkSizeK = azureConfig->getPropInt("@parallelChunkSizeK", defaultParallelChunkSize / 1024);
+        globalAzureAPIConfig.parallelChunkSize = (unsigned __int64)chunkSizeK * 1024;
+
+        // Load parallelInitialChunkSizeK in KB and convert to bytes
+        unsigned initialChunkSizeK = azureConfig->getPropInt("@parallelInitialChunkSizeK", defaultParallelInitialChunkSize / 1024);
+        globalAzureAPIConfig.parallelInitialChunkSize = (unsigned __int64)initialChunkSizeK * 1024;
+
+        // Load trace flag
+        globalAzureAPIConfig.traceEnabled = azureConfig->getPropBool("@trace", defaultTraceEnabled);
+
+        DBGLOG("Azure API configuration loaded: parallelThresholdK=%u KB, parallelConcurrency=%u, parallelChunkSizeK=%u KB, parallelInitialChunkSizeK=%u KB, trace=%s",
+            thresholdK, globalAzureAPIConfig.parallelConcurrency, chunkSizeK, initialChunkSizeK, globalAzureAPIConfig.traceEnabled ? "true" : "false");
+    }
+}
+
+static AzureAPIConfig getAzureConfig()
+{
+    reloadConfigHook.installOnce(updateFunc, true);
+    CriticalBlock block(azureConfigCS);
+    return globalAzureAPIConfig;
+}
+
 IFile *createAzureBlob(const char *azureFileName)
 {
-    return new AzureBlob(azureFileName);
+    return new AzureBlob(azureFileName, getAzureConfig());
 }
