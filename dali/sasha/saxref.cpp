@@ -894,6 +894,7 @@ public:
     std::atomic<uint64_t> processedFiles{0};
     XRefPeriodicTimer heartbeatTimer;
 
+    bool saveToDebugPlane = false; // If true, before updating ECL Watch, save scan data to sasha debug plane
     Owned<IPropertyTree> foundbranch;
     Owned<IPropertyTree> lostbranch;
     Owned<IPropertyTree> orphansbranch;
@@ -1001,13 +1002,75 @@ public:
         heartbeatTimer.updatePeriod();
     }
 
+    void doSaveToDebugPlane(const char *name, StringBuffer &datastr)
+    {
+        assertex(saveToDebugPlane);
+
+        StringBuffer debugPlaneName;
+        if (!getDefaultPlane(debugPlaneName, "@debugPlane", "debug"))
+        {
+            OWARNLOG(LOGPFX "Failed to get default debug plane, skipping saveToDebugPlane");
+            return;
+        }
+
+        Owned<IPropertyTree> debugPlane = getStoragePlane(debugPlaneName);
+        if (!debugPlane)
+        {
+            OWARNLOG(LOGPFX "Failed to get debug plane '%s', skipping saveToDebugPlane", debugPlaneName.str());
+            return;
+        }
+
+        const char* debugPrefix = debugPlane->queryProp("@prefix");
+        if (!debugPrefix || !*debugPrefix)
+        {
+            OWARNLOG(LOGPFX "Debug plane '%s' has no prefix, skipping saveToDebugPlane", debugPlaneName.str());
+            return;
+        }
+
+        // Create unique scope with cluster name and timestamp
+        CDateTime dt;
+        dt.setNow();
+        StringBuffer timestamp;
+        dt.getString(timestamp);
+        // Replace spaces and colons with underscores for filesystem compatibility
+        timestamp.replaceString(" ", "_");
+        timestamp.replaceString(":", "-");
+
+        StringBuffer uniqueScope(debugPrefix);
+        addPathSepChar(uniqueScope).append("xref");
+        if (clustname.get() && *clustname.get())
+            uniqueScope.append("_").append(clustname.get());
+        uniqueScope.append("_").append(timestamp);
+        addPathSepChar(uniqueScope).append(name).append(".xml");
+
+        log(false, "Saving debug files to %s", uniqueScope.str());
+
+        recursiveCreateDirectoryForFile(uniqueScope.str());
+
+        OwnedIFile file = createIFile(uniqueScope.str());
+        OwnedIFileIO fileio = file->open(IFOcreate);
+        if (!fileio)
+            throw makeStringExceptionV(0, "doSaveToDebugPlane: could not create or open %s", file->queryFilename());
+        {
+            Owned<IIOStream> stream = createIOStream(fileio);
+            stream.setown(createBufferedIOStream(stream));
+            writeStringToStream(*stream, datastr);
+        } // Stream destructor flushes here
+        fileio->close(); // Ensure errors are reported
+    }
+
     void addBranch(IPropertyTree *root,const char *name,IPropertyTree *branch)
     {
         if (!branch)
             return;
+
         branch->setProp("Cluster",clustname);
         StringBuffer datastr;
         toXML(branch,datastr);
+
+        if (saveToDebugPlane)
+            doSaveToDebugPlane(name,datastr);
+
         root->addPropTree(name,createPTree(name))->setPropBin("data",datastr.length(),datastr.str());
     }
 
@@ -1016,6 +1079,7 @@ public:
         lastlog = 0;
         sfnum = 0;
         fnum = 0;
+        saveToDebugPlane = getExpertOptBool("saveToDebugPlane", isContainerized());
     }
 
     void start(bool updateeclwatch,const char *clname)
