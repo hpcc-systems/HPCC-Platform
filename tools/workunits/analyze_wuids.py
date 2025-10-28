@@ -81,19 +81,30 @@ def parse_error_info(error_message):
     Examples:
         "Graph graph30[2]" -> graph_name="graph30", subgraph="2"
         "WORKER #118" -> worker_number="118"
+        "Graph graph149, The machine 100.65.250.75:21200" -> graph_name="graph149", machine_endpoint="100.65.250.75:21200"
     """
-    info = {'graph_name': None, 'subgraph_id': None, 'worker_number': None}
+    info = {'graph_name': None, 'subgraph_id': None, 'worker_number': None, 'machine_endpoint': None}
 
     # Parse graph name: "Graph <graphName>[<subgraphID>]"
     graph_match = re.search(r'Graph\s+(\w+)\[(\d+)\]', error_message, re.IGNORECASE)
     if graph_match:
         info['graph_name'] = graph_match.group(1)
         info['subgraph_id'] = graph_match.group(2)
+    else:
+        # Try alternate pattern: "Graph <graphName>," (without subgraph ID)
+        graph_match_alt = re.search(r'Graph\s+(\w+),', error_message, re.IGNORECASE)
+        if graph_match_alt:
+            info['graph_name'] = graph_match_alt.group(1)
 
     # Parse worker number: "WORKER #<number>"
     worker_match = re.search(r'WORKER\s+#(\d+)', error_message, re.IGNORECASE)
     if worker_match:
         info['worker_number'] = worker_match.group(1)
+
+    # Parse machine endpoint: "The machine <ip>:<port>"
+    machine_match = re.search(r'[Tt]he machine\s+(\d+\.\d+\.\d+\.\d+:\d+)', error_message)
+    if machine_match:
+        info['machine_endpoint'] = machine_match.group(1)
 
     return info
 
@@ -214,7 +225,7 @@ def find_worker_pod_info_from_xml(xml_content, graph_name, worker_number):
     Args:
         xml_content: Workunit XML string
         graph_name: Graph name to search for (e.g., "graph1"), or None to skip graph matching
-        worker_number: Worker sequence number as string (e.g., "118")
+        worker_number: Worker sequence number as string (e.g., "118"). If None, tries 1st worker for that instance
 
     Returns:
         dict with pod_name, container_name, or None if not found
@@ -251,48 +262,49 @@ def find_worker_pod_info_from_xml(xml_content, graph_name, worker_number):
         note = None
 
         if thorworker_element is not None:
-            # If we have an instanceNum from graph matching, use it for more precise matching
-            if thor_instance_num is not None:
-                for worker_process in thorworker_element:
-                    if worker_process.get('instanceNum') == thor_instance_num:
+            if worker_number:
+                # If we have an instanceNum from graph matching, use it for more precise matching
+                if thor_instance_num is not None:
+                    for worker_process in thorworker_element:
+                        if worker_process.get('instanceNum') == thor_instance_num:
+                            sequence = worker_process.get('sequence')
+                            if sequence == worker_number:
+                                pod_name = worker_process.get('podName')
+                                container_name = worker_process.get('containerName')
+                                break
+                else:
+                    # No graph name provided, search all ThorWorker elements by sequence only
+                    for worker_process in thorworker_element:
                         sequence = worker_process.get('sequence')
                         if sequence == worker_number:
                             pod_name = worker_process.get('podName')
                             container_name = worker_process.get('containerName')
+                            note = 'Matched by worker sequence only (no graph info)'
                             break
-            else:
-                # No graph name provided, search all ThorWorker elements by sequence only
+
+                # If exact match not found and we have an instanceNum, try pod name pattern matching
+                if pod_name is None and thor_instance_num is not None:
+                    for worker_process in thorworker_element:
+                        if worker_process.get('instanceNum') == thor_instance_num:
+                            pod_name_candidate = worker_process.get('podName', '')
+
+                            # Try to extract worker number from pod name pattern
+                            # Common pattern: thorworker-job-...-###-...
+                            pod_worker_match = re.search(r'-(\d+)-', pod_name_candidate)
+                            if pod_worker_match and pod_worker_match.group(1) == worker_number:
+                                pod_name = worker_process.get('podName')
+                                container_name = worker_process.get('containerName')
+                                note = 'Matched by pod name pattern'
+                                break
+
+            # If still no match and we have an instanceNum, return first worker for that instance
+            if pod_name is None and thor_instance_num is not None:
                 for worker_process in thorworker_element:
-                    sequence = worker_process.get('sequence')
-                    if sequence == worker_number:
+                    if worker_process.get('instanceNum') == thor_instance_num:
                         pod_name = worker_process.get('podName')
                         container_name = worker_process.get('containerName')
-                        note = 'Matched by worker sequence only (no graph info)'
+                        note = 'Approximate match - exact worker not identified'
                         break
-
-        # If exact match not found and we have an instanceNum, try pod name pattern matching
-        if pod_name is None and thor_instance_num is not None and thorworker_element is not None:
-            for worker_process in thorworker_element:
-                if worker_process.get('instanceNum') == thor_instance_num:
-                    pod_name_candidate = worker_process.get('podName', '')
-
-                    # Try to extract worker number from pod name pattern
-                    # Common pattern: thorworker-job-...-###-...
-                    pod_worker_match = re.search(r'-(\d+)-', pod_name_candidate)
-                    if pod_worker_match and pod_worker_match.group(1) == worker_number:
-                        pod_name = worker_process.get('podName')
-                        container_name = worker_process.get('containerName')
-                        note = 'Matched by pod name pattern'
-                        break
-
-        # If still no match and we have an instanceNum, return first worker for that instance
-        if pod_name is None and thor_instance_num is not None and thorworker_element is not None:
-            for worker_process in thorworker_element:
-                if worker_process.get('instanceNum') == thor_instance_num:
-                    pod_name = worker_process.get('podName')
-                    container_name = worker_process.get('containerName')
-                    note = 'Approximate match - exact worker not identified'
-                    break
 
         if pod_name is None:
             return None
@@ -384,14 +396,14 @@ def get_workunit_info(esp_url, wuid, verbose=False, auth=None, quick=False, stop
 
             if verbose:
                 print(f"  [VERBOSE] Error detected: {error_msg[:100]}{'...' if len(error_msg) > 100 else ''}", file=sys.stderr)
-                print(f"  [VERBOSE] Error details: graph={error_details.get('graph_name')}, worker={error_details.get('worker_number')}", file=sys.stderr)
+                print(f"  [VERBOSE] Error details: graph={error_details.get('graph_name')}, worker={error_details.get('worker_number')}, machine={error_details.get('machine_endpoint')}", file=sys.stderr)
 
             # Skip detailed analysis in quick mode
             if quick:
                 if verbose:
                     print(f"  [VERBOSE] Quick mode: skipping XML/postmortem analysis", file=sys.stderr)
-            # If we found worker info (graph is optional), fetch workunit XML to find process information
-            elif error_details.get('worker_number'):
+            # If we found worker info OR graph name, fetch workunit XML to find process information
+            elif error_details.get('worker_number') or error_details.get('graph_name'):
                 if verbose:
                     if error_details.get('graph_name'):
                         print(f"  [VERBOSE] Fetching workunit XML to find pod/container info (graph-based search)", file=sys.stderr)
@@ -498,7 +510,10 @@ def get_workunit_info(esp_url, wuid, verbose=False, auth=None, quick=False, stop
 
                     # If no OOM detected, check postmortem logs for SIGTERM
                     if not oom_detected and postmortem_log_files:
-                        # Sort postmortem log files and get the last one (largest number)
+                        if verbose:
+                            print(f"  [VERBOSE] Found {len(postmortem_log_files)} postmortem log file(s) to check", file=sys.stderr)
+
+                        # Sort postmortem log files by numeric suffix if present, otherwise by name
                         # Extract the numeric suffix for sorting
                         def extract_log_number(filepath):
                             match = re.search(r'\.log\.(\d+)$', filepath)
