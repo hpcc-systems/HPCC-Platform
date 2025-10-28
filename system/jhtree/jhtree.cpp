@@ -2031,6 +2031,12 @@ IKeyIndexPrewarmer * CKeyIndex::createPrewarmer()
     return new IndexPrewarmer(*this);
 }
 
+void CKeyIndex::ensureReady()
+{
+    //Ensure the bloom filters are loaded.
+    (void)queryBloom(0);
+}
+
 
 CKeyCursor::CKeyCursor(CKeyIndex &_key, const IIndexFilterList *_filter, bool _logExcessiveSeeks, size32_t _blockedIOSize)
     : key(OLINK(_key)), filter(_filter), logExcessiveSeeks(_logExcessiveSeeks)
@@ -2978,7 +2984,7 @@ bool IndexRowFilter::canMatch() const
 
 //-------------------------------------------------------
 
-class CLazyKeyIndex : implements IKeyIndex, public CInterface
+class CLazyKeyIndex final : implements IKeyIndex, public CInterface
 {
     StringAttr keyfile;
     unsigned crc; 
@@ -3056,6 +3062,7 @@ public:
     virtual offset_t queryFirstBranchOffset() override { return checkOpen().queryFirstBranchOffset(); }
     virtual const BloomFilter * queryBloom(unsigned i) const { return checkOpen().queryBloom(i); }
     virtual IKeyIndexPrewarmer * createPrewarmer() { return checkOpen().createPrewarmer(); }
+    virtual void ensureReady() override { checkOpen().ensureReady(); }
 };
 
 extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, IFileIO &iFileIO, unsigned fileIdx, bool isTLK, size32_t blockedIOSize)
