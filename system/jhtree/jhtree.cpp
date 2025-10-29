@@ -1123,46 +1123,50 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
     StringBuffer fname;
     fname.append(fileName).append('/').append(crc).append('/').append(blockedIOSize);
 
-    // MORE - holds onto the mutex way too long
-    synchronized block(mutex);
-    keyIndex = keyIndexCache.query(fname);
-    if (NULL == keyIndex)
     {
-        if (iMappedFile)
+        //This mutex is now only held when the object is being created - any load will happen outside.
+        synchronized block(mutex);
+        keyIndex = keyIndexCache.query(fname);
+        if (NULL == keyIndex)
         {
-            assert(!iFileIO && !part);
-            keyIndex = new CMemKeyIndex(getUniqId(fileIdx, fileName), LINK(iMappedFile), fname, isTLK);
-        }
-        else if (iFileIO)
-        {
-            assert(!part);
-            keyIndex = new CDiskKeyIndex(getUniqId(fileIdx, fileName), LINK(iFileIO), fname, isTLK, blockedIOSize);
+            if (iMappedFile)
+            {
+                assert(!iFileIO && !part);
+                keyIndex = new CMemKeyIndex(getUniqId(fileIdx, fileName), LINK(iMappedFile), fname, isTLK);
+            }
+            else if (iFileIO)
+            {
+                assert(!part);
+                keyIndex = new CDiskKeyIndex(getUniqId(fileIdx, fileName), LINK(iFileIO), fname, isTLK, blockedIOSize);
+            }
+            else
+            {
+                assert(fileIdx==(unsigned) -1);
+                Owned<IFile> iFile;
+                if (part)
+                {
+                    iFile.setown(part->open());
+                    if (NULL == iFile.get())
+                        throw MakeStringException(0, "Failed to open index file %s", fileName);
+                }
+                else
+                    iFile.setown(createIFile(fileName));
+                IFileIO *fio = iFile->open(IFOread);
+                if (fio)
+                    keyIndex = new CDiskKeyIndex(getUniqId(fileIdx, fileName), fio, fname, isTLK, blockedIOSize);
+                else
+                    throw MakeStringException(0, "Failed to open index file %s", fileName);
+            }
+            keyIndexCache.replace(fname, *LINK(keyIndex));
         }
         else
         {
-            assert(fileIdx==(unsigned) -1);
-            Owned<IFile> iFile;
-            if (part)
-            {
-                iFile.setown(part->open());
-                if (NULL == iFile.get())
-                    throw MakeStringException(0, "Failed to open index file %s", fileName);
-            }
-            else
-                iFile.setown(createIFile(fileName));
-            IFileIO *fio = iFile->open(IFOread);
-            if (fio)
-                keyIndex = new CDiskKeyIndex(getUniqId(fileIdx, fileName), fio, fname, isTLK, blockedIOSize);
-            else
-                throw MakeStringException(0, "Failed to open index file %s", fileName);
+            LINK(keyIndex);
         }
-        keyIndexCache.replace(fname, *LINK(keyIndex));
-    }
-    else
-    {
-        LINK(keyIndex);
     }
     assertex(NULL != keyIndex);
+    //Check the index has been loaded - thread safe, only one thread will load if multiple threads get here at the same time.
+    keyIndex->ensureReady();
     return keyIndex;
 }
 
@@ -1329,7 +1333,7 @@ static void noteSkips(IContextLogger *ctx, unsigned lskips, unsigned lnullSkips)
 
 // CKeyIndex impl.
 
-CKeyIndex::CKeyIndex(unsigned _iD, const char *_name) : name(_name)
+CKeyIndex::CKeyIndex(unsigned _iD, const char *_name, bool _forceTLK) : name(_name), forceTLK(_forceTLK)
 {
     iD = _iD;
     cache = queryNodeCache(); // use one node cache for all key indexes;
@@ -1367,12 +1371,10 @@ const CJHSearchNode *CKeyIndex::getRootNode() const
     return root.getClear();
 }
 
-void CKeyIndex::init(KeyHdr &hdr, bool isTLK)
+void CKeyIndex::init(KeyHdr &hdr)
 {
-    if (isTLK)
+    if (forceTLK)
         hdr.ktype |= HTREE_TOPLEVEL_KEY; // Once upon a time, thor did not set
-    else if (hdr.ktype & HTREE_TOPLEVEL_KEY)
-        isTLK = true;
     assertex((hdr.ktype & COL_PREFIX) != 0);   // We have not generated a key without COL_PREFIX set for over 20 years
 
     keyHdr = new CKeyHdr(iD);
@@ -1398,23 +1400,12 @@ CKeyIndex::~CKeyIndex()
     ::Release(rootNode);
 }
 
+//---------------------------------------------------------------------------------------------------------------------
+
 CMemKeyIndex::CMemKeyIndex(unsigned _iD, IMemoryMappedFile *_io, const char *_name, bool isTLK)
-    : CKeyIndex(_iD, _name)
+    : CKeyIndex(_iD, _name, isTLK)
 {
     io.setown(_io);
-    assertex(io->offset()==0);                  // mapped whole file
-    assertex(io->length()==io->fileSize());     // mapped whole file
-    KeyHdr hdr;
-    if (io->length() < sizeof(hdr))
-        throw MakeStringException(0, "Failed to read key header: file too small, could not read %u bytes", (unsigned) sizeof(hdr));
-    memcpy(&hdr, io->base(), sizeof(hdr));
-
-    if (hdr.ktype & USE_TRAILING_HEADER)
-    {
-        _WINREV(hdr.nodeSize);
-        memcpy(&hdr, (io->base()+io->length()) - hdr.nodeSize, sizeof(hdr));
-    }
-    init(hdr, isTLK);
 }
 
 const CJHTreeNode *CMemKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, CLoadNodeCacheState & readState) const
@@ -1433,15 +1424,58 @@ const CJHTreeNode *CMemKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, C
     return CKeyIndex::loadNodeFromMemory(nodeData, pos, false);
 }
 
+void CMemKeyIndex::ensureReady()
+{
+    if (initialised.load(std::memory_order_acquire))
+        return;
+
+    CriticalBlock block(cacheCrit);
+    if (initialised.load(std::memory_order_acquire))
+        return;
+
+    assertex(io->offset()==0);                  // mapped whole file
+    assertex(io->length()==io->fileSize());     // mapped whole file
+    KeyHdr hdr;
+    if (io->length() < sizeof(hdr))
+        throw MakeStringException(0, "Failed to read key header: file too small, could not read %u bytes", (unsigned) sizeof(hdr));
+    memcpy(&hdr, io->base(), sizeof(hdr));
+
+    if (hdr.ktype & USE_TRAILING_HEADER)
+    {
+        _WINREV(hdr.nodeSize);
+        memcpy(&hdr, (io->base()+io->length()) - hdr.nodeSize, sizeof(hdr));
+    }
+    init(hdr);
+
+    //Ensure the bloom filters are loaded.
+    (void)queryBloom(0);
+    initialised.store(true, std::memory_order_release);
+}
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
 CDiskKeyIndex::CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool isTLK, size32_t _blockedIOSize)
-    : CKeyIndex(_iD, _name)
+    : CKeyIndex(_iD, _name, isTLK)
 {
     blockedIOSize = _blockedIOSize;
     io.setown(_io);
+    //Do not read anmy data in the constructor - so that the load can be performed in parallel with other indexes.
+}
+
+void CDiskKeyIndex::ensureReady()
+{
+    if (initialised.load(std::memory_order_acquire))
+        return;
+
+    CriticalBlock block(cacheCrit);
+    if (initialised.load(std::memory_order_acquire))
+        return;
+
     KeyHdr hdr;
     offset_t sizeRead = io->read(0, sizeof(hdr), &hdr);
     if (sizeRead != sizeof(hdr))
-        throw MakeStringException(0, "Failed to read key '%s' header: file too small, could not read %u bytes - read %u", _name, (unsigned) sizeof(hdr), (unsigned)sizeRead);
+        throw MakeStringException(0, "Failed to read key '%s' header: file too small, could not read %u bytes - read %u", name.str(), (unsigned) sizeof(hdr), (unsigned)sizeRead);
 
 #ifdef _DEBUG
     //In debug mode always use the trailing header if it is available to ensure that code path is tested
@@ -1455,10 +1489,18 @@ CDiskKeyIndex::CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool
         offset_t readOffset = actualSize - hdr.nodeSize;
         sizeRead = io->read(readOffset, sizeof(hdr), &hdr);
         if (sizeRead != sizeof(hdr))
-            throw MakeStringException(4, "Invalid key %s: failed to read trailing key header at offset %llu, read %u", _name, readOffset, (unsigned)sizeRead);
+            throw MakeStringException(4, "Invalid key %s: failed to read trailing key header at offset %llu, read %u", name.str(), readOffset, (unsigned)sizeRead);
     }
-    init(hdr, isTLK);
+    init(hdr);
+
+    //Ensure the bloom filters are loaded.
+    (void)queryBloom(0);
+    initialised.store(true, std::memory_order_release);
 }
+
+
+
+//---------------------------------------------------------------------------------------------------------------------
 
 CJHTreeNode *CKeyIndex::_createNode(const NodeHdr &nodeHdr) const
 {
@@ -2030,13 +2072,6 @@ IKeyIndexPrewarmer * CKeyIndex::createPrewarmer()
 {
     return new IndexPrewarmer(*this);
 }
-
-void CKeyIndex::ensureReady()
-{
-    //Ensure the bloom filters are loaded.
-    (void)queryBloom(0);
-}
-
 
 CKeyCursor::CKeyCursor(CKeyIndex &_key, const IIndexFilterList *_filter, bool _logExcessiveSeeks, size32_t _blockedIOSize)
     : key(OLINK(_key)), filter(_filter), logExcessiveSeeks(_logExcessiveSeeks)
