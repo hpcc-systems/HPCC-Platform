@@ -1900,6 +1900,7 @@ class CSharedWriteAheadDisk : public CSharedWriteAheadBase
     Linked<IEngineRowAllocator> allocator;
     Linked<IOutputRowDeserializer> deserializer;
     IOutputMetaData *serializeMeta;
+    size32_t chunkStreamBufSize = 0;
 
     struct AddRemoveFreeChunk
     {
@@ -2114,7 +2115,7 @@ class CSharedWriteAheadDisk : public CSharedWriteAheadBase
         }
         else
         {
-            Owned<IBufferedSerialInputStream> stream = createFileSerialStream(tempFileIO, chunk.offset);
+            Owned<IBufferedSerialInputStream> stream = createFileSerialStream(tempFileIO, chunk.offset, (offset_t)-1, chunkStreamBufSize);
 #ifdef TRACE_WRITEAHEAD
             unsigned diskChunkNum;
             stream->get(sizeof(diskChunkNum), &diskChunkNum);
@@ -2206,6 +2207,7 @@ public:
         tempFileOwner->queryIFile().setShareMode(IFSHnone);
         tempFileIO.setown(tempFileOwner->queryIFile().open(IFOcreaterw));
         highOffset = 0;
+        chunkStreamBufSize = getBlockedRandomIO(tempFileIO);
     }
     ~CSharedWriteAheadDisk()
     {

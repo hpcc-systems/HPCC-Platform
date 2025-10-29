@@ -2354,7 +2354,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             if (!partIO.iFileIO)
                 throw MakeStringException(0, "Failed to open fetch file part %u: %s", partNo, iFile->queryFilename());
 
-            partIO.stream = createFileSerialStream(partIO.iFileIO, 0, (offset_t)-1, 0);
+            partIO.stream = createFileSerialStream(partIO.iFileIO, 0, (offset_t)-1, 0); // bufsize=0, no buffering
 
             unsigned expectedFormatCrc = helper->getDiskFormatCrc();
             IOutputMetaData *expectedFormat = helper->queryDiskRecordSize();

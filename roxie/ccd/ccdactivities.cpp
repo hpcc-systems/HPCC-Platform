@@ -4002,7 +4002,7 @@ void CRoxieFetchActivityBase::setPartNo(bool filechanged)
     rawFile.setown(files->getFilePart(lastPartNo.partNo, base)); // MORE - superfiles
     translator = translators->queryTranslator(0);                // MORE - superfiles
     assertex(rawFile != NULL);
-    rawStream.setown(createFileSerialStream(rawFile, 0, -1, 0));
+    rawStream.setown(createFileSerialStream(rawFile, 0, -1, 0)); // bufsize=0, no buffering
 }
 
 class CRoxieCSVFetchActivityFactory : public CRoxieFetchActivityFactory
@@ -4489,7 +4489,7 @@ class CRoxieKeyedJoinFetchActivity : public CRoxieAgentActivity
     {
         rawFile.setown(files->getFilePart(lastPartNo.partNo, base)); // MORE - superfiles
         translator = translators->queryTranslator(0);                // MORE - superfiles
-        rawStream.setown(createFileSerialStream(rawFile, 0, -1, 0));
+        rawStream.setown(createFileSerialStream(rawFile, 0, -1, 0)); // bufsize=0, no buffering
         prefetcher.setown(translators->getPrefetcher(0));
         prefetchSource.setStream(rawStream);
     }
