@@ -53,7 +53,8 @@ function getConfig(env) {
             "codemirror": baseUrl + "/node_modules/codemirror",
             "crossfilter": baseUrl + "/node_modules/crossfilter2/crossfilter.min",
             "font-awesome": hpccBaseUrl + "/common/font-awesome",
-            "tslib": baseUrl + "/node_modules/tslib/tslib"
+            "tslib": baseUrl + "/node_modules/tslib/tslib",
+            "dojo/_firebug": baseUrl + "/node_modules/dojo/_firebug"
         },
         packages: [
             {
