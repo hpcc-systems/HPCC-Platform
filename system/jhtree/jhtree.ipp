@@ -122,9 +122,11 @@ protected:
 
     CKeyIndex(unsigned _iD, const char *_name, bool _forceTLK);
     ~CKeyIndex();
-    void init(KeyHdr &hdr);
-    void loadBloomFilters();
-    const CJHSearchNode *getRootNode() const;
+    void init(KeyHdr &hdr, const INodeLoader & nodeLoader);
+    void loadBloomFilters(const INodeLoader & nodeLoader);
+    void ensureBloomFiltersLoaded(const INodeLoader & nodeLoader) const;
+
+    const CJHSearchNode *getRootNode(const INodeLoader & nodeLoader) const;
 
     inline bool isTLK() const { return (keyHdr->getKeyType() & HTREE_TOPLEVEL_KEY) != 0; }
  
@@ -191,6 +193,16 @@ public:
     virtual const char *queryFileName() const override
     {
         return key.queryFileName();
+    }
+
+    CCachedIndexRead & queryReadCache()
+    {
+        return readState.readCache;
+    }
+
+    void setUsePageCache(bool _usePageCache)
+    {
+        readState.usePageCache = _usePageCache;
     }
 
 protected:

@@ -40,8 +40,13 @@ public:
     byte * getBufferForUpdate(offset_t offset, size32_t writeSize);
 
     // Request data for a particular offset and size.  return null if no match, otherwise return a pointer
-    // to the daa
+    // to the data
     const byte * queryBuffer(offset_t offset, size32_t readSize) const;
+
+    // Return data from the buffer if it exists, otherwise read from the file and set the buffer
+    const byte * queryFillBuffer(offset_t offset, size32_t size, IFileIO * io, size32_t readSize);
+
+    size32_t querySize() const { return size; }
 
 protected:
     offset_t baseOffset = 0;
