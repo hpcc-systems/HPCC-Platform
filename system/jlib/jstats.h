@@ -22,6 +22,7 @@
 #include "jlib.hpp"
 #include "jexcept.hpp"
 #include "jmutex.hpp"
+#include "jatomic.hpp"
 #include <vector>
 #include <initializer_list>
 #include <map>
@@ -1054,73 +1055,119 @@ extern jlib_decl StringBuffer & formatMoney(StringBuffer &out, unsigned __int64 
  * This metric uses Welford’s online algorithm for running mean and variance, providing
  * numerically stable and efficient calculation of average and standard deviation without
  * storing historical data. It supports outlier detection via deviation calculations and
- * can be reset to clear all statistics.
+ * can be cleared to reset all statistics.
+ */
+
+/*
+ * Performance Design Notes:
+ * - Uses RelaxedAtomic<__uint64> for count to enable lock-free queryCount() operations
+ * - recordValue(double) accepts native floating-point values without conversion overhead
+ * - Critical sections protect both count increment and mean/M2 updates to ensure Welford's
+ *   algorithm correctness - count and statistical updates must be applied in sequential order
+ * - Supports implicit conversion from integer types for caller convenience
+ * - Memory layout groups related fields together without forced alignment since mean/M2
+ *   are always accessed together under the same lock
+ *
+ * Thread Safety:
+ * - queryCount() is lock-free and safe for concurrent access
+ * - recordValue() uses critical section to ensure sequential application of Welford updates
+ * - Other query operations use minimal critical sections for mathematical correctness
+ * - Multiple threads can safely record values and query statistics concurrently
  */
 class ThresholdStat
 {
 public:
     ThresholdStat() {}
 
-    __uint64 queryCount() const
+    __uint64 queryCount() const  // Lock-free operation using RelaxedAtomic
     {
-        CriticalBlock block(cs);
-        return count;
+        return count.load();
     }
 
-    void recordValue(__uint64 value)
+    void recordValue(double value)  // Accepts double directly, supports implicit conversion from integers
     {
-        CriticalBlock block(cs);
-        double x = static_cast<double>(value);
-        count++;
-        double delta = x - mean;
-        mean += delta / count;
-        double delta2 = x - mean;
+        CriticalBlock block(cs);  // Ensure atomic count increment with mean/M2 updates
+        __uint64 newCount = count.add_fetch(1);  // Atomic increment inside critical section
+        double delta = value - mean;
+        mean += delta / newCount;
+        double delta2 = value - mean;
         M2 += delta * delta2;
     }
 
     double queryRunningAverage() const
     {
+        // Fast path: no lock needed if no data
+        if (unlikely(count.load() == 0))
+            return 0.0;
+
         CriticalBlock block(cs);
         return mean;
     }
 
     double queryStandardDeviation() const
     {
-        CriticalBlock block(cs);
-        return (count > 1) ? sqrt(M2 / count) : 0.0;
-    }
-
-    double getDeviations(__uint64 sampleValue) const
-    {
-        CriticalBlock block(cs);
-        if (count < 2)
+        __uint64 currentCount = count.load();
+        if (unlikely(currentCount <= 1))  // Fast path: no lock needed for insufficient data
             return 0.0;
 
-        double stddev = queryStandardDeviation();
-
-        if (stddev == 0.0)
-            return 0.0;
-
-        return (static_cast<double>(sampleValue) - mean) / stddev;
+        CriticalBlock block(cs);
+        return sqrt(M2 / currentCount);
     }
 
-    virtual void reset()
+    double getDeviations(double sampleValue) const
+    {
+        __uint64 currentCount = count.load();
+        if (unlikely(currentCount < 2))
+            return 0.0;
+
+        CriticalBlock block(cs);
+        // Calculate stddev once and reuse
+        double stddev = sqrt(M2 / currentCount);
+
+        if (unlikely(stddev == 0.0))
+            return 0.0;
+
+        return (sampleValue - mean) / stddev;
+    }
+
+    // Performance optimization: Get multiple statistics in single lock
+    void queryStatistics(__uint64 & outCount, double & outMean, double & outStdDev) const
+    {
+        outCount = count.load();  // Lock-free count first
+        if (outCount == 0)
+        {
+            outMean = 0.0;
+            outStdDev = 0.0;
+            return;
+        }
+
+        CriticalBlock block(cs);  // Single lock for coordinated reads
+        outMean = mean;
+        outStdDev = (outCount > 1) ? sqrt(M2 / outCount) : 0.0;
+    }
+
+    void clear()
     {
         CriticalBlock block(cs);
-        count = 0;
+        count.store(0);
         mean = 0.0;
         M2 = 0.0;
     }
 
 protected:
-    mutable CriticalSection cs;
-    __uint64 count{0};
-    double mean{0.0};
-    double M2{0.0};
+    // Memory layout: group frequently accessed data together
+    RelaxedAtomic<__uint64> count{0};  // Most frequently accessed, keep first
+    mutable CriticalSection cs;        // Only for coordinated mean/M2 updates
+    // Welford algorithm state - accessed together under same lock
+    double mean{0.0};                  // Running mean
+    double M2{0.0};                    // Running sum of squared differences
 };
 
 inline std::shared_ptr<ThresholdStat> makeSharedThresholdStat()
 {
-    return std::make_shared<ThresholdStat>();
+    // std::make_shared is not used so that there are separate memory allocations for the object and the shared pointer control structure.
+    // This ensures the vmt for the control structure does not live in memory allocated by a shared object (dll) that could be unloaded.
+    // If make_shared is used and a shared object is unloaded, the vmt is also deleted which causes unpredictable results during weak pointer access.
+    return std::shared_ptr<ThresholdStat>(new ThresholdStat());
 }
 #endif

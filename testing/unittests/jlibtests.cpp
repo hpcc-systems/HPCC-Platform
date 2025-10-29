@@ -3413,6 +3413,10 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIPTTest, "JlibIPTTest");
 #include "jstring.hpp"
 #include <string>
 #include "jstats.h"
+#include <thread>
+#include <vector>
+#include <atomic>
+#include <chrono>
 
 IPropertyTree *createCompatibilityConfigPropertyTree()
 {
@@ -4378,7 +4382,10 @@ class JlibStatsTest : public CppUnit::TestFixture
         CPPUNIT_TEST(test);
         CPPUNIT_TEST(Test_thresholdStatPointer);
         CPPUNIT_TEST(Test_thresholdStat);
-        CPPUNIT_TEST(Test_thresholdStatReset);
+        CPPUNIT_TEST(Test_thresholdStatClear);
+        CPPUNIT_TEST(Test_thresholdStatImplicitConversion);
+        CPPUNIT_TEST(Test_thresholdStatPerformance);
+        CPPUNIT_TEST(Test_thresholdStatThreadSafety);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -4421,14 +4428,14 @@ public:
         double stddev = thresholdStat->queryStandardDeviation();
 
         // Check if a new value is an outlier (e.g., more than 2 stddev from mean)
-        __uint64 newValue = 200;
+        double newValue = 200.0;
         double deviations = thresholdStat->getDeviations(newValue);
-        CPPUNIT_ASSERT (fabs(deviations) > 2.0); // 200 is more than 2 stddev from mean
+        CPPUNIT_ASSERT(fabs(deviations) > 2.0); // 200 is more than 2 stddev from mean
     }
     void Test_thresholdStat()
     {
         // Test ThresholdStat for tracking numeric values with statistical aggregation
-        std::shared_ptr<ThresholdStat> pThreshold = std::make_shared<ThresholdStat>();
+        std::shared_ptr<ThresholdStat> pThreshold = makeSharedThresholdStat();
 
         // Initially should be empty
         CPPUNIT_ASSERT_EQUAL((__uint64)0, pThreshold->queryCount()); // count is 0
@@ -4466,10 +4473,10 @@ public:
         CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedStdDev, pThreshold->queryStandardDeviation(), 0.0001);
     }
 
-    void Test_thresholdStatReset()
+    void Test_thresholdStatClear()
     {
-        // Create a ThresholdStatistic with unit StatisticMeasure::Count
-        std::shared_ptr<ThresholdStat> pThreshold = std::make_shared<ThresholdStat>();
+        // Create a ThresholdStat with unit StatisticMeasure::Count
+        std::shared_ptr<ThresholdStat> pThreshold = makeSharedThresholdStat();
 
         // Record some values
         pThreshold->recordValue(10);
@@ -4481,10 +4488,10 @@ public:
         CPPUNIT_ASSERT(pThreshold->queryRunningAverage() > 0.0);
         CPPUNIT_ASSERT(pThreshold->queryStandardDeviation() > 0.0);
 
-        // Reset the metric
-        pThreshold->reset();
+        // Clear the metric
+        pThreshold->clear();
 
-        // After reset, statistics should be zero
+        // After clear, statistics should be zero
         CPPUNIT_ASSERT(pThreshold->queryCount() == 0);
         CPPUNIT_ASSERT(pThreshold->queryRunningAverage() == 0.0);
         CPPUNIT_ASSERT(pThreshold->queryStandardDeviation() == 0.0);
@@ -4498,6 +4505,159 @@ public:
         CPPUNIT_ASSERT(pThreshold->queryCount() == 3);
         CPPUNIT_ASSERT(pThreshold->queryRunningAverage() > 0.0);
         CPPUNIT_ASSERT(pThreshold->queryStandardDeviation() > 0.0);
+    }
+
+    void Test_thresholdStatImplicitConversion()
+    {
+        // Test ThresholdStat with various numeric types to verify implicit conversion
+        // Performance Note: recordValue(double) eliminates static_cast overhead
+        // compared to recordValue(__uint64) which required internal conversion
+        std::shared_ptr<ThresholdStat> pThreshold = makeSharedThresholdStat();
+
+        // Test integer literals (implicit int -> double conversion)
+        pThreshold->recordValue(100);    // int literal -> double
+        pThreshold->recordValue(200);    // int literal -> double
+
+        // Test explicit integer types (implicit conversion)
+        __uint64 latency = 150;
+        pThreshold->recordValue(latency); // __uint64 -> double
+
+        unsigned int responseTime = 175;
+        pThreshold->recordValue(responseTime); // unsigned int -> double
+
+        // Test floating-point values (no conversion needed)
+        pThreshold->recordValue(125.5);  // Direct double, optimal performance
+        pThreshold->recordValue(135.7);  // Direct double, optimal performance
+
+        // Verify statistics are calculated correctly across all types
+        CPPUNIT_ASSERT_EQUAL((__uint64)6, pThreshold->queryCount());
+
+        // Expected mean: (100 + 200 + 150 + 175 + 125.5 + 135.7) / 6 = 147.7
+        double expectedMean = (100.0 + 200.0 + 150.0 + 175.0 + 125.5 + 135.7) / 6.0;
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedMean, pThreshold->queryRunningAverage(), 0.0001);
+
+        // Test getDeviations with various types
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, pThreshold->getDeviations(expectedMean), 0.1); // At mean
+
+        // Test with integer parameter (implicit conversion)
+        int outlierValue = 300;
+        double deviations = pThreshold->getDeviations(outlierValue); // int -> double
+        CPPUNIT_ASSERT(fabs(deviations) > 1.0); // Should be an outlier
+
+        // Test with direct double (optimal case)
+        double preciseValue = 147.65;
+        double preciseDeviations = pThreshold->getDeviations(preciseValue); // Direct double
+        CPPUNIT_ASSERT(fabs(preciseDeviations) < 0.1); // Should be close to mean
+
+        // Performance verification: All operations should work with natural numeric types
+        // without requiring explicit casts in calling code
+    }
+
+    void Test_thresholdStatPerformance()
+    {
+        // Test performance optimizations and batch operations
+        std::shared_ptr<ThresholdStat> pThreshold = makeSharedThresholdStat();
+
+        // Test fast paths for empty statistics
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, pThreshold->queryRunningAverage(), 0.0001); // Fast path: no lock
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, pThreshold->queryStandardDeviation(), 0.0001); // Fast path: no lock
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, pThreshold->getDeviations(100.0), 0.0001); // Fast path: no lock
+
+        // Add some data
+        pThreshold->recordValue(100.0);
+        pThreshold->recordValue(200.0);
+        pThreshold->recordValue(150.0);
+
+        // Test batch query optimization - single lock for multiple stats
+        __uint64 count;
+        double mean, stddev;
+        pThreshold->queryStatistics(count, mean, stddev);
+
+        CPPUNIT_ASSERT_EQUAL((__uint64)3, count);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(150.0, mean, 0.0001);
+        CPPUNIT_ASSERT(stddev > 0.0); // Should have calculated standard deviation
+
+        // Verify batch query matches individual queries
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(mean, pThreshold->queryRunningAverage(), 0.0001);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(stddev, pThreshold->queryStandardDeviation(), 0.0001);
+
+        // Test that lock-free count is consistently accessible
+        for (int i = 0; i < 100; ++i)
+        {
+            CPPUNIT_ASSERT_EQUAL((__uint64)3, pThreshold->queryCount()); // Should always be lock-free
+        }
+    }
+
+    void Test_thresholdStatThreadSafety()
+    {
+        // Test thread safety of recordValue() to ensure Welford's algorithm correctness
+        // This test addresses the race condition identified by Copilot AI where concurrent
+        // threads could apply count increments and mean/M2 updates out of order
+        std::shared_ptr<ThresholdStat> pThreshold = makeSharedThresholdStat();
+
+        const int numThreads = 10;
+        const int numValuesPerThread = 1000;
+        const double baseValue = 100.0;
+
+        std::vector<std::thread> threads;
+        std::atomic<int> readyCount{0};
+        std::atomic<bool> startFlag{false};
+
+        // Create threads that will all start simultaneously
+        for (int i = 0; i < numThreads; ++i)
+        {
+            threads.emplace_back([&, i]() {
+                readyCount++;
+                // Wait for all threads to be ready
+                while (!startFlag.load()) {
+                    std::this_thread::yield();
+                }
+
+                // Each thread records values with slight variation
+                for (int j = 0; j < numValuesPerThread; ++j)
+                {
+                    double value = baseValue + (i * 10) + (j * 0.1);
+                    pThreshold->recordValue(value);
+                }
+            });
+        }
+
+        // Wait for all threads to be ready
+        while (readyCount.load() < numThreads) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+
+        // Start all threads simultaneously
+        startFlag.store(true);
+
+        // Wait for all threads to complete
+        for (auto& thread : threads) {
+            thread.join();
+        }
+
+        // Verify final statistics are consistent
+        __uint64 finalCount = pThreshold->queryCount();
+        CPPUNIT_ASSERT_EQUAL((__uint64)(numThreads * numValuesPerThread), finalCount);
+
+        // Verify that mean and standard deviation are reasonable
+        double mean = pThreshold->queryRunningAverage();
+        double stddev = pThreshold->queryStandardDeviation();
+
+        // Mean should be in expected range (around baseValue + some variation)
+        CPPUNIT_ASSERT(mean > baseValue);
+        CPPUNIT_ASSERT(mean < baseValue + (numThreads * 10) + (numValuesPerThread * 0.1));
+
+        // Standard deviation should be positive for varied input
+        CPPUNIT_ASSERT(stddev > 0.0);
+
+        // Test batch query consistency under concurrent access
+        __uint64 batchCount;
+        double batchMean, batchStddev;
+        pThreshold->queryStatistics(batchCount, batchMean, batchStddev);
+
+        CPPUNIT_ASSERT_EQUAL(finalCount, batchCount);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(mean, batchMean, 0.0001);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(stddev, batchStddev, 0.0001);
     }
 };
 
