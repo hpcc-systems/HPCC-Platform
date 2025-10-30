@@ -91,7 +91,7 @@ def download_asset(url, username=None, decrypted_password=None):
       f.write(response.content)
     logging.info(f"Downloaded {filename}")
   elif response.status_code == 404:
-    logging.debug(f"Asset not found: {url}")
+    logging.error(f"Asset not found: {url}")
   else:
     logging.error(f"{response.status_code} Failed to fetch {filename}")
 
@@ -165,24 +165,8 @@ else:
 package_list = ['platform', 'clienttools', 'eclide']
 redhat_distributions = ['el7', 'el8', 'rocky8', 'amzn2']
 debian_distributions = ['noble', 'focal', 'bionic', 'jammy']
-plugin_list = [
-  'cassandraembed',
-  'couchbaseembed',
-  'eclblas',
-  'h3',
-  'javaembed',
-  'kafka',
-  'memcached',
-  'mongodbembed',
-  'mysqlembed',
-  'nlp',
-  'parquetembed',
-  'redis',
-  'sqlite3embed',
-  'sqs',
-  'wasmembed'
-]
 documentation_languages = ['EN_US', 'PT_BR']
+debian_architectures = ['amd64', 'aarch64']
 
 if not version_list:
   logging.info("No new tags found")
@@ -193,34 +177,29 @@ for version in version_list:
   base_version = version.split('-')[0]
 
   # Fetch assets from GitHub
-  logging.info(f"Creating {data_dir_base}/CE-Candidate-{base_version} bin/platform, bin/clienttools, bin/ide, bin/plugins and docs directories")
+  logging.info(f"Creating {data_dir_base}/CE-Candidate-{base_version} bin/platform, bin/clienttools, bin/ide, and docs directories")
   os.makedirs(f"{data_dir_base}/CE-Candidate-{base_version}/bin/platform", exist_ok=True)
   os.makedirs(f"{data_dir_base}/CE-Candidate-{base_version}/bin/clienttools", exist_ok=True)
   os.makedirs(f"{data_dir_base}/CE-Candidate-{base_version}/bin/ide", exist_ok=True)
-  os.makedirs(f"{data_dir_base}/CE-Candidate-{base_version}/bin/plugins", exist_ok=True) 
   os.makedirs(f"{data_dir_base}/CE-Candidate-{base_version}/docs", exist_ok=True)
   # do CE platform
   os.chdir(f"{data_dir_base}/CE-Candidate-{base_version}/bin/platform")
   for distribution in redhat_distributions:
     download_asset(f"{repo_url}/download/community_{version}/hpccsystems-platform-community_{version}.{distribution}.x86_64_withsymbols.rpm")
   for distribution in debian_distributions:
-    download_asset(f"{repo_url}/download/community_{version}/hpccsystems-platform-community_{version}{distribution}_amd64_withsymbols.deb")
-    download_asset(f"{repo_url}/download/community_{version}/hpccsystems-platform-community_{version}{distribution}_amd64_k8s.deb")
+    for architecture in debian_architectures:
+      download_asset(f"{repo_url}/download/community_{version}/hpccsystems-platform-community_{version}{distribution}_{architecture}_withsymbols.deb")
+      download_asset(f"{repo_url}/download/community_{version}/hpccsystems-platform-community_{version}{distribution}_{architecture}_k8s.deb")
   # do CE clienttools
   os.chdir(f"{data_dir_base}/CE-Candidate-{base_version}/bin/clienttools")
   for distribution in redhat_distributions:
     download_asset(f"{repo_url}/download/community_{version}/hpccsystems-clienttools-community_{version}.{distribution}.x86_64_withsymbols.rpm")
   for distribution in debian_distributions:
-    download_asset(f"{repo_url}/download/community_{version}/hpccsystems-clienttools-community_{version}{distribution}_amd64_withsymbols.deb")
+    for architecture in debian_architectures:
+      download_asset(f"{repo_url}/download/community_{version}/hpccsystems-clienttools-community_{version}{distribution}_{architecture}_withsymbols.deb")
   download_asset(f"{repo_url}/download/community_{version}/hpccsystems-clienttools-community_{version}Darwin-x86_64.pkg")
+  download_asset(f"{repo_url}/download/community_{version}/hpccsystems-clienttools-community_{version}Darwin-arm64.pkg")
   download_asset(f"{repo_url}/download/community_{version}/hpccsystems-clienttools-community_{version}Windows-x86_64.exe")
-  # do CE plugins
-  os.chdir(f"{data_dir_base}/CE-Candidate-{base_version}/bin/plugins")
-  for plugin in plugin_list:
-    for distribution in redhat_distributions:
-      download_asset(f"{repo_url}/download/community_{version}/hpccsystems-plugin-{plugin}_{version}.{distribution}.x86_64_withsymbols.rpm")
-    for distribution in debian_distributions:
-      download_asset(f"{repo_url}/download/community_{version}/hpccsystems-plugin-{plugin}_{version}{distribution}_amd64_withsymbols.deb")
   # do CE eclide
   os.chdir(f"{data_dir_base}/CE-Candidate-{base_version}/bin/ide")
   download_asset(f"{repo_url}/download/community_{version}/hpccsystems-eclide-community_{version}Windows-i386.exe")
@@ -244,7 +223,8 @@ for version in version_list:
   for distribution in redhat_distributions:
     download_asset(f"{jfrog_base_url}/hpccpl-rpm-virtual/LN/{distribution}/x86_64/hpccsystems-platform-internal_{version}.{distribution}.x86_64_withsymbols.rpm", jfrog_username, decrypted_jfrog_password)
   for distribution in debian_distributions:
-    download_asset(f"{jfrog_base_url}/hpccpl-debian-virtual/pool/LN/hpccsystems-platform-internal_{version}{distribution}_amd64_withsymbols.deb", jfrog_username, decrypted_jfrog_password)
+    for architecture in debian_architectures:
+      download_asset(f"{jfrog_base_url}/hpccpl-debian-virtual/pool/LN/hpccsystems-platform-internal_{version}{distribution}_{architecture}_withsymbols.deb", jfrog_username, decrypted_jfrog_password)
   ## internal clienttools
   logging.info(f"Creating {data_dir_base}/LN-Candidate-{base_version}/bin/clienttools directory")
   os.makedirs(f"{data_dir_base}/LN-Candidate-{base_version}/bin/clienttools", exist_ok=True)
@@ -252,7 +232,8 @@ for version in version_list:
   for distribution in redhat_distributions:
     download_asset(f"{jfrog_base_url}/hpccpl-rpm-virtual/LN/{distribution}/x86_64/hpccsystems-clienttools-internal_{version}.{distribution}.x86_64_withsymbols.rpm", jfrog_username, decrypted_jfrog_password)
   for distribution in debian_distributions:
-    download_asset(f"{jfrog_base_url}/hpccpl-debian-virtual/pool/LN/hpccsystems-clienttools-internal_{version}{distribution}_amd64_withsymbols.deb", jfrog_username, decrypted_jfrog_password)
+    for architecture in debian_architectures:
+      download_asset(f"{jfrog_base_url}/hpccpl-debian-virtual/pool/LN/hpccsystems-clienttools-internal_{version}{distribution}_{architecture}_withsymbols.deb", jfrog_username, decrypted_jfrog_password)
   download_asset(f"{jfrog_base_url}/hpccpl-macos-virtual/LN/macos/x86_64/hpccsystems-clienttools-internal_{version}Darwin-x86_64.pkg", jfrog_username, decrypted_jfrog_password)
   download_asset(f"{jfrog_base_url}/hpccpl-windows-virtual/LN/windows/x86_64/hpccsystems-clienttools-internal_{version}Windows-x86_64.exe", jfrog_username, decrypted_jfrog_password)
   chown_recursive(f"{data_dir_base}/LN-Candidate-{base_version}", local_uid, local_gid)
