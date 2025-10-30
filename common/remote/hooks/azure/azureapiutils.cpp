@@ -46,6 +46,8 @@ bool areManagedIdentitiesEnabled()
 
 std::shared_ptr<Azure::Storage::StorageSharedKeyCredential> getAzureSharedKeyCredential(const char * accountName, const char * secretName)
 {
+    // MORE: Should we create a cache of credentials?  We would need to be careful about the lifetime of the shared key credential
+
     StringBuffer key;
     getSecretValue(key, "storage", secretName, "key", true);
     //Trim trailing whitespace/newlines in case the secret has been entered by hand e.g. on bare metal
@@ -73,6 +75,8 @@ std::shared_ptr<Azure::Storage::StorageSharedKeyCredential> getAzureSharedKeyCre
 
 std::shared_ptr<Azure::Core::Credentials::TokenCredential> getAzureManagedIdentityCredential()
 {
+    // MORE: Should we create a cache of credentials?  We would need to be careful about the lifetime of the managed identity credential
+
     // Azure SDK credential objects handle token refresh automatically
     const char * federatedTokenFile = std::getenv("AZURE_FEDERATED_TOKEN_FILE");
     if (federatedTokenFile)
@@ -123,6 +127,31 @@ std::shared_ptr<Azure::Core::Credentials::TokenCredential> getAzureManagedIdenti
             e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
     }
 }
+
+//---------------------------------------------------------------------------------------------------------------------
+
+// Global transport instance for connection reuse across all Azure blob operations
+// This allows HTTP connection pooling to work effectively across different blobs/containers/accounts
+static std::shared_ptr<Azure::Core::Http::HttpTransport> globalAzureTransport;
+static CriticalSection globalTransportCS;
+
+std::shared_ptr<Azure::Core::Http::HttpTransport> getHttpTransport()
+{
+    CriticalBlock block(globalTransportCS);
+    if (!globalAzureTransport)
+    {
+        // Create shared transport with optimized settings for all Azure operations
+        Azure::Core::Http::CurlTransportOptions transportOptions;
+        transportOptions.ConnectionTimeout = std::chrono::milliseconds(10000);  // 10 second connection timeout
+        transportOptions.NoSignal = true;  // Avoid signal interference
+        // Note: libcurl automatically handles connection pooling and keep-alive
+        // Sharing the transport instance ensures maximum connection reuse
+        globalAzureTransport = std::make_shared<Azure::Core::Http::CurlTransport>(transportOptions);
+    }
+    return globalAzureTransport;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
 
 bool isBase64Char(char c)
 {
