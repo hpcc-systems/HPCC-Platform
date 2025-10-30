@@ -534,6 +534,44 @@ const char * peekStringList(std::vector<size32_t> & matchOffsets, IBufferedSeria
 {
     size32_t scanned = 0;
     size32_t startNext = 0;
+    for (;;)
+    {
+        size32_t got;
+        const char * start = (const char *)in.peek(scanned+1,got);
+        if (got <= scanned)
+        {
+            len = scanned;
+            if (startNext == scanned)
+            {
+                //End of file, but the last string was null terminated...
+                return start;
+            }
+            return nullptr;
+        }
+
+        for (size32_t offset = scanned; offset < got; offset++)
+        {
+            char next = start[offset];
+            if (!next)
+            {
+                if (offset == startNext)
+                {
+                    //A zero length string terminates the list - include the empty string in the length
+                    len = offset + 1;
+                    return start;
+                }
+                matchOffsets.push_back(startNext);
+                startNext = offset + 1;
+            }
+        }
+        scanned = got;
+    }
+}
+
+const char * peekAttributePairList(std::vector<size32_t> & matchOffsets, IBufferedSerialInputStream & in, size32_t & len)
+{
+    size32_t scanned = 0;
+    size32_t startNext = 0;
     bool expectingValue = false;
 
     for (;;)
@@ -562,37 +600,24 @@ const char * peekStringList(std::vector<size32_t> & matchOffsets, IBufferedSeria
 
             if (unlikely(offset == startNext))
             {
-                // Found a null terminator or an empty string at the start of a field
-                size32_t secondCharOffset = offset + 1;
-                size32_t thirdCharOffset = offset + 2;
-
                 if (expectingValue)
                 {
-                    // Current null is possibly a empty string Attribute Value.
-                    if (thirdCharOffset < got)
-                    {
-                        char nextChar = start[secondCharOffset];
-                        // nextChar could be a null denoting eos; or the numeric value of the size of CPTValue followed by a null char; or an Attribute Name.
-                        // So we need to valid that the nextChar is valid for an Attribute Name.
-                        if (nextChar == '\0' || (nextChar == '@' && isValidXPathStartChr(start[thirdCharOffset])))
-                        {
-                            // Valid empty value
-                            matchOffsets.push_back(startNext);
-                            expectingValue = false;
-                            startNext = secondCharOffset;
+                    // Valid empty value
+                    size32_t secondCharOffset = offset + 1;
+                    matchOffsets.push_back(startNext);
+                    expectingValue = false;
+                    startNext = secondCharOffset;
 
-                            searchStart = nullPos + 1;
-                            searchLen = got - secondCharOffset;
-                            continue;
-                        }
-                    }
-                    // else no more data for third character
+                    searchStart = nullPos + 1;
+                    searchLen = got - secondCharOffset;
+                    continue;
                 }
-                // else empty name is not allowed
-
-                // Either not enough data to decide, or invalid empty field, treat as list terminator
-                len = offset + 1;
-                return start;
+                else
+                {
+                    // Invalid empty string for Name, treat as list terminator
+                    len = offset + 1;
+                    return start;
+                }
             }
             else
             {
