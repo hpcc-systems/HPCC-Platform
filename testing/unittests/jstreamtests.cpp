@@ -382,6 +382,7 @@ public:
         CPPUNIT_TEST(testGeneration);
         CPPUNIT_TEST(testBufferStream);     // Write a file and then read the results
         CPPUNIT_TEST(testVarStringHelpers);  // Test functions for reading varstrings from a stream
+        CPPUNIT_TEST(testAttributePairListPeek); // Test functions for reading a list of Attribute Name/Value pair strings from a stream
         CPPUNIT_TEST(testSimpleStream);     // Write a file and then read the results
         CPPUNIT_TEST(testIncSequentialStream); // write a file and read results after each flush
         CPPUNIT_TEST(testEvenSequentialStream); // write a file and read results after each flush
@@ -925,6 +926,76 @@ public:
         }
     }
 
+    void generatePeekStringPairListStrings(IBufferedSerialOutputStream & out, size32_t maxStringLength, offset_t minLength, unsigned & numStrings)
+    {
+        // Generate a list of attribute name/value pairs for testing peekStringList
+        // Names start with '@' followed by valid XPath characters
+        // Values can be empty (zero-length strings)
+        // The list is terminated with an empty string
+        offset_t offset{0};
+        size32_t prevLength{0};
+        size32_t prime{1997333137};
+        unsigned delta{0};
+        std::mt19937 generator{std::random_device{}()};
+        numStrings = 0;
+        bool expectingValue = false;
+        bool forceAtLeastOneNull{true};
+
+        while (offset < minLength)
+        {
+            size32_t length;
+
+            if (expectingValue)
+            {
+                if (forceAtLeastOneNull || generator() % 10 == 0) // Generate a value (can be empty 10% of the time)
+                {
+                    forceAtLeastOneNull = false;
+
+                    length = 0;
+                }
+                else
+                {
+                    length = (prevLength + prime) % maxStringLength;
+                }
+            }
+            else
+            {
+                length = ((prevLength + prime) % maxStringLength);
+                if (length < 2)
+                    length = 2;
+            }
+
+            size32_t got;
+            char * data = (char *)out.reserve(length+1, got);
+            CPPUNIT_ASSERT(got > length);
+
+            if (expectingValue)
+            {
+                for (unsigned j=0; j < length; j++)
+                    data[j] = (char)('A' + (delta + j) % 26);
+            }
+            else
+            {
+                data[0] = '@';
+                for (unsigned j=1; j < length; j++)
+                    data[j] = (j % 2) ? (char)('a' + (delta + j) % 26) : (char)('0' + (delta + j) % 10);
+            }
+
+            data[length] = 0;
+            out.commit(length+1);
+
+            offset += length+1;
+            delta++;
+            numStrings++;
+            prevLength = length;
+            expectingValue = !expectingValue;
+        }
+        size32_t got;
+        char * terminator = (char *)out.reserve(1, got);
+        terminator[0] = 0;
+        out.commit(1);
+    }
+
     static inline unsigned check(const char * testName, offset_t offset, const char * data, size32_t delta)
     {
         CPPUNIT_ASSERT(data != nullptr);
@@ -1018,6 +1089,37 @@ public:
         CPPUNIT_ASSERT(in.eos());
     }
 
+    void testAttributePairListPeek(IBufferedSerialInputStream & in, unsigned expectedNumStrings)
+    {
+        std::vector<size32_t> matches;
+        unsigned skipLen = 0;
+        const char * base = peekAttributePairList(matches, in, skipLen);
+
+        CPPUNIT_ASSERT_EQUAL(expectedNumStrings, (unsigned)matches.size());
+
+        // Verify that we can access each string via the returned offsets
+        // and that each string is null-terminated within the parsed region.
+        // The vector contains alternating Name,Value pairs: Names must be non-empty.
+        bool valueExpected{false};
+        for (size_t i = 0; i < matches.size(); ++i)
+        {
+            size32_t off = matches[i];
+            const char * str = base + off;
+            // remaining bytes in the parsed region starting at this offset
+            size32_t remaining = (skipLen > off) ? (size32_t)(skipLen - off) : 0;
+            CPPUNIT_ASSERT_MESSAGE("Parsed string extends beyond parsed region", remaining > 0);
+            CPPUNIT_ASSERT_MESSAGE("string not NUL-terminated within parsed region", memchr(str, '\0', remaining) != nullptr);
+
+            if (!valueExpected)
+                CPPUNIT_ASSERT_MESSAGE("Attribute name must not be empty", str[1] != '\0');
+
+            valueExpected = !valueExpected;
+        }
+
+        in.skip(skipLen);
+        CPPUNIT_ASSERT(in.eos());
+    }
+
     void testVarStringBuffer()
     {
         size32_t maxStringLength = 0x10000;
@@ -1061,6 +1163,35 @@ public:
             DBGLOG("Buffer:testStringListPeek took %lluus", timer.elapsedNs()/1000);
         }
     }
+    void testAttributePairListPeek()
+    {
+        if (testBuffer)
+        {
+            MemoryBuffer buffer;
+            unsigned numStrings{0};
+            {
+                // Generate attribute name/value pairs into the buffer.
+                // Names (first string) will not be empty.
+                // Values (second string) may be empty.
+                size32_t maxStringLength = 0x10000;
+                offset_t minFileLength = 0x400000;
+                unsigned numNulls = 0;
+
+                Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(buffer);
+                generatePeekStringPairListStrings(*out, maxStringLength, minFileLength, numStrings);
+                CPPUNIT_ASSERT(numStrings > 0);
+                CPPUNIT_ASSERT(numStrings % 2 == 0);
+            }
+
+            {
+                MemoryBuffer clone(buffer.length(), buffer.toByteArray());
+                Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(clone);
+                CCycleTimer timer;
+                testAttributePairListPeek(*in, numStrings);
+                DBGLOG("Buffer:testAttributePairListPeek took %lluus", timer.elapsedNs()/1000);
+            }
+        }
+    }
     void testVarStringFile(size32_t maxStringLength)
     {
         size32_t bufferSize = 0x4000;
@@ -1090,13 +1221,6 @@ public:
             Owned<IBufferedSerialInputStream> in = createInput(filename, bufferSize, nullptr, 0, false);
             testKVStringPeek(*in, minFileLength);
             DBGLOG("File:testKVStringPeek took %lluus", timer.elapsedNs()/1000);
-        }
-
-        {
-            CCycleTimer timer;
-            Owned<IBufferedSerialInputStream> in = createInput(filename, bufferSize, nullptr, 0, false);
-            testStringListPeek(*in);
-            DBGLOG("File:testStringListPeek took %lluus", timer.elapsedNs()/1000);
         }
 
         {
