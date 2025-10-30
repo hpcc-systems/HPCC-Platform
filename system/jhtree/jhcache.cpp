@@ -56,6 +56,19 @@ const byte * CCachedIndexRead::queryBuffer(offset_t offset, size32_t readSize) c
     return static_cast<const byte *>(data.get()) + (offset - baseOffset);
 }
 
+const byte * CCachedIndexRead::queryFillBuffer(offset_t offset, size32_t size, IFileIO * io, size32_t readSize)
+{
+    const byte * match = queryBuffer(offset, size);
+    if (match)
+        return match;
+
+    byte * buffer = getBufferForUpdate(offset, readSize);
+    size32_t sizeRead = io->read(offset, readSize, buffer);
+    adjustSize(sizeRead);
+
+    return queryBuffer(offset, size);
+}
+
 #ifdef __linux__
 static unsigned cacheIndex(offset_t cacheVal, unsigned numCacheEntries)
 {

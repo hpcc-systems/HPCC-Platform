@@ -47,6 +47,7 @@
 #include <alloca.h>
 #endif
 #include <utility>
+#include <algorithm>
 
 #include "hlzw.h"
 
@@ -1346,15 +1347,14 @@ CKeyIndex::CKeyIndex(unsigned _iD, const char *_name, bool _forceTLK) : name(_na
     latestGetNodeOffset = 0;
 }
 
-const CJHSearchNode *CKeyIndex::getRootNode() const
+const CJHSearchNode *CKeyIndex::getRootNode(const INodeLoader & nodeLoader) const
 {
     offset_t rootPos = keyHdr->getRootFPos();
     Linked<CNodeCache> nodeCache = queryNodeCache();
     // The root node may be a branch or a leaf (on TLK nodes)
     NodeType type = getBranchDepth() != 0 ? NodeBranch : NodeLeaf;
 
-    DefaultNodeLoader loader(*this);
-    Owned<const CJHSearchNode> root = (const CJHSearchNode *) nodeCache->getCachedNode(loader, iD, rootPos, type, NULL, isTopLevelKey());
+    Owned<const CJHSearchNode> root = (const CJHSearchNode *) nodeCache->getCachedNode(nodeLoader, iD, rootPos, type, NULL, isTopLevelKey());
 
     // It's not uncommon for a TLK to have a "root node" that has a single entry in it pointing to a leaf node
     // with all the info in. In such cases we can avoid a lot of cache lookups by pointing the "root" in the
@@ -1366,12 +1366,12 @@ const CJHSearchNode *CKeyIndex::getRootNode() const
     {
         Owned<const CJHSearchNode> oldRoot = root;
         rootPos = root->getFPosAt(0);
-        root.setown((const CJHSearchNode *) nodeCache->getCachedNode(loader, iD, rootPos, NodeLeaf, NULL, true));
+        root.setown((const CJHSearchNode *) nodeCache->getCachedNode(nodeLoader, iD, rootPos, NodeLeaf, NULL, true));
     }
     return root.getClear();
 }
 
-void CKeyIndex::init(KeyHdr &hdr)
+void CKeyIndex::init(KeyHdr &hdr, const INodeLoader & nodeLoader)
 {
     if (forceTLK)
         hdr.ktype |= HTREE_TOPLEVEL_KEY; // Once upon a time, thor did not set
@@ -1381,7 +1381,8 @@ void CKeyIndex::init(KeyHdr &hdr)
     try
     {
         keyHdr->load(hdr);
-        rootNode = getRootNode();
+        ensureBloomFiltersLoaded(nodeLoader);
+        rootNode = getRootNode(nodeLoader);
     }
     catch (IKeyException *ke)
     {
@@ -1445,10 +1446,9 @@ void CMemKeyIndex::ensureReady()
         _WINREV(hdr.nodeSize);
         memcpy(&hdr, (io->base()+io->length()) - hdr.nodeSize, sizeof(hdr));
     }
-    init(hdr);
 
-    //Ensure the bloom filters are loaded.
-    (void)queryBloom(0);
+    DefaultNodeLoader loader(*this); // Will never actually be used
+    init(hdr, loader);
     initialised.store(true, std::memory_order_release);
 }
 
@@ -1460,7 +1460,7 @@ CDiskKeyIndex::CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool
 {
     blockedIOSize = _blockedIOSize;
     io.setown(_io);
-    //Do not read anmy data in the constructor - so that the load can be performed in parallel with other indexes.
+    //Do not read any data in the constructor - so that the load can be performed in parallel with other indexes.
 }
 
 void CDiskKeyIndex::ensureReady()
@@ -1472,29 +1472,92 @@ void CDiskKeyIndex::ensureReady()
     if (initialised.load(std::memory_order_acquire))
         return;
 
+    //FUTURE: If the rootOffset was known (stored in the meta data) then this could guarantee reading all data
+    //that is needed to load the index in one go.  For the moment choose a value (128KB) that should cover most indexes.
+    //NOTE: Sizes >= 64K allow non-pathological TLKs to be loaded in one go.
+    const size32_t maxReadSize = 0x20000;
+    offset_t actualSize = io->size();
+
+    DefaultNodeLoader nodeLoader(*this);
+    CCachedIndexRead & readCache = nodeLoader.queryReadCache();
+    nodeLoader.setUsePageCache(false); // The data read when the index is opened is never read again (unless it gets swapped out)
+
+    const bool optimisticTailRead = true;
+    bool foundTrailingHeader = false;
     KeyHdr hdr;
-    offset_t sizeRead = io->read(0, sizeof(hdr), &hdr);
-    if (sizeRead != sizeof(hdr))
-        throw MakeStringException(0, "Failed to read key '%s' header: file too small, could not read %u bytes - read %u", name.str(), (unsigned) sizeof(hdr), (unsigned)sizeRead);
 
-#ifdef _DEBUG
-    //In debug mode always use the trailing header if it is available to ensure that code path is tested
-    if (hdr.ktype & USE_TRAILING_HEADER)
-#else
-    if (hdr.ktype & TRAILING_HEADER_ONLY)
-#endif
+    // Read the end of the file, and walk back through potential node sizes to find a valid footer,
+    // The only time this would fail would be for very old indexes which have no trailing footer.
+    if (optimisticTailRead && (actualSize > maxReadSize))
     {
-        _WINREV(hdr.nodeSize);
-        offset_t actualSize = io->size();
-        offset_t readOffset = actualSize - hdr.nodeSize;
-        sizeRead = io->read(readOffset, sizeof(hdr), &hdr);
-        if (sizeRead != sizeof(hdr))
-            throw MakeStringException(4, "Invalid key %s: failed to read trailing key header at offset %llu, read %u", name.str(), readOffset, (unsigned)sizeRead);
-    }
-    init(hdr);
+        offset_t endOffset = actualSize - maxReadSize;
+        const byte * endBuffer = readCache.queryFillBuffer(endOffset, maxReadSize, io, maxReadSize);
+        assertex(endBuffer);
 
-    //Ensure the bloom filters are loaded.
-    (void)queryBloom(0);
+        const byte * end = endBuffer + maxReadSize;
+        for (unsigned guessedNodeSize = 512; guessedNodeSize < 0x10000; guessedNodeSize *= 2)
+        {
+            const KeyHdr * candidateHdr = (const KeyHdr *)(end - guessedNodeSize);
+
+            //Does this look like a valid header?  Check the node size is consistent
+            unsigned short hdrNodeSize = candidateHdr->nodeSize;
+            _WINREV(hdrNodeSize);
+            if (hdrNodeSize != guessedNodeSize)
+                continue;
+
+            //Check the file size field matches the actual size of the file.
+            __int64 phyrec = candidateHdr->phyrec;
+            _WINREV(phyrec);
+            if (phyrec != actualSize-1)
+                continue;
+
+            // This should never be false - possibly an internal error instead
+            if (!(candidateHdr->ktype & USE_TRAILING_HEADER))
+                continue;
+
+            // Likelihood of a false positive by this point is not worth considering
+            memcpy(&hdr, candidateHdr, sizeof(KeyHdr));
+            foundTrailingHeader = true;
+            break;
+        }
+    }
+
+    if (!foundTrailingHeader)
+    {
+        // Read the first section of the file to prime the page cache - small indexes will be fully read
+        size32_t readSize = (size32_t)std::min(actualSize, (offset_t)maxReadSize);
+        const byte * match = readCache.queryFillBuffer(0, sizeof(KeyHdr), io, readSize);
+        if (!match)
+            throw makeStringExceptionV(0, "Failed to read key '%s' header: file too small, could not read %u bytes - read %u", name.str(), (unsigned) sizeof(KeyHdr), readCache.querySize());
+
+        memcpy(&hdr, match, sizeof(KeyHdr));
+
+    #ifdef _DEBUG
+        //In debug mode always use the trailing header if it is available to ensure that code path is tested
+        if (hdr.ktype & USE_TRAILING_HEADER)
+    #else
+        if (hdr.ktype & TRAILING_HEADER_ONLY)
+    #endif
+        {
+            if (actualSize > maxReadSize)
+            {
+                // Read the last section of the file to prime the read cache
+                offset_t endOffset = actualSize - maxReadSize;
+                readCache.queryFillBuffer(endOffset, maxReadSize, io, maxReadSize);
+            }
+
+            unsigned short nodeSize = hdr.nodeSize;
+            _WINREV(nodeSize);
+            offset_t readOffset = actualSize - nodeSize;
+            const byte * match = readCache.queryBuffer(readOffset, sizeof(hdr));
+            if (!match)
+                throw makeStringExceptionV(0, "Failed to read trailing key header at offset %llu, read %u", readOffset, readCache.querySize());
+            memcpy(&hdr, match, sizeof(KeyHdr));
+        }
+    }
+
+    init(hdr, nodeLoader);
+
     initialised.store(true, std::memory_order_release);
 }
 
@@ -1736,16 +1799,27 @@ const BloomFilter * CKeyIndex::queryBloom(unsigned i) const
 {
     if (!bloomFiltersLoaded)
     {
-        CriticalBlock b(cacheCrit);
-        if (!bloomFiltersLoaded)
-            const_cast<CKeyIndex *>(this)->loadBloomFilters();
+        DefaultNodeLoader loader(*this);
+        ensureBloomFiltersLoaded(loader);
     }
     if (i < bloomFilters.length())
         return &bloomFilters.item(i);
     return nullptr;
 }
 
-void CKeyIndex::loadBloomFilters()
+void CKeyIndex::ensureBloomFiltersLoaded(const INodeLoader & nodeLoader) const
+{
+    if (bloomFiltersLoaded)
+        return;
+
+    CriticalBlock b(cacheCrit);
+    if (bloomFiltersLoaded)
+        return;
+
+    const_cast<CKeyIndex *>(this)->loadBloomFilters(nodeLoader);
+}
+
+void CKeyIndex::loadBloomFilters(const INodeLoader & nodeLoader)
 {
     offset_t bloomAddr = keyHdr->getHdrStruct()->bloomHead;
     if (!bloomAddr || bloomAddr == static_cast<offset_t>(-1))
@@ -1754,10 +1828,9 @@ void CKeyIndex::loadBloomFilters()
         return; // indexes created before introduction of bloomfilter would have FFFF... in this space
     }
 
-    CLoadNodeCacheState readState;
     while (bloomAddr)
     {
-        Owned<const CJHTreeNode> node = loadNode(nullptr, bloomAddr, readState);
+        Owned<const CJHTreeNode> node = nodeLoader.loadNode(nullptr, bloomAddr);
         assertex(node->isBloom());
         CJHTreeBloomTableNode &bloomNode = *(CJHTreeBloomTableNode *)node.get();
         bloomAddr = bloomNode.get8();
@@ -1772,7 +1845,7 @@ void CKeyIndex::loadBloomFilters()
             offset_t next = node->getRightSib();
             if (!next)
                 break;
-            node.setown(loadNode(nullptr, next, readState));
+            node.setown(nodeLoader.loadNode(nullptr, next));
             assertex(node->isBloom());
         }
         assertex(bloomTable.length()==bloomTableSize);
@@ -1789,9 +1862,8 @@ bool CKeyIndex::bloomFilterReject(const IIndexFilterList &segs, IContextLogger *
         return false;
     if (!bloomFiltersLoaded)
     {
-        CriticalBlock b(cacheCrit);
-        if (!bloomFiltersLoaded)
-            const_cast<CKeyIndex *>(this)->loadBloomFilters();
+        DefaultNodeLoader loader(*this);
+        ensureBloomFiltersLoaded(loader);
     }
     bool hasMatchingBloom = false;
     ForEachItemIn(idx, bloomFilters)
