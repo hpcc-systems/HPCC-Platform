@@ -191,6 +191,7 @@ jobs:
     permissions:
       contents: write
       actions: write
+      packages: read
     uses: ./.github/workflows/build-clienttools-macos-13.yml
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
@@ -202,6 +203,7 @@ jobs:
     permissions:
       contents: read
       actions: write
+      packages: read
     uses: ./.github/workflows/build-clienttools-macos-13.yml
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
@@ -214,6 +216,7 @@ jobs:
     permissions:
       contents: write
       actions: write
+      packages: read
     uses: ./.github/workflows/build-clienttools-windows-2022.yml
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
@@ -227,6 +230,7 @@ jobs:
     permissions:
       contents: read
       actions: write
+      packages: read
     uses: ./.github/workflows/build-clienttools-windows-2022.yml
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
@@ -239,6 +243,7 @@ jobs:
     permissions:
       contents: write
       actions: write
+      packages: read
     uses: ./.github/workflows/build-eclide.yml
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
