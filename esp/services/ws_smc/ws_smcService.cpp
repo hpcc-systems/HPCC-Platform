@@ -34,6 +34,7 @@
 #include "roxiecontrol.hpp"
 #include "workunit.hpp"
 #include "junicode.hpp"
+#include "jstats.h"
 #include "dastats.hpp"
 
 #define STATUS_SERVER_THOR "ThorMaster"
@@ -2971,12 +2972,92 @@ static void handleGetGlobalMetrics(IEspGetGlobalMetricsRequest &req, IEspGetGlob
     resp.setGlobalMetrics(metricsResponse);
 }
 
+static void handleRecordGlobalMetrics(IEspRecordGlobalMetricsRequest &req, IEspRecordGlobalMetricsResponse &resp)
+{
+    const char* category = req.getCategory();
+    if (isEmptyString(category))
+        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Category is required for recording global metrics");
+    
+    // Build dimensions list
+    MetricsDimensionList dimensions;
+    ForEachItemIn(i, req.getDimensions())
+    {
+        IConstDimension& dim = req.getDimensions().item(i);
+        if (!isEmptyString(dim.getName()))
+            dimensions.push_back({dim.getName(), dim.getValue()});
+    }
+    
+    // Build statistics collection for recording
+    CRuntimeStatisticCollection stats(allStatistics);
+    unsigned validStatCount = 0;
+    StringArray unknownStatNames;
+    
+    ForEachItemIn(j, req.getStats())
+    {
+        IConstStat& stat = req.getStats().item(j);
+        const char* statName = stat.getName();
+        const char* statValue = stat.getValue();
+        
+        if (isEmptyString(statName) || isEmptyString(statValue))
+            continue;
+            
+        StatisticKind kind = queryStatisticKind(statName, StKindNone);
+        if (kind == StKindNone)
+        {
+            // Collect unknown statistic names in a unique list
+            if (NotFound == unknownStatNames.find(statName))
+                unknownStatNames.append(statName);
+            continue;
+        }
+        
+        stat_type value = _atoi64(statValue);
+        stats.queryStatistic(kind).set(value);
+        validStatCount++;
+    }
+    
+    if (validStatCount == 0)
+        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "No valid statistics provided for recording");
+    
+    recordGlobalMetrics(category, dimensions, stats, &allStatistics);
+    
+    // Generate appropriate response message
+    if (unknownStatNames.ordinality() == 0)
+    {
+        resp.setResult("All global metrics recorded successfully");
+    }
+    else
+    {
+        StringBuffer resultMsg("Some global metrics not recorded. Names: ");
+        ForEachItemIn(k, unknownStatNames)
+        {
+            if (k > 0)
+                resultMsg.append(", ");
+            resultMsg.append(unknownStatNames.item(k));
+        }
+        resp.setResult(resultMsg.str());
+    }
+}
+
 bool CWsSMCEx::onGetGlobalMetrics(IEspContext &context, IEspGetGlobalMetricsRequest &req, IEspGetGlobalMetricsResponse &resp)
 {
     try
     {
         context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_SMC_ACCESS_DENIED, "Failed to get global metrics. Permission denied.");
         handleGetGlobalMetrics(req, resp);
+    }
+    catch (IException *e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWsSMCEx::onRecordGlobalMetrics(IEspContext &context, IEspRecordGlobalMetricsRequest &req, IEspRecordGlobalMetricsResponse &resp)
+{
+    try
+    {
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Write, ECLWATCH_SMC_ACCESS_DENIED, "Failed to record global metrics. Permission denied.");
+        handleRecordGlobalMetrics(req, resp);
     }
     catch (IException *e)
     {
@@ -3043,6 +3124,10 @@ class DaliWsSMCGlobalMetricsTest : public CppUnit::TestFixture {
     CPPUNIT_TEST(testAllCategoriesImplicit); 
     CPPUNIT_TEST(testSingleCategoryAndDimensions); 
     CPPUNIT_TEST(testDimensionAcrossCategories); 
+    CPPUNIT_TEST(testRecordMetricsNoCategoryException); 
+    CPPUNIT_TEST(testRecordMetricsNoValidStatsException); 
+    CPPUNIT_TEST(testRecordMetricsAllKnownSuccess); 
+    CPPUNIT_TEST(testRecordMetricsUnknownStatKind); 
     CPPUNIT_TEST(tearDown); 
     CPPUNIT_TEST_SUITE_END();
 public: 
@@ -3064,7 +3149,7 @@ public:
         recordGlobalMetrics("categoryTwo", MetricsDimensionList{{"user","alice"}}, { StTimeLocalExecute, StCostExecute }, { 555, 7 }); 
         recordGlobalMetrics("categoryTwo", MetricsDimensionList{{"user","bob"},{"cluster","thor1"}}, { StTimeLocalExecute }, { 666 }); 
     }
-    Owned<IEspGetGlobalMetricsRequest> createRequestFromXML(const char * xml) { 
+    static Owned<IEspGetGlobalMetricsRequest> createRequestFromXML(const char * xml) { 
         Owned<IPropertyTree> t = createPTreeFromXMLString(xml); 
         Owned<IEspGetGlobalMetricsRequest> req = createGetGlobalMetricsRequest(); 
         if (const char *cat = t->queryProp("Category")) 
@@ -3087,7 +3172,7 @@ public:
         } 
         return req.getClear(); 
     }
-    void serializeResponse(IEspGetGlobalMetricsResponse &resp, StringBuffer &out) { 
+    static void serializeResponse(IEspGetGlobalMetricsResponse &resp, StringBuffer &out) { 
         CGetGlobalMetricsResponse *impl = dynamic_cast<CGetGlobalMetricsResponse *>(&resp); 
         CPPUNIT_ASSERT_MESSAGE("Response object type unexpected", impl != nullptr); 
         CGetGlobalMetricsResponse::serializer(nullptr, *impl, out, true); 
@@ -3140,7 +3225,73 @@ public:
         static const char * expected = "<GetGlobalMetricsResponse><GlobalMetrics><GlobalMetric><Category>categoryTwo</Category><Dimensions><Dimension><Name>user</Name><Value>alice</Value></Dimension></Dimensions><DateTimeRange><Start>1999070112</Start><End>1999070112</End></DateTimeRange><Stats><Stat><Name>TimeLocalExecute</Name><Value>555</Value></Stat><Stat><Name>CostExecute</Name><Value>7</Value></Stat></Stats></GlobalMetric><GlobalMetric><Category>categoryOne</Category><Dimensions><Dimension><Name>user</Name><Value>alice</Value></Dimension></Dimensions><DateTimeRange><Start>1999070112</Start><End>1999070112</End></DateTimeRange><Stats><Stat><Name>TimeLocalExecute</Name><Value>222</Value></Stat><Stat><Name>CostExecute</Name><Value>5</Value></Stat></Stats></GlobalMetric></GlobalMetrics></GetGlobalMetricsResponse>"; 
         assertResponseMatchesExpected(*resp, expected);
     }
+    static Owned<IEspRecordGlobalMetricsRequest> createRecordRequestFromXML(const char * xml) { 
+        Owned<IPropertyTree> t = createPTreeFromXMLString(xml); 
+        Owned<IEspRecordGlobalMetricsRequest> req = createRecordGlobalMetricsRequest(); 
+        if (const char *cat = t->queryProp("Category")) 
+            req->setCategory(cat); 
+        Owned<IPropertyTreeIterator> dims = t->getElements("Dimensions/Dimension"); 
+        ForEach(*dims) { 
+            IPropertyTree &d = dims->query(); 
+            const char *name = d.queryProp("Name"); 
+            if (isEmptyString(name)) continue; 
+            Owned<IEspDimension> dim = createDimension(); 
+            dim->setName(name); 
+            dim->setValue(d.queryProp("Value")); 
+            req->getDimensions().append(*dim.getClear()); 
+        } 
+        Owned<IPropertyTreeIterator> stats = t->getElements("Stats/Stat"); 
+        ForEach(*stats) { 
+            IPropertyTree &s = stats->query(); 
+            const char *name = s.queryProp("Name"); 
+            if (isEmptyString(name)) continue; 
+            Owned<IEspStat> stat = createStat(); 
+            stat->setName(name); 
+            stat->setValue(s.queryProp("Value")); 
+            req->getStats().append(*stat.getClear()); 
+        } 
+        return req.getClear(); 
+    }
+    void testRecordMetricsNoCategoryException() { 
+        static const char * requestXML = "<RecordGlobalMetricsRequest><Stats><Stat><Name>TimeLocalExecute</Name><Value>100</Value></Stat></Stats></RecordGlobalMetricsRequest>"; 
+        Owned<IEspRecordGlobalMetricsRequest> req = createRecordRequestFromXML(requestXML); 
+        Owned<IEspRecordGlobalMetricsResponse> resp = createRecordGlobalMetricsResponse(); 
+        try { 
+            handleRecordGlobalMetrics(*req, *resp); 
+            CPPUNIT_FAIL("Expected exception for missing category"); 
+        } catch (IException *e) { 
+            CPPUNIT_ASSERT(e->errorCode() == ECLWATCH_MISSING_PARAMS); 
+            e->Release(); 
+        } 
+    }
+    void testRecordMetricsNoValidStatsException() { 
+        static const char * requestXML = "<RecordGlobalMetricsRequest><Category>testCategory</Category></RecordGlobalMetricsRequest>"; 
+        Owned<IEspRecordGlobalMetricsRequest> req = createRecordRequestFromXML(requestXML); 
+        Owned<IEspRecordGlobalMetricsResponse> resp = createRecordGlobalMetricsResponse(); 
+        try { 
+            handleRecordGlobalMetrics(*req, *resp); 
+            CPPUNIT_FAIL("Expected exception for no valid statistics"); 
+        } catch (IException *e) { 
+            CPPUNIT_ASSERT(e->errorCode() == ECLWATCH_MISSING_PARAMS); 
+            e->Release(); 
+        } 
+    }
+    void testRecordMetricsAllKnownSuccess() { 
+        static const char * requestXML = "<RecordGlobalMetricsRequest><Category>testCategory</Category><Dimensions><Dimension><Name>testUser</Name><Value>alice</Value></Dimension></Dimensions><Stats><Stat><Name>TimeLocalExecute</Name><Value>100</Value></Stat><Stat><Name>CostExecute</Name><Value>5</Value></Stat></Stats></RecordGlobalMetricsRequest>"; 
+        Owned<IEspRecordGlobalMetricsRequest> req = createRecordRequestFromXML(requestXML); 
+        Owned<IEspRecordGlobalMetricsResponse> resp = createRecordGlobalMetricsResponse(); 
+        handleRecordGlobalMetrics(*req, *resp); 
+        CPPUNIT_ASSERT_EQUAL(std::string("All global metrics recorded successfully"), std::string(resp->getResult())); 
+    }
+    void testRecordMetricsUnknownStatKind() { 
+        static const char * requestXML = "<RecordGlobalMetricsRequest><Category>testCategory</Category><Stats><Stat><Name>TimeLocalExecute</Name><Value>100</Value></Stat><Stat><Name>UnknownStatKind</Name><Value>50</Value></Stat></Stats></RecordGlobalMetricsRequest>"; 
+        Owned<IEspRecordGlobalMetricsRequest> req = createRecordRequestFromXML(requestXML); 
+        Owned<IEspRecordGlobalMetricsResponse> resp = createRecordGlobalMetricsResponse(); 
+        handleRecordGlobalMetrics(*req, *resp); 
+        CPPUNIT_ASSERT_EQUAL(std::string("Some global metrics not recorded. Names: UnknownStatKind"), std::string(resp->getResult())); 
+    }
 };
+
 CPPUNIT_TEST_SUITE_REGISTRATION(DaliWsSMCGlobalMetricsTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(DaliWsSMCGlobalMetricsTest, "DaliWsSMCGlobalMetricsTest");
 #endif
