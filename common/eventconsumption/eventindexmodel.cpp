@@ -76,9 +76,8 @@ public: // IEventVisitationLink
     virtual void configure(const IPropertyTree& config) override
     {
         const IPropertyTree* node = config.queryBranch("storage");
-        if (!node)
-            throw makeStringException(-1, "index event model configuration missing required <storage> element");
-        storage.configure(*node);
+        if (node)
+            storage.configure(*node);
         node = config.queryBranch("memory");
         if (node)
             memory.configure(*node);
@@ -142,7 +141,7 @@ protected:
         memory.describePage(event, page);
         if (!page.cacheHit)
         {
-            storage.useAndDescribePage(event.queryNumericValue(EvAttrFileId), event.queryNumericValue(EvAttrFileOffset), event.queryNumericValue(EvAttrNodeKind), page);
+            storage.useAndDescribePage(event, page);
             CEvent simulated = event;
             event.changeEventType(EventIndexCacheMiss);
             simulated.changeEventType(EventIndexLoad);
@@ -233,7 +232,7 @@ protected:
             return; // discard unobserved page
         }
         ModeledPage page;
-        storage.useAndDescribePage(event.queryNumericValue(EvAttrFileId), event.queryNumericValue(EvAttrFileOffset), event.queryNumericValue(EvAttrNodeKind), page);
+        storage.useAndDescribePage(event, page);
         event.setValue(EvAttrReadTime, page.readTime);
         memory.describePage(event, page);
         if (ExpansionMode::OnLoad == page.expansionMode)
@@ -354,6 +353,9 @@ class IndexEventModelTests : public CppUnit::TestFixture
     CPPUNIT_TEST(testExplicitNoPageCache);
     CPPUNIT_TEST(testPageCacheEviction);
     CPPUNIT_TEST(testNoPageCacheEviction);
+    CPPUNIT_TEST(testNoStorage);
+    CPPUNIT_TEST(testNoStoragePlanes);
+    CPPUNIT_TEST(testStoragePageCacheOnly);
     CPPUNIT_TEST(testInMemoryExpansionEstimation);
     CPPUNIT_TEST(testOnLoadExpansionEstimation);
     CPPUNIT_TEST(testOnLoadToOneDemandExpansionEstimation);
@@ -581,6 +583,61 @@ expect:
                     <event type="IndexLoad" FileId="1" FileOffset="8192" NodeKind="0" InMemorySize="0" ExpandTime="0" ReadTime="500"/>
                     <event type="IndexLoad" FileId="1" FileOffset="8192" NodeKind="0" InMemorySize="0" ExpandTime="0" ReadTime="100"/>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="0" InMemorySize="0" ExpandTime="0" ReadTime="100"/>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="0" InMemorySize="0" ExpandTime="0" ReadTime="100"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData);
+    }
+
+    void testNoStorage()
+    {
+        constexpr const char *testData = R"!!!(
+            <test>
+                <link kind="index-events">
+                </link>
+                <input>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="0" InMemorySize="0" ExpandTime="0" ReadTime="1234"/>
+                </input>
+                <expect>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="0" InMemorySize="0" ExpandTime="0" ReadTime="1234"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData);
+    }
+
+    void testNoStoragePlanes()
+    {
+        constexpr const char *testData = R"!!!(
+            <test>
+                <link kind="index-events">
+                    <storage/>
+                </link>
+                <input>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="0" InMemorySize="0" ExpandTime="0" ReadTime="1234"/>
+                </input>
+                <expect>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="0" InMemorySize="0" ExpandTime="0" ReadTime="1234"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData);
+    }
+
+    void testStoragePageCacheOnly()
+    {
+        constexpr const char *testData = R"!!!(
+            <test>
+                <link kind="index-events">
+                    <storage cacheReadTime="100" cacheCapacity="16384"/>
+                </link>
+                <input>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="0" InMemorySize="0" ExpandTime="0" ReadTime="1234"/>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="0" InMemorySize="0" ExpandTime="0" ReadTime="1234"/>
+                </input>
+                <expect>
+                    <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="0" InMemorySize="0" ExpandTime="0" ReadTime="1234"/>
                     <event type="IndexLoad" FileId="1" FileOffset="0" NodeKind="0" InMemorySize="0" ExpandTime="0" ReadTime="100"/>
                 </expect>
             </test>
