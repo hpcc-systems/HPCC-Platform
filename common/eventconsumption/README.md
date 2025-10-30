@@ -455,3 +455,11 @@ Required link configuration datum targeted by the change.
                 @value
 
 Optional changed value. Omission removes the targeted datum, while presence updates it.
+
+## CIndexFileSummary
+
+A concrete implementation of `CEventConsumingOp` that collects statistics about the index events it visits. As the previous statement suggests, it is also an event visitor although this is a private implementation detail.
+
+Statistics are collected per index node. Values include memory usage, event counters, read timing (total, minimum, maximum, and average read time), and expansion timing (total, minimum, maximum, and average).
+
+The index node statistics can be aggregated by file ID or node kind. Grouping by file ID reveals branch and leaf activity for every observed file. Grouping by node kind provides model configuration guidance for cache sizes, expansion estimations, and storage plane performance.
