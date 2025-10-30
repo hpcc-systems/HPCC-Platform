@@ -2182,6 +2182,9 @@ public:
 // "includeAll" is a special field values that are used by field filtering on the server side,
 // but are only sent to a server version that supports them. NB: it can be negated, i.e. : -includeAll
 // These fields are used to specify sort order, and to specify which fields are to be returned.
+//
+// New fields must be added to this array, if they are not, they will be ignored and will not be serialized to
+// the client in serializeFileAttributes.
 
 struct DFUQFieldInfo
 {
@@ -2230,6 +2233,8 @@ static const DFUQFieldInfo dfuqFieldInfos[] =
     {DFUQResultField::writeCost,       "@writeCost",        DFUQResultFieldType::floatType},
     {DFUQResultField::expireDays,      "@expireDays",       DFUQResultFieldType::numericType},
     {DFUQResultField::subfilenames,    "@subfilenames",     DFUQResultFieldType::stringType},
+    {DFUQResultField::blockCompressed, "@blockCompressed",  DFUQResultFieldType::boolType},
+    {DFUQResultField::rowCompressed,   "@rowCompressed",    DFUQResultFieldType::boolType},
     {DFUQResultField::includeAll,      "includeAll",        DFUQResultFieldType::unknown}
 };
 const size_t dfuqFieldInfosCount = sizeof(dfuqFieldInfos)/sizeof(dfuqFieldInfos[0]);

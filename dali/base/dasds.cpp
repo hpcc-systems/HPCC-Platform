@@ -1217,11 +1217,11 @@ class CDeltaWriter : implements IThreaded
         Owned<IException> exception;
         unsigned _retryAttempts = retryAttempts;
         StringBuffer rL(basePath);
+        rL.append(name);
         for (;;)
         {
             try
             {
-                rL.append(name);
                 Owned<IFile> iFile = createIFile(rL.str());
                 Owned<IFileIO> fileIO = iFile->open(IFOcreate);
                 fileIO->write(0, length, data);
@@ -1255,11 +1255,11 @@ class CDeltaWriter : implements IThreaded
         Owned<IException> exception;
         unsigned _retryAttempts = retryAttempts;
         StringBuffer rL(basePath);
+        rL.append(name);
         for (;;)
         {
             try
             {
-                rL.append(name);
                 Owned<IFile> iFile = createIFile(rL.str());
                 iFile->remove();
             }
