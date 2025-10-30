@@ -1,6 +1,7 @@
 import * as React from "react";
-import { DefaultButton, PrimaryButton, Stack } from "@fluentui/react";
+import { DefaultButton, PrimaryButton } from "@fluentui/react";
 import { useOnEvent } from "@fluentui/react-hooks";
+import { StackShim } from "@fluentui/react-migration-v8-v9";
 import nlsHPCC from "src/nlsHPCC";
 import { MessageBox } from "../../layouts/MessageBox";
 import { Fields, Values } from "./Fields";
@@ -40,7 +41,7 @@ export const Filter: React.FunctionComponent<FilterProps> = ({
             <PrimaryButton text={nlsHPCC.Apply} onClick={() => { setDoSubmit(true); closeFilter(); }} />
             <DefaultButton text={nlsHPCC.Clear} onClick={() => { setDoReset(true); }} />
         </>}>
-        <Stack>
+        <StackShim>
             <TableForm
                 fields={filterFields}
                 doSubmit={doSubmit}
@@ -53,6 +54,6 @@ export const Filter: React.FunctionComponent<FilterProps> = ({
                     setDoReset(false);
                 }}
             />
-        </Stack>
+        </StackShim>
     </MessageBox>;
 };

@@ -51,6 +51,15 @@ export default defineConfig(
             "@typescript-eslint/no-this-alias": "off",
             "@typescript-eslint/no-unused-vars": "off",
             '@typescript-eslint/no-deprecated': 'warn',
+            "no-restricted-imports": ["error", {
+                "paths": [
+                    {
+                        name: "@fluentui/react",
+                        importNames: ["Stack", "StackItem"],
+                        message: "Use StackShim / StackItemShim from @fluentui/react-migration-v8-v9 instead."
+                    }
+                ]
+            }],
 
             ...reactHooks.configs.recommended.rules,
             'react-refresh/only-export-components': [
