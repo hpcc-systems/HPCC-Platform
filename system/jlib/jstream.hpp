@@ -74,6 +74,10 @@ extern jlib_decl std::pair<const char *, const char *> peekKeyValuePair(IBuffere
 //Returns a pointer to the base string if valid.
 extern jlib_decl const char * peekStringList(std::vector<size32_t> & matches, IBufferedSerialInputStream & in, size32_t & len);
 
+//Return a vector of offsets of the starts of null terminated Attribute Name/Value strings (Value can be empty string)
+// - terminated by a null string or end of file.
+//Returns a pointer to the base string if valid.
+extern jlib_decl const char * peekAttributePairList(std::vector<size32_t> & matches, IBufferedSerialInputStream & in, size32_t & len);
 
 interface ISerialOutputStream : extends IInterface
 {
