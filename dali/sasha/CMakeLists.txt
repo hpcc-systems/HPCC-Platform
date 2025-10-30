@@ -26,6 +26,8 @@ project (sasha)
 
 include (saruncmd.cmake)
 
+add_subdirectory(xref)
+
 INCLUDE(CheckLibraryExists) 
 
 if (NOT WIN32 AND NOT WIN64)
@@ -59,6 +61,7 @@ include_directories (
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
          ${HPCC_SOURCE_DIR}/system/security/shared
+         ./xref
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )
@@ -88,6 +91,7 @@ target_link_libraries ( saserver
          eclrtl 
          deftype 
          workunit 
+         xref
     )
 
 if (NOT CONTAINERIZED)
