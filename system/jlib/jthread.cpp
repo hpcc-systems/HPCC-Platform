@@ -1009,7 +1009,7 @@ class CThreadPool: public CThreadPoolBase, implements IThreadPool, public CInter
 
     PooledThreadHandle _start(void *param,const char *name, bool noBlock, unsigned timeout=0)
     {
-        CCycleTimer startTimer;
+        CCycleTimer startTimer(traceStartDelayPeriod);
         bool waited = false;
         bool timedout = false;
         if (defaultmax)
@@ -1020,7 +1020,8 @@ class CThreadPool: public CThreadPoolBase, implements IThreadPool, public CInter
             else if (waited)
                 timedout = !availsem.wait(timeout>0?timeout:delay);
         }
-        PooledThreadHandle ret;
+
+        CPooledThreadWrapper * t = nullptr;
         {
             CriticalBlock block(crit);
             if (timedout)
@@ -1048,16 +1049,15 @@ class CThreadPool: public CThreadPoolBase, implements IThreadPool, public CInter
                     overAllTimer.reset();
                 }
             }
-            CPooledThreadWrapper &t = allocThread();
-            if (name)
-                t.setName(name);
-            if (inheritThreadContext)
-                t.captureThreadLoggingInfo();
-            t.go(param);
-            ret = t.queryHandle();
+            t = &allocThread();
         }
-        Sleep(0);
-        return ret;
+        if (name)
+            t->setName(name);
+        if (inheritThreadContext)
+            t->captureThreadLoggingInfo();
+        t->go(param);
+        Sleep(0); // Potentially yield so that the new thread has a chance to start processing.
+        return t->queryHandle();
     }
 
 public:
