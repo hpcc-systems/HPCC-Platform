@@ -1019,14 +1019,14 @@ public:
             return;
         }
 
-        Owned<IPropertyTree> debugPlane = getStoragePlane(debugPlaneName);
+        Owned<const IStoragePlane> debugPlane = getStoragePlaneByName(debugPlaneName, false);
         if (!debugPlane)
         {
             OWARNLOG(LOGPFX "Failed to get debug plane '%s', skipping saveToDebugPlane", debugPlaneName.str());
             return;
         }
 
-        const char* debugPrefix = debugPlane->queryProp("@prefix");
+        const char* debugPrefix = debugPlane->queryPrefix();
         if (!debugPrefix || !*debugPrefix)
         {
             OWARNLOG(LOGPFX "Debug plane '%s' has no prefix, skipping saveToDebugPlane", debugPlaneName.str());
