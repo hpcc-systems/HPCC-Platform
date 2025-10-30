@@ -4222,15 +4222,16 @@ def main():
                 "cost_savings_summary": insights.generate_cost_savings_summary()
             }
             print(json.dumps(report, indent=2))
-        elif args.cost_optimization:
-            # Output focused cost optimization report
-            insights.print_cost_optimization_summary()
-        elif args.list_idle_nodes:
+        # Check for specific node listing requests first (these can run alongside other reports)
+        if args.list_idle_nodes:
             # List all idle nodes
             insights.list_idle_nodes()
         elif args.list_underutilized_nodes:
             # List all underutilized nodes
             insights.list_underutilized_nodes()
+        elif args.cost_optimization:
+            # Output focused cost optimization report
+            insights.print_cost_optimization_summary()
         else:
             # Set detailed nodes flag if requested
             if args.detailed_nodes:
