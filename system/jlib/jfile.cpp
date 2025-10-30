@@ -6343,6 +6343,8 @@ IBufferedSerialInputStream *createFileSerialStream(IFileIO *fileio,offset_t ofs,
     if (!fileio)
         return NULL;
 
+    if ((size32_t)-1 == bufsize)
+        bufsize = getBlockedSequentialIO(fileio);
     Owned<ISerialInputStream> fileStream = createSerialInputStream(fileio, ofs, flen);
     return createBufferedInputStream(fileStream, bufsize);
 }
@@ -7754,4 +7756,43 @@ static constexpr bool defaultConcurrentWriteSupport = isContainerized() ? false 
 bool getConcurrentWriteSupported(const char *planeName)
 {
     return 0 != getPlaneAttributeValue(planeName, ConcurrentWriteSupport, defaultConcurrentWriteSupport ? 1 : 0);
+}
+
+static size32_t getBlockedSizeFromFile(IFile *file, PlaneAttributeType type, size32_t defaultSize)
+{
+    if (file)
+    {
+        const char * filename = file->queryFilename();
+        if (filename)
+        {
+            Owned<const IStoragePlane> plane = getStoragePlaneFromPath(filename, false);
+            if (plane)
+                return plane->getAttribute(type);
+            else
+                return defaultSize;
+        }
+    }
+    return (size32_t)-1; // let caller decide
+}
+
+size32_t getBlockedSequentialIO(IFile *file)
+{
+    return getBlockedSizeFromFile(file, BlockedSequentialIO, (size32_t)-1); // let caller decide
+}
+
+size32_t getBlockedSequentialIO(IFileIO * fileio)
+{
+    IFile * file = fileio->queryFile();
+    return getBlockedSequentialIO(file);
+}
+
+size32_t getBlockedRandomIO(IFile *file)
+{
+    return getBlockedSizeFromFile(file, BlockedRandomIO, 0x10000); // 64K default
+}
+
+size32_t getBlockedRandomIO(IFileIO * fileio)
+{
+    IFile * file = fileio->queryFile();
+    return getBlockedRandomIO(file);
 }

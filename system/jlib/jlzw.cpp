@@ -2016,27 +2016,7 @@ public:
         assertex(trailer.blockSize);
         numBlocksToBuffer = 1;
         if (fileio && bufferSize == (size32_t)-1)
-        {
-            IFile * file = fileio->queryFile();
-            if (file)
-            {
-                const char * filename = file->queryFilename();
-                if (filename)
-                {
-                    Owned<const IStoragePlane> plane = getStoragePlaneFromPath(filename, false);
-                    if (plane)
-                    {
-                        bufferSize = plane->getAttribute(BlockedSequentialIO);
-                    }
-                    else
-                    {
-                        if (isContainerized())
-                            bufferSize = 0x400000; // Default to 4MB if containerized and no plane - so that dafilesrv default to large reads
-                    }
-
-                }
-            }
-        }
+            bufferSize = getBlockedSequentialIO(fileio);
 
         //Round the buffer size so that it will be a whole multiple of the number of blocks
         if (bufferSize && (bufferSize != (size32_t)-1))
