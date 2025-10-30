@@ -1096,12 +1096,21 @@ public:
 
                 resolvedFiles.reset(new Owned<const IResolvedFile> [filenames.size()]);
                 stat_type gatherNs = resolveTimer.elapsedNs();
-                RelaxedAtomic<unsigned> numActiveIndexes{0};
-                RelaxedAtomic<unsigned> numIndexesOpened{0};
+
+                struct
+                {
+                    CriticalSection cs;
+                    unsigned numActiveIndexes{0};
+                    unsigned numIndexesOpened{0};
+                    unsigned totalParts{0};
+                    unsigned localParts{0};
+                    unsigned activeTotalParts{0};
+                    unsigned activeLocalParts{0};
+                } stats;
 
                 // Now resolve the filenames in parallel - on a system with remote files most of the time is spent retrieving the file sizes.
                 // The files will be added to the cache - so that the subsequent query load will match immediately
-                asyncFor(filenames.size(), numResolveFilenameThreads, [this, &filenames, &resolvedFiles, &packages, &numIndexesOpened, &numActiveIndexes](unsigned i)
+                asyncFor(filenames.size(), numResolveFilenameThreads, [this, &filenames, &resolvedFiles, &packages, &stats](unsigned i)
                 {
                     try
                     {
@@ -1119,12 +1128,14 @@ public:
                         // This code does not check lazyOpen - because the purpose of that flag is to avoid opening files that are not needed.
                         // this code checks that the package is active - so the files are needed.
                         unsigned numOpened = 0;
-                        unsigned numActive = 0;
+                        unsigned totalParts = resolved->getNumTotalParts();
+                        unsigned localParts = resolved->getNumLocalParts(channelNo);
+                        bool isActiveIndex = false;
                         if (resolved && resolved->isKey())
                         {
-                            if (preopenActiveIndexes && packages.isActive())
+                            isActiveIndex = packages.isActive();
+                            if (preopenActiveIndexes && isActiveIndex)
                             {
-                                numActive++;
                                 Owned<IKeyArray> keySet = resolved->getKeyArray(isOpt, channelNo);
                                 for (unsigned partNo = 0; partNo < keySet->length(); partNo++)
                                 {
@@ -1142,8 +1153,17 @@ public:
                                 }
                             }
                         }
-                        numIndexesOpened.add(numOpened);
-                        numActiveIndexes.add(numActive);
+
+                        CriticalBlock block(stats.cs);
+                        stats.totalParts += totalParts;
+                        stats.localParts += localParts;
+                        stats.numIndexesOpened += numOpened;
+                        if (isActiveIndex)
+                        {
+                            stats.numActiveIndexes += 1;
+                            stats.activeTotalParts += totalParts;
+                            stats.activeLocalParts += localParts;
+                        }
                     }
                     catch (IException *E)
                     {
@@ -1153,7 +1173,11 @@ public:
 
 
                 stat_type resolveNs = resolveTimer.elapsedNs();
-                PROGLOG("Resolve %u files %u active %u parts opened on %u threads - gather %lluns, resolve %lluns", (unsigned)filenames.size(), numActiveIndexes.load(), numIndexesOpened.load(), numResolveFilenameThreads, gatherNs, resolveNs);
+                PROGLOG("Resolve files for channel %u files(%u, %u/%u) active(%u, %u/%u). %u opened on %u threads - gather %lluns, resolve %lluns",
+                        channelNo,
+                        (unsigned)filenames.size(), stats.localParts, stats.totalParts,
+                        stats.numActiveIndexes, stats.activeLocalParts, stats.activeTotalParts,
+                        stats.numIndexesOpened, numResolveFilenameThreads, gatherNs, resolveNs);
             }
 
             asyncFor(numQueries, parallelQueryLoadThreads, [this, querySet, &packages, &queryHashes, &queryDlls, forceRetry](unsigned i)
