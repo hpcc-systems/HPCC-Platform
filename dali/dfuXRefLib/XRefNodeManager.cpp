@@ -23,6 +23,7 @@
 #include "jstring.hpp"
 #include "jptree.hpp"
 #include "jmisc.hpp"
+#include "jfile.hpp"
 
 #include "mpcomm.hpp"
 #include "platform.h"
@@ -39,7 +40,8 @@
 
 #include "XRefNodeManager.hpp"
 
-
+// Maximum file size for loading xref data from files (256MB)
+constexpr offset_t XREF_MAX_FILE_SIZE = 0x10000000;
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -177,6 +179,9 @@ StringBuffer & CXRefNode::getLastModified(StringBuffer & str)
 }
 
 
+// NB: getXRefData is not used/can be removed
+// getDataTree also not used/can be removed
+// m_dataStr also not used/can be removed
 StringBuffer& CXRefNode::getXRefData(StringBuffer & str)
 {
     return toXML(&getDataTree(),str);
@@ -185,134 +190,319 @@ StringBuffer& CXRefNode::getXRefData(StringBuffer & str)
 
 IXRefFilesNode* CXRefNode::getLostFiles()
 {
-    if(!m_lost.get())
+    if (!m_lost.get())
     {
-        IPropertyTree* lostBranch = m_XRefTree->queryPropTree("Lost");
-        if(lostBranch == 0)
+        const char *xrefPath = m_XRefTree->queryProp("@xrefPath");
+
+        IPropertyTree *lostBranch = nullptr;
+        if (isEmptyString(xrefPath))
         {
-            lostBranch = m_XRefTree->addPropTree("Lost",createPTree());
-            commit();
+            // Dali-based storage: use branch from m_XRefTree
+            lostBranch = m_XRefTree->queryPropTree("Lost");
+            if (!lostBranch)
+            {
+                lostBranch = m_XRefTree->addPropTree("Lost",createPTree());
+                commit();
+            }
         }
+        // else: File-based storage doesn't need a branch
+
         StringBuffer tmpbuf;
-        m_lost.setown(new CXRefFilesNode(*lostBranch,getName(tmpbuf).str(),rootDir));
+        CXRefFilesNode *lostNode = new CXRefFilesNode(lostBranch,getName(tmpbuf).str(),rootDir.str());
+
+        // Set xrefPath if using file-based storage
+        if (!isEmptyString(xrefPath))
+            lostNode->setXRefPath(xrefPath, "Lost");
+
+        m_lost.setown(lostNode);
     }
     return m_lost.getLink();
 }
 
 IXRefFilesNode* CXRefNode::getFoundFiles()
 {
-    if(!m_found.get())
+    if (!m_found.get())
     {
-        IPropertyTree* foundBranch = m_XRefTree->queryPropTree("Found");
-        if(foundBranch == 0)
+        const char *xrefPath = m_XRefTree->queryProp("@xrefPath");
+        IPropertyTree* foundBranch = nullptr;
+
+        if (isEmptyString(xrefPath))
         {
-            foundBranch = m_XRefTree->addPropTree("Found",createPTree());
-            commit();
+            // Dali-based storage: use branch from m_XRefTree
+            foundBranch = m_XRefTree->queryPropTree("Found");
+            if (!foundBranch)
+            {
+                foundBranch = m_XRefTree->addPropTree("Found",createPTree());
+                commit();
+            }
         }
+        // else: File-based storage doesn't need a branch
+
         StringBuffer tmpbuf;
-        m_found.setown(new CXRefFilesNode(*foundBranch,getName(tmpbuf).str(),rootDir));
+        CXRefFilesNode *foundNode = new CXRefFilesNode(foundBranch,getName(tmpbuf).str(),rootDir.str());
+
+        // Set xrefPath if using file-based storage
+        if (!isEmptyString(xrefPath))
+            foundNode->setXRefPath(xrefPath, "Found");
+
+        m_found.setown(foundNode);
     }
     return m_found.getLink();
 }
 
 IXRefFilesNode* CXRefNode::getOrphanFiles()
 {
-    if(!m_orphans.get())
+    if (!m_orphans.get())
     {
-        IPropertyTree* orphanBranch = m_XRefTree->queryPropTree("Orphans");
-        if(orphanBranch == 0)
+        const char *xrefPath = m_XRefTree->queryProp("@xrefPath");
+        IPropertyTree* orphanBranch = nullptr;
+
+        if (isEmptyString(xrefPath))
         {
-            orphanBranch = m_XRefTree->addPropTree("Orphans",createPTree());
-            commit();
+            // Dali-based storage: use branch from m_XRefTree
+            orphanBranch = m_XRefTree->queryPropTree("Orphans");
+            if (!orphanBranch)
+            {
+                orphanBranch = m_XRefTree->addPropTree("Orphans",createPTree());
+                commit();
+            }
         }
+        // else: File-based storage doesn't need a branch
+
         StringBuffer tmpbuf;
-        m_orphans.setown(new CXRefOrphanFilesNode(*orphanBranch,getName(tmpbuf).str(),rootDir));
+        CXRefOrphanFilesNode *orphanNode = new CXRefOrphanFilesNode(orphanBranch,getName(tmpbuf).str(),rootDir.str());
+
+        // Set xrefPath if using file-based storage
+        if (!isEmptyString(xrefPath))
+            orphanNode->setXRefPath(xrefPath, "Orphans");
+
+        m_orphans.setown(orphanNode);
     }
     return m_orphans.getLink();
 }
 
 StringBuffer &CXRefNode::serializeMessages(StringBuffer &buf)
 {
-    if(!m_messages.get())
-    {
-        IPropertyTree* messagesBranch = m_XRefTree->queryPropTree("Messages");
-        if(messagesBranch == 0)
-        {
-            messagesBranch = m_XRefTree->addPropTree("Messages",createPTree());
-            commit();
-        }
-        StringBuffer tmpbuf;
-        m_messages.set(messagesBranch);
-    }
     buf.clear();
-    MemoryBuffer data;
-    m_messages->getPropBin("data",data);
-    if (data.length())
+    const char *xrefPath = m_XRefTree->queryProp("@xrefPath");
+
+    if (xrefPath && *xrefPath)
     {
-        buf.append(data.length(),data.toByteArray());
+        // File-based storage: load from file
+        try
+        {
+            StringBuffer filepath(xrefPath);
+            addPathSepChar(filepath).append("Messages").append(".xml");
+
+            Owned<IFile> file = createIFile(filepath.str());
+            if (file->exists())
+            {
+                Owned<IFileIO> fileIO = file->open(IFOread);
+                if (fileIO)
+                {
+                    offset_t fileSize = file->size();
+                    if (fileSize > 0 && fileSize < XREF_MAX_FILE_SIZE)
+                    {
+                        MemoryBuffer xmlContent;
+                        xmlContent.ensureCapacity((size32_t)fileSize);
+                        size32_t bytesRead = fileIO->read(0, (size32_t)fileSize, xmlContent.reserve((size32_t)fileSize));
+                        if (bytesRead > 0)
+                        {
+                            buf.append(bytesRead, xmlContent.toByteArray());
+                        }
+                    }
+                }
+            }
+        }
+        catch (IException *e)
+        {
+            StringBuffer errMsg;
+            OWARNLOG("XRefNode: Failed to load Messages from file: %s", e->errorMessage(errMsg).str());
+            e->Release();
+        }
+    }
+    else
+    {
+        // Dali-based storage: use "data" attribute
+        if(!m_messages.get())
+        {
+            IPropertyTree* messagesBranch = m_XRefTree->queryPropTree("Messages");
+            if(messagesBranch == 0)
+            {
+                messagesBranch = m_XRefTree->addPropTree("Messages",createPTree());
+                commit();
+            }
+            m_messages.set(messagesBranch);
+        }
+        MemoryBuffer data;
+        m_messages->getPropBin("data",data);
+        if (data.length())
+        {
+            buf.append(data.length(),data.toByteArray());
+        }
     }
     return buf;
 }
 
 void CXRefNode::deserializeMessages(IPropertyTree& inTree)
 {
-    if(!m_messages.get())
+    const char *xrefPath = m_XRefTree->queryProp("@xrefPath");
+
+    if (xrefPath && *xrefPath)
     {
-        IPropertyTree* messagesBranch = m_XRefTree->queryPropTree("Messages");
-        if(messagesBranch == 0)
+        // File-based storage: save to file
+        try
         {
-            messagesBranch = m_XRefTree->addPropTree("Messages",createPTree());
-            commit();
+            StringBuffer filepath(xrefPath);
+            addPathSepChar(filepath).append("Messages").append(".xml");
+
+            StringBuffer datastr;
+            toXML(&inTree,datastr);
+
+            Owned<IFile> file = createIFile(filepath.str());
+            Owned<IFileIO> fileIO = file->open(IFOcreate);
+            if (fileIO)
+            {
+                fileIO->write(0, datastr.length(), datastr.str());
+                fileIO->close();
+            }
         }
-        StringBuffer tmpbuf;
-        m_messages.set(messagesBranch);
+        catch (IException *e)
+        {
+            StringBuffer errMsg;
+            OWARNLOG("XRefNode: Failed to save Messages to file: %s", e->errorMessage(errMsg).str());
+            e->Release();
+        }
     }
-    StringBuffer datastr;
-    toXML(&inTree,datastr);
-    m_messages->setPropBin("data",datastr.length(),(void*)datastr.str());
+    else
+    {
+        // Dali-based storage: save to "data" attribute
+        if(!m_messages.get())
+        {
+            IPropertyTree* messagesBranch = m_XRefTree->queryPropTree("Messages");
+            if(messagesBranch == 0)
+            {
+                messagesBranch = m_XRefTree->addPropTree("Messages",createPTree());
+                commit();
+            }
+            m_messages.set(messagesBranch);
+        }
+        StringBuffer datastr;
+        toXML(&inTree,datastr);
+        m_messages->setPropBin("data",datastr.length(),(void*)datastr.str());
+    }
 }
 
 StringBuffer &CXRefNode::serializeDirectories(StringBuffer &buf)
 {
-    if(!m_directories.get())
-    {
-        IPropertyTree* directoriesBranch = m_XRefTree->queryPropTree("Directories");
-        if(directoriesBranch == 0)
-        {
-            directoriesBranch = m_XRefTree->addPropTree("Directories",createPTree());
-            commit();
-        }
-        StringBuffer tmpbuf;
-        m_directories.set(directoriesBranch);
-    }
     buf.clear();
-    MemoryBuffer data;
-    m_directories->getPropBin("data",data);
-    if (data.length())
+    const char *xrefPath = m_XRefTree->queryProp("@xrefPath");
+
+    if (xrefPath && *xrefPath)
     {
-        buf.append(data.length(),data.toByteArray());
+        // File-based storage: load from file
+        try
+        {
+            StringBuffer filepath(xrefPath);
+            addPathSepChar(filepath).append("Directories").append(".xml");
+
+            Owned<IFile> file = createIFile(filepath.str());
+            if (file->exists())
+            {
+                Owned<IFileIO> fileIO = file->open(IFOread);
+                if (fileIO)
+                {
+                    offset_t fileSize = file->size();
+                    if (fileSize > 0 && fileSize < XREF_MAX_FILE_SIZE)
+                    {
+                        MemoryBuffer xmlContent;
+                        xmlContent.ensureCapacity((size32_t)fileSize);
+                        size32_t bytesRead = fileIO->read(0, (size32_t)fileSize, xmlContent.reserve((size32_t)fileSize));
+                        if (bytesRead > 0)
+                        {
+                            buf.append(bytesRead, xmlContent.toByteArray());
+                        }
+                    }
+                }
+            }
+        }
+        catch (IException *e)
+        {
+            StringBuffer errMsg;
+            OWARNLOG("XRefNode: Failed to load Directories from file: %s", e->errorMessage(errMsg).str());
+            e->Release();
+        }
+    }
+    else
+    {
+        // Dali-based storage: use "data" attribute
+        if(!m_directories.get())
+        {
+            IPropertyTree* directoriesBranch = m_XRefTree->queryPropTree("Directories");
+            if(directoriesBranch == 0)
+            {
+                directoriesBranch = m_XRefTree->addPropTree("Directories",createPTree());
+                commit();
+            }
+            m_directories.set(directoriesBranch);
+        }
+        MemoryBuffer data;
+        m_directories->getPropBin("data",data);
+        if (data.length())
+        {
+            buf.append(data.length(),data.toByteArray());
+        }
     }
     return buf;
 }
 
 void CXRefNode::deserializeDirectories(IPropertyTree& inTree)
 {
-    if(!m_directories.get())
+    const char *xrefPath = m_XRefTree->queryProp("@xrefPath");
+
+    if (xrefPath && *xrefPath)
     {
-        IPropertyTree* directoriesBranch = m_XRefTree->queryPropTree("Directories");
-        if(directoriesBranch == 0)
+        // File-based storage: save to file
+        try
         {
-            directoriesBranch = m_XRefTree->addPropTree("Directories",createPTree());
-            commit();
+            StringBuffer filepath(xrefPath);
+            addPathSepChar(filepath).append("Directories").append(".xml");
+
+            StringBuffer datastr;
+            toXML(&inTree,datastr);
+
+            Owned<IFile> file = createIFile(filepath.str());
+            Owned<IFileIO> fileIO = file->open(IFOcreate);
+            if (fileIO)
+            {
+                fileIO->write(0, datastr.length(), datastr.str());
+                fileIO->close();
+            }
         }
-        StringBuffer tmpbuf;
-        m_directories.set(directoriesBranch);
+        catch (IException *e)
+        {
+            StringBuffer errMsg;
+            OWARNLOG("XRefNode: Failed to save Directories to file: %s", e->errorMessage(errMsg).str());
+            e->Release();
+        }
     }
-    StringBuffer datastr;
-    toXML(&inTree,datastr);
-    m_directories->setPropBin("data",datastr.length(),(void*)datastr.str());
-
-
+    else
+    {
+        // Dali-based storage: save to "data" attribute
+        if(!m_directories.get())
+        {
+            IPropertyTree* directoriesBranch = m_XRefTree->queryPropTree("Directories");
+            if(directoriesBranch == 0)
+            {
+                directoriesBranch = m_XRefTree->addPropTree("Directories",createPTree());
+                commit();
+            }
+            m_directories.set(directoriesBranch);
+        }
+        StringBuffer datastr;
+        toXML(&inTree,datastr);
+        m_directories->setPropBin("data",datastr.length(),(void*)datastr.str());
+    }
 }
 
 static bool deleteEmptyDir(IFile *dir)
