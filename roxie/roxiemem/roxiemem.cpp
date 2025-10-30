@@ -74,6 +74,8 @@ static memsize_t memTraceSizeLimit = 0;
 static const unsigned ScanReportThreshold = 10; // If average more than 10 scans per allocate then notify us.  More than 10 starts slowing the query down.
 bool memTraceInconsistencies = true;
 static bool memTraceReleaseWhenFree = true;
+static constexpr unsigned maxBlockedRows = 16;   // Maximum number of rows to allocate at once.
+
 
 void setMemTraceLevel(unsigned value)
 {
@@ -2828,10 +2830,16 @@ public:
     {
     }
 
+    virtual void gatherStats(CRuntimeStatisticCollection & stats) override
+    {
+        stats.addStatistic(StNumAllocations, numAllocations);
+    }
+
 protected:
     CChunkingRowManager * rowManager;       // Lifetime of rowManager is guaranteed to be longer
     unsigned allocatorId;
     RoxieHeapFlags flags;
+    unsigned __int64 numAllocations = 0;    // Not necessarily accurate if concurrent calls to allocate
 };
 
 
@@ -2842,8 +2850,6 @@ public:
         : CRoxieFixedRowHeapBase(_rowManager, _allocatorId, _flags), chunkCapacity(_chunkCapacity)
     {
     }
-
-    virtual void gatherStats(CRuntimeStatisticCollection & stats) override {}
 
     virtual void *allocate();
 
@@ -2875,13 +2881,9 @@ public:
         }
     }
 
-    virtual void gatherStats(CRuntimeStatisticCollection & stats) override
-    {
-        heap->gatherStats(stats);
-    }
-
     virtual void *allocate()
     {
+        numAllocations++; // not thread safe, but missing entries do not matter, nor does counting if allocation fails
         return heap->allocate(allocatorId);
     }
 
@@ -2915,7 +2917,8 @@ public:
     {
         if (curRow == numRows)
         {
-            numRows = this->heap->allocateBlock(this->allocatorId, maxRows, rows);
+            numRows = this->heap->allocateBlock(this->allocatorId, maxBlockedRows, rows);
+            this->numAllocations += numRows; // not thread safe, but missing entries do not matter
             curRow = 0;
         }
         return rows[curRow++];
@@ -2940,8 +2943,7 @@ public:
     }
 
 protected:
-    static const unsigned maxRows = 16; // Maximum number of rows to allocate at once.
-    char * rows[maxRows]; // Deliberately uninitialized
+    char * rows[maxBlockedRows]; // Deliberately uninitialized
     unsigned curRow = 0;
     unsigned numRows = 0;
 };
@@ -5909,6 +5911,7 @@ void * CRoxieFixedRowHeapBase::finalizeRow(void *final)
 
 void * CRoxieFixedRowHeap::allocate()
 {
+    numAllocations++; // not thread safe, but missing entries do not matter, nor does counting if allocation fails
     return rowManager->allocate(chunkCapacity, allocatorId);
 }
 
@@ -7203,6 +7206,7 @@ class RoxieMemTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testRecursiveCallbacks);
         CPPUNIT_TEST(testResize);
         CPPUNIT_TEST(testResizeLock);
+        CPPUNIT_TEST(testFixedRowHeapStats);
         //MORE: The following currently leak pages, so should go last
         CPPUNIT_TEST(testDatamanager);
         CPPUNIT_TEST(testCleanup);
@@ -7237,6 +7241,77 @@ protected:
         const bool lockMemory = false; // remove the time faulting in pages from the timing overhead
         initializeHeap(false, true, retainMemory, lockMemory, (unsigned)(memory / HEAP_ALIGNMENT_SIZE), 0, NULL);
         initAllocSizeMappings(defaultAllocSizes);
+    }
+
+    void testFixedRowHeapStats(RoxieHeapFlags flags)
+    {
+        CountingRowAllocatorCache rowCache;
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache, false);
+        
+        // Test CRoxieFixedRowHeap allocation counting (the feature we added)
+        {
+            Owned<IFixedRowHeap> fixedHeap1 = rowManager->createFixedRowHeap(64, 0, flags);
+            Owned<IFixedRowHeap> fixedHeap2 = rowManager->createFixedRowHeap(64, 0, flags);
+
+            // Initial state - no allocations should be recorded for either heap
+            const StatisticsMapping allStats(StKindAll);
+            CRuntimeStatisticCollection stats1(allStats);
+            CRuntimeStatisticCollection stats2(allStats);
+            fixedHeap1->gatherStats(stats1);
+            fixedHeap2->gatherStats(stats2);
+
+            // The numAllocations should start at 0 for both heaps
+            CPPUNIT_ASSERT_EQUAL(0ULL, stats1.getStatisticValue(StNumAllocations));
+            CPPUNIT_ASSERT_EQUAL(0ULL, stats2.getStatisticValue(StNumAllocations));
+
+            // Allocate rows from first heap
+            void* heap1_row1 = fixedHeap1->allocate();
+            void* heap1_row2 = fixedHeap1->allocate();
+            void* heap1_row3 = fixedHeap1->allocate();
+
+            // Allocate different number of rows from second heap
+            void* heap2_row1 = fixedHeap2->allocate();
+            void* heap2_row2 = fixedHeap2->allocate();
+
+            // Check that each heap tracks its own allocations correctly
+            CRuntimeStatisticCollection statsAfter1(allStats);
+            CRuntimeStatisticCollection statsAfter2(allStats);
+            fixedHeap1->gatherStats(statsAfter1);
+            fixedHeap2->gatherStats(statsAfter2);
+
+            CPPUNIT_ASSERT_EQUAL((flags & RHFblocked) ? maxBlockedRows : 3ULL, statsAfter1.getStatisticValue(StNumAllocations)); // First heap: 3 allocations
+            CPPUNIT_ASSERT_EQUAL((flags & RHFblocked) ? maxBlockedRows : 2ULL, statsAfter2.getStatisticValue(StNumAllocations)); // Second heap: 2 allocations
+
+            // Clean up
+            ReleaseRoxieRow(heap1_row1);
+            ReleaseRoxieRow(heap1_row2);
+            ReleaseRoxieRow(heap1_row3);
+            ReleaseRoxieRow(heap2_row1);
+            ReleaseRoxieRow(heap2_row2);
+        }
+        
+        // Also verify that variable row heap still works (for comparison)
+        {
+            Owned<IVariableRowHeap> variableHeap = rowManager->createVariableRowHeap(0, flags);
+
+            memsize_t capacity;
+            void* vrow1 = variableHeap->allocate(32, capacity);
+            void* vrow2 = variableHeap->allocate(64, capacity);
+
+            const StatisticsMapping allStats(StKindAll);
+            CRuntimeStatisticCollection vstats(allStats);
+            variableHeap->gatherStats(vstats);
+            ASSERT(vstats.getStatisticValue(StNumAllocations) == 2); // Should have 2 allocations
+
+            ReleaseRoxieRow(vrow1);
+            ReleaseRoxieRow(vrow2);
+        }
+    }
+
+    void testFixedRowHeapStats()
+    {
+        for (auto & flags : { RHFnone, RHFpacked, RHFunique, RHFunique|RHFpacked, RHFpacked|RHFblocked  })
+            testFixedRowHeapStats(flags);
     }
 
     void testCleanup()
