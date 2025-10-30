@@ -43,6 +43,10 @@
             "name": "azure-storage-files-shares-cpp",
             "platform": "@VCPKG_AZURE@"
         },
+        {
+            "name": "azure-identity-cpp",
+            "platform": "@VCPKG_AZURE@"
+        },
         "boost-property-tree",
         {
             "name": "cpp-driver",
