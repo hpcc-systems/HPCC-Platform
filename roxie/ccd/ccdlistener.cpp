@@ -1574,6 +1574,16 @@ public:
 
         requestSpan.setown(queryTraceManager().createServerSpan(!isEmptyString(queryName) ? queryName : "run_query", allHeaders, spanStartTimeStamp, flags));
         requestSpan->setSpanAttribute("queryset.name", querySetName);
+
+        if (headers)
+        {
+            if (headers->hasProp("X-Forwarded-For"))
+                requestSpan->setSpanAttribute("http.forwarded_for", headers->queryProp("X-Forwarded-For"));
+
+            if (headers->hasProp("X-Client-ID"))
+                requestSpan->setSpanAttribute("http.client_id", headers->queryProp("X-Client-ID"));
+        }
+
         logctx->setActiveSpan(requestSpan);
 
         const char * globalId = requestSpan->queryGlobalId();

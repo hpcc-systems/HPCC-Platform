@@ -3214,6 +3214,36 @@ public:
         return f.getClear();
     }
 
+    virtual unsigned getNumTotalParts() const override
+    {
+        unsigned totalParts = 0;
+        ForEachItemIn(subFile, subFiles)
+        {
+            IFileDescriptor *fdesc = subFiles.item(subFile);
+            if (fdesc)
+                totalParts += fdesc->numParts();
+        }
+        return totalParts;
+    }
+
+    virtual unsigned getNumLocalParts(unsigned channel) const override
+    {
+        unsigned localParts = 0;
+        ForEachItemIn(subFile, subFiles)
+        {
+            IFileDescriptor *fdesc = subFiles.item(subFile);
+            if (fdesc)
+            {
+                unsigned numParts = fdesc->numParts();
+                if (channel != 0)
+                    localParts += (numParts - 1) / numChannels; // ignore TLK or single part files.
+                else
+                    localParts += 1;    // TLK or single part file
+            }
+        }
+        return localParts;
+    }
+
     virtual IKeyArray *getKeyArray(bool isOpt, unsigned channel) const override
     {
         unsigned maxParts = 0;

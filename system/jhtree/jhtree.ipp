@@ -103,8 +103,10 @@ protected:
     Owned<const CJHTreeBlobNode> cachedBlobNode;
     CIArrayOf<IndexBloomFilter> bloomFilters;
     std::atomic<bool> bloomFiltersLoaded = {0};
-    offset_t cachedBlobNodePos;
+    std::atomic<bool> initialised{0};
+    const bool forceTLK; // saved from constructor to be used when loading the index
     size32_t blockedIOSize = 0;
+    offset_t cachedBlobNodePos;
 
     CKeyHdr *keyHdr;
     CNodeCache *cache;
@@ -118,11 +120,13 @@ protected:
     const CJHSearchNode *getIndexNodeUsingLoader(const INodeLoader &nodeLoader, offset_t offset, NodeType type, IContextLogger *ctx) const;
     const CJHTreeBlobNode *getBlobNode(offset_t nodepos, IContextLogger *ctx, CLoadNodeCacheState & readState);
 
-    CKeyIndex(unsigned _iD, const char *_name);
+    CKeyIndex(unsigned _iD, const char *_name, bool _forceTLK);
     ~CKeyIndex();
-    void init(KeyHdr &hdr, bool isTLK);
-    void loadBloomFilters();
-    const CJHSearchNode *getRootNode() const;
+    void init(KeyHdr &hdr, const INodeLoader & nodeLoader);
+    void loadBloomFilters(const INodeLoader & nodeLoader);
+    void ensureBloomFiltersLoaded(const INodeLoader & nodeLoader) const;
+
+    const CJHSearchNode *getRootNode(const INodeLoader & nodeLoader) const;
 
     inline bool isTLK() const { return (keyHdr->getKeyType() & HTREE_TOPLEVEL_KEY) != 0; }
  
@@ -191,6 +195,16 @@ public:
         return key.queryFileName();
     }
 
+    CCachedIndexRead & queryReadCache()
+    {
+        return readState.readCache;
+    }
+
+    void setUsePageCache(bool _usePageCache)
+    {
+        readState.usePageCache = _usePageCache;
+    }
+
 protected:
     const CKeyIndex & key;
     mutable CLoadNodeCacheState readState;
@@ -205,6 +219,8 @@ public:
 
     virtual const char *queryFileName() const { return name.get(); }
     virtual const IFileIO *queryFileIO() const override { return nullptr; }
+    virtual void ensureReady() override;
+
 // INodeLoader impl.
     virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, CLoadNodeCacheState & readState) const override;
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override {}
@@ -220,6 +236,8 @@ public:
 
     virtual const char *queryFileName() const { return name.get(); }
     virtual const IFileIO *queryFileIO() const override { return io; }
+    virtual void ensureReady() override;
+
 // INodeLoader impl.
     virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, CLoadNodeCacheState & readState) const override;
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override { ::mergeStats(stats, io); }

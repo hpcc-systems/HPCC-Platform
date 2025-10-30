@@ -216,7 +216,15 @@ public:
 
     static cFileDesc *create(const char *name, unsigned numParts, bool isDirPerPart, unsigned fnLen, XRefAllocator *allocator)
     {
-        if (numParts > 0xfff)
+        unsigned mapLen;
+        if (numParts==NotFound)
+        {
+            // numParts==NotFound is used for files without a part mask. Treat them as single files
+            mapLen = 1;
+        }
+        else if (numParts<=0xfff)
+            mapLen = (numParts*4+7)/8;
+        else
             throw makeStringExceptionV(0, "cFileDesc::create : numParts too large: %d (max 4096)", numParts);
 
         size_t nameLen = strlen(name);
@@ -225,8 +233,6 @@ public:
             OWARNLOG(LOGPFX "File name %s longer than 255 chars, truncating",name);
             nameLen = 255;
         }
-        // numParts==NotFound is used for files without a part mask. Treat them as single files
-        unsigned mapLen = numParts==NotFound ? 1 :(numParts*4+7)/8;
         return new(nameLen, mapLen, allocator) cFileDesc(name, nameLen, mapLen, numParts, isDirPerPart, fnLen, allocator);
     }
 
@@ -894,6 +900,7 @@ public:
     std::atomic<uint64_t> processedFiles{0};
     XRefPeriodicTimer heartbeatTimer;
 
+    bool saveToDebugPlane = false; // If true, before updating ECL Watch, save scan data to sasha debug plane
     Owned<IPropertyTree> foundbranch;
     Owned<IPropertyTree> lostbranch;
     Owned<IPropertyTree> orphansbranch;
@@ -1001,13 +1008,75 @@ public:
         heartbeatTimer.updatePeriod();
     }
 
+    void doSaveToDebugPlane(const char *name, StringBuffer &datastr)
+    {
+        assertex(saveToDebugPlane);
+
+        StringBuffer debugPlaneName;
+        if (!getDefaultPlane(debugPlaneName, "@debugPlane", "debug"))
+        {
+            OWARNLOG(LOGPFX "Failed to get default debug plane, skipping saveToDebugPlane");
+            return;
+        }
+
+        Owned<const IStoragePlane> debugPlane = getStoragePlaneByName(debugPlaneName, false);
+        if (!debugPlane)
+        {
+            OWARNLOG(LOGPFX "Failed to get debug plane '%s', skipping saveToDebugPlane", debugPlaneName.str());
+            return;
+        }
+
+        const char* debugPrefix = debugPlane->queryPrefix();
+        if (!debugPrefix || !*debugPrefix)
+        {
+            OWARNLOG(LOGPFX "Debug plane '%s' has no prefix, skipping saveToDebugPlane", debugPlaneName.str());
+            return;
+        }
+
+        // Create unique scope with cluster name and timestamp
+        CDateTime dt;
+        dt.setNow();
+        StringBuffer timestamp;
+        dt.getString(timestamp);
+        // Replace spaces and colons with underscores for filesystem compatibility
+        timestamp.replaceString(" ", "_");
+        timestamp.replaceString(":", "-");
+
+        StringBuffer uniqueScope(debugPrefix);
+        addPathSepChar(uniqueScope).append("xref");
+        if (clustname.get() && *clustname.get())
+            uniqueScope.append("_").append(clustname.get());
+        uniqueScope.append("_").append(timestamp);
+        addPathSepChar(uniqueScope).append(name).append(".xml");
+
+        log(false, "Saving debug files to %s", uniqueScope.str());
+
+        recursiveCreateDirectoryForFile(uniqueScope.str());
+
+        OwnedIFile file = createIFile(uniqueScope.str());
+        OwnedIFileIO fileio = file->open(IFOcreate);
+        if (!fileio)
+            throw makeStringExceptionV(0, "doSaveToDebugPlane: could not create or open %s", file->queryFilename());
+        {
+            Owned<IIOStream> stream = createIOStream(fileio);
+            stream.setown(createBufferedIOStream(stream));
+            writeStringToStream(*stream, datastr);
+        } // Stream destructor flushes here
+        fileio->close(); // Ensure errors are reported
+    }
+
     void addBranch(IPropertyTree *root,const char *name,IPropertyTree *branch)
     {
         if (!branch)
             return;
+
         branch->setProp("Cluster",clustname);
         StringBuffer datastr;
         toXML(branch,datastr);
+
+        if (saveToDebugPlane)
+            doSaveToDebugPlane(name,datastr);
+
         root->addPropTree(name,createPTree(name))->setPropBin("data",datastr.length(),datastr.str());
     }
 
@@ -1016,6 +1085,7 @@ public:
         lastlog = 0;
         sfnum = 0;
         fnum = 0;
+        saveToDebugPlane = getExpertOptBool("saveToDebugPlane", isContainerized());
     }
 
     void start(bool updateeclwatch,const char *clname)

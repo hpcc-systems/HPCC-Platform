@@ -58,7 +58,7 @@ killed()
         cd $1
     fi
     log "Attempting to kill $component"
-    kill_process ${PID_NAME} roxie 3 ${SENTINEL}
+    kill_process ${PID_NAME} roxie 15 ${SENTINEL}
     if [[ $? -eq 1 ]]; then
         log "could not kill $component"
     else

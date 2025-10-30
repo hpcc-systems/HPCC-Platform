@@ -1025,11 +1025,15 @@ public:
         {
             std::vector<hash64_t> queryHashes(numQueries);
             std::vector<Owned<const IQueryDll>> queryDlls(numQueries);
+            //The resolved files need to stay live otherwise they are removed from the cache
+            //Allocate an array to hold them - so they can be updated in parallel
+            std::unique_ptr<Owned<const IResolvedFile> []> resolvedFiles;
 
             if (numResolveFilenameThreads)
             {
                 //Load all the dlls in parallel, gathering a list of filenames for each package
                 //Currently keep a single critical section for all packages - could be optimized if necessary
+                CCycleTimer resolveTimer;
                 CriticalSection filenameCrit;
                 std::map<const IRoxiePackage *, SummaryMap> filenameSummaryMap;
 
@@ -1090,9 +1094,23 @@ public:
                         filenames.emplace_back(packageFilenames.first, &entry);
                 }
 
+                resolvedFiles.reset(new Owned<const IResolvedFile> [filenames.size()]);
+                stat_type gatherNs = resolveTimer.elapsedNs();
+
+                struct
+                {
+                    CriticalSection cs;
+                    unsigned numActiveIndexes{0};
+                    unsigned numIndexesOpened{0};
+                    unsigned totalParts{0};
+                    unsigned localParts{0};
+                    unsigned activeTotalParts{0};
+                    unsigned activeLocalParts{0};
+                } stats;
+
                 // Now resolve the filenames in parallel - on a system with remote files most of the time is spent retrieving the file sizes.
                 // The files will be added to the cache - so that the subsequent query load will match immediately
-                asyncFor(filenames.size(), numResolveFilenameThreads, [&filenames ](unsigned i)
+                asyncFor(filenames.size(), numResolveFilenameThreads, [this, &filenames, &resolvedFiles, &packages, &stats](unsigned i)
                 {
                     try
                     {
@@ -1101,15 +1119,65 @@ public:
                         const SummaryMap::value_type * filenameEntry = entry.second;
                         const char * filename = filenameEntry->first.c_str();
                         SummaryFlags flags = filenameEntry->second;
-                        //bool isOpt = (flags & SummaryFlags::IsOpt) != 0;
+                        bool isOpt = (flags & SummaryFlags::IsOpt) != 0;
                         bool isCodeSigned = (flags & SummaryFlags::IsSigned) != 0;
-                        Owned<const IResolvedFile> resolved = package->lookupExpandedFileName(filename, true, true, AccessMode::readRandom, false, true, isCodeSigned);
+                        const IResolvedFile * resolved = package->lookupExpandedFileName(filename, true, true, AccessMode::readRandom, false, true, isCodeSigned);
+                        resolvedFiles[i].setown(resolved);
+
+                        //MORE: Would this be better as a separate async loop?
+                        // This code does not check lazyOpen - because the purpose of that flag is to avoid opening files that are not needed.
+                        // this code checks that the package is active - so the files are needed.
+                        unsigned numOpened = 0;
+                        unsigned totalParts = resolved->getNumTotalParts();
+                        unsigned localParts = resolved->getNumLocalParts(channelNo);
+                        bool isActiveIndex = false;
+                        if (resolved && resolved->isKey())
+                        {
+                            isActiveIndex = packages.isActive();
+                            if (preopenActiveIndexes && isActiveIndex)
+                            {
+                                Owned<IKeyArray> keySet = resolved->getKeyArray(isOpt, channelNo);
+                                for (unsigned partNo = 0; partNo < keySet->length(); partNo++)
+                                {
+                                    IKeyIndexBase *thisBase = keySet->queryKeyPart(partNo);
+                                    if (thisBase)
+                                    {
+                                        unsigned fileNo = 0;
+                                        IKeyIndex *thisKey = thisBase->queryPart(fileNo);
+                                        if (thisKey)
+                                        {
+                                            thisKey->ensureReady();
+                                            numOpened++;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        CriticalBlock block(stats.cs);
+                        stats.totalParts += totalParts;
+                        stats.localParts += localParts;
+                        stats.numIndexesOpened += numOpened;
+                        if (isActiveIndex)
+                        {
+                            stats.numActiveIndexes += 1;
+                            stats.activeTotalParts += totalParts;
+                            stats.activeLocalParts += localParts;
+                        }
                     }
                     catch (IException *E)
                     {
                         ::Release(E);
                     }
                 });
+
+
+                stat_type resolveNs = resolveTimer.elapsedNs();
+                PROGLOG("Resolve files for channel %u files(%u, %u/%u) active(%u, %u/%u). %u opened on %u threads - gather %lluns, resolve %lluns",
+                        channelNo,
+                        (unsigned)filenames.size(), stats.localParts, stats.totalParts,
+                        stats.numActiveIndexes, stats.activeLocalParts, stats.activeTotalParts,
+                        stats.numIndexesOpened, numResolveFilenameThreads, gatherNs, resolveNs);
             }
 
             asyncFor(numQueries, parallelQueryLoadThreads, [this, querySet, &packages, &queryHashes, &queryDlls, forceRetry](unsigned i)

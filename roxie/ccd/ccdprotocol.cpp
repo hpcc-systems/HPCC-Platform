@@ -1533,6 +1533,28 @@ public:
 };
 
 static Owned<IActiveQueryLimiterFactory> queryLimiterFactory;
+static constexpr const char * FORWARDED_FOR_ADDRESS_HEADER_NAME = "X-Forwarded-For";
+// Extract original client IP from headers or inline properties, update peer input param
+static inline void updatePeerAddressFromHeaders(StringBuffer & peer, const IProperties * headers)
+{
+    StringBuffer originalClientAddress;
+    const char *forwardedFor = headers->queryProp(FORWARDED_FOR_ADDRESS_HEADER_NAME);
+    if (!isEmptyString(forwardedFor))
+    {
+        const char *comma = strchr(forwardedFor, ',');
+        if (comma)
+            originalClientAddress.append(comma - forwardedFor, forwardedFor);
+        else
+            originalClientAddress.append(forwardedFor);
+        originalClientAddress.trim();
+    }
+
+    if (isIPAddress(originalClientAddress.str()))
+    {
+        if (!originalClientAddress.isEmpty() && (peer.isEmpty() || !streq(originalClientAddress.str(), peer.str())))
+            peer.set(originalClientAddress);
+    }
+}
 
 class RoxieSocketWorker : public ProtocolQueryWorker
 {
@@ -1648,7 +1670,7 @@ private:
             throw MakeStringException(ROXIE_DATA_ERROR, "Malformed request");
     }
 
-    void sanitizeQuery(Owned<IPropertyTree> &queryPT, StringAttr &queryName, StringBuffer &saniText, HttpHelper &httpHelper, const char *&uid, bool &isBlind, bool &isDebug, IProperties * inlineTraceHeaders)
+    void sanitizeQuery(Owned<IPropertyTree> &queryPT, StringAttr &queryName, StringBuffer &saniText, HttpHelper &httpHelper, const char *&uid, bool &isBlind, bool &isDebug, IProperties * inlineHeaders)
     {
         if (queryPT)
         {
@@ -1658,14 +1680,26 @@ private:
                 uid = queryPT->queryProp("_TransactionId");
             isBlind = queryPT->getPropBool("@blind", false) || queryPT->getPropBool("_blind", false);
             isDebug = queryPT->getPropBool("@debug");
-            if (queryPT->hasProp("_trace") && inlineTraceHeaders)
+
+            if (inlineHeaders)
             {
-                if (queryPT->hasProp("_trace/traceparent"))
-                    inlineTraceHeaders->setProp("traceparent", queryPT->queryProp("_trace/traceparent"));
-                if (queryPT->hasProp("_trace/Global-Id"))
-                    inlineTraceHeaders->setProp("Global-Id", queryPT->queryProp("_trace/Global-Id"));
-                if (queryPT->hasProp("_trace/Caller-Id"))
-                    inlineTraceHeaders->setProp("Caller-Id", queryPT->queryProp("_trace/Caller-Id"));
+                if (queryPT->hasProp("_trace"))
+                {
+                    if (queryPT->hasProp("_trace/traceparent"))
+                        inlineHeaders->setProp("traceparent", queryPT->queryProp("_trace/traceparent"));
+                    if (queryPT->hasProp("_trace/Global-Id"))
+                        inlineHeaders->setProp("Global-Id", queryPT->queryProp("_trace/Global-Id"));
+                    if (queryPT->hasProp("_trace/Caller-Id"))
+                        inlineHeaders->setProp("caller.id", queryPT->queryProp("_trace/Caller-Id"));
+                }
+
+                if (queryPT->hasProp("_client"))
+                {
+                    if (queryPT->hasProp("_client/X-Forwarded-For"))
+                        inlineHeaders->setProp("X-Forwarded-For", queryPT->queryProp("_client/X-Forwarded-For"));
+                    if (queryPT->hasProp("_client/X-Client-ID"))
+                        inlineHeaders->setProp("X-Client-ID", queryPT->queryProp("_client/X-Client-ID"));
+                }
             }
 
             toXML(queryPT, saniText, 0, isBlind ? (XML_SingleQuoteAttributeValues | XML_Sanitize) : XML_SingleQuoteAttributeValues);
@@ -1938,12 +1972,15 @@ readAnother:
                 }
 
                 uid = NULL;
-                Owned<IProperties> inlineTraceHeaders = createProperties(true);
-                sanitizeQuery(queryPT, queryName, sanitizedText, httpHelper, uid, isBlind, isDebug, inlineTraceHeaders);
+                Owned<IProperties> inlineHeaders = createProperties(true);
+                sanitizeQuery(queryPT, queryName, sanitizedText, httpHelper, uid, isBlind, isDebug, inlineHeaders);
 
                 __uint64 timeProcessQueryText = xmlTimer.elapsedNs();
 
-                msgctx->startSpan(uid, querySetName, queryName, isHTTP ? httpHelper.queryRequestHeaders() : inlineTraceHeaders, &spanStartTimeStamp);
+                // Update peer address to use original client IP if available from proxy headers
+                updatePeerAddressFromHeaders(peerStr, isHTTP ? httpHelper.queryRequestHeaders() : inlineHeaders);
+
+                msgctx->startSpan(uid, querySetName, queryName, isHTTP ? httpHelper.queryRequestHeaders() : inlineHeaders, &spanStartTimeStamp);
 
                 //This must be set after the startSpan - since that resets the stats in the logctx
                 logctx.noteStatistic(StTimeQueryConsume, timeProcessQueryText); // include in the span and complete lines.
@@ -2294,4 +2331,94 @@ extern void unloadHpccProtocolPlugin()
     global.clear();
 }
 
+#if defined(_DEBUG) && defined(_USE_CPPUNIT)
+#include "unittests.hpp"
+
+class CcdProtocolUnitTests : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(CcdProtocolUnitTests);
+        CPPUNIT_TEST(testSingleEntryForwardForAddressExtraction);
+        CPPUNIT_TEST(testMultipleEntryForwardForAddressExtraction);
+        CPPUNIT_TEST(testNoForwardForHeaderExtraction);
+        CPPUNIT_TEST(testEmptyForwardForHeaderExtraction);
+        CPPUNIT_TEST(testWhiteSpaceForwardForHeaderExtraction);
+        CPPUNIT_TEST(testInvalidIpForwardForHeaderExtraction);
+        CPPUNIT_TEST(testValidIpv6ForwardForHeaderExtraction);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void testSingleEntryForwardForAddressExtraction()
+    {
+        Owned<IProperties> headers = createProperties();
+        headers->setProp(FORWARDED_FOR_ADDRESS_HEADER_NAME, "192.168.1.1");
+        StringBuffer peer;
+        peer.set("1.0.0.1");
+        updatePeerAddressFromHeaders(peer, headers);
+        CPPUNIT_ASSERT_EQUAL(std::string("192.168.1.1"), std::string(peer.str()));
+    }
+
+    void testMultipleEntryForwardForAddressExtraction()
+    {
+        Owned<IProperties> headers = createProperties();
+        headers->setProp(FORWARDED_FOR_ADDRESS_HEADER_NAME, "10.1.1.1, 172.16.0.1, 192.168.1.1");
+        StringBuffer peer;
+        peer.set("1.0.0.1");
+        updatePeerAddressFromHeaders(peer, headers);
+        CPPUNIT_ASSERT_EQUAL(std::string("10.1.1.1"), std::string(peer.str()));
+    }
+
+    void testNoForwardForHeaderExtraction()
+    {
+        Owned<IProperties> headers = createProperties();
+        StringBuffer peer;
+        peer.set("1.0.0.1");
+        updatePeerAddressFromHeaders(peer, headers);
+        CPPUNIT_ASSERT_EQUAL(std::string("1.0.0.1"), std::string(peer.str()));
+    }
+
+    void testEmptyForwardForHeaderExtraction()
+    {
+        Owned<IProperties> headers = createProperties();
+        headers->setProp(FORWARDED_FOR_ADDRESS_HEADER_NAME, "");
+        StringBuffer peer;
+        peer.set("1.0.0.1");
+        updatePeerAddressFromHeaders(peer, headers);
+        CPPUNIT_ASSERT_EQUAL(std::string("1.0.0.1"), std::string(peer.str()));
+    }
+
+    void testWhiteSpaceForwardForHeaderExtraction()
+    {
+        Owned<IProperties> headers = createProperties();
+        headers->setProp(FORWARDED_FOR_ADDRESS_HEADER_NAME, "  127.0.0.1  , 10.0.0.2");
+        StringBuffer peer;
+        peer.set("1.0.0.1");
+        updatePeerAddressFromHeaders(peer, headers);
+        CPPUNIT_ASSERT_EQUAL(std::string("127.0.0.1"), std::string(peer.str()));
+    }
+
+    void testInvalidIpForwardForHeaderExtraction()
+    {
+        Owned<IProperties> headers = createProperties();
+        headers->setProp(FORWARDED_FOR_ADDRESS_HEADER_NAME, "not_an_ip, 10.0.0.2");
+        StringBuffer peer;
+        peer.set("1.0.0.1");
+        updatePeerAddressFromHeaders(peer, headers);
+        // Should not update peer since IP is invalid
+        CPPUNIT_ASSERT_EQUAL(std::string("1.0.0.1"), std::string(peer.str()));
+    }
+
+    void testValidIpv6ForwardForHeaderExtraction()
+    {
+        Owned<IProperties> headers = createProperties();
+        headers->setProp(FORWARDED_FOR_ADDRESS_HEADER_NAME, "2001:0db8:85a3:0000:0000:8a2e:0370:7334, 10.0.0.2");
+        StringBuffer peer;
+        peer.set("1.0.0.1");
+        updatePeerAddressFromHeaders(peer, headers);
+        // Should update peer to the valid IPv6 address
+        CPPUNIT_ASSERT_EQUAL(std::string("2001:0db8:85a3:0000:0000:8a2e:0370:7334"), std::string(peer.str()));
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(CcdProtocolUnitTests);
+#endif
 //================================================================================================================================
