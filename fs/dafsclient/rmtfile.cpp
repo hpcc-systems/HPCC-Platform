@@ -2594,7 +2594,7 @@ public:
         iRemoteFileIO.setown(new CRemoteFilteredKeyIO(ep, filename, crc, actual, projected, fieldFilters, rowLimit));
         if (!iRemoteFileIO)
             throwStringExceptionV(DAFSERR_cmdstream_openfailure, "Unable to open remote key part: '%s'", filename.get());
-        strm.setown(createFileSerialStream(iRemoteFileIO));
+        strm.setown(createFileSerialStream(iRemoteFileIO, 0, (offset_t)-1, 0)); // bufsize=0 - CRemoteFilteredKeyIO is handling buffering
         prefetcher.setown(projected->createDiskPrefetcher());
         assertex(prefetcher);
         prefetchBuffer.setStream(strm);

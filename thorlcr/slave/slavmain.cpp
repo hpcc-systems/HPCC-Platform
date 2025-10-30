@@ -437,7 +437,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
             {
                 initialized = true;
                 Owned<IFileIO> iFileIO = activityCtx->getFetchFileIO(key.partNo);
-                ioStream.setown(createFileSerialStream(iFileIO, 0, (offset_t)-1, 0));
+                ioStream.setown(createFileSerialStream(iFileIO, 0, (offset_t)-1, 0)); // bufsize=0, no buffering
                 prefetchSource.setStream(ioStream);
             }
             return prefetchSource;

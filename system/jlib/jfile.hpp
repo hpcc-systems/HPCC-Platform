@@ -736,4 +736,9 @@ extern jlib_decl bool getFileSyncWriteCloseEnabled(const char *planeName);
 extern jlib_decl bool getConcurrentWriteSupported(const char *planeName);
 extern jlib_decl unsigned getWriteSyncMarginMs(const char * planeName);
 
+extern jlib_decl size32_t getBlockedSequentialIO(IFile *file);
+extern jlib_decl size32_t getBlockedSequentialIO(IFileIO *fileio);
+extern jlib_decl size32_t getBlockedRandomIO(IFile *file);
+extern jlib_decl size32_t getBlockedRandomIO(IFileIO * fileio);
+
 #endif
