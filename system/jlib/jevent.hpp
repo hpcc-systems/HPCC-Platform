@@ -496,8 +496,10 @@ protected:
     std::atomic<__uint64> startTimestamp{0};
     MemoryAttr buffer;
     CriticalSection cs;
+    Semaphore okToWriteSem;
     unsigned sizeMessageHeaderFooter{0};
     unsigned options{0};
+    unsigned writersWaiting{0};
     byte compressionType;
     bool outputToLog{false};
     bool corruptOutput{false};
