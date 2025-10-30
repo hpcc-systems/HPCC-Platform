@@ -31,7 +31,7 @@
 {{- $commonCtx := dict "root" $ "me" $sasha "secretsCategories" $secretsCategories -}}
 {{- $_ := set $commonCtx "includeCategories" (splitList " " (include "hpcc.getSashaPlanesFromAccess" $sasha)) -}}
 {{- $_ := set $commonCtx "lifeCycleCtx" (dict "containers" list) -}}
-{{- if and (hasKey $sasha "plane") $sasha.plane -}}
+{{- if or (and (hasKey $sasha "plane") $sasha.plane) (has $sashaName (list "xref" "wu-archiver" "dfuwu-archiver")) -}}
 {{- $_ := set $commonCtx "includeNames" (list ($sasha.plane | default (include "hpcc.getFirstPlaneForCategory" (dict "root" $ "category" "sasha")))) -}}
 {{- end -}}
 {{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.sashaConfigMap" "component" "sasha" "excludeKeys" "global")) -}}
@@ -66,7 +66,7 @@ spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $serviceName "type" "sasha") | indent 6 }}
       serviceAccountName: "hpcc-default"
       terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds | default 600 }}
-      {{- if hasKey $sasha "plane" }}
+      {{- if or (hasKey $sasha "plane") (has $sashaName (list "xref" "wu-archiver" "dfuwu-archiver")) }}
       initContainers:
         {{- include "hpcc.createConfigInitContainers" $commonCtx | indent 6 }}
       {{- end }}

@@ -3246,6 +3246,7 @@
           "labels": {},
           "at" : {},
           "image": {},
+          "plane": {},
           "resources": {},
           "expert": {},
           "terminationGracePeriodSeconds": {},

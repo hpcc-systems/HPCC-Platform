@@ -29,6 +29,11 @@
 #include "dadfs.hpp"
 #include "jlog.hpp"
 
+// Maximum file size for loading xref data from files (256MB)
+constexpr offset_t xrefMaxFileSize = 0x100000 * 256;
+extern void readXrefBranch(const char *branchName, const char *filePath, offset_t maxFileSize, MemoryBuffer &dst);
+
+
 interface IUserDescriptor;
 
 interface IXRefFilesNode : extends IInterface
@@ -41,17 +46,20 @@ interface IXRefFilesNode : extends IInterface
     virtual IPropertyTreeIterator *getMatchingFiles(const char *match, const char *type) = 0;
     virtual bool IsChanged() = 0;
     virtual void Commit() = 0;
+    virtual void setXRefPath(const char *_xrefPath, const char *_branchName) = 0;
 };
 
 class CXRefFilesNode : implements IXRefFilesNode, public CSimpleInterface
 {
 protected:
     bool m_bChanged;
-    IPropertyTree& m_baseTree;
+    IPropertyTree *m_baseTree;
     Owned<IPropertyTree> m_DataTree;
     MemoryBuffer _data;
     StringBuffer prefixName;
     StringAttr rootdir;
+    StringAttr xrefPath;  // Path for file-based storage
+    StringAttr branchName; // Name of this branch (e.g., "Lost", "Found", "Orphans")
 private:
     IPropertyTree* FindNode(const char* NodeName);
     IPropertyTree& queryDataTree();
@@ -63,7 +71,8 @@ private:
     virtual void CleanTree(IPropertyTree& inTree){}
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-    CXRefFilesNode(IPropertyTree& baseNode,const char* cluster, const char *rootdir);
+    CXRefFilesNode(IPropertyTree *baseNode,const char* cluster, const char *rootdir);
+    void setXRefPath(const char *_xrefPath, const char *_branchName) override;
     virtual ~CXRefFilesNode(){};
     virtual bool IsChanged() override;
     void Commit() override;
@@ -78,7 +87,7 @@ public:
 class CXRefOrphanFilesNode : public CXRefFilesNode
 {
 public:
-    CXRefOrphanFilesNode(IPropertyTree& baseNode,const char* cluster,const char* rootdir);
+    CXRefOrphanFilesNode(IPropertyTree *baseNode,const char* cluster,const char* rootdir);
     void CleanTree(IPropertyTree& inTree);
 };
 #endif // !XREFFILESNODE
