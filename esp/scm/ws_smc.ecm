@@ -477,7 +477,19 @@ ESPresponse [exceptions_inline, nil_remove] GetGlobalMetricsResponse
     ESParray<ESPstruct GlobalMetric, GlobalMetric> GlobalMetrics;
 };
 
-ESPservice [auth_feature("DEFERRED"), noforms, version("1.28"), default_client_version("1.28"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
+ESPrequest [nil_remove] RecordGlobalMetricsRequest
+{
+    string Category;                            // Category to record metrics for (required)
+    ESParray<ESPstruct Dimension> Dimensions;   // Optional dimensions for the metrics
+    ESParray<ESPstruct Stat, Stat> Stats;       // Statistics to record
+};
+
+ESPresponse [exceptions_inline, nil_remove] RecordGlobalMetricsResponse
+{
+    string Result;                              // Success or partial success message
+};
+
+ESPservice [auth_feature("DEFERRED"), noforms, version("1.29"), default_client_version("1.29"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
 {
     ESPmethod Index(SMCIndexRequest, SMCIndexResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/index.xslt")] Activity(ActivityRequest, ActivityResponse);
@@ -512,6 +524,7 @@ ESPservice [auth_feature("DEFERRED"), noforms, version("1.28"), default_client_v
 //this one doesn't seem to do any feature level check, Kevin/Tony?
     ESPmethod [auth_feature("NONE")] LockQuery(LockQueryRequest, LockQueryResponse);
     ESPmethod [min_ver("1.28")] GetGlobalMetrics(GetGlobalMetricsRequest, GetGlobalMetricsResponse);
+    ESPmethod [min_ver("1.29")] RecordGlobalMetrics(RecordGlobalMetricsRequest, RecordGlobalMetricsResponse);
 };
 
 SCMexportdef(WSSMC);
