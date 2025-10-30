@@ -1854,7 +1854,7 @@ public:
             part->getFilename(rfn).getRemotePath(rmtPath);
             throw MakeStringException(1001, "Could not open file part at %s%s", rmtPath.str(), (numCopies > 1) ? " or any alternate location." : ".");
         }
-        rawStream.setown(createFileSerialStream(rawFile, 0, -1, 0));
+        rawStream.setown(createFileSerialStream(rawFile, 0, -1, 0)); // NB: bufsize = 0, no buffering
     }
 
     virtual IDistributedFilePart * queryPart() = 0;

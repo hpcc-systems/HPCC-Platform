@@ -842,7 +842,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                                 fetchOutPtr += FETCHKEY_HEADER_SIZE;
 
                                 Owned<IFileIO> iFileIO = owner.getFilePartIO(filePartIndex);
-                                Owned<IBufferedSerialInputStream> stream = createFileSerialStream(iFileIO, localFpos);
+                                Owned<IBufferedSerialInputStream> stream = createFileSerialStream(iFileIO, localFpos, (offset_t)-1, 0); // bufsize=0, no buffering
                                 const ITranslator *translator = translators.item(filePartIndex);
 
                                 RtlDynamicRowBuilder fetchedRowBuilder(fetchDiskRowIf->queryRowAllocator());
