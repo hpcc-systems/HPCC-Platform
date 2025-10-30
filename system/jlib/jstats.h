@@ -1100,8 +1100,10 @@ public:
         if (unlikely(count.load() == 0))
             return 0.0;
 
-        CriticalBlock block(cs);
-        return mean;
+        {
+            CriticalBlock block(cs);
+            return mean;
+        }
     }
 
     double queryStandardDeviation() const
@@ -1110,8 +1112,10 @@ public:
         if (unlikely(currentCount <= 1))  // Fast path: no lock needed for insufficient data
             return 0.0;
 
-        CriticalBlock block(cs);
-        return sqrt(M2 / currentCount);
+        {
+            CriticalBlock block(cs);
+            return sqrt(M2 / currentCount);
+        }
     }
 
     double getDeviations(double sampleValue) const
@@ -1120,14 +1124,16 @@ public:
         if (unlikely(currentCount < 2))
             return 0.0;
 
-        CriticalBlock block(cs);
-        // Calculate stddev once and reuse
-        double stddev = sqrt(M2 / currentCount);
+        {
+            CriticalBlock block(cs);
+            // Calculate stddev once and reuse
+            double stddev = sqrt(M2 / currentCount);
 
-        if (unlikely(stddev == 0.0))
-            return 0.0;
+            if (unlikely(stddev == 0.0))
+                return 0.0;
 
-        return (sampleValue - mean) / stddev;
+            return (sampleValue - mean) / stddev;
+        }
     }
 
     // Performance optimization: Get multiple statistics in single lock
@@ -1141,9 +1147,11 @@ public:
             return;
         }
 
-        CriticalBlock block(cs);  // Single lock for coordinated reads
-        outMean = mean;
-        outStdDev = (outCount > 1) ? sqrt(M2 / outCount) : 0.0;
+        {
+            CriticalBlock block(cs);  // Single lock for coordinated reads
+            outMean = mean;
+            outStdDev = (outCount > 1) ? sqrt(M2 / outCount) : 0.0;
+        }
     }
 
     void clear()
