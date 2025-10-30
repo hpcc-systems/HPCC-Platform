@@ -149,11 +149,13 @@ define([
             var recentFilterLoaded = false;
             if (this.userName !== null) {
                 this.recentFilterNode = dom.byId(this.id + "RecentFilters");
-                this.recentFilterNodeRoot = srcReact.ReactRoot.create(this.recentFilterNode);
+                if (this.recentFilterNode) {
+                    this.recentFilterNodeRoot = srcReact.ReactRoot.create(this.recentFilterNode);
 
-                if (params.widget && !recentFilterLoaded) {
-                    this.recentFilterNodeRoot.lightThemedRender(srcReact.RecentFilters, { ws_key: params.ws_key, widget: params.widget, filter: {} });
-                    recentFilterLoaded = true;
+                    if (params.widget && !recentFilterLoaded) {
+                        this.recentFilterNodeRoot.lightThemedRender(srcReact.RecentFilters, { ws_key: params.ws_key, widget: params.widget, filter: {} });
+                        recentFilterLoaded = true;
+                    }
                 }
             }
         },

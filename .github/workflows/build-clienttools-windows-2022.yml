@@ -76,6 +76,8 @@ jobs:
           $currentDirectory = Get-Location
           $certificatePath = Join-Path -Path $currentDirectory -ChildPath $pfxPath
           [IO.File]::WriteAllBytes("$certificatePath", $encodedBytes)
+          $passphrasePath = Join-Path -Path $currentDirectory -ChildPath "passphrase.txt"
+          Set-Content -Path $passphrasePath -Value "${{ secrets.SIGNING_CERTIFICATE_PASSPHRASE }}"
           CertUtil -p ${{ secrets.SIGNING_CERTIFICATE_PASSPHRASE }} hpcc_code_signing.pfx           
 
       - name: vcpkg bootstrap
@@ -111,13 +113,7 @@ jobs:
         run: |
           mkdir -p ./build
           cmake -S ${{ steps.setup_source.outputs.source_dir }} -B ./build ${{ inputs.cmake-config-options }}
-          cmake --build ./build ${{ inputs.cmake-build-options }} --target package
-
-      - name: Sign Package
-        shell: "pwsh"
-        run: |
-          cd ./build
-          C:\"Program Files (x86)"\"Microsoft SDKs"\ClickOnce\SignTool\signtool.exe sign /debug /f ../sign/hpcc_code_signing.pfx /p ${{ secrets.SIGNING_CERTIFICATE_PASSPHRASE }} /t http://timestamp.digicert.com /fd SHA256 hpccsystems-clienttools*.exe
+          cmake --build ./build ${{ inputs.cmake-build-options }} --target SIGN
 
       - name: Release Community Clienttools
         if: ${{ inputs.ln-ref == '' }}
