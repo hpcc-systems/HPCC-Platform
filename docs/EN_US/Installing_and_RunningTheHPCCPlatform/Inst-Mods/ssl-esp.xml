@@ -44,12 +44,7 @@
     is encrypted and secure. The Public and Private Keys use 2048-bit RSA
     encryption.</para>
 
-    <para>These server keys are read at runtime by the ESP process. It is
-    important the installed keys have correct ownership and permissions.
-    Typically, it is the HPCC user and their public key (certificate.cer) with
-    read permissions such as 0444 (or 0644), along with the private key
-    (privatekey.cer) with more restrictive permissions of 0400 (or
-    0600).</para>
+    <para>These server keys (whether they are self-signed or imported) are read at runtime by the ESP process. For security reasons, it is important the installed keys have correct ownership and permissions. The certificate (the public key) should be owned by user hpcc with permissions 0444 (or 0644); the private key should be owned by user hpcc with permissions 0400 (or 0600).</para>
 
     <sect2 id="ConfigureESP_GenerateRSAPrivateKey">
       <title><emphasis role="bold">Generate an RSA Private
@@ -382,6 +377,32 @@
         secure service via https, you delete the service binding which uses
         http. You should then repeat the process for <emphasis
         role="bold">all</emphasis> other service bindings.</para>
+      </sect3>
+
+      <sect3 id="ConvertingFromHTTPtoHTTPS">
+        <title><emphasis role="bold">Converting an Existing Cluster from HTTP to HTTPS</emphasis></title>
+
+        <para>If your goal is to convert an existing unsecured cluster to a fully secured cluster (rather than just adding SSL support alongside existing HTTP services), you can simplify the process by converting existing service bindings instead of creating new ones.</para>
+
+        <orderedlist numeration="arabic">
+          <listitem>
+            <para>In the ESP Service Bindings tab, locate each existing HTTP service binding.</para>
+          </listitem>
+
+          <listitem>
+            <para>For each service binding, change the protocol from <emphasis role="bold">http</emphasis> to <emphasis role="bold">https</emphasis> in the protocol drop-list.</para>
+          </listitem>
+
+          <listitem>
+            <para>The port will automatically update to the default HTTPS port (e.g., 18002 for ws_ecl) if it hasn't been previously edited.</para>
+          </listitem>
+
+          <listitem>
+            <para>Click the disk icon to save each change.</para>
+          </listitem>
+        </orderedlist>
+
+        <para>This approach is more efficient than creating new HTTPS bindings and then deleting the HTTP ones, especially when converting multiple services in a production environment.</para>
       </sect3>
     </sect2>
 
