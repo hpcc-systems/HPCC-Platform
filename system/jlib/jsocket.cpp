@@ -701,6 +701,8 @@ public:
 
     int         pre_connect(bool block);
     int         post_connect();
+    void        prepareForAsyncConnect(struct sockaddr *& addr, size32_t &addrlen);
+    void        finishAsyncConnect(int connectResult);
 
     void        setTraceName(const char * prefix, const char * name);
     void        setTraceName();
@@ -1105,49 +1107,126 @@ size32_t CSocket::avail_read()
 
 #define PRE_CONN_UNREACH_ELIM  100
 
-int CSocket::pre_connect(bool block)
+// Static helper: Set socket blocking/non-blocking mode
+static bool set_socket_nonblock(T_SOCKET sock, bool nonblocking)
+{
+#if defined(O_NONBLOCK)
+    int flags = fcntl(sock, F_GETFL, 0);
+    if (flags == -1)
+        return false;
+    if (nonblocking)
+        flags |= O_NONBLOCK;
+    else
+        flags &= ~O_NONBLOCK;
+    return (fcntl(sock, F_SETFL, flags) == 0);
+#else
+#ifdef _WIN32
+    u_long yes = nonblocking ? 1 : 0;
+    return (ioctlsocket(sock, FIONBIO, &yes) == 0);
+#else
+    int yes = nonblocking ? 1 : 0;
+    return (ioctl(sock, FIONBIO, &yes) == 0);
+#endif
+#endif
+}
+
+// Static helper: Prepare a socket for connection (shared by sync and async paths)
+// Returns the socket descriptor and sockaddr structure
+// Throws exception on error
+static T_SOCKET prepare_socket_for_connect(const IpAddress & targetip, unsigned short hostport, J_SOCKADDR & sockaddr, socklen_t & sockaddrlen, const char * tracename)
 {
     if (targetip.isNull())
     {
         StringBuffer err;
-        err.appendf("CSocket::pre_connect - Invalid/missing host IP address raised in : %s, line %d",sanitizeSourceFile(__FILE__), __LINE__);
+        err.appendf("prepare_socket_for_connect - Invalid/missing host IP address raised in : %s, line %d",sanitizeSourceFile(__FILE__), __LINE__);
         IJSOCK_Exception *e = new SocketException(JSOCKERR_bad_netaddr,err.str());
         throw e;
     }
 
+    memset(&sockaddr, 0, sizeof(J_SOCKADDR));
+    sockaddrlen = setSockAddr(sockaddr, targetip, hostport);
+    T_SOCKET sock = ::socket(sockaddr.sa.sa_family, SOCK_STREAM, targetip.isIp4() ? 0 : PF_INET6);
+    if (sock == INVALID_SOCKET)
+    {
+        int err = SOCKETERRNO();
+        LOGERR(err, 1, "prepare_socket_for_connect");
+        throwJSockTargetException(err, tracename, __FILE__, __LINE__);
+    }
+
+    STATS.activesockets++;
+    return sock;
+}
+
+// Static helper: Perform synchronous connect on prepared socket
+// Returns error code (0 = success, or error that needs handling by caller)
+static int perform_socket_connect(T_SOCKET sock, const J_SOCKADDR & sockaddr, socklen_t sockaddrlen, bool nonblocking, const char * tracename)
+{
+    // Set socket to blocking or non-blocking mode
+    set_socket_nonblock(sock, nonblocking);
+
+    int rc = ::connect(sock, &sockaddr.sa, sockaddrlen);
+    int err = 0;
+    if (rc == SOCKET_ERROR)
+    {
+        err = SOCKETERRNO();
+        if ((err != JSE_INPROGRESS) && (err != JSE_WOULDBLOCK) && (err != JSE_TIMEDOUT) && (err != JSE_CONNREFUSED))    // handled by caller
+        {
+            if (err != JSE_NETUNREACH)
+            {
+                pre_conn_unreach_cnt.store(0);
+                LOGERR(err, 1, "perform_socket_connect");
+            }
+            else
+            {
+                int ecnt = pre_conn_unreach_cnt.load();
+                if (ecnt <= PRE_CONN_UNREACH_ELIM)
+                {
+                    pre_conn_unreach_cnt.fetch_add(1);
+                    LOGERR(err, 1, "perform_socket_connect network unreachable");
+                }
+            }
+        }
+        else
+            pre_conn_unreach_cnt.store(0);
+    }
+    else
+        pre_conn_unreach_cnt.store(0);
+
+#ifdef SOCKTRACE
+    PROGLOG("SOCKTRACE: perform_socket_connect socket%s %x %d err=%d", nonblocking?"":"(block)", sock, sock, err);
+#endif
+    return err;
+}
+
+// Static helper: Complete post-connect operations (shared by sync and async paths)
+// Returns error code (0 = success)
+static int finalize_socket_connect(T_SOCKET sock, const char * tracename)
+{
+    // Ensure socket is in non-blocking mode
+    set_socket_nonblock(sock, true);
+
+    int err = 0;
+    socklen_t errlen = sizeof(err);
+    int rc = getsockopt(sock, SOL_SOCKET, SO_ERROR, (char *)&err, &errlen); // check for error
+    if ((rc != 0) && !err)
+        err = SOCKETERRNO();  // some implementations of getsockopt duff
+    if ((err != 0) && (err != JSE_TIMEDOUT) && (err != JSE_CONNREFUSED)) // handled by caller
+        LOGERR(err, 1, "finalize_socket_connect");
+    return err;
+}
+
+int CSocket::pre_connect(bool block)
+{
     DEFINE_SOCKADDR(u);
-    socklen_t ul = setSockAddr(u,targetip,hostport);
-    sock = ::socket(u.sa.sa_family, SOCK_STREAM, targetip.isIp4()?0:PF_INET6);
+    socklen_t ul;
+    sock = prepare_socket_for_connect(targetip, hostport, u, ul, tracename);
     owned = true;
     state = ss_pre_open;            // will be set to open by post_connect
-    if (sock == INVALID_SOCKET) {
-        int err = SOCKETERRNO();
-        THROWJSOCKTARGETEXCEPTION(err);
-    }
 
     checkCfgKeepAlive();
 
-    STATS.activesockets++;
-    int err = 0;
-    set_nonblock(!block);
-    int rc = ::connect(sock, &u.sa, ul);
-    if (rc==SOCKET_ERROR) {
-        err = SOCKETERRNO();
-        if ((err != JSE_INPROGRESS)&&(err != JSE_WOULDBLOCK)&&(err != JSE_TIMEDOUT)&&(err!=JSE_CONNREFUSED)) {   // handled by caller
-            if (err != JSE_NETUNREACH) {
-                pre_conn_unreach_cnt.store(0);
-                LOGERR2(err,1,"pre_connect");
-            } else {
-                int ecnt = pre_conn_unreach_cnt.load();
-                if (ecnt <= PRE_CONN_UNREACH_ELIM) {
-                    pre_conn_unreach_cnt.fetch_add(1);
-                    LOGERR2(err,1,"pre_connect network unreachable");
-                }
-            }
-        } else
-            pre_conn_unreach_cnt.store(0);
-    } else
-        pre_conn_unreach_cnt.store(0);
+    nonblocking = !block;  // Track the blocking state
+    int err = perform_socket_connect(sock, u, ul, !block, tracename);
 #ifdef SOCKTRACE
     PROGLOG("SOCKTRACE: pre-connected socket%s %x %d (%p) err=%d", block?"(block)":"", sock, sock, this, err);
 #endif
@@ -1156,24 +1235,70 @@ int CSocket::pre_connect(bool block)
 
 int CSocket::post_connect()
 {
-    set_nonblock(true); // normally a NOP, but connect_wait's use of pre_connect could leave it in blocking state
-    int err = 0;
-    socklen_t  errlen = sizeof(err);
-    int rc = getsockopt(sock, SOL_SOCKET, SO_ERROR, (char *)&err, &errlen); // check for error
-    if ((rc!=0)&&!err)
-        err = SOCKETERRNO();  // some implementations of getsockopt duff
-    if (err==0) {
+    int err = finalize_socket_connect(sock, tracename);
+    if (err==0)
+    {
         nagling = true;
         set_nagle(false);
         state = ss_open;
         SocketEndpoint ep;
         localPort = getEndpoint(ep).port;
     }
-    else if ((err!=JSE_TIMEDOUT)&&(err!=JSE_CONNREFUSED)) // handled by caller
-        LOGERR2(err,1,"post_connect");
     return err;
 }
 
+// Memory for addr is allocated by this function and must be freed -- via free() -- by the caller
+void CSocket::prepareForAsyncConnect(struct sockaddr *& addr, size32_t & addrlen)
+{
+    // Prepare the socket for async connection
+    DEFINE_SOCKADDR(u);
+    socklen_t ul;
+    sock = prepare_socket_for_connect(targetip, hostport, u, ul, tracename);
+    owned = true;
+    state = ss_pre_open;  // will be set to open by finishAsyncConnect
+
+    checkCfgKeepAlive();
+    set_nonblock(true);  // Async connections must be non-blocking
+
+    // Allocate and copy the sockaddr for the caller
+    addr = (struct sockaddr *)malloc(ul);
+    memcpy(addr, &u, ul);
+    addrlen = ul;
+
+#ifdef _TRACE
+    setTraceName();
+#endif
+}
+
+void CSocket::finishAsyncConnect(int connectResult)
+{
+    if (connectResult < 0)
+    {
+        // Connection failed
+        errclose();
+        THROWJSOCKTARGETEXCEPTION(JSOCKERR_connection_failed);
+    }
+
+    // Finalize the connection
+    int err = finalize_socket_connect(sock, tracename);
+    if (err != 0)
+    {
+        errclose();
+        THROWJSOCKTARGETEXCEPTION(err);
+    }
+
+    // Complete socket setup
+    nagling = true;
+    set_nagle(false);
+    state = ss_open;
+    SocketEndpoint ep;
+    localPort = getEndpoint(ep).port;
+
+    STATS.connects++;
+#ifdef SOCKTRACE
+    PROGLOG("SOCKTRACE: async connect completed for socket %x %d (%p)", sock, sock, this);
+#endif
+}
 
 void CSocket::open(int listen_queue_size,bool reuseports)
 {
@@ -1858,15 +1983,36 @@ void CSocket::setTraceName()
 }
 
 
-ISocket*  ISocket::connect_wait( const SocketEndpoint &ep, unsigned timems)
+ISocket *  ISocket::connect_wait( const SocketEndpoint & ep, unsigned timems)
 {
-    if (ep.isNull()||(ep.port==0))
+    if (ep.isNull() || (ep.port==0))
         THROWJSOCKEXCEPTION(JSOCKERR_bad_address);
     Owned<CSocket> sock = new CSocket(ep,sm_tcp,NULL);
     sock->connect_wait(timems);
     return sock.getClear();
 }
 
+// Create a socket prepared for async connection - returns socket descriptor and sockaddr for use with io_uring
+// memory for addr is allocated by this function and must be freed -- via free() -- by the caller
+ISocket * ISocket::createForAsyncConnect(const SocketEndpoint & ep, struct sockaddr *& addr, size32_t & addrlen)
+{
+    if (ep.isNull() || (ep.port==0))
+        THROWJSOCKEXCEPTION(JSOCKERR_bad_address);
+
+    Owned<CSocket> csock = new CSocket(ep, sm_tcp, NULL);
+    csock->prepareForAsyncConnect(addr, addrlen);
+    return csock.getClear();
+}
+
+// Complete an async connection after io_uring connect completes
+void ISocket::completeAsyncConnect(ISocket * socket, int connectResult)
+{
+    CSocket * csock = dynamic_cast<CSocket *>(socket);
+    if (!csock)
+        THROWJSOCKEXCEPTION(JSOCKERR_not_opened);
+
+    csock->finishAsyncConnect(connectResult);
+}
 
 
 void CSocket::udpconnect()

@@ -287,6 +287,11 @@ public:
     // (e.g. if don't know that server listening yet)
     // if 0 specified for time then does single (blocking) connect try
     
+    // Async connection support for io_uring
+    //
+    static ISocket*  createForAsyncConnect(const SocketEndpoint & ep, struct sockaddr *& addr, size32_t & addrlen);
+    static void completeAsyncConnect(ISocket * socket, int connectResult);
+    
     
     // Create client socket connected to a UDP server socket
     //
