@@ -18,23 +18,91 @@ See this document for [K8s HPA details](https://kubernetes.io/docs/tasks/run-app
 
 Some of HPCC Systems' components are candidates for HPA configuration (ESP, ECLCCServer, etc.) and can be configured directly within the HPCC helm deployment.
 
-Example ESP application 'eclwatch' configured to horizontally auto-scale from 1 up to 3 replicas based on cpu utilization of 80:
+### HPCC Systems HPA Examples
 
-```console
-  esp:
+HPCC Systems component HPAs are centrally declared in global.hpas and referenced from within the component to be scaled.
+
+#### Example centralized HPAs configuration
+
+```yaml
++global:
++  hpas: #list of named HPA configurations, to be referenced from component definitions
++    HighCPULowReplicaHPAType: #example HPA profile for high CPU scaling trigger, with low replica count
++      hpa:
++        minReplicas: 1
++        maxReplicas: 2
++        metrics:
++        - type: Resource
++          name: cpu
++          target:
++            type: Utilization
++            value: "90"
++    LowCPULowReplicaHPAType: #example HPA profile for low CPU scaling trigger, with low replica count
++      hpa:
++        minReplicas: 1
++        maxReplicas: 2
++        metrics:
++        - type: Resource
++          name: cpu
++          target:
++            type: Utilization
++            value: "5"
+```
+#### Example 1: ESP ECLWatch Auto-scaling
+
+Example ESP application 'eclwatch' configured to horizontally auto-scale from 1 up to 2 replicas based on cpu utilization of 90 by referencing 'HighCPULowReplicaHPAType':
+
+```yaml
+esp:
 - name: eclwatch
   application: eclwatch
   auth: none
   replicas: 1
-  hpa:
-    minReplicas: 1
-    maxReplicas: 3
-    metrics:
-    - type: Resource
-      name: "cpu"
-      target: 
-        type: Utilization
-        value: "80"
+  hpa: "HighCPULowReplicaHPAType" # Reference to a named HPA configuration defined in global HPAs
+```
+
+#### Example 2: DaFileSrv Rowservice Elastic Scaling
+
+The DaFileSrv rowservice component provides streaming file access capabilities and is designed for elastic scaling based on actual demand. 
+
+**On-Demand Scaling Characteristics:**
+- Scales up automatically when data stream requests increase CPU utilization
+- Can scale down to minimal replicas when streaming demand is low
+- Responds to burst traffic patterns typical of file access workloads
+- Maintains secure mTLS communication during scaling operations
+
+```yaml
+dafilesrv:
+  - name: rowservice
+    disabled: false
+    application: stream
+    service:
+      servicePort: 7600
+      visibility: global
+    resources:
+      cpu: "500m"
+      memory: "128Mi"
+    hpa: "LowCPULowReplicaHPAType" # Reference to a named HPA configuration defined in global HPAs
+```
+
+**Prerequisites for DaFileSrv HPA:**
+- Kubernetes Metrics Server deployment
+- Resource requests configured for all containers (including postrun sidecars)
+
+Monitor CPU and memory utilization patterns to optimize resource allocation for your specific file access patterns and throughput requirements.
+
+Example rowservice deployment with HPA for automated scaling based on CPU using provided sample files:
+
+```console
+# Deploy HPCC Platform with rowservice HPA enabled
+helm install myhpcc hpcc/hpcc --set global.image.version=latest \
+  -f helm/examples/scaling/sample-hpas.yaml -f helm/examples/scaling/rowservice-LowCPULowReplicaHPA.yaml
+
+# Monitor autoscaling behavior during streaming workloads
+kubectl get hpa rowservice-hpa -w
+
+# Observe scaling response to demand
+kubectl get deployment rowservice
 ```
 
 Otherwise, an HPA can be created manually utilizing the kubectl command line tool.
