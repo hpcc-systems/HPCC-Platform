@@ -678,16 +678,37 @@ void CSocketTarget::startAsyncConnect()
 {
     state = numConnects ? State::Reconnecting : State::Connecting;
 
-    //MORE: Need to code a clean async connect - that would involve
-    // * adding an ISocket call to create an unconnected socket
-    // * add an async connect call to the ISocket interface
-    // * add a callback to the ISocket interface to process the post connect and then call back to this classes' callback
-    // for the moment connect synchronously, and revisit in a later PR
-    connect();
-
-    //Process as if an async connect had completed
-    int result = socket ? 0 : -1;
-    onAsyncComplete(result);
+    // Prepare socket for async connection
+    struct sockaddr *addr = nullptr;
+    try
+    {
+        size32_t addrlen = 0;
+        socket.setown(ISocket::createForAsyncConnect(ep, addr, addrlen));
+        if (socket && sender.asyncSender)
+        {
+            // Queue the async connect operation
+            sender.asyncSender->enqueueSocketConnect(socket, addr, addrlen, *this);
+            free(addr);
+            addr = nullptr;
+        }
+        else
+        {
+            // No async processor - fall back to sync connect
+            free(addr);
+            addr = nullptr;
+            connect();
+            int result = socket ? 0 : -1;
+            onAsyncComplete(result);
+        }
+    }
+    catch (IException * e)
+    {
+        if (addr)
+            free(addr);
+        socket.clear();
+        e->Release();
+        onAsyncComplete(-1);
+    }
 }
 
 void CSocketTarget::onAsyncComplete(int result)
@@ -702,6 +723,9 @@ void CSocketTarget::onAsyncComplete(int result)
         case State::Reconnecting:
             if (result < 0)
             {
+                // Connection failed - clean up socket
+                socket.clear();
+                
                 // If connecting for the first time failed there may be requests queued.  At the moment they are not dropped
                 // but uncomment the following line if that is the desired behaviour
                 // If reconnecting all items will be dropped already.
@@ -713,10 +737,25 @@ void CSocketTarget::onAsyncComplete(int result)
             }
             else
             {
-                if (numRequests != 0)
-                    startAsyncWrite();
-                else
-                    state = State::Connected;
+                // Complete the async connection
+                try
+                {
+                    ISocket::completeAsyncConnect(socket, result);
+                    numConnects++;
+                    if (sender.lowLatency)
+                        socket->set_nagle(false);
+                        
+                    if (numRequests != 0)
+                        startAsyncWrite();
+                    else
+                        state = State::Connected;
+                }
+                catch (IException * e)
+                {
+                    socket.clear();
+                    e->Release();
+                    state = State::Unconnected;
+                }
             }
             break;
         case State::ConnectWaiting:
