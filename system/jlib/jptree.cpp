@@ -3092,6 +3092,8 @@ void PTree::deserializeSelf(IBufferedSerialInputStream &src)
     read(src, flags);
 
     // Read attributes until we encounter a zero byte (attribute list terminator)
+#define HPCC_35246
+#ifdef HPCC_35246
     attrStringOffsets.clear();
     const char * base = peekKeyValuePairList(attrStringOffsets, src, skipLen);
     if (base) // there is at least one attribute to process
@@ -3101,7 +3103,7 @@ void PTree::deserializeSelf(IBufferedSerialInputStream &src)
     }
     else
         throwUnexpectedX("PTree deserialization error: end of stream, expected attribute name");
-/* DJPS
+#else
     for (;;)
     {
         NextByteStatus status = isNextByteZero(src);
@@ -3123,7 +3125,7 @@ void PTree::deserializeSelf(IBufferedSerialInputStream &src)
 
         src.skip(skipLen + 1); // +1 to skip over second null terminator.
     }
-*/
+#endif
     if (value)
         delete value;
     size32_t size{0};
@@ -4147,22 +4149,20 @@ no findAttribute() call for existing attributes
 */
 void CAtomPTree::setAttribute(const char *base, const std::vector<size32_t> &offsets)
 {
+    /**
+     * De-duplication of attributes:
+     * The attributes name is unique. However there maybe duplicates.
+     * Since only the most recent key is retrieved we can ignore duplicates.
+     * This will mean increased memory usage for the duplicates.
+     * However it will have a significant time saving on deserialization.
+    */
     size_t numStringOffsets = offsets.size();
     if (numStringOffsets < 2)
         return;
 
     if (numStringOffsets % 2 != 0)
         throwUnexpectedX("setAttribute error: offsets vector must contain pairs of key/value offsets");
-/*
-    // Deduplicate keys in input
-    std::unordered_set<size32_t> seenKeys;
-    for (size_t i = 0; i < numStringOffsets; i += 2)
-    {
-        const char *key = base + offsets[i];
-        if (key)
-            seenKeys.insert(i);
-    }
-*/
+
     // All attributes are treated as new i.e. do not exist in the tree already
     // Allocate them in one call
     size_t numNewAttributes = numStringOffsets / 2;
