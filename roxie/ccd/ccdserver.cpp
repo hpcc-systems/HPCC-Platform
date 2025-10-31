@@ -25919,7 +25919,7 @@ interface IJoinProcessor
 //   
 //------------------------------------------------------------------------------------------------------
 
-class CJoinGroup : public CInterface
+class CJoinGroup
 {
 protected:
     const void *left;                   // LHS row
@@ -25974,6 +25974,12 @@ public:
             roxiemem::ReleaseRoxieRowArray(rows.ordinality(), (const void * *)rows.getArray());
             rows.kill();
         }
+    }
+
+    inline bool Release(void) const
+    {
+        delete this;
+        return true;
     }
 
     inline bool isHeadRecord() const
