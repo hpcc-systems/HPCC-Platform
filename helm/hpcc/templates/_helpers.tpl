@@ -1109,6 +1109,10 @@ Pass in dict with me, and params
     - {{ $container.process }}
  {{- end }}
  {{- include "hpcc.addSecurityContext" . | indent 2 }}
+{{- printf "# DEBUG: current sidecar name: %s container name: %s" (.name | toJson) (.me.name | toJson) }}
+ {{- if (eq .me.name "rowservice") }}
+   {{- include "hpcc.addLowResources" . | indent 2 }}
+ {{- end }}
   volumeMounts:
   {{- include "hpcc.addTempVolumeMount" (.me | merge (dict "noSubPath" "true")) | nindent 2 }}
   {{- include "hpcc.addRuntimeVolumeMount" (.me | merge (dict "noSubPath" "true")) | nindent 2 }}
@@ -1464,18 +1468,44 @@ Pass in a dictionary with me defined
 {{-     $_ := set $requests "cpu" $cpu -}}
 {{-    end -}}
 {{-   end }}
+#{{- printf "# DEBUG: limits %s" ($limits | toJson) }}
 resources:
 {{-   if $limits }}
   limits:
+#{{- printf "# DEBUG: resources %s" ($limits | toJson) }}
 {{-    toYaml $limits | nindent 4 }}
 {{-   end -}}
 {{-   if $requests }}
   requests:
+#{{- printf "# DEBUG: requests %s" ($requests | toJson) }}
 {{-    toYaml $requests | nindent 4 -}}
 {{-   end -}}
 {{-  end -}}
 {{- end -}}
 {{- end -}}
+
+{{- define "hpcc.addLowResources" }}
+resources:
+  requests:
+    cpu: "5m"
+    memory: "8Mi"
+  limits:
+    cpu: "10m"
+    memory: "16Mi"
+{{ end -}}
+
+{{- define "hpcc.addResourcesEx" }}
+{{- $resources := .me | default .defaults }}
+{{- if $resources }}
+resources:
+{{- range $key, $section := $resources }}
+  {{ $key }}:
+{{- range $subkey, $value := $section }}
+    {{ $subkey }}: "{{ $value }}"
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
 
 {{/*
 Add resources object for stub pods
