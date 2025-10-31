@@ -114,29 +114,6 @@ CXRefNode::CXRefNode(const char* NodeName, IRemoteConnection *_conn)
 
 }
 
-CXRefNode::CXRefNode(IPropertyTree* pTreeRoot)
-{
-    m_bChanged = false;
-    try
-    {
-        m_XRefTree.set(pTreeRoot);
-        rootDir.set(m_XRefTree->queryProp("@rootdir"));
-        pTreeRoot->getProp("@name",m_origName);
-        //load up our tree with the data.....if there is data
-        MemoryBuffer buff;
-        pTreeRoot->getPropBin("data",buff);
-        if (buff.length())
-        {
-            m_dataStr.append(buff.length(),buff.toByteArray());
-        }
-        //lets check to ensure we have the correct children inplace(Orphan,lost,found)
-    }
-    catch(...)
-    {
-        IERRLOG("Error in creation of XRefNode...");
-    }
-}
-
 bool CXRefNode::useSasha()
 {
     if (!m_conn)
@@ -145,17 +122,7 @@ bool CXRefNode::useSasha()
 }
 
 
-IPropertyTree& CXRefNode::getDataTree()
-{
-    if(m_XRefDataTree.get() == 0)
-        m_XRefDataTree.setown(createPTreeFromXMLString(m_dataStr.str()));
-
-    return *m_XRefDataTree.get();
-
-}
-
-
-    //IConstXRefNode
+//IConstXRefNode
 StringBuffer & CXRefNode::getName(StringBuffer & str)
 {
     if(m_XRefTree.get())
@@ -177,16 +144,6 @@ StringBuffer & CXRefNode::getLastModified(StringBuffer & str)
         m_XRefTree->getProp("@modified",str);
     return str;
 }
-
-
-// NB: getXRefData is not used/can be removed
-// getDataTree also not used/can be removed
-// m_dataStr also not used/can be removed
-StringBuffer& CXRefNode::getXRefData(StringBuffer & str)
-{
-    return toXML(&getDataTree(),str);
-}
-
 
 IXRefFilesNode* CXRefNode::getLostFiles()
 {
