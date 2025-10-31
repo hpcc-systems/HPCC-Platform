@@ -3820,23 +3820,27 @@ protected:
             DBGLOG("=== createPTreeFromBinary() with custom nodeCreator completed ===");
 
             // Validation - verify both deserialized trees are equivalent to the original, log out any differences
-            if (!areMatchingPTrees(originalTree, memoryBufferDeserialized))
+            bool areTreesMatching = areMatchingPTrees(originalTree, memoryBufferDeserialized);
+            if (!areTreesMatching)
                 logPTreeSideBySide("originalTree", originalTree, "memoryBufferDeserialized", memoryBufferDeserialized);
-            CPPUNIT_ASSERT(areMatchingPTrees(originalTree, memoryBufferDeserialized));
+            CPPUNIT_ASSERT(areTreesMatching);
 
-            if (!areMatchingPTrees(originalTree, streamDeserialized))
+            areTreesMatching = areMatchingPTrees(originalTree, streamDeserialized);
+            if (!areTreesMatching)
                 logPTreeSideBySide("originalTree", originalTree, "streamDeserialized", streamDeserialized);
-            CPPUNIT_ASSERT(areMatchingPTrees(originalTree, streamDeserialized));
+            CPPUNIT_ASSERT(areTreesMatching);
 
-            if (!areMatchingPTrees(originalTree, deserializedCreatePTreeFromBinaryWithFlags))
+            areTreesMatching = areMatchingPTrees(originalTree, deserializedCreatePTreeFromBinaryWithFlags);
+            if (!areTreesMatching)
                 logPTreeSideBySide("originalTree", originalTree, "deserializedCreatePTreeFromBinaryWithFlags", deserializedCreatePTreeFromBinaryWithFlags);
-            CPPUNIT_ASSERT(areMatchingPTrees(originalTree, deserializedCreatePTreeFromBinaryWithFlags));
+            CPPUNIT_ASSERT(areTreesMatching);
 
             CPPUNIT_ASSERT(nodeCreator->wasCalled); // Verify nodeCreator was called
 
-            if (!areMatchingPTrees(originalTree, deserializedCreatePTreeFromBinaryWithCreator))
+            areTreesMatching = areMatchingPTrees(originalTree, deserializedCreatePTreeFromBinaryWithCreator);
+            if (!areTreesMatching)
                 logPTreeSideBySide("originalTree", originalTree, "deserializedCreatePTreeFromBinaryWithCreator", deserializedCreatePTreeFromBinaryWithCreator);
-            CPPUNIT_ASSERT(areMatchingPTrees(originalTree, deserializedCreatePTreeFromBinaryWithCreator));
+            CPPUNIT_ASSERT(areTreesMatching);
 
             DBGLOG("=== ROUND-TRIP TEST FOR: %s ===", testName);
 
@@ -3982,9 +3986,10 @@ private:
             expected1->setProp("@newAttr8", "newValue8");
             expected1->setProp("@newAttr9", "newValue9");
             expected1->setProp("@newAttr10", "");
-            if (!areMatchingPTrees(expected1, tree))
+            bool areTreesMatching = areMatchingPTrees(expected1, tree);
+            if (!areTreesMatching)
                 logPTreeSideBySide("expected1", expected1, "tree", tree);
-            CPPUNIT_ASSERT_MESSAGE("Test 1: Tree doesn't match expected after adding new attributes", areMatchingPTrees(expected1, tree));
+            CPPUNIT_ASSERT_MESSAGE("Test 1: Tree doesn't match expected after adding new attributes", areTreesMatching);
 
             DBGLOG("=== Test: Adding new attributes passed ===");
 
@@ -4160,9 +4165,10 @@ protected:
             totalSerializeNs += serializeElapsedNs;
 
             // Validation - serialized data matches
-            if (!areMatchingPTrees(copyDeserializedTree, deserializedTree))
+            bool areTreesMatching = areMatchingPTrees(copyDeserializedTree, deserializedTree);
+            if (!areTreesMatching)
                 logPTreeSideBySide("copyDeserializedTree", copyDeserializedTree, "tree", deserializedTree);
-            CPPUNIT_ASSERT(areMatchingPTrees(copyDeserializedTree, deserializedTree));
+            CPPUNIT_ASSERT(areTreesMatching);
         }
 
         TimingResults results;
