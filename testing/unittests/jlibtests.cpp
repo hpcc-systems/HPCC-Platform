@@ -3628,14 +3628,11 @@ IPropertyTree *createBinaryDataCompressionTestPTree()
  */
 
 // Helper: log two property trees as XML and produce a side-by-side text view to help diffing
-static void logPTreeSideBySide(const char *leftLabel, IPropertyTree *left, const char *rightLabel, IPropertyTree *right)
+static void logPTreeSideBySide(const char *leftLabel, IPropertyTree *leftTree, const char *rightLabel, IPropertyTree *rightTree)
 {
     StringBuffer leftXml, rightXml;
-    toXML(left, leftXml.clear(), 2, XML_Format|XML_SortTags);
-    toXML(right, rightXml.clear(), 2, XML_Format|XML_SortTags);
-
-    DBGLOG("PTree %s (full XML):\n%s", leftLabel, leftXml.str());
-    DBGLOG("PTree %s (full XML):\n%s", rightLabel, rightXml.str());
+    toXML(leftTree, leftXml.clear(), 2, XML_Format|XML_SortTags);
+    toXML(rightTree, rightXml.clear(), 2, XML_Format|XML_SortTags);
 
     std::vector<std::string> leftLines;
     std::vector<std::string> rightLines;
@@ -3651,6 +3648,62 @@ static void logPTreeSideBySide(const char *leftLabel, IPropertyTree *left, const
         while (std::getline(is, line))
             rightLines.push_back(line);
     }
+
+    // Reformat left side so attributes appear on separate indented lines (to match common multiline formatting)
+    std::vector<std::string> formattedLeftLines;
+    for (const auto &rawLine : leftLines)
+    {
+        std::string s = rawLine;
+        size_t lt = s.find('<');
+        if (lt != std::string::npos && lt + 1 < s.size() && s[lt+1] != '/' && s.find('"') != std::string::npos)
+        {
+            // locate end of tag (position of '>')
+            size_t endPos = s.rfind('>');
+            if (endPos == std::string::npos)
+            {
+                formattedLeftLines.push_back(s);
+                continue;
+            }
+            // find end of tag name
+            size_t pos = lt + 1;
+            while (pos < s.size() && !isspace((unsigned char)s[pos]) && s[pos] != '>' && s[pos] != '/') ++pos;
+            // first line: opening tag name
+            std::string tagName = s.substr(lt, pos - lt);
+            formattedLeftLines.push_back(tagName);
+
+            // attribute section between pos and endPos
+            std::string attrs = (pos < endPos) ? s.substr(pos, endPos - pos) : std::string();
+            size_t i = 0;
+            while (i < attrs.size())
+            {
+                // skip whitespace
+                while (i < attrs.size() && isspace((unsigned char)attrs[i])) ++i;
+                if (i >= attrs.size()) break;
+                size_t start = i;
+                bool inQuote = false;
+                while (i < attrs.size())
+                {
+                    if (attrs[i] == '"') inQuote = !inQuote;
+                    if (!inQuote && isspace((unsigned char)attrs[i])) break;
+                    ++i;
+                }
+                std::string token = attrs.substr(start, i - start);
+                if (!token.empty())
+                    formattedLeftLines.push_back(std::string(2, ' ') + token);
+            }
+
+            // closing marker
+            if (endPos > 0 && s[endPos - 1] == '/')
+                formattedLeftLines.push_back(std::string("/>") );
+            else
+                formattedLeftLines.push_back(std::string(">") );
+        }
+        else
+        {
+            formattedLeftLines.push_back(s);
+        }
+    }
+    leftLines.swap(formattedLeftLines);
 
     size_t maxLines = leftLines.size() > rightLines.size() ? leftLines.size() : rightLines.size();
     StringBuffer sb;
@@ -3766,8 +3819,7 @@ protected:
             Owned<IPropertyTree> deserializedCreatePTreeFromBinaryWithCreator = createPTreeFromBinary(*in3, nodeCreator);
             DBGLOG("=== createPTreeFromBinary() with custom nodeCreator completed ===");
 
-            // Validation - verify both deserialized trees are equivalent to the original
-            DBGLOG("=== Starting tree comparisons ===");
+            // Validation - verify both deserialized trees are equivalent to the original, log out any differences
             if (!areMatchingPTrees(originalTree, memoryBufferDeserialized))
                 logPTreeSideBySide("originalTree", originalTree, "memoryBufferDeserialized", memoryBufferDeserialized);
             CPPUNIT_ASSERT(areMatchingPTrees(originalTree, memoryBufferDeserialized));
@@ -3786,11 +3838,10 @@ protected:
                 logPTreeSideBySide("originalTree", originalTree, "deserializedCreatePTreeFromBinaryWithCreator", deserializedCreatePTreeFromBinaryWithCreator);
             CPPUNIT_ASSERT(areMatchingPTrees(originalTree, deserializedCreatePTreeFromBinaryWithCreator));
 
-            DBGLOG("=== Tree comparisons completed ===");
+            DBGLOG("=== ROUND-TRIP TEST FOR: %s ===", testName);
 
             double serializeTimeMs = serializeElapsedNs / 1e6;
             double serializeToStreamTimeMs = serializeToStreamElapsedNs / 1e6;
-            DBGLOG("=== ROUND-TRIP TEST STARTED FOR: %s ===", testName);
             DBGLOG("=== SERIALIZATION TEST RESULTS:");
             DBGLOG("  serialize() time: %.6f ms", serializeTimeMs);
             DBGLOG("  serializeToStream() time: %.6f ms", serializeToStreamTimeMs);
@@ -3891,152 +3942,53 @@ private:
             MemoryBuffer attrData;
             std::vector<size32_t> offsets;
 
-            // Test 1: Add new attributes (tests "new attribute" code path)
-            DBGLOG("=== Test 1: Adding new attributes ===");
+            // Test: Add attributes
+            DBGLOG("=== Test: Adding new attributes ===");
 
-            // Add attribute: @newAttr1="newValue1"
-            offsets.push_back(attrData.length());
-            attrData.append("@newAttr1").append('\0');
+            // Add 10 attributes (some values intentionally duplicated)
+            // Format: key, value, key, value, ...
+            auto addAttr = [&](const char *k, const char *v)
+            {
+                offsets.push_back(attrData.length());
+                attrData.append(k).append('\0');
+                offsets.push_back(attrData.length());
+                attrData.append(v ? v : "").append('\0');
+            };
 
-            offsets.push_back(attrData.length());
-            attrData.append("newValue1").append('\0');
-
-            // Add attribute: @newAttr2="newValue2"
-            offsets.push_back(attrData.length());
-            attrData.append("@newAttr2").append('\0');
-
-            offsets.push_back(attrData.length());
-            attrData.append("newValue2").append('\0');
+            addAttr("@newAttr1", "newValue1");
+            addAttr("@newAttr2", "newValue2");
+            addAttr("@newAttr3", "");
+            addAttr("@newAttr4", "dupValue1"); // Duplicate key
+            addAttr("@newAttr5", "newValue3");
+            addAttr("@newAttr4", "dupValue2"); // Duplicate key
+            addAttr("@newAttr6", "newValue4");
+            addAttr("@newAttr7", "newValue5");
+            addAttr("@newAttr8", "newValue6");
+            addAttr("@newAttr9", "newValue7");
+            addAttr("@newAttr10", "");
 
             DBGLOG("Calling setAttribute with %u offsets", (unsigned)offsets.size()); // Call setAttribute with the vector (testing new attribute insertion)
             const char *base = (const char *)attrData.toByteArray();
             ptree->setAttribute(base, offsets);
 
-            DBGLOG("setAttribute completed for new attributes");
-
             // Verify new attributes were added using areMatchingPTrees
             Owned<IPropertyTree> expected1 = createPTree("TestRoot", flags);
             expected1->setProp("@newAttr1", "newValue1");
             expected1->setProp("@newAttr2", "newValue2");
+            expected1->setProp("@newAttr3", "");
+            expected1->setProp("@newAttr4", "dupValue2");
+            expected1->setProp("@newAttr5", "newValue3");
+            expected1->setProp("@newAttr6", "newValue4");
+            expected1->setProp("@newAttr7", "newValue5");
+            expected1->setProp("@newAttr8", "newValue6");
+            expected1->setProp("@newAttr9", "newValue7");
+            expected1->setProp("@newAttr10", "");
             if (!areMatchingPTrees(expected1, tree))
                 logPTreeSideBySide("expected1", expected1, "tree", tree);
             CPPUNIT_ASSERT_MESSAGE("Test 1: Tree doesn't match expected after adding new attributes", areMatchingPTrees(expected1, tree));
 
-            DBGLOG("Test 1 passed");
+            DBGLOG("=== Test: Adding new attributes passed ===");
 
-            // Test 2: Update existing attributes (tests "update existing attribute" code path)
-            DBGLOG("=== Test 2: Updating existing attributes ===");
-            attrData.clear();
-            offsets.clear();
-
-            // Update attribute: @newAttr1="updatedValue1"
-            offsets.push_back(attrData.length());
-            attrData.append("@newAttr1").append('\0');
-
-            offsets.push_back(attrData.length());
-            attrData.append("updatedValue1").append('\0');
-
-            // Add one more new attribute: @newAttr3="newValue3"
-            offsets.push_back(attrData.length());
-            attrData.append("@newAttr3").append('\0');
-
-            offsets.push_back(attrData.length());
-            attrData.append("newValue3").append('\0');
-
-            DBGLOG("Calling setAttribute to update 1 existing + add 1 new");
-
-            // Call setAttribute again (testing both update and new attribute paths)
-            base = (const char *)attrData.toByteArray();
-            ptree->setAttribute(base, offsets);
-
-            DBGLOG("setAttribute completed for updates");
-
-            // Verify updates using areMatchingPTrees
-            Owned<IPropertyTree> expected2 = createPTree("TestRoot", flags);
-            expected2->setProp("@newAttr1", "updatedValue1"); // Updated value
-            expected2->setProp("@newAttr2", "newValue2");     // Unchanged from Test 1
-            expected2->setProp("@newAttr3", "newValue3");     // Newly added
-            if (!areMatchingPTrees(expected2, tree))
-                logPTreeSideBySide("expected2", expected2, "tree", tree);
-            CPPUNIT_ASSERT_MESSAGE("Test 2: Tree doesn't match expected after updating attributes", areMatchingPTrees(expected2, tree));
-
-            DBGLOG("Test 2 passed");
-
-            // Test 3: Update attributes that were added via setProp (exercises the existing attribute update path)
-            DBGLOG("=== Test 3: Testing setAttribute on pre-existing attributes ===");
-
-            // Add attributes using traditional setProp method
-            tree->setProp("@preExisting", "original");
-
-            // Now update it using setAttribute with vector
-            attrData.clear();
-            offsets.clear();
-
-            offsets.push_back(attrData.length());
-            attrData.append("@preExisting").append('\0');
-            offsets.push_back(attrData.length());
-            attrData.append("modified").append('\0');
-
-            DBGLOG("Calling setAttribute to update pre-existing attribute");
-
-            base = (const char *)attrData.toByteArray();
-            ptree->setAttribute(base, offsets);
-
-            // Prepare the expected tree for comparison (expected3)
-            Owned<IPropertyTree> expected3 = createPTree("TestRoot", flags);
-            expected3->setProp("@newAttr1", "updatedValue1");
-            expected3->setProp("@newAttr2", "newValue2");
-            expected3->setProp("@newAttr3", "newValue3");
-            expected3->setProp("@preExisting", "modified"); // Updated via setAttribute
-
-            // Log any differences between expected and actual tree. (No intentional mutation.)
-
-            // Log the entire expected and actual trees side-by-side for easy comparison.
-            {
-                StringBuffer expXml, actXml;
-                toXML(expected3, expXml.clear(), 2, XML_Format|XML_SortTags);
-                toXML(tree, actXml.clear(), 2, XML_Format|XML_SortTags);
-
-                // Log full trees separately first (helpful on their own)
-                DBGLOG("PTree expected (full XML):\n%s", expXml.str());
-                DBGLOG("PTree actual   (full XML):\n%s", actXml.str());
-
-                // Build side-by-side view by splitting into lines
-                std::vector<std::string> expLines;
-                std::vector<std::string> actLines;
-                {
-                    std::istringstream es(expXml.str());
-                    std::string line;
-                    while (std::getline(es, line))
-                        expLines.push_back(line);
-                }
-                {
-                    std::istringstream as(actXml.str());
-                    std::string line;
-                    while (std::getline(as, line))
-                        actLines.push_back(line);
-                }
-
-                size_t maxLines = expLines.size() > actLines.size() ? expLines.size() : actLines.size();
-                StringBuffer sideBySide;
-                sideBySide.append("===== Expected ============================== | ===== Actual ================================\n");
-                for (size_t i = 0; i < maxLines; ++i)
-                {
-                    const char *el = (i < expLines.size()) ? expLines[i].c_str() : "";
-                    const char *al = (i < actLines.size()) ? actLines[i].c_str() : "";
-                    // fixed-width column for expected side to ease visual diffing
-                    sideBySide.appendf("%-80s | %s\n", el, al);
-                }
-                sideBySide.append("===== End side-by-side =============================================================\n");
-                DBGLOG("PTree side-by-side comparison:\n%s", sideBySide.str());
-            }
-
-            // Verify the update worked using areMatchingPTrees
-            if (!areMatchingPTrees(expected3, tree))
-                logPTreeSideBySide("expected3", expected3, "tree", tree);
-            CPPUNIT_ASSERT_MESSAGE("Test 3: Tree doesn't match expected after updating pre-existing attribute", areMatchingPTrees(expected3, tree));
-
-            DBGLOG("Test 3 passed");
             DBGLOG("=== testSetAttributeWithVector completed successfully ===");
         }
         catch (IException *e)

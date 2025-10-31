@@ -568,7 +568,7 @@ const char * peekStringList(std::vector<size32_t> & matchOffsets, IBufferedSeria
     }
 }
 
-const char * peekAttributePairList(std::vector<size32_t> & matchOffsets, IBufferedSerialInputStream & in, size32_t & len)
+const char * peekKeyValuePairList(std::vector<size32_t> & matchOffsets, IBufferedSerialInputStream & in, size32_t & len)
 {
     size32_t scanned = 0;
     size32_t startNext = 0;

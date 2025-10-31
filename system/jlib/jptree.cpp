@@ -3093,7 +3093,7 @@ void PTree::deserializeSelf(IBufferedSerialInputStream &src)
 
     // Read attributes until we encounter a zero byte (attribute list terminator)
     attrStringOffsets.clear();
-    const char * base = peekAttributePairList(attrStringOffsets, src, skipLen);
+    const char * base = peekKeyValuePairList(attrStringOffsets, src, skipLen);
     if (base) // there is at least one attribute to process
     {
         setAttribute(base, attrStringOffsets);
@@ -4153,7 +4153,16 @@ void CAtomPTree::setAttribute(const char *base, const std::vector<size32_t> &off
 
     if (numStringOffsets % 2 != 0)
         throwUnexpectedX("setAttribute error: offsets vector must contain pairs of key/value offsets");
-
+/*
+    // Deduplicate keys in input
+    std::unordered_set<size32_t> seenKeys;
+    for (size_t i = 0; i < numStringOffsets; i += 2)
+    {
+        const char *key = base + offsets[i];
+        if (key)
+            seenKeys.insert(i);
+    }
+*/
     // All attributes are treated as new i.e. do not exist in the tree already
     // Allocate them in one call
     size_t numNewAttributes = numStringOffsets / 2;
@@ -4167,7 +4176,7 @@ void CAtomPTree::setAttribute(const char *base, const std::vector<size32_t> &off
         freeAttrArray(attrs, numAttrs);
     }
 
-    // process new additions only
+    // process offsets as new attributes
     size_t newAttributeIndex{0};
     for (size_t i = 0; i < numStringOffsets; i += 2)
     {
@@ -4176,8 +4185,6 @@ void CAtomPTree::setAttribute(const char *base, const std::vector<size32_t> &off
 
         if (!key || !validateXMLTag(key+1))
             throw MakeIPTException(-1, "Invalid xml attribute: %s", ('\0'==*key ? "(null)" : key));
-        if (findAttribute(key))
-            fprintf(stderr, "DJPS found existing attribute key=\"%s\"\n", key);
         if (!val)
             val = "";  // cannot have NULL value
 
