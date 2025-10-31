@@ -2,10 +2,10 @@
 
 | name     | version |
 | -------- | ------- |
-| current  |  9.14.x  |
-| previous |  9.12.x  |
-| critical |  9.10.x |
-| security |  9.8.x |
+| current  |  10.0.x |
+| previous |  9.14.x |
+| critical |  9.12.x |
+| security |  9.10.x |
 
 ## Supported versions
 
