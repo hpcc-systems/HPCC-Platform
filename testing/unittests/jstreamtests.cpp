@@ -1018,6 +1018,25 @@ public:
         CPPUNIT_ASSERT(in.eos());
     }
 
+    void testAttributeStringListPeek(IBufferedSerialInputStream & in)
+    {
+        offset_t offset = 0;
+        std::vector<size32_t> matches;
+        unsigned skipLen = 0;
+        const char * base = peekAttributeStringList(matches, in, skipLen);
+
+        unsigned delta = 0;
+        for (size32_t next : matches)
+        {
+            unsigned len = check("testAttributeStringListPeek", offset, base + next, delta);
+            offset += len+1;
+            delta++;
+        }
+        assertex(skipLen == offset);
+        in.skip(skipLen);
+        CPPUNIT_ASSERT(in.eos());
+    }
+
     void testVarStringBuffer()
     {
         size32_t maxStringLength = 0x10000;
@@ -1060,6 +1079,13 @@ public:
             testStringListPeek(*in);
             DBGLOG("Buffer:testStringListPeek took %lluus", timer.elapsedNs()/1000);
         }
+
+        {
+            CCycleTimer timer;
+            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(buffer.reset(0));
+            testAttributeStringListPeek(*in);
+            DBGLOG("Buffer:testAttributeStringListPeek took %lluus", timer.elapsedNs()/1000);
+        }
     }
     void testVarStringFile(size32_t maxStringLength)
     {
@@ -1097,6 +1123,13 @@ public:
             Owned<IBufferedSerialInputStream> in = createInput(filename, bufferSize, nullptr, 0, false);
             testStringListPeek(*in);
             DBGLOG("File:testStringListPeek took %lluus", timer.elapsedNs()/1000);
+        }
+
+        {
+            CCycleTimer timer;
+            Owned<IBufferedSerialInputStream> in = createInput(filename, bufferSize, nullptr, 0, false);
+            testAttributeStringListPeek(*in);
+            DBGLOG("File:testAttributeStringListPeek took %lluus", timer.elapsedNs()/1000);
         }
 
         {
