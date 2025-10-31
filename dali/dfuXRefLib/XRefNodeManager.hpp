@@ -47,7 +47,6 @@ interface IConstXRefNode : extends IInterface
 {
     virtual StringBuffer & getName(StringBuffer & str) = 0;
     virtual StringBuffer & getLastModified(StringBuffer & str)   = 0;
-    virtual StringBuffer& getXRefData(StringBuffer & buff)   = 0;
     virtual StringBuffer& getStatus(StringBuffer & buff) = 0;
     virtual IXRefFilesNode* getLostFiles() = 0;
     virtual IXRefFilesNode* getFoundFiles() = 0;
@@ -92,18 +91,19 @@ private:
     Owned<IPropertyTree> m_messages;
     Owned<IPropertyTree> m_directories;
     bool m_bChanged;
-    StringBuffer m_dataStr;
     StringBuffer m_ClusterName;
     CriticalSection commitCrit;
     StringAttr rootDir;
 
-private:
-    IPropertyTree& getDataTree();
+    // Helper methods to reduce code duplication
+    StringBuffer &serializeBranch(const char *branchName, Owned<IPropertyTree> &cached, StringBuffer &buf);
+    void deserializeBranch(const char *branchName, Owned<IPropertyTree> &cached, IPropertyTree &inTree);
+    template <typename NodeType>
+    NodeType *getOrCreateFilesNode(const char *branchName, Owned<IXRefFilesNode> &cached);
 
 public:
     IMPLEMENT_IINTERFACE;
     CXRefNode(); 
-    CXRefNode(IPropertyTree* pTreeRoot); 
     CXRefNode(const char* clusterName,IRemoteConnection *conn); 
     virtual ~CXRefNode();
     bool IsChanged();
@@ -120,7 +120,6 @@ public:
     virtual bool useSasha() override;
     virtual const char *queryRootDir() const override { return rootDir; }
     
-    virtual StringBuffer& getXRefData(StringBuffer & buff) override;
     virtual StringBuffer& getStatus(StringBuffer & buff) override;
     virtual IXRefFilesNode* getLostFiles() override;
     virtual IXRefFilesNode* getFoundFiles() override;

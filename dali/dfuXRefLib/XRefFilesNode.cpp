@@ -29,12 +29,19 @@
 //////////////////////////////////////////////////////////////////////
 
 
-CXRefFilesNode::CXRefFilesNode(IPropertyTree& baseNode,const char* cluster,const char *_rootdir) 
+CXRefFilesNode::CXRefFilesNode(IPropertyTree *baseNode,const char* cluster,const char *_rootdir)
   : m_baseTree(baseNode), rootdir(_rootdir)
 {
-    baseNode.setProp("@Cluster",cluster);
+    if (baseNode)
+        baseNode->setProp("@Cluster",cluster);
     m_bChanged = false;
     prefixName.append(cluster);
+}
+
+void CXRefFilesNode::setXRefPath(const char *_xrefPath, const char *_branchName)
+{
+    xrefPath.set(_xrefPath);
+    branchName.set(_branchName);
 }
 
 bool CXRefFilesNode::IsChanged()
@@ -54,7 +61,45 @@ MemoryBuffer &CXRefFilesNode::queryData()
     if (m_bChanged || (0 == _data.length()))
     {
         _data.clear();
-        m_baseTree.getPropBin("data", _data);
+
+        // If using file-based storage, load from file
+        if (xrefPath.length() > 0 && branchName.length() > 0)
+        {
+            try
+            {
+                StringBuffer filepath(xrefPath);
+                addPathSepChar(filepath).append(branchName).append(".xml");
+
+                Owned<IFile> file = createIFile(filepath.str());
+                if (file->exists())
+                {
+                    Owned<IFileIO> fileIO = file->open(IFOread);
+                    if (fileIO)
+                    {
+                        offset_t fileSize = file->size();
+                        if (fileSize > 0 && fileSize < 0x10000000) // Sanity check: < 256MB
+                        {
+                            _data.ensureCapacity((size32_t)fileSize);
+                            size32_t bytesRead = fileIO->read(0, (size32_t)fileSize, _data.reserve((size32_t)fileSize));
+                            _data.setLength(bytesRead);
+                        }
+                    }
+                }
+            }
+            catch (IException *e)
+            {
+                StringBuffer errMsg;
+                OWARNLOG("XRefFilesNode: Failed to load from file '%s/%s.xml': %s", 
+                         xrefPath.str(), branchName.str(), e->errorMessage(errMsg).str());
+                e->Release();
+            }
+        }
+        else
+        {
+            assertex(m_baseTree);
+            // Old method: load from "data" attribute in Dali
+            m_baseTree->getPropBin("data", _data);
+        }
     }
     return _data;
 }
@@ -71,7 +116,41 @@ void CXRefFilesNode::Deserialize(IPropertyTree& inTree)
     CleanTree(inTree);
     StringBuffer datastr;
     toXML(&inTree,datastr);
-    m_baseTree.setPropBin("data",datastr.length(),(void*)datastr.str());
+
+    // If using file-based storage, save to file
+    if (xrefPath.length() > 0 && branchName.length() > 0)
+    {
+        try
+        {
+            StringBuffer filepath(xrefPath);
+            addPathSepChar(filepath).append(branchName).append(".xml");
+
+            Owned<IFile> file = createIFile(filepath.str());
+            Owned<IFileIO> fileIO = file->open(IFOcreate);
+            if (fileIO)
+            {
+                fileIO->write(0, datastr.length(), datastr.str());
+                fileIO->close();
+            }
+            else
+            {
+                OWARNLOG("XRefFilesNode: Failed to save to file '%s'", filepath.str());
+            }
+        }
+        catch (IException *e)
+        {
+            StringBuffer errMsg;
+            OWARNLOG("XRefFilesNode: Failed to save to file '%s/%s.xml': %s", 
+                     xrefPath.str(), branchName.str(), e->errorMessage(errMsg).str());
+            e->Release();
+        }
+    }
+    else
+    {
+        assertex(m_baseTree);
+        // Old method: save to "data" attribute in Dali
+        m_baseTree->setPropBin("data",datastr.length(),(void*)datastr.str());
+    }
 }
 
 IPropertyTree* CXRefFilesNode::FindNode(const char* NodeName)
@@ -517,7 +596,7 @@ bool CXRefFilesNode::RemoveRemoteFile(const char* fileName,  const char* ipAddre
 //
 //
 ////////////////////////////////////////////////////////////////////////////////////
-CXRefOrphanFilesNode::CXRefOrphanFilesNode(IPropertyTree& baseNode,const char* cluster,const char* rootdir) 
+CXRefOrphanFilesNode::CXRefOrphanFilesNode(IPropertyTree *baseNode,const char* cluster,const char* rootdir) 
   : CXRefFilesNode(baseNode,cluster,rootdir)
 {
 }

@@ -9,6 +9,10 @@
 #include "jmisc.hpp"
 #include "jregexp.hpp"
 #include "jset.hpp"
+#include "jfile.hpp"
+#include "jplane.hpp"
+#include "jutil.hpp"
+#include "jsocket.hpp"
 
 #include <memory>
 #include <unordered_map>
@@ -26,6 +30,7 @@
 #include "sautil.hpp"
 #include "sacoalescer.hpp"
 #include "sacmd.hpp"
+#include "salds.hpp"
 
 #define DEFAULT_MAXDIRTHREADS 500
 #define DEFAULT_MAXMEMORY 4096
@@ -900,11 +905,11 @@ public:
     std::atomic<uint64_t> processedFiles{0};
     XRefPeriodicTimer heartbeatTimer;
 
-    bool saveToDebugPlane = false; // If true, before updating ECL Watch, save scan data to sasha debug plane
     Owned<IPropertyTree> foundbranch;
     Owned<IPropertyTree> lostbranch;
     Owned<IPropertyTree> orphansbranch;
     Owned<IPropertyTree> dirbranch;
+    bool saveToPlane = false;
 
     void log(bool forceStatusUpdate, const char * format, ...) __attribute__((format(printf, 3, 4)))
     {
@@ -1008,61 +1013,36 @@ public:
         heartbeatTimer.updatePeriod();
     }
 
-    void doSaveToDebugPlane(const char *name, StringBuffer &datastr)
+    void saveBranchToSashaPlane(const char *sashaDir, const char *name, IPropertyTree *branch)
     {
-        assertex(saveToDebugPlane);
-
-        StringBuffer debugPlaneName;
-        if (!getDefaultPlane(debugPlaneName, "@debugPlane", "debug"))
-        {
-            OWARNLOG(LOGPFX "Failed to get default debug plane, skipping saveToDebugPlane");
+        if (!branch)
             return;
-        }
-
-        Owned<const IStoragePlane> debugPlane = getStoragePlaneByName(debugPlaneName, false);
-        if (!debugPlane)
+        try
         {
-            OWARNLOG(LOGPFX "Failed to get debug plane '%s', skipping saveToDebugPlane", debugPlaneName.str());
-            return;
+            branch->setProp("Cluster",clustname);
+            StringBuffer filepath(sashaDir);
+            addPathSepChar(filepath).append(name).append(".xml");
+
+            StringBuffer datastr;
+            toXML(branch,datastr);
+
+            Owned<IFile> file = createIFile(filepath.str());
+            Owned<IFileIO> fileIO = file->open(IFOcreate);
+            if (!fileIO)
+            {
+                warn(filepath.str(), "Failed to create file");
+                return;
+            }
+            fileIO->write(0, datastr.length(), datastr.str());
+            fileIO->close();
+            PROGLOG(LOGPFX "Saved branch %s to %s", name, filepath.str());
         }
-
-        const char* debugPrefix = debugPlane->queryPrefix();
-        if (!debugPrefix || !*debugPrefix)
+        catch (IException *e)
         {
-            OWARNLOG(LOGPFX "Debug plane '%s' has no prefix, skipping saveToDebugPlane", debugPlaneName.str());
-            return;
+            StringBuffer errMsg;
+            warn(name, "Error saving branch to Sasha plane: %s", e->errorMessage(errMsg).str());
+            e->Release();
         }
-
-        // Create unique scope with cluster name and timestamp
-        CDateTime dt;
-        dt.setNow();
-        StringBuffer timestamp;
-        dt.getString(timestamp);
-        // Replace spaces and colons with underscores for filesystem compatibility
-        timestamp.replaceString(" ", "_");
-        timestamp.replaceString(":", "-");
-
-        StringBuffer uniqueScope(debugPrefix);
-        addPathSepChar(uniqueScope).append("xref");
-        if (clustname.get() && *clustname.get())
-            uniqueScope.append("_").append(clustname.get());
-        uniqueScope.append("_").append(timestamp);
-        addPathSepChar(uniqueScope).append(name).append(".xml");
-
-        log(false, "Saving debug files to %s", uniqueScope.str());
-
-        recursiveCreateDirectoryForFile(uniqueScope.str());
-
-        OwnedIFile file = createIFile(uniqueScope.str());
-        OwnedIFileIO fileio = file->open(IFOcreate);
-        if (!fileio)
-            throw makeStringExceptionV(0, "doSaveToDebugPlane: could not create or open %s", file->queryFilename());
-        {
-            Owned<IIOStream> stream = createIOStream(fileio);
-            stream.setown(createBufferedIOStream(stream));
-            writeStringToStream(*stream, datastr);
-        } // Stream destructor flushes here
-        fileio->close(); // Ensure errors are reported
     }
 
     void addBranch(IPropertyTree *root,const char *name,IPropertyTree *branch)
@@ -1074,18 +1054,14 @@ public:
         StringBuffer datastr;
         toXML(branch,datastr);
 
-        if (saveToDebugPlane)
-            doSaveToDebugPlane(name,datastr);
-
         root->addPropTree(name,createPTree(name))->setPropBin("data",datastr.length(),datastr.str());
     }
 
-    CNewXRefManagerBase()
+    CNewXRefManagerBase(bool _saveToPlane) : saveToPlane(_saveToPlane)
     {
         lastlog = 0;
         sfnum = 0;
         fnum = 0;
-        saveToDebugPlane = getExpertOptBool("saveToDebugPlane", isContainerized());
     }
 
     void start(bool updateeclwatch,const char *clname)
@@ -1097,7 +1073,6 @@ public:
                 return;
             IPropertyTree *xrefroot = conn->queryRoot();
             xpath.appendf("Cluster[@name=\"%s\"]", clname);
-
         }
         if (updateeclwatch) {
             xpath.insert(0,"/DFU/XREF/");
@@ -1156,11 +1131,68 @@ public:
         else if (fnum)
             ss.appendf("  [%d files]",fnum);
         croot->setProp("@status",ss.str());
-        addBranch(croot,"Orphans",orphansbranch);
-        addBranch(croot,"Lost",lostbranch);
-        addBranch(croot,"Found",foundbranch);
-        addBranch(croot,"Directories",dirbranch);
-        addErrorsWarnings(croot);
+
+        // Check if we should use Sasha plane for storage (configurable, default to containerized)
+        StringBuffer sashaDir;
+
+        // Read configuration - make this an expert option
+        if (saveToPlane)
+        {
+            // Create directory structure: <prefix>/xref/<cluster>/<datestamp>/
+            StringBuffer sashaDir;
+            getLdsPath("xref", sashaDir);
+            addPathSepChar(sashaDir).append(clustname);
+
+            // Create datestamp directory
+            StringBuffer datestamp;
+            dt.getDateString(datestamp, false);  // YYYY-MM-DD format
+            addPathSepChar(sashaDir).append(datestamp);
+
+            if (!recursiveCreateDirectory(sashaDir))
+                throw makeStringExceptionV(0, LOGPFX "Failed to create directory: %s", sashaDir.str());
+
+            PROGLOG(LOGPFX "Using Sasha storage at: %s", sashaDir.str());
+
+            // Save branches to Sasha plane files
+            saveBranchToSashaPlane(sashaDir.str(), "Orphans", orphansbranch);
+            saveBranchToSashaPlane(sashaDir.str(), "Lost", lostbranch);
+            saveBranchToSashaPlane(sashaDir.str(), "Found", foundbranch);
+            saveBranchToSashaPlane(sashaDir.str(), "Directories", dirbranch);
+
+            // Save Messages
+            Owned<IPropertyTree> message = createPTree("Messages");
+            ForEachItemIn(i1,errors) {
+                cMessage &item = errors.item(i1);
+                IPropertyTree *t = message->addPropTree("Error",createPTree("Error"));
+                t->addProp("File",item.lname.get());
+                t->addProp("Text",item.msg.get());
+            }
+            ForEachItemIn(i2,warnings) {
+                cMessage &item = warnings.item(i2);
+                IPropertyTree *t = message->addPropTree("Warning",createPTree("Warning"));
+                t->addProp("File",item.lname.get());
+                t->addProp("Text",item.msg.get());
+            }
+            saveBranchToSashaPlane(sashaDir.str(), "Messages", message);
+
+            // Store path reference in Dali
+            RemoteFilename rfn;
+            rfn.setLocalPath(sashaDir.str());
+            StringBuffer remotePath;
+            rfn.getRemotePath(remotePath);
+            croot->setProp("@xrefPath", remotePath);
+            PROGLOG(LOGPFX "Saved XREF data to Sasha plane with path: %s", remotePath.str());
+        }
+        else
+        {
+            // Use traditional Dali storage
+            addBranch(croot,"Orphans",orphansbranch);
+            addBranch(croot,"Lost",lostbranch);
+            addBranch(croot,"Found",foundbranch);
+            addBranch(croot,"Directories",dirbranch);
+            addErrorsWarnings(croot);
+        }
+
         if (abort)
             return;
         logconn.clear();
@@ -1173,7 +1205,6 @@ public:
         xrefroot->removeProp(xpath.str());
         xrefroot->addPropTree("Cluster",croot.getClear());
     }
-
 };
 
 
@@ -1200,8 +1231,8 @@ public:
     bool isPlaneStriped = false;
     unsigned numStripedDevices = 1;
 
-    CNewXRefManager(IPropertyTree *plane,unsigned maxMb=DEFAULT_MAXMEMORY)
-        : allocator(maxMb)
+    CNewXRefManager(IPropertyTree *plane, unsigned maxMb, bool saveToPlane)
+        : CNewXRefManagerBase(saveToPlane), allocator(maxMb)
     {
         iswin = false; // set later
         root.reset(cDirDesc::create("", &allocator));
@@ -2349,7 +2380,7 @@ class CSuperfileCheckManager: public CNewXRefManagerBase
 {
 public:
 
-    CSuperfileCheckManager()
+    CSuperfileCheckManager(bool saveToPlane) : CNewXRefManagerBase(saveToPlane)
     {
         clustname.set("SuperFiles");
     }
@@ -2413,8 +2444,6 @@ public:
         StringArray superowned;
         StringArray fileowned;
         StringArray fileowner;
-        sfnum = 0;
-        fnum = 0;
         class cfilescan1: public CSDSFileScanner
         {
             CSuperfileCheckManager &parent;
@@ -2816,6 +2845,16 @@ public:
         }
         IArrayOf<IGroup> groupsdone;
         StringArray dirsdone;
+        bool saveToPlane = false;
+        if (isContainerized())
+            saveToPlane = getComponentConfigSP()->getPropBool("expert/@saveToPlane", true);
+        else
+        {
+            // default off in BM
+            // NB: BM does not have a per component expert section atm (only at the global level)
+            saveToPlane = getGlobalConfigSP()->getPropBool("expert/@xrefSaveToPlane", false);
+        }
+
         ForEachItemIn(i,groups) {
 #ifdef TESTINGSUPERFILELINKAGE
             continue;
@@ -2834,7 +2873,7 @@ public:
             }
             else
                 maxMb = props->getPropInt("@memoryLimit", DEFAULT_MAXMEMORY);
-            CNewXRefManager manager(storagePlanes[gname],maxMb);
+            CNewXRefManager manager(storagePlanes[gname], maxMb, saveToPlane);
             if (!manager.setGroup(cnames.item(i),gname,groupsdone,dirsdone))
                 continue;
             manager.start(updateeclwatch);
@@ -2860,7 +2899,7 @@ public:
                 break;
         }
         if (checksuperfiles&&!stopped) {
-            CSuperfileCheckManager scmanager;
+            CSuperfileCheckManager scmanager(saveToPlane);
             scmanager.start(updateeclwatch);
             scmanager.updateStatus(true);
             if (stopped)
