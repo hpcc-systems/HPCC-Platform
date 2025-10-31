@@ -98,6 +98,8 @@ private:
     // Helper methods to reduce code duplication
     StringBuffer &serializeBranch(const char *branchName, Owned<IPropertyTree> &cached, StringBuffer &buf);
     void deserializeBranch(const char *branchName, Owned<IPropertyTree> &cached, IPropertyTree &inTree);
+    template <typename NodeType>
+    NodeType *getOrCreateFilesNode(const char *branchName, Owned<IXRefFilesNode> &cached);
 
 public:
     IMPLEMENT_IINTERFACE;

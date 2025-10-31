@@ -145,97 +145,50 @@ StringBuffer & CXRefNode::getLastModified(StringBuffer & str)
     return str;
 }
 
-IXRefFilesNode* CXRefNode::getLostFiles()
+template <typename NodeType>
+NodeType *CXRefNode::getOrCreateFilesNode(const char *branchName, Owned<IXRefFilesNode> &cached)
 {
-    if (!m_lost.get())
+    if (!cached.get())
     {
         const char *xrefPath = m_XRefTree->queryProp("@xrefPath");
+        IPropertyTree *branch = nullptr;
 
-        IPropertyTree *lostBranch = nullptr;
         if (isEmptyString(xrefPath))
         {
             // Dali-based storage: use branch from m_XRefTree
-            lostBranch = m_XRefTree->queryPropTree("Lost");
-            if (!lostBranch)
+            branch = m_XRefTree->queryPropTree(branchName);
+            if (!branch)
             {
-                lostBranch = m_XRefTree->addPropTree("Lost",createPTree());
+                branch = m_XRefTree->addPropTree(branchName, createPTree());
                 commit();
             }
         }
-        // else: File-based storage doesn't need a branch
+        // File-based storage doesn't need a branch
 
         StringBuffer tmpbuf;
-        CXRefFilesNode *lostNode = new CXRefFilesNode(lostBranch,getName(tmpbuf).str(),rootDir.str());
+        NodeType *node = new NodeType(branch, getName(tmpbuf).str(), rootDir.str());
 
-        // Set xrefPath if using file-based storage
         if (!isEmptyString(xrefPath))
-            lostNode->setXRefPath(xrefPath, "Lost");
+            node->setXRefPath(xrefPath, branchName);
 
-        m_lost.setown(lostNode);
+        cached.setown(node);
     }
-    return m_lost.getLink();
+    return static_cast<NodeType*>(cached.getLink());
+}
+
+IXRefFilesNode* CXRefNode::getLostFiles()
+{
+    return getOrCreateFilesNode<CXRefFilesNode>("Lost", m_lost);
 }
 
 IXRefFilesNode* CXRefNode::getFoundFiles()
 {
-    if (!m_found.get())
-    {
-        const char *xrefPath = m_XRefTree->queryProp("@xrefPath");
-        IPropertyTree* foundBranch = nullptr;
-
-        if (isEmptyString(xrefPath))
-        {
-            // Dali-based storage: use branch from m_XRefTree
-            foundBranch = m_XRefTree->queryPropTree("Found");
-            if (!foundBranch)
-            {
-                foundBranch = m_XRefTree->addPropTree("Found",createPTree());
-                commit();
-            }
-        }
-        // else: File-based storage doesn't need a branch
-
-        StringBuffer tmpbuf;
-        CXRefFilesNode *foundNode = new CXRefFilesNode(foundBranch,getName(tmpbuf).str(),rootDir.str());
-
-        // Set xrefPath if using file-based storage
-        if (!isEmptyString(xrefPath))
-            foundNode->setXRefPath(xrefPath, "Found");
-
-        m_found.setown(foundNode);
-    }
-    return m_found.getLink();
+    return getOrCreateFilesNode<CXRefFilesNode>("Found", m_found);
 }
 
 IXRefFilesNode* CXRefNode::getOrphanFiles()
 {
-    if (!m_orphans.get())
-    {
-        const char *xrefPath = m_XRefTree->queryProp("@xrefPath");
-        IPropertyTree* orphanBranch = nullptr;
-
-        if (isEmptyString(xrefPath))
-        {
-            // Dali-based storage: use branch from m_XRefTree
-            orphanBranch = m_XRefTree->queryPropTree("Orphans");
-            if (!orphanBranch)
-            {
-                orphanBranch = m_XRefTree->addPropTree("Orphans",createPTree());
-                commit();
-            }
-        }
-        // else: File-based storage doesn't need a branch
-
-        StringBuffer tmpbuf;
-        CXRefOrphanFilesNode *orphanNode = new CXRefOrphanFilesNode(orphanBranch,getName(tmpbuf).str(),rootDir.str());
-
-        // Set xrefPath if using file-based storage
-        if (!isEmptyString(xrefPath))
-            orphanNode->setXRefPath(xrefPath, "Orphans");
-
-        m_orphans.setown(orphanNode);
-    }
-    return m_orphans.getLink();
+    return getOrCreateFilesNode<CXRefOrphanFilesNode>("Orphans", m_orphans);
 }
 
 StringBuffer &CXRefNode::serializeBranch(const char *branchName, Owned<IPropertyTree> &cached, StringBuffer &buf)
@@ -646,3 +599,7 @@ void CXRefNode::error(const char *text)
     setStatus(text);
     commit();
 }
+
+// Explicit template instantiations
+template CXRefFilesNode *CXRefNode::getOrCreateFilesNode<CXRefFilesNode>(const char *branchName, Owned<IXRefFilesNode> &cached);
+template CXRefOrphanFilesNode *CXRefNode::getOrCreateFilesNode<CXRefOrphanFilesNode>(const char *branchName, Owned<IXRefFilesNode> &cached);
