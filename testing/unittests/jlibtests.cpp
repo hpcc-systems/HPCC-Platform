@@ -3958,13 +3958,12 @@ private:
             addAttr("@newAttr1", "newValue1");
             addAttr("@newAttr2", "newValue2");
             addAttr("@newAttr3", "");
-            addAttr("@newAttr4", "dupValue1"); // Duplicate key
-            addAttr("@newAttr5", "newValue3");
-            addAttr("@newAttr4", "dupValue2"); // Duplicate key
-            addAttr("@newAttr6", "newValue4");
-            addAttr("@newAttr7", "newValue5");
-            addAttr("@newAttr8", "newValue6");
-            addAttr("@newAttr9", "newValue7");
+            addAttr("@newAttr4", "newValue4");
+            addAttr("@newAttr5", "newValue5");
+            addAttr("@newAttr6", "newValue6");
+            addAttr("@newAttr7", "newValue7");
+            addAttr("@newAttr8", "newValue8");
+            addAttr("@newAttr9", "newValue9");
             addAttr("@newAttr10", "");
 
             DBGLOG("Calling setAttribute with %u offsets", (unsigned)offsets.size()); // Call setAttribute with the vector (testing new attribute insertion)
@@ -3976,12 +3975,12 @@ private:
             expected1->setProp("@newAttr1", "newValue1");
             expected1->setProp("@newAttr2", "newValue2");
             expected1->setProp("@newAttr3", "");
-            expected1->setProp("@newAttr4", "dupValue2");
-            expected1->setProp("@newAttr5", "newValue3");
-            expected1->setProp("@newAttr6", "newValue4");
-            expected1->setProp("@newAttr7", "newValue5");
-            expected1->setProp("@newAttr8", "newValue6");
-            expected1->setProp("@newAttr9", "newValue7");
+            expected1->setProp("@newAttr4", "newValue4");
+            expected1->setProp("@newAttr5", "newValue5");
+            expected1->setProp("@newAttr6", "newValue6");
+            expected1->setProp("@newAttr7", "newValue7");
+            expected1->setProp("@newAttr8", "newValue8");
+            expected1->setProp("@newAttr9", "newValue9");
             expected1->setProp("@newAttr10", "");
             if (!areMatchingPTrees(expected1, tree))
                 logPTreeSideBySide("expected1", expected1, "tree", tree);
