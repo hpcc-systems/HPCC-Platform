@@ -95,6 +95,10 @@ private:
     CriticalSection commitCrit;
     StringAttr rootDir;
 
+    // Helper methods to reduce code duplication
+    StringBuffer &serializeBranch(const char *branchName, Owned<IPropertyTree> &cached, StringBuffer &buf);
+    void deserializeBranch(const char *branchName, Owned<IPropertyTree> &cached, IPropertyTree &inTree);
+
 public:
     IMPLEMENT_IINTERFACE;
     CXRefNode(); 
