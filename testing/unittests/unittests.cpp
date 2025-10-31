@@ -277,7 +277,36 @@ int main(int argc, const char *argv[])
                 }
             }
         }
-        wasSuccessful = list || runner.run( "", false );
+        try
+        {
+            wasSuccessful = list || runner.run( "", false );
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            msg.append("Uncaught IException while running tests: ");
+            e->errorMessage(msg);
+            EXCLOG(e, msg.str());
+            e->Release();
+            wasSuccessful = false;
+        }
+        catch (CppUnit::Exception &e)
+        {
+            // CppUnit exceptions don't inherit from std::exception in older versions
+            fprintf(stderr, "Uncaught CppUnit::Exception while running tests: %s\n", e.what());
+            wasSuccessful = false;
+        }
+        catch (std::exception &e)
+        {
+            fprintf(stderr, "Uncaught std::exception while running tests: %s\n", e.what());
+            wasSuccessful = false;
+        }
+        catch (...)
+        {
+            // Unknown exception types (e.g., thrown across DLL boundaries)
+            fprintf(stderr, "Uncaught unknown exception while running tests\n");
+            wasSuccessful = false;
+        }
     }
     releaseAtoms();
     ClearTypeCache();   // Clear this cache before the file hooks are unloaded
@@ -971,7 +1000,7 @@ class RelaxedAtomicTimingTest : public CppUnit::TestFixture
 
         for (int a = 0; a < 201; a++)
             ra[a] = 0;
-        
+
         class T : public CThreaded
         {
         public:
@@ -1037,7 +1066,7 @@ class RelaxedAtomicTimingTest : public CppUnit::TestFixture
             CriticalSection &lock;
         } t1a(count, ra[0], lock[0], mode), t2a(count, ra[0], lock[0], mode), t3a(count, ra[0], lock[0], mode),
           t1b(count, ra[0], lock[0], mode), t2b(count, ra[1], lock[1], mode), t3b(count, ra[2], lock[2], mode),
-          t1c(count, ra[0], lock[0], mode), t2c(count, ra[100], lock[100], mode), t3c(count, ra[200], lock[200], mode);;  
+          t1c(count, ra[0], lock[0], mode), t2c(count, ra[100], lock[100], mode), t3c(count, ra[200], lock[200], mode);;
         DBGLOG("Testing RelaxedAtomics (test mode %u)", mode);
         t1a.start(false);
         t2a.start(false);
@@ -1080,7 +1109,7 @@ class compressToBufferTest : public CppUnit::TestFixture
 
     bool testOne(unsigned len, CompressionMethod method, bool prevResult, const char *options=nullptr)
     {
-        constexpr const char *in = 
+        constexpr const char *in =
           "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
           "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
           "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
@@ -1119,7 +1148,7 @@ class compressToBufferTest : public CppUnit::TestFixture
                DBGLOG("compressToBuffer %x size %u did not compress", (byte) method, len);
             ret = false;
         }
-        else 
+        else
         {
             if (!prevResult)
                 DBGLOG("compressToBuffer %x size %u compressed to %u in %lluns", (byte) method, len, compressed.length(), start.elapsedNs());
