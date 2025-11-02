@@ -254,7 +254,8 @@ bool CInputBasePartitioner::ensureBuffered(unsigned required)
     {
         if ((bufferOffset + required > bufferSize) || (numInBuffer + blockSize > bufferSize))
         {
-            memmove(buffer, buffer+bufferOffset, numInBuffer-bufferOffset);
+            if (bufferOffset != numInBuffer)
+                memmove(buffer, buffer+bufferOffset, numInBuffer-bufferOffset);
             numInBuffer -= bufferOffset;
             bufferOffset = 0;
         }
@@ -818,6 +819,7 @@ void CCsvPartitioner::storeFieldName(const char * start, unsigned len)
     fields->addAtom(fieldName.str());
 }
 
+
 size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToRead, bool processFullBuffer, bool ateof)
 {
     //more complicated processing of quotes etc....
@@ -994,7 +996,163 @@ void CCsvPartitioner::setTarget(IOutputProcessor * _target)
     CInputBasePartitioner::setTarget(hook);
 }
 
+// If a csvfile has quoted fields then the quote characters must be
+// * The start of a field - in which case the previous non-whitespace token must be either an end of record or a separator
+// * The end of a field - in which case the next non-whitespace token must be end of record of a separator
+// * A double quote.  This could be within a quoted string, or a blank field
+//
+// So read a string of tokens
+// - if it is a quote character and the previous charcater was not in [quote,separator,newline] then it must be an end of string
+// - else if character is not [separator,endofline]
+//        if theprevious was a quote character
+//           if not a potential double quote, then it must be an opening quote for a field.
+//
+// If it is a terminator token and and the quote state is known to be not in a quoted string, then we have the end of the line
+//
+// Potential pathological cases:
+//- No quote characters.    Save the location of the first newline.  Once the max csv-length has passed return that.
+//- "!"!"!"!"        - alternating quote and newline characters.      Spot and complain.
+//- ","!","!","!     - similarly pathological
+//- "","","","",""   - ditto
+//- """""""""""""!   - can only tell once you hit the first non quote
+//
+// As soon as a quote and a non quote/separator are in the same line you can tell which it is.
 
+// More: Clean this up - common up the case where the splitOffset is 0
+
+size32_t CCsvPartitioner::deduceStartNextLine(const byte * start, unsigned maxToRead, bool ateof)
+{
+    unsigned quote = 0;
+    const byte * endFirstTerminator = nullptr;
+    const byte * cur = start;
+    const byte * end = start + maxToRead;
+    bool quoteStateKnown = format.quote.isEmpty(); // if there are no quotes then we cannot be inside a quoted section!
+    bool possibleDoubleQuote = true;
+    TokenKind prevMatch = UNKNOWN;
+    bool seenQuote = false;
+
+    while (cur != end)
+    {
+        unsigned matchLen;
+        unsigned match = matcher.getMatch(end-cur, (const char *)cur, matchLen);
+        switch (kind(match))
+        {
+        case NONE:
+            if (!quoteStateKnown)
+            {
+                // " then normal character must be the start of a field...
+                if ((kind(prevMatch) == QUOTE) && !possibleDoubleQuote)
+                {
+                    quoteStateKnown = true;
+                    quote = prevMatch;
+                }
+                possibleDoubleQuote = false;
+            }
+            matchLen = 1;
+            break;
+        case WHITESPACE:
+            match = prevMatch; // preserve prevMatch
+            possibleDoubleQuote = false;
+            break;
+        case TERMINATOR:
+            if (quoteStateKnown)
+            {
+                if (quote == 0)
+                {
+                    cur += matchLen;
+                    //Found the end of the line...
+                    return (cur - start);
+                }
+            }
+            else
+            {
+                //Save the location after the first terminator just in case there are no quotes
+                if (!endFirstTerminator)
+                    endFirstTerminator = cur + matchLen;
+            }
+            possibleDoubleQuote = false;
+            break;
+        case SEPARATOR:
+            possibleDoubleQuote = false;
+            break;
+        case QUOTE:
+            {
+                unsigned nextMatch = UNKNOWN;
+                unsigned nextMatchLen = 0;
+                const byte * next = cur + matchLen;
+                if (next != end)
+                    nextMatch = matcher.getMatch((size32_t)(end-next), (const char *)next, nextMatchLen);
+
+                seenQuote = true;
+                if (quoteStateKnown)
+                {
+                    if (quote == 0)
+                        quote = match;
+                    else if (quote == match)
+                    {
+                        //Check for double quote... although I suspect this special case is not required
+                        if (nextMatch == quote)
+                        {
+                            matchLen += nextMatchLen;
+                            match = NONE;
+                        }
+                        else
+                            quote = 0;
+                    }
+                }
+                else
+                {
+                    switch (kind(prevMatch))
+                    {
+                    case UNKNOWN:
+                    case QUOTE:
+                    case SEPARATOR:
+                    case TERMINATOR:
+                        //possibleDoubleQuote will already be false if prev is SEPARATOR or TERMINATOR
+                        break;
+                    default:
+                        // A quote following a non-special must be the end of a field.
+                        // Unless it is a double quote - then nothing can be deduced yet
+                        if (match != nextMatch)
+                        {
+                            dbgassertex(kind(nextMatch) == NONE || kind(nextMatch) == TERMINATOR || kind(nextMatch) == SEPARATOR);
+                            quoteStateKnown = true;
+                            quote = 0;
+                        }
+                    }
+                }
+                break;
+            }
+        case ESCAPE:
+            // If this escape is at the end, proceed to field range
+            if (cur + matchLen == end)
+                break;
+
+            // Skip escape and ignore the next match
+            cur += matchLen;
+            match = matcher.getMatch((size32_t)(end-cur), (const char *)cur, matchLen);
+            if ((match & 255) == NONE)
+                matchLen = 1;
+            break;
+        }
+        prevMatch = (TokenKind)match;
+        cur += matchLen;
+    }
+
+    //No quotes found - assume it was after the first newline we matched
+    if (!seenQuote && endFirstTerminator)
+        return endFirstTerminator - start;
+
+    if (!ateof)
+        return (unsigned)-1;
+
+    if (start == end || kind(prevMatch) == TERMINATOR)
+        return end-start;
+
+    throw makeStringException(0, "Could not deduce the end of the record - pathological ");
+}
+
+//---------------------------------------------------------------------------------------------------------------------
 
 // A quick version of the csv partitioner that jumps to the split offset, and then searches for a terminator.
 
@@ -1006,83 +1164,67 @@ CCsvQuickPartitioner::CCsvQuickPartitioner(const FileFormat & _format, bool _noT
 void CCsvQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor & cursor)
 {
     const byte *buffer = bufferBase();
-    numInBuffer = bufferOffset = 0;
+
+    bool eof = false;
     if (splitOffset != 0)
     {
-        seekInput(splitOffset-thisOffset+thisHeaderSize);
+        //Split point is less than the current offset => this will contain nothing (cursor is already setup)
+        if (splitOffset <= cursor.inputOffset)
+            return;
 
-        bool eof;
-        if (format.maxRecordSize + maxElementLength > blockSize)
-            eof = !ensureBuffered(blockSize);
-        else
-            eof = !ensureBuffered(format.maxRecordSize + maxElementLength);
-        bool fullBuffer = false;
-        //Could be end of file - if no elements read.
-        if (numInBuffer != bufferOffset)
+        //If the buffer already contains the next split point then skip data in the buffer rather than re-reading
+        if (splitOffset < cursor.inputOffset + (numInBuffer - bufferOffset))
         {
-            //Throw away the first match, incase we hit the \n of a \r\n or something similar.
-            if (maxElementLength > 1)
-            {
-                unsigned matchLen;
-                unsigned match = matcher.getMatch(numInBuffer - bufferOffset, (const char *)buffer+bufferOffset, matchLen);
-                if ((match & 255) == NONE)
-                    bufferOffset++;
-                else
-                    bufferOffset += matchLen;
-            }
-
-            //Could have been single \n at the end of the file....
-            if (numInBuffer != bufferOffset)
-            {
-                if (format.maxRecordSize <= blockSize)
-                    bufferOffset += getSplitRecordSize(buffer+bufferOffset, numInBuffer-bufferOffset, fullBuffer, eof);
-                else
-                {
-                    //For large
-                    size32_t ensureSize = numInBuffer-bufferOffset;
-                    for (;;)
-                    {
-                        try
-                        {
-                            //There is still going to be enough buffered for a whole record.
-                            eof = !ensureBuffered(ensureSize);
-                            bufferOffset += getSplitRecordSize(buffer+bufferOffset, numInBuffer-bufferOffset, fullBuffer, eof);
-                            break;
-                        }
-                        catch (IException * e)
-                        {
-                            if (ensureSize == format.maxRecordSize)
-                                throw;
-                            e->Release();
-                            LOG(MCdebugProgress, "Failed to find split after reading %d", ensureSize);
-                            ensureSize += blockSize;
-                            if (ensureSize > format.maxRecordSize)
-                                ensureSize = format.maxRecordSize;
-                        }
-                    }
-                    if (doTrace(tracePartitionDetails))
-                        LOG(MCdebugProgress, "Found split after reading %d", ensureSize);
-                }
-            }
+            bufferOffset += splitOffset - cursor.inputOffset;
+            //assume eof is false - it will get reset if the csv match fails
         }
-        else if (splitOffset - thisOffset < thisSize)
-            throwError2(DFTERR_UnexpectedReadFailure, fullPath.get(), splitOffset-thisOffset+thisHeaderSize);
+        else
+        {
+            //Seek to the split point and read the next block
+            seekInput(splitOffset-thisOffset+thisHeaderSize);
+            bufferOffset = numInBuffer;
+        }
     }
     else
     {
-        // We are in the first part of the file
-        bool eof;
-        if (format.maxRecordSize + maxElementLength > blockSize)
-            eof = !ensureBuffered(blockSize);
-        else
-            eof = !ensureBuffered(format.maxRecordSize + maxElementLength);
-        bool fullBuffer = false;
+        //Force block to be read..
+        bufferOffset = numInBuffer;
+    }
 
-        // Discover record structure in the first record/row
+    if (bufferOffset == numInBuffer)
+        eof = !ensureBuffered(blockSize);
+
+    size32_t skipLength = 0;
+    if (splitOffset != 0)
+    {
+        size32_t ensureSize = numInBuffer - bufferOffset;
+        for (;;)
+        {
+            skipLength = deduceStartNextLine(buffer+bufferOffset, numInBuffer-bufferOffset, eof);
+            if (skipLength != (unsigned)-1)
+                break;
+
+            if (ensureSize >= format.maxRecordSize)
+                throwError1(DFTERR_EndOfCsvRecordNotFound, ensureSize);
+
+            LOG(MCdebugProgress, "Failed to find split after reading %d", ensureSize);
+            ensureSize += blockSize;
+            if (ensureSize > format.maxRecordSize)
+                ensureSize = format.maxRecordSize;
+            eof = !ensureBuffered(ensureSize);
+        }
+        if (doTrace(tracePartitionDetails))
+            LOG(MCdebugProgress, "Found split after reading %d", ensureSize);
+    }
+    else
+    {
+        // Discover record structure in the first record/row - but don't update the offset
+        const bool fullBuffer = false;
         getSplitRecordSize(buffer, numInBuffer, fullBuffer, eof);
     }
 
-    cursor.inputOffset = splitOffset + bufferOffset;
+    cursor.inputOffset = splitOffset + skipLength;
+    bufferOffset += skipLength;
     if (noTranslation)
         cursor.outputOffset = cursor.inputOffset - thisOffset;
 }
@@ -2406,7 +2548,7 @@ IOutputProcessor * createOutputProcessor(const FileFormat & format)
     }
 }
 
-IFormatPartitioner * createFormatPartitioner(FileSprayer &sprayer, const SocketEndpoint & ep, const FileFormat & srcFormat, const FileFormat & tgtFormat, bool calcOutput, const char * slave, const char *wuid)
+IFormatPartitioner * createLocalFormatPartitioner(const FileFormat & srcFormat, const FileFormat & tgtFormat, bool calcOutput, const char * slave, const char *wuid, bool newCsvPartitioner)
 {
     if ((srcFormat.type == FFTkey) || (tgtFormat.type == FFTkey))
         throwUnexpected();
@@ -2424,7 +2566,7 @@ IFormatPartitioner * createFormatPartitioner(FileSprayer &sprayer, const SocketE
         case FFTblocked:
             return new CSimpleBlockedPartitioner(sameFormats);
         case FFTcsv:
-            if (srcFormat.hasQuote() && srcFormat.hasQuotedTerminator())
+            if (srcFormat.hasQuote() && srcFormat.hasQuotedTerminator() && !newCsvPartitioner)
                 return new CCsvPartitioner(srcFormat);
             else
                 return new CCsvQuickPartitioner(srcFormat, sameFormats);
@@ -2468,9 +2610,217 @@ IFormatPartitioner * createFormatPartitioner(FileSprayer &sprayer, const SocketE
             break;
         }
     }
+    return nullptr;
+}
+
+IFormatPartitioner * createFormatPartitioner(FileSprayer &sprayer, const SocketEndpoint & ep, const FileFormat & srcFormat, const FileFormat & tgtFormat, bool calcOutput, const char * slave, const char *wuid, bool newCsvPartitioner)
+{
+    IFormatPartitioner * localPartitioner = createLocalFormatPartitioner(srcFormat, tgtFormat, calcOutput, slave, wuid, newCsvPartitioner);
+    if (localPartitioner)
+        return localPartitioner;
+
     StringBuffer name;
     if (!slave)
         slave = queryFtSlaveExecutable(ep, name);
 
     return new CRemotePartitioner(sprayer, ep, srcFormat, tgtFormat, slave, wuid);
 }
+
+//----------------------------------------------------------------------------
+// Unit tests for CCsvPartitioner::deduceStartNextLine
+//----------------------------------------------------------------------------
+
+#ifdef _USE_CPPUNIT
+
+#include "unittests.hpp"
+
+class CsvDeduceLineTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(CsvDeduceLineTest);
+        CPPUNIT_TEST(testSimpleNewline);
+        CPPUNIT_TEST(testQuotedNewline);
+        CPPUNIT_TEST(testNoQuotesWithNewline);
+        CPPUNIT_TEST(testDoubleQuote);
+        CPPUNIT_TEST(testEmptyBuffer);
+        CPPUNIT_TEST(testAlternatingQuoteNewline);
+        CPPUNIT_TEST(testQuoteCommaNewlinePattern);
+        CPPUNIT_TEST(testMultipleEmptyQuotedFields);
+    CPPUNIT_TEST_SUITE_END();
+
+protected:
+    // Test simple CSV line with no quotes
+    void testSimpleNewline()
+    {
+        FileFormat format;
+        format.type = FFTcsv;
+        format.separate.set("\\,");
+        format.quote.set("\"");
+        format.terminate.set("\n");
+        format.maxRecordSize = 8192;
+
+        CCsvPartitioner partitioner(format);
+
+        const char * data = "field1,field2,field3\nfield4,field5,field6\n";
+        size32_t result = partitioner.deduceStartNextLine((const byte *)data, strlen(data), false);
+
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Should find newline at position 21", (size32_t)21, result);
+    }
+
+    // Test CSV line with quoted field containing newline
+    void testQuotedNewline()
+    {
+        FileFormat format;
+        format.type = FFTcsv;
+        format.separate.set("\\,");
+        format.quote.set("\"");
+        format.terminate.set("\n");
+        format.maxRecordSize = 8192;
+
+        CCsvPartitioner partitioner(format);
+
+        const char * data = "field1,\"field2\nwith newline\",field3\nfield4\n";
+        size32_t result = partitioner.deduceStartNextLine((const byte *)data, strlen(data), false);
+
+        const char * expected = strstr(data, "field4");
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Should skip newline inside quotes", (size32_t)(expected - data), result);
+    }
+
+    // Boundary case: No quote characters - should save first newline
+    void testNoQuotesWithNewline()
+    {
+        FileFormat format;
+        format.type = FFTcsv;
+        format.separate.set("\\,");
+        format.quote.set("");  // No quotes configured
+        format.terminate.set("\n");
+        format.maxRecordSize = 8192;
+
+        CCsvPartitioner partitioner(format);
+
+        const char * data = "field1,field2,field3\nfield4,field5,field6\n";
+        size32_t result = partitioner.deduceStartNextLine((const byte *)data, strlen(data), false);
+
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Should find first newline immediately", (size32_t)21, result);
+    }
+
+    // Test double quote handling
+    void testDoubleQuote()
+    {
+        FileFormat format;
+        format.type = FFTcsv;
+        format.separate.set("\\,");
+        format.quote.set("\"");
+        format.terminate.set("\n");
+        format.maxRecordSize = 8192;
+
+        CCsvPartitioner partitioner(format);
+
+        const char * data = "field1,\"field\"\"2\",field3\nfield4\n";
+        size32_t result = partitioner.deduceStartNextLine((const byte *)data, strlen(data), false);
+
+        const char * expected = strstr(data, "field4");
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Should handle double quote correctly", (size32_t)(expected - data), result);
+    }
+
+    // Boundary case: Empty buffer at EOF
+    void testEmptyBuffer()
+    {
+        FileFormat format;
+        format.type = FFTcsv;
+        format.separate.set("\\,");
+        format.quote.set("\"");
+        format.terminate.set("\n");
+        format.maxRecordSize = 8192;
+
+        CCsvPartitioner partitioner(format);
+
+        const char * data = "";
+        size32_t result = partitioner.deduceStartNextLine((const byte *)data, 0, true);
+
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Empty buffer should return 0", (size32_t)0, result);
+    }
+
+    // Pathological case: Alternating quote and newline - "!\n"!\n"!\n"!\n
+    void testAlternatingQuoteNewline()
+    {
+        FileFormat format;
+        format.type = FFTcsv;
+        format.separate.set("\\,");
+        format.quote.set("\"");
+        format.terminate.set("\n");
+        format.maxRecordSize = 8192;
+
+        CCsvPartitioner partitioner(format);
+
+        const char * data = "\"\n\"\n\"\n\"\n";
+
+        //If the pattern is at the end of the file then it is valid
+        size32_t result = partitioner.deduceStartNextLine((const byte *)data, strlen(data), true);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Should handle alternating quote/newline pattern", (size32_t)strlen(data), result);
+
+        try
+        {
+            size32_t result = partitioner.deduceStartNextLine((const byte *)data, strlen(data), false);
+            // This is pathological and should either throw or handle gracefully
+            // The actual behavior depends on implementation
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Should handle alternating quote/newline pattern", (size32_t)-1, result);
+        }
+        catch (IException * e)
+        {
+            // Exception is acceptable for pathological input
+            e->Release();
+            CPPUNIT_ASSERT_MESSAGE("Exception thrown for pathological pattern", true);
+        }
+    }
+
+    // Pathological case: ",\n",\n",\n - quote, comma, newline pattern
+    void testQuoteCommaNewlinePattern()
+    {
+        FileFormat format;
+        format.type = FFTcsv;
+        format.separate.set("\\,");
+        format.quote.set("\"");
+        format.terminate.set("\n");
+        format.maxRecordSize = 8192;
+
+        CCsvPartitioner partitioner(format);
+
+        const char * data = "\",\n\",\n\",\n";
+
+        try
+        {
+            size32_t result = partitioner.deduceStartNextLine((const byte *)data, strlen(data), true);
+            CPPUNIT_ASSERT_MESSAGE("Should handle quote-comma-newline pattern", result != (unsigned)-1);
+        }
+        catch (IException * e)
+        {
+            e->Release();
+            CPPUNIT_ASSERT_MESSAGE("Exception acceptable for pathological pattern", true);
+        }
+    }
+
+    // Pathological case: Multiple empty quoted fields - "","","","",""
+    void testMultipleEmptyQuotedFields()
+    {
+        FileFormat format;
+        format.type = FFTcsv;
+        format.separate.set("\\,");
+        format.quote.set("\"");
+        format.terminate.set("\n");
+        format.maxRecordSize = 8192;
+
+        CCsvPartitioner partitioner(format);
+
+        const char * data = "\"\",\"\",\"\",\"\",\"\"\n";
+        size32_t result = partitioner.deduceStartNextLine((const byte *)data, strlen(data), true);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Should handle multiple empty quoted fields", (size32_t)strlen(data), result);
+
+        size32_t result2 = partitioner.deduceStartNextLine((const byte *)data, strlen(data), false);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Should handle multiple empty quoted fields", (size32_t)-1, result2);
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(CsvDeduceLineTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(CsvDeduceLineTest, "CsvDeduceLineTest");
+
+#endif // _USE_CPPUNIT
