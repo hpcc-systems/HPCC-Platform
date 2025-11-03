@@ -2764,7 +2764,7 @@
     "thor": {
       "type": "object",
       "required": [ "name", "maxJobs", "maxGraphs" ],
-      "additionalProperties": { "type": ["integer", "string", "boolean", "object"] },
+      "additionalProperties": { "type": ["integer", "string", "boolean"] },
       "properties": {
         "name": {
           "type": "string",

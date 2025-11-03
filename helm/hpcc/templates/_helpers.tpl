@@ -181,7 +181,7 @@ false
 
 {{/*
 Generate global ConfigMap info
-Pass in root as . or dict with root and excludeCost
+Pass in dict with root and optional excludeCost
 */}}
 {{- define "hpcc.generateGlobalConfigMap" -}}
 {{- if not (hasKey . "root") -}}
@@ -1531,7 +1531,7 @@ data:
       queues:
 {{ include "hpcc.generateConfigMapQueues" .root | indent 6 }}
 {{- end }}
-  global:
+    global:
 {{ include "hpcc.generateGlobalConfigMap" (dict "root" .root) | indent 6 }}
 {{- end -}}
 
