@@ -1177,8 +1177,10 @@ public:
     Linked<IPropertyTree> storagePlane;
     bool isPlaneStriped = false;
     unsigned numStripedDevices = 1;
+    bool filterScopesEnabled = false;
+    StringArray scopeFilters;
 
-    CNewXRefManager(IPropertyTree *plane, unsigned maxMb, bool saveToPlane)
+    CNewXRefManager(IPropertyTree *plane, unsigned maxMb, bool saveToPlane, const char *_scopeFilters)
         : CNewXRefManagerBase(saveToPlane), allocator(maxMb)
     {
         root.reset(cDirDesc::create("", &allocator));
@@ -1201,6 +1203,12 @@ public:
             unsigned numDevices = storagePlane->getPropInt("@numDevices", 1);
             isPlaneStriped = !storagePlane->hasProp("@hostGroup") && (numDevices>1);
             numStripedDevices = isPlaneStriped ? numDevices : 1;
+        }
+
+        if (!isEmptyString(_scopeFilters))
+        {
+            filterScopesEnabled = true;
+            scopeFilters.appendList(_scopeFilters, "::");
         }
     }
 
@@ -1397,10 +1405,18 @@ public:
     }
 
 
-    bool scanDirectory(unsigned node, const SocketEndpoint &ep, StringBuffer &path, unsigned drv, cDirDesc *pdir, IFile *cachefile, unsigned filePathOffset, unsigned stripeNum, cDirDesc *parent, offset_t &parentScopeSz)
+    bool scanDirectory(unsigned node, const SocketEndpoint &ep, StringBuffer &path, unsigned drv, cDirDesc *pdir, IFile *cachefile, unsigned filePathOffset, unsigned stripeNum, cDirDesc *parent, offset_t &parentScopeSz, unsigned scopeFilterIndex)
     {
         checkHeartbeat("Directory scan");
         size32_t dsz = path.length();
+        const char *scopeFilter = nullptr;
+        if (filterScopesEnabled)
+        {
+            if (scopeFilterIndex > scopeFilters.ordinality()+1)
+                return true;
+            else if (scopeFilterIndex < scopeFilters.ordinality())
+                scopeFilter = scopeFilters.item(scopeFilterIndex);
+        }
         if (pdir==NULL)
             pdir = root.get();
         RemoteFilename rfn;
@@ -1433,8 +1449,23 @@ public:
                 fname.toLowerCase();
             addPathSepChar(path).append(fname);
             if (iter->isDir())
+            {
+                if (filterScopesEnabled) {
+                    if (scopeFilterIndex == scopeFilters.ordinality() && readDigits(fname.str())!=0) {
+                        // If we are one past the last scope filter and it is likely a dir-per-part directory, scan it for part files
+                    }
+                    else if (isEmptyString(scopeFilter) || stricmp(fname.str(), scopeFilter) != 0) {
+                        path.setLength(dsz);
+                        continue;
+                    }
+                }
                 dirs.append(fname.str());
+            }
             else {
+                if (filterScopesEnabled && scopeFilterIndex < scopeFilters.ordinality()) {
+                    path.setLength(dsz);
+                    continue;
+                }
                 CDateTime dt;
                 offset_t filesz = iter->getFileSize();
                 iter->getModifiedTime(dt);
@@ -1536,7 +1567,7 @@ public:
             addPathSepChar(path).append(dirs.item(i));
             if (file.get()&&!resetRemoteFilename(file,path.str())) // sneaky way of avoiding cache
                 file.clear();
-            if (!scanDirectory(node,ep,path,drv,pdir->lookupDir(dirs.item(i),&allocator),file,filePathOffset,stripeNum,pdir,scopeSz))
+            if (!scanDirectory(node,ep,path,drv,pdir->lookupDir(dirs.item(i),&allocator),file,filePathOffset,stripeNum,pdir,scopeSz,scopeFilterIndex+1))
                 return false;
             path.setLength(dsz);
         }
@@ -1596,7 +1627,7 @@ public:
 
                     parent.log(false,"Scanning %s directory %s",parent.storagePlane->queryProp("@name"),path.str());
                     offset_t rootsz = 0;
-                    if (!parent.scanDirectory(0,localEP,path,0,parent.root.get(),NULL,path.length(),i+1,nullptr,rootsz))
+                    if (!parent.scanDirectory(0,localEP,path,0,parent.root.get(),NULL,path.length(),i+1,nullptr,rootsz,0))
                     {
                         ok = false;
                         return;
@@ -1608,7 +1639,7 @@ public:
                     SocketEndpoint ep = parent.rawgrp->queryNode(i).endpoint();
                     parent.log(false,"Scanning %s directory %s",ep.getEndpointHostText(hostStr).str(),path.str());
                     offset_t rootsz = 0;
-                    if (!parent.scanDirectory(i,ep,path,0,NULL,NULL,path.length(),0,nullptr,rootsz)) {
+                    if (!parent.scanDirectory(i,ep,path,0,NULL,NULL,path.length(),0,nullptr,rootsz,0)) {
                         ok = false;
                         return;
                     }
@@ -1619,7 +1650,7 @@ public:
                         ep = parent.rawgrp->queryNode(i).endpoint();
                         rootsz = 0;
                         parent.log(false,"Scanning %s directory %s",ep.getEndpointHostText(hostStr.clear()).str(),path.str());
-                        if (!parent.scanDirectory(i,ep,path,1,NULL,NULL,path.length(),0,nullptr,rootsz)) {
+                        if (!parent.scanDirectory(i,ep,path,1,NULL,NULL,path.length(),0,nullptr,rootsz,0)) {
                             ok = false;
                         }
                     }
@@ -2864,7 +2895,8 @@ public:
             }
             else
                 maxMb = props->getPropInt("@memoryLimit", DEFAULT_MAXMEMORY);
-            CNewXRefManager manager(storagePlanes[gname], maxMb, saveToPlane);
+            const char *filterScopes = props->queryProp("@filterScopes");
+            CNewXRefManager manager(storagePlanes[gname], maxMb, saveToPlane,filterScopes);
             if (!manager.setGroup(cnames.item(i),gname,groupsdone,dirsdone))
                 continue;
             manager.start(updateeclwatch);
