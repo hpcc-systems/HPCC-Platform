@@ -1711,10 +1711,30 @@ public:
                 return !abort;
             }
 
+            bool fileFiltered(const StringBuffer &name)
+            {
+                if (!parent.filterScopesEnabled)
+                    return false;
+                const char *filename = name.str();
+                ForEachItemIn(i,parent.scopeFilters)
+                {
+                    if (!startsWith(filename, parent.scopeFilters.item(i)))
+                        return true;
+
+                    const char *sep = strstr(filename, "::");
+                    if (!sep)
+                        return true;
+
+                    filename = sep + 2;
+                }
+                return strstr(filename, "::") != nullptr;
+            }
 
             void processFile(IPropertyTree &file,StringBuffer &name)
             {
                 if (abort)
+                    return;
+                if (fileFiltered(name))
                     return;
                 parent.log(false,"Process file %s",name.str());
                 parent.fnum++;
