@@ -47,7 +47,7 @@
 
 extern void LDStest();
 
-#define SASHAVERSION "1.4"
+#define SASHAVERSION "1.5"
 
 #define DEFAULT_PERF_REPORT_DELAY (60*5)
 

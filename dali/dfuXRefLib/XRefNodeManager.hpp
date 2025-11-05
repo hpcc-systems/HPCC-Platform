@@ -52,6 +52,7 @@ interface IConstXRefNode : extends IInterface
     virtual IXRefFilesNode* getFoundFiles() = 0;
     virtual IXRefFilesNode* getOrphanFiles() = 0;
     virtual StringBuffer& getCluster(StringBuffer& Cluster) = 0;
+    virtual StringBuffer& getFilterScopes(StringBuffer& filterScopes) = 0;
     virtual const char *queryRootDir() const = 0;
     virtual bool useSasha() = 0;
 };
@@ -63,6 +64,7 @@ interface IXRefNode :  extends IConstXRefNode
     virtual void setStatus(const char* str) = 0;
     virtual void commit() = 0;
     virtual void setCluster(const char* str) = 0;
+    virtual void setFilterScopes(const char* str) = 0;
     virtual StringBuffer &serializeMessages(StringBuffer &buf) = 0;
     virtual void deserializeMessages(IPropertyTree& inTree) = 0;
     virtual StringBuffer &serializeDirectories(StringBuffer &buf) = 0;
@@ -119,7 +121,7 @@ public:
     virtual StringBuffer & getLastModified(StringBuffer & str) override;
     virtual bool useSasha() override;
     virtual const char *queryRootDir() const override { return rootDir; }
-    
+
     virtual StringBuffer& getStatus(StringBuffer & buff) override;
     virtual IXRefFilesNode* getLostFiles() override;
     virtual IXRefFilesNode* getFoundFiles() override;
@@ -131,17 +133,19 @@ public:
     virtual void deserializeDirectories(IPropertyTree& inTree) override;
     virtual bool removeEmptyDirectories(StringBuffer &errstr) override;
     virtual void setName(const char* str) override;
-    
+
     void setXRefData(StringBuffer & buff);
     void setXRefData(IPropertyTree & pTree);
 
-    void BuildXRefData(IPropertyTree & pTree,const char* Cluster);
+    virtual void BuildXRefData(IPropertyTree & pTree,const char* Cluster) override;
 
-    void setStatus(const char* str);
-    void commit();
+    virtual void setStatus(const char* str) override;
+    virtual void commit() override;
 
-    virtual StringBuffer& getCluster(StringBuffer& Cluster);
-    virtual void setCluster(const char* str);
+    virtual StringBuffer& getCluster(StringBuffer& Cluster) override;
+    virtual void setCluster(const char* str) override;
+    virtual StringBuffer& getFilterScopes(StringBuffer& filterScopes) override;
+    virtual void setFilterScopes(const char* str) override;
 
 
 };
