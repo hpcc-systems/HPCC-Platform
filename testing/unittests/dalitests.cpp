@@ -3549,55 +3549,42 @@ class FileReadPropertiesUpdaterTester : public CppUnit::TestFixture
         CPPUNIT_TEST(testFileReadPropertiesUpdater);
     CPPUNIT_TEST_SUITE_END();
 
-    #define SCOPE "testfileupdate"
-    std::vector<std::string> subFileNames = { "subfile1", "subfile2", "subfile3" };
-    std::vector<std::string> superFileNames = { "superfile", "supersuperfile" };
-    std::string getSuperFileLogicalName(unsigned superfileNum)
-    {
-        return std::string(SCOPE) + "::" + superFileNames[superfileNum - 1];
-    }
-    std::string getSubFileLogicalName(unsigned subfileNum)
-    {
-        return std::string(SCOPE) + "::" + subFileNames[subfileNum - 1];
-    }
+    static constexpr const char *scope = "testfileupdate";
+    std::vector<std::string> subFileNames = {
+        std::string(scope) + "::subfile1",
+        std::string(scope) + "::subfile2",
+        std::string(scope) + "::subfile3"
+    };
+    std::vector<std::string> superFileNames = {
+        std::string(scope) + "::superfile",
+        std::string(scope) + "::supersuperfile"
+    };
+    bool daliClientInitialized;
     void cleanupTestFiles(bool assertOnFailure)
     {
         try
         {
-            Owned<IDistributedSuperFile> supersuperfile = dir.lookupSuperFile(getSuperFileLogicalName(2).c_str(), user, AccessMode::writeMeta);
-            if (supersuperfile)
-            {
-                supersuperfile->removeSubFile(nullptr, false, false, nullptr);
-                supersuperfile->detach();
-                supersuperfile.clear();
-            }
-            Owned<IDistributedSuperFile> superfile = dir.lookupSuperFile(getSuperFileLogicalName(1).c_str(), user, AccessMode::writeMeta);
-            if (superfile)
-            {
-                superfile->removeSubFile(nullptr, false, false, nullptr);
-                superfile->detach();
-                superfile.clear();
-            }
-            for (unsigned subfileNum = 1; subfileNum <= 3; subfileNum++)
-            {
-                Owned<IDistributedFile> subfile = dir.lookup(getSubFileLogicalName(subfileNum).c_str(), user, AccessMode::write, false, false, nullptr, true);
-                if (subfile)
-                    subfile->detach();
-            }
+            for (auto it = superFileNames.rbegin(); it != superFileNames.rend(); ++it)
+                dir.removeSuperFile(it->c_str(), false, user);
+            for (auto &subFileName : subFileNames)
+                dir.removeEntry(subFileName.c_str(), user);
         }
         catch (IException *e)
         {
+            StringBuffer errMsg;
+            e->errorMessage(errMsg);
+            fprintf(stderr, "Exception in cleanupTestFiles: %s\n", errMsg.str());
             ASSERT(!assertOnFailure && "Failed to clean up test files");
             e->Release();
         }
     }
     void createTestFiles()
     {
-        // Create 3 subfiles
-        for (unsigned subfileNum = 1; subfileNum <= 3; subfileNum++)
+        // Create subfiles
+        for (auto &subFileName : subFileNames)
         {
             Owned<IFileDescriptor> fdesc = createFileDescriptor();
-            fdesc->setDefaultDir("thordata/" SCOPE);
+            fdesc->setDefaultDir((std::string("thordata/") + scope).c_str());
 
             // Set file properties
             fdesc->queryProperties().setPropInt("@recordSize", 17);
@@ -3608,46 +3595,49 @@ class FileReadPropertiesUpdaterTester : public CppUnit::TestFixture
             ASSERT(dfile && "Failed to create distributed file");
 
             // Attach the file to the logical name
-            dfile->attach(getSubFileLogicalName(subfileNum).c_str(), user);
+            dfile->attach(subFileName.c_str(), user);
 
-            ASSERT(dir.exists(getSubFileLogicalName(subfileNum).c_str(), user) && "Subfile was not created successfully");
+            ASSERT(dir.exists(subFileName.c_str(), user) && "Subfile was not created successfully");
         }
 
         // Create the superfile and add subfiles to the superfile
-        Owned<IDistributedSuperFile> superfile = dir.createSuperFile(getSuperFileLogicalName(1).c_str(), user, true, false);
+        Owned<IDistributedSuperFile> superfile = dir.createSuperFile(superFileNames[0].c_str(), user, true, false);
         ASSERT(superfile && "Failed to create superfile");
-        for (unsigned subfileNum = 1; subfileNum <= 3; subfileNum++)
-            superfile->addSubFile(getSubFileLogicalName(subfileNum).c_str());
+        for (auto &subFileName : subFileNames)
+            superfile->addSubFile(subFileName.c_str());
         superfile.clear();
 
         // Create the supersuperfile and add superfile to it
-        Owned<IDistributedSuperFile> supersuperfile = dir.createSuperFile(getSuperFileLogicalName(2).c_str(), user, true, false);
+        Owned<IDistributedSuperFile> supersuperfile = dir.createSuperFile(superFileNames[1].c_str(), user, true, false);
         ASSERT(supersuperfile && "Failed to create supersuperfile");
-        supersuperfile->addSubFile(getSuperFileLogicalName(1).c_str());
+        supersuperfile->addSubFile(superFileNames[0].c_str());
         supersuperfile.clear();
 
         // Some quick integrity checks
-        supersuperfile.setown(dir.lookupSuperFile(getSuperFileLogicalName(2).c_str(), user, AccessMode::readMeta));
+        supersuperfile.setown(dir.lookupSuperFile(superFileNames[1].c_str(), user, AccessMode::readMeta));
         ASSERT(supersuperfile && "Failed to find created supersuperfile");
         unsigned numSubFiles = supersuperfile->numSubFiles();
         ASSERT(numSubFiles == 1 && "Supersuperfile does not contain expected number of subfiles");
 
-        superfile.setown(dir.lookupSuperFile(getSuperFileLogicalName(1).c_str(), user, AccessMode::readMeta));
+        superfile.setown(dir.lookupSuperFile(superFileNames[0].c_str(), user, AccessMode::readMeta));
         ASSERT(superfile && "Could not find created superfile");
         numSubFiles = superfile->numSubFiles();
-        ASSERT(numSubFiles == 3 && "Superfile does not contain expected number of subfiles");
+        ASSERT(numSubFiles == subFileNames.size() && "Superfile does not contain expected number of subfiles");
         size32_t superRecordSize = (size32_t)superfile->queryAttributes().getPropInt("@recordSize", -1);
         ASSERT(superRecordSize == 17 && "Superfile record size does not match subfiles");
     }
 
 public:
+    FileReadPropertiesUpdaterTester() : daliClientInitialized(false) {}
     ~FileReadPropertiesUpdaterTester()
     {
-        daliClientEnd();
+        if (daliClientInitialized)
+            daliClientEnd();
     }
     void testInit()
     {
         daliClientInit();
+        daliClientInitialized = true;
     }
 
     void testFileReadPropertiesUpdater()
@@ -3659,11 +3649,11 @@ public:
         unsigned expectedSuperReadCost = 0;
         {
             Owned<IFileReadPropertiesUpdater> fileReadPropertiesUpdater = createFileReadPropertiesUpdater(user);
-            for (unsigned subfileNum = 1; subfileNum <= 3; subfileNum++)
+            for (size_t idx = 0; idx < subFileNames.size(); idx++)
             {
-                Owned<IDistributedFile> subfile = dir.lookup(getSubFileLogicalName(subfileNum).c_str(), user, AccessMode::write, false, false, nullptr, true);
-                unsigned numReads = 10 + subfileNum; // create unique number of reads for each subfile
-                unsigned readCost = 1000 + subfileNum; // create unique read cost for each subfile
+                Owned<IDistributedFile> subfile = dir.lookup(subFileNames[idx].c_str(), user, AccessMode::write, false, false, nullptr, true);
+                unsigned numReads = 10 + idx + 1; // create unique number of reads for each subfile
+                unsigned readCost = 1000 + idx + 1; // create unique read cost for each subfile
                 expectedSuperNumReads += numReads;
                 expectedSuperReadCost += readCost;
                 fileReadPropertiesUpdater->addCostAndNumReads(subfile, numReads, readCost);
@@ -3671,9 +3661,9 @@ public:
             fileReadPropertiesUpdater->publish();
         }
         // Each owning superfiles should have the same number of reads and read cost as calculated above
-        for(unsigned superfileNum = 1; superfileNum <= 2; superfileNum++)
+        for(auto &superFileName : superFileNames)
         {
-            Owned<IDistributedSuperFile> superfile = dir.lookupSuperFile(getSuperFileLogicalName(superfileNum).c_str(), user, AccessMode::readMeta);
+            Owned<IDistributedSuperFile> superfile = dir.lookupSuperFile(superFileName.c_str(), user, AccessMode::readMeta);
             ASSERT(superfile && "Failed to find superfile");
             unsigned superNumReads = superfile->queryAttributes().getPropInt("@numDiskReads", -1);
             unsigned superReadCost = superfile->queryAttributes().getPropInt("@readCost", -1);
