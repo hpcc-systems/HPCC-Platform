@@ -265,27 +265,126 @@ class AKSClusterInsights:
 
         return summary
 
-    def get_node_utilization(self) -> Dict[str, Any]:
-        """Get node utilization metrics using kubectl."""
-        print("Fetching node utilization metrics...")
-
-        # Get kubectl credentials
-        subprocess.run([
-            "az", "aks", "get-credentials",
-            "--name", self.cluster_name,
-            "--resource-group", self.resource_group,
-            "--overwrite-existing"
-        ], capture_output=True, check=True)
+    def _ensure_kubectl_access(self) -> bool:
+        """Ensure kubectl access to the AKS cluster. Returns True if successful."""
+        if not self.cluster_name or not self.resource_group:
+            return False
 
         try:
+            # Check if kubectl is available
+            kubectl_check = subprocess.run(
+                ["kubectl", "version", "--client"],
+                capture_output=True,
+                timeout=5,
+                check=False
+            )
+
+            if kubectl_check.returncode != 0:
+                return False
+
+            # Get kubectl credentials
+            cred_result = subprocess.run([
+                "az", "aks", "get-credentials",
+                "--name", self.cluster_name,
+                "--resource-group", self.resource_group,
+                "--overwrite-existing",
+                "--only-show-errors"
+            ], capture_output=True, timeout=60, check=False)
+
+            if cred_result.returncode != 0:
+                return False
+
+            # Test connectivity with a quick cluster-info call
+            kubectl_test = subprocess.run(
+                ["kubectl", "cluster-info", "--request-timeout=15s"],
+                capture_output=True,
+                timeout=20,
+                check=False
+            )
+
+            return kubectl_test.returncode == 0
+
+        except Exception:
+            return False
+
+    def get_node_utilization(self) -> Dict[str, Any]:
+        """Get node utilization metrics using kubectl, with Azure API fallback."""
+        print("Fetching node utilization metrics...")
+
+        # First ensure we have the required parameters
+        if not self.cluster_name or not self.resource_group:
+            print("Warning: Missing cluster name or resource group for kubectl authentication", file=sys.stderr)
+            return self._get_node_utilization_fallback()
+
+        try:
+            # Check if kubectl is available
+            kubectl_check = subprocess.run(
+                ["kubectl", "version", "--client"],
+                capture_output=True,
+                timeout=10
+            )
+
+            if kubectl_check.returncode != 0:
+                print("Warning: kubectl not available or not working", file=sys.stderr)
+                return self._get_node_utilization_fallback()
+
+            # Get kubectl credentials with better error handling
+            print(f"Getting kubectl credentials for cluster {self.cluster_name}...")
+            cred_result = subprocess.run([
+                "az", "aks", "get-credentials",
+                "--name", self.cluster_name,
+                "--resource-group", self.resource_group,
+                "--overwrite-existing",
+                "--only-show-errors"  # Reduce noise
+            ], capture_output=True, timeout=60, check=False)
+
+            if cred_result.returncode != 0:
+                error_msg = cred_result.stderr.decode() if cred_result.stderr else 'Unknown authentication error'
+                print(f"Warning: Could not authenticate to AKS cluster: {error_msg}", file=sys.stderr)
+                print("Possible causes:", file=sys.stderr)
+                print("  - Insufficient permissions (need AKS Cluster User role)", file=sys.stderr)
+                print("  - Network connectivity issues", file=sys.stderr)
+                print("  - Cluster may be stopped or unavailable", file=sys.stderr)
+                return self._get_node_utilization_fallback()
+
+            # Test kubectl connectivity
+            print("Testing kubectl connectivity...")
+            kubectl_test = subprocess.run(
+                ["kubectl", "cluster-info", "--request-timeout=30s"],
+                capture_output=True,
+                timeout=35,
+                check=False
+            )
+
+            if kubectl_test.returncode != 0:
+                error_msg = kubectl_test.stderr.decode() if kubectl_test.stderr else 'Connection test failed'
+                print(f"Warning: kubectl connectivity test failed: {error_msg}", file=sys.stderr)
+                return self._get_node_utilization_fallback()
+
             # Get node metrics
+            print("Fetching node list...")
             nodes_result = subprocess.run(
-                ["kubectl", "get", "nodes", "-o", "json"],
+                ["kubectl", "get", "nodes", "-o", "json", "--request-timeout=30s"],
                 capture_output=True,
                 text=True,
-                check=True
+                timeout=35,
+                check=False
             )
-            nodes = json.loads(nodes_result.stdout)
+
+            if nodes_result.returncode != 0:
+                error_msg = nodes_result.stderr if nodes_result.stderr else 'Failed to get nodes'
+                print(f"Warning: Could not fetch nodes via kubectl: {error_msg}", file=sys.stderr)
+                return self._get_node_utilization_fallback()
+
+            if not nodes_result.stdout.strip():
+                print("Warning: Empty response from kubectl get nodes", file=sys.stderr)
+                return self._get_node_utilization_fallback()
+
+            try:
+                nodes = json.loads(nodes_result.stdout)
+            except json.JSONDecodeError as e:
+                print(f"Warning: Invalid JSON response from kubectl: {e}", file=sys.stderr)
+                return self._get_node_utilization_fallback()
 
             # Create a mapping of node names to creation times
             node_ages = {}
@@ -306,15 +405,18 @@ class AKSClusterInsights:
                     except Exception:
                         node_ages[node_name] = {"age_hours": 0, "age_days": 0, "creation_time": "unknown"}
 
-            # Get top nodes
+            # Get node utilization metrics (requires metrics server)
+            print("Fetching node utilization metrics...")
             top_result = subprocess.run(
-                ["kubectl", "top", "nodes", "--no-headers"],
+                ["kubectl", "top", "nodes", "--no-headers", "--request-timeout=30s"],
                 capture_output=True,
-                text=True
+                text=True,
+                timeout=35,
+                check=False
             )
 
             node_utilization = []
-            if top_result.returncode == 0:
+            if top_result.returncode == 0 and top_result.stdout.strip():
                 for line in top_result.stdout.strip().split('\n'):
                     if line:
                         parts = line.split()
@@ -356,14 +458,93 @@ class AKSClusterInsights:
                                 "age_days": age_info["age_days"],
                                 "creation_time": age_info["creation_time"]
                             })
+            else:
+                # kubectl top nodes failed - likely metrics server not available
+                if top_result.returncode != 0:
+                    error_msg = top_result.stderr if top_result.stderr else 'Metrics server may not be installed or accessible'
+                    print(f"Warning: kubectl top nodes failed: {error_msg}", file=sys.stderr)
+                    print("Note: Kubernetes metrics server is required for utilization data", file=sys.stderr)
+                else:
+                    print("Warning: No utilization data returned from metrics server", file=sys.stderr)
+
+                # Create basic node entries without utilization metrics
+                for node in nodes.get("items", []):
+                    node_name = node.get("metadata", {}).get("name", "")
+                    if node_name:
+                        age_info = node_ages.get(node_name, {"age_hours": 0, "age_days": 0, "creation_time": "unknown"})
+                        node_utilization.append({
+                            "name": node_name,
+                            "cpu_cores": "unknown",
+                            "cpu_percent": "0%",
+                            "cpu_percent_numeric": 0.0,  # Default to 0 since we can't measure
+                            "memory": "unknown", 
+                            "memory_percent": "0%",
+                            "memory_percent_numeric": 0.0,  # Default to 0 since we can't measure
+                            "age_hours": age_info["age_hours"],
+                            "age_days": age_info["age_days"],
+                            "creation_time": age_info["creation_time"],
+                            "metrics_unavailable": True  # Flag to indicate missing metrics
+                        })
+
+            # Check if we got any utilization data
+            has_real_metrics = any(not node.get("metrics_unavailable", False) for node in node_utilization)
 
             return {
                 "total_nodes": len(nodes.get("items", [])),
-                "node_metrics": node_utilization
+                "node_metrics": node_utilization,
+                "has_real_metrics": has_real_metrics,
+                "warning": "Some utilization metrics unavailable - metrics server may not be installed" if not has_real_metrics else ""
             }
         except Exception as e:
             print(f"Warning: Could not fetch node utilization: {e}", file=sys.stderr)
-            return {"error": str(e)}
+            return self._get_node_utilization_fallback()
+
+    def _get_node_utilization_fallback(self) -> Dict[str, Any]:
+        """Fallback method to get basic node information when kubectl is not available."""
+        print("Using Azure API fallback for node information (no utilization metrics available)")
+
+        if not self.cluster_data:
+            return {"error": "No cluster data available and kubectl access failed"}
+
+        # Get basic node information from Azure API
+        node_pools = self.cluster_data.get("agentPoolProfiles", [])
+        total_nodes = sum(pool.get("count", 0) for pool in node_pools)
+
+        # Create mock node metrics with zero utilization (since we can't get real metrics)
+        node_metrics = []
+        node_counter = 1
+
+        for pool in node_pools:
+            pool_name = pool.get("name", "unknown")
+            vm_size = pool.get("vmSize", "unknown")
+            node_count = pool.get("count", 0)
+
+            # Create entries for each node in the pool
+            for i in range(node_count):
+                node_name = f"aks-{pool_name}-{node_counter:08d}-vmss000000"  # Typical AKS node naming
+                node_metrics.append({
+                    "name": node_name,
+                    "cpu_cores": "unknown",
+                    "cpu_percent": "0%",
+                    "cpu_percent_numeric": 0.0,  # Set to 0 since we can't measure
+                    "memory": "unknown",
+                    "memory_percent": "0%", 
+                    "memory_percent_numeric": 0.0,  # Set to 0 since we can't measure
+                    "age_hours": 0.0,
+                    "age_days": 0.0,
+                    "creation_time": "unknown",
+                    "vm_size": vm_size,
+                    "node_pool": pool_name,
+                    "fallback_mode": True  # Flag to indicate this is estimated data
+                })
+                node_counter += 1
+
+        return {
+            "total_nodes": total_nodes,
+            "node_metrics": node_metrics,
+            "fallback_mode": True,
+            "warning": "Utilization data unavailable - kubectl access required for real metrics"
+        }
 
     def load_idle_history(self) -> Dict[str, Any]:
         """Load historical idle tracking data from local file."""
@@ -496,8 +677,13 @@ class AKSClusterInsights:
         if "error" in utilization_data or not utilization_data.get("node_metrics"):
             return {"error": "No utilization data available"}
 
-        # Update idle duration tracking
-        idle_durations = self.update_idle_tracking(utilization_data)
+        # Check if we're in fallback mode (no real utilization data)
+        is_fallback_mode = utilization_data.get("fallback_mode", False)
+
+        # Update idle duration tracking (skip if in fallback mode)
+        idle_durations = {}
+        if not is_fallback_mode:
+            idle_durations = self.update_idle_tracking(utilization_data)
 
         node_metrics = utilization_data["node_metrics"]
 
@@ -589,6 +775,39 @@ class AKSClusterInsights:
         avg_cpu = statistics.mean(cpu_usage_list) if cpu_usage_list else 0
         avg_memory = statistics.mean(memory_usage_list) if memory_usage_list else 0
 
+        # Check for suspicious metrics - warn if all nodes show 0% utilization
+        zero_cpu_nodes = len([cpu for cpu in cpu_usage_list if cpu == 0.0])
+        zero_mem_nodes = len([mem for mem in memory_usage_list if mem == 0.0])
+        total_nodes = len(cpu_usage_list)
+
+        metrics_warning = ""
+        metrics_unreliable = False
+
+        if total_nodes > 0:
+            zero_cpu_percent = (zero_cpu_nodes / total_nodes) * 100
+            zero_mem_percent = (zero_mem_nodes / total_nodes) * 100
+
+            # If 100% of nodes show 0% utilization, the metrics are likely incorrect
+            if zero_cpu_percent == 100 and zero_mem_percent == 100 and not is_fallback_mode:
+                metrics_unreliable = True
+                metrics_warning = (
+                    f"⚠️  METRICS WARNING: All nodes show 0% CPU and memory usage. "
+                    "This indicates metrics collection issues: (1) Metrics server problems, "
+                    "(2) Insufficient permissions, (3) kubectl connectivity issues, or "
+                    "(4) Data collection problems. Verify metrics server status and kubectl access."
+                )
+                print(f"Warning: {metrics_warning}", file=sys.stderr)
+                print("Warning: Skipping efficiency analysis due to unreliable metrics", file=sys.stderr)
+            elif avg_cpu == 0.0 and avg_memory == 0.0 and total_nodes > 5 and not is_fallback_mode:
+                metrics_unreliable = True
+                metrics_warning = (
+                    "⚠️  METRICS WARNING: All nodes show 0% utilization across both CPU and memory. "
+                    "This is highly unusual and likely indicates metrics collection issues. "
+                    "Check: kubectl access, metrics server installation, and node readiness."
+                )
+                print(f"Warning: {metrics_warning}", file=sys.stderr)
+                print("Warning: Skipping efficiency analysis due to unreliable metrics", file=sys.stderr)
+
         # Calculate idle duration statistics
         idle_duration_stats = {}
         if idle_nodes:
@@ -613,30 +832,105 @@ class AKSClusterInsights:
             except Exception as e:
                 print(f"Warning: ECL Watch job analysis failed: {e}", file=sys.stderr)
 
-        efficiency_analysis = {
-            "summary": {
-                "total_nodes": len(node_metrics),
-                "idle_nodes": len(idle_nodes),
-                "underutilized_nodes": len(underutilized_nodes),
-                "well_utilized_nodes": len(well_utilized_nodes),
-                "average_cpu_usage": round(avg_cpu, 1),
-                "average_memory_usage": round(avg_memory, 1),
-                "efficiency_score": round((avg_cpu + avg_memory) / 2, 1),
-                "idle_duration_stats": idle_duration_stats,
-                "workload_context": workload_context
-            },
-            "idle_nodes": idle_nodes,
-            "underutilized_nodes": underutilized_nodes,
-            "well_utilized_nodes": well_utilized_nodes,
-            "idle_durations": idle_durations,
-            "thresholds": {
-                "low_cpu": LOW_CPU_THRESHOLD,
-                "low_memory": LOW_MEMORY_THRESHOLD,
-                "idle_cpu": IDLE_CPU_THRESHOLD,
-                "idle_memory": IDLE_MEMORY_THRESHOLD
-            },
-            "job_analysis": job_analysis
-        }
+        # Check if we should skip efficiency analysis due to unreliable or missing metrics
+        # Also skip if we're in fallback mode with active workloads (conflicting signals)
+        active_jobs_detected = False
+        if job_analysis and "error" not in job_analysis:
+            job_stats = job_analysis.get("job_statistics", {})
+            active_jobs_detected = (
+                job_stats.get("currently_running", 0) > 0 or 
+                job_stats.get("total_active_jobs", 0) > 0 or
+                job_stats.get("recent_jobs_2h", 0) > 5  # More than 5 jobs in last 2 hours suggests active workload
+            )
+
+        # Skip detailed analysis if metrics are unreliable OR if we're in fallback mode with suspicious data
+        # In fallback mode, if we have a large cluster (>50 nodes) with all 0% utilization, it's likely unreliable
+        large_cluster_fallback = (
+            is_fallback_mode and 
+            len(node_metrics) > 50 and 
+            avg_cpu == 0.0 and 
+            avg_memory == 0.0
+        )
+
+        skip_detailed_analysis = (
+            metrics_unreliable or 
+            (is_fallback_mode and active_jobs_detected and avg_cpu == 0.0 and avg_memory == 0.0) or
+            large_cluster_fallback
+        )
+
+
+
+        if skip_detailed_analysis:
+            efficiency_analysis = {
+                "summary": {
+                    "total_nodes": len(node_metrics),
+                    "idle_nodes": 0,  # Don't categorize when metrics are unreliable
+                    "underutilized_nodes": 0,
+                    "well_utilized_nodes": 0,
+                    "average_cpu_usage": 0.0,  # Don't use unreliable averages
+                    "average_memory_usage": 0.0,
+                    "efficiency_score": 0.0,  # Can't calculate efficiency with bad metrics
+                    "idle_duration_stats": {},
+                    "workload_context": workload_context,
+                    "fallback_mode": is_fallback_mode,
+                    "utilization_warning": utilization_data.get("warning", "") if is_fallback_mode else "",
+                    "metrics_warning": metrics_warning if metrics_unreliable else (
+                        "⚠️ CONFLICTING SIGNALS: Active jobs detected but all nodes show 0% utilization. "
+                        "This suggests kubectl/metrics server issues. Skipping utilization-based analysis." 
+                        if is_fallback_mode and active_jobs_detected else ""
+                    ),
+                    "metrics_unreliable": True,
+                    "zero_cpu_nodes": zero_cpu_nodes,
+                    "zero_mem_nodes": zero_mem_nodes
+                },
+                "idle_nodes": [],  # Empty lists when metrics are unreliable
+                "underutilized_nodes": [],
+                "well_utilized_nodes": [],
+                "idle_durations": {},
+                "thresholds": {
+                    "low_cpu": LOW_CPU_THRESHOLD,
+                    "low_memory": LOW_MEMORY_THRESHOLD,
+                    "idle_cpu": IDLE_CPU_THRESHOLD,
+                    "idle_memory": IDLE_MEMORY_THRESHOLD
+                },
+                "job_analysis": job_analysis,
+                "fallback_mode": is_fallback_mode,
+                "metrics_unreliable": True
+            }
+        else:
+            # Normal efficiency analysis with reliable metrics
+            efficiency_analysis = {
+                "summary": {
+                    "total_nodes": len(node_metrics),
+                    "idle_nodes": len(idle_nodes),
+                    "underutilized_nodes": len(underutilized_nodes),
+                    "well_utilized_nodes": len(well_utilized_nodes),
+                    "average_cpu_usage": round(avg_cpu, 1),
+                    "average_memory_usage": round(avg_memory, 1),
+                    "efficiency_score": round((avg_cpu + avg_memory) / 2, 1),
+                    "idle_duration_stats": idle_duration_stats,
+                    "workload_context": workload_context,
+                    "fallback_mode": is_fallback_mode,
+                    "utilization_warning": utilization_data.get("warning", "") if is_fallback_mode else "",
+                    "metrics_warning": metrics_warning,
+                    "metrics_unreliable": False,
+                    "zero_cpu_nodes": zero_cpu_nodes,
+                    "zero_mem_nodes": zero_mem_nodes
+                },
+                "idle_nodes": idle_nodes,
+                "underutilized_nodes": underutilized_nodes,
+                "well_utilized_nodes": well_utilized_nodes,
+                "idle_durations": idle_durations,
+                "thresholds": {
+                    "low_cpu": LOW_CPU_THRESHOLD,
+                    "low_memory": LOW_MEMORY_THRESHOLD,
+                    "idle_cpu": IDLE_CPU_THRESHOLD,
+                    "idle_memory": IDLE_MEMORY_THRESHOLD
+                },
+                "job_analysis": job_analysis,
+                "fallback_mode": is_fallback_mode,
+                "metrics_unreliable": False
+            }
 
         return efficiency_analysis
 
@@ -759,12 +1053,33 @@ class AKSClusterInsights:
         if "error" in efficiency:
             return {"error": "Cannot calculate optimizations without utilization data"}
 
+        # Check if metrics are unreliable - if so, skip utilization-based optimizations
+        if efficiency.get("metrics_unreliable", False):
+            return {
+                "current_monthly_cost": costs.get("estimated_monthly", 0),
+                "optimization_scenarios": [],
+                "total_potential_savings": 0,
+                "recommendations": [
+                    {
+                        "priority": "High",
+                        "category": "Metrics",
+                        "recommendation": "Fix metrics collection issues before analyzing utilization",
+                        "rationale": efficiency["summary"].get("metrics_warning", "Current utilization metrics appear unreliable"),
+                        "action": "Verify kubectl access, metrics server installation, and cluster health"
+                    }
+                ],
+                "historical_analysis": historical_trends,
+                "metrics_unreliable": True,
+                "note": "Utilization-based optimization skipped due to unreliable metrics"
+            }
+
         opportunities = {
             "current_monthly_cost": costs.get("estimated_monthly", 0),
             "optimization_scenarios": [],
             "total_potential_savings": 0,
             "recommendations": [],
-            "historical_analysis": historical_trends
+            "historical_analysis": historical_trends,
+            "metrics_unreliable": False
         }
 
         # Scenario 1: Right-sizing based on utilization
@@ -954,14 +1269,27 @@ class AKSClusterInsights:
         """Get pod statistics."""
         print("Fetching pod statistics...")
 
+        # Check kubectl access first
+        if not self._ensure_kubectl_access():
+            return {"error": "kubectl access not available"}
+
         try:
             # Get all pods
             pods_result = subprocess.run(
-                ["kubectl", "get", "pods", "--all-namespaces", "-o", "json"],
+                ["kubectl", "get", "pods", "--all-namespaces", "-o", "json", "--request-timeout=30s"],
                 capture_output=True,
                 text=True,
-                check=True
+                timeout=35,
+                check=False
             )
+
+            if pods_result.returncode != 0:
+                error_msg = pods_result.stderr if pods_result.stderr else 'Failed to get pods'
+                return {"error": f"Could not fetch pod statistics: {error_msg}"}
+
+            if not pods_result.stdout.strip():
+                return {"error": "No pod data returned"}
+
             pods = json.loads(pods_result.stdout)
 
             pod_items = pods.get("items", [])
@@ -988,15 +1316,31 @@ class AKSClusterInsights:
 
     def get_pods_by_node(self) -> Dict[str, Any]:
         """Get detailed pod information organized by node."""
+        # Check kubectl access first
+        if not self._ensure_kubectl_access():
+            print("Warning: kubectl access not available for pod analysis", file=sys.stderr)
+            return {}
+
         try:
             # Get all pods with node information
             pods_result = subprocess.run(
                 ["kubectl", "get", "pods", "--all-namespaces", "-o", "json",
-                 "--field-selector=status.phase=Running"],
+                 "--field-selector=status.phase=Running", "--request-timeout=30s"],
                 capture_output=True,
                 text=True,
-                check=True
+                timeout=35,
+                check=False
             )
+
+            if pods_result.returncode != 0:
+                error_msg = pods_result.stderr if pods_result.stderr else 'Failed to get pods'
+                print(f"Warning: Could not fetch pods via kubectl: {error_msg}", file=sys.stderr)
+                return {}
+
+            if not pods_result.stdout.strip():
+                print("Warning: No pod data returned", file=sys.stderr)
+                return {}
+
             pods = json.loads(pods_result.stdout)
 
             pods_by_node = {}
@@ -1670,11 +2014,12 @@ class AKSClusterInsights:
                 "cost_efficiency_grade": self._calculate_efficiency_grade(efficiency, costs)
             },
             "waste_identification": {
-                "idle_nodes": efficiency.get("summary", {}).get("idle_nodes", 0),
-                "underutilized_nodes": efficiency.get("summary", {}).get("underutilized_nodes", 0),
+                "idle_nodes": 0 if efficiency.get("metrics_unreliable", False) else efficiency.get("summary", {}).get("idle_nodes", 0),
+                "underutilized_nodes": 0 if efficiency.get("metrics_unreliable", False) else efficiency.get("summary", {}).get("underutilized_nodes", 0),
                 "idle_cost_estimate": 0,
                 "underutilized_cost_estimate": 0,
-                "idle_duration_stats": efficiency.get("summary", {}).get("idle_duration_stats", {})
+                "idle_duration_stats": {} if efficiency.get("metrics_unreliable", False) else efficiency.get("summary", {}).get("idle_duration_stats", {}),
+                "metrics_unreliable": efficiency.get("metrics_unreliable", False)
             },
             "optimization_scenarios": optimization_opportunities.get("optimization_scenarios", []),
             "recommendations": optimization_opportunities.get("recommendations", []),
@@ -2616,10 +2961,7 @@ class AKSClusterInsights:
             print(f"Warning: Could not get detailed pool node info for {pool_name}: {e}", file=sys.stderr)
             return []
 
-    def _get_unified_ecl_watch_data(self) -> Dict[str, Any]:
-        """Get unified ECL Watch data to avoid duplicate API calls."""
-        # Implementation was removed - this is a stub
-        return {}
+
 
     def _print_node_pool_cost_analysis(self):
         """Print detailed cost analysis grouped by node pool."""
@@ -2635,12 +2977,47 @@ class AKSClusterInsights:
             print("❌ Unable to analyze node pool costs - utilization data unavailable")
             return
 
+        # Check if we're in fallback mode (no real utilization metrics)
+        if efficiency.get("fallback_mode", False):
+            print("⚠️  Node pool analysis available with limited data (kubectl access required for utilization metrics)")
+            print("📊 Showing basic node pool information from Azure API:")
+            print()
+
         # Get detailed node analysis
         detailed_analysis = self.get_detailed_node_analysis(efficiency)
         pool_analysis = detailed_analysis.get("pool_analysis", {})
 
         if not pool_analysis:
-            print("✅ No node pool waste detected or analysis unavailable")
+            # If in fallback mode, show basic pool cost information instead
+            if efficiency.get("fallback_mode", False):
+                print("📊 Basic node pool information (utilization metrics unavailable):")
+                print()
+
+                # Show basic pool costs without waste analysis
+                pool_costs = costs.get("by_pool", [])
+                if pool_costs:
+                    print(f"{'Pool Name':<20} {'VM Size':<15} {'Nodes':<8} {'Monthly Cost':<15} {'Cost/Node':<12}")
+                    print("-" * 80)
+
+                    total_cost = 0
+                    for pool in pool_costs:
+                        pool_name = pool.get("pool_name", "")[:19]
+                        vm_size = pool.get("vm_size", "")[:14] 
+                        count = pool.get("count", 0)
+                        monthly_cost = pool.get("monthly_cost", 0)
+                        cost_per_node = monthly_cost / max(count, 1)
+                        total_cost += monthly_cost
+
+                        print(f"{pool_name:<20} {vm_size:<15} {count:<8} ${monthly_cost:>10,.2f}     ${cost_per_node:>8,.2f}")
+
+                    print("-" * 80)
+                    print(f"{'TOTAL':<20} {'':<15} {'':<8} ${total_cost:>10,.2f}     {'':<12}")
+
+                    print(f"\n💡 To get utilization analysis and waste detection, ensure kubectl access to the cluster.")
+                else:
+                    print("No pool cost information available")
+            else:
+                print("✅ No node pool waste detected")
             return
 
         # Get cost information by pool from cost estimates
@@ -2797,167 +3174,7 @@ class AKSClusterInsights:
             print(f"Warning: Could not get detailed node info for pool {pool_name}: {e}", file=sys.stderr)
             return []
 
-    def _print_node_pool_cost_analysis(self):
-        """Print detailed cost analysis grouped by node pool."""
-        print(f"\n\n🏊 NODE POOL COST ANALYSIS")
-        print("-" * 80)
 
-        # Get efficiency and cost data
-        utilization = self.get_node_utilization()
-        efficiency = self.analyze_resource_efficiency(utilization)
-        costs = self.estimate_costs()
-
-        if "error" in efficiency:
-            print("❌ Unable to analyze node pool costs - utilization data unavailable")
-            return
-
-        # Get detailed node analysis
-        detailed_analysis = self.get_detailed_node_analysis(efficiency)
-        pool_analysis = detailed_analysis.get("pool_analysis", {})
-
-        if not pool_analysis:
-            print("✅ No node pool waste detected or analysis unavailable")
-            return
-
-        # Get cost information by pool from cost estimates
-        pool_costs = costs.get("by_pool", [])
-        pool_cost_lookup = {pool.get("pool_name"): pool for pool in pool_costs}
-
-        # Create enhanced pool analysis with cost details
-        enhanced_pool_data = []
-
-        for pool_name, waste_data in pool_analysis.items():
-            pool_cost_info = pool_cost_lookup.get(pool_name, {})
-
-            # Get basic pool info
-            total_nodes_in_pool = pool_cost_info.get("count", 0)
-            vm_size = pool_cost_info.get("vm_size", "Unknown")
-            monthly_pool_cost = pool_cost_info.get("monthly_cost", 0)
-            cost_per_node = monthly_pool_cost / max(total_nodes_in_pool, 1)
-
-            # Get waste info
-            idle_nodes = waste_data.get("idle_nodes", 0)
-            underutil_nodes = waste_data.get("underutilized_nodes", 0)
-            total_waste_nodes = idle_nodes + underutil_nodes
-
-            # Calculate cost savings potential
-            idle_cost_waste = idle_nodes * cost_per_node  # 100% savings - remove entirely
-            underutil_cost_waste = underutil_nodes * cost_per_node * 0.3  # 30% savings - right-size
-            total_savings_potential = idle_cost_waste + underutil_cost_waste
-
-            # Calculate waste percentages
-            waste_percentage = (total_waste_nodes / max(total_nodes_in_pool, 1)) * 100
-            cost_waste_percentage = (total_savings_potential / max(monthly_pool_cost, 1)) * 100
-
-            enhanced_pool_data.append({
-                "pool_name": pool_name,
-                "vm_size": vm_size,
-                "total_nodes": total_nodes_in_pool,
-                "idle_nodes": idle_nodes,
-                "underutil_nodes": underutil_nodes,
-                "total_waste_nodes": total_waste_nodes,
-                "monthly_pool_cost": monthly_pool_cost,
-                "cost_per_node": cost_per_node,
-                "idle_cost_waste": idle_cost_waste,
-                "underutil_cost_waste": underutil_cost_waste,
-                "total_savings_potential": total_savings_potential,
-                "waste_percentage": waste_percentage,
-                "cost_waste_percentage": cost_waste_percentage
-            })
-
-        # Sort by total savings potential (descending)
-        enhanced_pool_data.sort(key=lambda x: x["total_savings_potential"], reverse=True)
-
-        # Print header
-        print(f"{'Pool Name':<20} {'VM Size':<15} {'Thor Cluster':<16} {'Nodes':<8} {'Idle':<6} {'UnderUtil':<9} {'Monthly$/Node':<12} {'Savings':<12} {'Waste%':<8}")
-        print("-" * 114)
-
-        total_cluster_savings = 0
-
-        for pool_data in enhanced_pool_data:
-            pool_name = pool_data["pool_name"][:19]  # Truncate if too long
-            vm_size = pool_data["vm_size"][:14]  # Truncate if too long
-            total_nodes = pool_data["total_nodes"]
-            idle_nodes = pool_data["idle_nodes"]
-            underutil_nodes = pool_data["underutil_nodes"]
-            cost_per_node = pool_data["cost_per_node"]
-            total_savings = pool_data["total_savings_potential"]
-            waste_percentage = pool_data["waste_percentage"]
-
-            total_cluster_savings += total_savings
-
-            # Get Thor cluster information for this pool
-            thor_cluster = "Unknown"
-            if pool_cost_info:
-                # Determine cluster type based on pool name patterns
-                pool_name_lower = pool_name.lower()
-                if "thor" in pool_name_lower:
-                    if "d" in pool_name_lower and any(size in pool_name_lower for size in ["32", "48", "64"]):
-                        thor_cluster = f"thor-{pool_name_lower}"
-                    elif "l" in pool_name_lower:
-                        thor_cluster = f"thor-spill-{pool_name_lower}"
-                    else:
-                        thor_cluster = f"thor-{pool_name_lower}"
-                elif "serv" in pool_name_lower:
-                    thor_cluster = "Services/Admin"
-                elif "dali" in pool_name_lower or "file" in pool_name_lower or "data" in pool_name_lower:
-                    thor_cluster = "Data Services"
-                elif "system" in pool_name_lower:
-                    thor_cluster = "System"
-                elif "ops" in pool_name_lower:
-                    thor_cluster = "Operations"
-
-            # Format the row
-            nodes_display = f"{total_nodes}"
-            idle_display = f"{idle_nodes}" if idle_nodes > 0 else "-"
-            underutil_display = f"{underutil_nodes}" if underutil_nodes > 0 else "-"
-            cost_display = f"${cost_per_node:,.0f}"
-            savings_display = f"${total_savings:,.0f}" if total_savings > 0 else "-"
-            waste_display = f"{waste_percentage:.0f}%" if waste_percentage > 0 else "0%"
-            thor_display = thor_cluster[:15]  # Truncate if too long
-
-            print(f"{pool_name:<20} {vm_size:<15} {thor_display:<16} {nodes_display:<8} {idle_display:<6} {underutil_display:<9} "
-                  f"{cost_display:<12} {savings_display:<12} {waste_display:<8}")
-
-        # Summary section
-        print("-" * 114)
-        savings_display = f"${total_cluster_savings:,.0f}"
-        print(f"{'TOTALS':<20} {'':<15} {'':<16} {'':<8} {'':<6} {'':<9} {'':<12} {savings_display:<12} {'':<8}")
-
-        # Detailed savings breakdown for top wasteful pools - summary only
-        print(f"\n💰 TOP 5 POOL SAVINGS OPPORTUNITIES:")
-        for i, pool_data in enumerate(enhanced_pool_data[:5], 1):
-            if pool_data["total_savings_potential"] <= 0:
-                continue
-
-            pool_name = pool_data["pool_name"]
-            idle_savings = pool_data["idle_cost_waste"]
-            underutil_savings = pool_data["underutil_cost_waste"]
-            total_savings = pool_data["total_savings_potential"]
-
-            print(f"\n{i}. {pool_name} ({pool_data['vm_size']}) - ${total_savings:,.2f}/month potential savings:")
-
-            if idle_savings > 0:
-                print(f"   🗑️ IDLE NODES: {pool_data['idle_nodes']} nodes - ${idle_savings:,.2f}/month savings")
-
-            if underutil_savings > 0:
-                print(f"   📉 UNDERUTILIZED NODES: {pool_data['underutil_nodes']} nodes - ${underutil_savings:,.2f}/month savings")
-
-            print(f"   📊 Pool Cost Reduction Potential: {pool_data['cost_waste_percentage']:.1f}%")
-
-            # Action recommendations for this specific pool
-            if pool_data['idle_nodes'] > 0 and pool_data['underutil_nodes'] > 0:
-                print(f"   🎯 RECOMMENDED ACTION: Remove {pool_data['idle_nodes']} idle nodes immediately, then right-size {pool_data['underutil_nodes']} underutilized nodes")
-            elif pool_data['idle_nodes'] > 0:
-                print(f"   🎯 RECOMMENDED ACTION: Remove all {pool_data['idle_nodes']} idle nodes from this pool")
-            elif pool_data['underutil_nodes'] > 0:
-                print(f"   🎯 RECOMMENDED ACTION: Right-size all {pool_data['underutil_nodes']} underutilized nodes to smaller VMs")
-
-        if total_cluster_savings > 0:
-            print(f"\n🏆 CLUSTER-WIDE POOL OPTIMIZATION SUMMARY:")
-            print(f"   💸 Total Monthly Savings:             ${total_cluster_savings:,.2f}")
-            print(f"   📈 Annual Savings Potential:          ${total_cluster_savings * 12:,.2f}")
-            print(f"   🎯 Action: Focus on the top 3 pools listed above for maximum impact")
 
     def print_cost_optimization_summary(self):
         """Print focused cost optimization summary report."""
@@ -2983,6 +3200,12 @@ class AKSClusterInsights:
         print("-" * 80)
         exec_summary = summary["executive_summary"]
         waste_summary = summary["waste_identification"]
+
+        # Display metrics warning if present
+        metrics_warning = efficiency.get("summary", {}).get("metrics_warning", "")
+        if metrics_warning:
+            print(f"🚨 {metrics_warning}")
+            print()
 
         # Display cost information with source indicator
         cost_source = exec_summary.get('cost_source', 'estimated')
@@ -3151,7 +3374,8 @@ class AKSClusterInsights:
             print(f"⚠️  ECL Watch configured ({self.ecl_watch_url}) but job analysis failed")
             if job_analysis and "error" in job_analysis:
                 print(f"   Error: {job_analysis['error']}")
-            print(f"   Note: {job_analysis.get('note', 'Unable to correlate job activity with node utilization')}")
+            note = job_analysis.get('note', 'Unable to correlate job activity with node utilization') if job_analysis else 'Unable to correlate job activity with node utilization'
+            print(f"   Note: {note}")
             print()
 
         # Add cluster job statistics if ECL Watch is configured
@@ -3161,6 +3385,19 @@ class AKSClusterInsights:
         # Waste Identification with detailed cost breakdowns
         print(f"\n\n🗑️  RESOURCE WASTE ANALYSIS")
         print("-" * 80)
+
+        # Check if metrics are unreliable
+        if waste_summary.get("metrics_unreliable", False):
+            print("⚠️  WARNING: Skipping waste analysis due to unreliable utilization metrics")
+            print("🔍 ISSUE: Active jobs detected but all nodes show 0% utilization")
+            print("📊 ECL Watch shows active workload, but kubectl metrics unavailable")
+            print("🛠️  ACTION: Fix kubectl access and metrics server before analyzing resource waste")
+            print("\n💡 RECOMMENDATIONS:")
+            print("   1. Verify kubectl can connect to cluster")
+            print("   2. Check metrics-server pod status: kubectl get pods -n kube-system | grep metrics")
+            print("   3. Ensure proper RBAC permissions for metrics access")
+            print("   4. Re-run analysis after fixing metrics collection")
+            return
 
         # Calculate per-node cost details
         costs = self.estimate_costs()
@@ -3270,6 +3507,19 @@ class AKSClusterInsights:
         # Cost Optimization Opportunities
         print(f"\n\n💡 COST OPTIMIZATION OPPORTUNITIES")
         print("-" * 80)
+
+        # Check if metrics are unreliable
+        if optimization_opportunities.get("metrics_unreliable", False):
+            print("⚠️  WARNING: Utilization metrics appear unreliable - optimization analysis limited")
+            print("🔍 Issue: Most nodes showing 0% utilization, which suggests metrics collection problems")
+            print("🛠️  Action: Please verify kubectl access, metrics server health, and cluster connectivity")
+            print("\n📋 RECOMMENDED ACTIONS:")
+            for rec in optimization_opportunities.get("recommendations", []):
+                print(f"   • {rec.get('recommendation', 'No recommendation available')}")
+                print(f"     Reason: {rec.get('rationale', 'No rationale provided')}")
+            print("\n✋ Skipping utilization-based cost optimization until metrics are fixed")
+            return
+
         scenarios = summary["optimization_scenarios"]
 
         if scenarios:
@@ -3788,7 +4038,9 @@ class AKSClusterInsights:
             print(f"Estimated Monthly Cost:  ${costs['estimated_monthly']:,.2f}")
 
             # Show optimization potential
-            if optimization_opportunities.get('total_potential_savings', 0) > 0:
+            if optimization_opportunities.get("metrics_unreliable", False):
+                print(f"⚠️  Metrics Unreliable:  Cannot calculate savings - fix kubectl/metrics first")
+            elif optimization_opportunities.get('total_potential_savings', 0) > 0:
                 savings = optimization_opportunities['total_potential_savings']
                 savings_percent = (savings / costs['estimated_monthly']) * 100
                 print(f"💰 Potential Savings:    ${savings:,.2f}/month ({savings_percent:.1f}%)")
