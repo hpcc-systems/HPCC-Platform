@@ -230,11 +230,6 @@
                    <xsl:value-of select="@suspendCoalescerDuringXref"/>
                  </xsl:attribute>
                 </xsl:if>
-                <xsl:if test="string(@filterScopes) != ''">
-                 <xsl:attribute name="filterScopes">
-                   <xsl:value-of select="@filterScopes"/>
-                 </xsl:attribute>
-                </xsl:if>
             </xsl:element>
             <xsl:element name="DfuExpiry">
                 <xsl:attribute name="interval">

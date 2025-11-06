@@ -1233,6 +1233,7 @@ public:
 
         if (!isEmptyString(_scopeFilters))
         {
+            log(false, "Filter Scopes Enabled: searching for files in: %s", _scopeFilters);
             filterScopesEnabled = true;
             scopeFilters.appendList(_scopeFilters, "::");
         }
@@ -2749,14 +2750,15 @@ class CSashaXRefServer: public ISashaServer, public Thread
     {
         CSashaXRefServer &parent;
         StringAttr servers;
+        StringAttr filterScopes;
     public:
-        cRunThread(CSashaXRefServer &_parent,const char *_servers)
-            : parent(_parent), servers(_servers)
+        cRunThread(CSashaXRefServer &_parent,const char *_servers, const char *_filterScopes)
+            : parent(_parent), servers(_servers), filterScopes(_filterScopes)
         {
         }
         int run()
         {
-            parent.runXRef(servers,false,false);
+            parent.runXRef(servers,false,false,filterScopes);
             return 0;
         }
     };
@@ -2799,7 +2801,7 @@ public:
             OERRLOG("CSashaXRefServer aborted");
     }
 
-    void runXRef(const char *clustcsl,bool updateeclwatch,bool byscheduler)
+    void runXRef(const char *clustcsl,bool updateeclwatch,bool byscheduler, const char *filterScopes)
     {
         if (stopped||!clustcsl||!*clustcsl)
             return;
@@ -2885,7 +2887,6 @@ public:
             }
             else
                 maxMb = props->getPropInt("@memoryLimit", DEFAULT_MAXMEMORY);
-            const char *filterScopes = props->queryProp("@filterScopes");
             CNewXRefManager manager(storagePlanes[gname],maxMb,filterScopes);
             if (!manager.setGroup(cnames.item(i),gname,groupsdone,dirsdone))
                 continue;
@@ -2925,16 +2926,17 @@ public:
         PROGLOG(LOGPFX "%s %s",clustcsl,stopped?"Stopped":"Done");
     }
 
-    void xrefRequest(const char *servers)
+    void xrefRequest(const char *servers, const char *filterScopes)
     {
         //MORE: This could still be running when the server terminates which will likely cause the thread to core
-        cRunThread *thread = new cRunThread(*this,servers);
+        cRunThread *thread = new cRunThread(*this,servers,filterScopes);
         thread->startRelease();
     }
 
-    bool checkClusterSubmitted(StringBuffer &cname)
+    bool checkClusterSubmitted(StringBuffer &cname, StringBuffer &filterScopes)
     {
         cname.clear();
+        filterScopes.clear();
         Owned<IRemoteConnection> conn = querySDS().connect("/DFU/XREF",myProcessSession(),RTM_LOCK_WRITE ,INFINITE);
         Owned<IPropertyTreeIterator> clusters= conn->queryRoot()->getElements("Cluster");
         ForEach(*clusters) {
@@ -2947,6 +2949,10 @@ public:
                     if (cname.length())
                         cname.append(',');
                     cname.append(name);
+                    // Get filterScopes for this cluster
+                    const char *scopes = cluster.queryProp("@filterScopes");
+                    if (scopes && *scopes)
+                        filterScopes.set(scopes);
                 }
             }
         }
@@ -3008,8 +3014,9 @@ public:
             if (stopped)
                 break;
             StringBuffer cname;
+            StringBuffer filterScopes;
             bool byscheduler=false;
-            if (!eclwatchprovider||!checkClusterSubmitted(cname.clear()))
+            if (!eclwatchprovider||!checkClusterSubmitted(cname.clear(), filterScopes.clear()))
             {
                 if (!interval||((started!=(unsigned)-1)&&(msTick()-started<initinterval)))
                     continue;
@@ -3020,8 +3027,9 @@ public:
             }
             try
             {
-                runXRef(cname.length()?cname.str():clusters,true,byscheduler);
+                runXRef(cname.length()?cname.str():clusters,true,byscheduler,filterScopes.length()?filterScopes.str():nullptr);
                 cname.clear();
+                filterScopes.clear();
             }
             catch (IException *e)
             {
@@ -3049,9 +3057,10 @@ void processXRefRequest(ISashaCommand *cmd)
 {
     if (sashaXRefServer) {
         StringBuffer clusterlist(cmd->queryCluster());
+        StringBuffer filterScopes(cmd->queryFilterScopes());
         // only support single cluster for the moment
         if (clusterlist.length())
-            sashaXRefServer->xrefRequest(clusterlist);
+            sashaXRefServer->xrefRequest(clusterlist, filterScopes);
     }
 }
 
