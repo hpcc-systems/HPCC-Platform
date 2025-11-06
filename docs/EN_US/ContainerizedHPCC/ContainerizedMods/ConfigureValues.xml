@@ -1204,8 +1204,8 @@ thor:
 
         <para>Configuring TLS for secure communication between platform components in containerized
         deployments differs significantly from bare-metal installations.
-        Kubernetes environments allow flexibility when configuring for TLS,
-        but this section addresses the methods most directly supported by the
+        Kubernetes environments allow flexibility when configuring for TLS.
+        This section addresses the methods most directly supported by the
         HPCC Systems Helm chart:
         </para>
 
@@ -1261,7 +1261,7 @@ thor:
         <para>The following examples are to exhibit basic functionality in a 
         testing environment- production deployments may require different
         settings. The instructions reference paths that are relative to the
-        root of the HPCC-Platform repository- adjust as needed for your
+        root of the HPCC Systems Platform repository. Adjust as needed for your
         environment.
         </para>
         
@@ -1272,15 +1272,11 @@ thor:
         <para>
         Add Jetstack helm repo:
 
-        ```bash
-        helm repo add jetstack https://charts.jetstack.io
-        ```
+        <programlisting>helm repo add jetstack https://charts.jetstack.io</programlisting>
 
         Install cert-manager.
 
-        ```bash
-        helm install cert-manager jetstack/cert-manager --set crds.enabled=true --namespace cert-manager --create-namespace
-        ```
+        <programlisting>helm install cert-manager jetstack/cert-manager --set crds.enabled=true --namespace cert-manager --create-namespace</programlisting>
         </para>
 
         <sect4 id="MutualTLSWithinCluster">
@@ -1291,69 +1287,57 @@ thor:
           for cert-manager to use.</para>
 
           <para>Create a root certificate and private key for our local cluster certificate authority with
-          a single openssl call. This call uses a sample openssl config file found in the repo.
+          a single OpenSSL call. This call uses a sample OpenSSL config file found in the HPCC-Platform repository.
           </para>
 
-          ```bash
-          openssl req -x509 -newkey rsa:2048 -nodes -keyout ca.key -sha256 -days 1825 -out ca.crt -config helm/examples/certmanager/ca-req.cfg
-          ```
+          <programlisting>openssl req -x509 -newkey rsa:2048 -nodes -keyout ca.key -sha256 -days 1825 -out ca.crt -config helm/examples/certmanager/ca-req.cfg</programlisting>
 
           <para>The root certificate needs to be added as a kubernetes secret in order to be
           accessible to cert-manager. The secret name matches the default name used in the
           local issuer configuration in values.yaml.</para>
 
-          ```bash
-          kubectl create secret tls hpcc-local-issuer-key-pair --cert=ca.crt --key=ca.key
-          ```
+          <programlisting>kubectl create secret tls hpcc-local-issuer-key-pair --cert=ca.crt --key=ca.key</programlisting>
 
           <para>Repeat the root certificate creation process to create the CA secret for the code
           signing issuer. This is needed to run the ecl testing script at the end to show the
           example is working.</para>
 
-          ```bash
-          openssl req -x509 -newkey rsa:2048 -nodes -keyout signingca.key -sha256 -days 1825 -out signingca.crt -config examples/certmanager/ca-req.cfg
-          ```
+          <programlisting>openssl req -x509 -newkey rsa:2048 -nodes -keyout signingca.key -sha256 -days 1825 -out signingca.crt -config examples/certmanager/ca-req.cfg</programlisting>
 
           <para>Create a Kubernetes TLS secret from the generated signing root certificate and privatekey</para>
 
-          ```bash
-          kubectl create secret tls hpcc-signing-issuer-key-pair --cert=signingca.crt --key=signingca.key
-          ```
+          <programlisting>kubectl create secret tls hpcc-signing-issuer-key-pair --cert=signingca.crt --key=signingca.key</programlisting>
 
           <para>Install the HPCC helm chart with the "--set certificates.enabled" option set to true.</para>
 
-          ```bash
-          helm install myhpcc hpcc/hpcc --set certificates.enabled=true
-          ```
+          <programlisting>helm install myhpcc hpcc/hpcc --set certificates.enabled=true</programlisting>
 
           <para>The cluster ESPs are now using TLS both locally and publicly. Verify it is working
           by running an ecl job that requires using mutual TLS (using local client certificate):</para>
 
-          ```
-          ecl run --ssl hthor helm/examples/certmanager/localhttpcall.ecl
-          ```
+          <programlisting>ecl run --ssl hthor helm/examples/certmanager/localhttpcall.ecl</programlisting>
 
-          <para>Note that for the HTTPCALL in our ecl example the url now starts with "mtls:"
+          <para>Note that for the HTTPCALL in our ECL example the url now starts with <literal>mtls:</literal
           this tells HTTPCALL/SOAPCALL to use mutual TLS, using the local client certificate,
           and to verify the server using the local certificate authority certificate.</para>
 
           <para>You should see a result similar to this, possibly with some additional headers:</para>
 
-          ```xml
-          <Result>
-            <Dataset name='localHttpEchoResult'>
-              <Row>
-                <Method>GET</Method>
-                <UrlPath>/WsSmc/HttpEcho</UrlPath>
-                <UrlParameters>name=doe,joe&amp;number=1</UrlParameters>
-                <Headers>
-                  <Header>Accept-Encoding: gzip, deflate</Header>
-                  <Header>Accept: text/xml</Header>
-                </Headers>
-              </Row>
-            </Dataset>
-          </Result>
-          ```
+          <programlisting>
+          &lt;Result&gt;
+            &lt;Dataset name='localHttpEchoResult'&gt;
+              &lt;Row&gt;
+                &lt;Method&gt;GET&lt;/Method&gt;
+                &lt;UrlPath&gt;/WsSmc/HttpEcho&lt;/UrlPath&gt;
+                &lt;UrlParameters&gt;name=doe,joe&amp;number=1&lt;/UrlParameters&gt;
+                &lt;Headers&gt;
+                  &lt;Header&gt;Accept-Encoding: gzip, deflate&lt;/Header&gt;
+                  &lt;Header&gt;Accept: text/xml&lt;/Header&gt;
+                &lt;/Headers&gt;
+              &lt;/Row&gt;
+            &lt;/Dataset&gt;
+          &lt;/Result&gt;
+          </programlisting>
         </sect4>
 
         <sect4 id="RemoteMutualTLS">
@@ -1361,21 +1345,21 @@ thor:
 
           <para>This walkthrough demonstrates using a single Hashicorp Vault
           PKI Certificate authority to establish a zone of trust between two separate
-          HPCC environments. cert-manager continues to handle the backing Kubernetes
-          resources. For this example each HPCC environment is in a separate kubernetes
+          HPCC Systems environments. The cert-manager continues to handle the backing Kubernetes
+          resources. For this example each HPCC Systems environment is in a separate Kubernetes
           namespace: hpcc1 and hpcc2, but in production they could be in different
           Kubernetes clusters, or even in different cloud subscriptions.</para>
 
           <para>
-          Here we have hpcc2.roxie making a call to hpcc1.roxie in another 
+          In this example we have hpcc2.roxie making a call to hpcc1.roxie in another 
           environment, and we want them to trust each other. There are two main configuration
           customizations needed to set up this zone
-          of trust. Each of the two HPCC environments have these changes.</para> 
+          of trust. Each of the two HPCC Systems environments have these changes.</para> 
 
-          <para>First, the remote issuer is enabled and its spec set to use the Vault.
-          Both HPCC environments share the same Vault server, which allows them to use
-          the same underlying certificates to establish trush. Note alseo that the
-          <emphasis>ca</emphasis> property must be set to null to override the default.</para>
+          <para>The remote issuer is enabled and its <literal>spec</literal> property is set to use the Vault.
+          Both HPCC Systems environments share the same Vault server, which allows them to use
+          the same underlying certificates to establish trust. Note also that the
+          <literal>ca</literal> property must be set to <literal>null</literal> to override the default.</para>
 
           <programlisting>
             spec:
@@ -1389,10 +1373,10 @@ thor:
                       key: token
           </programlisting>
 
-          <para>Second, each roxie must be told to trust the other. In the hpcc2 values file the
-          roxie service has its trustClients array set to include hpcc1.roxie, and likewise the
-          hpcc1 values file has its roxie service trustClients array set to include hpcc2.roxie.
-          These files can be found in the repo at helm/examples/vault-pki-remote/values-hpcc2.yaml
+          <para>Each Roxie must be told to trust the other. In the hpcc2 values file the
+          Roxie service has its <literal>trustClients</literal> array set to include hpcc1.roxie, and likewise the
+          hpcc1 values file has its Roxie service <literal>trustClients</literal> array set to include hpcc2.roxie.
+          These files can be found in the HPCC-Platform repository at helm/examples/vault-pki-remote/values-hpcc2.yaml
           and helm/examples/vault-pki-remote/values-hpcc1.yaml.
           Here are the relevant parts of the hpcc2 values file:
           </para>
@@ -1410,29 +1394,29 @@ thor:
           </programlisting>
 
           <sect5 id="InstallHashicorpVault">
-            <title>Install Hashicorp vault service in dev mode</title>
+            <title>Install Hashicorp Vault Service</title>
 
-            <para>This is for development only, never deploy this way in
-            production. Deploying in dev mode sets up an in memory kv store
-            that won't persist secret values across restart, and the vault will
-            automatically be unsealed.</para>
+            <para>This scenario is for development only, you would never want to 
+            deploy this way in a real world production environment. Deploying in 
+            dev mode sets up an in memory kv store that won't persist secret values 
+            across restart, and the vault will automatically be unsealed.</para>
 
             <para>In dev mode the default root token is simply the string
             "root".</para>
 
-            <para>Add Hashicorp helm repo:</para>
+            <para>Add Hashicorp helm repository:</para>
 
             <programlisting>helm repo add hashicorp https://helm.releases.hashicorp.com</programlisting>
 
-            <para>Update Helm repos.</para>
+            <para>Update Helm repositories.</para>
 
             <programlisting>helm repo update</programlisting>
 
-            <para>Install vault server.</para>
+            <para>Install Vault server.</para>
 
-            <para>When using developer mode vault you have to set the
-            VAULT_DEV_LISTEN_ADDRESS environment variable as shown in order to
-            access the vault service from an external pod.</para>
+            <para>When using developer mode Vault you have to set the
+            <literal>VAULT_DEV_LISTEN_ADDRESS</literal> environment variable as shown in order to
+            access the Vault service from an external pod.</para>
 
             <programlisting>helm install vault hashicorp/vault  --set "injector.enabled=false" --set "server.dev.enabled=true" --set 'server.extraEnvironmentVars.VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200' --namespace vaultns --create-namespace</programlisting>
 
@@ -1444,25 +1428,25 @@ thor:
           </sect5>
 
           <sect5 id="SettingUpVault">
-            <title>Setting up vault</title>
+            <title>Setting Up Vault</title>
 
-            <para>Tell the vault command line application the server location
+            <para>Tell the Vault command line application the server location
             (dev mode is http, default location is https)</para>
 
             <programlisting>export VAULT_ADDR=http://127.0.0.1:8200</programlisting>
 
-            <para>Export an environment variable for the vault CLI to
+            <para>Export an environment variable for the Vault CLI to
             authenticate with the Vault server. As mentioned before since we
-            installed dev mode, the vault token is the string 'root'.</para>
+            installed dev mode, the Vault token is the string 'root'.</para>
 
             <programlisting>export VAULT_TOKEN=root</programlisting>
 
-            <para>In a separate terminal window start vault port
+            <para>In a separate terminal window start Vault port
             forwarding.</para>
 
             <programlisting>kubectl port-forward vault-0 8200:8200 -n vaultns</programlisting>
 
-            <para>Login to the vault command line using the vault root token
+            <para>Login to the Vault command line using the Vault root token
             (development mode defaults to "root"):</para>
 
             <programlisting>vault login root</programlisting>
@@ -1475,8 +1459,8 @@ thor:
 
             <programlisting>vault secrets tune -max-lease-ttl=87600h pki</programlisting>
 
-            <para>Generate the HPCC remote issuer CA, giving it the name 
-            <emphasis>hpcc-remote-issuer</emphasis> This name will be used to identify it
+            <para>Generate the HPCC Systems remote issuer CA, giving it the name 
+            <emphasis>hpcc-remote-issuer</emphasis>. This name will be used to identify it
             in the platform configuration.</para>
 
             <programlisting>vault write -field=certificate pki/root/generate/internal common_name="hpcc-issuer" issuer_name="hpcc-remote-issuer" ttl=87600h</programlisting>
@@ -1510,7 +1494,7 @@ EOF</programlisting>
           </sect5>
 
           <sect5 id="InstallFirstPlatformCluster">
-            <title>Install the first Platform cluster</title>
+            <title>Install The First Platform Cluster</title>
 
             <para>Create the <emphasis>hpcc1</emphasis> namespace.</para>
 
@@ -1545,14 +1529,14 @@ kubectl create secret tls hpcc-signing-issuer-key-pair --cert=hpcc1signing.crt -
           </sect5>
 
           <sect5 id="InstallSecondPlatformCluster">
-            <title>Install the second Platform cluster</title>
+            <title>Install The Second Platform Cluster</title>
 
             <para>Create the <emphasis>hpcc2</emphasis> namespace</para>
 
             <programlisting>kubectl create namespace hpcc2</programlisting>
 
             <para>The local and signing issuers are isolated and won't be using
-            vault. Create the unique secrets for both issuers in the <emphasis>hpcc2</emphasis> namespace.
+            Vault. Create the unique secrets for both issuers in the <emphasis>hpcc2</emphasis> namespace.
             </para>
 
             <programlisting>openssl req -x509 -newkey rsa:2048 -nodes -keyout hpcc2local.key -sha256 -days 1825 -out hpcc2local.crt -config helm/examples/vault-pki-remote/local-ca-req.cfg
@@ -1561,14 +1545,14 @@ kubectl create secret tls hpcc-local-issuer-key-pair --cert=hpcc2local.crt --key
 openssl req -x509 -newkey rsa:2048 -nodes -keyout hpcc2signing.key -sha256 -days 1825 -out hpcc2signing.crt -config helm/examples/vault-pki-remote/signing-ca-req.cfg
 kubectl create secret tls hpcc-signing-issuer-key-pair --cert=hpcc2signing.crt --key=hpcc2signing.key -n hpcc2</programlisting>
 
-            <para>The remote issuer does use vault. Create the secret the remote
-            issuer that hpcc1 will use to access the vault pki engine</para>
+            <para>The remote issuer does use Vault. Create the secret the remote
+            issuer that hpcc1 will use to access the Vault pki engine</para>
 
             <programlisting>kubectl create secret generic cert-manager-vault-token --from-literal=token=root -n hpcc2</programlisting>
 
             <programlisting>helm install myhpcc hpcc/hpcc --values helm/examples/vault-pki-remote/values-hpcc2.yaml -n hpcc2</programlisting>
 
-            <para>Use kubectl to check the status of the deployed pods. Wait
+            <para>Use <literal>kubectl</literal> to check the status of the deployed pods. Wait
             until all pods are running before continuing.</para>
 
             <programlisting>kubectl get pods -n hpcc2</programlisting>
@@ -1580,10 +1564,10 @@ kubectl create secret tls hpcc-signing-issuer-key-pair --cert=hpcc2signing.crt -
           </sect5>
 
           <sect5 id="ECLExampleDemonstratingTrust">
-            <title>ECL example demonstrating trust</title>
+            <title>ECL Example Demonstrating Trust</title>
 
-            <para>Now we can ECL in each environment that will communicate
-            securely to the other.</para>
+            <para>Now publish ECL to each environment that will communicate
+            securely across the environments.</para>
 
             <para>roxie_echo.ecl which returns a dataset passed into it.
             remote_echo.ecl which calls roxie_echo.ecl.</para>
@@ -1598,10 +1582,10 @@ kubectl create secret tls hpcc-signing-issuer-key-pair --cert=hpcc2signing.crt -
 
               <listitem>
                 <para>Publish remote_echo.ecl to the hpcc2 namespace. It calls
-                roxie_echo.ecl in the hpcc1 namespace using remote-mtls. This
-                is accomplished by using the `remote-mtls:` prefix in the url
+                roxie_echo.ecl in the hpcc1 namespace using remote mTLS. This
+                is accomplished by using the <literal>remote-mtls:</literal> prefix in the url
                 to signal that the call should be made using the certificate
-                associated with the `remote` issuer.</para>
+                associated with the <literal>remote</literal> issuer.</para>
               </listitem>
 
               <listitem>
@@ -1618,7 +1602,7 @@ ecl publish roxie2 --ssl --port 28010 remote_echo.ecl</programlisting>
             <para>Call the query and demonstrate trust</para>
 
             <para>You can navigate to EclQueries/WsEcl on port 28002 in your
-            browser and run the `remote_echo` query from there. You should see
+            browser and run the <literal>remote_echo</literal> query from there. You should see
             results similar to the following:</para>
 
             <programlisting language="json">{"remote_echoResponse":  {"sequence": 0, "Results":  {"remoteResult": {"Row": [{"Dataset": {"Row": [{"name": {"first": "Joeseph", "last": "Johnson"}, "address": {"city": "Fresno", "state": "CA", "zipcode": "11111"}}, {"name": {"first": "Joeseph", "last": "Johnson"}, "address": {"city": "Fresno", "state": "CA", "zipcode": "22222"}}, {"name": {"first": "Joeseph", "last": "Johnson"}, "address": {"city": "Fresno", "state": "CA", "zipcode": "33333"}}, {"name": {"first": "Joeseph", "last": "Johnson"}, "address": {"city": "Fresno", "state": "CA", "zipcode": "44444"}}, {"name": {"first": "Joeseph", "last": "Johnson"}, "address": {"city": "Fresno", "state": "CA", "zipcode": "55555"}}]}, "Exception": {"Code": "0"}}]}}}}}</programlisting>
@@ -1761,7 +1745,7 @@ ecl publish roxie2 --ssl --port 28010 remote_echo.ecl</programlisting>
 
             <para>The <literal>remote</literal> issuer is specifically designed
             for generating certificates that can be used by remote clients to
-            securely connect to HPCC services. This issuer supports advanced
+            securely connect to HPCC Systems services. This issuer supports advanced
             domain configuration options.</para>
           </sect5>
 
@@ -2148,7 +2132,7 @@ certificates:
       <sect3 id="ValYAML_Secrets">
         <title>Secrets</title>
 
-        <para>The Secrets section makes sensitive information published as Kubernetes secrets
+        <para>The secrets section makes sensitive information published as Kubernetes secrets
         available to the platform in a structured way without exposing it in
         code or configuration files. At the top level is a set of categories,
         where the category determines what the secret is and which components can
@@ -2166,7 +2150,7 @@ certificates:
         code.</para>
       </sect3>
 
-      <sect3>
+      <sect3 id="CV_Vaults">
         <title>Vaults</title>
 
         <para>The Vaults section is an alternative to the Secrets section. It serves
