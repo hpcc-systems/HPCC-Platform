@@ -26,7 +26,11 @@ constexpr const char* propTraceFlags = "traceFlags";
 
 // Trace option list fragment for jtrace-defined options used by ESPs
 #define PLATFORM_OPTIONS_FRAGMENT \
+    TRACEOPT(traceNone), \
     TRACEOPT(traceAll), \
+    TRACEOPT(traceStandard), \
+    TRACEOPT(traceDetailed), \
+    TRACEOPT(traceMax), \
     TRACEOPT(traceDetail), \
     TRACEOPT(traceHttp),
 

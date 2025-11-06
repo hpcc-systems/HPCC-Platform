@@ -38,6 +38,7 @@
 #include "jsecrets.hpp"
 #include "jutil.hpp"
 #include "junicode.hpp"
+#include "jtrace.hpp"
 
 #include "opentelemetry/sdk/common/attribute_utils.h"
 #include "opentelemetry/sdk/resource/resource.h"
@@ -5899,5 +5900,100 @@ protected:
 
 CPPUNIT_TEST_SUITE_REGISTRATION( SleepTests );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( SleepTests, "SleepTests" );
+
+//---------------------------------------------------------------------------------------------------------------------
+
+class JLibTraceLevelTests : public CppUnit::TestFixture
+{
+public:
+    CPPUNIT_TEST_SUITE(JLibTraceLevelTests);
+        CPPUNIT_TEST(testDefault);
+        CPPUNIT_TEST(testSetFalse);
+        CPPUNIT_TEST(testSetMultiple);
+        CPPUNIT_TEST(testSetDetailOverride);
+    CPPUNIT_TEST_SUITE_END();
+
+protected:
+    void testDefault()
+    {
+        // Test that the default trace level is traceNone
+        Owned<IPropertyTree> tree = createPTree();
+
+        TraceFlags result = loadTraceFlags(tree, thorTraceOptions, traceNone);
+        TraceFlags level = result & TraceFlags::LevelMask;
+
+        CPPUNIT_ASSERT_EQUAL((unsigned)traceNone, (unsigned)level);
+
+        // Test that the default trace level is traceStandard
+        result = loadTraceFlags(tree, thorTraceOptions, traceStandard);
+        level = result & TraceFlags::LevelMask;
+
+        CPPUNIT_ASSERT_EQUAL((unsigned)traceStandard, (unsigned)level);
+    }
+
+    void testSetFalse()
+    {
+        // Test that setting traceDetailed to false does not change the default behavior
+        Owned<IPropertyTree> tree = createPTree();
+        tree->setProp("@traceDetailed", "false");
+
+        TraceFlags result = loadTraceFlags(tree, thorTraceOptions, traceStandard);
+        TraceFlags level = result & TraceFlags::LevelMask;
+
+        CPPUNIT_ASSERT_EQUAL((unsigned)traceStandard, (unsigned)level);
+    }
+
+    void testSetMultiple()
+    {
+        // Test that setting both traceMax and traceDetailed (in that order) to true sets the trace level to traceMax
+        Owned<IPropertyTree> tree = createPTree();
+        tree->setProp("@traceMax", "true");
+        tree->setProp("@traceDetailed", "true");
+
+        TraceFlags result = loadTraceFlags(tree, thorTraceOptions, traceNone);
+        TraceFlags level = result & TraceFlags::LevelMask;
+
+        CPPUNIT_ASSERT_EQUAL((unsigned)traceMax, (unsigned)level);
+
+        // Test the other way around - traceDetailed first, then traceMax
+        tree.setown(createPTree());
+        tree->setProp("@traceDetailed", "true");
+        tree->setProp("@traceMax", "true");
+
+        result = loadTraceFlags(tree, thorTraceOptions, traceNone);
+        level = result & TraceFlags::LevelMask;
+
+        CPPUNIT_ASSERT_EQUAL((unsigned)traceMax, (unsigned)level);
+    }
+
+    void testSetDetailOverride()
+    {
+        // Test that setting traceMax to true and traceDetail to "detailed" sets the traceLevel to traceDetailed
+        Owned<IPropertyTree> tree = createPTree();
+        tree->setProp("@traceMax", "true");
+        tree->setProp("@traceDetail", "detailed");
+
+        TraceFlags result = loadTraceFlags(tree, thorTraceOptions, traceNone);
+        TraceFlags level = result & TraceFlags::LevelMask;
+
+        // traceDetail should override the boolean traceMax setting
+        CPPUNIT_ASSERT_EQUAL((unsigned)traceDetailed, (unsigned)level);
+
+        // Test with "standard" value
+        tree->setProp("@traceDetail", "standard");
+        result = loadTraceFlags(tree, thorTraceOptions, traceNone);
+        level = result & TraceFlags::LevelMask;
+        CPPUNIT_ASSERT_EQUAL((unsigned)traceStandard, (unsigned)level);
+
+        // Test with "max" value
+        tree->setProp("@traceDetail", "max");
+        result = loadTraceFlags(tree, thorTraceOptions, traceNone);
+        level = result & TraceFlags::LevelMask;
+        CPPUNIT_ASSERT_EQUAL((unsigned)traceMax, (unsigned)level);
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( JLibTraceLevelTests );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JLibTraceLevelTests, "JLibTraceLevelTests" );
 
 #endif // _USE_CPPUNIT
