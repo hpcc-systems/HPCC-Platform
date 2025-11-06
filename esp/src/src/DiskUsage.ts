@@ -1,6 +1,6 @@
 import { Gauge } from "@hpcc-js/chart";
 import { Palette } from "@hpcc-js/common";
-import { WsMachineEx, MachineService, DFUXRefService, WsDFUXRef } from "@hpcc-js/comms";
+import { WsMachineEx, MachineService, DFUXRefService, WsDFUXRefEx } from "@hpcc-js/comms";
 import { ColumnFormat, Table } from "@hpcc-js/dgrid";
 import { FlexGrid } from "@hpcc-js/layout";
 import { on as dojoOn } from "src-dojo/index";
@@ -193,20 +193,20 @@ interface DirectoryEx {
 }
 
 interface XREFDirectories {
-    nodes: WsDFUXRef.XRefNode[];
+    nodes: WsDFUXRefEx.XRefNode[];
     directories: DirectoryEx[];
 }
 
-function xrefDirectory(cluster: string): Promise<WsDFUXRef.DFUXRefDirectoriesQueryResponse> {
+function xrefDirectory(cluster: string): Promise<WsDFUXRefEx.DFUXRefDirectoriesQueryResponseEx> {
     const service = new DFUXRefService({ baseUrl: "" });
-    return service.DFUXRefDirectories({ Cluster: cluster }).catch(e => {
-        return {} as WsDFUXRef.DFUXRefDirectoriesQueryResponse;
+    return service.DFUXRefDirectoriesEx({ Cluster: cluster }).catch(e => {
+        return {} as WsDFUXRefEx.DFUXRefDirectoriesQueryResponseEx;
     });
 }
 
 function xrefDirectories(): Promise<XREFDirectories> {
     const service = new DFUXRefService({ baseUrl: "" });
-    return service.DFUXRefList().then(response => {
+    return service.DFUXRefListEx({}).then(response => {
         return Promise.all(response.DFUXRefListResult.XRefNode.map(xrefNode => xrefDirectory(xrefNode.Name)))
             .then(responses => {
                 const directories: DirectoryEx[] = [];
