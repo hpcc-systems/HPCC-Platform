@@ -14,7 +14,6 @@ import { useMyAccount } from "../hooks/user";
 import { useUserStore } from "../hooks/store";
 import { useLogicalClustersPalette } from "../hooks/platform";
 import { calcSearch, pushParams } from "../util/history";
-import { useHasFocus, useIsMounted } from "../hooks/util";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { CreateWUQueryStore } from "../comms/workunit";
 import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
@@ -90,16 +89,6 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         total, setTotal,
         refreshTable } = useFluentStoreState({ page });
     const [, , palette] = useLogicalClustersPalette();
-
-    //  Refresh on focus  ---
-    const isMounted = useIsMounted();
-    const hasFocus = useHasFocus();
-    React.useEffect(() => {
-        if (isMounted && hasFocus) {
-            refreshTable.call();
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [hasFocus]);
 
     //  Grid ---
     const query = React.useMemo(() => {
