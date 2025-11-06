@@ -47,6 +47,8 @@ interface ISashaCommand: extends IInterface
     virtual void setOwner(const char *val) = 0;         
     virtual const char *queryCluster() = 0;
     virtual void setCluster(const char *val) = 0;
+    virtual const char *queryFilterScopes() = 0;
+    virtual void setFilterScopes(const char *val) = 0;
     virtual const char *queryJobName() = 0;
     virtual void setJobName(const char *val) = 0;
     virtual const char *queryOutputFormat() = 0;

@@ -3298,11 +3298,6 @@
             "type": "integer",
             "description": "maximum thread count for scanning directories",
             "default": "500"
-          },
-          "filterScopes": {
-            "type": "string",
-            "description": "comma separated list of scopes to xref (All scopes if left blank).",
-            "default": ""
           }
         },
         "additionalProperties": false

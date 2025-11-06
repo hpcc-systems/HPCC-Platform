@@ -489,6 +489,19 @@ void CXRefNode::setCluster(const char* str)
     m_ClusterName.append(str);
 }
 
+StringBuffer& CXRefNode::getFilterScopes(StringBuffer& filterScopes)
+{
+    if(m_XRefTree.get())
+        m_XRefTree->getProp("@filterScopes",filterScopes);
+    return filterScopes;
+}
+
+void CXRefNode::setFilterScopes(const char* str)
+{
+    if(m_XRefTree.get())
+        m_XRefTree->setProp("@filterScopes",str);
+}
+
 void CXRefNode::setLastModified(IJlibDateTime& dt )
 {
     SCMStringBuffer datestr,timestr;

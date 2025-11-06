@@ -114,8 +114,6 @@
                                   hpcc:presetValue="4096" hpcc:tooltip="The upper memory limit that xref can use"/>
                     <xs:attribute name="suspendCoalescerDuringXref" type="xs:boolean" hpcc:displayName="Suspend Coalescer During Xref"
                                   hpcc:presetValue="true" hpcc:tooltip="Suspend the coalescer whilst xrefing"/>
-                    <xs:attribute name="filterScopes" type="xs:string" hpcc:displayName="Filter Scopes to focus XRef scan"
-                                    hpcc:presetValue="" hpcc:tooltip="double semicolon separated list of scopes to xref e.g. somescope::anotherscope (All scopes if left blank)"/>
                 </xs:attributeGroup>
 
                 <xs:attributeGroup name="dfuexpiry" hpcc:groupByName="DfuExpiry" hpcc:docid="sh.t5">
