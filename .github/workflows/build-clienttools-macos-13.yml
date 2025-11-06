@@ -2,7 +2,7 @@ name: Build Clienttools macos-13
 
 env:
   VCPKG_BINARY_SOURCES: "clear;nuget,GitHub,read"
-  VCPKG_NUGET_REPOSITORY: "https://github.com/hpcc-systems/vcpkg"
+  VCPKG_NUGET_REPOSITORY: "https://nuget.pkg.github.com/hpcc-systems/index.json"
 
 on:
   workflow_call:
