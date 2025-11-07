@@ -22,5 +22,6 @@ IEvToolCommand* createIndexCommand()
     return new CEvtCommandGroup({
         { "summarize", createIndexSummaryCommand },
         { "hotspot", createIndexHotspotCommand },
+        { "plot", createIndexPlotCommand },
     });
 }
