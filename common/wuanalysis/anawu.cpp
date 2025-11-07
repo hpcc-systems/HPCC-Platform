@@ -172,7 +172,7 @@ class WorkunitAnalyserBase
 public:
     WorkunitAnalyserBase();
 
-    void analyse(IConstWorkUnit * wu, const char * optGraph);
+    void analyse(IConstWorkUnit * wu, const char * graph);
     WuScope * getRootScope() { return LINK(root); }
 
 protected:
@@ -200,6 +200,7 @@ public:
     void update(IWorkUnit *wu);
     bool hasIssues() const { return !issues.empty(); }
     stat_type queryOption(WutOptionType opt) const { return options.queryOption(opt); }
+    cost_type getTotalCostPenalty() const;
 protected:
     CIArrayOf<CActivityRule> activityRules;
     CIArrayOf<CSubgraphRule> subgraphRules;
@@ -1506,7 +1507,15 @@ void WorkunitRuleAnalyser::update(IWorkUnit *wu)
         issues.item(i).createException(wu);
 }
 
-
+cost_type WorkunitRuleAnalyser::getTotalCostPenalty() const
+{
+    // All issues recorded here are related to activities, so the total cost penalty is the sum of all activity issues.
+    // Note, once graph/subgraph issues, this code may need to change.
+    cost_type totalCost = 0;
+    ForEachItemIn(i, issues)
+        totalCost += issues.item(i).getCostPenalty();
+    return totalCost;
+}
 
 //-----------------------------------------------------------------------------------------------------------
 
@@ -2186,38 +2195,15 @@ void WorkunitStatsAnalyser::traceDependencies()
 
 //---------------------------------------------------------------------------------------------------------------------
 
-void WUANALYSIS_API analyseWorkunit(IConstWorkUnit &workunit, const char *optGraph, IPropertyTree *options, double costPerHour)
+cost_type analyseWorkunit(IConstWorkUnit &workunit, unsigned wfid, const char *graph, IPropertyTree *options, double costPerHour)
 {
-    if (!workunit.getDebugValueBool("analyzeWorkunit", true))
-        return;
-    if (options && options->getPropBool("disabled", false))
-        return;
-
     WorkunitRuleAnalyser analyser;
     Owned<IException> error;
 
     analyser.applyConfig(options, &workunit, costPerHour);
-
-    // Examine workunit's cost or execute time to determine if it is worth analyzing
-    // (If the workunit's statistic below the 'interesting' thresholds, then it is not worth analyzing
-    // because none of the individual activities can exceed the thresholds.)
-    if (isEmptyString(optGraph))
-    {
-        // don't bother analyzing if job cost is below threshold
-        cost_type minInterestingCost = analyser.queryOption(watOptMinInterestingCost);
-        cost_type wuCost;
-        if (minInterestingCost && workunit.getStatistic(wuCost, "", StCostExecute) && wuCost < minInterestingCost)
-            return;
-        // don't bother analyzing if job time is below threshold
-        stat_type minInterestingTime = analyser.queryOption(watOptMinInterestingTime);
-        stat_type wuTime;
-        if (minInterestingTime && workunit.getStatistic(wuTime, "", StTimeElapsed) && wuTime < minInterestingTime)
-            return;
-    }
-
     try
     {
-        analyser.analyse(&workunit, optGraph);
+        analyser.analyse(&workunit, graph);
         analyser.applyRules();
     }
     catch (IException *e)
@@ -2231,15 +2217,24 @@ void WUANALYSIS_API analyseWorkunit(IConstWorkUnit &workunit, const char *optGra
         {
             StringBuffer msg;
             error->errorMessage(msg);
-            msg.appendf(" (wuid=%s graph=%s)", workunit.queryWuid(), optGraph ? optGraph : "*");
+            msg.appendf(" (wuid=%s graph=%s)", workunit.queryWuid(), graph);
             addExceptionToWorkunit(wu, SeverityWarning, CostOptimizerName, error->errorCode(), msg.str(), nullptr, 0, 0, 0);
         }
         if (analyser.hasIssues())
+        {
             analyser.update(wu);
+            VStringBuffer wfScope("%s%u", WorkflowScopePrefix, wfid);
+            VStringBuffer graphScope("%s:%s", wfScope.str(), graph);
+            wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphScope, StCostSavingPotential, nullptr, analyser.getTotalCostPenalty(), 1, 0, StatsMergeSum);
+            cost_type totalCostSavingPotential = aggregateCost(wu, wfScope, StCostSavingPotential, 2);
+            wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTworkflow, wfScope, StCostSavingPotential, nullptr, totalCostSavingPotential, 1, 0, StatsMergeSum); 
+            return analyser.getTotalCostPenalty();
+        }
     }
+    return 0;
 }
 
-void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, const char *optGraph, double costPerHour, bool updatewu)
+void analyseAndPrintIssues(IConstWorkUnit * wu, const char *optGraph, double costPerHour, bool updatewu)
 {
     printf("Analyze %s", wu->queryWuid());
     if (optGraph)
@@ -2270,6 +2265,8 @@ void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, const char *optGr
         Owned<IWorkUnit> lockedwu = &(wu->lock());
         lockedwu->clearExceptions(CostOptimizerName);
         analyser.update(lockedwu);
+        if (analyser.hasIssues())
+            lockedwu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, CostOptimizerName, StCostSavingPotential, "Aggregate cost saving potential", analyser.getTotalCostPenalty(), 1, 0, StatsMergeReplace);
         timingInfo.append(" update ");
         formatStatistic(timingInfo, cycle_to_nanosec(updateTimer.elapsedCycles()), SMeasureTimeNs);
     }
@@ -2285,23 +2282,21 @@ static bool getBoolWUOption(const IConstWorkUnit * workunit, IPropertyTree *cfg,
     return cfg ? cfg->getPropBool(cfgOption, defaultValue) : defaultValue;
 }
 
-void WUANALYSIS_API runWorkunitAnalyser(IConstWorkUnit &workunit, IPropertyTree *cfg, const char * optGraph, bool inEclAgent, double costPerHour)
+void runWorkunitAnalyser(IConstWorkUnit &workunit, IPropertyTree *cfg, unsigned wfid, const char * graph, bool inEclAgent, double costPerHour)
 {
+    assertex(!isEmptyString(graph)); // graph is not longer optional as analysis will always be executed on graphs rather than entire workunit in one go
+
+    if (!workunit.getDebugValueBool("analyzeWorkunit", true))
+        return;
     Owned<IPropertyTree> analyzerCfg = cfg->getPropTree("analyzerOptions");
-    bool optAnalyzeInEclAgent = getBoolWUOption(&workunit, analyzerCfg, "analyzeInEclAgent", "@analyzeInEclAgent", defaultAnalyzeInEclAgent);
+    if (analyzerCfg && analyzerCfg->getPropBool("disabled", false))
+        return;
     // Analyze when
     // - analyzeInEclAgent is true and inEclAgent is true OR
     // - analyzeInEclAgent is false and inEclAgent is false
+    bool optAnalyzeInEclAgent = getBoolWUOption(&workunit, analyzerCfg, "analyzeInEclAgent", "@analyzeInEclAgent", defaultAnalyzeInEclAgent);
     if (optAnalyzeInEclAgent == inEclAgent)
-    {
-        bool optAnalyzeWhenComplete = getBoolWUOption(&workunit, analyzerCfg, "analyzeWhenComplete", "@analyzeWhenComplete", defaultAnalyzeWhenComplete);
-        bool graphSpecified = !isEmptyString(optGraph);
-        // Analyze when
-        // - analyzeWhenComplete is true and graph is not specified OR
-        // - analyzeWhenComplete is false and graph is specified
-        if (optAnalyzeWhenComplete != graphSpecified)
-            analyseWorkunit(workunit, optGraph, analyzerCfg, costPerHour);
-    }
+        analyseWorkunit(workunit, wfid, graph, analyzerCfg, costPerHour);
 }
 
 

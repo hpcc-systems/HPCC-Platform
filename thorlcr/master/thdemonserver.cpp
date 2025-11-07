@@ -288,7 +288,7 @@ public:
         synchronized block(mutex);
 
         IConstWorkUnit & wu =  graph->queryJob().queryWorkUnit();
-        previousExecutionCost = aggregateCost(&wu);
+        previousExecutionCost = aggregateCost(&wu, nullptr, StCostExecute, 3);
 
         costLimit = getGuillotineCost(&wu);
         activeGraphs.append(*LINK(graph));
