@@ -26,9 +26,9 @@
 
 #include "anacommon.hpp"
 
-void WUANALYSIS_API analyseWorkunit(IConstWorkUnit &workunit, const char *optGraph, IPropertyTree *options, double costPerHour);
-void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, const char *optGraph, double costPerHour, bool updatewu);
-void WUANALYSIS_API runWorkunitAnalyser(IConstWorkUnit &workunit, IPropertyTree *cfg, const char * optGraph, bool inEclAgent, double costPerHour);
+WUANALYSIS_API cost_type analyseWorkunit(IConstWorkUnit &workunit, unsigned wfid, const char *graph, IPropertyTree *options, double costPerHour);
+WUANALYSIS_API void analyseAndPrintIssues(IConstWorkUnit * wu, const char *optGraph, double costPerHour, bool updatewu);
+WUANALYSIS_API void runWorkunitAnalyser(IConstWorkUnit &workunit, IPropertyTree *cfg, unsigned wfid, const char * graph, bool inEclAgent, double costPerHour);
 //---------------------------------------------------------------------------------------------------------------------
 
 class WuScope;

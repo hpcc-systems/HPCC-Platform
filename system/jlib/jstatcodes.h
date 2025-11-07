@@ -363,6 +363,7 @@ enum StatisticKind
     StNumSoapcallRetries,
     StTimeQueryPreparation,
     StCycleQueryPreparationCycles,
+    StCostSavingPotential,
     StMax,
 
     //For any quantity there is potentially the following variants.
