@@ -2071,6 +2071,171 @@ class AKSClusterInsights:
         else:
             return "F"
 
+    def _calculate_thor_worker_costs(self) -> Dict[str, Any]:
+        """Calculate costs specifically for nodes hosting Thor worker pods."""
+        try:
+            # Get nodes and their efficiency data
+            utilization = self.get_node_utilization()
+            efficiency = self.analyze_resource_efficiency(utilization)
+            
+            if "error" in efficiency:
+                return {"error": "Unable to analyze node utilization", "thor_worker_nodes": 0, "total_monthly_cost": 0}
+            
+            return self._calculate_thor_worker_costs_with_data(efficiency)
+            
+        except Exception as e:
+            print(f"Warning: Could not calculate Thor worker costs: {e}", file=sys.stderr)
+            return {"error": str(e), "thor_worker_nodes": 0, "total_monthly_cost": 0}
+
+    def _calculate_thor_worker_costs_with_data(self, efficiency: Dict[str, Any]) -> Dict[str, Any]:
+        """Calculate costs specifically for nodes hosting Thor worker pods using pre-computed efficiency data."""
+        try:
+            # Get pods by node to identify which nodes host Thor worker pods
+            pods_by_node = self.get_pods_by_node()
+            
+            # If pods_by_node is empty, try a direct kubectl call
+            if not pods_by_node:
+                try:
+                    # Try direct kubectl call to get thorworker pods with node info from ALL namespaces
+                    cmd = ["kubectl", "get", "pods", "--all-namespaces", "-o", 
+                           "jsonpath={range .items[*]}{.metadata.namespace}{\"\t\"}{.metadata.name}{\"\t\"}{.spec.nodeName}{\"\n\"}{end}",
+                           "--field-selector=status.phase=Running"]
+                    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                    
+                    if result.returncode == 0 and result.stdout.strip():
+                        # Parse the output and build pods_by_node for thorworker pods
+                        pods_by_node = {}
+                        for line in result.stdout.strip().split('\n'):
+                            parts = line.split('\t')
+                            if len(parts) >= 3 and 'thorworker-job' in parts[1]:
+                                namespace, pod_name, node_name = parts[0], parts[1], parts[2]
+                                if node_name not in pods_by_node:
+                                    pods_by_node[node_name] = []
+                                pods_by_node[node_name].append({
+                                    "pod_name": pod_name,
+                                    "namespace": namespace,
+                                    "containers": ["thorworker"]  # Simplified
+                                })
+                except Exception as e:
+                    print(f"   Warning: Direct kubectl query failed: {e}")
+                    
+            # Get cost information by pool
+            costs = self.estimate_costs()
+            pool_costs = costs.get("by_pool", [])
+            pool_cost_lookup = {pool.get("pool_name"): pool for pool in pool_costs}
+            
+            # Get all nodes from efficiency analysis AND get all cluster nodes to ensure we don't miss any
+            all_nodes = (efficiency.get("idle_nodes", []) + 
+                        efficiency.get("underutilized_nodes", []) +
+                        efficiency.get("efficient_nodes", []))
+            
+            # If we don't have many nodes from efficiency analysis, try to get all nodes
+            if len(all_nodes) < 50:  # Assuming cluster should have more nodes
+                try:
+                    # Get basic node info directly from kubectl
+                    cmd = ["kubectl", "get", "nodes", "-o", "json"]
+                    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                    if result.returncode == 0:
+                        import json
+                        nodes_data = json.loads(result.stdout)
+                        for node_item in nodes_data.get("items", []):
+                            node_name = node_item.get("metadata", {}).get("name", "")
+                            if node_name and not any(n.get("name") == node_name for n in all_nodes):
+                                # Add basic node info for nodes not in efficiency analysis
+                                all_nodes.append({
+                                    "name": node_name,
+                                    "node_pool": "unknown",
+                                    "cpu_percent": "0%",
+                                    "memory_percent": "0%"
+                                })
+                except Exception as e:
+                    pass  # If this fails, continue with what we have
+            
+            nodes_hosting_thor_workers = []
+            total_thor_hosting_cost = 0.0
+            
+            # Analyze each node to see if it hosts Thor worker pods
+            for node in all_nodes:
+                node_name = node.get("name", "")
+                node_pool = node.get("node_pool", "")
+                
+                # If node_pool is unknown or empty, try to derive it from node name
+                if not node_pool or node_pool == "unknown":
+                    # Extract pool name from AKS node naming pattern: aks-{poolname}-{vmss}-{instance}
+                    if node_name.startswith("aks-") and "-" in node_name:
+                        parts = node_name.split("-")
+                        if len(parts) >= 3:
+                            node_pool = parts[1]  # Second part is typically the pool name
+                
+                # Get pods running on this node
+                node_pods = pods_by_node.get(node_name, [])
+                
+                has_thor_worker_pods = False
+                thor_worker_pods = []
+                
+                # Check if node hosts Thor worker pods
+                for pod_info in node_pods:
+                    pod_name = pod_info.get("pod_name", "")
+                    namespace = pod_info.get("namespace", "")
+                    
+                    # Check if this pod is a Thor worker pod (in any namespace)
+                    if "thorworker-job" in pod_name.lower():
+                        has_thor_worker_pods = True
+                        thor_worker_pods.append(f"{namespace}:{pod_name}")
+                
+                # Include nodes that host Thor worker pods
+                if has_thor_worker_pods:
+                    # Get node cost from pool information
+                    pool_cost_info = pool_cost_lookup.get(node_pool, {})
+                    node_monthly_cost = 0.0
+                    
+                    if pool_cost_info and pool_cost_info.get("count", 0) > 0:
+                        # Calculate per-node cost (total pool cost / number of nodes in pool)
+                        pool_monthly_cost = pool_cost_info.get("monthly_cost", 0)
+                        pool_node_count = pool_cost_info.get("count", 1)
+                        node_monthly_cost = pool_monthly_cost / pool_node_count
+                    
+                    nodes_hosting_thor_workers.append({
+                        "node_name": node_name,
+                        "node_pool": node_pool,
+                        "vm_size": pool_cost_info.get("vm_size", "Unknown"),
+                        "monthly_cost": node_monthly_cost,
+                        "cpu_percent": node.get("cpu_percent", "0%"),
+                        "memory_percent": node.get("memory_percent", "0%"),
+                        "thor_worker_pods": thor_worker_pods,
+                        "total_pods": len(node_pods)
+                    })
+                    
+                    total_thor_hosting_cost += node_monthly_cost
+            
+            # Debug: Show what we found
+            thor_hosting_nodes = [node_name for node_name in pods_by_node.keys() 
+                                if any("thorworker-job" in pod["pod_name"].lower() 
+                                      for pod in pods_by_node[node_name])]
+            available_pools = list(pool_cost_lookup.keys())
+            
+            debug_info = {
+                "thor_pod_nodes_found": len(thor_hosting_nodes),
+                "sample_thor_nodes": thor_hosting_nodes[:3],
+                "available_cost_pools": len(available_pools),
+                "sample_cost_pools": available_pools[:3],
+                "nodes_analyzed": len(all_nodes),
+                "pods_by_node_keys": len(pods_by_node)
+            }
+            
+            return {
+                "thor_worker_nodes": len(nodes_hosting_thor_workers),
+                "total_monthly_cost": total_thor_hosting_cost,
+                "node_details": nodes_hosting_thor_workers,
+                "average_cost_per_node": total_thor_hosting_cost / len(nodes_hosting_thor_workers) if nodes_hosting_thor_workers else 0,
+                "debug_info": debug_info,
+                "analysis_timestamp": datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            print(f"Warning: Could not calculate Thor worker hosting costs: {e}", file=sys.stderr)
+            return {"error": str(e), "thor_worker_nodes": 0, "total_monthly_cost": 0}
+
     def get_cluster_health(self) -> Dict[str, Any]:
         """Get cluster health status."""
         print("Checking cluster health...")
@@ -2266,21 +2431,20 @@ class AKSClusterInsights:
                 for wu in workunits:
                     state = wu.get('State', '').lower()
 
-                    # Filter out completed jobs - only include active states
-                    if state != 'completed':
-                        job_info = {
-                            'wuid': wu.get('Wuid', ''),
-                            'state': wu.get('State', ''),
-                            'jobname': wu.get('Jobname', ''),
-                            'cluster': wu.get('Cluster', ''),
-                            'queue': wu.get('Queue', ''),
-                            'owner': wu.get('Owner', ''),
-                            'total_cluster_time': wu.get('TotalClusterTime', ''),
-                            'state_id': wu.get('StateID', 0),
-                            'completion_time': wu.get('StateDesc', ''),  # Contains completion info
-                            'description': wu.get('Description', '')
-                        }
-                        jobs.append(job_info)
+                    # Include all jobs (active and completed) in recent timeframe for activity analysis
+                    job_info = {
+                        'wuid': wu.get('Wuid', ''),
+                        'state': wu.get('State', ''),
+                        'jobname': wu.get('Jobname', ''),
+                        'cluster': wu.get('Cluster', ''),
+                        'queue': wu.get('Queue', ''),
+                        'owner': wu.get('Owner', ''),
+                        'total_cluster_time': wu.get('TotalClusterTime', ''),
+                        'state_id': wu.get('StateID', 0),
+                        'completion_time': wu.get('StateDesc', ''),  # Contains completion info
+                        'description': wu.get('Description', '')
+                    }
+                    jobs.append(job_info)
 
 
 
@@ -2316,23 +2480,33 @@ class AKSClusterInsights:
 
         # Analyze running jobs by queue
         for job in running_jobs:
-            queue = job.get('queue', 'unknown')
-            cluster = job.get('cluster', 'unknown')
-            owner = job.get('owner', 'unknown')
+            # Only count jobs that are actually in active states (not completed)
+            state = job.get('state', '').lower()
+            if state != 'completed':  # Include all non-completed states as running/active
+                queue = job.get('queue', job.get('cluster', 'unknown'))  # Fallback to cluster if queue is missing
+                if not queue or queue.strip() == '':
+                    queue = job.get('cluster', 'unknown')
+                cluster = job.get('cluster', 'unknown')
+                owner = job.get('owner', 'unknown')
 
-            queue_stats[queue]['running_jobs'] += 1
-            queue_stats[queue]['clusters'].add(cluster)
-            queue_stats[queue]['owners'].add(owner)
+                queue_stats[queue]['running_jobs'] += 1
+                queue_stats[queue]['clusters'].add(cluster)
+                queue_stats[queue]['owners'].add(owner)
 
         # Analyze recent jobs by queue
         for job in recent_jobs:
-            queue = job.get('queue', 'unknown')
-            cluster = job.get('cluster', 'unknown')
-            owner = job.get('owner', 'unknown')
+            # Only count completed jobs for recent activity (running jobs are already counted above)
+            state = job.get('state', '').lower()
+            if state in ['completed', 'failed', 'aborted']:
+                queue = job.get('queue', job.get('cluster', 'unknown'))  # Fallback to cluster if queue is missing
+                if not queue or queue.strip() == '':
+                    queue = job.get('cluster', 'unknown')
+                cluster = job.get('cluster', 'unknown')
+                owner = job.get('owner', 'unknown')
 
-            queue_stats[queue]['recent_jobs'] += 1
-            queue_stats[queue]['clusters'].add(cluster)
-            queue_stats[queue]['owners'].add(owner)
+                queue_stats[queue]['recent_jobs'] += 1
+                queue_stats[queue]['clusters'].add(cluster)
+                queue_stats[queue]['owners'].add(owner)
 
         # Calculate totals and activity levels
         for queue, stats in queue_stats.items():
@@ -2360,7 +2534,7 @@ class AKSClusterInsights:
 
         return dict(queue_stats)
 
-    def _assess_workload_context(self, queue_analysis: Dict[str, Any]) -> Dict[str, Any]:
+    def _assess_workload_context(self, queue_analysis: Dict[str, Any], total_running_jobs: int = None, total_recent_jobs: int = None, total_pending_jobs: int = None) -> Dict[str, Any]:
         """Assess whether idle/underutilized nodes are justified based on workload activity."""
         assessment = {
             "idle_justified": False,
@@ -2371,8 +2545,22 @@ class AKSClusterInsights:
             "recommendations": []
         }
 
-        total_running = sum(stats['running_jobs'] + stats.get('submitted_jobs', 0) + stats.get('compiling_jobs', 0) + stats.get('compiled_jobs', 0) for stats in queue_analysis.values())
-        total_recent = sum(stats['recent_jobs'] for stats in queue_analysis.values())
+        # Use provided totals if available, otherwise calculate from queue analysis
+        if total_running_jobs is not None and total_recent_jobs is not None:
+            total_running = total_running_jobs
+            total_recent = total_recent_jobs
+            total_pending = total_pending_jobs if total_pending_jobs is not None else 0
+        else:
+            # Fallback to queue analysis only when explicit values aren't provided
+            total_running = sum(stats['running_jobs'] for stats in queue_analysis.values())
+            total_recent = sum(stats['recent_jobs'] for stats in queue_analysis.values())
+            # Calculate total pending jobs from queue analysis
+            total_pending = 0
+            for stats in queue_analysis.values():
+                total_pending += stats.get('queued_jobs', 0)
+                total_pending += stats.get('submitted_jobs', 0)
+                total_pending += stats.get('compiling_jobs', 0)
+                total_pending += stats.get('compiled_jobs', 0)
 
         active_queues = []
         idle_queues = []
@@ -2399,9 +2587,21 @@ class AKSClusterInsights:
 
         # Determine if idle/underutilization is justified
         if total_running == 0:
-            if total_recent == 0:
+            if total_pending > 10:
+                # High number of pending jobs - idle nodes are justified for quick job startup
                 assessment["idle_justified"] = True
-                assessment["workload_summary"] = "No jobs running or completed recently - cluster idle state expected"
+                assessment["underutilization_justified"] = True
+                assessment["workload_summary"] = f"High pending workload ({total_pending} queued/preparing jobs) - idle nodes justified for rapid job processing"
+                assessment["recommendations"].append(f"Significant job backlog ({total_pending} jobs) - maintain idle capacity for efficient job processing")
+            elif total_pending > 3:
+                # Moderate pending jobs - some idle nodes justified
+                assessment["idle_justified"] = True
+                assessment["underutilization_justified"] = True
+                assessment["workload_summary"] = f"Moderate pending workload ({total_pending} queued/preparing jobs) - some idle capacity justified"
+                assessment["recommendations"].append(f"Moderate job queue ({total_pending} jobs) - maintain some idle nodes for job startup efficiency")
+            elif total_recent == 0:
+                assessment["idle_justified"] = True
+                assessment["workload_summary"] = "No jobs active, pending, or completed recently - cluster idle state expected"
                 assessment["recommendations"].append("Consider scaling down idle node pools during extended no-job periods")
             elif total_recent < 5:
                 assessment["idle_justified"] = True
@@ -2410,21 +2610,40 @@ class AKSClusterInsights:
                 assessment["recommendations"].append("Light workload detected - some idle nodes acceptable for rapid job startup")
             else:
                 assessment["underutilization_justified"] = True
-                assessment["workload_summary"] = f"Recent activity detected ({total_recent} jobs) but no current jobs - temporary idle period"
+                assessment["workload_summary"] = f"Recent activity detected ({total_recent} jobs) but no current active jobs - temporary idle period"
                 assessment["recommendations"].append("Recent job activity suggests workload variability - maintain some capacity for job spikes")
         else:
-            if total_running >= 10:
-                assessment["workload_summary"] = f"High job activity ({total_running} running, {total_recent} recent) - utilization should be high"
-                assessment["recommendations"].append("High job activity - investigate why nodes appear underutilized")
-            elif total_running >= 3:
-                assessment["underutilization_justified"] = True
-                assessment["workload_summary"] = f"Moderate job activity ({total_running} running, {total_recent} recent) - some underutilization acceptable"
-                assessment["recommendations"].append("Moderate workload - optimize node pool sizes to match typical demand")
-            else:
+            # There are running jobs - assess based on total workload including pending
+            if total_pending >= 10:
+                # High number of pending jobs - idle nodes are definitely justified
                 assessment["idle_justified"] = True
                 assessment["underutilization_justified"] = True
-                assessment["workload_summary"] = f"Low job activity ({total_running} running, {total_recent} recent) - underutilization expected"
-                assessment["recommendations"].append("Low job activity - consider scaling down excess capacity")
+                assessment["workload_summary"] = f"High job activity with significant queue ({total_running} active, {total_pending} pending, {total_recent} recent) - idle nodes justified for queue processing"
+                assessment["recommendations"].append(f"Significant job backlog ({total_pending} pending jobs) - idle nodes needed for efficient queue processing")
+            elif total_pending >= 5:
+                # Moderate pending jobs - idle nodes are justified
+                assessment["idle_justified"] = True
+                assessment["underutilization_justified"] = True
+                assessment["workload_summary"] = f"Moderate job activity with pending queue ({total_running} active, {total_pending} pending, {total_recent} recent) - idle capacity justified for job processing"
+                assessment["recommendations"].append(f"Job queue building up ({total_pending} pending) - maintain idle capacity for queue processing")
+            elif total_running >= 10:
+                # High running jobs but low pending - investigate utilization
+                assessment["workload_summary"] = f"High job activity ({total_running} active, {total_pending} pending, {total_recent} recent) - utilization should be high"
+                assessment["recommendations"].append("High job activity but low queue - investigate why nodes appear underutilized")
+            elif total_running >= 3:
+                # Moderate running jobs, low pending
+                assessment["underutilization_justified"] = True
+                assessment["workload_summary"] = f"Moderate job activity ({total_running} active, {total_pending} pending, {total_recent} recent) - some underutilization acceptable"
+                assessment["recommendations"].append("Moderate workload - optimize node pool sizes to match typical demand")
+            else:
+                # Low running jobs, low pending
+                assessment["idle_justified"] = True
+                assessment["underutilization_justified"] = True
+                assessment["workload_summary"] = f"Low job activity ({total_running} active, {total_pending} pending, {total_recent} recent) - underutilization expected"
+                if total_pending > 0:
+                    assessment["recommendations"].append(f"Low activity but {total_pending} jobs queued - maintain minimal capacity for queue processing")
+                else:
+                    assessment["recommendations"].append("Low job activity - consider scaling down excess capacity")
 
         return assessment
 
@@ -2497,9 +2716,41 @@ class AKSClusterInsights:
             unified_data["recent_jobs"] = recent_result.get("jobs", [])
 
             # Generate workload assessment
-            if "error" not in running_result:
-                unified_data["workload_assessment"]["total_running_jobs"] = len(running_result.get("jobs", []))
-            unified_data["workload_assessment"]["total_recent_jobs"] = len(recent_result.get("jobs", []))
+            # Use cluster statistics to get accurate active job counts
+            running_jobs_list = running_result.get("jobs", [])
+            recent_jobs_list = recent_result.get("jobs", [])
+                
+            # Calculate active jobs using the same method as cluster statistics
+            # This ensures consistency with the displayed "Total Active Jobs" count
+            total_active_jobs = 0
+            total_pending_jobs = 0
+            if self._ecl_watch_username_param and self.ecl_watch_username and self.ecl_watch_password:
+                # Generate cluster statistics to get accurate counts
+                cluster_stats = self._generate_cluster_statistics_from_jobs(
+                    running_jobs_list,
+                    recent_jobs_list,
+                    "error" in running_result
+                )
+                if cluster_stats.get("success", False):
+                    cluster_summary = cluster_stats.get("summary", {})
+                    total_running = cluster_summary.get('total_running_jobs', 0)
+                    total_queued = cluster_summary.get('total_queued_jobs', 0)
+                    total_submitted = cluster_summary.get('total_submitted_jobs', 0)
+                    total_compiling = cluster_summary.get('total_compiling_jobs', 0)
+                    total_compiled = cluster_summary.get('total_compiled_jobs', 0)
+                    total_active_jobs = total_running + total_queued + total_submitted + total_compiling + total_compiled
+                    total_pending_jobs = total_queued + total_submitted + total_compiling + total_compiled
+                else:
+                    # Fallback to raw count if cluster stats fail
+                    total_active_jobs = len(running_jobs_list)
+                    total_pending_jobs = 0
+            else:
+                # Fallback to raw count if no credentials
+                total_active_jobs = len(running_jobs_list)
+                total_pending_jobs = 0
+            
+            unified_data["workload_assessment"]["total_running_jobs"] = total_active_jobs
+            unified_data["workload_assessment"]["total_recent_jobs"] = len(recent_jobs_list)
 
             # Analyze queue activity for workload context
             queue_analysis = self._analyze_job_queue_activity(
@@ -2508,7 +2759,12 @@ class AKSClusterInsights:
             )
 
             # Determine workload assessment
-            workload_assessment = self._assess_workload_context(queue_analysis)
+            workload_assessment = self._assess_workload_context(
+                queue_analysis, 
+                unified_data["workload_assessment"]["total_running_jobs"],
+                unified_data["workload_assessment"]["total_recent_jobs"],
+                total_pending_jobs
+            )
             unified_data["workload_assessment"].update(workload_assessment)
 
             # Generate cluster statistics if we have credential access
@@ -3277,6 +3533,62 @@ class AKSClusterInsights:
             print(f"   {workload_summary}")
             print()
 
+            # Add cost analysis
+            # Get current cost from the main cost estimation
+            costs = self.estimate_costs()
+            current_monthly_cost = costs.get('estimated_monthly', 0)
+            
+            if current_monthly_cost > 0:
+                # Convert monthly cost to hourly cost (monthly / (30 days * 24 hours))
+                current_hourly_cost = current_monthly_cost / (30 * 24)
+                # Calculate yearly costs
+                yearly_total_cost = current_hourly_cost * 24 * 365
+                
+                print(f"💰 COST ANALYSIS:")
+                print(f"   Current Cluster Cost:     ${current_hourly_cost:,.2f}/hour (projected ${yearly_total_cost:,.0f}/year)")
+                
+                # Calculate cost per currently running job per hour
+                if total_running > 0:
+                    hourly_cost_per_job = current_hourly_cost / total_running
+                    yearly_cost_per_job = hourly_cost_per_job * 24 * 365
+                    print(f"   Cost per Running Job:    ${hourly_cost_per_job:,.2f}/job/hour (${yearly_cost_per_job:,.0f}/job/year)")
+                else:
+                    print(f"   Cost per Running Job:    N/A (no running jobs)")
+                
+                # Calculate Thor worker nodes cost analysis
+                thor_worker_cost_analysis = self._calculate_thor_worker_costs_with_data(efficiency)
+                if thor_worker_cost_analysis and thor_worker_cost_analysis.get('thor_worker_nodes', 0) > 0:
+                    thor_monthly_cost = thor_worker_cost_analysis['total_monthly_cost']
+                    thor_hourly_cost = thor_monthly_cost / (30 * 24)
+                    thor_yearly_cost = thor_hourly_cost * 24 * 365
+                    thor_nodes = thor_worker_cost_analysis['thor_worker_nodes']
+                    
+                    print(f"   Nodes Hosting Thor Workers: ${thor_hourly_cost:,.2f}/hour (${thor_yearly_cost:,.0f}/year)")
+                    print(f"   Thor Worker Hosting Nodes:  {thor_nodes} nodes")
+                    
+                    if total_running > 0:
+                        thor_cost_per_job = thor_hourly_cost / total_running
+                        thor_yearly_per_job = thor_cost_per_job * 24 * 365
+                        print(f"   Thor Node Cost per Job:     ${thor_cost_per_job:,.2f}/job/hour (${thor_yearly_per_job:,.0f}/job/year)")
+                else:
+                    # Add debug output to understand the issue
+                    if thor_worker_cost_analysis and 'error' in thor_worker_cost_analysis:
+                        print(f"   Note: Thor worker hosting analysis failed: {thor_worker_cost_analysis['error']}")
+                    elif thor_worker_cost_analysis:
+                        # Check if we found any pods but no matching nodes
+                        node_details = thor_worker_cost_analysis.get('node_details', [])
+                        debug_info = thor_worker_cost_analysis.get('debug_info', {})
+                        print(f"   Note: Thor pods on {debug_info.get('thor_pod_nodes_found', 0)} nodes, {debug_info.get('available_cost_pools', 0)} cost pools, {len(node_details)} matches")
+                        print(f"   Debug: analyzed {debug_info.get('nodes_analyzed', 0)} nodes, {debug_info.get('pods_by_node_keys', 0)} nodes with pods")
+                        if debug_info.get('sample_thor_nodes'):
+                            print(f"   Sample Thor nodes: {debug_info.get('sample_thor_nodes', [])}")
+                        if debug_info.get('sample_cost_pools'):
+                            print(f"   Sample cost pools: {debug_info.get('sample_cost_pools', [])}")
+                    else:
+                        print(f"   Note: No Thor worker hosting nodes identified")
+                
+                print()
+
             if idle_justified:
                 print(f"   ✅ Idle nodes justified by low job activity")
             else:
@@ -3287,19 +3599,6 @@ class AKSClusterInsights:
             else:
                 print(f"   ⚠️  Underutilization unexpected - investigate job distribution")
             print()
-
-            # Active queue analysis
-            active_queues = workload_context.get('active_queues', [])
-            if active_queues:
-                print(f"🎯 ACTIVE QUEUES:")
-                for queue_info in active_queues[:5]:  # Show top 5 active queues
-                    queue_name = queue_info.get('queue', 'unknown')
-                    running = queue_info.get('running_jobs', 0)
-                    recent = queue_info.get('recent_jobs', 0)
-                    activity = queue_info.get('activity_level', 'unknown')
-                    clusters = ', '.join(queue_info.get('clusters', []))[:30]  # Truncate long cluster lists
-                    print(f"   • {queue_name:<15} {running:>2} running, {recent:>2} recent ({activity}) - {clusters}")
-                print()
 
             # Job-Node Correlation Analysis
             correlation_analysis = self.analyze_job_node_correlation()
@@ -4236,9 +4535,9 @@ class AKSClusterInsights:
 
         # Print combined cluster job statistics table
         print(f"\n🏗️  CLUSTER JOB STATISTICS")
-        print("-" * 165)
-        print(f"{'Cluster Name':<20} {'Status':<14} {'Run':<4} {'Sub':<4} {'Comp':<4} {'Cmpd':<4} {'Que':<4} {'Failed':<8} {'Aborted':<8} {'Queues':<18} {'Owners':<15} {'Last Job Time':<18}")
-        print("-" * 165)
+        print("-" * 145)
+        print(f"{'Cluster Name':<20} {'Status':<14} {'Run':<4} {'Sub':<4} {'Comp':<4} {'Cmpd':<4} {'Que':<4} {'Failed':<8} {'Aborted':<8} {'Owners':<15} {'Last Job Time':<18}")
+        print("-" * 145)
 
         # Sort clusters by activity level and then by running jobs
         activity_order = {"High Activity": 1, "Active": 2, "Light Activity": 3, "Recent Activity": 4, "Idle": 5}
@@ -4260,15 +4559,6 @@ class AKSClusterInsights:
             activity = cluster_data['activity_status']
             status_icon = "🔴" if activity == "High Activity" else "🟡" if activity == "Active" else "🟢" if activity in ["Light Activity", "Recent Activity"] else "⚪"
             status_display = f"{status_icon}{activity[:12]}"
-
-            # Format queues (truncate if too long)
-            if cluster_data['queues']:
-                queues_str = ', '.join(cluster_data['queues'][:2])
-                if len(cluster_data['queues']) > 2:
-                    queues_str += f" +{len(cluster_data['queues']) - 2}"
-                queues_display = queues_str[:17]
-            else:
-                queues_display = "none"
 
             # Format owners (truncate if too long)
             if cluster_data['owners']:
@@ -4302,7 +4592,7 @@ class AKSClusterInsights:
                 except:
                     last_job_display = last_job[:17]
 
-            print(f"{display_name:<20} {status_display:<14} {cluster_data['running_jobs']:<4} {cluster_data['submitted_jobs']:<4} {cluster_data['compiling_jobs']:<4} {cluster_data['compiled_jobs']:<4} {cluster_data['queued_jobs']:<4} {cluster_data['failed_jobs_24h']:<8} {cluster_data['aborted_jobs_24h']:<8} {queues_display:<18} {owners_display:<15} {last_job_display:<18}")
+            print(f"{display_name:<20} {status_display:<14} {cluster_data['running_jobs']:<4} {cluster_data['submitted_jobs']:<4} {cluster_data['compiling_jobs']:<4} {cluster_data['compiled_jobs']:<4} {cluster_data['queued_jobs']:<4} {cluster_data['failed_jobs_24h']:<8} {cluster_data['aborted_jobs_24h']:<8} {owners_display:<15} {last_job_display:<18}")
 
         if len(sorted_clusters) > 10:
             print(f"\n   ... showing top 10 clusters, {len(sorted_clusters) - 10} more available (use --detailed-nodes for full list)")
