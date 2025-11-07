@@ -360,6 +360,7 @@ class IndexModelMemoryTest : public CppUnit::TestFixture
     CPPUNIT_TEST(testDescribeActual);
     CPPUNIT_TEST(testOnLoadConfiguration);
     CPPUNIT_TEST(testMixedConfiguration);
+    CPPUNIT_TEST(testNodeCacheCapacity);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -539,6 +540,106 @@ public:
         // The configured value for branch nodes is ignored.
         CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, memory.modes[0]);
         CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnDemand, memory.modes[1]);
+        END_TEST
+    }
+
+    void testNodeCacheCapacity()
+    {
+        START_TEST
+        MemoryModel memory;
+        Owned<IPropertyTree> configTree = createTestConfiguration(R"!!!(
+            <memory>
+                <node kind="0" cacheCapacity=" 1  "/>
+                <node kind="1" cacheCapacity="1 "/>
+            </memory>
+        )!!!");
+        memory.configure(*configTree);
+        CPPUNIT_ASSERT_EQUAL(1ULL, memory.caches[0].capacity);
+        CPPUNIT_ASSERT_EQUAL(1ULL, memory.caches[1].capacity);
+        END_TEST
+        START_TEST
+        MemoryModel memory;
+        Owned<IPropertyTree> configTree = createTestConfiguration(R"!!!(
+            <memory>
+                <node kind="0" cacheCapacity=" 1 b "/>
+                <node kind="1" cacheCapacity="1 b"/>
+            </memory>
+        )!!!");
+        memory.configure(*configTree);
+        CPPUNIT_ASSERT_EQUAL(1ULL, memory.caches[0].capacity);
+        CPPUNIT_ASSERT_EQUAL(1ULL, memory.caches[1].capacity);
+        END_TEST
+        START_TEST
+        MemoryModel memory;
+        Owned<IPropertyTree> configTree = createTestConfiguration(R"!!!(
+            <memory>
+                <node kind="0" cacheCapacity=" 1 kb "/>
+                <node kind="1" cacheCapacity="1 kib"/>
+            </memory>
+        )!!!");
+        memory.configure(*configTree);
+        CPPUNIT_ASSERT_EQUAL(1000ULL, memory.caches[0].capacity);
+        CPPUNIT_ASSERT_EQUAL(1024ULL, memory.caches[1].capacity);
+        END_TEST
+        START_TEST
+        MemoryModel memory;
+        Owned<IPropertyTree> configTree = createTestConfiguration(R"!!!(
+            <memory>
+                <node kind="0" cacheCapacity=" 1 mb "/>
+                <node kind="1" cacheCapacity="1 mib"/>
+            </memory>
+        )!!!");
+        memory.configure(*configTree);
+        CPPUNIT_ASSERT_EQUAL(1000ULL*1000, memory.caches[0].capacity);
+        CPPUNIT_ASSERT_EQUAL(1024ULL*1024, memory.caches[1].capacity);
+        END_TEST
+        START_TEST
+        MemoryModel memory;
+        Owned<IPropertyTree> configTree = createTestConfiguration(R"!!!(
+            <memory>
+                <node kind="0" cacheCapacity=" 1 gb "/>
+                <node kind="1" cacheCapacity="1 gib"/>
+            </memory>
+        )!!!");
+        memory.configure(*configTree);
+        CPPUNIT_ASSERT_EQUAL(1000ULL*1000*1000, memory.caches[0].capacity);
+        CPPUNIT_ASSERT_EQUAL(1024ULL*1024*1024, memory.caches[1].capacity);
+        END_TEST
+        START_TEST
+        MemoryModel memory;
+        Owned<IPropertyTree> configTree = createTestConfiguration(R"!!!(
+            <memory>
+                <node kind="0" cacheCapacity=" 1 tb "/>
+                <node kind="1" cacheCapacity="1 tib"/>
+            </memory>
+        )!!!");
+        memory.configure(*configTree);
+        CPPUNIT_ASSERT_EQUAL(1000ULL*1000*1000*1000, memory.caches[0].capacity);
+        CPPUNIT_ASSERT_EQUAL(1024ULL*1024*1024*1024, memory.caches[1].capacity);
+        END_TEST
+        START_TEST
+        MemoryModel memory;
+        Owned<IPropertyTree> configTree = createTestConfiguration(R"!!!(
+            <memory>
+                <node kind="0" cacheCapacity=" 1 pb "/>
+                <node kind="1" cacheCapacity="1 pib"/>
+            </memory>
+        )!!!");
+        memory.configure(*configTree);
+        CPPUNIT_ASSERT_EQUAL(1000ULL*1000*1000*1000*1000, memory.caches[0].capacity);
+        CPPUNIT_ASSERT_EQUAL(1024ULL*1024*1024*1024*1024, memory.caches[1].capacity);
+        END_TEST
+        START_TEST
+        MemoryModel memory;
+        Owned<IPropertyTree> configTree = createTestConfiguration(R"!!!(
+            <memory>
+                <node kind="0" cacheCapacity=" 1.5 gb "/>
+                <node kind="1" cacheCapacity="1.5 gib"/>
+            </memory>
+        )!!!");
+        memory.configure(*configTree);
+        CPPUNIT_ASSERT_EQUAL(1500ULL*1000*1000, memory.caches[0].capacity);
+        CPPUNIT_ASSERT_EQUAL(1536ULL*1024*1024, memory.caches[1].capacity);
         END_TEST
     }
 };
