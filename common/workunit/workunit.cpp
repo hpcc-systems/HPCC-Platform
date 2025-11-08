@@ -14112,6 +14112,13 @@ bool looksLikeAWuid(const char * wuid, const char firstChar)
         while (isdigit(wuid[idx]))
             idx++;
     }
+    // pattern match optional task suffix (for publish WUIDs)
+    if ('T' == wuid[idx] && isdigit(wuid[idx+1]))
+    {
+        idx += 2;
+        while (isdigit(wuid[idx]))
+            idx++;
+    }
     // expect the NULL terminator
     return ('\0' == wuid[idx]);
 }

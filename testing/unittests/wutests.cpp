@@ -23,6 +23,7 @@ class wuTests : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( wuTests );
         CPPUNIT_TEST(testLooksLikeAWuid);
+        CPPUNIT_TEST(testLooksLikeAPublishWuid);
         CPPUNIT_TEST(testWuidPattern);
     CPPUNIT_TEST_SUITE_END();
 
@@ -74,6 +75,34 @@ public:
         CPPUNIT_ASSERT_MESSAGE("looksLikeAWuid should fail", !looksLikeAWuid("W12345678-12345", 'W'));
         CPPUNIT_ASSERT_MESSAGE("looksLikeAWuid should fail", !looksLikeAWuid("W12345678-123456-", 'W'));
         CPPUNIT_ASSERT_MESSAGE("looksLikeAWuid should fail", !looksLikeAWuid("*", 'W'));
+    }
+
+    void testLooksLikeAPublishWuid()
+    {
+        // Basic publish WUID format: PYYYYMMDD-HHMMSS
+        CPPUNIT_ASSERT_MESSAGE("looksLikeAWuid should pass for P20250101-120000", looksLikeAWuid("P20250101-120000", 'P'));
+        CPPUNIT_ASSERT_MESSAGE("looksLikeAWuid should pass for p20231231-235959", looksLikeAWuid("p20231231-235959", 'P'));
+        
+        // Publish WUID with uniqueness suffix: PYYYYMMDD-HHMMSS-<n>
+        CPPUNIT_ASSERT_MESSAGE("looksLikeAWuid should pass for P20250101-120000-1", looksLikeAWuid("P20250101-120000-1", 'P'));
+        CPPUNIT_ASSERT_MESSAGE("looksLikeAWuid should pass for P20250101-120000-123", looksLikeAWuid("P20250101-120000-123", 'P'));
+        
+        // Publish subtask WUID format: PYYYYMMDD-HHMMSST<taskId>
+        CPPUNIT_ASSERT_MESSAGE("looksLikeAWuid should pass for P20250101-120000T1", looksLikeAWuid("P20250101-120000T1", 'P'));
+        CPPUNIT_ASSERT_MESSAGE("looksLikeAWuid should pass for P20250101-120000T123", looksLikeAWuid("P20250101-120000T123", 'P'));
+        
+        // Publish subtask WUID with uniqueness suffix: PYYYYMMDD-HHMMSS-<n>T<taskId>
+        CPPUNIT_ASSERT_MESSAGE("looksLikeAWuid should pass for P20250101-120000-1T1", looksLikeAWuid("P20250101-120000-1T1", 'P'));
+        CPPUNIT_ASSERT_MESSAGE("looksLikeAWuid should pass for P20250101-120000-5T999", looksLikeAWuid("P20250101-120000-5T999", 'P'));
+        
+        // Verify that W-style WUIDs don't validate as P-style (wrong first char)
+        CPPUNIT_ASSERT_MESSAGE("looksLikeAWuid should fail for W with P check", !looksLikeAWuid("W20250101-120000", 'P'));
+        
+        // Invalid formats
+        CPPUNIT_ASSERT_MESSAGE("looksLikeAWuid should fail for P20250101-120000T", !looksLikeAWuid("P20250101-120000T", 'P'));
+        CPPUNIT_ASSERT_MESSAGE("looksLikeAWuid should fail for P20250101-120000Tx", !looksLikeAWuid("P20250101-120000Tx", 'P'));
+        CPPUNIT_ASSERT_MESSAGE("looksLikeAWuid should fail for P20250101-120000-T1", !looksLikeAWuid("P20250101-120000-T1", 'P'));
+        CPPUNIT_ASSERT_MESSAGE("looksLikeAWuid should fail for P20250101-120000T1x", !looksLikeAWuid("P20250101-120000T1x", 'P'));
     }
 
     void testWuidPattern()
