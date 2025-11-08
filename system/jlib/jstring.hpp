@@ -620,6 +620,16 @@ inline bool hasPrefix(const char * text, const char * prefix, bool caseSensitive
         return strnicmp(text, prefix, strlen(prefix)) == 0;
 }
 
+// Evaluates if wuid matches the pattern:
+//   firstChar # # # # # # # # "-" # # # # # # [ "-" #+ ] [ "T" #+ ]
+// All other deviations from the pattern, including an incomplete match or the use of wildcard
+// characters, will return false.
+extern jlib_decl bool looksLikeAWuid(const char * wuid, char firstChar);
+// First char is any of the characters in `anyFirstChar`
+extern jlib_decl bool looksLikeAWuid(const char * wuid, const char * anyFirstChar);
+// Default to 'W' as the first character
+inline bool looksLikeAWuid(const char * wuid) { return looksLikeAWuid(wuid, 'W'); }
+
 // Search for a string in a null terminated array of const char * strings
 extern jlib_decl unsigned matchString(const char * search, const char * const * strings);
 
