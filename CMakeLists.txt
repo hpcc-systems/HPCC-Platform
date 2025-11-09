@@ -554,8 +554,9 @@ if(TOP_LEVEL_PROJECT)
                     !uninstfinalize '${CPACK_NSIS_FINALIZE_CMD} \\\"%1\\\"'
                 ")
 
+                set(SIGN_PACKAGE_FILE "${CMAKE_BINARY_DIR}/hpccsystems-clienttools-${projname}_${version}-${stagever}${CPACK_SYSTEM_NAME}${packageStrippedLabel}${packageContainerizedLabel}${CUSTOM_LABEL}.exe")
                 add_custom_target(SIGN
-                    COMMAND signtool sign /f "${PROJECT_SOURCE_DIR}/../sign/hpcc_code_signing.pfx" /fd "SHA256" /p "${PFX_PASSWORD}" /tr "http://timestamp.digicert.com" /td "SHA256" "${CMAKE_BINARY_DIR}/${CPACK_PACKAGE_FILE_NAME}.exe"
+                    COMMAND signtool sign /f "${PROJECT_SOURCE_DIR}/../sign/hpcc_code_signing.pfx" /fd "SHA256" /p "${PFX_PASSWORD}" /tr "http://timestamp.digicert.com" /td "SHA256" "${SIGN_PACKAGE_FILE}"
                     COMMENT "Digital Signature"
                 )
                 add_dependencies(SIGN PACKAGE)
