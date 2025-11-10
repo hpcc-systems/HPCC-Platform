@@ -217,36 +217,66 @@ interface LogAccessInfo {
     logsStatusMessage: string;
 }
 
+let g_logAccessInfoPromise: Promise<LogAccessInfo> | undefined;
+const fetchLogAccessInfo = async (): Promise<LogAccessInfo> => {
+    const logAccessInfoResult: LogAccessInfo = {
+        logsEnabled: false,
+        logsManagerType: "",
+        logsColumns: [],
+        logsStatusMessage: ""
+    };
+    try {
+        const [accessResponse, healthReportResponse] = await Promise.all([
+            service.GetLogAccessInfo({}),
+            service.GetHealthReport({})
+        ]);
+
+        const healthReportStatusCode: string = healthReportResponse?.Status?.Code?.toString() ?? "";
+        const healthReportMessages = healthReportResponse?.Status?.MessageArray?.Item ?? [];
+
+        if (accessResponse?.Exceptions) {
+            logAccessInfoResult.logsStatusMessage = accessResponse?.Exceptions?.Exception[0]?.Message ?? nlsHPCC.LogAccess_GenericException;
+            return logAccessInfoResult;
+        } else if (healthReportStatusCode === "Fail" && healthReportMessages.length > 0) {
+            logAccessInfoResult.logsStatusMessage = healthReportMessages[healthReportMessages.length - 1];
+            return logAccessInfoResult;
+        } else {
+            if (accessResponse.RemoteLogManagerType === null) {
+                logAccessInfoResult.logsStatusMessage = nlsHPCC.LogAccess_LoggingNotConfigured;
+                return logAccessInfoResult;
+            } else {
+                logAccessInfoResult.logsEnabled = true;
+                logAccessInfoResult.logsManagerType = accessResponse.RemoteLogManagerType;
+                logAccessInfoResult.logsColumns = accessResponse?.Columns?.Column ?? [];
+                return logAccessInfoResult;
+            }
+        }
+    } catch (err) {
+        logAccessInfoResult.logsStatusMessage = nlsHPCC.LogAccess_GenericException;
+        return logAccessInfoResult;
+    }
+};
+
 export function useLogAccessInfo(): LogAccessInfo {
     const [logsEnabled, setLogsEnabled] = React.useState(false);
     const [logsManagerType, setLogsManagerType] = React.useState("");
-    const [logsColumns, setLogsColumns] = React.useState<WsLogaccess.Column[]>();
+    const [logsColumns, setLogsColumns] = React.useState<WsLogaccess.Column[]>([]);
     const [logsStatusMessage, setLogsStatusMessage] = React.useState("");
 
     React.useEffect(() => {
-        Promise.all([service.GetLogAccessInfo({}), service.GetHealthReport({})]).then(([accessResponse, healthReportResponse]) => {
-            const healthReportStatusCode: string = healthReportResponse?.Status?.Code?.toString() ?? "";
-            const healthReportMessages = healthReportResponse?.Status?.MessageArray?.Item ?? [];
-            if (accessResponse?.Exceptions) {
-                setLogsStatusMessage(accessResponse?.Exceptions?.Exception[0]?.Message ?? nlsHPCC.LogAccess_GenericException);
-                setLogsEnabled(false);
-            } else if (healthReportStatusCode === "Fail" && healthReportMessages.length > 0) {
-                setLogsStatusMessage(healthReportMessages[healthReportMessages.length - 1]);
-                setLogsEnabled(false);
-            } else {
-                if (accessResponse.RemoteLogManagerType === null) {
-                    setLogsStatusMessage(nlsHPCC.LogAccess_LoggingNotConfigured);
-                    setLogsEnabled(false);
-                } else {
-                    setLogsEnabled(true);
-                    setLogsManagerType(accessResponse.RemoteLogManagerType);
-                    setLogsColumns(accessResponse?.Columns?.Column);
-                }
+        if (!g_logAccessInfoPromise) {
+            g_logAccessInfoPromise = fetchLogAccessInfo();
+        }
+        let active = true;
+        g_logAccessInfoPromise.then(logInfo => {
+            if (active) {
+                setLogsEnabled(logInfo.logsEnabled);
+                setLogsManagerType(logInfo.logsManagerType);
+                setLogsColumns(logInfo.logsColumns);
+                setLogsStatusMessage(logInfo.logsStatusMessage);
             }
-        }).catch(e => {
-            setLogsStatusMessage(nlsHPCC.LogAccess_GenericException);
-            setLogsEnabled(false);
         });
+        return () => { active = false; };
     }, []);
 
     return { logsEnabled, logsManagerType, logsColumns, logsStatusMessage };
