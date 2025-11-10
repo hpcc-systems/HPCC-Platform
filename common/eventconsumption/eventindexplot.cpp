@@ -214,22 +214,14 @@ void CIndexPlotOp::parseIterations(IPropertyTreeIterator* iterIter, Iterations& 
     ForEach(*iterIter)
     {
         IPropertyTree& iterTree = iterIter->query();
-        Iteration iteration;
-        iteration.name.set(iterTree.queryProp("@name"));
-
+        const char* name = iterTree.queryProp("@name");
+        std::vector<Iteration::Delta> deltas;
         Owned<IPropertyTreeIterator> deltaIter = iterTree.getElements("delta");
         ForEach(*deltaIter)
-        {
-            IPropertyTree& deltaTree = deltaIter->query();
-            Iteration::Delta delta;
-            delta.linkId.set(deltaTree.queryProp("@linkId"));
-            delta.xpath.set(deltaTree.queryProp("@xpath"));
-            delta.value.set(deltaTree.queryProp("@value"));
-            iteration.deltas.push_back(delta);
-        }
-        if (iteration.deltas.empty())
-            throw makeStringExceptionV(0, "Iteration %s must have at least one delta", iteration.name.get());
-        iterations.push_back(iteration);
+            deltas.emplace_back(deltaIter->query());
+        if (deltas.empty())
+            throw makeStringExceptionV(0, "Iteration %s must have at least one delta", name);
+        iterations.emplace_back(name, std::move(deltas));
     }
 }
 
