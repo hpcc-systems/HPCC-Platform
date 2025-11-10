@@ -86,7 +86,7 @@ dafilesrv:
 Monitor CPU and memory utilization patterns to optimize resource allocation for your specific file access patterns and throughput requirements.
 Using the Pre-configured Example File:
 
-Complete example configurationw are available for light expected loads (rowservice-1-3xhpa-lightload.yaml) and for heavier expected loads (rowservice-2-5xhpa-highload.yaml). These files demonstrate rowservice configuration optimized for on-demand scaling:
+Complete example configurations are available for light expected loads (rowservice-1-3xhpa-lightload.yaml) and for heavier expected loads (rowservice-2-5xhpa-highload.yaml). These files demonstrate rowservice configuration optimized for on-demand scaling:
 
 ```console
 # Deploy HPCC Platform with rowservice HPA enabled
