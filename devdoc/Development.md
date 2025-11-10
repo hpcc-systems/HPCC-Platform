@@ -68,6 +68,41 @@ typing the name:  `hpccsystems-platform.sln`
 This will load the solution in Visual Studio where you can build in the
 usual way.
 
+### vcpkg Submodule Version Checking
+
+The HPCC Platform build system automatically checks if the vcpkg submodule is at the expected baseline commit. **By default, it will automatically update the submodule** to ensure dependency consistency.
+
+**CMake Option:**
+- `VCPKG_AUTO_UPDATE_SUBMODULE` (default: ON): Automatically update vcpkg submodule to expected baseline if out of date
+
+**Examples:**
+```bash
+# From your build directory, default behavior - automatically update out-of-date submodule
+cmake ..
+
+# From your build directory, strict mode - fail if submodule is out of date
+cmake -DVCPKG_AUTO_UPDATE_SUBMODULE=OFF ..
+```
+
+**Important Notes:**
+
+1. **Detached HEAD State:** After automatic checkout, the vcpkg submodule will be in a detached HEAD state. The parent repository will show the submodule as modified. This is normal for submodule updates. If you wish to work on a branch in vcpkg, check out the desired branch in the vcpkg directory.
+
+2. **Concurrency Warning:** If multiple CMake configure operations run simultaneously (e.g., in parallel CI builds or by different users on a shared checkout), they may interfere with each other during auto-update. The git fetch and checkout operations are not atomic and could lead to race conditions. **It is strongly recommended to disable auto-update in CI environments or multi-user/shared checkouts** by setting `-DVCPKG_AUTO_UPDATE_SUBMODULE=OFF`.
+
+3. **Security Warning:** The automatic update feature fetches and checks out commits based on vcpkg-configuration.json. **Always verify changes to vcpkg-configuration.json in pull requests**, especially from untrusted sources, as malicious modifications could cause the build system to check out compromised commits from the vcpkg submodule.
+
+4. **Offline Support:** The auto-update feature checks if the required commit exists locally before attempting to fetch from remote, enabling offline builds when the commit is already available.
+
+**Manual Fix:**
+If you disable auto-update and the build fails due to an out-of-date submodule:
+```bash
+cd vcpkg
+git checkout <expected-commit>
+# Or to update all submodules:
+git submodule update --init --recursive
+```
+
 ## Packaging
 
 To make an installation package on a supported linux system, use the

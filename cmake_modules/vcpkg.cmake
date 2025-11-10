@@ -1,6 +1,123 @@
 if ("${VCPKG_DONE}" STREQUAL "")
   set (VCPKG_DONE 1)
 
+# Verify vcpkg submodule is properly initialized and up-to-date
+if(NOT EXISTS "${HPCC_SOURCE_DIR}/vcpkg/.git")
+    message(FATAL_ERROR "vcpkg submodule is not initialized. Please run: git submodule update --init --recursive vcpkg")
+endif()
+
+# Check vcpkg submodule version
+# Simple approach: Try local checkout first, give clear manual instructions if it fails
+# IMPORTANT: Auto-update should be disabled in CI environments to avoid concurrency issues (set -DVCPKG_AUTO_UPDATE_SUBMODULE=OFF)
+# WARNING: In multi-user or shared checkouts, concurrent CMake configure operations may cause race conditions during auto-update
+# SECURITY: Always verify vcpkg-configuration.json changes in pull requests - malicious modifications could check out compromised commits
+# Read expected baseline from vcpkg-configuration.json
+if(EXISTS "${HPCC_SOURCE_DIR}/vcpkg-configuration.json")
+    file(READ "${HPCC_SOURCE_DIR}/vcpkg-configuration.json" VCPKG_CONFIG_CONTENT)
+    
+    # Use CMake's built-in JSON support (available since 3.19, HPCC requires 3.22.1+)
+    string(JSON EXPECTED_VCPKG_COMMIT ERROR_VARIABLE JSON_ERROR GET "${VCPKG_CONFIG_CONTENT}" "default-registry" "baseline")
+    
+    if(JSON_ERROR)
+        message(WARNING "Could not read baseline from vcpkg-configuration.json: ${JSON_ERROR}")
+        message(WARNING "Skipping vcpkg submodule version check")
+    elseif(EXPECTED_VCPKG_COMMIT AND NOT EXPECTED_VCPKG_COMMIT MATCHES ".*-NOTFOUND")
+        # Validate commit hash format (7-40 hexadecimal characters for Git SHA-1)
+        if(NOT EXPECTED_VCPKG_COMMIT MATCHES "^[a-fA-F0-9]{7,40}$")
+            message(WARNING "Invalid baseline commit format in vcpkg-configuration.json: ${EXPECTED_VCPKG_COMMIT}")
+            message(WARNING "Expected 7-40 hexadecimal characters. Skipping vcpkg submodule version check")
+        else()
+            # Get current vcpkg commit
+            execute_process(
+                COMMAND git -C "${HPCC_SOURCE_DIR}/vcpkg" rev-parse HEAD
+                OUTPUT_VARIABLE CURRENT_VCPKG_COMMIT
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+                RESULT_VARIABLE REV_PARSE_RESULT
+                ERROR_VARIABLE REV_PARSE_ERROR
+                ERROR_QUIET
+            )
+            
+            if(NOT REV_PARSE_RESULT EQUAL 0 OR "${CURRENT_VCPKG_COMMIT}" STREQUAL "")
+                message(FATAL_ERROR "Failed to determine current vcpkg commit. Please run: git submodule update --init --recursive vcpkg\nError: ${REV_PARSE_ERROR}")
+            endif()
+            
+            # Compare commits
+            if(NOT "${CURRENT_VCPKG_COMMIT}" STREQUAL "${EXPECTED_VCPKG_COMMIT}")
+            set(VCPKG_MISMATCH_MSG "vcpkg submodule is not at expected baseline")
+            set(VCPKG_DETAILS_MSG "Expected: ${EXPECTED_VCPKG_COMMIT}, Current: ${CURRENT_VCPKG_COMMIT}")
+            
+            if(VCPKG_AUTO_UPDATE_SUBMODULE)
+                # Check for uncommitted changes and untracked files before auto-update
+                execute_process(
+                    COMMAND git -C "${HPCC_SOURCE_DIR}/vcpkg" status --porcelain
+                    OUTPUT_VARIABLE VCPKG_STATUS
+                    OUTPUT_STRIP_TRAILING_WHITESPACE
+                    RESULT_VARIABLE STATUS_RESULT
+                    ERROR_QUIET
+                )
+                
+                if(NOT "${VCPKG_STATUS}" STREQUAL "")
+                    message(FATAL_ERROR "${VCPKG_MISMATCH_MSG}\n${VCPKG_DETAILS_MSG}\nvcpkg directory has local changes or untracked files. Please clean up first:\n  cd vcpkg && git status")
+                endif()
+                
+                # Try simple checkout first (works if commit exists locally)
+                message(STATUS "${VCPKG_MISMATCH_MSG}")
+                message(STATUS "${VCPKG_DETAILS_MSG}")
+                message(STATUS "Attempting to update vcpkg submodule...")
+                
+                # Check if expected commit exists locally to support offline builds
+                execute_process(
+                    COMMAND git -C "${HPCC_SOURCE_DIR}/vcpkg" cat-file -e "${EXPECTED_VCPKG_COMMIT}^{commit}"
+                    RESULT_VARIABLE COMMIT_EXISTS_RESULT
+                    OUTPUT_QUIET
+                    ERROR_QUIET
+                )
+                
+                if(NOT COMMIT_EXISTS_RESULT EQUAL 0)
+                    # Commit not found locally, need to fetch from remote
+                    message(STATUS "Expected commit not found locally, fetching from remote...")
+                    execute_process(
+                        COMMAND git -C "${HPCC_SOURCE_DIR}/vcpkg" fetch origin
+                        RESULT_VARIABLE FETCH_RESULT
+                        OUTPUT_QUIET
+                        ERROR_VARIABLE FETCH_ERROR
+                    )
+                    
+                    if(NOT FETCH_RESULT EQUAL 0)
+                        message(FATAL_ERROR "Failed to fetch vcpkg submodule updates: ${FETCH_ERROR}\nYou may be offline or the remote is unavailable.\nPlease update vcpkg manually:\n  cd vcpkg\n  git fetch origin\n  git checkout ${EXPECTED_VCPKG_COMMIT}\n\nOr disable auto-update: cmake -DVCPKG_AUTO_UPDATE_SUBMODULE=OFF ..")
+                    endif()
+                endif()
+                
+                execute_process(
+                    COMMAND git -C "${HPCC_SOURCE_DIR}/vcpkg" checkout "${EXPECTED_VCPKG_COMMIT}"
+                    RESULT_VARIABLE CHECKOUT_RESULT
+                    OUTPUT_QUIET
+                    ERROR_VARIABLE CHECKOUT_ERROR
+                )
+                
+                if(NOT CHECKOUT_RESULT EQUAL 0)
+                    # Checkout failed - give clear instructions
+                    message(FATAL_ERROR "${VCPKG_MISMATCH_MSG}\n${VCPKG_DETAILS_MSG}\nFailed to checkout vcpkg baseline commit: ${CHECKOUT_ERROR}\nPlease update vcpkg manually:\n  cd vcpkg\n  git fetch origin\n  git checkout ${EXPECTED_VCPKG_COMMIT}\n\nOr disable auto-update: cmake -DVCPKG_AUTO_UPDATE_SUBMODULE=OFF ..")
+                endif()
+                
+                message(STATUS "Successfully updated vcpkg submodule to baseline: ${EXPECTED_VCPKG_COMMIT}")
+                message(STATUS "NOTE: vcpkg submodule is now in detached HEAD state at commit ${EXPECTED_VCPKG_COMMIT}")
+                message(STATUS "NOTE: The parent repository will show vcpkg as modified. This is normal for submodule updates.")
+                message(STATUS "NOTE: If you wish to work on a branch in vcpkg, check out the desired branch in the vcpkg directory.")
+            else()
+                message(FATAL_ERROR "${VCPKG_MISMATCH_MSG}\n${VCPKG_DETAILS_MSG}\nPlease update vcpkg manually:\n  cd vcpkg && git checkout ${EXPECTED_VCPKG_COMMIT}\n\nOr enable auto-update: cmake -DVCPKG_AUTO_UPDATE_SUBMODULE=ON ..")
+            endif()
+        else()
+            message(STATUS "vcpkg submodule is at expected baseline: ${CURRENT_VCPKG_COMMIT}")
+        endif()
+        endif()
+    else()
+        message(WARNING "Could not read baseline from vcpkg-configuration.json default-registry section")
+    endif()
+else()
+    message(WARNING "vcpkg-configuration.json not found, cannot verify submodule version")
+endif()
+
 set(VCPKG_FILES_DIR "${CMAKE_BINARY_DIR}" CACHE STRING "Folder for vcpkg download, build and installed files")
 set(CMAKE_TOOLCHAIN_FILE ${HPCC_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake)
 set(VCPKG_ROOT ${HPCC_SOURCE_DIR}/vcpkg)
