@@ -568,6 +568,84 @@ const char * peekStringList(std::vector<size32_t> & matchOffsets, IBufferedSeria
     }
 }
 
+const char * peekAttributeStringList(std::vector<size32_t> & matches, IBufferedSerialInputStream & in, size32_t & len)
+{
+    size32_t scanned = 0;
+    size32_t startNext = 0;
+    bool expectingValue = false;
+
+    for (;;)
+    {
+        size32_t got;
+        const char * start = (const char *)in.peek(scanned+1, got);
+        if (unlikely(got <= scanned))
+        {
+            len = scanned;
+            if (startNext == scanned)
+            {
+                //End of file, but the last string was null terminated...
+                return start;
+            }
+            return nullptr;
+        }
+
+        const char * searchStart = start + scanned;
+        size32_t searchLen = got - scanned;
+
+        // null-byte scanning in the newly available portion
+        const char * nullPos;
+        while ((nullPos = (const char *)memchr(searchStart, '\0', searchLen)) != nullptr)
+        {
+            size32_t offset = nullPos - start;
+
+            if (unlikely(offset == startNext))
+            {
+                // Found a null terminator or an empty string at the start of a field
+                // Determine if this is valid based on what we're expecting
+                size32_t secondCharOffset = offset + 1;
+                size32_t thirdCharOffset = offset + 2;
+
+                if (thirdCharOffset < got)
+                {
+                    if (expectingValue)
+                    {
+                        char nextChar = start[secondCharOffset];
+                        if (nextChar == '\0' ||
+                            (nextChar == '@' && isValidXPathStartChr(start[thirdCharOffset]))) // @ could be the size of CPTValue so check char after it
+                        {
+                            // Valid empty value
+                            matches.push_back(startNext);
+                            expectingValue = false;
+                            startNext = secondCharOffset;
+
+                            searchStart = nullPos + 1;
+                            searchLen = got - secondCharOffset;
+                            continue;
+                        }
+                    }
+                    // else: Empty name is not allowed - fall through to terminator handling
+                }
+
+                // Either not enough data to decide, or invalid empty field, treat as list terminator
+                len = offset + 1;
+                return start;
+            }
+            else
+            {
+                matches.push_back(startNext);
+                expectingValue = !expectingValue;
+                startNext = offset + 1;
+
+                searchStart = nullPos + 1;
+                searchLen = got - startNext;
+            }
+        }
+
+        // No more nulls found in current buffer, need to peek more data
+        scanned = got;
+    }
+}
+
 //---------------------------------------------------------------------------
 
 class CFileSerialInputStream final : public CInterfaceOf<ISerialInputStream>
