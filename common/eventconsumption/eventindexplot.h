@@ -47,8 +47,13 @@ protected:
             StringAttr linkId;
             StringAttr xpath;
             StringAttr value;
+
+            Delta(const IPropertyTree& delta) : linkId(delta.queryProp("@linkId")), xpath(delta.queryProp("@xpath")), value(delta.queryProp("@value")) {}
         };
         std::vector<Delta> deltas;
+
+        Iteration() = default;
+        Iteration(const char* name, std::vector<Delta>&& _deltas) : name(name), deltas(std::move(_deltas)) {}
     };
 
     using Iterations = std::vector<Iteration>;
