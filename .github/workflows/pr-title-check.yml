@@ -1,0 +1,105 @@
+# PR Title Validation
+# ====================
+# Ensures pull request titles start with "HPCC-" followed by digits
+#
+name: pr-title-check
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+    branches:
+      - "master"
+      - "candidate-*"
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  validate-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Check PR title format
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          echo "Checking PR title: $PR_TITLE"
+
+          # Check if title starts with HPCC- (case sensitive) followed by digits
+          if echo "$PR_TITLE" | grep -qE '^HPCC-[0-9]+'; then
+            echo "✓ PR title is valid: starts with HPCC- followed by digits"
+          else
+            echo "✗ PR title is invalid"
+            echo ""
+            echo "PR titles must start with 'HPCC-' (case insensitive) followed by digits."
+            echo "Examples:"
+            echo "  ✓ HPCC-12345 Fix memory leak in Thor"
+            echo "  ✗ hpcc-999 Update documentation"
+            echo "  ✗ Fix memory leak"
+            echo "  ✗ HPCC- Missing ticket number"
+            exit 1
+          fi
+
+      - name: Check first commit message format and signature
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          echo "Getting first commit in PR..."
+
+          # Get the first commit in the PR
+          FIRST_COMMIT=$(git rev-list --reverse ${BASE_SHA}..${HEAD_SHA} | head -n 1)
+
+          if [ -z "$FIRST_COMMIT" ]; then
+            echo "✗ Could not determine first commit"
+            exit 1
+          fi
+
+          # Get the commit message (first line)
+          COMMIT_MSG=$(git log --format=%s -n 1 $FIRST_COMMIT)
+          echo "First commit message: $COMMIT_MSG"
+
+          # Get the full commit message body
+          FULL_COMMIT_MSG=$(git log --format=%B -n 1 $FIRST_COMMIT)
+
+          # Check if commit message starts with HPCC- (case sensitive) followed by digits
+          if echo "$COMMIT_MSG" | grep -qE '^HPCC-[0-9]+'; then
+            echo "✓ First commit message is valid: starts with HPCC- followed by digits"
+          else
+            echo "✗ First commit message is invalid"
+            echo ""
+            echo "The first commit message must start with 'HPCC-' (case sensitive) followed by digits."
+            echo "Examples:"
+            echo "  ✓ HPCC-12345 Fix memory leak in Thor"
+            echo "  ✓ HPCC-999: Update documentation"
+            echo "  ✗ hpcc-999 Wrong case"
+            echo "  ✗ Fix memory leak"
+            echo "  ✗ HPCC- Missing ticket number"
+            exit 1
+          fi
+
+          # Check if commit is signed
+          if echo "$FULL_COMMIT_MSG" | grep -q "^Signed-off-by: "; then
+            echo "✓ First commit is signed"
+          else
+            echo "✗ First commit is not signed"
+            echo ""
+            echo "The first commit must include a 'Signed-off-by:' line."
+            echo "To sign your commits, use: git commit -s"
+            echo ""
+            echo "Example commit message:"
+            echo "  HPCC-12345 Fix memory leak in Thor"
+            echo "  "
+            echo "  This fixes a memory leak in the Thor component."
+            echo "  "
+            echo "  Signed-off-by: Your Name <your.email@example.com>"
+            exit 1
+          fi
+
+          exit 0
