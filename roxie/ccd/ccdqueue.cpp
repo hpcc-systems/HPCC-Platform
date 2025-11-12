@@ -244,6 +244,28 @@ unsigned getReplicationLevel(unsigned channel)
     return topology->queryChannelInfo(channel).replicationLevel();
 }
 
+static bool anyChannelHasReplicas()
+{
+    // In containerized environments, replicas are potentially dynamic - so always assume they may exist
+    if (isContainerized())
+        return true;
+
+    // Check if any configured channel has more than one agent (replicas)
+    // This is used to determine if IBYTI infrastructure is needed
+    Owned<const ITopologyServer> topology = getTopology();
+    const std::vector<unsigned> channels = topology->queryChannels();
+    for (unsigned channel : channels)
+    {
+        if (channel != 0) // Skip channel 0 (broadcast channel)
+        {
+            const SocketEndpointArray &eps = topology->queryAgents(channel);
+            if (eps.ordinality() > 1)
+                return true;
+        }
+    }
+    return false;
+}
+
 //============================================================================================
 
 // A callback interface for processing Roxie worker requests
@@ -1317,7 +1339,7 @@ class RoxieQueue : public CInterface, implements IThreadFactory
 public:
     IMPLEMENT_IINTERFACE;
 
-    RoxieQueue(unsigned _numWorkers, const char *qname=nullptr)
+    RoxieQueue(unsigned _numWorkers, const char *qname, bool enableIBYTI)
     {
         numWorkers = _numWorkers;
         StringBuffer tname("RoxieWorkers");
@@ -1333,7 +1355,8 @@ public:
         }
         started = 0;
         idle = 0;
-        if (IBYTIbufferSize)
+        // Only allocate IBYTIbuffer if we have replicas - otherwise it's wasted memory
+        if (IBYTIbufferSize && enableIBYTI)
             myIBYTIbuffer = new IBYTIbuffer(IBYTIbufferSize);
     }
 
@@ -1901,6 +1924,7 @@ public:
 class RoxieReceiverBase : implements IRoxieOutputQueueManager, public CInterface
 {
 protected:
+    bool enableIBYTI;
     RoxieQueue slaQueue;
     RoxieQueue hiQueue;
     RoxieQueue loQueue;
@@ -1908,10 +1932,15 @@ protected:
     unsigned numWorkers;
 
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE
 
-    RoxieReceiverBase(unsigned _numWorkers) : slaQueue(_numWorkers, "SLA"), hiQueue(_numWorkers, "HIGH"), loQueue(_numWorkers, "LOW"), bgQueue(_numWorkers, "BG"), numWorkers(_numWorkers)
+    RoxieReceiverBase(unsigned _numWorkers)
+     : enableIBYTI(anyChannelHasReplicas()),
+       slaQueue(_numWorkers, "SLA", enableIBYTI), hiQueue(_numWorkers, "HIGH", enableIBYTI),
+       loQueue(_numWorkers, "LOW", enableIBYTI), bgQueue(_numWorkers, "BG", enableIBYTI), numWorkers(_numWorkers)
     {
+        if (!enableIBYTI)
+            LOG(MCoperatorInfo, "IBYTI tracking disabled because channels do not have replicas");
     }
 
     virtual void start() 
@@ -2636,7 +2665,7 @@ public:
         bool preActivity = false;
         unsigned mySubChannel = header.mySubChannel();
 
-        if (header.retries == QUERY_ABORTED)
+        if (unlikely(header.retries == QUERY_ABORTED))
         {
             bool foundInQ = false;
             foundInQ = mySubChannel != 0 && delayed.queryQueue(header.channel, mySubChannel).doIBYTI(header);
@@ -2650,47 +2679,46 @@ public:
                 StringBuffer s; 
                 DBGLOG("Abort activity %s", header.toString(s).str());
             }
+            return;
+        }
+
+        unsigned subChannel = header.getRespondingSubChannel();
+        if (subChannel == mySubChannel)
+        {
+            if (doTrace(traceRoxiePackets))
+                DBGLOG("doIBYTI packet was from self");
         }
         else
         {
-            unsigned subChannel = header.getRespondingSubChannel();
-            if (subChannel == mySubChannel)
+            noteNodeHealthy(header.subChannels[subChannel]);
+            bool foundInQ = mySubChannel != 0 && delayed.queryQueue(header.channel, mySubChannel).doIBYTI(header);
+            if (!foundInQ)
+                foundInQ = queue.remove(header);  // Check on list waiting for a free worker
+            if (foundInQ)
             {
-                if (doTrace(traceRoxiePackets))
-                    DBGLOG("doIBYTI packet was from self");
-            }
-            else
-            {
-                noteNodeHealthy(header.subChannels[subChannel]);
-                bool foundInQ = mySubChannel != 0 && delayed.queryQueue(header.channel, mySubChannel).doIBYTI(header);
-                if (!foundInQ)
-                    foundInQ = queue.remove(header);  // Check on list waiting for a free worker
-                if (foundInQ)
-                {
-                    if (doTrace(traceRoxiePackets))
-                    {
-                        StringBuffer s; 
-                        DBGLOG("Removed activity from Q : %s", header.toString(s).str());
-                    }
-                    return;
-                }
-                if (abortRunning(header, queue, true, preActivity))
-                {
-                    if (doTrace(traceRoxiePackets))
-                    {
-                        StringBuffer s;
-                        DBGLOG("Aborted running activity : %s", header.toString(s).str());
-                    }
-                    return;
-                }               
                 if (doTrace(traceRoxiePackets))
                 {
                     StringBuffer s;
-                    DBGLOG("doIBYTI packet was too late (or too early, or too low priority) : %s", header.toString(s).str());
+                    DBGLOG("Removed activity from Q : %s", header.toString(s).str());
                 }
-                if (IBYTIbufferSize)
-                    queue.noteOrphanIBYTI(header);
+                return;
             }
+            if (abortRunning(header, queue, true, preActivity))
+            {
+                if (doTrace(traceRoxiePackets))
+                {
+                    StringBuffer s;
+                    DBGLOG("Aborted running activity : %s", header.toString(s).str());
+                }
+                return;
+            }
+            if (doTrace(traceRoxiePackets))
+            {
+                StringBuffer s;
+                DBGLOG("doIBYTI packet was too late (or too early, or too low priority) : %s", header.toString(s).str());
+            }
+
+            queue.noteOrphanIBYTI(header);
         }
     }
 
@@ -2732,7 +2760,8 @@ public:
                 }
                 doFileCallback(packet);
             }
-            else if (IBYTIbufferSize && queue.lookupOrphanIBYTI(header))
+            // Skip orphan IBYTI lookup if no buddies - IBYTI packets won't be sent without replicas
+            else if (header.hasBuddies() && queue.lookupOrphanIBYTI(header))
             {
                 if (doTrace(traceRoxiePackets))
                 {
@@ -2796,17 +2825,18 @@ public:
                                 break;
                             }
                         }
-                    }
 
-                    if (!alreadyRunning && checkCompleted && ROQ->replyPending(header))
-                    {
-                        alreadyRunning = true;
-                        ROQ->sendIbyti(header, logctx, mySubchannel);
-                        if (doTrace(traceRoxiePackets, TraceFlags::Max))
+                        if (!alreadyRunning && checkCompleted && ROQ->replyPending(header))
                         {
-                            StringBuffer xx; logctx.CTXLOG("Ignored retry on subchannel %u for completed activity %s", mySubchannel, header.toString(xx).str());
+                            alreadyRunning = true;
+                            ROQ->sendIbyti(header, logctx, mySubchannel);
+                            if (doTrace(traceRoxiePackets, TraceFlags::Max))
+                            {
+                                StringBuffer xx; logctx.CTXLOG("Ignored retry on subchannel %u for completed activity %s", mySubchannel, header.toString(xx).str());
+                            }
                         }
                     }
+
                     if (!alreadyRunning)
                     {
                         if (doTrace(traceRoxiePackets, TraceFlags::Max))
@@ -2818,7 +2848,7 @@ public:
                         // It's debatable whether we should delay for the primary here - they had one chance already...
                         // But then again, so did we, assuming the timeout is longer than the IBYTIdelay
                         unsigned delay = 0;
-                        if (mySubchannel != 0)  // i.e. I am not the primary here
+                        if (mySubchannel != 0)  // i.e. I am not the primary here and there are replicas (no delay if no buddies)
                         {
                             for (unsigned subChannel = 0; subChannel < mySubchannel; subChannel++)
                                 delay += getIbytiDelay(header.subChannels[subChannel]);
@@ -2837,7 +2867,7 @@ public:
                 {
                     WorkerReceiverTracker::TimeDivision division(timeTracker, WorkerReceiverTracker::pushing);
                     unsigned delay = 0;
-                    if (mySubchannel != 0 && (header.activityId & ~ROXIE_PRIORITY_MASK) < ROXIE_ACTIVITY_SPECIAL_FIRST)  // i.e. I am not the primary here, and never delay special
+                    if (mySubchannel != 0 && (header.activityId & ~ROXIE_PRIORITY_MASK) < ROXIE_ACTIVITY_SPECIAL_FIRST)  // i.e. I am not the primary here, there are replicas, and never delay special
                     {
                         for (unsigned subChannel = 0; subChannel < mySubchannel; subChannel++)
                             delay += getIbytiDelay(header.subChannels[subChannel]);
@@ -2902,7 +2932,10 @@ public:
     {
         RoxieReceiverBase::start();
         timeTracker.reset(WorkerReceiverTracker::waiting);
-        delayedPacketProcessor.start(false);
+        // Only start delayed packet processor thread if there are replicas
+        // Without replicas, packets are never delayed for IBYTI
+        if (enableIBYTI)
+            delayedPacketProcessor.start(false);
         workerCommunicator->startListening(*this);
     }
 
