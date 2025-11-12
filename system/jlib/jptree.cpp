@@ -87,6 +87,13 @@ static AtomRefTable *keyTable = nullptr;
 static AtomRefTable *keyTableNC = nullptr;
 
 static CriticalSection hashcrit;
+/* DJPS
+Owned<ReleasableHashCritSection> getOwnedHashcrit()
+{
+    ReleasableHashCritSection *pHashcrit = new ReleasableHashCritSection(hashcrit);
+	return pHashcrit;
+}
+*/
 static CAttrValHashTable *attrHT = nullptr;
 static AttrValue **freelist = nullptr;
 static unsigned freelistmax = 0;
@@ -3784,6 +3791,12 @@ AttrValue *PTree::getNextAttribute(AttrValue *cur) const
             return nullptr;
         return ++cur;
     }
+}
+
+Owned<CReleasableCriticalSection> PTree::getOwnedHashcrit()
+{
+    CReleasableCriticalSection *pHashcrit = new CReleasableCriticalSection(hashcrit);
+	return pHashcrit;
 }
 
 

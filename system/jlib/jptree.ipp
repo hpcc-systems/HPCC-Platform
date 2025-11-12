@@ -763,6 +763,7 @@ public:
 
 protected:
     aindex_t getChildMatchPos(const char *xpath);
+    Owned<CReleasableCriticalSection> getOwnedHashcrit();
 
     virtual ChildMap *checkChildren() const;
     virtual bool isEquivalent(IPropertyTree *tree) const { return (nullptr != QUERYINTERFACE(tree, PTree)); }

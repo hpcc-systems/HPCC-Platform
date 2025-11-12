@@ -1180,7 +1180,7 @@ public:
 
     static std::vector<KV> buildDataset(size_t targetSize)
     {
-        // For small target sizes keep the original handcrafted base to preserve existing test expectations
+        // For small target sizes use the following test expectations
         if (targetSize <= 11)
         {
             std::vector<KV> base = {

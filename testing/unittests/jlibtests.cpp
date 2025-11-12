@@ -4549,6 +4549,27 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeCombinedTimingStressTest, "PTreeCombi
 CPPUNIT_TEST_SUITE_REGISTRATION(PTreeBinaryDeserializationProfilingStressTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeBinaryDeserializationProfilingStressTest, "PTreeBinaryDeserializationProfilingStressTest");
 
+
+//=====================================================================================================================
+
+class PTreeHashCritTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(PTreeHashCritTest);
+        CPPUNIT_TEST(runAllTests);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void runAllTests()
+    {
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(PTreeHashCritTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeHashCritTest, "PTreeHashCritTest");
+
+
+//=====================================================================================================================
+
 #include "jdebug.hpp"
 #include "jmutex.hpp"
 #include <shared_mutex>
@@ -4851,6 +4872,24 @@ private:
 
 CPPUNIT_TEST_SUITE_REGISTRATION(AtomicTimingStressTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(AtomicTimingStressTest, "AtomicTimingStressTest");
+
+
+//=====================================================================================================================
+
+class ReleasableCriticalSectionTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(ReleasableCriticalSectionTest);
+        CPPUNIT_TEST(runAllTests);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void runAllTests()
+    {
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(ReleasableCriticalSectionTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(ReleasableCriticalSectionTest, "ReleasableCriticalSectionTest");
 
 
 //=====================================================================================================================
