@@ -1510,31 +1510,39 @@ Pass in a dictionary with me defined
 {{- $resourceWholeCpusWithLimits := hasKey .root.Values.global "resourceWholeCpusWithLimits" | ternary .root.Values.global.resourceWholeCpusWithLimits false -}}
 {{- if not $omitResources }}
 {{-  if $resources }}
-{{-   $limits := omit $resources "cpu" }}
-{{-   $requests := dict }}
-{{-   if hasKey $resources "cpu"  -}}
-{{-    $cpu := $resources.cpu }}
-{{-    if $resourceCpusWithLimits -}}
-{{-     $_ := set $limits "cpu" $cpu -}}
-{{-    else if $resourceWholeCpusWithLimits -}}
-{{-     $milliCPUs := int (include "hpcc.k8sCPUStringToMilliCPU" $cpu) }}
-{{-     if eq (mod $milliCPUs 1000) 0 -}}
+{{/*   Check if resources are already in structured format */}}
+{{-   if or (hasKey $resources "requests") (hasKey $resources "limits") }}
+{{/*    Already structured - pass through unchanged */}}
+resources:
+{{-    toYaml $resources | nindent 2 }}
+{{-   else }}
+{{/*    Flat format - convert to structured */}}
+{{-    $limits := omit $resources "cpu" }}
+{{-    $requests := dict }}
+{{-    if hasKey $resources "cpu"  -}}
+{{-     $cpu := $resources.cpu }}
+{{-     if $resourceCpusWithLimits -}}
 {{-      $_ := set $limits "cpu" $cpu -}}
+{{-     else if $resourceWholeCpusWithLimits -}}
+{{-      $milliCPUs := int (include "hpcc.k8sCPUStringToMilliCPU" $cpu) }}
+{{-      if eq (mod $milliCPUs 1000) 0 -}}
+{{-       $_ := set $limits "cpu" $cpu -}}
+{{-      else -}}
+{{-       $_ := set $requests "cpu" $cpu -}}
+{{-      end -}}
 {{-     else -}}
 {{-      $_ := set $requests "cpu" $cpu -}}
 {{-     end -}}
-{{-    else -}}
-{{-     $_ := set $requests "cpu" $cpu -}}
-{{-    end -}}
-{{-   end }}
+{{-    end }}
 resources:
-{{-   if $limits }}
+{{-    if $limits }}
   limits:
-{{-    toYaml $limits | nindent 4 }}
-{{-   end -}}
-{{-   if $requests }}
+{{-     toYaml $limits | nindent 4 }}
+{{-    end -}}
+{{-    if $requests }}
   requests:
-{{-    toYaml $requests | nindent 4 -}}
+{{-     toYaml $requests | nindent 4 -}}
+{{-    end -}}
 {{-   end -}}
 {{-  end -}}
 {{- end -}}
