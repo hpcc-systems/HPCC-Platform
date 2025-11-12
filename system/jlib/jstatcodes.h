@@ -333,6 +333,7 @@ enum StatisticKind
     StNumCacheDuplicates,
     StNumCacheEvictions,
     StSizeOffsetBranches,
+    StSizeOffsetRoot,
     StSizeBranchMemory,
     StSizeLeafMemory,
     StSizeLargestExpandedLeaf,
