@@ -18,6 +18,7 @@
 #include "jliball.hpp"
 
 #include "workunit.hpp"
+#include "environment.hpp"
 #include "anacommon.hpp"
 #include "anarule.hpp"
 #include "anawu.hpp"
@@ -81,6 +82,10 @@ constexpr struct WuOption wuOptionsDefaults[watOptMax]
     /* Note watClusterCostPerHour cannot be used as debug option or config option (this is calculated) */
     {watClusterCostPerHour, "costRatePerHour", 0, wutOptValueTypeCost},
     {watOptMaxExecuteTime, "maxExecuteTime", msecs2StatUnits(5000), wutOptValueTypeMSec},
+    {watOptSoapCallTimeAggregateThreshold, "soapCallAggregateTimeThreshold", seconds2StatUnits(300), wutOptValueTypeMSec}, // 5 minutes
+    {watOptSoapCallRowAvgThreshold, "soapCallRowAvgThreshold", msecs2StatUnits(500), wutOptValueTypeCount}, // 0.5 seconds
+    {watOptSoapCallWarnClusterSize, "soapCallWarnClusterSize", 5, wutOptValueTypeCount},
+    {watOptClusterSize, "clusterSize", 1, wutOptValueTypeCount}, // Thor cluster size
 };
 
 constexpr bool checkWuOptionsDefaults(int i = watOptMax)
@@ -1459,6 +1464,27 @@ void WorkunitRuleAnalyser::applyConfig(IPropertyTree *cfg, IConstWorkUnit * wu, 
     /* watClusterCostPerHour is calculated by caller and its value is set in options*/
     /* (So, watClusterCostPerHour cannot be used as debug option or config option)*/
     options.setOptionValue(watClusterCostPerHour, money2cost_type(costRate));
+
+    // Set cluster size from workunit cluster information
+    try
+    {
+        const char * clusterName = wu->queryClusterName();
+        if (clusterName && *clusterName)
+        {
+            Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName);
+            if (clusterInfo)
+            {
+                unsigned clusterSize = clusterInfo->getSize();
+                if (clusterSize > 0)
+                    options.setOptionValue(watOptClusterSize, clusterSize);
+            }
+        }
+    }
+    catch(...)
+    {
+        // If cluster info can't be retrieved, uses preconfigured default value (1)
+    }
+
     maxExecuteCycles = millisec_to_cycle(statUnits2msecs(options.queryOption(watOptMaxExecuteTime)));
 }
 

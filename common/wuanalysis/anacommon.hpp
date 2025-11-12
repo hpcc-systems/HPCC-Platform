@@ -73,7 +73,6 @@ public:
     void setScope(const char *_scope) { scope.set(_scope); }
     stat_type getTimePenalty() const { return timePenalty; }
     cost_type getCostPenalty() const { return costPenalty; }
-
 private:
     AnalyzerErrorCode errorCode = ANA_GENERICERROR_ID;
     StringBuffer filename;
@@ -96,6 +95,10 @@ enum WutOptionType
     watPreFilteredKJThreshold,
     watClusterCostPerHour,
     watOptMaxExecuteTime,
+    watOptSoapCallTimeAggregateThreshold,
+    watOptSoapCallRowAvgThreshold,
+    watOptSoapCallWarnClusterSize,
+    watOptClusterSize,
     watOptMax
 };
 

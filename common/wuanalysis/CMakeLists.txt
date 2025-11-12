@@ -50,6 +50,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/rtl/eclrtl
          ${HPCC_SOURCE_DIR}/common/thorhelper
          ${HPCC_SOURCE_DIR}/common/workunit
+         ${HPCC_SOURCE_DIR}/common/environment
     )
 
 HPCC_ADD_LIBRARY( wuanalysis SHARED ${SRCS} )
@@ -66,4 +67,5 @@ target_link_libraries ( wuanalysis
          hrpc
          workunit
          thorhelper
+         environment
     )
