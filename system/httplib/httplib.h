@@ -926,6 +926,7 @@ protected:
     client_cert_path_ = rhs.client_cert_path_;
     client_key_path_ = rhs.client_key_path_;
     connection_timeout_sec_ = rhs.connection_timeout_sec_;
+    connection_timeout_usec_ = rhs.connection_timeout_usec_;
     read_timeout_sec_ = rhs.read_timeout_sec_;
     read_timeout_usec_ = rhs.read_timeout_usec_;
     write_timeout_sec_ = rhs.write_timeout_sec_;
@@ -1182,7 +1183,7 @@ private:
   bool is_ssl() const override;
 
   bool connect_with_proxy(Socket &sock, Response &res, bool &success);
-  bool initialize_ssl(Socket &socket);
+  bool initialize_ssl(Socket &socket, unsigned timeoutMs);
 
   bool load_certs();
 
@@ -4638,24 +4639,32 @@ inline bool ClientImpl::send(const Request &req, Response &res) {
     }
 
     if (!is_alive) {
+#ifdef CPPHTTPLIB_OPENSSL_SUPPORT
+      CCycleTimer timer;
+#endif
       if (!create_and_connect_socket(socket_))
       {
         OERRLOG("HTTPLIB Error create_and_connect_socket failed");
         return false;
       }
-
 #ifdef CPPHTTPLIB_OPENSSL_SUPPORT
       // TODO: refactoring
       if (is_ssl()) {
         auto &scli = static_cast<SSLClient &>(*this);
         if (!proxy_host_.empty()) {
           bool success = false;
+          // NOTE: if using proxy then up to 2x connect time
           if (!scli.connect_with_proxy(socket_, res, success)) {
             return success;
           }
         }
 
-        if (!scli.initialize_ssl(socket_))
+        unsigned connTimeMs = (connection_timeout_sec_ * 1000) + (connection_timeout_usec_ / 1000);
+        unsigned remainingMs = timer.remainingMs(connTimeMs);
+        if (remainingMs == 0)
+          return false;
+
+        if (!scli.initialize_ssl(socket_, remainingMs))
         {
           OERRLOG("HTTPLIB Error initialize_ssl failed");
           return false;
@@ -5462,6 +5471,9 @@ enum SSLMethod { SSL_ACCEPT_METHOD, SSL_CONNECT_METHOD };
 
 inline int SSL_handleWait(SSL *ssl, socket_t sock, int errCode, int *sslErr, unsigned remainingMs)
 {
+    if (remainingMs == 0)
+        return 0;
+
     int retCode;
     unsigned secs = remainingMs / 1000;
     unsigned usecs = (remainingMs % 1000) * 1000;
@@ -5488,14 +5500,14 @@ inline int SSL_handleWait(SSL *ssl, socket_t sock, int errCode, int *sslErr, uns
     return retCode;
 }
 
-inline int SSL_timedAcceptorConnect(SSL *ssl, socket_t sock, SSLMethod method)
+inline int SSL_timedAcceptorConnect(SSL *ssl, socket_t sock, SSLMethod method, unsigned timeoutMs=60000)
 {
-    unsigned timeoutMs = 60*1000;
     unsigned remainingMs;
     CCycleTimer timer;
     int retCode;
     int result;
     int sslErr;
+
     while (true)
     {
         ERR_clear_error();
@@ -5532,6 +5544,7 @@ inline int SSL_timedAcceptorConnect(SSL *ssl, socket_t sock, SSLMethod method)
             OERRLOG("HTTPLIB Error : %s", errmsg.str());
             break;
         }
+        // another attempt ...
     }
 
     return result;
@@ -5552,7 +5565,7 @@ inline SSL *ssl_new(socket_t sock, SSL_CTX *ctx, std::mutex &ctx_mutex,
     auto bio = BIO_new_socket(static_cast<int>(sock), BIO_NOCLOSE);
     SSL_set_bio(ssl, bio, bio);
 
-    int retCode;
+    int retCode = 0;
     bool setupResult = setup(ssl);
 
     if (setupResult)
@@ -5973,7 +5986,7 @@ inline bool SSLClient::load_certs() {
   return ret;
 }
 
-inline bool SSLClient::initialize_ssl(Socket &socket) {
+inline bool SSLClient::initialize_ssl(Socket &socket, unsigned timeoutMs) {
   auto ssl = detail::ssl_new(
       socket.sock, ctx_, ctx_mutex_,
       [&](SSL *ssl) {
@@ -5986,7 +5999,7 @@ inline bool SSLClient::initialize_ssl(Socket &socket) {
           SSL_set_verify(ssl, SSL_VERIFY_NONE, nullptr);
         }
 
-        if (SSL_timedAcceptorConnect(ssl, socket.sock, SSL_CONNECT_METHOD) != 1) {
+        if (SSL_timedAcceptorConnect(ssl, socket.sock, SSL_CONNECT_METHOD, timeoutMs) != 1) {
           OERRLOG("HTTPLIB Error connecting ssl");
           error_ = Error::SSLConnection;
           return false;
