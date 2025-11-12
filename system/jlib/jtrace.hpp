@@ -463,13 +463,18 @@ struct TraceOption { const char * name; TraceFlags value; };
 
 //========================================================================================= 
 
+#define COMMON_TRACE_OPTIONS \
+    TRACEOPT(traceNone), \
+    TRACEOPT(traceStandard), \
+    TRACEOPT(traceDetailed), \
+    TRACEOPT(traceMax), \
+    TRACEOPT(traceDetail), \
+    TRACEOPT(traceAll), /* place before the other options so you can enable all and selectively disable */ \
+    TRACEOPT(traceThreadStartup)
+
 constexpr std::initializer_list<TraceOption> roxieTraceOptions
 { 
-    TRACEOPT(traceNone),
-    TRACEOPT(traceStandard),
-    TRACEOPT(traceDetailed),
-    TRACEOPT(traceMax),
-    TRACEOPT(traceDetail), // set after individual trace levels, giving this value precedence
+    COMMON_TRACE_OPTIONS,
     TRACEOPT(traceHttp),
     TRACEOPT(traceSockets),
     TRACEOPT(traceCassandra),
@@ -478,7 +483,6 @@ constexpr std::initializer_list<TraceOption> roxieTraceOptions
     TRACEOPT(traceFilters),
     TRACEOPT(traceKafka),
     TRACEOPT(traceJava),
-    TRACEOPT(traceThreadStartup),
     TRACEOPT(traceRoxieLock), 
     TRACEOPT(traceQueryHashes), 
     TRACEOPT(traceSubscriptions),
@@ -499,35 +503,20 @@ constexpr std::initializer_list<TraceOption> roxieTraceOptions
 
 constexpr std::initializer_list<TraceOption> thorTraceOptions
 {
-    TRACEOPT(traceNone),
-    TRACEOPT(traceAll),             // place before the other options so you can enable all and selectively disable
-    TRACEOPT(traceStandard),
-    TRACEOPT(traceDetailed),
-    TRACEOPT(traceMax),
-    TRACEOPT(traceDetail), // set after individual trace levels, giving this value precedence
+    COMMON_TRACE_OPTIONS,
     TRACEOPT(traceGraphDtor),
 };
 
 constexpr std::initializer_list<TraceOption> eclccTraceOptions
 {
-    TRACEOPT(traceNone),
-    TRACEOPT(traceAll),             // place before the other options so you can enable all and selectively disable
-    TRACEOPT(traceStandard),
-    TRACEOPT(traceDetailed),
-    TRACEOPT(traceMax),
-    TRACEOPT(traceDetail), // set after individual trace levels, giving this value precedence
+    COMMON_TRACE_OPTIONS,
     TRACEOPT(traceOptimizations),
     TRACEOPT(traceResources),
 };
 
 constexpr std::initializer_list<TraceOption> dfuServerTraceOptions
 {
-    TRACEOPT(traceNone),
-    TRACEOPT(traceAll),             // place before the other options so you can enable all and selectively disable
-    TRACEOPT(traceStandard),
-    TRACEOPT(traceDetailed),
-    TRACEOPT(traceMax),
-    TRACEOPT(traceDetail), // set after individual trace levels, giving this value precedence
+    COMMON_TRACE_OPTIONS,
     TRACEOPT(traceSprayDetails),
     TRACEOPT(tracePartitionDetails),
     TRACEOPT(traceDaFsClient),
@@ -535,12 +524,7 @@ constexpr std::initializer_list<TraceOption> dfuServerTraceOptions
 
 constexpr std::initializer_list<TraceOption> dafilesrvServerTraceOptions
 {
-    TRACEOPT(traceNone),
-    TRACEOPT(traceAll),             // place before the other options so you can enable all and selectively disable
-    TRACEOPT(traceStandard),
-    TRACEOPT(traceDetailed),
-    TRACEOPT(traceMax),
-    TRACEOPT(traceDetail), // set after individual trace levels, giving this value precedence
+    COMMON_TRACE_OPTIONS,
     TRACEOPT(traceSprayDetails),
     TRACEOPT(tracePartitionDetails),
 };
