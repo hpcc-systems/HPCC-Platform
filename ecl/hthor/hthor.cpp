@@ -1248,6 +1248,7 @@ void CHThorIndexWriteActivity::execute()
     unsigned __int64 reccount = 0;
     unsigned int fileCrc = -1;
     offset_t offsetBranches = 0;
+    offset_t offsetRoot = 0;
     offset_t uncompressedSize = 0;
     unsigned __int64 numLeafNodes = 0;
     unsigned __int64 numBlobNodes = 0;
@@ -1362,6 +1363,7 @@ void CHThorIndexWriteActivity::execute()
         totalBlobNodes += numBlobNodes;
         numDiskWrites = io->getStatistic(StNumDiskWrites);
         offsetBranches = builder->getStatistic(StSizeOffsetBranches);
+        offsetRoot = builder->getStatistic(StSizeOffsetRoot);
         out->flush();
         out.clear();
         io->close();
@@ -1415,6 +1417,7 @@ void CHThorIndexWriteActivity::execute()
     attrs->setPropInt64("@size", indexFileSize);
     attrs->setPropInt64("@recordCount", reccount);
     attrs->setPropInt64("@offsetBranches", offsetBranches);
+    attrs->setPropInt64("@offsetRoot", offsetRoot);
 
     CDateTime createTime, modifiedTime, accessedTime;
     file->getTime(&createTime, &modifiedTime, &accessedTime);
