@@ -96,6 +96,10 @@ enum WutOptionType
     watPreFilteredKJThreshold,
     watClusterCostPerHour,
     watOptMaxExecuteTime,
+    watOptSoapCallTimeAggregateThreshold,
+    watOptSoapCallRowAvgThreshold,
+    watOptSoapCallWarnClusterSize,
+    watOptClusterSize,
     watOptMax
 };
 
