@@ -27,10 +27,6 @@
 #include <random>
 #include <vector>
 
-#ifdef CALLGRIND_PROFILING
-#include <valgrind/callgrind.h>
-#endif
-
 #include "jsem.hpp"
 #include "jfile.hpp"
 #include "jdebug.hpp"
@@ -42,7 +38,7 @@
 #include "jsecrets.hpp"
 #include "jutil.hpp"
 #include "junicode.hpp"
-#include "zcrypt.hpp"
+#include "jtrace.hpp"
 
 #include "opentelemetry/sdk/common/attribute_utils.h"
 #include "opentelemetry/sdk/resource/resource.h"
@@ -3417,8 +3413,6 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIPTTest, "JlibIPTTest");
 #include "jio.hpp"
 #include "jstring.hpp"
 #include <string>
-#include <vector>
-#include <sstream>
 
 IPropertyTree *createCompatibilityConfigPropertyTree()
 {
@@ -3582,10 +3576,13 @@ IPropertyTree *createCompatibilityConfigPropertyTree()
     return root.getClear();
 }
 
-IPropertyTree *createBinaryDataCompressionTestPTree()
+IPropertyTree *createBinaryDataCompressionTestPTree(const char *testXml)
 {
+    // Validate the testXml parameter
+    CPPUNIT_ASSERT(testXml && *testXml);
+
     // Create a tree with various binary data sizes to test compression thresholds
-    Owned<IPropertyTree> tree = createPTree("Compressed");
+    Owned<IPropertyTree> tree = createPTree(testXml);
 
     // Add some regular properties first
     tree->setProp("normalProp", "normalValue");
@@ -3627,97 +3624,6 @@ IPropertyTree *createBinaryDataCompressionTestPTree()
  * and measures performance of both operations
  */
 
-// Helper: log two property trees as XML and produce a side-by-side text view to help diffing
-static void logPTreeSideBySide(const char *leftLabel, IPropertyTree *leftTree, const char *rightLabel, IPropertyTree *rightTree)
-{
-    StringBuffer leftXml, rightXml;
-    toXML(leftTree, leftXml.clear(), 2, XML_Format|XML_SortTags);
-    toXML(rightTree, rightXml.clear(), 2, XML_Format|XML_SortTags);
-
-    std::vector<std::string> leftLines;
-    std::vector<std::string> rightLines;
-    {
-        std::istringstream is(leftXml.str());
-        std::string line;
-        while (std::getline(is, line))
-            leftLines.push_back(line);
-    }
-    {
-        std::istringstream is(rightXml.str());
-        std::string line;
-        while (std::getline(is, line))
-            rightLines.push_back(line);
-    }
-
-    // Reformat left side so attributes appear on separate indented lines (to match common multiline formatting)
-    std::vector<std::string> formattedLeftLines;
-    for (const auto &rawLine : leftLines)
-    {
-        std::string s = rawLine;
-        size_t lt = s.find('<');
-        if (lt != std::string::npos && lt + 1 < s.size() && s[lt+1] != '/' && s.find('"') != std::string::npos)
-        {
-            // locate end of tag (position of '>')
-            size_t endPos = s.rfind('>');
-            if (endPos == std::string::npos)
-            {
-                formattedLeftLines.push_back(s);
-                continue;
-            }
-            // find end of tag name
-            size_t pos = lt + 1;
-            while (pos < s.size() && !isspace((unsigned char)s[pos]) && s[pos] != '>' && s[pos] != '/') ++pos;
-            // first line: opening tag name
-            std::string tagName = s.substr(lt, pos - lt);
-            formattedLeftLines.push_back(tagName);
-
-            // attribute section between pos and endPos
-            std::string attrs = (pos < endPos) ? s.substr(pos, endPos - pos) : std::string();
-            size_t i = 0;
-            while (i < attrs.size())
-            {
-                // skip whitespace
-                while (i < attrs.size() && isspace((unsigned char)attrs[i])) ++i;
-                if (i >= attrs.size()) break;
-                size_t start = i;
-                bool inQuote = false;
-                while (i < attrs.size())
-                {
-                    if (attrs[i] == '"') inQuote = !inQuote;
-                    if (!inQuote && isspace((unsigned char)attrs[i])) break;
-                    ++i;
-                }
-                std::string token = attrs.substr(start, i - start);
-                if (!token.empty())
-                    formattedLeftLines.push_back(std::string(2, ' ') + token);
-            }
-
-            // closing marker
-            if (endPos > 0 && s[endPos - 1] == '/')
-                formattedLeftLines.push_back(std::string("/>") );
-            else
-                formattedLeftLines.push_back(std::string(">") );
-        }
-        else
-        {
-            formattedLeftLines.push_back(s);
-        }
-    }
-    leftLines.swap(formattedLeftLines);
-
-    size_t maxLines = leftLines.size() > rightLines.size() ? leftLines.size() : rightLines.size();
-    StringBuffer sb;
-    sb.appendf("===== %s (expected) %s %s (actual) =====\n", leftLabel, "", rightLabel);
-    for (size_t i = 0; i < maxLines; ++i)
-    {
-        const char *l = (i < leftLines.size()) ? leftLines[i].c_str() : "";
-        const char *r = (i < rightLines.size()) ? rightLines[i].c_str() : "";
-        sb.appendf("%-80s | %s\n", l, r);
-    }
-    sb.append("===== End side-by-side =====\n");
-    DBGLOG("PTree side-by-side comparison:\n%s", sb.str());
-}
-
 class PTreeSerializationDeserializationTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(PTreeSerializationDeserializationTest);
@@ -3725,161 +3631,116 @@ class PTreeSerializationDeserializationTest : public CppUnit::TestFixture
     CPPUNIT_TEST(testRoundTripForRootOnlyPTree);
     CPPUNIT_TEST(testRoundTripForCompatibilityConfigPropertyTree);
     CPPUNIT_TEST(testRoundTripForBinaryDataCompressionTestPTree);
-    CPPUNIT_TEST(testRoundTripForRootOnlyPTree_lowmem);
-    CPPUNIT_TEST(testRoundTripForCompatibilityConfigPropertyTree_lowmem);
-    CPPUNIT_TEST(testRoundTripForBinaryDataCompressionTestPTree_lowmem);
-    // Direct tests for vector-based setAttribute
-    CPPUNIT_TEST(testSetAttributeWithVector);
-    CPPUNIT_TEST(testSetAttributeWithVector_lowmem);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
+    static constexpr const char *testXml{
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        "<Configuration version=\"1.0\" environment=\"test\">"
+        "  <Database host=\"localhost\" port=\"3306\" ssl=\"true\">"
+        "    <Connection timeout=\"30\" pool=\"10\" retry=\"3\"/>"
+        "    <Tables>"
+        "      <Table name=\"users\" schema=\"public\" rows=\"1000\"/>"
+        "      <Table name=\"orders\" schema=\"sales\" rows=\"5000\"/>"
+        "    </Tables>"
+        "  </Database>"
+        "  <Cache enabled=\"true\" size=\"1024\" ttl=\"3600\">"
+        "    <Policies>"
+        "      <Policy name=\"default\" expiry=\"300\"/>"
+        "    </Policies>"
+        "  </Cache>"
+        "</Configuration>"};
+
     // Complete round-trip test method that performs serialization, deserialization, and validation
-    void performRoundTripTest(const char *testName, IPropertyTree *tree, byte flags = ipt_none)
+    void performRoundTripTest(const char *testName, IPropertyTree *tree)
     {
-        try
+        Owned<IPropertyTree> originalTree;
+        originalTree.setown(tree);
+        CCycleTimer timer;
+
+        // Serialization
+        MemoryBuffer memoryBuffer, streamBuffer;
+
+        // Time serialize() method
+        timer.reset();
+        originalTree->serialize(memoryBuffer);
+        __uint64 serializeElapsedNs = timer.elapsedNs();
+        size_t memoryBufferSize = memoryBuffer.length();
+
+        // Time serializeToStream() method
+        Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(streamBuffer);
+        timer.reset();
+        originalTree->serializeToStream(*out);
+        out->flush();
+        __uint64 serializeToStreamElapsedNs = timer.elapsedNs();
+        size_t streamBufferSize = streamBuffer.length();
+
+        // Validation - serialized data matches
+        CPPUNIT_ASSERT_EQUAL(memoryBufferSize, streamBufferSize);
+        CPPUNIT_ASSERT(memcmp(memoryBuffer.toByteArray(), streamBuffer.toByteArray(), memoryBufferSize) == 0);
+
+        // Time deserialize() method
+        Owned<IPropertyTree> memoryBufferDeserialized = createPTree();
+        timer.reset();
+        memoryBufferDeserialized->deserialize(memoryBuffer);
+        __uint64 deserializeElapsedNs = timer.elapsedNs();
+
+        // Time deserializeFromStream() method
+        Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(streamBuffer);
+        Owned<IPropertyTree> streamDeserialized = createPTree();
+        timer.reset();
+        streamDeserialized->deserializeFromStream(*in);
+        __uint64 deserializeFromStreamElapsedNs = timer.elapsedNs();
+
+        // Create PTree from Binary tests
+        //
+        // Test 1: Call with null nodeCreator (should fall back to createPTree(src, ipt_none))
+        streamBuffer.reset();
+        Owned<IBufferedSerialInputStream> in2 = createBufferedSerialInputStream(streamBuffer);
+        Owned<IPropertyTree> deserializedCreatePTreeFromBinaryWithNull = createPTreeFromBinary(*in2, nullptr);
+        // Test 2: Call with custom nodeCreator
+        class TestNodeCreator : public CSimpleInterfaceOf<IPTreeNodeCreator>
         {
-            Owned<IPropertyTree> originalTree;
-            originalTree.setown(tree);
-            CCycleTimer timer;
+        public:
+            bool wasCalled = false;
 
-            // Serialization
-            MemoryBuffer memoryBuffer, streamBuffer;
-
-            // Time serialize() method
-            DBGLOG("=== Starting serialize() for test: %s ===", testName);
-            timer.reset();
-            originalTree->serialize(memoryBuffer);
-            __uint64 serializeElapsedNs = timer.elapsedNs();
-            size_t memoryBufferSize = memoryBuffer.length();
-            DBGLOG("=== serialize() completed, size: %zu bytes ===", memoryBufferSize);
-
-            // Time serializeToStream() method
-            DBGLOG("=== Starting serializeToStream() ===");
-            Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(streamBuffer);
-            timer.reset();
-            originalTree->serializeToStream(*out);
-            out->flush();
-            __uint64 serializeToStreamElapsedNs = timer.elapsedNs();
-            size_t streamBufferSize = streamBuffer.length();
-            DBGLOG("=== serializeToStream() completed, size: %zu bytes ===", streamBufferSize);
-
-            // Validation - serialized data matches
-            CPPUNIT_ASSERT_EQUAL(memoryBufferSize, streamBufferSize);
-            CPPUNIT_ASSERT(memcmp(memoryBuffer.toByteArray(), streamBuffer.toByteArray(), memoryBufferSize) == 0);
-
-            // Copy streamBuffer for deserializationFromStream() tests
-            MemoryBuffer streamBuffer2, streamBuffer3;
-            streamBuffer2.append(streamBuffer.length(), streamBuffer.toByteArray());
-            streamBuffer3.append(streamBuffer.length(), streamBuffer.toByteArray());
-
-            // Time deserialize() method
-            DBGLOG("=== Starting deserialize() ===");
-            Owned<IPropertyTree> memoryBufferDeserialized = createPTree(flags);
-            timer.reset();
-            memoryBufferDeserialized->deserialize(memoryBuffer);
-            __uint64 deserializeElapsedNs = timer.elapsedNs();
-            DBGLOG("=== deserialize() completed ===");
-
-            // Time deserializeFromStream() method
-            DBGLOG("=== Starting deserializeFromStream() ===");
-            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(streamBuffer);
-            Owned<IPropertyTree> streamDeserialized = createPTree(flags);
-            timer.reset();
-            streamDeserialized->deserializeFromStream(*in);
-            __uint64 deserializeFromStreamElapsedNs = timer.elapsedNs();
-            DBGLOG("=== deserializeFromStream() completed ===");
-
-            // Create PTree from Binary tests
-            //
-            // Test 1: Call with flags parameter
-            DBGLOG("=== Starting createPTreeFromBinary() with flags ===");
-            Owned<IBufferedSerialInputStream> in2 = createBufferedSerialInputStream(streamBuffer2);
-            Owned<IPropertyTree> deserializedCreatePTreeFromBinaryWithFlags = createPTreeFromBinary(*in2, flags);
-            DBGLOG("=== createPTreeFromBinary() with flags completed ===");
-            // Test 2: Call with custom nodeCreator
-            DBGLOG("=== Starting createPTreeFromBinary() with custom nodeCreator ===");
-            class TestNodeCreator : public CSimpleInterfaceOf<IPTreeNodeCreator>
+            virtual IPropertyTree *create(const char *tag) override
             {
-            public:
-                bool wasCalled = false;
-                byte nodeFlags;
+                wasCalled = true;
+                return createPTree(tag);
+            }
+        };
+        Owned<TestNodeCreator> nodeCreator = new TestNodeCreator();
+        // Reset stream position
+        streamBuffer.reset();
+        Owned<IBufferedSerialInputStream> in3 = createBufferedSerialInputStream(streamBuffer);
+        Owned<IPropertyTree> deserializedCreatePTreeFromBinaryWithCreator = createPTreeFromBinary(*in3, nodeCreator);
 
-                TestNodeCreator(byte _flags) : nodeFlags(_flags) {}
+        // Validation - verify both deserialized trees are equivalent to the original
+        CPPUNIT_ASSERT(areMatchingPTrees(originalTree, memoryBufferDeserialized));
+        CPPUNIT_ASSERT(areMatchingPTrees(originalTree, streamDeserialized));
+        CPPUNIT_ASSERT(areMatchingPTrees(originalTree, deserializedCreatePTreeFromBinaryWithNull));
+        CPPUNIT_ASSERT(nodeCreator->wasCalled); // Verify nodeCreator was called
+        CPPUNIT_ASSERT(areMatchingPTrees(originalTree, deserializedCreatePTreeFromBinaryWithCreator));
 
-                virtual IPropertyTree *create(const char *tag) override
-                {
-                    wasCalled = true;
-                    return createPTree(tag, nodeFlags);
-                }
-            };
-            Owned<TestNodeCreator> nodeCreator = new TestNodeCreator(flags);
-            // Reset stream position
-            Owned<IBufferedSerialInputStream> in3 = createBufferedSerialInputStream(streamBuffer3);
-            Owned<IPropertyTree> deserializedCreatePTreeFromBinaryWithCreator = createPTreeFromBinary(*in3, nodeCreator);
-            DBGLOG("=== createPTreeFromBinary() with custom nodeCreator completed ===");
+        double serializeTimeMs = serializeElapsedNs / 1e6;
+        double serializeToStreamTimeMs = serializeToStreamElapsedNs / 1e6;
+        DBGLOG("=== ROUND-TRIP TEST STARTED FOR: %s ===", testName);
+        DBGLOG("=== SERIALIZATION TEST RESULTS:");
+        DBGLOG("  serialize() time: %.6f ms", serializeTimeMs);
+        DBGLOG("  serializeToStream() time: %.6f ms", serializeToStreamTimeMs);
+        DBGLOG("  Performance ratio (serializeToStream/serialize): %.6f", serializeToStreamTimeMs / serializeTimeMs);
+        DBGLOG("  serialize() data size: %zu bytes", memoryBufferSize);
+        DBGLOG("  serializeToStream() data size: %zu bytes", streamBufferSize);
 
-            // Validation - verify both deserialized trees are equivalent to the original, log out any differences
-            bool areTreesMatching = areMatchingPTrees(originalTree, memoryBufferDeserialized);
-            if (!areTreesMatching)
-                logPTreeSideBySide("originalTree", originalTree, "memoryBufferDeserialized", memoryBufferDeserialized);
-            CPPUNIT_ASSERT(areTreesMatching);
+        double deserializeTimeMs = deserializeElapsedNs / 1e6;
+        double deserializeFromStreamTimeMs = deserializeFromStreamElapsedNs / 1e6;
+        DBGLOG("=== DESERIALIZATION TEST RESULTS:");
+        DBGLOG("  deserialize() time: %.6f ms", deserializeTimeMs);
+        DBGLOG("  deserializeFromStream() time: %.6f ms", deserializeFromStreamTimeMs);
+        DBGLOG("  Performance ratio (deserializeFromStream/deserialize): %.6f", deserializeFromStreamTimeMs / deserializeTimeMs);
 
-            areTreesMatching = areMatchingPTrees(originalTree, streamDeserialized);
-            if (!areTreesMatching)
-                logPTreeSideBySide("originalTree", originalTree, "streamDeserialized", streamDeserialized);
-            CPPUNIT_ASSERT(areTreesMatching);
-
-            areTreesMatching = areMatchingPTrees(originalTree, deserializedCreatePTreeFromBinaryWithFlags);
-            if (!areTreesMatching)
-                logPTreeSideBySide("originalTree", originalTree, "deserializedCreatePTreeFromBinaryWithFlags", deserializedCreatePTreeFromBinaryWithFlags);
-            CPPUNIT_ASSERT(areTreesMatching);
-
-            CPPUNIT_ASSERT(nodeCreator->wasCalled); // Verify nodeCreator was called
-
-            areTreesMatching = areMatchingPTrees(originalTree, deserializedCreatePTreeFromBinaryWithCreator);
-            if (!areTreesMatching)
-                logPTreeSideBySide("originalTree", originalTree, "deserializedCreatePTreeFromBinaryWithCreator", deserializedCreatePTreeFromBinaryWithCreator);
-            CPPUNIT_ASSERT(areTreesMatching);
-
-            DBGLOG("=== ROUND-TRIP TEST FOR: %s ===", testName);
-
-            double serializeTimeMs = serializeElapsedNs / 1e6;
-            double serializeToStreamTimeMs = serializeToStreamElapsedNs / 1e6;
-            DBGLOG("=== SERIALIZATION TEST RESULTS:");
-            DBGLOG("  serialize() time: %.6f ms", serializeTimeMs);
-            DBGLOG("  serializeToStream() time: %.6f ms", serializeToStreamTimeMs);
-            DBGLOG("  Performance ratio (serializeToStream/serialize): %.6f", serializeToStreamTimeMs / serializeTimeMs);
-            DBGLOG("  serialize() data size: %zu bytes", memoryBufferSize);
-            DBGLOG("  serializeToStream() data size: %zu bytes", streamBufferSize);
-
-            double deserializeTimeMs = deserializeElapsedNs / 1e6;
-            double deserializeFromStreamTimeMs = deserializeFromStreamElapsedNs / 1e6;
-            DBGLOG("=== DESERIALIZATION TEST RESULTS:");
-            DBGLOG("  deserialize() time: %.6f ms", deserializeTimeMs);
-            DBGLOG("  deserializeFromStream() time: %.6f ms", deserializeFromStreamTimeMs);
-            DBGLOG("  Performance ratio (deserializeFromStream/deserialize): %.6f", deserializeFromStreamTimeMs / deserializeTimeMs);
-
-            DBGLOG("=== ROUND-TRIP TEST COMPLETED SUCCESSFULLY");
-        }
-        catch (IException *e)
-        {
-            StringBuffer msg;
-            e->errorMessage(msg);
-            DBGLOG("=== EXCEPTION CAUGHT in %s: [%d] %s ===", testName, e->errorCode(), msg.str());
-            e->Release();
-            CPPUNIT_FAIL(StringBuffer("IException in ").append(testName).append(": ").append(msg).str());
-        }
-        catch (std::exception &e)
-        {
-            DBGLOG("=== STD::EXCEPTION CAUGHT in %s: %s ===", testName, e.what());
-            CPPUNIT_FAIL(StringBuffer("std::exception in ").append(testName).append(": ").append(e.what()).str());
-        }
-        catch (...)
-        {
-            DBGLOG("=== UNKNOWN EXCEPTION CAUGHT in %s ===", testName);
-            CPPUNIT_FAIL(StringBuffer("Unknown exception in ").append(testName).str());
-        }
+        DBGLOG("=== ROUND-TRIP TEST COMPLETED SUCCESSFULLY");
     }
 
 public:
@@ -3896,679 +3757,12 @@ public:
 
     void testRoundTripForBinaryDataCompressionTestPTree()
     {
-        performRoundTripTest(__func__, createBinaryDataCompressionTestPTree());
-    }
-
-    // ipt_lowmem tests
-    void testRoundTripForRootOnlyPTree_lowmem()
-    {
-        performRoundTripTest(__func__, createPTree("EmptyRoot", ipt_lowmem), ipt_lowmem);
-    }
-
-    void testRoundTripForCompatibilityConfigPropertyTree_lowmem()
-    {
-        performRoundTripTest(__func__, createCompatibilityConfigPropertyTree(), ipt_lowmem);
-    }
-
-    void testRoundTripForBinaryDataCompressionTestPTree_lowmem()
-    {
-        performRoundTripTest(__func__, createBinaryDataCompressionTestPTree(), ipt_lowmem);
-    }
-
-    // Direct tests for vector-based setAttribute function
-    void testSetAttributeWithVector()
-    {
-        testSetAttributeWithVectorImpl(ipt_none);
-    }
-
-    void testSetAttributeWithVector_lowmem()
-    {
-        testSetAttributeWithVectorImpl(ipt_lowmem);
-    }
-
-private:
-    void testSetAttributeWithVectorImpl(byte flags)
-    {
-        try
-        {
-            // Create a simple tree for testing
-            Owned<IPropertyTree> tree = createPTree("TestRoot", flags);
-
-            // Cast to PTree* to access the internal setAttribute(base, vector) method
-            PTree *ptree = dynamic_cast<PTree *>(tree.get());
-            CPPUNIT_ASSERT_MESSAGE("Failed to cast IPropertyTree to PTree", ptree != nullptr);
-
-            // Build a string buffer containing key/value pairs and a vector of offsets
-            // Format matches what peekStringList produces in deserializeSelf:
-            // - String buffer contains null-terminated strings
-            // - Vector contains pairs: [key_offset, value_offset, key_offset, value_offset, ...]
-
-            MemoryBuffer attrData;
-            std::vector<size32_t> offsets;
-
-            // Test: Add attributes
-            DBGLOG("=== Test: Adding new attributes ===");
-
-            // Add 10 attributes (some values intentionally duplicated)
-            // Format: key, value, key, value, ...
-            auto addAttr = [&](const char *k, const char *v)
-            {
-                offsets.push_back(attrData.length());
-                attrData.append(k).append('\0');
-                offsets.push_back(attrData.length());
-                attrData.append(v ? v : "").append('\0');
-            };
-
-            addAttr("@newAttr1", "newValue1");
-            addAttr("@newAttr2", "newValue2");
-            addAttr("@newAttr3", "");
-            addAttr("@newAttr4", "newValue4");
-            addAttr("@newAttr5", "newValue5");
-            addAttr("@newAttr6", "newValue6");
-            addAttr("@newAttr7", "newValue7");
-            addAttr("@newAttr8", "newValue8");
-            addAttr("@newAttr9", "newValue9");
-            addAttr("@newAttr10", "");
-
-            DBGLOG("Calling setAttribute with %u offsets", (unsigned)offsets.size()); // Call setAttribute with the vector (testing new attribute insertion)
-            const char *base = (const char *)attrData.toByteArray();
-            ptree->setAttribute(base, offsets);
-
-            // Verify new attributes were added using areMatchingPTrees
-            Owned<IPropertyTree> expected1 = createPTree("TestRoot", flags);
-            expected1->setProp("@newAttr1", "newValue1");
-            expected1->setProp("@newAttr2", "newValue2");
-            expected1->setProp("@newAttr3", "");
-            expected1->setProp("@newAttr4", "newValue4");
-            expected1->setProp("@newAttr5", "newValue5");
-            expected1->setProp("@newAttr6", "newValue6");
-            expected1->setProp("@newAttr7", "newValue7");
-            expected1->setProp("@newAttr8", "newValue8");
-            expected1->setProp("@newAttr9", "newValue9");
-            expected1->setProp("@newAttr10", "");
-            bool areTreesMatching = areMatchingPTrees(expected1, tree);
-            if (!areTreesMatching)
-                logPTreeSideBySide("expected1", expected1, "tree", tree);
-            CPPUNIT_ASSERT_MESSAGE("Test 1: Tree doesn't match expected after adding new attributes", areTreesMatching);
-
-            DBGLOG("=== Test: Adding new attributes passed ===");
-
-            DBGLOG("=== testSetAttributeWithVector completed successfully ===");
-        }
-        catch (IException *e)
-        {
-            StringBuffer msg;
-            e->errorMessage(msg);
-            e->Release();
-            CPPUNIT_FAIL(StringBuffer("IException in testSetAttributeWithVector: ").append(msg).str());
-        }
-        catch (std::exception &e)
-        {
-            CPPUNIT_FAIL(StringBuffer("std::exception in testSetAttributeWithVector: ").append(e.what()).str());
-        }
-        catch (...)
-        {
-            CPPUNIT_FAIL("Unknown exception in testSetAttributeWithVector");
-        }
+        performRoundTripTest(__func__, createBinaryDataCompressionTestPTree(testXml));
     }
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(PTreeSerializationDeserializationTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeSerializationDeserializationTest, "PTreeSerializationDeserializationTest");
-
-// Base class with shared functionality for PTree timing tests
-class PTreeTimingTestBase : public CppUnit::TestFixture
-{
-protected:
-    struct TimingResults
-    {
-        double avgDeserializeTimeMs;
-        double avgSerializeTimeMs;
-        double totalDeserializeTimeMs;
-        double totalSerializeTimeMs;
-        const char *testName;
-        byte flags;
-    };
-
-    const char *getBinaryFilePath()
-    {
-        const char *envPath = getenv("DALI_TEST_BINARY_FILE");
-        constexpr const char *defaultPath = "~/HPCC-Platform/testing/unittests/dalisds1.bin.gz";
-        return envPath ? envPath : defaultPath;
-    }
-
-    const char *getXmlFilePath()
-    {
-        const char *envPath = getenv("DALI_TEST_XML_FILE");
-        constexpr const char *defaultPath = "~/HPCC-Platform/testing/unittests/dalisds1.xml.gz";
-        return envPath ? envPath : defaultPath;
-    }
-
-    const char *expandTilde(const char *path, StringBuffer &expanded)
-    {
-        if (!path || !path[0])
-            return path;
-
-        if (path[0] == '~' && (path[1] == '/' || path[1] == '\0'))
-        {
-            const char *home = getenv("HOME");
-            if (home)
-            {
-                expanded.append(home);
-                if (path[1] == '/')
-                    expanded.append(path + 1);
-                return expanded.str();
-            }
-        }
-        return path;
-    }
-
-    void readXmlFile(const char *filePath, StringBuffer &output)
-    {
-        StringBuffer expandedPath;
-        const char *actualPath = expandTilde(filePath, expandedPath);
-        if (!actualPath)
-            throw MakeStringException(-1, "XML file path is null");
-        Owned<IFile> xmlFile = createIFile(actualPath);
-        if (!xmlFile->exists())
-            throw MakeStringException(-1, "XML file \"%s\" does not exist", actualPath);
-
-        size32_t fileSize = (size32_t)xmlFile->size();
-        MemoryBuffer fileData;
-        Owned<IFileIO> fileIO = xmlFile->open(IFOread);
-        fileData.reserveTruncate(fileSize);
-        size32_t bytesRead = fileIO->read(0, fileSize, fileData.bufferBase());
-        fileData.setLength(bytesRead);
-
-        const char *ext = pathExtension(filePath);
-        if (ext && streq(ext, ".gz"))
-            gunzip((const byte *)fileData.toByteArray(), fileData.length(), output);
-        else
-            output.append(fileData.length(), fileData.toByteArray());
-    }
-
-    void createBinaryDataFromXml(const char *xmlFilePath, MemoryBuffer &binaryData)
-    {
-        StringBuffer xmlData;
-        try
-        {
-            readXmlFile(xmlFilePath, xmlData);
-        }
-        catch (IException *e)
-        {
-            throw;
-        }
-        Owned<IPropertyTree> tree = createPTreeFromXMLString(xmlData);
-        binaryData.clear();
-        Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(binaryData);
-        tree->serializeToStream(*out);
-        out->flush();
-    }
-
-    bool readBinaryFile(const char *filePath, MemoryBuffer &output)
-    {
-        StringBuffer expandedPath;
-        const char *actualPath = expandTilde(filePath, expandedPath);
-        if (!actualPath)
-            return false;
-        Owned<IFile> binaryFile = createIFile(actualPath);
-        if (!binaryFile->exists())
-            return false;
-
-        size32_t fileSize = (size32_t)binaryFile->size();
-        Owned<IFileIO> fileIO = binaryFile->open(IFOread);
-        output.reserveTruncate(fileSize);
-        size32_t bytesRead = fileIO->read(0, fileSize, output.bufferBase());
-        output.setLength(bytesRead);
-
-        const char *ext = pathExtension(actualPath);
-        if (ext && streq(ext, ".gz"))
-        {
-            StringBuffer tempOutput;
-            gunzip((const byte *)output.toByteArray(), output.length(), tempOutput);
-            output.clear();
-            output.append(tempOutput.length(), tempOutput.str());
-        }
-
-        return true;
-    }
-
-    TimingResults performBinaryTimingTestWithResults(const char *testName, const MemoryBuffer &binaryDataBuffer, int iterations, byte flags)
-    {
-        assertex(testName);
-        unsigned binaryDataLen = binaryDataBuffer.length();
-        assertex(binaryDataLen > 0);
-
-        CCycleTimer timer;
-        __uint64 totalDeserializeNs{0};
-        __uint64 totalSerializeNs{0};
-
-        MemoryBuffer streamBufferIn;
-        MemoryBuffer streamBufferOut;
-        for (int i = 0; i < iterations; i++)
-        {
-            streamBufferIn.clear();
-            streamBufferIn.append(binaryDataLen, binaryDataBuffer.toByteArray());
-            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(streamBufferIn);
-            timer.reset();
-            Owned<IPropertyTree> deserializedTree = createPTreeFromBinary(*in, flags);
-            __uint64 deserializeElapsedNs = timer.elapsedNs();
-            Owned<IPropertyTree> copyDeserializedTree = createPTreeFromIPT(deserializedTree);
-            totalDeserializeNs += deserializeElapsedNs;
-
-            streamBufferOut.clear();
-            Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(streamBufferOut);
-            timer.reset();
-            deserializedTree->serializeToStream(*out);
-            out->flush();
-            __uint64 serializeElapsedNs = timer.elapsedNs();
-            totalSerializeNs += serializeElapsedNs;
-
-            // Validation - serialized data matches
-            bool areTreesMatching = areMatchingPTrees(copyDeserializedTree, deserializedTree);
-            if (!areTreesMatching)
-                logPTreeSideBySide("copyDeserializedTree", copyDeserializedTree, "tree", deserializedTree);
-            CPPUNIT_ASSERT(areTreesMatching);
-        }
-
-        TimingResults results;
-        results.avgDeserializeTimeMs = (totalDeserializeNs / iterations) / 1e6;
-        results.avgSerializeTimeMs = (totalSerializeNs / iterations) / 1e6;
-        results.totalDeserializeTimeMs = totalDeserializeNs / 1e6;
-        results.totalSerializeTimeMs = totalSerializeNs / 1e6;
-        results.testName = testName;
-        results.flags = flags;
-
-        return results;
-    }
-
-    TimingResults performXmlTimingTestWithResults(const char *testName, const char *xmlData, int iterations, byte flags)
-    {
-        assertex(testName);
-        assertex(xmlData);
-
-        CCycleTimer timer;
-        __uint64 totalDeserializeNs{0};
-        __uint64 totalSerializeNs{0};
-
-        for (int i = 0; i < iterations; i++)
-        {
-            timer.reset();
-            Owned<IPropertyTree> tree = createPTreeFromXMLString(xmlData, flags);
-            __uint64 deserializeElapsedNs = timer.elapsedNs();
-            totalDeserializeNs += deserializeElapsedNs;
-
-            timer.reset();
-            StringBuffer xmlOutput;
-            toXML(tree, xmlOutput);
-            __uint64 serializeElapsedNs = timer.elapsedNs();
-            totalSerializeNs += serializeElapsedNs;
-        }
-
-        TimingResults results;
-        results.avgDeserializeTimeMs = (totalDeserializeNs / iterations) / 1e6;
-        results.avgSerializeTimeMs = (totalSerializeNs / iterations) / 1e6;
-        results.totalDeserializeTimeMs = totalDeserializeNs / 1e6;
-        results.totalSerializeTimeMs = totalSerializeNs / 1e6;
-        results.testName = testName;
-        results.flags = flags;
-
-        return results;
-    }
-};
-
-// Test suite for XML timing tests
-class PTreeXmlTimingStressTest : public PTreeTimingTestBase
-{
-    CPPUNIT_TEST_SUITE(PTreeXmlTimingStressTest);
-    CPPUNIT_TEST(testXmlTimingWithNormalVsLowMem);
-    CPPUNIT_TEST_SUITE_END();
-
-public:
-    void testXmlTimingWithNormalVsLowMem()
-    {
-        constexpr const int iterations{100};
-
-        // Load XML data
-        StringBuffer xmlData;
-        readXmlFile(getXmlFilePath(), xmlData);
-        unsigned xmlDataLen = (unsigned)strlen(xmlData.str());
-
-        // Run XML timing tests
-        TimingResults xmlNormalResults = performXmlTimingTestWithResults("XML Normal", xmlData.str(), iterations, ipt_none);
-        TimingResults xmlLowMemResults = performXmlTimingTestWithResults("XML Low Memory", xmlData.str(), iterations, ipt_lowmem);
-
-        // Calculate differences
-        double lowMemDeserializeDiff = ((xmlLowMemResults.avgDeserializeTimeMs - xmlNormalResults.avgDeserializeTimeMs) / xmlNormalResults.avgDeserializeTimeMs) * 100;
-        double lowMemSerializeDiff = ((xmlLowMemResults.avgSerializeTimeMs - xmlNormalResults.avgSerializeTimeMs) / xmlNormalResults.avgSerializeTimeMs) * 100;
-
-        // Display results
-        fprintf(stdout, "\n=== XML TIMING COMPARISON TEST ===\n");
-        fprintf(stdout, "XML data size: %u bytes\n", xmlDataLen);
-        fprintf(stdout, "Iterations: %d\n", iterations);
-        fprintf(stdout, "┌──────────────────────┬─────────────────┬─────────────────┐\n");
-        fprintf(stdout, "│ Mode                 │ Avg Deserialize │ Avg Serialize   │\n");
-        fprintf(stdout, "│                      │ (ms)            │ (ms)            │\n");
-        fprintf(stdout, "├──────────────────────┼─────────────────┼─────────────────┤\n");
-        fprintf(stdout, "│ XML Normal           │ %15.6f │ %15.6f │\n",
-                xmlNormalResults.avgDeserializeTimeMs,
-                xmlNormalResults.avgSerializeTimeMs);
-        fprintf(stdout, "│ XML Low Memory       │ %15.6f │ %15.6f │\n",
-                xmlLowMemResults.avgDeserializeTimeMs,
-                xmlLowMemResults.avgSerializeTimeMs);
-        fprintf(stdout, "│ XML LowMem Diff      │ %+14.2f%% │ %+14.2f%% │\n",
-                lowMemDeserializeDiff,
-                lowMemSerializeDiff);
-        fprintf(stdout, "└──────────────────────┴─────────────────┴─────────────────┘\n");
-        fflush(stdout);
-    }
-};
-
-// Test suite for Binary timing tests
-class PTreeBinaryTimingStressTest : public PTreeTimingTestBase
-{
-    CPPUNIT_TEST_SUITE(PTreeBinaryTimingStressTest);
-    CPPUNIT_TEST(testBinaryTimingWithNormalVsLowMem);
-    CPPUNIT_TEST_SUITE_END();
-
-public:
-    void testBinaryTimingWithNormalVsLowMem()
-    {
-        constexpr const int iterations{100};
-
-        // Load Binary data
-        //  If the binary file does not exist then create it from the XML file
-        MemoryBuffer binaryData;
-        if (!readBinaryFile(getBinaryFilePath(), binaryData))
-            createBinaryDataFromXml(getXmlFilePath(), binaryData);
-        unsigned binaryDataLen = (unsigned)binaryData.length();
-
-        // Run Binary timing tests
-        TimingResults binaryNormalResults = performBinaryTimingTestWithResults("Binary Normal", binaryData, iterations, ipt_none);
-        TimingResults binaryLowMemResults = performBinaryTimingTestWithResults("Binary Low Memory", binaryData, iterations, ipt_lowmem);
-
-        // Calculate differences
-        double lowMemDeserializeDiff = ((binaryLowMemResults.avgDeserializeTimeMs - binaryNormalResults.avgDeserializeTimeMs) / binaryNormalResults.avgDeserializeTimeMs) * 100;
-        double lowMemSerializeDiff = ((binaryLowMemResults.avgSerializeTimeMs - binaryNormalResults.avgSerializeTimeMs) / binaryNormalResults.avgSerializeTimeMs) * 100;
-
-        // Display results
-        fprintf(stdout, "\n=== BINARY TIMING COMPARISON TEST ===\n");
-        fprintf(stdout, "Binary data size: %u bytes\n", binaryDataLen);
-        fprintf(stdout, "Iterations: %d\n", iterations);
-        fprintf(stdout, "┌──────────────────────┬─────────────────┬─────────────────┐\n");
-        fprintf(stdout, "│ Mode                 │ Avg Deserialize │ Avg Serialize   │\n");
-        fprintf(stdout, "│                      │ (ms)            │ (ms)            │\n");
-        fprintf(stdout, "├──────────────────────┼─────────────────┼─────────────────┤\n");
-        fprintf(stdout, "│ Binary Normal        │ %15.6f │ %15.6f │\n",
-                binaryNormalResults.avgDeserializeTimeMs,
-                binaryNormalResults.avgSerializeTimeMs);
-        fprintf(stdout, "│ Binary Low Memory    │ %15.6f │ %15.6f │\n",
-                binaryLowMemResults.avgDeserializeTimeMs,
-                binaryLowMemResults.avgSerializeTimeMs);
-        fprintf(stdout, "│ Binary LowMem Diff   │ %+14.2f%% │ %+14.2f%% │\n",
-                lowMemDeserializeDiff,
-                lowMemSerializeDiff);
-        fprintf(stdout, "└──────────────────────┴─────────────────┴─────────────────┘\n");
-        fflush(stdout);
-    }
-};
-
-//  Test suite for combined XML and Binary timing tests
-class PTreeCombinedTimingStressTest : public PTreeTimingTestBase
-{
-    CPPUNIT_TEST_SUITE(PTreeCombinedTimingStressTest);
-    CPPUNIT_TEST(testCombinedXmlAndBinaryTimingWithNormalVsLowMem);
-    CPPUNIT_TEST_SUITE_END();
-
-public:
-    void testCombinedXmlAndBinaryTimingWithNormalVsLowMem()
-    {
-        constexpr const int iterations{100};
-
-        // Load XML data
-        StringBuffer xmlData;
-        readXmlFile(getXmlFilePath(), xmlData);
-        unsigned xmlDataLen = (unsigned)strlen(xmlData.str());
-
-        // Load Binary data
-        //  If the binary file does not exist then create it from the XML file
-        MemoryBuffer binaryData;
-        if (!readBinaryFile(getBinaryFilePath(), binaryData))
-            createBinaryDataFromXml(getXmlFilePath(), binaryData);
-        unsigned binaryDataLen = (unsigned)binaryData.length();
-
-        // Run all timing tests
-        TimingResults xmlNormalResults = performXmlTimingTestWithResults("XML Normal", xmlData.str(), iterations, ipt_none);
-        TimingResults xmlLowMemResults = performXmlTimingTestWithResults("XML Low Memory", xmlData.str(), iterations, ipt_lowmem);
-        TimingResults binaryNormalResults = performBinaryTimingTestWithResults("Binary Normal", binaryData, iterations, ipt_none);
-        TimingResults binaryLowMemResults = performBinaryTimingTestWithResults("Binary Low Memory", binaryData, iterations, ipt_lowmem);
-
-        // Calculate all comparisons
-        double xmlLowMemDeserializeDiff = ((xmlLowMemResults.avgDeserializeTimeMs - xmlNormalResults.avgDeserializeTimeMs) / xmlNormalResults.avgDeserializeTimeMs) * 100;
-        double xmlLowMemSerializeDiff = ((xmlLowMemResults.avgSerializeTimeMs - xmlNormalResults.avgSerializeTimeMs) / xmlNormalResults.avgSerializeTimeMs) * 100;
-        double binaryLowMemDeserializeDiff = ((binaryLowMemResults.avgDeserializeTimeMs - binaryNormalResults.avgDeserializeTimeMs) / binaryNormalResults.avgDeserializeTimeMs) * 100;
-        double binaryLowMemSerializeDiff = ((binaryLowMemResults.avgSerializeTimeMs - binaryNormalResults.avgSerializeTimeMs) / binaryNormalResults.avgSerializeTimeMs) * 100;
-        double binaryVsXmlNormalDeserialize = ((binaryNormalResults.avgDeserializeTimeMs - xmlNormalResults.avgDeserializeTimeMs) / xmlNormalResults.avgDeserializeTimeMs) * 100;
-        double binaryVsXmlNormalSerialize = ((binaryNormalResults.avgSerializeTimeMs - xmlNormalResults.avgSerializeTimeMs) / xmlNormalResults.avgSerializeTimeMs) * 100;
-        double binaryVsXmlLowMemDeserialize = ((binaryLowMemResults.avgDeserializeTimeMs - xmlLowMemResults.avgDeserializeTimeMs) / xmlLowMemResults.avgDeserializeTimeMs) * 100;
-        double binaryVsXmlLowMemSerialize = ((binaryLowMemResults.avgSerializeTimeMs - xmlLowMemResults.avgSerializeTimeMs) / xmlLowMemResults.avgSerializeTimeMs) * 100;
-
-        // Display combined results
-        fprintf(stdout, "\n=== COMBINED XML & BINARY TIMING COMPARISON TEST ===\n");
-        fprintf(stdout, "XML data size: %u bytes\n", xmlDataLen);
-        fprintf(stdout, "Binary data size: %u bytes\n", binaryDataLen);
-        fprintf(stdout, "Iterations: %d\n", iterations);
-        fprintf(stdout, "┌──────────────────────┬─────────────────┬─────────────────┐\n");
-        fprintf(stdout, "│ Format & Mode        │ Avg Deserialize │ Avg Serialize   │\n");
-        fprintf(stdout, "│                      │ (ms)            │ (ms)            │\n");
-        fprintf(stdout, "├──────────────────────┼─────────────────┼─────────────────┤\n");
-        fprintf(stdout, "│ XML Normal           │ %15.6f │ %15.6f │\n",
-                xmlNormalResults.avgDeserializeTimeMs,
-                xmlNormalResults.avgSerializeTimeMs);
-        fprintf(stdout, "│ XML Low Memory       │ %15.6f │ %15.6f │\n",
-                xmlLowMemResults.avgDeserializeTimeMs,
-                xmlLowMemResults.avgSerializeTimeMs);
-        fprintf(stdout, "│ XML LowMem Diff      │ %+14.2f%% │ %+14.2f%% │\n",
-                xmlLowMemDeserializeDiff,
-                xmlLowMemSerializeDiff);
-        fprintf(stdout, "├──────────────────────┼─────────────────┼─────────────────┤\n");
-        fprintf(stdout, "│ Binary Normal        │ %15.6f │ %15.6f │\n",
-                binaryNormalResults.avgDeserializeTimeMs,
-                binaryNormalResults.avgSerializeTimeMs);
-        fprintf(stdout, "│ Binary Low Memory    │ %15.6f │ %15.6f │\n",
-                binaryLowMemResults.avgDeserializeTimeMs,
-                binaryLowMemResults.avgSerializeTimeMs);
-        fprintf(stdout, "│ Binary LowMem Diff   │ %+14.2f%% │ %+14.2f%% │\n",
-                binaryLowMemDeserializeDiff,
-                binaryLowMemSerializeDiff);
-        fprintf(stdout, "├──────────────────────┼─────────────────┼─────────────────┤\n");
-        fprintf(stdout, "│ Binary vs XML Normal │ %+14.2f%% │ %+14.2f%% │\n",
-                binaryVsXmlNormalDeserialize,
-                binaryVsXmlNormalSerialize);
-        fprintf(stdout, "│ Binary vs XML LowMem │ %+14.2f%% │ %+14.2f%% │\n",
-                binaryVsXmlLowMemDeserialize,
-                binaryVsXmlLowMemSerialize);
-        fprintf(stdout, "└──────────────────────┴─────────────────┴─────────────────┘\n");
-        fflush(stdout);
-    }
-};
-
-//  Test suite for profiling Binary deserialization
-class PTreeBinaryDeserializationProfilingStressTest : public PTreeTimingTestBase
-{
-    CPPUNIT_TEST_SUITE(PTreeBinaryDeserializationProfilingStressTest);
-    CPPUNIT_TEST(testBinaryLowMemDeserializationForProfiling);
-    CPPUNIT_TEST_SUITE_END();
-
-public:
-    void testBinaryLowMemDeserializationForProfiling()
-    {
-        // This test is designed specifically for profiling tools
-        // It focuses solely on binary deserialization with low memory flags
-        // Run with: perf record -g ./unittests --test testBinaryLowMemDeserializationForProfiling
-        // Or with callgrind: valgrind --tool=callgrind ./unittests -e PTreeSerializationDeserializationXmlTimingStressTest
-
-        constexpr const int iterations{1}; // More iterations for better profiling data
-        constexpr const byte flags{ipt_lowmem};
-
-        // Load Binary data - DECOMPRESS BEFORE PROFILING STARTS
-        MemoryBuffer binaryData;
-        const char *binaryPath = getBinaryFilePath();
-        try
-        {
-            // Read raw file (without automatic decompression)
-            if (!readBinaryFileRaw(binaryPath, binaryData))
-                createBinaryDataFromXml(getXmlFilePath(), binaryData);
-
-            // Decompress outside the profiled section to exclude gunzip from profiling
-            if (!decompressIfNeeded(binaryPath, binaryData))
-                CPPUNIT_FAIL("Failed to decompress binary data");
-        }
-        catch (IException *e)
-        {
-            StringBuffer msg;
-            e->errorMessage(msg);
-            e->Release();
-            CPPUNIT_FAIL(msg.str());
-        }
-        catch (...)
-        {
-            CPPUNIT_FAIL("Failed to load test data files");
-        }
-
-        unsigned binaryDataLen = binaryData.length();
-        if (binaryDataLen == 0)
-            CPPUNIT_FAIL("Binary data is empty - test data files not found or empty");
-
-        DBGLOG("=== BINARY LOW MEMORY DESERIALIZATION PROFILING TEST ===");
-        DBGLOG("Binary data size: %u bytes (decompressed)", binaryDataLen);
-        DBGLOG("Iterations: %d", iterations);
-        DBGLOG("Flags: 0x%02X (ipt_lowmem)", flags);
-        DBGLOG("Decompression completed BEFORE profiling begins");
-        DBGLOG("This test is optimized for profiling - running deserialization only");
-
-        CCycleTimer timer;
-        __uint64 totalDeserializeNs{0};
-
-        MemoryBuffer streamBufferIn;
-        try
-        {
-            for (int i = 0; i < iterations; i++)
-            {
-                streamBufferIn.clear();
-                streamBufferIn.append(binaryDataLen, binaryData.toByteArray());
-                Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(streamBufferIn);
-
-                timer.reset();
-#ifdef CALLGRIND_PROFILING
-                CALLGRIND_START_INSTRUMENTATION;
-                CALLGRIND_TOGGLE_COLLECT;
-#endif
-                Owned<IPropertyTree> deserializedTree = createPTreeFromBinary(*in, flags);
-#ifdef CALLGRIND_PROFILING
-                CALLGRIND_TOGGLE_COLLECT;
-                CALLGRIND_STOP_INSTRUMENTATION;
-#endif
-                __uint64 deserializeElapsedNs = timer.elapsedNs();
-                totalDeserializeNs += deserializeElapsedNs;
-
-                // Keep a reference to prevent optimization
-                CPPUNIT_ASSERT(deserializedTree != nullptr);
-            }
-        }
-        catch (IException *e)
-        {
-            StringBuffer msg;
-            e->errorMessage(msg);
-            e->Release();
-            CPPUNIT_FAIL(msg.str());
-        }
-        catch (...)
-        {
-            CPPUNIT_FAIL("Unexpected exception during deserialization");
-        }
-
-        double avgDeserializeTimeMs = (totalDeserializeNs / iterations) / 1e6;
-        double totalDeserializeTimeMs = totalDeserializeNs / 1e6;
-
-        DBGLOG("=== PROFILING TEST RESULTS ===");
-        DBGLOG("Total deserialize time: %.6f ms", totalDeserializeTimeMs);
-        DBGLOG("Average deserialize time: %.6f ms", avgDeserializeTimeMs);
-        DBGLOG("Iterations per second: %.2f", 1000.0 / avgDeserializeTimeMs);
-        DBGLOG("=== PROFILING TEST COMPLETED ===");
-    }
-
-private:
-    bool readBinaryFileRaw(const char *filePath, MemoryBuffer &output)
-    {
-        // Read file without decompression - for profiling tests
-        StringBuffer expandedPath;
-        const char *actualPath = expandTilde(filePath, expandedPath);
-        if (!actualPath)
-            return false;
-        Owned<IFile> binaryFile = createIFile(actualPath);
-        if (!binaryFile->exists())
-            return false;
-
-        size32_t fileSize = (size32_t)binaryFile->size();
-        Owned<IFileIO> fileIO = binaryFile->open(IFOread);
-        output.reserveTruncate(fileSize);
-        size32_t bytesRead = fileIO->read(0, fileSize, output.bufferBase());
-        output.setLength(bytesRead);
-
-        return true;
-    }
-
-    bool decompressIfNeeded(const char *filePath, MemoryBuffer &data)
-    {
-        // Decompress if file has .gz extension
-        StringBuffer expandedPath;
-        const char *actualPath = expandTilde(filePath, expandedPath);
-        if (!actualPath)
-            return false;
-
-        const char *ext = pathExtension(actualPath);
-        if (ext && streq(ext, ".gz"))
-        {
-            StringBuffer tempOutput;
-            gunzip((const byte *)data.toByteArray(), data.length(), tempOutput);
-            data.clear();
-            data.append(tempOutput.length(), tempOutput.str());
-        }
-
-        return true;
-    }
-};
-
-CPPUNIT_TEST_SUITE_REGISTRATION(PTreeXmlTimingStressTest);
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeXmlTimingStressTest, "PTreeXmlTimingStressTest");
-CPPUNIT_TEST_SUITE_REGISTRATION(PTreeBinaryTimingStressTest);
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeBinaryTimingStressTest, "PTreeBinaryTimingStressTest");
-CPPUNIT_TEST_SUITE_REGISTRATION(PTreeCombinedTimingStressTest);
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeCombinedTimingStressTest, "PTreeCombinedTimingStressTest");
-CPPUNIT_TEST_SUITE_REGISTRATION(PTreeBinaryDeserializationProfilingStressTest);
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeBinaryDeserializationProfilingStressTest, "PTreeBinaryDeserializationProfilingStressTest");
-
-
-//=====================================================================================================================
-
-class PTreeHashCritTest : public CppUnit::TestFixture
-{
-    CPPUNIT_TEST_SUITE(PTreeHashCritTest);
-        CPPUNIT_TEST(runAllTests);
-    CPPUNIT_TEST_SUITE_END();
-
-public:
-    void runAllTests()
-    {
-    }
-};
-
-CPPUNIT_TEST_SUITE_REGISTRATION(PTreeHashCritTest);
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeHashCritTest, "PTreeHashCritTest");
-
-
-//=====================================================================================================================
 
 #include "jdebug.hpp"
 #include "jmutex.hpp"
@@ -4872,24 +4066,6 @@ private:
 
 CPPUNIT_TEST_SUITE_REGISTRATION(AtomicTimingStressTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(AtomicTimingStressTest, "AtomicTimingStressTest");
-
-
-//=====================================================================================================================
-
-class ReleasableCriticalSectionTest : public CppUnit::TestFixture
-{
-    CPPUNIT_TEST_SUITE(ReleasableCriticalSectionTest);
-        CPPUNIT_TEST(runAllTests);
-    CPPUNIT_TEST_SUITE_END();
-
-public:
-    void runAllTests()
-    {
-    }
-};
-
-CPPUNIT_TEST_SUITE_REGISTRATION(ReleasableCriticalSectionTest);
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(ReleasableCriticalSectionTest, "ReleasableCriticalSectionTest");
 
 
 //=====================================================================================================================
@@ -6724,5 +5900,100 @@ protected:
 
 CPPUNIT_TEST_SUITE_REGISTRATION( SleepTests );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( SleepTests, "SleepTests" );
+
+//---------------------------------------------------------------------------------------------------------------------
+
+class JLibTraceLevelTests : public CppUnit::TestFixture
+{
+public:
+    CPPUNIT_TEST_SUITE(JLibTraceLevelTests);
+        CPPUNIT_TEST(testDefault);
+        CPPUNIT_TEST(testSetFalse);
+        CPPUNIT_TEST(testSetMultiple);
+        CPPUNIT_TEST(testSetDetailOverride);
+    CPPUNIT_TEST_SUITE_END();
+
+protected:
+    void testDefault()
+    {
+        // Test that the default trace level is traceNone
+        Owned<IPropertyTree> tree = createPTree();
+
+        TraceFlags result = loadTraceFlags(tree, thorTraceOptions, traceNone);
+        TraceFlags level = result & TraceFlags::LevelMask;
+
+        CPPUNIT_ASSERT_EQUAL((unsigned)traceNone, (unsigned)level);
+
+        // Test that the default trace level is traceStandard
+        result = loadTraceFlags(tree, thorTraceOptions, traceStandard);
+        level = result & TraceFlags::LevelMask;
+
+        CPPUNIT_ASSERT_EQUAL((unsigned)traceStandard, (unsigned)level);
+    }
+
+    void testSetFalse()
+    {
+        // Test that setting traceDetailed to false does not change the default behavior
+        Owned<IPropertyTree> tree = createPTree();
+        tree->setProp("@traceDetailed", "false");
+
+        TraceFlags result = loadTraceFlags(tree, thorTraceOptions, traceStandard);
+        TraceFlags level = result & TraceFlags::LevelMask;
+
+        CPPUNIT_ASSERT_EQUAL((unsigned)traceStandard, (unsigned)level);
+    }
+
+    void testSetMultiple()
+    {
+        // Test that setting both traceMax and traceDetailed (in that order) to true sets the trace level to traceMax
+        Owned<IPropertyTree> tree = createPTree();
+        tree->setProp("@traceMax", "true");
+        tree->setProp("@traceDetailed", "true");
+
+        TraceFlags result = loadTraceFlags(tree, thorTraceOptions, traceNone);
+        TraceFlags level = result & TraceFlags::LevelMask;
+
+        CPPUNIT_ASSERT_EQUAL((unsigned)traceMax, (unsigned)level);
+
+        // Test the other way around - traceDetailed first, then traceMax
+        tree.setown(createPTree());
+        tree->setProp("@traceDetailed", "true");
+        tree->setProp("@traceMax", "true");
+
+        result = loadTraceFlags(tree, thorTraceOptions, traceNone);
+        level = result & TraceFlags::LevelMask;
+
+        CPPUNIT_ASSERT_EQUAL((unsigned)traceMax, (unsigned)level);
+    }
+
+    void testSetDetailOverride()
+    {
+        // Test that setting traceMax to true and traceDetail to "detailed" sets the traceLevel to traceDetailed
+        Owned<IPropertyTree> tree = createPTree();
+        tree->setProp("@traceMax", "true");
+        tree->setProp("@traceDetail", "detailed");
+
+        TraceFlags result = loadTraceFlags(tree, thorTraceOptions, traceNone);
+        TraceFlags level = result & TraceFlags::LevelMask;
+
+        // traceDetail should override the boolean traceMax setting
+        CPPUNIT_ASSERT_EQUAL((unsigned)traceDetailed, (unsigned)level);
+
+        // Test with "standard" value
+        tree->setProp("@traceDetail", "standard");
+        result = loadTraceFlags(tree, thorTraceOptions, traceNone);
+        level = result & TraceFlags::LevelMask;
+        CPPUNIT_ASSERT_EQUAL((unsigned)traceStandard, (unsigned)level);
+
+        // Test with "max" value
+        tree->setProp("@traceDetail", "max");
+        result = loadTraceFlags(tree, thorTraceOptions, traceNone);
+        level = result & TraceFlags::LevelMask;
+        CPPUNIT_ASSERT_EQUAL((unsigned)traceMax, (unsigned)level);
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( JLibTraceLevelTests );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JLibTraceLevelTests, "JLibTraceLevelTests" );
 
 #endif // _USE_CPPUNIT
