@@ -686,11 +686,13 @@ int CSecureSocket::secure_accept(int logLevel)
     int err;
     while (true)
     {
+        unsigned startTime = msTick();
         err = SSL_accept(m_ssl);
+        unsigned elapsedTime = msTick() - startTime;
         if (err > 0)
         {
             if (logLevel > SSLogNormal)
-                DBGLOG("SSL accept ok, using %s", SSL_get_cipher(m_ssl));
+                DBGLOG("SSL_accept succeeded in %u ms, using %s", elapsedTime, SSL_get_cipher(m_ssl));
 
             if (m_verify)
             {
@@ -726,7 +728,7 @@ int CSecureSocket::secure_accept(int logLevel)
                 {
                     char errbuf[512];
                     ERR_error_string_n(ERR_get_error(), errbuf, 512);
-                    DBGLOG("SSL_accept returned 0, error - %s", errbuf);
+                    DBGLOG("SSL_accept returned 0 after %u ms, error - %s", elapsedTime, errbuf);
                 }
                 if (ret == SSL_ERROR_SYSCALL)
                     return PORT_CHECK_SSL_ACCEPT_ERROR;
@@ -760,7 +762,7 @@ int CSecureSocket::secure_accept(int logLevel)
                 char errbuf[512];
                 ERR_error_string_n(errnum, errbuf, 512);
                 errbuf[511] = '\0';
-                DBGLOG("SSL_accept returned %d, SSL_get_error=%d, error - %s", err, ret, errbuf);
+                DBGLOG("SSL_accept returned %d after %u ms, SSL_get_error=%d, error - %s", err, elapsedTime, ret, errbuf);
                 if(strstr(errbuf, "error:1408F455:") != NULL)
                 {
                     DBGLOG("Unrecoverable SSL library error.");

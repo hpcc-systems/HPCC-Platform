@@ -301,13 +301,19 @@ public:
             int loglevel = SSLogMin;
             if (doTrace(traceSockets))
                 loglevel = SSLogMax;
+            unsigned startTime = msTick();
             int status = ssock->secure_accept(loglevel);
+            unsigned elapsedTime = msTick() - startTime;
             if (status < 0)
             {
                 // secure_accept may also DBGLOG() errors ...
+                if (doTrace(traceSockets))
+                    DBGLOG("Roxie secure_accept failed after %u ms", elapsedTime);
                 cleanupSocket(ssock);
                 return nullptr;
             }
+            if (doTrace(traceSockets))
+                DBGLOG("Roxie secure_accept completed in %u ms", elapsedTime);
         }
         catch (IException *E)
         {
