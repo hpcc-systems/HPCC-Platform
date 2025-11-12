@@ -3553,8 +3553,11 @@ TraceFlags loadTraceFlags(const IPropertyTree *ptree, const std::initializer_lis
                     dft |= TraceFlags(tmp);
             }
         }
-        else if (option.value <= TraceFlags::LevelMask) // block individual trace level names
-            continue;
+        else if (option.value <= TraceFlags::LevelMask)
+        {
+            if (strToBool(value))
+                dft = (dft & ~TraceFlags::LevelMask) | option.value;
+        }
         else // Boolean trace options
         {
             bool flag = strToBool(value);

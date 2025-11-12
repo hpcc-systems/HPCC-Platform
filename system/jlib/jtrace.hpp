@@ -469,6 +469,7 @@ constexpr std::initializer_list<TraceOption> roxieTraceOptions
     TRACEOPT(traceStandard),
     TRACEOPT(traceDetailed),
     TRACEOPT(traceMax),
+    TRACEOPT(traceDetail), // set after individual trace levels, giving this value precedence
     TRACEOPT(traceHttp),
     TRACEOPT(traceSockets),
     TRACEOPT(traceCassandra),
@@ -503,6 +504,7 @@ constexpr std::initializer_list<TraceOption> thorTraceOptions
     TRACEOPT(traceStandard),
     TRACEOPT(traceDetailed),
     TRACEOPT(traceMax),
+    TRACEOPT(traceDetail), // set after individual trace levels, giving this value precedence
     TRACEOPT(traceGraphDtor),
 };
 
@@ -513,6 +515,7 @@ constexpr std::initializer_list<TraceOption> eclccTraceOptions
     TRACEOPT(traceStandard),
     TRACEOPT(traceDetailed),
     TRACEOPT(traceMax),
+    TRACEOPT(traceDetail), // set after individual trace levels, giving this value precedence
     TRACEOPT(traceOptimizations),
     TRACEOPT(traceResources),
 };
@@ -524,6 +527,7 @@ constexpr std::initializer_list<TraceOption> dfuServerTraceOptions
     TRACEOPT(traceStandard),
     TRACEOPT(traceDetailed),
     TRACEOPT(traceMax),
+    TRACEOPT(traceDetail), // set after individual trace levels, giving this value precedence
     TRACEOPT(traceSprayDetails),
     TRACEOPT(tracePartitionDetails),
     TRACEOPT(traceDaFsClient),
@@ -536,6 +540,7 @@ constexpr std::initializer_list<TraceOption> dafilesrvServerTraceOptions
     TRACEOPT(traceStandard),
     TRACEOPT(traceDetailed),
     TRACEOPT(traceMax),
+    TRACEOPT(traceDetail), // set after individual trace levels, giving this value precedence
     TRACEOPT(traceSprayDetails),
     TRACEOPT(tracePartitionDetails),
 };
