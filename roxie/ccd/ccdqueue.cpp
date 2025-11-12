@@ -2687,7 +2687,8 @@ public:
                     StringBuffer s;
                     DBGLOG("doIBYTI packet was too late (or too early, or too low priority) : %s", header.toString(s).str());
                 }
-                if (IBYTIbufferSize)
+                // Only track orphan IBYTI if we have buddies and the buffer is enabled
+                if (header.hasBuddies() && IBYTIbufferSize)
                     queue.noteOrphanIBYTI(header);
             }
         }
@@ -2776,8 +2777,10 @@ public:
 
                     // If it's a retry, look it up against already running, or output stream, or input queue
                     // if found, send an IBYTI and discard retry request
+                    // Skip this check if no buddies - IBYTI won't help in single-agent configurations
 
                     bool alreadyRunning = false;
+                    if (header.hasBuddies())
                     {
                         WorkerReceiverTracker::TimeDivision division(timeTracker, WorkerReceiverTracker::checkingRunning);
 
@@ -2798,7 +2801,7 @@ public:
                         }
                     }
 
-                    if (!alreadyRunning && checkCompleted && ROQ->replyPending(header))
+                    if (!alreadyRunning && header.hasBuddies() && checkCompleted && ROQ->replyPending(header))
                     {
                         alreadyRunning = true;
                         ROQ->sendIbyti(header, logctx, mySubchannel);
