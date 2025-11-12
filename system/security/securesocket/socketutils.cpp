@@ -679,23 +679,33 @@ void CSocketTarget::startAsyncConnect()
     state = numConnects ? State::Reconnecting : State::Connecting;
 
     // Prepare socket for async connection
-    struct sockaddr *addr = nullptr;
+    struct sockaddr * addr = nullptr;
     try
     {
-        size32_t addrlen = 0;
-        socket.setown(ISocket::createForAsyncConnect(ep, addr, addrlen));
-        if (socket && sender.asyncSender)
+        if (sender.asyncSender)
         {
-            // Queue the async connect operation
-            sender.asyncSender->enqueueSocketConnect(socket, addr, addrlen, *this);
-            free(addr);
-            addr = nullptr;
+            size32_t addrlen = 0;
+            socket.setown(ISocket::createForAsyncConnect(ep, addr, addrlen));
+            if (socket)
+            {
+                // Queue the async connect operation
+                sender.asyncSender->enqueueSocketConnect(socket, addr, addrlen, *this);
+                free(addr);
+                addr = nullptr;
+            }
+            else
+            {
+                // No async processor - fall back to sync connect
+                free(addr);
+                addr = nullptr;
+                connect();
+                int result = socket ? 0 : -1;
+                onAsyncComplete(result);
+            }
         }
         else
         {
-            // No async processor - fall back to sync connect
-            free(addr);
-            addr = nullptr;
+            // sender is not async - fall back to sync connect
             connect();
             int result = socket ? 0 : -1;
             onAsyncComplete(result);
@@ -703,8 +713,7 @@ void CSocketTarget::startAsyncConnect()
     }
     catch (IException * e)
     {
-        if (addr)
-            free(addr);
+        free(addr);
         socket.clear();
         e->Release();
         onAsyncComplete(-1);

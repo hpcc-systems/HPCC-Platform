@@ -1225,8 +1225,8 @@ int CSocket::pre_connect(bool block)
 
     checkCfgKeepAlive();
 
-    int err = perform_socket_connect(sock, u, ul, !block, tracename);
     nonblocking = !block;  // Track the blocking state
+    int err = perform_socket_connect(sock, u, ul, !block, tracename);
 #ifdef SOCKTRACE
     PROGLOG("SOCKTRACE: pre-connected socket%s %x %d (%p) err=%d", block?"(block)":"", sock, sock, this, err);
 #endif
@@ -1247,6 +1247,7 @@ int CSocket::post_connect()
     return err;
 }
 
+// Memory for addr is allocated by this function and must be freed -- via free() -- by the caller
 void CSocket::prepareForAsyncConnect(struct sockaddr *& addr, size32_t & addrlen)
 {
     // Prepare the socket for async connection
@@ -1992,6 +1993,7 @@ ISocket *  ISocket::connect_wait( const SocketEndpoint & ep, unsigned timems)
 }
 
 // Create a socket prepared for async connection - returns socket descriptor and sockaddr for use with io_uring
+// memory for addr is allocated by this function and must be freed -- via free() -- by the caller
 ISocket * ISocket::createForAsyncConnect(const SocketEndpoint & ep, struct sockaddr *& addr, size32_t & addrlen)
 {
     if (ep.isNull() || (ep.port==0))
