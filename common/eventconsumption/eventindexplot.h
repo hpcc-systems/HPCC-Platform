@@ -98,6 +98,7 @@ public:
 protected:
     static ValueSelector parseValueSelector(const char* selector);
     static bool compareLinkIds(const char* linkLinkId, const char* deltaLinkId);
+    void configureAxis(Iterations& axis, const IPropertyTree* config);
     void parseIterations(IPropertyTreeIterator *iterIter, Iterations &iterations);
     void validateIterations(const Iterations &iterations, bool isAxis);
     bool doOnePlot(LinkChanges &linkChanges);

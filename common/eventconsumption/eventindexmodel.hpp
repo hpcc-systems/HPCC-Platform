@@ -187,12 +187,13 @@ public:
 public:
     virtual ~IndexMRUCache() = default;
     virtual void configure(const IPropertyTree& config);
+    virtual bool enabled() const = 0;
+    virtual void resize(__uint64 newCapacity);
     inline bool exists(__uint64 fileId, __uint64 offset) { return exists({fileId, offset}); }
     bool exists(const IndexHashKey& key);
     inline bool insert(__uint64 fileId, __uint64 offset, IndexMRUCacheReporter& reporter) { return insert({fileId, offset}, reporter); }
     bool insert(const IndexHashKey& key, IndexMRUCacheReporter& reporter);
 protected:
-    virtual bool enabled() const = 0;
     virtual __uint64 size(const IndexHashKey& key) = 0;
     virtual const char* description() const = 0;
 private:
@@ -204,8 +205,15 @@ public:
     DListOf<Value> mru;
 };
 
+interface IIndexMRUCacheContainer
+{
+    virtual bool isCacheEnabled() const = 0;
+    virtual __uint64 getCacheSize() const = 0;
+    virtual void resizeCache(__uint64 newSize) = 0;
+};
+
 // Encapsulation of the configuration's `storage` element.
-class Storage
+class Storage : public IIndexMRUCacheContainer
 {
 private:
     friend class IndexModelStorageTest;
@@ -247,10 +255,10 @@ private:
         static constexpr __uint64 DefaultPageSize = 8192; // 8K page size
     public:
         virtual void configure(const IPropertyTree& config) override;
+        virtual bool enabled() const override;
         inline __uint64 getReadTimeIfExists(__uint64 fileId, __uint64 offset) { return getReadTimeIfExists({fileId, offset}); }
         __uint64 getReadTimeIfExists(const IndexHashKey& key);
     protected:
-        virtual bool enabled() const override;
         virtual __uint64 size(const IndexHashKey& key) override;
         virtual const char* description() const override;
     public:
@@ -263,6 +271,11 @@ private:
     using Files = std::set<File, std::less<>>;
     // An association of file IDs to file specifications.
     using ObservedFiles = std::unordered_map<__uint64, const File*>;
+
+public:
+    virtual bool isCacheEnabled() const override { return cache.enabled(); }
+    virtual __uint64 getCacheSize() const override { return cache.capacity; }
+    virtual void resizeCache(__uint64 newSize) override { cache.resize(newSize); }
 
 public:
     // Extract storage plane and file specifications from the configuration.
@@ -299,7 +312,7 @@ private:
 };
 
 // Encapsulation of the configuration's `memory` element.
-class MemoryModel
+class MemoryModel : public IIndexMRUCacheContainer
 {
 public:
     static constexpr size_t NumKinds = 2;
@@ -331,6 +344,11 @@ public:
         MemoryModel& parent;
         __uint64 kind{0};
     };
+
+public:
+    virtual bool isCacheEnabled() const override;
+    virtual __uint64 getCacheSize() const override;
+    virtual void resizeCache(__uint64 newSize) override { UNIMPLEMENTED; }
 
 public:
     MemoryModel();

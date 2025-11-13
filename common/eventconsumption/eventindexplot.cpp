@@ -159,16 +159,12 @@ void CIndexPlotOp::setOpConfig(const IPropertyTree& _config)
     IPropertyTree* xAxisTree = command->queryPropTree("x-axis");
     if (!xAxisTree)
         throw makeStringException(0, "Missing required 'x-axis' section in configuration");
-    parseIterations(xAxisTree->getElements("iteration"), xAxis);
-    validateIterations(xAxis, true);
+    configureAxis(xAxis, xAxisTree);
 
     // Parse y-axis configuration (optional)
     IPropertyTree* yAxisTree = command->queryPropTree("y-axis");
     if (yAxisTree)
-    {
-        parseIterations(yAxisTree->getElements("iteration"), yAxis);
-        validateIterations(yAxis, true);
-    }
+        configureAxis(yAxis, yAxisTree);
 
     valueSelector = parseValueSelector(command->queryProp("@valueSelector"));
     if (ValueSelector::Unknown == valueSelector)
@@ -203,6 +199,41 @@ bool CIndexPlotOp::compareLinkIds(const char* linkLinkId, const char* deltaLinkI
     if (emptyDelta)
         return strieq(defaultLinkId, linkLinkId);
     return strieq(linkLinkId, deltaLinkId);
+}
+
+void CIndexPlotOp::configureAxis(Iterations& axis, const IPropertyTree* config)
+{
+    if (!config)
+        return;
+
+    parseIterations(config->getElements("iteration"), axis);
+    if (axis.empty())
+    {
+        const char* xpath = config->queryProp("@xpath");
+        const char* minValueString = config->queryProp("@minValue");
+        const char* maxValueString = config->queryProp("@maxValue");
+        const char* stepsString = config->queryProp("@steps");
+        if (isEmptyString(xpath) && isEmptyString(minValueString) && isEmptyString(maxValueString) && isEmptyString(stepsString))
+            throw makeStringException(0, "Missing required 'iteration' or 'xpath' section in axis configuration");
+
+        // MORE: generalize to not assume byte counts
+        __uint64 minValue = strToBytes(minValueString, StrToBytesFlags::ThrowOnError);
+        __uint64 maxValue = strToBytes(maxValueString, StrToBytesFlags::ThrowOnError);
+        __uint64 steps = strtoull(stepsString, nullptr, 0);
+        if (minValue > maxValue)
+            throw makeStringExceptionV(0, "Invalid axis range: %s to %s", minValueString, maxValueString);
+        if (!steps)
+            throw makeStringExceptionV(0, "Invalid axis steps: %s", stepsString);
+        __uint64 stepSize = (maxValue - minValue) / steps;
+        for (__uint64 value = minValue; value <= maxValue; value += stepSize)
+        {
+            Iteration& iteration = axis.emplace_back();
+            Iteration::Delta& delta = iteration.deltas.emplace_back();
+            delta.xpath.set(xpath);
+            delta.value.set(VStringBuffer("%" I64F "u", value));
+        }
+    }
+    validateIterations(axis, true);
 }
 
 void CIndexPlotOp::parseIterations(IPropertyTreeIterator* iterIter, Iterations& iterations)
@@ -265,9 +296,9 @@ bool CIndexPlotOp::doOnePlot(LinkChanges& linkChanges)
         const char* plotName = linkChanges.front()->name.get();
         if (!isEmptyString(plotName))
         {
-            plotData.append(plotName).append('\n');
-            out->put(plotData.length(), plotData.str());
-            plotData.clear();
+            plotData.append(plotName);
+            outputCell(plotData, false);
+            outputEOLN();
         }
     }
 
@@ -316,27 +347,39 @@ bool CIndexPlotOp::doXAxis(LinkChanges& linkChanges, size_t yAxisIdx)
         // adjust the link configurations as needed to produce one plot value
         linkChanges.push_back(&xAxisIteration);
         applyIteration(linkChanges);
+        linkChanges.pop_back();
 
-        // generate the visitor chain to produce one plot value
-        Owned<IEventVisitor> chain;
-        chain.set(this);
-        for (const LinkSpec& linkSpec : links)
+        try
         {
-            const IPropertyTree& linkTree = (linkSpec.modified ? *linkSpec.modified : *linkSpec.original);
-            const char* kind = linkTree.queryProp("@kind");
-            Owned<IEventVisitationLink> link;
-            if (strieq(kind, "event-filter"))
-                link.setown(createEventFilter(linkTree));
-            else
-                link.setown(createEventModel(linkTree));
-            link->setNextLink(*chain);
-            chain.setown(link.getClear());
-        }
+            // generate the visitor chain to produce one plot value
+            Owned<IEventVisitor> chain;
+            chain.set(this);
+            for (const LinkSpec& linkSpec : links)
+            {
+                const IPropertyTree& linkTree = (linkSpec.modified ? *linkSpec.modified : *linkSpec.original);
+                const char* kind = linkTree.queryProp("@kind");
+                Owned<IEventVisitationLink> link;
+                if (strieq(kind, "event-filter"))
+                    link.setown(createEventFilter(linkTree));
+                else
+                    link.setown(createEventModel(linkTree));
+                link->setNextLink(*chain);
+                chain.setown(link.getClear());
+            }
 
-        // visit the input events to produce one plot value
-        cellValue = 0;
-        if (!traverseEvents(inputPath, *chain))
-            return false;
+            // visit the input events to produce one plot value
+            cellValue = 0;
+            if (!traverseEvents(inputPath, *chain))
+                return false;
+            cellData.append(cellValue);
+        }
+        catch (IException* e)
+        {
+            // exceptions during link creation suggest an invalid configuration, which may be true
+            // in all cases or for individual cells; leave cell blank and continue
+            e->Release();
+            // MORE: accumulate error messages for output after all plot cells are produced
+        }
 
         // reset the link configurations in preparation for the next plot value
         for (LinkSpec& link : links)
@@ -346,7 +389,7 @@ bool CIndexPlotOp::doXAxis(LinkChanges& linkChanges, size_t yAxisIdx)
         }
 
         // output the cell value
-        outputCell(cellData.append(cellValue), (is3D || cellIdx % xAxis.size() != 0));
+        outputCell(cellData, (is3D || cellIdx % xAxis.size() != 0));
 
         // prepare for next iteration
         cellIdx++;
