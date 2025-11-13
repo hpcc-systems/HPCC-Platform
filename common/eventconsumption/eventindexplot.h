@@ -48,6 +48,7 @@ protected:
             StringAttr xpath;
             StringAttr value;
 
+            Delta() = default;
             Delta(const IPropertyTree& delta) : linkId(delta.queryProp("@linkId")), xpath(delta.queryProp("@xpath")), value(delta.queryProp("@value")) {}
         };
         std::vector<Delta> deltas;
