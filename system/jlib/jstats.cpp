@@ -1030,6 +1030,7 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { NUMSTAT(SoapcallRetries), "The number of times a soapcall request retries" },
     { TIMESTAT(QueryPreparation), "The total time spent preparing a query for execution" },
     { CYCLESTAT(QueryPreparation) },
+    { COSTSTAT(Failed), "The cost associated with failed jobs" },
 };
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);
