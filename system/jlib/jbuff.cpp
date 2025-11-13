@@ -548,6 +548,15 @@ MemoryBuffer & MemoryBuffer::append(const char * value)
         return append((char)0);
 }
 
+MemoryBuffer & MemoryBuffer::appendCStr(const char * value)
+{
+    dbgassertex(value);
+    if (value)
+        return append(strlen(value)+1, value);
+    else
+        return append('\0');
+}
+
 MemoryBuffer & MemoryBuffer::append(const unsigned char * value)
 {
     return append((const char *) value);
