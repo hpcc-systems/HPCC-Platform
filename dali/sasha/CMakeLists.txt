@@ -38,7 +38,6 @@ set (    SRCS
          sacoalescer.cpp 
          salds.cpp 
          saqmon.cpp 
-         saserver.cpp 
          sautil.cpp 
          saverify.cpp 
          saxref.cpp 
@@ -71,15 +70,15 @@ if (WIN32)
     endif ()
 endif()
 
-HPCC_ADD_EXECUTABLE ( saserver ${SRCS} )
-install ( TARGETS saserver RUNTIME DESTINATION ${EXEC_DIR})
+HPCC_ADD_LIBRARY ( sashalib SHARED ${SRCS} )
 
+target_compile_definitions ( sashalib PRIVATE SASHALIB_EXPORTS _USRDLL )
 
 if ( ${HAVE_LIBCRYPT} )
-target_link_libraries ( saserver crypt)
+target_link_libraries ( sashalib crypt)
 endif ( ${HAVE_LIBCRYPT} )
 
-target_link_libraries ( saserver 
+target_link_libraries ( sashalib
          jlib 
          dafsclient 
          dalibase 
@@ -91,8 +90,22 @@ target_link_libraries ( saserver
     )
 
 if (NOT CONTAINERIZED)
-    target_link_libraries ( saserver environment )
+    target_link_libraries ( sashalib environment )
 endif()
+
+install ( TARGETS sashalib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+
+
+set (    SRCS
+         saserver.cpp
+    )
+
+HPCC_ADD_EXECUTABLE ( saserver ${SRCS} )
+install ( TARGETS saserver RUNTIME DESTINATION ${EXEC_DIR})
+
+target_link_libraries ( saserver
+         sashalib
+    )
 
 set (    SRCS 
          sacmd.cpp 
@@ -118,7 +131,3 @@ target_link_libraries ( sasha
          mp
          saruncmdlib
     )
-
-
-
-

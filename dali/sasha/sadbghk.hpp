@@ -1,4 +1,5 @@
 #pragma once
 
-interface ISashaServer;
-extern ISashaServer *createSashaDebugPlaneHousekeepingServer();
+#include "sautil.hpp"
+
+extern sashalib_decl ISashaServer *createSashaDebugPlaneHousekeepingServer();

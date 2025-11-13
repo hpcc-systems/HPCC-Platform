@@ -9,11 +9,12 @@
 #include "dasds.hpp"
 #include "daaudit.hpp"
 #include "daqueue.hpp"
-#include "saserver.hpp"
 #include "workunit.hpp"
 #include "wujobq.hpp"
 #include "environment.hpp"
 #include "jconfig.hpp"
+
+#include "sautil.hpp"
 
 //not currently created or used in the containerized version
 
@@ -243,10 +244,10 @@ public:
     {
         Owned<IPropertyTree> qmonprops;
         if (isContainerized())
-            qmonprops.set(serverConfig);
+            qmonprops.setown(getComponentConfig());
         else
         {
-            qmonprops.setown(serverConfig->getPropTree("ThorQMon"));
+            qmonprops.setown(getComponentConfigSP()->getPropTree("ThorQMon"));
             if (!qmonprops)
                 qmonprops.setown(createPTree("ThorQMon"));
         }

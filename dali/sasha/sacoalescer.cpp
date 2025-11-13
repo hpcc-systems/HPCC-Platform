@@ -7,7 +7,6 @@
 #include "mpbase.hpp"
 #include "mpcomm.hpp"
 #include "dasds.hpp"
-#include "saserver.hpp"
 #include "sautil.hpp"
 #include "dalienv.hpp"
 
@@ -245,10 +244,10 @@ public:
             {
                 stopsem.wait(1000*60);
                 if (!stopped.load() && schedule.ready())  {
-                    CSuspendAutoStop suspendstop;
+                    Owned<IInterface> suspendstop = queryServerContext().createAutoStopSuspender();
                     DWORD runcode;
                     HANDLE h;
-                    StringBuffer cmd(sashaProgramName);
+                    StringBuffer cmd(queryServerContext().getSashaProgramName());
                     cmd.append(" --coalesce");
 #ifdef _CONTAINERIZED
                     cmd.append(" --config=").append(coalesceProps->queryProp("@config"));
@@ -289,9 +288,9 @@ ISashaServer *createSashaSDSCoalescingServer()
 {
     assertex(!sashaSDSCoalescingServer); // initialization problem
 #ifdef _CONTAINERIZED
-    Linked<IPropertyTree> config = serverConfig;
+    Owned<IPropertyTree> config = getComponentConfig();
 #else
-    Owned<IPropertyTree> config = serverConfig->getPropTree("Coalescer");
+    Owned<IPropertyTree> config = getComponentConfigSP()->getPropTree("Coalescer");
     if (!config)
         config.setown(createPTree("Coalescer"));
 #endif

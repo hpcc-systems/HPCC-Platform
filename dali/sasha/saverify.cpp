@@ -11,7 +11,6 @@
 #include "rmtfile.hpp"
 #include "dasds.hpp"
 #include "dadfs.hpp"
-#include "saserver.hpp"
 #include "saverify.hpp"
 #include "sautil.hpp"
 #include "dautils.hpp"
@@ -376,9 +375,9 @@ public:
         stopped = false;
 
         StringBuffer userName;
-        serverConfig->getProp("@user", userName);
+        getComponentConfigSP()->getProp("@user", userName);
         if (userName.isEmpty()) // for backward compatibility
-            serverConfig->getProp("@sashaUser", userName);
+            getComponentConfigSP()->getProp("@sashaUser", userName);
         udesc.setown(createUserDescriptor());
         udesc->set(userName.str(), nullptr);
     }
@@ -410,7 +409,12 @@ public:
 
     int run()
     {
-        Owned<IPropertyTree> verifprops = serverConfig->getPropTree("Verifier");
+#ifdef _CONTAINERIZED
+        Owned<IPropertyTree> verifprops = getComponentConfig();
+#else
+        Owned<IPropertyTree> verifprops = getComponentConfigSP()->getPropTree("Verifier");
+#endif
+
         if (!verifprops)
             verifprops.setown(createPTree("Verifier"));
         unsigned interval = verifprops->getPropInt("@interval",DEFAULT_VERIFY_INTERVAL);
@@ -618,9 +622,10 @@ public:
 
     int run()
     {
-        Owned<IPropertyTree> monprops = serverConfig->getPropTree("DaFileSrvMonitor");
+        // NB: this service is BM only
+        Owned<IPropertyTree> monprops = getComponentConfigSP()->getPropTree("DaFileSrvMonitor");
         if (!monprops)
-            monprops.setown(createPTree("DaFSMonitorServer"));
+            monprops.setown(createPTree("DaFileSrvMonitor"));
         unsigned interval = monprops->getPropInt("@interval",DEFAULT_DAFSMONITOR_INTERVAL);
         if (!interval)
             stopped = true;
@@ -657,7 +662,7 @@ ISashaServer *createSashaVerifierServer()
     return sashaVerifierServer;
 }
 
-ISashaServer *createSashaDaFSMonitorServer()
+ISashaServer *createSashaDaFSMonitorServer() // BM only
 {
     assertex(!sashaDaFSMonitorServer); // initialization problem
     sashaDaFSMonitorServer = new CSashaDaFSMonitorServer();

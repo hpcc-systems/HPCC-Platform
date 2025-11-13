@@ -8,6 +8,19 @@
 
 #include "sautil.hpp"
 
+static ISashaServerContext *sashaServerContext = nullptr;
+
+void setServerContext(ISashaServerContext &ctx)
+{
+    sashaServerContext = &ctx;
+}
+
+ISashaServerContext &queryServerContext()
+{
+    assertex(sashaServerContext);
+    return *sashaServerContext;
+}
+
 unsigned clustersToGroups(IPropertyTree *envroot,const StringArray &cmplst,StringArray &cnames,StringArray &groups,bool *done)
 {
     if (!envroot)
