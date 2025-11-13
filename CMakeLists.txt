@@ -142,6 +142,7 @@ if(NOT LICENSE_FILE)
 endif()
 
 include(${HPCC_SOURCE_DIR}/cmake_modules/optionDefaults.cmake)
+include(${CMAKE_MODULE_PATH}/codeSigning.cmake)
 
 set(CMAKE_INSTALL_MESSAGE LAZY)
 
@@ -535,37 +536,9 @@ if(TOP_LEVEL_PROJECT)
             ")
             set (CPACK_NSIS_DELETE_ICONS_EXTRA "Delete '$SMPROGRAMS\\\\$START_MENU\\\\ECL Command Prompt.lnk'")
 
-
             set(CPACK_NSIS_MODIFY_PATH "ON")
 
-            # Signing Configuration  ---
-            if (EXISTS "${PROJECT_SOURCE_DIR}/../sign/passphrase.txt")
-                file(STRINGS "${PROJECT_SOURCE_DIR}/../sign/passphrase.txt" PFX_PASSWORD LIMIT_COUNT 1)
-                message("-- Using passphrase from file: ${PROJECT_SOURCE_DIR}/../sign/passphrase.txt")
-            endif ()
-
-            if (PFX_PASSWORD)
-                set(CPACK_NSIS_FINALIZE_CMD "signtool sign /f \\\"${PROJECT_SOURCE_DIR}/../sign/hpcc_code_signing.pfx\\\" /fd SHA256 /p \\\"${PFX_PASSWORD}\\\" /tr http://timestamp.digicert.com /td SHA256")
-                
-                set(CPACK_NSIS_DEFINES "
-                    !define MUI_STARTMENUPAGE_DEFAULTFOLDER \\\"${CPACK_PACKAGE_VENDOR}\\\\${version}\\\\${CPACK_NSIS_DISPLAY_NAME}\\\"
-                    !define MUI_FINISHPAGE_NOAUTOCLOSE
-                    !finalize '${CPACK_NSIS_FINALIZE_CMD} \\\"%1\\\"'
-                    !uninstfinalize '${CPACK_NSIS_FINALIZE_CMD} \\\"%1\\\"'
-                ")
-
-                add_custom_target(SIGN
-                    COMMAND signtool sign /f "${PROJECT_SOURCE_DIR}/../sign/hpcc_code_signing.pfx" /fd "SHA256" /p "${PFX_PASSWORD}" /tr "http://timestamp.digicert.com" /td "SHA256" "${CMAKE_BINARY_DIR}/${CPACK_PACKAGE_FILE_NAME}.exe"
-                    COMMENT "Digital Signature"
-                )
-                add_dependencies(SIGN PACKAGE)
-                set_property(TARGET SIGN PROPERTY FOLDER "CMakePredefinedTargets")
-            else ()
-                set(CPACK_NSIS_DEFINES "
-                    !define MUI_STARTMENUPAGE_DEFAULTFOLDER \\\"${CPACK_PACKAGE_VENDOR}\\\\${version}\\\\${CPACK_NSIS_DISPLAY_NAME}\\\"
-                    !define MUI_FINISHPAGE_NOAUTOCLOSE
-                ")
-            endif ()
+            configure_windows_signing(SIGN "${CMAKE_BINARY_DIR}/${CPACK_PACKAGE_FILE_NAME}.exe")
         endif()
     endif(PLATFORM OR PLUGIN)
 endif(TOP_LEVEL_PROJECT)
