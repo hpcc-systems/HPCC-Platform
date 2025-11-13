@@ -1480,9 +1480,15 @@ void WorkunitRuleAnalyser::applyConfig(IPropertyTree *cfg, IConstWorkUnit * wu, 
             }
         }
     }
-    catch(...)
+    catch (IException * e)
     {
-        // If cluster info can't be retrieved, uses preconfigured default value (1)
+        StringBuffer msg;
+        DBGLOG("Failed to retrieve cluster info: %s", e->errorMessage(msg).str());
+        e->Release();
+    }
+    catch (...)
+    {
+        DBGLOG("Failed to retrieve cluster info: unknown exception");
     }
 
     maxExecuteCycles = millisec_to_cycle(statUnits2msecs(options.queryOption(watOptMaxExecuteTime)));

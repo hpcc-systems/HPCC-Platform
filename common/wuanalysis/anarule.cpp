@@ -318,14 +318,18 @@ public:
 
     virtual bool check(PerformanceIssue & result, IWuActivity & activity, const IAnalyserOptions & options) override
     {
-        // Only report if cluster has more than 10 nodes
+        // Only report if cluster size exceeds the configured threshold
         stat_type clusterSize = options.queryOption(watOptClusterSize);
         if (clusterSize <= options.queryOption(watOptSoapCallWarnClusterSize))
             return false;
 
         stat_type timeSoapCall = activity.getStatRaw(StTimeSoapcall, StAvgX);
         IWuEdge * inputEdge = activity.queryInput(0);
+        if (!inputEdge)
+            return false;
         stat_type rowscnt = inputEdge->getStatRaw(StNumRowsProcessed);
+        if (rowscnt == 0)
+            return false;
         stat_type soapCallPerRow = timeSoapCall / rowscnt;
         // Skip if average time per row is below the minimum threshold
         if (soapCallPerRow < options.queryOption(watOptSoapCallRowAvgThreshold))
