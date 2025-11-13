@@ -1518,12 +1518,13 @@ Resource format detection strategy:
 */}}
 {{-   $resourceTypeKeys := list "cpu" "memory" "ephemeral-storage" "nvidia.com/gpu" "amd.com/gpu" "hugepages-1Gi" "hugepages-2Mi" }}
 {{-   $hasStructured := or (hasKey $resources "requests") (hasKey $resources "limits") }}
-{{-   $hasFlat := false }}
+{{-   $hasFlatDict := dict "value" false }}
 {{-   range $k, $v := $resources }}
 {{-    if has $k $resourceTypeKeys }}
-{{-     $hasFlat = true }}
+{{-     $_ := set $hasFlatDict "value" true }}
 {{-    end }}
 {{-   end }}
+{{-   $hasFlat := $hasFlatDict.value }}
 {{-   if and $hasStructured $hasFlat }}
 {{-    fail (printf "hpcc.addResources: Mixed resource format detected in %v. Do not mix structured keys (requests/limits) with flat resource keys (cpu/memory/etc) in the same object. Use either structured format or flat format consistently." $resources) }}
 {{-   end }}
