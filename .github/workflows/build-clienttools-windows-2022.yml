@@ -113,11 +113,7 @@ jobs:
         run: |
           mkdir -p ./build
           cmake -S ${{ steps.setup_source.outputs.source_dir }} -B ./build ${{ inputs.cmake-config-options }}
-          if [ -d ./LN ]; then
-            cmake --build ./build ${{ inputs.cmake-build-options }} --target oss/SIGN
-          else
-            cmake --build ./build ${{ inputs.cmake-build-options }} --target SIGN
-          fi
+          cmake --build ./build ${{ inputs.cmake-build-options }} --target SIGN
 
       - name: Release Community Clienttools
         if: ${{ inputs.ln-ref == '' }}
