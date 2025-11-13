@@ -43,8 +43,8 @@ private:
     std::atomic<bool> shouldAccept{true};
     
 public:
-    TestConnectionListener(unsigned port, bool useTLS = false)
-        : CSocketConnectionListener(port, useTLS, 0, 0)
+    TestConnectionListener(unsigned port, bool useTLS = false, bool useIOUring = true)
+        : CSocketConnectionListener(port, useTLS, 0, 0, useIOUring)
     {
     }
     
@@ -172,6 +172,8 @@ class MultishotAcceptTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testManySequentialConnections);
         CPPUNIT_TEST(testConnectionBurst);
         CPPUNIT_TEST(testSlowClients);
+        CPPUNIT_TEST(testIOUringDisabledViaParameter);
+        CPPUNIT_TEST(testIOUringDisabledViaConfig);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -585,6 +587,101 @@ public:
                                   messagesReceived >= numClients - 1);
             
             listener.stop();
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+    
+    // Test 11: Verify io_uring can be disabled via constructor parameter
+    void testIOUringDisabledViaParameter()
+    {
+        unsigned short port = getRandomTestPort();
+        
+        try
+        {
+            // Explicitly disable io_uring via parameter
+            TestConnectionListener listener(port, false, false);
+            MilliSleep(300);
+            
+            // Verify io_uring is NOT being used
+            CPPUNIT_ASSERT_MESSAGE("Multishot accept should be disabled when io_uring parameter is false", 
+                                  !listener.isUsingMultishotAccept());
+            
+            // But connections should still work (using thread-based accept)
+            SimpleClient client("127.0.0.1", port);
+            CPPUNIT_ASSERT_MESSAGE("Client should connect even with io_uring disabled", 
+                                  client.connect());
+            
+            MilliSleep(100);
+            
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Connection should be accepted in fallback mode", 
+                                        1U, listener.getAcceptedCount());
+            
+            client.close();
+            listener.stop();
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+    
+    // Test 12: Verify io_uring can be disabled via global configuration
+    void testIOUringDisabledViaConfig()
+    {
+        unsigned short port = getRandomTestPort();
+        
+        try
+        {
+            // Set configuration to disable io_uring
+            Owned<IPropertyTree> config = getComponentConfigSP();
+            bool originalSetting = config ? config->getPropBool("expert/@useIOUring", true) : true;
+            
+            if (config)
+                config->setPropBool("expert/@useIOUring", false);
+            
+            try
+            {
+                // Create listener with default parameter (should check config)
+                TestConnectionListener listener(port, false);
+                MilliSleep(300);
+                
+                // Verify io_uring is NOT being used due to config
+                CPPUNIT_ASSERT_MESSAGE("Multishot accept should be disabled when expert/@useIOUring is false", 
+                                      !listener.isUsingMultishotAccept());
+                
+                // But connections should still work
+                SimpleClient client("127.0.0.1", port);
+                CPPUNIT_ASSERT_MESSAGE("Client should connect even with io_uring disabled via config", 
+                                      client.connect());
+                
+                MilliSleep(100);
+                
+                CPPUNIT_ASSERT_EQUAL_MESSAGE("Connection should be accepted in fallback mode", 
+                                            1U, listener.getAcceptedCount());
+                
+                client.close();
+                listener.stop();
+            }
+            catch (...)
+            {
+                // Restore original setting
+                if (config)
+                    config->setPropBool("expert/@useIOUring", originalSetting);
+                throw;
+            }
+            
+            // Restore original setting
+            if (config)
+                config->setPropBool("expert/@useIOUring", originalSetting);
         }
         catch (IException *e)
         {
