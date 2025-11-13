@@ -1258,7 +1258,7 @@ public:
 
             if (!item)
             {
-                recordGlobalMetrics("Queue", { {"component", "eclccserver" }, { "name", instanceName } }, { StNumWaits, StTimeWaitFailure, StCostWait }, { 1, waitTimeNs, costWait });
+                recordGlobalMetrics("Queue", { {"component", "eclccserver" }, { "name", instanceName } }, { StNumWaits, StNumStops, StTimeWaitFailure, StCostWait }, { 1, 1, waitTimeNs, costWait });
                 break;
             }
 
@@ -1273,7 +1273,7 @@ public:
             if (state == WUStateAborted)
                 recordGlobalMetrics("Queue", { {"component", "eclccserver" }, { "name", instanceName }, { "user", username.str() } }, { StNumAborts, StTimeLocalExecute, StCostAbort }, { 1, executeTimeNs, costExecute });
             else if (state == WUStateFailed)
-                recordGlobalMetrics("Queue", { {"component", "eclccserver" }, { "name", instanceName }, { "user", username.str() } }, { StNumFailures, StTimeLocalExecute, StCostExecute }, { 1, executeTimeNs, costExecute });
+                recordGlobalMetrics("Queue", { {"component", "eclccserver" }, { "name", instanceName }, { "user", username.str() } }, { StNumFailures, StTimeLocalExecute, StCostExecute, StCostFailed }, { 1, executeTimeNs, costExecute, costExecute });
             else if (state != WUStateUnknown)
                 recordGlobalMetrics("Queue", { {"component", "eclccserver" }, { "name", instanceName }, { "user", username.str() } }, { StNumSuccesses, StTimeLocalExecute, StCostExecute }, { 1, executeTimeNs, costExecute });
         }
