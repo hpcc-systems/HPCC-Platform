@@ -51,6 +51,7 @@ set (    SRCS
          filetests.cpp
          wutests.cpp
          socketasynctests.cpp
+         multishotaccepttests.cpp
          ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp/fxpp/FragmentedXmlPullParser.cpp
          ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp/fxpp/FragmentedXmlAssistant.cpp
          ${CMAKE_BINARY_DIR}/generated/ws_loggingservice_esp.cpp
@@ -86,6 +87,7 @@ include_directories (
          ./../../common/deftype
          ./../../common/workunit
          ./../../system/security/cryptohelper
+         ./../../system/security/securesocket
          ./../../configuration/configmgr/configmgrlib
          ${HPCC_SOURCE_DIR}/system/masking/include
          ${HPCC_SOURCE_DIR}/system/xmllib
