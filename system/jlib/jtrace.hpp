@@ -31,6 +31,10 @@ static constexpr const char *kLegacyCallerIdHttpHeaderName = "HPCC-Caller-Id";
 static constexpr const char *kGlobalIdOtelAttributeName = "id.global";
 static constexpr const char *kCallerIdOtelAttributeName = "id.caller";
 static constexpr const char *kLocalIdIdOtelAttributeName = "id.local";
+static constexpr size32_t lenTraceId = 32;
+static constexpr size32_t lenSpanId = 16;
+static constexpr size32_t bytesTraceId = lenTraceId/2;
+static constexpr size32_t bytesSpanId = lenSpanId/2;
 
 enum class SpanLogFlags : unsigned
 {
@@ -277,6 +281,7 @@ interface ITraceManager : extends IInterface
  extern jlib_decl ISpan * createBackdatedInternalSpan(const char * name, stat_type elapsedNs);
 
 extern jlib_decl ISpan * queryNullSpan();
+extern jlib_decl ISpan * createPseudoSpan(const char * traceId, const char * spanId); // Create an object that looks like a span, but does not use open telemetry
 extern jlib_decl ISpan * getNullSpan();
 extern jlib_decl void initTraceManager(const char * componentName, const IPropertyTree * componentConfig, const IPropertyTree * globalConfig);
 extern jlib_decl ITraceManager & queryTraceManager();
@@ -463,12 +468,18 @@ struct TraceOption { const char * name; TraceFlags value; };
 
 //========================================================================================= 
 
+#define COMMON_TRACE_OPTIONS \
+    TRACEOPT(traceNone), \
+    TRACEOPT(traceStandard), \
+    TRACEOPT(traceDetailed), \
+    TRACEOPT(traceMax), \
+    TRACEOPT(traceDetail), \
+    TRACEOPT(traceAll), /* place before the other options so you can enable all and selectively disable */ \
+    TRACEOPT(traceThreadStartup)
+
 constexpr std::initializer_list<TraceOption> roxieTraceOptions
 { 
-    TRACEOPT(traceNone),
-    TRACEOPT(traceStandard),
-    TRACEOPT(traceDetailed),
-    TRACEOPT(traceMax),
+    COMMON_TRACE_OPTIONS,
     TRACEOPT(traceHttp),
     TRACEOPT(traceSockets),
     TRACEOPT(traceCassandra),
@@ -477,7 +488,6 @@ constexpr std::initializer_list<TraceOption> roxieTraceOptions
     TRACEOPT(traceFilters),
     TRACEOPT(traceKafka),
     TRACEOPT(traceJava),
-    TRACEOPT(traceThreadStartup),
     TRACEOPT(traceRoxieLock), 
     TRACEOPT(traceQueryHashes), 
     TRACEOPT(traceSubscriptions),
@@ -498,32 +508,20 @@ constexpr std::initializer_list<TraceOption> roxieTraceOptions
 
 constexpr std::initializer_list<TraceOption> thorTraceOptions
 {
-    TRACEOPT(traceNone),
-    TRACEOPT(traceAll),             // place before the other options so you can enable all and selectively disable
-    TRACEOPT(traceStandard),
-    TRACEOPT(traceDetailed),
-    TRACEOPT(traceMax),
+    COMMON_TRACE_OPTIONS,
     TRACEOPT(traceGraphDtor),
 };
 
 constexpr std::initializer_list<TraceOption> eclccTraceOptions
 {
-    TRACEOPT(traceNone),
-    TRACEOPT(traceAll),             // place before the other options so you can enable all and selectively disable
-    TRACEOPT(traceStandard),
-    TRACEOPT(traceDetailed),
-    TRACEOPT(traceMax),
+    COMMON_TRACE_OPTIONS,
     TRACEOPT(traceOptimizations),
     TRACEOPT(traceResources),
 };
 
 constexpr std::initializer_list<TraceOption> dfuServerTraceOptions
 {
-    TRACEOPT(traceNone),
-    TRACEOPT(traceAll),             // place before the other options so you can enable all and selectively disable
-    TRACEOPT(traceStandard),
-    TRACEOPT(traceDetailed),
-    TRACEOPT(traceMax),
+    COMMON_TRACE_OPTIONS,
     TRACEOPT(traceSprayDetails),
     TRACEOPT(tracePartitionDetails),
     TRACEOPT(traceDaFsClient),
@@ -531,11 +529,7 @@ constexpr std::initializer_list<TraceOption> dfuServerTraceOptions
 
 constexpr std::initializer_list<TraceOption> dafilesrvServerTraceOptions
 {
-    TRACEOPT(traceNone),
-    TRACEOPT(traceAll),             // place before the other options so you can enable all and selectively disable
-    TRACEOPT(traceStandard),
-    TRACEOPT(traceDetailed),
-    TRACEOPT(traceMax),
+    COMMON_TRACE_OPTIONS,
     TRACEOPT(traceSprayDetails),
     TRACEOPT(tracePartitionDetails),
 };

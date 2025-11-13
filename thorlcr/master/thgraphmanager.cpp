@@ -906,9 +906,9 @@ bool CJobManager::doit(IConstWorkUnit *workunit, const char *graphName, const So
     if (aborted)
         recordGlobalMetrics("Queue", { {"component", "thor" }, { "name", thorName }, { "user", username } }, { StNumAborts, StTimeLocalExecute, StCostAbort }, { 1, executeTimeNs, costExecute });
     else if (failed)
-        recordGlobalMetrics("Queue", { {"component", "thor" }, { "name", thorName }, { "user", username } }, { StNumFailures, StTimeLocalExecute, StCostExecute }, { 1, executeTimeNs, costExecute });
+        recordGlobalMetrics("Queue", { {"component", "thor" }, { "name", thorName }, { "user", username } }, { StNumFailures, StTimeLocalExecute, StCostExecute, StCostFailed }, { 1, executeTimeNs, costExecute, costExecute });
     else
-        recordGlobalMetrics("Queue", { {"component", "thor" }, { "name", thorName }, { "user", username } }, { StTimeLocalExecute, StCostExecute }, { executeTimeNs, costExecute });
+        recordGlobalMetrics("Queue", { {"component", "thor" }, { "name", thorName }, { "user", username } }, { StNumSuccesses, StTimeLocalExecute, StCostExecute }, { 1, executeTimeNs, costExecute });
         //TBD: Ideally this time would be spread over all the timeslots when this graph was executing
 
     if (e.get()) throw e.getClear();
@@ -1619,7 +1619,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
 
                     if (0 == currentGraphName.length())
                     {
-                        recordGlobalMetrics("Queue", { {"component", "thor" }, { "name", thorname } }, { StNumWaits, StTimeWaitFailure, StCostWait }, { 1, waitTimeNs, costWait });
+                        recordGlobalMetrics("Queue", { {"component", "thor" }, { "name", thorname } }, { StNumWaits, StNumStops, StTimeWaitFailure, StCostWait }, { 1, 1, waitTimeNs, costWait });
                         break;
                     }
 

@@ -1028,6 +1028,7 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { TIMESTAT(QueryPreparation), "The total time spent preparing a query for execution" },
     { CYCLESTAT(QueryPreparation) },
     { COSTSTAT(SavingPotential), "The potential cost savings from optimizations" },
+    { COSTSTAT(Failed), "The cost associated with failed jobs" },
 };
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);

@@ -3080,6 +3080,9 @@ bool CWsSMCEx::onRecordGlobalMetrics(IEspContext &context, IEspRecordGlobalMetri
 #include "dautils.hpp"
 #include <cppunit/extensions/HelperMacros.h>
 #include <algorithm>
+#include <vector>
+#include <set>
+#include <string>
 
 // copy daliClientInit/daliClientEnd approach from testing/unittests/dalitests.cpp
 static unsigned localDaliInitCounter = 0;
@@ -3117,9 +3120,11 @@ static void daliClientEnd()
         localDaliInitCounter--;
 }
 
+static const std::vector<const char*> expectedCategories = { "categoryOne", "categoryTwo" };
+
 class DaliWsSMCGlobalMetricsTest : public CppUnit::TestFixture { 
     CPPUNIT_TEST_SUITE(DaliWsSMCGlobalMetricsTest); 
-    CPPUNIT_TEST(setUp); 
+    CPPUNIT_TEST(doStart); 
     CPPUNIT_TEST(testAllCategoriesExplicit); 
     CPPUNIT_TEST(testAllCategoriesImplicit); 
     CPPUNIT_TEST(testSingleCategoryAndDimensions); 
@@ -3128,17 +3133,23 @@ class DaliWsSMCGlobalMetricsTest : public CppUnit::TestFixture {
     CPPUNIT_TEST(testRecordMetricsNoValidStatsException); 
     CPPUNIT_TEST(testRecordMetricsAllKnownSuccess); 
     CPPUNIT_TEST(testRecordMetricsUnknownStatKind); 
-    CPPUNIT_TEST(tearDown); 
+    CPPUNIT_TEST(doStop); 
     CPPUNIT_TEST_SUITE_END();
 public: 
-    void setUp() override { 
+    void doStart() {
         daliClientInit(); 
+        // Reset removes all Instances of a category. A category
+        // with no instances is not returned in the response.
+        // So these calls help ensure the test is starting from a clean slate.
         resetGlobalMetrics("categoryOne", MetricsDimensionList()); 
         resetGlobalMetrics("categoryTwo", MetricsDimensionList()); 
         setGlobalMetricNowTime("1999-07-01T12:00:00"); 
-        prepareSampleMetrics(); 
+        prepareSampleMetrics();
     }
-    void tearDown() override { 
+    void doStop() {
+        // Remove our test data from dali to avoid polluting other tests.
+        resetGlobalMetrics("categoryOne", MetricsDimensionList()); 
+        resetGlobalMetrics("categoryTwo", MetricsDimensionList()); 
         daliClientEnd(); 
     }
     void prepareSampleMetrics() { 
@@ -3187,27 +3198,66 @@ public:
         CPPUNIT_ASSERT_MESSAGE(message.str(), areMatchingPTrees(responseTree, expectedTree));
     }
 
-    static constexpr const char * expectedAllCategories = "<GetGlobalMetricsResponse><GlobalMetrics>" 
-        "<GlobalMetric><Category>categoryTwo</Category><DateTimeRange><Start>1999070112</Start><End>1999070112</End></DateTimeRange><Stats><Stat><Name>TimeLocalExecute</Name><Value>444</Value></Stat></Stats></GlobalMetric>" 
-        "<GlobalMetric><Category>categoryTwo</Category><Dimensions><Dimension><Name>user</Name><Value>alice</Value></Dimension></Dimensions><DateTimeRange><Start>1999070112</Start><End>1999070112</End></DateTimeRange><Stats><Stat><Name>TimeLocalExecute</Name><Value>555</Value></Stat><Stat><Name>CostExecute</Name><Value>7</Value></Stat></Stats></GlobalMetric>" 
-        "<GlobalMetric><Category>categoryTwo</Category><Dimensions><Dimension><Name>user</Name><Value>bob</Value></Dimension><Dimension><Name>cluster</Name><Value>thor1</Value></Dimension></Dimensions><DateTimeRange><Start>1999070112</Start><End>1999070112</End></DateTimeRange><Stats><Stat><Name>TimeLocalExecute</Name><Value>666</Value></Stat></Stats></GlobalMetric>" 
-        "<GlobalMetric><Category>categoryOne</Category><DateTimeRange><Start>1999070112</Start><End>1999070112</End></DateTimeRange><Stats><Stat><Name>TimeLocalExecute</Name><Value>111</Value></Stat></Stats></GlobalMetric>" 
-        "<GlobalMetric><Category>categoryOne</Category><Dimensions><Dimension><Name>user</Name><Value>alice</Value></Dimension></Dimensions><DateTimeRange><Start>1999070112</Start><End>1999070112</End></DateTimeRange><Stats><Stat><Name>TimeLocalExecute</Name><Value>222</Value></Stat><Stat><Name>CostExecute</Name><Value>5</Value></Stat></Stats></GlobalMetric>" 
-        "<GlobalMetric><Category>categoryOne</Category><Dimensions><Dimension><Name>user</Name><Value>bob</Value></Dimension><Dimension><Name>cluster</Name><Value>thor1</Value></Dimension></Dimensions><DateTimeRange><Start>1999070112</Start><End>1999070112</End></DateTimeRange><Stats><Stat><Name>TimeLocalExecute</Name><Value>333</Value></Stat></Stats></GlobalMetric>" 
-        "</GlobalMetrics></GetGlobalMetricsResponse>";
+    // Ensure all the categories _this test_ added are present in the response.
+    // Ignore others to allow for the possibility that other categories may be present
+    // from other tests.
+    static void assertResponseIncludesCategories(IEspGetGlobalMetricsResponse &resp, const std::vector<const char*>& expectedCategories)
+    {
+        std::set<std::string> responseCategories;
+        
+        // Collect all categories from the response
+        const IArrayOf<IConstGlobalMetric>& metrics = resp.getGlobalMetrics();
+        ForEachItemIn(i, metrics)
+        {
+            IConstGlobalMetric& metric = metrics.item(i);
+            const char* category = metric.getCategory();
+            if (category && *category)
+                responseCategories.insert(category);
+        }
+        
+        // Collect all missing categories
+        std::vector<std::string> missingCategories;
+        for (const char* expectedCategory : expectedCategories)
+        {
+            if (responseCategories.find(expectedCategory) == responseCategories.end())
+                missingCategories.push_back(expectedCategory);
+        }
+        
+        // Report missing categories if any
+        if (!missingCategories.empty())
+        {
+            VStringBuffer message("Missing categories in response: ");
+            bool first = true;
+            for (const std::string& missing : missingCategories)
+            {
+                if (!first) 
+                    message.append(", ");
+                message.append("'").append(missing.c_str()).append("'");
+                first = false;
+            }
+            
+            // Add serialized response for debugging
+            StringBuffer serializedResp;
+            serializeResponse(resp, serializedResp);
+            message.append(". Response: ").append(serializedResp.str());
+            
+            CPPUNIT_FAIL(message.str());
+        }
+    }
+
     void testAllCategoriesExplicit() { 
         static const char * requestXML = "<GetGlobalMetricsRequest><Category>All</Category><DateTimeRange><Start>1999-01-01T00:00:00</Start><End>2099-01-01T00:00:00</End></DateTimeRange></GetGlobalMetricsRequest>"; 
         Owned<IEspGetGlobalMetricsRequest> req = createRequestFromXML(requestXML); 
         Owned<IEspGetGlobalMetricsResponse> resp = createGetGlobalMetricsResponse(); 
         handleGetGlobalMetrics(*req, *resp); 
-        assertResponseMatchesExpected(*resp, expectedAllCategories);
+        assertResponseIncludesCategories(*resp, expectedCategories);
     }
     void testAllCategoriesImplicit() { 
         static const char * requestXML = "<GetGlobalMetricsRequest><DateTimeRange><Start>1999-01-01T00:00:00</Start><End>2099-01-01T00:00:00</End></DateTimeRange></GetGlobalMetricsRequest>"; 
         Owned<IEspGetGlobalMetricsRequest> req = createRequestFromXML(requestXML); 
         Owned<IEspGetGlobalMetricsResponse> resp = createGetGlobalMetricsResponse(); 
         handleGetGlobalMetrics(*req, *resp);
-        assertResponseMatchesExpected(*resp, expectedAllCategories);
+        assertResponseIncludesCategories(*resp, expectedCategories);
     }
     void testSingleCategoryAndDimensions() { 
         static const char * requestXML = "<GetGlobalMetricsRequest><Category>categoryOne</Category><Dimensions><Dimension><Name>user</Name><Value>bob</Value></Dimension></Dimensions><DateTimeRange><Start>1999-01-01T00:00:00</Start><End>2099-01-01T00:00:00</End></DateTimeRange></GetGlobalMetricsRequest>"; 

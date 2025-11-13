@@ -602,28 +602,34 @@ public:
         else
         {
             assertex(lengthRemaining > 1);
+
             traceInfo = finger;
-            lengthRemaining--;
-            if (*finger++ & LOGGING_DEBUGGERACTIVE)
+            const byte * endTraceInfo = finger + lengthRemaining;
+            byte traceFlags = *finger++;
+            if (traceFlags & LOGGING_TRACELEVELSET)
+                finger++;
+            if (traceFlags & LOGGING_DEBUGGERACTIVE)
             {
-                assertex(lengthRemaining >= (int) sizeof(unsigned short));
+                assertex(finger + sizeof(unsigned short) <= endTraceInfo);
                 unsigned short debugLen = *(unsigned short *) finger;
+                assertex(finger + sizeof(unsigned short) + debugLen <= endTraceInfo);
                 finger += debugLen + sizeof(unsigned short);
-                lengthRemaining -= debugLen + sizeof(unsigned short);
             }
+            if (traceFlags & LOGGING_TRACEID)
+            {
+                assertex(finger + bytesTraceId + bytesSpanId <= endTraceInfo);
+                finger += bytesTraceId + bytesSpanId;
+            }
+
             for (;;)
             {
-                assertex(lengthRemaining>0);
-                if (!*finger)
-                {
-                    lengthRemaining--;
-                    finger++;
+                assertex(finger != endTraceInfo);
+                byte next = *finger++;
+                if (next == 0)
                     break;
-                }
-                lengthRemaining--;
-                finger++;
             }
             traceLength = finger - traceInfo;
+            lengthRemaining = endTraceInfo - finger;
         }
     }
 
@@ -1028,45 +1034,60 @@ void AgentContextLogger::set(ISerializedRoxieQueryPacket *packet)
         StringBuffer s;
         if (traceInfo)
         {
-            unsigned traceLength = packet->getTraceLength();
-            unsigned char loggingFlags = *traceInfo;
-            if (loggingFlags & LOGGING_FLAGSPRESENT) // should always be true.... but this flag is handy to avoid flags byte ever being NULL
+            //Extract the extra meta information serialized in queryChannelBuffer() in ccdserver.cpp
+            const byte * endTraceInfo = traceInfo + packet->getTraceLength();
+            unsigned char loggingFlags = *traceInfo++;
+            if (loggingFlags & LOGGING_INTERCEPTED)
+                intercept = true;
+            if (loggingFlags & LOGGING_TRACELEVELSET)
             {
-                traceInfo++;
-                traceLength--;
-                if (loggingFlags & LOGGING_INTERCEPTED)
-                    intercept = true;
-                if (loggingFlags & LOGGING_TRACELEVELSET)
-                {
-                    ctxTraceLevel = (*traceInfo++ - 1); // avoid null byte here in case anyone still thinks there's just a null-terminated string
-                    traceLength--;
-                }
-                if (loggingFlags & LOGGING_BLIND)
-                    blind = true;
-                if (loggingFlags & LOGGING_CHECKINGHEAP)
-                    checkingHeap = true;
-                if (loggingFlags & LOGGING_DEBUGGERACTIVE)
-                {
-                    assertex(traceLength > sizeof(unsigned short));
-                    debuggerActive = true;
-                    unsigned short debugLen = *(unsigned short *) traceInfo;
-                    traceInfo += debugLen + sizeof(unsigned short);
-                    traceLength -= debugLen + sizeof(unsigned short);
-                }
-                // Passing the wuid via the logging context prefix is a lot of a hack...
-                if (loggingFlags & LOGGING_WUID)
-                {
-                    unsigned wuidLen = 0;
-                    while (wuidLen < traceLength)
-                    {
-                        if (traceInfo[wuidLen]=='@'||traceInfo[wuidLen]==':')
-                            break;
-                        wuidLen++;
-                    }
-                    wuid.set((const char *) traceInfo, wuidLen);
-                }
+                // legacy: avoid null byte here in case anyone still thinks there's just a null-terminated string
+                ctxTraceLevel = (*traceInfo++ - 1);
             }
-            s.append(traceLength, (const char *) traceInfo);
+            if (loggingFlags & LOGGING_BLIND)
+                blind = true;
+            if (loggingFlags & LOGGING_CHECKINGHEAP)
+                checkingHeap = true;
+            if (loggingFlags & LOGGING_DEBUGGERACTIVE)
+            {
+                assertex(traceInfo + sizeof(unsigned short) <= endTraceInfo);
+                debuggerActive = true;
+                unsigned short debugLen = *(unsigned short *) traceInfo;
+                assertex(traceInfo + sizeof(unsigned short) + debugLen <= endTraceInfo);
+                traceInfo += debugLen + sizeof(unsigned short);
+            }
+            if (loggingFlags & LOGGING_TRACEID)
+            {
+                assertex(traceInfo + bytesTraceId + bytesSpanId <= endTraceInfo);
+
+                char traceId[lenTraceId+1];
+                convertDataToHex(lenTraceId, traceId, bytesTraceId, (const char *) traceInfo);
+                traceId[lenTraceId] = 0;
+                traceInfo += bytesTraceId;
+
+                char spanId[lenSpanId+1];
+                convertDataToHex(lenSpanId, spanId, bytesSpanId, (const char *) traceInfo);
+                spanId[lenSpanId] = 0;
+                traceInfo += bytesSpanId;
+
+                agentSpan.setown(createPseudoSpan(traceId, spanId));
+                setActiveSpan(agentSpan);
+            }
+
+            // Passing the wuid via the logging context prefix is a lot of a hack...
+            if (loggingFlags & LOGGING_WUID)
+            {
+                unsigned wuidLen = 0;
+                while (traceInfo + wuidLen < endTraceInfo)
+                {
+                    if (traceInfo[wuidLen]=='@'||traceInfo[wuidLen]==':')
+                        break;
+                    wuidLen++;
+                }
+                wuid.set((const char *) traceInfo, wuidLen);
+            }
+
+            s.append(endTraceInfo - traceInfo, (const char *) traceInfo);
             s.append("|");
         }
         channel = header.channel;
@@ -1083,6 +1104,8 @@ void AgentContextLogger::set(ISerializedRoxieQueryPacket *packet)
     {
         StringContextLogger::set("");
         channel = 0;
+        agentSpan.clear();
+        setActiveSpan(nullptr);
     }
 }
 
@@ -1169,7 +1192,7 @@ void sendUnloadMessage(hash64_t hash, const char *id, const IRoxieContextLogger 
 
     MemoryBuffer mb;
     mb.append(sizeof(RoxiePacketHeader), &header);
-    mb.append((char) LOGGING_FLAGSPRESENT);
+    mb.append((char) LOGGING_NONE);
     mb.append(id);
     if (doTrace(traceRoxiePackets))
         DBGLOG("UNLOAD sent for query %s", id);
@@ -1976,26 +1999,25 @@ protected:
 
 static void throwPacketTooLarge(IRoxieQueryPacket *x, unsigned maxPacketSize)
 {
-    StringBuffer t;
+    StringBuffer traceInfoText;
     unsigned traceLength = x->getTraceLength();
     if (traceLength)
     {
         const byte *traceInfo = x->queryTraceInfo();
         unsigned char loggingFlags = *traceInfo;
-        if (loggingFlags & LOGGING_FLAGSPRESENT) // should always be true.... but this flag is handy to avoid flags byte ever being NULL
+        traceInfo++;
+        traceLength--;
+        if (loggingFlags & LOGGING_TRACELEVELSET)
         {
             traceInfo++;
             traceLength--;
-            if (loggingFlags & LOGGING_TRACELEVELSET)
-            {
-                traceInfo++;
-                traceLength--;
-            }
-            t.append(traceLength, (const char *) traceInfo);
         }
+
+        //Append the rest of the context - but ensure any control characters are converted into something printable
+        encodeJSON(traceInfoText, traceLength, (const char *) traceInfo);
     }
     throw MakeStringException(ROXIE_PACKET_ERROR, "Maximum packet length %d exceeded sending packet %s (context length %u, continuation length %u, smart step length %u, trace length %u, total length %u",
-                            maxPacketSize, t.str(),
+                            maxPacketSize, traceInfoText.str(),
                             x->getContextLength(), x->getContinuationLength(), x->getSmartStepInfoLength(), x->getTraceLength(), x->queryHeader().packetlength);
 }
 

@@ -47,8 +47,14 @@ protected:
             StringAttr linkId;
             StringAttr xpath;
             StringAttr value;
+
+            Delta() = default;
+            Delta(const IPropertyTree& delta) : linkId(delta.queryProp("@linkId")), xpath(delta.queryProp("@xpath")), value(delta.queryProp("@value")) {}
         };
         std::vector<Delta> deltas;
+
+        Iteration() = default;
+        Iteration(const char* name, std::vector<Delta>&& _deltas) : name(name), deltas(std::move(_deltas)) {}
     };
 
     using Iterations = std::vector<Iteration>;
@@ -93,6 +99,7 @@ public:
 protected:
     static ValueSelector parseValueSelector(const char* selector);
     static bool compareLinkIds(const char* linkLinkId, const char* deltaLinkId);
+    void configureAxis(Iterations& axis, const IPropertyTree* config);
     void parseIterations(IPropertyTreeIterator *iterIter, Iterations &iterations);
     void validateIterations(const Iterations &iterations, bool isAxis);
     bool doOnePlot(LinkChanges &linkChanges);
