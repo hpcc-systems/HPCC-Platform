@@ -37,6 +37,7 @@
 #include "jregexp.hpp"
 #include "jdebug.hpp"
 #include "jiouring.hpp"
+#include "jptree.hpp"
 
 //#define TRACE_MAX_MESSAGES
 
@@ -246,7 +247,7 @@ CReadSelectHandler::CReadSelectHandler(unsigned inactiveCloseTimeoutMs, unsigned
         Owned<IPropertyTree> config = createPTreeFromXMLString("<iouring poll='1'/>");
         // MORE: Update queue depth to allow the max number of connections
         constexpr bool useThreadForCompletion = true;
-        asyncReader.setown(createURingProcessor(config, useThreadForCompletion));
+        asyncReader.setown(createURingProcessorIfEnabled(config, useThreadForCompletion));
     }
 
     if (!asyncReader)
@@ -275,11 +276,44 @@ CReadSelectHandler::CReadSelectHandler(unsigned inactiveCloseTimeoutMs, unsigned
 
 CReadSelectHandler::~CReadSelectHandler()
 {
+    // Ensure aborting is set to stop any new operations
+    aborting = true;
+    
     if (timeoutCycles)
     {
-        aborting = true;
         maintenanceSem.signal();
         maintenanceThread.join();
+    }
+    
+    // Close all remaining handlers before destruction
+    // This prevents handlers from calling virtual methods on a partially-destroyed object
+    std::vector<Owned<CReadSocketHandler>> toClose;
+    {
+        CriticalBlock b(handlersCS);
+        for (auto it = handlers.begin(); it != handlers.end(); )
+        {
+            CReadSocketHandler *handler = *it;
+            if (handler->close())
+            {
+                toClose.push_back(LINK(handler));
+                if (selectHandler)
+                    selectHandler->remove(handler->querySocket());
+            }
+            it = handlers.erase(it);
+        }
+    }
+    
+    // Close all sockets outside the critical section
+    for (auto &handler : toClose)
+    {
+        try
+        {
+            handler->querySocket()->close();
+        }
+        catch (...)
+        {
+            // Ignore exceptions during cleanup
+        }
     }
 }
 
@@ -386,13 +420,12 @@ void CReadSelectHandler::clearupSocketHandlers()
 
 //---------------------------------------------------------------------------------------------------------------------
 
-
-static constexpr bool useIOUring = true;
-CSocketConnectionListener::CSocketConnectionListener(unsigned port, bool _useTLS, unsigned _inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets)
-    : CReadSelectHandler(_inactiveCloseTimeoutMs, _maxListenHandlerSockets, useIOUring), Thread("CSocketConnectionListener"), useTLS(_useTLS)
+CSocketConnectionListener::CSocketConnectionListener(unsigned port, bool _useTLS, unsigned _inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets, bool _useIOUring)
+    : CReadSelectHandler(_inactiveCloseTimeoutMs, _maxListenHandlerSockets, _useIOUring), Thread("CSocketConnectionListener"), useTLS(_useTLS)
 {
     // Check if we have io_uring support available and can use multishot accept
-    useMultishotAccept = (asyncReader != nullptr) && useIOUring;
+    // Note: asyncReader will be null if io_uring is disabled via configuration or unavailable
+    useMultishotAccept = (asyncReader != nullptr) && _useIOUring;
 
     if (port)
         startPort(port);

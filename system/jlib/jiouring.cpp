@@ -467,11 +467,40 @@ IAsyncProcessor * createURingProcessor(const IPropertyTree * config, bool thread
     }
 }
 
+IAsyncProcessor * createURingProcessorIfEnabled(const IPropertyTree * config, bool threaded)
+{
+    // Check global configuration for io_uring setting
+    try
+    {
+        Owned<IPropertyTree> globalConfig = getComponentConfigSP();
+        if (globalConfig)
+        {
+            bool enabled = globalConfig->getPropBool("expert/@useIOUring", true);
+            if (!enabled)
+            {
+                DBGLOG("io_uring disabled via expert/@useIOUring configuration");
+                return nullptr;
+            }
+        }
+    }
+    catch (...)
+    {
+        // If config is not available, proceed with default behavior
+    }
+    
+    return createURingProcessor(config, threaded);
+}
+
 
 #else
 
 // Lib uring is only supported on Linux and FreeBSD
 IAsyncProcessor * createURingProcessor(const IPropertyTree * config, bool threaded)
+{
+    return nullptr;
+}
+
+IAsyncProcessor * createURingProcessorIfEnabled(const IPropertyTree * config, bool threaded)
 {
     return nullptr;
 }
