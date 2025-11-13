@@ -52,6 +52,8 @@ public:
     virtual void enqueueSocketRead(ISocket * socket, void * buf, size32_t len, IAsyncCallback & callback) override;
     virtual void enqueueSocketWrite(ISocket * socket, const void * buf, size32_t len, IAsyncCallback & callback) override;
     virtual void enqueueSocketWriteMany(ISocket * socket, const iovec * buffers, unsigned numBuffers, IAsyncCallback & callback) override;
+    virtual void enqueueSocketMultishotAccept(ISocket * socket, IAsyncCallback & callback) override;
+    virtual void cancelMultishotAccept(ISocket * socket) override;
 
     virtual void lockMemory(const void * buffer, size_t len) override;
 
@@ -137,6 +139,11 @@ bool URingProcessor::dequeueCompletion(CompletionResponse & response)
     response.callback = static_cast<IAsyncCallback *>(io_uring_cqe_get_data(cqe));
     response.result = cqe->res;
     io_uring_cqe_seen(&ring, cqe);
+    
+    // Skip callbacks that are just sentinel values (from cancel operations)
+    if (reinterpret_cast<uintptr_t>(response.callback) == 1)
+        return false;
+    
     return true;
 }
 
@@ -240,6 +247,41 @@ void URingProcessor::enqueueSocketWriteMany(ISocket * socket, const iovec * buff
     io_uring_prep_writev2(sqe, socket->OShandle(), buffers, numBuffers, offset, flags);
 
     io_uring_sqe_set_data(sqe, &callback);
+
+    submitRequests();
+}
+
+void URingProcessor::enqueueSocketMultishotAccept(ISocket * socket, IAsyncCallback & callback)
+{
+    CLeavableCriticalBlock block(requestCrit, isMultiThreaded);
+
+    io_uring_sqe * sqe = allocRequest(block);
+
+    int socketfd = socket->OShandle();
+    // Use multishot accept - this will keep accepting connections until cancelled or an error occurs
+    io_uring_prep_multishot_accept(sqe, socketfd, nullptr, nullptr, 0);
+
+    io_uring_sqe_set_data(sqe, &callback);
+
+    submitRequests();
+}
+
+void URingProcessor::cancelMultishotAccept(ISocket * socket)
+{
+    CLeavableCriticalBlock block(requestCrit, isMultiThreaded);
+
+    io_uring_sqe * sqe = allocRequest(block);
+
+    int socketfd = socket->OShandle();
+    // Cancel the multishot accept operation for this socket
+    // This will generate two types of completions:
+    // 1. One for the cancel operation itself (with this sentinel callback)
+    // 2. One for the cancelled multishot accept (with its original callback and -ECANCELED result)
+    io_uring_prep_cancel_fd(sqe, socketfd, IORING_ASYNC_CANCEL_ALL);
+
+    // Use a sentinel value for the cancel operation's own completion
+    // This completion will be discarded in dequeueCompletion()
+    io_uring_sqe_set_data(sqe, (void *)(uintptr_t)1);
 
     submitRequests();
 }

@@ -139,10 +139,11 @@ protected:
 
 // This class starts a thread that listens on a socket.  When a connection is made it adds the socket to a select handler.
 // When data is written to the socket it will call the notify handler.
-class SECURESOCKET_API CSocketConnectionListener : protected CReadSelectHandler, public Thread
+class SECURESOCKET_API CSocketConnectionListener : protected CReadSelectHandler, public Thread, public IAsyncCallback
 {
 public:
     CSocketConnectionListener(unsigned port, bool _useTLS, unsigned _inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets);
+    ~CSocketConnectionListener();
 
     void startPort(unsigned short port);
     void stop();
@@ -150,11 +151,20 @@ public:
 
     virtual int run() override;
 
+// interface IAsyncCallback
+    virtual void onAsyncComplete(int result) override;
+
+private:
+    void handleAcceptedConnection(int socketfd);
+
 private:
     Owned<ISocket> listenSocket;
     Owned<ISecureSocketContext> secureContextServer;
     bool useTLS;
     std::atomic<bool> aborting{false};
+    std::atomic<bool> useMultishotAccept{false};
+    std::atomic<unsigned> pendingAcceptCallbacks{0};
+    Semaphore shutdownSem;
 };
 
 struct HashSocketEndpoint
