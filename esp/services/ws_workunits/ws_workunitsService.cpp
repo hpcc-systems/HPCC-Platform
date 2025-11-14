@@ -1644,8 +1644,9 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
             {
                 if (e->errorCode() != ECLWATCH_CANNOT_OPEN_WORKUNIT)
                     throw e;
-                getArchivedWUInfo(context, sashaServerIp.get(), sashaServerPort, wuid.str(), resp);
+                // getArchivedWUInfo can throw, so release the exception before calling it
                 e->Release();
+                getArchivedWUInfo(context, sashaServerIp.get(), sashaServerPort, wuid.str(), resp);
             }
 
             switch (resp.getWorkunit().getStateID())
@@ -2627,7 +2628,7 @@ bool CWsWorkunitsEx::onWUQuery(IEspContext &context, IEspWUQueryRequest & req, I
 
         if (req.getType() && strieq(req.getType(), "archived workunits"))
             doWUQueryFromArchive(context, sashaServerIp.get(), sashaServerPort, *archivedWuCache, awusCacheMinutes, req, resp);
-        else if(notEmpty(pattern) && looksLikeAWuid(pattern, 'W'))
+        else if(notEmpty(pattern) && looksLikeAWuid(pattern, "WP"))
             doWUQueryBySingleWuid(context, pattern, resp);
         else if (notEmpty(req.getLogicalFile()) && req.getLogicalFileSearchType() && strieq(req.getLogicalFileSearchType(), "Created"))
             doWUQueryByFile(context, req.getLogicalFile(), resp);
