@@ -25,6 +25,7 @@
 #include "thmfilemanager.hpp"
 #include "eclhelper.hpp"
 #include "thexception.hpp"
+#include "jlzw.hpp"
 
 #include "eclhelper.hpp" // tmp for IHThorArg interface
 #include "thdiskbase.ipp"
@@ -483,6 +484,17 @@ void CWriteMasterBase::slaveDone(size32_t slaveIdx, MemoryBuffer &mb)
         modifiedTime.getString(timeStr);
         props.setProp("@modified", timeStr.str());
         props.setPropInt64("@recordCount", slaveProcessed);
+
+        // Get compression method from slave (if available)
+        byte compMethod = 0;
+        if (mb.remaining())
+            mb.read(compMethod);
+        if (compMethod && (0 == slaveIdx)) // Store compression type from first slave
+        {
+            const char *compressionType = translateFromCompMethod(compMethod);
+            if (compressionType && *compressionType)
+                fileDesc->queryProperties().setProp("@compressionType", compressionType);
+        }
     }
 }
 

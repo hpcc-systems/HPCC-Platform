@@ -361,7 +361,7 @@ void CDiskWriteSlaveActivityBase::open()
     if (helperFlags & TDWpersist)
         twFlags |= TW_Persist;
 
-    Owned<IFileIO> partOutputIO = createMultipleWrite(this, *partDesc, twFlags, compress, ecomp, this, &abortSoon, (external&&!query) ? &tempExternalName : NULL);
+    Owned<IFileIO> partOutputIO = createMultipleWrite(this, *partDesc, twFlags, compress, ecomp, this, &abortSoon, (external&&!query) ? &tempExternalName : NULL, &compMethod);
 
     {
         CriticalBlock block(statsCs);
@@ -615,6 +615,9 @@ void CDiskWriteSlaveActivityBase::processDone(MemoryBuffer &mb)
     modifiedTime.getTime(hour, min, sec, nanosec);
     modifiedTime.setTime(hour, min, sec, 0);
     modifiedTime.serialize(mb);
+
+    // Send compression method (determined when file was created)
+    mb.append((byte)compMethod);
 }
 
 /////////////
