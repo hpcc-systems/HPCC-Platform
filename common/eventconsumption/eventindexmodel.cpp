@@ -93,19 +93,18 @@ public: // IEventVisitationLink
         if (!node)
             throw makeStringException(-1, "index event model configuration missing required <storage> element");
         storage.configure(*node);
+        const char* dynamicCacheCapacityStr = node->queryProp("@dynamicCacheCapacity");
         node = config.queryBranch("memory");
         if (node)
             memory.configure(*node);
-        const char* maxCacheCapacityStr = config.queryProp("@maxCacheCapacity");
-        if (!isEmptyString(maxCacheCapacityStr))
+        if (!isEmptyString(dynamicCacheCapacityStr))
         {
-            __uint64 maxCacheCapacity = strToBytes<__uint64>(maxCacheCapacityStr, StrToBytesFlags::ThrowOnError);
-            if (maxCacheCapacity && storage.isCacheEnabled() && !storage.getCacheSize())
+            __uint64 dynamicCacheCapacity = strToBytes<__uint64>(dynamicCacheCapacityStr, StrToBytesFlags::ThrowOnError);
+            if (dynamicCacheCapacity && storage.isCacheEnabled() && !storage.getCacheSize())
             {
                 __uint64 memoryCacheCapacity = memory.getCacheSize();
-                if (memoryCacheCapacity > maxCacheCapacity)
-                    throw makeStringExceptionV(-1, "max cache capacity %llu is less than actual memory cache capacity %llu", maxCacheCapacity, memoryCacheCapacity);
-                storage.resizeCache(maxCacheCapacity - memoryCacheCapacity);
+                if (memoryCacheCapacity < dynamicCacheCapacity)
+                    storage.resizeCache(std::max(Storage::DefaultPageSize, dynamicCacheCapacity - memoryCacheCapacity));
             }
         }
     }
@@ -996,7 +995,7 @@ expect:
     void testMaxCacheCapacity()
     {
         {
-            // maxCacheCapacity not specified ==> no page cache capacity
+            // dynamicCacheCapacity not specified ==> no page cache capacity
             constexpr const char* testConfig = R"!!!(
 storage:
   cacheReadTime: 100
@@ -1020,8 +1019,8 @@ memory:
         {
             // storage/@cacheReadTime not specified ==> no page cache capacity
             constexpr const char* testConfig = R"!!!(
-maxCacheCapacity: 64 Mib
 storage:
+  dynamicCacheCapacity: 64 Mib
   plane:
     name: placeholder
     readTime: 500
@@ -1040,33 +1039,12 @@ memory:
             CPPUNIT_ASSERT_EQUAL(strToBytes("56 mib", StrToBytesFlags::ThrowOnError), model.getMemory().getCacheSize());
         }
         {
-            // node caches too large ==> exception
-            constexpr const char* testConfig = R"!!!(
-maxCacheCapacity: 64 Mib
-storage:
-  cacheReadTime: 100
-  plane:
-    name: placeholder
-    readTime: 500
-memory:
-  node:
-    kind: 0
-    cacheCapacity: 33 Mib
-  node:
-    kind: 1
-    cacheCapacity: 32 Mib
-)!!!";
-            TestIndexEventModel model;
-            Owned<IPropertyTree> config = createPTreeFromYAMLString(testConfig);
-            CPPUNIT_ASSERT_THROWS_IEXCEPTION(model.configure(*config), "expected exception for cache size exceeding maxCacheCapacity");
-        }
-        {
             // storage/@cacheCapacity set explicitly ==> use it
             constexpr const char* testConfig = R"!!!(
-maxCacheCapacity: 64 Mib
 storage:
   cacheReadTime: 100
   cacheCapacity: 12 mib
+  dynamicCacheCapacity: 64 Mib
   plane:
     name: placeholder
     readTime: 500
@@ -1087,9 +1065,9 @@ memory:
         {
             // page cache constraint in effect
             constexpr const char* testConfig = R"!!!(
-maxCacheCapacity: 64 Mib
 storage:
   cacheReadTime: 100
+  dynamicCacheCapacity: 64 Mib
   plane:
     name: placeholder
     readTime: 500
