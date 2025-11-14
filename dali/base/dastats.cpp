@@ -495,7 +495,7 @@ void startDaliRecordGlobalMetricPublisher(const char * category, const MetricsDi
     }
 }
 
-void stopRecordGlobalMetricPublisher()
+void stopDaliRecordGlobalMetricPublisher()
 {
     if (publisher)
     {

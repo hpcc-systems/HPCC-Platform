@@ -637,7 +637,7 @@ public:
     inline unsigned ordinality() const { return mapping.numStatistics(); }
     inline StatisticKind getKind(unsigned i) const { return mapping.getKind(i); }
     inline unsigned __int64 getValue(unsigned i) const { return values[i].get(); }
-    inline void setValue(unsigned i, stat_type value) { values[i].set(value); }
+    inline void setValue(unsigned i, stat_type value) const { values[i].set(value); }
 
     void set(const CRuntimeStatisticCollection & other, unsigned node = 0);
     void merge(const CRuntimeStatisticCollection & other, unsigned node = 0);
