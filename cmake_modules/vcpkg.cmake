@@ -126,15 +126,6 @@ if (INSTALL_VCPKG_CATALOG)
     install(FILES ${CMAKE_BINARY_DIR}/vcpkg-catalog.txt DESTINATION "." COMPONENT Runtime)
 endif()
 
-#  Check if vcpkg needs a bootstrap ---
-# If vcpkg is not present (scripts missing) and automatic submodule updates are
-# disabled, fail early with a clear message instead of attempting a long
-# bootstrap/download which would block the configure step.
-if(NOT EXISTS "${VCPKG_ROOT}/scripts/vcpkg-tool-metadata.txt")
-  if(NOT VCPKG_AUTO_UPDATE_SUBMODULE)
-    message(FATAL_ERROR "vcpkg appears to be missing or uninitialized (missing: ${VCPKG_ROOT}/scripts/vcpkg-tool-metadata.txt).\nEither enable automatic submodule updates with -DVCPKG_AUTO_UPDATE_SUBMODULE=ON or run: git submodule update --init --recursive vcpkg")
-  endif()
-endif()
 if (WIN32)
     set(VCPKG_BOOTSTRAP_FILE "bootstrap-vcpkg.bat")
 else ()
