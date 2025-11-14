@@ -1109,6 +1109,9 @@ Pass in dict with me, and params
     - {{ $container.process }}
  {{- end }}
  {{- include "hpcc.addSecurityContext" . | indent 2 }}
+ {{- if (eq .me.name "rowservice") }}
+   {{- include "hpcc.addPostrunResources" . | indent 2 }}
+ {{- end }}
   volumeMounts:
   {{- include "hpcc.addTempVolumeMount" (.me | merge (dict "noSubPath" "true")) | nindent 2 }}
   {{- include "hpcc.addRuntimeVolumeMount" (.me | merge (dict "noSubPath" "true")) | nindent 2 }}
@@ -1476,6 +1479,43 @@ resources:
 {{-  end -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Add minimal resource allocation for postrun sidecar containers
+
+This template generates low-impact CPU and memory resource specifications
+for utility sidecar containers that perform lifecycle management tasks.
+These containers typically monitor main application containers and perform
+cleanup operations, requiring minimal cluster resources.
+
+The resource values ensure guaranteed scheduling while preventing resource
+contention with primary HPCC Platform workloads (Dali, Thor, Roxie).
+
+Pass in: Current template context (.)
+Returns: YAML resources block with minimal requests and limits
+*/}}
+{{- define "hpcc.addPostrunResources" }}
+resources:
+  requests:
+    cpu: "5m"
+    memory: "8Mi"
+  limits:
+    cpu: "10m"
+    memory: "16Mi"
+{{ end -}}
+
+{{- define "hpcc.addResourcesEx" }}
+{{- $resources := .me | default .defaults }}
+{{- if $resources }}
+resources:
+{{- range $key, $section := $resources }}
+  {{ $key }}:
+{{- range $subkey, $value := $section }}
+    {{ $subkey }}: {{ $value }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
 
 {{/*
 Add resources object for stub pods

@@ -1,0 +1,25 @@
+certificates:
+  enabled: true
+dafilesrv:
+  - name: rowservice
+    disabled: false
+    application: stream
+    service:
+      servicePort: 7600
+      visibility: global
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "128Mi"
+      limits:
+        cpu: "1"
+        memory: "1Gi"
+    hpa:
+      minReplicas: 1
+      maxReplicas: 3
+      metrics:
+      - type: Resource
+        name: "cpu"
+        target:
+          type: Utilization
+          value: "80"

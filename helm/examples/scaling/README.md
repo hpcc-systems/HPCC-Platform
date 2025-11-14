@@ -18,10 +18,14 @@ See this document for [K8s HPA details](https://kubernetes.io/docs/tasks/run-app
 
 Some of HPCC Systems' components are candidates for HPA configuration (ESP, ECLCCServer, etc.) and can be configured directly within the HPCC helm deployment.
 
+### HPCC Systems HPA Examples
+
+#### Example 1: ESP ECLWatch Auto-scaling
+
 Example ESP application 'eclwatch' configured to horizontally auto-scale from 1 up to 3 replicas based on cpu utilization of 80:
 
-```console
-  esp:
+```yaml
+esp:
 - name: eclwatch
   application: eclwatch
   auth: none
@@ -35,6 +39,65 @@ Example ESP application 'eclwatch' configured to horizontally auto-scale from 1 
       target: 
         type: Utilization
         value: "80"
+```
+
+#### Example 2: DaFileSrv Rowservice Elastic Scaling
+
+The DaFileSrv rowservice component provides streaming file access capabilities and is designed for elastic scaling based on actual demand. 
+
+**On-Demand Scaling Characteristics:**
+- Scales up automatically when data stream requests increase CPU utilization
+- Can scale down to minimal replicas when streaming demand is low
+- Responds to burst traffic patterns typical of file access workloads
+- Maintains secure mTLS communication during scaling operations
+
+```yaml
+certificates:
+  enabled: true
+dafilesrv:
+  - name: rowservice
+    disabled: false
+    application: stream
+    service:
+      servicePort: 7600
+      visibility: global
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "128Mi"
+      limits:
+        cpu: "1"
+        memory: "1Gi"
+    hpa:
+      minReplicas: 1
+      maxReplicas: 3
+      metrics:
+      - type: Resource
+        name: "cpu"
+        target: 
+          type: Utilization
+          value: "80"
+```
+
+**Prerequisites for DaFileSrv HPA:**
+- Kubernetes Metrics Server deployment
+- Resource requests configured for all containers (including postrun sidecars)
+
+Monitor CPU and memory utilization patterns to optimize resource allocation for your specific file access patterns and throughput requirements.
+Using the Pre-configured Example File:
+
+Complete example configurations are available for light expected loads (rowservice-1-3xhpa-lightload.yaml) and for heavier expected loads (rowservice-2-5xhpa-highload.yaml). These files demonstrate rowservice configuration optimized for on-demand scaling:
+
+```console
+# Deploy HPCC Platform with rowservice HPA enabled
+helm install myhpcc hpcc/hpcc --set global.image.version=latest \
+  -f helm/examples/scaling/rowservice-1-3xhpa-lightload.yaml
+
+# Monitor autoscaling behavior during streaming workloads
+kubectl get hpa rowservice-hpa -w
+
+# Observe scaling response to demand
+kubectl get deployment rowservice
 ```
 
 Otherwise, an HPA can be created manually utilizing the kubectl command line tool.
