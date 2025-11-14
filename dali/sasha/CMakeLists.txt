@@ -119,6 +119,31 @@ target_link_libraries ( sasha
          saruncmdlib
     )
 
+if (USE_CPPUNIT)
 
+    set (    SRCS
+             saarch.cpp
+             sacmd.cpp
+             sacoalescer.cpp
+             sadbghk.cpp
+             salds.cpp
+             saqmon.cpp
+             saserver.cpp
+             sautil.cpp
+             saverify.cpp
+             saxref.cpp
+        )
 
+    HPCC_ADD_LIBRARY ( sashatests SHARED ${SRCS} )
+
+    install ( TARGETS sashatests LIBRARY DESTINATION ${LIB_DIR} )
+
+    include_directories ( ${HPCC_SOURCE_DIR}/testing/unittests )
+
+    target_link_libraries ( sashatests
+        workunit
+        ${CppUnit_LIBRARIES}
+    )
+
+endif()
 
