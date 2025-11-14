@@ -110,8 +110,7 @@ void CJHBlockCompressedSearchNode::load(CKeyHdr *_keyHdr, const void *rawData, o
 
     keyLen = keyHdr->getMaxKeyLength();
     keyCompareLen = _keyHdr->getNodeKeyLength();
-    keyRecLen = keyLen + sizeof(offset_t);
-
+    
     const char *keys = ((const char *) rawData) + sizeof(hdr);
 
     firstSequence = *(unsigned __int64 *) keys;
@@ -120,6 +119,11 @@ void CJHBlockCompressedSearchNode::load(CKeyHdr *_keyHdr, const void *rawData, o
     
     CompressionMethod compressionMethod = *(CompressionMethod*) keys;
     keys += sizeof(CompressionMethod);
+    
+    hasFilePosition = *(bool*) keys;
+    keys += sizeof(bool);
+    
+    keyRecLen = hasFilePosition ? (keyLen + sizeof(offset_t)) : keyLen;
 
     CCycleTimer expansionTimer(true);
     keyBuf = expandBlock(keys, inMemorySize, compressionMethod);
@@ -128,7 +132,7 @@ void CJHBlockCompressedSearchNode::load(CKeyHdr *_keyHdr, const void *rawData, o
 
 int CJHBlockCompressedSearchNode::compareValueAt(const char *src, unsigned int index) const
 {
-    return memcmp(src, keyBuf + index*keyRecLen + (keyHdr->hasSpecialFileposition() ? sizeof(offset_t) : 0), keyCompareLen);
+    return memcmp(src, keyBuf + index*keyRecLen, keyCompareLen);
 }
 
 bool CJHBlockCompressedSearchNode::fetchPayload(unsigned int index, char *dst, PayloadReference & activePayload) const
@@ -139,11 +143,14 @@ bool CJHBlockCompressedSearchNode::fetchPayload(unsigned int index, char *dst, P
     const char * p = keyBuf + index*keyRecLen;
     if (keyHdr->hasSpecialFileposition())
     {
-        //It would make sense to have the fileposition at the start of the row from the perspective of the
-        //internal representation, but that would complicate everything else which assumes the keyed
-        //fields start at the beginning of the row.
-        memcpy(dst+keyCompareLen, p+keyCompareLen+sizeof(offset_t), keyLen-keyCompareLen);
-        memcpy(dst+keyLen, p, sizeof(offset_t));
+        memcpy(dst+keyCompareLen, p+keyCompareLen, keyLen-keyCompareLen);
+        if (hasFilePosition)
+            memcpy(dst+keyLen, p+keyLen, sizeof(offset_t));
+        else
+        {
+            offset_t zeroPos = 0;
+            memcpy(dst+keyLen, &zeroPos, sizeof(offset_t));
+        }
     }
     else
     {
@@ -158,8 +165,6 @@ bool CJHBlockCompressedSearchNode::getKeyAt(unsigned int index, char *dst) const
     if (dst)
     {
         const char * p = keyBuf + index*keyRecLen;
-        if (keyHdr->hasSpecialFileposition())
-            p += sizeof(offset_t);
         memcpy(dst, p, keyCompareLen);
     }
     return true;
@@ -168,7 +173,12 @@ bool CJHBlockCompressedSearchNode::getKeyAt(unsigned int index, char *dst) const
 size32_t CJHBlockCompressedSearchNode::getSizeAt(unsigned int index) const
 {
     if (keyHdr->hasSpecialFileposition())
-        return keyLen + sizeof(offset_t);
+    {
+        if (hasFilePosition)
+            return keyLen + sizeof(offset_t);
+        else
+            return keyLen;
+    }
     else
         return keyLen;
 }
@@ -176,9 +186,10 @@ size32_t CJHBlockCompressedSearchNode::getSizeAt(unsigned int index) const
 offset_t CJHBlockCompressedSearchNode::getFPosAt(unsigned int index) const
 {
     if (index >= hdr.numKeys) return 0;
+    if (!hasFilePosition) return 0;
 
     offset_t pos;
-    const char * p = keyBuf + index*keyRecLen;
+    const char * p = keyBuf + index*keyRecLen + keyLen;
     memcpy( &pos, p, sizeof(__int64));
     _WINREV(pos);
     return pos;
@@ -252,16 +263,23 @@ bool CBlockCompressedWriteNode::add(offset_t pos, const void *indata, size32_t i
         memcpy(keyPtr, &context.compressionMethod, sizeof(context.compressionMethod));
         keyPtr += sizeof(context.compressionMethod);
         hdr.keyBytes += sizeof(context.compressionMethod);
+        
+        bool hasFilepos = !context.zeroFilePos;
+        memcpy(keyPtr, &hasFilepos, sizeof(bool));
+        keyPtr += sizeof(bool);
+        hdr.keyBytes += sizeof(bool);
 
-        //Adjust the fixed key size to include the fileposition field which is written by writekey.
+        //Adjust the fixed key size to include the fileposition field which is written by writekey
         bool isVariable = keyHdr->isVariable();
-        size32_t fixedKeySize = isVariable ? 0 : keyLen + sizeof(offset_t);
+        size32_t fixedKeySize = isVariable ? 0 : (hasFilepos ? keyLen + sizeof(offset_t) : keyLen);
 
         ICompressHandler * handler = queryCompressHandler(context.compressionMethod);
         compressor.open(keyPtr, maxBytes-hdr.keyBytes, handler, context.compressionOptions, isVariable, fixedKeySize);
     }
 
-    if (0xffff == hdr.numKeys || 0 == compressor.writekey(pos, (const char *)indata, insize))
+    unsigned writeOptions = KeyCompressor::TrailingFilePosition | (context.zeroFilePos ? KeyCompressor::NoFilePosition : 0);
+    int written = compressor.writekey(pos, (const char *)indata, insize, writeOptions);
+    if (0xffff == hdr.numKeys || written == 0)
         return false;
 
     if (insize>keyLen)
@@ -278,7 +296,7 @@ void CBlockCompressedWriteNode::finalize()
 {
     compressor.close();
     if (hdr.numKeys)
-        hdr.keyBytes = compressor.buflen() + sizeof(unsigned __int64) + sizeof(CompressionMethod); // rsequence
+        hdr.keyBytes = compressor.buflen() + sizeof(unsigned __int64) + sizeof(CompressionMethod) + sizeof(bool); // rsequence + compressionMethod + hasFilePosition
 }
 
 BlockCompressedIndexCompressor::BlockCompressedIndexCompressor(unsigned keyedSize, IHThorIndexWriteArg *helper, const char* options)
@@ -310,6 +328,9 @@ BlockCompressedIndexCompressor::BlockCompressedIndexCompressor(unsigned keyedSiz
     context.compressionHandler = queryCompressHandler(compressionMethod);
     if (!context.compressionHandler)
         throw MakeStringException(0, "Unknown compression method %d", (int)compressionMethod);
+    
+    if (helper && (helper->getFlags() & TIWzerofilepos))
+        context.zeroFilePos = true;
 }
 
 CJHBlockCompressedVarNode::CJHBlockCompressedVarNode() {}
