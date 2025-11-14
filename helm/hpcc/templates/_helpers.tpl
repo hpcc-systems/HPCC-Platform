@@ -1510,32 +1510,60 @@ Pass in a dictionary with me defined
 {{- $resourceWholeCpusWithLimits := hasKey .root.Values.global "resourceWholeCpusWithLimits" | ternary .root.Values.global.resourceWholeCpusWithLimits false -}}
 {{- if not $omitResources }}
 {{-  if $resources }}
-{{-   $limits := omit $resources "cpu" }}
-{{-   $requests := dict }}
-{{-   if hasKey $resources "cpu"  -}}
-{{-    $cpu := $resources.cpu }}
-{{-    if $resourceCpusWithLimits -}}
-{{-     $_ := set $limits "cpu" $cpu -}}
-{{-    else if $resourceWholeCpusWithLimits -}}
-{{-     $milliCPUs := int (include "hpcc.k8sCPUStringToMilliCPU" $cpu) }}
-{{-     if eq (mod $milliCPUs 1000) 0 -}}
+{{/*
+Resource format detection strategy:
+- Structured format: Contains "requests" or "limits" keys (Kubernetes standard)
+- Flat format: Contains only resource type keys like "cpu", "memory", etc. (HPCC standard)
+- Mixed format: Contains both structural and resource type keys (invalid, will fail with error)
+*/}}
+{{-   $resourceTypeKeys := list "cpu" "memory" "ephemeral-storage" "nvidia.com/gpu" "amd.com/gpu" "hugepages-1Gi" "hugepages-2Mi" }}
+{{-   $hasStructured := or (hasKey $resources "requests") (hasKey $resources "limits") }}
+{{-   $hasFlatDict := dict "value" false }}
+{{-   range $k, $v := $resources }}
+{{-    if has $k $resourceTypeKeys }}
+{{-     $_ := set $hasFlatDict "value" true }}
+{{-    end }}
+{{-   end }}
+{{-   $hasFlat := $hasFlatDict.value }}
+{{-   if and $hasStructured $hasFlat }}
+{{-    fail (printf "hpcc.addResources: Mixed resource format detected in %v. Do not mix structured keys (requests/limits) with flat resource keys (cpu/memory/etc) in the same object. Use either structured format or flat format consistently." $resources) }}
+{{-   end }}
+{{-   if $hasStructured }}
+{{/*    Structured format detected - pass through unchanged */}}
+{{/*    Using nindent 2 because $resources already contains the nested structure (requests/limits blocks) */}}
+resources:
+{{-    toYaml $resources | nindent 2 }}
+{{-   else }}
+{{/*    Flat format detected - convert to structured Kubernetes format */}}
+{{-    $limits := omit $resources "cpu" }}
+{{-    $requests := dict }}
+{{-    if hasKey $resources "cpu"  -}}
+{{-     $cpu := $resources.cpu }}
+{{-     if $resourceCpusWithLimits -}}
 {{-      $_ := set $limits "cpu" $cpu -}}
+{{-     else if $resourceWholeCpusWithLimits -}}
+{{-      $milliCPUs := int (include "hpcc.k8sCPUStringToMilliCPU" $cpu) }}
+{{-      if eq (mod $milliCPUs 1000) 0 -}}
+{{-       $_ := set $limits "cpu" $cpu -}}
+{{-      else -}}
+{{-       $_ := set $requests "cpu" $cpu -}}
+{{-      end -}}
 {{-     else -}}
 {{-      $_ := set $requests "cpu" $cpu -}}
 {{-     end -}}
-{{-    else -}}
-{{-     $_ := set $requests "cpu" $cpu -}}
-{{-    end -}}
-{{-   end }}
+{{-    end }}
+{{/*    Using nindent 4 for flat format because we're building the nested structure explicitly */}}
 resources:
-{{-   if $limits }}
+{{-    if $limits }}
   limits:
-{{-    toYaml $limits | nindent 4 }}
-{{-   end -}}
-{{-   if $requests }}
+{{-     toYaml $limits | nindent 4 }}
+{{-    end -}}
+{{-    if $requests }}
   requests:
-{{-    toYaml $requests | nindent 4 -}}
+{{-     toYaml $requests | nindent 4 -}}
+{{-    end -}}
 {{-   end -}}
+{{/*  end structured vs flat format check */}}
 {{-  end -}}
 {{- end -}}
 {{- end -}}
