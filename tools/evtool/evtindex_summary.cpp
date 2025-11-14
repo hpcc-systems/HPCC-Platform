@@ -26,6 +26,25 @@
 class CEvtIndexSummaryCommand : public TEventConsumingCommand<CIndexFileSummary>
 {
 public:
+    virtual bool acceptTerseOption(char opt) override
+    {
+        switch (opt)
+        {
+            case 'f':
+                op.setSummarization(IndexSummarization::byFile);
+                break;
+            case 'k':
+                op.setSummarization(IndexSummarization::byNodeKind);
+                break;
+            case 'n':
+                op.setSummarization(IndexSummarization::byNode);
+                break;
+            default:
+                return false;
+        }
+        return true;
+    }
+
     virtual void usageSyntax(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out) override
     {
         TEventConsumingCommand<CIndexFileSummary>::usageSyntax(argc, argv, pos, out);
@@ -39,7 +58,21 @@ R"!!!([options] [filters] <filename>
     virtual void usageSynopsis(IBufferedSerialOutputStream& out) override
     {
         constexpr const char* usageStr = R"!!!(
-Summarize the index events in a binary event file.
+Summarize the index events in a binary event file. Activity can be aggregated
+by either index file ID, node kind, or individual node (as identified by file
+ID and file offset). One line of output is produced for each event group.
+)!!!";
+        size32_t usageStrLength = size32_t(strlen(usageStr));
+        out.put(usageStrLength, usageStr);
+    }
+
+    virtual void usageOptions(IBufferedSerialOutputStream& out) override
+    {
+        TEventConsumingCommand<CIndexFileSummary>::usageOptions(out);
+        constexpr const char* usageStr =
+R"!!!(    -f                        Summarize activity by file.
+    -k                        Summarize activity by node kind.
+    -n                        Summarize activity by node.
 )!!!";
         size32_t usageStrLength = size32_t(strlen(usageStr));
         out.put(usageStrLength, usageStr);

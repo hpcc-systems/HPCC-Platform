@@ -18,12 +18,52 @@
 #pragma once
 
 #include "eventconsumption.h"
+#include "eventindex.hpp"
+#include "eventindexmodel.hpp"
 #include "eventoperation.h"
 #include "eventvisitor.h"
+#include <unordered_map>
 
-class event_decl CIndexFileSummary : public IEventVisitor, public CEventConsumingOp
+enum class IndexSummarization
 {
-public: // IEventVisitor
+    byFile,
+    byNodeKind,
+    byNode,
+};
+
+class event_decl CIndexFileSummary : private IEventVisitor, public CEventConsumingOp
+{
+protected:
+    struct NodeStats
+    {
+        struct Bucket
+        {
+            __uint64 total{0};
+            uint32_t count{0};
+            uint32_t min{UINT32_MAX};
+            uint32_t max{0};
+        };
+        struct Events
+        {
+            uint32_t hits{0};
+            uint32_t misses{0};
+            uint32_t loads{0};
+            uint32_t payloads{0};
+            uint32_t evictions{0};
+        };
+        enum ReadBucket
+        {
+            PageCache,
+            LocalFile,
+            RemoteFile,
+            NumBuckets
+        };
+        uint32_t inMemorySize{0};
+        Events events;
+        Bucket readTime[NumBuckets];
+        Bucket expandTime;
+    };
+protected: // IEventVisitor
     virtual bool visitFile(const char *filename, uint32_t version) override;
     virtual bool visitEvent(CEvent& event) override;
     virtual void departFile(uint32_t bytesRead) override;
@@ -31,37 +71,27 @@ public: // CEventConsumingOp
     virtual bool doOp() override;
 public:
     IMPLEMENT_IINTERFACE;
+    void setSummarization(IndexSummarization value) { summarization = value; }
 protected:
-    struct NodeKindSummary;
-    NodeKindSummary& nodeSummary(__uint64 fileId, __uint64 nodeKind);
+    void summarizeByFile();
+    void summarizeByNodeKind();
+    void summarizeByNode();
     void appendCSVColumn(StringBuffer& line, const char* value);
     void appendCSVColumn(StringBuffer& line, __uint64 value);
+    template <typename... Args>
+    void appendCSVColumns(StringBuffer &line, Args &&...values);
+    template<typename bucket_type_t>
+    void appendCSVBucket(StringBuffer& line, const bucket_type_t& bucket, bool includeCount);
+    void appendCSVBucketHeaders(StringBuffer &line, const char *prefix, bool includeCount);
+    template <typename events_type_t>
+    void appendCSVEvents(StringBuffer &line, const events_type_t &events);
+    void appendCSVEventsHeaders(StringBuffer &line, const char* prefix);
+    void outputLine(StringBuffer& line);
 protected:
+    using Cache = std::unordered_map<IndexHashKey, NodeStats, IndexHashKeyHash>;
     using FileInfo = std::map<unsigned, StringAttr>;
-    struct NodeKindSummary
-    {
-        __uint64 hits{0};
-        __uint64 misses{0};
-        __uint64 loads{0};
-        __uint64 loadedSize{0};
-        __uint64 evictions{0};
-        __uint64 evictedSize{0};
-        __uint64 elapsed{0};
-        __uint64 read{0};
-        __uint64 expandTime{0};
-        __uint64 payloads{0};
-        __uint64 payloadExpansions{0};
-        __uint64 payloadConsumption{0};
-    };
-    struct FileSummary
-    {
-        NodeKindSummary branch;
-        NodeKindSummary leaf;
-    };
-    using Summary = std::map<unsigned, FileSummary>;
+    static constexpr __uint64 readBucketBoundary[NodeStats::NumBuckets] = {20'000, 400'000, UINT64_MAX};
     FileInfo fileInfo;
-    Summary summary;
-    EventType currentEvent{EventNone};
-    __uint64 currentFileId{0};
-    __uint64 currentNodeKind{0};
+    IndexSummarization summarization{IndexSummarization::byFile};
+    Cache stats[NumNodeKinds];
 };
