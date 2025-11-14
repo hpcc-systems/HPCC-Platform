@@ -53,6 +53,7 @@ interface IConstXRefNode : extends IInterface
     virtual IXRefFilesNode* getFoundFiles() = 0;
     virtual IXRefFilesNode* getOrphanFiles() = 0;
     virtual StringBuffer& getCluster(StringBuffer& Cluster) = 0;
+    virtual StringBuffer& getFilterScopes(StringBuffer& filterScopes) = 0;
     virtual const char *queryRootDir() const = 0;
     virtual bool useSasha() = 0;
 };
@@ -64,6 +65,7 @@ interface IXRefNode :  extends IConstXRefNode
     virtual void setStatus(const char* str) = 0;
     virtual void commit() = 0;
     virtual void setCluster(const char* str) = 0;
+    virtual void setFilterScopes(const char* str) = 0;
     virtual StringBuffer &serializeMessages(StringBuffer &buf) = 0;
     virtual void deserializeMessages(IPropertyTree& inTree) = 0;
     virtual StringBuffer &serializeDirectories(StringBuffer &buf) = 0;
@@ -143,6 +145,8 @@ public:
 
     virtual StringBuffer& getCluster(StringBuffer& Cluster);
     virtual void setCluster(const char* str);
+    virtual StringBuffer& getFilterScopes(StringBuffer& filterScopes);
+    virtual void setFilterScopes(const char* str);
 
 
 };
