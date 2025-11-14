@@ -12653,6 +12653,7 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
     unsigned __int64 numBlobNodes = 0;
     unsigned __int64 numBranchNodes = 0;
     offset_t offsetBranches = 0;
+    offset_t offsetRoot = 0;
     offset_t uncompressedSize = 0;
     offset_t originalBlobSize = 0;
     offset_t branchMemorySize = 0;
@@ -12865,6 +12866,7 @@ public:
             numBranchNodes = builder->getStatistic(StNumNodeCacheAdds);
             numBlobNodes = builder->getStatistic(StNumBlobCacheAdds);
             offsetBranches = builder->getStatistic(StSizeOffsetBranches);
+            offsetRoot = builder->getStatistic(StSizeOffsetRoot);
             originalBlobSize = bc.queryTotalSize();
             branchMemorySize = builder->getStatistic(StSizeBranchMemory);
             leafMemorySize = builder->getStatistic(StSizeLeafMemory);
@@ -12908,6 +12910,7 @@ public:
         numBlobNodes = 0;
         numBranchNodes = 0;
         offsetBranches = 0;
+        offsetRoot = 0;
         uncompressedSize = 0;
         originalBlobSize = 0;
         noteStatistic(StNumDuplicateKeys, cummulativeDuplicateKeyCount);
@@ -12929,6 +12932,7 @@ public:
         attrs->setPropInt64("@size", compressedFileSize);
         attrs->setPropInt64("@recordCount", reccount);
         attrs->setPropInt64("@offsetBranches", offsetBranches);
+        attrs->setPropInt64("@offsetRoot", offsetRoot);
 
         CDateTime createTime, modifiedTime, accessedTime;
         writer->queryFile()->getTime(&createTime, &modifiedTime, &accessedTime);

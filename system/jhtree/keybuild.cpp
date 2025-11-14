@@ -151,6 +151,7 @@ protected:
     unsigned levels;
     offset_t nextPos;
     offset_t offsetBranches = 0;
+    offset_t offsetRoot = 0;
     Owned<CWriteKeyHdr> keyHdr;
     CWriteNode *prevLeafNode;
     NodeInfoArray leafInfo;
@@ -509,6 +510,7 @@ protected:
         }
         offsetBranches = nextPos;
         buildTree(leafInfo);
+        offsetRoot = keyHdr->getHdrStruct()->root;
         if(metadata)
         {
             assertex(strcmp(metadata->queryName(), "metadata") == 0);
@@ -663,6 +665,8 @@ protected:
             return duplicateCount;
         case StSizeOffsetBranches:
             return offsetBranches;
+        case StSizeOffsetRoot:
+            return offsetRoot;
         case StSizeBranchMemory:
             return indexCompressor->queryBranchMemorySize();
         case StSizeLeafMemory:

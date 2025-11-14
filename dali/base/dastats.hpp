@@ -56,6 +56,6 @@ extern da_decl void resetGlobalMetrics(const char * optCategory, const MetricsDi
 #endif
 
 extern da_decl void startDaliRecordGlobalMetricPublisher(const char * category, const MetricsDimensionList &  dimensions, const CRuntimeStatisticCollection & stats, unsigned publishPeriodMs);
-extern da_decl void stopRecordGlobalMetricPublisher();
+extern da_decl void stopDaliRecordGlobalMetricPublisher();
 
 #endif
