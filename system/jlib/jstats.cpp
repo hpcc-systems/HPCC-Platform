@@ -792,7 +792,7 @@ public:
 constexpr const char * UNUSED = "<unused>";
 
 //The order of entries in this table must match the order in the enumeration
-static const constexpr StatisticMeta statsMetaData[StMax] = {
+static const constexpr StatisticMeta statsMetaData[] = {
     { StKindNone, SMeasureNone, StatsMergeSum, StKindNone, StKindNone, { "none" }, { "@none" }, nullptr },
     { StKindAll, SMeasureAll, StatsMergeSum, StKindAll, StKindAll, { "all" }, { "@all" }, nullptr },
     { WHENFIRSTSTAT(GraphStarted), "The time when a graph started./nDeprecated" }, // Deprecated - use WhenStart
@@ -1032,9 +1032,12 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { CYCLESTAT(QueryPreparation) },
     { COSTSTAT(SavingPotential), "The potential cost savings from optimizations" },
     { COSTSTAT(Failed), "The cost associated with failed jobs" },
+    { SIZESTAT(OffsetRoot), "The offset of the root branch in an index" },
 };
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);
+
+static_assert(StMax == sizeof(statsMetaData) / sizeof(StatisticMeta), "statsMetaData table out of sync with StatisticKind enumeration");
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
