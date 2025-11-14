@@ -84,21 +84,40 @@ jobs:
             exit 1
           fi
 
-          # Check if commit is signed
+          # ---- Full commit body for DCO check ----
+          FULL_COMMIT_MSG=$(git log --format=%B -n 1 $FIRST_COMMIT)
+
+          # ---- 1. DCO check ----
+          DCO_OK=false
           if echo "$FULL_COMMIT_MSG" | grep -q "^Signed-off-by: "; then
-            echo "✓ First commit is signed"
+            echo "✓ DCO sign-off found"
+            DCO_OK=true
+          fi
+
+          # ---- 2. GPG check ----
+          GPG_OK=false
+          if git verify-commit "$FIRST_COMMIT" > /dev/null 2>&1; then
+            echo "✓ GPG signature verified"
+            GPG_OK=true
+          fi
+
+          # ---- Require at least ONE ----
+          if $DCO_OK || $GPG_OK; then
+            echo "First commit is signed (DCO or GPG)"
           else
             echo "✗ First commit is not signed"
             echo ""
-            echo "The first commit must include a 'Signed-off-by:' line."
-            echo "To sign your commits, use: git commit -s"
+            echo "You must sign the first commit **either** with:"
+            echo "  • DCO: add a 'Signed-off-by:' line  →  git commit -s"
+            echo "  • GPG: sign with your key          →  git commit -S"
             echo ""
-            echo "Example commit message:"
-            echo "  HPCC-12345 Fix memory leak in Thor"
-            echo "  "
-            echo "  This fixes a memory leak in the Thor component."
-            echo "  "
-            echo "  Signed-off-by: Your Name <your.email@example.com>"
+            echo "To fix an existing commit:"
+            echo "  git rebase -i ${BASE_SHA}^"
+            echo "  Change 'pick' → 'edit' on the first commit, then:"
+            echo "    git commit --amend -s   # for DCO"
+            echo "    # or"
+            echo "    git commit --amend -S --no-edit   # for GPG"
+            echo "  git rebase --continue"
             exit 1
           fi
 
