@@ -65,24 +65,22 @@ public:
         return false;
     }
 
-    virtual void usageSyntax(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out) override
+    virtual const char* getVerboseDescription() const override
     {
-        TEventConsumingCommand<CEventSavingOp>::usageSyntax(argc, argv, pos, out);
-        constexpr const char* usageStr =
-R"!!!([options] [filters] <filename>
-)!!!";
-        size32_t usageStrLength = size32_t(strlen(usageStr));
-        out.put(usageStrLength, usageStr);
-    }
-
-    virtual void usageSynopsis(IBufferedSerialOutputStream& out) override
-    {
-        constexpr const char* usageStr = R"!!!(
-Record visited events to a new binary event file. The output file path and
+        return R"!!!(Record visited events to a new binary event file. The output file path and
 recording options are specified by --output-path and --recording-options, respectively.
 )!!!";
-        size32_t usageStrLength = size32_t(strlen(usageStr));
-        out.put(usageStrLength, usageStr);
+    }
+
+    virtual const char* getBriefDescription() const override
+    {
+        return "create a new binary event fle from binary input";
+    }
+
+    virtual void usageSyntax(StringBuffer& helpText) override
+    {
+        helpText.append(R"!!!([options] [filters] <filename>
+)!!!");
     }
 
     virtual void usageOptions(IBufferedSerialOutputStream& out) override

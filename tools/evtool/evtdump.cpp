@@ -48,23 +48,21 @@ public:
         return true;
     }
 
-    virtual void usageSyntax(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out) override
+    virtual const char* getVerboseDescription() const override
     {
-        TEventConsumingCommand<CDumpEventsOp>::usageSyntax(argc, argv, pos, out);
-        constexpr const char* usageStr =
-R"!!!([options] [filters] <filename>
+        return R"!!!(Parse a binary event file and write its contents to standard output.
 )!!!";
-        size32_t usageStrLength = size32_t(strlen(usageStr));
-        out.put(usageStrLength, usageStr);
     }
 
-    virtual void usageSynopsis(IBufferedSerialOutputStream& out) override
+    virtual const char* getBriefDescription() const override
     {
-        constexpr const char* usageStr = R"!!!(
-Parse a binary event file and write its contents to standard output.
-)!!!";
-        size32_t usageStrLength = size32_t(strlen(usageStr));
-        out.put(usageStrLength, usageStr);
+        return "output all events in their entirety";
+    }
+
+    virtual void usageSyntax(StringBuffer& helpText) override
+    {
+        helpText.append(R"!!!([options] [filters] <filename>
+)!!!");
     }
 
     virtual void usageOptions(IBufferedSerialOutputStream& out) override

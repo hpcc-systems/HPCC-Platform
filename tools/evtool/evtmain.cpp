@@ -24,6 +24,12 @@
 #include <map>
 #include <string>
 
+static constexpr const char* verbose = R"!!!(Collection of commands for the manipulation of event data files. Supported
+manipulations include creating event files, outputting events, and analyzing
+index event data. In most cases, events may be filtered by event type and
+attribute values.
+)!!!";
+
 int main(int argc, const char* argv[])
 {
     COnScopeExit cleanup(cleanupConsole);
@@ -35,7 +41,7 @@ int main(int argc, const char* argv[])
         { "save-as", createSaveAsCommand },
         { "sim", createSimCommand },
         { "index", createIndexCommand },
-    });
+    }, verbose, nullptr);
     try
     {
         evtool.dispatch(argc, argv, 0);

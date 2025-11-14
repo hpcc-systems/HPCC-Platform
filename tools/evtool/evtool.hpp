@@ -24,29 +24,38 @@
 
 // Abstract implementation of the command interface. `dispatch` is implemented with the help of
 // several virtual and abstract methods. `usage` remains for subclasses to implement.
-class CEvToolCommand : public CInterfaceOf<IEvToolCommand>
+class CEvToolCommand : public CEvtCommandBase
 {
 public: // new abstract methods
     virtual bool isGoodRequest() = 0;
     virtual int  doRequest() = 0;
-public: // IEvToolCommand
-    virtual int dispatch(int argc, const char* argv[], int pos) override;
+public:
     virtual void usage(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out) override;
 protected:
+    // CEvtCommandBase implementation
+    virtual bool acceptArgument(const char* arg) override;
+    virtual bool isValidRequest() override { return isGoodRequest(); }
+    virtual int executeCommand() override { return doRequest(); }
+
+    // Command line argument processing
     virtual bool accept(const char* arg);
     virtual bool acceptTerseOption(char opt);
     virtual bool acceptVerboseOption(const char* opt);
     virtual bool acceptKVOption(const char* key, const char* value);
     virtual bool acceptParameter(const char* arg);
-    virtual void usageSyntax(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out);
-    virtual void usageSynopsis(IBufferedSerialOutputStream& out);
-    virtual void usageOptions(IBufferedSerialOutputStream& out);
+
+    // Usage output components
+    virtual void usageOptions(IBufferedSerialOutputStream& out) override;
     virtual void usageFilters(IBufferedSerialOutputStream& out);
-    virtual void usageParameters(IBufferedSerialOutputStream& out);
-    virtual void usageDetails(IBufferedSerialOutputStream& out);
+
+    // Utility methods
     virtual IPropertyTree* loadConfiguration(const char* path) const;
-protected:
-    bool isHelp = false;
+
+    // IEvToolCommand description interface (default implementations)
+    virtual bool hasVerboseDescription() const override { return true; }
+    virtual const char* getVerboseDescription() const override { return nullptr; }
+    virtual bool hasBriefDescription() const override { return true; }
+    virtual const char* getBriefDescription() const override { return nullptr; }
 };
 
 // Extension of `CEvToolCommand` that connects a command to an event file operation. The premise

@@ -70,23 +70,27 @@ public:
         return true;
     }
 
-    virtual void usageSyntax(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out) override
+    virtual const char* getBriefDescription() const override
     {
-        CEvToolCommand::usageSyntax(argc, argv, pos, out);
+        return "generate plot data sets from index events using the given configuration";
+    }
+
+    virtual const char* getVerboseDescription() const override
+    {
+        return R"!!!(Generate 2D and 3D plot data sets from index events using the given
+configuration. 2D plots are defined by an x-axis and a value selector. 3D plots
+are defined by an x-axis, a y-axis, and a value selector. Multiple plot data
+sets using the same axis and value selector definitions, but changing other
+model and filter configurations are supported.
+)!!!";
+    }
+    
+    virtual void usageSyntax(StringBuffer& helpText) override
+    {
         constexpr const char* usageStr =
 R"!!!(--config=<filename> [<filename>]
 )!!!";
-        size32_t usageStrLength = size32_t(strlen(usageStr));
-        out.put(usageStrLength, usageStr);
-    }
-
-    virtual void usageSynopsis(IBufferedSerialOutputStream& out) override
-    {
-        constexpr const char* usageStr = R"!!!(
-Generate 2D and 3D plot data from index events using the specified configuration.
-)!!!";
-        size32_t usageStrLength = size32_t(strlen(usageStr));
-        out.put(usageStrLength, usageStr);
+        helpText.append(usageStr);
     }
 
     virtual void usageFilters(IBufferedSerialOutputStream& out) override
@@ -102,6 +106,16 @@ R"!!!(    --config=<filename>       Required. YAML/XML/JSON configuration file
 )!!!";
         size32_t usageStrLength = size32_t(strlen(usageStr));
         CEvToolCommand::usageOptions(out);
+        out.put(usageStrLength, usageStr);
+    }
+
+    virtual void usageDetails(IBufferedSerialOutputStream& out) override
+    {
+        constexpr const char* usageStr = R"!!!(
+The <filename> parameter is unused when specified in the configuration file. It
+is required when not specified in the configuration file.
+)!!!";
+        size32_t usageStrLength = size32_t(strlen(usageStr));
         out.put(usageStrLength, usageStr);
     }
 };
