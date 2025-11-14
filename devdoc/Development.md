@@ -55,11 +55,11 @@ cmake <source directory>
 
 ### vcpkg Dependency Management
 
-HPCC Platform uses vcpkg submodule for managing third-party dependencies. The build system automatically verifies and can update the vcpkg submodule to match the expected baseline defined in `vcpkg-configuration.json`.
+HPCC Platform uses the vcpkg submodule for managing third-party dependencies. The build system automatically verifies and can update the vcpkg submodule to match the commit recorded in the parent repository's index.
 
 #### Automatic vcpkg Submodule Management
 
-By default, CMake will automatically update the vcpkg submodule if it doesn't match the expected baseline:
+By default, CMake will automatically update the vcpkg submodule if it doesn't match the recorded commit:
 
 ```bash
 # Default behavior - automatic update enabled
