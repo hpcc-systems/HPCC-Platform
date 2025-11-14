@@ -804,6 +804,7 @@ LABEL               { RETURNSYM(LABEL); }
 LAST                { RETURNSYM(LAST); }
 LEFT                { RETURNSYM(LEFT); }
 LENGTH              { RETURNSYM(LENGTH); }
+LENGTHSIZE          { RETURNSYM(LENGTHSIZE); }
 LIBRARY             { RETURNSYM(LIBRARY); }
 LIKELY              { RETURNSYM(LIKELY); }
 LIMIT               { RETURNSYM(LIMIT); }

@@ -259,6 +259,7 @@ extern HQL_API IAtom * leftAtom;
 extern HQL_API IAtom * leftonlyAtom;
 extern HQL_API IAtom * leftouterAtom;
 extern HQL_API IAtom * legacyAtom;
+extern HQL_API IAtom * lengthSizeAtom;
 extern HQL_API IAtom * libraryAtom;
 extern HQL_API IAtom * lightweightAtom;
 extern HQL_API IAtom * _lightweight_Atom;

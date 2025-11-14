@@ -290,6 +290,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   LAST
   LEFT
   LENGTH
+  LENGTHSIZE
   LIBRARY
   LIKELY
   LIMIT
@@ -5009,6 +5010,11 @@ fieldAttr
                         {
                             parser->normalizeExpression($3, type_int, true, false);
                             $$.setExpr(createExprAttribute(maxLengthAtom, $3.getExpr()));
+                        }
+    | LENGTHSIZE '(' expression ')'
+                        {
+                            parser->normalizeExpression($3, type_int, true, false);
+                            $$.setExpr(createExprAttribute(lengthSizeAtom, $3.getExpr()));
                         }
     | MAXSIZE '(' expression ')' 
                         {
