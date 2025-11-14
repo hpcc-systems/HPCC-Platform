@@ -365,6 +365,7 @@ enum StatisticKind
     StCycleQueryPreparationCycles,
     StCostSavingPotential,
     StCostFailed,
+    StSizeOffsetRoot,
     StMax,
 
     //For any quantity there is potentially the following variants.

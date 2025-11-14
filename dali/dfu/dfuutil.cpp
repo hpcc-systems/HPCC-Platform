@@ -545,6 +545,7 @@ public:
             copyProp(dstProps, srcProps, "@uncompressedSize");
             copyProp(dstProps, srcProps, "@recordCount");
             copyProp(dstProps, srcProps, "@offsetBranches");
+            copyProp(dstProps, srcProps, "@offsetRoot");
         }
 
         if (!copyphysical) //cloneFrom tells roxie where to copy from.. it's unnecessary if we already did the copy

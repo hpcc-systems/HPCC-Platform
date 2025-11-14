@@ -349,9 +349,11 @@ public:
                 offset_t slaveUncompressedSize;
                 offset_t slaveOriginalBlobSize;
                 offset_t offsetBranches;
+                offset_t offsetRoot;
                 mb.read(slaveUncompressedSize);
                 mb.read(slaveOriginalBlobSize);
                 mb.read(offsetBranches);
+                mb.read(offsetRoot);
 
                 compressedFileSize += size;
                 uncompressedSize += slaveUncompressedSize;
@@ -359,6 +361,7 @@ public:
 
                 props.setPropInt64("@uncompressedSize", slaveUncompressedSize);
                 props.setPropInt64("@offsetBranches", offsetBranches);
+                props.setPropInt64("@offsetRoot", offsetRoot);
 
                 //Read details for the TLK if it has been generated
                 if (!singlePartKey && 0 == slaveIdx && buildTlk)
