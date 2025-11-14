@@ -18,6 +18,20 @@ https://hpccsystems.com
 
 # Build Instructions
 
+🚀 **For the most comprehensive and up-to-date build instructions, see [BUILD_MASTER_GUIDE.md](BUILD_MASTER_GUIDE.md)**
+
+This document contains legacy build instructions that are maintained for reference. For new developers, we recommend using the comprehensive guide which includes:
+
+- Modern build workflows with vcpkg
+- Automated verification scripts  
+- Detailed troubleshooting guidance
+- Platform-specific optimizations
+- Development environment setup
+
+---
+
+## Legacy Build Instructions
+
 * Visit [https://github.com/hpcc-systems/HPCC-Platform/wiki](https://github.com/hpcc-systems/HPCC-Platform/wiki) for up-to-date help and guidance.
 
 ## Prerequisites
