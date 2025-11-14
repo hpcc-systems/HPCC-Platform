@@ -152,7 +152,7 @@ bool WsDFUHelpers::addToLogicalFileList(IPropertyTree& file, const char* nodeGro
                 lFile->setKeyType("Distributed");
         }
 
-        bool isFileCompressed = file.getPropBool(getDFUQResultFieldName(DFUQResultField::iscompressed));
+        bool isFileCompressed = file.getPropBool(getDFUQResultFieldName(DFUQResultField::iscompressed)) || file.getPropBool(getDFUQResultFieldName(DFUQResultField::blockCompressed));
         if (isFileCompressed)
         {
             if (version >= 1.22)
