@@ -289,6 +289,7 @@ bool CIndexPlotOp::doOnePlot(LinkChanges& linkChanges)
     StringBuffer plotData;
     size_t yAxisIdx = 0;
     cellIdx = 0;
+    bool result = true;
 
     // handle optional plot name (identified as the name of the first plot variant)
     if (!linkChanges.empty())
@@ -314,9 +315,13 @@ bool CIndexPlotOp::doOnePlot(LinkChanges& linkChanges)
         for (const Iteration& yAxisIteration : yAxis)
         {
             linkChanges.push_back(&yAxisIteration);
-            if (!doXAxis(linkChanges, yAxisIdx))
-                return false;
+            result = doXAxis(linkChanges, yAxisIdx);
             linkChanges.pop_back();
+            if (!result)
+            {
+                outputEOLN();
+                break;
+            }
             yAxisIdx++;
         }
     }
@@ -328,9 +333,17 @@ bool CIndexPlotOp::doOnePlot(LinkChanges& linkChanges)
             outputCell(getAxisValueName(plotData, xAxis[idx]), true);
         outputEOLN();
 
-        return doXAxis(linkChanges, yAxisIdx);
+        result = doXAxis(linkChanges, yAxisIdx);
     }
-    return true;
+    if (!nonFatalExceptions.empty())
+    {
+        outputEOLN();
+        for (StringBuffer& msg : nonFatalExceptions)
+            outputCell(msg, false); // msg is cleared by this call
+        outputEOLN();
+        nonFatalExceptions.clear();
+    }
+    return result;
 }
 
 bool CIndexPlotOp::doXAxis(LinkChanges& linkChanges, size_t yAxisIdx)
@@ -347,7 +360,6 @@ bool CIndexPlotOp::doXAxis(LinkChanges& linkChanges, size_t yAxisIdx)
         // adjust the link configurations as needed to produce one plot value
         linkChanges.push_back(&xAxisIteration);
         applyIteration(linkChanges);
-        linkChanges.pop_back();
 
         try
         {
@@ -377,8 +389,20 @@ bool CIndexPlotOp::doXAxis(LinkChanges& linkChanges, size_t yAxisIdx)
         {
             // exceptions during link creation suggest an invalid configuration, which may be true
             // in all cases or for individual cells; leave cell blank and continue
+            StringBuffer msg;
+            e->errorMessage(msg);
             e->Release();
-            // MORE: accumulate error messages for output after all plot cells are produced
+            for (const Iteration* iteration : linkChanges)
+            {
+                for (const Iteration::Delta& delta : iteration->deltas)
+                {
+                    msg << "\n    ";
+                    if (!delta.linkId.isEmpty())
+                        msg << "[" << delta.linkId.get() << "]";
+                    msg << delta.xpath.get() << " : " << delta.value.get();
+                }
+            }
+            nonFatalExceptions.emplace_back(msg);
         }
 
         // reset the link configurations in preparation for the next plot value
@@ -393,6 +417,7 @@ bool CIndexPlotOp::doXAxis(LinkChanges& linkChanges, size_t yAxisIdx)
 
         // prepare for next iteration
         cellIdx++;
+        linkChanges.pop_back();
     }
     outputEOLN();
 

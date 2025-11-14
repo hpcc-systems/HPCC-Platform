@@ -215,6 +215,8 @@ interface IIndexMRUCacheContainer
 // Encapsulation of the configuration's `storage` element.
 class Storage : public IIndexMRUCacheContainer
 {
+public:
+    static constexpr __uint64 DefaultPageSize = 8192; // 8K page size
 private:
     friend class IndexModelStorageTest;
 
@@ -251,8 +253,6 @@ private:
 
     class PageCache : public IndexMRUCache
     {
-    public:
-        static constexpr __uint64 DefaultPageSize = 8192; // 8K page size
     public:
         virtual void configure(const IPropertyTree& config) override;
         virtual bool enabled() const override;
