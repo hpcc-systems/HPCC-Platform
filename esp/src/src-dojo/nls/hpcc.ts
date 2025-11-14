@@ -748,7 +748,7 @@ export = {
         Permissions: "Permissions",
         PhysicalFiles: "Physical Files",
         PhysicalMemory: "Physical Memory",
-        PlaceholderFindText: "Wuid, User, (ecl:*, file:*, dfu:*, query:*)...",
+        PlaceholderFindText: "Find pages, workunits, files...",
         PlaceholderFirstName: "John",
         PlaceholderLastName: "Smith",
         Platform: "Platform",
