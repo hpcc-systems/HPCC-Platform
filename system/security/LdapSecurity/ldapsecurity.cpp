@@ -30,6 +30,19 @@ using namespace cryptohelper;
 #include "workunit.hpp"
 
 /**********************************************************
+ *     FailedAuthEntry - Internal structure               *
+ **********************************************************/
+
+struct FailedAuthEntry
+{
+    unsigned timestamp;  // msTick() value when first failed attempt occurred
+    unsigned failedAttempts;
+    
+    FailedAuthEntry() : timestamp(0), failedAttempts(0) {}
+    FailedAuthEntry(unsigned ts, unsigned attempts) : timestamp(ts), failedAttempts(attempts) {}
+};
+
+/**********************************************************
  *     CLdapSecUser                                       *
  **********************************************************/
 
@@ -692,6 +705,22 @@ bool CLdapSecManager::unsubscribe(ISecAuthenticEvents & events, IEspSecureContex
     return true;
 }
 
+void CLdapSecManager::recordFailedAuthentication(const char* username)
+{
+    CriticalBlock block(m_failedAuthCacheLock);
+    auto it = m_failedAuthCache.find(username);
+    if (it != m_failedAuthCache.end())
+    {
+        it->second.failedAttempts++;
+        DBGLOG("Incremented failed authentication count for user %s to %u", username, it->second.failedAttempts);
+    }
+    else
+    {
+        m_failedAuthCache[username] = FailedAuthEntry(msTick(), 1);
+        DBGLOG("Added user %s to failed authentication cache", username);
+    }
+}
+
 bool CLdapSecManager::authenticate(ISecUser* user)
 {
     if(!user)
@@ -784,20 +813,7 @@ bool CLdapSecManager::authenticate(ISecUser* user)
                 WARNLOG("Digital signature for %s does not match cached signature", user->getName());
                 user->setAuthenticateStatus(AS_INVALID_CREDENTIALS);
                 // Update failed auth cache
-                {
-                    CriticalBlock block(m_failedAuthCacheLock);
-                    auto it = m_failedAuthCache.find(username);
-                    if (it != m_failedAuthCache.end())
-                    {
-                        it->second.failedAttempts++;
-                        DBGLOG("Incremented failed authentication count for user %s to %u", username, it->second.failedAttempts);
-                    }
-                    else
-                    {
-                        m_failedAuthCache[username] = FailedAuthEntry(msTick(), 1);
-                        DBGLOG("Added user %s to failed authentication cache", username);
-                    }
-                }
+                recordFailedAuthentication(username);
                 return false;
             }
         }
@@ -811,20 +827,7 @@ bool CLdapSecManager::authenticate(ISecUser* user)
                     user->setAuthenticateStatus(AS_INVALID_CREDENTIALS);
                     WARNLOG("Invalid digital signature for user %s", user->getName());
                     // Update failed auth cache
-                    {
-                        CriticalBlock block(m_failedAuthCacheLock);
-                        auto it = m_failedAuthCache.find(username);
-                        if (it != m_failedAuthCache.end())
-                        {
-                            it->second.failedAttempts++;
-                            DBGLOG("Incremented failed authentication count for user %s to %u", username, it->second.failedAttempts);
-                        }
-                        else
-                        {
-                            m_failedAuthCache[username] = FailedAuthEntry(msTick(), 1);
-                            DBGLOG("Added user %s to failed authentication cache", username);
-                        }
-                    }
+                    recordFailedAuthentication(username);
                     return false;
                 }
                 else
@@ -894,18 +897,7 @@ bool CLdapSecManager::authenticate(ISecUser* user)
     else
     {
         // Authentication failed, update failed auth cache
-        CriticalBlock block(m_failedAuthCacheLock);
-        auto it = m_failedAuthCache.find(username);
-        if (it != m_failedAuthCache.end())
-        {
-            it->second.failedAttempts++;
-            DBGLOG("Incremented failed authentication count for user %s to %u", username, it->second.failedAttempts);
-        }
-        else
-        {
-            m_failedAuthCache[username] = FailedAuthEntry(msTick(), 1);
-            DBGLOG("Added user %s to failed authentication cache", username);
-        }
+        recordFailedAuthentication(username);
     }
 
     return AS_AUTHENTICATED == user->getAuthenticateStatus();

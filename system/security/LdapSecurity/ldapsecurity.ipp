@@ -300,14 +300,6 @@ public:
     }
 };
 
-struct FailedAuthEntry
-{
-    unsigned timestamp;  // msTick() value when first failed attempt occurred
-    unsigned failedAttempts;
-    
-    FailedAuthEntry() : timestamp(0), failedAttempts(0) {}
-    FailedAuthEntry(unsigned ts, unsigned attempts) : timestamp(ts), failedAttempts(attempts) {}
-};
 
 class LDAPSECURITY_API CLdapSecManager : implements ISecManager, public CInterface
 {
@@ -333,10 +325,12 @@ private:
     StringBuffer m_hpccInternalScope;
     
     // Failed authentication cache
+    struct FailedAuthEntry;  // Forward declaration - defined in .cpp
     std::map<std::string, FailedAuthEntry> m_failedAuthCache;
     CriticalSection m_failedAuthCacheLock;
     unsigned m_maxFailedAttempts;
     unsigned m_failedAuthCacheTimeoutMs;
+    void recordFailedAuthentication(const char* username);
 
 public:
     IMPLEMENT_IINTERFACE
