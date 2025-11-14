@@ -1,6 +1,66 @@
 if ("${VCPKG_DONE}" STREQUAL "")
   set (VCPKG_DONE 1)
 
+# vcpkg submodule management (skip entirely if disabled)
+if(VCPKG_AUTO_UPDATE_SUBMODULE)
+    if(NOT EXISTS "${HPCC_SOURCE_DIR}/vcpkg/.git")
+        message(FATAL_ERROR "vcpkg submodule is not initialized. Please run: git submodule update --init --recursive")
+    endif()
+
+    # Check if vcpkg submodule is out of sync using git native commands
+    execute_process(
+        COMMAND git submodule status vcpkg
+        OUTPUT_VARIABLE SUBMODULE_STATUS
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        WORKING_DIRECTORY "${HPCC_SOURCE_DIR}"
+        ERROR_QUIET
+    )
+    
+    # Git submodule status output format:
+    # " " (space) = in sync
+    # "+" = ahead of recorded commit  
+    # "-" = behind recorded commit
+    # "U" = merge conflicts
+    if(SUBMODULE_STATUS MATCHES "^[+-U]")
+        message(STATUS "vcpkg submodule is out of sync: ${SUBMODULE_STATUS}")
+        message(STATUS "Updating vcpkg submodule...")
+        
+    # Try a shallow update first (faster, less data). Add a timeout to avoid
+    # long blocking operations on slow networks. If shallow update fails or
+    # times out, fall back to a full update and report detailed output.
+    execute_process(
+      COMMAND git submodule update --init --recursive --depth 1 vcpkg
+      RESULT_VARIABLE SUBMODULE_UPDATE_RESULT
+      OUTPUT_VARIABLE SUBMODULE_UPDATE_OUTPUT
+      ERROR_VARIABLE SUBMODULE_UPDATE_ERROR
+      WORKING_DIRECTORY "${HPCC_SOURCE_DIR}"
+      TIMEOUT 120
+    )
+
+    if(NOT SUBMODULE_UPDATE_RESULT EQUAL 0)
+      message(WARNING "Shallow update of vcpkg submodule failed or timed out. Output: ${SUBMODULE_UPDATE_OUTPUT} Error: ${SUBMODULE_UPDATE_ERROR}")
+      message(STATUS "Attempting full vcpkg submodule update (this may take longer)...")
+
+      execute_process(
+        COMMAND git submodule update --init --recursive vcpkg
+        RESULT_VARIABLE SUBMODULE_UPDATE_RESULT_FULL
+        OUTPUT_VARIABLE SUBMODULE_UPDATE_OUTPUT_FULL
+        ERROR_VARIABLE SUBMODULE_UPDATE_ERROR_FULL
+        WORKING_DIRECTORY "${HPCC_SOURCE_DIR}"
+        TIMEOUT 600
+      )
+
+      if(NOT SUBMODULE_UPDATE_RESULT_FULL EQUAL 0)
+        message(FATAL_ERROR "Failed to update vcpkg submodule (shallow and full attempts failed).\nShallow output: ${SUBMODULE_UPDATE_OUTPUT}\nShallow error: ${SUBMODULE_UPDATE_ERROR}\nFull output: ${SUBMODULE_UPDATE_OUTPUT_FULL}\nFull error: ${SUBMODULE_UPDATE_ERROR_FULL}\nManual fix: git submodule update --init --recursive")
+      endif()
+    endif()
+
+    message(STATUS "Successfully updated vcpkg submodule")
+    else()
+        message(STATUS "vcpkg submodule is in sync")
+    endif()
+endif()
+
 set(VCPKG_FILES_DIR "${CMAKE_BINARY_DIR}" CACHE STRING "Folder for vcpkg download, build and installed files")
 set(CMAKE_TOOLCHAIN_FILE ${HPCC_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake)
 set(VCPKG_ROOT ${HPCC_SOURCE_DIR}/vcpkg)
@@ -66,7 +126,6 @@ if (INSTALL_VCPKG_CATALOG)
     install(FILES ${CMAKE_BINARY_DIR}/vcpkg-catalog.txt DESTINATION "." COMPONENT Runtime)
 endif()
 
-#  Check if vcpkg needs a bootstrap ---
 if (WIN32)
     set(VCPKG_BOOTSTRAP_FILE "bootstrap-vcpkg.bat")
 else ()
