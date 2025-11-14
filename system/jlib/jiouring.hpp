@@ -49,6 +49,8 @@ interface IAsyncProcessor : public IInterface
     virtual void enqueueSocketRead(ISocket * socket, void * buf, size32_t len, IAsyncCallback & callback) = 0;
     virtual void enqueueSocketWrite(ISocket * socket, const void * buf, size32_t len, IAsyncCallback & callback) = 0;
     virtual void enqueueSocketWriteMany(ISocket * socket, const iovec * buffers, unsigned numBuffers, IAsyncCallback & callback) = 0;
+    virtual void enqueueSocketMultishotAccept(ISocket * socket, IAsyncCallback & callback) = 0;
+    virtual void cancelMultishotAccept(ISocket * socket) = 0;
 
 // Functions for managing the completion queue - particularly non-threaded urings
     virtual void checkForCompletions() = 0;
@@ -58,5 +60,9 @@ interface IAsyncProcessor : public IInterface
 
 // Create an instance of the IAsyncProcessor interface - may return null if not supported
 extern jlib_decl IAsyncProcessor * createURingProcessor(const IPropertyTree * config, bool threaded);
+
+// Helper that checks expert/@useIOUring configuration before creating URing processor
+// Returns null if disabled via configuration or if not supported on platform
+extern jlib_decl IAsyncProcessor * createURingProcessorIfEnabled(const IPropertyTree * config, bool threaded);
 
 #endif

@@ -116,6 +116,47 @@ thor:
 
 Note: This requires that libjemalloc is installed in the container image at /usr/lib/x86_64-linux-gnu/libjemalloc.so.2
 
+## useIOUring (boolean)
+
+If set to true (default), enables io_uring for all asynchronous I/O operations including:
+- Multishot accept for incoming socket connections (eliminates separate accept threads)
+- Asynchronous socket reads for established connections
+- Asynchronous socket writes/sends (Roxie worker communication)
+
+io_uring provides significantly better performance for high-throughput network operations by reducing context switches
+and system call overhead. This feature requires Linux kernel 5.19+ (for multishot accept) and liburing support.
+
+If io_uring is not available on the system, the platform will automatically fall back to traditional select/epoll-based I/O.
+
+Setting this to false disables ALL io_uring usage across the platform, forcing use of traditional I/O mechanisms.
+This can be useful for:
+- Testing and debugging
+- Compatibility with older kernels
+- Troubleshooting performance issues
+
+Default: true
+
+Example of disabling io_uring globally:
+```
+global:
+  expert:
+    useIOUring: false
+```
+
+This setting can be applied globally or on a per-component basis via the component's expert section.
+
+Example of disabling io_uring for a specific Roxie component:
+```
+roxie:
+- name: myroxie
+  expert:
+    useIOUring: false
+```
+
+Note: Roxie also has a separate `@workerSendUseIOUring` topology setting that specifically controls io_uring for worker-to-worker 
+send operations. The global `expert/@useIOUring` setting takes precedence - if set to false, it will disable all io_uring 
+regardless of component-specific settings.
+
 
 # Plane Expert Settings
 
