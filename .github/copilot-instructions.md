@@ -99,3 +99,7 @@ For the ECL Watch web interface, see the separate instructions in `esp/src/.gith
 - Code submission process: `devdoc/CodeSubmissions.md`
 - Contributing docs: `devdoc/docs/ContributeDocs.md`
 - GitHub Copilot tips: `devdoc/userdoc/copilot/CopilotPromptTips.md`
+
+## Location of other instruction files
+
+For understanding the global metrics, see `.github/instructions/globalmetrics.md`.
