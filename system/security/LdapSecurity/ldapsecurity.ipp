@@ -300,6 +300,7 @@ public:
     }
 };
 
+
 class LDAPSECURITY_API CLdapSecManager : implements ISecManager, public CInterface
 {
 private:
@@ -322,6 +323,14 @@ private:
     static const SecFeatureSet s_safeFeatures = SMF_ALL_FEATURES;
     static const SecFeatureSet s_implementedFeatures = s_safeFeatures & ~(SMF_RetrieveUserData | SMF_RemoveResources);
     StringBuffer m_hpccInternalScope;
+    
+    // Failed authentication cache
+    struct FailedAuthEntry;  // Forward declaration - defined in .cpp
+    std::map<std::string, FailedAuthEntry> m_failedAuthCache;
+    CriticalSection m_failedAuthCacheLock;
+    unsigned m_maxFailedAttempts;
+    unsigned m_failedAuthCacheTimeoutMs;
+    void recordFailedAuthentication(const char* username);
 
 public:
     IMPLEMENT_IINTERFACE
