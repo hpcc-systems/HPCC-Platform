@@ -1517,7 +1517,7 @@ data:
 {{- include "hpcc.generateLoggingConfig" . | indent 6 }}
 {{- include "hpcc.generateTracingConfig" . | indent 6 }}
 {{ include "hpcc.generateVaultConfig" . | indent 6 }}
-{{- if hasKey .me "plane" }}
+{{- if or (hasKey .me "plane") (has .me.name (list "xref" "wu-archiver" "dfuwu-archiver")) -}}
  {{- $sashaStoragePlane := .me.plane | default (include "hpcc.getFirstPlaneForCategory" (dict "root" .root "category" "sasha")) }}
  {{- $_ := set .me "plane" $sashaStoragePlane }}
       storagePath: {{ include "hpcc.getPlanePrefix" (dict "root" .root "planeName" $sashaStoragePlane) }}
