@@ -84,6 +84,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
 
     const [loadingItems, setLoadingItems] = React.useState<Set<string>>(new Set());
     const [initialLoading, setInitialLoading] = React.useState(false);
+    const [loadedItems, setLoadedItems] = React.useState<Set<string>>(new Set());
 
     const { data: dropZoneData, loading: dataLoading, refresh: refreshDropZones } = useLandingZoneStore();
 
@@ -190,6 +191,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
             if (dropzone && machine) {
                 const machineId = `machine-${dropzoneName}-${machineAddress}`;
                 setLoadingItems(prev => new Set(prev).add(machineId));
+                setLoadedItems(prev => new Set(prev).add(machineId));
 
                 const fileSprayService = new FileSprayService({ baseUrl: "" });
 
@@ -262,6 +264,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
         if (folderData) {
             const folderId = nodeId; // nodeId is the folder ID
             setLoadingItems(prev => new Set(prev).add(folderId));
+            setLoadedItems(prev => new Set(prev).add(folderId));
 
             const fileSprayService = new FileSprayService({ baseUrl: "" });
 
@@ -331,6 +334,32 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
         setExpandedNodes(expandedIds);
     }, [expandedNodes, handleMachineExpansion, handleFolderExpansion]);
 
+    // trigger expansion when targetDropzones loads and there are expanded nodes
+    React.useEffect(() => {
+        if (targetDropzones.length > 0 && expandedNodes.size > 0) {
+            expandedNodes.forEach(nodeId => {
+                // skip if already loaded
+                if (loadedItems.has(nodeId)) {
+                    return;
+                }
+
+                if (nodeId.startsWith("machine-")) {
+                    handleMachineExpansion(nodeId);
+                } else if (nodeId.startsWith("folder-")) {
+                    // only try to load folder if it exists in the data
+                    const folderData = allDropZoneData.find(item => {
+                        if (item.type !== "folder") return false;
+                        const expectedId = `folder-${item.NetAddress}-${item.fullPath}`;
+                        return expectedId === nodeId;
+                    });
+                    if (folderData) {
+                        handleFolderExpansion(nodeId);
+                    }
+                }
+            });
+        }
+    }, [targetDropzones, expandedNodes, handleMachineExpansion, handleFolderExpansion, allDropZoneData, loadedItems]);
+
     const {
         treeItems,
         selectedItemIds,
@@ -366,6 +395,25 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
         );
 
         if (dropzone && machine) {
+            const machineId = `machine-${dropZoneName}-${netAddress}`;
+
+            // ensure the machine remains expanded
+            setExpandedNodes(prev => new Set(prev).add(machineId));
+
+            // clear the loaded state for this machine and all its folders
+            setLoadedItems(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(machineId);
+
+                prev.forEach(itemId => {
+                    if (itemId.startsWith(`folder-${netAddress}-`)) {
+                        newSet.delete(itemId);
+                    }
+                });
+
+                return newSet;
+            });
+
             const fileSprayService = new FileSprayService({ baseUrl: "" });
 
             fileSprayService.FileList({
@@ -402,6 +450,8 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
                     );
                     return [...filteredData, ...transformedFiles];
                 });
+
+                setLoadedItems(prev => new Set(prev).add(machineId));
             }).catch(err => {
                 logger.error(err);
             });
