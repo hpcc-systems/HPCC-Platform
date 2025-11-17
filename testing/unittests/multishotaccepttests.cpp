@@ -646,7 +646,12 @@ public:
             bool originalSetting = config ? config->getPropBool("expert/@useIOUring", true) : true;
             
             if (config)
+            {
+                // Ensure the expert path exists before setting the property
+                if (!config->queryPropTree("expert"))
+                    config->addPropTree("expert", createPTree("expert"));
                 config->setPropBool("expert/@useIOUring", false);
+            }
             
             try
             {
@@ -675,13 +680,21 @@ public:
             {
                 // Restore original setting
                 if (config)
+                {
+                    if (!config->queryPropTree("expert"))
+                        config->addPropTree("expert", createPTree("expert"));
                     config->setPropBool("expert/@useIOUring", originalSetting);
+                }
                 throw;
             }
             
             // Restore original setting
             if (config)
+            {
+                if (!config->queryPropTree("expert"))
+                    config->addPropTree("expert", createPTree("expert"));
                 config->setPropBool("expert/@useIOUring", originalSetting);
+            }
         }
         catch (IException *e)
         {
