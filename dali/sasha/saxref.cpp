@@ -1712,11 +1712,11 @@ public:
                 return !abort;
             }
 
-            bool fileFiltered(const StringBuffer &name)
+            bool logicalFileFiltered(const char *name)
             {
                 if (!parent.filterScopesEnabled)
                     return false;
-                const char *filename = name.str();
+                const char *filename = name;
                 ForEachItemIn(i,parent.scopeFilters)
                 {
                     if (!startsWith(filename, parent.scopeFilters.item(i)))
@@ -1735,7 +1735,7 @@ public:
             {
                 if (abort)
                     return;
-                if (fileFiltered(name))
+                if (logicalFileFiltered(name))
                     return;
                 parent.log(false,"Process file %s",name.str());
                 parent.fnum++;
