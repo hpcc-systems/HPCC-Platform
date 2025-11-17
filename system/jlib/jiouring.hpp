@@ -45,11 +45,26 @@ interface IAsyncProcessor : public IInterface
 // Functions for each of the asynchronous actions that can be queued
     virtual void enqueueCallbackCommand(IAsyncCallback & callback) = 0;
     virtual void enqueueCallbackCommands(const std::vector<IAsyncCallback *> & callbacks) = 0;
+    
+    // Enqueue an asynchronous socket connect operation
+    // socket: The socket to connect (must be created with createForAsyncConnect)
+    // addr: Socket address to connect to (caller must free with free() after calling this)
+    // addrlen: Length of the socket address structure
+    // callback: Will be called when connect completes (result = 0 for success, negative error code for failure)
     virtual void enqueueSocketConnect(ISocket * socket, const struct sockaddr * addr, size32_t addrlen, IAsyncCallback & callback) = 0;
+    
     virtual void enqueueSocketRead(ISocket * socket, void * buf, size32_t len, IAsyncCallback & callback) = 0;
     virtual void enqueueSocketWrite(ISocket * socket, const void * buf, size32_t len, IAsyncCallback & callback) = 0;
     virtual void enqueueSocketWriteMany(ISocket * socket, const iovec * buffers, unsigned numBuffers, IAsyncCallback & callback) = 0;
+    
+    // Enqueue a multishot accept operation that continuously accepts connections
+    // socket: Listening socket to accept connections on
+    // callback: Will be called for each accepted connection (result = file descriptor for new connection)
+    //           Also called once with -ECANCELED when the operation is cancelled
     virtual void enqueueSocketMultishotAccept(ISocket * socket, IAsyncCallback & callback) = 0;
+    
+    // Cancel an active multishot accept operation
+    // socket: The listening socket to cancel multishot accept for
     virtual void cancelMultishotAccept(ISocket * socket) = 0;
 
 // Functions for managing the completion queue - particularly non-threaded urings

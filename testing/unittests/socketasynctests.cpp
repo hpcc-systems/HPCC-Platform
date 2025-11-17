@@ -875,7 +875,7 @@ public:
                     while (messagesSent < totalMessages)
                     {
                         char sendBuf[64];
-                        sprintf(sendBuf, "Message_%u", messagesSent);
+                        snprintf(sendBuf, sizeof(sendBuf), "Message_%u", messagesSent);
                         size_t msgLen = strlen(sendBuf);
                         
                         try

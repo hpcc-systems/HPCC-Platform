@@ -148,7 +148,7 @@ public:
     // _useIOUring: true to enable io_uring multishot accept (if available), false to use traditional thread-based accept
     //              Defaults to true, but can be overridden by expert/@useIOUring configuration setting
     CSocketConnectionListener(unsigned port, bool _useTLS, unsigned _inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets, bool _useIOUring = true);
-    ~CSocketConnectionListener();
+    ~CSocketConnectionListener() override;
 
     void startPort(unsigned short port);
     void stop();
@@ -163,7 +163,6 @@ public:
 private:
     void handleAcceptedConnection(int socketfd);
 
-private:
     Owned<ISocket> listenSocket;
     Owned<ISecureSocketContext> secureContextServer;
     bool useTLS;

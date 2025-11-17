@@ -27,6 +27,9 @@
 
 #include <liburing.h>
 
+// Sentinel value used to identify cancel operation completions that should be discarded
+static constexpr uintptr_t CANCEL_SENTINEL = 1;
+
 //------------------------------------------------------------------------------
 
 struct CompletionResponse
@@ -141,7 +144,7 @@ bool URingProcessor::dequeueCompletion(CompletionResponse & response)
     io_uring_cqe_seen(&ring, cqe);
     
     // Skip callbacks that are just sentinel values (from cancel operations)
-    if (reinterpret_cast<uintptr_t>(response.callback) == 1)
+    if (reinterpret_cast<uintptr_t>(response.callback) == CANCEL_SENTINEL)
         return false;
     
     return true;
@@ -281,7 +284,7 @@ void URingProcessor::cancelMultishotAccept(ISocket * socket)
 
     // Use a sentinel value for the cancel operation's own completion
     // This completion will be discarded in dequeueCompletion()
-    io_uring_sqe_set_data(sqe, (void *)(uintptr_t)1);
+    io_uring_sqe_set_data(sqe, (void *)CANCEL_SENTINEL);
 
     submitRequests();
 }

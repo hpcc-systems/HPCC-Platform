@@ -713,8 +713,8 @@ void CSocketConnectionListener::onAsyncComplete(int result)
             }
             else
             {
-                // For other fatal errors, the multishot operation may have stopped
-                OERRLOG("Multishot accept error: %d. Operation may have stopped.", result);
+                // For other unexpected errors, the multishot operation may have stopped or may be recoverable
+                WARNLOG("Multishot accept unexpected error: %d. Operation may have stopped or may be recoverable.", result);
                 // Signal completion in case this was a fatal error that terminated multishot
                 if (pendingAcceptCallbacks.fetch_sub(1) == 1)
                     shutdownSem.signal();
@@ -901,9 +901,9 @@ void CSocketTarget::startAsyncConnect()
             if (socket)
             {
                 // Queue the async connect operation
+                // Note: enqueueSocketConnect takes ownership of addr and will free it when done
                 sender.asyncSender->enqueueSocketConnect(socket, addr, addrlen, *this);
-                free(addr);
-                addr = nullptr;
+                addr = nullptr; // Ownership transferred
             }
             else
             {
@@ -918,6 +918,8 @@ void CSocketTarget::startAsyncConnect()
         else
         {
             // sender is not async - fall back to sync connect
+            free(addr); // addr may have been allocated even if we don't use async
+            addr = nullptr;
             connect();
             int result = socket ? 0 : -1;
             onAsyncComplete(result);
@@ -928,6 +930,12 @@ void CSocketTarget::startAsyncConnect()
         free(addr);
         socket.clear();
         e->Release();
+        onAsyncComplete(-1);
+    }
+    catch (...)
+    {
+        free(addr);
+        socket.clear();
         onAsyncComplete(-1);
     }
 }
