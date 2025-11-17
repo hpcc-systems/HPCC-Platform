@@ -1447,6 +1447,7 @@ public:
                         todo.push(std::move(pending.front()));
                         pending.pop();
                     }
+                    b.leave();
                     // Because blockedSaveCrit is held, it will also block 'synchronous save' (see addToQueue)
                     // i.e. if stuck here, the transactions will start building up, and trigger a 'Forced synchronous save',
                     // which will in turn block. This must complete!
