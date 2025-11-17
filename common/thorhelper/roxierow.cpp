@@ -488,7 +488,7 @@ public:
             CAllocatorCacheItem *container = _lookup(meta, activityId, flags);
             if (container)
             {
-                if (0 == ((roxiemem::RHFunique|roxiemem::RHFblocked) & flags))
+                if (0 == ((roxiemem::RHFunique|roxiemem::RHFblocked|roxiemem::RHFlimitedcount) & flags))
                     return LINK(&container->queryElement());
                 // If in cache but unique, reuse allocatorId, but create a unique allocator (and heap)
                 // If blocked the allocator must not be commoned up!  (The underlying heap will be within roxiemem.)
