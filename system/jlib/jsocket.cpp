@@ -1162,7 +1162,12 @@ static T_SOCKET prepare_socket_for_connect(const IpAddress & targetip, unsigned 
 static int perform_socket_connect(T_SOCKET sock, const J_SOCKADDR & sockaddr, socklen_t sockaddrlen, bool nonblocking, const char * tracename)
 {
     // Set socket to blocking or non-blocking mode
-    set_socket_nonblock(sock, nonblocking);
+    if (!set_socket_nonblock(sock, nonblocking))
+    {
+        int err = SOCKETERRNO();
+        LOGERR2(err, 1, "perform_socket_connect: Failed to set socket blocking mode");
+        return err;
+    }
 
     int rc = ::connect(sock, &sockaddr.sa, sockaddrlen);
     int err = 0;
@@ -1208,7 +1213,11 @@ static int perform_socket_connect(T_SOCKET sock, const J_SOCKADDR & sockaddr, so
 static int finalize_socket_connect(T_SOCKET sock, const char * tracename)
 {
     // Ensure socket is in non-blocking mode
-    set_socket_nonblock(sock, true);
+    if (!set_socket_nonblock(sock, true))
+    {
+        LOGERR2(SOCKETERRNO(), 1, "finalize_socket_connect: Failed to set socket non-blocking");
+        return SOCKETERRNO();
+    }
 
     int err = 0;
     socklen_t errlen = sizeof(err);

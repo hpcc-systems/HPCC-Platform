@@ -138,11 +138,23 @@ public:
                 return false;
                 
             char *buf = (char *)malloc(len + 1);
-            socket->readtms(buf, len, len, read, timeoutMs);
-            buf[len] = 0;
-            response.append(buf);
+            if (!buf)
+                return false;
+            
+            bool success = false;
+            try
+            {
+                socket->readtms(buf, len, len, read, timeoutMs);
+                buf[len] = 0;
+                response.append(buf);
+                success = (read == len);
+            }
+            catch (...)
+            {
+                // Ensure cleanup even on exception
+            }
             free(buf);
-            return read == len;
+            return success;
         }
         catch (IException *e)
         {

@@ -477,10 +477,14 @@ void CSocketConnectionListener::startPort(unsigned short port)
 
     if (useMultishotAccept)
     {
-        // Start the multishot accept operation
-        // Track that we have an active accept operation
-        pendingAcceptCallbacks.store(1);
-        asyncReader->enqueueSocketMultishotAccept(listenSocket, *this);
+        // Only start multishot accept if not already running
+        unsigned expected = 0;
+        if (pendingAcceptCallbacks.compare_exchange_strong(expected, 1))
+        {
+            // Start the multishot accept operation
+            asyncReader->enqueueSocketMultishotAccept(listenSocket, *this);
+        }
+        // If already running, do nothing (expected would be non-zero)
     }
     else
     {
@@ -676,16 +680,26 @@ void CSocketConnectionListener::handleAcceptedConnection(int socketfd)
 
 void CSocketConnectionListener::onAsyncComplete(int result)
 {
+    // Check if we're shutting down first to avoid accessing members during destruction
+    if (aborting.load())
+    {
+        // If this is a cancellation during shutdown, signal completion
+        if (result == -ECANCELED)
+        {
+            if (pendingAcceptCallbacks.fetch_sub(1) == 1)
+                shutdownSem.signal();
+        }
+        return;
+    }
+    
     // This is called when a new connection is accepted via multishot accept
     if (result < 0)
     {
-        // Check if this is a cancellation (expected during shutdown)
+        // For transient/recoverable errors, multishot accept continues
         if (result == -ECANCELED)
         {
+            // Cancellation - should have been handled at function entry if aborting
             DBGLOG("Multishot accept cancelled");
-            // Signal that the multishot accept has been terminated
-            if (pendingAcceptCallbacks.fetch_sub(1) == 1)
-                shutdownSem.signal();
             return;
         }
         
@@ -715,9 +729,13 @@ void CSocketConnectionListener::onAsyncComplete(int result)
             {
                 // For other unexpected errors, the multishot operation may have stopped or may be recoverable
                 WARNLOG("Multishot accept unexpected error: %d. Operation may have stopped or may be recoverable.", result);
-                // Signal completion in case this was a fatal error that terminated multishot
-                if (pendingAcceptCallbacks.fetch_sub(1) == 1)
-                    shutdownSem.signal();
+                // Only signal completion if we're shutting down and haven't already signaled
+                // This prevents double-signaling if multiple errors occur
+                if (aborting.load())
+                {
+                    if (pendingAcceptCallbacks.fetch_sub(1) == 1)
+                        shutdownSem.signal();
+                }
             }
         }
         return;
@@ -918,8 +936,7 @@ void CSocketTarget::startAsyncConnect()
         else
         {
             // sender is not async - fall back to sync connect
-            free(addr); // addr may have been allocated even if we don't use async
-            addr = nullptr;
+            // addr is guaranteed to be nullptr here (never allocated in this path)
             connect();
             int result = socket ? 0 : -1;
             onAsyncComplete(result);
