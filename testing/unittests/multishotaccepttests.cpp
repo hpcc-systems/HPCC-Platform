@@ -27,6 +27,7 @@
 #include <thread>
 #include <atomic>
 #include <vector>
+#include <memory>
 #include <unistd.h>
 
 // Helper to get a random port for testing
@@ -248,14 +249,14 @@ public:
             TestConnectionListener listener(port, false);
             MilliSleep(300);
             
-            std::vector<SimpleClient *> clients;
+            std::vector<std::unique_ptr<SimpleClient>> clients;
             
             // Connect all clients
             for (unsigned i = 0; i < numClients; i++)
             {
-                SimpleClient *client = new SimpleClient("127.0.0.1", port);
+                auto client = std::make_unique<SimpleClient>("127.0.0.1", port);
                 CPPUNIT_ASSERT_MESSAGE("Client should connect", client->connect());
-                clients.push_back(client);
+                clients.push_back(std::move(client));
                 MilliSleep(10); // Small delay between connections
             }
             
@@ -265,11 +266,10 @@ public:
             CPPUNIT_ASSERT_EQUAL_MESSAGE("All connections should be accepted", 
                                         numClients, listener.getAcceptedCount());
             
-            // Cleanup
-            for (auto client : clients)
+            // Cleanup - unique_ptr handles deletion automatically
+            for (auto &client : clients)
             {
                 client->close();
-                delete client;
             }
             
             listener.stop();
@@ -359,16 +359,15 @@ public:
             TestConnectionListener listener(port, false);
             MilliSleep(300);
             
-            std::vector<SimpleClient *> clients;
+            std::vector<std::unique_ptr<SimpleClient>> clients;
             
             // Connect clients
             for (unsigned i = 0; i < numClients; i++)
             {
-                SimpleClient *client = new SimpleClient("127.0.0.1", port);
+                auto client = std::make_unique<SimpleClient>("127.0.0.1", port);
                 if (client->connect())
-                    clients.push_back(client);
-                else
-                    delete client;
+                    clients.push_back(std::move(client));
+                // If connect fails, unique_ptr automatically deletes
             }
             
             MilliSleep(100);
@@ -376,11 +375,10 @@ public:
             // Stop while connections are active
             listener.stop();
             
-            // Cleanup
-            for (auto client : clients)
+            // Cleanup - close connections (unique_ptr handles deletion)
+            for (auto &client : clients)
             {
                 client->close();
-                delete client;
             }
             
             // Should complete without hanging

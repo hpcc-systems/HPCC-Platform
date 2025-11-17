@@ -584,7 +584,12 @@ void CSocketConnectionListener::stop()
             // The cancellation will trigger a final callback with -ECANCELED
             constexpr unsigned timeoutMs = 5000; // 5 seconds should be plenty
             if (!shutdownSem.wait(timeoutMs))
-                OERRLOG("Timeout waiting for multishot accept cancellation to complete");
+            {
+                // Check if cancellation actually completed before we started waiting
+                if (pendingAcceptCallbacks.load() > 0)
+                    OERRLOG("Timeout waiting for multishot accept cancellation to complete");
+                // else: cancellation completed before we started waiting (race condition, but harmless)
+            }
         }
         else
         {
