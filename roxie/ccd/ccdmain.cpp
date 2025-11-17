@@ -1097,6 +1097,17 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         blindLogging = topology->getPropBool("@blindLogging", false);
         preloadOnceData = topology->getPropBool("@preloadOnceData", true);
         reloadRetriesFailed  = topology->getPropBool("@reloadRetriesSuspended", true);
+
+        // Options that can override the default heap flags.
+        if (topology->getPropBool("@heapFlagsPacked", false))
+            defaultHeapFlags |= roxiemem::RHFpacked;
+        if (topology->getPropBool("@heapFlagsUnique", false))
+            defaultHeapFlags |= roxiemem::RHFunique;
+        if (topology->getPropBool("@heapFlagsExact", true))
+            defaultHeapFlags |= roxiemem::RHFexactsize;
+        if (topology->getPropBool("@heapFlagsLimited", true))
+            defaultHeapFlags |= roxiemem::RHFlimitedcount;
+
 #if defined(__linux__) && defined(SYS_ioprio_set)
         const char *backgroundCopyClassString = topology->queryProp("@backgroundCopyClass");
         if (!isEmptyString(backgroundCopyClassString))
