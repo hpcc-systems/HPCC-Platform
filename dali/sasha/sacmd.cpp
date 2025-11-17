@@ -111,7 +111,6 @@ public:
         mb.read(state);
         mb.read(owner);
         mb.read(cluster);
-        mb.read(filterScopes);
         mb.read(jobname);
         mb.read(outputformat);
         mb.read(online);
@@ -158,6 +157,8 @@ public:
             mb.read(afterWU);
             mb.read(beforeWU);
         }
+        if (mb.remaining() > 0)
+            mb.read(filterScopes);
     }
 
     void serialize(MemoryBuffer &mb)
@@ -175,7 +176,6 @@ public:
         mb.append(state);
         mb.append(owner);
         mb.append(cluster);
-        mb.append(filterScopes);
         mb.append(jobname);
         mb.append(outputformat);
         mb.append(online);
@@ -209,6 +209,7 @@ public:
             mb.append(afterWU);
             mb.append(beforeWU);
         }
+        mb.append(filterScopes);
     }
 
     SashaCommandAction getAction()
