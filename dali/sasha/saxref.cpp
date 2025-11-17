@@ -831,6 +831,51 @@ static void mergeDirPerPartDirs(cDirDesc *parent, cDirDesc *dir, const char *cur
     }
 }
 
+// Check if a directory is a dir-per-part directory (numeric name, no subdirs, and in containerized mode)
+// If it is and has been merged (files are empty after merge), returns true
+static bool isDirPerPartDirectory(cDirDesc *dir)
+{
+    if (!isContainerized())
+        return false;
+    
+    // Dir-per-part directories should not have subdirectories
+    if (!dir->dirs.empty())
+        return false;
+    
+    // Check if dir name is a number
+    StringBuffer dirName;
+    dir->getName(dirName);
+    unsigned dirPerPartNum = readDigits(dirName.str());
+    if (dirPerPartNum == 0)
+        return false;
+    
+    // If files are empty, it means the directory has been merged into the parent
+    // This is the criteria to skip adding it to sorteddirs
+    return dir->files.empty();
+}
+
+// Merge dir-per-part directory metadata (sizes, counts) into parent directory
+static void mergeDirPerPartMetadata(cDirDesc *parent, cDirDesc *dir)
+{
+    for (unsigned drv = 0; drv < 2; drv++)
+    {
+        parent->totalsize[drv] += dir->totalsize[drv];
+        
+        // Update min/max sizes if needed
+        if (dir->minnode[drv] && (!parent->minnode[drv] || parent->minsize[drv] > dir->minsize[drv]))
+        {
+            parent->minnode[drv] = dir->minnode[drv];
+            parent->minsize[drv] = dir->minsize[drv];
+        }
+        
+        if (dir->maxnode[drv] && (!parent->maxnode[drv] || parent->maxsize[drv] < dir->maxsize[drv]))
+        {
+            parent->maxnode[drv] = dir->maxnode[drv];
+            parent->maxsize[drv] = dir->maxsize[drv];
+        }
+    }
+}
+
 constexpr int64_t oneSecondNS = 1000 * 1000 * 1000; // 1 second in nanoseconds
 constexpr int64_t oneHourNS = 60 * 60 * oneSecondNS; // 1 hour in nanoseconds
 class XRefPeriodicTimer : public PeriodicTimer
@@ -2123,9 +2168,17 @@ public:
         for (auto& dirPair : d->dirs) {
             cDirDesc *dir = dirPair.second.get();
             mergeDirPerPartDirs(d,dir,basedir);
-            listOrphans(dir,basedir,scope,abort,recentCutoffDays);
-            if (abort)
-                return;
+            
+            // Check if this is a dir-per-part directory that has been merged
+            // If so, merge its metadata into parent and skip adding it to sorteddirs
+            if (isDirPerPartDirectory(dir)) {
+                mergeDirPerPartMetadata(d, dir);
+            }
+            else {
+                listOrphans(dir,basedir,scope,abort,recentCutoffDays);
+                if (abort)
+                    return;
+            }
         }
 
         for (auto& filePair : d->files) {
