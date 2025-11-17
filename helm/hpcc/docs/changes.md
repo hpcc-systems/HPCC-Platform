@@ -26,7 +26,7 @@ The following changes should be noted:
 
 If you try to launch with an unmodified 8.0.x values.yaml, you may see errors like this:
 
-```code
+```
 - esp.1: service is required
 - esp.2: service is required
 - esp.3: service is required
@@ -44,7 +44,7 @@ If you try to launch with an unmodified 8.0.x values.yaml, you may see errors li
 
 For the ESP “service is required” errors, you will need to change a spec that looks like (for example)
 
-```code
+```yaml
 esp:
 - name: eclwatch
   application: eclwatch
@@ -57,7 +57,7 @@ esp:
 
 to
 
-```code
+```yaml
 - name: eclwatch
   application: eclwatch
   auth: none
@@ -70,7 +70,7 @@ to
 
 For the roxie errors, change something that looks like (for example)
 
-```code
+```yaml
 roxie:
 - name: roxie
   disabled: false
@@ -86,7 +86,7 @@ roxie:
 
 to
 
-```code
+```yaml
 roxie:
 - name: roxie
   disabled: false
@@ -101,7 +101,7 @@ roxie:
 
 The sasha errors are not quite so descriptive but are addressed in the same way as the ESP ones, i.e. change something that looks like:
 
-```code
+```yaml
 sasha:
   wu-archiver:
     servicePort: 8877
@@ -109,7 +109,7 @@ sasha:
 
 to
 
-```code
+```yaml
 sasha:
   wu-archiver:
     service:
@@ -147,7 +147,7 @@ attribute to allow a subdirectory to be used within a mount point.
 
 For instance if you have the following definition in 8.0.x:
 
-```code
+```yaml
 storage:
   daliStorage:
      existingClaim: my-pvc
@@ -155,7 +155,7 @@ storage:
 
 would be defined as follows in 8.2.x:
 
-```code
+```yaml
 storage:
   - name: dali
     pvc: my-pvc
@@ -165,7 +165,7 @@ storage:
 
 And similarly a definition that uses ephemeral storage:
 `
-```code
+```yaml
 storage:
   daliStorage:
     storageClass: ""
@@ -174,7 +174,7 @@ storage:
 
 would be become:
 
-```code
+```yaml
 storage:
   - name: dali
     storageClass: ""

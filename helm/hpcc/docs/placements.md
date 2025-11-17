@@ -4,7 +4,7 @@ The placement is responsible for finding the best Node for a Pod. It can be conf
 through placement to include an array of objects to configure the Kubernetes Scheduler.
 It must have a "pods" list which tells it which pod the settings will be applied to.
 The syntax is:
-```code
+```yaml
    placements:
    - pods: [list]
      placement:
@@ -81,7 +81,7 @@ Supported configurations under each "placement"
    Reference https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/
 
 "nodeSelector" example:
-```code
+```yaml
 placements:
 - pods: ["eclwatch","roxie-workunit","^compile-.*$","mydali"]
   placement:
@@ -89,7 +89,7 @@ placements:
       name: npone
 ```
 "nodeSelector" and "tolerations" example:
-```code
+```yaml
 - pods: ["thorworker-", "thor-thoragent", "thormanager-","thor-eclagent","hthor-"]
   placement:
     nodeSelector:
@@ -101,7 +101,7 @@ placements:
       effect: "NoSchedule"
 ```
 "affinity" example:
-```code
+```yaml
 - pods: ["thorworker-.*"]
   placement:
     affinity:
@@ -116,7 +116,7 @@ placements:
               - e2e-az2
 ```
 "schedulerName" example, above "affinity" settings can be in this file. Caution "affinity" in "schedulerName" file is only supported in Kubernetes 1.20.0 beta and later.
-```code
+```yaml
 - pods: ["target:roxie"]
   placement:
     schedulerName: "my-scheduler"
@@ -133,11 +133,11 @@ placements:
 
 ```
 "topologySpreadConstraints" example, there are two node pools which have "hpcc=nodepool1" and "hpcc=nodepool2" respectively. The Roxie pods will be evenly scheduled on the two node pools. After deployment verify it with
-```code
+```bash
 kubectl get pod -o wide | grep roxie
 ```
 Placements code:
-```code
+```yaml
 - pods: ["type:roxie"]
   placement:
     topologySpreadConstraints:
