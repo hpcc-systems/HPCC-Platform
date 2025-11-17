@@ -64,6 +64,7 @@
 #define MAX_SIZE_DIRECT_BUCKET          2048                    // Sizes below this are directly mapped to a particular bucket
 #define ALLOC_ALIGNMENT                 sizeof(void *)          // Minimum alignment of data allocated from the heap manager
 #define PACKED_ALIGNMENT                4                       // Minimum alignment of packed blocks
+#define EXACT_ALIGNMENT                 8                       // Minimum alignment of exact blocks - similar to packed, but allocator id is duplicated
 
 #define MAX_FRAC_ALLOCATOR              20
 
@@ -479,6 +480,8 @@ enum RoxieHeapFlags
     RHFblocked          = 0x0040,  // allocate blocks of rows
     RHFscanning         = 0x0080,  // scan the heaplet for free items instead of using a free list
     RHFdelayrelease     = 0x0100,
+    RHFlimitedcount     = 0x0200,  // only share a heap a limited number of times
+    RHFexactsize        = 0x0400,  // align rather than round up the size of the allocation
 
     //internal flags
     RHFhuge             = 0x40000000,   // only used for tracing
