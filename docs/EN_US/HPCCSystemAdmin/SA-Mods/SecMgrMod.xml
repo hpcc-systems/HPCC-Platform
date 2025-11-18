@@ -181,5 +181,140 @@
       <para><ulink
       url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/system/security/plugins/htpasswdSecurity">https://github.com/hpcc-systems/HPCC-Platform/tree/master/system/security/plugins/htpasswdSecurity</ulink></para>
     </sect2>
+
+    <sect2 id="authenticate-setting-element">
+      <title>AuthenticateSetting Element</title>
+
+      <para>The <emphasis role="bold">AuthenticateSetting</emphasis> element
+      allows an <emphasis>EspBinding</emphasis> to specify which user
+      properties (settings) should be loaded by the security manager for
+      authenticated users. This enables advanced customization, such as using
+      user-specific settings in custom static services or in DESDL custom
+      request transformations.</para>
+
+      <para>This feature is essential for supporting
+      <emphasis>CustomBindingTransform</emphasis> rules and for migrating
+      legacy services to DESDL. The settings requested are made available in
+      the ESP context for use by services and transformations.</para>
+
+      <sect3 id="authenticate-setting-purpose">
+        <title>Purpose and Use Cases</title>
+
+        <itemizedlist>
+          <listitem>
+            <para>Explicitly declare which user properties should be loaded
+            for each authenticated user.</para>
+          </listitem>
+
+          <listitem>
+            <para>Enable request customization based on user settings in
+            static services or DESDL transformations.</para>
+          </listitem>
+
+          <listitem>
+            <para>Support migration of legacy services to DESDL by providing
+            required user data for <emphasis>CustomBindingTransform</emphasis>
+            rules.</para>
+          </listitem>
+        </itemizedlist>
+      </sect3>
+
+      <sect3 id="authenticate-setting-configuration">
+        <title>Configuration</title>
+
+        <para>Add <emphasis>AuthenticateSetting</emphasis> elements to your
+        <emphasis>EspBinding</emphasis> configuration. Each element includes
+        the following attributes:</para>
+
+        <variablelist>
+          <varlistentry>
+            <term>include</term>
+
+            <listitem>
+              <para>Set to "Yes" to activate the setting.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>path</term>
+
+            <listitem>
+              <para>The identifier for the user property to be loaded.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>resource</term>
+
+            <listitem>
+              <para>The resource name as recognized by the security
+              manager.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>description</term>
+
+            <listitem>
+              <para>Human-readable description of the setting.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+
+        <para><emphasis role="bold">Example:</emphasis></para>
+
+        <programlisting>&lt;AuthenticateSetting include="Yes"
+                     path="user.department"
+                     resource="Department"
+                     description="User's department"/&gt;</programlisting>
+      </sect3>
+
+      <sect3 id="authenticate-setting-implementation">
+        <title>Implementation Details</title>
+
+        <itemizedlist>
+          <listitem>
+            <para>XSLT transforms convert
+            <emphasis>AuthenticateSetting</emphasis> elements into
+            <emphasis>Setting</emphasis> elements in the runtime
+            configuration.</para>
+          </listitem>
+
+          <listitem>
+            <para>Service logic (e.g., <emphasis>WsDeployService</emphasis>)
+            manages <emphasis>AuthenticateSetting</emphasis> elements
+            similarly to <emphasis>Feature</emphasis> elements.</para>
+          </listitem>
+
+          <listitem>
+            <para>HTTP bindings request an AuthMap for these settings, making
+            them available in the ESP context.</para>
+          </listitem>
+
+          <listitem>
+            <para>Security managers must implement support for these settings
+            (via <emphasis>createSettingMap()</emphasis>), or throw an
+            exception if unsupported.</para>
+          </listitem>
+        </itemizedlist>
+      </sect3>
+
+      <sect3 id="authenticate-setting-integration">
+        <title>Integration Notes</title>
+
+        <itemizedlist>
+          <listitem>
+            <para>Works in conjunction with
+            <emphasis>AuthenticateFeature</emphasis> for fine-grained user
+            property and feature control.</para>
+          </listitem>
+
+          <listitem>
+            <para>Requires compatible security manager and updated
+            service/binding logic.</para>
+          </listitem>
+        </itemizedlist>
+      </sect3>
+    </sect2>
   </sect1>
 </chapter>
