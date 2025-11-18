@@ -1553,16 +1553,12 @@ static void DelimToStringArray(const char *csl, StringArray &dst, const char *de
         return;
     const char *s = csl;
     char c;
-    size32_t delimLen = 1;
     if (!delim)
         c = ',';
     else if (*delim&&!delim[1])
         c = *delim;
     else
-    {
         c = 0;
-        delimLen = strlen(delim);
-    }
     StringBuffer str;
     unsigned dstlen=dst.ordinality();
     for (;;)
@@ -1598,10 +1594,7 @@ static void DelimToStringArray(const char *csl, StringArray &dst, const char *de
             dst.append(str.str());
         if (!*e)
             break;
-        else if (c)
-            s = e+1;
-        else
-            s = e+delimLen;
+        s = e+1;
     }
 }
 
