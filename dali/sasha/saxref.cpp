@@ -1235,7 +1235,7 @@ public:
         {
             log(false, "Filter Scopes Enabled: searching for files in: %s", _scopeFilters);
             filterScopesEnabled = true;
-            scopeFilters.appendList(_scopeFilters, "::");
+            scopeFilters.appendList(_scopeFilters, ",");
         }
     }
 
@@ -1433,19 +1433,98 @@ public:
         return false;
     }
 
+    // Helper function to check if a scope matches a filter
+    // matchType: 0 = partial match (for directories), 1 = full match (for files)
+    bool checkScopeMatchesFilter(const char *path, bool allowPartialMatch)
+    {
+        if (!filterScopesEnabled)
+            return true;
 
-    bool scanDirectory(unsigned node,const SocketEndpoint &ep,StringBuffer &path, unsigned drv, cDirDesc *pdir, IFile *cachefile, unsigned level, unsigned filePathOffset, unsigned stripeNum, unsigned scopeFilterIndex)
+        ForEachItemIn(i, scopeFilters)
+        {
+            const char *filter = scopeFilters.item(i);
+            const char *scope = path;
+
+            while (true)
+            {
+                const char *filterSep = strstr(filter, "::");
+                const char *scopeSep = strstr(scope, "/");
+
+                if (filterSep && scopeSep)
+                {
+                    // Common Case: Both filter and scope have more subscopes, check that they match so far
+                    size_t filterLen = filterSep - filter;
+                    if (filterLen != (scopeSep - scope) || strncmp(filter, scope, filterLen) != 0)
+                        break;
+
+                    filter = filterSep + 2;
+                    scope = scopeSep + 1;
+                }
+                else if (filterSep)
+                {
+                    // Filter has more subscopes than scope
+                    if (allowPartialMatch)
+                    {
+                        if (strncmp(filter, scope, filterSep - filter) == 0)
+                            return true;
+                    }
+                    // For full match: filter is longer, no match
+                    break;
+                }
+                else if (scopeSep)
+                {
+                    // Scope has more subscopes than filter
+                    if (!isEmptyString(filter) && strncmp(filter, scope, scopeSep - scope) != 0)
+                        break;
+
+                    // Check if remaining scope is a dir-per-part directory
+                    scope = scopeSep + 1;
+                    if (isContainerized() && strchr(scope, '/') == nullptr && readDigits(scope) != 0)
+                        return true;
+
+                    break;
+                }
+                else
+                {
+                    // Both filter and scope are out of subscopes, check final match
+                    if (isEmptyString(filter))
+                    {
+                        if (isEmptyString(scope))
+                            return true;
+
+                        // Check if remaining scope is a dir-per-part directory
+                        if (isContainerized() && readDigits(scope) != 0)
+                            return true;
+                    }
+                    else if (streq(filter, scope))
+                        return true;
+
+                    break;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    // Checks that a scope matches the beginning of a filter
+    // Returns true if a partial scope matches any filter, false otherwise
+    bool partialScopeMatchesFilter(const char *path)
+    {
+        return checkScopeMatchesFilter(path, true);
+    }
+
+    // Checks that a logical file scope matches the filter (scope does not include filename)
+    // Returns true if the full scope matches any filter, false otherwise
+    bool fullScopeMatchesFilter(const char *path)
+    {
+        return checkScopeMatchesFilter(path, false);
+    }
+
+    bool scanDirectory(unsigned node,const SocketEndpoint &ep,StringBuffer &path, unsigned drv, cDirDesc *pdir, IFile *cachefile, unsigned filePathOffset, unsigned stripeNum)
     {
         checkHeartbeat("Directory scan");
         size32_t dsz = path.length();
-        const char *scopeFilter = nullptr;
-        if (filterScopesEnabled)
-        {
-            if (scopeFilterIndex > scopeFilters.ordinality()+1)
-                return true;
-            else if (scopeFilterIndex < scopeFilters.ordinality())
-                scopeFilter = scopeFilters.item(scopeFilterIndex);
-        }
         if (pdir==NULL)
             pdir = root.get();
         RemoteFilename rfn;
@@ -1472,58 +1551,17 @@ public:
         StringBuffer fname;
         offset_t nsz = 0;
         StringArray dirs;
+        bool scanFiles = fullScopeMatchesFilter(path.str()+filePathOffset+1);
         ForEach(*iter) {
             iter->getName(fname.clear());
             if (iswin)
                 fname.toLowerCase();
             addPathSepChar(path).append(fname);
-            if (iter->isDir())  {
-                if (filterScopesEnabled) {
-                    if (scopeFilterIndex == scopeFilters.ordinality() && readDigits(fname.str())!=0) {
-                        // If we are one past the last scope filter and it is likely a dir-per-part directory, scan it for part files
-                    }
-                    else if (isEmptyString(scopeFilter) || stricmp(fname.str(), scopeFilter) != 0) {
-                        path.setLength(dsz);
-                        continue;
-                    }
-                }
-                // NB: Check if a subdirectory is a stripe directory under certain conditions
-                // Stripe directories must be under root. The level is 0 if root
-                // Only look for stripe directories if the plane details say it is striped
-                if ((level == 0) && isPlaneStriped) {
-                    const char *dir = fname.str();
-                    bool isDirStriped = dir[0] == 'd' && dir[1] != '\0'; // Directory may be striped if it starts with 'd' and longer than one character
-                    if (isDirStriped) {
-                        dir++;
-                        while (*dir) {
-                            if (!isdigit(*(dir++))) {
-                                isDirStriped = false;
-                                break;
-                            }
-                        }
-                        if (isDirStriped) {
-                            // To properly match all file parts, we need to remove the stripe directory from the path
-                            // so that the cDirDesc hierarchy matches the logical scope hierarchy
-                            // /var/lib/HPCCSystems/hpcc-data/d1/somescope/otherscope/afile.1_of_2
-                            // /var/lib/HPCCSystems/hpcc-data/d2/somescope/otherscope/afile.2_of_2
-                            // These files would never be matched if we didn't build up the cDirDesc structure without the stripe directory
-                            if (!scanDirectory(node,ep,path,drv,pdir,NULL,level+1,filePathOffset,stripeNum,scopeFilterIndex+1))
-                                return false;
-
-                            path.setLength(dsz);
-                            continue;
-                        }
-                    }
-                    // Top-level directory is not striped, but isPlaneStriped is true. Throw an error, but continue processing directory as normal
-                    OERRLOG(LOGPFX "Top-level directory striping mismatch for %s: isPlaneStriped=%d", path.str(), isPlaneStriped);
-                }
-                dirs.append(fname.str());
+            if (iter->isDir()) {
+                if (partialScopeMatchesFilter(path.str()+filePathOffset+1))
+                    dirs.append(fname.str());
             }
-            else {
-                if (filterScopesEnabled && scopeFilterIndex < scopeFilters.ordinality()) {
-                    path.setLength(dsz);
-                    continue;
-                }
+            else if (scanFiles) {
                 CDateTime dt;
                 nsz += iter->getFileSize();
                 iter->getModifiedTime(dt);
@@ -1547,7 +1585,7 @@ public:
             addPathSepChar(path).append(dirs.item(i));
             if (file.get()&&!resetRemoteFilename(file,path.str())) // sneaky way of avoiding cache
                 file.clear();
-            if (!scanDirectory(node,ep,path,drv,pdir->lookupDir(dirs.item(i),&allocator),file,level+1,filePathOffset,stripeNum,scopeFilterIndex+1))
+            if (!scanDirectory(node,ep,path,drv,pdir->lookupDir(dirs.item(i),&allocator),file,filePathOffset,stripeNum))
                 return false;
             path.setLength(dsz);
         }
@@ -1606,7 +1644,7 @@ public:
                     addPathSepChar(path).append('d').append(i+1);
 
                     parent.log(false,"Scanning %s directory %s",parent.storagePlane->queryProp("@name"),path.str());
-                    if (!parent.scanDirectory(0,localEP,path,0,parent.root.get(),NULL,1,path.length(),i+1,0))
+                    if (!parent.scanDirectory(0,localEP,path,0,parent.root.get(),NULL,path.length(),i+1))
                     {
                         ok = false;
                         return;
@@ -1617,7 +1655,7 @@ public:
                     StringBuffer hostStr;
                     SocketEndpoint ep = parent.rawgrp->queryNode(i).endpoint();
                     parent.log(false,"Scanning %s directory %s",ep.getEndpointHostText(hostStr).str(),path.str());
-                    if (!parent.scanDirectory(i,ep,path,0,NULL,NULL,0,path.length(),0,0)) {
+                    if (!parent.scanDirectory(i,ep,path,0,NULL,NULL,path.length(),0)) {
                         ok = false;
                         return;
                     }
@@ -1627,7 +1665,7 @@ public:
                         setReplicateFilename(path,1);
                         ep = parent.rawgrp->queryNode(i).endpoint();
                         parent.log(false,"Scanning %s directory %s",ep.getEndpointHostText(hostStr.clear()).str(),path.str());
-                        if (!parent.scanDirectory(i,ep,path,1,NULL,NULL,0,path.length(),0,0)) {
+                        if (!parent.scanDirectory(i,ep,path,1,NULL,NULL,path.length(),0)) {
                             ok = false;
                         }
                     }
@@ -1688,23 +1726,35 @@ public:
                 return !abort;
             }
 
-            bool logicalFileFiltered(const char *name)
+            bool logicalFileFiltered(StringBuffer &logicalFileName)
             {
                 if (!parent.filterScopesEnabled)
                     return false;
-                const char *filename = name;
+
                 ForEachItemIn(i,parent.scopeFilters)
                 {
-                    if (!startsWith(filename, parent.scopeFilters.item(i)))
-                        return true;
-
-                    const char *sep = strstr(filename, "::");
-                    if (!sep)
-                        return true;
-
-                    filename = sep + 2;
+                    const char *fileScope = logicalFileName.str();
+                    const char *fileScopeEnd = fileScope + logicalFileName.length();
+                    while (true)
+                    {
+                        if (fileScopeEnd == fileScope)
+                        {
+                            for (;i<numItemsi;i++)
+                            {
+                                if (isEmptyString(parent.scopeFilters.item(i)))
+                                    return false;
+                            }
+                            return true;
+                        }
+                        else if (fileScopeEnd[0] == ':' && fileScopeEnd[1] == ':')
+                            break;
+                        else
+                            fileScopeEnd--;
+                    }
+                    if (strncmp(fileScope, parent.scopeFilters.item(i), fileScopeEnd - fileScope) == 0)
+                        return false;
                 }
-                return strstr(filename, "::") != nullptr;
+                return true;
             }
 
             void processFile(IPropertyTree &file,StringBuffer &name)
@@ -2952,7 +3002,7 @@ public:
                     // Get filterScopes for this cluster
                     const char *scopes = cluster.queryProp("@filterScopes");
                     if (scopes && *scopes)
-                        filterScopes.set(scopes);
+                        filterScopes.set(scopes).toLowerCase();
                 }
             }
         }
