@@ -1379,6 +1379,7 @@ NO_SANITIZE("alignment") void excsighandler(int signum, siginfo_t *info, void *e
     StringBuffer networkIp;
     PROGLOG("================================================");
     PROGLOG("Program:   %s:%s", queryHostIP().getHostText(networkIp).str(),queryCurrentProcessPath());
+    PROGLOG("Version:   %s %s %s", hpccBuildInfo.buildVersion, hpccBuildInfo.buildTag, hpccBuildInfo.buildTagTimestamp);
     PROGLOG("Signal:    %d %s",signum,strsignal(signum));
     PROGLOG("Fault IP:  " I64X "", ip);
     PROGLOG("Accessing: " I64X "", (unsigned __int64) info->si_addr);
@@ -1437,6 +1438,7 @@ NO_SANITIZE("alignment") void excsighandler(int signum, siginfo_t *info, void *e
     StringBuffer networkIp;
     PROGLOG("================================================");
     PROGLOG("Program:   %s:%s", queryHostIP().getHostText(networkIp).str(),queryCurrentProcessPath());
+    PROGLOG("Version:   %s %s %s", hpccBuildInfo.buildVersion, hpccBuildInfo.buildTag, hpccBuildInfo.buildTagTimestamp);
     PROGLOG("Signal:    %d %s",signum,strsignal(signum));
     PROGLOG("Fault IP:  %08X", ip);
     PROGLOG("Accessing: %08X", (unsigned) info->si_addr);
