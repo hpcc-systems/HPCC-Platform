@@ -167,6 +167,8 @@ protected:
                 thisWidth--;
             if (!nofilter)
             {
+                StringBuffer planeName;
+                f->getClusterName(0, planeName);
                 Owned<IKeyIndex> keyIndex;
                 unsigned copy;
                 for (copy=0; copy<lastPart->numCopies(); copy++)
@@ -179,8 +181,7 @@ protected:
                         rfn.getPath(remotePath);
                         unsigned crc = 0;
                         lastPart->getCrc(crc);
-                        unsigned __int64 blockedIOSize{0};
-                        verifyex(findPlaneAttrFromPath(remotePath, BlockedRandomIO, 0, blockedIOSize)); // should never happen - error if plane not found
+                        unsigned __int64 blockedIOSize = getPlaneAttributeValue(planeName, BlockedRandomIO, 0);
                         keyIndex.setown(createKeyIndex(remotePath.str(), crc, false, (size32_t)blockedIOSize));
                         break;
                     }
