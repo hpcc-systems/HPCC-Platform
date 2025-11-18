@@ -156,12 +156,6 @@ Model options are specified using a property tree. The configuration conforms to
 
 An optional identifier that must be `index-events` when present.
 
-    @maxCacheCapacity
-
-Optional upper limit to the amount of memory used by all model caches that model live system caches. This includes the storage page cache and all memory node caches. It excludes internal caches needed to enable modeling, such as historical observations.
-
-For the value to be applied in the model, the storage page cache must be configured with a read time and not a capacity. The effect, then, is that the page cache capacity will be updated to the difference between the limit and the sum of all memory node caches. It is an error for the node cache sizes to reach or exceed the limit.
-
     storage/
 
 Required container for storage plane and page cache configuration settings.
@@ -173,6 +167,25 @@ Required container for storage plane and page cache configuration settings.
 Optional page cache controls. Setting a positive read time enables the page cache. Setting a positive capacity limits the total size of cached pages. Note that unlike a real page cache, which would cache the entire page, the model merely tracks which 8 KB pages are cached based on file ID and offset.
 
 **If not zero, the capacity must be at least 8 KB. It is an error to configure the page cache such that it cannot cache at least one page.**
+
+    storage/
+        @dynamicCacheCapacity
+
+The page cache capacity can be dynamically configured relative to the combined sizes of all in-memory node caches. When `@cacheReadTime` enables the page cache, when `@cacheCapacity` is omitted (or zero), and the sum of `//memory/node/@cacheCapacity` is less than `@dynamicCacheCapacity`, the page cache capacity is set to the difference of `@dynamicCacheCapacity` and the sum of `//memory/node/@cacheCapacity`. This property cannot enable the page cache, nor can it override an explicitly defined capacity. If the capacity would be set to a non-zero value less than the size of a page, making the cache incapable of holding a page, the capacity instead remains zero.
+
+Consider this example:
+```yaml
+storage:
+  cacheReadTime: 10000
+  dynamicCacheCapacity: 40 MiB
+memory:
+  node:
+  - kind: 0
+    cacheCapacity: 0.5 MiB
+  - kind: 1
+    cacheCapacity: 20 MiB
+```
+In this example, the node caches are allotted 20.5 MiB. The page cache is dynamically allotted the balance of 40 MiB, or 19.5 MiB.
 
     storage/
         plane/
