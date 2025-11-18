@@ -84,24 +84,22 @@ public:
         return true;
     }
 
-    virtual void usageSyntax(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out) override
+    virtual const char* getVerboseDescription() const override
     {
-        CEvToolCommand::usageSyntax(argc, argv, pos, out);
-        constexpr const char* usageStr =
-R"!!!([options] <filename>
-)!!!";
-        size32_t usageStrLength = size32_t(strlen(usageStr));
-        out.put(usageStrLength, usageStr);
-    }
-
-    virtual void usageSynopsis(IBufferedSerialOutputStream& out) override
-    {
-        constexpr const char* usageStr = R"!!!(
-Create a binary event file containing the events specified in an external
+        return R"!!!(Create a binary event file containing the events specified in an external
 configuration file. The configuration may be either XML, JSON, or YAML markup.
 )!!!";
-        size32_t usageStrLength = size32_t(strlen(usageStr));
-        out.put(usageStrLength, usageStr);
+    }
+
+    virtual const char* getBriefDescription() const override
+    {
+        return "create a binary event file from a text file";
+    }
+
+    virtual void usageSyntax(StringBuffer& helpText) override
+    {
+        helpText.append(R"!!!([options] <filename>
+)!!!");
     }
 
     virtual void usageParameters(IBufferedSerialOutputStream& out) override

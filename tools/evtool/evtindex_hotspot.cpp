@@ -72,19 +72,9 @@ public:
         return TEventConsumingCommand<CIndexHotspotOp>::acceptKVOption(key, value);
     }
 
-    virtual void usageSyntax(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out) override
+    virtual const char* getVerboseDescription() const override
     {
-        TEventConsumingCommand<CIndexHotspotOp>::usageSyntax(argc, argv, pos, out);
-        constexpr const char* usageStr =
-R"!!!(<event> [options] [filters] <filename>
-)!!!";
-        size32_t usageStrLength = strlen(usageStr);
-        out.put(usageStrLength, usageStr);
-    }
-    virtual void usageSynopsis(IBufferedSerialOutputStream& out) override
-    {
-        constexpr const char* usageStr = R"!!!(
-Identify activity hotspots for each index file referenced within a recorded
+        return R"!!!(Identify activity hotspots for each index file referenced within a recorded
 event file. The activity to be analyzed is specified by a obligatory event
 selector correlating to a single event type. Additional options determine the
 analysis to be performed.
@@ -96,8 +86,17 @@ Events:
                               events.
     --miss                    Analyze index cache miss events.
 )!!!";
-        size32_t usageStrLength = strlen(usageStr);
-        out.put(usageStrLength, usageStr);
+    }
+
+    virtual const char* getBriefDescription() const override
+    {
+        return "identify the most active index nodes";
+    }
+
+    virtual void usageSyntax(StringBuffer& helpText) override
+    {
+        helpText.append(R"!!!(<event> [options] [filters] <filename>
+)!!!");
     }
 
     virtual void usageOptions(IBufferedSerialOutputStream& out) override

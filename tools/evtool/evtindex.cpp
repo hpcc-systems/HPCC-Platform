@@ -17,11 +17,14 @@
 
 #include "evtindex.hpp"
 
+static constexpr const char* brief = "group of commands for analyzing index file events";
+static constexpr const char* verbose = "Commands focused on the analysis of index file events.";
+
 IEvToolCommand* createIndexCommand()
 {
     return new CEvtCommandGroup({
         { "summarize", createIndexSummaryCommand },
         { "hotspot", createIndexHotspotCommand },
         { "plot", createIndexPlotCommand },
-    });
+    }, verbose, brief);
 }
