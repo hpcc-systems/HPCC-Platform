@@ -873,6 +873,7 @@ class jlib_decl CAtomPTree : public PTree
     PtrStrUnion<HashKeyElement> name;
 protected:
     virtual bool removeAttribute(const char *k) override;
+    static CriticalSection &queryHashCrit();
     virtual IPropertyTree *create(IBufferedSerialInputStream &in, PTreeDeserializeContext &ctx) override
     {
         IPropertyTree *tree = new CAtomPTree();
@@ -898,8 +899,6 @@ public:
         return tree;
     }
 };
-
-
 jlib_decl IPropertyTree *createPropBranch(IPropertyTree *tree, const char *xpath, bool createIntermediates=false, IPropertyTree **created=NULL, IPropertyTree **createdParent=NULL);
 
 class jlib_decl LocalPTree : public PTree

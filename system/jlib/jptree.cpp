@@ -3829,6 +3829,42 @@ bool LocalPTree::removeAttribute(const char *key)
     return true;
 }
 
+void LocalPTree::deserializeAttributes(const char *base, PTreeDeserializeContext &ctx)
+{
+    const unsigned newAttrPairs = ctx.matchOffsets.size() / 2;
+    if (!newAttrPairs)
+        return;
+
+    // Allocate space for existing and new attributes
+    AttrValue *newAttrs = (AttrValue *)realloc(attrs, (numAttrs + newAttrPairs) * sizeof(AttrValue));
+    if (unlikely(!newAttrs))
+    {
+        VStringBuffer err("PTree deserialization error: out of memory reading attributes, numAttrs=%u, newAttrPairs=%u", numAttrs, newAttrPairs);
+        throwUnexpectedX(err.str());
+    }
+    attrs = newAttrs;
+
+    // Process each name/value pair
+    for (unsigned i = 0; i < ctx.matchOffsets.size(); i += 2)
+    {
+        const char *attrName = base + ctx.matchOffsets[i];
+        const char *attrValue = base + ctx.matchOffsets[i + 1];
+        AttrValue *v = new (&attrs[numAttrs++]) AttrValue; // Initialize new AttrValue
+
+        if (!v->key.set(attrName)) // AttrStr will not return encoding marker when get() is called
+            v->key.setPtr(isnocase() ? AttrStr::createNC(attrName) : AttrStr::create(attrName));
+        if (arrayOwner)
+        {
+            CQualifierMap *map = arrayOwner->queryMap();
+            if (map)
+                map->insertEntryIfMapped(attrName, attrValue, this);
+        }
+
+        if (!v->value.set(attrValue))
+            v->value.setPtr(AttrStr::create(attrValue));
+    }
+}
+
 void LocalPTree::setAttribute(const char *inputkey, const char *val, bool encoded)
 {
     if (!inputkey)
@@ -4028,6 +4064,49 @@ void CAtomPTree::freeAttrArray(AttrValue *a, unsigned n)
         *(AttrValue **)a = p;
         p = a;
     }
+}
+
+void CAtomPTree::deserializeAttributes(const char *base, PTreeDeserializeContext &ctx)
+{
+    const unsigned newAttrPairs = ctx.matchOffsets.size() / 2;
+    if (!newAttrPairs)
+        return;
+
+    // Allocate memory for all attributes (existing + new) in one go, and copy existing attributes if needed.
+    unsigned insertPos = numAttrs;
+    AttrValue *newattrs = newAttrArray(insertPos + newAttrPairs);
+    if (attrs)
+    {
+        memcpy(newattrs, attrs, insertPos * sizeof(AttrValue));
+        freeAttrArray(attrs, insertPos);
+    }
+    attrs = newattrs;
+    numAttrs = insertPos + newAttrPairs;
+
+    // Set attribute values and update qualifier map if needed
+    for (unsigned i = 0; i < ctx.matchOffsets.size(); i += 2)
+    {
+        const char *attrName = base + ctx.matchOffsets[i];
+        const char *attrValue = base + ctx.matchOffsets[i + 1];
+
+        if (arrayOwner)
+        {
+            CQualifierMap *map = arrayOwner->queryMap();
+            if (map)
+                map->insertEntryIfMapped(attrName, attrValue, this);
+        }
+
+        AttrValue *v = &newattrs[insertPos++];
+        if (!v->key.set(attrName))
+            v->key.setPtr(attrHT->addkey(attrName, isnocase()));
+        if (!v->value.set(attrValue))
+            v->value.setPtr(attrHT->addval(attrValue));
+    }
+}
+
+CriticalSection &CAtomPTree::queryHashCrit()
+{
+    return hashcrit;
 }
 
 void CAtomPTree::setAttribute(const char *key, const char *val, bool encoded)
