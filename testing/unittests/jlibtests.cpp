@@ -3678,6 +3678,11 @@ protected:
         CPPUNIT_ASSERT_EQUAL(memoryBufferSize, streamBufferSize);
         CPPUNIT_ASSERT(memcmp(memoryBuffer.toByteArray(), streamBuffer.toByteArray(), memoryBufferSize) == 0);
 
+        // Copy streamBuffer for deserializationFromStream() tests
+        MemoryBuffer streamBuffer2, streamBuffer3;
+        streamBuffer2.append(streamBuffer.length(), streamBuffer.toByteArray());
+        streamBuffer3.append(streamBuffer.length(), streamBuffer.toByteArray());
+
         // Time deserialize() method
         timer.reset();
         Owned<IPropertyTree> memoryBufferDeserialized = createPTree(memoryBuffer);
@@ -3692,8 +3697,7 @@ protected:
         // Create PTree from Binary tests
         //
         // Test 1: Call with null nodeCreator (should fall back to createPTree(src, ipt_none))
-        streamBuffer.reset();
-        Owned<IBufferedSerialInputStream> in2 = createBufferedSerialInputStream(streamBuffer);
+        Owned<IBufferedSerialInputStream> in2 = createBufferedSerialInputStream(streamBuffer2);
         Owned<IPropertyTree> deserializedCreatePTreeFromBinaryWithNull = createPTreeFromBinary(*in2, nullptr);
         // Test 2: Call with custom nodeCreator
         class TestNodeCreator : public CSimpleInterfaceOf<IPTreeNodeCreator>
@@ -3708,9 +3712,7 @@ protected:
             }
         };
         Owned<TestNodeCreator> nodeCreator = new TestNodeCreator();
-        // Reset stream position
-        streamBuffer.reset();
-        Owned<IBufferedSerialInputStream> in3 = createBufferedSerialInputStream(streamBuffer);
+        Owned<IBufferedSerialInputStream> in3 = createBufferedSerialInputStream(streamBuffer3);
         Owned<IPropertyTree> deserializedCreatePTreeFromBinaryWithCreator = createPTreeFromBinary(*in3, nodeCreator);
 
         // Validation - verify both deserialized trees are equivalent to the original
