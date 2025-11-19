@@ -3091,16 +3091,7 @@ void PTree::deserializeSelf(IBufferedSerialInputStream &src, PTreeDeserializeCon
     if (unlikely(!base))
         throwUnexpectedX("PTree deserialization error: end of stream, expected attribute name");
 
-    size_t numStringOffsets = ctx.matchOffsets.size();
-    if (unlikely(numStringOffsets % 2 != 0))
-        throwUnexpectedX("PTree deserialization error: end of stream, expected attribute value");
-    constexpr bool attributeNameNotEncoded = false; // Deserialized attribute name is in its original unencoded form
-    for (size_t i = 0; i < numStringOffsets; i += 2)
-    {
-        const char *attrName = base + ctx.matchOffsets[i];
-        const char *attrValue = base + ctx.matchOffsets[i + 1];
-        setAttribute(attrName, attrValue, attributeNameNotEncoded);
-    }
+    deserializeAttributes(base, ctx);
 
     src.skip(skipLen); // Skip over all attributes and the terminator
 
@@ -3832,6 +3823,39 @@ bool LocalPTree::removeAttribute(const char *key)
     return true;
 }
 
+void LocalPTree::deserializeAttributes(const char *base, PTreeDeserializeContext &ctx)
+{
+    const unsigned newAttrPairs = ctx.matchOffsets.size() / 2;
+    if (!newAttrPairs)
+        return;
+
+    // Expected to run on an empty tree.
+    // Qualifier map will never be set up during deserialization, so no need to update.
+    dbgassertex(!(numAttrs || arrayOwner || attrs));
+
+    // Allocate space for new attributes
+    AttrValue *newAttrs = (AttrValue *)realloc(attrs, newAttrPairs * sizeof(AttrValue));
+    if (unlikely(!newAttrs))
+    {
+        VStringBuffer err("PTree deserialization error: out of memory reading attributes, numAttrs=%u, newAttrPairs=%u", numAttrs, newAttrPairs);
+        throwUnexpectedX(err.str());
+    }
+    attrs = newAttrs;
+
+    // Process each name/value pair
+    for (unsigned i = 0; i < ctx.matchOffsets.size(); i += 2)
+    {
+        const char *attrName = base + ctx.matchOffsets[i];
+        const char *attrValue = base + ctx.matchOffsets[i + 1];
+        AttrValue *v = new (&attrs[numAttrs++]) AttrValue; // Initialize new AttrValue
+
+        if (!v->key.set(attrName)) // AttrStr will not return encoding marker when get() is called
+            v->key.setPtr(isnocase() ? AttrStr::createNC(attrName) : AttrStr::create(attrName));
+        if (!v->value.set(attrValue))
+            v->value.setPtr(AttrStr::create(attrValue));
+    }
+}
+
 void LocalPTree::setAttribute(const char *inputkey, const char *val, bool encoded)
 {
     if (!inputkey)
@@ -4031,6 +4055,57 @@ void CAtomPTree::freeAttrArray(AttrValue *a, unsigned n)
         *(AttrValue **)a = p;
         p = a;
     }
+}
+
+void CAtomPTree::deserializeAttributes(const char *base, PTreeDeserializeContext &ctx)
+{
+    const unsigned newAttrPairs = ctx.matchOffsets.size() / 2;
+    if (!newAttrPairs)
+        return;
+
+    // Expected to run on an empty tree.
+    // Qualifier map will never be set up during deserialization, so no need to update.
+    dbgassertex(!(numAttrs || arrayOwner || attrs));
+
+    // Allocate storage for all deserialized attributes in a single allocation.
+    CLeavableCriticalBlock block(hashcrit);
+    AttrValue *newAttrs = newAttrArray(newAttrPairs);
+    block.ensureLeave();
+
+    // Process each name/value pair. Commit to members only after fully successful population.
+    const bool nc = isnocase();
+    try
+    {
+        for (unsigned i{0}; i < ctx.matchOffsets.size(); i += 2)
+        {
+            const char *attrName = base + ctx.matchOffsets[i];
+            const char *attrValue = base + ctx.matchOffsets[i + 1];
+            AttrValue *v = new (&newAttrs[i >> 1]) AttrValue;
+
+            const bool keySet = v->key.set(attrName);
+            const bool valueSet = v->value.set(attrValue);
+            if (!keySet || !valueSet)
+            {
+                block.ensureEnter();
+
+                if (!keySet)
+                    v->key.setPtr(attrHT->addkey(attrName, nc));
+                if (!valueSet)
+                    v->value.setPtr(attrHT->addval(attrValue));
+            }
+        }
+    }
+    catch (...)
+    {
+        block.ensureEnter();
+        freeAttrArray(newAttrs, newAttrPairs);
+        block.ensureLeave();
+        throw;
+    }
+    block.ensureLeave();
+
+    attrs = newAttrs;
+    numAttrs = newAttrPairs;
 }
 
 void CAtomPTree::setAttribute(const char *key, const char *val, bool encoded)
