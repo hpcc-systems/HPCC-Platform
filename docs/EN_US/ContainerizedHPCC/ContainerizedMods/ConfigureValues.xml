@@ -1222,7 +1222,7 @@ thor:
             <listitem>
               <para>TLS Using Public CA: Use a public Certificate Authority to
               establish trust between external clients and a
-              publically-exposed component such as ECL Watch</para>
+              publicly-exposed component such as ECL Watch</para>
             </listitem>
           </itemizedlist></para>
 
@@ -1255,7 +1255,7 @@ thor:
 
             <listitem>
               <para>To use the `remote` issuer, set the component's
-              `visibility` property to `local` or `global`, and it's
+              `visibility` property to `local` or `global`, and its
               `trustClients` array to the list of remote trusted
               clients.</para>
 
@@ -1267,7 +1267,7 @@ thor:
                     <para>Although an effort was made to standardize on the
                     term TLS throughout this section, there may be references
                     to the older SSL standard it replaced. Any SSL references
-                    should be taken as colloquial or legacy nomencalature that
+                    should be taken as colloquial or legacy nomenclature that
                     actually refers to a TLS implementation.</para>
                   </listitem>
                 </varlistentry>
@@ -1302,7 +1302,7 @@ thor:
           <programlisting>openssl req -x509 -newkey rsa:2048 -nodes -keyout ca.key -sha256 -days 1825 \
             -out ca.crt -config helm/examples/certmanager/ca-req.cfg</programlisting>
 
-          <para>The root certificate needs to be added as a kubernetes secret
+          <para>The root certificate needs to be added as a Kubernetes secret
           in order to be accessible to cert-manager. The secret name matches
           the default name used in the local issuer configuration in
           values.yaml.</para>
@@ -1310,24 +1310,24 @@ thor:
           <programlisting>kubectl create secret tls hpcc-local-issuer-key-pair --cert=ca.crt --key=ca.key</programlisting>
 
           <para>Repeat the root certificate creation process to create the CA
-          secret for the code signing issuer. This is needed to run the ecl
+          secret for the code signing issuer. This is needed to run the ECL
           testing script at the end to show the example is working.</para>
 
           <programlisting>openssl req -x509 -newkey rsa:2048 -nodes -keyout signingca.key -sha256 \
             -days 1825 -out signingca.crt -config examples/certmanager/ca-req.cfg</programlisting>
 
           <para>Create a Kubernetes TLS secret from the generated signing root
-          certificate and privatekey</para>
+          certificate and private key</para>
 
           <programlisting>kubectl create secret tls hpcc-signing-issuer-key-pair --cert=signingca.crt --key=signingca.key</programlisting>
 
-          <para>Install the HPCC helm chart with the "--set
+          <para>Install the HPCC Helm chart with the "--set
           certificates.enabled" option set to true.</para>
 
           <programlisting>helm install myhpcc hpcc/hpcc --set certificates.enabled=true</programlisting>
 
           <para>The cluster ESPs are now using TLS both locally and publicly.
-          Verify it is working by running an ecl job that requires using
+          Verify it is working by running an ECL job that requires using
           mutual TLS (using local client certificate):</para>
 
           <programlisting>ecl run --ssl hthor helm/examples/certmanager/localhttpcall.ecl</programlisting>
@@ -1421,7 +1421,7 @@ thor:
             <para>In dev mode the default root token is simply the string
             "root".</para>
 
-            <para>Add Hashicorp helm repository:</para>
+            <para>Add Hashicorp Helm repository:</para>
 
             <programlisting>helm repo add hashicorp https://helm.releases.hashicorp.com</programlisting>
 
