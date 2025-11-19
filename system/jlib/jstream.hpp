@@ -71,8 +71,10 @@ extern jlib_decl const char * queryZeroTerminatedString(IBufferedSerialInputStre
 extern jlib_decl std::pair<const char *, const char *> peekKeyValuePair(IBufferedSerialInputStream & in, size32_t & len);
 
 //Return a vector of offsets of the starts of null terminated strings - terminated by a null string or end of file.
+//grouping allows for empty strings within a group, but the list is terminated by an empty string at the end of a group.
 //Returns a pointer to the base string if valid.
-extern jlib_decl const char * peekStringList(std::vector<size32_t> & matches, IBufferedSerialInputStream & in, size32_t & len);
+static constexpr unsigned noGrouping = 0;
+extern jlib_decl const char * peekStringList(std::vector<size32_t> & matches, IBufferedSerialInputStream & in, size32_t & len, unsigned grouping = noGrouping);
 
 
 interface ISerialOutputStream : extends IInterface
