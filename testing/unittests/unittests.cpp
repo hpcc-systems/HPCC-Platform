@@ -22,7 +22,6 @@
 #include "jfile.hpp"
 #include "deftype.hpp"
 #include "rmtfile.hpp"
-#include "thorhelper.hpp"
 #include "libbase58.h"
 
 /*
@@ -705,217 +704,6 @@ class Base58Test : public CppUnit::TestFixture
 CPPUNIT_TEST_SUITE_REGISTRATION( Base58Test );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( Base58Test, "Base58Test" );
 
-thread_local unsigned temp = 0;  // Avoids clever compilers optimizing everything away
-static unsigned skip(unsigned j)
-{
-    temp += j;
-    return j+1;
-}
-static unsigned call_from_thread(unsigned count)
-{
-    unsigned tot = count;
-    for (int j = 0; j < count; j++)
-        tot += skip(j);
-    return tot;
-}
-
-class ThreadedPersistStressTest : public CppUnit::TestFixture
-{
-    CPPUNIT_TEST_SUITE( ThreadedPersistStressTest  );
-        CPPUNIT_TEST(testThreads);
-    CPPUNIT_TEST_SUITE_END();
-
-    void testThreads()
-    {
-        testThreadsX(0);
-        testThreadsX(1);
-        testThreadsX(2);
-        testThreadsX(3);
-        testThreadsX(4);
-        testThreadsX(5);
-        testThreadsX(6);
-    }
-    void testThreadsX(unsigned mode)
-    {
-        unsigned iters = 10000;
-        testThreadsXX(mode, 0, iters);
-        testThreadsXX(mode, 10, iters);
-        testThreadsXX(mode, 1000, iters);
-        testThreadsXX(mode, 2000, iters);
-        testThreadsXX(mode, 4000, iters);
-        testThreadsXX(mode, 8000, iters);
-        testThreadsXX(mode, 16000, iters);
-        testThreadsXX(mode, 32000, iters);
-        testThreadsXX(mode, 64000, iters);
-    }
-    void testThreadsXX(unsigned mode, unsigned count, unsigned iters)
-    {
-        unsigned start = usTick();
-        class Threaded : public IThreaded
-        {
-        public:
-            Threaded(unsigned _count) : count(_count) {}
-            virtual void threadmain() override
-            {
-                ret = call_from_thread(count);
-            }
-            unsigned count;
-            unsigned ret = 0;
-        } t1(count), t2(count), t3(count);
-        class MyThread : public Thread
-        {
-        public:
-            MyThread(unsigned _count) : count(_count) {}
-            virtual int run() override
-            {
-                ret = call_from_thread(count);
-                return 0;
-            }
-            unsigned count;
-            unsigned ret = 0;
-        };
-
-        unsigned ret = 0;
-        switch (mode)
-        {
-        case 0:
-        {
-            CThreadedPersistent thread1("1", &t1), thread2("2", &t2), thread3("3", &t3);
-            for (unsigned i = 0; i < iters; i++)
-            {
-                thread1.start(false);
-                thread2.start(false);
-                thread3.start(false);
-                ret = call_from_thread(count);
-                thread1.join(INFINITE);
-                thread2.join(INFINITE);
-                thread3.join(INFINITE);
-            }
-            ret += t1.ret + t2.ret + t3.ret;
-            break;
-        }
-        case 1:
-        {
-            for (unsigned i = 0; i < iters; i++)
-            {
-                t1.threadmain();
-                t2.threadmain();
-                t3.threadmain();
-                ret = call_from_thread(count);
-            }
-            ret += t1.ret + t2.ret + t3.ret;
-            break;
-        }
-        case 2:
-        {
-            CThreaded tthread1("1", &t1), tthread2("2", &t2), tthread3("3", &t3);
-            for (unsigned i = 0; i < iters; i++)
-            {
-                tthread1.start(false);
-                tthread2.start(false);
-                tthread3.start(false);
-                ret = call_from_thread(count);
-                tthread1.join();
-                tthread2.join();
-                tthread3.join();
-            }
-            ret += t1.ret + t2.ret + t3.ret;
-            break;
-        }
-        case 3:
-        {
-            for (unsigned i = 0; i < iters; i++)
-            {
-                class casyncfor: public CAsyncFor
-                {
-                public:
-                    casyncfor(unsigned _count) :count(_count), ret(0) {}
-                    void Do(unsigned i)
-                    {
-                        ret += call_from_thread(count);
-                    }
-                    unsigned count;
-                    unsigned ret;
-                } afor(count);
-                afor.For(4, 4);
-                ret = afor.ret;
-            }
-            break;
-        }
-        case 4:
-        {
-            CPersistentTask task1("1", &t1), task2("2", &t2), task3("3", &t3);
-            for (unsigned i = 0; i < iters; i++)
-            {
-                task1.start(false);
-                task2.start(false);
-                task3.start(false);
-                ret = call_from_thread(count);
-                task1.join(INFINITE);
-                task2.join(INFINITE);
-                task3.join(INFINITE);
-            }
-            ret += t1.ret + t2.ret + t3.ret;
-            break;
-        }
-        case 5:
-        {
-            MyThread thread1(count), thread2(count), thread3(count);
-            for (unsigned i = 0; i < iters; i++)
-            {
-                thread1.start(false);
-                thread2.start(false);
-                thread3.start(false);
-                ret = call_from_thread(count);
-                thread1.join(INFINITE);
-                thread2.join(INFINITE);
-                thread3.join(INFINITE);
-            }
-            ret += thread1.ret + thread2.ret + thread3.ret;
-            break;
-        }
-        case 6:
-        {
-            IArrayOf<IThread> threads;
-            for (unsigned i = 0; i < iters; i++)
-            {
-                MyThread * thread1 = new MyThread(count);
-                MyThread * thread2 = new MyThread(count);
-                MyThread * thread3 = new MyThread(count);
-                threads.append(*thread1);
-                threads.append(*thread2);
-                threads.append(*thread3);
-
-                thread1->start(false);
-                thread2->start(false);
-                thread3->start(false);
-                ret = call_from_thread(count);
-                thread1->join(INFINITE);
-                thread2->join(INFINITE);
-                thread3->join(INFINITE);
-                ret += thread1->ret + thread2->ret + thread3->ret;
-
-#if 0
-                if (i >= 600)
-                {
-                    threads.remove(0);
-                    threads.remove(0);
-                    threads.remove(0);
-                }
-#endif
-            }
-            break;
-        }
-        }
-        constexpr const char * modes[] = { "ThreadedPersistant", "Sequential", "CThreaded", "AsyncFor", "PersistantTask", "Thread", "ManyThread" };
-        DBGLOG("%s %d, %d [%u], %u", modes[mode], count, usTick() - start, (usTick() - start) / iters / 4, ret);
-    }
-};
-
-CPPUNIT_TEST_SUITE_REGISTRATION( ThreadedPersistStressTest );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( ThreadedPersistStressTest, "ThreadedPersistStressTest" );
-
-
 #ifndef _WIN32
 class PipeRunTest : public CppUnit::TestFixture
 {
@@ -971,7 +759,7 @@ class RelaxedAtomicTimingTest : public CppUnit::TestFixture
 
         for (int a = 0; a < 201; a++)
             ra[a] = 0;
-        
+
         class T : public CThreaded
         {
         public:
@@ -1037,7 +825,7 @@ class RelaxedAtomicTimingTest : public CppUnit::TestFixture
             CriticalSection &lock;
         } t1a(count, ra[0], lock[0], mode), t2a(count, ra[0], lock[0], mode), t3a(count, ra[0], lock[0], mode),
           t1b(count, ra[0], lock[0], mode), t2b(count, ra[1], lock[1], mode), t3b(count, ra[2], lock[2], mode),
-          t1c(count, ra[0], lock[0], mode), t2c(count, ra[100], lock[100], mode), t3c(count, ra[200], lock[200], mode);;  
+          t1c(count, ra[0], lock[0], mode), t2c(count, ra[100], lock[100], mode), t3c(count, ra[200], lock[200], mode);;
         DBGLOG("Testing RelaxedAtomics (test mode %u)", mode);
         t1a.start(false);
         t2a.start(false);
@@ -1080,7 +868,7 @@ class compressToBufferTest : public CppUnit::TestFixture
 
     bool testOne(unsigned len, CompressionMethod method, bool prevResult, const char *options=nullptr)
     {
-        constexpr const char *in = 
+        constexpr const char *in =
           "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
           "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
           "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
@@ -1119,7 +907,7 @@ class compressToBufferTest : public CppUnit::TestFixture
                DBGLOG("compressToBuffer %x size %u did not compress", (byte) method, len);
             ret = false;
         }
-        else 
+        else
         {
             if (!prevResult)
                 DBGLOG("compressToBuffer %x size %u compressed to %u in %lluns", (byte) method, len, compressed.length(), start.elapsedNs());
