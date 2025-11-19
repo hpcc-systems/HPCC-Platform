@@ -609,7 +609,7 @@ public:
             return numParts!=grp.ordinality() || partNum>=grp.ordinality() || !grp.queryNode(partNum).endpoint().equals(ep);
     }
 
-    CriticalSection &prepareFileAndReturnLock(cFileDesc *&file, cDirDesc *parent, const char *filename, unsigned filenameLen, unsigned partNum, unsigned numParts)
+    CriticalSection &prepareFileAndReturnLock(cFileDesc *&file, cDirDesc *parent, const char *filename, unsigned filenameLen, unsigned partNum, unsigned numParts, offset_t &parentnsz, offset_t &nsz, offset_t filesz)
     {
         // In containerized systems, it is common for the file to have a directory for each part (dir-per-part)
         // We know a file is a dir-per-part file if [1] the directory name is numeric and matches the part number
@@ -630,6 +630,7 @@ public:
                         {
                             // Not a dir-per-part file, add part to found file
                             file = it->second.get();
+                            nsz += filesz;
                             return filesCrit;
                         }
                         // Likely this file part is dir-per-part, so don't accidentally add to this file
@@ -649,6 +650,7 @@ public:
                         file = cFileDesc::create(filename, numParts, true, filenameLen, allocator);
                         parent->files.emplace(filename, file);
                     }
+                    parentnsz += filesz;
                     return parent->filesCrit;
                 }
             }
@@ -665,10 +667,13 @@ public:
                         it->second->isDirPerPart = false;
                         file = it->second.release();
                         parent->files.erase(it);
+                        parentnsz -= filesz;
                         CriticalUnblock unblock(parent->filesCrit);
 
                         CriticalBlock block(filesCrit);
                         files.emplace(filename, file);
+                        nsz += filesz; // moved file
+                        nsz += filesz; // found file
                         return filesCrit;
                     }
                 }
@@ -678,6 +683,7 @@ public:
                 CriticalBlock block(filesCrit);
                 file = cFileDesc::create(filename, numParts, false, filenameLen, allocator);
                 files.emplace(filename, file);
+                nsz += filesz;
                 return filesCrit;
             }
         }
@@ -691,11 +697,12 @@ public:
                 file = cFileDesc::create(filename, numParts, false, filenameLen, allocator);
                 files.emplace(filename, file);
             }
+            nsz += filesz;
             return filesCrit;
         }
     }
 
-    cFileDesc *addFile(unsigned drv,const char *fullname,const char *filePath,unsigned filePathOffset,unsigned node,const SocketEndpoint &ep,IGroup &grp,unsigned numnodes,unsigned stripeNum,unsigned numStripedDevices, cDirDesc *parent,XRefAllocator *allocator)
+    cFileDesc *addFile(unsigned drv,const char *fullname,const char *filePath,unsigned filePathOffset,unsigned node,const SocketEndpoint &ep,IGroup &grp,unsigned numnodes,unsigned stripeNum,unsigned numStripedDevices,cDirDesc *parent,offset_t &parentnsz,offset_t &nsz,offset_t filesz,XRefAllocator *allocator)
     {
         unsigned nf;          // num parts
         unsigned pf;          // part num
@@ -705,7 +712,7 @@ public:
         bool misplaced = isMisplaced(pf,nf,ep,grp,filePath,filePathOffset,stripeNum,numStripedDevices);
 
         cFileDesc *file = nullptr;
-        CriticalBlock block(prepareFileAndReturnLock(file,parent,fn,filenameLen,pf,nf));
+        CriticalBlock block(prepareFileAndReturnLock(file,parent,fn,filenameLen,pf,nf,parentnsz,nsz,filesz));
 
         if (misplaced) {
             cMisplacedRec *mp = file->misplaced;
@@ -1360,7 +1367,7 @@ public:
     }
 
 
-    bool scanDirectory(unsigned node, const SocketEndpoint &ep, StringBuffer &path, unsigned drv, cDirDesc *pdir, IFile *cachefile, unsigned filePathOffset, unsigned stripeNum, cDirDesc *parent)
+    bool scanDirectory(unsigned node, const SocketEndpoint &ep, StringBuffer &path, unsigned drv, cDirDesc *pdir, IFile *cachefile, unsigned filePathOffset, unsigned stripeNum, cDirDesc *parent, offset_t &parentnsz)
     {
         checkHeartbeat("Directory scan");
         size32_t dsz = path.length();
@@ -1399,11 +1406,11 @@ public:
                 dirs.append(fname.str());
             else {
                 CDateTime dt;
-                nsz += iter->getFileSize();
+                offset_t filesz = iter->getFileSize();
                 iter->getModifiedTime(dt);
                 if (!fileFiltered(path.str(),dt)) {
                     try {
-                        pdir->addFile(drv,fname.str(),path.str(),filePathOffset,node,ep,*grp,numnodes,stripeNum,numStripedDevices,parent,&allocator);
+                        pdir->addFile(drv,fname.str(),path.str(),filePathOffset,node,ep,*grp,numnodes,stripeNum,numStripedDevices,parent,parentnsz,nsz,filesz,&allocator);
                         processedFiles++;
                     }
                     catch (IException *e) {
@@ -1421,7 +1428,7 @@ public:
             addPathSepChar(path).append(dirs.item(i));
             if (file.get()&&!resetRemoteFilename(file,path.str())) // sneaky way of avoiding cache
                 file.clear();
-            if (!scanDirectory(node,ep,path,drv,pdir->lookupDir(dirs.item(i),&allocator),file,filePathOffset,stripeNum,pdir))
+            if (!scanDirectory(node,ep,path,drv,pdir->lookupDir(dirs.item(i),&allocator),file,filePathOffset,stripeNum,pdir,nsz))
                 return false;
             path.setLength(dsz);
         }
@@ -1480,7 +1487,8 @@ public:
                     addPathSepChar(path).append('d').append(i+1);
 
                     parent.log(false,"Scanning %s directory %s",parent.storagePlane->queryProp("@name"),path.str());
-                    if (!parent.scanDirectory(0,localEP,path,0,parent.root.get(),NULL,path.length(),i+1,nullptr))
+                    offset_t rootsz = 0;
+                    if (!parent.scanDirectory(0,localEP,path,0,parent.root.get(),NULL,path.length(),i+1,nullptr,rootsz))
                     {
                         ok = false;
                         return;
@@ -1491,7 +1499,8 @@ public:
                     StringBuffer hostStr;
                     SocketEndpoint ep = parent.rawgrp->queryNode(i).endpoint();
                     parent.log(false,"Scanning %s directory %s",ep.getEndpointHostText(hostStr).str(),path.str());
-                    if (!parent.scanDirectory(i,ep,path,0,NULL,NULL,path.length(),0,nullptr)) {
+                    offset_t rootsz = 0;
+                    if (!parent.scanDirectory(i,ep,path,0,NULL,NULL,path.length(),0,nullptr,rootsz)) {
                         ok = false;
                         return;
                     }
@@ -1500,8 +1509,9 @@ public:
                         i = (i+r)%n;
                         setReplicateFilename(path,1);
                         ep = parent.rawgrp->queryNode(i).endpoint();
+                        rootsz = 0;
                         parent.log(false,"Scanning %s directory %s",ep.getEndpointHostText(hostStr.clear()).str(),path.str());
-                        if (!parent.scanDirectory(i,ep,path,1,NULL,NULL,path.length(),0,nullptr)) {
+                        if (!parent.scanDirectory(i,ep,path,1,NULL,NULL,path.length(),0,nullptr,rootsz)) {
                             ok = false;
                         }
                     }
@@ -1959,8 +1969,7 @@ public:
         for (unsigned drv=0;drv<drvs;drv++) {
             if (abort)
                 return;
-            if ((!d->files.empty())||(d->totalsize[drv]!=0)||d->empty(drv)) { // final empty() is to make sure only truly empty dirs get added
-                                                                                  // but not empty parents
+            if (!d->empty(drv)) {
                 Owned<IPropertyTree> dt = createPTree("Directory");
                 if (drv) {
                     StringBuffer tmp(name);
