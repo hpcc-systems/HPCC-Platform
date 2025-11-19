@@ -225,6 +225,7 @@ Optional storage plane name identifies the storage device on which the file is s
         file/
             @branchPlane
             @leafPlane
+            @blobPlane
 
 Optional storage plane names associating all nodes of a given kind to a storage plane. When present, the value must match one of the configured storage plane names. Omission, or empty, with the default plane for the file.
 
@@ -244,7 +245,9 @@ The optional configuration of memory expansion modeling for each index node kind
         node/
             @kind
 
-A value of zero for branch nodes or one for leaf nodes. Required to specify a leaf node, and optional to specify a branch node. A `node` without `kind` is ignored.
+One of zero or "branch" for branch nodes. One of one or "leaf" for leaf nodes. One of two or "blob" for blob nodes.
+
+In all cases, the numeric value takes precedence over the text equivalent. A `node` without `@kind` is ignored.
 
     memory/
         node/

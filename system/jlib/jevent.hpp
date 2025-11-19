@@ -351,6 +351,11 @@ public:
     bool setValue(EventAttr attr, const char* value);
     bool setValue(EventAttr attr, __uint64 value);
     bool setValue(EventAttr attr, bool value);
+    // Ambiguity resolution: ensures unsigned values are correctly cast to __uint64 and routed to the intended overload.
+    inline bool setValue(EventAttr attr, unsigned value)
+    {
+        return setValue(attr, __uint64(value));
+    }
 
 public:
     CEvent();

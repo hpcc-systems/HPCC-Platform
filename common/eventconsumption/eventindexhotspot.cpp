@@ -52,63 +52,31 @@ class CHotspotEventVisitor : public CInterfaceOf<IEventVisitor>
             this->path.set(_path);
         }
 
-        void recordEvent(offset_t offset, BucketKind bucketKind)
+        void recordEvent(offset_t offset, NodeKind nodeKind)
         {
             bucket_type bucket = page2bucket(offset2page(offset, defaultPageBits), granularityBits());
             bucket_type key = bucket2activityKey(bucket);
             unsigned short index = bucket2activityIndex(bucket);
-            activity[bucketKind].buckets[key][index]++;
-            if (bucket < activity[bucketKind].range.first)
-                activity[bucketKind].range.first = bucket;
-            if (bucket > activity[bucketKind].range.second)
-                activity[bucketKind].range.second = bucket;
+            activity[nodeKind].buckets[key][index]++;
+            if (bucket < activity[nodeKind].range.first)
+                activity[nodeKind].range.first = bucket;
+            if (bucket > activity[nodeKind].range.second)
+                activity[nodeKind].range.second = bucket;
         }
 
         void forEachBucket(IBucketVisitor& visitor)
         {
-            Activity& leaf = activity[BucketLeaf];
-            Activity& branch = activity[BucketBranch];
             visitor.arrive(id, path);
-            bucket_type bucket = std::min(leaf.range.first, branch.range.first);
-            if (bucket != std::numeric_limits<bucket_type>::max())
+            for (unsigned kind = 0; kind < NumNodeKinds; kind++)
             {
-                bool haveLeaves = !leaf.buckets.empty();
-                bool haveBranches = !branch.buckets.empty();
-                // Ambiguity exists when the greatest leaf bucket is the least branch bucket. It
-                // can be ignored if the bucket visitor does not want ambiguous buckets.
-                bool haveAmbiguity = visitor.wantAmbiguous() && haveLeaves && haveBranches && leaf.range.second == branch.range.first;
-                if (haveAmbiguity)
+                Activity& act = activity[kind];
+                if (act.range.first != std::numeric_limits<bucket_type>::max() && !act.buckets.empty())
                 {
-                    if (leaf.range.second > leaf.range.first)
-                        leaf.range.second--;
-                    else
-                        haveLeaves = false;
-                    if (branch.range.second > branch.range.first)
-                        branch.range.first++;
-                    else
-                        haveBranches = false;
-                }
-                if (haveLeaves)
-                {
-                    while (bucket <= leaf.range.second)
+                    for (bucket_type bucket = act.range.first; bucket <= act.range.second; bucket++)
                     {
-                        stat_type events = queryBucket(leaf.buckets, bucket);
+                        stat_type events = queryBucket(act.buckets, bucket);
                         if (events)
-                            visitor.visitBucket(bucket, BucketLeaf, events);
-                        bucket++;
-                    }
-                }
-                if (haveAmbiguity)
-                    visitor.visitBucket(bucket, BucketAmbiguous, queryBucket(leaf.buckets, bucket) + queryBucket(branch.buckets, bucket));
-                if (haveBranches)
-                {
-                    bucket = branch.range.first;
-                    while (bucket <= branch.range.second)
-                    {
-                        stat_type events = queryBucket(branch.buckets, bucket);
-                        if (events)
-                            visitor.visitBucket(bucket, BucketBranch, events);
-                        bucket++;
+                            visitor.visitBucket(bucket, NodeKind(kind), events);
                     }
                 }
             }
@@ -142,7 +110,7 @@ class CHotspotEventVisitor : public CInterfaceOf<IEventVisitor>
         CHotspotEventVisitor& container; // back reference to obtain shared configuration
         __uint64 id{0};
         StringAttr path;
-        Activity activity[BucketAmbiguous]; // incoming activity is never ambiguous, this storage is not ambiguous
+        Activity activity[NumNodeKinds];
     };
 
 public: // IEventVisitor
@@ -160,8 +128,9 @@ public: // IEventVisitor
                 return true;
             __uint64 fileId = event.queryNumericValue(EvAttrFileId);
             auto [it, inserted] = activity.try_emplace(fileId, *this, fileId);
+            NodeKind nodeKind = queryIndexNodeKind(event);
             if (observedEvents.count(type))
-                it->second.recordEvent(event.queryNumericValue(EvAttrFileOffset), event.queryNumericValue(EvAttrNodeKind)? BucketLeaf : BucketBranch);
+                it->second.recordEvent(event.queryNumericValue(EvAttrFileOffset), nodeKind);
             else
                 it->second.setPath(event.queryTextValue(EvAttrPath));
         }

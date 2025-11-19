@@ -251,7 +251,8 @@ Filters:
                                     of MetaFileInformation, by file ID, and
                                     applies the filter to the path.
                                 - FileOffset: numeric
-                                - NodeKind: numeric, 0 or 1
+                                - NodeKind: numeric, 0 (branch), 1 (leaf), or 2
+                                    (blob)
                                 - ReadTime: numeric
                                 - ExpandTime: numeric
                                 - InMemorySize: numeric
