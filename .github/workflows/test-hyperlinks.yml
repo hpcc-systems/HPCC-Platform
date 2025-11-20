@@ -146,7 +146,7 @@ jobs:
               echo $FILE >> missingFiles.txt
               continue
             fi  
-            grep -onHE -e "\]\([^\)]+" -e "\`\`\`" -e "http://[^\ \;\"\'\<\>\,\`\)]+" -e "https://[^\ \;\"\'\<\>\,\`\)]+" ${FILE} | sed 's/](//'  > links.tmp
+            grep -onHE -e "\]\([^\)]+" -e "\`\`\`" -e "\]\(https?://[^\ \;\"\'\<\>\,\`\)]+" ${FILE} | sed -e 's/](//'  > links.tmp
             FLAG=0
             for LINE in $( cat links.tmp )
             do 
