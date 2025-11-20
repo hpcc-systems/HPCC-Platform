@@ -39,7 +39,8 @@
 class jlib_decl PTreeDeserializeContext
 {
 public:
-    std::vector<size32_t> matchOffsets{30};
+    static constexpr size32_t expectedMaximumAttributeOffsetCount = 30;
+    std::vector<size32_t> matchOffsets{expectedMaximumAttributeOffsetCount};
 };
 
 ///////////////////
