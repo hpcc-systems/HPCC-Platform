@@ -143,13 +143,12 @@ bool CJHBlockCompressedSearchNode::fetchPayload(unsigned int index, char *dst, P
     const char * p = keyBuf + index*keyRecLen;
     if (keyHdr->hasSpecialFileposition())
     {
-        memcpy(dst+keyCompareLen, p+keyCompareLen, keyLen-keyCompareLen);
         if (hasFilePosition)
-            memcpy(dst+keyLen, p+keyLen, sizeof(offset_t));
+            memcpy(dst+keyCompareLen, p+keyCompareLen, keyLen + sizeof(offset_t) - keyCompareLen);
         else
         {
-            offset_t zeroPos = 0;
-            memcpy(dst+keyLen, &zeroPos, sizeof(offset_t));
+            memcpy(dst+keyCompareLen, p+keyCompareLen, keyLen-keyCompareLen);
+            *((offset_t*) dst+keyLen) = 0;
         }
     }
     else
@@ -265,7 +264,7 @@ bool CBlockCompressedWriteNode::add(offset_t pos, const void *indata, size32_t i
         hdr.keyBytes += sizeof(context.compressionMethod);
         
         bool hasFilepos = !context.zeroFilePos;
-        memcpy(keyPtr, &hasFilepos, sizeof(bool));
+        *(bool*)keyPtr = hasFilepos;
         keyPtr += sizeof(bool);
         hdr.keyBytes += sizeof(bool);
 
@@ -278,8 +277,7 @@ bool CBlockCompressedWriteNode::add(offset_t pos, const void *indata, size32_t i
     }
 
     unsigned writeOptions = KeyCompressor::TrailingFilePosition | (context.zeroFilePos ? KeyCompressor::NoFilePosition : 0);
-    int written = compressor.writekey(pos, (const char *)indata, insize, writeOptions);
-    if (0xffff == hdr.numKeys || written == 0)
+    if (0xffff == hdr.numKeys || 0 == compressor.writekey(pos, (const char *)indata, insize, writeOptions))
         return false;
 
     if (insize>keyLen)
@@ -372,13 +370,12 @@ bool CJHBlockCompressedVarNode::fetchPayload(unsigned int num, char *dst, Payloa
         _WINREV(reclen);
         if (keyHdr->hasSpecialFileposition())
         {
-            memcpy(dst+keyCompareLen, p+keyCompareLen, reclen-keyCompareLen);
             if (hasFilePosition)
-                memcpy(dst+reclen, p+reclen, sizeof(offset_t));
+                memcpy(dst+keyCompareLen, p+keyCompareLen, reclen + sizeof(offset_t) - keyCompareLen);
             else
             {
-                offset_t zeroPos = 0;
-                memcpy(dst+reclen, &zeroPos, sizeof(offset_t));
+                memcpy(dst+keyCompareLen, p+keyCompareLen, reclen-keyCompareLen);
+                *((offset_t*) dst+reclen) = 0;
             }
         }
         else
