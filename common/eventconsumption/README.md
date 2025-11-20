@@ -125,6 +125,12 @@ All numeric comparisons are supported. A `timestamp` value will be converted to 
 
 All index context events include the `FileId` attribute. The `FileInformation` meta event includes the `Path` attribute. All index events can filter `FileId` using either the actual numeric value or the related `Path` value from a previously seen `FileInformation` meta event. A `FileId` term with a file path pattern follows [text](#text) rules while a term with a file identifier follows [numeric](#numeric) rules.
 
+2. NodeKind Attribute
+
+Events using `NodeKind` can be filtered by either the numerical value (0, 1, or 2) or the text equivalent (*branch*, *leaf*, *blob*, respectively). Text is converted to the numeric equivalent, and numeric values are compared. With only three valid values, number ranges are not supported but all other numeric comparisons are available.
+
+Remember that `IndexPayload` does not use `NodeKind` but has an implied logical value of `LeafNode`. Likewise for `FileInformation`, even though the value has no meaning for the meta event. `NodeKind` cannot, by itself, be used to block all index events for leaf nodes.
+
 ### IEventModel
 
 An extension of `IEventVisitationLink`, this abstraction describes visitors whose purpose is to more broadly transform the event stream. Possible changes include:
