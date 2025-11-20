@@ -930,7 +930,7 @@ public:
     {
         // Generate a list of strings in pairs for testing peekStringList grouping:
         // - The first string must not be empty
-        // - The second string can be be empty (zero-length strings), this equates to a grouping of 2 for peekStringList
+        // - The second string can be empty (zero-length strings), this equates to a grouping of 2 for peekStringList
         // - The list is terminated with a null
         size32_t got = 0;
         for (size32_t i = 0; i < numStrings; i++)
@@ -1060,7 +1060,7 @@ public:
             CPPUNIT_ASSERT_MESSAGE("String not matching expected results", memcmp(str, pairedStrings[i].str(), pairedStrings[i].length() + 1) == 0);
 
             if (!valueExpected)
-                CPPUNIT_ASSERT_MESSAGE("Attribute name must not be empty", str[1] != '\0');
+                CPPUNIT_ASSERT_MESSAGE("Attribute name must not be empty", str[0] != '\0');
 
             valueExpected = !valueExpected;
         }
