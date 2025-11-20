@@ -143,6 +143,7 @@ export = {
         Compressed: "Compressed",
         CompressedSize: "Compressed Size",
         Compression: "Compression",
+        CompressionType: "Compression Type",
         ComputerUpTime: "Computer Up Time",
         Condition: "Condition",
         ConfigureService: "Configure service",

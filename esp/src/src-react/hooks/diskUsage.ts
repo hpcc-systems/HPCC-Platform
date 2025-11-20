@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { MachineService, WsDFUXRef, WsMachineEx } from "@hpcc-js/comms";
+import { MachineService, WsDFUXRefEx, WsMachineEx } from "@hpcc-js/comms";
 
 export interface DirectoryEx {
     Cluster: string;
@@ -14,7 +14,7 @@ export interface DirectoryEx {
 }
 
 export interface XREFDirectories {
-    nodes: WsDFUXRef.XRefNode[];
+    nodes: WsDFUXRefEx.XRefNode[];
     directories: DirectoryEx[];
 }
 
