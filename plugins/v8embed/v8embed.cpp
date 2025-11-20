@@ -546,7 +546,7 @@ public:
         const byte *inData = (const byte *) setData;
         const byte *endData = inData + totalBytes;
         int numElems;
-        if (elemSize == UNKNOWN_LENGTH)
+        if (isUnknownLength(elemSize))
         {
             numElems = 0;
             // Will need 2 passes to work out how many elements there are in the set :(
@@ -598,13 +598,13 @@ public:
                 rtlDataAttr utfText;
                 rtlStrToUtf8X(utfCharCount, utfText.refstr(), numChars, (const char *) inData);
                 thisItem = v8::String::New(utfText.getstr(), rtlUtf8Size(utfCharCount, utfText.getstr()));
-                if (elemSize == UNKNOWN_LENGTH)
+                if (isUnknownLength(elemSize))
                     thisSize = numChars + 1;
                 break;
             }
             case type_string:
             {
-                if (elemSize == UNKNOWN_LENGTH)
+                if (isUnknownLength(elemSize))
                 {
                     thisSize = * (size32_t *) inData;
                     inData += sizeof(size32_t);
@@ -627,7 +627,7 @@ public:
                 break;
             case type_unicode:
             {
-                if (elemSize == UNKNOWN_LENGTH)
+                if (isUnknownLength(elemSize))
                 {
                     thisSize = (* (size32_t *) inData) * sizeof(UChar); // NOTE - it's in chars...
                     inData += sizeof(size32_t);
@@ -637,7 +637,7 @@ public:
             }
             case type_utf8:
             {
-                assertex (elemSize == UNKNOWN_LENGTH);
+                assertex (isUnknownLength(elemSize));
                 size32_t numChars = * (size32_t *) inData;
                 inData += sizeof(size32_t);
                 thisSize = rtlUtf8Size(numChars, inData);
@@ -754,7 +754,7 @@ public:
         rtlRowBuilder out;
         byte *outData = NULL;
         size32_t outBytes = 0;
-        if (elemSize != UNKNOWN_LENGTH)
+        if (!isUnknownLength(elemSize))
         {
             out.ensureAvailable(numResults * elemSize); // MORE - check for overflow?
             outData = out.getbytes();
@@ -793,7 +793,7 @@ public:
                 v8::String::AsciiValue ascii(elem);
                 const char * text =  *ascii;
                 size_t lenBytes = ascii.length();
-                if (elemSize == UNKNOWN_LENGTH)
+                if (isUnknownLength(elemSize))
                 {
                     if (elemType == type_string)
                     {
@@ -831,7 +831,7 @@ public:
                 size32_t numchars = rtlUtf8Length(lenBytes, text);
                 if (elemType == type_utf8)
                 {
-                    assertex (elemSize == UNKNOWN_LENGTH);
+                    assertex (isUnknownLength(elemSize));
                     out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
                     outData = out.getbytes() + outBytes;
                     * (size32_t *) outData = numchars;
@@ -840,7 +840,7 @@ public:
                 }
                 else
                 {
-                    if (elemSize == UNKNOWN_LENGTH)
+                    if (isUnknownLength(elemSize))
                     {
                         out.ensureAvailable(outBytes + numchars*sizeof(UChar) + sizeof(size32_t));
                         outData = out.getbytes() + outBytes;
@@ -860,7 +860,7 @@ public:
             default:
                 rtlFail(0, "v8embed: type mismatch - unsupported return type");
             }
-            if (elemSize != UNKNOWN_LENGTH)
+            if (!isUnknownLength(elemSize))
             {
                 outData += elemSize;
                 outBytes += elemSize;

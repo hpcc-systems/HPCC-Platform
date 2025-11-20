@@ -1135,7 +1135,7 @@ public:
                 rtlRowBuilder out;
                 byte *outData = NULL;
                 size32_t outBytes = 0;
-                if (elemSize != UNKNOWN_LENGTH)
+                if (!isUnknownLength(elemSize))
                 {
                     outBytes = numResults * elemSize;  // MORE - check for overflow?
                     out.ensureAvailable(outBytes);
@@ -1147,7 +1147,7 @@ public:
                     const char *text = (*iter).data();
                     if (elemType == type_string)
                     {
-                        if (elemSize == UNKNOWN_LENGTH)
+                        if (isUnknownLength(elemSize))
                         {
                             out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
                             outData = out.getbytes() + outBytes;
@@ -1163,7 +1163,7 @@ public:
                     }
                     else
                     {
-                        if (elemSize == UNKNOWN_LENGTH)
+                        if (isUnknownLength(elemSize))
                         {
                             out.ensureAvailable(outBytes + lenBytes + 1);
                             outData = out.getbytes() + outBytes;
@@ -1342,7 +1342,7 @@ public:
             while (inData < endData)
             {
                 int thisSize;
-                if (elemSize == UNKNOWN_LENGTH)
+                if (isUnknownLength(elemSize))
                 {
                     if (elemType==type_varstring)
                         thisSize = strlen((const char *) inData) + 1;

@@ -334,7 +334,7 @@ bool needVarStringCompare(ITypeInfo * leftType, ITypeInfo * rightType)
 {
     unsigned lSize = leftType->getSize();
     unsigned rSize = rightType->getSize();
-    return (lSize != rSize) || (lSize == UNKNOWN_LENGTH);
+    return (lSize != rSize) || (isUnknownLength(lSize));
 }
 
 
@@ -482,12 +482,12 @@ bool canRemoveStringCast(ITypeInfo * to, ITypeInfo * from)
     unsigned toSize = to->getSize();
 
     //Special case string conversions that don't require us to copy any data.
-    if ((toSize == UNKNOWN_LENGTH) || ((fromSize != UNKNOWN_LENGTH) && (toSize <= fromSize)))
+    if ((isUnknownLength(toSize)) || ((!isUnknownLength(fromSize)) && (toSize <= fromSize)))
     {
         switch (from->getTypeCode())
         {
         case type_varstring:
-            if (toSize != UNKNOWN_LENGTH)
+            if (!isUnknownLength(toSize))
                 break;
             //fall through
         case type_data:
@@ -892,7 +892,7 @@ bool isNullAssign(const CHqlBoundTarget & target, IHqlExpression * expr)
     ITypeInfo * targetType = target.expr->queryType();
     //if an assignment to a local variable size temporary object, then it is ok to omit an assignment of null
     //since it won't change its value, and it isn't going to be assigned more than once.
-    if ((targetType->getSize() == UNKNOWN_LENGTH) && target.length && hasWrapperModifier(targetType) && !hasModifier(targetType, typemod_member))
+    if (isUnknownLength(targetType->getSize()) && target.length && hasWrapperModifier(targetType) && !hasModifier(targetType, typemod_member))
     {
         ITypeInfo * exprType = expr->queryType();
         switch (exprType->getTypeCode())
@@ -1025,7 +1025,7 @@ bool CHqlBoundTarget::extractFrom(const CHqlBoundExpr & bound)
         if (bound.length->getOperator() != no_variable)
             return false;
     }
-    else if (boundType->getSize() == UNKNOWN_LENGTH)
+    else if (isUnknownLength(boundType->getSize()))
     {
         type_t btc = boundType->getTypeCode();
         if ((btc != type_varstring) && (btc != type_varunicode) && !hasLinkCountedModifier(boundType))
@@ -1051,7 +1051,7 @@ bool CHqlBoundTarget::extractFrom(const CHqlBoundExpr & bound)
 bool CHqlBoundTarget::isFixedSize() const
 { 
     validate();
-    return queryType()->getSize() != UNKNOWN_LENGTH;
+    return !isUnknownLength(queryType()->getSize());
 }
 
 
@@ -1065,7 +1065,7 @@ void CHqlBoundTarget::validate() const
         {
             //No checks to apply in these cases.
         }
-        else if (type->getSize() != UNKNOWN_LENGTH)
+        else if (!isUnknownLength(type->getSize()))
         {
             assertex(!length);
         }
@@ -3602,7 +3602,7 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
     case no_constant:
         {
             ITypeInfo * type = expr->queryType();
-            if ((options.inlineStringThreshold > 0) && (type->getSize() > options.inlineStringThreshold) && (type->getSize() != UNKNOWN_LENGTH))
+            if ((options.inlineStringThreshold > 0) && (type->getSize() > options.inlineStringThreshold) && !isUnknownLength(type->getSize()))
             {
                 IHqlExpression * literal = addBigLiteral((const char *)expr->queryValue()->queryValue(), type->getSize());
                 Owned<ITypeInfo> retType = makeReferenceModifier(LINK(type));
@@ -3804,7 +3804,7 @@ void HqlCppTranslator::buildReturn(BuildCtx & ctx, IHqlExpression * expr, ITypeI
 
     node_operator op = expr->getOperator();
     type_t returntc = retType->getTypeCode();
-    if ((retType->getSize() == UNKNOWN_LENGTH) && (returntc == type_varstring))
+    if (isUnknownLength(retType->getSize()) && (returntc == type_varstring))
     {
         if (hasConstModifier(retType) && (hasConstModifier(exprType) || expr->queryValue()))
         {
@@ -4519,7 +4519,7 @@ void HqlCppTranslator::buildSimpleExpr(BuildCtx & ctx, IHqlExpression * expr, CH
             ITypeInfo * exprType = expr->queryType();
             IHqlExpression * child = expr->queryChild(0);
             ITypeInfo * childType = child->queryType();
-            if ((exprType->getTypeCode() == type_string) && (exprType->getSize() == UNKNOWN_LENGTH))
+            if ((exprType->getTypeCode() == type_string) && isUnknownLength(exprType->getSize()))
             {
                 if ((childType->getTypeCode() == type_string) && (exprType->queryCharset() == childType->queryCharset()))
                 {
@@ -4550,7 +4550,7 @@ void HqlCppTranslator::buildSimpleExpr(BuildCtx & ctx, IHqlExpression * expr, CH
             case type_string:
             case type_data:
             case type_qstring:
-                if (type->getSize() == UNKNOWN_LENGTH)
+                if (isUnknownLength(type->getSize()))
                     simple = true;
                 break;
             }
@@ -4678,7 +4678,7 @@ void HqlCppTranslator::createTempFor(BuildCtx & ctx, ITypeInfo * _exprType, CHql
     }
 
     size32_t size = exprType->getSize();
-    if (size == UNKNOWN_LENGTH)
+    if (isUnknownLength(size))
     {
         switch (tc)
         {
@@ -4843,10 +4843,10 @@ void HqlCppTranslator::buildTempExpr(BuildCtx & ctx, IHqlExpression * expr, CHql
     if (isCast(expr))
     {
         ITypeInfo * exprType = expr->queryType();
-        if (exprType->getStringLen() == UNKNOWN_LENGTH)
+        if (isUnknownLength(exprType->getStringLen()))
         {
             unsigned bestLen = getBestLengthEstimate(expr);
-            if (bestLen != UNKNOWN_LENGTH)
+            if (!isUnknownLength(bestLen))
             {
                 IHqlExpression * uncast = expr->queryChild(0);
                 Owned<ITypeInfo> stretchedType = getStretchedType(bestLen, exprType);
@@ -5994,11 +5994,11 @@ static IHqlExpression * getCastParameter(IHqlExpression * curParam, ITypeInfo * 
         switch (atc)
         {
         case type_unicode:
-            if ((argType->getSize() == UNKNOWN_LENGTH) && (ptc == type_varunicode))
+            if (isUnknownLength(argType->getSize()) && (ptc == type_varunicode))
                 return LINK(curParam);
             break;
         case type_string:
-            if ((argType->getSize() == UNKNOWN_LENGTH) && 
+            if (isUnknownLength(argType->getSize()) &&
                 ((ptc == type_varstring) && (argType->queryCharset() == paramType->queryCharset())))
                 return LINK(curParam);
             break;
@@ -6039,7 +6039,7 @@ static IHqlExpression * getCastParameter(IHqlExpression * curParam, ITypeInfo * 
             break;
         case type_unicode:
             //Don't need cast between different locales
-            if ((argSize != paramType->getSize()) && (argSize != UNKNOWN_LENGTH))
+            if ((argSize != paramType->getSize()) && (!isUnknownLength(argSize)))
             {
                 Owned<ITypeInfo> modArgType = makeUnicodeType(argType->getStringLen(), curParam->queryType()->queryLocale());
                 return ensureExprType(curParam, modArgType);
@@ -6212,7 +6212,7 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
     {
     case type_varstring:
     case type_varunicode:
-        if (retType->getSize() == UNKNOWN_LENGTH)
+        if (isUnknownLength(retType->getSize()))
         {
             if (hasConstModifier(retType))
                 break;
@@ -6241,7 +6241,7 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
     case type_qstring:
     case type_unicode:
     case type_utf8:
-        if (retType->getSize() == UNKNOWN_LENGTH)
+        if (isUnknownLength(retType->getSize()))
         {
             OwnedHqlExpr lenVar;
             OwnedHqlExpr strVar;
@@ -6542,7 +6542,7 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
         case type_qstring:
         case type_unicode:
         case type_utf8:
-            if (argType->getSize() == UNKNOWN_LENGTH)
+            if (isUnknownLength(argType->getSize()))
                 args.append(*getBoundLength(bound));
             /*
             Ensure parameter is passed as non-const if the argument does not have const.
@@ -6668,7 +6668,7 @@ void HqlCppTranslator::doBuildExprCall(BuildCtx & ctx, IHqlExpression * expr, CH
 void HqlCppTranslator::doBuildAssignCall(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr)
 {
     ITypeInfo * exprType = expr->queryType()->queryPromotedType();
-    if ((exprType->getSize() == UNKNOWN_LENGTH) && target.isFixedSize())
+    if (isUnknownLength(exprType->getSize()) && target.isFixedSize())
     {
         doBuildExprAssign(ctx, target, expr);
         return;
@@ -6852,7 +6852,7 @@ void HqlCppTranslator::doBuildAssignCast(BuildCtx & ctx, const CHqlBoundTarget &
 
     CHqlBoundExpr pure;
     bool assignDirect = false;
-    if ((exprType->getSize() == UNKNOWN_LENGTH) && (targetType->getTypeCode() == exprType->getTypeCode()) &&
+    if (isUnknownLength(exprType->getSize()) && (targetType->getTypeCode() == exprType->getTypeCode()) &&
         (isStringType(exprType) || isUnicodeType(exprType)))
     {
         OwnedITypeInfo stretched = getStretchedType(UNKNOWN_LENGTH, targetType->queryPromotedType());
@@ -6947,7 +6947,7 @@ void HqlCppTranslator::doBuildExprCast(BuildCtx & ctx, IHqlExpression * expr, CH
     case no_substring:
         {
             ITypeInfo * argType = arg->queryType();
-            if ((exprType->getSize() != UNKNOWN_LENGTH) && (argType->getSize() == UNKNOWN_LENGTH) && (exprType->getTypeCode() == argType->getTypeCode()))
+            if (!isUnknownLength(exprType->getSize()) && isUnknownLength(argType->getSize()) && (exprType->getTypeCode() == argType->getTypeCode()))
             {
                 OwnedITypeInfo stretched = getStretchedType(exprType->getStringLen(), argType);
                 if (stretched == exprType)
@@ -7028,9 +7028,9 @@ void HqlCppTranslator::doBuildCastViaTemp(BuildCtx & ctx, ITypeInfo * to, CHqlBo
 
     //If the temporary size can be deduced, then use a fixed length temporary to save a heap operation.
     ITypeInfo * fromType = pure.expr->queryType();
-    if (isStringType(to) && to->getSize() == UNKNOWN_LENGTH && isStringType(fromType) && !pure.length)
+    if (isStringType(to) && isUnknownLength(to->getSize()) && isStringType(fromType) && !pure.length)
     {
-        assertex(fromType->getSize() != UNKNOWN_LENGTH);
+        assertex(!isUnknownLength(fromType->getSize()));
         targetType.setown(getStretchedType(fromType->getStringLen(), to));
     }
 
@@ -7361,7 +7361,7 @@ void HqlCppTranslator::doBuildExprCast(BuildCtx & ctx, ITypeInfo * to, CHqlBound
         case type_row:
             break;
         case type_varstring:
-            if ((to->getSize() == UNKNOWN_LENGTH) && (from->getTypeCode() == type_varstring))
+            if (isUnknownLength(to->getSize()) && (from->getTypeCode() == type_varstring))
                 tgt.set(pure);
             else
                 doBuildCastViaTemp(ctx, to, pure, tgt);
@@ -7383,7 +7383,7 @@ void HqlCppTranslator::doBuildExprCast(BuildCtx & ctx, ITypeInfo * to, CHqlBound
                             tgt.length.set(pure.length);
 
                         Owned<ITypeInfo> newType;
-                        if (to->getSize() == UNKNOWN_LENGTH)
+                        if (isUnknownLength(to->getSize()))
                             newType.setown(getStretchedType(from->getSize(), to));
                         else
                             newType.set(to);
@@ -7409,7 +7409,7 @@ void HqlCppTranslator::doBuildExprCast(BuildCtx & ctx, ITypeInfo * to, CHqlBound
         case type_unicode:
         case type_varunicode:
         case type_utf8:
-            if ((from->getTypeCode() == to->getTypeCode()) && (to->getSize() == UNKNOWN_LENGTH))
+            if ((from->getTypeCode() == to->getTypeCode()) && isUnknownLength(to->getSize()))
             {
                 tgt.set(pure);
                 return;
@@ -7971,7 +7971,7 @@ bool HqlCppTranslator::ifRequiresAssignment(BuildCtx & ctx, IHqlExpression * exp
     IHqlExpression * trueExpr = expr->queryChild(1);
     IHqlExpression * falseExpr = expr->queryChild(2);
 
-    if (requiresTemp(ctx, trueExpr, true) || requiresTemp(ctx, falseExpr, true) || expr->queryType()->getSize() == UNKNOWN_LENGTH)
+    if (requiresTemp(ctx, trueExpr, true) || requiresTemp(ctx, falseExpr, true) || isUnknownLength(expr->queryType()->getSize()))
         return true;
     if (trueExpr->queryType() != falseExpr->queryType() && isStringType(expr->queryType()))
         return true;
@@ -8182,7 +8182,7 @@ void HqlCppTranslator::doBuildExprEmbedBody(BuildCtx & ctx, IHqlExpression * exp
     if (tgt)
     {
         ITypeInfo * type = expr->queryType();
-        assertex(type->getTypeCode() == type_varstring || type->getSize() != UNKNOWN_LENGTH);
+        assertex(type->getTypeCode() == type_varstring || !isUnknownLength(type->getSize()));
         tgt->expr.set(quoted);
     }
     else
@@ -8435,7 +8435,7 @@ void HqlCppTranslator::doBuildExprList(BuildCtx & ctx, IHqlExpression * expr, CH
         {
             LinkedHqlExpr values = expr;
             //MORE: Also alien data types and other weird things...
-            //if (childType->getSize() == UNKNOWN_LENGTH)
+            //if (isUnknownLength(childType->getSize()))
             if (expr->numChildren() == 0)
             {
                 tgt.length.setown(getSizetConstant(0));
@@ -8867,7 +8867,7 @@ static unsigned getMemcmpSize(IHqlExpression * left, IHqlExpression * right, boo
     case type_string:
     case type_data:
     case type_qstring:
-        if (size != UNKNOWN_LENGTH)
+        if (!isUnknownLength(size))
             return size;
         break;
     }
@@ -9902,9 +9902,9 @@ void HqlCppTranslator::doBuildExprTransfer(BuildCtx & ctx, IHqlExpression * expr
 
     //Must calculate the size of the bound value before we start messing about with stripping casts etc.
     OwnedHqlExpr size;
-    if (to->getSize() == UNKNOWN_LENGTH)
+    if (isUnknownLength(to->getSize()))
     {
-        if (from->getSize() == UNKNOWN_LENGTH)
+        if (isUnknownLength(from->getSize()))
             size.setown(getBoundSize(bound));
         else
             size.setown(getSizetConstant(from->getSize()));
@@ -9923,7 +9923,7 @@ void HqlCppTranslator::doBuildExprTransfer(BuildCtx & ctx, IHqlExpression * expr
         if (!to->isReference())
             to = makeReferenceModifier(to);
         tgt.expr.setown(createValue(no_implicitcast, to, LINK(bound.expr)));
-        if (to->getSize() == UNKNOWN_LENGTH)
+        if (isUnknownLength(to->getSize()))
         {
             switch (to->getTypeCode())
             {
@@ -9996,7 +9996,7 @@ void HqlCppTranslator::doBuildExprOrdered(BuildCtx & ctx, IHqlExpression * expr,
     //create a compare function....
     ITypeInfo * elementType = boundList.expr->queryType()->queryChildType();
     unsigned elementSize = elementType->getSize();
-    if (elementSize == UNKNOWN_LENGTH)
+    if (isUnknownLength(elementSize))
         throwError(HQLERR_OrderOnVarlengthStrings);
 
     StringBuffer tempName;
@@ -11193,7 +11193,7 @@ void HqlCppTranslator::assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & tar
     IHqlExpression * targetVar = target.expr;
     HqlExprArray args;
     assertex(targetVar);
-    assertex(toSize != UNKNOWN_LENGTH);
+    assertex(!isUnknownLength(toSize));
 
     switch(toType)
     {
@@ -11294,7 +11294,7 @@ void HqlCppTranslator::assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & tar
                                     default: UNIMPLEMENTED;
                                     }
 
-                                    if ((toSize < srclen) || (srclen==UNKNOWN_LENGTH) || (toType != type_varstring))
+                                    if ((toSize < srclen) || (isUnknownLength(srclen)) || (toType != type_varstring))
                                     {
                                         args.append(*getSizetConstant(toSize));
                                         args.append(*getElementPointer(targetVar));
@@ -12334,7 +12334,7 @@ static IHqlExpression *createActualFromFormal(IHqlExpression *param)
     case type_dictionary:
     case type_table:
     case type_groupedtable:
-        if (paramType->getSize() == UNKNOWN_LENGTH)
+        if (isUnknownLength(paramType->getSize()))
         {
             if (hasOutOfLineModifier(paramType) || hasLinkCountedModifier(paramType))
             {
@@ -12912,7 +12912,7 @@ IHqlExpression * HqlCppTranslator::getBoundCount(const CHqlBoundExpr & bound)
             if (bound.length)
                 return convertBetweenCountAndSize(bound, true);
             unsigned size = type->getSize();
-            if (size != UNKNOWN_LENGTH)
+            if (!isUnknownLength(size))
                 return getSizetConstant(size / type->queryChildType()->getSize());
             UNIMPLEMENTED;
         }
@@ -12962,7 +12962,7 @@ IHqlExpression * HqlCppTranslator::getBoundLength(const CHqlBoundExpr & bound)
         UNIMPLEMENTED;
     case type_utf8:
         {
-            assertex(type->getSize() != UNKNOWN_LENGTH);
+            assertex(!isUnknownLength(type->getSize()));
             HqlExprArray args;
             args.append(*getSizetConstant(type->getSize()));
             args.append(*getElementPointer(bound.expr));
@@ -13043,7 +13043,7 @@ IHqlExpression * HqlCppTranslator::getBoundSize(const CHqlBoundExpr & bound)
         return createQuoted(temp.str(), LINK(sizetType));
     }
 
-    if (type->getSize() != UNKNOWN_LENGTH)
+    if (!isUnknownLength(type->getSize()))
         return getSizetConstant(type->getSize());
     OwnedHqlExpr length = getBoundLength(bound);
     return getBoundSize(type, length, bound.expr);
@@ -13276,7 +13276,7 @@ bool HqlCppTranslator::requiresTemp(BuildCtx & ctx, IHqlExpression * expr, bool 
                     return true;
                 break;
             case type_varstring:
-                if ((type->getSize() != UNKNOWN_LENGTH) || (child->queryType()->getTypeCode() != type_varstring))
+                if (!isUnknownLength(type->getSize()) || (child->queryType()->getTypeCode() != type_varstring))
                     return true;
                 break;
             }

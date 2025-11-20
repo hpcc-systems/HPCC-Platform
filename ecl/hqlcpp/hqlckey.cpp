@@ -97,7 +97,7 @@ bool isKeyableType(ITypeInfo * type)
     case type_unicode:
     case type_varunicode:
     case type_utf8:
-        return (type->getSize() != UNKNOWN_LENGTH);
+        return !isUnknownLength((type->getSize()));
     default:
         return false;
     }

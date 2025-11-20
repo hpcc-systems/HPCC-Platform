@@ -1439,7 +1439,7 @@ protected:
         case type_data:
         case type_qstring:
             line.append(irText);
-            if (info.length != UNKNOWN_LENGTH)
+            if (!isUnknownLength(info.length))
                 line.append(info.length);
             return;
         case type_decimal:
@@ -1450,13 +1450,13 @@ protected:
         case type_unicode:
         case type_varstring:
             line.append(irText);
-            if (info.length != UNKNOWN_LENGTH)
+            if (!isUnknownLength(info.length))
                 line.append(info.length);
             line.append("(").append(info.locale).append(")");
             return;
         case type_utf8:
             line.append(irText);
-            if (info.length != UNKNOWN_LENGTH)
+            if (!isUnknownLength(info.length))
                 line.append("_").append(info.length);
             line.append("(").append(info.locale).append(")");
             return;

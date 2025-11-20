@@ -212,7 +212,7 @@ static IHqlExpression * createExpandedRecord(IHqlExpression * expr);
 static ITypeInfo * getExpandedFieldType(ITypeInfo * type, IHqlExpression * expr)
 {
     Linked<ITypeInfo> expandedType = type;
-    if (type->getSize() == UNKNOWN_LENGTH)
+    if (isUnknownLength(type->getSize()))
         expandedType.clear();
     switch (type->getTypeCode())
     {
@@ -225,7 +225,7 @@ static ITypeInfo * getExpandedFieldType(ITypeInfo * type, IHqlExpression * expr)
     case type_varstring:
     case type_varunicode:
 #if 0
-        if (type->getSize() != UNKNOWN_LENGTH)
+        if (!isUnknownLength((type->getSize()))
         {
             unsigned len = type->getStringLen();
             switch (type->getTypeCode())
@@ -245,7 +245,7 @@ static ITypeInfo * getExpandedFieldType(ITypeInfo * type, IHqlExpression * expr)
     case type_string:
     case type_unicode:
     case type_utf8:
-        if (type->getSize() == UNKNOWN_LENGTH)
+        if (isUnknownLength(type->getSize()))
         {
             unsigned maxLength = UNKNOWN_LENGTH;
             IHqlExpression * maxSizeExpr = expr ? queryAttributeChild(expr, maxSizeAtom, 0) : NULL;
@@ -282,7 +282,7 @@ static ITypeInfo * getExpandedFieldType(ITypeInfo * type, IHqlExpression * expr)
                     maxLength = (unsigned)maxLengthExpr->queryValue()->getIntValue();
             }
 
-            if (maxLength != UNKNOWN_LENGTH)
+            if (!isUnknownLength(maxLength))
             {
                 switch (type->getTypeCode())
                 {
@@ -1134,7 +1134,7 @@ bool FilterExtractor::matchSubstringFilter(KeyConditionInfo & matches, node_oper
         return false;
     ITypeInfo * fieldType = selector->queryType();
     unsigned fieldLength = fieldType->getStringLen();
-    if (!createValueSets && (fieldLength == UNKNOWN_LENGTH))
+    if (!createValueSets && (isUnknownLength(fieldLength)))
         return false;
 
     OwnedHqlExpr range = foldHqlExpression(left->queryChild(1));

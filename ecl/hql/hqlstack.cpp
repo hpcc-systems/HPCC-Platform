@@ -118,7 +118,7 @@ int FuncCallStack::push(ITypeInfo* argType, IHqlExpression* curParam)
     case type_data:
         getStringFromIValue(len, str, castParam);
         // For STRINGn, len doesn't need to be passed in.
-        if(argType->getSize() == UNKNOWN_LENGTH) {
+        if (isUnknownLength(argType->getSize())) {
             push(sizeof(unsigned), &len);
         }
         push(sizeof(char *), &str);
@@ -143,7 +143,7 @@ int FuncCallStack::push(ITypeInfo* argType, IHqlExpression* curParam)
             memcpy_iflen(str, text, argSize);
 
             // For STRINGn, len doens't need to be passed in.
-            if(argType->getSize() == UNKNOWN_LENGTH)
+            if (isUnknownLength(argType->getSize()))
             {
                 len = castParam->queryType()->getStringLen();
                 push(sizeof(unsigned), &len);

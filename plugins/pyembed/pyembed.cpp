@@ -791,7 +791,7 @@ static void getSetResult(PyObject *obj, bool & isAllResult, size32_t & resultByt
     OwnedPyObject elem;
     for (elem.setown(PyIter_Next(iter)); elem != NULL; elem.setown(PyIter_Next(iter)))
     {
-        if (elemSize != UNKNOWN_LENGTH)
+        if (!isUnknownLength(elemSize))
         {
             out.ensureAvailable(outBytes + elemSize);
             outData = out.getbytes() + outBytes;
@@ -826,7 +826,7 @@ static void getSetResult(PyObject *obj, bool & isAllResult, size32_t & resultByt
             const char * text =  PyString_AsString(elem);
             checkPythonError();
             size_t lenBytes = PyString_Size(elem);
-            if (elemSize == UNKNOWN_LENGTH)
+            if (isUnknownLength(elemSize))
             {
                 if (elemType == type_string)
                 {
@@ -866,7 +866,7 @@ static void getSetResult(PyObject *obj, bool & isAllResult, size32_t & resultByt
             size32_t numchars = rtlUtf8Length(lenBytes, text);
             if (elemType == type_utf8)
             {
-                assertex (elemSize == UNKNOWN_LENGTH);
+                assertex (isUnknownLength(elemSize));
                 out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
                 outData = out.getbytes() + outBytes;
                 * (size32_t *) outData = numchars;
@@ -875,7 +875,7 @@ static void getSetResult(PyObject *obj, bool & isAllResult, size32_t & resultByt
             }
             else
             {
-                if (elemSize == UNKNOWN_LENGTH)
+                if (isUnknownLength(elemSize))
                 {
                     out.ensureAvailable(outBytes + numchars*sizeof(UChar) + sizeof(size32_t));
                     outData = out.getbytes() + outBytes;
@@ -898,7 +898,7 @@ static void getSetResult(PyObject *obj, bool & isAllResult, size32_t & resultByt
                 rtlFail(0, "pyembed: type mismatch - return value in list was not a bytearray");
             size_t lenBytes = PyByteArray_Size(elem);  // Could check does not overflow size32_t
             const char *data = PyByteArray_AsString(elem);
-            if (elemSize == UNKNOWN_LENGTH)
+            if (isUnknownLength(elemSize))
             {
                 out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
                 outData = out.getbytes() + outBytes;
@@ -1734,12 +1734,12 @@ public:
             {
                 size32_t numChars = strlen((const char *) inData);
                 thisElem.setown(PyString_FromStringAndSize((const char *) inData, numChars));
-                if (elemSize == UNKNOWN_LENGTH)
+                if (isUnknownLength(elemSize))
                     thisSize = numChars + 1;
                 break;
             }
             case type_string:
-                if (elemSize == UNKNOWN_LENGTH)
+                if (isUnknownLength(elemSize))
                 {
                     thisSize = * (size32_t *) inData;
                     inData += sizeof(size32_t);
@@ -1758,7 +1758,7 @@ public:
                 break;
             case type_unicode:
             {
-                if (elemSize == UNKNOWN_LENGTH)
+                if (isUnknownLength(elemSize))
                 {
                     thisSize = (* (size32_t *) inData) * sizeof(UChar); // NOTE - it's in chars...
                     inData += sizeof(size32_t);
@@ -1773,7 +1773,7 @@ public:
             }
             case type_utf8:
             {
-                assertex (elemSize == UNKNOWN_LENGTH);
+                assertex (isUnknownLength(elemSize));
                 size32_t numChars = * (size32_t *) inData;
                 inData += sizeof(size32_t);
                 thisSize = rtlUtf8Size(numChars, inData);
@@ -1781,7 +1781,7 @@ public:
                 break;
             }
             case type_data:
-                if (elemSize == UNKNOWN_LENGTH)
+                if (isUnknownLength(elemSize))
                 {
                     thisSize = * (size32_t *) inData;
                     inData += sizeof(size32_t);

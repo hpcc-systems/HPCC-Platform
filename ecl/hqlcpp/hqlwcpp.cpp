@@ -419,7 +419,7 @@ void HqlCppWriter::generateType(ITypeInfo * type, const char * name)
             {
                 unsigned dim = type->getCardinality();
                 result.addSuffix().append("[");
-                if (dim && (dim != UNKNOWN_LENGTH))
+                if (dim && (!isUnknownLength(dim)))
                     result.addSuffix().append(dim);
                 result.addSuffix().append("]");
                 break;
@@ -432,7 +432,7 @@ void HqlCppWriter::generateType(ITypeInfo * type, const char * name)
         case type_data:
         case type_utf8:
             {
-                if ((size != UNKNOWN_LENGTH) && !isPointer)
+                if ((!isUnknownLength(size)) && !isPointer)
                 {
                     result.addArray(size);
                 }
@@ -461,7 +461,7 @@ void HqlCppWriter::generateType(ITypeInfo * type, const char * name)
         case type_varunicode:
         case type_unicode:
             {
-                if ((type->getSize() != UNKNOWN_LENGTH) && !isPointer)
+                if (!isUnknownLength(type->getSize()) && !isPointer)
                     result.addArray(size/2);
                 else
                     isPointer = true;
@@ -859,7 +859,7 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * att
     case type_dictionary:
     case type_table:
     case type_groupedtable:
-        if ((paramType->getSize() == UNKNOWN_LENGTH) && !hasStreamedModifier(paramType))
+        if (isUnknownLength(paramType->getSize()) && !hasStreamedModifier(paramType))
         {
             out.append("size32_t");
             if (isOut)
@@ -998,7 +998,7 @@ void HqlCppWriter::generateFunctionReturnType(StringBuffer & params, ITypeInfo *
     {
     case type_varstring:
     case type_varunicode:
-        if (retType->getSize() == UNKNOWN_LENGTH)
+        if (isUnknownLength(retType->getSize()))
         {
             generateType(retType, NULL);
             break;
@@ -1012,7 +1012,7 @@ void HqlCppWriter::generateFunctionReturnType(StringBuffer & params, ITypeInfo *
         {
             OwnedITypeInfo ptrType = makeReferenceModifier(LINK(retType));
             out.append("void");
-            if (retType->getSize() == UNKNOWN_LENGTH)
+            if (isUnknownLength(retType->getSize()))
             {
                 if (retType->getTypeCode() != type_varstring)
                     params.append("size32_t & __lenResult,");
@@ -1854,7 +1854,7 @@ void HqlCppWriter::generateStmtAssign(IHqlStmt * assign, bool link)
         case type_varunicode:
             if (hasModifier(type, typemod_ref))
                generateSimpleAssign(target, source);
-            else if (type->getSize() == UNKNOWN_LENGTH)
+            else if (isUnknownLength(type->getSize()))
             {
                 indent();
                 generateExprCpp(target).append(setFunction);
@@ -2065,7 +2065,7 @@ void HqlCppWriter::generateStmtDeclare(IHqlStmt * declare)
             else
                 out.append("rtlRowsAttr ").append(targetName);
         }
-        else if (typeSize != UNKNOWN_LENGTH)
+        else if (!isUnknownLength(typeSize))
             out.append("rtlFixedSizeDataAttr<").append(typeSize).append("> ").append(targetName);
         else
             out.append("rtlDataAttr ").append(targetName);

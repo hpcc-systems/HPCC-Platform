@@ -147,7 +147,7 @@ public:
     virtual type_t getTypeCode() const { return type_unicode; };
     virtual unsigned getDigits() { return getStringLen(); }
     //N.B. getSize() in bytes, i.e. UChars*2; getStringLen in UChars, i.e. getSize()/2 (where length known)
-    virtual unsigned getStringLen() { if(getSize()==UNKNOWN_LENGTH) return UNKNOWN_LENGTH; else return getSize()/2; }
+    virtual unsigned getStringLen() { if(isUnknownLength(getSize())) return getSize(); else return getSize()/2; }
     virtual unsigned getCardinality();
 
     using CTypeInfo::castFrom;
@@ -175,7 +175,7 @@ class CVarUnicodeTypeInfo : public CUnicodeTypeInfo
 public:
     CVarUnicodeTypeInfo(unsigned len, IAtom * _locale);
     virtual type_t getTypeCode() const                { return type_varunicode; };
-    virtual unsigned getStringLen()             { return length != UNKNOWN_LENGTH ? length/2-1 : UNKNOWN_LENGTH; };
+    virtual unsigned getStringLen()             { return !isUnknownLength(length) ? length/2-1 : length; };
 
     using CUnicodeTypeInfo::castFrom;
     virtual IValue * castFrom(size32_t len, const char * text);
@@ -191,7 +191,7 @@ public:
 
     virtual type_t getTypeCode() const          { return type_utf8; };
     virtual unsigned getSize()                  { return UNKNOWN_LENGTH; };
-    virtual unsigned getStringLen()             { return length != UNKNOWN_LENGTH ? length/4 : UNKNOWN_LENGTH; };
+    virtual unsigned getStringLen()             { return !isUnknownLength(length) ? length/4 : length; };
 
     using CUnicodeTypeInfo::castFrom;
     virtual IValue * castFrom(size32_t len, const UChar * text);
@@ -224,8 +224,8 @@ class CVarStringTypeInfo : public CStringTypeInfo
 public:
     CVarStringTypeInfo(unsigned len, ICharsetInfo * _charset, ICollationInfo * _collation);
     virtual type_t getTypeCode() const                { return type_varstring; };
-    virtual unsigned getStringLen()             { return length != UNKNOWN_LENGTH ? length-1 : UNKNOWN_LENGTH; };
-    virtual unsigned getDigits()                { return length != UNKNOWN_LENGTH ? length-1 : UNKNOWN_LENGTH; };
+    virtual unsigned getStringLen()             { return !isUnknownLength(length) ? length-1 : length; };
+    virtual unsigned getDigits()                { return !isUnknownLength(length) ? length-1 : length; };
 
     using CStringTypeInfo::castFrom;
     virtual IValue * castFrom(size32_t len, const char * text);

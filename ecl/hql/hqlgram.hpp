@@ -1273,7 +1273,7 @@ class HqlLex
         IHqlExpression * parseECL(IFileContents * contents, IXmlScope *xmlScope, int startLine, int startCol);
         IHqlExpression * parseECL(const char * curParam, IXmlScope *xmlScope, int startLine, int startCol);
         void setMacroParam(const attribute & errpos, IHqlExpression* funcdef, StringBuffer& curParam, IIdAtom * argumentName, unsigned& parmno,IProperties *macroParms);
-        unsigned getTypeSize(unsigned lengthTypeName);
+        unsigned getTypeSize(const attribute & errpos, unsigned lengthTypeName);
         static IHqlExpression * createIntegerConstant(__int64 value, bool isSigned);
 
         void doPreprocessorLookup(const attribute & errpos, bool stringify, int extra);

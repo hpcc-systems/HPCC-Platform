@@ -167,7 +167,7 @@ ITypeInfo * getConcatResultType(IHqlExpression * expr)
     {
         ITypeInfo * type = expr->queryChild(idx)->queryType();
         unsigned size = type->getStringLen();
-        if (size == UNKNOWN_LENGTH)
+        if (isUnknownLength(size))
             unknown = true;
         else
             totalSize += size;

@@ -2394,11 +2394,17 @@ IPropertyTree * HqlLex::getClearJavadoc()
     return tree;
 }
 
-unsigned HqlLex::getTypeSize(unsigned lengthTypeName)
+unsigned HqlLex::getTypeSize(const attribute & errpos, unsigned lengthTypeName)
 {
     const char * tok = get_yyText();
     if (strlen(tok)> lengthTypeName)
-        return atoi(tok + lengthTypeName);
+    {
+        size32_t length = atoi(tok + lengthTypeName);
+        if (length > MAX_SUPPORTED_LENGTH)
+            reportError(errpos, ERR_ILLSIZE_STRING, "Invalid length %u for type", length);
+        return length;
+    }
+
     return UNKNOWN_LENGTH;
 }
 

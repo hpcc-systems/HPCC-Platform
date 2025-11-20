@@ -4077,7 +4077,7 @@ BoundRow * HqlCppTranslator::buildDatasetIterateSpecialTempTable(BuildCtx & ctx,
         requiresTempRow = true;
         break;
     default:
-        if (type->getSize() == UNKNOWN_LENGTH)
+        if (isUnknownLength(type->getSize()))
             requiresTempRow = true;
         break;
     }
@@ -4484,7 +4484,7 @@ void HqlCppTranslator::doBuildRowAssignAggregateNext(BuildCtx & ctx, IReferenceS
             }
             break;
         }
-        if (targetSelect->queryType()->getSize() == UNKNOWN_LENGTH)
+        if (isUnknownLength(targetSelect->queryType()->getSize()))
             isVariableOffset = true;
     }
     if (alreadyDoneExpr)
@@ -4554,7 +4554,7 @@ void HqlCppTranslator::doBuildRowAssignAggregate(BuildCtx & ctx, IReferenceSelec
                 needGuard = true;
             break;
         }
-        if ((tgt->queryType()->getSize() == UNKNOWN_LENGTH) && (idx+1 != numAggregates))
+        if (isUnknownLength(tgt->queryType()->getSize()) && (idx+1 != numAggregates))
             needGuard = true;
     }
 

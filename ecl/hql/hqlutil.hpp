@@ -459,8 +459,8 @@ public:
     SubStringHelper(IHqlExpression * src, IHqlExpression * range);
 
     bool canGenerateInline()    { return special || infiniteString; }
-    bool knownStart()           { return fixedStart != UNKNOWN_LENGTH; }
-    bool knownEnd()             { return fixedEnd != UNKNOWN_LENGTH; }
+    bool knownStart()           { return !isUnknownLength(fixedStart); }
+    bool knownEnd()             { return !isUnknownLength(fixedEnd); }
 
     void init(IHqlExpression * _src, IHqlExpression * range);
 
