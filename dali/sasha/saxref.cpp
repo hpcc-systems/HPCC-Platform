@@ -370,6 +370,7 @@ private:
             maxnode[drv] = 0;
             maxsize[drv] = 0;
         }
+        dirPerPartNum = readDigits(_name, sl, false);
     }
 
 public:
@@ -385,6 +386,7 @@ public:
     offset_t maxsize[2];                //  largest node size
     unsigned short minnode[2];          //  smallest node (1..)
     unsigned short maxnode[2];          //  largest node (1..)
+    unsigned dirPerPartNum = 0;         //  only >0 if the directory *looks* like a dir-per-part dir
 
     byte name[1];                     // first byte length  NB this is the tail name
     // char namestr[*name]
@@ -448,6 +450,57 @@ public:
         return buf.append((size32_t)name[0],(const char *)name+1);
     }
 
+    const char *queryName() const
+    {
+        return (const char *)name+1;
+    }
+
+    size32_t getNameLen() const
+    {
+        return (size32_t)name[0];
+    }
+
+    bool isDirPerPartCandidate() const
+    {
+        return dirPerPartNum > 0; // I look like a dir-per-dir directory
+    }
+
+    bool isDirPerPartMatch(unsigned partNum) const
+    {
+        assertex(isDirPerPartCandidate());
+        return partNum==(dirPerPartNum-1);
+    }
+
+    cFileDesc *getFile(const char *filename)
+    {
+        CriticalBlock block(filesCrit);
+        auto it = files.find(filename);
+        if (it != files.end())
+            return it->second.get();
+        return nullptr;
+    }
+
+    cFileDesc *ensureFile(const char *filename, unsigned numParts, bool isDirPerPart, unsigned filenameLen, XRefAllocator *allocator)
+    {
+        CriticalBlock block(filesCrit);
+        auto it = files.find(filename);
+        cFileDesc *file = nullptr;
+        if (it != files.end())
+            file = it->second.get();
+        else
+        {
+            cFileDesc *file = cFileDesc::create(filename, numParts, true, filenameLen, allocator);
+            files.emplace(filename, file);
+        }
+        return file;
+    }
+
+    void addExistingFile(const char *filename, cFileDesc *file)
+    {
+        CriticalBlock block(filesCrit);
+        files.emplace(filename, file);
+    }
+
     cDirDesc *lookupDirNonThreadSafe(const char *name, XRefAllocator *allocator)
     {
         auto it = dirs.find(name);
@@ -470,7 +523,7 @@ public:
         return lookupDirNonThreadSafe(name, allocator);
     }
 
-    const char *decodeName(unsigned drv,const char *name,unsigned node, unsigned numnodes,
+    static const char *decodeName(unsigned drv,const char *name,unsigned node, unsigned numnodes,
                     StringAttr &mask,       // decoded mask
                     unsigned &pf,           // part node
                     unsigned &nf,           // num parts
@@ -488,7 +541,7 @@ public:
         return fn;
     }
 
-    bool isMisplaced(unsigned partNum, unsigned numParts, const SocketEndpoint &ep, IGroup &grp, const char *fullPath, unsigned filePathOffset, unsigned stripeNum, unsigned numStripedDevices)
+    static bool isMisplaced(unsigned partNum, unsigned numParts, const SocketEndpoint &ep, IGroup &grp, const char *fullPath, unsigned filePathOffset, unsigned stripeNum, unsigned numStripedDevices)
     {
         // External files (i.e. no ._n_of_m suffix) are considered misplaced so we can get
         // the node where the external file was found for addExternalFoundFile later
@@ -702,38 +755,27 @@ public:
         }
     }
 
-    cFileDesc *addFile(unsigned drv,const char *fullname,const char *filePath,unsigned filePathOffset,unsigned node,const SocketEndpoint &ep,IGroup &grp,unsigned numnodes,unsigned stripeNum,unsigned numStripedDevices,cDirDesc *parent,offset_t &parentnsz,offset_t &nsz,offset_t filesz,XRefAllocator *allocator)
+    void chkFile(cFileDesc *file, bool misplaced, unsigned partNum, unsigned drv,const char *filePath,unsigned node,unsigned numnodes)
     {
-        unsigned nf;          // num parts
-        unsigned pf;          // part num
-        unsigned filenameLen; // length of file name excluding extension i.e. ._$P$_of_$N$
-        StringAttr mask;
-        const char *fn = decodeName(drv,fullname,node,numnodes,mask,pf,nf,filenameLen);
-        bool misplaced = isMisplaced(pf,nf,ep,grp,filePath,filePathOffset,stripeNum,numStripedDevices);
-
-        cFileDesc *file = nullptr;
-        CriticalBlock block(prepareFileAndReturnLock(file,parent,fn,filenameLen,pf,nf,parentnsz,nsz,filesz));
+        CriticalBlock block(filesCrit);
 
         if (misplaced) {
             cMisplacedRec *mp = file->misplaced;
             while (mp) {
-                if (mp->eq(drv,pf,node,numnodes)) {
-                    OERRLOG(LOGPFX "Duplicate file with mismatched tail (%d,%d) %s",pf,node,filePath);
-                    return NULL;
+                if (mp->eq(drv,partNum,node,numnodes)) {
+                    OERRLOG(LOGPFX "Duplicate file with mismatched tail (%d,%d) %s",partNum,node,filePath);
+                    return;
                 }
                 mp = mp->next;
             }
             mp = cMisplacedRec::create(allocator);
-            mp->init(drv,pf,node,numnodes);
+            mp->init(drv,partNum,node,numnodes);
             mp->next = file->misplaced;
             file->misplaced = mp;
             // NB: still perform setpresent() below, so that later 'orphan' and 'found' scanning can spot the part as orphaned or part of a found file.
         }
-        if (file->setpresent(drv,pf)) {
-            OERRLOG(LOGPFX "Duplicate file with mismatched tail (%d) %s",pf,filePath);
-            file = NULL;
-        }
-        return file;
+        if (file->setpresent(drv,partNum))
+            OERRLOG(LOGPFX "Duplicate file with mismatched tail (%d) %s",partNum,filePath);
     }
 
     bool markFile(unsigned drv,const char *name, unsigned node, const SocketEndpoint &ep, IGroup &grp, unsigned numnodes)
@@ -1410,7 +1452,84 @@ public:
                 iter->getModifiedTime(dt);
                 if (!fileFiltered(path.str(),dt)) {
                     try {
-                        pdir->addFile(drv,fname.str(),path.str(),filePathOffset,node,ep,*grp,numnodes,stripeNum,numStripedDevices,parent,parentnsz,nsz,filesz,&allocator);
+                        unsigned numParts;          // num parts
+                        unsigned partNum;          // part num
+                        unsigned filenameLen; // length of file name excluding extension i.e. ._$P$_of_$N$
+                        StringAttr mask;
+                        const char *fn = cDirDesc::decodeName(drv,fname,node,numnodes,mask,partNum,numParts,filenameLen);
+                        bool misplaced = cDirDesc::isMisplaced(partNum,numParts,ep,*grp,path,filePathOffset,stripeNum,numStripedDevices);
+
+                        cFileDesc *file = nullptr;
+                        bool addToParent = false;
+                        // JCSMORE (numParts!=NotFound) looks redundant/should be removed
+                        if (isContainerized()&&(numParts!=NotFound)&&parent&&!misplaced) // misplaed files should not be candidates for dir-per-part logic
+                        {
+                            if (pdir->isDirPerPartCandidate())
+                            {
+                                if (pdir->isDirPerPartMatch(partNum))
+                                {
+                                    // In a containerized deployment, a dir-per-part is on by default, and this branch
+                                    // is expected to be the normal/common case, all other branches are exceptions.
+                                    file = pdir->getFile(fn);
+                                    if (file && !file->isDirPerPart) // add comment!
+                                    {
+                                        nsz += filesz;
+                                    }
+                                    else
+                                    {
+                                        // This is still in a directory that looks like a dir-per-part, and the file was not found
+                                        // so create it in the parent (above the dir-per-part directory), i.e. effectively ignoring
+                                        // the dir-per-part dir itself.
+                                        file = parent->ensureFile(fn, numParts, true, filenameLen, &allocator);
+                                        parentnsz += filesz;
+                                        addToParent = true;
+                                    }
+                                }
+                                else // we are in a dir-per-part directory, but part doesn't look like it belongs in a dir-per-part structure
+                                {
+                                    // Not a dir-per-part file, check for previously moved file
+                                    CLeavableCriticalBlock parentBlock(parent->filesCrit);
+                                    auto it = parent->files.find(fn);
+                                    if (it != parent->files.end() && it->second->isDirPerPart)
+                                    {
+                                        // Move file to current directory
+                                        it->second->isDirPerPart = false;
+                                        file = it->second.release();
+                                        parent->files.erase(it);
+                                        parentnsz -= filesz;
+
+                                        parentBlock.leave();
+
+                                        pdir->addExistingFile(fn, file);
+                                        nsz += filesz; // moved file - MORE this isn't really correct
+                                    }
+                                    else
+                                    {
+                                        // No previously moved file and no dir-per-part. Create in current directory
+                                        parentBlock.leave();
+
+                                        file = parent->ensureFile(fn, numParts, false, filenameLen, &allocator);
+
+                                    }
+                                    nsz += filesz;
+                                }
+                            }
+                            else
+                            {
+                                file = pdir->ensureFile(fn, numParts, false, filenameLen, &allocator);
+                                nsz += filesz;
+                            }
+                        }
+                        else
+                        {
+                            file = pdir->ensureFile(fn, numParts, false, filenameLen, &allocator);
+                            nsz += filesz;
+                        }
+
+                        cDirDesc *currentOrParent = addToParent ? parent : pdir;
+                        // rename chkFile to something!
+                        currentOrParent->chkFile(file, misplaced, partNum, drv, path, node, numnodes);
+
                         processedFiles++;
                     }
                     catch (IException *e) {
