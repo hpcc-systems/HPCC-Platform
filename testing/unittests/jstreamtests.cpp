@@ -1047,6 +1047,8 @@ public:
         constexpr int keyValuePairGrouping = 2;
         const char * base = peekStringList(matches, in, skipLen, keyValuePairGrouping);
 
+        if (expectedNumStrings)
+            CPPUNIT_ASSERT_MESSAGE("peekStringList returned null base for non-empty set", base != nullptr);
         CPPUNIT_ASSERT_EQUAL(expectedNumStrings, (unsigned)matches.size());
 
         // Verify that we can access each string via the returned offsets
@@ -1122,11 +1124,12 @@ public:
 
             {
                 // Empty stream test
-                String nullString[] = {"\0"};
-                MemoryBuffer emptyStreamBuffer(1, nullString);
+                byte emptyByteString[] = {'\0'};
+                String nullString((const char *)emptyByteString);
+                MemoryBuffer emptyStreamBuffer(1, emptyByteString);
                 Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(emptyStreamBuffer);
                 CCycleTimer timer;
-                testStringListPeekGrouping(*in, numStrings, nullString);
+                testStringListPeekGrouping(*in, numStrings, &nullString);
                 DBGLOG("Buffer:testStringListPeekGrouping took %lluus", timer.elapsedNs()/1000);
             }
 
@@ -1142,6 +1145,7 @@ public:
             }
 
             {
+                // Test reading back the generated attribute name/value pairs with grouping of 2.
                 MemoryBuffer clone(buffer.length(), buffer.toByteArray());
                 Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(clone);
                 CCycleTimer timer;
