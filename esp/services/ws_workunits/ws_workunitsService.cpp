@@ -4277,14 +4277,19 @@ static void getWUDetailsMetaProperties(double version, IArrayOf<IEspWUDetailsMet
 {
     for (unsigned sk=StKindAll+1; sk<StMax;++sk)
     {
-        const char * s = queryStatisticName((StatisticKind)sk);
+        StatisticKind kind = (StatisticKind)sk;
+        const char * s = queryStatisticName(kind);
+        //Cycles are internal only - they are never exposed to the outside world
+        if (queryMeasure(kind) == SMeasureCycle)
+            continue;
+
         if (s && *s)
         {
             Owned<IEspWUDetailsMetaProperty> property = createWUDetailsMetaProperty("","");
             property->setName(s);
             property->setValueType(CWUDetailsAttrValueType_Single);
             if (version >= 1.99)
-                property->setDescription(queryStatisticDescription((StatisticKind)sk));
+                property->setDescription(queryStatisticDescription(kind));
             properties.append(*property.getClear());
         }
     }
@@ -4383,7 +4388,13 @@ class WUDetailsMetaTest : public CppUnit::TestFixture
         // are successful.
         IArrayOf<IEspWUDetailsMetaProperty> properties;
         getWUDetailsMetaProperties(1.98, properties);
-        unsigned expectedOrdinalityProps = StMax - (StKindAll + 1) + (WaMax-WaKind);
+        // All attributes are included, but no cycle stats
+        unsigned expectedOrdinalityProps = (WaMax-WaKind);
+        for (unsigned i= (StKindAll + 1); i < StMax; i++)
+        {
+            if (queryMeasure((StatisticKind)i) != SMeasureCycle)
+                expectedOrdinalityProps++;
+        }
         ASSERT(properties.ordinality()==expectedOrdinalityProps);
 
         StringArray scopeTypes;
