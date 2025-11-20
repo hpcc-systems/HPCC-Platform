@@ -1,8 +1,9 @@
 import * as React from "react";
-import { DefaultButton, Dropdown, PrimaryButton, Checkbox, Pivot, PivotItem, TextField, IDropdownOption, Stack, SelectionMode, Selection } from "@fluentui/react";
+import { DefaultButton, Dropdown, PrimaryButton, Checkbox, Pivot, PivotItem, TextField, IDropdownOption, SelectionMode, Selection } from "@fluentui/react";
 import { useConst, useForceUpdate } from "@fluentui/react-hooks";
 import { Button } from "@fluentui/react-components";
 import { BookmarkAddRegular, DeleteRegular } from "@fluentui/react-icons";
+import { StackShim, StackItemShim } from "@fluentui/react-migration-v8-v9";
 import nlsHPCC from "src/nlsHPCC";
 import { MetricsView, clone, useMetricMeta, useMetricsViews } from "../hooks/metrics";
 import { MessageBox } from "../layouts/MessageBox";
@@ -183,21 +184,21 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
                 />
             </>}>
             <>
-                <Stack horizontal>
-                    <Stack.Item grow>
+                <StackShim horizontal>
+                    <StackItemShim grow>
                         <Dropdown selectedKey={viewId} onChange={onDropdownChange} options={options} />
-                    </Stack.Item>
+                    </StackItemShim>
                     <Button appearance="subtle" icon={<BookmarkAddRegular />} title={nlsHPCC.Add} disabled hidden onClick={() => {
                         setShowAdd(true);
                     }} />
                     <Button appearance="subtle" icon={<DeleteRegular />} title={nlsHPCC.Delete} disabled hidden onClick={() => {
                     }} />
-                </Stack>
+                </StackShim>
                 <Pivot>
                     <PivotItem key="metrics" headerText={nlsHPCC.Metrics}>
                         <div style={{ height: innerHeight, overflow: "auto" }}>
-                            <Stack horizontal>
-                                <Stack.Item grow={1}>
+                            <StackShim horizontal>
+                                <StackItemShim grow={1}>
                                     <GridOptions
                                         label={nlsHPCC.ScopeTypes}
                                         strArray={globalScopeTypes}
@@ -206,8 +207,8 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
                                             dirtyView.scopeTypes = [...scopeTypes];
                                         }}
                                     ></GridOptions>
-                                </Stack.Item>
-                                <Stack.Item grow={1}>
+                                </StackItemShim>
+                                <StackItemShim grow={1}>
                                     <GridOptions
                                         label={nlsHPCC.ScopeColumns}
                                         strArray={globalProperties}
@@ -216,8 +217,8 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
                                             dirtyView.properties = [...properties];
                                         }}
                                     ></GridOptions>
-                                </Stack.Item>
-                            </Stack>
+                                </StackItemShim>
+                            </StackShim>
                         </div>
                     </PivotItem>
                     <PivotItem key="sql" headerText={nlsHPCC.SQL} >

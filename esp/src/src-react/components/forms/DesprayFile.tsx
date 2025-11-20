@@ -1,5 +1,6 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, IDropdownOption, mergeStyleSets, PrimaryButton, Spinner, Stack, TextField, } from "@fluentui/react";
+import { Checkbox, DefaultButton, IDropdownOption, mergeStyleSets, PrimaryButton, Spinner, TextField, } from "@fluentui/react";
+import { StackShim } from "@fluentui/react-migration-v8-v9";
 import { useForm, Controller } from "react-hook-form";
 import { FileSpray, FileSprayService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
@@ -148,7 +149,7 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
             <PrimaryButton text={nlsHPCC.Despray} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
         </>}>
-        <Stack>
+        <StackShim>
             <Controller
                 control={control} name="destGroup"
                 render={({
@@ -295,8 +296,8 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                         value={value}
                     />}
             />
-        </Stack>
-        <Stack>
+        </StackShim>
+        <StackShim>
             <table className={componentStyles.twoColumnTable}>
                 <tbody><tr>
                     <td><Controller
@@ -321,6 +322,6 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                         /></td>
                     </tr></tbody>
             </table>
-        </Stack>
+        </StackShim>
     </MessageBox>;
 };

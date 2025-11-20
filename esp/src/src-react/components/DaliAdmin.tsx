@@ -1,5 +1,6 @@
 import * as React from "react";
-import { Pivot, PivotItem, TextField, Checkbox, DefaultButton, Stack } from "@fluentui/react";
+import { Pivot, PivotItem, TextField, Checkbox, DefaultButton } from "@fluentui/react";
+import { StackShim } from "@fluentui/react-migration-v8-v9";
 import { SizeMe } from "../layouts/SizeMe";
 import { pushUrl } from "../util/history";
 import { pivotItemStyle } from "../layouts/pivot";
@@ -108,13 +109,13 @@ export const DaliAdmin: React.FunctionComponent<DaliAdminProps> = ({
                     <DaliImport />
                 </PivotItem>
                 <PivotItem headerText={nlsHPCC.Export} itemKey="daliExport" style={pivotItemStyle(size)}>
-                    <Stack tokens={{ childrenGap: 12 }} styles={{ root: { maxWidth: 400 } }}>
+                    <StackShim tokens={{ childrenGap: 12 }} styles={{ root: { maxWidth: 400 } }}>
                         <TextField label="Path" placeholder="/your/dfs/path" value={path} onChange={(_, v) => setPath(v || "")} />
                         <Checkbox label="Safe" checked={safe} onChange={(_, c) => setSafe(!!c)} />
                         <DefaultButton onClick={() => confirmExport(true)}>
                             {nlsHPCC.Export}
                         </DefaultButton>
-                    </Stack>
+                    </StackShim>
                 </PivotItem>
             </Pivot>
         }</SizeMe>

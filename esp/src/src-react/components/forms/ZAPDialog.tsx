@@ -1,5 +1,6 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, Dropdown, Icon, IDropdownProps, IOnRenderComboBoxLabelProps, IStackTokens, ITextFieldProps, Label, mergeStyleSets, PrimaryButton, Spinner, Stack, TextField, TooltipHost } from "@fluentui/react";
+import { Checkbox, DefaultButton, Dropdown, Icon, IDropdownProps, IOnRenderComboBoxLabelProps, IStackTokens, ITextFieldProps, Label, mergeStyleSets, PrimaryButton, Spinner, TextField, TooltipHost } from "@fluentui/react";
+import { StackShim } from "@fluentui/react-migration-v8-v9";
 import { useForm, Controller } from "react-hook-form";
 import { LogType } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
@@ -35,12 +36,12 @@ type CustomLabelProps = ITextFieldProps & IDropdownProps & IOnRenderComboBoxLabe
 }
 
 const CustomLabel = (props: CustomLabelProps): React.JSX.Element => {
-    return <Stack horizontal verticalAlign="center" tokens={stackTokens}>
+    return <StackShim horizontal verticalAlign="center" tokens={stackTokens}>
         <Label htmlFor={props.name} disabled={props.disabled} id={props.id} style={{ fontWeight: 600, display: "block", padding: "5px 0" }}>{props.label}</Label>
         <TooltipHost content={props.tooltip}>
             <Icon iconName="Info" style={{ cursor: "default" }} />
         </TooltipHost>
-    </Stack>;
+    </StackShim>;
 };
 
 interface ZAPDialogValues {
@@ -513,12 +514,12 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                     field: { onChange, name: fieldName, value },
                     fieldState: { error }
                 }) => <div>
-                        <Stack horizontal verticalAlign="center" tokens={stackTokens}>
+                        <StackShim horizontal verticalAlign="center" tokens={stackTokens}>
                             <Label htmlFor={fieldName} disabled={logFiltersUnavailable} className={formClasses.label}>{nlsHPCC.FromDate}</Label>
                             <TooltipHost content={nlsHPCC.LogFilterStartDateTooltip}>
                                 <Icon iconName="Info" style={{ cursor: "default" }} />
                             </TooltipHost>
-                        </Stack>
+                        </StackShim>
                         <TooltipHost content={nlsHPCC.LogFilterStartDateTooltip}>
                             <input
                                 key={fieldName}
@@ -550,12 +551,12 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                     field: { onChange, name: fieldName, value },
                     fieldState: { error }
                 }) => <div>
-                        <Stack horizontal verticalAlign="center" tokens={stackTokens}>
+                        <StackShim horizontal verticalAlign="center" tokens={stackTokens}>
                             <Label htmlFor={fieldName} disabled={logFiltersUnavailable} className={formClasses.label}>{nlsHPCC.ToDate}</Label>
                             <TooltipHost content={nlsHPCC.LogFilterEndDateTooltip}>
                                 <Icon iconName="Info" style={{ cursor: "default" }} />
                             </TooltipHost>
-                        </Stack>
+                        </StackShim>
                         <input
                             key={fieldName}
                             type="datetime-local"

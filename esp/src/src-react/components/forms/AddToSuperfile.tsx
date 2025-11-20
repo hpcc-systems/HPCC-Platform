@@ -1,5 +1,6 @@
 import * as React from "react";
-import { ChoiceGroup, DefaultButton, mergeStyleSets, PrimaryButton, Spinner, Stack, TextField, } from "@fluentui/react";
+import { ChoiceGroup, DefaultButton, mergeStyleSets, PrimaryButton, Spinner, TextField, } from "@fluentui/react";
+import { StackShim } from "@fluentui/react-migration-v8-v9";
 import { useForm, Controller } from "react-hook-form";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
@@ -93,7 +94,7 @@ export const AddToSuperfile: React.FunctionComponent<AddToSuperfileProps> = ({
             <PrimaryButton text={nlsHPCC.Add} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
         </>}>
-        <Stack>
+        <StackShim>
             <Controller
                 control={control} name="superFile"
                 render={({
@@ -126,7 +127,7 @@ export const AddToSuperfile: React.FunctionComponent<AddToSuperfileProps> = ({
                     />}
             />
             {logicalFiles?.length > 0 &&
-                <Stack>
+                <StackShim>
                     <table className={`${componentStyles.twoColumnTable} ${componentStyles.selectionTable}`}>
                         <thead>
                             <tr>
@@ -154,8 +155,8 @@ export const AddToSuperfile: React.FunctionComponent<AddToSuperfileProps> = ({
                             })}
                         </tbody>
                     </table>
-                </Stack>
+                </StackShim>
             }
-        </Stack>
+        </StackShim>
     </MessageBox>;
 };

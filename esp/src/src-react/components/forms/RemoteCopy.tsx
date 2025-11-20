@@ -1,5 +1,6 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, IDropdownOption, mergeStyleSets, MessageBar, MessageBarType, PrimaryButton, Spinner, Stack, TextField } from "@fluentui/react";
+import { Checkbox, DefaultButton, IDropdownOption, mergeStyleSets, MessageBar, MessageBarType, PrimaryButton, Spinner, TextField } from "@fluentui/react";
+import { StackShim } from "@fluentui/react-migration-v8-v9";
 import { Controller, useForm } from "react-hook-form";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
@@ -130,7 +131,7 @@ export const RemoteCopy: React.FunctionComponent<RemoteCopyProps> = ({
                 {errorMessage}
             </MessageBar>
         }
-        <Stack>
+        <StackShim>
             <Controller
                 control={control} name="sourceDali"
                 render={({
@@ -186,8 +187,8 @@ export const RemoteCopy: React.FunctionComponent<RemoteCopyProps> = ({
                     required: nlsHPCC.ValidationErrorRequired
                 }}
             />
-        </Stack>
-        <Stack>
+        </StackShim>
+        <StackShim>
             <Controller
                 control={control} name="destGroup"
                 render={({
@@ -224,8 +225,8 @@ export const RemoteCopy: React.FunctionComponent<RemoteCopyProps> = ({
                     required: nlsHPCC.ValidationErrorRequired
                 }}
             />
-        </Stack>
-        <Stack>
+        </StackShim>
+        <StackShim>
             <table className={componentStyles.twoColumnTable}>
                 <tbody>
                     <tr>
@@ -272,7 +273,7 @@ export const RemoteCopy: React.FunctionComponent<RemoteCopyProps> = ({
                     </tr>
                 </tbody>
             </table>
-        </Stack>
+        </StackShim>
     </MessageBox>;
 
 };

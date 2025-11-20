@@ -1,5 +1,6 @@
 import * as React from "react";
-import { Checkbox, ColorPicker, DefaultButton, getColorFromString, IColor, Label, MessageBar, MessageBarType, PrimaryButton, Stack, TextField } from "@fluentui/react";
+import { Checkbox, ColorPicker, DefaultButton, getColorFromString, IColor, Label, MessageBar, MessageBarType, PrimaryButton, TextField } from "@fluentui/react";
+import { StackShim, StackItemShim } from "@fluentui/react-migration-v8-v9";
 import { useForm, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
 import { useActivity } from "./activity";
@@ -79,8 +80,8 @@ export function useBanner({ showForm, setShowForm }: useBannerProps): [React.Fun
                 <PrimaryButton text={nlsHPCC.OK} onClick={handleSubmit(onSubmit)} />
                 <DefaultButton text={nlsHPCC.Cancel} onClick={closeForm} />
             </>}>
-            <Stack horizontal horizontalAlign="space-between">
-                <Stack.Item grow={2}>
+            <StackShim horizontal horizontalAlign="space-between">
+                <StackItemShim grow={2}>
                     <Controller
                         control={control} name="BannerAction"
                         render={({
@@ -146,15 +147,15 @@ export function useBanner({ showForm, setShowForm }: useBannerProps): [React.Fun
                             }
                         }}
                     />
-                </Stack.Item>
-                <Stack.Item>
+                </StackItemShim>
+                <StackItemShim>
                     <Label>{nlsHPCC.BannerColor}</Label>
                     <ColorPicker
                         onChange={updateColor}
                         color={color}
                     />
-                </Stack.Item>
-            </Stack>
+                </StackItemShim>
+            </StackShim>
         </MessageBox>;
     }, [closeForm, color, control, handleSubmit, onSubmit, showForm, updateColor]);
 

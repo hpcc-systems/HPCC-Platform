@@ -1,7 +1,8 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, IIconProps, SearchBox, Stack } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, IIconProps, SearchBox } from "@fluentui/react";
 import { ToggleButton } from "@fluentui/react-components";
 import { TextCaseTitleRegular, TextCaseTitleFilled } from "@fluentui/react-icons";
+import { StackShim, StackItemShim } from "@fluentui/react-migration-v8-v9";
 import { Workunit, WsWorkunits, IScope } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
@@ -129,12 +130,12 @@ export const ECLArchive: React.FunctionComponent<ECLArchiveProps> = ({
                     {   //  Only render after archive is loaded (to ensure it "defaults to open") ---
                         archive?.modAttrs.length &&
                         <HolyGrail
-                            header={<Stack horizontal>
-                                <Stack.Item grow>
+                            header={<StackShim horizontal>
+                                <StackItemShim grow>
                                     <SearchBox value={treeFilter} onChange={onChangeTreeFilter} iconProps={filterIcon} placeholder={nlsHPCC.Filter} />
-                                </Stack.Item>
+                                </StackItemShim>
                                 <ToggleButton appearance="subtle" icon={matchCase ? <TextCaseTitleFilled /> : <TextCaseTitleRegular />} title={nlsHPCC.MatchCase} checked={matchCase} onClick={() => { setMatchCase(!matchCase); }} />
-                            </Stack>}
+                            </StackShim>}
                             main={<AutosizeComponent>
                                 <ECLArchiveTree archive={archive} filter={treeFilter} matchCase={matchCase} selectedAttrIDs={selection ? [selection] : []} setSelectedItem={setSelectedItem} />
                             </AutosizeComponent>}
