@@ -3422,7 +3422,7 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIPTTest, "JlibIPTTest");
 IPropertyTree *createCompatibilityConfigPropertyTree()
 {
     // Creates a complex nested property tree with multiple compatibility elements for serialization testing
-    Owned<IPropertyTree> root = createPTree("__array__");
+    Owned<IPropertyTree> root = createPTree("Property");
 
     // Helper lambda to add property elements with name/value attributes
     auto addProperty = [](IPropertyTree *parent, const char *name, const char *value = nullptr)
@@ -3468,11 +3468,18 @@ IPropertyTree *createCompatibilityConfigPropertyTree()
     };
 
     // Helper lambda to add rule elements
-    auto addRule = [](IPropertyTree *parent, const char *contentType, const char *presence)
+    auto addRule = [](IPropertyTree *parent, const char *name, const char *presence)
     {
         IPropertyTree *rule = parent->addPropTree("rule");
-        rule->setProp("@contentType", contentType);
-        rule->setProp("@presence", presence);
+        if (name)
+        {
+            rule->setProp("@name", name);
+            rule->setProp("@presence", presence);
+        }
+        else
+        {
+            CPPUNIT_FAIL("Rule name is required");
+        }
     };
 
     // First compatibility element
@@ -3517,8 +3524,8 @@ IPropertyTree *createCompatibilityConfigPropertyTree()
         addValueType(compat, "*", "r");
 
         // Rules
-        addRule(compat, "", "r");
-        addRule(compat, "xml", "r");
+        addRule(compat, "rule", "r");
+        addRule(compat, "rule", "");
     }
 
     // Second compatibility element
@@ -3529,15 +3536,15 @@ IPropertyTree *createCompatibilityConfigPropertyTree()
         IPropertyTree *context = compat->addPropTree("context");
         context->setProp("@domain", "urn:hpcc:unittest");
         context->setProp("@version", "0");
-        addProperty(context, "valuetype-set", "value-type-set-a");
-        addProperty(context, "rule-set", "");
+        addProperty(context, "valuetype-set", "valuetype-set-2");
+        addProperty(context, "rule-set", "rule-set-value");
 
         addValueType(compat, "secret", "r");
         addValueType(compat, "secret-if-a", "r", true, "value-type-set-a");
         addValueType(compat, "secret-if-b", "p", false, "value-type-set-b");
 
-        addRule(compat, "", "r");
-        addRule(compat, "xml", "r");
+        addRule(compat, "rule", "");
+        addRule(compat, "rule", "r");
     }
 
     // Third compatibility element
@@ -3555,8 +3562,8 @@ IPropertyTree *createCompatibilityConfigPropertyTree()
         addValueType(compat, "secret-if-a", "p", true, "value-type-set-a");
         addValueType(compat, "secret-if-b", "p", false, "value-type-set-b");
 
-        addRule(compat, "", "p");
-        addRule(compat, "xml", "p");
+        addRule(compat, "rule", "r");
+        addRule(compat, "rule", "r");
     }
 
     // Fourth compatibility element
@@ -3574,20 +3581,17 @@ IPropertyTree *createCompatibilityConfigPropertyTree()
         addValueType(compat, "secret-if-a", "p", true, "value-type-set-a");
         addValueType(compat, "secret-if-b", "r", false, "value-type-set-b");
 
-        addRule(compat, "", "r");
-        addRule(compat, "xml", "r");
+        addRule(compat, "rule", "");
+        addRule(compat, "rule", "r");
     }
 
     return root.getClear();
 }
 
-IPropertyTree *createBinaryDataCompressionTestPTree(const char *testXml)
+IPropertyTree *createBinaryDataCompressionTestPTree()
 {
-    // Validate the testXml parameter
-    CPPUNIT_ASSERT(testXml && *testXml);
-
     // Create a tree with various binary data sizes to test compression thresholds
-    Owned<IPropertyTree> tree = createPTree(testXml);
+    Owned<IPropertyTree> tree = createPTree("Compressed");
 
     // Add some regular properties first
     tree->setProp("normalProp", "normalValue");
@@ -3642,113 +3646,138 @@ class PTreeSerializationDeserializationTest : public CppUnit::TestFixture
     CPPUNIT_TEST_SUITE_END();
 
 protected:
-    static constexpr const char *testXml{
-        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-        "<Configuration version=\"1.0\" environment=\"test\">"
-        "  <Database host=\"localhost\" port=\"3306\" ssl=\"true\">"
-        "    <Connection timeout=\"30\" pool=\"10\" retry=\"3\"/>"
-        "    <Tables>"
-        "      <Table name=\"users\" schema=\"public\" rows=\"1000\"/>"
-        "      <Table name=\"orders\" schema=\"sales\" rows=\"5000\"/>"
-        "    </Tables>"
-        "  </Database>"
-        "  <Cache enabled=\"true\" size=\"1024\" ttl=\"3600\">"
-        "    <Policies>"
-        "      <Policy name=\"default\" expiry=\"300\"/>"
-        "    </Policies>"
-        "  </Cache>"
-        "</Configuration>"};
-
     // Complete round-trip test method that performs serialization, deserialization, and validation
-    void performRoundTripTest(const char *testName, IPropertyTree *tree)
+    void performRoundTripTest(const char *testName, IPropertyTree *tree, byte flags=ipt_none)
     {
-        Owned<IPropertyTree> originalTree;
-        originalTree.setown(tree);
-        CCycleTimer timer;
-
-        // Serialization
-        MemoryBuffer memoryBuffer, streamBuffer;
-
-        // Time serialize() method
-        timer.reset();
-        originalTree->serialize(memoryBuffer);
-        __uint64 serializeElapsedNs = timer.elapsedNs();
-        size_t memoryBufferSize = memoryBuffer.length();
-
-        // Time serializeToStream() method
-        Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(streamBuffer);
-        timer.reset();
-        originalTree->serializeToStream(*out);
-        out->flush();
-        __uint64 serializeToStreamElapsedNs = timer.elapsedNs();
-        size_t streamBufferSize = streamBuffer.length();
-
-        // Validation - serialized data matches
-        CPPUNIT_ASSERT_EQUAL(memoryBufferSize, streamBufferSize);
-        CPPUNIT_ASSERT(memcmp(memoryBuffer.toByteArray(), streamBuffer.toByteArray(), memoryBufferSize) == 0);
-
-        // Copy streamBuffer for deserializationFromStream() tests
-        MemoryBuffer streamBuffer2, streamBuffer3;
-        streamBuffer2.append(streamBuffer.length(), streamBuffer.toByteArray());
-        streamBuffer3.append(streamBuffer.length(), streamBuffer.toByteArray());
-
-        // Time deserialize() method
-        timer.reset();
-        Owned<IPropertyTree> memoryBufferDeserialized = createPTree(memoryBuffer);
-        __uint64 deserializeElapsedNs = timer.elapsedNs();
-
-        // Time deserializeFromStream() method
-        Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(streamBuffer);
-        timer.reset();
-        Owned<IPropertyTree> streamDeserialized = createPTreeFromBinary(*in, ipt_none);
-        __uint64 deserializeFromStreamElapsedNs = timer.elapsedNs();
-
-        // Create PTree from Binary tests
-        //
-        // Test 1: Call with null nodeCreator (should fall back to createPTree(src, ipt_none))
-        Owned<IBufferedSerialInputStream> in2 = createBufferedSerialInputStream(streamBuffer2);
-        Owned<IPropertyTree> deserializedCreatePTreeFromBinaryWithNull = createPTreeFromBinary(*in2, nullptr);
-        // Test 2: Call with custom nodeCreator
-        class TestNodeCreator : public CSimpleInterfaceOf<IPTreeNodeCreator>
+        try
         {
-        public:
-            bool wasCalled = false;
+            Owned<IPropertyTree> originalTree;
+            originalTree.setown(tree);
+            CCycleTimer timer;
 
-            virtual IPropertyTree *create(const char *tag) override
+            // Serialization
+            MemoryBuffer memoryBuffer, streamBuffer;
+
+            // Time serialize() method
+            DBGLOG("=== Starting serialize() for test: %s ===", testName);
+            timer.reset();
+            originalTree->serialize(memoryBuffer);
+            __uint64 serializeElapsedNs = timer.elapsedNs();
+            size_t memoryBufferSize = memoryBuffer.length();
+            DBGLOG("=== serialize() completed, size: %zu bytes ===", memoryBufferSize);
+
+            // Time serializeToStream() method
+            DBGLOG("=== Starting serializeToStream() ===");
+            Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(streamBuffer);
+            timer.reset();
+            originalTree->serializeToStream(*out);
+            out->flush();
+            __uint64 serializeToStreamElapsedNs = timer.elapsedNs();
+            size_t streamBufferSize = streamBuffer.length();
+            DBGLOG("=== serializeToStream() completed, size: %zu bytes ===", streamBufferSize);
+
+            // Validation - serialized data matches
+            CPPUNIT_ASSERT_EQUAL(memoryBufferSize, streamBufferSize);
+            CPPUNIT_ASSERT(memcmp(memoryBuffer.toByteArray(), streamBuffer.toByteArray(), memoryBufferSize) == 0);
+
+            // Copy streamBuffer for deserializationFromStream() tests
+            MemoryBuffer streamBuffer2, streamBuffer3;
+            streamBuffer2.append(streamBuffer.length(), streamBuffer.toByteArray());
+            streamBuffer3.append(streamBuffer.length(), streamBuffer.toByteArray());
+
+            // Time deserialize() method
+            DBGLOG("=== Starting deserialize() ===");
+            Owned<IPropertyTree> memoryBufferDeserialized = createPTree(flags);
+            timer.reset();
+            memoryBufferDeserialized->deserialize(memoryBuffer);
+            __uint64 deserializeElapsedNs = timer.elapsedNs();
+            DBGLOG("=== deserialize() completed ===");
+
+            // Time deserializeFromStream() method
+            DBGLOG("=== Starting deserializeFromStream() ===");
+            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(streamBuffer);
+            Owned<IPropertyTree> streamDeserialized = createPTree(flags);
+            timer.reset();
+            PTreeDeserializeContext ctx;
+            streamDeserialized->deserializeFromStream(*in, ctx);
+            __uint64 deserializeFromStreamElapsedNs = timer.elapsedNs();
+            DBGLOG("=== deserializeFromStream() completed ===");
+
+            // Create PTree from Binary tests
+            //
+            // Test 1: Call with flags parameter
+            DBGLOG("=== Starting createPTreeFromBinary() with flags ===");
+            Owned<IBufferedSerialInputStream> in2 = createBufferedSerialInputStream(streamBuffer2);
+            Owned<IPropertyTree> deserializedCreatePTreeFromBinaryWithFlags = createPTreeFromBinary(*in2, flags);
+            DBGLOG("=== createPTreeFromBinary() with flags completed ===");
+            // Test 2: Call with custom nodeCreator
+            DBGLOG("=== Starting createPTreeFromBinary() with custom nodeCreator ===");
+            class TestNodeCreator : public CSimpleInterfaceOf<IPTreeNodeCreator>
             {
-                wasCalled = true;
-                return createPTree(tag);
-            }
-        };
-        Owned<TestNodeCreator> nodeCreator = new TestNodeCreator();
-        Owned<IBufferedSerialInputStream> in3 = createBufferedSerialInputStream(streamBuffer3);
-        Owned<IPropertyTree> deserializedCreatePTreeFromBinaryWithCreator = createPTreeFromBinary(*in3, nodeCreator);
+            public:
+                bool wasCalled = false;
+                byte nodeFlags;
 
-        // Validation - verify both deserialized trees are equivalent to the original
-        CPPUNIT_ASSERT(areMatchingPTrees(originalTree, memoryBufferDeserialized));
-        CPPUNIT_ASSERT(areMatchingPTrees(originalTree, streamDeserialized));
-        CPPUNIT_ASSERT(areMatchingPTrees(originalTree, deserializedCreatePTreeFromBinaryWithNull));
-        CPPUNIT_ASSERT(nodeCreator->wasCalled); // Verify nodeCreator was called
-        CPPUNIT_ASSERT(areMatchingPTrees(originalTree, deserializedCreatePTreeFromBinaryWithCreator));
+                TestNodeCreator(byte _flags) : nodeFlags(_flags) {}
 
-        double serializeTimeMs = serializeElapsedNs / 1e6;
-        double serializeToStreamTimeMs = serializeToStreamElapsedNs / 1e6;
-        DBGLOG("=== ROUND-TRIP TEST STARTED FOR: %s ===", testName);
-        DBGLOG("=== SERIALIZATION TEST RESULTS:");
-        DBGLOG("  serialize() time: %.6f ms", serializeTimeMs);
-        DBGLOG("  serializeToStream() time: %.6f ms", serializeToStreamTimeMs);
-        DBGLOG("  Performance ratio (serializeToStream/serialize): %.6f", serializeToStreamTimeMs / serializeTimeMs);
-        DBGLOG("  serialize() data size: %zu bytes", memoryBufferSize);
-        DBGLOG("  serializeToStream() data size: %zu bytes", streamBufferSize);
+                virtual IPropertyTree *create(const char *tag) override
+                {
+                    wasCalled = true;
+                    return createPTree(tag, nodeFlags);
+                }
+            };
+            Owned<TestNodeCreator> nodeCreator = new TestNodeCreator(flags);
+            // Reset stream position
+            Owned<IBufferedSerialInputStream> in3 = createBufferedSerialInputStream(streamBuffer3);
+            Owned<IPropertyTree> deserializedCreatePTreeFromBinaryWithCreator = createPTreeFromBinary(*in3, nodeCreator);
+            DBGLOG("=== createPTreeFromBinary() with custom nodeCreator completed ===");
 
-        double deserializeTimeMs = deserializeElapsedNs / 1e6;
-        double deserializeFromStreamTimeMs = deserializeFromStreamElapsedNs / 1e6;
-        DBGLOG("=== DESERIALIZATION TEST RESULTS:");
-        DBGLOG("  deserialize() time: %.6f ms", deserializeTimeMs);
-        DBGLOG("  deserializeFromStream() time: %.6f ms", deserializeFromStreamTimeMs);
-        DBGLOG("  Performance ratio (deserializeFromStream/deserialize): %.6f", deserializeFromStreamTimeMs / deserializeTimeMs);
+            // Validation - verify both deserialized trees are equivalent to the original
+            DBGLOG("=== Starting tree comparisons ===");
+            CPPUNIT_ASSERT(areMatchingPTrees(originalTree, memoryBufferDeserialized));
+            CPPUNIT_ASSERT(areMatchingPTrees(originalTree, streamDeserialized));
+            CPPUNIT_ASSERT(areMatchingPTrees(originalTree, deserializedCreatePTreeFromBinaryWithFlags));
+            CPPUNIT_ASSERT(nodeCreator->wasCalled); // Verify nodeCreator was called
+            CPPUNIT_ASSERT(areMatchingPTrees(originalTree, deserializedCreatePTreeFromBinaryWithCreator));
+            DBGLOG("=== Tree comparisons completed ===");
 
-        DBGLOG("=== ROUND-TRIP TEST COMPLETED SUCCESSFULLY");
+            double serializeTimeMs = (double)serializeElapsedNs / 1e6;
+            double serializeToStreamTimeMs = (double)serializeToStreamElapsedNs / 1e6;
+            DBGLOG("=== ROUND-TRIP TEST STARTED FOR: %s ===", testName);
+            DBGLOG("=== SERIALIZATION TEST RESULTS:");
+            DBGLOG("  serialize() time: %.6f ms", serializeTimeMs);
+            DBGLOG("  serializeToStream() time: %.6f ms", serializeToStreamTimeMs);
+            DBGLOG("  Performance ratio (serializeToStream/serialize): %.6f", serializeToStreamTimeMs / serializeTimeMs);
+            DBGLOG("  serialize() data size: %zu bytes", memoryBufferSize);
+            DBGLOG("  serializeToStream() data size: %zu bytes", streamBufferSize);
+
+            double deserializeTimeMs = (double)deserializeElapsedNs / 1e6;
+            double deserializeFromStreamTimeMs = (double)deserializeFromStreamElapsedNs / 1e6;
+            DBGLOG("=== DESERIALIZATION TEST RESULTS:");
+            DBGLOG("  deserialize() time: %.6f ms", deserializeTimeMs);
+            DBGLOG("  deserializeFromStream() time: %.6f ms", deserializeFromStreamTimeMs);
+            DBGLOG("  Performance ratio (deserializeFromStream/deserialize): %.6f", deserializeFromStreamTimeMs / deserializeTimeMs);
+
+            DBGLOG("=== ROUND-TRIP TEST COMPLETED SUCCESSFULLY");
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            DBGLOG("=== EXCEPTION CAUGHT in %s: [%d] %s ===", testName, e->errorCode(), msg.str());
+            e->Release();
+            throw;
+        }
+        catch (std::exception &e)
+        {
+            DBGLOG("=== STD::EXCEPTION CAUGHT in %s: %s ===", testName, e.what());
+            throw;
+        }
+        catch (...)
+        {
+            DBGLOG("=== UNKNOWN EXCEPTION CAUGHT in %s ===", testName);
+            throw;
+        }
     }
 
 public:
@@ -3765,7 +3794,23 @@ public:
 
     void testRoundTripForBinaryDataCompressionTestPTree()
     {
-        performRoundTripTest(__func__, createBinaryDataCompressionTestPTree(testXml));
+        performRoundTripTest(__func__, createBinaryDataCompressionTestPTree());
+    }
+
+    // ipt_lowmem tests
+    void testRoundTripForRootOnlyPTree_lowmem()
+    {
+        performRoundTripTest(__func__, createPTree("EmptyRoot", ipt_lowmem), ipt_lowmem);
+    }
+
+    void testRoundTripForCompatibilityConfigPropertyTree_lowmem()
+    {
+        performRoundTripTest(__func__, createCompatibilityConfigPropertyTree(), ipt_lowmem);
+    }
+
+    void testRoundTripForBinaryDataCompressionTestPTree_lowmem()
+    {
+        performRoundTripTest(__func__, createBinaryDataCompressionTestPTree(), ipt_lowmem);
     }
 
     void testMultiThreadedSerializationAndDeserializationOfAtomTree()

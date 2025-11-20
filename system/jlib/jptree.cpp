@@ -3083,21 +3083,16 @@ void PTree::deserializeSelf(IBufferedSerialInputStream &src, PTreeDeserializeCon
 
     // Read attributes until we encounter a zero byte (attribute list terminator)
     ctx.matchOffsets.clear();
-    constexpr unsigned pairedNameAndValueStringGrouping = 2;
-    const char * base = peekStringList(ctx.matchOffsets, src, skipLen, pairedNameAndValueStringGrouping);
-    if (unlikely(!base))
+    constexpr unsigned valueStringCanBeEmpty = 2;
+    const char * base = peekStringList(ctx.matchOffsets, src, skipLen, valueStringCanBeEmpty);
+    if (!base)
         throwUnexpectedX("PTree deserialization error: end of stream, expected attribute name");
 
     size_t numStringOffsets = ctx.matchOffsets.size();
     if (numStringOffsets % 2 != 0)
         throwUnexpectedX("PTree deserialization error: end of stream, expected attribute value");
-    constexpr bool attributeNameNotEncoded = false; // Deserialized attribute name is in its original unencoded form
-    for (size_t i = 0; i < numStringOffsets; i += 2)
-    {
-        const char *attrName = base + ctx.matchOffsets[i];
-        const char *attrValue = base + ctx.matchOffsets[i + 1];
-        setAttribute(attrName, attrValue, attributeNameNotEncoded);
-    }
+
+    deserializeAttributes(base, ctx);
 
     src.skip(skipLen); // Skip over all attributes and the terminator
 
@@ -3109,6 +3104,17 @@ void PTree::deserializeSelf(IBufferedSerialInputStream &src, PTreeDeserializeCon
         value = new CPTValue(src, size);
     else
         value = nullptr;
+}
+
+void PTree::deserializeAttributes(const char * base, PTreeDeserializeContext &ctx)
+{
+    constexpr bool attributeNameNotEncoded = false; // Deserialized attribute name is in its original unencoded form
+    for (unsigned i=0; i < ctx.matchOffsets.size(); i += 2)
+    {
+        const char *attrName = base + ctx.matchOffsets[i];
+        const char *attrValue = base + ctx.matchOffsets[i+1];
+        setAttribute(attrName, attrValue, attributeNameNotEncoded);
+    }
 }
 
 void PTree::serializeAttributes(MemoryBuffer &tgt)
@@ -3829,6 +3835,35 @@ bool LocalPTree::removeAttribute(const char *key)
     return true;
 }
 
+void LocalPTree::deserializeAttributes(const char * base, PTreeDeserializeContext &ctx)
+{
+    const unsigned newAttrPairs = ctx.matchOffsets.size() / 2;
+    if (!newAttrPairs)
+        return;
+
+    for (unsigned i=0; i < ctx.matchOffsets.size(); i += 2)
+    {
+        const char *attrName = base + ctx.matchOffsets[i];
+        const char *attrValue = base + ctx.matchOffsets[i+1];
+
+        attrs = (AttrValue *)realloc(attrs, (numAttrs+1)*sizeof(AttrValue));
+        AttrValue *v = new(&attrs[numAttrs++]) AttrValue;  // Initialize new AttrValue
+        if (!v->key.set(attrName)) //AttrStr will not return encoding marker when get() is called
+            v->key.setPtr(isnocase() ? AttrStr::createNC(attrName) : AttrStr::create(attrName));
+        if (arrayOwner)
+        {
+            CQualifierMap *map = arrayOwner->queryMap();
+            if (map)
+            {
+                map->insertEntryIfMapped(attrName, attrValue, this);
+            }
+        }
+
+        if (!v->value.set(attrValue))
+            v->value.setPtr(AttrStr::create(attrValue));
+    }
+}
+
 void LocalPTree::setAttribute(const char *inputkey, const char *val, bool encoded)
 {
     if (!inputkey)
@@ -4027,6 +4062,43 @@ void CAtomPTree::freeAttrArray(AttrValue *a, unsigned n)
         AttrValue *&p = freelist[n];
         *(AttrValue **)a = p;
         p = a;
+    }
+}
+
+void CAtomPTree::deserializeAttributes(const char * base, PTreeDeserializeContext &ctx)
+{
+    const unsigned newAttrPairs = ctx.matchOffsets.size() / 2;
+    if (!newAttrPairs)
+        return;
+
+    CriticalBlock block(hashcrit);
+    for (unsigned i=0; i < ctx.matchOffsets.size(); i += 2)
+    {
+        const char *attrName = base + ctx.matchOffsets[i];
+        const char *attrValue = base + ctx.matchOffsets[i+1];
+
+        AttrValue *newattrs = newAttrArray(numAttrs+1);
+        if (attrs)
+        {
+            memcpy(newattrs, attrs, numAttrs*sizeof(AttrValue));
+            freeAttrArray(attrs, numAttrs);
+        }
+
+        if (arrayOwner)
+        {
+            CQualifierMap *map = arrayOwner->queryMap();
+            if (map)
+                map->insertEntryIfMapped(attrName, attrValue, this);
+        }
+
+        AttrValue *v = &newattrs[numAttrs];
+        if (!v->key.set(attrName))
+            v->key.setPtr(attrHT->addkey(attrName, isnocase()));
+        if (!v->value.set(attrValue))
+            v->value.setPtr(attrHT->addval(attrValue));
+
+        numAttrs++;
+        attrs = newattrs;
     }
 }
 
