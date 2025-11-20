@@ -681,7 +681,7 @@ void CMemberInfo::doBuildSkipInput(HqlCppTranslator & translator, BuildCtx & ctx
     HqlExprArray args;
     args.append(*LINK(helper));
 
-    if (size == UNKNOWN_LENGTH)
+    if (isUnknownLength(size))
     {
         OwnedHqlExpr sizeVariable = callDeserializerGetSize(translator, ctx, helper);
         callDeserializerSkipInputTranslatedSize(translator, ctx, helper, sizeVariable);
@@ -1632,7 +1632,7 @@ void CColumnInfo::buildClear(HqlCppTranslator & translator, BuildCtx & ctx, IRef
             {
                 size32_t size = type->getSize();
                 size32_t len = type->getStringLen();
-                if (size == UNKNOWN_LENGTH)
+                if (isUnknownLength(size))
                 {
                     assertex(direction < 0);
                     null.setown(createConstant(type->castFrom(0, (const char *)NULL)));
@@ -1651,7 +1651,7 @@ void CColumnInfo::buildClear(HqlCppTranslator & translator, BuildCtx & ctx, IRef
                 assertex(direction < 0);
                 size32_t size = type->getSize();
                 size32_t len = type->getStringLen();
-                if (size == UNKNOWN_LENGTH)
+                if (isUnknownLength(size))
                 {
                     null.setown(createConstant(type->castFrom(0, (const UChar *)NULL)));
                 }
@@ -1702,7 +1702,7 @@ bool CColumnInfo::prepareReadAhead(HqlCppTranslator & translator, ReadAheadState
 bool CColumnInfo::buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, ReadAheadState & state)
 {
     size32_t columnSize = queryType()->getSize();
-    if ((columnSize != UNKNOWN_LENGTH) && state.requiredValues.ordinality())
+    if ((!isUnknownLength(columnSize)) && state.requiredValues.ordinality())
     {
         OwnedHqlExpr selector = createSelectorExpr();
         unsigned match = state.requiredValues.find(*selector);
@@ -1755,7 +1755,7 @@ void CColumnInfo::buildExpr(HqlCppTranslator & translator, BuildCtx & ctx, IRefe
 
 bool CColumnInfo::isFixedSize()
 {
-    return (queryType()->getSize() != UNKNOWN_LENGTH);
+    return !isUnknownLength(queryType()->getSize());
 }
 
 
@@ -2211,7 +2211,7 @@ IHqlExpression * CAlienColumnInfo::doBuildSizeOfUnbound(HqlCppTranslator & trans
     IHqlAlienTypeInfo * alien = queryAlienType(type);
     unsigned size = alien->getPhysicalTypeSize();
     
-    if (size != UNKNOWN_LENGTH)
+    if (!isUnknownLength(size))
         return getSizetConstant(size);
 
     BoundRow * cursor = selector->queryRootRow();
@@ -2276,7 +2276,7 @@ void CAlienColumnInfo::gatherSize(SizeStruct & target)
         addVariableSize(0, target);
     else
     {
-        if (size != UNKNOWN_LENGTH)
+        if (!isUnknownLength(size))
             target.addFixed(size);
         else
             addVariableSize(0, target);
@@ -2291,7 +2291,7 @@ unsigned CAlienColumnInfo::getPhysicalSize()
     IHqlAlienTypeInfo * alien = queryAlienType(type);
     unsigned size = alien->getPhysicalTypeSize();
 
-    if (size == UNKNOWN_LENGTH)
+    if (isUnknownLength(size))
     {
         IHqlExpression * lengthAttr = queryStripCasts(alien->queryLengthFunction());
         if (lengthAttr->isConstant() && !lengthAttr->isFunction())
@@ -2316,7 +2316,7 @@ ITypeInfo * CAlienColumnInfo::queryPhysicalType()
 ITypeInfo * CAlienColumnInfo::getPhysicalSourceType()
 {
     ITypeInfo * physicalType = queryPhysicalType();
-    if (physicalType->getSize() == UNKNOWN_LENGTH)
+    if (isUnknownLength(physicalType->getSize()))
         return getStretchedType(INFINITE_LENGTH, physicalType);
 
     return LINK(physicalType);
@@ -2340,7 +2340,7 @@ IHqlExpression * CAlienColumnInfo::getAlienGetFunction(HqlCppTranslator & transl
 
 bool CAlienColumnInfo::isFixedSize()
 {
-    return getPhysicalSize() != UNKNOWN_LENGTH;
+    return !isUnknownLength(getPhysicalSize());
 }
 
 
@@ -2389,7 +2389,7 @@ void CAlienColumnInfo::setColumn(HqlCppTranslator & translator, BuildCtx & ctx, 
 
     OwnedHqlExpr absoluteCall = replaceSelector(call, querySelfReference(), self);
     OwnedHqlExpr selectedCall = cursor->bindToRow(absoluteCall, queryRootSelf());
-    if (physicalType->getSize() == UNKNOWN_LENGTH)
+    if (isUnknownLength(physicalType->getSize()))
     {
         CHqlBoundExpr boundCall;
         translator.buildExpr(ctx, selectedCall, boundCall);
@@ -2860,7 +2860,7 @@ void CXmlColumnInfo::buildFixedStringAssign(HqlCppTranslator & translator, Build
 void CXmlColumnInfo::buildColumnAssign(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, const CHqlBoundTarget & target)
 {
     Linked<ITypeInfo> type = queryPhysicalType();
-    if (type->getSize() != UNKNOWN_LENGTH)
+    if (!isUnknownLength(type->getSize()))
     {
         IIdAtom * func = NULL;
         IHqlExpression * defaultValue = queryAttributeChild(column, xmlDefaultAtom, 0);
@@ -3060,15 +3060,15 @@ IHqlExpression * CXmlColumnInfo::getCallExpr(HqlCppTranslator & translator, Buil
     case type_set:
         return getXmlSetExpr(translator, ctx, selector);
     case type_string:
-        if ((type->getSize() != UNKNOWN_LENGTH) && type->queryCharset()->queryName() == asciiAtom)
+        if (!isUnknownLength(type->getSize()) && type->queryCharset()->queryName() == asciiAtom)
             func = defaultValue ? columnReadStringId : columnGetStringId;
         break;
     case type_data:
-        if (type->getSize() != UNKNOWN_LENGTH)
+        if (!isUnknownLength(type->getSize()))
             func = defaultValue ? columnReadDataId : columnGetDataId;
         break;
     case type_qstring:
-        if (type->getSize() != UNKNOWN_LENGTH)
+        if (!isUnknownLength(type->getSize()))
             func = defaultValue ? columnReadQStringId : columnGetQStringId;
         break;
     }
@@ -3167,7 +3167,7 @@ CMemberInfo * ColumnToOffsetMap::addColumn(CContainerInfo * container, IHqlExpre
             if (column->queryType()->getTypeCode() != type_bitfield)
                 completeActiveBitfields();
 
-            if (translateVirtuals && column->hasAttribute(virtualAtom) && (column->queryType()->getSize() != UNKNOWN_LENGTH))
+            if (translateVirtuals && column->hasAttribute(virtualAtom) && !isUnknownLength(column->queryType()->getSize()))
                 created = new CVirtualColumnInfo(container, prior, column);
             else
                 created = createColumn(container, column, map, isPayload);
@@ -3317,14 +3317,14 @@ CMemberInfo * ColumnToOffsetMap::createColumn(CContainerInfo * container, IHqlEx
     case type_unicode:
     case type_qstring:
     case type_utf8:
-        if (type->getSize() == UNKNOWN_LENGTH)
+        if (isUnknownLength(type->getSize()))
             created = new CSpecialStringColumnInfo(container, prior, column);
         else
             created = new CColumnInfo(container, prior, column);
         break;
     case type_varstring:
     case type_varunicode:
-        if (type->getSize() == UNKNOWN_LENGTH)
+        if (isUnknownLength(type->getSize()))
             created = new CSpecialVStringColumnInfo(container, prior, column);
         else
             created = new CColumnInfo(container, prior, column);
@@ -3381,7 +3381,7 @@ AColumnInfo * ColumnToOffsetMap::queryRootColumn()
 
 void ColumnToOffsetMap::ensureMaxSizeCached()
 {
-    if (cachedMaxSize == UNKNOWN_LENGTH)
+    if (isUnknownLength(cachedMaxSize))
     {
         bool isKnownSize;
         cachedMaxSize = getMaxRecordSize(record, defaultMaxRecordSize, isKnownSize, cachedDefaultMaxSizeUsed);

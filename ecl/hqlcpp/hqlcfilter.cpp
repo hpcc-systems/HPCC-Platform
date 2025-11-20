@@ -120,7 +120,7 @@ bool CppFilterExtractor::createGroupingMonitor(BuildCtx ctx, const char * listNa
             {
                 IHqlExpression & cur = keyableSelects.item(i);
                 size32_t curSize = cur.queryType()->getSize();
-                if (!createValueSets && curSize == UNKNOWN_LENGTH)
+                if (!createValueSets && isUnknownLength(curSize))
                     break;
                 if (expr == &cur)
                 {
@@ -221,7 +221,7 @@ void CppFilterExtractor::buildKeySegmentInExpr(BuildFilterState & buildState, Ke
             HqlExprArray args;
             args.append(*LINK(targetVar));
             unsigned srcSize = normalized->queryType()->getSize();
-            if (srcSize < curSize && curSize != UNKNOWN_LENGTH)
+            if (srcSize < curSize && !isUnknownLength(curSize))
             {
                 OwnedHqlExpr lengthExpr = getSizetConstant(srcSize);
                 OwnedHqlExpr rangeLower = getRangeLimit(fieldType, lengthExpr, normalized, -1);
@@ -725,7 +725,7 @@ IHqlExpression * CppFilterExtractor::getMonitorValueAddress(BuildCtx & ctx, IHql
             {
             case type_varstring: case type_varunicode:
                 {
-                    assertex(type->getSize() != UNKNOWN_LENGTH);
+                    assertex(!isUnknownLength(type->getSize()));
                     CHqlBoundTarget tempTarget;
                     translator.createTempFor(ctx, type, tempTarget, typemod_none, FormatNatural);
                     //clear the variable.
@@ -1022,7 +1022,7 @@ void CppFilterExtractor::buildSegments(BuildCtx & ctx, const char * listName, bo
         IHqlExpression * expandedSelector = &expandedSelects.item(idx);
         IHqlExpression * field = selector->queryChild(1);
         unsigned curSize = expandedSelector->queryType()->getSize();
-        assertex(createValueSets || curSize != UNKNOWN_LENGTH);
+        assertex(createValueSets || !isUnknownLength(curSize));
 
         //MORE: Should also allow nested record structures, and allow keying on first elements.
         //      and field->queryType()->getSize() doesn't work for alien datatypes etc.

@@ -282,7 +282,7 @@ CResultSetMetaData::CResultSetMetaData(IFvDataSourceMetaData * _meta, bool _useX
         CResultSetColumnInfo * column = new CResultSetColumnInfo;
         column->type = type;
         column->flag = meta->queryFieldFlags(idx);
-        if (type->getSize() == UNKNOWN_LENGTH)
+        if (isUnknownLength(type->getSize()))
             fixedSize = false;
         switch (type->getTypeCode())
         {
@@ -332,7 +332,7 @@ void CResultSetMetaData::calcFieldOffsets(const byte * data, unsigned * offsets)
     {
         ITypeInfo & type = *columns.item(idx).type;
         unsigned size = type.getSize();
-        if (size == UNKNOWN_LENGTH)
+        if (isUnknownLength(size))
         {
             const byte * cur = data + curOffset;
             switch (type.getTypeCode())
@@ -493,7 +493,7 @@ unsigned CResultSetMetaData::getColumnRawSize(int column) const
 {
     assertex(columns.isItem(column));
     unsigned size = columns.item(column).type->getSize();
-    return (size == UNKNOWN_LENGTH) ? 0 : size;
+    return (isUnknownLength(size)) ? 0 : size;
 }
 
 
@@ -895,7 +895,7 @@ bool CResultSetCursor::first()
 static unsigned getLength(ITypeInfo & type, const byte * & cursor)
 {
     unsigned len = type.getStringLen();
-    if (len != UNKNOWN_LENGTH)
+    if (!isUnknownLength(len))
         return len;
     len = *(unsigned *)cursor;
     cursor += sizeof(unsigned);

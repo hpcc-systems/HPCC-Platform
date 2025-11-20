@@ -458,7 +458,7 @@ bool CChildLimitedDatasetColumnInfo::isFixedSize()
 {
     if (sizeField && sizeField->queryValue())
         return true;
-    if (countField && countField->queryValue() && (fixedChildSize != UNKNOWN_LENGTH))
+    if (countField && countField->queryValue() && (!isUnknownLength(fixedChildSize)))
         return true;
     return false;   //MORE:
 }
@@ -510,7 +510,7 @@ bool CChildLimitedDatasetColumnInfo::buildReadAhead(HqlCppTranslator & translato
             OwnedHqlExpr replacedCount = quickFullReplaceExpressions(mappedCount, state.requiredValues, state.mappedValues);
             if (containsSelector(replacedCount, queryRootSelf()))
                 return false;
-            if (fixedChildSize != UNKNOWN_LENGTH)
+            if (!isUnknownLength(fixedChildSize))
             {
                 OwnedHqlExpr scaledSize = multiplyValue(replacedCount, fixedChildSize);
                 callDeserializerSkipInputSize(translator, ctx, state. helper, scaledSize);

@@ -67,6 +67,16 @@ enum typemod_t
 
 #define INFINITE_LENGTH         0xFFFFFFF0
 #define UNKNOWN_LENGTH          0xFFFFFFF1
+#define UNKNOWN_LENGTH1         0xFFFFFFF2  // strings with 1 byte length prefix
+#define UNKNOWN_LENGTH2         0xFFFFFFF3  // strings with 2 byte length prefix
+
+#define MAX_SUPPORTED_LENGTH    (INFINITE_LENGTH-1U)
+
+// Helper function to check if a length value represents an unknown length (including variants)
+inline bool isUnknownLength(size32_t length)
+{
+    return length >= UNKNOWN_LENGTH;
+}
 
 typedef enum type_vals type_t;
 
@@ -250,8 +260,8 @@ extern DEFTYPE_API bool isLittleEndian(ITypeInfo * type);
 extern DEFTYPE_API bool isDatasetType(ITypeInfo * type);
 extern DEFTYPE_API bool isSingleValuedType(ITypeInfo * type);
 extern DEFTYPE_API bool isStandardSizeInt(ITypeInfo * type); // Is this an int type that can be represented by a c++ int?
-inline bool isFixedSize(ITypeInfo * type) { return type && (type->getSize() != UNKNOWN_LENGTH); }
-inline bool isUnknownSize(ITypeInfo * type) { return type && (type->getSize() == UNKNOWN_LENGTH); }
+inline bool isFixedSize(ITypeInfo * type) { return type && !isUnknownLength(type->getSize()); }
+inline bool isUnknownSize(ITypeInfo * type) { return type && isUnknownLength(type->getSize()); }
 inline bool isAnyType(ITypeInfo * type) { return type && (type->getTypeCode() == type_any); }
 inline bool isDecimalType(ITypeInfo * type) { return type && (type->getTypeCode() == type_decimal); }
 inline bool isDictionaryType(ITypeInfo * type) { return type && (type->getTypeCode() == type_dictionary); }

@@ -740,7 +740,7 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, const ch
     {
     case type_varstring:
     case type_varunicode:
-        if (retType->getSize() == UNKNOWN_LENGTH)
+        if (isUnknownLength(retType->getSize()))
         {
             // variable length varstring, should return as char*
             retCharStar = true;
@@ -754,7 +754,7 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, const ch
     case type_qstring:
     case type_unicode:
     case type_utf8:
-        if (retType->getSize() == UNKNOWN_LENGTH)
+        if (isUnknownLength(retType->getSize()))
         {
             // string, pass in the reference of length var and char* var. After function call,
             // values will be stored in them.
@@ -1418,7 +1418,7 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, const ch
         }
         
         Linked<ITypeInfo> resultType = retType;
-        if (resultType->getSize() == UNKNOWN_LENGTH)
+        if (isUnknownLength(resultType->getSize()))
             resultType.setown(getStretchedType(tlen, resultType));
 
         switch (typecode)
@@ -1697,11 +1697,11 @@ IHqlExpression *deserializeConstantSet(ITypeInfo *type, bool isAll, size32_t len
                 break;
             case type_varstring:
                 values.append(*createConstant(data));
-                if (size==UNKNOWN_LENGTH)
+                if (isUnknownLength(size))
                     size = (size32_t)(strlen(data)+1);
                 break;
             case type_string:
-                if (size==UNKNOWN_LENGTH)
+                if (isUnknownLength(size))
                 {
                     size = *(size32_t *) data;
                     data += sizeof(size32_t);
@@ -1709,7 +1709,7 @@ IHqlExpression *deserializeConstantSet(ITypeInfo *type, bool isAll, size32_t len
                 values.append(*createConstant(createStringValue(data, size)));
                 break;
             case type_data:
-                if (size==UNKNOWN_LENGTH)
+                if (isUnknownLength(size))
                 {
                     size = *(size32_t *) data;
                     data += sizeof(size32_t);
@@ -1717,7 +1717,7 @@ IHqlExpression *deserializeConstantSet(ITypeInfo *type, bool isAll, size32_t len
                 values.append(*createConstant(createDataValue(data, size)));
                 break;
             case type_unicode:
-                if (size==UNKNOWN_LENGTH)
+                if (isUnknownLength(size))
                 {
                     numChars = *(size32_t *) data;  // in characters
                     data += sizeof(size32_t);
@@ -1731,7 +1731,7 @@ IHqlExpression *deserializeConstantSet(ITypeInfo *type, bool isAll, size32_t len
                 break;
             case type_utf8:
                 // size is always UNKNOWN_LENGTH for uft8
-                assertex(size==UNKNOWN_LENGTH);
+                assertex(isUnknownLength(size));
                 numChars = *(size32_t *) data;  // in characters
                 data += sizeof(size32_t);
                 values.append(*createConstant(createUtf8Value(numChars, data, LINK(childType))));
@@ -1740,7 +1740,7 @@ IHqlExpression *deserializeConstantSet(ITypeInfo *type, bool isAll, size32_t len
             default:
                 return NULL;
             }
-            if (size != UNKNOWN_LENGTH)
+            if (!isUnknownLength(size))
                 data += size;
         }
         return createValue(no_list, LINK(type), values);
@@ -3312,7 +3312,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             IHqlExpression * child = expr->queryChild(0);
             ITypeInfo * type = child->queryType();
             size32_t len = type->getStringLen();
-            if (len != UNKNOWN_LENGTH)
+            if (!isUnknownLength(len))
                 return getSizetConstant(len);
 
             if (child->getOperator() == no_substring)
@@ -3563,7 +3563,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                     //Don't allow variable size string returns to be lost...
                     if (((child->queryType()->getTypeCode() == type_varstring) ||
                          (child->queryType()->getTypeCode() == type_varunicode)) &&
-                        (exprType->getSize() == UNKNOWN_LENGTH))
+                        isUnknownLength(exprType->getSize()))
 
                         break;
 
@@ -3593,7 +3593,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
 #if 0
             case no_if:
                 {
-                    if (isStringType(exprType) && (exprType->getSize() != UNKNOWN_LENGTH) && (child->queryType()->getSize() == UNKNOWN_LENGTH))
+                    if (isStringType(exprType) && !isUnknownLength(exprType->getSize()) && isUnknownLength(child->queryType()->getSize()))
                     {
                         HqlExprArray args;
                         unwindChildren(args, child);
@@ -3613,7 +3613,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                     //(stringN)(X[1..m]) -> (stringN)X if m >= N
                     unsigned castLen = exprType->getStringLen();
                     type_t tc = exprType->getTypeCode();
-                    if ((castLen != UNKNOWN_LENGTH) && ((tc == type_string) || (tc == type_data) || (tc == type_qstring) || (tc == type_unicode) || (tc == type_utf8)))
+                    if ((!isUnknownLength(castLen)) && ((tc == type_string) || (tc == type_data) || (tc == type_qstring) || (tc == type_unicode) || (tc == type_utf8)))
                     {
                         IHqlExpression * range = child->queryChild(1);
                         bool simplify = false;
@@ -3645,7 +3645,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                 size32_t childSize = childValue->getSize();
                 const void * rawvalue = childValue->queryValue();
                 unsigned newSize = exprType->getSize();
-                if (newSize == UNKNOWN_LENGTH)
+                if (isUnknownLength(newSize))
                 {
                     unsigned newLen = UNKNOWN_LENGTH;
                     switch (exprType->getTypeCode())
@@ -3662,7 +3662,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                         newLen = rtlUtf8Length(childSize, rawvalue);
                         break;
                     }
-                    if (newLen != UNKNOWN_LENGTH)
+                    if (!isUnknownLength(newLen))
                     {
                         newSize = childSize;
                         exprType.setown(getStretchedType(newLen, exprType));
@@ -4013,7 +4013,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                 ITypeInfo * type = child->queryType();
                 unsigned castLen = type->getStringLen();
                 type_t tc = type->getTypeCode();
-                if ((castLen != UNKNOWN_LENGTH) && ((tc == type_string) || (tc == type_data) || (tc == type_qstring) || (tc == type_unicode) || (tc == type_utf8)))
+                if ((!isUnknownLength(castLen)) && ((tc == type_string) || (tc == type_data) || (tc == type_qstring) || (tc == type_unicode) || (tc == type_utf8)))
                 {
                     IHqlExpression * range = expr->queryChild(1);
                     bool simplify = false;

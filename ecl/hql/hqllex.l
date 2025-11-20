@@ -1177,7 +1177,7 @@ DATA{digit}*        {
                         if (!(likely(lookupFlags & LEXresolve)))
                             return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
 
-                      unsigned size = lexer->getTypeSize(4);
+                      unsigned size = lexer->getTypeSize(returnToken, 4);
                       ITypeInfo *dataType = makeDataType(size);
                       if (!dataType)
                       {
@@ -1192,15 +1192,15 @@ STRING{digit}*      {
                         if (!(likely(lookupFlags & LEXresolve)))
                             return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
 
-                      unsigned size = lexer->getTypeSize(6);
-                      ITypeInfo *strType = makeStringType(size,NULL,NULL);
-                      if (!strType)
-                      {
+                        unsigned size = lexer->getTypeSize(returnToken, 6);
+                        ITypeInfo *strType = makeStringType(size,NULL,NULL);
+                        if (!strType)
+                        {
                             lexer->reportError(returnToken, ERR_ILLSIZE_STRING, "Invalid size for STRING type");
                             strType = makeStringType(1, NULL, NULL);
-                      }
-                      returnToken.setType(strType);
-                      return(SIMPLE_TYPE);
+                        }
+                        returnToken.setType(strType);
+                        return(SIMPLE_TYPE);
                     }
 UNICODE(_{letter}+)?{digit}* {
                       //Note letter includes _ so this include en_US etc.
@@ -1218,7 +1218,7 @@ UNICODE(_{letter}+)?{digit}* {
                           getNormalizedLocaleName(digitstart-8, CUR_TOKEN_TEXT+8, locale);
                       }
 
-                      unsigned length = lexer->getTypeSize(digitstart);
+                      unsigned length = lexer->getTypeSize(returnToken, digitstart);
                       ITypeInfo *uniType = makeUnicodeType(length, createLowerCaseAtom(locale.str()));
                       if (!uniType)
                       {
@@ -1246,7 +1246,7 @@ UTF8(_{letter}+)?(_{digit}+)? {
 
                       if(CUR_TOKEN_TEXT[digitstart] == '_')
                           digitstart++;
-                      unsigned length = lexer->getTypeSize(digitstart);
+                      unsigned length = lexer->getTypeSize(returnToken, digitstart);
                       ITypeInfo *uniType = makeUtf8Type(length, createLowerCaseAtom(locale.str()));
                       if (!uniType)
                       {
@@ -1261,7 +1261,7 @@ VARSTRING{digit}*   {
                         if (!(likely(lookupFlags & LEXresolve)))
                             return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
 
-                      unsigned size = lexer->getTypeSize(9);
+                      unsigned size = lexer->getTypeSize(returnToken, 9);
                       ITypeInfo *vStrType = makeVarStringType(size);
                       if (!vStrType)
                       {
@@ -1286,7 +1286,7 @@ VARUNICODE(_{letter}+)?{digit}* {
                           getNormalizedLocaleName(digitstart-11, CUR_TOKEN_TEXT+11, locale);
                       }
 
-                      unsigned length = lexer->getTypeSize(digitstart);
+                      unsigned length = lexer->getTypeSize(returnToken, digitstart);
                       ITypeInfo *vUniType = makeVarUnicodeType(length, createLowerCaseAtom(locale.str()));
                       if(!vUniType)
                       {
@@ -1301,8 +1301,8 @@ QSTRING{digit}*     {
                         if (!(likely(lookupFlags & LEXresolve)))
                             return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
 
-                      unsigned size = lexer->getTypeSize(7);
-                      ITypeInfo * type = makeQStringType(size);
+                      unsigned length = lexer->getTypeSize(returnToken, 7);
+                      ITypeInfo * type = makeQStringType(length);
                       assertex(type);
                       returnToken.setType(type);
                       return(SIMPLE_TYPE);

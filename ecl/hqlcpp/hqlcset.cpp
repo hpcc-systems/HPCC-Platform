@@ -872,7 +872,7 @@ BoundRow * InlineLinkedDictionaryCursor::buildSelectMap(BuildCtx & ctx, IHqlExpr
             if (isAscii(type))
             {
                 optimizedLookupFunc.append("dictionaryLookupString");
-                if (type->getStringLen()!=UNKNOWN_LENGTH)
+                if (!isUnknownLength(type->getStringLen()))
                 {
                     optimizedLookupFunc.append("N");
                     args.append(*getSizetConstant(type->getStringLen()));
@@ -944,7 +944,7 @@ void InlineLinkedDictionaryCursor::buildInDataset(BuildCtx & ctx, IHqlExpression
             if (isAscii(type))
             {
                 optimizedLookupFunc.append("dictionaryLookupExistsString");
-                if (type->getStringLen()!=UNKNOWN_LENGTH)
+                if (!isUnknownLength(type->getStringLen()))
                 {
                     optimizedLookupFunc.append("N");
                     args.append(*getSizetConstant(type->getStringLen()));
@@ -1546,7 +1546,7 @@ IHqlCppSetCursor * HqlCppTranslator::createSetSelector(BuildCtx & ctx, IHqlExpre
     case no_all:
         return new AllSetCursor(*this);
     case no_list:
-        if ((normalized->numChildren() == 0) || (normalized->queryType()->queryChildType()->getSize() != UNKNOWN_LENGTH))
+        if ((normalized->numChildren() == 0) || !isUnknownLength(normalized->queryType()->queryChildType()->getSize()))
             return new ListSetCursor(*this, normalized);
         break; // default
     case no_createset:

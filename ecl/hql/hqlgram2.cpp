@@ -2829,7 +2829,7 @@ void HqlGram::addField(const attribute &errpos, IIdAtom * name, ITypeInfo *_type
         fieldType.set(fieldType->queryChildType());
         break;
     case type_decimal:
-        if (fieldType->getSize() == UNKNOWN_LENGTH)
+        if (isUnknownLength(fieldType->getSize()))
         {
             reportWarning(CategorySyntax, ERR_BAD_FIELD_TYPE, errpos.pos, "Fields of unknown length decimal not currently supported");
             fieldType.setown(makeDecimalType(MAX_DECIMAL_DIGITS, MAX_DECIMAL_PRECISION, fieldType->isSigned()));
@@ -2865,7 +2865,7 @@ void HqlGram::addField(const attribute &errpos, IIdAtom * name, ITypeInfo *_type
     }
 
     size32_t fieldSize = fieldType->getSize();
-    if (fieldSize != UNKNOWN_LENGTH)
+    if (!isUnknownLength(fieldSize))
     {
         if (fieldSize > MAX_SENSIBLE_FIELD_LENGTH)
             reportWarning(CategoryEfficiency, SeverityError, ERR_BAD_FIELD_SIZE, errpos.pos, "Field %s is larger than max sensible size", str(name));
@@ -4421,7 +4421,7 @@ bool HqlGram::checkAlienTypeDef(IHqlScope* scope, const attribute& errpos)
         else 
         {
             // check whether we need a physicalLength()
-            bool phylenNeeded = physical->getSize()==UNKNOWN_LENGTH;
+            bool phylenNeeded = isUnknownLength(physical->getSize());
             OwnedHqlExpr phyLen = scope->lookupSymbol(physicalLengthId, LSFpublic, lookupCtx);
 
             // physicalLength
@@ -4526,14 +4526,14 @@ ITypeInfo * HqlGram::checkStringIndex(attribute & strAttr, attribute & idxAttr)
     unsigned startIndex = info.fixedStart;
     unsigned endIndex = info.fixedEnd;
 
-    if (info.knownStart() && (startIndex < 1 || ((strSize != UNKNOWN_LENGTH) && startIndex > strSize)))
+    if (info.knownStart() && (startIndex < 1 || ((!isUnknownLength(strSize)) && startIndex > strSize)))
     {
         if (startIndex<1)
             reportWarning(CategoryIndex, ERR_SUBSTR_INVALIDRANGE, idxAttr.pos,"Invalid substring range: start index %d must >= 1", startIndex);
-        else  /* assert: strSize != UNKNOWN_LENGTH */
+        else  /* assert: !isUnknownLength(strSize) */
             reportWarning(CategoryIndex, ERR_SUBSTR_INVALIDRANGE, idxAttr.pos,"Invalid substring range: index %d out of bound: 1..%d", startIndex, strSize);
     }
-    else if (info.knownEnd() && (endIndex < 1 || ((strSize != UNKNOWN_LENGTH) && endIndex > strSize)))
+    else if (info.knownEnd() && (endIndex < 1 || ((!isUnknownLength(strSize)) && endIndex > strSize)))
     {
         if (endIndex < 1)
             reportWarning(CategoryIndex, ERR_SUBSTR_INVALIDRANGE, idxAttr.pos, "Invalid substring range: end index %d must >= 1", endIndex);
@@ -4544,7 +4544,7 @@ ITypeInfo * HqlGram::checkStringIndex(attribute & strAttr, attribute & idxAttr)
         reportWarning(CategoryIndex, ERR_SUBSTR_INVALIDRANGE, idxAttr.pos, "Invalid substring range: start index %d > end index %d", startIndex, endIndex);
 
     unsigned resultSize = UNKNOWN_LENGTH;
-//  if (strSize != UNKNOWN_LENGTH)
+//  if (!isUnknownLength(strSize))
     {
         if (info.knownStart() && info.knownEnd() && endIndex >= startIndex)
             resultSize = endIndex - startIndex + 1;
@@ -7896,7 +7896,7 @@ void HqlGram::checkIndexFieldType(IHqlExpression * expr, bool isPayload, bool in
             default:
                 if (!type->isScalar())
                     reportInvalidIndexFieldType(expr, false, errpos);
-                else if ((type->getSize() == UNKNOWN_LENGTH) && !variableOk)
+                else if (isUnknownLength(type->getSize()) && !variableOk)
                 {
                     reportError(ERR_INDEX_BADTYPE, errpos, "Variable size fields (%s) are not supported inside indexes", str(id));
                     break;
@@ -8395,7 +8395,7 @@ void HqlGram::checkProjectedFields(IHqlExpression * e, attribute & errpos)
             if (value)
             {
                 IIdAtom * id = field->queryId();
-                bool isVariableSize = (value->queryType()->getSize() == UNKNOWN_LENGTH);
+                bool isVariableSize = isUnknownLength(value->queryType()->getSize());
                 if (value->getOperator() == no_implicitcast)
                     value = value->queryChild(0);
                 if (isVariableSize)
@@ -10339,7 +10339,7 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
     if (isSaved(failure) && !type)
     {
         size32_t exprTypeSize = etype->getSize();
-        if (queryOperatorInList(no_stored, failure) && (exprTypeSize != UNKNOWN_LENGTH))
+        if (queryOperatorInList(no_stored, failure) && (!isUnknownLength(exprTypeSize)))
         {
             if (isStringType(etype) || isUnicodeType(etype))
                 type.setown(getStretchedType(UNKNOWN_LENGTH, etype));
@@ -12677,15 +12677,15 @@ void HqlGram::checkSizeof(ITypeInfo* type, attribute& errpos, bool isDataset)
             reportError(ERR_SIZEOF_WRONGPARAM,errpos,"Can not determine the size of SET");
             break;
         case type_qstring: 
-            if (type->getSize() == UNKNOWN_LENGTH)
+            if (isUnknownLength(type->getSize()))
                 reportError(ERR_SIZEOF_WRONGPARAM,errpos,"SIZEOF: QSTRING has unknown size");
             break;
         case type_varstring: 
-            if (type->getSize() == UNKNOWN_LENGTH)
+            if (isUnknownLength(type->getSize()))
                 reportError(ERR_SIZEOF_WRONGPARAM,errpos,"SIZEOF: VARSTRING has unknown size");
             break;
         case type_string:
-            if (type->getSize() == UNKNOWN_LENGTH)
+            if (isUnknownLength(type->getSize()))
                 reportError(ERR_SIZEOF_WRONGPARAM,errpos,"SIZEOF: STRING has unknown size");
             break;
         case type_alien:

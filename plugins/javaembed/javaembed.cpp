@@ -3578,7 +3578,7 @@ public:
         size32_t outBytes = 0;
         if (numResults > 0)
         {
-            if (elemSize != UNKNOWN_LENGTH)
+            if (!isUnknownLength(elemSize))
             {
                 out.ensureAvailable(numResults * elemSize); // MORE - check for overflow?
                 outData = out.getbytes();
@@ -3632,7 +3632,7 @@ public:
                         switch (elemType)
                         {
                         case type_string:
-                            if (elemSize == UNKNOWN_LENGTH)
+                            if (isUnknownLength(elemSize))
                             {
                                 out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
                                 outData = out.getbytes() + outBytes;
@@ -3644,7 +3644,7 @@ public:
                                 rtlStrToStr(elemSize, outData, lenBytes, text);
                             break;
                         case type_varstring:
-                            if (elemSize == UNKNOWN_LENGTH)
+                            if (isUnknownLength(elemSize))
                             {
                                 out.ensureAvailable(outBytes + lenBytes + 1);
                                 outData = out.getbytes() + outBytes;
@@ -3660,7 +3660,7 @@ public:
                             size32_t numchars = rtlUtf8Length(lenBytes, text);
                             if (elemType == type_utf8)
                             {
-                                assertex (elemSize == UNKNOWN_LENGTH);
+                                assertex (isUnknownLength(elemSize));
                                 out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
                                 outData = out.getbytes() + outBytes;
                                 * (size32_t *) outData = numchars;
@@ -3669,7 +3669,7 @@ public:
                             }
                             else
                             {
-                                if (elemSize == UNKNOWN_LENGTH)
+                                if (isUnknownLength(elemSize))
                                 {
                                     // You can't assume that number of chars in utf8 matches number in unicode16 ...
                                     size32_t numchars16;
@@ -3693,7 +3693,7 @@ public:
                         }
                         JNIenv->ReleaseStringUTFChars(elem, text);
                         JNIenv->DeleteLocalRef(elem);
-                        if (elemSize != UNKNOWN_LENGTH)
+                        if (!isUnknownLength(elemSize))
                             outData += elemSize;
                     }
                 }
@@ -3706,7 +3706,7 @@ public:
             }
         }
         __isAllResult = false;
-        __resultBytes = elemSize == UNKNOWN_LENGTH ? outBytes : elemSize * numResults;
+        __resultBytes = isUnknownLength(elemSize) ? outBytes : elemSize * numResults;
         __result = out.detachdata();
     }
     virtual IRowStream *getDatasetResult(IEngineRowAllocator * _resultAllocator)
@@ -4002,7 +4002,7 @@ public:
                 argsig += 17;  // Yes, 17, because we increment again at the end of the case
                 const byte *inData = (const byte *) setData;
                 const byte *endData = inData + totalBytes;
-                if (elemSize == UNKNOWN_LENGTH)
+                if (isUnknownLength(elemSize))
                 {
                     numElems = 0;
                     // Will need 2 passes to work out how many elements there are in the set :(
@@ -4046,13 +4046,13 @@ public:
                         rtlDataAttr unicode;
                         rtlStrToUnicodeX(unicodeChars, unicode.refustr(), numChars, (const char *) inData);
                         thisElem = JNIenv->NewString(unicode.getustr(), unicodeChars);
-                        if (elemSize == UNKNOWN_LENGTH)
+                        if (isUnknownLength(elemSize))
                             thisSize = numChars + 1;
                         break;
                     }
                     case type_string:
                     {
-                        if (elemSize == UNKNOWN_LENGTH)
+                        if (isUnknownLength(elemSize))
                         {
                             thisSize = * (size32_t *) inData;
                             inData += sizeof(size32_t);
@@ -4065,7 +4065,7 @@ public:
                     }
                     case type_unicode:
                     {
-                        if (elemSize == UNKNOWN_LENGTH)
+                        if (isUnknownLength(elemSize))
                         {
                             thisSize = (* (size32_t *) inData) * sizeof(UChar); // NOTE - it's in chars...
                             inData += sizeof(size32_t);
@@ -4075,7 +4075,7 @@ public:
                     }
                     case type_utf8:
                     {
-                        assertex (elemSize == UNKNOWN_LENGTH);
+                        assertex (isUnknownLength(elemSize));
                         size32_t numChars = * (size32_t *) inData;
                         inData += sizeof(size32_t);
                         unsigned unicodeChars;

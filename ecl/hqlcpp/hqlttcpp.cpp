@@ -2225,7 +2225,7 @@ IHqlExpression * SortListSimplifier::simplify(IHqlExpression * sortlist)
             {
                 ITypeInfo * type = concats.item(idxc).queryType();
                 unsigned tc = type->getTypeCode();
-                if (!((tc == type_string || tc == type_data) && (type->getSize() != UNKNOWN_LENGTH)))
+                if (!((tc == type_string || tc == type_data) && !isUnknownLength((type->getSize()))))
                     expand = false;
             }
             if (expand)

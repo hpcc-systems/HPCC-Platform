@@ -1401,7 +1401,7 @@ public:
         {
             const CassValue *value = cass_iterator_get_value(iterator);
             assertex(value);
-            if (elemSize != UNKNOWN_LENGTH)
+            if (!isUnknownLength(elemSize))
             {
                 out.ensureAvailable(outBytes + elemSize);
                 outData = out.getbytes() + outBytes;
@@ -1433,7 +1433,7 @@ public:
                 rtlDataAttr str;
                 size32_t lenBytes;
                 cassandraembed::getStringResult(NULL, value, lenBytes, str.refstr());
-                if (elemSize == UNKNOWN_LENGTH)
+                if (isUnknownLength(elemSize))
                 {
                     if (elemType == type_string)
                     {
@@ -1470,7 +1470,7 @@ public:
                 size32_t lenBytes = rtlUtf8Size(lenChars, text);
                 if (elemType == type_utf8)
                 {
-                    assertex (elemSize == UNKNOWN_LENGTH);
+                    assertex (isUnknownLength(elemSize));
                     out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
                     outData = out.getbytes() + outBytes;
                     * (size32_t *) outData = lenChars;
@@ -1479,7 +1479,7 @@ public:
                 }
                 else
                 {
-                    if (elemSize == UNKNOWN_LENGTH)
+                    if (isUnknownLength(elemSize))
                     {
                         // You can't assume that number of chars in utf8 matches number in unicode16 ...
                         size32_t numchars16;
@@ -1499,7 +1499,7 @@ public:
             default:
                 fail("type mismatch - unsupported return type");
             }
-            if (elemSize != UNKNOWN_LENGTH)
+            if (!isUnknownLength(elemSize))
                 outBytes += elemSize;
         }
         __isAllResult = false;
@@ -1622,7 +1622,7 @@ public:
         const byte *inData = (const byte *) setData;
         const byte *endData = inData + totalBytes;
         int numElems;
-        if (elemSize == UNKNOWN_LENGTH)
+        if (isUnknownLength(elemSize))
         {
             numElems = 0;
             // Will need 2 passes to work out how many elements there are in the set :(
@@ -1681,7 +1681,7 @@ public:
             case type_varstring:
             {
                 size32_t numChars = strlen((const char *) inData);
-                if (elemSize == UNKNOWN_LENGTH)
+                if (isUnknownLength(elemSize))
                     thisSize = numChars + 1;
                 size32_t utf8chars;
                 rtlDataAttr utfText;
@@ -1691,7 +1691,7 @@ public:
             }
             case type_string:
             {
-                if (elemSize == UNKNOWN_LENGTH)
+                if (isUnknownLength(elemSize))
                 {
                     thisSize = * (size32_t *) inData;
                     inData += sizeof(size32_t);
@@ -1714,7 +1714,7 @@ public:
                 break;
             case type_unicode:
             {
-                if (elemSize == UNKNOWN_LENGTH)
+                if (isUnknownLength(elemSize))
                 {
                     thisSize = (* (size32_t *) inData) * sizeof(UChar); // NOTE - it's in chars...
                     inData += sizeof(size32_t);
@@ -1728,7 +1728,7 @@ public:
             }
             case type_utf8:
             {
-                assertex (elemSize == UNKNOWN_LENGTH);
+                assertex (isUnknownLength(elemSize));
                 size32_t numChars = * (size32_t *) inData;
                 inData += sizeof(size32_t);
                 thisSize = rtlUtf8Size(numChars, inData);
@@ -1736,7 +1736,7 @@ public:
                 break;
             }
             case type_data:
-                if (elemSize == UNKNOWN_LENGTH)
+                if (isUnknownLength(elemSize))
                 {
                     thisSize = * (size32_t *) inData;
                     inData += sizeof(size32_t);

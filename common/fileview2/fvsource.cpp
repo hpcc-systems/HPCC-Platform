@@ -255,7 +255,7 @@ void DataSourceMetaData::addSimpleField(const char * name, const char * xpath, I
     ITypeInfo * promoted = type->queryPromotedType();
     unsigned size = promoted->getSize();
     unsigned thisBits = 0;
-    if (size == UNKNOWN_LENGTH)
+    if (isUnknownLength(size))
     {
         isStoredFixedWidth = false;
         switch (type->getTypeCode())
@@ -319,7 +319,7 @@ void DataSourceMetaData::extractKeyedInfo(UnsignedArray & offsets, TypeInfoArray
                 offsets.append(curOffset);
                 types.append(*LINK(cur.type));
                 unsigned size = cur.type->getSize();
-                assertex(size != UNKNOWN_LENGTH);
+                assertex(!isUnknownLength(size));
                 curOffset += size;
                 break;
             }
@@ -441,7 +441,7 @@ unsigned DataSourceMetaData::numKeyedColumns() const
         case FVFFnone:
             {
                 unsigned size = cur.type->getSize();
-                assertex(size != UNKNOWN_LENGTH);
+                assertex(!isUnknownLength(size));
                 curOffset += size;
                 count++;
                 break;
@@ -620,7 +620,7 @@ size32_t DataSourceMetaData::calcRecordSize(size32_t maxLength, const void *rec)
     {
         ITypeInfo & type = *fields.item(idx).type;
         unsigned size = type.getSize();
-        if (size == UNKNOWN_LENGTH)
+        if (isUnknownLength(size))
         {
             const byte * cur = data + curOffset;
             switch (type.getTypeCode())
