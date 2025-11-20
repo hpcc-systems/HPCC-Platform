@@ -448,6 +448,20 @@
             }
           }
         },
+        "hpas": {
+          "type": "object",
+          "description" : "Global HPAs configuration",
+          "additionalProperties": {
+            "type": "object",
+            "properties":
+            {
+              "hpa": {
+                "$ref": "#/definitions/hpa"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
         "visibilities": {
           "type": "object",
           "description" : "Global visibilities configuration",
@@ -3355,8 +3369,8 @@
         "egress": {
           "$ref" : "#/definitions/egress"
         },
-        "hpa": {
-          "$ref": "#/definitions/hpa"
+        "hpa":{
+          "type": "string"
         },
         "expert": {
           "$ref": "#/definitions/expert"
@@ -3630,6 +3644,23 @@
           "description": "default per stub instance milli cpu requirements",
           "type": "string",
           "default": "50m"
+        },
+        "additionalProperties": false
+      }
+    },
+    "monitoringInstanceResources": {
+      "type": "object",
+      "description" : "Resource definitions per instance for monitoring sidecars",
+      "properties": {
+        "memory": {
+          "description": "Default per monitoring sidecar instance memory requirements",
+          "type": "string",
+          "default": "100Mi"
+        },
+        "cpu": {
+          "description": "Default per monitoring sidecar instance CPU requirements",
+          "type": "string",
+          "default": "5m"
         },
         "additionalProperties": false
       }

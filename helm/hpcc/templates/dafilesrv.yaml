@@ -74,10 +74,7 @@ spec:
           value: "/tmp/{{ .name }}.sentinel"
 {{ include "hpcc.addSentinelProbes" . | indent 8 }}
 {{- include "hpcc.addSecurityContext" $commonCtx | indent 8 }}
-{{- if .resources }}
-        resources:
-{{ toYaml .resources | nindent 10 }}
-{{- end }}
+{{- include "hpcc.addResources" (dict "me" .resources "root" $) | indent 8 }}
 {{ include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addEphemeralVolumeMounts" . | indent 8 }}
@@ -100,7 +97,7 @@ spec:
 {{- end }}
 ---
 {{- if hasKey . "hpa" }}
- {{- include "hpcc.addHorizontalPodAutoscaler" (dict "name" .name "kind" "Deployment" "hpa" .hpa) }}
+  {{- include "hpcc.addHorizontalPodAutoscalerByReference" (dict "name" .name "hpaRef" .hpa "kind" "Deployment" "root" $) }}
 {{- end }}
 ---
 kind: ConfigMap 
