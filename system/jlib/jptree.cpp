@@ -9273,20 +9273,26 @@ static std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfigura
             matchConfig = extractOption("--componentTag", cur);
             if (matchConfig)
                 componentTag = matchConfig;
-#ifdef _DEBUG
             else
             {
-                const char *matchHold = extractOption("--hold", cur);
-                if (matchHold)
+                const char * legacy = extractOption("--legacyconfig", cur);
+                if (legacy)
+                    legacyFilename = legacy;
+#ifdef _DEBUG
+                else
                 {
-                    if (strToBool(matchHold))
+                    const char *matchHold = extractOption("--hold", cur);
+                    if (matchHold)
                     {
-                        held = true;
-                        holdLoop();
+                        if (strToBool(matchHold))
+                        {
+                            held = true;
+                            holdLoop();
+                        }
                     }
                 }
-            }
 #endif
+            }
         }
     }
 
