@@ -554,7 +554,7 @@ const char * peekStringList(std::vector<size32_t> & matchOffsets, IBufferedSeria
             char next = start[offset];
             if (!next)
             {
-                if (offset == startNext && matchOffsets.size() % grouping == 0)
+                if (offset == startNext && (grouping == 0 || matchOffsets.size() % grouping == 0))
                 {
                     //A zero length string terminates the list - include the empty string in the length
                     len = offset + 1;
