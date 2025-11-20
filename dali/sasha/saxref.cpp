@@ -893,9 +893,9 @@ public:
     CIArrayOf<cMessage> errors;
     CIArrayOf<cMessage> warnings;
     StringAttr rootdir;
-    unsigned lastlog;
-    unsigned sfnum;
-    unsigned fnum;
+    unsigned lastlog = 0;
+    unsigned sfnum = 0;
+    unsigned fnum = 0;
     std::atomic<uint64_t> processedDirs{0};
     std::atomic<uint64_t> processedFiles{0};
     XRefPeriodicTimer heartbeatTimer;
@@ -1082,9 +1082,6 @@ public:
 
     CNewXRefManagerBase()
     {
-        lastlog = 0;
-        sfnum = 0;
-        fnum = 0;
         saveToDebugPlane = getExpertOptBool("saveToDebugPlane", isContainerized());
     }
 
@@ -1181,19 +1178,19 @@ class CNewXRefManager: public CNewXRefManagerBase
 {
     XRefAllocator allocator;
     std::unique_ptr<cDirDesc> root;
-    bool iswin;                     // set by scanDirectories
-    IpAddress *iphash;
-    unsigned *ipnum;
-    unsigned iphashsz;
+    bool iswin = false;             // set by scanDirectories
+    IpAddress *iphash = nullptr;
+    unsigned *ipnum = nullptr;
+    unsigned iphashsz = 0;          // set by setGroup
     IArrayOf<IPropertyTree> sorteddirs;
 
 public:
     Owned<IGroup> grp, rawgrp;
     StringArray clusters;           // list of matching cluster (used in xref)
     StringBuffer clusterscsl;       // comma separated list of cluster (used in xref)
-    unsigned numnodes;
+    unsigned numnodes = 0;          // set by setGroup
     StringArray lostfiles;
-    bool verbose;
+    bool verbose = true;
     unsigned numuniqnodes = 0;
     Owned<IUserDescriptor> udesc;
     Linked<IPropertyTree> storagePlane;
@@ -1203,11 +1200,7 @@ public:
     CNewXRefManager(IPropertyTree *plane,unsigned maxMb=DEFAULT_MAXMEMORY)
         : allocator(maxMb)
     {
-        iswin = false; // set later
         root.reset(cDirDesc::create("", &allocator));
-        verbose = true;
-        iphash = NULL;
-        ipnum = NULL;
         foundbranch.setown(createPTree("Found"));
         lostbranch.setown(createPTree("Lost"));
         orphansbranch.setown(createPTree("Orphans"));
