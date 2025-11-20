@@ -62,8 +62,8 @@ public: // IBucketVisitor
 
     virtual void depart() override
     {
-        for (byte bucketKind = BucketBranch; bucketKind < BucketKindMax; bucketKind++)
-            stats[bucketKind].clear();
+        for (unsigned nodeKind = 0; nodeKind < NumNodeKinds; nodeKind++)
+            stats[nodeKind].clear();
     }
 
     virtual void end() override
@@ -128,7 +128,7 @@ protected:
         }
    };
     Linked<IBufferedSerialOutputStream> out;
-    Stats stats[BucketKindMax]; // keep statistics for each bucket kind
+    Stats stats[NumNodeKinds]; // keep statistics for each bucket kind
     unsigned currentGranularity{0};
     bool arrived{false};
 };
@@ -139,19 +139,14 @@ protected:
 class CAllBucketVisitor : public CStreamingBucketVisitor
 {
 public:
-    virtual void visitBucket(bucket_type bucket, BucketKind bucketKind, stat_type stat) override
+    virtual void visitBucket(bucket_type bucket, NodeKind nodeKind, stat_type stat) override
     {
-        stats[bucketKind].recordEvent(stat);
+        stats[nodeKind].recordEvent(stat);
         StringBuffer lines;
-        if (firstLeaf && BucketLeaf == bucketKind)
+        if (firstOfKind[nodeKind])
         {
-            lines.append("  leaf:\n");
-            firstLeaf = false;
-        }
-        else if (firstBranch && BucketBranch == bucketKind)
-        {
-            lines.append("  branch:\n");
-            firstBranch = false;
+            lines.append("  ").append(mapNodeKind(nodeKind)).append('\n');
+            firstOfKind[nodeKind] = false;
         }
         lines.append("  - first-node: ").append(bucket2page(bucket, currentGranularity)).append('\n');
         lines.append("    events: ").append(stat).append('\n');
@@ -161,16 +156,11 @@ public:
     virtual void depart() override
     {
         StringBuffer lines;
-        stats[BucketLeaf].toString(lines, 2, "leafStats");
-        stats[BucketAmbiguous].toString(lines, 2, "ambiguousStats");
-        stats[BucketBranch].toString(lines, 2, "branchStats");
+        stats[LeafNode].toString(lines, 2, "leafStats");
+        stats[BranchNode].toString(lines, 2, "branchStats");
+        stats[BlobNode].toString(lines, 2, "blobStats");
         out->put(lines.length(), lines.str());
-        firstLeaf = firstBranch = true;
-    }
-
-    virtual bool wantAmbiguous() const override
-    {
-        return false;
+        firstOfKind[LeafNode] = firstOfKind[BranchNode] = firstOfKind[BlobNode] = true;
     }
 
 protected:
@@ -183,8 +173,7 @@ public:
     using CStreamingBucketVisitor::CStreamingBucketVisitor;
 
 private:
-    bool firstLeaf{true};
-    bool firstBranch{true};
+    bool firstOfKind[NumNodeKinds] = {true, true, true};
 };
 
 IBucketVisitor* createAllBucketVisitor(IBufferedSerialOutputStream& out)
@@ -218,10 +207,10 @@ protected:
     };
 
 public:
-    virtual void visitBucket(bucket_type bucket, BucketKind bucketKind, stat_type stat) override
+    virtual void visitBucket(bucket_type bucket, NodeKind nodeKind, stat_type stat) override
     {
-        Info& info = (BucketLeaf == bucketKind ? leaves : branches);
-        stats[bucketKind].recordEvent(stat);
+        Info& info = kinds[nodeKind];
+        stats[nodeKind].recordEvent(stat);
         if (info.hits.size() == limit) // have top N; drop the lowest
         {
             stat_type last = info.hits.back().first;
@@ -262,15 +251,10 @@ public:
 
     virtual void depart() override
     {
-        summarize(leaves, stats[BucketLeaf], "leaves");
-        summarize(branches, stats[BucketBranch], "branches");
+        summarize(kinds[LeafNode], stats[LeafNode], "leaves");
+        summarize(kinds[BranchNode], stats[BranchNode], "branches");
+        summarize(kinds[BlobNode], stats[BlobNode], "blobs");
         CStreamingBucketVisitor::depart();
-    }
-
-    virtual bool wantAmbiguous() const override
-    {
-        // Output clearly differentiates between leaf and branch buckets. Ambiguity is not needed.
-        return false;
     }
 
 protected:
@@ -310,8 +294,7 @@ protected:
     }
 
 private:
-    Info leaves;
-    Info branches;
+    Info kinds[NumNodeKinds];
     byte limit;
 };
 

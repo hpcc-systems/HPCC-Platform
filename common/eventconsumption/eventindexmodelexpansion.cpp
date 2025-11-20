@@ -16,13 +16,14 @@
 ############################################################################## */
 
 #include "eventindexmodel.hpp"
+#include "eventindex.hpp"
 #include "jevent.hpp"
 
-MemoryModel::NodeCache::NodeCache(MemoryModel& _parent, __uint64 _kind)
+MemoryModel::NodeCache::NodeCache(MemoryModel& _parent, NodeKind _kind)
     : parent(_parent)
     , kind(_kind)
 {
-    assertex(kind < NumKinds);
+    assertex(isNodeKind(kind));
 }
 
 void MemoryModel::NodeCache::configure(const IPropertyTree& config)
@@ -60,7 +61,7 @@ static void parseExpansionMode(const char* modeStr, ExpansionMode& expansionMode
 
 bool MemoryModel::isCacheEnabled() const
 {
-    for (unsigned idx = 0; idx < NumKinds; ++idx)
+    for (unsigned idx = 0; idx < NumNodeKinds; ++idx)
     {
         if (caches[idx].enabled())
             return true;
@@ -71,13 +72,13 @@ bool MemoryModel::isCacheEnabled() const
 __uint64 MemoryModel::getCacheSize() const
 {
     __uint64 total = 0;
-    for (unsigned idx = 0; idx < NumKinds; ++idx)
+    for (unsigned idx = 0; idx < NumNodeKinds; ++idx)
         total += caches[idx].capacity;
     return total;
 }
 
 MemoryModel::MemoryModel()
-    : caches{NodeCache(*this, 0), NodeCache(*this, 1)}
+    : caches{NodeCache(*this, BranchNode), NodeCache(*this, LeafNode), NodeCache(*this, BlobNode)}
 {
 }
 
@@ -86,15 +87,22 @@ void MemoryModel::configure(const IPropertyTree& config)
     unsigned estimatedCount = 0;
 
     // Process settings for each node kind.
-    for (unsigned idx = 0; idx < NumKinds; ++idx)
+    for (unsigned idx = 0; idx < NumNodeKinds; ++idx)
     {
-        const IPropertyTree* node = config.queryPropTree(VStringBuffer("node[@kind=%u]", idx));
+        // The xpath must support both numeric (@kind='0') and text (@kind='branch') formats
+        // because configuration files may use either representation for @kind. queryPropTree
+        // throws an exception for an ambiguous xpath when string values are present.
+        const IPropertyTree* node = config.queryPropTree(VStringBuffer("node[@kind='%u']", idx));
         if (!node)
-            continue;
+        {
+            node = config.queryPropTree(VStringBuffer("node[@kind='%s']", nodeKindText[idx]));
+            if (!node)
+                continue;
+        }
 
         // Identify per-kind overrides of the default expansion mode, except branch nodes which
         // are always on-load.
-        if (idx != 0 && node->hasProp("@expansionMode"))
+        if (idx != BranchNode && node->hasProp("@expansionMode"))
             parseExpansionMode(node->queryProp("@expansionMode"), modes[idx]);
 
         // MORE: Consider support for custom compressed size "estimates" if more precise values are
@@ -127,7 +135,7 @@ void MemoryModel::configure(const IPropertyTree& config)
     case 0:
         estimating = false;
         break;
-    case NumKinds:
+    case NumNodeKinds:
         estimating = true;
         break;
     default:
@@ -140,8 +148,7 @@ void MemoryModel::configure(const IPropertyTree& config)
     ForEach(*it)
     {
         const IPropertyTree& entry = it->query();
-        __uint64 nodeKind = (__uint64)entry.getPropInt64("@NodeKind");
-        assertex(nodeKind < NumKinds);
+        NodeKind nodeKind = mapNodeKind(entry.queryProp("@NodeKind"));
         if (!usingHistory(nodeKind))
             continue;
         IndexHashKey key;
@@ -244,8 +251,8 @@ void MemoryModel::describePage(const CEvent& event, ModeledPage& page) const
         return;
     page.fileId = event.queryNumericValue(EvAttrFileId);
     page.offset = event.queryNumericValue(EvAttrFileOffset);
-    page.nodeKind = (event.hasAttribute(EvAttrNodeKind) ? event.queryNumericValue(EvAttrNodeKind) : 1);
-    assertex(page.nodeKind < NumKinds);
+    page.nodeKind = queryIndexNodeKind(event);
+    assertex(isNodeKind(page.nodeKind));
     page.expansionMode = modes[page.nodeKind];
 
     IndexHashKey key(event);
@@ -400,15 +407,19 @@ public:
             <memory>
                 <node kind="0" sizeFactor="1.0" sizeToTimeFactor="1.0"/>
                 <node kind="1" sizeFactor="1.75" sizeToTimeFactor="0.75"/>
+                <node kind="2" sizeFactor="2.5" sizeToTimeFactor="1.0"/>
             </memory>)!!!");
         memory.configure(*configTree);
         CPPUNIT_ASSERT(memory.estimating);
-        CPPUNIT_ASSERT(memory.estimates[0].compressed == 8'192);
-        CPPUNIT_ASSERT(memory.estimates[0].expanded == 8'192);
-        CPPUNIT_ASSERT(memory.estimates[0].time == 8'192);
-        CPPUNIT_ASSERT(memory.estimates[1].compressed == 8'192);
-        CPPUNIT_ASSERT(memory.estimates[1].expanded == 14'336);
-        CPPUNIT_ASSERT(memory.estimates[1].time == 10'752);
+        CPPUNIT_ASSERT(memory.estimates[BranchNode].compressed == 8'192);
+        CPPUNIT_ASSERT(memory.estimates[BranchNode].expanded == 8'192);
+        CPPUNIT_ASSERT(memory.estimates[BranchNode].time == 8'192);
+        CPPUNIT_ASSERT(memory.estimates[LeafNode].compressed == 8'192);
+        CPPUNIT_ASSERT(memory.estimates[LeafNode].expanded == 14'336);
+        CPPUNIT_ASSERT(memory.estimates[LeafNode].time == 10'752);
+        CPPUNIT_ASSERT(memory.estimates[BlobNode].compressed == 8'192);
+        CPPUNIT_ASSERT(memory.estimates[BlobNode].expanded == 20'480);
+        CPPUNIT_ASSERT(memory.estimates[BlobNode].time == 20'480);
         END_TEST
     }
 
@@ -421,6 +432,7 @@ public:
             <memory>
                 <node kind="0" sizeFactor="1.0" sizeToTimeFactor="1.0"/>
                 <node kind="1" sizeFactor="1.0" sizeToTimeFactor="1.0"/>
+                <node kind="2" sizeFactor="2.5" sizeToTimeFactor="1.0"/>
             </memory>
         )!!!");
         memory.configure(*configTree);
@@ -429,37 +441,37 @@ public:
         event.reset(EventIndexLoad);
         event.setValue(EvAttrFileId, 1ULL);
         event.setValue(EvAttrFileOffset, 0ULL);
-        event.setValue(EvAttrNodeKind, 0ULL);
+        event.setValue(EvAttrNodeKind, BranchNode);
         event.setValue(EvAttrInMemorySize, 1ULL);
         event.setValue(EvAttrExpandTime, 1ULL);
         memory.describePage(event, page);
-        CPPUNIT_ASSERT_EQUAL(memory.estimates[0].compressed, page.compressed.size);
+        CPPUNIT_ASSERT_EQUAL(memory.estimates[BranchNode].compressed, page.compressed.size);
         CPPUNIT_ASSERT_EQUAL(true, page.compressed.estimated);
-        CPPUNIT_ASSERT_EQUAL(memory.estimates[0].expanded, page.expanded.size);
+        CPPUNIT_ASSERT_EQUAL(memory.estimates[BranchNode].expanded, page.expanded.size);
         CPPUNIT_ASSERT_EQUAL(true, page.expanded.estimated);
-        CPPUNIT_ASSERT_EQUAL(memory.estimates[0].time, page.expansionTime);
-        event.setValue(EvAttrNodeKind, 1ULL);
+        CPPUNIT_ASSERT_EQUAL(memory.estimates[BranchNode].time, page.expansionTime);
+        event.setValue(EvAttrNodeKind, LeafNode);
         memory.describePage(event, page);
-        CPPUNIT_ASSERT_EQUAL(memory.estimates[1].compressed, page.compressed.size);
+        CPPUNIT_ASSERT_EQUAL(memory.estimates[LeafNode].compressed, page.compressed.size);
         CPPUNIT_ASSERT_EQUAL(true, page.compressed.estimated);
-        CPPUNIT_ASSERT_EQUAL(memory.estimates[1].expanded, page.expanded.size);
+        CPPUNIT_ASSERT_EQUAL(memory.estimates[LeafNode].expanded, page.expanded.size);
         CPPUNIT_ASSERT_EQUAL(true, page.expanded.estimated);
-        CPPUNIT_ASSERT_EQUAL(memory.estimates[1].time, page.expansionTime);
+        CPPUNIT_ASSERT_EQUAL(memory.estimates[LeafNode].time, page.expansionTime);
         event.setValue(EvAttrInMemorySize, 0ULL);
         memory.describePage(event, page);
-        CPPUNIT_ASSERT_EQUAL(memory.estimates[1].compressed, page.compressed.size);
+        CPPUNIT_ASSERT_EQUAL(memory.estimates[LeafNode].compressed, page.compressed.size);
         CPPUNIT_ASSERT_EQUAL(true, page.compressed.estimated);
-        CPPUNIT_ASSERT_EQUAL(memory.estimates[1].expanded, page.expanded.size);
+        CPPUNIT_ASSERT_EQUAL(memory.estimates[LeafNode].expanded, page.expanded.size);
         CPPUNIT_ASSERT_EQUAL(true, page.expanded.estimated);
-        CPPUNIT_ASSERT_EQUAL(memory.estimates[1].time, page.expansionTime);
+        CPPUNIT_ASSERT_EQUAL(memory.estimates[LeafNode].time, page.expansionTime);
         event.setValue(EvAttrInMemorySize, 1ULL);
         event.setValue(EvAttrExpandTime, 0ULL);
         memory.describePage(event, page);
-        CPPUNIT_ASSERT_EQUAL(memory.estimates[1].compressed, page.compressed.size);
+        CPPUNIT_ASSERT_EQUAL(memory.estimates[LeafNode].compressed, page.compressed.size);
         CPPUNIT_ASSERT_EQUAL(true, page.compressed.estimated);
-        CPPUNIT_ASSERT_EQUAL(memory.estimates[1].expanded, page.expanded.size);
+        CPPUNIT_ASSERT_EQUAL(memory.estimates[LeafNode].expanded, page.expanded.size);
         CPPUNIT_ASSERT_EQUAL(true, page.expanded.estimated);
-        CPPUNIT_ASSERT_EQUAL(memory.estimates[1].time, page.expansionTime);
+        CPPUNIT_ASSERT_EQUAL(memory.estimates[LeafNode].time, page.expansionTime);
         END_TEST
     }
 
@@ -473,25 +485,25 @@ public:
         event.reset(EventIndexLoad);
         event.setValue(EvAttrFileId, 1ULL);
         event.setValue(EvAttrFileOffset, 0ULL);
-        event.setValue(EvAttrNodeKind, 0ULL);
+        event.setValue(EvAttrNodeKind, BranchNode);
         event.setValue(EvAttrInMemorySize, 1ULL);
         event.setValue(EvAttrExpandTime, 1ULL);
         memory.describePage(event, page);
-        CPPUNIT_ASSERT_EQUAL(memory.estimates[0].compressed, page.compressed.size);
+        CPPUNIT_ASSERT_EQUAL(memory.estimates[BranchNode].compressed, page.compressed.size);
         CPPUNIT_ASSERT_EQUAL(true, page.compressed.estimated);
         CPPUNIT_ASSERT_EQUAL(1ULL, page.expanded.size);
         CPPUNIT_ASSERT_EQUAL(false, page.expanded.estimated);
         CPPUNIT_ASSERT_EQUAL(1ULL, page.expansionTime);
-        event.setValue(EvAttrNodeKind, 1ULL);
+        event.setValue(EvAttrNodeKind, LeafNode);
         memory.describePage(event, page);
-        CPPUNIT_ASSERT_EQUAL(memory.estimates[1].compressed, page.compressed.size);
+        CPPUNIT_ASSERT_EQUAL(memory.estimates[LeafNode].compressed, page.compressed.size);
         CPPUNIT_ASSERT_EQUAL(true, page.compressed.estimated);
         CPPUNIT_ASSERT_EQUAL(1ULL, page.expanded.size);
         CPPUNIT_ASSERT_EQUAL(false, page.expanded.estimated);
         CPPUNIT_ASSERT_EQUAL(1ULL, page.expansionTime);
         event.setValue(EvAttrInMemorySize, 0ULL);
         memory.describePage(event, page);
-        CPPUNIT_ASSERT_EQUAL(memory.estimates[1].compressed, page.compressed.size);
+        CPPUNIT_ASSERT_EQUAL(memory.estimates[LeafNode].compressed, page.compressed.size);
         CPPUNIT_ASSERT_EQUAL(true, page.compressed.estimated);
         CPPUNIT_ASSERT_EQUAL(0ULL, page.expanded.size);
         CPPUNIT_ASSERT_EQUAL(false, page.expanded.estimated);
@@ -499,7 +511,7 @@ public:
         event.setValue(EvAttrInMemorySize, 1ULL);
         event.setValue(EvAttrExpandTime, 0ULL);
         memory.describePage(event, page);
-        CPPUNIT_ASSERT_EQUAL(memory.estimates[1].compressed, page.compressed.size);
+        CPPUNIT_ASSERT_EQUAL(memory.estimates[LeafNode].compressed, page.compressed.size);
         CPPUNIT_ASSERT_EQUAL(true, page.compressed.estimated);
         CPPUNIT_ASSERT_EQUAL(1ULL, page.expanded.size);
         CPPUNIT_ASSERT_EQUAL(false, page.expanded.estimated);
@@ -515,8 +527,9 @@ public:
             <memory/>
         )!!!");
         memory.configure(*configTree);
-        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, memory.modes[0]);
-        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, memory.modes[1]);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, memory.modes[BranchNode]);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, memory.modes[LeafNode]);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, memory.modes[BlobNode]);
         END_TEST
         START_TEST
         MemoryModel memory;
@@ -524,11 +537,27 @@ public:
             <memory>
                 <node kind="0"/>
                 <node kind="1"/>
+                <node kind="2"/>
             </memory>
         )!!!");
         memory.configure(*configTree);
-        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, memory.modes[0]);
-        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, memory.modes[1]);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, memory.modes[BranchNode]);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, memory.modes[LeafNode]);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, memory.modes[BlobNode]);
+        END_TEST
+        START_TEST
+        MemoryModel memory;
+        Owned<IPropertyTree> configTree = createTestConfiguration(R"!!!(
+            <memory>
+                <node kind="branch"/>
+                <node kind="leaf"/>
+                <node kind="blob"/>
+            </memory>
+        )!!!");
+        memory.configure(*configTree);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, memory.modes[BranchNode]);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, memory.modes[LeafNode]);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, memory.modes[BlobNode]);
         END_TEST
         START_TEST
         MemoryModel memory;
@@ -539,8 +568,9 @@ public:
             </memory>
         )!!!");
         memory.configure(*configTree);
-        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, memory.modes[0]);
-        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, memory.modes[1]);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, memory.modes[BranchNode]);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, memory.modes[LeafNode]);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, memory.modes[BlobNode]);
         END_TEST
     }
 
@@ -556,8 +586,8 @@ public:
         )!!!");
         memory.configure(*configTree);
         // The configured value for branch nodes is ignored.
-        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, memory.modes[0]);
-        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnDemand, memory.modes[1]);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnLoad, memory.modes[BranchNode]);
+        CPPUNIT_ASSERT_EQUAL(ExpansionMode::OnDemand, memory.modes[LeafNode]);
         END_TEST
     }
 
@@ -572,8 +602,8 @@ public:
             </memory>
         )!!!");
         memory.configure(*configTree);
-        CPPUNIT_ASSERT_EQUAL(1ULL, memory.caches[0].capacity);
-        CPPUNIT_ASSERT_EQUAL(1ULL, memory.caches[1].capacity);
+        CPPUNIT_ASSERT_EQUAL(1ULL, memory.caches[BranchNode].capacity);
+        CPPUNIT_ASSERT_EQUAL(1ULL, memory.caches[LeafNode].capacity);
         END_TEST
         START_TEST
         MemoryModel memory;
@@ -584,8 +614,8 @@ public:
             </memory>
         )!!!");
         memory.configure(*configTree);
-        CPPUNIT_ASSERT_EQUAL(1ULL, memory.caches[0].capacity);
-        CPPUNIT_ASSERT_EQUAL(1ULL, memory.caches[1].capacity);
+        CPPUNIT_ASSERT_EQUAL(1ULL, memory.caches[BranchNode].capacity);
+        CPPUNIT_ASSERT_EQUAL(1ULL, memory.caches[LeafNode].capacity);
         END_TEST
         START_TEST
         MemoryModel memory;
@@ -596,8 +626,8 @@ public:
             </memory>
         )!!!");
         memory.configure(*configTree);
-        CPPUNIT_ASSERT_EQUAL(1000ULL, memory.caches[0].capacity);
-        CPPUNIT_ASSERT_EQUAL(1024ULL, memory.caches[1].capacity);
+        CPPUNIT_ASSERT_EQUAL(1000ULL, memory.caches[BranchNode].capacity);
+        CPPUNIT_ASSERT_EQUAL(1024ULL, memory.caches[LeafNode].capacity);
         END_TEST
         START_TEST
         MemoryModel memory;
@@ -608,8 +638,8 @@ public:
             </memory>
         )!!!");
         memory.configure(*configTree);
-        CPPUNIT_ASSERT_EQUAL(1000ULL*1000, memory.caches[0].capacity);
-        CPPUNIT_ASSERT_EQUAL(1024ULL*1024, memory.caches[1].capacity);
+        CPPUNIT_ASSERT_EQUAL(1000ULL*1000, memory.caches[BranchNode].capacity);
+        CPPUNIT_ASSERT_EQUAL(1024ULL*1024, memory.caches[LeafNode].capacity);
         END_TEST
         START_TEST
         MemoryModel memory;
@@ -620,8 +650,8 @@ public:
             </memory>
         )!!!");
         memory.configure(*configTree);
-        CPPUNIT_ASSERT_EQUAL(1000ULL*1000*1000, memory.caches[0].capacity);
-        CPPUNIT_ASSERT_EQUAL(1024ULL*1024*1024, memory.caches[1].capacity);
+        CPPUNIT_ASSERT_EQUAL(1000ULL*1000*1000, memory.caches[BranchNode].capacity);
+        CPPUNIT_ASSERT_EQUAL(1024ULL*1024*1024, memory.caches[LeafNode].capacity);
         END_TEST
         START_TEST
         MemoryModel memory;
@@ -632,8 +662,8 @@ public:
             </memory>
         )!!!");
         memory.configure(*configTree);
-        CPPUNIT_ASSERT_EQUAL(1000ULL*1000*1000*1000, memory.caches[0].capacity);
-        CPPUNIT_ASSERT_EQUAL(1024ULL*1024*1024*1024, memory.caches[1].capacity);
+        CPPUNIT_ASSERT_EQUAL(1000ULL*1000*1000*1000, memory.caches[BranchNode].capacity);
+        CPPUNIT_ASSERT_EQUAL(1024ULL*1024*1024*1024, memory.caches[LeafNode].capacity);
         END_TEST
         START_TEST
         MemoryModel memory;
@@ -644,8 +674,8 @@ public:
             </memory>
         )!!!");
         memory.configure(*configTree);
-        CPPUNIT_ASSERT_EQUAL(1000ULL*1000*1000*1000*1000, memory.caches[0].capacity);
-        CPPUNIT_ASSERT_EQUAL(1024ULL*1024*1024*1024*1024, memory.caches[1].capacity);
+        CPPUNIT_ASSERT_EQUAL(1000ULL*1000*1000*1000*1000, memory.caches[BranchNode].capacity);
+        CPPUNIT_ASSERT_EQUAL(1024ULL*1024*1024*1024*1024, memory.caches[LeafNode].capacity);
         END_TEST
         START_TEST
         MemoryModel memory;
@@ -656,8 +686,8 @@ public:
             </memory>
         )!!!");
         memory.configure(*configTree);
-        CPPUNIT_ASSERT_EQUAL(1500ULL*1000*1000, memory.caches[0].capacity);
-        CPPUNIT_ASSERT_EQUAL(1536ULL*1024*1024, memory.caches[1].capacity);
+        CPPUNIT_ASSERT_EQUAL(1500ULL*1000*1000, memory.caches[BranchNode].capacity);
+        CPPUNIT_ASSERT_EQUAL(1536ULL*1024*1024, memory.caches[LeafNode].capacity);
         END_TEST
     }
 };

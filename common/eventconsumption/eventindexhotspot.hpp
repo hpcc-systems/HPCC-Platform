@@ -18,6 +18,7 @@
 #pragma once
 
 #include "eventconsumption.h"
+#include "eventindex.hpp"
 #include "eventvisitor.h"
 #include <set>
 
@@ -55,15 +56,6 @@ inline offset_t page2Offset(page_type page, byte pageBits)
     return page << pageBits;
 }
 
-// Index node kind(s) found in a bucket.
-enum BucketKind
-{
-    BucketBranch, // correlates to nodeKind in the event recorder interface
-    BucketLeaf, // correlates to nodeKind in the event recorder interface
-    BucketAmbiguous, // inactive between leaves and branches, or both leaf and branch activity
-    BucketKindMax
-};
-
 // Interface of an observer of index file activity.
 interface IBucketVisitor : IInterface
 {
@@ -72,14 +64,11 @@ interface IBucketVisitor : IInterface
     // Perform any setup required before visiting hotspot activity buckets for one file.
     virtual void arrive(unsigned id, const char* path) = 0;
     // Observe a hotspot activity bucket.
-    virtual void visitBucket(bucket_type bucket, BucketKind bucketKind, stat_type stat) = 0;
+    virtual void visitBucket(bucket_type bucket, NodeKind nodeKind, stat_type stat) = 0;
     // Perform any cleanup, or other post-processing, after visting all hotspot activity buckets.
     virtual void depart() = 0;
     // End a hotspot analysis activity.
     virtual void end() = 0;
-    // Does the visitor want ambiguous buckets, where a single bucket represents both leaves and
-    // branches? If not, the bucket will be reported twice, once as a leaf and once as a branch.
-    virtual bool wantAmbiguous() const = 0;
 };
 
 extern IBucketVisitor* createTopBucketVisitor(IBufferedSerialOutputStream& out, byte limit);
