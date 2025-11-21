@@ -530,7 +530,7 @@ extern jlib_decl std::pair<const char *, const char *> peekKeyValuePair(IBuffere
     }
 }
 
-const char * peekStringList(std::vector<size32_t> & matchOffsets, IBufferedSerialInputStream & in, size32_t & len)
+const char * peekStringList(std::vector<size32_t> & matchOffsets, IBufferedSerialInputStream & in, size32_t & len, unsigned grouping)
 {
     size32_t scanned = 0;
     size32_t startNext = 0;
@@ -554,7 +554,7 @@ const char * peekStringList(std::vector<size32_t> & matchOffsets, IBufferedSeria
             char next = start[offset];
             if (!next)
             {
-                if (offset == startNext)
+                if (offset == startNext && (grouping == 0 || matchOffsets.size() % grouping == 0))
                 {
                     //A zero length string terminates the list - include the empty string in the length
                     len = offset + 1;
