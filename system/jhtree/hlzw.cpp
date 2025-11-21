@@ -99,7 +99,7 @@ void KeyCompressor::openBlob(void *blk,int blksize)
     method = comp->getCompressionMethod();
 }
 
-int KeyCompressor::writekey(offset_t fPtr, const char *key, unsigned datalength)
+int KeyCompressor::writekey(offset_t fPtr, const char *key, unsigned datalength, unsigned options)
 {
     assert(!isBlob);
     assertex(__BYTE_ORDER == __LITTLE_ENDIAN); // otherwise the following code is wrong.
@@ -111,8 +111,14 @@ int KeyCompressor::writekey(offset_t fPtr, const char *key, unsigned datalength)
         KEYRECSIZE_T rs = datalength;
         tempKeyBuffer.appendSwap(sizeof(rs), &rs);
     }
-    tempKeyBuffer.appendSwap(sizeof(offset_t), &fPtr);
+
+    bool hasTrailingFilePos = (options & TrailingFilePosition) != 0 && (options & NoFilePosition) == 0;
+    bool hasLeadingFilePos = (options & NoFilePosition) == 0 && !hasTrailingFilePos;
+    if (hasLeadingFilePos)
+        tempKeyBuffer.appendSwap(sizeof(offset_t), &fPtr);
     tempKeyBuffer.append(datalength, key);
+    if (hasTrailingFilePos)
+        tempKeyBuffer.appendSwap(sizeof(offset_t), &fPtr);
 
     size32_t toWrite = tempKeyBuffer.length();
     if (comp->write(tempKeyBuffer.bufferBase(),toWrite)!=toWrite)
