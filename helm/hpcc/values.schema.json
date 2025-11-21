@@ -970,6 +970,16 @@
       },
       "additionalProperties": false
     },
+    "thorSubComponent": {
+      "description": "Thor sub-component with resource and cost configuration",
+      "type": "object",
+      "properties": {
+        "cost": {
+          "$ref": "#/definitions/componentCost"
+        }
+      },
+      "additionalProperties": false
+    },
     "secrets": {
       "oneOf": [
         {
@@ -2883,8 +2893,14 @@
         "stubResources": {
           "$ref": "#/definitions/resources"
         },
-        "cost": {
-          "$ref" : "#/definitions/componentCost"
+        "manager": {
+          "$ref": "#/definitions/thorSubComponent"
+        },
+        "worker": {
+          "$ref": "#/definitions/thorSubComponent"
+        },
+        "eclagent": {
+          "$ref": "#/definitions/thorSubComponent"
         },
         "expert": {
           "$ref": "#/definitions/expert"

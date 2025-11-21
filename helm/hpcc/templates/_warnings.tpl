@@ -178,6 +178,37 @@ Pass in dict with root and warnings
   {{- $_ := set $warning "msg" (printf "Insecure feature enabled in ecl: %s " $ctx.insecureEclFeature) -}}
   {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
  {{- end -}}
+ {{- /* Warn if thor has inconsistent sub-component cost configurations */ -}}
+ {{- $_ := set $ctx "thorInconsistentCosts" list -}}
+ {{- range $thor := .root.Values.thor -}}
+  {{- if not $thor.disabled -}}
+   {{- /* Check for inconsistent sub-component cost configurations */ -}}
+   {{- $managerHasCost := and $thor.manager $thor.manager.cost -}}
+   {{- $workerHasCost := and $thor.worker $thor.worker.cost -}}
+   {{- $eclagentHasCost := and $thor.eclagent $thor.eclagent.cost -}}
+   {{- $anyCost := or $managerHasCost (or $workerHasCost $eclagentHasCost) -}}
+   {{- if $anyCost -}}
+    {{- $missingCosts := list -}}
+    {{- if not $managerHasCost -}}
+     {{- $missingCosts = append $missingCosts "manager" -}}
+    {{- end -}}
+    {{- if not $workerHasCost -}}
+     {{- $missingCosts = append $missingCosts "worker" -}}
+    {{- end -}}
+    {{- if not $eclagentHasCost -}}
+     {{- $missingCosts = append $missingCosts "eclagent" -}}
+    {{- end -}}
+    {{- if $missingCosts -}}
+     {{- $_ := set $ctx "thorInconsistentCosts" (append $ctx.thorInconsistentCosts (printf "%s (missing: %s)" $thor.name (join ", " $missingCosts))) -}}
+    {{- end -}}
+   {{- end -}}
+  {{- end -}}
+ {{- end -}}
+ {{- if $ctx.thorInconsistentCosts -}}
+  {{- $warning := dict "source" "helm" "severity" "warning" -}}
+  {{- $_ := set $warning "msg" (printf "Thor inconsistent costs: %s" (join "; " $ctx.thorInconsistentCosts)) -}}
+  {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
+ {{- end -}}
  {{- /* Warn if TLS not enabled */ -}}
  {{- $_ := set $ctx "TLSdisabled" list -}}
  {{- range $espservice := .root.Values.esp -}}
