@@ -126,9 +126,9 @@ inline void setCompFlag(const char *compStr, unsigned &flags)
         flags |= rw_lz4;
 }
 
-inline unsigned getCompMethod(unsigned flags)
+inline CompressionMethod getCompMethod(unsigned flags)
 {
-    unsigned compMethod = COMPRESS_METHOD_LZ4;
+    CompressionMethod compMethod = COMPRESS_METHOD_LZ4;
     if (TestRwFlag(flags, rw_lzw))
         compMethod = COMPRESS_METHOD_LZW;
     else if (TestRwFlag(flags, rw_fastlz))
@@ -142,11 +142,11 @@ inline unsigned getCompMethod(unsigned flags)
 }
 
 //MORE: This should be passed as an option ptree instead - see future PRs
-inline unsigned getCompMethod(const char *compStr)
+inline CompressionMethod getCompMethod(const char *compStr)
 {
     //Could change to return translateToCompMethod(compStr);
     //but would need to extend rw flags to cope with the other variants
-    unsigned compMethod = COMPRESS_METHOD_LZ4;
+    CompressionMethod compMethod = COMPRESS_METHOD_LZ4;
     if (!isEmptyString(compStr))
     {
         if (0 == stricmp("FLZ", compStr))

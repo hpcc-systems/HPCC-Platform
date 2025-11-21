@@ -117,4 +117,5 @@ protected:
     ValueSelector valueSelector{ValueSelector::Unknown};
     size_t cellIdx{0};
     __uint64 cellValue{0};
+    std::vector<StringBuffer> nonFatalExceptions;
 };

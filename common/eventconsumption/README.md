@@ -125,6 +125,12 @@ All numeric comparisons are supported. A `timestamp` value will be converted to 
 
 All index context events include the `FileId` attribute. The `FileInformation` meta event includes the `Path` attribute. All index events can filter `FileId` using either the actual numeric value or the related `Path` value from a previously seen `FileInformation` meta event. A `FileId` term with a file path pattern follows [text](#text) rules while a term with a file identifier follows [numeric](#numeric) rules.
 
+2. NodeKind Attribute
+
+Events using `NodeKind` can be filtered by either the numerical value (0, 1, or 2) or the text equivalent (*branch*, *leaf*, *blob*, respectively). Text is converted to the numeric equivalent, and numeric values are compared. With only three valid values, number ranges are not supported but all other numeric comparisons are available.
+
+Remember that `IndexPayload` does not use `NodeKind` but has an implied logical value of `LeafNode`. Likewise for `FileInformation`, even though the value has no meaning for the meta event. `NodeKind` cannot, by itself, be used to block all index events for leaf nodes.
+
 ### IEventModel
 
 An extension of `IEventVisitationLink`, this abstraction describes visitors whose purpose is to more broadly transform the event stream. Possible changes include:
@@ -156,12 +162,6 @@ Model options are specified using a property tree. The configuration conforms to
 
 An optional identifier that must be `index-events` when present.
 
-    @maxCacheCapacity
-
-Optional upper limit to the amount of memory used by all model caches that model live system caches. This includes the storage page cache and all memory node caches. It excludes internal caches needed to enable modeling, such as historical observations.
-
-For the value to be applied in the model, the storage page cache must be configured with a read time and not a capacity. The effect, then, is that the page cache capacity will be updated to the difference between the limit and the sum of all memory node caches. It is an error for the node cache sizes to reach or exceed the limit.
-
     storage/
 
 Required container for storage plane and page cache configuration settings.
@@ -173,6 +173,25 @@ Required container for storage plane and page cache configuration settings.
 Optional page cache controls. Setting a positive read time enables the page cache. Setting a positive capacity limits the total size of cached pages. Note that unlike a real page cache, which would cache the entire page, the model merely tracks which 8 KB pages are cached based on file ID and offset.
 
 **If not zero, the capacity must be at least 8 KB. It is an error to configure the page cache such that it cannot cache at least one page.**
+
+    storage/
+        @dynamicCacheCapacity
+
+The page cache capacity can be dynamically configured relative to the combined sizes of all in-memory node caches. When `@cacheReadTime` enables the page cache, when `@cacheCapacity` is omitted (or zero), and the sum of `//memory/node/@cacheCapacity` is less than `@dynamicCacheCapacity`, the page cache capacity is set to the difference of `@dynamicCacheCapacity` and the sum of `//memory/node/@cacheCapacity`. This property cannot enable the page cache, nor can it override an explicitly defined capacity. If the capacity would be set to a non-zero value less than the size of a page, making the cache incapable of holding a page, the capacity instead remains zero.
+
+Consider this example:
+```yaml
+storage:
+  cacheReadTime: 10000
+  dynamicCacheCapacity: 40 MiB
+memory:
+  node:
+  - kind: 0
+    cacheCapacity: 0.5 MiB
+  - kind: 1
+    cacheCapacity: 20 MiB
+```
+In this example, the node caches are allotted 20.5 MiB. The page cache is dynamically allotted the balance of 40 MiB, or 19.5 MiB.
 
     storage/
         plane/
@@ -212,6 +231,7 @@ Optional storage plane name identifies the storage device on which the file is s
         file/
             @branchPlane
             @leafPlane
+            @blobPlane
 
 Optional storage plane names associating all nodes of a given kind to a storage plane. When present, the value must match one of the configured storage plane names. Omission, or empty, with the default plane for the file.
 
@@ -231,7 +251,9 @@ The optional configuration of memory expansion modeling for each index node kind
         node/
             @kind
 
-A value of zero for branch nodes or one for leaf nodes. Required to specify a leaf node, and optional to specify a branch node. A `node` without `kind` is ignored.
+One of zero or "branch" for branch nodes. One of one or "leaf" for leaf nodes. One of two or "blob" for blob nodes.
+
+In all cases, the numeric value takes precedence over the text equivalent. A `node` without `@kind` is ignored.
 
     memory/
         node/

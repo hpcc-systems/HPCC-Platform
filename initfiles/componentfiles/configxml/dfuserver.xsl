@@ -80,6 +80,10 @@
                <xsl:value-of select="@transferBufferSize"/>
             </xsl:attribute> 
 
+            <xsl:attribute name="useNewCsvPartitioner">
+               <xsl:value-of select="@useNewCsvPartitioner"/>
+            </xsl:attribute>
+
             <xsl:attribute name="useFtSlave">
                <xsl:value-of select="@useFtSlave"/>
             </xsl:attribute>

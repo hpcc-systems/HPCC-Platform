@@ -645,7 +645,7 @@ void CHThorDiskWriteActivity::open()
     }
     if(compressed)
     {
-        CompressionMethod compMethod = (helperFlags & (TDXjobtemp|TDWpersist)) ? COMPRESS_METHOD_ZSTD : COMPRESS_METHOD_LZ4;
+        compMethod = (helperFlags & (TDXjobtemp|TDWpersist)) ? COMPRESS_METHOD_ZSTD : COMPRESS_METHOD_LZ4;
         size32_t compBlockSize = 0; // i.e. default
         size32_t blockedIoSize = -1; // i.e. default
         io.setown(createCompressedFileWriter(file, extend, true, ecomp, compMethod, compBlockSize, blockedIoSize, IFEnone));
@@ -801,7 +801,13 @@ void CHThorDiskWriteActivity::publish()
     if (encrypted)
         properties.setPropBool("@encrypted", true);
     if (compressed)
+    {
         properties.setPropBool("@blockCompressed", true);
+        // Store compression type (determined when file was created)
+        const char *compressionType = translateFromCompMethod(compMethod);
+        if (!isEmptyString(compressionType))
+            properties.setProp("@compressionType", compressionType);
+    }
     if (helperFlags & TDWpersist)
         properties.setPropBool("@persistent", true);
     if (grouped)

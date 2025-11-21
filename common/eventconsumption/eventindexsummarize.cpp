@@ -33,7 +33,7 @@ bool CIndexFileSummary::visitEvent(CEvent& event)
     else
     {
         IndexHashKey key(event.queryNumericValue(EvAttrFileId), event.queryNumericValue(EvAttrFileOffset));
-        __uint64 nodeKind = (event.hasAttribute(EvAttrNodeKind) ? event.queryNumericValue(EvAttrNodeKind) : 1);
+        __uint64 nodeKind = queryIndexNodeKind(event);
         NodeStats& nodeStats = stats[nodeKind][key];
         __uint64 tmp;
         switch (event.queryType())
@@ -155,10 +155,12 @@ void CIndexFileSummary::summarizeByFile()
     };
     using SummaryStats = std::map<__uint64, FileStats>;
     SummaryStats summary;
+    bool haveNodeKindEntries[NumNodeKinds] = {false,};
     for (unsigned nodeKind = 0; nodeKind < NumNodeKinds; nodeKind++)
     {
         for (Cache::value_type& entry : stats[nodeKind])
         {
+            haveNodeKindEntries[nodeKind] = true;
             NodeKindStats& nodeKindStats = summary[entry.first.fileId].kinds[nodeKind];
             NodeStats& nodeStats = entry.second;
             if (nodeStats.events.hits && !nodeStats.events.misses)
@@ -189,20 +191,36 @@ void CIndexFileSummary::summarizeByFile()
 
     StringBuffer line;
     appendCSVColumns(line, "File Id", "File Path");
-    appendCSVBucketHeaders(line, "Branch In Memory Size", false);
-    appendCSVEventsHeaders(line, "Branch");
-    appendCSVBucketHeaders(line, "Branch Page Cache Read", true);
-    appendCSVBucketHeaders(line, "Branch Local Read", true);
-    appendCSVBucketHeaders(line, "Branch Remote Read", true);
-    appendCSVColumn(line, "Contentious Branch Reads");
-    appendCSVBucketHeaders(line, "Branch Expansion", true);
-    appendCSVBucketHeaders(line, "Leaf In Memory Size", false);
-    appendCSVEventsHeaders(line, "Leaf");
-    appendCSVBucketHeaders(line, "Leaf Page Cache Read", true);
-    appendCSVBucketHeaders(line, "Leaf Local Read", true);
-    appendCSVBucketHeaders(line, "Leaf Remote Read", true);
-    appendCSVColumn(line, "Contentious Leaf Reads");
-    appendCSVBucketHeaders(line, "Leaf Expansion", true);
+    if (haveNodeKindEntries[BranchNode])
+    {
+        appendCSVColumn(line, "Branch In Memory Size");
+        appendCSVEventsHeaders(line, "Branch");
+        appendCSVBucketHeaders(line, "Branch Page Cache Read", true);
+        appendCSVBucketHeaders(line, "Branch Local Read", true);
+        appendCSVBucketHeaders(line, "Branch Remote Read", true);
+        appendCSVColumn(line, "Contentious Branch Reads");
+        appendCSVBucketHeaders(line, "Branch Expansion", true);
+    }
+    if (haveNodeKindEntries[LeafNode])
+    {
+        appendCSVColumn(line, "Leaf In Memory Size");
+        appendCSVEventsHeaders(line, "Leaf");
+        appendCSVBucketHeaders(line, "Leaf Page Cache Read", true);
+        appendCSVBucketHeaders(line, "Leaf Local Read", true);
+        appendCSVBucketHeaders(line, "Leaf Remote Read", true);
+        appendCSVColumn(line, "Contentious Leaf Reads");
+        appendCSVBucketHeaders(line, "Leaf Expansion", true);
+    }
+    if (haveNodeKindEntries[BlobNode])
+    {
+        appendCSVColumn(line, "Blob In Memory Size");
+        appendCSVEventsHeaders(line, "Blob");
+        appendCSVBucketHeaders(line, "Blob Page Cache Read", true);
+        appendCSVBucketHeaders(line, "Blob Local Read", true);
+        appendCSVBucketHeaders(line, "Blob Remote Read", true);
+        appendCSVColumn(line, "Contentious Blob Reads");
+        appendCSVBucketHeaders(line, "Blob Expansion", true);
+    }
     outputLine(line);
 
     for (SummaryStats::value_type& e : summary)
@@ -210,6 +228,8 @@ void CIndexFileSummary::summarizeByFile()
         appendCSVColumns(line, e.first, fileInfo[e.first].str());
         for (unsigned nodeKind = 0; nodeKind < NumNodeKinds; nodeKind++)
         {
+            if (!haveNodeKindEntries[nodeKind])
+                continue;
             NodeKindStats& nodeStats = e.second.kinds[nodeKind];
             appendCSVBucket(line, nodeStats.inMemorySize, false);
             appendCSVEvents(line, nodeStats.events);
@@ -257,6 +277,9 @@ void CIndexFileSummary::summarizeByNodeKind()
 
     for (unsigned nodeKind = 0; nodeKind < NumNodeKinds; nodeKind++)
     {
+        if (stats[nodeKind].empty())
+            continue;
+
         Bucket inMemorySize;
         Events events;
         Bucket readTime[NodeStats::NumBuckets];
@@ -290,17 +313,7 @@ void CIndexFileSummary::summarizeByNodeKind()
             expandTime.max = std::max(expandTime.max, nodeStats.expandTime.max);
         }
 
-        switch (nodeKind)
-        {
-        case 0:
-            appendCSVColumn(line, "branch");
-            break;
-        case 1:
-            appendCSVColumn(line, "leaf");
-            break;
-        default:
-            throw makeStringExceptionV(-1, "unknown node kind: %u", nodeKind);
-        }
+        appendCSVColumn(line, mapNodeKind((NodeKind)nodeKind));
         appendCSVBucket(line, inMemorySize, false);
         appendCSVEvents(line, events);
         __uint64 contentiousReads = events.loads;
@@ -334,17 +347,7 @@ void CIndexFileSummary::summarizeByNode()
             const IndexHashKey& key = entry.first;
             NodeStats& nodeStats = entry.second;
             appendCSVColumns(line, key.fileId, fileInfo[key.fileId].str(), key.offset);
-            switch (nodeKind)
-            {
-            case 0:
-                appendCSVColumn(line, "branch");
-                break;
-            case 1:
-                appendCSVColumn(line, "leaf");
-                break;
-            default:
-                throw makeStringExceptionV(-1, "unknown node kind: %u", nodeKind);
-            }
+            appendCSVColumn(line, mapNodeKind((NodeKind)nodeKind));
             appendCSVColumn(line, nodeStats.inMemorySize);
             appendCSVEvents(line, nodeStats.events);
             __uint64 contentiousReads = nodeStats.events.loads;

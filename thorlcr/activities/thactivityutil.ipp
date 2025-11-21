@@ -109,7 +109,7 @@ void cancelReplicates(CActivityBase *activity, IPartDescriptor &partDesc);
 #define TW_Persist 0x40
 
 interface IPartDescriptor;
-IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc, unsigned twFlags, bool &compress, ICompressor *ecomp, ICopyFileProgress *iProgress, bool *aborted, StringBuffer *_locationName=NULL);
+IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc, unsigned twFlags, bool &compress, ICompressor *ecomp, ICopyFileProgress *iProgress, bool *aborted, StringBuffer *_locationName=NULL, CompressionMethod *compMethod=NULL);
 
 class CAsyncCall : implements IThreaded
 {

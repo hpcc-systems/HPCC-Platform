@@ -28,13 +28,14 @@ bool operator < (const char* left, const Storage::File& right) { return strcmp(l
 
 Storage::File::File(const char* _path, const Plane& _plane) : path(_path)
 {
-    planes[0] = &_plane;
-    planes[1] = &_plane;
+    for (unsigned idx = 0; idx < NumNodeKinds; ++idx)
+        planes[idx] = &_plane;
+
 }
 
 const Storage::Plane& Storage::File::lookupPlane(__uint64 nodeKind) const
 {
-    assertex(nodeKind < 2);
+    assertex(isNodeKind(nodeKind));
     return *planes[nodeKind];
 }
 
@@ -153,25 +154,32 @@ void Storage::configureFiles(const IPropertyTree& config)
         if (fileConfig.hasProp("@plane"))
         {
             const Plane& plane = lookupPlane(fileConfig.queryProp("@plane"), file.path.str());
-            for (size_t i = 0; i < File::NumPlanes; ++i)
+            for (size_t i = 0; i < NumNodeKinds; ++i)
                 file.planes[i] = &plane;
         }
         // branch nodes may be stored separately from leaf nodes
         if (fileConfig.hasProp("@branchPlane"))
         {
             const Plane& plane = lookupPlane(fileConfig.queryProp("@branchPlane"), file.path.str());
-            file.planes[0] = &plane;
+            file.planes[BranchNode] = &plane;
         }
-        else if (!file.planes[0])
-            file.planes[0] = defaultPlane;
+        else if (!file.planes[BranchNode])
+            file.planes[BranchNode] = defaultPlane;
         // leaf nodes may be stored separately from branch nodes
         if (fileConfig.hasProp("@leafPlane"))
         {
             const Plane& plane = lookupPlane(fileConfig.queryProp("@leafPlane"), file.path.str());
-            file.planes[1] = &plane;
+            file.planes[LeafNode] = &plane;
         }
-        else if (!file.planes[1])
-            file.planes[1] = defaultPlane;
+        else if (!file.planes[LeafNode])
+            file.planes[LeafNode] = defaultPlane;
+        if (fileConfig.hasProp("@blobPlane"))
+        {
+            const Plane& plane = lookupPlane(fileConfig.queryProp("@blobPlane"), file.path.str());
+            file.planes[BlobNode] = &plane;
+        }
+        else if (!file.planes[BlobNode])
+            file.planes[BlobNode] = defaultPlane;
         if (!configuredFiles.insert(file).second)
             throw makeStringExceptionV(-1, "duplicate file path '%s'", file.path.str());
         if (isEmptyString(file.path.get()))

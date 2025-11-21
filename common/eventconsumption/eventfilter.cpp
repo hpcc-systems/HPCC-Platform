@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include "eventfilter.h"
+#include "eventindex.hpp"
 #include "jregexp.hpp"
 #include "jutil.hpp"
 #include <set>
@@ -316,6 +317,15 @@ protected:
         }
     };
 
+    struct NodeKindFilterTerm : public UnsignedFilterTerm
+    {
+        bool acceptToken(const char* token, FilterTermComparison comp) override
+        {
+            NodeKind kind = mapNodeKind(token);
+            return acceptRange(kind, kind, comp);
+        }
+    };
+
 public: // IEventVisitationLink
     IMPLEMENT_IEVENTVISITATIONLINK;
 
@@ -490,6 +500,8 @@ public: // IEventFilter
                 throw makeStringException(-1, "event attribute EvAttrPath has a conflicting filter term for EvAttrFileId");
             return term->accept(values);
         }
+        else if (EvAttrNodeKind == id)
+            return ensureTerm<NodeKindFilterTerm>(id)->accept(values);
         else
         {
             switch (queryEventAttributeType(id))
@@ -618,11 +630,11 @@ class EventFilterTests : public CppUnit::TestFixture
     CPPUNIT_TEST(testFilterByAttributeByPath1);
     CPPUNIT_TEST(testFilterByAttributeByPath2);
     CPPUNIT_TEST(testFilterByAttributeByPath3);
-    CPPUNIT_TEST(testFileByttributeByBool1);
-    CPPUNIT_TEST(testFileByttributeByBool2);
-    CPPUNIT_TEST(testFileByAttributeByTimestamp1);
-    CPPUNIT_TEST(testFileByAttributeByTimestamp2);
-    CPPUNIT_TEST(testFileByAttributeByTimestamp3);
+    CPPUNIT_TEST(testFilterByAttributeByBool1);
+    CPPUNIT_TEST(testFilterByAttributeByBool2);
+    CPPUNIT_TEST(testFilterByAttributeByTimestamp1);
+    CPPUNIT_TEST(testFilterByAttributeByTimestamp2);
+    CPPUNIT_TEST(testFilterByAttributeByTimestamp3);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -1118,7 +1130,7 @@ public:
         testEventVisitationLinks(testData, false);
     }
 
-    void testFileByttributeByBool1()
+    void testFilterByAttributeByBool1()
     {
         constexpr const char* testData = R"!!!(
             <test>
@@ -1141,7 +1153,7 @@ public:
         testEventVisitationLinks(testData, false);
     }
 
-    void testFileByttributeByBool2()
+    void testFilterByAttributeByBool2()
     {
         constexpr const char* testData = R"!!!(
             <test>
@@ -1166,7 +1178,7 @@ public:
         testEventVisitationLinks(testData, false);
     }
 
-    void testFileByAttributeByTimestamp1()
+    void testFilterByAttributeByTimestamp1()
     {
         constexpr const char* testData = R"!!!(
             <test>
@@ -1206,7 +1218,7 @@ public:
         testEventVisitationLinks(testData, false);
     }
 
-    void testFileByAttributeByTimestamp2()
+    void testFilterByAttributeByTimestamp2()
     {
         constexpr const char* testData = R"!!!(
             <test>
@@ -1246,7 +1258,7 @@ public:
         testEventVisitationLinks(testData, false);
     }
 
-    void testFileByAttributeByTimestamp3()
+    void testFilterByAttributeByTimestamp3()
     {
         constexpr const char* testData = R"!!!(
             <test>
@@ -1275,6 +1287,32 @@ public:
                     <event type="RecordingActive" EventTimestamp="2024-01-01T10:15:33"/>
                     <event type="RecordingActive" EventTimestamp="2024-01-01T10:30:47"/>
                     <event type="RecordingActive" EventTimestamp="2024-01-01T10:45:59"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData, false);
+    }
+
+    void testFilterByAttributeByNodeKind()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link kind="event-filter">
+                    <attribute id="NodeKind" values="leaf,2"/>
+                </link>
+                <input>
+                    <event type="IndexCacheMiss" NodeKind="branch"/>
+                    <event type="IndexCacheMiss" NodeKind="0"/>
+                    <event type="IndexCacheMiss" NodeKind="leaf"/>
+                    <event type="IndexCacheMiss" NodeKind="1"/>
+                    <event type="IndexCacheMiss" NodeKind="blob"/>
+                    <event type="IndexCacheMiss" NodeKind="2"/>
+                </input>
+                <expect>
+                    <event type="IndexCacheMiss" NodeKind="1"/>
+                    <event type="IndexCacheMiss" NodeKind="1"/>
+                    <event type="IndexCacheMiss" NodeKind="2"/>
+                    <event type="IndexCacheMiss" NodeKind="2"/>
                 </expect>
             </test>
         )!!!";

@@ -18,6 +18,7 @@
 #pragma once
 
 #include "eventmodeling.h"
+#include "eventindex.hpp"
 #include "jqueue.hpp"
 #include <memory>
 #include <set>
@@ -45,71 +46,6 @@ enum class ExpansionMode
     OnDemand
 };
 
-// The index event model configuration conforms to this structure:
-//   kind: index-event
-//   storage:
-//     cacheReadTime: nanosecond time to read one page
-//     cacheCapacity: maximum bytes to use for the cache
-//     plane:
-//     - name: unique, non-empty, identifier
-//       readTime: nanosecond time to read one page
-//     file:
-//     - path: empty or unique index file path
-//       plane: name of place in which the file resides, if different from the default
-//       branchPlane: name of place in which index branches reside, if different from the default
-//       leafPlane: name of place in which index leaves reside, if different from the default
-//   memory:
-//     node:
-//     - kind: node kind
-//       sizeFactor: floating point multiplier for estimated node size
-//       sizeToTimeFactor: floating point multiplier for estimated node expansionMode time
-//       expansionMode: choice of `ll`, `ld`, or `dd`
-//       cacheCapacity: maximum bytes to use for the cache
-//     observed:
-//     - FileId: unique index file identifier
-//       FileOffset: index page offset
-//       NodeKind: node kind
-//       InMemorySize: size of the node in bytes
-//       ExpandTime: time in nanoseconds to expand the node
-//
-// - `kind` is optional; as the first model the value is implied.
-// - `cacheReadTime` is optional; if zero, empty, or omitted, the cache is disabled.
-// - `cacheCapacity` is optional; if zero, empty, or omitted, the cache is unlimited.
-// - The first `plane` declared is assumed to be the default plane for files not explicitly assigned
-//   an alternate choice.
-// - `file` is optional; omission implies all files exist in the default plane.
-// - `file/path` is optional; omission, or empty, assigns the storage plane for all files not
-//   explicitly configured.
-// - `file/plane` is optional; omission, or empty, implies the file resides in the default storage
-//   plane.
-// - `file/branchPlane` is optional; omission, or empty, implies the file's index branches reside in
-//   the file's default storage plane.
-// - `file/leafPlane` is optional; omission, or empty, implies the file's index leaves reside in the
-//   file's default storage plane.
-// - `memory` is optional; omission prevents any memory modeling.
-// - `memory/node` is optional; omission prevents estimating algorithm performance. If present,
-//   one instance for each type of index node is required.
-// - `memory/node/kind` is a required choice of `branch` or `leaf`.
-// - `memory/node/sizeFactor` is a required positive floating point multiplier for algorithm
-//   performance estimation. The on disk page size is multiplied by this value.
-// - `memory/node/sizeToTimeFactor` is a required positive floating point multiplier for
-//   algorithm performance estimation. The estimated size is multipled by this factor to estimate
-//   the expansion time.
-// - `expansion/node/mode` is optional; omission and empty are equivalent to `ll`. The value is
-//   ignored for branch nodes, which are always treated as `ll`. Accepted options are:
-//   - `ll`: model input and output are both on-load
-//   - `ld`: model input is on-load and output is on-demand
-//   - `dd`: model input and output are both on-demand
-// - `memory/observed` is an optional mechanism to pre-populate the memory caches. It enables
-//   unit test case scenarios to be set up without requiring explicit events to be visited.
-// - `memory/observed/NodeKind` is expected and corresponds to input event NodeKind values.
-// - `memory/observed/FileId` is expected only when history is used for the node kind.
-// - `memory/observed/FileOffset` is expected only when history is used for the node kind.
-// - `memory/observed/InMemorySize` is expected only when the node cache for the node kind is
-//   enabled, which implies that history is also used for the node kind.
-// - `memory/observed/ExpandTime` is expected only when the node cache for the node kind is
-//   enabled, which implies that history is also used for the node kind.
-
 // Encapsulation of all modeled information about given file page. Note that the file path is not
 // included as the model does not retain that information.
 struct ModeledPage
@@ -121,7 +57,7 @@ struct ModeledPage
     };
     __uint64 fileId{0};
     __uint64 offset{0};
-    __uint64 nodeKind{1};
+    __uint64 nodeKind{LeafNode};
     __uint64 readTime{0};
     Size compressed;
     Size expanded;
@@ -215,6 +151,8 @@ interface IIndexMRUCacheContainer
 // Encapsulation of the configuration's `storage` element.
 class Storage : public IIndexMRUCacheContainer
 {
+public:
+    static constexpr __uint64 DefaultPageSize = 8192; // 8K page size
 private:
     friend class IndexModelStorageTest;
 
@@ -233,10 +171,8 @@ private:
     class File
     {
     public:
-        static constexpr size_t NumPlanes = 2;
-    public:
         StringAttr path;
-        const Plane* planes[NumPlanes]{nullptr,};
+        const Plane* planes[NumNodeKinds]{nullptr,};
 
     public:
         File() = default;
@@ -251,8 +187,6 @@ private:
 
     class PageCache : public IndexMRUCache
     {
-    public:
-        static constexpr __uint64 DefaultPageSize = 8192; // 8K page size
     public:
         virtual void configure(const IPropertyTree& config) override;
         virtual bool enabled() const override;
@@ -315,7 +249,6 @@ private:
 class MemoryModel : public IIndexMRUCacheContainer
 {
 public:
-    static constexpr size_t NumKinds = 2;
     struct Estimate
     {
         __uint64 compressed{8'192}; // all nodes assumed to be 8K on disk
@@ -339,10 +272,10 @@ public:
         virtual __uint64 size(const IndexHashKey& key) override;
         virtual const char* description() const override;
     public:
-        NodeCache(MemoryModel& _parent, __uint64 _kind);
+        NodeCache(MemoryModel& _parent, NodeKind _kind);
     private:
         MemoryModel& parent;
-        __uint64 kind{0};
+        NodeKind kind;
     };
 
 public:
@@ -354,8 +287,8 @@ public:
     MemoryModel();
     void configure(const IPropertyTree& config);
 
-    inline bool caching(const CEvent& event) const { return caching(event.hasAttribute(EvAttrNodeKind) ? event.queryNumericValue(EvAttrNodeKind) : 1); }
-    bool caching(__uint64 nodeKind) const { assertex(nodeKind < NumKinds); return caches[nodeKind].enabled(); }
+    inline bool caching(const CEvent& event) const { return caching(queryIndexNodeKind(event)); }
+    bool caching(__uint64 nodeKind) const { assertex(isNodeKind(nodeKind)); return caches[nodeKind].enabled(); }
 
     // Record, if necessary, that indicated index node has been observed. Intended to be called only
     // for IndexCacheHit and IndexCacheMiss events, but not enforced.
@@ -380,15 +313,15 @@ public:
     void cachePage(ModeledPage& page, IndexMRUCacheReporter& reporter);
 
 protected:
-    inline bool usingHistory(const CEvent& event) const { return usingHistory(event.hasAttribute(EvAttrNodeKind) ? event.queryNumericValue(EvAttrNodeKind) : 1); }
-    inline bool usingHistory(__uint64 nodeKind) const { assertex(nodeKind < NumKinds); return ((ExpansionMode::OnLoadToOnDemand == modes[nodeKind] && !estimating) || caches[nodeKind].enabled()); }
+    inline bool usingHistory(const CEvent& event) const { return usingHistory(queryIndexNodeKind(event)); }
+    inline bool usingHistory(__uint64 nodeKind) const { assertex(isNodeKind(nodeKind)); return ((ExpansionMode::OnLoadToOnDemand == modes[nodeKind] && !estimating) || caches[nodeKind].enabled()); }
     void refreshPage(ActualHistory::iterator& it, const CEvent& event);
     __uint64 nodeEntrySize(const IndexHashKey& key, __uint64) const;
 public:
     ActualHistory actualHistory;
     EstimatedHistory estimatedHistory;
-    Estimate estimates[NumKinds];
-    ExpansionMode modes[NumKinds] = {ExpansionMode::OnLoad,};
+    Estimate estimates[NumNodeKinds];
+    ExpansionMode modes[NumNodeKinds] = {ExpansionMode::OnLoad,};
     bool estimating{false};
-    mutable NodeCache caches[NumKinds]; // testing presence in the cache can modify the cache
+    mutable NodeCache caches[NumNodeKinds]; // testing presence in the cache can modify the cache
 };

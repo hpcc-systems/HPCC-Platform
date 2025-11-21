@@ -45,25 +45,23 @@ public:
         return true;
     }
 
-    virtual void usageSyntax(int argc, const char* argv[], int pos, IBufferedSerialOutputStream& out) override
+    virtual const char* getVerboseDescription() const override
     {
-        TEventConsumingCommand<CIndexFileSummary>::usageSyntax(argc, argv, pos, out);
-        constexpr const char* usageStr =
-R"!!!([options] [filters] <filename>
-)!!!";
-        size32_t usageStrLength = size32_t(strlen(usageStr));
-        out.put(usageStrLength, usageStr);
-    }
-
-    virtual void usageSynopsis(IBufferedSerialOutputStream& out) override
-    {
-        constexpr const char* usageStr = R"!!!(
-Summarize the index events in a binary event file. Activity can be aggregated
+        return R"!!!(Summarize the index events in a binary event file. Activity can be aggregate
 by either index file ID, node kind, or individual node (as identified by file
 ID and file offset). One line of output is produced for each event group.
 )!!!";
-        size32_t usageStrLength = size32_t(strlen(usageStr));
-        out.put(usageStrLength, usageStr);
+    }
+
+    virtual const char* getBriefDescription() const override
+    {
+        return "describe the index event effects on performance";
+    }
+
+    virtual void usageSyntax(StringBuffer& helpText) override
+    {
+        helpText.append(R"!!!([options] [filters] <filename>
+)!!!");
     }
 
     virtual void usageOptions(IBufferedSerialOutputStream& out) override

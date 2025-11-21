@@ -1644,8 +1644,9 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
             {
                 if (e->errorCode() != ECLWATCH_CANNOT_OPEN_WORKUNIT)
                     throw e;
-                getArchivedWUInfo(context, sashaServerIp.get(), sashaServerPort, wuid.str(), resp);
+                // getArchivedWUInfo can throw, so release the exception before calling it
                 e->Release();
+                getArchivedWUInfo(context, sashaServerIp.get(), sashaServerPort, wuid.str(), resp);
             }
 
             switch (resp.getWorkunit().getStateID())
@@ -2627,7 +2628,7 @@ bool CWsWorkunitsEx::onWUQuery(IEspContext &context, IEspWUQueryRequest & req, I
 
         if (req.getType() && strieq(req.getType(), "archived workunits"))
             doWUQueryFromArchive(context, sashaServerIp.get(), sashaServerPort, *archivedWuCache, awusCacheMinutes, req, resp);
-        else if(notEmpty(pattern) && looksLikeAWuid(pattern, 'W'))
+        else if(notEmpty(pattern) && looksLikeAWuid(pattern, "WP"))
             doWUQueryBySingleWuid(context, pattern, resp);
         else if (notEmpty(req.getLogicalFile()) && req.getLogicalFileSearchType() && strieq(req.getLogicalFileSearchType(), "Created"))
             doWUQueryByFile(context, req.getLogicalFile(), resp);
@@ -4277,14 +4278,19 @@ static void getWUDetailsMetaProperties(double version, IArrayOf<IEspWUDetailsMet
 {
     for (unsigned sk=StKindAll+1; sk<StMax;++sk)
     {
-        const char * s = queryStatisticName((StatisticKind)sk);
+        StatisticKind kind = (StatisticKind)sk;
+        const char * s = queryStatisticName(kind);
+        //Cycles are internal only - they are never exposed to the outside world
+        if (queryMeasure(kind) == SMeasureCycle)
+            continue;
+
         if (s && *s)
         {
             Owned<IEspWUDetailsMetaProperty> property = createWUDetailsMetaProperty("","");
             property->setName(s);
             property->setValueType(CWUDetailsAttrValueType_Single);
             if (version >= 1.99)
-                property->setDescription(queryStatisticDescription((StatisticKind)sk));
+                property->setDescription(queryStatisticDescription(kind));
             properties.append(*property.getClear());
         }
     }
@@ -4383,7 +4389,13 @@ class WUDetailsMetaTest : public CppUnit::TestFixture
         // are successful.
         IArrayOf<IEspWUDetailsMetaProperty> properties;
         getWUDetailsMetaProperties(1.98, properties);
-        unsigned expectedOrdinalityProps = StMax - (StKindAll + 1) + (WaMax-WaKind);
+        // All attributes are included, but no cycle stats
+        unsigned expectedOrdinalityProps = (WaMax-WaKind);
+        for (unsigned i= (StKindAll + 1); i < StMax; i++)
+        {
+            if (queryMeasure((StatisticKind)i) != SMeasureCycle)
+                expectedOrdinalityProps++;
+        }
         ASSERT(properties.ordinality()==expectedOrdinalityProps);
 
         StringArray scopeTypes;

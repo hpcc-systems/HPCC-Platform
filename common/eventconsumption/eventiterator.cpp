@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include "eventiterator.h"
+#include "eventindex.hpp"
 
 bool CPropertyTreeEvents::nextEvent(CEvent& event)
 {
@@ -67,7 +68,10 @@ bool CPropertyTreeEvents::nextEvent(CEvent& event)
             attr.setValue(valueStr);
             break;
         case EATCnumeric:
-            attr.setValue(strtoull(valueStr, nullptr, 0));
+            if (EvAttrNodeKind == attrId)
+                attr.setValue(__uint64(mapNodeKind(valueStr)));
+            else
+                attr.setValue(strtoull(valueStr, nullptr, 0));
             break;
         case EATCboolean:
             attr.setValue(strToBool(valueStr));
@@ -138,6 +142,7 @@ class EventIteratorTests : public CppUnit::TestFixture
     CPPUNIT_TEST(testStrictEventParsingUnusedAttribute);
     CPPUNIT_TEST(testStrictEventParsingIncompleteEvent);
     CPPUNIT_TEST(testLenientEventParsing);
+    CPPUNIT_TEST(testNodeKindMapping);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -213,6 +218,31 @@ public:
                     <event type="FileInformation"/>
                     <event type="FileInformation" FileId="1"/>
                     <event type="FileInformation" FileId="1" Path="foo"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData, false);
+    }
+
+    void testNodeKindMapping()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <input>
+                    <event type="IndexCacheMiss" NodeKind="0"/>
+                    <event type="IndexCacheHit" NodeKind="1"/>
+                    <event type="IndexLoad" NodeKind="2"/>
+                    <event type="IndexEviction" NodeKind="branch"/>
+                    <event type="IndexCacheMiss" NodeKind="leaf"/>
+                    <event type="IndexCacheHit" NodeKind="blob"/>
+                </input>
+                <expect>
+                    <event type="IndexCacheMiss" NodeKind="0"/>
+                    <event type="IndexCacheHit" NodeKind="1"/>
+                    <event type="IndexLoad" NodeKind="2"/>
+                    <event type="IndexEviction" NodeKind="0"/>
+                    <event type="IndexCacheMiss" NodeKind="1"/>
+                    <event type="IndexCacheHit" NodeKind="2"/>
                 </expect>
             </test>
         )!!!";

@@ -93,19 +93,18 @@ public: // IEventVisitationLink
         if (!node)
             throw makeStringException(-1, "index event model configuration missing required <storage> element");
         storage.configure(*node);
+        const char* dynamicCacheCapacityStr = node->queryProp("@dynamicCacheCapacity");
         node = config.queryBranch("memory");
         if (node)
             memory.configure(*node);
-        const char* maxCacheCapacityStr = config.queryProp("@maxCacheCapacity");
-        if (!isEmptyString(maxCacheCapacityStr))
+        if (!isEmptyString(dynamicCacheCapacityStr))
         {
-            __uint64 maxCacheCapacity = strToBytes<__uint64>(maxCacheCapacityStr, StrToBytesFlags::ThrowOnError);
-            if (maxCacheCapacity && storage.isCacheEnabled() && !storage.getCacheSize())
+            __uint64 dynamicCacheCapacity = strToBytes<__uint64>(dynamicCacheCapacityStr, StrToBytesFlags::ThrowOnError);
+            if (dynamicCacheCapacity && storage.isCacheEnabled() && !storage.getCacheSize())
             {
                 __uint64 memoryCacheCapacity = memory.getCacheSize();
-                if (memoryCacheCapacity > maxCacheCapacity)
-                    throw makeStringExceptionV(-1, "max cache capacity %llu is less than actual memory cache capacity %llu", maxCacheCapacity, memoryCacheCapacity);
-                storage.resizeCache(maxCacheCapacity - memoryCacheCapacity);
+                if (memoryCacheCapacity < dynamicCacheCapacity)
+                    storage.resizeCache(std::max(Storage::DefaultPageSize, dynamicCacheCapacity - memoryCacheCapacity));
             }
         }
     }
@@ -168,7 +167,7 @@ protected:
         memory.describePage(event, page);
         if (!page.cacheHit)
         {
-            storage.useAndDescribePage(event.queryNumericValue(EvAttrFileId), event.queryNumericValue(EvAttrFileOffset), event.queryNumericValue(EvAttrNodeKind), page);
+            storage.useAndDescribePage(event.queryNumericValue(EvAttrFileId), event.queryNumericValue(EvAttrFileOffset), queryIndexNodeKind(event), page);
             CEvent simulated = event;
             event.changeEventType(EventIndexCacheMiss);
             simulated.changeEventType(EventIndexLoad);
@@ -259,7 +258,7 @@ protected:
             return; // discard unobserved page
         }
         ModeledPage page;
-        storage.useAndDescribePage(event.queryNumericValue(EvAttrFileId), event.queryNumericValue(EvAttrFileOffset), event.queryNumericValue(EvAttrNodeKind), page);
+        storage.useAndDescribePage(event.queryNumericValue(EvAttrFileId), event.queryNumericValue(EvAttrFileOffset), queryIndexNodeKind(event), page);
         event.setValue(EvAttrReadTime, page.readTime);
         memory.describePage(event, page);
         if (ExpansionMode::OnLoad == page.expansionMode)
@@ -400,6 +399,7 @@ class IndexEventModelTests : public CppUnit::TestFixture
     CPPUNIT_TEST(testCacheMissInModeledCache);
     CPPUNIT_TEST(testNodeCacheEvictions);
     CPPUNIT_TEST(testMaxCacheCapacity);
+    CPPUNIT_TEST(testAcceptNodeKinds);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -633,6 +633,7 @@ expect:
                     <memory>
                         <node kind="0" sizeFactor="1.5" sizeToTimeFactor="0.25"/>
                         <node kind="1" sizeFactor="2.0" sizeToTimeFactor="0.75"/>
+                        <node kind="2" sizeFactor="2.5" sizeToTimeFactor="1.0"/>
                     </memory>
                 </link>
                 <input>
@@ -677,6 +678,7 @@ expect:
                     <memory>
                         <node kind="0" sizeFactor="1.5" sizeToTimeFactor="0.25"/>
                         <node kind="1" expansionMode="ll" sizeFactor="4.0" sizeToTimeFactor="0.5"/>
+                        <node kind="2" sizeFactor="2.5" sizeToTimeFactor="1.0"/>
                     </memory>
                 </link>
                 <input>
@@ -715,6 +717,7 @@ expect:
                     <memory>
                         <node kind="0" sizeFactor="1.5" sizeToTimeFactor="0.25"/>
                         <node kind="1" expansionMode="ld" sizeFactor="4.0" sizeToTimeFactor="0.5"/>
+                        <node kind="2" sizeFactor="2.5" sizeToTimeFactor="1.0"/>
                     </memory>
                 </link>
                 <input>
@@ -747,6 +750,7 @@ expect:
                     <memory>
                         <node kind="0" sizeFactor="1.5" sizeToTimeFactor="0.25"/>
                         <node kind="1" expansionMode="dd" sizeFactor="4.0" sizeToTimeFactor="0.5"/>
+                        <node kind="2" sizeFactor="2.5" sizeToTimeFactor="1.0"/>
                     </memory>
                 </link>
                 <input>
@@ -996,7 +1000,7 @@ expect:
     void testMaxCacheCapacity()
     {
         {
-            // maxCacheCapacity not specified ==> no page cache capacity
+            // dynamicCacheCapacity not specified ==> no page cache capacity
             constexpr const char* testConfig = R"!!!(
 storage:
   cacheReadTime: 100
@@ -1020,8 +1024,8 @@ memory:
         {
             // storage/@cacheReadTime not specified ==> no page cache capacity
             constexpr const char* testConfig = R"!!!(
-maxCacheCapacity: 64 Mib
 storage:
+  dynamicCacheCapacity: 64 Mib
   plane:
     name: placeholder
     readTime: 500
@@ -1040,33 +1044,12 @@ memory:
             CPPUNIT_ASSERT_EQUAL(strToBytes("56 mib", StrToBytesFlags::ThrowOnError), model.getMemory().getCacheSize());
         }
         {
-            // node caches too large ==> exception
-            constexpr const char* testConfig = R"!!!(
-maxCacheCapacity: 64 Mib
-storage:
-  cacheReadTime: 100
-  plane:
-    name: placeholder
-    readTime: 500
-memory:
-  node:
-    kind: 0
-    cacheCapacity: 33 Mib
-  node:
-    kind: 1
-    cacheCapacity: 32 Mib
-)!!!";
-            TestIndexEventModel model;
-            Owned<IPropertyTree> config = createPTreeFromYAMLString(testConfig);
-            CPPUNIT_ASSERT_THROWS_IEXCEPTION(model.configure(*config), "expected exception for cache size exceeding maxCacheCapacity");
-        }
-        {
             // storage/@cacheCapacity set explicitly ==> use it
             constexpr const char* testConfig = R"!!!(
-maxCacheCapacity: 64 Mib
 storage:
   cacheReadTime: 100
   cacheCapacity: 12 mib
+  dynamicCacheCapacity: 64 Mib
   plane:
     name: placeholder
     readTime: 500
@@ -1087,9 +1070,9 @@ memory:
         {
             // page cache constraint in effect
             constexpr const char* testConfig = R"!!!(
-maxCacheCapacity: 64 Mib
 storage:
   cacheReadTime: 100
+  dynamicCacheCapacity: 64 Mib
   plane:
     name: placeholder
     readTime: 500
@@ -1107,6 +1090,30 @@ memory:
             CPPUNIT_ASSERT_EQUAL(strToBytes("8 mib", StrToBytesFlags::ThrowOnError), model.getStorage().getCacheSize());
             CPPUNIT_ASSERT_EQUAL(strToBytes("56 mib", StrToBytesFlags::ThrowOnError), model.getMemory().getCacheSize());
         }
+    }
+
+    void testAcceptNodeKinds()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link kind="index-events">
+                    <storage>
+                        <plane name="a" readTime="500"/>
+                    </storage>
+                </link>
+                <input>
+                    <event type="IndexCacheHit" FileId="1" FileOffset="0" NodeKind="0" InMemorySize="60000" ExpandTime="4000"/>
+                    <event type="IndexCacheHit" FileId="1" FileOffset="8192" NodeKind="1" InMemorySize="60000" ExpandTime="4000"/>
+                    <event type="IndexCacheHit" FileId="1" FileOffset="16384" NodeKind="2" InMemorySize="60000" ExpandTime="4000"/>
+                </input>
+                <expect>
+                    <event type="IndexCacheHit" FileId="1" FileOffset="0" NodeKind="0" InMemorySize="60000" ExpandTime="4000"/>
+                    <event type="IndexCacheHit" FileId="1" FileOffset="8192" NodeKind="1" InMemorySize="60000" ExpandTime="4000"/>
+                    <event type="IndexCacheHit" FileId="1" FileOffset="16384" NodeKind="2" InMemorySize="60000" ExpandTime="4000"/>
+                </expect>
+            </test>
+)!!!";
+        testEventVisitationLinks(testData);
     }
 };
 
