@@ -982,6 +982,8 @@ export = {
         Stopped: "Stopped",
         Stopping: "Stopping",
         StorageInformation: "Storage Information",
+        StorageStateParseFailure: "Failed to parse stored state",
+        StorageStateWriteFailure: "Writing data to store failed",
         Subfiles: "Subfiles",
         Subgraph: "Subgraph",
         SubgraphLabel: "Subgraph Label",

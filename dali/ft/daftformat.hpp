@@ -100,6 +100,6 @@ extern DALIFT_API IFormatProcessor * createFormatProcessor(const FileFormat & sr
 extern DALIFT_API IOutputProcessor * createOutputProcessor(const FileFormat & format);
 
 class FileSprayer;
-extern DALIFT_API IFormatPartitioner * createFormatPartitioner(FileSprayer &sprayer, const SocketEndpoint & ep, const FileFormat & srcFormat, const FileFormat & tgtFormat, bool calcOutput, const char * slave, const char *wuid);
+extern DALIFT_API IFormatPartitioner * createFormatPartitioner(FileSprayer &sprayer, const SocketEndpoint & ep, const FileFormat & srcFormat, const FileFormat & tgtFormat, bool calcOutput, const char * slave, const char *wuid, bool newCsvPartitioner);
 
 #endif
