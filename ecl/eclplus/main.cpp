@@ -35,36 +35,6 @@
 #define ERROR_NO_SERVER                   3
 #define ERROR_CODE_USAGE                  4
 
-// Evaluates if wuid matches the pattern:
-//   'W' # # # # # # # # "-" # # # # # # [ "-" #+ ]
-// All other deviations from the pattern, including an incomplete match or the use of wildcard
-// characters, will return false.
-//
-// Copied from workunit.dll to avoid a dependency. Should possibly go in jlib.
-static bool localLooksLikeAWuid(const char * wuid)
-{
-    if (!wuid)
-        return false;
-    // pattern match required content
-    if ((toupper(wuid[0]) != 'W') ||
-        !isdigit(wuid[1]) || !isdigit(wuid[2]) || !isdigit(wuid[3]) || !isdigit(wuid[4]) ||
-        !isdigit(wuid[5]) || !isdigit(wuid[6]) || !isdigit(wuid[7]) || !isdigit(wuid[8]) ||
-        ('-' != wuid[9]) ||
-        !isdigit(wuid[10]) || !isdigit(wuid[11]) || !isdigit(wuid[12]) ||
-        !isdigit(wuid[13]) || !isdigit(wuid[14]) || !isdigit(wuid[15]))
-        return false;
-    // pattern match optional content
-    size_t idx = 16;
-    if ('-' == wuid[16] && isdigit(wuid[17]))
-    {
-        idx += 2;
-        while (isdigit(wuid[idx]))
-            idx++;
-    }
-    // expect the NULL terminator
-    return ('\0' == wuid[idx]);
-}
-
 
 void usage()
 {
@@ -212,7 +182,7 @@ bool build_globals(int argc, const char *argv[], IProperties * globals)
         {
             globals->loadProp(arg);
         }
-        else if (localLooksLikeAWuid(arg))
+        else if (looksLikeAWuid(arg))
         {
             globals->setProp("WUID", arg);
         }
@@ -304,7 +274,7 @@ bool build_globals(int argc, const char *argv[], IProperties * globals)
         {
             globals->setProp("action", "query");
             const char * source = globals->queryProp("service");
-            if (localLooksLikeAWuid(source))
+            if (looksLikeAWuid(source))
                 globals->setProp("-fsourceWuid", source);
             else
                 globals->setProp("-fsourceService", source);

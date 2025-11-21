@@ -198,14 +198,14 @@ jobs:
           generateReleaseNotes: false
           prerelease: ${{ contains(github.ref, '-rc') }}
           makeLatest: ${{ inputs.make-latest }}
-          artifacts: "./ECLIDE/build/*.exe"
+          artifacts: "./ECLIDE/build/hpccsystems-eclide-community_*.exe"
       
       - name: Upload Assets to Jfrog
         if: ${{ github.repository_owner == 'hpcc-systems' }}
         shell: bash
         run: |
           cd ./ECLIDE/build
-          packages=($(ls -1 hpccsystems-*.exe ))
+          packages=($(ls -1 hpccsystems-eclide-internal_*.exe ))
           for _package in ${packages[@]}; do
             curl -u${{ secrets.JFROG_USERNAME }}:${{ secrets.JFROG_PASSWORD }} "https://${{ secrets.JFROG_REGISTRY }}/hpccpl-windows-local/LN/windows/x86_64/${_package}" -T ${_package}
           done

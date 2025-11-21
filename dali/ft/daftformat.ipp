@@ -248,6 +248,8 @@ protected:
 
 class DALIFT_API CCsvPartitioner : public CInputBasePartitioner
 {
+    friend class CsvDeduceLineTest;
+    enum TokenKind { NONE=0, SEPARATOR=1, TERMINATOR=2, WHITESPACE=3, QUOTE=4, ESCAPE=5, UNKNOWN=6 };
 public:
     CCsvPartitioner(const FileFormat & _format);
 
@@ -264,11 +266,13 @@ protected:
         return getSplitRecordSize(record,maxToRead,processFullBuffer,true);
     }
 
+    size32_t deduceStartNextLine(const byte * record, unsigned maxToRead, bool ateof);
+
+    static inline TokenKind kind(unsigned match) { return (TokenKind)(match & 255); }
 private:
     void storeFieldName(const char * start, unsigned len);
 
 protected:
-    enum { NONE=0, SEPARATOR=1, TERMINATOR=2, WHITESPACE=3, QUOTE=4, ESCAPE=5 };
     unsigned        maxElementLength;
     FileFormat      format;
     StringMatcher   matcher;
@@ -658,7 +662,7 @@ public:
     unsigned getMaxElementLength() { return maxElementLength; }
 
 protected:
-    enum { NONE, OPENTAG, CLOSETAG, ENDTAG, ENDCLOSETAG, NEWLINE, WHITESPACE };
+    enum { NONE, OPENTAG, CLOSETAG, ENDTAG, ENDCLOSETAG, NEWLINE, WHITESPACE, UNKNOWN };
     unsigned        maxElementLength;
     StringMatcher   matcher;
     unsigned        unitSize;

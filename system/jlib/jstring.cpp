@@ -2808,6 +2808,59 @@ bool endsWithIgnoreCase(const char* src, const char* suffix)
     return false;
 }
 
+// Evaluates if wuid matches the pattern:
+//   firstChar # # # # # # # # "-" # # # # # # [ "-" #+ ] [ "T" #+ ]
+// All other deviations from the pattern, including an incomplete match or the use of wildcard
+// characters, will return false.
+bool looksLikeAWuid(const char * wuid, char firstChar)
+{
+    if (!wuid)
+        return false;
+    // pattern match required content
+    if ((toupper(wuid[0]) != toupper(firstChar)) ||
+        !isdigit(wuid[1]) || !isdigit(wuid[2]) || !isdigit(wuid[3]) || !isdigit(wuid[4]) ||
+        !isdigit(wuid[5]) || !isdigit(wuid[6]) || !isdigit(wuid[7]) || !isdigit(wuid[8]) ||
+        ('-' != wuid[9]) ||
+        !isdigit(wuid[10]) || !isdigit(wuid[11]) || !isdigit(wuid[12]) ||
+        !isdigit(wuid[13]) || !isdigit(wuid[14]) || !isdigit(wuid[15]))
+        return false;
+    // pattern match optional content
+    size_t idx = 16;
+    if ('-' == wuid[16] && wuid[17] != '\0' && isdigit(wuid[17]))
+    {
+        idx += 2;
+        while (isdigit(wuid[idx]))
+            idx++;
+    }
+    // pattern match optional task suffix (for publish WUIDs)
+    if ('T' == wuid[idx] && wuid[idx+1] != '\0' && isdigit(wuid[idx+1]))
+    {
+        // Only publish WUIDs can have a task suffix
+        if (toupper(wuid[0]) != 'P')
+            return false;
+
+        idx += 2;
+        while (isdigit(wuid[idx]))
+            idx++;
+    }
+    // expect the NULL terminator
+    return ('\0' == wuid[idx]);
+}
+
+bool looksLikeAWuid(const char * wuid, const char * anyFirstChar)
+{
+    if (!anyFirstChar)
+        return false;
+    // first character must be one of the specified characters
+    for (const char* ptr = anyFirstChar; *ptr != '\0'; ++ptr)
+    {
+        if (looksLikeAWuid(wuid, *ptr))
+            return true;
+    }
+    return false;
+}
+
+
 unsigned matchString(const char * search, const char * const * strings)
 {
     for (unsigned i=0;;i++)
