@@ -274,6 +274,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
     }, [closeForm, handleSubmit, logAccessorMessage, logsEnabled]);
 
     React.useEffect(() => {
+        if (!showForm) return;
         WsWorkunits.WUGetZAPInfo({ request: { WUID: wuid } }).then(response => {
             setEmailDisabled(response?.WUGetZAPInfoResponse?.EmailTo === null);
             setLogAccessorMessage(response?.WUGetZAPInfoResponse?.Message ?? "");
@@ -286,7 +287,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
             }
             reset(newValues);
         }).catch(err => logger.error(err));
-    }, [wuid, reset]);
+    }, [wuid, reset, showForm]);
 
     React.useEffect(() => {
         if (!logsEnabled) { setLogFiltersUnavailable(true); }

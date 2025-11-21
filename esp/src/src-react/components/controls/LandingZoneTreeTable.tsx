@@ -1,8 +1,13 @@
 import * as React from "react";
+import { scopedLogger } from "@hpcc-js/util";
 import { Checkbox, Table, TableHeader, TableRow, TableHeaderCell, TableBody, TableCell, Button, Spinner, makeStyles, mergeClasses, tokens } from "@fluentui/react-components";
+import { useConst } from "@fluentui/react-hooks";
 import { FolderRegular, DocumentRegular, ServerRegular, DesktopRegular, ChevronDownRegular, ChevronRightRegular } from "@fluentui/react-icons";
+import { userKeyValStore } from "src/KeyValStore";
 import { convertedSize } from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
+
+const logger = scopedLogger("src-react/components/controls/LandingZoneTreeTable.tsx");
 
 const useStyles = makeStyles({
     container: {
@@ -93,6 +98,41 @@ const useStyles = makeStyles({
     }
 });
 
+const OPEN_ITEMS_STORAGE_KEY = "LandingZone_ExpandedItems";
+
+const usePersistedExpansion = () => {
+    const store = useConst(() => userKeyValStore());
+    const [expandedItems, setExpandedItems] = React.useState<Set<string>>(new Set());
+    const [isLoaded, setIsLoaded] = React.useState(false);
+
+    React.useEffect(() => {
+        store.get(OPEN_ITEMS_STORAGE_KEY).then((stored) => {
+            if (stored) {
+                try {
+                    const parsed = JSON.parse(stored);
+                    if (Array.isArray(parsed)) {
+                        setExpandedItems(new Set(parsed));
+                    }
+                } catch (err) {
+                    logger.error(nlsHPCC.StorageStateParseFailure);
+                }
+            }
+            setIsLoaded(true);
+        }).catch(() => {
+            setIsLoaded(true);
+        });
+    }, [store]);
+
+    const updateExpandedItems = React.useCallback((newExpandedItems: Set<string>) => {
+        setExpandedItems(newExpandedItems);
+        store.set(OPEN_ITEMS_STORAGE_KEY, JSON.stringify(Array.from(newExpandedItems))).catch(_err => {
+            logger.error(nlsHPCC.StorageStateWriteFailure);
+        });
+    }, [store]);
+
+    return { expandedItems, updateExpandedItems, isLoaded };
+};
+
 export interface LandingZoneItem {
     id: string;
     name: string;
@@ -124,11 +164,28 @@ export const LandingZoneTreeTable: React.FunctionComponent<LandingZoneTreeTableP
     loading = false,
     loadingItems = new Set(),
     selectedItems,
-    expandedItems,
+    expandedItems: externalExpandedItems,
     onSelectionChange,
     onExpansionChange
 }) => {
     const styles = useStyles();
+    const { expandedItems: persistedExpandedItems, updateExpandedItems, isLoaded } = usePersistedExpansion();
+    const hasNotifiedParent = React.useRef(false);
+
+    const mergedExpandedItems = React.useMemo(() => {
+        if (!isLoaded) {
+            return externalExpandedItems;
+        }
+        return new Set([...externalExpandedItems, ...persistedExpandedItems]);
+    }, [externalExpandedItems, persistedExpandedItems, isLoaded]);
+
+    React.useEffect(() => {
+        if (isLoaded && !hasNotifiedParent.current && persistedExpandedItems.size > 0) {
+            hasNotifiedParent.current = true;
+            onExpansionChange(new Set(persistedExpandedItems));
+        }
+    }, [isLoaded, persistedExpandedItems, onExpansionChange]);
+
 
     const [columnWidths, setColumnWidths] = React.useState({
         selection: 60,
@@ -195,14 +252,16 @@ export const LandingZoneTreeTable: React.FunctionComponent<LandingZoneTreeTableP
     }), []);
 
     const handleExpansionToggle = React.useCallback((item: LandingZoneItem) => {
-        const newExpandedItems = new Set(expandedItems);
-        if (expandedItems.has(item.id)) {
+        const newExpandedItems = new Set(mergedExpandedItems);
+        if (mergedExpandedItems.has(item.id)) {
             newExpandedItems.delete(item.id);
         } else {
             newExpandedItems.add(item.id);
         }
+
+        updateExpandedItems(newExpandedItems);
         onExpansionChange(newExpandedItems);
-    }, [expandedItems, onExpansionChange]);
+    }, [mergedExpandedItems, updateExpandedItems, onExpansionChange]);
 
     const handleSelectionToggle = React.useCallback((item: LandingZoneItem) => {
         if (item.type === "dropzone" || item.type === "machine" || item.type === "folder") {
@@ -306,7 +365,7 @@ export const LandingZoneTreeTable: React.FunctionComponent<LandingZoneTreeTableP
                                             icon={
                                                 loadingItems.has(item.id) ? (
                                                     <Spinner size="extra-small" className={styles.compactSpinner} />
-                                                ) : expandedItems.has(item.id) ? (
+                                                ) : mergedExpandedItems.has(item.id) ? (
                                                     <ChevronDownRegular />
                                                 ) : (
                                                     <ChevronRightRegular />
