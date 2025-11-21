@@ -327,7 +327,7 @@ public:
     virtual ChildMap *checkChildren() const override;
     virtual IPropertyTree *create(const char *name, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false) override;
     virtual IPropertyTree *create(MemoryBuffer &mb) override;
-    virtual IPropertyTree *create(IBufferedSerialInputStream &in) override;
+    virtual IPropertyTree * create(IBufferedSerialInputStream &in, PTreeDeserializeContext &ctx) override;
     virtual void createChildMap() override;
     virtual IPropertyTree *ownPTree(IPropertyTree *tree) override;
     virtual void setLocal(size32_t size, const void *data, bool _binary, CompressionMethod compressType) override;
