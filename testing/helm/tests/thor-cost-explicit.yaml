@@ -5,9 +5,6 @@ global:
 
 thor:
 - name: thor
-  # Thor-level (deprecated) cost retained for backward-compatibility. Subcomponents override.
-  cost:
-    perCpu: 2.00
   manager:
     cost:
       perCpu: 2.50

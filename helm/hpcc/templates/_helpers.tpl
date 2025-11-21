@@ -181,14 +181,14 @@ false
 
 {{/*
 Generate global ConfigMap info
-Pass in dict with root and optional excludeCost
+Pass in dict with root and optional excludePerCpuCost
 */}}
 {{- define "hpcc.generateGlobalConfigMap" -}}
 {{- if not (hasKey . "root") -}}
-{{-   fail "hpcc.generateGlobalConfigMap: expected dict with key 'root' (and optional 'excludeCost')" -}}
+ {{- fail (printf "hpcc.generateGlobalConfigMap: expected dict with key 'root' (and optional 'excludePerCpuCost'), but got keys: [%s]" (join ", " (keys .))) -}}
 {{- end -}}
 {{- $root := .root -}}
-{{- $excludeCost := .excludeCost | default false -}}
+{{- $excludePerCpuCost := .excludePerCpuCost | default false -}}
 {{- /*Create local variables which always exist to avoid having to check if intermediate key values exist*/ -}}
 {{- $storage := ($root.Values.storage | default dict) -}}
 {{- $planes := ($storage.planes | default list) -}}
@@ -265,9 +265,13 @@ storage:
     prefix: {{ $root.Values.global.defaultSpillPath | default "/var/lib/HPCCSystems/hpcc-spill" | quote }}
     category: spill
 {{- end }}
-{{- if and $root.Values.global.cost (not $excludeCost) }}
+{{- if $root.Values.global.cost }}
 cost:
+{{- if $excludePerCpuCost }}
+{{ toYaml (omit $root.Values.global.cost "perCpu") | indent 2 }}
+{{- else }}
 {{ toYaml $root.Values.global.cost | indent 2 }}
+{{- end }}
 {{- end }}
 {{- if $root.Values.global.logAccess }}
 logAccess:

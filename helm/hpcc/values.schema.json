@@ -2902,11 +2902,6 @@
         "eclagent": {
           "$ref": "#/definitions/thorSubComponent"
         },
-        "cost": {
-          "$ref" : "#/definitions/componentCost",
-          "description": "deprecated cost section, use manager, worker, and eclagent sections",
-          "type": "object"
-        },
         "expert": {
           "$ref": "#/definitions/expert"
         },

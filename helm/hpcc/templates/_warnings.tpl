@@ -178,28 +178,10 @@ Pass in dict with root and warnings
   {{- $_ := set $warning "msg" (printf "Insecure feature enabled in ecl: %s " $ctx.insecureEclFeature) -}}
   {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
  {{- end -}}
- {{- /* Warn if thor has both top-level cost and sub-component cost configurations */ -}}
- {{- $_ := set $ctx "thorCostConflicts" list -}}
+ {{- /* Warn if thor has inconsistent sub-component cost configurations */ -}}
  {{- $_ := set $ctx "thorInconsistentCosts" list -}}
- {{- $_ := set $ctx "thorUsingCost" list -}}
  {{- range $thor := .root.Values.thor -}}
   {{- if not $thor.disabled -}}
-   {{- if $thor.cost -}}
-    {{- $_ := set $ctx "thorUsingCost" (append $ctx.thorUsingCost $thor.name) -}}
-    {{- $conflictingCosts := list -}}
-    {{- if and $thor.manager $thor.manager.cost -}}
-     {{- $conflictingCosts = append $conflictingCosts "manager.cost" -}}
-    {{- end -}}
-    {{- if and $thor.worker $thor.worker.cost -}}
-     {{- $conflictingCosts = append $conflictingCosts "worker.cost" -}}
-    {{- end -}}
-    {{- if and $thor.eclagent $thor.eclagent.cost -}}
-     {{- $conflictingCosts = append $conflictingCosts "eclagent.cost" -}}
-    {{- end -}}
-    {{- if $conflictingCosts -}}
-     {{- $_ := set $ctx "thorCostConflicts" (append $ctx.thorCostConflicts (printf "%s (%s)" $thor.name (join ", " $conflictingCosts))) -}}
-    {{- end -}}
-   {{- end -}}
    {{- /* Check for inconsistent sub-component cost configurations */ -}}
    {{- $managerHasCost := and $thor.manager $thor.manager.cost -}}
    {{- $workerHasCost := and $thor.worker $thor.worker.cost -}}
@@ -222,20 +204,9 @@ Pass in dict with root and warnings
    {{- end -}}
   {{- end -}}
  {{- end -}}
- {{- if $ctx.thorCostConflicts -}}
-  {{- $warning := dict "source" "helm" "severity" "warning" -}}
-  {{- $_ := set $warning "msg" (printf "Thor component vs sub-component cost conflict: %s" (join "; " $ctx.thorCostConflicts)) -}}
-  {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
- {{- end -}}
  {{- if $ctx.thorInconsistentCosts -}}
   {{- $warning := dict "source" "helm" "severity" "warning" -}}
   {{- $_ := set $warning "msg" (printf "Thor inconsistent costs: %s" (join "; " $ctx.thorInconsistentCosts)) -}}
-  {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
- {{- end -}}
- {{- /* Warn if thor.cost is being used, but only if "no cost conflicts" hasn't already been reported */ -}}
- {{- if and $ctx.thorUsingCost (not $ctx.thorCostConflicts) -}}
-  {{- $warning := dict "source" "helm" "severity" "warning" -}}
-  {{- $_ := set $warning "msg" (printf "Default thor.cost is deprecated (subcomponent level cost config should be provided): %s" ($ctx.thorUsingCost|toStrings)) -}}
   {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
  {{- end -}}
  {{- /* Warn if TLS not enabled */ -}}
