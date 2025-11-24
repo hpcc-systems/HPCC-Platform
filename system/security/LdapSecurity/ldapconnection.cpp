@@ -1773,10 +1773,7 @@ public:
             const char* username = user.getName();
             const char* password = user.credentials().getPassword();
             if(!username || !*username || !password || !*password)
-            {
-                DBGLOG("CLdapClient::authenticate username/password must be provided");
                 return false;
-            }
 
             if (getMaxPwdAge(m_connections,(char*)m_ldapconfig->getBasedn(), m_ldapconfig->getLdapTimeout()) != PWD_NEVER_EXPIRES)
                 m_domainPwdsNeverExpire = false;
