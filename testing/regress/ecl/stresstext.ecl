@@ -25,6 +25,7 @@
 //version multiPart=false,variant='inplace_zstd'
 //version multiPart=false,variant='inplace_var'
 //version multiPart=false,variant='hybrid'
+//version multiPart=true,variant='hybrid'
 //version multiPart=false,variant='hybrid_var'
 
 // The settings below may be useful when trying to analyse Roxie keyed join behaviour, as they will
