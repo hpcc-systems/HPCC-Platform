@@ -190,7 +190,14 @@ public:
     CUtf8TypeInfo(unsigned len, IAtom * _locale) : CUnicodeTypeInfo(len, _locale) {}
 
     virtual type_t getTypeCode() const          { return type_utf8; };
-    virtual unsigned getSize()                  { return UNKNOWN_LENGTH; };
+    virtual unsigned getSize()
+    {
+        //If unknown length then preserve the size-bytes information
+        if (isUnknownLength(length))
+            return length;
+        //the size of a utf8-encoded type is never known
+        return UNKNOWN_LENGTH;
+    }
     virtual unsigned getStringLen()             { return !isUnknownLength(length) ? length/4 : length; };
 
     using CUnicodeTypeInfo::castFrom;

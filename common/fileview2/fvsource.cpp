@@ -273,7 +273,7 @@ void DataSourceMetaData::addSimpleField(const char * name, const char * xpath, I
             minRecordSize += sizeof(UChar);
             break;
         default:
-            minRecordSize += sizeof(size32_t);
+            minRecordSize += getLengthSizeBytes(size);
             break;
         }
     }
@@ -623,30 +623,31 @@ size32_t DataSourceMetaData::calcRecordSize(size32_t maxLength, const void *rec)
         if (isUnknownLength(size))
         {
             const byte * cur = data + curOffset;
+            unsigned lengthSize = getLengthSizeBytes(size);
             switch (type.getTypeCode())
             {
             case type_data:
             case type_string:
             case type_table:
             case type_groupedtable:
-                checkReadPastEnd(curOffset, sizeof(unsigned), maxLength);
-                size = *((unsigned *)cur) + sizeof(unsigned);
+                checkReadPastEnd(curOffset, lengthSize, maxLength);
+                size = rtlReadInt(cur, lengthSize) + lengthSize;
                 break;
             case type_set:
-                checkReadPastEnd(curOffset, sizeof(bool) + sizeof(unsigned), maxLength);
-                size = *((unsigned *)(cur + sizeof(bool))) + sizeof(unsigned) + sizeof(bool);
+                checkReadPastEnd(curOffset, sizeof(bool) + lengthSize, maxLength);
+                size = rtlReadInt(cur + sizeof(bool), lengthSize) + lengthSize + sizeof(bool);
                 break;
             case type_qstring:
-                checkReadPastEnd(curOffset, sizeof(unsigned), maxLength);
-                size = rtlQStrSize(*((unsigned *)cur)) + sizeof(unsigned);
+                checkReadPastEnd(curOffset, lengthSize, maxLength);
+                size = rtlQStrSize(rtlReadInt(cur, lengthSize)) + lengthSize;
                 break;
             case type_unicode:
-                checkReadPastEnd(curOffset, sizeof(unsigned), maxLength);
-                size = *((unsigned *)cur)*2 + sizeof(unsigned);
+                checkReadPastEnd(curOffset, lengthSize, maxLength);
+                size = rtlReadInt(cur, lengthSize) * sizeof(UChar) + lengthSize;
                 break;
             case type_utf8:
-                checkReadPastEnd(curOffset, sizeof(unsigned), maxLength);
-                size = sizeof(unsigned) + rtlUtf8Size(*(unsigned *)cur, cur+sizeof(unsigned));
+                checkReadPastEnd(curOffset, lengthSize, maxLength);
+                size = lengthSize + rtlUtf8Size(rtlReadInt(cur, lengthSize), cur+lengthSize);
                 break;
             case type_varstring:
                 //buffer overflow checking for the following will wait until code is reimplemented

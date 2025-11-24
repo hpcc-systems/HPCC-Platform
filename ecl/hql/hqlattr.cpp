@@ -686,6 +686,7 @@ static unsigned getMaxSize(ITypeInfo * type, IHqlExpression * maxLength, IHqlExp
     if (maxSize)
         return (unsigned)getIntValue(maxSize, 0);
 
+    size32_t lengthSize = getLengthSizeBytes(size);
     if (maxLength)
     {
         unsigned __int64 len = (unsigned)getIntValue(maxLength, 0);
@@ -693,17 +694,17 @@ static unsigned getMaxSize(ITypeInfo * type, IHqlExpression * maxLength, IHqlExp
         {
         case type_string:
         case type_data:
-            return truncMaxlength(sizeof(size32_t) + len);
+            return truncMaxlength(lengthSize + len);
         case type_unicode:
-            return truncMaxlength(sizeof(size32_t) + len*sizeof(UChar));
+            return truncMaxlength(lengthSize + len*sizeof(UChar));
         case type_qstring:
-            return truncMaxlength(sizeof(size32_t) + rtlQStrSize((unsigned)len));
+            return truncMaxlength(lengthSize + rtlQStrSize((unsigned)len));
         case type_varstring:
             return truncMaxlength(len + 1);
         case type_varunicode:
             return truncMaxlength((len + 1) * sizeof(UChar));
         case type_utf8:
-            return truncMaxlength(sizeof(size32_t) + (len * 4));
+            return truncMaxlength(lengthSize + (len * 4));
         case type_set:
             return truncMaxlength(len);
         }
@@ -726,6 +727,9 @@ static unsigned getMaxSize(ITypeInfo * type, IHqlExpression * maxLength, IHqlExp
             }
         }
     }
+
+    if (lengthSize < 4)
+        return (1U << (lengthSize*8)) - 1;
 
     return UNKNOWN_LENGTH;
 }
@@ -1006,7 +1010,7 @@ static IHqlExpression * evaluateFieldAttrSize(IHqlExpression * expr)
         case type_utf8:
             if (isUnknownLength(thisSize))
             {
-                minSize = sizeof(size32_t);
+                minSize = getLengthSizeBytes(thisSize);
                 maxSize = getMaxSize(expr);
             }
             break;

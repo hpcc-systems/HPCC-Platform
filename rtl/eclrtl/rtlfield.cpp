@@ -385,6 +385,83 @@ void RtlTypeInfoBase::setHighBound(void * buffer, const byte * value, size32_t s
     setBound(buffer, value, subLength, 0xff, inclusive);
 }
 
+unsigned RtlTypeInfoBase::getLengthSizeBytes() const
+{
+    if (isFixedSize())
+        return 0;
+
+    switch (length)
+    {
+    case 1:
+    case 2:
+        return length;
+    }
+    dbgassertex(length == 0 || length == UNKNOWN_LENGTH);
+    //case 0, UNKNOWN_LENGTH - no
+    return 4;
+}
+
+size32_t RtlTypeInfoBase::getUnknownLengthMax() const
+{
+    if (!isFixedSize())
+    {
+        switch (length)
+        {
+        case 1:
+            return 0xFF;
+        case 2:
+            return 0xFFFF;
+        }
+    }
+    return 0xFFFFFFFF; // i.e. no maximum
+}
+
+void RtlTypeInfoBase::writeSize(void * dest, size32_t size) const
+{
+    switch (length)
+    {
+    case 1:
+        rtlWriteInt1(dest, size);
+        break;
+    case 2:
+        rtlWriteInt2(dest, size);
+        break;
+    default:
+        rtlWriteInt4(dest, size);
+        break;
+    }
+}
+
+size32_t RtlTypeInfoBase::readAheadSize(IRowPrefetcherSource & in) const
+{
+    assertex(!isFixedSize());
+    char temp[4];
+    switch (length)
+    {
+    case 1:
+        in.read(1, temp);
+        return rtlReadInt1(temp);
+    case 2:
+        in.read(2, temp);
+        return rtlReadInt2(temp);
+    default:
+        return in.readSize();
+    }
+}
+
+size32_t RtlTypeInfoBase::readSize(const void * src) const
+{
+    switch (length)
+    {
+    case 1:
+        return rtlReadInt1(src);
+    case 2:
+        return rtlReadInt2(src);
+    default:
+        return rtlReadInt4(src);
+    }
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 size32_t RtlBoolTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
@@ -1158,14 +1235,24 @@ size32_t RtlStringTypeInfo::getMinSize() const
 {
     if (isFixedSize())
         return length;
-    return sizeof(size32_t);
+    return getLengthSizeBytes();
 }
 
 size32_t RtlStringTypeInfo::size(const byte * self, const byte * selfrow) const 
 {
     if (isFixedSize())
         return length;
-    return sizeof(size32_t) + rtlReadSize32t(self);
+
+    //inline the calls since this can be a performance critical when calculating field offsets
+    switch (length)
+    {
+    case 1:
+        return 1 + rtlReadInt1(self);
+    case 2:
+        return 2 + rtlReadInt2(self);
+    default:
+        return 4 + rtlReadSize32t(self);
+    }
 }
 
 size32_t RtlStringTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
@@ -1180,17 +1267,35 @@ size32_t RtlStringTypeInfo::buildString(ARowBuilder &builder, size32_t offset, c
 {
     if (!isFixedSize())
     {
-        builder.ensureCapacity(offset+size+sizeof(size32_t), queryName(field));
+        unsigned lengthSize = getLengthSizeBytes();
+        size32_t maxLength = getUnknownLengthMax();
+        if (size > maxLength)
+            size = maxLength;
+        builder.ensureCapacity(offset+size+lengthSize, queryName(field));
         byte *dest = builder.getSelf()+offset;
-        rtlWriteInt4(dest, size);
+        switch (lengthSize)
+        {
+        case 1:
+            rtlWriteInt1(dest, size);
+            break;
+        case 2:
+            rtlWriteInt2(dest, size);
+            break;
+        case 4:
+            rtlWriteInt4(dest, size);
+            break;
+        default:
+            rtlFail(0, "Invalid lengthSize in RtlStringTypeInfo::buildString");
+        }
+
         // NOTE - it has been the subject of debate whether we should convert the incoming data to EBCDIC, or expect the IFieldSource to have already returned ebcdic
         // In order to be symmetrical with the passing of ecl data to a IFieldProcessor the former interpretation is preferred.
         // Expecting source.getStringResult to somehow "know" that EBCDIC was expected seems odd.
         if (isEbcdic())
-            rtlStrToEStr(size, (char *) dest+sizeof(size32_t), size, (char *)value);
+            rtlStrToEStr(size, (char *) dest+lengthSize, size, (char *)value);
         else
-            memcpy_iflen(dest+sizeof(size32_t), value, size);
-        offset += size+sizeof(size32_t);
+            memcpy_iflen(dest+lengthSize, value, size);
+        offset += size+lengthSize;
     }
     else
     {
@@ -1212,11 +1317,15 @@ size32_t RtlStringTypeInfo::buildUtf8(ARowBuilder &builder, size32_t offset, con
 
     if (!isFixedSize())
     {
-        builder.ensureCapacity(offset+codepoints+sizeof(size32_t), queryName(field));
+        unsigned lengthSize = getLengthSizeBytes();
+        size32_t maxLength = getUnknownLengthMax();
+        if (codepoints > maxLength)
+            codepoints = maxLength;
+        builder.ensureCapacity(offset+codepoints+lengthSize, queryName(field));
         char *dest = (char *) builder.getSelf()+offset;
-        rtlWriteInt4(dest, codepoints);
-        rtlUtf8ToStr(codepoints, dest+sizeof(size32_t), codepoints, value);
-        offset += codepoints+sizeof(size32_t);
+        writeSize(dest, codepoints);
+        rtlUtf8ToStr(codepoints, dest+lengthSize, codepoints, value);
+        offset += codepoints+lengthSize;
     }
     else
     {
@@ -1252,9 +1361,10 @@ size32_t RtlStringTypeInfo::process(const byte * self, const byte * selfrow, con
     }
     else
     {
-        str = reinterpret_cast<const char *>(self + sizeof(size32_t));
-        thisLength = rtlReadSize32t(self);
-        thisSize = sizeof(size32_t) + thisLength;
+        unsigned lengthSize = getLengthSizeBytes();
+        str = reinterpret_cast<const char *>(self + lengthSize);
+        thisLength = readSize(self);
+        thisSize = lengthSize + thisLength;
     }
 
     if (isEbcdic())
@@ -1283,9 +1393,10 @@ size32_t RtlStringTypeInfo::toXML(const byte * self, const byte * selfrow, const
     }
     else
     {
-        str = reinterpret_cast<const char *>(self + sizeof(size32_t));
-        thisLength = rtlReadSize32t(self);
-        thisSize = sizeof(size32_t) + thisLength;
+        unsigned lengthSize = getLengthSizeBytes();
+        str = reinterpret_cast<const char *>(self + lengthSize);
+        thisLength = readSize(self);
+        thisSize = lengthSize + thisLength;
     }
 
     if (isEbcdic())
@@ -1313,11 +1424,12 @@ size32_t RtlStringTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerS
     }
     else
     {
+        unsigned lengthSize = getLengthSizeBytes();
         size32_t size = in.readSize();
-        byte * dest = builder.ensureCapacity(offset+sizeof(size32_t)+size, nullptr) + offset;
-        rtlWriteSize32t(dest, size);
-        in.read(size, dest + sizeof(size32_t));
-        offset += sizeof(size32_t)+size;
+        byte * dest = builder.ensureCapacity(offset+lengthSize+size, nullptr) + offset;
+        writeSize(dest, size);
+        in.read(size, dest + lengthSize);
+        offset += lengthSize+size;
     }
     return offset;
 }
@@ -1330,7 +1442,7 @@ void RtlStringTypeInfo::readAhead(IRowPrefetcherSource & in) const
     }
     else
     {
-        size32_t thisLength = in.readSize();
+        size32_t thisLength = readAheadSize(in);
         in.skip(thisLength);
     }
 }
@@ -1347,11 +1459,12 @@ void RtlStringTypeInfo::getString(size32_t & resultLen, char * & result, const v
     }
     else
     {
-        size32_t len = rtlReadSize32t(ptr);
+        unsigned lengthSize = getLengthSizeBytes();
+        size32_t len = readSize(ptr);
         if (isEbcdic())
-            return rtlEStrToStrX(resultLen, result, len, (const char *)ptr + sizeof(size32_t));
+            return rtlEStrToStrX(resultLen, result, len, (const char *)ptr + lengthSize);
         else
-            return rtlStrToStrX(resultLen, result, len, (const char *)ptr + sizeof(size32_t));
+            return rtlStrToStrX(resultLen, result, len, (const char *)ptr + lengthSize);
     }
 }
 
@@ -1369,8 +1482,9 @@ void RtlStringTypeInfo::getUtf8(size32_t & resultLen, char * & result, const voi
     }
     else
     {
-        size32_t len = rtlReadSize32t(ptr);
-        return rtlStrToUtf8X(resultLen, result, len, (const char *)ptr + sizeof(size32_t));
+        unsigned lengthSize = getLengthSizeBytes();
+        size32_t len = readSize(ptr);
+        return rtlStrToUtf8X(resultLen, result, len, (const char *)ptr + lengthSize);
     }
 }
 
@@ -1379,8 +1493,9 @@ __int64 RtlStringTypeInfo::getInt(const void * ptr) const
     //Utf8 output is the same as string output, so avoid the intermediate translation
     if (isFixedSize())
         return rtlStrToInt8(length, (const char *)ptr);
-    size32_t len = rtlReadSize32t(ptr);
-    return rtlStrToInt8(len, (const char *)ptr + sizeof(size32_t));
+    unsigned lengthSize = getLengthSizeBytes();
+    size32_t len = readSize(ptr);
+    return rtlStrToInt8(len, (const char *)ptr + lengthSize);
 }
 
 int RtlStringTypeInfo::compare(const byte * left, const byte * right) const
@@ -1394,9 +1509,10 @@ int RtlStringTypeInfo::compare(const byte * left, const byte * right) const
         //    return rtlCompareEStrEStr(length, (const char *)left, length, (const char *)right);
         // but that's the same as a memcmp if lengths match
 
-        size32_t lenLeft = rtlReadSize32t(left);
-        size32_t lenRight = rtlReadSize32t(right);
-        return rtlCompareEStrEStr(lenLeft, (const char *)left + sizeof(size32_t), lenRight, (const char *)right + sizeof(size32_t));
+        unsigned lengthSize = getLengthSizeBytes();
+        size32_t lenLeft = readSize(left);
+        size32_t lenRight = readSize(right);
+        return rtlCompareEStrEStr(lenLeft, (const char *)left + lengthSize, lenRight, (const char *)right + lengthSize);
     }
     else
     {
@@ -1405,9 +1521,10 @@ int RtlStringTypeInfo::compare(const byte * left, const byte * right) const
         //    return rtlCompareStrStr(length, (const char *)left, length, (const char *)right);  // Actually this is a memcmp
         // but that's the same as a memcmp if lengths match
 
-        size32_t lenLeft = rtlReadSize32t(left);
-        size32_t lenRight = rtlReadSize32t(right);
-        return rtlCompareStrStr(lenLeft, (const char *)left + sizeof(size32_t), lenRight, (const char *)right + sizeof(size32_t));
+        unsigned lengthSize = getLengthSizeBytes();
+        size32_t lenLeft = readSize(left);
+        size32_t lenRight = readSize(right);
+        return rtlCompareStrStr(lenLeft, (const char *)left + lengthSize, lenRight, (const char *)right + lengthSize);
     }
 }
 
@@ -1424,13 +1541,14 @@ int RtlStringTypeInfo::compareRange(size32_t lenLeft, const byte * left, size32_
     }
     else
     {
-        size32_t maxLeft = rtlReadSize32t(left);
-        size32_t maxRight = rtlReadSize32t(right);
+        unsigned lengthSize = getLengthSizeBytes();
+        size32_t maxLeft = readSize(left);
+        size32_t maxRight = readSize(right);
 
         if (isEbcdic())
-            return rtlCompareEStrEStr(std::min(lenLeft, maxLeft), (const char *)left + sizeof(size32_t), std::min(lenRight, maxRight), (const char *)right + sizeof(size32_t));
+            return rtlCompareEStrEStr(std::min(lenLeft, maxLeft), (const char *)left + lengthSize, std::min(lenRight, maxRight), (const char *)right + lengthSize);
         else
-            return rtlCompareStrStr(std::min(lenLeft, maxLeft), (const char *)left + sizeof(size32_t), std::min(lenRight, maxRight), (const char *)right + sizeof(size32_t));
+            return rtlCompareStrStr(std::min(lenLeft, maxLeft), (const char *)left + lengthSize, std::min(lenRight, maxRight), (const char *)right + lengthSize);
     }
 }
 
@@ -1446,8 +1564,9 @@ unsigned RtlStringTypeInfo::hash(const byte * self, unsigned inhash) const
         len = length;
     else
     {
-        len = rtlReadSize32t(self);
-        self += sizeof(size32_t);
+        unsigned lengthSize = getLengthSizeBytes();
+        len = readSize(self);
+        self += lengthSize;
     }
     return rtlHash32Data(rtlTrimStrLen(len, (const char *) self), self, inhash);
 }
@@ -1468,14 +1587,15 @@ size32_t RtlDataTypeInfo::getMinSize() const
 {
     if (isFixedSize())
         return length;
-    return sizeof(size32_t);
+    return getLengthSizeBytes();
 }
 
 size32_t RtlDataTypeInfo::size(const byte * self, const byte * selfrow) const 
 {
     if (isFixedSize())
         return length;
-    return sizeof(size32_t) + rtlReadSize32t(self);
+    unsigned lengthSize = getLengthSizeBytes();
+    return lengthSize + readSize(self);
 }
 
 size32_t RtlDataTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
@@ -1490,11 +1610,15 @@ size32_t RtlDataTypeInfo::buildString(ARowBuilder &builder, size32_t offset, con
 {
     if (!isFixedSize())
     {
-        builder.ensureCapacity(offset+size+sizeof(size32_t), queryName(field));
+        unsigned lengthSize = getLengthSizeBytes();
+        size32_t maxLength = getUnknownLengthMax();
+        if (size > maxLength)
+            size = maxLength;
+        builder.ensureCapacity(offset+size+lengthSize, queryName(field));
         byte *dest = builder.getSelf()+offset;
-        rtlWriteInt4(dest, size);
-        memcpy_iflen(dest+sizeof(size32_t), value, size);
-        offset += size+sizeof(size32_t);
+        writeSize(dest, size);
+        memcpy_iflen(dest+lengthSize, value, size);
+        offset += size+lengthSize;
     }
     else
     {
@@ -1523,9 +1647,10 @@ size32_t RtlDataTypeInfo::process(const byte * self, const byte * selfrow, const
     }
     else
     {
-        str = reinterpret_cast<const char *>(self + sizeof(size32_t));
-        thisLength = rtlReadSize32t(self);
-        thisSize = sizeof(size32_t) + thisLength;
+        unsigned lengthSize = getLengthSizeBytes();
+        str = reinterpret_cast<const char *>(self + lengthSize);
+        thisLength = readSize(self);
+        thisSize = lengthSize + thisLength;
     }
 
     target.processData(thisLength, str, field);
@@ -1544,9 +1669,10 @@ size32_t RtlDataTypeInfo::toXML(const byte * self, const byte * selfrow, const R
     }
     else
     {
-        str = reinterpret_cast<const char *>(self + sizeof(size32_t));
-        thisLength = rtlReadSize32t(self);
-        thisSize = sizeof(size32_t) + thisLength;
+        unsigned lengthSize = getLengthSizeBytes();
+        str = reinterpret_cast<const char *>(self + lengthSize);
+        thisLength = readSize(self);
+        thisSize = lengthSize + thisLength;
     }
 
     target.outputData(thisLength, str, queryScalarXPath(field));
@@ -1564,11 +1690,12 @@ size32_t RtlDataTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerSou
     }
     else
     {
+        unsigned lengthSize = getLengthSizeBytes();
         size32_t size = in.readSize();
-        byte * dest = builder.ensureCapacity(offset+sizeof(size32_t)+size, nullptr) + offset;
-        rtlWriteSize32t(dest, size);
-        in.read(size, dest + sizeof(size32_t));
-        offset += sizeof(size32_t)+size;
+        byte * dest = builder.ensureCapacity(offset+lengthSize+size, nullptr) + offset;
+        writeSize(dest, size);
+        in.read(size, dest + lengthSize);
+        offset += lengthSize+size;
     }
     return offset;
 }
@@ -1581,7 +1708,7 @@ void RtlDataTypeInfo::readAhead(IRowPrefetcherSource & in) const
     }
     else
     {
-        size32_t thisLength = in.readSize();
+        size32_t thisLength = readAheadSize(in);
         in.skip(thisLength);
     }
 }
@@ -1595,8 +1722,9 @@ void RtlDataTypeInfo::getString(size32_t & resultLen, char * & result, const voi
     }
     else
     {
-        size32_t len = rtlReadSize32t(ptr);
-        return rtlStrToStrX(resultLen, result, len, (const char *)ptr + sizeof(size32_t));
+        unsigned lengthSize = getLengthSizeBytes();
+        size32_t len = readSize(ptr);
+        return rtlStrToStrX(resultLen, result, len, (const char *)ptr + lengthSize);
     }
 }
 
@@ -1608,8 +1736,9 @@ void RtlDataTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void 
     }
     else
     {
-        size32_t len = rtlReadSize32t(ptr);
-        return rtlStrToUtf8X(resultLen, result, len, (const char *)ptr + sizeof(size32_t));
+        unsigned lengthSize = getLengthSizeBytes();
+        size32_t len = readSize(ptr);
+        return rtlStrToUtf8X(resultLen, result, len, (const char *)ptr + lengthSize);
     }
 }
 
@@ -1618,8 +1747,9 @@ __int64 RtlDataTypeInfo::getInt(const void * ptr) const
     //Utf8 output is the same as string output, so avoid the intermediate translation
     if (isFixedSize())
         return rtlStrToInt8(length, (const char *)ptr);
-    size32_t len = rtlReadSize32t(ptr);
-    return rtlStrToInt8(len, (const char *)ptr + sizeof(size32_t));
+    unsigned lengthSize = getLengthSizeBytes();
+    size32_t len = readSize(ptr);
+    return rtlStrToInt8(len, (const char *)ptr + lengthSize);
 }
 
 int RtlDataTypeInfo::compare(const byte * left, const byte * right) const
@@ -1629,9 +1759,10 @@ int RtlDataTypeInfo::compare(const byte * left, const byte * right) const
         // but that acts as a memcmp if lengths match
         return memcmp(left, right, length);
 
-    size32_t lenLeft = rtlReadSize32t(left);
-    size32_t lenRight = rtlReadSize32t(right);
-    return rtlCompareDataData(lenLeft, (const char *)left + sizeof(size32_t), lenRight, (const char *)right + sizeof(size32_t));
+    unsigned lengthSize = getLengthSizeBytes();
+    size32_t lenLeft = readSize(left);
+    size32_t lenRight = readSize(right);
+    return rtlCompareDataData(lenLeft, (const char *)left + lengthSize, lenRight, (const char *)right + lengthSize);
 }
 
 int RtlDataTypeInfo::compareRange(size32_t lenLeft, const byte * left, size32_t lenRight, const byte * right) const
@@ -1644,12 +1775,13 @@ int RtlDataTypeInfo::compareRange(size32_t lenLeft, const byte * left, size32_t 
     }
     else
     {
-        size32_t maxLeft = rtlReadSize32t(left);
-        size32_t maxRight = rtlReadSize32t(right);
+        unsigned lengthSize = getLengthSizeBytes();
+        size32_t maxLeft = readSize(left);
+        size32_t maxRight = readSize(right);
         lenLeft = std::min(lenLeft, maxLeft);
         lenRight = std::min(lenRight, maxRight);
 
-        return rtlCompareDataData(lenLeft, (const char *)left + sizeof(size32_t), lenRight, (const char *)right + sizeof(size32_t));
+        return rtlCompareDataData(lenLeft, (const char *)left + lengthSize, lenRight, (const char *)right + lengthSize);
     }
 }
 
@@ -1665,8 +1797,9 @@ unsigned RtlDataTypeInfo::hash(const byte *self, unsigned inhash) const
         len = length;
     else
     {
-        len = rtlReadSize32t(self);
-        self += sizeof(size32_t);
+        unsigned lengthSize = getLengthSizeBytes();
+        len = readSize(self);
+        self += lengthSize;
     }
     return rtlHash32Data(len, self, inhash);
 }
@@ -1883,14 +2016,15 @@ size32_t RtlQStringTypeInfo::getMinSize() const
 {
     if (isFixedSize())
         return rtlQStrSize(length);
-    return sizeof(size32_t);
+    return getLengthSizeBytes();
 }
 
 size32_t RtlQStringTypeInfo::size(const byte * self, const byte * selfrow) const 
 {
     if (isFixedSize())
         return rtlQStrSize(length);
-    return sizeof(size32_t) + rtlQStrSize(rtlReadSize32t(self));
+    unsigned lengthSize = getLengthSizeBytes();
+    return lengthSize + rtlQStrSize(readSize(self));
 }
 
 size32_t RtlQStringTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
@@ -1901,15 +2035,20 @@ size32_t RtlQStringTypeInfo::build(ARowBuilder &builder, size32_t offset, const 
     return buildString(builder, offset, field, size, value.getstr());
 }
 
-size32_t RtlQStringTypeInfo::buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t size, const char *value) const
+size32_t RtlQStringTypeInfo::buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t lenValue, const char *value) const
 {
     if (!isFixedSize())
     {
-        size32_t sizeInBytes = rtlQStrSize(size) + sizeof(size32_t);
+        unsigned lengthSize = getLengthSizeBytes();
+        size32_t maxLength = getUnknownLengthMax();
+        if (lenValue > maxLength)
+            lenValue = maxLength;
+
+        size32_t sizeInBytes = rtlQStrSize(lenValue) + lengthSize;
         builder.ensureCapacity(offset+sizeInBytes, queryName(field));
         byte *dest = builder.getSelf()+offset;
-        rtlWriteInt4(dest, size);
-        rtlStrToQStr(size, (char *) dest+sizeof(size32_t), size, value);
+        writeSize(dest, lenValue);
+        rtlStrToQStr(lenValue, (char *) dest+lengthSize, lenValue, value);
         offset += sizeInBytes;
     }
     else
@@ -1917,7 +2056,7 @@ size32_t RtlQStringTypeInfo::buildString(ARowBuilder &builder, size32_t offset, 
         size32_t sizeInBytes = rtlQStrSize(length);
         builder.ensureCapacity(offset+sizeInBytes, queryName(field));
         byte *dest = builder.getSelf()+offset;
-        rtlStrToQStr(length, (char *) dest, size, value);
+        rtlStrToQStr(length, (char *) dest, lenValue, value);
         offset += sizeInBytes;
     }
     return offset;
@@ -1940,9 +2079,10 @@ size32_t RtlQStringTypeInfo::process(const byte * self, const byte * selfrow, co
     }
     else
     {
-        str = reinterpret_cast<const char *>(self + sizeof(size32_t));
-        thisLength = rtlReadSize32t(self);
-        thisSize = sizeof(size32_t) + rtlQStrSize(thisLength);
+        unsigned lengthSize = getLengthSizeBytes();
+        str = reinterpret_cast<const char *>(self + lengthSize);
+        thisLength = readSize(self);
+        thisSize = lengthSize + rtlQStrSize(thisLength);
     }
 
     target.processQString(thisLength, str, field);
@@ -1961,9 +2101,10 @@ size32_t RtlQStringTypeInfo::toXML(const byte * self, const byte * selfrow, cons
     }
     else
     {
-        str = reinterpret_cast<const char *>(self + sizeof(size32_t));
-        thisLength = rtlReadSize32t(self);
-        thisSize = sizeof(size32_t) + rtlQStrSize(thisLength);
+        unsigned lengthSize = getLengthSizeBytes();
+        str = reinterpret_cast<const char *>(self + lengthSize);
+        thisLength = readSize(self);
+        thisSize = lengthSize + rtlQStrSize(thisLength);
     }
 
     target.outputQString(thisLength, str, queryScalarXPath(field));
@@ -1981,12 +2122,13 @@ size32_t RtlQStringTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializer
     }
     else
     {
+        unsigned lengthSize = getLengthSizeBytes();
         size32_t thisLength = in.readSize();
         size32_t size = rtlQStrSize(thisLength);
-        byte * dest = builder.ensureCapacity(offset+sizeof(size32_t)+size, nullptr) + offset;
-        rtlWriteSize32t(dest, thisLength);
-        in.read(size, dest + sizeof(size32_t));
-        offset += sizeof(size32_t)+size;
+        byte * dest = builder.ensureCapacity(offset+lengthSize+size, nullptr) + offset;
+        writeSize(dest, thisLength);
+        in.read(size, dest + lengthSize);
+        offset += lengthSize+size;
     }
     return offset;
 }
@@ -2000,7 +2142,7 @@ void RtlQStringTypeInfo::readAhead(IRowPrefetcherSource & in) const
     }
     else
     {
-        size32_t thisLength = in.readSize();
+        size32_t thisLength = readAheadSize(in);
         size32_t size = rtlQStrSize(thisLength);
         in.skip(size);
     }
@@ -2015,8 +2157,9 @@ void RtlQStringTypeInfo::getString(size32_t & resultLen, char * & result, const 
     }
     else
     {
-        size32_t len = rtlReadSize32t(ptr);
-        return rtlQStrToStrX(resultLen, result, len, (const char *)ptr + sizeof(size32_t));
+        unsigned lengthSize = getLengthSizeBytes();
+        size32_t len = readSize(ptr);
+        return rtlQStrToStrX(resultLen, result, len, (const char *)ptr + lengthSize);
     }
 }
 
@@ -2041,9 +2184,10 @@ int RtlQStringTypeInfo::compare(const byte * left, const byte * right) const
         // but that acts as a memcmp if lengths match
         return memcmp(left, right, rtlQStrSize(length));
 
-    size32_t lenLeft = rtlReadSize32t(left);
-    size32_t lenRight = rtlReadSize32t(right);
-    return rtlCompareQStrQStr(lenLeft, left + sizeof(size32_t), lenRight, right + sizeof(size32_t));
+    unsigned lengthSize = getLengthSizeBytes();
+    size32_t lenLeft = readSize(left);
+    size32_t lenRight = readSize(right);
+    return rtlCompareQStrQStr(lenLeft, left + lengthSize, lenRight, right + lengthSize);
 }
 
 int RtlQStringTypeInfo::compareRange(size32_t lenLeft, const byte * left, size32_t lenRight, const byte * right) const
@@ -2056,12 +2200,13 @@ int RtlQStringTypeInfo::compareRange(size32_t lenLeft, const byte * left, size32
     }
     else
     {
-        size32_t maxLeft = rtlReadSize32t(left);
-        size32_t maxRight = rtlReadSize32t(right);
+        unsigned lengthSize = getLengthSizeBytes();
+        size32_t maxLeft = readSize(left);
+        size32_t maxRight = readSize(right);
         lenLeft = std::min(lenLeft, maxLeft);
         lenRight = std::min(lenRight, maxRight);
 
-        return rtlSafeCompareQStrQStr(lenLeft, (const char *)left + sizeof(size32_t), lenRight, (const char *)right + sizeof(size32_t));
+        return rtlSafeCompareQStrQStr(lenLeft, (const char *)left + lengthSize, lenRight, (const char *)right + lengthSize);
     }
 }
 
@@ -2090,7 +2235,7 @@ void RtlQStringTypeInfo::setBound(void * buffer, const byte * value, size32_t su
         }
         else
         {
-            copyLen = std::min(rtlReadSize32t(value), subLength);
+            copyLen = std::min(readSize(value), subLength);
             size32_t copySize = size(value, nullptr);
             memcpy(dst, value, copySize);
         }
@@ -2353,14 +2498,15 @@ size32_t RtlUnicodeTypeInfo::getMinSize() const
 {
     if (isFixedSize())
         return length * sizeof(UChar);
-    return sizeof(size32_t);
+    return getLengthSizeBytes();
 }
 
 size32_t RtlUnicodeTypeInfo::size(const byte * self, const byte * selfrow) const 
 {
     if (isFixedSize())
         return length * sizeof(UChar);
-    return sizeof(size32_t) + rtlReadSize32t(self) * sizeof(UChar);
+    unsigned lengthSize = getLengthSizeBytes();
+    return lengthSize + readSize(self) * sizeof(UChar);
 }
 
 size32_t RtlUnicodeTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
@@ -2370,12 +2516,17 @@ size32_t RtlUnicodeTypeInfo::build(ARowBuilder &builder, size32_t offset, const 
     source.getUnicodeResult(field, sizeInChars, value);
     if (!isFixedSize())
     {
+        unsigned lengthSize = getLengthSizeBytes();
+        size32_t maxLength = getUnknownLengthMax();
+        if (sizeInChars > maxLength)
+            sizeInChars = maxLength;
+
         size32_t sizeInBytes = sizeInChars * sizeof(UChar);
-        builder.ensureCapacity(offset+sizeInBytes+sizeof(size32_t), queryName(field));
+        builder.ensureCapacity(offset+sizeInBytes+lengthSize, queryName(field));
         byte *dest = builder.getSelf()+offset;
-        rtlWriteInt4(dest, sizeInChars);  // NOTE - in chars!
-        memcpy_iflen(dest+sizeof(size32_t), value, sizeInBytes);
-        offset += sizeInBytes+sizeof(size32_t);
+        writeSize(dest, sizeInChars);  // NOTE - in chars!
+        memcpy_iflen(dest+lengthSize, value, sizeInBytes);
+        offset += sizeInBytes+lengthSize;
     }
     else
     {
@@ -2407,12 +2558,17 @@ size32_t RtlUnicodeTypeInfo::buildUtf8(ARowBuilder &builder, size32_t offset, co
 {
     if (!isFixedSize())
     {
+        unsigned lengthSize = getLengthSizeBytes();
+        size32_t maxLength = getUnknownLengthMax();
+        if (sizeInChars > maxLength)
+            sizeInChars = maxLength;
+
         size32_t sizeInBytes = sizeInChars * sizeof(UChar);
-        builder.ensureCapacity(offset+sizeInBytes+sizeof(size32_t), queryName(field));
+        builder.ensureCapacity(offset+sizeInBytes+lengthSize, queryName(field));
         byte *dest = builder.getSelf()+offset;
-        rtlWriteInt4(dest, sizeInChars);  // NOTE - in chars!
-        rtlUtf8ToUnicode(sizeInChars, (UChar *) (dest+sizeof(size32_t)), sizeInChars, value);
-        offset += sizeInBytes+sizeof(size32_t);
+        writeSize(dest, sizeInChars);  // NOTE - in chars!
+        rtlUtf8ToUnicode(sizeInChars, (UChar *) (dest+lengthSize), sizeInChars, value);
+        offset += sizeInBytes+lengthSize;
     }
     else
     {
@@ -2429,12 +2585,17 @@ size32_t RtlUnicodeTypeInfo::buildString(ARowBuilder &builder, size32_t offset, 
 {
     if (!isFixedSize())
     {
+        unsigned lengthSize = getLengthSizeBytes();
+        size32_t maxLength = getUnknownLengthMax();
+        if (sizeInChars > maxLength)
+            sizeInChars = maxLength;
+
         size32_t sizeInBytes = sizeInChars * sizeof(UChar);
-        builder.ensureCapacity(offset+sizeInBytes+sizeof(size32_t), queryName(field));
+        builder.ensureCapacity(offset+sizeInBytes+lengthSize, queryName(field));
         byte *dest = builder.getSelf()+offset;
-        rtlWriteSize32t(dest, sizeInChars);  // NOTE - in chars!
-        rtlStrToUnicode(sizeInChars, (UChar *) (dest+sizeof(size32_t)), sizeInChars, value);
-        offset += sizeInBytes+sizeof(size32_t);
+        writeSize(dest, sizeInChars);  // NOTE - in chars!
+        rtlStrToUnicode(sizeInChars, (UChar *) (dest+lengthSize), sizeInChars, value);
+        offset += sizeInBytes+lengthSize;
     }
     else
     {
@@ -2460,9 +2621,10 @@ size32_t RtlUnicodeTypeInfo::process(const byte * self, const byte * selfrow, co
     }
     else
     {
-        ustr = reinterpret_cast<const UChar *>(self + sizeof(size32_t));
-        thisLength = rtlReadSize32t(self);
-        thisSize = sizeof(size32_t) + thisLength * sizeof(UChar);
+        unsigned lengthSize = getLengthSizeBytes();
+        ustr = reinterpret_cast<const UChar *>(self + lengthSize);
+        thisLength = readSize(self);
+        thisSize = lengthSize + thisLength * sizeof(UChar);
     }
 
     target.processUnicode(thisLength, ustr, field);
@@ -2481,9 +2643,10 @@ size32_t RtlUnicodeTypeInfo::toXML(const byte * self, const byte * selfrow, cons
     }
     else
     {
-        ustr = reinterpret_cast<const UChar *>(self + sizeof(size32_t));
-        thisLength = rtlReadSize32t(self);
-        thisSize = sizeof(size32_t) + thisLength * sizeof(UChar);
+        unsigned lengthSize = getLengthSizeBytes();
+        ustr = reinterpret_cast<const UChar *>(self + lengthSize);
+        thisLength = readSize(self);
+        thisSize = lengthSize + thisLength * sizeof(UChar);
     }
 
     target.outputUnicode(thisLength, ustr, queryScalarXPath(field));
@@ -2501,12 +2664,13 @@ size32_t RtlUnicodeTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializer
     }
     else
     {
+        unsigned lengthSize = getLengthSizeBytes();
         size32_t thisLength = in.readSize();
         size32_t size = thisLength * sizeof(UChar);
-        byte * dest = builder.ensureCapacity(offset+sizeof(size32_t)+size, nullptr) + offset;
-        rtlWriteSize32t(dest, thisLength);
-        in.read(size, dest + sizeof(size32_t));
-        offset += sizeof(size32_t)+size;
+        byte * dest = builder.ensureCapacity(offset+lengthSize+size, nullptr) + offset;
+        writeSize(dest, thisLength);
+        in.read(size, dest + lengthSize);
+        offset += lengthSize+size;
     }
     return offset;
 }
@@ -2520,7 +2684,7 @@ void RtlUnicodeTypeInfo::readAhead(IRowPrefetcherSource & in) const
     }
     else
     {
-        size32_t thisLength = in.readSize();
+        size32_t thisLength = readAheadSize(in);
         size32_t size = thisLength * sizeof(UChar);
         in.skip(size);
     }
@@ -2535,8 +2699,9 @@ void RtlUnicodeTypeInfo::getString(size32_t & resultLen, char * & result, const 
     }
     else
     {
-        size32_t len = rtlReadSize32t(ptr);
-        const char * str = (const char *)ptr + sizeof(size32_t);
+        unsigned lengthSize = getLengthSizeBytes();
+        size32_t len = readSize(ptr);
+        const char * str = (const char *)ptr + lengthSize;
         return rtlUnicodeToStrX(resultLen, result, len, (const UChar *)str);
     }
 }
@@ -2549,8 +2714,9 @@ void RtlUnicodeTypeInfo::getUtf8(size32_t & resultLen, char * & result, const vo
     }
     else
     {
-        size32_t len = rtlReadSize32t(ptr);
-        const char * str = (const char *)ptr + sizeof(size32_t);
+        unsigned lengthSize = getLengthSizeBytes();
+        size32_t len = readSize(ptr);
+        const char * str = (const char *)ptr + lengthSize;
         return rtlUnicodeToUtf8X(resultLen, result, len, (const UChar *)str);
     }
 }
@@ -2560,8 +2726,9 @@ __int64 RtlUnicodeTypeInfo::getInt(const void * ptr) const
     //Utf8 output is the same as string output, so avoid the intermediate translation
     if (isFixedSize())
         return rtlUnicodeToInt8(length, (const UChar *)ptr);
-    size32_t len = rtlReadSize32t(ptr);
-    const char * str = (const char *)ptr + sizeof(size32_t);
+    unsigned lengthSize = getLengthSizeBytes();
+    size32_t len = readSize(ptr);
+    const char * str = (const char *)ptr + lengthSize;
     return rtlUnicodeToInt8(len, (const UChar *)str);
 }
 
@@ -2570,10 +2737,11 @@ int RtlUnicodeTypeInfo::compare(const byte * left, const byte * right) const
     if (isFixedSize())
         return rtlCompareUnicodeUnicode(length, (const UChar *)left, length, (const UChar *)right, locale);
 
-    size32_t lenLeft = rtlReadSize32t(left);
-    size32_t lenRight = rtlReadSize32t(right);
-    const UChar * valueLeft = reinterpret_cast<const UChar *>(left + sizeof(size32_t));
-    const UChar * valueRight = reinterpret_cast<const UChar *>(right + sizeof(size32_t));
+    unsigned lengthSize = getLengthSizeBytes();
+    size32_t lenLeft = readSize(left);
+    size32_t lenRight = readSize(right);
+    const UChar * valueLeft = reinterpret_cast<const UChar *>(left + lengthSize);
+    const UChar * valueRight = reinterpret_cast<const UChar *>(right + lengthSize);
     return rtlCompareUnicodeUnicode(lenLeft, valueLeft, lenRight, valueRight, locale);
 }
 
@@ -2587,12 +2755,13 @@ int RtlUnicodeTypeInfo::compareRange(size32_t lenLeft, const byte * left, size32
     }
     else
     {
-        size32_t maxLeft = rtlReadSize32t(left);
-        size32_t maxRight = rtlReadSize32t(right);
+        unsigned lengthSize = getLengthSizeBytes();
+        size32_t maxLeft = readSize(left);
+        size32_t maxRight = readSize(right);
         lenLeft = std::min(lenLeft, maxLeft);
         lenRight = std::min(lenRight, maxRight);
 
-        return rtlCompareUnicodeUnicode(lenLeft, (const UChar *)(left + sizeof(size32_t)), lenRight, (const UChar *)(right + sizeof(size32_t)), locale);
+        return rtlCompareUnicodeUnicode(lenLeft, (const UChar *)(left + lengthSize), lenRight, (const UChar *)(right + lengthSize), locale);
     }
 }
 
@@ -2616,10 +2785,11 @@ void RtlUnicodeTypeInfo::setBound(void * buffer, const byte * value, size32_t su
             }
             else
             {
-                size32_t copyLen = std::min(rtlReadSize32t(value), subLength);
+                unsigned lengthSize = getLengthSizeBytes();
+                size32_t copyLen = std::min(readSize(value), subLength);
                 size32_t copySize = copyLen * sizeof(UChar);
-                *(size32_t *)buffer = copyLen;
-                memcpy(dst + sizeof(size32_t), value + sizeof(size32_t), copySize);
+                writeSize(buffer, copyLen);
+                memcpy(dst + lengthSize, value + lengthSize, copySize);
             }
         }
         else
@@ -2644,8 +2814,9 @@ unsigned RtlUnicodeTypeInfo::hash(const byte * self, unsigned inhash) const
         len = length;
     else
     {
-        len = rtlReadSize32t(self);
-        self += sizeof(size32_t);
+        unsigned lengthSize = getLengthSizeBytes();
+        len = readSize(self);
+        self += lengthSize;
     }
     const UChar * uself = reinterpret_cast<const UChar *>(self);
     return rtlHash32Unicode(rtlTrimUnicodeStrLen(len, uself), uself, inhash);
@@ -2870,13 +3041,14 @@ unsigned RtlVarUnicodeTypeInfo::hash(const byte * _self, unsigned inhash) const
 
 size32_t RtlUtf8TypeInfo::getMinSize() const
 {
-    return sizeof(size32_t);
+    return getLengthSizeBytes();
 }
 
 size32_t RtlUtf8TypeInfo::size(const byte * self, const byte * selfrow) const 
 {
     assertex(!isFixedSize());
-    return sizeof(size32_t) + rtlUtf8Size(rtlReadSize32t(self), self+sizeof(unsigned));
+    unsigned lengthSize = getLengthSizeBytes();
+    return lengthSize + rtlUtf8Size(readSize(self), self+lengthSize);
 }
 
 size32_t RtlUtf8TypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
@@ -2889,38 +3061,50 @@ size32_t RtlUtf8TypeInfo::build(ARowBuilder &builder, size32_t offset, const Rtl
 
 size32_t RtlUtf8TypeInfo::buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t sizeInChars, const char *value) const
 {
-    size32_t sizeInBytes = rtlUtf8Size(sizeInChars, value);
     assertex(!isFixedSize());
-    builder.ensureCapacity(offset+sizeInBytes+sizeof(size32_t), queryName(field));
+    unsigned lengthSize = getLengthSizeBytes();
+    size32_t maxLength = getUnknownLengthMax();
+    if (sizeInChars > maxLength)
+        sizeInChars = maxLength;
+
+    size32_t sizeInBytes = rtlUtf8Size(sizeInChars, value);
+    builder.ensureCapacity(offset+sizeInBytes+lengthSize, queryName(field));
     byte *dest = builder.getSelf()+offset;
-    rtlWriteSize32t(dest, sizeInChars);  // NOTE - in chars!
-    memcpy_iflen(dest+sizeof(size32_t), value, sizeInBytes);
-    return offset + sizeInBytes+sizeof(size32_t);
+    writeSize(dest, sizeInChars);  // NOTE - in chars!
+    memcpy_iflen(dest+lengthSize, value, sizeInBytes);
+    return offset + sizeInBytes+lengthSize;
 }
 
 size32_t RtlUtf8TypeInfo::buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t sizeInChars, const char *value) const
 {
     assertex(!isFixedSize());
 
+    unsigned lengthSize = getLengthSizeBytes();
+    size32_t maxLength = getUnknownLengthMax();
+    if (sizeInChars > maxLength)
+        sizeInChars = maxLength;
+
     //MORE: The target size could be precalculated - which would avoid creating a temporary
     size32_t tempLen;
     rtlDataAttr temp;
     rtlStrToUtf8X(tempLen, temp.refstr(), sizeInChars, value);
+
     size32_t sizeInBytes = rtlUtf8Size(tempLen, temp.getstr());
-    builder.ensureCapacity(offset+sizeInBytes+sizeof(size32_t), queryName(field));
+    builder.ensureCapacity(offset+sizeInBytes+lengthSize, queryName(field));
     byte *dest = builder.getSelf()+offset;
-    rtlWriteSize32t(dest, sizeInChars);  // NOTE - in chars!
-    memcpy_iflen((dest+sizeof(size32_t)), temp.getstr(), sizeInBytes);
-    return offset + sizeInBytes+sizeof(size32_t);
+    writeSize(dest, sizeInChars);  // NOTE - in chars!
+    memcpy_iflen((dest+lengthSize), temp.getstr(), sizeInBytes);
+    return offset + sizeInBytes+lengthSize;
 }
 
 
 size32_t RtlUtf8TypeInfo::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const
 {
     assertex(!isFixedSize());
-    const char * str = reinterpret_cast<const char *>(self + sizeof(size32_t));
-    unsigned thisLength = rtlReadSize32t(self);
-    unsigned thisSize = sizeof(size32_t) + rtlUtf8Size(thisLength, str);
+    unsigned lengthSize = getLengthSizeBytes();
+    const char * str = reinterpret_cast<const char *>(self + lengthSize);
+    unsigned thisLength = readSize(self);
+    unsigned thisSize = lengthSize + rtlUtf8Size(thisLength, str);
 
     target.processUtf8(thisLength, str, field);
     return thisSize;
@@ -2929,9 +3113,10 @@ size32_t RtlUtf8TypeInfo::process(const byte * self, const byte * selfrow, const
 size32_t RtlUtf8TypeInfo::toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const
 {
     assertex(!isFixedSize());
-    const char * str = reinterpret_cast<const char *>(self + sizeof(size32_t));
-    unsigned thisLength = rtlReadSize32t(self);
-    unsigned thisSize = sizeof(size32_t) + rtlUtf8Size(thisLength, str);
+    unsigned lengthSize = getLengthSizeBytes();
+    const char * str = reinterpret_cast<const char *>(self + lengthSize);
+    unsigned thisLength = readSize(self);
+    unsigned thisSize = lengthSize + rtlUtf8Size(thisLength, str);
 
     target.outputUtf8(thisLength, str, queryScalarXPath(field));
     return thisSize;
@@ -2940,16 +3125,17 @@ size32_t RtlUtf8TypeInfo::toXML(const byte * self, const byte * selfrow, const R
 size32_t RtlUtf8TypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerSource & in, size32_t offset) const
 {
     assertex(!isFixedSize());
+    unsigned lengthSize = getLengthSizeBytes();
     size32_t thisLength = in.readSize();
-    size32_t size = in.readUtf8(builder, offset + sizeof(size32_t), offset + sizeof(size32_t), thisLength);
-    rtlWriteSize32t(builder.getSelf() + offset, thisLength);
-    return offset + sizeof(size32_t) + size;
+    size32_t size = in.readUtf8(builder, offset + lengthSize, offset + lengthSize, thisLength);
+    writeSize(builder.getSelf() + offset, thisLength);
+    return offset + lengthSize + size;
 }
 
 void RtlUtf8TypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
     assertex(!isFixedSize());
-    size32_t thisLength = in.readSize();
+    size32_t thisLength = readAheadSize(in);
     in.skipUtf8(thisLength);
 }
 
@@ -2962,8 +3148,9 @@ void RtlUtf8TypeInfo::getString(size32_t & resultLen, char * & result, const voi
     }
     else
     {
-        size32_t len = rtlReadSize32t(ptr);
-        rtlUtf8ToStrX(resultLen, result, len, (const char *)ptr + sizeof(size32_t));
+        unsigned lengthSize = getLengthSizeBytes();
+        size32_t len = readSize(ptr);
+        rtlUtf8ToStrX(resultLen, result, len, (const char *)ptr + lengthSize);
     }
 }
 
@@ -2975,8 +3162,9 @@ void RtlUtf8TypeInfo::getUtf8(size32_t & resultLen, char * & result, const void 
     }
     else
     {
-        size32_t len = rtlReadSize32t(ptr);
-        rtlUtf8ToUtf8X(resultLen, result, len, (const char *)ptr + sizeof(size32_t));
+        unsigned lengthSize = getLengthSizeBytes();
+        size32_t len = readSize(ptr);
+        rtlUtf8ToUtf8X(resultLen, result, len, (const char *)ptr + lengthSize);
     }
 }
 
@@ -2985,27 +3173,30 @@ __int64 RtlUtf8TypeInfo::getInt(const void * ptr) const
     //Utf8 output is the same as string output, so avoid the intermediate translation
     if (isFixedSize())
         return rtlUtf8ToInt(length, (const char *)ptr);
-    size32_t len = rtlReadSize32t(ptr);
-    return rtlUtf8ToInt(len, (const char *)ptr + sizeof(size32_t));
+    unsigned lengthSize = getLengthSizeBytes();
+    size32_t len = readSize(ptr);
+    return rtlUtf8ToInt(len, (const char *)ptr + lengthSize);
 }
 
 int RtlUtf8TypeInfo::compare(const byte * left, const byte * right) const
 {
     assertex(!isFixedSize());
-    size32_t lenLeft = rtlReadSize32t(left);
-    size32_t lenRight = rtlReadSize32t(right);
-    const char * valueLeft = reinterpret_cast<const char *>(left) + sizeof(size32_t);
-    const char * valueRight = reinterpret_cast<const char *>(right) + sizeof(size32_t);
+    unsigned lengthSize = getLengthSizeBytes();
+    size32_t lenLeft = readSize(left);
+    size32_t lenRight = readSize(right);
+    const char * valueLeft = reinterpret_cast<const char *>(left) + lengthSize;
+    const char * valueRight = reinterpret_cast<const char *>(right) + lengthSize;
     return rtlCompareUtf8Utf8(lenLeft, valueLeft, lenRight, valueRight, locale);
 }
 
 int RtlUtf8TypeInfo::compareRange(size32_t lenLeft, const byte * left, size32_t lenRight, const byte * right) const
 {
-    size32_t maxLeft = rtlReadSize32t(left);
-    size32_t maxRight = rtlReadSize32t(right);
+    unsigned lengthSize = getLengthSizeBytes();
+    size32_t maxLeft = readSize(left);
+    size32_t maxRight = readSize(right);
     lenLeft = std::min(lenLeft, maxLeft);
     lenRight = std::min(lenRight, maxRight);
-    return rtlCompareUtf8Utf8(lenLeft, (const char *)(left + sizeof(size32_t)), lenRight, (const char *)(right + sizeof(size32_t)), locale);
+    return rtlCompareUtf8Utf8(lenLeft, (const char *)(left + lengthSize), lenRight, (const char *)(right + lengthSize), locale);
 }
 
 void RtlUtf8TypeInfo::setBound(void * buffer, const byte * value, size32_t subLength, byte fill, bool inclusive) const
@@ -3019,10 +3210,11 @@ void RtlUtf8TypeInfo::setBound(void * buffer, const byte * value, size32_t subLe
         if (subLength != MatchFullString)
         {
             //Note: Only variable length utf8 is supported by the system
-            size32_t copyLen = std::min(rtlReadSize32t(value), subLength);
-            size32_t copySize = rtlUtf8Size(copyLen, value + sizeof(size32_t));
-            *(size32_t *)buffer = copyLen;
-            memcpy(dst + sizeof(size32_t), value + sizeof(size32_t), copySize);
+            unsigned lengthSize = getLengthSizeBytes();
+            size32_t copyLen = std::min(readSize(value), subLength);
+            size32_t copySize = rtlUtf8Size(copyLen, value + lengthSize);
+            writeSize(buffer, copyLen);
+            memcpy(dst + lengthSize, value + lengthSize, copySize);
         }
         else
         {
@@ -3042,8 +3234,9 @@ void RtlUtf8TypeInfo::setBound(void * buffer, const byte * value, size32_t subLe
 unsigned RtlUtf8TypeInfo::hash(const byte * self, unsigned inhash) const
 {
     assertex(!isFixedSize());
-    size32_t len = rtlReadSize32t(self);
-    const char * uself = reinterpret_cast<const char *>(self + sizeof(size32_t));
+    unsigned lengthSize = getLengthSizeBytes();
+    size32_t len = readSize(self);
+    const char * uself = reinterpret_cast<const char *>(self + lengthSize);
     return rtlHash32Utf8(rtlTrimUtf8StrLen(len, uself), uself,inhash);
 }
 

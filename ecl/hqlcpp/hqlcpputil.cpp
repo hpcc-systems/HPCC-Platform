@@ -43,6 +43,8 @@ static IHqlExpression * defaultAttrExpr;
 static IHqlExpression * selfAttrExpr;
 
 ITypeInfo * boolType;
+ITypeInfo * uint1Type;
+ITypeInfo * uint2Type;
 ITypeInfo * sizetType;
 ITypeInfo * signedType;
 ITypeInfo * unsignedType;
@@ -69,6 +71,8 @@ IHqlExpression * conditionalRowMarkerExpr;
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     boolType = makeBoolType();
+    uint1Type = makeIntType(1, false);
+    uint2Type = makeIntType(2, false);
     signedType = makeIntType(sizeof(signed), true);
     unsignedType = makeIntType(sizeof(unsigned), false);
     sizetType = makeIntType(sizeof(size32_t), false);

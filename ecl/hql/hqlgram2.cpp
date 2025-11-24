@@ -2780,6 +2780,21 @@ void HqlGram::addField(const attribute &errpos, IIdAtom * name, ITypeInfo *_type
         }
     }
 
+    IHqlExpression * lengthSizeAttr = queryAttributeInList(lengthSizeAtom, attrs);
+    if (lengthSizeAttr)
+    {
+        if (!isUnknownLength(fieldType->getSize()))
+            reportError(ERR_BAD_FIELD_TYPE, errpos, "LENGTHSIZE is only valid on a variable length field");
+        else if (!canOverrideStringLength(fieldType))
+            reportError(ERR_BAD_FIELD_TYPE, errpos, "LENGTHSIZE is not valid on this type of field");
+        else
+        {
+            unsigned lengthSize = getIntValue(lengthSizeAttr->queryChild(0));
+            if ((lengthSize != 1) && (lengthSize != 2) && (lengthSize != 4))
+                reportError(ERR_BAD_FIELD_TYPE, errpos, "LENGTHSIZE must be 1, 2, or 4");
+        }
+    }
+
     IHqlExpression * defaultAttr = queryAttributeInList(defaultAtom, attrs);
     if (defaultAttr)
     {
@@ -2890,6 +2905,10 @@ void HqlGram::addDatasetField(const attribute &errpos, IIdAtom * name, ITypeInfo
         if (childAttrs)
             attrs = createComma(LINK(childAttrs->queryChild(0)), attrs);
     }
+
+    IHqlExpression * lengthSizeAttr = queryAttributeInList(lengthSizeAtom, attrs);
+    if (lengthSizeAttr)
+        reportError(ERR_BAD_FIELD_TYPE, errpos, "LENGTHSIZE is only valid on a string and unicode fields");
 
     Owned<ITypeInfo> dsType = LINK(fieldType);
     if (value)
