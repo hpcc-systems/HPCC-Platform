@@ -2501,16 +2501,13 @@ EspAuthState CEspHttpServer::handleAuthFailed(bool sessionAuth, EspAuthRequest& 
         return authTaskDone;
     }
 
+    authReq.ctx->addTraceSummaryValue(LogMin, "authAction", sessionAuth ? "askUserLogin" : "sendBasicChallenge", TXSUMMARY_GRP_CORE);
+
     if (!sessionAuth)
-    {
-        ESPLOG(LogMin, "Authentication failed: send BasicAuthentication.");
         m_response->sendBasicChallenge(authReq.authBinding->getChallengeRealm(), true);
-    }
     else
-    {
-        ESPLOG(LogMin, "Authentication failed: call askUserLogin.");
         askUserLogin(authReq, msg);
-    }
+
     return authFailed;
 }
 
