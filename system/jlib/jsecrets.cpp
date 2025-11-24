@@ -81,9 +81,8 @@ static const IPropertyTree *getLocalSecret(const char *category, const char * na
     return getSecret(category, name, "k8s", nullptr);
 }
 
-//based on kubernetes secret / key names. Even if some vault backends support additional characters we'll restrict to this subset for now
-
-static const char *validSecretNameChrs = ".-";
+// based on kubernetes secret / key names. Even if some vault backends support additional characters we'll restrict to this subset for now
+// isKeyName is not currently used, but may be in the future
 inline static bool isValidSecretOrKeyNameChr(char c, bool firstOrLastChar, bool isKeyName)
 {
     if (c == '\0')
@@ -92,9 +91,16 @@ inline static bool isValidSecretOrKeyNameChr(char c, bool firstOrLastChar, bool 
         return true;
     if (firstOrLastChar)
         return false;
-    if (strchr(validSecretNameChrs, c)!=nullptr)
+
+    switch (c)
+    {
+    case '.':
+    case '-':
+    case '_':   //keyname supports '_', relax restrictions for all - since supported by vaults
         return true;
-    return (isKeyName && c=='_'); //keyname also supports '_'
+    default:
+        return false;
+    }
 }
 
 static bool isValidSecretOrKeyName(const char *name, bool isKeyName)
