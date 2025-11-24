@@ -2893,6 +2893,10 @@
         "stubResources": {
           "$ref": "#/definitions/resources"
         },
+        "cost": {
+          "$ref" : "#/definitions/componentCost",
+          "description" : "[DEPRECIATED] Cost information for all thor components. Specify cost information in sub-components." 
+        },
         "manager": {
           "$ref": "#/definitions/thorSubComponent"
         },
