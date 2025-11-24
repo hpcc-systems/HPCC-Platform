@@ -31,6 +31,7 @@
 #include "dasds.hpp"
 #include "workunit.hpp"
 #include "jsecrets.hpp"
+#include "esptrace.h"
 
 #include <map>
 #include <string>
@@ -1774,7 +1775,8 @@ public:
             const char* password = user.credentials().getPassword();
             if(!username || !*username || !password || !*password)
             {
-                DBGLOG("CLdapClient::authenticate username/password must be provided");
+                if (doTrace(LdapAuthenticationWarnings))
+                    DBGLOG("CLdapClient::authenticate username/password must be provided");
                 return false;
             }
 
