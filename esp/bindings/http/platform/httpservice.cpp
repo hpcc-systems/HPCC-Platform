@@ -2501,7 +2501,7 @@ EspAuthState CEspHttpServer::handleAuthFailed(bool sessionAuth, EspAuthRequest& 
         return authTaskDone;
     }
 
-    authReq.ctx->addTraceSummaryValue(LogMin, "sessionAuth", sessionAuth, TXSUMMARY_GRP_ENTERPRISE);
+    authReq.ctx->addTraceSummaryValue(LogMin, "sessionAuth", sessionAuth, TXSUMMARY_GRP_CORE);
 
     if (!sessionAuth)
     {
