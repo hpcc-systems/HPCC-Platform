@@ -25,7 +25,7 @@
 constexpr const char* propTraceFlags = "traceFlags";
 
 // ESP-specific trace flags
-constexpr TraceFlags LdapAuthenticationWarnings = TraceFlags::flag11;
+constexpr TraceFlags traceLdapDetails = TraceFlags::flag16;
 
 // Trace option list fragment for jtrace-defined options used by ESPs
 #define PLATFORM_OPTIONS_FRAGMENT \
@@ -36,7 +36,7 @@ constexpr TraceFlags LdapAuthenticationWarnings = TraceFlags::flag11;
 // Trace option list fragment for options used by most ESPs
 #define ESP_OPTIONS_FRAGMENT \
     PLATFORM_OPTIONS_FRAGMENT \
-    TRACEOPT(LdapAuthenticationWarnings),
+    TRACEOPT(traceLdapDetails),
 
 // Trace option initializer list for ESPs that do not define their own options.
 constexpr std::initializer_list<TraceOption> espTraceOptions

@@ -1775,7 +1775,7 @@ public:
             const char* password = user.credentials().getPassword();
             if(!username || !*username || !password || !*password)
             {
-                if (doTrace(LdapAuthenticationWarnings))
+                if (doTrace(traceLdapDetails))
                     DBGLOG("CLdapClient::authenticate username/password must be provided");
                 return false;
             }

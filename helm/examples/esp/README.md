@@ -16,20 +16,6 @@ Flags will be added to this list as tracing logic is updated in ESP code. For ex
 
 Flags defined in `esp/platform/esptrace.h` and applicable to most, if not all, ESP configurations.
 
-#### LdapAuthenticationWarnings
-
-Controls whether LDAP authentication warning messages are logged. This flag is disabled by default to reduce log verbosity in production environments.
-
-Set to `true` or `1` to enable logging of LDAP authentication warnings such as missing username or password messages.
-
-Example:
-```yml
-esp:
-- name: eclwatch
-  traceFlags:
-    LdapAuthenticationWarnings: true
-```
-
 #### traceDetail
 
 Set the default trace level in the process. Accepted case-insensitive values are:
@@ -40,6 +26,12 @@ Set the default trace level in the process. Accepted case-insensitive values are
   - Release builds default to `standard`
   - Debug builds default to `max`
 - `0`, `none`, *all other values*: no trace output
+
+#### traceLdapDetails
+
+Controls whether detailed LDAP authentication messages are logged. This flag is disabled by default to reduce log verbosity in production environments.
+
+Set to `true` or `1` to enable logging of these messages.
 
 ## Process Configuration
 
