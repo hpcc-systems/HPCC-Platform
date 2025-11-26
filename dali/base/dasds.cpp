@@ -2499,9 +2499,6 @@ CRemoteTreeBase::CRemoteTreeBase(MemoryBuffer &mb)
 {
 }
 
-CRemoteTreeBase::CRemoteTreeBase(IBufferedSerialInputStream &in, PTreeDeserializeContext &ctx)
-{
-}
 
 void CRemoteTreeBase::deserializeRT(MemoryBuffer &src)
 {
@@ -2683,7 +2680,6 @@ public:
 #endif
 
     CServerRemoteTree(MemoryBuffer &mb) : CRemoteTreeBase(mb) { init(); }
-    CServerRemoteTree(IBufferedSerialInputStream &in, PTreeDeserializeContext &ctx) : CRemoteTreeBase(in, ctx) { init(); }
     CServerRemoteTree(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL)
         : CRemoteTreeBase(name, value, children) { init(); }
 
@@ -2765,9 +2761,10 @@ public:
         return new CServerRemoteTree(mb);
     }
 
-    virtual IPropertyTree *create(IBufferedSerialInputStream &in, PTreeDeserializeContext &ctx) override
+    virtual IPropertyTree *create(IBufferedSerialInputStream &in) override
     {
         Owned<CServerRemoteTree> tree = new CServerRemoteTree();
+        PTreeDeserializeContext ctx;
         tree->deserializeFromStream(in, ctx);
         return tree.getClear();
     }
