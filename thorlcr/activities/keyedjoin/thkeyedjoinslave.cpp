@@ -2460,7 +2460,11 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         size32_t bufferSize = bufferSize1mb;
         unsigned __int64 value;
         if (fileIO && fileIO->queryFile() && findPlaneAttrFromPath(fileIO->queryFile()->queryFilename(), BlockedRandomIO, bufferSize1mb, value))
+        {
+            if (value > (size32_t)-1)
+                throw MakeStringExceptionV(0, "BlockedRandomIO buffer size attribute too large: %" I64F "u (max allowed: %u)", value, (unsigned)((size32_t)-1));
             bufferSize = (size32_t)value;
+        }
         return bufferSize;
     }
     IKeyIndex *createPartKeyIndex(unsigned partNo, unsigned copy)
