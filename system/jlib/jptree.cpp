@@ -3055,7 +3055,7 @@ void PTree::deserializeFromStream(IBufferedSerialInputStream &src, PTreeDeserial
         {
         case NextByteStatus::nextByteIsNonZero:
         {
-            IPropertyTree *child = create(src, ctx);
+            IPropertyTree *child = create(src);
             addPropTree(child->queryName(), child);
             break;
         }
@@ -3083,25 +3083,23 @@ void PTree::deserializeSelf(IBufferedSerialInputStream &src, PTreeDeserializeCon
 
     // Read attributes until we encounter a zero byte (attribute list terminator)
     ctx.matchOffsets.clear();
-    constexpr unsigned valueStringCanBeEmpty = 2;
-    const char * base = peekStringList(ctx.matchOffsets, src, skipLen, valueStringCanBeEmpty);
-    if (base) // there is at least one attribute to process
-    {
-        size_t numStringOffsets = ctx.matchOffsets.size();
-        if (numStringOffsets % 2 != 0)
-            throwUnexpectedX("PTree deserialization error: end of stream, expected attribute value");
-        constexpr bool attributeNameNotEncoded = false; // Deserialized attribute name is in its original unencoded form
-        for (size_t i = 0; i < numStringOffsets; i += 2)
-        {
-            const char *attrName = base + ctx.matchOffsets[i];
-            const char *attrValue = base + ctx.matchOffsets[i + 1];
-            setAttribute(attrName, attrValue, attributeNameNotEncoded);
-        }
-
-        src.skip(skipLen); // Skip over all attributes and the terminator
-    }
-    else
+    constexpr unsigned pairedNameAndValueStringGrouping = 2;
+    const char * base = peekStringList(ctx.matchOffsets, src, skipLen, pairedNameAndValueStringGrouping);
+    if (unlikely(!base))
         throwUnexpectedX("PTree deserialization error: end of stream, expected attribute name");
+
+    size_t numStringOffsets = ctx.matchOffsets.size();
+    if (numStringOffsets % 2 != 0)
+        throwUnexpectedX("PTree deserialization error: end of stream, expected attribute value");
+    constexpr bool attributeNameNotEncoded = false; // Deserialized attribute name is in its original unencoded form
+    for (size_t i = 0; i < numStringOffsets; i += 2)
+    {
+        const char *attrName = base + ctx.matchOffsets[i];
+        const char *attrValue = base + ctx.matchOffsets[i + 1];
+        setAttribute(attrName, attrValue, attributeNameNotEncoded);
+    }
+
+    src.skip(skipLen); // Skip over all attributes and the terminator
 
     if (value)
         delete value;
