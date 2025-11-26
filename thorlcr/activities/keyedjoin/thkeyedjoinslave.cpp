@@ -2461,8 +2461,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         unsigned __int64 value;
         if (fileIO && fileIO->queryFile() && findPlaneAttrFromPath(fileIO->queryFile()->queryFilename(), BlockedRandomIO, bufferSize1mb, value))
         {
-            if (value > (size32_t)-1)
-                throw MakeStringExceptionV(0, "BlockedRandomIO buffer size attribute too large: %" I64F "u (max allowed: %u)", value, (unsigned)((size32_t)-1));
+            if (value > std::numeric_limits<size32_t>::max())
+                throw makeStringExceptionV(0, "BlockedRandomIO buffer size attribute too large: %" I64F "u (max allowed: %u)", value, std::numeric_limits<size32_t>::max());
             bufferSize = (size32_t)value;
         }
         return bufferSize;
