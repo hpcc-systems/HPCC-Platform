@@ -48,6 +48,8 @@ enum EventType : byte
     MetaFileInformation,          // information about a file
     EventRecordingActive,         // optional event to indicate that recording was suspended/re-enabled
     EventIndexPayload,            // payload of a leaf node accessed
+    EventQueryStart,
+    EventQueryStop,
     EventMax
 };
 
@@ -84,6 +86,7 @@ enum EventAttr : byte
     EvAttrDataSize,
     EvAttrExpandTime,
     EvAttrFirstUse,
+    EvAttrServiceName,
     EvAttrMax
 };
 
@@ -421,6 +424,9 @@ public:
     void recordDaliSubscribe(const char * xpath, __int64 id, stat_type elapsedNs);
 
     void recordFileInformation(unsigned fileid, const char * filename);
+
+    void recordQueryStart(const char * queryName);
+    void recordQueryStop();
 
     void recordEvent(CEvent& event);
 

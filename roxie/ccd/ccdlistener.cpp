@@ -19,6 +19,7 @@
 #include "jlib.hpp"
 #include "jthread.hpp"
 #include "jregexp.hpp"
+#include "jevent.hpp"
 #include "securesocket.hpp"
 
 #include "wujobq.hpp"
@@ -1294,6 +1295,10 @@ public:
         requestSpan->setSpanAttribute("hpcc.wuid", wuid);
         ContextSpanScope spanScope(*logctx, requestSpan);
 
+        // Call after the create span so the trace id is initialised
+        if (recordingEvents())
+            queryRecorder().recordQueryStart(wuid.get());
+
         Owned<IQueryFactory> queryFactory;
         try
         {
@@ -1306,6 +1311,8 @@ public:
         }
         catch (IException *E)
         {
+            if (recordingEvents())
+                queryRecorder().recordQueryStop();
             reportException(wu, E, *logctx);
             if (daliHelper)
                 daliHelper->noteWorkunitRunning(wuid.get(), false);
@@ -1314,6 +1321,8 @@ public:
 #ifndef _DEBUG
         catch(...)
         {
+            if (recordingEvents())
+                queryRecorder().recordQueryStop();
             reportUnknownException(wu, *logctx);
             throw;
         }
@@ -1330,6 +1339,10 @@ public:
             exportWorkUnitToXML(wu, wuXML, true, true, true);
             DBGLOG("%s", wuXML.str());
         }
+
+        if (recordingEvents())
+            queryRecorder().recordQueryStop();
+
         clearKeyStoreCache(false);   // Bit of a kludge - cache should really be smarter
     }
 
@@ -1572,8 +1585,13 @@ public:
 
         ensureContextLogger();
 
-        requestSpan.setown(queryTraceManager().createServerSpan(!isEmptyString(queryName) ? queryName : "run_query", allHeaders, spanStartTimeStamp, flags));
+        const char * tracedQueryName = !isEmptyString(queryName) ? queryName : "run_query";
+        requestSpan.setown(queryTraceManager().createServerSpan(tracedQueryName, allHeaders, spanStartTimeStamp, flags));
         requestSpan->setSpanAttribute("queryset.name", querySetName);
+
+        // Call after the create span so the trace id is initialised
+        if (recordingEvents())
+            queryRecorder().recordQueryStart(tracedQueryName);
 
         if (headers)
         {
@@ -1744,7 +1762,12 @@ public:
 
             logctx->exportStatsToSpan(failed, elapsedNs, memused, agentsDuplicates, agentsResends);
         }
+
+        // requestSpan is non-null if this is a real query (ignore control:xxx messages)
+        if (requestSpan && recordingEvents())
+            queryRecorder().recordQueryStop();
     }
+
 };
 
 
