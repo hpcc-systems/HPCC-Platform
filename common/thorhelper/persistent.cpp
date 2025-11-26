@@ -432,15 +432,18 @@ public:
 
     virtual bool inDoNotReuseList(SocketEndpoint* ep)
     {
-        if(!ep)
+        if (!ep)
             return false;
         StringBuffer epstr;
         ep->getEndpointHostText(epstr);
-        if(epstr.length()> 0 && m_doNotReuseList.getValue(epstr.str()) != nullptr)
-            return true;
+        if (epstr.length())
+        {
+            CriticalBlock block(m_critsect);
+            if (m_doNotReuseList.getValue(epstr.str()) != nullptr)
+                return true;
+        }
         return false;
     }
-
 };
 
 bool isHttpPersistable(const char* httpVer, const char* conHeader)
