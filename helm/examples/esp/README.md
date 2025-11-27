@@ -27,6 +27,12 @@ Set the default trace level in the process. Accepted case-insensitive values are
   - Debug builds default to `max`
 - `0`, `none`, *all other values*: no trace output
 
+#### traceLdapDetails
+
+Controls whether detailed LDAP authentication messages are logged. This flag is disabled by default to reduce log verbosity in production environments.
+
+Set to `true` or `1` to enable logging of these messages.
+
 ## Process Configuration
 
 ### Containerized
