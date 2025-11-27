@@ -429,12 +429,15 @@ The generated `error-report.log` file is uploaded as an artifact. If it is trigg
 ## Possible reasons for failure in hyperlinks testing action
 
 The below are the possible reasons why the hyperlinks testing workflow may fail,
-1. Detects broken links or invalid file paths.  
+1. Detects broken links or invalid file paths.
    Soultion: Fix the broken links or file paths reported in the error-report.log, the log file can be found in the workflow summary as a GitHub Artifact.
-2. Dummy links detected.  
+2. Dummy links detected.
    Soultion: Enclose the link in triple backticks. For example: ```https://This/is/not/a/valid/link.com```. The dummy link used here is just for explanation and doesn't point to any external site, so, it is enclosed by triple backticks and thus is ignored during the hyperlinks testing process. Note: To see the backticks around the dummy link, view this file raw format.
-3. Links Returning a Non-Zero Exit Code  
+3. Links Returning a Non-Zero Exit Code
    Solution: These links typically indicate issues such as connection timeouts or unsafe links. To resolve the problem, correct or update the problematic links.
+4. Tag contains a valid URL, for example:
+   [https://hpcc-systems.github.io/HPCC-Platform/dali/sasha/sasha.html](https://hpcc-systems.github.io/HPCC-Platform/dali/sasha/sasha.html)
+   and this confuses the checker. (Fixed in HPCC-35299)
 
 ## Steps to integrate hyperlinks testing workflow in other workflows
 
