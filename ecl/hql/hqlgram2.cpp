@@ -1185,6 +1185,15 @@ IHqlExpression * HqlGram::processIndexBuild(const attribute &err, attribute & in
         checkIndexRecordType(dataset->queryRecord(), numPayload, false, indexAttr);
     }
 
+    // If the trim attribute is specified, then add a project to trim all the input strings
+    // When generating code the optimizer will combine this with the previous usertable/selectfields
+    if (queryAttributeInList(trimAtom, flags))
+    {
+        OwnedHqlExpr trimTransform = queryCreateTrimTransform(projectedDataset);
+        if (trimTransform)
+            projectedDataset.setown(createDataset(no_newusertable, { LINK(projectedDataset), LINK(projectedDataset->queryRecord()), trimTransform.getClear() }));
+    }
+
     HqlExprArray args;
     args.append(*LINK(projectedDataset));
     args.append(*filenameAttr.getExpr());
@@ -7467,19 +7476,28 @@ IHqlExpression * HqlGram::createBuildIndexFromIndex(attribute & indexAttr, attri
             reportError(ERR_KEYEDINDEXINVALID,indexAttr,"The index record has no mappings from the dataset - cannot build an index on it");
     }
 
-    IHqlExpression * select;
+    OwnedHqlExpr select;
     if (sourceDataset)
-        select = createDataset(no_newusertable, { LINK(sourceDataset), LINK(record), LINK(transform) });
+        select.setown(createDataset(no_newusertable, { LINK(sourceDataset), LINK(record), LINK(transform) }));
     else if (transform)
-        select = createDataset(no_newusertable, { LINK(dataset), LINK(record), LINK(transform) });
+        select.setown(createDataset(no_newusertable, { LINK(dataset), LINK(record), LINK(transform) }));
     else
     {
         IHqlExpression * newRecord = checkBuildIndexRecord(LINK(record), errpos);
-        select = createDataset(no_selectfields, { LINK(dataset), newRecord });
+        select.setown(createDataset(no_selectfields, { LINK(dataset), newRecord }));
+    }
+
+    // If the trim attribute is present on the index, then add a project to trim all the input strings
+    // When generating code the optimizer will combine this with the previous usertable/selectfields
+    if (hasAttribute(trimAtom, buildOptions) || index->hasAttribute(trimAtom))
+    {
+        OwnedHqlExpr trimTransform = queryCreateTrimTransform(select);
+        if (trimTransform)
+            select.setown(createDataset(no_newusertable, { LINK(select), LINK(select->queryRecord()), trimTransform.getClear() }));
     }
 
     HqlExprArray args;
-    args.append(*select);
+    args.append(*select.getLink());
     args.append(*LINK(filename));
 
     ForEachItemIn(i, buildOptions)

@@ -517,6 +517,7 @@ shakespeareStream := normalizeWordFormat(convertTextFileToInversion(4, Directory
 
     boolean generateAllVariants := true; // Enable to test generating indexes with different compression formats
     doCreateSearchIndex() := FUNCTION
+        hybridVarIndex := INDEX(inputStream, { kind, word, doc, segment, wpos, wip }, { flags, string original, dpos }, Files.NameSearchIndex+'_hybrid_var', compressed('hybrid'), TRIM);
         RETURN ORDERED(
             IF (generateAllVariants,
                 ORDERED(
@@ -526,9 +527,9 @@ shakespeareStream := normalizeWordFormat(convertTextFileToInversion(4, Directory
                     BUILD(inputStream, { kind, word, doc, segment, wpos, wip }, { flags, original, dpos }, Files.NameSearchIndex+'_inplace_lzw', compressed('inplace:lzw'), OVERWRITE),
                     BUILD(inputStream, { kind, word, doc, segment, wpos, wip }, { flags, original, dpos }, Files.NameSearchIndex+'_inplace_lz4hc', compressed('inplace:lz4hc'), OVERWRITE),
                     BUILD(inputStream, { kind, word, doc, segment, wpos, wip }, { flags, original, dpos }, Files.NameSearchIndex+'_inplace_zstd', compressed('inplace:zstds'), OVERWRITE),
-                    BUILD(inputStream, { kind, word, doc, segment, wpos, wip }, { flags, string original := TRIM(original), dpos }, Files.NameSearchIndex+'_inplace_var', compressed('inplace'), OVERWRITE),
+                    BUILD(inputStream, { kind, word, doc, segment, wpos, wip }, { flags, string original := original, dpos }, Files.NameSearchIndex+'_inplace_var', compressed('inplace'), OVERWRITE, TRIM),
                     BUILD(inputStream, { kind, word, doc, segment, wpos, wip }, { flags, original, dpos }, Files.NameSearchIndex+'_hybrid', compressed('hybrid'), OVERWRITE),
-                    BUILD(inputStream, { kind, word, doc, segment, wpos, wip }, { flags, string original := TRIM(original), dpos }, Files.NameSearchIndex+'_hybrid_var', compressed('hybrid'), OVERWRITE),
+                    BUILD(hybridVarIndex, inputStream, OVERWRITE),  // Test the syntax that builds an index definition and creates the field mappings automatically, including the trim
                     BUILD(inputStream, { kind, word, doc, segment, wpos }, { wip, flags, original, dpos }, Files.NameSearchIndex+'_nowip', OVERWRITE),
                 )
             ),

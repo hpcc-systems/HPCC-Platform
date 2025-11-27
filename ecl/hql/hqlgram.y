@@ -3100,34 +3100,15 @@ buildFlag
                             $$.setExpr(createComma(createAttribute(noRootAtom), createExprAttribute(distributedAtom, $3.getExpr()), createLocalAttribute()));
                             $$.setPosition($1);
                         }
-    | COMPRESSED '(' compressMode ')'
-                        {
-                            $$.setExpr(createExprAttribute(compressedAtom, $3.getExpr()));
-                            // if (!$$.queryExpr()->queryChild(0)->isAttribute())
-                            //    $$.setExpr(createComma($$.getExpr(), createExprAttribute(filepositionAtom, createConstant(false))));
-                            $$.setPosition($1);
-                        }
     | DEDUP
                         {
                             $$.setExpr(createAttribute(dedupAtom), $1);
-                        }
-    | FILEPOSITION optConstBoolArg
-                        {
-                            $$.setExpr(createExprAttribute(filepositionAtom, $2.getExpr()), $1);
-                        }
-    | MAXLENGTH
-                        {
-                            $$.setExpr(createExprAttribute(maxLengthAtom), $1);
-                        }
-    | MAXLENGTH '(' constExpression ')'
-                        {
-                            parser->normalizeExpression($3, type_numeric, false);
-                            $$.setExpr(createExprAttribute(maxLengthAtom, $3.getExpr()), $1);
                         }
     | RESTRICTED        {
                             $$.setExpr(createAttribute(restrictedAtom));
                             $$.setPosition($1);
                         }
+    | indexOrBuildFlag
     | expression
     ;
 
@@ -3455,17 +3436,21 @@ indexFlag
                             $$.setExpr(createAttribute(fixedAtom));
                             $$.setPosition($1);
                         }
-    | COMPRESSED '(' compressMode ')'
-                        {
-                            $$.setExpr(createExprAttribute(compressedAtom, $3.getExpr()));
-                            // if (!$$.queryExpr()->queryChild(0)->isAttribute())
-                            //    $$.setExpr(createComma($$.getExpr(), createExprAttribute(filepositionAtom, createConstant(false))));
-                            $$.setPosition($1);
-                        }
     | DYNAMIC
                         {
                             $$.setExpr(createAttribute(dynamicAtom));
                             $$.setPosition($1);
+                        }
+    | indexOrBuildFlag
+    | bloomAttr
+    | hashedIndexAttr
+    | commonAttribute
+    ;
+
+indexOrBuildFlag
+    : TRIM
+                        {
+                            $$.setExpr(createExprAttribute(trimAtom), $1);
                         }
     | FILEPOSITION optConstBoolArg
                         {
@@ -3480,9 +3465,13 @@ indexFlag
                             parser->normalizeExpression($3, type_numeric, false);
                             $$.setExpr(createExprAttribute(maxLengthAtom, $3.getExpr()), $1);
                         }
-    | bloomAttr
-    | hashedIndexAttr
-    | commonAttribute
+    | COMPRESSED '(' compressMode ')'
+                        {
+                            $$.setExpr(createExprAttribute(compressedAtom, $3.getExpr()));
+                            // if (!$$.queryExpr()->queryChild(0)->isAttribute())
+                            //    $$.setExpr(createComma($$.getExpr(), createExprAttribute(filepositionAtom, createConstant(false))));
+                            $$.setPosition($1);
+                        }
     ;
 
 compressMode

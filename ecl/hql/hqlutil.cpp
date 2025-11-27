@@ -10795,3 +10795,102 @@ size32_t getMaxLength(IHqlExpression * expr)
 
     return UNKNOWN_LENGTH;
 }
+
+bool isTrimSupported(ITypeInfo * type)
+{
+    switch (type->getTypeCode())
+    {
+    case type_string:
+    case type_qstring:
+    case type_unicode:
+    case type_utf8:
+    case type_varstring:
+    case type_varunicode:
+        return true;
+    default:
+        return false;
+    }
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+interface IFieldTransformer
+{
+    virtual IHqlExpression * transform(IHqlExpression * expr) = 0;
+};
+
+// A function for applying an arbitrary transformation to each field in a row.
+// If the callback returns non-null the value is used
+// if the callback returns null and it is a datarow, then the callback is applied recursively
+// otherwise the value is used unchanged
+
+static IHqlExpression * applyTransformationToRow(IHqlExpression * expr, IFieldTransformer & callback);
+static void applyTransformationToRow(HqlExprArray & args, bool & anyMapped, IHqlExpression * self, IHqlExpression * right, IHqlExpression * record, IFieldTransformer & callback)
+{
+    ForEachChild(i, record)
+    {
+        IHqlExpression * cur = record->queryChild(i);
+        switch (cur->getOperator())
+        {
+        case no_record:
+            applyTransformationToRow(args, anyMapped, self, right, cur, callback);
+            break;
+        case no_ifblock:
+            applyTransformationToRow(args, anyMapped, self, right, cur->queryChild(1), callback);
+            break;
+        case no_field:
+            {
+                OwnedHqlExpr target = createSelectExpr(LINK(self), LINK(cur));
+                OwnedHqlExpr value = createSelectExpr(LINK(right), LINK(cur));
+                OwnedHqlExpr mapped = callback.transform(value);
+                if (mapped)
+                {
+                    anyMapped = true;
+                    value.setown(mapped.getClear());
+                }
+                else if (cur->isDatarow())
+                {
+                    IHqlExpression * transform = applyTransformationToRow(value, callback);
+                    if (transform)
+                        value.setown(createRow(no_createrow, transform));
+                }
+
+                args.append(*createAssign(target.getClear(), value.getClear()));
+                break;
+            }
+        }
+    }
+}
+
+static IHqlExpression * applyTransformationToRow(IHqlExpression * expr, IFieldTransformer & callback)
+{
+    IHqlExpression * record = expr->queryRecord();
+    OwnedHqlExpr self = createSelector(no_self, record, NULL);
+    HqlExprArray args;
+    bool anyMapped = false;
+    applyTransformationToRow(args, anyMapped, self, expr, record, callback);
+    if (!anyMapped)
+        return nullptr;
+
+    // If the expression is a dataset, then this will be used to create a no_newusertable, which needs a no_newtransform
+    // everything else will use a no_transform
+    node_operator op = expr->isDataset() ? no_newtransform : no_transform;
+    return createValue(op, makeTransformType(record->getType()), args);
+}
+
+
+IHqlExpression * queryCreateTrimTransform(IHqlExpression * expr)
+{
+    class TrimFieldTransformer : public CInterfaceOf<IFieldTransformer>
+    {
+    public:
+        virtual IHqlExpression * transform(IHqlExpression * expr)
+        {
+            ITypeInfo * type = expr->queryType();
+            //It is only necessary to trim fields with unknown size - fixed length fields will either be truncated or space padded
+            if (isUnknownSize(type) && isTrimSupported(type))
+                return createValue(no_trim, expr->getType(), LINK(expr));
+            return nullptr;
+        }
+    } transformer;
+    return applyTransformationToRow(expr, transformer);
+}
