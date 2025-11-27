@@ -5128,6 +5128,79 @@ unsigned getExpressionCount(IHqlExpression * expr, bool onlyActivities, bool pro
 
 //------------------------------------------------------------------------------------------------
 
+static HqlTransformerInfo stringPackingTransformerInfo("StringPackingTransformer");
+class StringPackingTransformer : public QuickHqlTransformer
+{
+public:
+    StringPackingTransformer(unsigned _minFieldLength)
+    : QuickHqlTransformer(stringPackingTransformerInfo, nullptr), minFieldLength(_minFieldLength)
+    {
+    }
+
+protected:
+    virtual IHqlExpression * createTransformedBody(IHqlExpression * expr)
+    {
+        if (expr->getOperator() == no_field)
+        {
+            ITypeInfo * type = expr->queryType();
+            if (canOverrideStringLength(type) && !isUnknownLength(type->getSize()))
+            {
+                unsigned length = type->getSize();
+                //Only convert fields to variable length if they are longer than the minimum length
+                if (length >= minFieldLength)
+                {
+                    __int64 unknownLengthBytes = 0;
+                    if (length <= 0xFF)
+                        unknownLengthBytes = 1;
+                    else if (length <= 0xFFFF)
+                        unknownLengthBytes = 2;
+
+                    if (unknownLengthBytes)
+                    {
+                        HqlExprArray args;
+                        transformChildren(expr, args);
+                        OwnedITypeInfo newType = getStretchedType(UNKNOWN_LENGTH, type);
+                        args.append(*createExprAttribute(lengthSizeAtom, createConstant(unknownLengthBytes)));
+                        return createField(expr->queryId(), newType.getClear(), args);
+                    }
+                }
+            }
+        }
+
+        return QuickHqlTransformer::createTransformedBody(expr);
+    }
+
+protected:
+    unsigned minFieldLength;
+};
+
+IHqlExpression * createPackedStringRecord(IHqlExpression * record, unsigned firstPayloadField, unsigned minFieldLength)
+{
+    StringPackingTransformer transformer(minFieldLength);
+    HqlExprArray fields;
+    bool same = true;
+    ForEachChild(idx, record)
+    {
+        IHqlExpression * cur = record->queryChild(idx);
+        OwnedHqlExpr mapped;
+        if (idx >= firstPayloadField)
+            mapped.setown(transformer.transform(cur));
+        else
+            mapped.set(cur);
+
+        if (mapped != cur)
+            same = false;
+        fields.append(*mapped.getClear());
+    }
+
+    if (same)
+        return LINK(record);
+    return record->clone(fields);
+}
+
+
+//------------------------------------------------------------------------------------------------
+
 
 /*
 
