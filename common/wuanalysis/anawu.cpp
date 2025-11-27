@@ -123,7 +123,7 @@ public:
         }
     }
 
-    void applyConfig(IPropertyTree *options)
+    void applyConfig(const IPropertyTree *options)
     {
         if (!options) return;
         for (int opt = watOptFirst; opt < watOptMax; opt++)
@@ -165,7 +165,6 @@ private:
 };
 
 //-----------------------------------------------------------------------------------------------------------
-
 //MORE: Split this in two - for new code and old code.
 class WorkunitAnalyserBase
 {
@@ -191,7 +190,7 @@ class WorkunitRuleAnalyser : public WorkunitAnalyserBase
 public:
     WorkunitRuleAnalyser();
 
-    void applyConfig(IPropertyTree *cfg, IConstWorkUnit * wu, double _costRate);
+    void applyConfig(const IPropertyTree *cfg, IConstWorkUnit * wu, double _costRate, const IPropertyTree *_environInfoPT);
 
     void applyRules();
     void check(IWuActivity & activity);
@@ -206,6 +205,7 @@ protected:
     CIArrayOf<CSubgraphRule> subgraphRules;
     CIArrayOf<PerformanceIssue> issues;
     WuAnalyserOptions options;
+    Linked<const IPropertyTree> environInfoPT;
     CCycleTimer timer;
     cycle_t maxExecuteCycles = 0;
 
@@ -1452,7 +1452,7 @@ WorkunitRuleAnalyser::WorkunitRuleAnalyser()
     gatherRules(subgraphRules);
 }
 
-void WorkunitRuleAnalyser::applyConfig(IPropertyTree *cfg, IConstWorkUnit * wu, double costRate)
+void WorkunitRuleAnalyser::applyConfig(const IPropertyTree *cfg, IConstWorkUnit * wu, double costRate, const IPropertyTree *_environInfoPT)
 {
     options.applyConfig(cfg);
     options.applyConfig(wu);
@@ -1460,6 +1460,7 @@ void WorkunitRuleAnalyser::applyConfig(IPropertyTree *cfg, IConstWorkUnit * wu, 
     /* (So, watClusterCostPerHour cannot be used as debug option or config option)*/
     options.setOptionValue(watClusterCostPerHour, money2cost_type(costRate));
     maxExecuteCycles = millisec_to_cycle(statUnits2msecs(options.queryOption(watOptMaxExecuteTime)));
+    environInfoPT.set(_environInfoPT);
 }
 
 void WorkunitRuleAnalyser::check(IWuActivity & wuScope)
@@ -1484,7 +1485,7 @@ void WorkunitRuleAnalyser::check(IWuSubGraph & wuScope)
     ForEachItemIn(i, subgraphRules)
     {
         Owned<PerformanceIssue> issue (new PerformanceIssue);
-        if (subgraphRules.item(i).check(*issue, wuScope, options))
+        if (subgraphRules.item(i).check(*issue, wuScope, options, *environInfoPT))
             issueRecorder.noteIssue(issue);
     }
 }
@@ -2195,12 +2196,11 @@ void WorkunitStatsAnalyser::traceDependencies()
 
 //---------------------------------------------------------------------------------------------------------------------
 
-cost_type analyseWorkunit(IConstWorkUnit &workunit, unsigned wfid, const char *graph, IPropertyTree *options, double costPerHour)
+cost_type analyseWorkunit(IConstWorkUnit &workunit, unsigned wfid, const char *graph, const IPropertyTree *options, double costPerHour, const IPropertyTree *environinfoPT)
 {
     WorkunitRuleAnalyser analyser;
     Owned<IException> error;
-
-    analyser.applyConfig(options, &workunit, costPerHour);
+    analyser.applyConfig(options, &workunit, costPerHour, environinfoPT);
     try
     {
         analyser.analyse(&workunit, graph);
@@ -2246,7 +2246,7 @@ void analyseAndPrintIssues(IConstWorkUnit * wu, const char *optGraph, double cos
     CCycleTimer totalTimer;
     {
         CCycleTimer collateTimer;
-        analyser.applyConfig(nullptr, wu, costPerHour);
+        analyser.applyConfig(nullptr, wu, costPerHour, nullptr);
         analyser.analyse(wu, optGraph);
         timingInfo.append(" collate ");
         formatStatistic(timingInfo, cycle_to_nanosec(collateTimer.elapsedCycles()), SMeasureTimeNs);
@@ -2282,7 +2282,7 @@ static bool getBoolWUOption(const IConstWorkUnit * workunit, IPropertyTree *cfg,
     return cfg ? cfg->getPropBool(cfgOption, defaultValue) : defaultValue;
 }
 
-void runWorkunitAnalyser(IConstWorkUnit &workunit, IPropertyTree *cfg, unsigned wfid, const char * graph, bool inEclAgent, double costPerHour)
+void runWorkunitAnalyser(IConstWorkUnit &workunit, const IPropertyTree *cfg, unsigned wfid, const char * graph, bool inEclAgent, double costPerHour, const IPropertyTree *environInfoPT)
 {
     assertex(!isEmptyString(graph)); // graph is not longer optional as analysis will always be executed on graphs rather than entire workunit in one go
 
@@ -2296,7 +2296,7 @@ void runWorkunitAnalyser(IConstWorkUnit &workunit, IPropertyTree *cfg, unsigned 
     // - analyzeInEclAgent is false and inEclAgent is false
     bool optAnalyzeInEclAgent = getBoolWUOption(&workunit, analyzerCfg, "analyzeInEclAgent", "@analyzeInEclAgent", defaultAnalyzeInEclAgent);
     if (optAnalyzeInEclAgent == inEclAgent)
-        analyseWorkunit(workunit, wfid, graph, analyzerCfg, costPerHour);
+        analyseWorkunit(workunit, wfid, graph, analyzerCfg, costPerHour, environInfoPT);
 }
 
 
