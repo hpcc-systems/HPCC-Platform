@@ -284,14 +284,16 @@ public:
         StringArray clusters;
         file->getClusterNames(clusters);
         StringBuffer outs;
-        outs.appendf(",FileAccess,Thor,%s,%s,%s,%s,%s,%s,%" I64F "d,%d",
+        outs.appendf(",FileAccess,Thor,%s,%s,%s,%s,%s,%s,%" I64F "d,%" I64F "d,%d",
                         extended?"EXTEND":"READ",
                         globals->queryProp("@nodeGroup"),
                         job.queryUser(),
                         file->queryLogicalName(),
                         job.queryWuid(),
                         job.queryGraphName(),
-                        file->getFileSize(false, false),clusters.ordinality());
+                        file->getFileSize(false, false),
+                        file->getDiskSize(false, false),
+                        clusters.ordinality());
         ForEachItemIn(i,clusters) {
             outs.append(',').append(clusters.item(i));
         }
@@ -418,6 +420,7 @@ public:
             if (efile.get())
             {
                 __int64 fs = efile->getFileSize(false,false);
+                __int64 ds = efile->getDiskSize(false,false);
                 StringArray clusters;
                 unsigned c=0;
                 for (; c<efile->numClusters(); c++)
@@ -433,12 +436,12 @@ public:
                 {
                     ForEachItemIn(c, clusters)
                     {
-                        LOG(MCauditInfo,",FileAccess,Thor,DELETED,%s,%s,%s,%s,%s,%" I64F "d,%s",
+                        LOG(MCauditInfo,",FileAccess,Thor,DELETED,%s,%s,%s,%s,%s,%" I64F "d,%" I64F "d,%s",
                                         globals->queryProp("@name"),
                                         userStr.str(),
                                         logicalName,
                                         wuidStr.str(),
-                                        job.queryGraphName(),fs,clusters.item(c));
+                                        job.queryGraphName(),fs,ds,clusters.item(c));
                     }
                 }
             }
@@ -546,7 +549,8 @@ public:
             fileMap.replace(*new CIDistributeFileMapping(logicalName, *LINK(file))); // cache takes ownership
             return;
         }
-        offset_t fs = file->getDiskSize(false, false);
+        offset_t fs = file->getFileSize(false, false);
+        offset_t ds = file->getDiskSize(false, false);
         if (publishedFile)
             publishedFile->set(file);
         file->attach(logicalName, job.queryUserDescriptor());
@@ -555,13 +559,13 @@ public:
         {
             StringBuffer clusterName;
             fileDesc.getClusterGroupName(c, clusterName, &queryNamedGroupStore());
-            LOG(MCauditInfo,",FileAccess,Thor,CREATED,%s,%s,%s,%s,%s,%" I64F "d,%s",
+            LOG(MCauditInfo,",FileAccess,Thor,CREATED,%s,%s,%s,%s,%s,%" I64F "d,%" I64F "d,%s",
                             globals->queryProp("@nodeGroup"),
                             job.queryUser(),
                             file->queryLogicalName(),
                             job.queryWuid(),
                             job.queryGraphName(),
-                            fs,clusterName.str());
+                            fs,ds,clusterName.str());
         }
     }
 
