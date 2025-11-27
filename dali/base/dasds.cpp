@@ -2493,13 +2493,12 @@ enum IncCmd { None, PropDelete, AttrDelete, PropChange, PropNew, PropExisting, C
 CRemoteTreeBase::CRemoteTreeBase(const char *name, IPTArrayValue *value, ChildMap *children)
     : SDS_PTREE(name, ipt_none, value, children)
 {
-    serverId = 0;
 }
 
 CRemoteTreeBase::CRemoteTreeBase(MemoryBuffer &mb)
 {
-    serverId = 0;
 }
+
 
 void CRemoteTreeBase::deserializeRT(MemoryBuffer &src)
 {
@@ -2765,7 +2764,8 @@ public:
     virtual IPropertyTree *create(IBufferedSerialInputStream &in) override
     {
         Owned<CServerRemoteTree> tree = new CServerRemoteTree();
-        tree->deserializeFromStream(in);
+        PTreeDeserializeContext ctx;
+        tree->deserializeFromStream(in, ctx);
         return tree.getClear();
     }
 
