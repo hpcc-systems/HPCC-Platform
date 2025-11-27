@@ -56,7 +56,7 @@ Pass in dict with root and me
 {{- $workerCostConfig := dict -}}
 {{- $_ := include "setThorComponentCost" (dict "root" .root "me" .me "subComponent" "worker" "cost" $workerCostConfig) -}}
 {{- $workerSpecifications := pick .me "worker" | default (dict "worker" (dict "cost" $workerCostConfig.cost)) -}}
-{{- $thorScope := omit .me "thoragent" "hthor" "env" "eclAgentResources" "eclAgentUseChildProcesses" "eclAgentReplicas" "thorAgentReplicas" "eclAgentType" "manager" "worker" "eclagent" | merge $managerSpecifications $workerSpecifications $eclAgentSpecifications }}
+{{- $thorScope := omit .me "thoragent" "hthor" "env" "eclAgentResources" "eclAgentUseChildProcesses" "eclAgentReplicas" "thorAgentReplicas" "eclAgentType" "manager" "worker" "eclagent" "cost" | merge $managerSpecifications $workerSpecifications $eclAgentSpecifications }}
 {{- $misc := .root.Values.global.misc | default dict }}
 {{- $postJobCommand := $misc.postJobCommand | default "" }}
 {{- $eclAgentJobName := printf "%s-job-_HPCC_JOBNAME_" $eclAgentType }}
@@ -100,6 +100,7 @@ data:
 {{- include "hpcc.generateTracingConfig" (dict "root" .root "me" $thorAgentScope) | indent 6 }}
       type: thor
     global:
+{{/* Thor uses sub-component costs (manager, worker, eclagent), so exclude global perCpu */}}
 {{ include "hpcc.generateGlobalConfigMap" (dict "root" .root "excludePerCpuCost" true) | indent 6 }}
 
 {{- if not .eclAgentUseChildProcesses }}

@@ -178,15 +178,40 @@ Pass in dict with root and warnings
   {{- $_ := set $warning "msg" (printf "Insecure feature enabled in ecl: %s " $ctx.insecureEclFeature) -}}
   {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
  {{- end -}}
- {{- /* Warn if thor has inconsistent sub-component cost configurations */ -}}
+ {{- /* Warn if thor has inconsistent sub-component cost configurations and use of deprecated thor.cost */ -}}
  {{- $_ := set $ctx "thorInconsistentCosts" list -}}
  {{- range $thor := .root.Values.thor -}}
   {{- if not $thor.disabled -}}
+   {{- /* Check for deprecated thor.cost */ -}}
+   {{- $hasDeprecatedCost := $thor.cost -}}
+   {{- if $hasDeprecatedCost -}}
+    {{- $warning := dict "source" "helm" "severity" "warning" -}}
+    {{- $_ := set $warning "msg" (printf "Thor '%s' uses deprecated 'cost' field at the top level. Please use sub-component cost fields (manager.cost, worker.cost, eclagent.cost) instead." $thor.name) -}}
+    {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
+   {{- end -}}
    {{- /* Check for inconsistent sub-component cost configurations */ -}}
    {{- $managerHasCost := and $thor.manager $thor.manager.cost -}}
    {{- $workerHasCost := and $thor.worker $thor.worker.cost -}}
    {{- $eclagentHasCost := and $thor.eclagent $thor.eclagent.cost -}}
    {{- $anyCost := or $managerHasCost (or $workerHasCost $eclagentHasCost) -}}
+   {{- /* If deprecated cost is set along with some (but not all) sub-component costs, warn about inconsistency */ -}}
+   {{- if and $hasDeprecatedCost $anyCost -}}
+    {{- $subCosts := list -}}
+    {{- if $managerHasCost -}}
+     {{- $subCosts = append $subCosts "manager" -}}
+    {{- end -}}
+    {{- if $workerHasCost -}}
+     {{- $subCosts = append $subCosts "worker" -}}
+    {{- end -}}
+    {{- if $eclagentHasCost -}}
+     {{- $subCosts = append $subCosts "eclagent" -}}
+    {{- end -}}
+    {{- if lt (len $subCosts) 3 -}}
+     {{- $warning := dict "source" "helm" "severity" "warning" -}}
+     {{- $_ := set $warning "msg" (printf "Thor '%s' specifies deprecated 'cost' and only some sub-component costs (%s). This is inconsistent; use only sub-component cost fields or all of them." $thor.name (join ", " $subCosts)) -}}
+     {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
+    {{- end -}}
+   {{- end -}}
    {{- if $anyCost -}}
     {{- $missingCosts := list -}}
     {{- if not $managerHasCost -}}

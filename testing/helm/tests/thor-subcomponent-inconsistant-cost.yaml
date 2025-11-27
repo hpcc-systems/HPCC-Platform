@@ -10,7 +10,7 @@ thor:
   worker:
     cost:
       perCpu: 2.40
-  # manager and eclagent should inherit from global.cost (0.50)
+  # error should be reported as cost defined for worker but it is not for manager and eclagent
   prefix: thor
   numWorkers: 2
   maxJobs: 2

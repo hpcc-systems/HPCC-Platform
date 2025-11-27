@@ -2895,7 +2895,7 @@
         },
         "cost": {
           "$ref" : "#/definitions/componentCost",
-          "description" : "[DEPRECATED] Cost information for all thor components. Specify cost information in sub-components." 
+          "description" : "[DEPRECATED] Cost information for all Thor components. Specify cost information in sub-components." 
         },
         "manager": {
           "$ref": "#/definitions/thorSubComponent"
