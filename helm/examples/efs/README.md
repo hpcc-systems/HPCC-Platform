@@ -10,7 +10,7 @@ Current implementation only tested successfully with a IAM user. It may need upd
 ## Prepare environment
 Make sure an EFS file system is available or create an [EFS File System](#efs-file-system) before using this chart.<br/>
 Fill in the following information in the efs-env file
-```code
+```
 ACCOUNT_ID       # AWS Account ID
 EKS_NAME         # Elastic Kubernetes Service (EKS) cluster name: kubectl configure get-cluster  (The first part of the name before ".")
 EFS_ID           # EFS ID can be found from AWS Console or command-line:
@@ -37,7 +37,7 @@ Add each unique security group id to the variable "EFS_SECURITY_GROUPS"
 
 ## Install EFS CSI Driver
 Run the following command under the efs directory:
-```code
+```console
 ./install-efs-csi-driver.sh
 ```
 The script configures the IAM roles and policies, installs the aws-efs-csi-driver, and creates the file for the "aws-efs-auto" storage class. To verify
@@ -62,7 +62,7 @@ Under the efs directory, run the following command to create the "aws-efs-auto" 
 kubectl apply -f storageclass.yaml
 ```
 To verify
-```code
+```console
 kubectl get sc
 NAME            PROVISIONER             RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
 aws-efs-auto    efs.csi.aws.com         Delete          Immediate              false                  9s
@@ -86,7 +86,7 @@ The storage needs to be created before starting the HPCC cluster. Under the helm
   helm install awsstorage examples/efs/hpcc-efs-dynamic-pv
 ```
 To verify
-```code
+```console
 kubectl get pvc
 NAME                                 STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
 dali-awsstorage-hpcc-efs-pvc         Bound    pvc-400ddbb7-1b89-4468-b416-ffece25aab0d   1Gi        RWO            aws-efs        5m52s
@@ -110,7 +110,7 @@ To cleanup, run
 In this method, the storage lives beyond the Kubernetes cluster. It uses the helm chart "hpcc-efs-static-pv" to manually create PVs and PVCs and to configure access points in EFS with the Kubernetes cluster. This means that even if the Kubernetes cluster is deleted, the storage will remain and can be reused across different Kubernetes clusters.<br/>
 The create-ap.sh script creates five access points in EFS for each of dali, dll, sasha, data, and mydropzone. It also displays a description for each access point. You may need to add additional tags to the access points depending on your organization. For example, for RISK users, the "owner" and "owner_email" tags are required; add these to the script as needed.<br/>
 Once you are ready, under the efs directory run the following command:
-```code
+```console
 ./create-ap.sh
 ```
 Note that running the script again will create five more access points with the same exact specifications. Use the delete-ap.sh to delete all access points.<br/>
@@ -121,12 +121,12 @@ The storage needs to be created before starting the HPCC cluster. Under the helm
   helm install awsstorage examples/efs/hpcc-efs-static-pv
 ```
 To verify
-```code
+```console
 kubectl get sc
 NAME             PROVISIONER             RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
 aws-efs-static   efs.csi.aws.com         Delete          Immediate              false                  110s
 ```
-```code
+```console
 kubectl get pv
 NAME                                CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                                        STORAGECLASS     REASON   AGE
 dali-awsstorage-hpcc-efs-pv         1Gi        RWO            Retain           Bound    default/dali-awsstorage-hpcc-efs-pvc         aws-efs-static            23s
@@ -135,7 +135,7 @@ dll-awsstorage-hpcc-efs-pv          1Gi        RWX            Retain           B
 mydropzone-awsstorage-hpcc-efs-pv   1Gi        RWX            Retain           Bound    default/mydropzone-awsstorage-hpcc-efs-pvc   aws-efs-static            23s
 sasha-awsstorage-hpcc-efs-pv        1Gi        RWX            Retain           Bound    default/sasha-awsstorage-hpcc-efs-pvc        aws-efs-static            23s
 ```
-```code
+```console
 kubectl get pvc
 NAME                                 STATUS   VOLUME                              CAPACITY   ACCESS MODES   STORAGECLASS     AGE
 dali-awsstorage-hpcc-efs-pvc         Bound    dali-awsstorage-hpcc-efs-pv         1Gi        RWO            aws-efs-static   29s
@@ -157,7 +157,7 @@ To cleanup, run
 # EFS File System
 Reference:
 - https://docs.aws.amazon.com/efs/latest/ug/gs-step-two-create-efs-resources.html
-- https://hpccsystems.com/blog/Cloud-AWS
+- https://hpccsystems.com/resources/setting-up-an-hpcc-systems-cluster-on-aws-eks/
 You can use either AWS CLI or the console to create the EFS.
 ## AWS CLI
 If you don't have AWS CLI reference
@@ -169,7 +169,7 @@ For simple setup we recommend you use the same VPC/Subnets and security group fo
   aws efs create-file-system --throughput-mode bursting --tags "Key=Name,Value=<EFS Name>" --region <REGION>
 ```
 The EFS server FQDN will be
-```code
+```console
   <EFS ID>.efs.<REGION>.amazonaws.com
 ```
 
