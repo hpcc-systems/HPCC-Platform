@@ -680,11 +680,12 @@ void CppCompiler::expandCompileOptions(StringBuffer & target, bool isC)
         target.append(CC_OPTION_DEBUG[targetCompiler]);
     else
         target.append(CC_OPTION_RELEASE[targetCompiler]);
-    target.append(compilerOptions).append(CC_EXTRA_OPTIONS);
+    target.append(CC_EXTRA_OPTIONS);
     if (isC)
         target.append(" ").append(CC_OPTION_C[targetCompiler]);
     else
         target.append(" ").append(CC_OPTION_CPP[targetCompiler]);
+    target.append(compilerOptions);
 }
 
 bool CppCompiler::doLink()
