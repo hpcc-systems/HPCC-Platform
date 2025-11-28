@@ -1147,8 +1147,14 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         formatGraphTimerLabel(graphTimeStr, graphName);
 
         updateWorkunitStat(wu, SSTgraph, graphName, StTimeElapsed, graphTimeStr, graphTimeNs, wfid);
-
         addTimeStamp(wu, SSTgraph, graphName, StWhenFinished, wfid);
+
+        if (globals->getPropBool("@watchdogProgressEnabled"))
+            queryDeMonServer()->updateAggregates(wu);
+
+        // Replace graph cost estimate (produced by updateAggregates) with actual execute cost based on the graph's
+        // elapsed time cost.  The following must be done after the final call to updateAggregates, so that the
+        // estimated cost is overwritten.
         cost_type cost = money2cost_type(calculateThorCost(nanoToMilli(graphTimeNs), queryNodeClusterWidth()));
         if (cost)
             wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphScope, StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
