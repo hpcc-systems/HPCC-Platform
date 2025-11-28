@@ -35,6 +35,7 @@
 #include <map>
 #include <string>
 #include <set>
+#include <openssl/evp.h>
 
 #ifdef _WIN32
 #include <lm.h>
@@ -1603,6 +1604,11 @@ static __int64 getMaxPwdAge(Owned<ILdapConnectionPool> _conns, const char * _bas
 }
 
 static CriticalSection  lcCrit;
+static CriticalSection  uaCrit;
+std::map<std::string, std::string> unauthorizedUserCache;
+time_t lastClearedUnauthorizedUserCache = 0;
+constexpr int UNAUTHORIZED_CACHE_TTL_SECONDS = 300;
+
 class CLdapClient : implements ILdapClient, public CInterface
 {
 private:
@@ -1776,6 +1782,38 @@ public:
             {
                 DBGLOG("CLdapClient::authenticate username/password must be provided");
                 return false;
+            }
+
+            //
+            // Check for duplicate attempts to authorize the same unauthorized user. If the user is found
+            // in the cache, check the password. If unchanged, exit early with a fail. If the password
+            // has changed, remove the entry from the cache and continue. Entries only added when there
+            // is an authentication failure with the password. Other failure not logged so that an AD
+            // change can make the user valid.
+            {
+                CriticalBlock block(uaCrit);
+                time_t currentTime = time(nullptr);
+
+                //
+                // reset every 5 minutes to ensure cache does not grow unbounded
+                if (currentTime - lastClearedUnauthorizedUserCache > UNAUTHORIZED_CACHE_TTL_SECONDS)
+                {
+                    lastClearedUnauthorizedUserCache = currentTime;
+                    unauthorizedUserCache.clear();
+                }
+                else
+                {
+                    auto it = unauthorizedUserCache.find(username);
+                    if (it != unauthorizedUserCache.end())
+                    {
+                        if (it->second == std::string(password))
+                        {
+                            user.setAuthenticateStatus(AS_INVALID_CREDENTIALS);
+                            return false;
+                        }
+                        unauthorizedUserCache.erase(it);  // different password, try authenticating
+                    }
+                }
             }
 
             if (getMaxPwdAge(m_connections,(char*)m_ldapconfig->getBasedn(), m_ldapconfig->getLdapTimeout()) != PWD_NEVER_EXPIRES)
@@ -2015,6 +2053,7 @@ public:
                     }
                     else
                     {
+                        addUserToUnauthenticatedCache(username, password);
                         DBGLOG("LDAP: Authentication(1) (%c) for user %s failed - %s", isWorkunitDAToken(password) ? 't' :'f', username, ldap_err2string(rc));
                         user.setAuthenticateStatus(AS_INVALID_CREDENTIALS);
                     }
@@ -2026,17 +2065,20 @@ public:
                     if (user.getPasswordDaysRemaining() == scPasswordExpired)
                     {
                         DBGLOG("LDAP: Password Expired(2) for user %s", username);
+                        addUserToUnauthenticatedCache(username, password);
                         user.setAuthenticateStatus(AS_PASSWORD_EXPIRED);
                     }
                     else
                     {
                         DBGLOG("LDAP: Authentication(2) for user %s failed - %s", username, ldap_err2string(rc));
+                        addUserToUnauthenticatedCache(username, password);
                         user.setAuthenticateStatus(AS_INVALID_CREDENTIALS);
                     }
                 }
                 return false;
             }
             user.setAuthenticateStatus(AS_AUTHENTICATED);
+            removeUserFromUnauthenticatedCache(username);  // remove user from cache since valid credentials provided
         }
         //Always retrieve user info(SID, UID, fullname, etc) for Active Directory, when the user first logs in.
         if((m_ldapconfig->getServerType() == ACTIVE_DIRECTORY) && (m_pp != NULL))
@@ -2044,6 +2086,21 @@ public:
 
         return true;
     };
+
+    void addUserToUnauthenticatedCache(const char *username, const char *password)
+    {
+        CriticalBlock block(uaCrit);
+        unauthorizedUserCache.emplace(username, password);
+    }
+
+    void removeUserFromUnauthenticatedCache(const char *username)
+    {
+        CriticalBlock block(uaCrit);
+        auto it = unauthorizedUserCache.find(username);
+        if (it != unauthorizedUserCache.end())
+            unauthorizedUserCache.erase(it);
+    }
+
 
     virtual bool authorize(SecResourceType rtype, ISecUser& user, IArrayOf<ISecResource>& resources, const char * resName = nullptr)
     {
