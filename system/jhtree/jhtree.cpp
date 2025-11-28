@@ -1925,8 +1925,8 @@ const CJHTreeNode *CDiskKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, 
 
         {
             // Align the read position to a multiple of the read granularity, and get a reusable buffer from the readState object
-            offset_t readPosMask = ~(offset_t)(readSize - 1);
-            offset_t alignedPos = pos & readPosMask;
+            offset_t readPosDelta = pos % readSize;
+            offset_t alignedPos = pos - readPosDelta;
             byte * buffer = readCache.getBufferForUpdate(alignedPos, readSize);
 
             // NOTE: There will only be a single call to loadNode for a given position, but there may be multiple calls to
@@ -2040,8 +2040,12 @@ CKeyCursor::CKeyCursor(CKeyIndex &_key, const IIndexFilterList *_filter, bool _l
 {
     if (_blockedIOSize)
     {
-        if (unlikely(!isPowerOf2(_blockedIOSize)))
-            throw makeStringExceptionV(-1, "Blocked IO size must be a power of 2");
+        //If the blockedIOSize is < cache size then it will use the page cache page size.  Otherwise ensure it is a multiple of the page size.
+        if (pageCachePageSize && (_blockedIOSize > pageCachePageSize))
+        {
+            if ((_blockedIOSize % pageCachePageSize) != 0)
+                throw makeStringExceptionV(-1, "Blocked IO size must be a multiple of the page cache page size (%u)", pageCachePageSize);
+        }
         readState.preferredReadSize = _blockedIOSize;
     }
 
