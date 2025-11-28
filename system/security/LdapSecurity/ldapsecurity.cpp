@@ -27,6 +27,30 @@
 using namespace cryptohelper;
 
 #include "workunit.hpp"
+#include <ctime>
+
+/**********************************************************
+ *     Failed Authentication Cache                        *
+ **********************************************************/
+
+// Structure to track failed authentication attempts
+struct FailedAuthEntry
+{
+    time_t firstFailureTime;
+    unsigned failedAttempts;
+    
+    FailedAuthEntry() : firstFailureTime(0), failedAttempts(0) {}
+    FailedAuthEntry(time_t timestamp, unsigned attempts) 
+        : firstFailureTime(timestamp), failedAttempts(attempts) {}
+};
+
+// Default configuration values
+static constexpr unsigned DEFAULT_MAX_FAILED_ATTEMPTS = 5;
+static constexpr unsigned DEFAULT_FAILED_AUTH_CACHE_TIMEOUT_SECONDS = 300; // 5 minutes
+
+// Failed authentication cache using username as key
+static std::map<std::string, FailedAuthEntry> g_failedAuthCache;
+static CriticalSection g_failedAuthCacheLock;
 
 /**********************************************************
  *     CLdapSecUser                                       *
@@ -571,6 +595,75 @@ ISecProperty* CLdapSecResourceList::findProperty(const char* name)
 
 
 /**********************************************************
+ *     Failed Authentication Cache Helper Methods         *
+ **********************************************************/
+
+// Check if a user is in the failed authentication cache and should be blocked
+// Returns true if user should be blocked, false if authentication should proceed
+static bool checkFailedAuthCache(const char* username, unsigned maxFailedAttempts, unsigned cacheTimeoutSeconds)
+{
+    CriticalBlock block(g_failedAuthCacheLock);
+    
+    auto it = g_failedAuthCache.find(username);
+    if (it == g_failedAuthCache.end())
+        return false; // User not in cache, proceed with authentication
+
+    time_t currentTime = time(nullptr);
+    time_t elapsedTime = currentTime - it->second.firstFailureTime;
+    
+    // Check if entry is stale
+    if (elapsedTime >= cacheTimeoutSeconds)
+    {
+        DBGLOG("Removing stale failed auth entry for user %s (elapsed: %ld seconds)", username, (long)elapsedTime);
+        g_failedAuthCache.erase(it);
+        return false; // Entry was stale, removed, proceed with authentication
+    }
+    
+    // Check if max attempts exceeded
+    if (it->second.failedAttempts >= maxFailedAttempts)
+    {
+        DBGLOG("User %s blocked due to %u failed authentication attempts", username, it->second.failedAttempts);
+        return true; // Block authentication
+    }
+    
+    return false; // Under max attempts, proceed with authentication
+}
+
+// Update the failed authentication cache after a failed authentication
+static void updateFailedAuthCache(const char* username)
+{
+    CriticalBlock block(g_failedAuthCacheLock);
+    
+    auto it = g_failedAuthCache.find(username);
+    if (it == g_failedAuthCache.end())
+    {
+        // User not in cache, add with initial failure
+        time_t currentTime = time(nullptr);
+        g_failedAuthCache[username] = FailedAuthEntry(currentTime, 1);
+        DBGLOG("Added user %s to failed auth cache (attempt 1)", username);
+    }
+    else
+    {
+        // User already in cache, increment failure count
+        it->second.failedAttempts++;
+        DBGLOG("Incremented failed auth count for user %s (attempt %u)", username, it->second.failedAttempts);
+    }
+}
+
+// Remove a user from the failed authentication cache (called on successful authentication)
+static void removeFromFailedAuthCache(const char* username)
+{
+    CriticalBlock block(g_failedAuthCacheLock);
+    
+    auto it = g_failedAuthCache.find(username);
+    if (it != g_failedAuthCache.end())
+    {
+        DBGLOG("Removing user %s from failed auth cache after successful authentication", username);
+        g_failedAuthCache.erase(it);
+    }
+}
+
+/**********************************************************
  *     CLdapSecManager                                    *
  **********************************************************/
 CLdapSecManager::CLdapSecManager(const char *serviceName, const char *config)
@@ -629,6 +722,8 @@ void CLdapSecManager::init(const char *serviceName, IPropertyTree* cfg)
 
     m_passwordExpirationWarningDays = cfg->getPropInt(".//@passwordExpirationWarningDays", 10); //Default to 10 days
     m_checkViewPermissions = cfg->getPropBool(".//@checkViewPermissions", false);
+    m_maxFailedAuthAttempts = cfg->getPropInt(".//@maxFailedAuthAttempts", DEFAULT_MAX_FAILED_ATTEMPTS);
+    m_failedAuthCacheTimeout = cfg->getPropInt(".//@failedAuthCacheTimeoutSeconds", DEFAULT_FAILED_AUTH_CACHE_TIMEOUT_SECONDS);
     m_hpccInternalScope.set(queryDfsXmlBranchName(DXB_Internal)).append("::");//HpccInternal::
 
     bool useLegacySuperUserStatusCheck = cfg->getPropBool("@useLegacySuperUserStatusCheck", true);
@@ -694,6 +789,23 @@ bool CLdapSecManager::authenticate(ISecUser* user)
         return false;
     }
 
+    const char* username = user->getName();
+    if (isEmptyString(username))
+    {
+        DBGLOG("CLdapSecManager::authenticate username cannot be empty");
+        return false;
+    }
+    
+    // Check failed authentication cache before proceeding
+    if (checkFailedAuthCache(username, m_maxFailedAuthAttempts, m_failedAuthCacheTimeout))
+    {
+        DBGLOG("User %s authentication blocked due to failed authentication cache", username);
+        user->setAuthenticateStatus(AS_INVALID_CREDENTIALS);
+        m_permissionsCache->removePermissions(*user);
+        m_permissionsCache->removeFromUserCache(*user);
+        return false;
+    }
+
     bool isCaching = m_permissionsCache->isCacheEnabled() && !m_usercache_off;//caching enabled?
     bool isUserCached = false;
     Owned<ISecUser> cachedUser = new CLdapSecUser(user->getName(), "");
@@ -707,6 +819,7 @@ bool CLdapSecManager::authenticate(ISecUser* user)
     {
         if(isCaching && !isUserCached)
             m_permissionsCache->add(*user);
+        removeFromFailedAuthCache(username);
         return true;
     }
 
@@ -722,12 +835,14 @@ bool CLdapSecManager::authenticate(ISecUser* user)
             if (streq(cachedUser->credentials().getSignature(), user->credentials().getSignature()))
             {
                 user->setAuthenticateStatus(AS_AUTHENTICATED);
+                removeFromFailedAuthCache(username);
                 return true;
             }
             else
             {
                 WARNLOG("Digital signature for %s does not match cached signature", user->getName());
                 user->setAuthenticateStatus(AS_INVALID_CREDENTIALS);
+                updateFailedAuthCache(username);
                 return false;
             }
         }
@@ -740,6 +855,7 @@ bool CLdapSecManager::authenticate(ISecUser* user)
                 {
                     user->setAuthenticateStatus(AS_INVALID_CREDENTIALS);
                     WARNLOG("Invalid digital signature for user %s", user->getName());
+                    updateFailedAuthCache(username);
                     return false;
                 }
                 else
@@ -747,6 +863,7 @@ bool CLdapSecManager::authenticate(ISecUser* user)
                     user->setAuthenticateStatus(AS_AUTHENTICATED);
                     if(isCaching && !isUserCached)
                         m_permissionsCache->add(*user);
+                    removeFromFailedAuthCache(username);
                     return true;
                 }
             }
@@ -755,6 +872,7 @@ bool CLdapSecManager::authenticate(ISecUser* user)
 
     if (isUserCached && cachedUser->getAuthenticateStatus() == AS_AUTHENTICATED)//only authenticated users will be cached
     {
+        removeFromFailedAuthCache(username);
         return true;
     }
 
@@ -769,6 +887,7 @@ bool CLdapSecManager::authenticate(ISecUser* user)
 
     if (AS_AUTHENTICATED == user->getAuthenticateStatus())
     {
+        removeFromFailedAuthCache(username);
         if (isCaching)
             m_permissionsCache->add(*user);
         else if (isEmptyString(user->credentials().getPassword()) && (0 == user->credentials().getSessionToken()) && isEmptyString(user->credentials().getSignature()))
@@ -784,6 +903,11 @@ bool CLdapSecManager::authenticate(ISecUser* user)
                user->credentials().setSignature(b64Signature);
             }
         }
+    }
+    else
+    {
+        // Authentication failed, update the failed authentication cache
+        updateFailedAuthCache(username);
     }
 
     return AS_AUTHENTICATED == user->getAuthenticateStatus();
