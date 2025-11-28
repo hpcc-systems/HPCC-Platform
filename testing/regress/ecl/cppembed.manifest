@@ -1,0 +1,4 @@
+<Manifest>
+    <Resource filename="cppembed.cpp" type="cpp" />
+    <Resource filename="cppembed.hpp" type="hpp" />
+</Manifest>
