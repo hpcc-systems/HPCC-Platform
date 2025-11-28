@@ -3222,10 +3222,17 @@ extern jlib_decl double friendlyCPUToDecimal(const char *in)
 
 extern jlib_decl double getResourcedCpus(const char *resourceName)
 {
-    Owned<IPropertyTree> resourceTree = getComponentConfigSP()->getPropTree(resourceName);
-    if (nullptr == resourceTree)
-        return 0.0;
-    return friendlyCPUToDecimal(resourceTree->queryProp("@cpu"));
+    if (isContainerized())
+    {
+        Owned<IPropertyTree> resourceTree = getComponentConfigSP()->getPropTree(resourceName);
+        if (nullptr == resourceTree)
+            return 0.0;
+        return friendlyCPUToDecimal(resourceTree->queryProp("@cpu"));
+    }
+    else
+    {
+        return (double) getAffinityCpus();
+    }
 }
 
 void jlib_decl atomicWriteFile(const char *fileName, const char *output)
