@@ -217,6 +217,7 @@ protected:
     Linked<ICodegenContextCallback> ctxCallback;
     unsigned defaultMaxCompileThreads;
     StringArray temporaryDirectories;
+    StringArray includeDirectories;
     StringArray sourceFiles;
     StringArray sourceFlags;
     BoolArray sourceIsTemp;
@@ -294,6 +295,16 @@ void HqlDllGenerator::addLibrariesToCompiler()
             break;
         LOG(MCuserInfo,"Adding temporary directory: %s", dir);
         temporaryDirectories.append(dir);
+        idx++;
+    }
+    idx=0;
+    for (;;)
+    {
+        const char * includeDir = code->queryIncludeDirectory(idx);
+        if (!includeDir)
+            break;
+        LOG(MCuserInfo,"Adding include directory: %s", includeDir);
+        includeDirectories.append(includeDir);
         idx++;
     }
 }
@@ -711,6 +722,9 @@ bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
     StringBufferAdaptor optionAdaptor(options);
     wu->getDebugValue("compileOptions", optionAdaptor);
     compiler->addCompileOption(options.str());
+
+    ForEachItemIn(idxInclude, includeDirectories)
+        compiler->addInclude(includeDirectories.item(idxInclude));
 
     if (okToAbort)
         compiler->setAbortChecker(this);

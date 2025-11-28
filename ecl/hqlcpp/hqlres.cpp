@@ -102,6 +102,68 @@ static void loadResource(const char *filepath, MemoryBuffer &content)
     read(fio, 0, (size32_t) f->size(), content);
 }
 
+static bool hasExtension(const char *filename, const char * const *extensions, unsigned count)
+{
+    if (!filename || !*filename)
+        return false;
+    const char *ext = pathExtension(filename);
+    if (!ext)
+        return false;
+    for (unsigned i=0; i<count; i++)
+    {
+        if (strieq(ext, extensions[i]))
+            return true;
+    }
+    return false;
+}
+
+static bool isSourceResource(const char *type, const char *filename)
+{
+    if (type && (strieq(type, "CPP") || strieq(type, "C")))
+        return true;
+
+    static const char * const cppExtensions[] = { ".cpp", ".c", ".cc", ".cxx" };
+    return hasExtension(filename, cppExtensions, sizeof(cppExtensions)/sizeof(cppExtensions[0]));
+}
+
+static bool isHeaderResource(const char *type, const char *filename)
+{
+    if (type && (strieq(type, "H") || strieq(type, "HPP") || strieq(type, "HH") || strieq(type, "INL")))
+        return true;
+
+    static const char * const headerExtensions[] = { ".h", ".hpp", ".hh", ".inl" };
+    return hasExtension(filename, headerExtensions, sizeof(headerExtensions)/sizeof(headerExtensions[0]));
+}
+
+static void ensureManifestTempDir(StringBuffer &tempDir, IHqlCppInstance &cppInstance)
+{
+    if (tempDir.length())
+        return;
+
+    getTempFilePath(tempDir, "eclcc", nullptr);
+    tempDir.append(PATHSEPCHAR).append("tmp.XXXXXX");
+    if (!mkdtemp((char *) tempDir.str()))
+        throw makeStringExceptionV(0, "Failed to create temporary directory %s (error %d)", tempDir.str(), errno);
+    cppInstance.addTemporaryDir(tempDir.str());
+    cppInstance.addIncludeDirectory(tempDir.str());
+}
+
+static void appendRelativeResourcePath(StringBuffer &target, const char *tempDir, const char *relativeName, const char *fallbackName)
+{
+    target.append(tempDir).append(PATHSEPCHAR);
+    if (relativeName && *relativeName)
+        target.append(relativeName);
+    else if (fallbackName && *fallbackName)
+    {
+        const char *tail = pathTail(fallbackName);
+        if (!tail || !*tail)
+            throw makeStringExceptionV(0, "Failed to resolve resource filename for %s", fallbackName);
+        target.append(tail);
+    }
+    else
+        throw makeStringException(0, "Failed to determine resource filename");
+}
+
 bool ResourceManager::getDuplicateResourceId(const char *srctype, const char *respath, const char *filepath, int &id)
 {
     StringBuffer xpath;
@@ -238,6 +300,7 @@ void ResourceManager::addManifestFile(const char *filename, ICodegenContextCallb
     }
 
     Owned<IPropertyTreeIterator> resources = manifestSrc->getElements("Resource[@filename]");
+    StringBuffer manifestTempDir;
     ForEach(*resources)
     {
         IPropertyTree &item = resources->query();
@@ -271,20 +334,32 @@ void ResourceManager::addManifestFile(const char *filename, ICodegenContextCallb
             else
             {
                 const char *type = item.queryProp("@type");
-                if (strieq(type, "CPP") || strieq(type, "C"))
+                const char *relativeName = item.queryProp("@filename");
+                bool isSource = isSourceResource(type, relativeName ? relativeName : resourceFilename);
+                bool isHeader = isHeaderResource(type, relativeName ? relativeName : resourceFilename);
+
+                if (isSource || isHeader)
                 {
                     if (!ctxCallback->allowAccess("cpp", isSigned))
                         throw makeStringExceptionV(0, "Embedded code via manifest file not allowed");
-                    cppInstance.useSourceFile(resourceFilename, item.queryProp("@compileFlags"), false);
+                    ensureManifestTempDir(manifestTempDir, cppInstance);
+                    StringBuffer tempFileName;
+                    appendRelativeResourcePath(tempFileName, manifestTempDir.str(), relativeName, resourceFilename);
+                    if (!recursiveCreateDirectoryForFile(tempFileName))
+                        throw makeStringExceptionV(0, "Failed to create temporary file %s (error %d)", tempFileName.str(), errno);
+                    copyFile(tempFileName.str(), resourceFilename);
+                    if (isSource)
+                    {
+                        cppInstance.useSourceFile(tempFileName, item.queryProp("@compileFlags"), true);
+                        continue;
+                    }
                 }
-                else
-                {
-                    if ((strieq(type, "jar") || strieq(type, "pyzip")) && !ctxCallback->allowAccess(type, isSigned))
-                        throw makeStringExceptionV(0, "Embedded %s files via manifest file not allowed", type);
-                    MemoryBuffer content;
-                    loadResource(resourceFilename, content);
-                    addCompress(type, content.length(), content.toByteArray(), &item); // MORE - probably should not recompress files known to be compressed, like jar
-                }
+
+                if ((strieq(type, "jar") || strieq(type, "pyzip")) && !ctxCallback->allowAccess(type, isSigned))
+                    throw makeStringExceptionV(0, "Embedded %s files via manifest file not allowed", type);
+                MemoryBuffer content;
+                loadResource(resourceFilename, content);
+                addCompress(type, content.length(), content.toByteArray(), &item); // MORE - probably should not recompress files known to be compressed, like jar
             }
         }
     }
@@ -406,33 +481,30 @@ void ResourceManager::addManifestsFromArchive(IPropertyTree *archive, ICodegenCo
                             throw makeStringExceptionV(0, "MD5 mismatch %s in archive", filename);
                     }
                     const char *type = item.queryProp("@type");
-                    if (strieq(type, "CPP") || strieq(type, "C"))
+                    const char *relativeName = item.queryProp("@filename");
+                    bool isSource = isSourceResource(type, relativeName ? relativeName : filename);
+                    bool isHeader = isHeaderResource(type, relativeName ? relativeName : filename);
+                    if (isSource || isHeader)
                     {
                         if (!ctxCallback->allowAccess("cpp", isSigned))
                             throw makeStringExceptionV(0, "Embedded code via manifest file not allowed");
-                        if (!tempDir.length())
-                        {
-                            getTempFilePath(tempDir, "eclcc", nullptr);
-                            tempDir.append(PATHSEPCHAR).append("tmp.XXXXXX"); // Note - we share same temp dir for all from this manifest
-                            if (!mkdtemp((char *) tempDir.str()))
-                                throw makeStringExceptionV(0, "Failed to create temporary directory %s (error %d)", tempDir.str(), errno);
-                            cppInstance.addTemporaryDir(tempDir.str());
-                        }
+                        ensureManifestTempDir(tempDir, cppInstance);
                         StringBuffer tempFileName;
-                        tempFileName.append(tempDir).append(PATHSEPCHAR).append(item.queryProp("@filename"));
+                        appendRelativeResourcePath(tempFileName, tempDir.str(), relativeName, filename);
                         if (!recursiveCreateDirectoryForFile(tempFileName))
                             throw makeStringExceptionV(0, "Failed to create temporary file %s (error %d)", tempFileName.str(), errno);
                         FILE *source = fopen(tempFileName.str(), "wt");
                         fwrite(content.toByteArray(), content.length(), 1, source);
                         fclose(source);
-                        cppInstance.useSourceFile(tempFileName, item.queryProp("@compileFlags"), true);
+                        if (isSource)
+                        {
+                            cppInstance.useSourceFile(tempFileName, item.queryProp("@compileFlags"), true);
+                            continue;
+                        }
                     }
-                    else
-                    {
-                        if ((strieq(type, "jar") || strieq(type, "pyzip")) && !ctxCallback->allowAccess(type, isSigned))
-                            throw makeStringExceptionV(0, "Embedded %s files via manifest file not allowed", type);
-                        addCompress(type, content.length(), content.toByteArray(), &item); // MORE - probably should not recompress files known to be compressed, like jar
-                    }
+                    if ((strieq(type, "jar") || strieq(type, "pyzip")) && !ctxCallback->allowAccess(type, isSigned))
+                        throw makeStringExceptionV(0, "Embedded %s files via manifest file not allowed", type);
+                    addCompress(type, content.length(), content.toByteArray(), &item); // MORE - probably should not recompress files known to be compressed, like jar
                 }
             }
             else
