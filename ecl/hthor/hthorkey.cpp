@@ -121,6 +121,7 @@ const void *CHThorNullAggregateActivity::nextRow()
 {
     if (finished) return NULL;
 
+    ActivityTimer t(activityStats, timeActivities);
     processed++;
     finished = true;
     RtlDynamicRowBuilder rowBuilder(rowAllocator);
@@ -163,6 +164,7 @@ const void *CHThorNullCountActivity::nextRow()
 {
     if (finished) return NULL;
 
+    ActivityTimer t(activityStats, timeActivities);
     processed++;
     finished = true;
 
@@ -870,6 +872,7 @@ void CHThorIndexReadActivity::initPart()
 
 const void *CHThorIndexReadActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if(keyedLimitReached)
     {
         if (keyedLimitSkips)
@@ -969,6 +972,7 @@ const void *CHThorIndexReadActivity::nextRow()
 
 const void *CHThorIndexReadActivity::nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
 {
+    ActivityTimer t(activityStats, timeActivities);
     // MORE - should set wasCompleteMatch
     if(keyedLimitReached && !keyedLimitSkips)
         helper.onKeyedLimitExceeded(); // should throw exception
@@ -1147,6 +1151,7 @@ void CHThorIndexNormalizeActivity::stop()
 
 const void *CHThorIndexNormalizeActivity::nextRow()
 {
+    ActivityTimer t(activityStats, timeActivities);
     if ((stopAfter && (processed-initialProcessed)==stopAfter) || !klManager)
         return NULL;
 
@@ -1344,6 +1349,8 @@ void CHThorIndexAggregateActivity::gather()
 const void *CHThorIndexAggregateActivity::nextRow()
 {
     if (finished) return NULL;
+
+    ActivityTimer t(activityStats, timeActivities);
     gather();
 
     processed++;
@@ -1425,6 +1432,7 @@ const void *CHThorIndexCountActivity::nextRow()
 {
     if (finished) return NULL;
 
+    ActivityTimer t(activityStats, timeActivities);
     unsigned __int64 totalCount = 0;
 
     if (keyedLimitReached)
@@ -1584,6 +1592,7 @@ const void *CHThorIndexGroupAggregateActivity::nextRow()
     if (eof)
         return NULL;
 
+    ActivityTimer t(activityStats, timeActivities);
     if (!gathered)
         gather();
 
