@@ -82,6 +82,7 @@ include_directories (
          ./../../common/thorhelper
          ./../../dali/base
          ./../../system/security/shared
+         ./../../system/security/zcrypt
          ./../../common/deftype
          ./../../common/workunit
          ./../../system/security/cryptohelper
@@ -128,6 +129,7 @@ target_link_libraries ( unittests
          logginglib
          workunit
          eventconsumption
+         zcrypt
          ${CppUnit_LIBRARIES}
     )
 

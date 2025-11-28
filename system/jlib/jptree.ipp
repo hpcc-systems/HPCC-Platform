@@ -33,6 +33,16 @@
 
 #define ANE_APPEND -1
 #define ANE_SET -2
+
+// Context object for property tree deserialization
+// To be used to avoid repeated allocations during deserialization
+class jlib_decl PTreeDeserializeContext
+{
+public:
+    static constexpr size32_t expectedMaximumAttributeOffsetCount = 30;
+    std::vector<size32_t> matchOffsets{expectedMaximumAttributeOffsetCount};
+};
+
 ///////////////////
 class MappingStringToOwned : public MappingStringTo<IInterfacePtr,IInterfacePtr>
 {
@@ -649,7 +659,8 @@ public:
     void serializeAttributes(MemoryBuffer &tgt);
 
     void serializeCutOff(IBufferedSerialOutputStream &tgt, int cutoff=-1, int depth=0) const;
-    void deserializeSelf(IBufferedSerialInputStream &src);
+    void deserializeSelf(IBufferedSerialInputStream &src, PTreeDeserializeContext &ctx);
+    virtual void deserializeAttributes(const char * base, PTreeDeserializeContext &ctx);
     void serializeAttributes(IBufferedSerialOutputStream &tgt) const;
 
     void cloneIntoSelf(const IPropertyTree &srcTree, bool sub);     // clone the name and contents of srcTree into "this" tree
@@ -755,7 +766,7 @@ public:
     virtual unsigned getAttributeCount() const override;
 
     virtual void serializeToStream(IBufferedSerialOutputStream &out) const override;
-    virtual void deserializeFromStream(IBufferedSerialInputStream &src) override;
+    virtual void deserializeFromStream(IBufferedSerialInputStream &src, PTreeDeserializeContext &ctx) override;
 // serializable impl.
     virtual void serialize(MemoryBuffer &tgt) override;
     virtual void deserialize(MemoryBuffer &src) override;
@@ -878,9 +889,11 @@ public:
     virtual IPropertyTree *create(IBufferedSerialInputStream &in) override
     {
         IPropertyTree *tree = new CAtomPTree();
-        tree->deserializeFromStream(in);
+        PTreeDeserializeContext ctx;
+        tree->deserializeFromStream(in, ctx);
         return tree;
     }
+    virtual void deserializeAttributes(const char * base, PTreeDeserializeContext &ctx) override;
 };
 
 
@@ -919,10 +932,11 @@ public:
     virtual IPropertyTree *create(IBufferedSerialInputStream &in) override
     {
         IPropertyTree *tree = new LocalPTree();
-        tree->deserializeFromStream(in);
+        PTreeDeserializeContext ctx;
+        tree->deserializeFromStream(in, ctx);
         return tree;
     }
-
+    virtual void deserializeAttributes(const char * base, PTreeDeserializeContext &ctx) override;
 };
 
 class SingleIdIterator : public CInterfaceOf<IPropertyTreeIterator>

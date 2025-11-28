@@ -251,7 +251,7 @@ public:
     virtual IPropertyTree *create(IBufferedSerialInputStream &in) override = 0;
 
 protected: // data
-    __int64 serverId;
+    __int64 serverId = 0;
 };
 
 class CTrackChanges

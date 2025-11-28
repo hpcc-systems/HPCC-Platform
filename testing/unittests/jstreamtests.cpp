@@ -382,6 +382,7 @@ public:
         CPPUNIT_TEST(testGeneration);
         CPPUNIT_TEST(testBufferStream);     // Write a file and then read the results
         CPPUNIT_TEST(testVarStringHelpers);  // Test functions for reading varstrings from a stream
+        CPPUNIT_TEST(testGroupingInPeekStringList);  // Test grouping functionality in peekStringList
         CPPUNIT_TEST(testSimpleStream);     // Write a file and then read the results
         CPPUNIT_TEST(testIncSequentialStream); // write a file and read results after each flush
         CPPUNIT_TEST(testEvenSequentialStream); // write a file and read results after each flush
@@ -925,6 +926,27 @@ public:
         }
     }
 
+    void generatePeekStringPairListStrings(IBufferedSerialOutputStream & out, const String pairedStrings[], size32_t numStrings)
+    {
+        // Generate a list of strings in pairs for testing peekStringList grouping:
+        // - The first string must not be empty
+        // - The second string can be empty (zero-length strings), this equates to a grouping of 2 for peekStringList
+        // - The list is terminated with a null
+        size32_t got = 0;
+        for (size32_t i = 0; i < numStrings; i++)
+        {
+            size32_t length = pairedStrings[i].length();
+            char * data = (char *)out.reserve(length+1, got);
+            CPPUNIT_ASSERT(got > length);
+            memcpy(data, pairedStrings[i].str(), length);
+            data[length] = 0;
+            out.commit(length+1);
+        }
+        char * terminator = (char *)out.reserve(1, got);
+        terminator[0] = 0;
+        out.commit(1);
+    }
+
     static inline unsigned check(const char * testName, offset_t offset, const char * data, size32_t delta)
     {
         CPPUNIT_ASSERT(data != nullptr);
@@ -1018,6 +1040,37 @@ public:
         CPPUNIT_ASSERT(in.eos());
     }
 
+    void testStringListPeekGrouping(IBufferedSerialInputStream & in, unsigned expectedNumStrings, const String pairedStrings[])
+    {
+        std::vector<size32_t> matches;
+        unsigned skipLen = 0;
+        constexpr int keyValuePairGrouping = 2;
+        const char * base = peekStringList(matches, in, skipLen, keyValuePairGrouping);
+
+        if (expectedNumStrings)
+            CPPUNIT_ASSERT_MESSAGE("peekStringList returned null base for non-empty set", base != nullptr);
+        CPPUNIT_ASSERT_EQUAL(expectedNumStrings, (unsigned)matches.size());
+
+        // Verify that we can access each string via the returned offsets
+        // and that each string is null-terminated within the parsed region.
+        // The vector contains alternating string pairs: The first string must not be empty string.
+        bool valueExpected{false};
+        for (size_t i = 0; i < matches.size(); ++i)
+        {
+            size32_t off = matches[i];
+            const char * str = base + off;
+            CPPUNIT_ASSERT_MESSAGE("String not matching expected results", memcmp(str, pairedStrings[i].str(), pairedStrings[i].length() + 1) == 0);
+
+            if (!valueExpected)
+                CPPUNIT_ASSERT_MESSAGE("Attribute name must not be empty", str[0] != '\0');
+
+            valueExpected = !valueExpected;
+        }
+
+        in.skip(skipLen);
+        CPPUNIT_ASSERT(in.eos());
+    }
+
     void testVarStringBuffer()
     {
         size32_t maxStringLength = 0x10000;
@@ -1061,6 +1114,47 @@ public:
             DBGLOG("Buffer:testStringListPeek took %lluus", timer.elapsedNs()/1000);
         }
     }
+
+    void testGroupingInPeekStringList()
+    {
+        if (testBuffer)
+        {
+            MemoryBuffer buffer;
+            unsigned numStrings{0};
+
+            {
+                // Empty stream test
+                byte emptyByteString[] = {'\0'};
+                String nullString((const char *)emptyByteString);
+                MemoryBuffer emptyStreamBuffer(1, emptyByteString);
+                Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(emptyStreamBuffer);
+                CCycleTimer timer;
+                testStringListPeekGrouping(*in, numStrings, &nullString);
+                DBGLOG("Buffer:testStringListPeekGrouping took %lluus", timer.elapsedNs()/1000);
+            }
+
+            String pairedStrings[] = {"@Name1", "Value1", "Name2", "", "name3", "Value3", "@Name4", "Value4", "NAME5", ""};
+            constexpr unsigned numPairedStrings = sizeof(pairedStrings) / sizeof(pairedStrings[0]);
+
+            {
+                // Generate attribute name/value pairs into the buffer.
+                Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(buffer);
+                generatePeekStringPairListStrings(*out, pairedStrings, numPairedStrings);
+                CPPUNIT_ASSERT(numPairedStrings > 0);
+                CPPUNIT_ASSERT(numPairedStrings % 2 == 0);
+            }
+
+            {
+                // Test reading back the generated attribute name/value pairs with grouping of 2.
+                MemoryBuffer clone(buffer.length(), buffer.toByteArray());
+                Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(clone);
+                CCycleTimer timer;
+                testStringListPeekGrouping(*in, numPairedStrings, pairedStrings);
+                DBGLOG("Buffer:testStringListPeekGrouping took %lluus", timer.elapsedNs()/1000);
+            }
+        }
+    }
+
     void testVarStringFile(size32_t maxStringLength)
     {
         size32_t bufferSize = 0x4000;

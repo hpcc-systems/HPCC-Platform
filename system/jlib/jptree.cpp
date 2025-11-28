@@ -3045,9 +3045,9 @@ void PTree::serializeToStream(IBufferedSerialOutputStream &tgt) const
     serializeCutOff(tgt, -1, 0);
 }
 
-void PTree::deserializeFromStream(IBufferedSerialInputStream &src)
+void PTree::deserializeFromStream(IBufferedSerialInputStream &src, PTreeDeserializeContext &ctx)
 {
-    deserializeSelf(src);
+    deserializeSelf(src, ctx);
 
     for (;;)
     {
@@ -3070,39 +3070,31 @@ void PTree::deserializeFromStream(IBufferedSerialInputStream &src)
     }
 }
 
-void PTree::deserializeSelf(IBufferedSerialInputStream &src)
+void PTree::deserializeSelf(IBufferedSerialInputStream &src, PTreeDeserializeContext &ctx)
 {
-    size32_t len{0};
-    const char *name = queryZeroTerminatedString(src, len);
-    if (len == 0)
+    size32_t skipLen{0};
+    const char *name = queryZeroTerminatedString(src, skipLen);
+    if (skipLen == 0)
         throwUnexpectedX("PTree deserialization error: end of stream, expected name");
     setName(name);
-    src.skip(len + 1); // Skip over name and null terminator
+    src.skip(skipLen + 1); // Skip over name and null terminator
 
     read(src, flags);
 
     // Read attributes until we encounter a zero byte (attribute list terminator)
-    for (;;)
-    {
-        NextByteStatus status = isNextByteZero(src);
-        if (status == NextByteStatus::nextByteIsZero)
-        {
-            src.skip(1); // Skip over null terminator.
-            break;
-        }
-        if (status == NextByteStatus::endOfStream)
-            throwUnexpectedX("PTree deserialization error: end of stream, expected attribute name");
+    ctx.matchOffsets.clear();
+    constexpr unsigned valueStringCanBeEmpty = 2;
+    const char * base = peekStringList(ctx.matchOffsets, src, skipLen, valueStringCanBeEmpty);
+    if (!base)
+        throwUnexpectedX("PTree deserialization error: end of stream, expected attribute name");
 
-        // NextByteStatus::nextByteIsNonZero - read the attribute key-value pair
-        std::pair<const char *, const char *> attrPair = peekKeyValuePair(src, len);
-        if (attrPair.second == nullptr)
-            throwUnexpectedX("PTree deserialization error: end of stream, expected attribute value");
+    size_t numStringOffsets = ctx.matchOffsets.size();
+    if (numStringOffsets % 2 != 0)
+        throwUnexpectedX("PTree deserialization error: end of stream, expected attribute value");
 
-        constexpr bool attributeNameNotEncoded = false; // Deserialized attribute name is in its original unencoded form
-        setAttribute(attrPair.first, attrPair.second, attributeNameNotEncoded);
+    deserializeAttributes(base, ctx);
 
-        src.skip(len + 1); // +1 to skip over second null terminator.
-    }
+    src.skip(skipLen); // Skip over all attributes and the terminator
 
     if (value)
         delete value;
@@ -3112,6 +3104,17 @@ void PTree::deserializeSelf(IBufferedSerialInputStream &src)
         value = new CPTValue(src, size);
     else
         value = nullptr;
+}
+
+void PTree::deserializeAttributes(const char * base, PTreeDeserializeContext &ctx)
+{
+    constexpr bool attributeNameNotEncoded = false; // Deserialized attribute name is in its original unencoded form
+    for (unsigned i=0; i < ctx.matchOffsets.size(); i += 2)
+    {
+        const char *attrName = base + ctx.matchOffsets[i];
+        const char *attrValue = base + ctx.matchOffsets[i+1];
+        setAttribute(attrName, attrValue, attributeNameNotEncoded);
+    }
 }
 
 void PTree::serializeAttributes(MemoryBuffer &tgt)
@@ -3832,6 +3835,35 @@ bool LocalPTree::removeAttribute(const char *key)
     return true;
 }
 
+void LocalPTree::deserializeAttributes(const char * base, PTreeDeserializeContext &ctx)
+{
+    const unsigned newAttrPairs = ctx.matchOffsets.size() / 2;
+    if (!newAttrPairs)
+        return;
+
+    for (unsigned i=0; i < ctx.matchOffsets.size(); i += 2)
+    {
+        const char *attrName = base + ctx.matchOffsets[i];
+        const char *attrValue = base + ctx.matchOffsets[i+1];
+
+        attrs = (AttrValue *)realloc(attrs, (numAttrs+1)*sizeof(AttrValue));
+        AttrValue *v = new(&attrs[numAttrs++]) AttrValue;  // Initialize new AttrValue
+        if (!v->key.set(attrName)) //AttrStr will not return encoding marker when get() is called
+            v->key.setPtr(isnocase() ? AttrStr::createNC(attrName) : AttrStr::create(attrName));
+        if (arrayOwner)
+        {
+            CQualifierMap *map = arrayOwner->queryMap();
+            if (map)
+            {
+                map->insertEntryIfMapped(attrName, attrValue, this);
+            }
+        }
+
+        if (!v->value.set(attrValue))
+            v->value.setPtr(AttrStr::create(attrValue));
+    }
+}
+
 void LocalPTree::setAttribute(const char *inputkey, const char *val, bool encoded)
 {
     if (!inputkey)
@@ -4030,6 +4062,43 @@ void CAtomPTree::freeAttrArray(AttrValue *a, unsigned n)
         AttrValue *&p = freelist[n];
         *(AttrValue **)a = p;
         p = a;
+    }
+}
+
+void CAtomPTree::deserializeAttributes(const char * base, PTreeDeserializeContext &ctx)
+{
+    const unsigned newAttrPairs = ctx.matchOffsets.size() / 2;
+    if (!newAttrPairs)
+        return;
+
+    CriticalBlock block(hashcrit);
+    for (unsigned i=0; i < ctx.matchOffsets.size(); i += 2)
+    {
+        const char *attrName = base + ctx.matchOffsets[i];
+        const char *attrValue = base + ctx.matchOffsets[i+1];
+
+        AttrValue *newattrs = newAttrArray(numAttrs+1);
+        if (attrs)
+        {
+            memcpy(newattrs, attrs, numAttrs*sizeof(AttrValue));
+            freeAttrArray(attrs, numAttrs);
+        }
+
+        if (arrayOwner)
+        {
+            CQualifierMap *map = arrayOwner->queryMap();
+            if (map)
+                map->insertEntryIfMapped(attrName, attrValue, this);
+        }
+
+        AttrValue *v = &newattrs[numAttrs];
+        if (!v->key.set(attrName))
+            v->key.setPtr(attrHT->addkey(attrName, isnocase()));
+        if (!v->value.set(attrValue))
+            v->value.setPtr(attrHT->addval(attrValue));
+
+        numAttrs++;
+        attrs = newattrs;
     }
 }
 
@@ -4527,8 +4596,9 @@ IPropertyTree *createPTree(MemoryBuffer &src, byte flags)
 
 IPropertyTree *createPTreeFromBinary(IBufferedSerialInputStream &src, byte flags)
 {
+    PTreeDeserializeContext ctx;
     IPropertyTree *tree = createPTree(nullptr, flags);
-    tree->deserializeFromStream(src);
+    tree->deserializeFromStream(src, ctx);
     return tree;
 }
 
@@ -4537,8 +4607,9 @@ IPropertyTree *createPTreeFromBinary(IBufferedSerialInputStream &src, IPTreeNode
     if (!nodeCreator)
         return createPTreeFromBinary(src, ipt_none);
 
+    PTreeDeserializeContext ctx;
     IPropertyTree *tree = nodeCreator->create(nullptr); // The nullptr is a dummy name value, it will be overwritten by deserializeFromStream
-    tree->deserializeFromStream(src);
+    tree->deserializeFromStream(src, ctx);
     return tree;
 }
 
