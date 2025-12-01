@@ -504,6 +504,21 @@ public:
                 DBGLOG("Retrieved HPCC Admin username %s", m_HPCCAdminUser_username.str());
             }
         }
+        else
+        {
+            // Check for legacy environment.xml configuration
+            cfg->getProp(".//@hpccAdminUsername", m_HPCCAdminUser_username);
+            if (!m_HPCCAdminUser_username.isEmpty())
+            {
+                StringBuffer pwd;
+                cfg->getProp(".//@hpccAdminPassword", pwd);
+                if (pwd.isEmpty())
+                    throw MakeStringException(-1, "hpccAdminPassword is empty");
+                decrypt(m_HPCCAdminUser_password, pwd.str());
+                DBGLOG("Retrieved optional HPCC Admin username/password from environment.xml");
+            }
+        }
+
 
         const char* basedn = cfg->queryProp(".//@commonBasedn");
         if(basedn == NULL || *basedn == '\0')
