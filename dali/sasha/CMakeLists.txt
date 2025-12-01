@@ -36,6 +36,7 @@ set (    SRCS
          saarch.cpp 
          sacmd.cpp 
          sacoalescer.cpp 
+         saglobalmsg.cpp
          salds.cpp 
          saqmon.cpp 
          saserver.cpp 
