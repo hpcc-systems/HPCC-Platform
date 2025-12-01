@@ -1,0 +1,373 @@
+/*##############################################################################
+
+    HPCC SYSTEMS software Copyright (C) 2024 HPCC Systems®.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+############################################################################## */
+
+#include "platform.h"
+#include "jlib.hpp"
+#include "jlog.ipp"
+#include "jtime.hpp"
+#include "jfile.hpp"
+
+#include "saserver.hpp"
+#include "sautil.hpp"
+#include "saglobalmsg.hpp"
+#include "sysinfologger.hpp"
+
+static constexpr unsigned defaultHouseKeepingIntervalHours = 24;
+static constexpr unsigned defaultGlobalMsgRetentionDays = 30;
+static constexpr unsigned defaultGlobalMsgHideAfterDays = 7;
+static constexpr unsigned defaultGlobalMsgArchiveAfterDays = 14;
+static constexpr const char * defaultGlobalMsgArchivePath = "/var/lib/HPCCSystems/globalmessages";
+static constexpr bool defaultEnableArchiving = false;
+static constexpr bool defaultEnableAutoDelete = false;
+static constexpr bool defaultEnableHideOldMessages = true;
+
+class CSashaGlobalMessageServer : public ISashaServer, public Thread
+{
+    std::atomic<bool> stopped{true};
+    Semaphore stopSem;
+    Mutex runMutex;
+    
+    unsigned intervalHours = defaultHouseKeepingIntervalHours;
+    unsigned retentionPeriodDays = defaultGlobalMsgRetentionDays; // Messages older than this are deleted
+    StringBuffer archivePath;
+    bool enableArchiving = defaultEnableArchiving;
+    bool enableAutoDelete = defaultEnableAutoDelete;
+    bool enableHideOldMessages = defaultEnableHideOldMessages;
+    unsigned hideAfterDays = defaultGlobalMsgHideAfterDays;
+    unsigned archiveAfterDays = defaultGlobalMsgArchiveAfterDays;
+    
+public:
+    IMPLEMENT_IINTERFACE_USING(Thread);
+
+    CSashaGlobalMessageServer()
+        : Thread("CSashaGlobalMessageServer")
+    {
+    }
+
+    void loadConfiguration()
+    {
+        Owned<IPropertyTree> compConfig = getComponentConfig();
+        if (!compConfig)
+            return;
+
+        // Load interval (in hours, like debug housekeeping)
+        intervalHours = compConfig->getPropInt("@interval", defaultHouseKeepingIntervalHours);
+        if (intervalHours == 0)
+        {
+            PROGLOG("Sasha Global Message Server disabled (interval 0)");
+            return; // Disabled if interval is 0
+        }
+
+        // Load retention settings - messages older than retentionPeriodDays are deleted
+        retentionPeriodDays = compConfig->getPropInt("@retentionDays", defaultGlobalMsgRetentionDays);
+        hideAfterDays = compConfig->getPropInt("@hideAfterDays", defaultGlobalMsgHideAfterDays);
+        archiveAfterDays = compConfig->getPropInt("@archiveAfterDays", defaultGlobalMsgArchiveAfterDays);
+        
+        // Load archival settings
+        archivePath.set(compConfig->queryProp("@archivePath", defaultGlobalMsgArchivePath));
+        
+        enableArchiving = compConfig->getPropBool("@enableArchiving", defaultEnableArchiving);
+        enableAutoDelete = compConfig->getPropBool("@enableAutoDelete", defaultEnableAutoDelete);
+        enableHideOldMessages = compConfig->getPropBool("@enableHideOldMessages", defaultEnableHideOldMessages);
+
+        PROGLOG("Sasha Global Message Server Configuration:");
+        PROGLOG("  Interval: %u hours", intervalHours);
+        PROGLOG("  Archiving: %s", enableArchiving ? "enabled" : "disabled");
+        PROGLOG("  Archive Path: %s", archivePath.str());
+        PROGLOG("  Archive after: %u days", archiveAfterDays);
+        PROGLOG("  Auto Delete: %s", enableAutoDelete ? "enabled" : "disabled");
+        PROGLOG("  Retention Period: %u days (message deletion threshold)", retentionPeriodDays);
+        PROGLOG("  Auto Hide: %s", enableHideOldMessages ? "enabled" : "disabled");
+        PROGLOG("  Hide After: %u days", hideAfterDays);
+    }
+
+    virtual void start() override
+    {
+        loadConfiguration();
+        if (intervalHours == 0)
+            return; // Service disabled
+            
+        stopped = false;
+        Thread::start(false);
+    }
+
+    virtual void ready() override
+    {
+    }
+    
+    virtual void stop() override
+    {
+        if (stopped)
+            return;
+            
+        stopped = true;
+        stopSem.signal();
+        synchronized block(runMutex); // hopefully stopped should stop
+        if (!join(1000 * 60 * 3))
+            OERRLOG("CSashaGlobalMessageServer aborted");
+    }
+
+    void runGlobalMessageMaintenance()
+    {
+        synchronized block(runMutex);
+        if (stopped)
+            return;
+            
+        PROGLOG("Starting Global Message maintenance cycle");
+        
+        unsigned hiddenCount = 0;
+        unsigned archivedCount = 0; 
+        unsigned deletedCount = 0;
+        
+        try {
+            
+            // Archive old messages if archiving is enabled
+            if (enableArchiving)
+                archivedCount = archiveOldMessages(archiveAfterDays);
+
+            // Delete messages outside retention period if auto-delete is enabled
+            if (enableAutoDelete)
+                deletedCount = deleteOldMessages(retentionPeriodDays);
+
+            // Hide old messages if auto-hide is enabled
+            if (enableHideOldMessages)
+                hiddenCount = hideOldMessages(hideAfterDays);
+
+            if (hiddenCount || archivedCount || deletedCount)
+                PROGLOG("Global Message maintenance: hidden %u, archived %u, deleted %u messages", hiddenCount, archivedCount, deletedCount);
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e, "Error during Global Message maintenance");
+            e->Release();
+        }
+        catch (...)
+        {
+            ERRLOG("Unknown error during Global Message maintenance");
+        }
+    }
+
+    unsigned archiveOldMessages(unsigned cutoffDays)
+    {
+        try {
+            // Calculate cutoff date
+            CDateTime cutoff;
+            cutoff.setNow();
+            cutoff.adjustTime(-cutoffDays * 24 * 60); // Messages older than cutoff period
+            unsigned cutoffYear, cutoffMonth, cutoffDay;
+            cutoff.getDate(cutoffYear, cutoffMonth, cutoffDay);
+            
+            // Create filter with cutoff date and iterate through messages older than cutoff
+            Owned<ISysInfoLoggerMsgFilter> filter = createSysInfoLoggerMsgFilter();
+            filter->setOlderThanDate(cutoffYear, cutoffMonth, cutoffDay);
+            Owned<ISysInfoLoggerMsgIterator> iter = createSysInfoLoggerMsgIterator(filter);
+            
+            // Check if there are any messages to archive (so as to avoid creating empty archive files)
+            if (!iter->first())
+            {
+                PROGLOG("No global messages found to archive (older than %u days)", cutoffDays);
+                return 0;
+            }
+            
+            // Prepare archive filename with timestamp
+            CDateTime now;
+            now.setNow();
+            StringBuffer archiveFile;
+            unsigned year, month, day, hour, minute, second, nano;
+            now.getDate(year, month, day);
+            now.getTime(hour, minute, second, nano);
+            
+            archiveFile.appendf("%s/globalmessages_%04d%02d%02d_%02d%02d%02d.txt",
+                              archivePath.str(), year, month, day, hour, minute, second);
+
+            // Ensure archive directory exists
+            recursiveCreateDirectoryForFile(archiveFile.str());
+
+            // Create archive file
+            Owned<IFile> file = createIFile(archiveFile.str());
+            Owned<IFileIO> fileIO = file->open(IFOcreate);
+            if (!fileIO)
+            {
+                OWARNLOG("Failed to create archive file: %s", archiveFile.str());
+                return 0;
+            }
+            
+            // Write archive header
+            StringBuffer header;
+            header.appendf("# HPCC Global Messages Archive\n");
+            header.appendf("# Created: %04d-%02d-%02d %02d:%02d:%02d\n", year, month, day, hour, minute, second);
+            header.appendf("# Messages older than: %04d-%02d-%02d\n", cutoffYear, cutoffMonth, cutoffDay);
+            header.appendf("# Format: ID,Timestamp,Source,Severity,Code,Hidden,Message\n\n");
+            offset_t writeOffset = 0;
+            fileIO->write(writeOffset, header.length(), header.str());
+            writeOffset += header.length();
+            
+            unsigned archivedCount = 0;
+            
+            // Process messages one by one and write to archive file
+            do
+            {
+                const ISysInfoLoggerMsg &msg = iter->query();
+                
+                // Escape commas and quotes in message content for CSV format
+                StringBuffer escapedMsg;
+                const char *msgText = msg.queryMsg();
+                if (msgText && *msgText)
+                {
+                    escapedMsg.append('"');
+                    for (const char *p = msgText; *p; p++)
+                    {
+                        if (*p == '"')
+                            escapedMsg.append("\"\""); // Escape quotes by doubling them
+                        else
+                            escapedMsg.append(*p);
+                    }
+                    escapedMsg.append('"');
+                }
+                
+                // Escape source field too
+                StringBuffer escapedSource;
+                const char *sourceText = msg.querySource();
+                if (sourceText && *sourceText)
+                {
+                    escapedSource.append('"').append(sourceText).append('"');
+                }
+                
+                StringBuffer line;
+                line.appendf("%" I64F "u,%" I64F "u,%s,%s,%u,%s,%s\n",
+                            msg.queryLogMsgId(),
+                            msg.queryTimeStamp(),
+                            escapedSource.length() ? escapedSource.str() : "",
+                            LogMsgClassToFixString(msg.queryClass()),
+                            msg.queryLogMsgCode(),
+                            msg.queryIsHidden() ? "true" : "false",
+                            escapedMsg.length() ? escapedMsg.str() : "");
+                
+                fileIO->write(writeOffset, line.length(), line.str());
+                writeOffset += line.length();
+                archivedCount++;
+            }
+            while (iter->next());
+            
+            // Close the file
+            fileIO.clear();
+            file.clear();
+            
+            PROGLOG("Archived %u global messages to: %s", archivedCount, archiveFile.str());
+            
+            // Delete the archived messages
+            unsigned deletedCount = deleteOlderThanLogSysInfoMsg(true, true, cutoffYear, cutoffMonth, cutoffDay, nullptr);
+            PROGLOG("Deleted %u archived messages from storage", deletedCount);
+            
+            return archivedCount;
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e, "Error archiving global messages");
+            e->Release();
+            return 0;
+        }
+    }
+
+    unsigned hideOldMessages(unsigned cutoffDays)
+    {
+        try
+        {
+            // Calculate cutoff date
+            CDateTime cutoff;
+            cutoff.setNow();
+            cutoff.adjustTime(-cutoffDays * 24 * 60); // Messages older than cutoff period
+            
+            Owned<ISysInfoLoggerMsgFilter> filter = createSysInfoLoggerMsgFilter();
+            
+            unsigned cutoffYear, cutoffMonth, cutoffDay;
+            cutoff.getDate(cutoffYear, cutoffMonth, cutoffDay);
+            filter->setOlderThanDate(cutoffYear, cutoffMonth, cutoffDay);
+            filter->setVisibleOnly(); // Only hide visible messages
+            unsigned hiddenCount = hideLogSysInfoMsg(filter);
+            
+            return hiddenCount;
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e, "Error hiding old global messages");
+            e->Release();
+            return 0;
+        }
+    }
+
+    unsigned deleteOldMessages(unsigned cutoffDays)
+    {
+        try
+        {
+            // Calculate cutoff date
+            CDateTime cutoff;
+            cutoff.setNow();
+            cutoff.adjustTime(-cutoffDays * 24 * 60); // Messages older than cutoff period
+            
+            // Delete messages older than the retention period cutoff
+            unsigned year, month, day;
+            cutoff.getDate(year, month, day);
+            
+            unsigned deletedCount = deleteOlderThanLogSysInfoMsg(true, false, year, month, day, nullptr);
+            
+            return deletedCount;
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e, "Error deleting old global messages");
+            e->Release();
+            return 0;
+        }
+    }
+
+    virtual int run() override
+    {
+        CSashaSchedule schedule;
+        schedule.init(getComponentConfigSP(), intervalHours);
+        
+        PROGLOG("Sasha Global Message Server started");
+        
+        while (!stopped)
+        {
+            stopSem.wait(1000 * 60); // Wait 1 minute
+            if (stopped)
+                break;
+            if (!schedule.ready())
+                continue;
+                
+            try {
+                runGlobalMessageMaintenance();
+            }
+            catch (IException *e) 
+            {
+                EXCLOG(e, "Global Message Server maintenance error");
+                e->Release();
+            }
+        }
+        
+        PROGLOG("Sasha Global Message Server stopped");
+        return 0;
+    }
+} *sashaGlobalMessageServer = nullptr;
+
+ISashaServer *createSashaGlobalMessageServer()
+{
+    assertex(!sashaGlobalMessageServer);
+    sashaGlobalMessageServer = new CSashaGlobalMessageServer();
+    return sashaGlobalMessageServer;
+}

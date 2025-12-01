@@ -1811,6 +1811,8 @@ dali queues
 {{- else if (eq "debugplane-housekeeping" .name) -}}
 {{- else if (eq "xref" .name) -}}
 dali data
+{{- else if (eq "global-message-housekeeping" .name) -}}
+dali
 {{- else -}}
 {{- $_ := fail (printf "Unknown sasha service:" .name ) -}}
 {{- end -}}

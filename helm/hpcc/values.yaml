@@ -586,6 +586,17 @@ sasha:
     #at: "* 2 * * *"
     #clusterlist: "*"
 
+  global-message-housekeeping: {} # NB: no properties defined, use defaults
+    #disabled: true
+    #interval: 24
+    #retentionDays: 30
+    #hideAfterDays: 7
+    #archiveAfterDays: 14
+    #archivePath: "/var/lib/HPCCSystems/globalmessages"
+    #enableArchiving: false
+    #enableAutoDelete: false
+    #enableHideOldMessages: true
+
 
 dfuserver:
 - name: dfuserver
