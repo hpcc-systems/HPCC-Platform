@@ -55,30 +55,41 @@ constexpr size_t s3FilePrefixLen = 5;  // Length of "s3://" for pointer arithmet
 constexpr size32_t minMultipartSize = 5 * 1024 * 1024; // 5MB AWS minimum
 constexpr unsigned defaultMaxRetries = 3;
 
-// Global AWS initialization
-static std::atomic_bool initializedAws{false};
+// Global AWS initialization with reference counting
+static std::atomic<unsigned> awsInitRefCount{0};
 static CriticalSection awsCS;
 static S3Config globalS3Config;
+static Aws::SDKOptions awsOptions;
 
-static void ensureAWSInitialized()
+static void initAWS()
 {
-    if (initializedAws)
-        return;
     CriticalBlock block(awsCS);
-    if (initializedAws)
-        return;
+    if (awsInitRefCount.fetch_add(1) == 0)
+    {
+        // First initialization
+        awsOptions.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Warn;
+        Aws::InitAPI(awsOptions);
+        PROGLOG("AWS SDK initialized for S3 file operations");
+    }
+}
 
-    // Configure AWS SDK options - use heap allocation to avoid destructor issues
-    // CRITICAL: We intentionally "leak" awsOptions and never call ShutdownAPI!
-    // The AWS SDK has complex internal dependencies. Calling ShutdownAPI or
-    // allowing SDKOptions to destruct causes segfaults due to destruction order
-    // issues with AWS SDK internal objects (CurlHandleContainer, EC2MetadataClient, etc.)
-    static Aws::SDKOptions* awsOptions = new Aws::SDKOptions();
-    awsOptions->loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Warn;
-
-    Aws::InitAPI(*awsOptions);
-    initializedAws = true;
-    PROGLOG("AWS SDK initialized for S3 file operations");
+static void shutdownAWS()
+{
+    CriticalBlock block(awsCS);
+    unsigned prevCount = awsInitRefCount.fetch_sub(1);
+    if (prevCount == 1)
+    {
+        // Last reference - perform shutdown
+        // IMPORTANT: All S3Clients must be destroyed before this point
+        Aws::ShutdownAPI(awsOptions);
+        PROGLOG("AWS SDK shutdown for S3 file operations");
+    }
+    else if (prevCount == 0)
+    {
+        // Should never happen - more shutdowns than inits
+        ERRLOG("AWS SDK shutdown called more times than init");
+        awsInitRefCount++; // Restore count
+    }
 }
 
 // S3Config implementation
@@ -118,11 +129,17 @@ private:
     mutable CriticalSection cs;
     std::unique_ptr<Aws::S3::S3Client> client;
     S3Config currentConfig;
+    bool initialized = false;
 
 public:
     Aws::S3::S3Client& getClient(const S3Config& config)
     {
         CriticalBlock block(cs);
+        if (!initialized)
+        {
+            initAWS();
+            initialized = true;
+        }
         if (!client || configChanged(config))
         {
             client = createClient(config);
@@ -130,6 +147,24 @@ public:
         }
         return *client;
     }
+
+    void cleanup()
+    {
+        CriticalBlock block(cs);
+        if (initialized)
+        {
+            // Destroy client before shutting down AWS SDK
+            client.reset();
+            shutdownAWS();
+            initialized = false;
+        }
+    }
+
+    ~S3ClientManager()
+    {
+        cleanup();
+    }
+
 private:
     bool configChanged(const S3Config& config) const
     {
@@ -165,12 +200,27 @@ private:
     }
 };
 
+static S3ClientManager* s3ClientManager = nullptr;
+
 static S3ClientManager& getS3ClientManager()
 {
-    // CRITICAL: Never delete this! Use heap allocation to avoid destructor
-    // running during static destruction, which causes segfaults with AWS SDK
-    static S3ClientManager* manager = new S3ClientManager();
-    return *manager;
+    if (!s3ClientManager)
+    {
+        CriticalBlock block(awsCS);
+        if (!s3ClientManager)
+            s3ClientManager = new S3ClientManager();
+    }
+    return *s3ClientManager;
+}
+
+static void cleanupS3ClientManager()
+{
+    CriticalBlock block(awsCS);
+    if (s3ClientManager)
+    {
+        delete s3ClientManager;
+        s3ClientManager = nullptr;
+    }
 }
 
 // Utility functions
@@ -1021,8 +1071,6 @@ bool S3File::getInfo(bool& isdir, offset_t& size, CDateTime& modtime)
 
 IFileIO* S3File::open(IFOmode mode, IFEflags extraFlags)
 {
-    ensureAWSInitialized();
-
     switch (mode)
     {
         case IFOread:
@@ -1276,7 +1324,6 @@ void S3File::gatherMetadata() const
 
 extern S3FILE_API IFile *createS3File(const char *s3FileName)
 {
-    ensureAWSInitialized();
     return new S3File(s3FileName, globalS3Config);
 }
 
@@ -1318,7 +1365,6 @@ extern S3FILE_API void installFileHook()
     CriticalBlock block(hookCS);
     if (!s3FileHook)
     {
-        ensureAWSInitialized();
         s3FileHook = new S3FileHook;
         addContainedFileHook(s3FileHook);
     }
@@ -1342,11 +1388,19 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 
 MODULE_EXIT()
 {
-    // Cleanup file hook
+    // Proper cleanup sequence:
+    // 1. Remove file hook from registry
+    // 2. Delete file hook (no AWS calls here)
+    // 3. Clean up S3ClientManager (destroys all clients BEFORE ShutdownAPI)
+    // 4. ClientManager destructor calls shutdownAWS() when refcount reaches zero
+    
     if (s3FileHook)
     {
         removeContainedFileHook(s3FileHook);
         delete s3FileHook;
         s3FileHook = nullptr;
     }
+
+    // This destroys all S3Clients and calls Aws::ShutdownAPI in the correct order
+    cleanupS3ClientManager();
 }
