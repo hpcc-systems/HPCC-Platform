@@ -2761,10 +2761,9 @@ public:
         return new CServerRemoteTree(mb);
     }
 
-    virtual IPropertyTree *create(IBufferedSerialInputStream &in) override
+    virtual IPropertyTree *create(IBufferedSerialInputStream &in, PTreeDeserializeContext &ctx) override
     {
         Owned<CServerRemoteTree> tree = new CServerRemoteTree();
-        PTreeDeserializeContext ctx;
         tree->deserializeFromStream(in, ctx);
         return tree.getClear();
     }
