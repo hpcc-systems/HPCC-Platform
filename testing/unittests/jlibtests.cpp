@@ -4410,7 +4410,7 @@ protected:
             timer.reset();
             Owned<IPropertyTree> deserializedTree = createPTreeFromBinary(*in, flags);
             cycle_t deserializeElapsedCycles = timer.elapsedCycles();
-            Owned<IPropertyTree> copyDeserializedTree = createPTreeFromIPT(deserializedTree);
+            Owned<IPropertyTree> copyDeserializedTree = createPTreeFromIPT(deserializedTree); // For validation
             totalDeserializeCycles += deserializeElapsedCycles;
             double deserializeCyclesDouble = static_cast<double>(deserializeElapsedCycles);
             minDeserializeCycles = std::min(minDeserializeCycles, deserializeCyclesDouble);

@@ -781,7 +781,7 @@ protected:
     virtual void removingElement(IPropertyTree *tree, unsigned pos) { }
     virtual IPropertyTree *create(const char *name=nullptr, IPTArrayValue *value=nullptr, ChildMap *children=nullptr, bool existing=false) = 0;
     virtual IPropertyTree *create(MemoryBuffer &mb) = 0;
-    virtual IPropertyTree *create(IBufferedSerialInputStream &in) = 0;
+    virtual IPropertyTree *create(IBufferedSerialInputStream &in, PTreeDeserializeContext &ctx) = 0;
     virtual IPropertyTree *ownPTree(IPropertyTree *tree);
 
     virtual bool removeAttribute(const char *k) = 0;
@@ -885,10 +885,9 @@ public:
         tree->deserialize(mb);
         return tree;
     }
-    virtual IPropertyTree *create(IBufferedSerialInputStream &in) override
+    virtual IPropertyTree *create(IBufferedSerialInputStream &in, PTreeDeserializeContext &ctx) override
     {
         IPropertyTree *tree = new CAtomPTree();
-        PTreeDeserializeContext ctx;
         tree->deserializeFromStream(in, ctx);
         return tree;
     }
@@ -927,10 +926,9 @@ public:
         tree->deserialize(mb);
         return tree;
     }
-    virtual IPropertyTree *create(IBufferedSerialInputStream &in) override
+    virtual IPropertyTree *create(IBufferedSerialInputStream &in, PTreeDeserializeContext &ctx) override
     {
         IPropertyTree *tree = new LocalPTree();
-        PTreeDeserializeContext ctx;
         tree->deserializeFromStream(in, ctx);
         return tree;
     }
