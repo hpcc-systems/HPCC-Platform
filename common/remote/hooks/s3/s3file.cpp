@@ -52,11 +52,8 @@ using namespace Aws;
 // Constants
 constexpr const char* s3FilePrefix = "s3://";
 constexpr size_t s3FilePrefixLen = 5;  // Length of "s3://" for pointer arithmetic
-constexpr const char* s3ComponentName = "s3file";
-constexpr size32_t defaultReadBufferSize = 4 * 1024 * 1024; // 4MB
 constexpr size32_t minMultipartSize = 5 * 1024 * 1024; // 5MB AWS minimum
 constexpr unsigned defaultMaxRetries = 3;
-constexpr unsigned defaultTimeoutMs = 30000;
 
 // Global AWS initialization
 static std::atomic_bool initializedAws{false};
@@ -94,8 +91,6 @@ void S3Config::loadFromConfig(IPropertyTree* _config)
 {
     if (!_config)
         return;
-
-    config = _config;
 
     // Store strings using StringAttr to own the memory
     const char* regionStr = _config->queryProp("@region");
@@ -138,8 +133,8 @@ public:
 private:
     bool configChanged(const S3Config& config) const
     {
-        return (strcmp(config.region.str(), currentConfig.region.str()) != 0) ||
-               (strcmp(config.endpoint.str(), currentConfig.endpoint.str()) != 0) ||
+        return (!strsame(config.region.str(), currentConfig.region.str())) ||
+               (!strsame(config.endpoint.str(), currentConfig.endpoint.str())) ||
                (config.useSSL != currentConfig.useSSL) ||
                (config.useVirtualHosting != currentConfig.useVirtualHosting);
     }
@@ -501,7 +496,7 @@ public:
 protected:
     void ensureMetadata() const;
     void gatherMetadata() const;
-    void invalidateMeta() { haveMeta = false; }
+    void invalidateMeta() { CriticalBlock block(metaCS); haveMeta = false; }
     Aws::S3::S3Client& getClient() const { return getS3ClientManager().getClient(config); }
 };
 
@@ -1196,7 +1191,7 @@ bool S3File::createDirectory()
                 }
 
                 start = slash + 1;
-                if (!start)
+                if (!*start)
                     break;
             }
         }
@@ -1292,7 +1287,8 @@ extern S3FILE_API bool isS3FileName(const char *fileName)
 
     const char *bucketName = fileName + s3FilePrefixLen;
     const char *slash = strchr(bucketName, '/');
-    return slash != nullptr;
+    // Require a non-empty key after the slash
+    return (slash != nullptr && *(slash + 1) != '\0');
 }
 
 class S3FileHook : public CInterfaceOf<IContainedFileHook>

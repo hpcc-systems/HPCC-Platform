@@ -41,13 +41,11 @@
  */
 
 // Forward declarations
-interface IPropertyTree;
 class StringAttr;
 
 // Configuration structure for S3 operations
 struct S3Config
 {
-    IPropertyTree* config = nullptr;
     StringAttr region;
     StringAttr endpoint;  // For S3-compatible services
     bool useSSL = true;

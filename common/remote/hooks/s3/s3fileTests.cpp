@@ -59,7 +59,6 @@ protected:
     void testS3UrlValidation()
     {
         // Valid S3 URLs
-        CPPUNIT_ASSERT(isS3FileName("s3://bucket/"));
         CPPUNIT_ASSERT(isS3FileName("s3://bucket/key"));
         CPPUNIT_ASSERT(isS3FileName("s3://my-bucket/path/to/file.txt"));
         CPPUNIT_ASSERT(isS3FileName("s3://bucket-name/nested/path/file.dat"));
@@ -67,6 +66,7 @@ protected:
         // Invalid S3 URLs
         CPPUNIT_ASSERT(!isS3FileName(""));
         CPPUNIT_ASSERT(!isS3FileName("s3://"));
+        CPPUNIT_ASSERT(!isS3FileName("s3://bucket/"));
         CPPUNIT_ASSERT(!isS3FileName("s3://bucket"));
         CPPUNIT_ASSERT(!isS3FileName("http://bucket/key"));
         CPPUNIT_ASSERT(!isS3FileName("file:///path/to/file"));
