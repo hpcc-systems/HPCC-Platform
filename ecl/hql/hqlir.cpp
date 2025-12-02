@@ -1405,6 +1405,14 @@ protected:
         return nextId;
     }
 
+    void appendTypeLength(const SimpleTypeBuilderInfo & info)
+    {
+        if (!isUnknownLength(info.length))
+            line.append(info.length);
+        else if (getLengthSizeBytes(info.length) != 4)
+            line.append("{").append(getLengthSizeBytes(info.length)).append("}");
+    }
+
     void appendTypeText(type_t tc, const SimpleTypeBuilderInfo & info)
     {
         const char * irText = getTypeIRText(tc);
@@ -1439,8 +1447,7 @@ protected:
         case type_data:
         case type_qstring:
             line.append(irText);
-            if (!isUnknownLength(info.length))
-                line.append(info.length);
+            appendTypeLength(info);
             return;
         case type_decimal:
         case type_bitfield:
@@ -1450,14 +1457,12 @@ protected:
         case type_unicode:
         case type_varstring:
             line.append(irText);
-            if (!isUnknownLength(info.length))
-                line.append(info.length);
+            appendTypeLength(info);
             line.append("(").append(info.locale).append(")");
             return;
         case type_utf8:
             line.append(irText);
-            if (!isUnknownLength(info.length))
-                line.append("_").append(info.length);
+            appendTypeLength(info);
             line.append("(").append(info.locale).append(")");
             return;
         }
@@ -2267,6 +2272,12 @@ extern HQL_API void dump_ir(IHqlExpression * expr1, IHqlExpression * expr2, IHql
 extern HQL_API void dbglogIR(IHqlExpression * expr)
 {
     DblgLogIRBuilder output(defaultDumpOptions);
+    playIR(output, expr, NULL, NULL);
+}
+
+extern HQL_API void dbglogIR(IHqlExpression * expr, unsigned options)
+{
+    DblgLogIRBuilder output(options);
     playIR(output, expr, NULL, NULL);
 }
 

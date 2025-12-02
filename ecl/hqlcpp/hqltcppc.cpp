@@ -626,15 +626,6 @@ void callDeserializeGetN(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpr
     ctx.addExpr(call);
 }
 
-IHqlExpression * callDeserializerGetSize(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * helper)
-{
-    HqlExprArray args;
-    args.append(*LINK(helper));
-    OwnedHqlExpr call = translator.bindFunctionCall(deserializerReadSizeId, args);
-    OwnedHqlExpr sizeVariable = ctx.getTempDeclare(sizetType, call);
-    return LINK(sizeVariable);
-}
-
 void callDeserializerSkipInputSize(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * helper, IHqlExpression * size)
 {
     CHqlBoundExpr bound;
@@ -693,6 +684,29 @@ void CMemberInfo::doBuildSkipInput(HqlCppTranslator & translator, BuildCtx & ctx
     }
 }
 
+IHqlExpression * CMemberInfo::callDeserializerGetSize(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * helper)
+{
+    size32_t lengthSize = getLengthSize();
+    if (lengthSize == sizeof(size32_t))
+    {
+        HqlExprArray args;
+        args.append(*LINK(helper));
+        OwnedHqlExpr call = translator.bindFunctionCall(deserializerReadSizeId, args);
+        OwnedHqlExpr sizeVariable = ctx.getTempDeclare(sizetType, call);
+        return LINK(sizeVariable);
+    }
+    else
+    {
+        OwnedHqlExpr sizeVariable = ctx.getTempDeclare(queryLengthType(), nullptr);
+        HqlExprArray args;
+        args.append(*LINK(helper));
+        args.append(*getSizetConstant(lengthSize));
+        args.append(*getPointer(sizeVariable));
+        OwnedHqlExpr call = translator.bindTranslatedFunctionCall(deserializerReadNId, args);
+        ctx.addExpr(call);
+        return ensureExprType(sizeVariable, sizetType);
+    }
+}
 
 IHqlExpression * CMemberInfo::createSelfPeekDeserializer(HqlCppTranslator & translator, IHqlExpression * helper)
 {
@@ -1045,6 +1059,39 @@ void CMemberInfo::setPayload(bool _isPayload)
 AColumnInfo * CMemberInfo::lookupColumn(IHqlExpression * search)
 {
     throwUnexpected();
+}
+
+size32_t CMemberInfo::getLengthSize() const
+{
+    ITypeInfo * type = queryType();
+    size32_t size = getLengthSizeBytes(type->getSize());
+#ifdef _DEBUG
+    IHqlExpression * lengthSizeAttr = column->queryAttribute(lengthSizeAtom);
+    if (lengthSizeAttr)
+        assertex(size == (unsigned)getIntValue(lengthSizeAttr->queryChild(0)));
+    else
+        assertex(size == 0 || size == 4);
+#endif
+    return size;
+}
+
+ITypeInfo * CMemberInfo::queryLengthType() const
+{
+    ITypeInfo * type = queryType();
+    size32_t size = getLengthSizeBytes(type->getSize());
+    switch (size)
+    {
+    case 0:
+        return nullptr;
+    case 1:
+        return uint1Type;
+    case 2:
+        return uint2Type;
+    case 4:
+        return sizetType;
+    default:
+        UNIMPLEMENTED;
+    }
 }
 
 
@@ -1920,34 +1967,39 @@ CSpecialStringColumnInfo::CSpecialStringColumnInfo(CContainerInfo * _container, 
 
 void CSpecialStringColumnInfo::buildColumnExpr(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, CHqlBoundExpr & bound)
 {
-    OwnedHqlExpr address = getColumnAddress(translator, ctx, selector, sizetType);
-    OwnedHqlExpr addressStr = getColumnAddress(translator, ctx, selector, queryType(), sizeof(size32_t));
+    unsigned lengthSize = getLengthSize();
+    ITypeInfo * lengthType = queryLengthType();
+    OwnedHqlExpr address = getColumnAddress(translator, ctx, selector, lengthType);
+    OwnedHqlExpr addressStr = getColumnAddress(translator, ctx, selector, queryType(), lengthSize);
 
-    bound.length.setown(convertAddressToValue(address, sizetType));
+    OwnedHqlExpr lengthValue = convertAddressToValue(address, lengthType);
+    bound.length.setown(ensureExprType(lengthValue, sizetType));
     bound.expr.setown(convertAddressToValue(addressStr, queryType()));
 
 #if 0
     //Following improves code for transforms, disable until I finish regression testing
     ensureSimpleLength(translator, ctx, bound);
     OwnedHqlExpr boundSize = translator.getBoundSize(bound);
-    associateSizeOf(ctx, selector, boundSize, sizeof(size32_t));
+    associateSizeOf(ctx, selector, boundSize, lengthSize);
 #endif
 }
 
 void CSpecialStringColumnInfo::gatherSize(SizeStruct & target)
 {
-    addVariableSize(sizeof(size32_t), target);
+    addVariableSize(getLengthSize(), target);
 }
 
 
 void CSpecialStringColumnInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm)
 {
-    OwnedHqlExpr address = getColumnAddress(translator, ctx, selector, sizetType);
-    OwnedHqlExpr addressStr = getColumnAddress(translator, ctx, selector, queryType(), sizeof(size32_t));
+    unsigned lengthSize = getLengthSize();
+    ITypeInfo * lengthType = queryLengthType();
+    OwnedHqlExpr address = getColumnAddress(translator, ctx, selector, lengthType);
+    OwnedHqlExpr addressStr = getColumnAddress(translator, ctx, selector, queryType(), lengthSize);
 
-    OwnedHqlExpr targetLength = convertAddressToValue(address, sizetType);
-    OwnedHqlExpr sizeSizet = getSizetConstant(sizeof(size32_t));
-    callDeserializeGetN(translator, ctx, helper, sizeSizet, address);
+    OwnedHqlExpr targetLength = convertAddressToValue(address, lengthType);
+    OwnedHqlExpr sizeLengthSize = getSizetConstant(lengthSize);
+    callDeserializeGetN(translator, ctx, helper, sizeLengthSize, address);
 
     if (queryType()->getTypeCode() == type_utf8)
     {
@@ -1958,7 +2010,7 @@ void CSpecialStringColumnInfo::buildDeserialize(HqlCppTranslator & translator, B
 
         SizeStruct fixedRowSize;
         CHqlBoundExpr boundFixedRowSize;
-        gatherMaxRowSize(fixedRowSize, NULL, sizeof(size32_t), selector);
+        gatherMaxRowSize(fixedRowSize, NULL, lengthSize, selector);
         fixedRowSize.buildSizeExpr(translator, ctx, row, boundFixedRowSize);
 
         assertex(!row->isSerialization() && row->queryBuilder());
@@ -1967,18 +2019,18 @@ void CSpecialStringColumnInfo::buildDeserialize(HqlCppTranslator & translator, B
         HqlExprArray args;
         args.append(*LINK(helper));
         args.append(*LINK(row->queryBuilder()));
-        args.append(*adjustValue(boundOffset.expr, sizeof(size32_t)));
+        args.append(*adjustValue(boundOffset.expr, lengthSize));
         args.append(*LINK(boundFixedRowSize.expr));
         args.append(*LINK(targetLength));
         OwnedHqlExpr call = translator.bindTranslatedFunctionCall(func, args);
         OwnedHqlExpr sizeVariable = ctx.getTempDeclare(sizetType, call);
-        associateSizeOf(ctx, selector, sizeVariable, sizeof(size32_t));
+        associateSizeOf(ctx, selector, sizeVariable, lengthSize);
     }
     else
     {
-
+        OwnedHqlExpr castLength = ensureExprType(targetLength, sizetType);
         CHqlBoundExpr bound;
-        bound.length.setown(translator.ensureSimpleTranslatedExpr(ctx, targetLength));
+        bound.length.setown(translator.ensureSimpleTranslatedExpr(ctx, castLength));
         bound.expr.setown(convertAddressToValue(addressStr, queryType()));
 
         OwnedHqlExpr boundSize = translator.getBoundSize(bound);
@@ -1986,11 +2038,11 @@ void CSpecialStringColumnInfo::buildDeserialize(HqlCppTranslator & translator, B
             boundSize.setown(translator.ensureSimpleTranslatedExpr(ctx, boundSize));
         OwnedHqlExpr unboundSize = createTranslated(boundSize);
 
-        checkAssignOk(translator, ctx, selector, unboundSize, sizeof(size32_t));
+        checkAssignOk(translator, ctx, selector, unboundSize, lengthSize);
 
         callDeserializeGetN(translator, ctx, helper, boundSize, addressStr);
 
-        associateSizeOf(ctx, selector, boundSize, sizeof(size32_t));
+        associateSizeOf(ctx, selector, boundSize, lengthSize);
     }
 }
 
@@ -2016,39 +2068,66 @@ bool CSpecialStringColumnInfo::buildReadAhead(HqlCppTranslator & translator, Bui
 
 IHqlExpression * CSpecialStringColumnInfo::buildSizeOfUnbound(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector)
 {
-    OwnedHqlExpr address = getColumnAddress(translator, ctx, selector, sizetType);
-    OwnedHqlExpr addressStr = getColumnAddress(translator, ctx, selector, queryType(), sizeof(size32_t));
+    unsigned lengthSize = getLengthSize();
+    ITypeInfo * lengthType = queryLengthType();
+    OwnedHqlExpr address = getColumnAddress(translator, ctx, selector, lengthType);
+    OwnedHqlExpr addressStr = getColumnAddress(translator, ctx, selector, queryType(), lengthSize);
 
-    OwnedHqlExpr length = convertAddressToValue(address, sizetType);
-    assertex(length->queryType()->queryTypeBase() == sizetType);
+    OwnedHqlExpr length = convertAddressToValue(address, lengthType);
+    assertex(length->queryType()->queryTypeBase() == lengthType);
+    OwnedHqlExpr castLength = ensureExprType(length, sizetType);
 
-    OwnedHqlExpr boundSize = translator.getBoundSize(column->queryType(), length, addressStr);
-    return createValue(no_translated, LINK(sizetType), adjustValue(boundSize, sizeof(size32_t)));
+    OwnedHqlExpr boundSize = translator.getBoundSize(column->queryType(), castLength, addressStr);
+    return createValue(no_translated, LINK(sizetType), adjustValue(boundSize, lengthSize));
 }
 
 void CSpecialStringColumnInfo::setColumn(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * _value)
 {
-    OwnedHqlExpr address = getColumnAddress(translator, ctx, selector, sizetType, 0);
-    OwnedHqlExpr addressStr = getColumnAddress(translator, ctx, selector, queryType(), sizeof(size32_t));
+    unsigned lengthSize = getLengthSize();
+    ITypeInfo * lengthType = queryLengthType();
+    OwnedHqlExpr address = getColumnAddress(translator, ctx, selector, lengthType, 0);
+    OwnedHqlExpr addressStr = getColumnAddress(translator, ctx, selector, queryType(), lengthSize);
 
     ITypeInfo * columnType = column->queryType();
     CHqlBoundExpr bound;
     OwnedHqlExpr value = ensureExprType(_value, columnType);
     translator.buildExpr(ctx, value, bound);
     ensureSimpleLength(translator, ctx, bound);
+    if (lengthSize != sizeof(size32_t))
+    {
+        size32_t maxLength = (1U << (8*lengthSize)) -1;
+        OwnedHqlExpr boundLength = translator.getBoundLength(bound);
+        if (boundLength->queryValue() && boundLength->queryValue()->getIntValue() > maxLength)
+        {
+            bound.length.setown(getSizetConstant(maxLength));
+        }
+        else
+        {
+            size32_t exprMaxLength = getMaxLength(_value);
+            if (exprMaxLength > maxLength)
+            {
+                OwnedHqlExpr transLen = createTranslated(boundLength);
+                OwnedHqlExpr compare = createBoolExpr(no_lt, LINK(transLen), getSizetConstant(maxLength));
+                OwnedHqlExpr minLen = createValue(no_if, sizetType, LINK(compare), LINK(transLen), getSizetConstant(maxLength));
+                CHqlBoundExpr newLength;
+                translator.buildTempExpr(ctx, minLen, newLength);
+                bound.length.set(newLength.expr);
+            }
+        }
+    }
 
     OwnedHqlExpr length = createValue(no_translated, LINK(sizetType), translator.getBoundLength(bound));
     OwnedHqlExpr size = createValue(no_translated, LINK(sizetType), translator.getBoundSize(bound));
-    checkAssignOk(translator, ctx, selector, size, sizeof(size32_t));
+    checkAssignOk(translator, ctx, selector, size, lengthSize);
     CHqlBoundTarget boundTarget;
-    boundTarget.expr.setown(convertAddressToValue(address, sizetType));
+    boundTarget.expr.setown(convertAddressToValue(address, lengthType));
     translator.buildExprAssign(ctx, boundTarget, length);
 
     translator.buildBlockCopy(ctx, addressStr, bound);
 
     //Use the size just calulated for the field
     OwnedHqlExpr boundSize = translator.getBoundSize(bound);
-    associateSizeOf(ctx, selector, boundSize, sizeof(size32_t));
+    associateSizeOf(ctx, selector, boundSize, lengthSize);
 }
 
 //---------------------------------------------------------------------------

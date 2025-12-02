@@ -881,4 +881,6 @@ extern HQL_API bool joinHasRightOnlyHardMatch(IHqlExpression * expr, bool allowS
 extern HQL_API void gatherParseWarnings(IErrorReceiver * errs, IHqlExpression * expr, IErrorArray & warnings);
 extern HQL_API IHqlExpression * queryAttributeModifier(ITypeInfo * type, IAtom * name);
 
+extern HQL_API size32_t getMaxLength(IHqlExpression * expr);
+
 #endif

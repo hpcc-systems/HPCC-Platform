@@ -56,6 +56,8 @@ extern bool isNonConstantAndQueryInvariant(IHqlExpression * expr);
 
 //Common types and expressions...
 extern ITypeInfo * boolType;
+extern ITypeInfo * uint1Type;
+extern ITypeInfo * uint2Type;
 extern ITypeInfo * sizetType;
 extern ITypeInfo * signedType;
 extern ITypeInfo * unsignedType;

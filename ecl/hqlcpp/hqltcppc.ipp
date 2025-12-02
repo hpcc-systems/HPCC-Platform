@@ -138,6 +138,10 @@ protected:
     IHqlExpression * addDatasetLimits(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * _value);
     bool hasDatasetLimits() const;
 
+    size32_t getLengthSize() const;
+    ITypeInfo * queryLengthType() const;
+    IHqlExpression * callDeserializerGetSize(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * helper);
+
 protected:
     CContainerInfo *    container;
     CMemberInfo *       prior;
@@ -760,7 +764,6 @@ protected:
 
 void ensureSimpleLength(HqlCppTranslator & translator, BuildCtx & ctx, CHqlBoundExpr & bound);
 void callDeserializeGetN(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * helper, IHqlExpression * boundSize, IHqlExpression * address);
-IHqlExpression * callDeserializerGetSize(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * helper);
 void callDeserializerSkipInputSize(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * helper, IHqlExpression * size);
 void callDeserializerSkipInputTranslatedSize(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * helper, IHqlExpression * size);
 

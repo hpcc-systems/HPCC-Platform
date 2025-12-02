@@ -11245,25 +11245,31 @@ void readRow(StringBuffer &out, MemoryBuffer &in, TypeInfoArray &types, StringAt
         StringAttrItem &name = names.item(idx);
         ITypeInfo &type = types.item(idx);
         unsigned size = type.getSize();
+        unsigned len = type.getStringLen();
         switch(type.getTypeCode())
         {
         case type_data:
+        case type_string:
+        case type_unicode:
+        case type_utf8:
+        case type_qstring:
             if (isUnknownLength(size))
             {
-                if (in.remaining() < sizeof(int))
+                unsigned lengthSize = getLengthSizeBytes(size);
+                if (in.remaining() < lengthSize)
                     throw MakeStringException(WUERR_CorruptResult, "corrupt workunit information");
-                in.read(size);
+                len = rtlReadInt(in.readDirect(lengthSize), lengthSize);
             }
-            outputXmlData(size, in.readDirect(size), name.text, out);
+            break;
+        }
+
+        switch(type.getTypeCode())
+        {
+        case type_data:
+            outputXmlData(len, in.readDirect(len), name.text, out);
             break;
         case type_string:
-            if (isUnknownLength(size))
-            {
-                if (in.remaining() < sizeof(int))
-                    throw MakeStringException(WUERR_CorruptResult, "corrupt workunit information");
-                in.read(size);
-            }
-            outputXmlString(size, (const char *) in.readDirect(size), name.text, out);
+            outputXmlString(len, (const char *) in.readDirect(len), name.text, out);
             break;
         case type_varstring:
             {
@@ -11274,21 +11280,11 @@ void readRow(StringBuffer &out, MemoryBuffer &in, TypeInfoArray &types, StringAt
                 break;
             }
         case type_unicode:
-            {
-                unsigned len = type.getStringLen();
-                if (isUnknownLength(size))
-                    in.read(len);
-                outputXmlUnicode(len, (UChar const *) in.readDirect(len*2), name.text, out);
-            }
+            outputXmlUnicode(len, (UChar const *) in.readDirect(len*2), name.text, out);
             break;
         case type_utf8:
             {
-                unsigned len = type.getStringLen();
-                if (isUnknownLength(size))
-                {
-                    in.read(len);
-                    size = rtlUtf8Size(len, in.readDirect(0));
-                }
+                size = rtlUtf8Size(len, in.readDirect(0));
                 outputXmlUtf8(len, (const char *) in.readDirect(size), name.text, out);
             }
             break;

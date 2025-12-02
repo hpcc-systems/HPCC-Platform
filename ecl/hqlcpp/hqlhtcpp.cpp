@@ -20042,7 +20042,7 @@ void HqlCppTranslator::traceExpression(const char * title, IHqlExpression * expr
     LOG(MCdebugInfo, "Tracing expressions: %s", title);
     if (options.traceIR)
     {
-        EclIR::dbglogIR(expr);
+        EclIR::dbglogIR(expr, options.irOptions);
     }
     else
     {

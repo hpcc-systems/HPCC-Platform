@@ -335,25 +335,26 @@ void CResultSetMetaData::calcFieldOffsets(const byte * data, unsigned * offsets)
         if (isUnknownLength(size))
         {
             const byte * cur = data + curOffset;
+            unsigned lengthSize = getLengthSizeBytes(size);
             switch (type.getTypeCode())
             {
             case type_data:
             case type_string:
             case type_table:
             case type_groupedtable:
-                size = *((unsigned *)cur) + sizeof(unsigned);
+                size = rtlReadInt(cur, lengthSize) + lengthSize;
                 break;
             case type_set:
-                size = *((unsigned *)(cur + sizeof(bool))) + sizeof(unsigned) + sizeof(bool);
+                size = rtlReadInt(cur + sizeof(bool), lengthSize) + lengthSize + sizeof(bool);
                 break;
             case type_qstring:
-                size = rtlQStrSize(*((unsigned *)cur)) + sizeof(unsigned);
+                size = rtlQStrSize(rtlReadInt(cur, lengthSize)) + lengthSize;
                 break;
             case type_unicode:
-                size = *((unsigned *)cur)*sizeof(UChar) + sizeof(unsigned);
+                size = rtlReadInt(cur, lengthSize) * sizeof(UChar) + lengthSize;
                 break;
             case type_utf8:
-                size = sizeof(unsigned) + rtlUtf8Size(*(unsigned *)cur, cur+sizeof(unsigned));
+                size = lengthSize + rtlUtf8Size(rtlReadInt(cur, lengthSize), cur+lengthSize);
                 break;
             case type_varstring:
                 size = strlen((char *)cur)+1;
@@ -897,8 +898,9 @@ static unsigned getLength(ITypeInfo & type, const byte * & cursor)
     unsigned len = type.getStringLen();
     if (!isUnknownLength(len))
         return len;
-    len = *(unsigned *)cursor;
-    cursor += sizeof(unsigned);
+    unsigned lengthSize = getLengthSizeBytes(len);
+    len = rtlReadInt(cursor, lengthSize);
+    cursor += lengthSize;
     return len;
 }
 
@@ -989,8 +991,10 @@ IResultSetCursor * CResultSetCursor::getChildren(int columnIndex) const
         return NULL;
     }
 
-    unsigned len = *(unsigned *)cur;
-    const byte * data = cur + sizeof(unsigned);
+    unsigned size = type.getSize();
+    unsigned lengthSize = getLengthSizeBytes(size);
+    unsigned len = rtlReadInt(cur, lengthSize);
+    const byte * data = cur + lengthSize;
     Owned<IFvDataSource> childData = meta.meta->createChildDataSource(columnIndex, len, data);
     Owned<CResultSet> nestedResult = new CResultSet(childData, meta.alwaysUseXPath);
     return nestedResult->createCursor();

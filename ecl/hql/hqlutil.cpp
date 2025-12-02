@@ -10255,14 +10255,21 @@ void getFieldTypeInfo(FieldTypeInfoStruct &out, ITypeInfo *type)
             //until the alien field type is supported
         }
     }
+
+    size32_t originalSize = type->getSize();
     out.fieldType |= tc;
-    out.length = type->getSize();
+    out.length = originalSize;
     out.locale = nullptr;
     out.className = nullptr;
-    if (isUnknownLength(out.length))
+    bool unknownLength = isUnknownLength(originalSize);
+    if (unknownLength)
     {
         out.fieldType |= RFTMunknownsize;
-        out.length = 0;
+        unsigned lengthBytes = getLengthSizeBytes(out.length);
+        if (lengthBytes == 4)
+            out.length = 0;
+        else
+            out.length = lengthBytes;
     }
 
     switch (tc)
@@ -10318,7 +10325,9 @@ void getFieldTypeInfo(FieldTypeInfoStruct &out, ITypeInfo *type)
         break;
     case type_qstring:
         out.className = "RtlQStringTypeInfo";
-        out.length = type->getStringLen();
+        //NOTE: This is updating from length, not from size - retain special values for unknown length
+        if (!unknownLength || (originalSize == UNKNOWN_LENGTH))
+            out.length = type->getStringLen();
         break;
     case type_varstring:
         out.className = "RtlVarStringTypeInfo";
@@ -10392,7 +10401,9 @@ void getFieldTypeInfo(FieldTypeInfoStruct &out, ITypeInfo *type)
     case type_unicode:
         out.className = "RtlUnicodeTypeInfo";
         out.locale = str(type->queryLocale());
-        out.length = type->getStringLen();
+        //NOTE: This is updating from length, not from size - retain special values for unknown length
+        if (!unknownLength || (originalSize == UNKNOWN_LENGTH))
+            out.length = type->getStringLen();
         break;
     case type_varunicode:
         out.className = "RtlVarUnicodeTypeInfo";
@@ -10402,7 +10413,9 @@ void getFieldTypeInfo(FieldTypeInfoStruct &out, ITypeInfo *type)
     case type_utf8:
         out.className = "RtlUtf8TypeInfo";
         out.locale = str(type->queryLocale());
-        out.length = type->getStringLen();
+        //NOTE: This is updating from length, not from size - retain special values for unknown length
+        if (!unknownLength || (originalSize == UNKNOWN_LENGTH))
+            out.length = type->getStringLen();
         break;
     case type_alien:
         out.className = "RtlAlienTypeInfo";
@@ -10743,4 +10756,42 @@ IException * checkRegexSyntax(IHqlExpression * expr)
         }
     }
     return nullptr;
+}
+
+
+size32_t getMaxLength(IHqlExpression * expr)
+{
+    ITypeInfo * type = expr->queryType();
+    size32_t typeLength = type->getStringLen();
+    if (!isUnknownLength(typeLength))
+        return type->getStringLen();
+
+    switch (expr->getOperator())
+    {
+    case no_trim:
+        return getMaxLength(expr->queryChild(0));
+
+    case no_concat:
+        {
+            size32_t max = 0;
+            ForEachChild(i, expr)
+            {
+                size32_t len = getMaxLength(expr->queryChild(i));
+                if (isUnknownLength(len))
+                    return UNKNOWN_LENGTH;
+                max += len;
+            }
+            return max;
+        }
+    }
+
+    switch (typeLength)
+    {
+    case UNKNOWN_LENGTH1:
+        return 0xFF;
+    case UNKNOWN_LENGTH2:
+        return 0xFFFF;
+    }
+
+    return UNKNOWN_LENGTH;
 }

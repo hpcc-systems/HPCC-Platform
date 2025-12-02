@@ -66,9 +66,16 @@ enum typemod_t
 };
 
 #define INFINITE_LENGTH         0xFFFFFFF0
-#define UNKNOWN_LENGTH          0xFFFFFFF1
+
+#ifndef UNKNOWN_LENGTH
+#define UNKNOWN_LENGTH          0xFFFFFFF1  // This value may be persisted, so don't change it
 #define UNKNOWN_LENGTH1         0xFFFFFFF2  // strings with 1 byte length prefix
 #define UNKNOWN_LENGTH2         0xFFFFFFF3  // strings with 2 byte length prefix
+#else
+static_assert(UNKNOWN_LENGTH  == 0xFFFFFFF1);
+static_assert(UNKNOWN_LENGTH1 == 0xFFFFFFF2);
+static_assert(UNKNOWN_LENGTH2 == 0xFFFFFFF3);
+#endif
 
 #define MAX_SUPPORTED_LENGTH    (INFINITE_LENGTH-1U)
 
@@ -76,6 +83,34 @@ enum typemod_t
 inline bool isUnknownLength(size32_t length)
 {
     return length >= UNKNOWN_LENGTH;
+}
+inline unsigned getUnknownLengthValue(size32_t lengthSize)
+{
+    switch (lengthSize)
+    {
+    case 1: return UNKNOWN_LENGTH1;
+    case 2: return UNKNOWN_LENGTH2;
+    }
+    return UNKNOWN_LENGTH;
+}
+inline unsigned getLengthSizeBytes(unsigned length)
+{
+    switch (length)
+    {
+    case UNKNOWN_LENGTH1: return 1;
+    case UNKNOWN_LENGTH2: return 2;
+    case UNKNOWN_LENGTH:  return 4;
+    }
+    return 0;
+}
+inline size32_t getUnknownLengthMax(size32_t length)
+{
+    switch (length)
+    {
+    case UNKNOWN_LENGTH1: return 0xFF;
+    case UNKNOWN_LENGTH2: return 0xFFFF;
+    }
+    return INFINITE_LENGTH-1;
 }
 
 typedef enum type_vals type_t;
@@ -266,6 +301,8 @@ inline bool isAnyType(ITypeInfo * type) { return type && (type->getTypeCode() ==
 inline bool isDecimalType(ITypeInfo * type) { return type && (type->getTypeCode() == type_decimal); }
 inline bool isDictionaryType(ITypeInfo * type) { return type && (type->getTypeCode() == type_dictionary); }
 
+extern DEFTYPE_API bool canOverrideStringLength(type_t tc);
+extern DEFTYPE_API bool canOverrideStringLength(ITypeInfo * type);
 
 //If casting a value from type before to type after is the value preserved.
 //If the value is not preserved then it means more than one source value can match a target value.

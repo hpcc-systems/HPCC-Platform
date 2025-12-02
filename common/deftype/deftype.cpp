@@ -1540,7 +1540,7 @@ extern DEFTYPE_API ITypeInfo *makeUnicodeType(unsigned len, IAtom * locale)
     else
     {
         if(isUnknownLength(len))
-            ret = new CUnicodeTypeInfo(UNKNOWN_LENGTH, locale);
+            ret = new CUnicodeTypeInfo(len, locale);
         else
             ret = new CUnicodeTypeInfo(len*2, locale);
         utt->setValue(key, ret);
@@ -1565,7 +1565,7 @@ extern DEFTYPE_API ITypeInfo *makeVarUnicodeType(unsigned len, IAtom * locale)
     else
     {
         if(isUnknownLength(len))
-            ret = new CVarUnicodeTypeInfo(UNKNOWN_LENGTH, locale);
+            ret = new CVarUnicodeTypeInfo(len, locale);
         else
             ret = new CVarUnicodeTypeInfo((len+1)*2, locale);
         vutt->setValue(key, ret);
@@ -1589,7 +1589,7 @@ extern DEFTYPE_API ITypeInfo *makeUtf8Type(unsigned len, IAtom * locale)
     else
     {
         if (isUnknownLength(len))
-            ret = new CUtf8TypeInfo(UNKNOWN_LENGTH, locale);
+            ret = new CUtf8TypeInfo(len, locale);
         else
             ret = new CUtf8TypeInfo(len*4, locale);
         u8tt->setValue(key, ret);
@@ -3026,6 +3026,18 @@ ICharsetInfo * getAsciiCharset()
 
 ITypeInfo * getStretchedType(unsigned newLen, ITypeInfo * type)
 {
+#ifdef PRESERVE_STRETCHED_MODIFIERS
+    // This code is not currently used, but preserved as a reminder that it might be needed in future.
+    if (type->queryModifier() != typemod_none)
+    {
+        ITypeInfo * srcType = type->queryTypeBase();
+        ITypeInfo * stretchedType = getStretchedType(newLen, srcType);
+        if (stretchedType == srcType)
+            return LINK(type);
+        return cloneModifier(type, stretchedType);
+    }
+#endif
+
     switch (type->getTypeCode())
     {
     case type_string:
@@ -3065,6 +3077,8 @@ ITypeInfo * getMaxLengthType(ITypeInfo * type)
     case type_utf8:
     case type_qstring:
     case type_data:
+        if (isUnknownLength(type->getStringLen()))
+            return LINK(type);
         return getStretchedType(UNKNOWN_LENGTH, type);
     default:
         return LINK(type);
@@ -3326,6 +3340,25 @@ ITypeInfo * replaceChildType(ITypeInfo * type, ITypeInfo * newChild)
         throwUnexpected();
     }
     return cloneModifiers(type, newType);
+}
+
+bool canOverrideStringLength(type_t tc)
+{
+    switch (tc)
+    {
+    case type_string:
+    case type_unicode:
+    case type_utf8:
+    case type_qstring:
+    case type_data:
+        return true;
+    }
+    return false;
+}
+
+bool canOverrideStringLength(ITypeInfo * type)
+{
+    return canOverrideStringLength(type->getTypeCode());
 }
 
 //---------------------------------------------------------------------------

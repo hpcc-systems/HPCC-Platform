@@ -5885,7 +5885,7 @@ expr
                                 unsigned l = t1->getStringLen();
                                 unsigned r = t2->getStringLen();
                                 unsigned size = UNKNOWN_LENGTH;
-                                if ((l != UNKNOWN_LENGTH) && (r != UNKNOWN_LENGTH))
+                                if (!isUnknownLength(l) && !isUnknownLength(r))
                                     size = l + r;
                                 //MORE: case sensitive?
                                 ICharsetInfo * charset = t1->queryCharset();
@@ -6108,7 +6108,7 @@ primexpr
                             IHqlExpression *expr = $2.getExpr();
                             ITypeInfo *exprType = expr->queryType();
                             ITypeInfo *type = $1.getType();
-                            if ((exprType->getSize() != UNKNOWN_LENGTH) && (exprType->getSize() < type->getSize()) && type->getSize() != UNKNOWN_LENGTH)
+                            if (!isUnknownLength(exprType->getSize()) && (exprType->getSize() < type->getSize()) && !isUnknownLength(type->getSize()))
                                 parser->reportError(ERR_TYPETRANS_LARGERTYPE, $1, "Type transfer: target type in is larger than source type");
                             $$.setExpr(createValue(no_typetransfer, type, expr));
                         }
@@ -6614,7 +6614,7 @@ primexpr1
                             IHqlExpression *expr = $3.getExpr();
                             ITypeInfo *exprType = expr->queryType();
                             ITypeInfo *type = $5.getType();
-                            if ((exprType->getSize() != UNKNOWN_LENGTH) && (exprType->getSize() < type->getSize()) && type->getSize() != UNKNOWN_LENGTH)
+                            if (!isUnknownLength(exprType->getSize()) && (exprType->getSize() < type->getSize()) && !isUnknownLength(type->getSize()))
                                 parser->reportError(ERR_TYPETRANS_LARGERTYPE, $5, "Type transfer: target type in is larger than source type");
                             $$.setExpr(createTypeTransfer(expr, type));
                         }
@@ -8026,7 +8026,7 @@ simpleDataRow
                             parser->normalizeExpression($3);
                             IHqlExpression *expr = $3.getExpr();
                             IHqlExpression *record = $5.getExpr();
-//                          if ((exprType->getSize() != UNKNOWN_LENGTH) && (exprType->getSize() < type->getSize()) && type->getSize() != UNKNOWN_LENGTH)
+//                          if (!isUnknownLength(exprType->getSize()) && (exprType->getSize() < type->getSize()) && !isUnknownLength(type->getSize()))
 //                              parser->reportError(ERR_TYPETRANS_LARGERTYPE, $5, "Type transfer: target type in is larger than source type");
                             $$.setExpr(createRow(no_typetransfer, record, expr));
                             $$.setPosition($1);

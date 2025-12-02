@@ -468,6 +468,7 @@ public:
     unsigned length;                // for bitfield (int-size, # bits, bitoffset) << 16
                                     // for decimal, numdigits | precision << 16
                                     // if RFTMunknownsize then maxlength (records) [maxcount(datasets)]
+                                    // for string/data/qstring/unicode/utf8 - values of 1 or 2 indicate the number of bytes in the length (otherwise 4)
 protected:
     ~RtlTypeInfo() = default;
 };

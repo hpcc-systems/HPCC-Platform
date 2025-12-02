@@ -6253,17 +6253,35 @@ CHqlField::CHqlField(IIdAtom * _id, ITypeInfo *_type, HqlExprArray &_ownedOperan
 void CHqlField::onCreateField()
 {
     bool hasLCA = hasAttribute(_linkCounted_Atom);
-    ITypeInfo * newType = setLinkCountedAttr(type, hasLCA);
+    Owned<ITypeInfo> newType = setLinkCountedAttr(type, hasLCA);
+
+    IHqlExpression * lengthSizeAttr = queryAttribute(lengthSizeAtom);
+    if (lengthSizeAttr)
+    {
+        if (isUnknownLength(newType->getSize()) && canOverrideStringLength(newType))
+        {
+            unsigned lengthSize = getIntValue(lengthSizeAttr->queryChild(0));
+            switch (lengthSize)
+            {
+            case 1:
+            case 2:
+            case 4:
+                newType.setown(getStretchedType(getUnknownLengthValue(lengthSize), newType));
+                break;
+            }
+        }
+    }
+
     type->Release();
-    type = newType;
+    type = newType.getClear();
 
 #ifdef _DEBUG
     if (hasLinkCountedModifier(type) != hasAttribute(_linkCounted_Atom))
         throwUnexpected();
 #endif
 #ifdef DEBUG_ON_CREATE
-    if (queryName() == createIdAtom("imgLength"))
-        DBGLOG("Create field %s=%p", expr->queryName()->str(), expr);
+    if (queryId() == createIdAtom("imgLength"))
+        DBGLOG("Create field %s=%p", str(queryId()), this);
 #endif
 
     infoFlags &= ~(HEFfunctionOfGroupAggregate);

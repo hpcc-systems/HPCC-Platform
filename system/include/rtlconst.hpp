@@ -84,4 +84,9 @@ enum type_vals
     type_scalar         = 0xfe,
 };
 
+#define UNKNOWN_LENGTH          0xFFFFFFF1  // This value may be persisted, so don't change it
+//These values are only used for fields - they are not general constraints on the type (e.g. when casting)
+#define UNKNOWN_LENGTH1         0xFFFFFFF2  // strings with 1 byte length prefix
+#define UNKNOWN_LENGTH2         0xFFFFFFF3  // strings with 2 byte length prefix
+
 #endif
