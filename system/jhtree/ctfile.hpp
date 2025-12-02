@@ -548,7 +548,7 @@ IKeyException *MakeKeyException(int code, const char *format, ...) __attribute__
 interface IIndexCompressor : public IInterface
 {
     virtual const char *queryName() const = 0;
-    virtual CWriteNode *createNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode) const = 0;
+    virtual CWriteNodeBase *createNode(offset_t _fpos, CKeyHdr *_keyHdr, NodeType nodeType) const = 0;
     virtual offset_t queryBranchMemorySize() const = 0;
     virtual offset_t queryLeafMemorySize() const = 0;
 };

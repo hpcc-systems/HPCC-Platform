@@ -79,12 +79,19 @@ public:
 class PocIndexCompressor : public CInterfaceOf<IIndexCompressor>
 {
     virtual const char *queryName() const override { return "POC"; }
-    virtual CWriteNode *createNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode) const override
+    virtual CWriteNodeBase *createNode(offset_t _fpos, CKeyHdr *_keyHdr, NodeType nodeType) const override
     {
-        if (isLeafNode)
-            return new CPOCWriteNode(_fpos, _keyHdr, isLeafNode);
-        else
-            return new CLegacyWriteNode(_fpos, _keyHdr, isLeafNode);
+        switch (nodeType)
+        {
+        case NodeLeaf:
+            return new CPOCWriteNode(_fpos, _keyHdr, true);
+        case NodeBranch:
+            return new CLegacyWriteNode(_fpos, _keyHdr, false);
+        case NodeBlob:
+            return new CBlobWriteNode(_fpos, _keyHdr);
+        default:
+            throwUnexpected();
+        }
     }
     virtual offset_t queryBranchMemorySize() const override
     {
@@ -99,9 +106,19 @@ class PocIndexCompressor : public CInterfaceOf<IIndexCompressor>
 class LegacyIndexCompressor : public CInterfaceOf<IIndexCompressor>
 {
     virtual const char *queryName() const override { return "Legacy"; }
-    virtual CWriteNode *createNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode) const override
+    virtual CWriteNodeBase *createNode(offset_t _fpos, CKeyHdr *_keyHdr, NodeType nodeType) const override
     {
-        return new CLegacyWriteNode(_fpos, _keyHdr, isLeafNode);
+        switch (nodeType)
+        {
+        case NodeLeaf:
+            return new CLegacyWriteNode(_fpos, _keyHdr, true);
+        case NodeBranch:
+            return new CLegacyWriteNode(_fpos, _keyHdr, false);
+        case NodeBlob:
+            return new CBlobWriteNode(_fpos, _keyHdr);
+        default:
+            throwUnexpected();
+        }
     }
     virtual offset_t queryBranchMemorySize() const override
     {
@@ -126,12 +143,19 @@ public:
     }
 
     virtual const char *queryName() const override { return "Hybrid"; }
-    virtual CWriteNode *createNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode) const override
+    virtual CWriteNodeBase *createNode(offset_t _fpos, CKeyHdr *_keyHdr, NodeType nodeType) const override
     {
-        if (isLeafNode)
-            return leafCompressor->createNode(_fpos, _keyHdr, isLeafNode);
-        else
-            return branchCompressor->createNode(_fpos, _keyHdr, isLeafNode);
+        switch (nodeType)
+        {
+        case NodeLeaf:
+            return leafCompressor->createNode(_fpos, _keyHdr, nodeType);
+        case NodeBranch:
+            return branchCompressor->createNode(_fpos, _keyHdr, nodeType);
+        case NodeBlob:
+            return new CBlobWriteNode(_fpos, _keyHdr);
+        default:
+            throwUnexpected();
+        }
     }
     virtual offset_t queryBranchMemorySize() const override
     {
@@ -290,8 +314,7 @@ public:
         assertex(levels > 0);
 
         unsigned int nodeIndex = 0;
-        CWriteNode *node = NULL;
-        node = indexCompressor->createNode(nextPos, keyHdr, false); 
+        CWriteNode *node = (CWriteNode *)indexCompressor->createNode(nextPos, keyHdr, NodeBranch);
         nextPos += keyHdr->getNodeSize();
         numBranches++;
         while (nodeIndex<thisLevel.ordinality())
@@ -301,7 +324,7 @@ public:
             {
                 flushNode(node, parents);
                 node->Release();
-                node = indexCompressor->createNode(nextPos, keyHdr, false);
+                node = (CWriteNode *)indexCompressor->createNode(nextPos, keyHdr, NodeBranch);
                 nextPos += keyHdr->getNodeSize();
                 numBranches++;
                 verifyex(node->add(info.pos, info.value, info.size, info.sequence));
@@ -573,7 +596,7 @@ protected:
         if (NULL == activeNode)
         {
             keyHdr->getHdrStruct()->firstLeaf = nextPos;
-            activeNode = indexCompressor->createNode(nextPos, keyHdr, true);
+            activeNode = (CWriteNode*)indexCompressor->createNode(nextPos, keyHdr, NodeLeaf);
             nextPos += keyHdr->getNodeSize();
             numLeaves++;
         }
@@ -604,7 +627,7 @@ protected:
 
             flushNode(activeNode, leafInfo);
             activeNode->Release();
-            activeNode = indexCompressor->createNode(nextPos, keyHdr, true);
+            activeNode = (CWriteNode*)indexCompressor->createNode(nextPos, keyHdr, NodeLeaf);
             nextPos += keyHdr->getNodeSize();
             numLeaves++;
             if (!activeNode->add(pos, keyData, recsize, sequence))
@@ -619,7 +642,7 @@ protected:
         if (keyHdr->getHdrStruct()->blobHead == 0)
             keyHdr->getHdrStruct()->blobHead = nextPos;         
         CBlobWriteNode *prevBlobNode = activeBlobNode;
-        activeBlobNode = new CBlobWriteNode(nextPos, keyHdr);
+        activeBlobNode = (CBlobWriteNode *)indexCompressor->createNode(nextPos, keyHdr, NodeBlob);
         nextPos += keyHdr->getNodeSize();
         if (prevBlobNode)
         {

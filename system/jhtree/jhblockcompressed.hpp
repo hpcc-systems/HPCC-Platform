@@ -106,9 +106,19 @@ public:
 
     virtual const char *queryName() const override { return "Block"; }
 
-    virtual CWriteNode *createNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode) const override
+    virtual CWriteNodeBase *createNode(offset_t _fpos, CKeyHdr *_keyHdr, NodeType nodeType) const override
     {
-        return new CBlockCompressedWriteNode(_fpos, _keyHdr, isLeafNode, context);
+        switch (nodeType)
+        {
+        case NodeLeaf:
+            return new CBlockCompressedWriteNode(_fpos, _keyHdr, true, context);
+        case NodeBranch:
+            return new CBlockCompressedWriteNode(_fpos, _keyHdr, false, context);
+        case NodeBlob:
+            return new CBlobWriteNode(_fpos, _keyHdr);
+        default:
+            throwUnexpected();
+        }
     }
 
     virtual offset_t queryBranchMemorySize() const override

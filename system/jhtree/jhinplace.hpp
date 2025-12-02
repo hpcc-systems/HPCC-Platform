@@ -329,12 +329,19 @@ public:
     InplaceIndexCompressor(size32_t keyedSize, const CKeyHdr * keyHdr, IHThorIndexWriteArg * helper, const char * _compressionName);
 
     virtual const char *queryName() const override { return compressionName.str(); }
-    virtual CWriteNode *createNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode) const override
+    virtual CWriteNodeBase *createNode(offset_t _fpos, CKeyHdr *_keyHdr, NodeType nodeType) const override
     {
-        if (isLeafNode)
+        switch (nodeType)
+        {
+        case NodeLeaf:
             return new CInplaceLeafWriteNode(_fpos, _keyHdr, ctx);
-        else
+        case NodeBranch:
             return new CInplaceBranchWriteNode(_fpos, _keyHdr, ctx);
+        case NodeBlob:
+            return new CBlobWriteNode(_fpos, _keyHdr);
+        default:
+            throwUnexpected();
+        }
     }
 
     virtual offset_t queryBranchMemorySize() const override
