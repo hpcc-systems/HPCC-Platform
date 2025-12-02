@@ -71,6 +71,6 @@ features:
     icon:
       dark:  /devdoc/redbook.png
       light: /devdoc/redbook.png
-    link: https://hpccsystems.atlassian.net/wiki/spaces/hpcc/pages/23586808/HPCC+Systems+Red+Book
+    link: https://hpcc-systems.github.io/HPCC-Platform/devdoc/red_book/HPCC-Systems-Red-Book.md
 ---
 

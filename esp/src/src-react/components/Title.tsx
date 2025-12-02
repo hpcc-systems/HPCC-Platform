@@ -169,7 +169,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                 {
                     key: "additionalResources", text: nlsHPCC.AdditionalResources, subMenuProps: {
                         items: [
-                            { key: "redBook", href: "https://wiki.hpccsystems.com/display/hpcc/HPCC+Systems+Red+Book", text: nlsHPCC.RedBook, target: "_blank" },
+                            { key: "redBook", href: "https://hpcc-systems.github.io/HPCC-Platform/devdoc/red_book/HPCC-Systems-Red-Book.html", text: nlsHPCC.RedBook, target: "_blank" },
                             { key: "forums", href: "https://hpccsystems.com/bb/", text: nlsHPCC.Forums, target: "_blank" },
                             { key: "issues", href: "https://hpccsystems.atlassian.net/issues/", text: nlsHPCC.IssueReporting, target: "_blank" },
                         ]
