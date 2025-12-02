@@ -19,11 +19,13 @@
 #include "jfile.hpp"
 #include "jtime.hpp"
 #include "jsort.hpp"
+#include "jlog.hpp"
 
 #include "rtlkey.hpp"
 #include "jhtree.hpp"
 #include "rmtfile.hpp"
 #include "rmtclient.hpp"
+#include "mpcomm.hpp"
 
 #include "thorstep.ipp"
 
@@ -80,6 +82,10 @@ protected:
     mutable CriticalSection keyManagersCS;  // CS for any updates to keyManagers
     unsigned fileTableStart = NotFound;
     std::vector<Owned<CStatsContextLogger>> contextLoggers;
+    mptag_t limitAbortTag = TAG_NULL;
+    bool limitAbort = false;
+    bool limitAbortSent = false;
+    bool limitAbortLogged = false;
 
 
     class TransformCallback : implements IThorIndexCallback , public CSimpleInterface
@@ -360,6 +366,83 @@ public:
         else
             return nullptr;
     }
+    void resetLimitAbortState()
+    {
+        limitAbort = false;
+        limitAbortSent = false;
+        limitAbortLogged = false;
+        if (container.queryLocalOrGrouped() || limitAbortTag == TAG_NULL)
+            return;
+        ICommunicator &comm = queryJobChannel().queryJobComm();
+        rank_t sender = 0;
+        while (comm.probe(RANK_ALL, limitAbortTag, &sender, 0))
+        {
+            CMessageBuffer msg;
+            comm.recv(msg, sender, limitAbortTag, &sender, 0);
+        }
+    }
+    bool checkLimitAbortSignal()
+    {
+        if (limitAbort)
+            return true;
+        if (container.queryLocalOrGrouped() || limitAbortTag == TAG_NULL)
+            return false;
+        ICommunicator &comm = queryJobChannel().queryJobComm();
+        rank_t sender = 0;
+        bool receivedAbortSignal = false;
+        while (comm.probe(RANK_ALL, limitAbortTag, &sender, 0))
+        {
+            CMessageBuffer msg;
+            if (comm.recv(msg, sender, limitAbortTag, &sender, 0))
+            receivedAbortSignal = true;
+        }
+        if (receivedAbortSignal)
+        {
+            limitAbort = true;
+            if (!limitAbortLogged)
+            {
+                limitAbortLogged = true;
+                ActPrintLog("INDEXLIMIT: Slave %u received keyed-limit abort signal", queryJobChannel().queryMyRank());
+            }
+            return true;
+        }
+        return false;
+    }
+    // Notify peer slaves once this slave has satisfied the shared limit.
+    void broadcastLimitAbort(rowcount_t localCount=RCMAX)
+    {
+        if (limitAbortSent)
+            return;
+        limitAbortSent = true;
+        limitAbort = true;
+        if (!limitAbortLogged)
+        {
+            const unsigned rank = queryJobChannel().queryMyRank();
+            if (localCount == RCMAX)
+                ActPrintLog("INDEXLIMIT: Slave %u broadcasting keyed-limit abort", rank);
+            else
+                ActPrintLog("INDEXLIMIT: Slave %u broadcasting keyed-limit abort after local count %" I64F "u", rank, (unsigned __int64)localCount);
+            limitAbortLogged = true;
+        }
+        if (container.queryLocalOrGrouped() || limitAbortTag == TAG_NULL)
+            return;
+        ICommunicator &comm = queryJobChannel().queryJobComm();
+        unsigned slaves = container.queryJob().querySlaves();
+        rank_t self = queryJobChannel().queryMyRank();
+        for (rank_t r=1; r<=slaves; ++r)
+        {
+            if (r == self)
+                continue;
+            CMessageBuffer msg;
+            msg.append((byte)1);
+            if (!comm.send(msg, r, limitAbortTag, MP_ASYNC_SEND))
+            {
+                CMessageBuffer retry;
+                retry.append((byte)1);
+                comm.send(retry, r, limitAbortTag);
+            }
+        }
+    }
     void configureNextInput()
     {
         if (currentManager)
@@ -380,8 +463,11 @@ public:
     {
         ++keyedProcessed;
         // NB - this is only checking if local limit exceeded (skip case previously checked)
-        if (keyedProcessed > keyedLimit)
+        if (keyedLimit != RCMAX && keyedProcessed >= keyedLimit)
+        {
+            broadcastLimitAbort(keyedProcessed);
             return true;
+        }
         return false;
     }
 
@@ -526,26 +612,50 @@ public:
     {
         if (0 == partDescs.ordinality())
             return 0;
+        resetLimitAbortState();
         // Note - don't use merger's count - it doesn't work
         unsigned __int64 count = 0;
         IKeyManager *_currentManager = currentManager;
         unsigned p = 0;
+        const bool limitActive = (keyedLimit != RCMAX);
         while (true)
         {
+            if (limitActive && checkLimitAbortSignal())
+                break;
+            if (queryAbortSoon())
+                break;
             IKeyManager *keyManager = nullptr;
             Owned<IIndexLookup> indexInput = getNextInput(keyManager, p, false);
             if (!indexInput)
                 break;
             if (keyManager)
                 prepareManager(keyManager);
-            if (hard) // checkCount checks hard key count only.
+            if (limitActive)
+            {
+                for (;;)
+                {
+                    if (checkLimitAbortSignal() || queryAbortSoon())
+                        break;
+                    const void *key = indexInput->nextKey();
+                    if (!key)
+                        break;
+                    ++count;
+                    callback.finishedRow();
+                    if (count >= keyedLimit)
+                    {
+                        broadcastLimitAbort((rowcount_t)count);
+                        break;
+                    }
+                }
+            }
+            else if (hard) // checkCount checks hard key count only.
                 count += indexInput->checkCount(keyedLimit-count); // part max, is total limit [keyedLimit] minus total so far [count]
             else
                 count += indexInput->getCount();
-            bool limitHit = count > keyedLimit;
+            bool limitHit = count >= keyedLimit;
             if (keyManager)
                 resetManager(keyManager);
-            if (limitHit)
+            if (limitHit || (limitActive && checkLimitAbortSignal()))
                 break;
         }
         if (_currentManager)
@@ -565,7 +675,12 @@ public:
     {
         data.read(logicalFilename);
         if (!container.queryLocalOrGrouped())
+        {
             mpTag = container.queryJobChannel().deserializeMPTag(data); // channel to pass back partial counts for aggregation
+            limitAbortTag = container.queryJobChannel().deserializeMPTag(data);
+        }
+        else
+            limitAbortTag = TAG_NULL;
         if (initialized)
         {
             partDescs.kill();
@@ -686,6 +801,7 @@ public:
     // IThorDataLink
     virtual void start() override
     {
+        resetLimitAbortState();
         PARENT::start();
         keyedProcessed = 0;
         if (!eoi)
@@ -703,6 +819,7 @@ public:
     virtual void reset() override
     {
         PARENT::reset();
+        resetLimitAbortState();
         eoi = false;
         currentPart = 0;
         if (currentManager)
@@ -1247,7 +1364,7 @@ public:
             {
                 distributor->disconnect(true);
                 distributor->join();
-            }            
+            }
         }
         PARENT::stop();
     }
@@ -1419,7 +1536,7 @@ public:
             sz = sizeof(unsigned __int64);
         }
         dataLinkIncrement();
-        return result.finalizeRowClear(sz);     
+        return result.finalizeRowClear(sz);
     }
     virtual void stop() override
     {
@@ -1585,7 +1702,7 @@ class CIndexAggregateSlaveActivity : public CIndexReadSlaveBase
     CPartialResultAggregator aggregator;
 
 public:
-    CIndexAggregateSlaveActivity(CGraphElementBase *_container) 
+    CIndexAggregateSlaveActivity(CGraphElementBase *_container)
         : CIndexReadSlaveBase(_container), aggregator(*this)
     {
         helper = (IHThorIndexAggregateArg *)container.queryHelper();
@@ -1655,7 +1772,7 @@ public:
             }
             return nullptr;
         }
-    }  
+    }
 };
 
 CActivityBase *createIndexAggregateSlave(CGraphElementBase *container) { return new CIndexAggregateSlaveActivity(container); }
