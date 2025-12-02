@@ -71,6 +71,14 @@ public:
     virtual int compareValueAt(const char *src, unsigned int index) const;
 };
 
+class CJHNewBlobNode final : public CJHBlobNode
+{
+public:
+    virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy) override;
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+
 struct CBlockCompressedBuildContext
 {
     ICompressHandler* compressionHandler = nullptr;

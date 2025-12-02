@@ -1465,8 +1465,9 @@ CDiskKeyIndex::CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool
 
 CJHTreeNode *CKeyIndex::_createNode(const NodeHdr &nodeHdr) const
 {
-    if (nodeHdr.compressionType == LegacyCompression)
+    switch (nodeHdr.compressionType)
     {
+    case LegacyCompression:
         switch(nodeHdr.nodeType)
         {
         case NodeBranch:
@@ -1479,7 +1480,7 @@ CJHTreeNode *CKeyIndex::_createNode(const NodeHdr &nodeHdr) const
             else
                 return new CJHLegacySearchNode();
         case NodeBlob:
-            return new CJHTreeBlobNode();
+            return new CJHLegacyBlobNode();
         case NodeMeta:
             return new CJHTreeMetadataNode();
         case NodeBloom:
@@ -1487,29 +1488,26 @@ CJHTreeNode *CKeyIndex::_createNode(const NodeHdr &nodeHdr) const
         default:
             throwUnexpected();
         }
-    }
-    else
-    {
-        switch(nodeHdr.compressionType)
-        {
-        case SplitPayload:
-            assertex(nodeHdr.nodeType== NodeLeaf);    // Should only be using the new format for leaf nodes
-            return new CJHSplitSearchNode();
-        case InplaceCompression:
-            if (nodeHdr.nodeType == NodeLeaf)
-                return new CJHInplaceLeafNode();
-            if (nodeHdr.nodeType == NodeBranch)
-                return new CJHInplaceBranchNode();
-            UNIMPLEMENTED;
-        case BlockCompression:
-            assertex(nodeHdr.nodeType== NodeLeaf);    // Should only be using the new format for leaf nodes
-            if (keyHdr->isVariable())
-                return new CJHBlockCompressedVarNode();
-            else
-                return new CJHBlockCompressedSearchNode();
-        default:
-            throwUnexpected();
-        }
+    case SplitPayload:
+        assertex(nodeHdr.nodeType== NodeLeaf);    // Should only be using the new format for leaf nodes
+        return new CJHSplitSearchNode();
+    case InplaceCompression:
+        if (nodeHdr.nodeType == NodeLeaf)
+            return new CJHInplaceLeafNode();
+        if (nodeHdr.nodeType == NodeBranch)
+            return new CJHInplaceBranchNode();
+        UNIMPLEMENTED;
+    case BlockCompression:
+        assertex(nodeHdr.nodeType== NodeLeaf);
+        if (keyHdr->isVariable())
+            return new CJHBlockCompressedVarNode();
+        else
+            return new CJHBlockCompressedSearchNode();
+    case NewBlobCompression:
+        assertex(nodeHdr.nodeType== NodeBlob);    // Should only be using the NewBlobCompression for blob nodes
+        return new CJHNewBlobNode();
+    default:
+        throw makeStringExceptionV(0, "Unknown compression type %u in key %s", nodeHdr.compressionType, name.get());
     }
 }
 
@@ -1601,9 +1599,9 @@ bool CKeyIndex::hasPayload()
     return keyHdr->hasPayload();
 }
 
-const CJHTreeBlobNode *CKeyIndex::getBlobNode(offset_t nodepos, IContextLogger *ctx, CLoadNodeCacheState & readState)
+const CJHBlobNode *CKeyIndex::getBlobNode(offset_t nodepos, IContextLogger *ctx, CLoadNodeCacheState & readState)
 {
-    Owned<const CJHTreeBlobNode> match;
+    Owned<const CJHBlobNode> match;
     cycle_t readCycles = 0;
     cycle_t fetchCycles = 0;
     {
@@ -1614,7 +1612,7 @@ const CJHTreeBlobNode *CKeyIndex::getBlobNode(offset_t nodepos, IContextLogger *
             CCycleTimer blobLoadTimer;
             Owned<const CJHTreeNode> node = loadNode(&fetchCycles, nodepos, readState); // note - don't use the cache
             assertex(node->isBlob());
-            cachedBlobNode.setown(static_cast<const CJHTreeBlobNode *>(node.getClear()));
+            cachedBlobNode.setown(static_cast<const CJHBlobNode *>(node.getClear()));
             cachedBlobNodePos = nodepos;
             readCycles = blobLoadTimer.elapsedCycles();
         }
@@ -1647,7 +1645,7 @@ const byte *CKeyIndex::loadBlob(unsigned __int64 blobid, size32_t &blobSize, ICo
     size32_t offset = (size32_t) ((blobid & I64C(0xffff000000000000)) >> 44);
 
     CLoadNodeCacheState readState;
-    Owned<const CJHTreeBlobNode> blobNode = getBlobNode(nodepos, ctx, readState);
+    Owned<const CJHBlobNode> blobNode = getBlobNode(nodepos, ctx, readState);
     size32_t sizeRemaining = blobNode->getTotalBlobSize(offset);
     blobSize = sizeRemaining;
     byte *ret = (byte *) malloc(sizeRemaining);

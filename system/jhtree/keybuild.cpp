@@ -152,7 +152,7 @@ public:
         case NodeBranch:
             return branchCompressor->createNode(_fpos, _keyHdr, nodeType);
         case NodeBlob:
-            return new CBlobWriteNode(_fpos, _keyHdr);
+            return new CNewBlobWriteNode(COMPRESS_METHOD_ZSTD, _fpos, _keyHdr);
         default:
             throwUnexpected();
         }

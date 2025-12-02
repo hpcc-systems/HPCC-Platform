@@ -178,6 +178,7 @@ public:
         unsigned maxCompressionFactor = 50;    // Don't compress payload to less than 2% of the original by default (because when it is read it will use lots of memory)
         bool recompress = false;
         bool reuseCompressor = true;
+        CompressionMethod blobCompression = COMPRESS_METHOD_LZW;
     } options;
 };
 
@@ -338,7 +339,10 @@ public:
         case NodeBranch:
             return new CInplaceBranchWriteNode(_fpos, _keyHdr, ctx);
         case NodeBlob:
-            return new CBlobWriteNode(_fpos, _keyHdr);
+            if (ctx.options.blobCompression != COMPRESS_METHOD_LZW)
+                return new CNewBlobWriteNode(ctx.options.blobCompression, _fpos, _keyHdr);
+            else
+                return new CBlobWriteNode(_fpos, _keyHdr);
         default:
             throwUnexpected();
         }

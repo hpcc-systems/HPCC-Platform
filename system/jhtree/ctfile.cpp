@@ -482,17 +482,14 @@ size32_t CLegacyWriteNode::compressValue(const char *keyData, size32_t size, cha
     return size-pack+1;
 }
 
-CBlobWriteNode::CBlobWriteNode(offset_t _fpos, CKeyHdr *_keyHdr) : CWriteNodeBase(_fpos, _keyHdr)
+//---------------------------------------------------------------------------------------------------------------------
+
+CBlobWriteNodeBase::CBlobWriteNodeBase(offset_t _fpos, CKeyHdr *_keyHdr) : CWriteNodeBase(_fpos, _keyHdr)
 {
     hdr.nodeType = NodeBlob;
-    lzwcomp.openBlob(keyPtr, maxBytes);
 }
 
-CBlobWriteNode::~CBlobWriteNode()
-{
-}
-
-unsigned __int64 CBlobWriteNode::makeBlobId(offset_t nodepos, unsigned offset)
+unsigned __int64 CBlobWriteNodeBase::makeBlobId(offset_t nodepos, unsigned offset)
 {
     assertex(nodepos != 0);
     assertex((nodepos & I64C(0xffff000000000000)) == 0);
@@ -500,16 +497,16 @@ unsigned __int64 CBlobWriteNode::makeBlobId(offset_t nodepos, unsigned offset)
     return (((unsigned __int64) offset) << 44) | nodepos;
 }
 
-void CBlobWriteNode::write(IFileIOStream *out, CRC32 *crc)
+void CBlobWriteNodeBase::write(IFileIOStream *out, CRC32 *crc)
 {
-    lzwcomp.close();
+    compressor.close();
     CWriteNodeBase::write(out, crc);
 }
 
-unsigned __int64 CBlobWriteNode::add(const char * &data, size32_t &size)
+unsigned __int64 CBlobWriteNodeBase::add(const char * &data, size32_t &size)
 {
-    unsigned __int64 ret = makeBlobId(getFpos(), lzwcomp.getCurrentOffset());
-    unsigned written = lzwcomp.writeBlob(data, size);
+    unsigned __int64 ret = makeBlobId(getFpos(), compressor.getCurrentOffset());
+    unsigned written = compressor.writeBlob(data, size);
     if (written)
     {
         size -= written;
@@ -518,6 +515,19 @@ unsigned __int64 CBlobWriteNode::add(const char * &data, size32_t &size)
     }
     else
         return 0;
+}
+
+
+CBlobWriteNode::CBlobWriteNode(offset_t _fpos, CKeyHdr *_keyHdr) : CBlobWriteNodeBase(_fpos, _keyHdr)
+{
+    compressor.openBlob(COMPRESS_METHOD_LZW, keyPtr, maxBytes);
+}
+
+CNewBlobWriteNode::CNewBlobWriteNode(CompressionMethod method, offset_t _fpos, CKeyHdr *_keyHdr) : CBlobWriteNodeBase(_fpos, _keyHdr)
+{
+    hdr.compressionType = NewBlobCompression;
+    *keyPtr++ = (byte)method;
+    compressor.openBlob(method, keyPtr, maxBytes-1);
 }
 
 //=========================================================================================================
@@ -643,6 +653,22 @@ void *CJHTreeNode::allocMem(size32_t len)
             throw E.getClear();
     }
     return ret;
+}
+
+
+char *CJHTreeNode::expandData(ICompressHandler * handler, const void *src,size32_t &retsize)
+{
+    Owned<IExpander> exp = handler->getExpander();
+    int len=exp->init(src);
+    if (len==0)
+    {
+        retsize = 0;
+        return NULL;
+    }
+    char *outkeys=(char *) allocMem(len);
+    exp->expand(outkeys);
+    retsize = len;
+    return outkeys;
 }
 
 char *CJHTreeNode::expandData(const void *src,size32_t &retsize)
@@ -1293,23 +1319,7 @@ offset_t CJHRowCompressedNode::getFPosAt(unsigned int num) const
 
 //=========================================================================================================
 
-CJHTreeBlobNode::CJHTreeBlobNode()
-{
-}
-
-CJHTreeBlobNode::~CJHTreeBlobNode()
-{
-}
-
-void CJHTreeBlobNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _fpos, bool needCopy)
-{
-    CJHTreeNode::load(_keyHdr, rawData, _fpos, needCopy);
-    const byte *data = ((const byte *) rawData) + sizeof(hdr);
-    inMemorySize = keyHdr->getNodeSize();
-    keyBuf = expandData(data, inMemorySize);
-}
-
-size32_t CJHTreeBlobNode::getTotalBlobSize(unsigned offset) const
+size32_t CJHBlobNode::getTotalBlobSize(unsigned offset) const
 {
     assertex(offset < inMemorySize);
     unsigned datalen;
@@ -1318,7 +1328,7 @@ size32_t CJHTreeBlobNode::getTotalBlobSize(unsigned offset) const
     return datalen;
 }
 
-size32_t CJHTreeBlobNode::getBlobData(unsigned offset, void *dst) const
+size32_t CJHBlobNode::getBlobData(unsigned offset, void *dst) const
 {
     unsigned sizeHere = getTotalBlobSize(offset);
     offset += sizeof(unsigned);
@@ -1327,6 +1337,15 @@ size32_t CJHTreeBlobNode::getBlobData(unsigned offset, void *dst) const
     memcpy(dst, keyBuf+offset, sizeHere);
     return sizeHere;
 }
+
+void CJHLegacyBlobNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _fpos, bool needCopy)
+{
+    CJHTreeNode::load(_keyHdr, rawData, _fpos, needCopy);
+    const byte *data = ((const byte *) rawData) + sizeof(hdr);
+    inMemorySize = keyHdr->getNodeSize();
+    keyBuf = expandData(data, inMemorySize);
+}
+
 
 void CJHTreeRawDataNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _fpos, bool needCopy)
 {
