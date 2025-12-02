@@ -33,6 +33,7 @@ protected:
     size32_t keyLen = 0;
     size32_t keyCompareLen = 0;
     size32_t keyRecLen = 0;
+    bool zeroFilePosition = true;
 
     unsigned __int64 firstSequence = 0;
 
@@ -76,6 +77,7 @@ struct CBlockCompressedBuildContext
     ICompressHandler* compressionHandler = nullptr;
     StringBuffer compressionOptions;
     CompressionMethod compressionMethod = COMPRESS_METHOD_ZSTDS;
+    bool zeroFilePos = false;
 };
 
 class jhtree_decl CBlockCompressedWriteNode : public CWriteNode
