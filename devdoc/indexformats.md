@@ -9,7 +9,7 @@ The indexes used by the HPCC systems are based on B-trees.  The B-trees are stor
 - Blob nodes\
   Each row in an index is limited to 32K uncompressed.  If a larger payload is required, it is stored separately in one or more blob nodes.
 
-All these nodes are compressed (in different ways) when stored on disk.   The compressed representation can be anything from 1× to 50× smaller; 5× is a typical compression ratio.
+All these nodes are compressed (in different ways) when stored on disk.  The compressed representation can be anything from 1× to 50× smaller; 5× is a typical compression ratio.
 
 ## Factors Affecting Index performance
 
@@ -55,7 +55,7 @@ Fast decompression will obviously reduce the processing time.  But the decompres
 
 Linux has a page cache which uses any spare memory to cache previous reads from disk.  Often when loading a node from disk it will already be in the page cache because it has previously been read.  That typically reduces the read time from ~150 µs (NVMe/SSD) to <10 µs.
 
-The Linux page cache contains compressed nodes, while the internal cache contains expanded pages.  For the same amount of memory, more nodes can be kept in the Linux page cache than the internal cache.   This reduces the number of nodes that are actually read from disk - which is more significant the slower the disk.
+The Linux page cache contains compressed nodes, while the internal cache contains expanded pages.  For the same amount of memory, more nodes can be kept in the Linux page cache than the internal cache.  This reduces the number of nodes that are actually read from disk - which is more significant the slower the disk.
 
 The faster the decompression, the greater the benefit of the Linux page cache over the internal cache.  When index formats are changed you will need to re-tune the system to find the best balance.
 
@@ -124,13 +124,30 @@ On disk:
 * Blob nodes\
   Currently use LZW compression.
 
+Version 9.14.x adds support for inplace:zstds, which further reduces the size of the indexes.  It is likely that the reduced disk size will outweigh the extra decompression time, and the default for compressed('inplace') should be compressed('inplace:zstd') once systems that support that format are widely deployed.
+
 ### Hybrid
 
-This is a proposal for a new format to help with some unusual indexes.
+This format uses the same representation as inplace compression for branch nodes, and an improved version of the legacy compression for leaf nodes.  The most significant change is the compression algorithm can be configured - allowing the use of zstd.
 
-It uses the same representation as inplace compression for branch nodes, and the same representation of leaf nodes as the legacy compression - but it allows the compression algorithm to be configured.  This will provide improved compression for branch nodes, but allow nodes to be decompressed more quickly, and use less disk space.
+Initial results suggest that the on-disk sizes of hybrid:zstds indexes are notably smaller than the legacy format, and generally smaller than the current "inplace:lz4hc3s".  They are very similar size to inplace:zstds for those indexes where inplace compression works well, but also compress well even when inplace compression does not.
 
-So 'hybrid:zstds' would use zstds compression for the leaf nodes.
+Once the format is stable and systems that support it (in a future 9.14.x release) are deployed, the default compression should be changed to hybrid:zstds
+
+### Further ways of reducing the index sizes
+
+Some of the following reduce in-memory size, some on-disk and some both
+
+* Better encoding of variable length rows.
+  (Rows < 127 bytes larger than the keyed portion, or even the fixed portion.)  Saves <.5%
+* Special case common leading text for all entries in a leaf node.
+  It would require compressing the data twice, but initial experiments suggest a further 1% saving.  It should be added to hybrid indexes as an option.  It would also reduce the in-memory sizes.
+* Encode fixed size strings as variable length.
+  This also relies on support for single-byte prefixed variable length strings.  Initial work suggests that the disk size does not change much, but the in-memory size may nearly halve.  Whether this is significant enough to be worthwhile remains to be seen.
+* Use zstd for blobs
+  Blobs are not very common, but this is likely to significantly cut the sizes of files that do use them.
+* Use dictionaries
+  This has the potential of increasing compression.
 
 ## Recommendations for using the new index formats
 
