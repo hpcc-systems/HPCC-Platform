@@ -3515,7 +3515,8 @@ public:
         XRefAllocator allocator(1); // 1MB limit
 
         // Try to allocate more than the limit
-        try {
+        try
+        {
             void *ptr = allocator.alloc(2 * 1024 * 1024); // 2MB
             allocator.dealloc(ptr, 2 * 1024 * 1024); // cleanup in case test fails
             CPPUNIT_FAIL("Should have thrown an exception for memory limit exceeded");
