@@ -51,7 +51,7 @@ global:
   ## resource settings for monitoring sidecar components
   # such as post-mortem collectors
   #monitoringInstanceResources:
-  #  memory: "100Mi"
+  #  memory: "10Mi"
   #  cpu: "5m"
 
   ## env adds default environment variables for all components. Environment settings can also be added or overridden locally
@@ -174,7 +174,7 @@ global:
   # Each entry describes autoscaling policies, including minimum and maximum replica counts and scaling metrics (CPU or memory).
   #
   #hpas:
-  #  HighCPULowReplicaHPAType: # name for this HPA configuration, to be referenced from
+  #  HighCPULowReplicaHPAType: # name for this HPA configuration, to be referenced from components that want to use it
   #   hpa:
   #    minReplicas: 1
   #    maxReplicas: 2

@@ -1500,7 +1500,7 @@ This template sets default low-impact CPU and memory resources suitable for moni
 {{- define "hpcc.addMonitoringResources" -}}
 {{- $monitoringResources := .me | default .root.Values.global.monitoringResources | default dict }}
 {{- $cpuResource := $monitoringResources.cpu | default "5m" }}
-{{- $memoryResource := $monitoringResources.memory | default "100Mi" }}
+{{- $memoryResource := $monitoringResources.memory | default "10Mi" }}
 {{- $resources := dict "memory" $memoryResource "cpu" $cpuResource -}}
 {{- include "hpcc.addResources" (dict "me" $resources "root" .root) }}
 {{- end -}}
