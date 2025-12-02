@@ -3405,14 +3405,10 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIPTTest, "JlibIPTTest");
  *
  */
 
-#include "platform.h"
-#include "jfile.ipp"
-#include "jptree.hpp"
+#include <atomic>
+#include <limits>
+#include <thread>
 #include "jptree.ipp"
-#include "jiface.hpp"
-#include "jio.hpp"
-#include "jstring.hpp"
-#include <string>
 
 IPropertyTree *createCompatibilityConfigPropertyTree()
 {
@@ -3621,16 +3617,26 @@ IPropertyTree *createBinaryDataCompressionTestPTree(const char *testXml)
  * Combined PTree serialization and deserialization tests
  *
  * Tests PTree serialization/deserialization format consistency between MemoryBuffer and IBufferedSerialInputStream
- * and measures performance of both operations
+ *
+ * testRoundTripForRootOnlyPTree - Tests round-trip serialization/deserialization for a PTree with only a root node
+ * testRoundTripForCompatibilityConfigPropertyTree - Tests round-trip for a complex compatibility config PTree
+ * testRoundTripForBinaryDataCompressionTestPTree - Tests round-trip for a PTree with various binary data sizes
+ * testMalformedStreamMissingAttributeListTerminators - Tests deserialization error handling for missing attribute list terminators
+ * testMalformedStreamMissingAttributeValue - Tests deserialization error handling for missing attribute values
+ * testMalformedStreamTruncatedName - Tests deserialization error handling for truncated names
+ * testMultiThreadedSerializationAndDeserializationOfAtomTree - Tests thread safety of serialization/deserialization with multiple threads
  */
 
 class PTreeSerializationDeserializationTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(PTreeSerializationDeserializationTest);
-    // Complete round-trip tests - serialization followed by deserialization with validation
     CPPUNIT_TEST(testRoundTripForRootOnlyPTree);
     CPPUNIT_TEST(testRoundTripForCompatibilityConfigPropertyTree);
     CPPUNIT_TEST(testRoundTripForBinaryDataCompressionTestPTree);
+    CPPUNIT_TEST(testMalformedStreamMissingAttributeListTerminators);
+    CPPUNIT_TEST(testMalformedStreamMissingAttributeValue);
+    CPPUNIT_TEST(testMalformedStreamTruncatedName);
+    CPPUNIT_TEST(testMultiThreadedSerializationAndDeserializationOfAtomTree);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -3658,16 +3664,13 @@ protected:
         originalTree.setown(tree);
         CCycleTimer timer;
 
-        // Serialization
         MemoryBuffer memoryBuffer, streamBuffer;
 
-        // Time serialize() method
         timer.reset();
         originalTree->serialize(memoryBuffer);
         __uint64 serializeElapsedNs = timer.elapsedNs();
         size_t memoryBufferSize = memoryBuffer.length();
 
-        // Time serializeToStream() method
         Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(streamBuffer);
         timer.reset();
         originalTree->serializeToStream(*out);
@@ -3675,30 +3678,26 @@ protected:
         __uint64 serializeToStreamElapsedNs = timer.elapsedNs();
         size_t streamBufferSize = streamBuffer.length();
 
-        // Validation - serialized data matches
         CPPUNIT_ASSERT_EQUAL(memoryBufferSize, streamBufferSize);
         CPPUNIT_ASSERT(memcmp(memoryBuffer.toByteArray(), streamBuffer.toByteArray(), memoryBufferSize) == 0);
 
-        // Time deserialize() method
-        Owned<IPropertyTree> memoryBufferDeserialized = createPTree();
+        // Copy streamBuffer for deserializationFromStream() tests
+        MemoryBuffer streamBuffer2, streamBuffer3;
+        streamBuffer2.append(streamBuffer.length(), streamBuffer.toByteArray());
+        streamBuffer3.append(streamBuffer.length(), streamBuffer.toByteArray());
+
         timer.reset();
-        memoryBufferDeserialized->deserialize(memoryBuffer);
+        Owned<IPropertyTree> memoryBufferDeserialized = createPTree(memoryBuffer);
         __uint64 deserializeElapsedNs = timer.elapsedNs();
 
-        // Time deserializeFromStream() method
         Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(streamBuffer);
-        Owned<IPropertyTree> streamDeserialized = createPTree();
         timer.reset();
-        streamDeserialized->deserializeFromStream(*in);
+        Owned<IPropertyTree> streamDeserialized = createPTreeFromBinary(*in, ipt_none);
         __uint64 deserializeFromStreamElapsedNs = timer.elapsedNs();
 
-        // Create PTree from Binary tests
-        //
-        // Test 1: Call with null nodeCreator (should fall back to createPTree(src, ipt_none))
-        streamBuffer.reset();
-        Owned<IBufferedSerialInputStream> in2 = createBufferedSerialInputStream(streamBuffer);
+        Owned<IBufferedSerialInputStream> in2 = createBufferedSerialInputStream(streamBuffer2);
         Owned<IPropertyTree> deserializedCreatePTreeFromBinaryWithNull = createPTreeFromBinary(*in2, nullptr);
-        // Test 2: Call with custom nodeCreator
+
         class TestNodeCreator : public CSimpleInterfaceOf<IPTreeNodeCreator>
         {
         public:
@@ -3711,12 +3710,9 @@ protected:
             }
         };
         Owned<TestNodeCreator> nodeCreator = new TestNodeCreator();
-        // Reset stream position
-        streamBuffer.reset();
-        Owned<IBufferedSerialInputStream> in3 = createBufferedSerialInputStream(streamBuffer);
+        Owned<IBufferedSerialInputStream> in3 = createBufferedSerialInputStream(streamBuffer3);
         Owned<IPropertyTree> deserializedCreatePTreeFromBinaryWithCreator = createPTreeFromBinary(*in3, nodeCreator);
 
-        // Validation - verify both deserialized trees are equivalent to the original
         CPPUNIT_ASSERT(areMatchingPTrees(originalTree, memoryBufferDeserialized));
         CPPUNIT_ASSERT(areMatchingPTrees(originalTree, streamDeserialized));
         CPPUNIT_ASSERT(areMatchingPTrees(originalTree, deserializedCreatePTreeFromBinaryWithNull));
@@ -3743,6 +3739,52 @@ protected:
         DBGLOG("=== ROUND-TRIP TEST COMPLETED SUCCESSFULLY");
     }
 
+    void expectTruncatedStreamFailure(IPropertyTree &tree, size32_t truncationOffset, const char *expectedSubstring, const char *contextDescription)
+    {
+        MemoryBuffer full;
+        Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(full);
+        tree.serializeToStream(*out);
+        out->flush();
+
+        const byte *bytes = reinterpret_cast<const byte *>(full.toByteArray());
+        size32_t totalLength = full.length();
+
+        VStringBuffer assertMsg("Serialized stream shorter than truncation offset for %s", contextDescription);
+        CPPUNIT_ASSERT_MESSAGE(assertMsg.str(), truncationOffset <= totalLength);
+
+        MemoryBuffer truncated;
+        truncated.append(truncationOffset, bytes);
+
+        Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(truncated);
+        bool hitExpectedThrow = false;
+        try
+        {
+            createPTreeFromBinary(*in, ipt_none);
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            const char *mChars = msg.str();
+            if (mChars && strstr(mChars, expectedSubstring))
+            {
+                hitExpectedThrow = true;
+            }
+            else
+            {
+                VStringBuffer detail("Caught unexpected exception during %s: %s", contextDescription, mChars ? mChars : "<null>");
+                CPPUNIT_FAIL(detail.str());
+            }
+        }
+
+        if (!hitExpectedThrow)
+        {
+            VStringBuffer detail("Did not hit expected exception substring '%s' during %s", expectedSubstring, contextDescription);
+            CPPUNIT_FAIL(detail.str());
+        }
+    }
+
 public:
     // Complete round-trip test methods - perform serialization and deserialization in one test
     void testRoundTripForRootOnlyPTree()
@@ -3759,10 +3801,1279 @@ public:
     {
         performRoundTripTest(__func__, createBinaryDataCompressionTestPTree(testXml));
     }
+
+    class AtomTreeSerializationTestThread : public Thread
+    {
+    public:
+        AtomTreeSerializationTestThread(unsigned _index,
+                             Semaphore &_startSem,
+                             CriticalSection &_errorCs,
+                             bool &_encounteredError,
+                             StringBuffer &_errorMessages,
+                             IPropertyTree &_originalTree)
+            : Thread("AtomTreeSerializationTestThread"),
+              threadIndex(_index),
+              startSem(_startSem),
+              errorCs(_errorCs),
+              encounteredError(_encounteredError),
+              errorMessages(_errorMessages),
+              originalTree(_originalTree)
+        {
+        }
+
+        virtual int run() override
+        {
+            startSem.wait();
+            try
+            {
+                Owned<IPropertyTree> expected = createPTreeFromIPT(&originalTree, ipt_lowmem);
+
+                VStringBuffer threadTag("worker_%u", threadIndex);
+                expected->setProp("@threadId", threadTag.str());
+
+                IPropertyTree *settings = expected->queryPropTree("settings");
+                if (settings)
+                {
+                    settings->setProp("@worker", threadTag.str());
+                    settings->setProp("threshold", VStringBuffer("%u", 42 + threadIndex).str());
+
+                    if (IPropertyTree *alpha = settings->queryPropTree("option[@name=\"alpha\"]"))
+                        alpha->setProp("value", VStringBuffer("alpha_value_%u", threadIndex).str());
+                    if (IPropertyTree *beta = settings->queryPropTree("option[@name=\"beta\"]"))
+                        beta->setProp("value", VStringBuffer("beta_value_%u", threadIndex).str());
+                }
+
+                MemoryBuffer payload;
+                for (unsigned idx = 0; idx < 2048; ++idx)
+                    payload.append((byte)((idx + threadIndex) % 256));
+                expected->setPropBin("binaryPayload", payload.length(), payload.toByteArray());
+
+                if (IPropertyTree *clusters = expected->queryPropTree("clusters"))
+                {
+                    unsigned clusterIndex = 0;
+                    Owned<IPropertyTreeIterator> iter = clusters->getElements("cluster");
+                    ForEach(*iter)
+                    {
+                        IPropertyTree &cluster = iter->query();
+                        cluster.setProp("description", VStringBuffer("Example cluster entry thread %u index %u", threadIndex, clusterIndex).str());
+                        cluster.setPropInt("@threadId", threadIndex);
+
+                        MemoryBuffer clusterPayload;
+                        clusterPayload.append(sizeof(threadIndex), &threadIndex);
+                        clusterPayload.append(sizeof(clusterIndex), &clusterIndex);
+                        cluster.setPropBin("payload", clusterPayload.length(), clusterPayload.toByteArray());
+                        ++clusterIndex;
+                    }
+                }
+
+                if (IPropertyTree *metrics = expected->queryPropTree("metrics"))
+                {
+                    metrics->setProp("@enabled", (threadIndex % 2 == 0) ? "true" : "false");
+                    metrics->setProp("@thread", threadTag.str());
+                    metrics->setProp("sampleInterval", VStringBuffer("%u.%02u", threadIndex + 1, threadIndex).str());
+                }
+
+                MemoryBuffer serialized;
+                {
+                    Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(serialized);
+                    expected->serializeToStream(*out);
+                    out->flush();
+                }
+
+                size32_t serializedLength = (size32_t)serialized.length();
+                if (!serializedLength)
+                {
+                    CriticalBlock block(errorCs);
+                    encounteredError = true;
+                    errorMessages.appendf("Thread %u: serialization produced empty buffer\n", threadIndex);
+                    return 0;
+                }
+
+                Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(serialized);
+                Owned<IPropertyTree> deserialized = createPTreeFromBinary(*in, ipt_lowmem);
+                if (!areMatchingPTrees(expected, deserialized))
+                {
+                    CriticalBlock block(errorCs);
+                    encounteredError = true;
+                    errorMessages.appendf("Thread %u: deserialized tree mismatch for root %s\n", threadIndex, expected->queryName());
+                }
+            }
+            catch (IException *e)
+            {
+                StringBuffer msg;
+                e->errorMessage(msg);
+                e->Release();
+                CriticalBlock block(errorCs);
+                encounteredError = true;
+                errorMessages.appendf("Thread %u: %s\n", threadIndex, msg.str());
+            }
+            catch (...)
+            {
+                CriticalBlock block(errorCs);
+                encounteredError = true;
+                errorMessages.appendf("Thread %u: unknown exception\n", threadIndex);
+            }
+
+            return 0;
+        }
+
+    private:
+        unsigned threadIndex{0};
+        Semaphore &startSem;
+        CriticalSection &errorCs;
+        bool &encounteredError;
+        StringBuffer &errorMessages;
+        IPropertyTree &originalTree;
+    };
+
+    // Multi-threaded serialization/deserialization tests to ensure thread safety with unique Atom trees per thread
+    void testMultiThreadedSerializationAndDeserializationOfAtomTree()
+    {
+        try
+        {
+            constexpr unsigned numThreads = 50;
+            IArrayOf<AtomTreeSerializationTestThread> workers;
+
+            CriticalSection errorCs;
+            bool encounteredError = false;
+            StringBuffer errorMessages;
+            Semaphore startSem; // zero-initialized; used as a start gate
+
+            Owned<IPropertyTree> originalTree = createPTree("MultiThreadRoot", ipt_lowmem);
+            CPPUNIT_ASSERT(originalTree != nullptr);
+
+            auto joinAll = [&workers]()
+            {
+                for (unsigned i = 0; i < workers.ordinality(); ++i)
+                    workers.item(i).join();
+            };
+
+            try
+            {
+                for (unsigned i = 0; i < numThreads; ++i)
+                {
+                    // All threads share the same originalTree, but each creates its own modified copy
+                    // After deserialization, each thread compares its own expected vs actual trees
+                    AtomTreeSerializationTestThread *worker = new AtomTreeSerializationTestThread(i, startSem, errorCs, encounteredError, errorMessages, *originalTree);
+                    workers.append(*worker);
+                    worker->start(false);
+                }
+                startSem.signal(numThreads);
+            }
+            catch (const std::exception &e)
+            {
+                startSem.signal(numThreads);
+                joinAll();
+                CPPUNIT_FAIL(VStringBuffer("Exception while creating worker threads: %s", e.what()).str());
+            }
+            catch (...)
+            {
+                startSem.signal(numThreads);
+                joinAll();
+                CPPUNIT_FAIL("Unknown exception while creating worker threads");
+            }
+
+            joinAll();
+            CPPUNIT_ASSERT_MESSAGE(errorMessages.length() ? errorMessages.str() : "Multi-threaded AtomTree ipt_lowmem deserialization failed", !encounteredError);
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(VStringBuffer("Unexpected IException in testMultiThreadedSerializationAndDeserializationOfAtomTree: %s", msg.str()).str());
+        }
+        catch (const std::exception &e)
+        {
+            CPPUNIT_FAIL(VStringBuffer("Unexpected std::exception in testMultiThreadedSerializationAndDeserializationOfAtomTree: %s", e.what()).str());
+        }
+        catch (...)
+        {
+            CPPUNIT_FAIL("Unexpected unknown exception in testMultiThreadedSerializationAndDeserializationOfAtomTree");
+        }
+    }
+
+    // Malformed buffered-serial stream: ensure exception at jptree.cpp:3089 is thrown
+    void testMalformedStreamMissingAttributeListTerminators()
+    {
+        constexpr const char *rootName = "Root";
+        constexpr unsigned int rootNameLength = (unsigned int)strlen(rootName);
+        Owned<IPropertyTree> original = createPTree(rootName);
+        original->setProp("child", "value");
+        constexpr unsigned int nullTerminatorSize = 1;
+        constexpr unsigned int flagsSize = 1;
+        size32_t flagsEnd = rootNameLength + nullTerminatorSize + flagsSize;
+
+        expectTruncatedStreamFailure(*original, flagsEnd, "PTree deserialization error: end of stream, expected attribute name", "attribute name test");
+    }
+
+    void testMalformedStreamMissingAttributeValue()
+    {
+        constexpr const char *rootName = "Root";
+        constexpr unsigned int rootNameLength = (unsigned int)strlen(rootName);
+        constexpr const char *attrName = "@incomplete";
+        constexpr unsigned int attrNameLength = (unsigned int)strlen(attrName);
+        constexpr const char *attrValue = "value";
+        Owned<IPropertyTree> original = createPTree(rootName);
+        original->setProp(attrName, attrValue);
+        constexpr size32_t nullTerminatorSize = 1;
+        constexpr size32_t flagsSize = 1;
+        constexpr size32_t attributeSectionOffset = rootNameLength + nullTerminatorSize + flagsSize;
+        constexpr size32_t truncationPoint = attributeSectionOffset + attrNameLength + nullTerminatorSize;
+
+        expectTruncatedStreamFailure(*original, truncationPoint, "PTree deserialization error: end of stream, expected attribute value", "attribute value test");
+    }
+
+    void testMalformedStreamTruncatedName()
+    {
+        Owned<IPropertyTree> original = createPTree("Root");
+        expectTruncatedStreamFailure(*original, 0, "PTree deserialization error: end of stream, expected name", "name read test");
+    }
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(PTreeSerializationDeserializationTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeSerializationDeserializationTest, "PTreeSerializationDeserializationTest");
+
+#include <cmath>
+#ifdef CALLGRIND_PROFILING
+#include <valgrind/callgrind.h>
+#endif
+#include "zcrypt.hpp"
+
+// Base class with shared functionality for PTree serialize and deserialize timing tests
+class PTreeTimingTestBase : public CppUnit::TestFixture
+{
+protected:
+    static constexpr unsigned spacingWidth = 2;
+    static constexpr unsigned modeColumnWidth = 24;
+    static constexpr unsigned numericColumnWidth = 15;
+    static constexpr unsigned statsColumnWidth = numericColumnWidth * 4 + 5;
+
+    struct TimingResults
+    {
+        double avgDeserializeCycles{0};
+        double avgSerializeCycles{0};
+        double totalDeserializeCycles{0};
+        double totalSerializeCycles{0};
+        double minDeserializeCycles{0};
+        double maxDeserializeCycles{0};
+        double stdDevDeserializeCycles{0};
+        double minSerializeCycles{0};
+        double maxSerializeCycles{0};
+        double stdDevSerializeCycles{0};
+        const char *testName{nullptr};
+        byte flags{0};
+    };
+
+    const char *getBinaryFilePath()
+    {
+        const char *envPath = getenv("PTREE_TEST_BINARY_FILE");
+        constexpr const char *defaultPath = "~/HPCC-Platform/testing/unittests/ptree.bin.gz";
+        return envPath ? envPath : defaultPath;
+    }
+
+    const char *getXmlFilePath()
+    {
+        const char *envPath = getenv("PTREE_TEST_XML_FILE");
+        constexpr const char *defaultPath = "~/HPCC-Platform/testing/unittests/ptree.xml.gz";
+        return envPath ? envPath : defaultPath;
+    }
+
+    int resolveIterations(int defaultIterations) const
+    {
+        const char *envIterations = getenv("PTREE_TEST_ITERATIONS");
+        if (!envIterations || !*envIterations)
+            return defaultIterations;
+
+        char *endPtr = nullptr;
+        long parsed = strtol(envIterations, &endPtr, 10);
+        if (endPtr == envIterations || *endPtr != '\0')
+        {
+            DBGLOG("PTree timing tests: ignoring invalid PTREE_TEST_ITERATIONS value '%s'", envIterations);
+            return defaultIterations;
+        }
+        if (parsed <= 0)
+        {
+            DBGLOG("PTree timing tests: PTREE_TEST_ITERATIONS value '%s' must be positive, using default %d", envIterations, defaultIterations);
+            return defaultIterations;
+        }
+        if (parsed > std::numeric_limits<int>::max())
+        {
+            DBGLOG("PTree timing tests: PTREE_TEST_ITERATIONS value '%s' exceeds max int, clamping to %d", envIterations, std::numeric_limits<int>::max());
+            parsed = std::numeric_limits<int>::max();
+        }
+
+        return static_cast<int>(parsed);
+    }
+
+    std::string formatFixed(double value, unsigned precision) const
+    {
+        VStringBuffer tmp("%.*f", static_cast<int>(precision), value);
+        return std::string(tmp.str());
+    }
+
+    std::string formatPercent(double value) const
+    {
+        VStringBuffer tmp("%+.2f%%", value);
+        return std::string(tmp.str());
+    }
+
+    std::string formatPercentDiff(double baseline, double value) const
+    {
+        constexpr double diffEpsilon = 1e-9;
+        if (fabs(baseline) < diffEpsilon)
+            return "-";
+        double percent = ((value - baseline) / baseline) * 100.0;
+        return formatPercent(percent);
+    }
+
+    void printTimingTableHeader(FILE *stream) const
+    {
+        (void)stream;
+        DBGLOG("mode,avg_deserialize_cycles,min_deserialize_cycles,max_deserialize_cycles,stddev_deserialize_cycles,avg_serialize_cycles,min_serialize_cycles,max_serialize_cycles,stddev_serialize_cycles");
+    }
+
+    void printTimingResultRow(FILE *stream, const char *label, const TimingResults &results) const
+    {
+        (void)stream;
+        std::string avgDeserialize = formatFixed(results.avgDeserializeCycles, 0);
+        std::string minDeserialize = formatFixed(results.minDeserializeCycles, 0);
+        std::string maxDeserialize = formatFixed(results.maxDeserializeCycles, 0);
+        std::string stddevDeserialize = formatFixed(results.stdDevDeserializeCycles, 2);
+        std::string avgSerialize = formatFixed(results.avgSerializeCycles, 0);
+        std::string minSerialize = formatFixed(results.minSerializeCycles, 0);
+        std::string maxSerialize = formatFixed(results.maxSerializeCycles, 0);
+        std::string stddevSerialize = formatFixed(results.stdDevSerializeCycles, 2);
+
+        DBGLOG("\"%s\",%s,%s,%s,%s,%s,%s,%s,%s",
+            label,
+            avgDeserialize.c_str(),
+            minDeserialize.c_str(),
+            maxDeserialize.c_str(),
+            stddevDeserialize.c_str(),
+            avgSerialize.c_str(),
+            minSerialize.c_str(),
+            maxSerialize.c_str(),
+            stddevSerialize.c_str());
+    }
+
+    void printTimingDiffRow(FILE *stream, const char *label,
+                            const TimingResults &baseline,
+                            const TimingResults &comparison) const
+    {
+        (void)stream;
+        std::string deserializeAvgDiff = formatPercentDiff(baseline.avgDeserializeCycles, comparison.avgDeserializeCycles);
+        std::string deserializeMinDiff = formatPercentDiff(baseline.minDeserializeCycles, comparison.minDeserializeCycles);
+        std::string deserializeMaxDiff = formatPercentDiff(baseline.maxDeserializeCycles, comparison.maxDeserializeCycles);
+        std::string deserializeStdDiff = formatPercentDiff(baseline.stdDevDeserializeCycles, comparison.stdDevDeserializeCycles);
+        std::string serializeAvgDiff = formatPercentDiff(baseline.avgSerializeCycles, comparison.avgSerializeCycles);
+        std::string serializeMinDiff = formatPercentDiff(baseline.minSerializeCycles, comparison.minSerializeCycles);
+        std::string serializeMaxDiff = formatPercentDiff(baseline.maxSerializeCycles, comparison.maxSerializeCycles);
+        std::string serializeStdDiff = formatPercentDiff(baseline.stdDevSerializeCycles, comparison.stdDevSerializeCycles);
+
+        DBGLOG("\"%s\",%s,%s,%s,%s,%s,%s,%s,%s",
+            label,
+            deserializeAvgDiff.c_str(),
+            deserializeMinDiff.c_str(),
+            deserializeMaxDiff.c_str(),
+            deserializeStdDiff.c_str(),
+            serializeAvgDiff.c_str(),
+            serializeMinDiff.c_str(),
+            serializeMaxDiff.c_str(),
+            serializeStdDiff.c_str());
+    }
+
+    const char *expandTilde(const char *path, StringBuffer &expanded)
+    {
+        if (!path || !path[0])
+            return path;
+
+        if (path[0] == '~' && (path[1] == '/' || path[1] == '\0'))
+        {
+            const char *home = getenv("HOME");
+            if (home)
+            {
+                expanded.append(home);
+                if (path[1] == '/')
+                    expanded.append(path + 1);
+                return expanded.str();
+            }
+        }
+        return path;
+    }
+
+    void readXmlFile(const char *filePath, StringBuffer &output)
+    {
+        DBGLOG("Reading XML %s", filePath);
+        StringBuffer expandedPath;
+        const char *actualPath = expandTilde(filePath, expandedPath);
+        if (!actualPath)
+            throw MakeStringException(-1, "XML file path is null");
+        Owned<IFile> xmlFile = createIFile(actualPath);
+        if (!xmlFile->exists())
+            throw MakeStringException(-1, "XML file \"%s\" does not exist", actualPath);
+
+        size32_t fileSize = (size32_t)xmlFile->size();
+        MemoryBuffer fileData;
+        Owned<IFileIO> fileIO = xmlFile->open(IFOread);
+        fileData.reserveTruncate(fileSize);
+        size32_t bytesRead = fileIO->read(0, fileSize, fileData.bufferBase());
+        fileData.setLength(bytesRead);
+
+        const char *ext = pathExtension(filePath);
+        if (ext && streq(ext, ".gz"))
+            gunzip((const byte *)fileData.toByteArray(), fileData.length(), output);
+        else
+            output.append(fileData.length(), fileData.toByteArray());
+    }
+
+    void createBinaryDataFromXml(const char *xmlFilePath, MemoryBuffer &binaryData)
+    {
+        DBGLOG("Creating binary data from XML %s", xmlFilePath);
+
+        StringBuffer xmlData;
+        try
+        {
+            readXmlFile(xmlFilePath, xmlData);
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            throw MakeStringException(-1, "Failed to read XML data '%s': %s", xmlFilePath, msg.str());
+        }
+
+        Owned<IPropertyTree> tree;
+        try
+        {
+            tree.setown(createPTreeFromXMLString(xmlData.str(), ipt_none));
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            throw MakeStringException(-1, "Failed to parse XML data '%s': %s", xmlFilePath, msg.str());
+        }
+        catch (...)
+        {
+            throw MakeStringException(-1, "Failed to parse XML data '%s'", xmlFilePath);
+        }
+
+        binaryData.clear();
+        Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(binaryData);
+        tree->serializeToStream(*out);
+        out->flush();
+    }
+
+    bool readBinaryFile(const char *filePath, MemoryBuffer &output)
+    {
+        StringBuffer expandedPath;
+        const char *actualPath = expandTilde(filePath, expandedPath);
+        if (!actualPath)
+            return false;
+        Owned<IFile> binaryFile = createIFile(actualPath);
+        if (!binaryFile->exists())
+            return false;
+
+        size32_t fileSize = (size32_t)binaryFile->size();
+        Owned<IFileIO> fileIO = binaryFile->open(IFOread);
+        output.reserveTruncate(fileSize);
+        size32_t bytesRead = fileIO->read(0, fileSize, output.bufferBase());
+        output.setLength(bytesRead);
+
+        const char *ext = pathExtension(actualPath);
+        if (ext && streq(ext, ".gz"))
+        {
+            StringBuffer tempOutput;
+            gunzip((const byte *)output.toByteArray(), output.length(), tempOutput);
+            output.clear();
+            output.append(tempOutput.length(), tempOutput.str());
+        }
+
+        return true;
+    }
+
+    TimingResults performBinaryTimingTestWithResults(const char *testName, const MemoryBuffer &binaryDataBuffer, int iterations, byte flags)
+    {
+        assertex(testName);
+        unsigned binaryDataLen = binaryDataBuffer.length();
+        assertex(binaryDataLen > 0);
+
+        CCycleTimer timer;
+        cycle_t totalDeserializeCycles{0};
+        cycle_t totalSerializeCycles{0};
+        double minDeserializeCycles = std::numeric_limits<double>::max();
+        double maxDeserializeCycles = 0.0;
+        double minSerializeCycles = std::numeric_limits<double>::max();
+        double maxSerializeCycles = 0.0;
+        double meanDeserialize = 0.0;
+        double m2Deserialize = 0.0;
+        double meanSerialize = 0.0;
+        double m2Serialize = 0.0;
+        MemoryBuffer streamBufferIn;
+        MemoryBuffer streamBufferOut;
+        for (int i = 0; i < iterations; i++)
+        {
+            DBGLOG("Binary timing test %s iteration %d/%d", testName, i+1, iterations);
+
+            streamBufferIn.clear();
+            streamBufferIn.append(binaryDataLen, binaryDataBuffer.toByteArray());
+            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(streamBufferIn);
+            timer.reset();
+            Owned<IPropertyTree> deserializedTree = createPTreeFromBinary(*in, flags);
+            cycle_t deserializeElapsedCycles = timer.elapsedCycles();
+            Owned<IPropertyTree> copyDeserializedTree = createPTreeFromIPT(deserializedTree); // For validation
+            totalDeserializeCycles += deserializeElapsedCycles;
+            double deserializeCyclesDouble = static_cast<double>(deserializeElapsedCycles);
+            minDeserializeCycles = std::min(minDeserializeCycles, deserializeCyclesDouble);
+            maxDeserializeCycles = std::max(maxDeserializeCycles, deserializeCyclesDouble);
+            double deltaDeserialize = deserializeCyclesDouble - meanDeserialize;
+            meanDeserialize += deltaDeserialize / (i + 1);
+            double deltaDeserialize2 = deserializeCyclesDouble - meanDeserialize;
+            m2Deserialize += deltaDeserialize * deltaDeserialize2;
+
+            streamBufferOut.clear();
+            Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(streamBufferOut);
+            timer.reset();
+            deserializedTree->serializeToStream(*out);
+            out->flush();
+            cycle_t serializeElapsedCycles = timer.elapsedCycles();
+            totalSerializeCycles += serializeElapsedCycles;
+            double serializeCyclesDouble = static_cast<double>(serializeElapsedCycles);
+            minSerializeCycles = std::min(minSerializeCycles, serializeCyclesDouble);
+            maxSerializeCycles = std::max(maxSerializeCycles, serializeCyclesDouble);
+            double deltaSerialize = serializeCyclesDouble - meanSerialize;
+            meanSerialize += deltaSerialize / (i + 1);
+            double deltaSerialize2 = serializeCyclesDouble - meanSerialize;
+            m2Serialize += deltaSerialize * deltaSerialize2;
+
+            CPPUNIT_ASSERT(areMatchingPTrees(copyDeserializedTree, deserializedTree));
+        }
+
+        TimingResults results;
+        results.avgDeserializeCycles = (double)totalDeserializeCycles / iterations;
+        results.avgSerializeCycles = (double)totalSerializeCycles / iterations;
+        results.totalDeserializeCycles = (double)totalDeserializeCycles;
+        results.totalSerializeCycles = (double)totalSerializeCycles;
+        results.minDeserializeCycles = (iterations > 0) ? minDeserializeCycles : 0.0;
+        results.maxDeserializeCycles = (iterations > 0) ? maxDeserializeCycles : 0.0;
+        results.stdDevDeserializeCycles = (iterations > 1) ? std::sqrt(m2Deserialize / (iterations - 1)) : 0.0;
+        results.minSerializeCycles = (iterations > 0) ? minSerializeCycles : 0.0;
+        results.maxSerializeCycles = (iterations > 0) ? maxSerializeCycles : 0.0;
+        results.stdDevSerializeCycles = (iterations > 1) ? std::sqrt(m2Serialize / (iterations - 1)) : 0.0;
+        results.testName = testName;
+        results.flags = flags;
+
+        return results;
+    }
+
+    TimingResults performXmlTimingTestWithResults(const char *testName, const char *xmlData, int iterations, byte flags)
+    {
+        assertex(testName);
+        assertex(xmlData);
+
+        CCycleTimer timer;
+        cycle_t totalDeserializeCycles{0};
+        cycle_t totalSerializeCycles{0};
+        double minDeserializeCycles = std::numeric_limits<double>::max();
+        double maxDeserializeCycles = 0.0;
+        double minSerializeCycles = std::numeric_limits<double>::max();
+        double maxSerializeCycles = 0.0;
+        double meanDeserialize = 0.0;
+        double m2Deserialize = 0.0;
+        double meanSerialize = 0.0;
+        double m2Serialize = 0.0;
+
+        for (int i = 0; i < iterations; i++)
+        {
+            DBGLOG("XML timing test %s iteration %d/%d", testName, i+1, iterations);
+
+            timer.reset();
+            Owned<IPropertyTree> tree = createPTreeFromXMLString(xmlData, flags);
+            cycle_t deserializeElapsedCycles = timer.elapsedCycles();
+            totalDeserializeCycles += deserializeElapsedCycles;
+            double deserializeCyclesDouble = static_cast<double>(deserializeElapsedCycles);
+            minDeserializeCycles = std::min(minDeserializeCycles, deserializeCyclesDouble);
+            maxDeserializeCycles = std::max(maxDeserializeCycles, deserializeCyclesDouble);
+            double deltaDeserialize = deserializeCyclesDouble - meanDeserialize;
+            meanDeserialize += deltaDeserialize / (i + 1);
+            double deltaDeserialize2 = deserializeCyclesDouble - meanDeserialize;
+            m2Deserialize += deltaDeserialize * deltaDeserialize2;
+
+            timer.reset();
+            StringBuffer xmlOutput;
+            toXML(tree, xmlOutput);
+            cycle_t serializeElapsedCycles = timer.elapsedCycles();
+            totalSerializeCycles += serializeElapsedCycles;
+            double serializeCyclesDouble = static_cast<double>(serializeElapsedCycles);
+            minSerializeCycles = std::min(minSerializeCycles, serializeCyclesDouble);
+            maxSerializeCycles = std::max(maxSerializeCycles, serializeCyclesDouble);
+            double deltaSerialize = serializeCyclesDouble - meanSerialize;
+            meanSerialize += deltaSerialize / (i + 1);
+            double deltaSerialize2 = serializeCyclesDouble - meanSerialize;
+            m2Serialize += deltaSerialize * deltaSerialize2;
+        }
+
+        TimingResults results;
+        results.avgDeserializeCycles = (double)totalDeserializeCycles / iterations;
+        results.avgSerializeCycles = (double)totalSerializeCycles / iterations;
+        results.totalDeserializeCycles = (double)totalDeserializeCycles;
+        results.totalSerializeCycles = (double)totalSerializeCycles;
+        results.minDeserializeCycles = (iterations > 0) ? minDeserializeCycles : 0.0;
+        results.maxDeserializeCycles = (iterations > 0) ? maxDeserializeCycles : 0.0;
+        results.stdDevDeserializeCycles = (iterations > 1) ? std::sqrt(m2Deserialize / (iterations - 1)) : 0.0;
+        results.minSerializeCycles = (iterations > 0) ? minSerializeCycles : 0.0;
+        results.maxSerializeCycles = (iterations > 0) ? maxSerializeCycles : 0.0;
+        results.stdDevSerializeCycles = (iterations > 1) ? std::sqrt(m2Serialize / (iterations - 1)) : 0.0;
+        results.testName = testName;
+        results.flags = flags;
+
+        return results;
+    }
+
+    struct ConcurrentTimingSummary
+    {
+        unsigned threads{0};
+        unsigned iterationsPerThread{0};
+        unsigned totalOperations{0};
+        double avgDeserializeCycles{0};
+        uint64_t minDeserializeCycles{0};
+        uint64_t maxDeserializeCycles{0};
+        double avgDeserializeUs{0};
+        double minDeserializeUs{0};
+        double maxDeserializeUs{0};
+    };
+
+    template <typename Factory>
+    void runConcurrentSerializeDeserializeTest(const char *label, unsigned numThreads, unsigned iterationsPerThread, Factory &&factory, ConcurrentTimingSummary *summary = nullptr) const
+    {
+        assertex(label && *label);
+        if (numThreads == 0 || iterationsPerThread == 0)
+            return;
+
+        std::atomic<uint64_t> totalDeserializeCycles{0};
+        std::atomic<uint64_t> minDeserializeCycles{std::numeric_limits<uint64_t>::max()};
+        std::atomic<uint64_t> maxDeserializeCycles{0};
+        std::atomic<unsigned> failureCount{0};
+        CriticalSection errorCs;
+        StringBuffer errorMessages;
+
+        auto updateMin = [](std::atomic<uint64_t> &target, uint64_t value)
+        {
+            uint64_t current = target.load(std::memory_order_relaxed);
+            while (value < current && !target.compare_exchange_weak(current, value, std::memory_order_relaxed))
+            {
+            }
+        };
+
+        auto updateMax = [](std::atomic<uint64_t> &target, uint64_t value)
+        {
+            uint64_t current = target.load(std::memory_order_relaxed);
+            while (value > current && !target.compare_exchange_weak(current, value, std::memory_order_relaxed))
+            {
+            }
+        };
+
+        struct SharedIterationData
+        {
+            StringBuffer verifyPath;
+            StringBuffer expectedValue;
+            byte deserializeFlags{ipt_none};
+            bool hasVerification{false};
+        };
+
+        std::vector<SharedIterationData> sharedIterations;
+        sharedIterations.reserve(iterationsPerThread);
+        std::vector<std::unique_ptr<MemoryBuffer>> serializedBuffers;
+        serializedBuffers.reserve(iterationsPerThread);
+        for (unsigned iteration = 0; iteration < iterationsPerThread; ++iteration)
+        {
+            Owned<IPropertyTree> tree;
+            StringBuffer verifyPath;
+            StringBuffer expectedValue;
+            byte deserializeFlags = ipt_none;
+            try
+            {
+                factory(0, iteration, tree, verifyPath, expectedValue, deserializeFlags);
+            }
+            catch (IException *e)
+            {
+                StringBuffer msg;
+                e->errorMessage(msg);
+                e->Release();
+                VStringBuffer detail("Factory threw IException while preparing %s iteration %u: %s", label, iteration, msg.str());
+                CPPUNIT_FAIL(detail.str());
+            }
+            catch (const std::exception &e)
+            {
+                VStringBuffer detail("Factory threw std::exception while preparing %s iteration %u: %s", label, iteration, e.what());
+                CPPUNIT_FAIL(detail.str());
+            }
+            catch (...)
+            {
+                VStringBuffer detail("Factory threw unknown exception while preparing %s iteration %u", label, iteration);
+                CPPUNIT_FAIL(detail.str());
+            }
+
+            if (!tree)
+            {
+                VStringBuffer msg("Factory returned null tree while preparing %s iteration %u", label, iteration);
+                CPPUNIT_FAIL(msg.str());
+            }
+
+            SharedIterationData data;
+            std::unique_ptr<MemoryBuffer> serialized(new MemoryBuffer);
+            Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(*serialized);
+            tree->serializeToStream(*out);
+            out->flush();
+            serializedBuffers.push_back(std::move(serialized));
+            data.deserializeFlags = deserializeFlags;
+            if (verifyPath.length())
+            {
+                data.verifyPath.append(verifyPath);
+                data.expectedValue.append(expectedValue);
+                data.hasVerification = true;
+            }
+
+            sharedIterations.push_back(std::move(data));
+        }
+
+        std::vector<std::thread> workers;
+        workers.reserve(numThreads);
+        for (unsigned threadIndex = 0; threadIndex < numThreads; ++threadIndex)
+        {
+            workers.emplace_back([&, threadIndex]()
+            {
+                MemoryBuffer workingBuffer;
+                for (unsigned iteration = 0; iteration < iterationsPerThread; ++iteration)
+                {
+                    const SharedIterationData &iterationData = sharedIterations[iteration];
+                    MemoryBuffer &sourceBuffer = *serializedBuffers[iteration];
+                    try
+                    {
+                        workingBuffer.clear();
+                        workingBuffer.append(sourceBuffer.length(), sourceBuffer.toByteArray());
+                        workingBuffer.reset();
+
+                        CCycleTimer timer;
+                        timer.reset();
+                        Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(workingBuffer);
+                        Owned<IPropertyTree> roundTrip = createPTreeFromBinary(*in, iterationData.deserializeFlags);
+                        cycle_t deserializeCycles = timer.elapsedCycles();
+
+                        if (iterationData.hasVerification)
+                        {
+                            const char *actualValue = roundTrip->queryProp(iterationData.verifyPath.str());
+                            if (!actualValue || strcmp(actualValue, iterationData.expectedValue.str()) != 0)
+                            {
+                                CriticalBlock block(errorCs);
+                                failureCount.fetch_add(1, std::memory_order_relaxed);
+                                VStringBuffer msg("Value mismatch for %s thread %u iteration %u: expected '%s' got '%s'", label, threadIndex, iteration, iterationData.expectedValue.str(), actualValue ? actualValue : "<null>");
+                                errorMessages.append(msg).append('\n');
+                            }
+                        }
+
+                        uint64_t deserializeValue = (uint64_t)deserializeCycles;
+                        totalDeserializeCycles.fetch_add(deserializeValue, std::memory_order_relaxed);
+                        updateMin(minDeserializeCycles, deserializeValue);
+                        updateMax(maxDeserializeCycles, deserializeValue);
+                    }
+                    catch (IException *e)
+                    {
+                        StringBuffer msg;
+                        e->errorMessage(msg);
+                        e->Release();
+                        CriticalBlock block(errorCs);
+                        failureCount.fetch_add(1, std::memory_order_relaxed);
+                        VStringBuffer detail("IException in %s thread %u iteration %u: %s", label, threadIndex, iteration, msg.str());
+                        errorMessages.append(detail).append('\n');
+                    }
+                    catch (const std::exception &e)
+                    {
+                        CriticalBlock block(errorCs);
+                        failureCount.fetch_add(1, std::memory_order_relaxed);
+                        VStringBuffer detail("std::exception in %s thread %u iteration %u: %s", label, threadIndex, iteration, e.what());
+                        errorMessages.append(detail).append('\n');
+                    }
+                    catch (...)
+                    {
+                        CriticalBlock block(errorCs);
+                        failureCount.fetch_add(1, std::memory_order_relaxed);
+                        VStringBuffer detail("Unknown exception in %s thread %u iteration %u", label, threadIndex, iteration);
+                        errorMessages.append(detail).append('\n');
+                    }
+                }
+            });
+        }
+
+        for (auto &worker : workers)
+            worker.join();
+
+        const unsigned totalOperations = numThreads * iterationsPerThread;
+        double avgDeserialize = totalOperations ? (double)totalDeserializeCycles.load(std::memory_order_relaxed) / totalOperations : 0.0;
+        uint64_t minDeserializeValue = minDeserializeCycles.load(std::memory_order_relaxed);
+        uint64_t maxDeserializeValue = maxDeserializeCycles.load(std::memory_order_relaxed);
+        if (minDeserializeValue == std::numeric_limits<uint64_t>::max())
+            minDeserializeValue = 0;
+        double avgDeserializeNs = cycle_to_nanosec((cycle_t)avgDeserialize);
+        double minDeserializeNs = cycle_to_nanosec((cycle_t)minDeserializeValue);
+        double maxDeserializeNs = cycle_to_nanosec((cycle_t)maxDeserializeValue);
+
+        if (summary)
+        {
+            summary->threads = numThreads;
+            summary->iterationsPerThread = iterationsPerThread;
+            summary->totalOperations = totalOperations;
+            summary->avgDeserializeCycles = avgDeserialize;
+            summary->minDeserializeCycles = minDeserializeValue;
+            summary->maxDeserializeCycles = maxDeserializeValue;
+            summary->avgDeserializeUs = avgDeserializeNs / 1000.0;
+            summary->minDeserializeUs = minDeserializeNs / 1000.0;
+            summary->maxDeserializeUs = maxDeserializeNs / 1000.0;
+        }
+        else
+        {
+            DBGLOG("Concurrent test '%s' completed with %u operations (threads=%u, iterations/thread=%u)", label, totalOperations, numThreads, iterationsPerThread);
+            DBGLOG("  Deserialize: avg %.0f cycles (%.3f us), min %llu cycles (%.3f us), max %llu cycles (%.3f us)",
+                avgDeserialize, avgDeserializeNs / 1000.0,
+                (unsigned long long)minDeserializeValue, minDeserializeNs / 1000.0,
+                (unsigned long long)maxDeserializeValue, maxDeserializeNs / 1000.0);
+        }
+
+        unsigned failures = failureCount.load(std::memory_order_relaxed);
+        if (failures)
+        {
+            VStringBuffer msg("Concurrent test '%s' encountered %u failure(s):\n%s", label, failures, errorMessages.str());
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+};
+
+// Test suite for XML timing tests
+//  testXmlTimingWithNormalVsLowMem: compares timing of XML deserialization/serialization with normal vs low memory mode
+//  testXmlConcurrentSerializationDeserializationUniqueProperties: multi-threaded test where each thread des
+class PTreeXmlTimingStressTest : public PTreeTimingTestBase
+{
+    CPPUNIT_TEST_SUITE(PTreeXmlTimingStressTest);
+    CPPUNIT_TEST(testXmlTimingWithNormalVsLowMem);
+    CPPUNIT_TEST(testXmlConcurrentSerializationDeserializationUniqueProperties);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void testXmlTimingWithNormalVsLowMem()
+    {
+        const int iterations = resolveIterations(10);
+
+        StringBuffer xmlData;
+        readXmlFile(getXmlFilePath(), xmlData);
+        unsigned xmlDataLen = (unsigned)strlen(xmlData.str());
+
+        TimingResults xmlNormalResults = performXmlTimingTestWithResults("XML Normal", xmlData.str(), iterations, ipt_none);
+        TimingResults xmlLowMemResults = performXmlTimingTestWithResults("XML Low Memory", xmlData.str(), iterations, ipt_lowmem);
+
+        DBGLOG("\n=== XML TIMING COMPARISON TEST ===");
+        DBGLOG("XML data size: %u bytes", xmlDataLen);
+        DBGLOG("Iterations: %d", iterations);
+        printTimingTableHeader(stdout);
+        printTimingResultRow(stdout, "XML Normal", xmlNormalResults);
+        printTimingResultRow(stdout, "XML Low Memory", xmlLowMemResults);
+        printTimingDiffRow(stdout, "XML LowMem Diff", xmlNormalResults, xmlLowMemResults);
+    }
+
+    void testXmlConcurrentSerializationDeserializationUniqueProperties()
+    {
+        const unsigned numThreads = 50;
+        unsigned iterationsPerThread = (unsigned)resolveIterations(3);
+        if (iterationsPerThread == 0)
+            iterationsPerThread = 1;
+        else if (iterationsPerThread > 50)
+            iterationsPerThread = 50;
+
+        StringBuffer xmlData;
+        readXmlFile(getXmlFilePath(), xmlData);
+        const char *xmlSource = xmlData.str();
+
+        runConcurrentSerializeDeserializeTest("XML Concurrent Unique Properties", numThreads, iterationsPerThread,
+            [xmlSource](unsigned /*threadIndex*/, unsigned iteration, Owned<IPropertyTree> &tree, StringBuffer &verifyPath, StringBuffer &expectedValue, byte &deserializeFlags)
+            {
+                tree.setown(createPTreeFromXMLString(xmlSource, ipt_none));
+                if (!tree)
+                    throw MakeStringException(-1, "Failed to construct XML tree for shared iteration data");
+                ensurePTree(tree, "ConcurrentSummary");
+                verifyPath.appendf("ConcurrentSummary/@iteration_%u", iteration);
+                expectedValue.appendf("xml-iteration-%u", iteration);
+                tree->setProp(verifyPath.str(), expectedValue.str());
+                deserializeFlags = ipt_none;
+            });
+    }
+};
+
+// Test suite for Binary timing tests
+//  testBinaryTimingWithNormalVsLowMem: compares timing of Binary deserialization/serialization with normal vs low memory mode
+//  testBinaryConcurrentSerializationDeserializationUniqueProperties: multi-threaded test where each thread des
+class PTreeBinaryTimingStressTest : public PTreeTimingTestBase
+{
+    CPPUNIT_TEST_SUITE(PTreeBinaryTimingStressTest);
+    CPPUNIT_TEST(testBinaryTimingWithNormalVsLowMem);
+    CPPUNIT_TEST(testBinaryConcurrentSerializationDeserializationUniqueProperties);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void testBinaryTimingWithNormalVsLowMem()
+    {
+        const int iterations = resolveIterations(10);
+
+        // Load Binary data  - if the binary file does not exist then create it from the XML file
+        MemoryBuffer binaryData;
+        if (!readBinaryFile(getBinaryFilePath(), binaryData))
+            createBinaryDataFromXml(getXmlFilePath(), binaryData);
+        unsigned binaryDataLen = (unsigned)binaryData.length();
+
+        TimingResults binaryNormalResults = performBinaryTimingTestWithResults("Binary Normal", binaryData, iterations, ipt_none);
+        TimingResults binaryLowMemResults = performBinaryTimingTestWithResults("Binary Low Memory", binaryData, iterations, ipt_lowmem);
+
+        DBGLOG("\n=== BINARY TIMING COMPARISON TEST ===");
+        DBGLOG("Binary data size: %u bytes", binaryDataLen);
+        DBGLOG("Iterations: %d", iterations);
+        printTimingTableHeader(stdout);
+        printTimingResultRow(stdout, "Binary Normal", binaryNormalResults);
+        printTimingResultRow(stdout, "Binary Low Memory", binaryLowMemResults);
+        printTimingDiffRow(stdout, "Binary LowMem Diff", binaryNormalResults, binaryLowMemResults);
+    }
+
+    void testBinaryConcurrentSerializationDeserializationUniqueProperties()
+    {
+        const unsigned numThreads = 50;
+        unsigned iterationsPerThread = (unsigned)resolveIterations(3);
+        if (iterationsPerThread == 0)
+            iterationsPerThread = 1;
+        else if (iterationsPerThread > 50)
+            iterationsPerThread = 50;
+
+        MemoryBuffer binaryData;
+        if (!readBinaryFile(getBinaryFilePath(), binaryData))
+            createBinaryDataFromXml(getXmlFilePath(), binaryData);
+
+        const size32_t binarySize = (size32_t)binaryData.length();
+        const void *binaryBytes = binaryData.toByteArray();
+
+        ConcurrentTimingSummary timingSummary;
+        runConcurrentSerializeDeserializeTest("Binary Concurrent Unique Properties", numThreads, iterationsPerThread,
+            [binarySize, binaryBytes](unsigned /*threadIndex*/, unsigned iteration, Owned<IPropertyTree> &tree, StringBuffer &verifyPath, StringBuffer &expectedValue, byte &deserializeFlags)
+            {
+                MemoryBuffer workingBuffer;
+                workingBuffer.append(binarySize, binaryBytes);
+                Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(workingBuffer);
+                tree.setown(createPTreeFromBinary(*in, ipt_none));
+                if (!tree)
+                    throw MakeStringException(-1, "Failed to construct binary tree for shared iteration data");
+                ensurePTree(tree, "ConcurrentSummary");
+                verifyPath.appendf("ConcurrentSummary/@iteration_%u", iteration);
+                expectedValue.appendf("binary-iteration-%u", iteration);
+                tree->setProp(verifyPath.str(), expectedValue.str());
+                deserializeFlags = ipt_none;
+            }, &timingSummary);
+
+        DBGLOG("binary_concurrent_metrics_header,threads,iterations_per_thread,total_operations,avg_deserialize_cycles,avg_deserialize_us,min_deserialize_cycles,min_deserialize_us,max_deserialize_cycles,max_deserialize_us");
+
+        DBGLOG("binary_concurrent_metrics,%u,%u,%u,%.0f,%.3f,%llu,%.3f,%llu,%.3f",
+            timingSummary.threads,
+            timingSummary.iterationsPerThread,
+            timingSummary.totalOperations,
+            timingSummary.avgDeserializeCycles,
+            timingSummary.avgDeserializeUs,
+            (unsigned long long)timingSummary.minDeserializeCycles,
+            timingSummary.minDeserializeUs,
+            (unsigned long long)timingSummary.maxDeserializeCycles,
+            timingSummary.maxDeserializeUs);
+    }
+};
+
+//  Test suite for combined XML and Binary timing tests
+//  testCombinedXmlAndBinaryTimingWithNormalVsLowMem: compares timing of XML and Binary deserialization/serialization with normal vs low memory mode
+//  testCombinedConcurrentSerializationDeserializationUniqueProperties: multi-threaded test where each thread deserializes and serializes unique properties in both XML and Binary formats
+class PTreeCombinedTimingStressTest : public PTreeTimingTestBase
+{
+    CPPUNIT_TEST_SUITE(PTreeCombinedTimingStressTest);
+    CPPUNIT_TEST(testCombinedXmlAndBinaryTimingWithNormalVsLowMem);
+    CPPUNIT_TEST(testCombinedConcurrentSerializationDeserializationUniqueProperties);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void testCombinedXmlAndBinaryTimingWithNormalVsLowMem()
+    {
+        START_TEST
+
+        const int iterations = resolveIterations(10);
+
+        StringBuffer xmlData;
+        readXmlFile(getXmlFilePath(), xmlData);
+        unsigned xmlDataLen = (unsigned)strlen(xmlData.str());
+
+        // Load Binary data - if the binary file does not exist then create it from the XML file
+        MemoryBuffer binaryData;
+        if (!readBinaryFile(getBinaryFilePath(), binaryData))
+            createBinaryDataFromXml(getXmlFilePath(), binaryData);
+        unsigned binaryDataLen = (unsigned)binaryData.length();
+
+        TimingResults xmlNormalResults = performXmlTimingTestWithResults("XML Normal", xmlData.str(), iterations, ipt_none);
+        TimingResults xmlLowMemResults = performXmlTimingTestWithResults("XML Low Memory", xmlData.str(), iterations, ipt_lowmem);
+        TimingResults binaryNormalResults = performBinaryTimingTestWithResults("Binary Normal", binaryData, iterations, ipt_none);
+        TimingResults binaryLowMemResults = performBinaryTimingTestWithResults("Binary Low Memory", binaryData, iterations, ipt_lowmem);
+
+        DBGLOG("\n=== COMBINED XML & BINARY TIMING COMPARISON TEST ===");
+        DBGLOG("XML data size: %u bytes", xmlDataLen);
+        DBGLOG("Binary data size: %u bytes", binaryDataLen);
+        DBGLOG("Iterations: %d", iterations);
+        printTimingTableHeader(stdout);
+        printTimingResultRow(stdout, "XML Normal", xmlNormalResults);
+        printTimingResultRow(stdout, "XML Low Memory", xmlLowMemResults);
+        printTimingResultRow(stdout, "Binary Normal", binaryNormalResults);
+        printTimingResultRow(stdout, "Binary Low Memory", binaryLowMemResults);
+        printTimingDiffRow(stdout, "XML LowMem Diff", xmlNormalResults, xmlLowMemResults);
+        printTimingDiffRow(stdout, "Binary LowMem Diff", binaryNormalResults, binaryLowMemResults);
+        printTimingDiffRow(stdout, "Binary vs XML Normal", xmlNormalResults, binaryNormalResults);
+        printTimingDiffRow(stdout, "Binary vs XML LowMem", xmlLowMemResults, binaryLowMemResults);
+
+        END_TEST
+    }
+
+    void testCombinedConcurrentSerializationDeserializationUniqueProperties()
+    {
+        const unsigned numThreads = 50;
+        unsigned iterationsPerThread = (unsigned)resolveIterations(3);
+        if (iterationsPerThread == 0)
+            iterationsPerThread = 1;
+        else if (iterationsPerThread > 50)
+            iterationsPerThread = 50;
+
+        StringBuffer xmlData;
+        readXmlFile(getXmlFilePath(), xmlData);
+        const char *xmlSource = xmlData.str();
+
+        runConcurrentSerializeDeserializeTest("Combined XML Concurrent Unique Properties", numThreads, iterationsPerThread,
+            [xmlSource](unsigned /*threadIndex*/, unsigned iteration, Owned<IPropertyTree> &tree, StringBuffer &verifyPath, StringBuffer &expectedValue, byte &deserializeFlags)
+            {
+                tree.setown(createPTreeFromXMLString(xmlSource, ipt_none));
+                if (!tree)
+                    throw MakeStringException(-1, "Failed to construct XML tree for shared iteration data");
+                ensurePTree(tree, "CombinedConcurrent");
+                verifyPath.appendf("CombinedConcurrent/@xml_iteration_%u", iteration);
+                expectedValue.appendf("combined-xml-iteration-%u", iteration);
+                tree->setProp(verifyPath.str(), expectedValue.str());
+                deserializeFlags = ipt_none;
+            });
+
+        MemoryBuffer binaryData;
+        if (!readBinaryFile(getBinaryFilePath(), binaryData))
+            createBinaryDataFromXml(getXmlFilePath(), binaryData);
+
+        const size32_t binarySize = (size32_t)binaryData.length();
+        const void *binaryBytes = binaryData.toByteArray();
+
+        runConcurrentSerializeDeserializeTest("Combined Binary Concurrent Unique Properties", numThreads, iterationsPerThread,
+            [binarySize, binaryBytes](unsigned /*threadIndex*/, unsigned iteration, Owned<IPropertyTree> &tree, StringBuffer &verifyPath, StringBuffer &expectedValue, byte &deserializeFlags)
+            {
+                MemoryBuffer workingBuffer;
+                workingBuffer.append(binarySize, binaryBytes);
+                Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(workingBuffer);
+                tree.setown(createPTreeFromBinary(*in, ipt_none));
+                if (!tree)
+                    throw MakeStringException(-1, "Failed to construct binary tree for shared iteration data");
+                ensurePTree(tree, "CombinedConcurrent");
+                verifyPath.appendf("CombinedConcurrent/@binary_iteration_%u", iteration);
+                expectedValue.appendf("combined-binary-iteration-%u", iteration);
+                tree->setProp(verifyPath.str(), expectedValue.str());
+                deserializeFlags = ipt_none;
+            });
+    }
+};
+
+//  Test suite for profiling Binary deserialization
+//  testBinaryLowMemDeserializationForProfiling: focused test for profiling tools to analyze binary deserialization with low memory mode
+class PTreeBinaryDeserializationProfilingStressTest : public PTreeTimingTestBase
+{
+    CPPUNIT_TEST_SUITE(PTreeBinaryDeserializationProfilingStressTest);
+    CPPUNIT_TEST(testBinaryLowMemDeserializationForProfiling);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void testBinaryLowMemDeserializationForProfiling()
+    {
+        // This test is designed specifically for profiling tools
+        // It focuses solely on binary deserialization with low memory flags
+        // Run with: perf record -g ./unittests --test testBinaryLowMemDeserializationForProfiling
+        // Or with callgrind: valgrind --tool=callgrind ./unittests -e PTreeSerializationDeserializationXmlTimingStressTest
+
+        const int iterations = resolveIterations(1);  // Default to 1 but allow env override for profiling runs
+        constexpr const byte flags = ipt_lowmem;
+
+        MemoryBuffer binaryData;
+        const char *binaryPath = getBinaryFilePath();
+        try
+        {
+            if (!readBinaryFileRaw(binaryPath, binaryData)) // If the binary file does not exist then create it from the XML file
+                createBinaryDataFromXml(getXmlFilePath(), binaryData);
+
+            if (!decompressIfNeeded(binaryPath, binaryData))
+                CPPUNIT_FAIL("Failed to decompress binary data");
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+        catch (...)
+        {
+            CPPUNIT_FAIL("Failed to load test data files");
+        }
+
+        unsigned binaryDataLen = binaryData.length();
+        if (binaryDataLen == 0)
+            CPPUNIT_FAIL("Binary data is empty - test data files not found or empty");
+
+        DBGLOG("=== BINARY LOW MEMORY DESERIALIZATION PROFILING TEST ===");
+        DBGLOG("Binary data size: %u bytes (decompressed)", binaryDataLen);
+        DBGLOG("Iterations: %d", iterations);
+        DBGLOG("Flags: 0x%02X (ipt_lowmem)", flags);
+        DBGLOG("Decompression completed BEFORE profiling begins");
+        DBGLOG("This test is optimized for profiling - running deserialization only");
+
+        CCycleTimer timer;
+        cycle_t totalDeserializeCycles{0};
+        double minDeserializeCycles = std::numeric_limits<double>::max();
+        double maxDeserializeCycles = 0.0;
+        double meanDeserialize = 0.0;
+        double m2Deserialize = 0.0;
+
+        MemoryBuffer streamBufferIn;
+        try
+        {
+            for (int i = 0; i < iterations; i++)
+            {
+                DBGLOG("Profiling iteration %d/%d", i + 1, iterations);
+                streamBufferIn.clear();
+                streamBufferIn.append(binaryDataLen, binaryData.toByteArray());
+                Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(streamBufferIn);
+
+                timer.reset();
+#ifdef CALLGRIND_PROFILING
+                CALLGRIND_START_INSTRUMENTATION;
+                CALLGRIND_TOGGLE_COLLECT;
+#endif
+                Owned<IPropertyTree> deserializedTree = createPTreeFromBinary(*in, flags);
+#ifdef CALLGRIND_PROFILING
+                CALLGRIND_TOGGLE_COLLECT;
+                CALLGRIND_STOP_INSTRUMENTATION;
+#endif
+                cycle_t deserializeElapsedCycles = timer.elapsedCycles();
+                totalDeserializeCycles += deserializeElapsedCycles;
+                double deserializeCyclesDouble = static_cast<double>(deserializeElapsedCycles);
+                minDeserializeCycles = std::min(minDeserializeCycles, deserializeCyclesDouble);
+                maxDeserializeCycles = std::max(maxDeserializeCycles, deserializeCyclesDouble);
+                double deltaDeserialize = deserializeCyclesDouble - meanDeserialize;
+                meanDeserialize += deltaDeserialize / (i + 1);
+                double deltaDeserialize2 = deserializeCyclesDouble - meanDeserialize;
+                m2Deserialize += deltaDeserialize * deltaDeserialize2;
+
+                CPPUNIT_ASSERT(deserializedTree != nullptr); // Keep a reference to prevent optimization
+            }
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+        catch (...)
+        {
+            CPPUNIT_FAIL("Unexpected exception during deserialization");
+        }
+
+        double avgDeserializeCycles = (double)totalDeserializeCycles / iterations;
+        double totalDeserializeCyclesDouble = (double)totalDeserializeCycles;
+        double avgDeserializeNs = cycle_to_nanosec((cycle_t)avgDeserializeCycles);
+        double iterationsPerSecond = avgDeserializeNs > 0 ? 1e9 / avgDeserializeNs : std::numeric_limits<double>::infinity();
+        double minDeserializeCyclesOutput = (iterations > 0) ? minDeserializeCycles : 0.0;
+        double maxDeserializeCyclesOutput = (iterations > 0) ? maxDeserializeCycles : 0.0;
+        double stdDevDeserializeCycles = (iterations > 1) ? std::sqrt(m2Deserialize / (iterations - 1)) : 0.0;
+
+        TimingResults profilingResults;
+        profilingResults.avgDeserializeCycles = avgDeserializeCycles;
+        profilingResults.totalDeserializeCycles = totalDeserializeCyclesDouble;
+        profilingResults.minDeserializeCycles = minDeserializeCyclesOutput;
+        profilingResults.maxDeserializeCycles = maxDeserializeCyclesOutput;
+        profilingResults.stdDevDeserializeCycles = stdDevDeserializeCycles;
+        profilingResults.avgSerializeCycles = 0.0;
+        profilingResults.totalSerializeCycles = 0.0;
+        profilingResults.minSerializeCycles = 0.0;
+        profilingResults.maxSerializeCycles = 0.0;
+        profilingResults.stdDevSerializeCycles = 0.0;
+
+        printTimingTableHeader(stdout);
+        printTimingResultRow(stdout, "Binary LowMem Profiling", profilingResults);
+
+        DBGLOG("profiling_additional_metrics,total_deserialize_cycles,%.0f", totalDeserializeCyclesDouble);
+        DBGLOG("profiling_additional_metrics,iterations_per_second,%.2f", iterationsPerSecond);
+    }
+
+private:
+    bool readBinaryFileRaw(const char *filePath, MemoryBuffer &output)
+    {
+        DBGLOG("Reading binary %s", filePath);
+
+        StringBuffer expandedPath;
+        const char *actualPath = expandTilde(filePath, expandedPath);
+        if (!actualPath)
+            return false;
+        Owned<IFile> binaryFile = createIFile(actualPath);
+        if (!binaryFile->exists())
+            return false;
+
+        size32_t fileSize = (size32_t)binaryFile->size();
+        Owned<IFileIO> fileIO = binaryFile->open(IFOread);
+        output.reserveTruncate(fileSize);
+        size32_t bytesRead = fileIO->read(0, fileSize, output.bufferBase());
+        output.setLength(bytesRead);
+
+        return true;
+    }
+
+    bool decompressIfNeeded(const char *filePath, MemoryBuffer &data)
+    {
+        StringBuffer expandedPath;
+        const char *actualPath = expandTilde(filePath, expandedPath);
+        if (!actualPath)
+            return false;
+
+        const char *ext = pathExtension(actualPath);
+        if (ext && streq(ext, ".gz"))
+        {
+            DBGLOG("Decompressing %s", filePath);
+
+            StringBuffer tempOutput;
+            gunzip((const byte *)data.toByteArray(), data.length(), tempOutput);
+            data.clear();
+            data.append(tempOutput.length(), tempOutput.str());
+        }
+
+        return true;
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(PTreeXmlTimingStressTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeXmlTimingStressTest, "PTreeXmlTimingStressTest");
+CPPUNIT_TEST_SUITE_REGISTRATION(PTreeBinaryTimingStressTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeBinaryTimingStressTest, "PTreeBinaryTimingStressTest");
+CPPUNIT_TEST_SUITE_REGISTRATION(PTreeCombinedTimingStressTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeCombinedTimingStressTest, "PTreeCombinedTimingStressTest");
+CPPUNIT_TEST_SUITE_REGISTRATION(PTreeBinaryDeserializationProfilingStressTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeBinaryDeserializationProfilingStressTest, "PTreeBinaryDeserializationProfilingStressTest");
 
 #include "jdebug.hpp"
 #include "jmutex.hpp"
