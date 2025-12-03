@@ -53,10 +53,11 @@ public:
     {
         if (shouldAccept)
         {
-            acceptedConnections++;
             // Create a handler like real implementations do
             // Use minimal sizes since we're just testing accept functionality
-            return new CReadSocketHandler(*this, asyncReader, sock, 4, 1024);
+            CReadSocketHandler *handler = new CReadSocketHandler(*this, asyncReader, sock, 4, 1024);
+            acceptedConnections++;
+            return handler;
         }
         else
         {
