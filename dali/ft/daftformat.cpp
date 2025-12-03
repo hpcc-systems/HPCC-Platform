@@ -1149,6 +1149,11 @@ size32_t CCsvPartitioner::deduceStartNextLine(const byte * start, unsigned maxTo
     if (start == end || kind(prevMatch) == TERMINATOR)
         return end-start;
 
+    // Hit the end of file and no newline has been seen - either a corrupt file, or a very small file with no
+    // newline terminator - e.g. spray_header_test.ecl.  If it is less than a max record size, assume it is the latter.
+    if (maxToRead <= format.maxRecordSize)
+        return end-start;
+
     throw makeStringException(0, "Could not deduce the end of the record - pathological ");
 }
 
