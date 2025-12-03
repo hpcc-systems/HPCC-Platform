@@ -5,23 +5,24 @@ on:
     branches:
       - "master"
       - "candidate-*"
+    paths:
+      - "rtl/include/eclhelper.hpp"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
-  build:
-    name: "Check eclhelper interface"
+  fail-on-eclhelper-change:
+    name: "eclhelper.hpp must not change"
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout pr
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-      - name: Fetch base
+      - name: Fail workflow
         run: |
-          git -c protocol.version=2 fetch --no-tags --prune --progress --no-recurse-submodules --depth=1 origin ${{ github.base_ref }}
-      - name: Check eclhelper
-        run: |
-          git diff origin/${{ github.base_ref }} --exit-code -- rtl/include/eclhelper.hpp
+          echo "ERROR: Changes detected in rtl/include/eclhelper.hpp"
+          echo "This is a critical binary compatibility interface that must remain stable."
+          echo "If you need to modify this file, please coordinate with platform maintainers."
+          exit 1
