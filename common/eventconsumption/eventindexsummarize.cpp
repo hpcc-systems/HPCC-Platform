@@ -39,6 +39,30 @@ public:
     }
 
 protected:
+    // Common data structures moved from CNodeCollector to avoid replication
+    struct Bucket
+    {
+        __uint64 total{0};
+        uint32_t count{0};
+        uint32_t min{UINT32_MAX};
+        uint32_t max{0};
+    };
+    struct Events
+    {
+        uint32_t hits{0};
+        uint32_t misses{0};
+        uint32_t loads{0};
+        uint32_t payloads{0};
+        uint32_t evictions{0};
+    };
+    enum ReadBucket
+    {
+        PageCache,
+        LocalFile,
+        RemoteFile,
+        NumBuckets
+    };
+    static constexpr __uint64 readBucketBoundary[NumBuckets] = {20'000, 400'000, UINT64_MAX};
     void appendCSVColumn(StringBuffer& line, const char* value)
     {
         if (!line.isEmpty())
@@ -140,28 +164,6 @@ class CNodeCollector : public CSummaryCollector
 protected:
     struct NodeStats
     {
-        struct Bucket
-        {
-            __uint64 total{0};
-            uint32_t count{0};
-            uint32_t min{UINT32_MAX};
-            uint32_t max{0};
-        };
-        struct Events
-        {
-            uint32_t hits{0};
-            uint32_t misses{0};
-            uint32_t loads{0};
-            uint32_t payloads{0};
-            uint32_t evictions{0};
-        };
-        enum ReadBucket
-        {
-            PageCache,
-            LocalFile,
-            RemoteFile,
-            NumBuckets
-        };
         uint32_t inMemorySize{0};
         Events events;
         Bucket readTime[NumBuckets];
@@ -200,10 +202,10 @@ public: // IEventVisitor
                 tmp = event.queryNumericValue(EvAttrReadTime);
                 if (tmp)
                 {
-                    unsigned bucket = NodeStats::NumBuckets;
+                    unsigned bucket = NumBuckets;
                     while (bucket > 0 && tmp < readBucketBoundary[bucket - 1])
                         bucket--;
-                    assertex(bucket < NodeStats::NumBuckets);
+                    assertex(bucket < NumBuckets);
 
                     nodeStats.readTime[bucket].count++;
                     nodeStats.readTime[bucket].total += tmp;
@@ -287,7 +289,7 @@ protected:
             };
             Bucket inMemorySize;
             Events events;
-            Bucket readTime[NodeStats::NumBuckets];
+            Bucket readTime[NumBuckets];
             Bucket expandTime;
         };
         struct FileStats
@@ -316,7 +318,7 @@ protected:
                 nodeKindStats.events.loads += nodeStats.events.loads;
                 nodeKindStats.events.payloads += nodeStats.events.payloads;
                 nodeKindStats.events.evictions += nodeStats.events.evictions;
-                for (unsigned bucket = 0; bucket < NodeStats::NumBuckets; bucket++)
+                for (unsigned bucket = 0; bucket < NumBuckets; bucket++)
                 {
                     nodeKindStats.readTime[bucket].count += nodeStats.readTime[bucket].count;
                     nodeKindStats.readTime[bucket].total += nodeStats.readTime[bucket].total;
@@ -376,7 +378,7 @@ protected:
                 appendCSVBucket(line, nodeStats.inMemorySize, false);
                 appendCSVEvents(line, nodeStats.events);
                 __uint64 contentiousReads = nodeStats.events.loads;
-                for (unsigned bucket = 0; bucket < NodeStats::NumBuckets; bucket++)
+                for (unsigned bucket = 0; bucket < NumBuckets; bucket++)
                 {
                     appendCSVBucket(line, nodeStats.readTime[bucket], true);
                     contentiousReads -= nodeStats.readTime[bucket].count;
@@ -424,7 +426,7 @@ protected:
 
             Bucket inMemorySize;
             Events events;
-            Bucket readTime[NodeStats::NumBuckets];
+            Bucket readTime[NumBuckets];
             Bucket expandTime;
 
             for (Cache::value_type& entry : stats[nodeKind])
@@ -442,7 +444,7 @@ protected:
                 events.loads += nodeStats.events.loads;
                 events.payloads += nodeStats.events.payloads;
                 events.evictions += nodeStats.events.evictions;
-                for (unsigned bucket = 0; bucket < NodeStats::NumBuckets; bucket++)
+                for (unsigned bucket = 0; bucket < NumBuckets; bucket++)
                 {
                     readTime[bucket].count += nodeStats.readTime[bucket].count;
                     readTime[bucket].total += nodeStats.readTime[bucket].total;
@@ -459,7 +461,7 @@ protected:
             appendCSVBucket(line, inMemorySize, false);
             appendCSVEvents(line, events);
             __uint64 contentiousReads = events.loads;
-            for (unsigned bucket = 0; bucket < NodeStats::NumBuckets; bucket++)
+            for (unsigned bucket = 0; bucket < NumBuckets; bucket++)
             {
                 appendCSVBucket(line, readTime[bucket], true);
                 contentiousReads -= readTime[bucket].count;
@@ -494,7 +496,7 @@ protected:
                 appendCSVColumn(line, nodeStats.inMemorySize);
                 appendCSVEvents(line, nodeStats.events);
                 __uint64 contentiousReads = nodeStats.events.loads;
-                for (unsigned bucket = 0; bucket < NodeStats::NumBuckets; bucket++)
+                for (unsigned bucket = 0; bucket < NumBuckets; bucket++)
                 {
                     appendCSVBucket(line, nodeStats.readTime[bucket], true);
                     contentiousReads -= nodeStats.readTime[bucket].count;
@@ -508,8 +510,303 @@ protected:
 
 protected:
     using Cache = std::unordered_map<IndexHashKey, NodeStats, IndexHashKeyHash>;
-    static constexpr __uint64 readBucketBoundary[NodeStats::NumBuckets] = {20'000, 400'000, UINT64_MAX};
     Cache stats[NumNodeKinds];
+};
+
+class TraceHashKey
+{
+public:
+    StringAttr traceId;
+    TraceHashKey() = default;
+    TraceHashKey(const char* _traceId) : traceId(_traceId) {}
+    TraceHashKey(const CEvent& event) : traceId(event.queryTextValue(EvAttrEventTraceId)) {}
+    bool operator == (const TraceHashKey& other) const { return streq(traceId.str(), other.traceId.str()); }
+};
+
+class TraceHashKeyHash
+{
+public:
+    std::size_t operator()(const TraceHashKey& key) const
+    {
+        return hashc((byte*)key.traceId.str(), key.traceId.length(), fnvInitialHash32);
+    }
+};
+
+class CTraceCollector : public CSummaryCollector
+{
+protected:
+    class NodeKindStats
+    {
+    public:
+        Events events;
+        Bucket readTime[NumBuckets];
+        Bucket expandTime;
+        std::unordered_map<IndexHashKey, uint32_t, IndexHashKeyHash> nodeMemorySize; // Track memory size per unique node
+    public:
+        NodeKindStats() = default;
+        bool isEmpty() const
+        {
+            return events.hits == 0 && events.misses == 0 && events.loads == 0 &&
+                   events.payloads == 0 && events.evictions == 0;
+        }
+        void visit(CEvent& event)
+        {
+            __uint64 tmp;
+            switch (event.queryType())
+            {
+            case EventIndexCacheHit:
+                tmp = event.queryNumericValue(EvAttrInMemorySize);
+                if (tmp)
+                    nodeMemorySize[IndexHashKey(event)] = tmp; // Store/update memory size for this node
+                events.hits++;
+                break;
+            case EventIndexCacheMiss:
+                events.misses++;
+                break;
+            case EventIndexLoad:
+                tmp = event.queryNumericValue(EvAttrInMemorySize);
+                if (tmp)
+                    nodeMemorySize[IndexHashKey(event)] = tmp; // Store/update memory size for this node
+                tmp = event.queryNumericValue(EvAttrReadTime);
+                if (tmp)
+                {
+                    unsigned bucket = NumBuckets;
+                    while (bucket > 0 && tmp < readBucketBoundary[bucket - 1])
+                        bucket--;
+                    assertex(bucket < NumBuckets);
+
+                    readTime[bucket].count++;
+                    readTime[bucket].total += tmp;
+                    readTime[bucket].min = std::min(readTime[bucket].min, uint32_t(tmp));
+                    readTime[bucket].max = std::max(readTime[bucket].max, uint32_t(tmp));
+                    tmp = event.queryNumericValue(EvAttrExpandTime);
+                    if (tmp)
+                    {
+                        expandTime.count++;
+                        expandTime.total += tmp;
+                        expandTime.min = std::min(expandTime.min, uint32_t(tmp));
+                        expandTime.max = std::max(expandTime.max, uint32_t(tmp));
+                    }
+                }
+                events.loads++;
+                break;
+            case EventIndexEviction:
+                tmp = event.queryNumericValue(EvAttrInMemorySize);
+                if (tmp)
+                    nodeMemorySize[IndexHashKey(event)] = tmp; // Store/update memory size for this node
+                events.evictions++;
+                break;
+            case EventIndexPayload:
+                tmp = event.queryNumericValue(EvAttrExpandTime);
+                if (tmp && event.queryBooleanValue(EvAttrFirstUse))
+                {
+                    expandTime.count++;
+                    expandTime.total += tmp;
+                    expandTime.min = std::min(expandTime.min, uint32_t(tmp));
+                    expandTime.max = std::max(expandTime.max, uint32_t(tmp));
+                }
+                events.payloads++;
+                break;
+            default:
+                break;
+            }
+        }
+        void addStats(const NodeKindStats& other)
+        {
+            events.hits += other.events.hits;
+            events.misses += other.events.misses;
+            events.loads += other.events.loads;
+            events.payloads += other.events.payloads;
+            events.evictions += other.events.evictions;
+            for (unsigned bucket = 0; bucket < NumBuckets; bucket++)
+            {
+                if (other.readTime[bucket].count == 0)
+                    continue;
+                readTime[bucket].count += other.readTime[bucket].count;
+                readTime[bucket].total += other.readTime[bucket].total;
+                readTime[bucket].min = std::min(readTime[bucket].min, other.readTime[bucket].min);
+                readTime[bucket].max = std::max(readTime[bucket].max, other.readTime[bucket].max);
+            }
+            if (other.expandTime.count != 0)
+            {
+                expandTime.count += other.expandTime.count;
+                expandTime.total += other.expandTime.total;
+                expandTime.min = std::min(expandTime.min, other.expandTime.min);
+                expandTime.max = std::max(expandTime.max, other.expandTime.max);
+            }
+            nodeMemorySize.insert(other.nodeMemorySize.begin(), other.nodeMemorySize.end());
+        }
+    };
+    class TraceStats
+    {
+    public:
+        NodeKindStats kinds[NumNodeKinds];
+        std::set<__uint64> uniqueFileIds; // Track unique files accessed in this trace
+        __uint64 firstTimestamp{UINT64_MAX}; // Earliest event timestamp in this trace
+        __uint64 lastTimestamp{0}; // Latest event timestamp in this trace
+    public:
+        TraceStats() = default;
+        void visit(CEvent& event)
+        {
+            __uint64 fileId = event.queryNumericValue(EvAttrFileId);
+            uniqueFileIds.insert(fileId);
+
+            // Track earliest and latest timestamps for this trace
+            __uint64 timestamp = event.queryNumericValue(EvAttrEventTimestamp);
+            if (timestamp != 0)
+            {
+                firstTimestamp = std::min(firstTimestamp, timestamp);
+                lastTimestamp = std::max(lastTimestamp, timestamp);
+            }
+
+            kinds[queryIndexNodeKind(event)].visit(event);
+        }
+    };
+public: // IEventVisitor
+    virtual bool visitEvent(CEvent& event) override
+    {
+        // Implicit event filter applied unconditionally
+        if (queryEventContext(event.queryType()) != EventCtxIndex)
+            return true;
+        __uint64 fileId = event.queryNumericValue(EvAttrFileId);
+        if (event.queryType() != MetaFileInformation)
+        {
+            const char* traceIdStr = "";
+            if (event.hasAttribute(EvAttrEventTraceId))
+                traceIdStr = event.queryTextValue(EvAttrEventTraceId);
+            // Note: Missing trace ID values are considered valid and represented as empty string
+
+            TraceHashKey key(traceIdStr);
+            stats[key].visit(event);
+        }
+        return true;
+    }
+
+public: // CSummaryCollector
+    using CSummaryCollector::CSummaryCollector;
+
+    virtual void summarize() override
+    {
+        // Determine which node kinds have data
+        bool haveNodeKindEntries[NumNodeKinds] = {false,};
+        for (Cache::value_type& entry : stats)
+        {
+            TraceStats& traceStats = entry.second;
+            for (unsigned nodeKind = 0; nodeKind < NumNodeKinds; nodeKind++)
+            {
+                const NodeKindStats& nodeKindStats = traceStats.kinds[nodeKind];
+                if (!nodeKindStats.isEmpty())
+                {
+                    haveNodeKindEntries[nodeKind] = true;
+                }
+            }
+        }
+
+        StringBuffer line;
+        appendCSVColumns(line, "Trace ID", "Service Name", "First Timestamp", "Last Timestamp", "Unique Files");
+
+        // Add aggregate statistics headers
+        appendNodeKindHeaders(line, "Total ");
+
+        // Add node kind specific headers only for kinds that have data
+        for (unsigned nodeKind = 0; nodeKind < NumNodeKinds; nodeKind++)
+        {
+            if (!haveNodeKindEntries[nodeKind])
+                continue;
+            const char* nodeKindName = mapNodeKind((NodeKind)nodeKind);
+            VStringBuffer prefix("%c%s ", toupper(*nodeKindName), nodeKindName + 1);
+            appendNodeKindHeaders(line, prefix);
+        }
+
+        outputLine(line);
+
+        for (Cache::value_type& entry : stats)
+        {
+            const TraceHashKey& key = entry.first;
+            TraceStats& traceStats = entry.second;
+
+            // Look up service name for this trace
+            const char* serviceName = operation.queryMetaInfoState().queryServiceName(key.traceId.str());
+            if (!serviceName)
+                serviceName = "";
+
+            // Format timestamps using CDateTime (empty if no valid timestamps were found)
+            StringBuffer earliestTsStr, latestTsStr;
+            if (traceStats.firstTimestamp != UINT64_MAX)
+            {
+                CDateTime earliestDt;
+                earliestDt.setTimeStampNs(traceStats.firstTimestamp);
+                earliestDt.getString(earliestTsStr);
+            }
+            if (traceStats.lastTimestamp > 0)
+            {
+                CDateTime latestDt;
+                latestDt.setTimeStampNs(traceStats.lastTimestamp);
+                latestDt.getString(latestTsStr);
+            }
+
+            appendCSVColumns(line, key.traceId.str(), serviceName, earliestTsStr.str(), latestTsStr.str(), traceStats.uniqueFileIds.size());
+
+            // Create aggregate statistics across all node kinds
+            NodeKindStats aggregateStats = {};
+            std::unordered_map<IndexHashKey, uint32_t, IndexHashKeyHash> allNodeMemory;
+
+            for (unsigned nodeKind = 0; nodeKind < NumNodeKinds; nodeKind++)
+                aggregateStats.addStats(traceStats.kinds[nodeKind]);
+
+            // Output aggregate statistics
+            appendNodeKindData(line, aggregateStats);
+
+            // Output per-node-kind statistics only for kinds that have data
+            for (unsigned nodeKind = 0; nodeKind < NumNodeKinds; nodeKind++)
+            {
+                if (!haveNodeKindEntries[nodeKind])
+                    continue;
+                const NodeKindStats& nodeKindStats = traceStats.kinds[nodeKind];
+                appendNodeKindData(line, nodeKindStats);
+            }
+
+            outputLine(line);
+        }
+    }
+
+protected:
+    void appendNodeKindHeaders(StringBuffer& line, const char* prefix)
+    {
+        appendCSVEventsHeaders(line, prefix);
+        appendCSVBucketHeaders(line, VStringBuffer("%sPage Cache Read Time", prefix), true);
+        appendCSVBucketHeaders(line, VStringBuffer("%sLocal Read Time", prefix), true);
+        appendCSVBucketHeaders(line, VStringBuffer("%sRemote Read Time", prefix), true);
+        appendCSVColumn(line, VStringBuffer("%sContentious Reads", prefix));
+        appendCSVBucketHeaders(line, VStringBuffer("%sExpand Time", prefix), true);
+        appendCSVColumn(line, VStringBuffer("%sUnique Nodes", prefix));
+        appendCSVColumn(line, VStringBuffer("%sTotal Memory Size", prefix));
+    }
+
+    void appendNodeKindData(StringBuffer& line, const NodeKindStats& nodeKindStats)
+    {
+        appendCSVEvents(line, nodeKindStats.events);
+        __uint64 contentiousReads = nodeKindStats.events.loads;
+        for (unsigned bucket = 0; bucket < NumBuckets; bucket++)
+        {
+            appendCSVBucket(line, nodeKindStats.readTime[bucket], true);
+            contentiousReads -= nodeKindStats.readTime[bucket].count;
+        }
+        appendCSVColumn(line, contentiousReads);
+        appendCSVBucket(line, nodeKindStats.expandTime, true);
+
+        // Calculate unique nodes and total memory size
+        __uint64 totalMemorySize = 0;
+        for (const auto& nodeEntry : nodeKindStats.nodeMemorySize)
+            totalMemorySize += nodeEntry.second;
+
+        appendCSVColumn(line, nodeKindStats.nodeMemorySize.size());
+        appendCSVColumn(line, totalMemorySize);
+    }
+
+protected:
+    using Cache = std::unordered_map<TraceHashKey, TraceStats, TraceHashKeyHash>;
+    Cache stats;
 };
 
 bool CIndexFileSummary::doOp()
@@ -521,6 +818,9 @@ bool CIndexFileSummary::doOp()
     case IndexSummarization::byNodeKind:
     case IndexSummarization::byNode:
         collector.setown(new CNodeCollector(*this, summarization, out));
+        break;
+    case IndexSummarization::byTrace:
+        collector.setown(new CTraceCollector(*this, summarization, out));
         break;
     default:
         return false;
