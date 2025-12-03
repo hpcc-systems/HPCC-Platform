@@ -11,28 +11,19 @@ on:
       - "!candidate-7.2.*"
       - "!candidate-7.0.*"
       - "!candidate-6.*"
+    paths:
+      - 'helm/**'
+      - 'testing/helm/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  pre_job:
-     # continue-on-error: true # Uncomment once integration is finished
-     runs-on: ubuntu-latest
-     # Map a step output to a job output
-     outputs:
-       helm: ${{ steps.skip_check.outputs.helm }}
-     steps:
-       - id: skip_check
-         uses: hpcc-systems/github-actions/changed-modules@main
-         with:
-           github_token: ${{ github.token }}
   build:
     name: "Check helm chart lint"
     runs-on: ubuntu-latest
-    needs: pre_job
-    if: ${{ github.repository == 'hpcc-systems/HPCC-Platform' && needs.pre_job.outputs.helm }}
+    if: ${{ github.repository == 'hpcc-systems/HPCC-Platform' }}
     steps:
       - uses: actions/checkout@v4
         with:

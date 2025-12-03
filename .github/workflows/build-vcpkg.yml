@@ -60,6 +60,112 @@ permissions:
   actions: write
 
 jobs:
+  pre_job:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    runs-on: ubuntu-latest
+    # Map a step output to a job output
+    outputs:
+      workflows: ${{ steps.skip_check.outputs.workflows }}
+      platform: ${{ steps.skip_check.outputs.platform }}
+      plugins: ${{ steps.skip_check.outputs.plugins }}
+      dockerfiles: ${{ steps.skip_check.outputs.dockerfiles }}
+      helm: ${{ steps.skip_check.outputs.helm }}
+      ecllibrary: ${{ steps.skip_check.outputs.ecllibrary }}
+      eclwatch: ${{ steps.skip_check.outputs.eclwatch }}
+      docs: ${{ steps.skip_check.outputs.docs }}
+      testing: ${{ steps.skip_check.outputs.testing }}
+      initfiles: ${{ steps.skip_check.outputs.initfiles }}
+      vcpkg: ${{ steps.skip_check.outputs.vcpkg }}
+      other: ${{ steps.skip_check.outputs.other }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: skip_check
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            workflows:
+              - ".github/workflows/**"
+            platform:
+              - "clienttools/**"
+              - "cmake_modules/**"
+              - "common/**"
+              - "configuration/**"
+              - "dali/**"
+              - "deploy/**"
+              - "deployment/**"
+              - "ecl/**"
+              - "esp/**"
+              - "fs/**"
+              - "lib2/**"
+              - "package/**"
+              - "plugins/**"
+              - "roxie/**"
+              - "rtl/**"
+              - "services/**"
+              - "system/**"
+              - "thorlcr/**"
+              - "tools/**"
+              - "vcpkg/**"
+              - "vcpkg-overlays/**"
+            plugins:
+              - "plugins/**"
+            dockerfiles:
+              - "dockerfiles/**"
+            helm:
+              - "helm/**"
+              - "testing/helm/**"
+            ecllibrary:
+              - "ecllibrary/**"
+            eclwatch:
+              - "esp/eclwatch/**"
+              - "esp/src/**"
+            docs:
+              - "docs/**"
+            testing:
+              - "testing/**"
+            initfiles:
+              - "initfiles/**"
+            vcpkg:
+              - "vcpkg/**"
+              - "vcpkg-overlays/**"
+            other:
+              - "charm/**"
+              - "devdoc/**"
+              - "devel/**"
+              - "githooks/**"
+              - "install/**"
+              - "misc/**"
+          list-files: json
+      - name: Print changed paths
+        if: always()
+        run: |
+          echo "=== Path Filter Report ==="
+          echo "Filters with changes: ${{ steps.skip_check.outputs.changes }}"
+          echo ""
+          
+          # Parse the JSON array of changed filters
+          changed_filters='${{ steps.skip_check.outputs.changes }}'
+          
+          # Iterate through each changed filter
+          for filter in $(echo "$changed_filters" | jq -r '.[]'); do
+            echo "### ${filter^} ###"
+            
+            # Get the files for this filter
+            files_var="${filter}_files"
+            files_json=$(echo '${{ toJSON(steps.skip_check.outputs) }}' | jq -r --arg key "$files_var" '.[$key]')
+            
+            if [[ "$files_json" != "null" && "$files_json" != "" ]]; then
+              echo "$files_json" | jq -r '.[]'
+            else
+              echo "No files detected"
+            fi
+            echo ""
+          done
+          
+          echo "=========================="
 
   build-workflow-dispatch:
     if: ${{ contains('workflow_dispatch', github.event_name) }}
@@ -81,7 +187,8 @@ jobs:
     secrets: inherit
 
   build-docker-ubuntu-24_04-arm:
-    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: [pre_job]
+    if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.platform == 'true') }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ubuntu-24.04
@@ -89,14 +196,16 @@ jobs:
     secrets: inherit
 
   build-docker-ubuntu-24_04:
-    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: [pre_job]
+    if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.platform == 'true') }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ubuntu-24.04
     secrets: inherit
 
   build-docker-ubuntu-22_04-arm:
-    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: [pre_job]
+    if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.platform == 'true') }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ubuntu-22.04
@@ -104,7 +213,8 @@ jobs:
     secrets: inherit
 
   build-docker-ubuntu-22_04:
-    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: [pre_job]
+    if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.platform == 'true' || needs.pre_job.outputs.testing == 'true') }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ubuntu-22.04
@@ -113,8 +223,8 @@ jobs:
     secrets: inherit
 
   test-smoke-docker-ubuntu-22_04:
-    if: ${{ contains('pull_request,push', github.event_name) }}
-    needs: build-docker-ubuntu-22_04
+    needs: [build-docker-ubuntu-22_04, pre_job]
+    if: ${{ contains('pull_request,push', github.event_name) && needs.pre_job.outputs.testing == 'true' }}
     uses: ./.github/workflows/test-smoke-gh_runner.yml
     with:
       os: ubuntu-22.04
@@ -122,7 +232,8 @@ jobs:
     secrets: inherit
 
   test-regression-suite-k8s-ubuntu-22_04:
-    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: [pre_job]
+    if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.testing == 'true' || needs.pre_job.outputs.platform == 'true') }}
     uses: ./.github/workflows/test-regression-suite-k8s.yml
     secrets: inherit
     with:
@@ -130,8 +241,8 @@ jobs:
       asset-name: 'docker-ubuntu-22_04-containerized'
 
   test-unit-docker-ubuntu-22_04:
-    if: ${{ contains('pull_request,push', github.event_name) }}
-    needs: build-docker-ubuntu-22_04
+    needs: [build-docker-ubuntu-22_04, pre_job]
+    if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.testing == 'true' || needs.pre_job.outputs.platform == 'true') }}
     uses: ./.github/workflows/test-unit-gh_runner.yml
     with:
       os: ubuntu-22.04
@@ -139,8 +250,8 @@ jobs:
     secrets: inherit
 
   test-bundles-on-thor-ubuntu-22_04:
-    if: ${{ contains('pull_request,push', github.event_name) }}
-    needs: build-docker-ubuntu-22_04
+    needs: [build-docker-ubuntu-22_04, pre_job]
+    if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.testing == 'true' || needs.pre_job.outputs.platform == 'true') }}
     uses: ./.github/workflows/bundleTest-thor.yml
     with:
       os: ubuntu-22.04
@@ -149,39 +260,17 @@ jobs:
     secrets: inherit
 
   test-eclwatch-gh_runner-ubuntu-22_04:
-    if: ${{ contains('pull_request,push', github.event_name) }}
-    needs: build-docker-ubuntu-22_04
+    needs: [build-docker-ubuntu-22_04, pre_job]
+    if: ${{ contains('pull_request,push', github.event_name) && needs.pre_job.outputs.eclwatch == 'true' }}
     uses: ./.github/workflows/test-eclwatch.yml
     with:
       os: ubuntu-22.04
       asset-name: 'docker-ubuntu-22_04'
     secrets: inherit
 
-  check-documentation-changes:
-    if: ${{ contains('pull_request,push', github.event_name) }}
-    runs-on: ubuntu-22.04
-    outputs:
-      documentation_contents_changed: ${{ steps.variables.outputs.documentation_contents_changed }}
-    steps:
-      - name: Check for Documentation Changes
-        id: changed
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            src:
-              - 'docs/**'
-              - '.github/workflows/test-documentation.yml'
-      - name: Set Output
-        id: variables
-        run: |
-          echo "documentation_contents_changed=${{ steps.changed.outputs.src }}" >> $GITHUB_OUTPUT
-      - name: Print Variables
-        run: |
-          echo "${{ toJSON(steps.variables.outputs)}}"
-
   test-documentation-ubuntu-22_04:
-    needs: check-documentation-changes
-    if: ${{ contains('pull_request,push', github.event_name) && needs.check-documentation-changes.outputs.documentation_contents_changed == 'true' }}
+    needs: [pre_job]
+    if: ${{ contains('pull_request,push', github.event_name) && needs.pre_job.outputs.docs == 'true' }}
     uses: ./.github/workflows/test-documentation.yml
     with:
       os: 'ubuntu-22.04'
@@ -202,14 +291,16 @@ jobs:
     secrets: inherit
 
   build-docker-centos-7:
-    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: [pre_job]
+    if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.platform == 'true') }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: centos-7
     secrets: inherit
 
   build-docker-wasm32-emscripten:
-    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: [pre_job]
+    if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.platform == 'true') }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: wasm32-emscripten
@@ -225,7 +316,8 @@ jobs:
     secrets: inherit
 
   build-gh_runner-windows-2022:
-    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: [pre_job]
+    if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.platform == 'true') }}
     uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: windows-2022
@@ -241,7 +333,8 @@ jobs:
     secrets: inherit
 
   build-gh_runner-macos-14-x86_64:
-    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: [pre_job]
+    if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.platform == 'true') }}
     uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: macos-14
@@ -250,7 +343,8 @@ jobs:
     secrets: inherit
 
   build-gh_runner-macos-14:
-    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: [pre_job]
+    if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.platform == 'true') }}
     uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: macos-14
