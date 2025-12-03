@@ -3655,7 +3655,7 @@
         "memory": {
           "description": "Default per monitoring sidecar instance memory requirements",
           "type": "string",
-          "default": "10Mi"
+          "default": "30Mi"
         },
         "cpu": {
           "description": "Default per monitoring sidecar instance CPU requirements",

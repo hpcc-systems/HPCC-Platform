@@ -20,7 +20,7 @@ Some of HPCC Systems' components are candidates for HPA configuration (ESP, ECLC
 
 ### HPCC Systems HPA Examples
 
-HPCC Systems component HPAs are centraly declared in global.hpas and referenced from within the component to be scaled.
+HPCC Systems component HPAs are centrally declared in global.hpas and referenced from within the component to be scaled.
 
 #### Example centralized HPAs configuration
 

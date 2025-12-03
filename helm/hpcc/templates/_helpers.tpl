@@ -1109,9 +1109,7 @@ Pass in dict with me, and params
     - {{ $container.process }}
  {{- end }}
  {{- include "hpcc.addSecurityContext" . | indent 2 }}
- {{- if (eq .me.name "rowservice") }}
-   {{- include "hpcc.addMonitoringResources" (dict "me" .me.monitoringResources "root" .root) | indent 2 }}
- {{- end }}
+ {{- include "hpcc.addMonitoringResources" (dict "me" .me.monitoringResources "root" .root) | indent 2 }}
   volumeMounts:
   {{- include "hpcc.addTempVolumeMount" (.me | merge (dict "noSubPath" "true")) | nindent 2 }}
   {{- include "hpcc.addRuntimeVolumeMount" (.me | merge (dict "noSubPath" "true")) | nindent 2 }}
@@ -1500,7 +1498,7 @@ This template sets default low-impact CPU and memory resources suitable for moni
 {{- define "hpcc.addMonitoringResources" -}}
 {{- $monitoringResources := .me | default .root.Values.global.monitoringResources | default dict }}
 {{- $cpuResource := $monitoringResources.cpu | default "5m" }}
-{{- $memoryResource := $monitoringResources.memory | default "10Mi" }}
+{{- $memoryResource := $monitoringResources.memory | default "30Mi" }}
 {{- $resources := dict "memory" $memoryResource "cpu" $cpuResource -}}
 {{- include "hpcc.addResources" (dict "me" $resources "root" .root) }}
 {{- end -}}
@@ -2955,7 +2953,7 @@ Pass in:
 {{- define "hpcc.addHorizontalPodAutoscalerByReference" -}}
 {{- $hpaRef := .hpaRef -}}
 {{- $root := .root -}}
-{{- if hasKey $root.Values.global.hpas $hpaRef -}}
+{{- if and $root.Values.global.hpas (hasKey $root.Values.global.hpas $hpaRef) -}}
   {{- $hpaConfig := get $root.Values.global.hpas $hpaRef -}}
   {{- include "hpcc.addHorizontalPodAutoscaler" (dict "name" .name "kind" .kind "hpa" $hpaConfig.hpa) }}
 {{- else -}}

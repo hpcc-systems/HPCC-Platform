@@ -51,7 +51,7 @@ global:
   ## resource settings for monitoring sidecar components
   # such as post-mortem collectors
   #monitoringInstanceResources:
-  #  memory: "10Mi"
+  #  memory: "30Mi"
   #  cpu: "5m"
 
   ## env adds default environment variables for all components. Environment settings can also be added or overridden locally
