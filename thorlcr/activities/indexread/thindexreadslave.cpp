@@ -394,7 +394,7 @@ public:
         {
             CMessageBuffer msg;
             if (comm.recv(msg, sender, limitAbortTag, &sender, 0))
-            receivedAbortSignal = true;
+                receivedAbortSignal = true;
         }
         if (receivedAbortSignal)
         {

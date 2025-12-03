@@ -235,6 +235,11 @@ public:
         }
         reInit = 0 != (indexBaseHelper->getFlags() & (TIRvarfilename|TIRdynamicfilename));
     }
+    ~CIndexReadBase()
+    {
+        if (limitAbortTag != TAG_NULL)
+            container.queryJob().freeMPTag(limitAbortTag);
+    }
     virtual void init() override
     {
         CMasterActivity::init();
