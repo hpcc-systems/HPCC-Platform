@@ -138,23 +138,19 @@ public:
             if (read != sizeof(len))
                 return false;
                 
-            char *buf = (char *)malloc(len + 1);
-            if (!buf)
-                return false;
-            
+            std::unique_ptr<char[]> buf(new char[len + 1]);
             bool success = false;
             try
             {
-                socket->readtms(buf, len, len, read, timeoutMs);
+                socket->readtms(buf.get(), len, len, read, timeoutMs);
                 buf[len] = 0;
-                response.append(buf);
+                response.append(buf.get());
                 success = (read == len);
             }
             catch (...)
             {
-                // Ensure cleanup even on exception
+                // Exception occurred, buffer will be freed automatically
             }
-            free(buf);
             return success;
         }
         catch (IException *e)
