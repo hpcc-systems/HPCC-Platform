@@ -745,6 +745,8 @@ void CSocketConnectionListener::onAsyncComplete(int result)
     // result contains the file descriptor of the accepted socket
     // With multishot accept, the operation continues to accept connections automatically
     // until it's cancelled or encounters an error
+    if (aborting.load())
+        return;
     handleAcceptedConnection(result);
 }
 
