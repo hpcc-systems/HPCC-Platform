@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2020 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2025 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@
 #define S3FILE_HPP
 
 #include "jfile.hpp"
+#include "jptree.hpp"
 
 #ifdef S3FILE_EXPORTS
 #define S3FILE_API DECL_EXPORT
@@ -27,13 +28,52 @@
 #endif
 
 /*
- * Direct access to files in s3 buckets
- * Installs hooks into createIFile, spotting filenames of the form s3://url
+ * Modern S3 file access implementation
+ *
+ * Features:
+ * - Uses latest AWS C++ SDK with modern patterns
+ * - Thread-safe operations with improved error handling
+ * - Configurable read-ahead buffering and caching
+ * - Support for multipart uploads for large files
+ * - Proper credential management via AWS credential chain
+ * - Comprehensive logging and metrics
+ * - Support for S3-compatible services (MinIO, etc.)
  */
 
-extern "C" {
-  extern S3FILE_API void installFileHook();
-  extern S3FILE_API void removeFileHook();
+// Forward declarations
+class StringAttr;
+
+// Configuration structure for S3 operations
+struct S3Config
+{
+    StringAttr region;
+    StringAttr endpoint;  // For S3-compatible services
+    bool useSSL = true;
+    bool useVirtualHosting = true;
+    size32_t readAheadSize = 4 * 1024 * 1024; // 4MB default
+    size32_t writeBufferSize = 5 * 1024 * 1024; // 5MB minimum for multipart
+    unsigned maxRetries = 3;
+    unsigned timeoutMs = 30000; // 30 seconds
+
+    S3Config() = default;
+    S3Config(IPropertyTree* _config);
+    void loadFromConfig(IPropertyTree* _config);
 };
 
-#endif
+// Modern S3 file interface
+class S3File;
+
+// Forward declarations for implementation classes
+class S3FileReadIO;
+class S3FileWriteIO;
+
+extern "C" {
+    extern S3FILE_API void installFileHook();
+    extern S3FILE_API void removeFileHook();
+    extern S3FILE_API IFile *createS3File(const char* s3FileName);
+    extern S3FILE_API bool isS3FileName(const char* fileName);
+
+};
+
+
+#endif // S3FILE_HPP
