@@ -1423,7 +1423,7 @@ IFormatPartitioner * FileSprayer::createPartitioner(aindex_t index, bool calcOut
 
     srcFormat.quotedTerminator = options->getPropBool("@quotedTerminator", true);
     const SocketEndpoint & ep = cur.filename.queryEndpoint();
-    bool newCsvPartitioner = getComponentConfigSP()->getPropBool("@useNewCsvPartitioner", false);
+    bool newCsvPartitioner = getComponentConfigSP()->getPropBool("@useNewCsvPartitioner", true);
     IFormatPartitioner * partitioner = createFormatPartitioner(*this, ep, srcFormat, tgtFormat, calcOutput, queryFixedSlave(), wuid, newCsvPartitioner);
 
     // CSV record structure discovery of the first source

@@ -107,6 +107,8 @@ struct EventInformation
 #define FILEINFORMATION_ATTRS ATTR_HEADER, EvAttrFileId, EvAttrPath
 #define RECORDINGACTIVE_ATTRS ATTR_HEADER, EvAttrEnabled
 #define INDEXPAYLOAD_ATTRS    ATTR_HEADER, EvAttrFileId, EvAttrFileOffset, EvAttrFirstUse, EvAttrExpandTime
+#define QUERYSTART_ATTRS      ATTR_HEADER, EvAttrServiceName
+#define QUERYSTOP_ATTRS       ATTR_HEADER
 
 static constexpr EventInformation eventInformation[] {
     DEFINE_EVENT(None, EventCtxMax, { EvAttrNone } ),
@@ -126,6 +128,8 @@ static constexpr EventInformation eventInformation[] {
     DEFINE_META(FileInformation, EventCtxIndex, { FILEINFORMATION_ATTRS } ),
     DEFINE_EVENT(RecordingActive, EventCtxOther, { RECORDINGACTIVE_ATTRS } ),
     DEFINE_EVENT(IndexPayload, EventCtxIndex, { INDEXPAYLOAD_ATTRS } ),
+    DEFINE_EVENT(QueryStart, EventCtxIndex, { QUERYSTART_ATTRS } ),
+    DEFINE_EVENT(QueryStop, EventCtxIndex, { QUERYSTOP_ATTRS } ),
 };
 static_assert(_elements_in(eventInformation) == EventMax);
 
@@ -175,6 +179,7 @@ static constexpr EventAttrInformation attrInformation[] = {
     DEFINE_ATTR(DataSize, u4),
     DEFINE_ATTR(ExpandTime, u8),
     DEFINE_ATTR(FirstUse, bool),
+    DEFINE_ATTR(ServiceName, string),
 };
 
 static_assert(_elements_in(attrInformation) == EvAttrMax);
@@ -809,6 +814,37 @@ void EventRecorder::recordFileInformation(unsigned fileid, const char * filename
     writeEventHeader(MetaFileInformation, pos);
     write(pos, EvAttrFileId, fileid);
     write(pos, EvAttrPath, filename);
+    writeEventFooter(pos, requiredSize, writeOffset);
+}
+
+void EventRecorder::recordQueryStart(const char * queryName)
+{
+    if (!isRecording())
+        return;
+
+    if (unlikely(outputToLog))
+        TRACEEVENT("{ \"name\": \"QueryStart\", \"ServiceName\": \"%s\" }", queryName);
+
+    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(queryName);
+    offset_type writeOffset = reserveEvent(requiredSize);
+    offset_type pos = writeOffset;
+    writeEventHeader(EventQueryStart, pos);
+    write(pos, EvAttrServiceName, queryName);
+    writeEventFooter(pos, requiredSize, writeOffset);
+}
+
+void EventRecorder::recordQueryStop()
+{
+    if (!isRecording())
+        return;
+
+    if (unlikely(outputToLog))
+        TRACEEVENT("{ \"name\": \"QueryStop\" }");
+
+    size32_t requiredSize = sizeMessageHeaderFooter;
+    offset_type writeOffset = reserveEvent(requiredSize);
+    offset_type pos = writeOffset;
+    writeEventHeader(EventQueryStop, pos);
     writeEventFooter(pos, requiredSize, writeOffset);
 }
 

@@ -27,18 +27,25 @@ typedef unsigned short KEYRECSIZE_T;
 class KeyCompressor final
 {
 public:
+    enum KeyWriteOptions 
+    {
+        DefaultWriteOptions= 0x00,
+        TrailingFilePosition = 0x01,
+        NoFilePosition = 0x02
+    };
+
     KeyCompressor() {}
     ~KeyCompressor();
     void open(void *blk,int blksize, bool isVariable, bool rowcompression, size32_t fixedRowSize);
     void open(void *blk,int blksize, ICompressHandler * compressionHandler, const char * options, bool _isVariable, size32_t fixedRowSize);
     void open(void *blk,int blksize, ICompressor * compressor, bool _isVariable, size32_t _fixedRowSize);
 
-    int writekey(offset_t fPtr, const char *key, unsigned datalength);
+    int writekey(offset_t fPtr, const char *key, unsigned datalength, unsigned writeOptions = DefaultWriteOptions);
     bool write(const void * data, size32_t datalength);
 
     bool compressBlock(size32_t destSize, void * dest, size32_t srcSize, const void * src, ICompressHandler * compressionHandler, const char * options, bool isVariable, size32_t fixedSize);
 
-    void openBlob(void *blk,int blksize);
+    void openBlob(CompressionMethod compression, void *blk,int blksize);
     unsigned writeBlob(const char *data, unsigned datalength);
     void close();
     bool adjustLimit(size32_t newLimit);

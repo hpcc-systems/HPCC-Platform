@@ -123,7 +123,9 @@ enum CompressionType : byte
     // Additional compression formats can be added here...
     SplitPayload = 1,         // A proof-of-concept using separate compression blocks for keyed fields vs payload
     InplaceCompression = 2,
-    BlockCompression = 3
+    ExperimentalCompression = 3,    // Used for testing new compression methods
+    BlockCompression = 3,           // Renumber once the format is fixed.
+    NewBlobCompression = 4,
 };
 
 //#pragma pack(1)
@@ -264,6 +266,7 @@ protected:
     unsigned loadExpandTime = 0;
     char *keyBuf = nullptr;
 
+    static char *expandData(ICompressHandler * handler, const void *src,size32_t &retsize);
     static char *expandData(const void *src,size32_t &retsize);
     static void releaseMem(void *togo, size32_t size);
     static void *allocMem(size32_t size);
@@ -404,15 +407,17 @@ public:
     virtual int compareValueAt(const char *src, unsigned int index) const;
 };
 
-class CJHTreeBlobNode : public CJHTreeNode
+class CJHBlobNode : public CJHTreeNode
 {
 public:
-    CJHTreeBlobNode ();
-    ~CJHTreeBlobNode ();
-
-    virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy) override;
     size32_t getTotalBlobSize(unsigned offset) const;
     size32_t getBlobData(unsigned offset, void *dst) const;
+};
+
+class CJHLegacyBlobNode final : public CJHBlobNode
+{
+public:
+    virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy) override;
 };
 
 class CJHTreeRawDataNode : public CJHTreeNode
@@ -507,17 +512,31 @@ public:
     virtual size32_t getMemorySize() const override { return memorySize; }
 };
 
-class jhtree_decl CBlobWriteNode : public CWriteNodeBase
+class jhtree_decl CBlobWriteNodeBase : public CWriteNodeBase
 {
-    KeyCompressor lzwcomp;
-    static unsigned __int64 makeBlobId(offset_t nodepos, unsigned offset);
 public:
-    CBlobWriteNode(offset_t _fpos, CKeyHdr *keyHdr);
-    ~CBlobWriteNode();
+    CBlobWriteNodeBase(offset_t _fpos, CKeyHdr *keyHdr);
 
     virtual void write(IFileIOStream *, CRC32 *crc) override;
     unsigned __int64 add(const char * &data, size32_t &size);
     virtual size32_t getMemorySize() const override { return 0; }
+
+protected:
+    KeyCompressor compressor;
+
+    static unsigned __int64 makeBlobId(offset_t nodepos, unsigned offset);
+};
+
+class jhtree_decl CBlobWriteNode : public CBlobWriteNodeBase
+{
+public:
+    CBlobWriteNode(offset_t _fpos, CKeyHdr *keyHdr);
+};
+
+class jhtree_decl CNewBlobWriteNode : public CBlobWriteNodeBase
+{
+public:
+    CNewBlobWriteNode(CompressionMethod method, offset_t _fpos, CKeyHdr *keyHdr);
 };
 
 class jhtree_decl CMetadataWriteNode : public CWriteNodeBase
@@ -548,7 +567,7 @@ IKeyException *MakeKeyException(int code, const char *format, ...) __attribute__
 interface IIndexCompressor : public IInterface
 {
     virtual const char *queryName() const = 0;
-    virtual CWriteNode *createNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode) const = 0;
+    virtual CWriteNodeBase *createNode(offset_t _fpos, CKeyHdr *_keyHdr, NodeType nodeType) const = 0;
     virtual offset_t queryBranchMemorySize() const = 0;
     virtual offset_t queryLeafMemorySize() const = 0;
 };
