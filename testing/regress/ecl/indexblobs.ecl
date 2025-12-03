@@ -19,12 +19,20 @@
 //version useEmbedded=true,noSeek=false
 //version useEmbedded=false,noSeek=true
 //version useEmbedded=false,noSeek=false
+//version compression='hybrid'
+//version compression='inplace'
+//version compression='inplace:blob(lzw)'
+//version compression='inplace:blob(zstd)'
+//version compression='inplace:zstds'
+//unsuported: version compression='inplace:zstds,blob(zstd)'
 
-import setup;
+import ^ as root;
+import $.setup;
 import Std.File AS FileServices;
 
 useEmbedded := #IFDEFINED(root.useEmbedded, false);
-noSeek := #IFDEFINED(root.noSeek, false);
+noSeek := #IFDEFINED(root.noSeek, true);
+compressionType := #IFDEFINED(root.compression, 'legacy');
 
 #if (useEmbedded)
 attr := 'EMBEDDED';
@@ -74,7 +82,7 @@ END;
 
 p := PROJECT(ds, TRANSFORM(idxRecord, SELF.payload := LEFT.kids1; SELF := LEFT));
 
-i := INDEX(p, {uid}, {p}, prefix+'anindex'+IF(useEmbedded,'E','L'));
+i := INDEX(p, {uid}, {p}, prefix+'anindex'+IF(useEmbedded,'E','L'), compressed(compressionType));
 
 lhsRec := RECORD
  unsigned uid;

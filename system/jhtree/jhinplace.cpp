@@ -2797,6 +2797,12 @@ InplaceIndexCompressor::InplaceIndexCompressor(size32_t keyedSize, const CKeyHdr
             {
                 ctx.options.reuseCompressor = strToBool(value);
             }
+            else if (strieq(option, "blob"))
+            {
+                method = translateToCompMethod(value, COMPRESS_METHOD_NONE);
+                if (method != COMPRESS_METHOD_NONE)
+                    ctx.options.blobCompression = method;
+            }
             else
             {
                 //ignore any unrecognised options

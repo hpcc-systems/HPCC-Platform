@@ -33,6 +33,7 @@ protected:
     size32_t keyLen = 0;
     size32_t keyCompareLen = 0;
     size32_t keyRecLen = 0;
+    bool zeroFilePosition = true;
 
     unsigned __int64 firstSequence = 0;
 
@@ -71,11 +72,20 @@ public:
     virtual int compareValueAt(const char *src, unsigned int index) const;
 };
 
+class CJHNewBlobNode final : public CJHBlobNode
+{
+public:
+    virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy) override;
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+
 struct CBlockCompressedBuildContext
 {
     ICompressHandler* compressionHandler = nullptr;
     StringBuffer compressionOptions;
     CompressionMethod compressionMethod = COMPRESS_METHOD_ZSTDS;
+    bool zeroFilePos = false;
 };
 
 class jhtree_decl CBlockCompressedWriteNode : public CWriteNode
@@ -106,9 +116,19 @@ public:
 
     virtual const char *queryName() const override { return "Block"; }
 
-    virtual CWriteNode *createNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode) const override
+    virtual CWriteNodeBase *createNode(offset_t _fpos, CKeyHdr *_keyHdr, NodeType nodeType) const override
     {
-        return new CBlockCompressedWriteNode(_fpos, _keyHdr, isLeafNode, context);
+        switch (nodeType)
+        {
+        case NodeLeaf:
+            return new CBlockCompressedWriteNode(_fpos, _keyHdr, true, context);
+        case NodeBranch:
+            return new CBlockCompressedWriteNode(_fpos, _keyHdr, false, context);
+        case NodeBlob:
+            return new CBlobWriteNode(_fpos, _keyHdr);
+        default:
+            throwUnexpected();
+        }
     }
 
     virtual offset_t queryBranchMemorySize() const override
