@@ -735,8 +735,9 @@ void CSocketConnectionListener::onAsyncComplete(int result)
                 // For other unexpected errors, the multishot operation may have stopped or may be recoverable
                 // Log as warning since we're not aborting and the error is unexpected
                 WARNLOG("Multishot accept unexpected error: %d. Operation may have stopped or may be recoverable.", result);
-                // Not signaling shutdown here since we're not in aborting state
-                // If the error is fatal and stops multishot, stop() will handle cleanup with timeout
+                // If the error is fatal and stops multishot, decrement the callback counter and signal shutdown if needed
+                if (pendingAcceptCallbacks.fetch_sub(1) == 1)
+                    shutdownSem.signal();
             }
         }
         return;
