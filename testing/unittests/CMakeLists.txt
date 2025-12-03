@@ -50,6 +50,7 @@ set (    SRCS
          espapicmdtests.cpp
          filetests.cpp
          wutests.cpp
+         socketasynctests.cpp
          ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp/fxpp/FragmentedXmlPullParser.cpp
          ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp/fxpp/FragmentedXmlAssistant.cpp
          ${CMAKE_BINARY_DIR}/generated/ws_loggingservice_esp.cpp
