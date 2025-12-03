@@ -882,5 +882,8 @@ extern HQL_API void gatherParseWarnings(IErrorReceiver * errs, IHqlExpression * 
 extern HQL_API IHqlExpression * queryAttributeModifier(ITypeInfo * type, IAtom * name);
 
 extern HQL_API size32_t getMaxLength(IHqlExpression * expr);
+extern HQL_API bool isTrimSupported(ITypeInfo * type);
+//Create a transform expr for trimming any variable length strings in a record - return null if no trimming is required
+extern HQL_API IHqlExpression * queryCreateTrimTransform(IHqlExpression * expr);
 
 #endif
