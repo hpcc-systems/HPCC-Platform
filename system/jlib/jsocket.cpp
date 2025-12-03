@@ -1162,7 +1162,12 @@ static T_SOCKET prepare_socket_for_connect(const IpAddress & targetip, unsigned 
 static int perform_socket_connect(T_SOCKET sock, const J_SOCKADDR & sockaddr, socklen_t sockaddrlen, bool nonblocking, const char * tracename)
 {
     // Set socket to blocking or non-blocking mode
-    set_socket_nonblock(sock, nonblocking);
+    if (!set_socket_nonblock(sock, nonblocking))
+    {
+        int err = SOCKETERRNO();
+        LOGERR2(err, 1, "perform_socket_connect: Failed to set socket blocking mode");
+        return err;
+    }
 
     int rc = ::connect(sock, &sockaddr.sa, sockaddrlen);
     int err = 0;
@@ -1199,11 +1204,20 @@ static int perform_socket_connect(T_SOCKET sock, const J_SOCKADDR & sockaddr, so
 }
 
 // Static helper: Complete post-connect operations (shared by sync and async paths)
-// Returns error code (0 = success)
+// Returns: 0 on success, or system error code (e.g. JSE_TIMEDOUT, JSE_CONNREFUSED, etc.) on failure.
+//   Callers should treat any non-zero return value as a connection error.
+//   Common error codes include:
+//     - JSE_TIMEDOUT: Connection attempt timed out
+//     - JSE_CONNREFUSED: Connection was refused by the remote host
+//     - Other system error codes as returned by getsockopt(SO_ERROR)
 static int finalize_socket_connect(T_SOCKET sock, const char * tracename)
 {
     // Ensure socket is in non-blocking mode
-    set_socket_nonblock(sock, true);
+    if (!set_socket_nonblock(sock, true))
+    {
+        LOGERR2(SOCKETERRNO(), 1, "finalize_socket_connect: Failed to set socket non-blocking");
+        return SOCKETERRNO();
+    }
 
     int err = 0;
     socklen_t errlen = sizeof(err);
@@ -1262,6 +1276,11 @@ void CSocket::prepareForAsyncConnect(struct sockaddr *& addr, size32_t & addrlen
 
     // Allocate and copy the sockaddr for the caller
     addr = (struct sockaddr *)malloc(ul);
+    if (!addr)
+    {
+        errclose();
+        throw MakeStringException(JSOCKERR_graceful_close, "Failed to allocate memory for sockaddr");
+    }
     memcpy(addr, &u, ul);
     addrlen = ul;
 

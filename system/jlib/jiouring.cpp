@@ -27,6 +27,9 @@
 
 #include <liburing.h>
 
+// Sentinel value used to identify cancel operation completions that should be discarded
+static constexpr uintptr_t CANCEL_SENTINEL = 1;
+
 //------------------------------------------------------------------------------
 
 struct CompletionResponse
@@ -52,6 +55,8 @@ public:
     virtual void enqueueSocketRead(ISocket * socket, void * buf, size32_t len, IAsyncCallback & callback) override;
     virtual void enqueueSocketWrite(ISocket * socket, const void * buf, size32_t len, IAsyncCallback & callback) override;
     virtual void enqueueSocketWriteMany(ISocket * socket, const iovec * buffers, unsigned numBuffers, IAsyncCallback & callback) override;
+    virtual void enqueueSocketMultishotAccept(ISocket * socket, IAsyncCallback & callback) override;
+    virtual void cancelMultishotAccept(ISocket * socket) override;
 
     virtual void lockMemory(const void * buffer, size_t len) override;
 
@@ -137,6 +142,11 @@ bool URingProcessor::dequeueCompletion(CompletionResponse & response)
     response.callback = static_cast<IAsyncCallback *>(io_uring_cqe_get_data(cqe));
     response.result = cqe->res;
     io_uring_cqe_seen(&ring, cqe);
+    
+    // Skip callbacks that are just sentinel values (from cancel operations)
+    if (reinterpret_cast<uintptr_t>(response.callback) == CANCEL_SENTINEL)
+        return false;
+    
     return true;
 }
 
@@ -240,6 +250,42 @@ void URingProcessor::enqueueSocketWriteMany(ISocket * socket, const iovec * buff
     io_uring_prep_writev2(sqe, socket->OShandle(), buffers, numBuffers, offset, flags);
 
     io_uring_sqe_set_data(sqe, &callback);
+
+    submitRequests();
+}
+
+void URingProcessor::enqueueSocketMultishotAccept(ISocket * socket, IAsyncCallback & callback)
+{
+    CLeavableCriticalBlock block(requestCrit, isMultiThreaded);
+
+    io_uring_sqe * sqe = allocRequest(block);
+
+    int socketfd = socket->OShandle();
+    // Use multishot accept - this will keep accepting connections until cancelled or an error occurs
+    io_uring_prep_multishot_accept(sqe, socketfd, nullptr, nullptr, 0);
+
+    io_uring_sqe_set_data(sqe, &callback);
+
+    submitRequests();
+}
+
+void URingProcessor::cancelMultishotAccept(ISocket * socket)
+{
+    CLeavableCriticalBlock block(requestCrit, isMultiThreaded);
+
+    io_uring_sqe * sqe = allocRequest(block);
+
+    int socketfd = socket->OShandle();
+    // Cancel the multishot accept operation for this socket
+    // This will generate completions:
+    // 1. One for the cancel operation itself (with the sentinel callback, which is discarded)
+    // 2. One for the cancelled multishot accept (with its original callback and -ECANCELED result)
+    // Note: With IORING_ASYNC_CANCEL_ALL, if there are multiple operations on this FD, each will get -ECANCELED
+    io_uring_prep_cancel_fd(sqe, socketfd, IORING_ASYNC_CANCEL_ALL);
+
+    // Use a sentinel value for the cancel operation's own completion
+    // This completion will be discarded in dequeueCompletion()
+    io_uring_sqe_set_data(sqe, (void *)CANCEL_SENTINEL);
 
     submitRequests();
 }
@@ -425,11 +471,40 @@ IAsyncProcessor * createURingProcessor(const IPropertyTree * config, bool thread
     }
 }
 
+IAsyncProcessor * createURingProcessorIfEnabled(const IPropertyTree * config, bool threaded)
+{
+    // Check global configuration for io_uring setting
+    try
+    {
+        Owned<IPropertyTree> globalConfig = getComponentConfigSP();
+        if (globalConfig)
+        {
+            bool enabled = globalConfig->getPropBool("expert/@useIOUring", true);
+            if (!enabled)
+            {
+                DBGLOG("io_uring disabled via expert/@useIOUring configuration");
+                return nullptr;
+            }
+        }
+    }
+    catch (...)
+    {
+        // If config is not available, proceed with default behavior
+    }
+    
+    return createURingProcessor(config, threaded);
+}
+
 
 #else
 
 // Lib uring is only supported on Linux and FreeBSD
 IAsyncProcessor * createURingProcessor(const IPropertyTree * config, bool threaded)
+{
+    return nullptr;
+}
+
+IAsyncProcessor * createURingProcessorIfEnabled(const IPropertyTree * config, bool threaded)
 {
     return nullptr;
 }
