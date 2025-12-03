@@ -87,14 +87,14 @@ void KeyCompressor::open(void *blk,int blksize, ICompressor * compressor, bool _
     fixedRowSize = _fixedRowSize;
 }
 
-void KeyCompressor::openBlob(void *blk,int blksize)
+void KeyCompressor::openBlob(CompressionMethod compression, void *blk,int blksize)
 {
     isVariable = false;
     isBlob = true;
     curOffset = 0;
     ::Release(comp);
     comp = NULL;
-    comp = createLZWCompressor(true);
+    comp = queryCompressHandler(compression)->getCompressor();
     comp->open(blk,blksize,0, true);
     method = comp->getCompressionMethod();
 }

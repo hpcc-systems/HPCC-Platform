@@ -178,6 +178,7 @@ public:
         unsigned maxCompressionFactor = 50;    // Don't compress payload to less than 2% of the original by default (because when it is read it will use lots of memory)
         bool recompress = false;
         bool reuseCompressor = true;
+        CompressionMethod blobCompression = COMPRESS_METHOD_LZW;
     } options;
 };
 
@@ -329,12 +330,22 @@ public:
     InplaceIndexCompressor(size32_t keyedSize, const CKeyHdr * keyHdr, IHThorIndexWriteArg * helper, const char * _compressionName);
 
     virtual const char *queryName() const override { return compressionName.str(); }
-    virtual CWriteNode *createNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode) const override
+    virtual CWriteNodeBase *createNode(offset_t _fpos, CKeyHdr *_keyHdr, NodeType nodeType) const override
     {
-        if (isLeafNode)
+        switch (nodeType)
+        {
+        case NodeLeaf:
             return new CInplaceLeafWriteNode(_fpos, _keyHdr, ctx);
-        else
+        case NodeBranch:
             return new CInplaceBranchWriteNode(_fpos, _keyHdr, ctx);
+        case NodeBlob:
+            if (ctx.options.blobCompression != COMPRESS_METHOD_LZW)
+                return new CNewBlobWriteNode(ctx.options.blobCompression, _fpos, _keyHdr);
+            else
+                return new CBlobWriteNode(_fpos, _keyHdr);
+        default:
+            throwUnexpected();
+        }
     }
 
     virtual offset_t queryBranchMemorySize() const override

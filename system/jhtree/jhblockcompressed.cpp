@@ -226,6 +226,16 @@ void CJHBlockCompressedSearchNode::dump(FILE *out, int length, unsigned rowCount
         fprintf(out, "==========\n");
 }
 
+
+void CJHNewBlobNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _fpos, bool needCopy)
+{
+    CJHTreeNode::load(_keyHdr, rawData, _fpos, needCopy);
+    const byte *data = ((const byte *) rawData) + sizeof(hdr);
+    CompressionMethod method = (CompressionMethod)*data++;
+    inMemorySize = keyHdr->getNodeSize();
+    keyBuf = expandData(queryCompressHandler(method), data, inMemorySize);
+}
+
 //=========================================================================================================
 
 CBlockCompressedWriteNode::CBlockCompressedWriteNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode, const CBlockCompressedBuildContext& ctx) : 
@@ -293,6 +303,8 @@ void CBlockCompressedWriteNode::finalize()
     if (hdr.numKeys)
         hdr.keyBytes = compressor.buflen() + sizeof(unsigned __int64) + sizeof(CompressionMethod) + sizeof(bool); // rsequence + compressionMethod + zeroFilePosition
 }
+
+//=========================================================================================================
 
 BlockCompressedIndexCompressor::BlockCompressedIndexCompressor(unsigned keyedSize, IHThorIndexWriteArg *helper, const char* options)
 {

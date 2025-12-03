@@ -45,7 +45,7 @@ public:
 
     bool compressBlock(size32_t destSize, void * dest, size32_t srcSize, const void * src, ICompressHandler * compressionHandler, const char * options, bool isVariable, size32_t fixedSize);
 
-    void openBlob(void *blk,int blksize);
+    void openBlob(CompressionMethod compression, void *blk,int blksize);
     unsigned writeBlob(const char *data, unsigned datalength);
     void close();
     bool adjustLimit(size32_t newLimit);

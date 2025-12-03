@@ -100,7 +100,7 @@ protected:
     unsigned iD;
     StringAttr name;
     mutable CriticalSection cacheCrit;
-    Owned<const CJHTreeBlobNode> cachedBlobNode;
+    Owned<const CJHBlobNode> cachedBlobNode;
     CIArrayOf<IndexBloomFilter> bloomFilters;
     std::atomic<bool> bloomFiltersLoaded = {0};
     offset_t cachedBlobNodePos;
@@ -116,7 +116,7 @@ protected:
     CJHTreeNode *loadNodeFromMemory(const void *nodeData, offset_t pos, bool needsCopy) const;
     CJHTreeNode *_createNode(const NodeHdr &hdr) const;
     const CJHSearchNode *getIndexNodeUsingLoader(const INodeLoader &nodeLoader, offset_t offset, NodeType type, IContextLogger *ctx) const;
-    const CJHTreeBlobNode *getBlobNode(offset_t nodepos, IContextLogger *ctx, CLoadNodeCacheState & readState);
+    const CJHBlobNode *getBlobNode(offset_t nodepos, IContextLogger *ctx, CLoadNodeCacheState & readState);
 
     CKeyIndex(unsigned _iD, const char *_name);
     ~CKeyIndex();
