@@ -785,10 +785,10 @@ IPropertyTree *CClientRemoteTree::create(MemoryBuffer &mb)
     return tree;
 }
 
-IPropertyTree *CClientRemoteTree::create(IBufferedSerialInputStream &in)
+IPropertyTree *CClientRemoteTree::create(IBufferedSerialInputStream &in, PTreeDeserializeContext &ctx)
 {
     Owned<CClientRemoteTree> tree = new CClientRemoteTree(connection);
-    tree->deserializeFromStream(in);
+    tree->deserializeFromStream(in, ctx);
     return tree.getClear();
 }
 

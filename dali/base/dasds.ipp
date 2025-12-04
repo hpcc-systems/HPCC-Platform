@@ -248,10 +248,10 @@ public:
     virtual bool isEquivalent(IPropertyTree *tree) const override { return (NULL != QUERYINTERFACE(tree, CRemoteTreeBase)); }
     virtual IPropertyTree *create(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false) override = 0;
     virtual IPropertyTree *create(MemoryBuffer &mb) override = 0;
-    virtual IPropertyTree *create(IBufferedSerialInputStream &in) override = 0;
+    virtual IPropertyTree *create(IBufferedSerialInputStream &in, PTreeDeserializeContext &ctx) override = 0;
 
 protected: // data
-    __int64 serverId;
+    __int64 serverId = 0;
 };
 
 class CTrackChanges
