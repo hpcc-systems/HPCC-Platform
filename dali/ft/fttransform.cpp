@@ -632,7 +632,8 @@ void CIndexTransformer::rebuildIndex(IFile * in, IFileIOStream * out, const char
 //    size32_t keyedSize = indexRecord.getFixedOffset(indexRecord.getNumKeyedFields());
 
     //MORE: Need to rebuild/copy bloom filters
-    Owned<IKeyBuilder> keyBuilder = createKeyBuilder(outFileStream, flags, maxDiskRecordSize, nodeSize, keyedSize, 0, nullptr, outputCompression, false, isTLK);
+    KeyBuilderOptions options = {flags, maxDiskRecordSize, nodeSize, keyedSize, 0, nullptr, outputCompression, false, isTLK};
+    Owned<IKeyBuilder> keyBuilder = createKeyBuilder(outFileStream, options);
 
     TrivialVirtualFieldCallback callback(manager);
     size32_t maxSizeSeen = 0;

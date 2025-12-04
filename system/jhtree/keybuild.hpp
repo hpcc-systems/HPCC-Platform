@@ -95,6 +95,21 @@ public:
 typedef IArrayOf<CNodeInfo> NodeInfoArray;
 
 typedef std::vector<const BloomFilter *> BloomFilterArray;
+
+class KeyBuilderOptions
+{
+public:
+    unsigned flags = 0;
+    unsigned rawSize = 0;
+    unsigned nodeSize = 0;
+    unsigned keyFieldSize = (unsigned) -1;
+    unsigned __int64 startSequence = 0;
+    IHThorIndexWriteArg *helper = nullptr;
+    const char *defaultCompression = nullptr;
+    bool enforceOrder = true;
+    bool isTLK = false;
+};
+
 interface IKeyBuilder : public IInterface
 {
     virtual void finish(IPropertyTree * metadata, unsigned * crc, size32_t maxRecordSizeSeen, const BloomFilterArray * optBloomFilters) = 0;
@@ -104,7 +119,7 @@ interface IKeyBuilder : public IInterface
     virtual unsigned __int64 getStatistic(StatisticKind kind) const = 0;
 };
 
-extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyFieldSize, unsigned __int64 startSequence, IHThorIndexWriteArg *helper, const char * defaultCompression, bool enforceOrder, bool isTLK);
+extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, const KeyBuilderOptions &options);
 
 interface IKeyDesprayer : public IInterface
 {

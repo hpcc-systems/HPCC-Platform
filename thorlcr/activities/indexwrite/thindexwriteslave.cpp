@@ -211,7 +211,8 @@ public:
         maxRecordSizeSeen = 0;
         {
             CriticalBlock b(builderCS);
-            builder.setown(createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper->getKeyedSize(), isTlk ? 0 : totalCount, helper, defaultIndexCompression, !isTlk, isTlk));
+            KeyBuilderOptions options = {flags, maxDiskRecordSize, nodeSize, helper->getKeyedSize(), isTlk ? 0 : totalCount, helper, defaultIndexCompression, !isTlk, isTlk};
+            builder.setown(createKeyBuilder(out, options));
         }
     }
     void buildLayoutMetadata(Owned<IPropertyTree> & metadata)
