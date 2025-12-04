@@ -42,6 +42,9 @@ public:
             case 't':
                 op.setSummarization(IndexSummarization::byTrace);
                 break;
+            case 's':
+                op.setSummarization(IndexSummarization::byService);
+                break;
             default:
                 return false;
         }
@@ -52,8 +55,8 @@ public:
     {
         return R"!!!(Summarize the index events in a binary event file. Activity can be aggregate
 by either index file ID, node kind, individual node (as identified by file
-ID and file offset), or trace ID. One line of output is produced for each
-event group.
+ID and file offset), trace ID, or service name. One line of output is produced
+for each event group.
 )!!!";
     }
 
@@ -76,6 +79,7 @@ R"!!!(    -f                        Summarize activity by file.
     -k                        Summarize activity by node kind.
     -n                        Summarize activity by node.
     -t                        Summarize activity by trace ID.
+    -s                        Summarize activity by service name.
 )!!!";
         size32_t usageStrLength = size32_t(strlen(usageStr));
         out.put(usageStrLength, usageStr);
