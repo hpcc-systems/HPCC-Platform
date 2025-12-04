@@ -188,7 +188,7 @@ spec:
 {{- end }}
 ---
 {{- if hasKey . "hpa" }}
- {{- include "hpcc.addHorizontalPodAutoscaler" (dict "name" .name "kind" "Deployment" "hpa" .hpa) }}
+  {{- include "hpcc.addHorizontalPodAutoscalerByReference" (dict "name" .name "hpaRef" .hpa "kind" "Deployment" "root" $) }}
 {{- end }}
 ---
 kind: ConfigMap
