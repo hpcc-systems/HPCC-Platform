@@ -62,11 +62,11 @@ jobs:
           fi
 
           # Get the commit message (first line)
-          COMMIT_MSG=$(git log --format=%s -n 1 $FIRST_COMMIT)
+          COMMIT_MSG=$(git log --format=%s -n 1 "$FIRST_COMMIT")
           echo "First commit message: $COMMIT_MSG"
 
           # Get the full commit message body
-          FULL_COMMIT_MSG=$(git log --format=%B -n 1 $FIRST_COMMIT)
+          FULL_COMMIT_MSG=$(git log --format=%B -n 1 "$FIRST_COMMIT")
 
           # Check if commit message starts with HPCC- (case sensitive) followed by digits
           if echo "$COMMIT_MSG" | grep -qE '^HPCC-[0-9]+'; then
@@ -84,25 +84,22 @@ jobs:
             exit 1
           fi
 
-          # ---- Full commit body for DCO check ----
-          FULL_COMMIT_MSG=$(git log --format=%B -n 1 $FIRST_COMMIT)
-
           # ---- 1. DCO check ----
           DCO_OK=false
-          if echo "$FULL_COMMIT_MSG" | grep -q "^Signed-off-by: "; then
+          if echo "$FULL_COMMIT_MSG" | grep -q "Signed-off-by: "; then
             echo "✓ DCO sign-off found"
             DCO_OK=true
           fi
 
           # ---- 2. GPG check ----
           GPG_OK=false
-          if git verify-commit "$FIRST_COMMIT" > /dev/null 2>&1; then
+          if git log --format=%G? -n 1 "$FIRST_COMMIT" | grep -q "^G"; then
             echo "✓ GPG signature verified"
             GPG_OK=true
           fi
 
           # ---- Require at least ONE ----
-          if $DCO_OK || $GPG_OK; then
+          if [ "$DCO_OK" = "true" || "$GPG_OK" = "true" ]; then
             echo "First commit is signed (DCO or GPG)"
           else
             echo "✗ First commit is not signed"
