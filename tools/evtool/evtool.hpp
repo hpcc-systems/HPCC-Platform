@@ -264,7 +264,8 @@ Filters:
                                 - EventTimestamp: numeric or fully formed time-
                                     stamp strings as recognized by the
                                     CDateTime::setString method.
-                                - EventTraceId: string
+                                - EventTraceId: string matching either a recorded
+                                    trace ID or an associated query service name
                                 - EventThreadId: numeric
                                 - EventStackTrace: string
                                 - DataSize: numeric
