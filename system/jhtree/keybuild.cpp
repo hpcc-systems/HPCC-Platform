@@ -167,6 +167,15 @@ public:
     }
 };
 
+
+//---------------------------------------------------------------------------------------------------------------------
+
+KeyBuilderOptions::KeyBuilderOptions(unsigned _flags, unsigned _rawSize, unsigned _nodeSize, unsigned _keyFieldSize, IHThorIndexWriteArg *_helper)
+    : flags(_flags), rawSize(_rawSize), nodeSize(_nodeSize), keyFieldSize(_keyFieldSize), helper(_helper)
+{
+}
+
+
 class CKeyBuilder : public CInterfaceOf<IKeyBuilder>
 {
 protected:
@@ -261,7 +270,7 @@ public:
 
         doCrc = true;
         duplicateCount = 0;
-        const char * compression = options.defaultCompression;
+        const char * compression = options.compression;
         if (options.helper)
         {
             partitionFieldMask = options.helper->getPartitionFieldMask();
@@ -276,8 +285,6 @@ public:
                     bloomInfo++;
                 }
             }
-            if (options.helper->getFlags() & TIWcompressdefined)
-                compression = options.helper->queryCompression();
         }
 
         if (!isEmptyString(compression))

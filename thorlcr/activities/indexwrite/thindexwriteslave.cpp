@@ -58,7 +58,7 @@ class IndexWriteSlaveActivity : public ProcessSlaveActivity, public ILookAheadSt
 
     MemoryBuffer rowBuff;
     OwnedConstThorRow lastRow, firstRow;
-    StringBuffer defaultIndexCompression;
+    StringBuffer indexCompressionType;
     bool needFirstRow, enableTlkPart0, receivingTag2;
 
     unsigned replicateDone;
@@ -94,7 +94,9 @@ public:
         enableTlkPart0 = (0 != container.queryJob().getWorkUnitValueInt("enableTlkPart0", globals->getPropBool("@enableTlkPart0", true)));
         defaultNoSeek = (0 != container.queryJob().getWorkUnitValueInt("noSeekBuildIndex", globals->getPropBool("@noSeekBuildIndex", isContainerized())));
         reInit = (0 != (TIWvarfilename & helper->getFlags()));
+        StringBuffer defaultIndexCompression;
         container.queryJob().getWorkUnitValue("defaultIndexCompression", defaultIndexCompression);
+        getIndexCompressionType(indexCompressionType, helper, defaultIndexCompression.str());
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
@@ -213,7 +215,7 @@ public:
             CriticalBlock b(builderCS);
             KeyBuilderOptions options(flags, maxDiskRecordSize, nodeSize, helper->getKeyedSize(), helper);
             options.startSequence = isTlk ? 0 : totalCount;
-            options.defaultCompression = defaultIndexCompression;
+            options.setCompression(indexCompressionType);
             options.enforceOrder = !isTlk;
             options.isTLK = isTlk;
             builder.setown(createKeyBuilder(out, options));

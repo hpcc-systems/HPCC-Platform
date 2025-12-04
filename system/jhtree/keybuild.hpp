@@ -96,8 +96,16 @@ typedef IArrayOf<CNodeInfo> NodeInfoArray;
 
 typedef std::vector<const BloomFilter *> BloomFilterArray;
 
-class KeyBuilderOptions
+class jhtree_decl KeyBuilderOptions
 {
+public:
+    KeyBuilderOptions(unsigned _flags, unsigned _rawSize, unsigned _nodeSize, unsigned _keyFieldSize, IHThorIndexWriteArg *_helper);
+
+    void setCompression(const char * value)
+    {
+        compression.set(value);
+    }
+
 public:
     unsigned flags = 0;
     unsigned rawSize = 0;
@@ -105,14 +113,10 @@ public:
     unsigned keyFieldSize = (unsigned) -1;
     unsigned __int64 startSequence = 0;
     IHThorIndexWriteArg *helper = nullptr;
-    const char *defaultCompression = nullptr;
+    StringBuffer compression;
     bool enforceOrder = true;
     bool isTLK = false;
 
-    KeyBuilderOptions(unsigned _flags, unsigned _rawSize, unsigned _nodeSize, unsigned _keyFieldSize, IHThorIndexWriteArg *_helper)
-        : flags(_flags), rawSize(_rawSize), nodeSize(_nodeSize), keyFieldSize(_keyFieldSize), helper(_helper)
-    {
-    }
 };
 
 interface IKeyBuilder : public IInterface

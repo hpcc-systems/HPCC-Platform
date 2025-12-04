@@ -12634,7 +12634,7 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
     offset_t branchMemorySize = 0;
     offset_t leafMemorySize = 0;
     unsigned nodeSize = 0;
-    StringBuffer defaultIndexCompression;
+    StringBuffer indexCompressionType;
 
     void updateWorkUnitResult()
     {
@@ -12789,15 +12789,18 @@ public:
                 out.setown(createNoSeekIOStream(out));
 
             IRoxieServerContext * serverContext = ctx->queryServerContext();
+            SCMStringBuffer defaultIndexCompression;
             if (serverContext)
             {
                 IConstWorkUnit *workunit = serverContext->queryWorkUnit();
                 if (workunit)
-                    workunit->getDebugValue("defaultIndexCompression", StringBufferAdaptor(defaultIndexCompression));
+                    workunit->getDebugValue("defaultIndexCompression", defaultIndexCompression);
             }
 
+            getIndexCompressionType(indexCompressionType, &helper, defaultIndexCompression.str());
+
             KeyBuilderOptions options(flags, maxDiskRecordSize, nodeSize, helper.getKeyedSize(), &helper);
-            options.defaultCompression = defaultIndexCompression;
+            options.setCompression(indexCompressionType);
             Owned<IKeyBuilder> builder = createKeyBuilder(out, options);
             class BcWrapper : implements IBlobCreator
             {
@@ -12946,8 +12949,7 @@ public:
         properties.setPropInt("@nodeSize", nodeSize);
 
         // Set the compression type that was actually used
-        const char *compressionType = getIndexCompressionType(&helper, defaultIndexCompression);
-        properties.setProp("@compressionType", compressionType);
+        properties.setProp("@compressionType", indexCompressionType.str());
 
         WorkunitUpdate workUnit = ctx->updateWorkUnit();
         if (workUnit)
