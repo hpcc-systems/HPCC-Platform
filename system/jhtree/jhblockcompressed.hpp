@@ -95,7 +95,7 @@ private:
     char *lastKeyValue = nullptr;
     unsigned __int64 lastSequence = 0;
     size32_t keyLen = 0;
-    size32_t memorySize;
+    size32_t memorySize = 0;
     const CBlockCompressedBuildContext& context;
 public:
     CBlockCompressedWriteNode(offset_t fpos, CKeyHdr *keyHdr, bool isLeafNode, const CBlockCompressedBuildContext& ctx);
@@ -112,7 +112,7 @@ class BlockCompressedIndexCompressor : public CInterfaceOf<IIndexCompressor>
 {
     CBlockCompressedBuildContext context;
 public:
-    BlockCompressedIndexCompressor(unsigned keyedSize, IHThorIndexWriteArg *helper, const char* options);
+    BlockCompressedIndexCompressor(unsigned keyedSize, IHThorIndexWriteArg *helper, const char* options, bool isTLK);
 
     virtual const char *queryName() const override { return "Block"; }
 
