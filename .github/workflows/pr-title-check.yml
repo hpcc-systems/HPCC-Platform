@@ -96,7 +96,7 @@ jobs:
 
           # ---- 2. GPG check ----
           GPG_OK=false
-          if git verify-commit "$FIRST_COMMIT" > /dev/null 2>&1; then
+          if git log --format=%G? -n 1 $FIRST_COMMIT | grep -q "^G"; then
             echo "✓ GPG signature verified"
             GPG_OK=true
           fi
