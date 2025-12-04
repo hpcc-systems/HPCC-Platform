@@ -211,7 +211,11 @@ public:
         maxRecordSizeSeen = 0;
         {
             CriticalBlock b(builderCS);
-            KeyBuilderOptions options = {flags, maxDiskRecordSize, nodeSize, helper->getKeyedSize(), isTlk ? 0 : totalCount, helper, defaultIndexCompression, !isTlk, isTlk};
+            KeyBuilderOptions options(flags, maxDiskRecordSize, nodeSize, helper->getKeyedSize(), helper);
+            options.startSequence = isTlk ? 0 : totalCount;
+            options.defaultCompression = defaultIndexCompression;
+            options.enforceOrder = !isTlk;
+            options.isTLK = isTlk;
             builder.setown(createKeyBuilder(out, options));
         }
     }

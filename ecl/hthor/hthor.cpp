@@ -1301,7 +1301,8 @@ void CHThorIndexWriteActivity::execute()
         if (!needsSeek)
             out.setown(createNoSeekIOStream(out));
 
-        KeyBuilderOptions options = {flags, keyMaxSize, nodeSize, helper.getKeyedSize(), 0, &helper, defaultIndexCompression, true, false};
+        KeyBuilderOptions options(flags, keyMaxSize, nodeSize, helper.getKeyedSize(), &helper);
+        options.defaultCompression = defaultIndexCompression;
         Owned<IKeyBuilder> builder = createKeyBuilder(out, options);
         class BcWrapper : implements IBlobCreator
         {

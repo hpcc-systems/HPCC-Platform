@@ -108,6 +108,11 @@ public:
     const char *defaultCompression = nullptr;
     bool enforceOrder = true;
     bool isTLK = false;
+
+    KeyBuilderOptions(unsigned _flags, unsigned _rawSize, unsigned _nodeSize, unsigned _keyFieldSize, IHThorIndexWriteArg *_helper)
+        : flags(_flags), rawSize(_rawSize), nodeSize(_nodeSize), keyFieldSize(_keyFieldSize), helper(_helper)
+    {
+    }
 };
 
 interface IKeyBuilder : public IInterface

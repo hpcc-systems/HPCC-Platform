@@ -373,7 +373,8 @@ public:
         if (quickCompressed)
             flags |= HTREE_QUICK_COMPRESSED_KEY;
         // MORE - should we take compression options from somewhere?
-        KeyBuilderOptions options = {flags, rowsize, nodeSize, keyedsize, 0, nullptr, nullptr, false, false};
+        KeyBuilderOptions options(flags, rowsize, nodeSize, keyedsize, nullptr);
+        options.enforceOrder = false;
         keyBuilder.setown(createKeyBuilder(keyStream, options)); // MORE - support for sequence other than 0...
     }
 

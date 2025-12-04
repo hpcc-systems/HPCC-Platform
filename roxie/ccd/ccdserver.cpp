@@ -12796,7 +12796,8 @@ public:
                     workunit->getDebugValue("defaultIndexCompression", StringBufferAdaptor(defaultIndexCompression));
             }
 
-            KeyBuilderOptions options = {flags, maxDiskRecordSize, nodeSize, helper.getKeyedSize(), 0, &helper, defaultIndexCompression, true, false};
+            KeyBuilderOptions options(flags, maxDiskRecordSize, nodeSize, helper.getKeyedSize(), &helper);
+            options.defaultCompression = defaultIndexCompression;
             Owned<IKeyBuilder> builder = createKeyBuilder(out, options);
             class BcWrapper : implements IBlobCreator
             {
