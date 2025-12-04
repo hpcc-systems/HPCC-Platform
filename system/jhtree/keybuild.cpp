@@ -167,6 +167,15 @@ public:
     }
 };
 
+
+//---------------------------------------------------------------------------------------------------------------------
+
+KeyBuilderOptions::KeyBuilderOptions(unsigned _flags, unsigned _rawSize, unsigned _nodeSize, unsigned _keyFieldSize, IHThorIndexWriteArg *_helper)
+    : flags(_flags), rawSize(_rawSize), nodeSize(_nodeSize), keyFieldSize(_keyFieldSize), helper(_helper)
+{
+}
+
+
 class CKeyBuilder : public CInterfaceOf<IKeyBuilder>
 {
 protected:
@@ -209,35 +218,36 @@ private:
     bool isTLK = false;
 
 public:
-    CKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned _keyedSize, unsigned __int64 _startSequence,  IHThorIndexWriteArg *_helper, const char * defaultCompression, bool _enforceOrder, bool _isTLK)
-        : out(_out), enforceOrder(_enforceOrder), isTLK(_isTLK)
+    CKeyBuilder(IFileIOStream *_out, const KeyBuilderOptions &options)
+        : out(_out), enforceOrder(options.enforceOrder), isTLK(options.isTLK)
     {
-        sequence = _startSequence;
+        sequence = options.startSequence;
         keyHdr.setown(new CWriteKeyHdr());
-        keyValueSize = rawSize;
-        keyedSize = _keyedSize != (unsigned) -1 ? _keyedSize : rawSize;
+        keyValueSize = options.rawSize;
+        keyedSize = options.keyFieldSize != (unsigned) -1 ? options.keyFieldSize : options.rawSize;
 
         levels = 0;
         records = 0;
-        nextPos = nodeSize; // leaving room for header
+        nextPos = options.nodeSize; // leaving room for header
         prevLeafNode = NULL;
 
-        assertex(nodeSize >= CKeyHdr::getSize());
-        assertex(nodeSize <= 0xffff); // stored in a short in the header - we should fix that if/when we restructure header
-        if (!(flags & COL_PREFIX))
+        assertex(options.nodeSize >= CKeyHdr::getSize());
+        assertex(options.nodeSize <= 0xffff); // stored in a short in the header - we should fix that if/when we restructure header
+        if (!(options.flags & COL_PREFIX))
             throw MakeStringException(0, "Invalid flags in CKeyBuilder::CKeyBuilder - COL_PREFIX is required");
+        unsigned flags = options.flags;
         if (flags & TRAILING_HEADER_ONLY)
             flags |= USE_TRAILING_HEADER;
         if ((flags & (HTREE_QUICK_COMPRESSED_KEY|HTREE_VARSIZE)) == (HTREE_QUICK_COMPRESSED_KEY|HTREE_VARSIZE))
             flags &= ~HTREE_QUICK_COMPRESSED;  // Quick does not support variable-size rows
         KeyHdr *hdr = keyHdr->getHdrStruct();
-        hdr->nodeSize = nodeSize;
+        hdr->nodeSize = options.nodeSize;
         hdr->extsiz = 4096;
         hdr->length = keyValueSize; 
         hdr->ktype = flags;
         hdr->timeid = 0;
         hdr->clstyp = 1;  // IDX_CLOSE
-        hdr->maxkbn = nodeSize-sizeof(NodeHdr);
+        hdr->maxkbn = options.nodeSize-sizeof(NodeHdr);
         hdr->maxkbl = hdr->maxkbn;
         hdr->flpntr = sizeof(offset_t);
         hdr->verson = 130; // version from ctree.
@@ -250,24 +260,22 @@ public:
         hdr->hdrseq = 0;
         hdr->fposOffset = 0;
         hdr->fileSize = 0;
-        hdr->nodeKeyLength = _keyedSize;
+        hdr->nodeKeyLength = options.keyFieldSize;
         hdr->version = 1;
         hdr->blobHead = 0;
         hdr->metadataHead = 0;
         hdr->firstLeaf = 0;
 
-        keyHdr->write(out, &headCRC);  // Reserve space for the header - we may seek back and write it properly later
-
         doCrc = true;
         duplicateCount = 0;
-        const char * compression = defaultCompression;
-        if (_helper)
+        const char * compression = options.compression;
+        if (options.helper)
         {
-            partitionFieldMask = _helper->getPartitionFieldMask();
-            auto bloomInfo =_helper->queryBloomInfo();
+            partitionFieldMask = options.helper->getPartitionFieldMask();
+            auto bloomInfo = options.helper->queryBloomInfo();
             if (bloomInfo)
             {
-                const RtlRecord &recinfo = _helper->queryDiskRecordSize()->queryRecordAccessor(true);
+                const RtlRecord &recinfo = options.helper->queryDiskRecordSize()->queryRecordAccessor(true);
                 while (*bloomInfo)
                 {
                     bloomBuilders.append(*createBloomBuilder(*bloomInfo[0]));
@@ -275,8 +283,6 @@ public:
                     bloomInfo++;
                 }
             }
-            if (_helper->getFlags() & TIWcompressdefined)
-                compression = _helper->queryCompression();
         }
 
         if (!isEmptyString(compression))
@@ -285,16 +291,21 @@ public:
             if (strieq(compression, "POC") || startsWithIgnoreCase(compression, "POC:"))
                 indexCompressor.setown(new PocIndexCompressor);
             else if (strieq(compression, "inplace") || startsWithIgnoreCase(compression, "inplace:"))
-                indexCompressor.setown(new InplaceIndexCompressor(keyedSize, keyHdr, _helper, compression));
+                indexCompressor.setown(new InplaceIndexCompressor(keyedSize, keyHdr, options.helper, compression));
             else if (strieq(compression, "hybrid") || startsWithIgnoreCase(compression, "hybrid:"))
-                indexCompressor.setown(new HybridIndexCompressor(keyedSize, keyHdr, _helper, compression, isTLK));
+                indexCompressor.setown(new HybridIndexCompressor(keyedSize, keyHdr, options.helper, compression, isTLK));
             else if (strieq(compression, "legacy"))
+            {
+                hdr->ktype |= HTREE_COMPRESSED_KEY;
                 indexCompressor.setown(new LegacyIndexCompressor);
+            }
             else
                 throw makeStringExceptionV(0, "Unrecognised index compression format %s", compression);
         }
         else
             indexCompressor.setown(new LegacyIndexCompressor);
+
+        keyHdr->write(out, &headCRC);  // Reserve space for the header - we may seek back and write it properly later
     }
     
     ~CKeyBuilder()
@@ -765,9 +776,9 @@ protected:
     }
 };
 
-extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyFieldSize, unsigned __int64 startSequence, IHThorIndexWriteArg *helper, const char * defaultCompression, bool enforceOrder, bool isTLK)
+extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, const KeyBuilderOptions &options)
 {
-    return new CKeyBuilder(_out, flags, rawSize, nodeSize, keyFieldSize, startSequence, helper, defaultCompression, enforceOrder, isTLK);
+    return new CKeyBuilder(_out, options);
 }
 
 class PartNodeInfo : public CInterface
