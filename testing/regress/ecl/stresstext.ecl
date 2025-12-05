@@ -27,6 +27,9 @@
 //version multiPart=false,variant='hybrid'
 //version multiPart=true,variant='hybrid'
 //version multiPart=false,variant='hybrid_var'
+//version multiPart=true,variant='hybrid_var'
+//version multiPart=true,variant='hybridz'
+//version multiPart=true,variant='hybridz_var'
 
 // The settings below may be useful when trying to analyse Roxie keyed join behaviour, as they will
 // eliminate some wait time for an agent queue to become available

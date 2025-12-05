@@ -3194,9 +3194,10 @@ void CMasterGraph::getStats(IStatisticGatherer &stats)
     cost_type costDiskAccess = getDiskAccessCost();
     if (costDiskAccess)
         stats.addStatistic(StCostFileAccess, costDiskAccess);
+    stats.addStatistic(StCostExecute, getExecuteCost());
 }
 
-cost_type CMasterGraph::getDiskAccessCost()
+cost_type CMasterGraph::getDiskAccessCost() const
 {
     cost_type totalDiskAccessCost = 0;
     Owned<IThorGraphIterator> iterChildGraph = getChildGraphIterator();

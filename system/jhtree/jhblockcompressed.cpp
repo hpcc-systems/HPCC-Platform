@@ -123,7 +123,7 @@ void CJHBlockCompressedSearchNode::load(CKeyHdr *_keyHdr, const void *rawData, o
     zeroFilePosition = *(bool*) keys;
     keys += sizeof(bool);
     
-    keyRecLen = zeroFilePosition ? (keyLen + sizeof(offset_t)) : keyLen;
+    keyRecLen = zeroFilePosition ? keyLen : (keyLen + sizeof(offset_t));
 
     CCycleTimer expansionTimer(true);
     keyBuf = expandBlock(keys, inMemorySize, compressionMethod);
@@ -144,12 +144,12 @@ bool CJHBlockCompressedSearchNode::fetchPayload(unsigned int index, char *dst, P
     if (keyHdr->hasSpecialFileposition())
     {
         if (zeroFilePosition)
-            memcpy(dst+keyCompareLen, p+keyCompareLen, keyLen + sizeof(offset_t) - keyCompareLen);
-        else
         {
             memcpy(dst+keyCompareLen, p+keyCompareLen, keyLen-keyCompareLen);
-            *((offset_t*) dst+keyLen) = 0;
+            *(offset_t*)(dst+keyLen) = 0;
         }
+        else
+            memcpy(dst+keyCompareLen, p+keyCompareLen, keyLen + sizeof(offset_t) - keyCompareLen);
     }
     else
     {
@@ -182,7 +182,7 @@ size32_t CJHBlockCompressedSearchNode::getSizeAt(unsigned int index) const
 offset_t CJHBlockCompressedSearchNode::getFPosAt(unsigned int index) const
 {
     if (index >= hdr.numKeys) return 0;
-    if (!zeroFilePosition) return 0;
+    if (zeroFilePosition) return 0;
 
     offset_t pos;
     const char * p = keyBuf + index*keyRecLen + keyLen;
@@ -270,13 +270,13 @@ bool CBlockCompressedWriteNode::add(offset_t pos, const void *indata, size32_t i
         keyPtr += sizeof(context.compressionMethod);
         hdr.keyBytes += sizeof(context.compressionMethod);
         
-        bool hasFilepos = !context.zeroFilePos;
-        *(bool*)keyPtr = hasFilepos;
+        *(bool*)keyPtr = context.zeroFilePos;
         keyPtr += sizeof(bool);
         hdr.keyBytes += sizeof(bool);
 
         //Adjust the fixed key size to include the fileposition field which is written by writekey
         bool isVariable = keyHdr->isVariable();
+        bool hasFilepos = !context.zeroFilePos;
         size32_t fixedKeySize = isVariable ? 0 : (hasFilepos ? keyLen + sizeof(offset_t) : keyLen);
 
         ICompressHandler * handler = queryCompressHandler(context.compressionMethod);
@@ -306,7 +306,7 @@ void CBlockCompressedWriteNode::finalize()
 
 //=========================================================================================================
 
-BlockCompressedIndexCompressor::BlockCompressedIndexCompressor(unsigned keyedSize, IHThorIndexWriteArg *helper, const char* options)
+BlockCompressedIndexCompressor::BlockCompressedIndexCompressor(unsigned keyedSize, IHThorIndexWriteArg *helper, const char* options, bool isTLK)
 {
     CompressionMethod compressionMethod = COMPRESS_METHOD_ZSTDS;
     StringBuffer compressionOptions;
@@ -336,7 +336,7 @@ BlockCompressedIndexCompressor::BlockCompressedIndexCompressor(unsigned keyedSiz
     if (!context.compressionHandler)
         throw MakeStringException(0, "Unknown compression method %d", (int)compressionMethod);
     
-    if (helper && (helper->getFlags() & TIWzerofilepos))
+    if (!isTLK && helper && (helper->getFlags() & TIWzerofilepos))
         context.zeroFilePos = true;
 }
 
@@ -358,7 +358,7 @@ void CJHBlockCompressedVarNode::load(CKeyHdr *_keyHdr, const void *rawData, offs
         KEYRECSIZE_T recsize = *(KEYRECSIZE_T *)finger;
         _WINREV(recsize);
         finger += recsize + sizeof(KEYRECSIZE_T);
-        if (zeroFilePosition)
+        if (!zeroFilePosition)
             finger += sizeof(offset_t);
     }
 }
@@ -380,12 +380,12 @@ bool CJHBlockCompressedVarNode::fetchPayload(unsigned int num, char *dst, Payloa
         if (keyHdr->hasSpecialFileposition())
         {
             if (zeroFilePosition)
-                memcpy(dst+keyCompareLen, p+keyCompareLen, reclen + sizeof(offset_t) - keyCompareLen);
-            else
             {
                 memcpy(dst+keyCompareLen, p+keyCompareLen, reclen-keyCompareLen);
-                *((offset_t*) dst+reclen) = 0;
+                *(offset_t*)(dst+keyLen) = 0;
             }
+            else
+                memcpy(dst+keyCompareLen, p+keyCompareLen, reclen + sizeof(offset_t) - keyCompareLen);
         }
         else
             memcpy(dst+keyCompareLen, p+keyCompareLen, reclen-keyCompareLen);

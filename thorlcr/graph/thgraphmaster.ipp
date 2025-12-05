@@ -131,7 +131,15 @@ public:
     void readActivityInitData(MemoryBuffer &mb, unsigned slave);
     bool deserializeStats(unsigned node, MemoryBuffer &mb);
     void getStats(IStatisticGatherer &stats);
-    virtual cost_type getDiskAccessCost() override;
+    virtual cost_type getDiskAccessCost() const override;
+    virtual cost_type getExecuteCost() const override
+    {
+        return money2cost_type(calculateThorCost(cycle_to_millisec(getLastElapsedCycles()), queryNodeClusterWidth()));
+    }
+    virtual cost_type getTotalCost() const override
+    {
+        return getExecuteCost() + getDiskAccessCost();
+    }
     virtual void setComplete(bool tf=true);
     virtual bool prepare(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies, bool shortCircuit, bool async) override;
     virtual void execute(size32_t _parentExtractSz, const byte *parentExtract, bool checkDependencies, bool async) override;

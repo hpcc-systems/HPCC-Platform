@@ -530,6 +530,8 @@ shakespeareStream := normalizeWordFormat(convertTextFileToInversion(4, Directory
                     BUILD(inputStream, { kind, word, doc, segment, wpos, wip }, { flags, string original := original, dpos }, Files.NameSearchIndex+'_inplace_var', compressed('inplace'), OVERWRITE, TRIM),
                     BUILD(inputStream, { kind, word, doc, segment, wpos, wip }, { flags, original, dpos }, Files.NameSearchIndex+'_hybrid', compressed('hybrid'), OVERWRITE),
                     BUILD(hybridVarIndex, inputStream, OVERWRITE),  // Test the syntax that builds an index definition and creates the field mappings automatically, including the trim
+                    BUILD(inputStream, { kind, word, doc, segment, wpos, wip }, { flags, dpos, original }, Files.NameSearchIndex+'_hybridz', compressed('hybrid'), OVERWRITE),
+                    BUILD(inputStream, { kind, word, doc, segment, wpos, wip }, { flags, dpos, string original := TRIM(original)}, Files.NameSearchIndex+'_hybridz_var', compressed('hybrid'), OVERWRITE),
                     BUILD(inputStream, { kind, word, doc, segment, wpos }, { wip, flags, original, dpos }, Files.NameSearchIndex+'_nowip', OVERWRITE),
                 )
             ),

@@ -632,6 +632,9 @@ class graph_decl CGraphBase : public CGraphStub, implements IEclGraphResults
     CGraphStubArrayCopy orderedChildGraphs;
     Owned<IGraphTempHandler> tmpHandler;
     AtomicShared<CFileSizeTracker> tempFileSizeTracker;
+    cycle_t startCycles = 0;
+    mutable cycle_t lastElapsedCycles = 0;
+
     void clean();
 
 protected:
@@ -677,7 +680,7 @@ public:
     CJobChannel &queryJobChannel() const { return jobChannel; }
     unsigned queryJobChannelNumber() const;
     IGraphTempHandler *queryTempHandler(bool assert=true) const { if (assert) assertex(tmpHandler.get()); return tmpHandler; }
-    CGraphBase *queryOwner() { return owner; }
+    CGraphBase *queryOwner() const { return owner; }
     CGraphBase *queryParent() { return parent?parent:this; }
     IMPServer &queryMPServer() const;
     void clearProgressUpdated() { progressUpdated.store(false); }
@@ -724,11 +727,11 @@ public:
     }
     virtual void executeSubGraph(size32_t parentExtractSz, const byte *parentExtract);
     virtual void execute(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies, bool async);
-    IThorActivityIterator *getIterator()
+    IThorActivityIterator *getIterator() const
     {
         return new CGraphElementIterator(containers);
     }
-    IThorActivityIterator *getConnectedIterator(bool branchOnConditional=true);
+    IThorActivityIterator *getConnectedIterator(bool branchOnConditional=true) const;
     IThorActivityIterator *getSinkIterator() const
     {
         return new CGraphElementArrayIterator(activeSinks);
@@ -794,7 +797,9 @@ public:
     void doExecute(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies);
     void doExecuteChild(size32_t parentExtractSz, const byte *parentExtract);
     void setResults(IThorGraphResults *results);
-    virtual cost_type getDiskAccessCost() = 0;
+    virtual cost_type getDiskAccessCost() const = 0;
+    virtual cost_type getExecuteCost() const = 0;
+    virtual cost_type getTotalCost() const = 0;
     virtual void executeChild(size32_t parentExtractSz, const byte *parentExtract, IThorGraphResults *results, IThorGraphResults *graphLoopResults);
     virtual void executeChild(size32_t parentExtractSz, const byte *parentExtract);
     virtual bool serializeStats(MemoryBuffer &mb) override { return false; }
@@ -816,6 +821,14 @@ public:
     {
         CFileSizeTracker *tracker = tempFileSizeTracker.query();
         return tracker ? tracker->queryActiveSize() : 0;
+    }
+    void updateLastElapsedCycles()
+    {
+        lastElapsedCycles = get_cycles_now()-startCycles;
+    }
+    cycle_t getLastElapsedCycles() const
+    {
+        return lastElapsedCycles;
     }
 // IExceptionHandler
     virtual bool fireException(IException *e);

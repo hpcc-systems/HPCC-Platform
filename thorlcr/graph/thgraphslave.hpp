@@ -552,7 +552,10 @@ public:
     virtual void abort(IException *e) override;
     virtual void reset() override;
     virtual void done() override;
-    virtual cost_type getDiskAccessCost() override { UNIMPLEMENTED; }
+    // getDiskAccessCost, getExecuteCost and getTotalCost are not implemented because they are only required on master
+    virtual cost_type getDiskAccessCost() const override { UNIMPLEMENTED; }
+    virtual cost_type getExecuteCost() const override { UNIMPLEMENTED; }
+    virtual cost_type getTotalCost() const override { UNIMPLEMENTED; }
     virtual IThorGraphResults *createThorGraphResults(unsigned num);
 
 // IExceptionHandler

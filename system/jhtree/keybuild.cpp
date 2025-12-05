@@ -136,9 +136,9 @@ protected:
     Owned<IIndexCompressor> leafCompressor;
     Owned<IIndexCompressor> branchCompressor;
 public:
-    HybridIndexCompressor(unsigned keyedSize, const CKeyHdr* keyHdr, IHThorIndexWriteArg *helper, const char * compression)
+    HybridIndexCompressor(unsigned keyedSize, const CKeyHdr* keyHdr, IHThorIndexWriteArg *helper, const char * compression, bool isTLK)
     {
-        leafCompressor.setown(new BlockCompressedIndexCompressor(keyedSize, helper, compression));
+        leafCompressor.setown(new BlockCompressedIndexCompressor(keyedSize, helper, compression, isTLK));
         branchCompressor.setown(new InplaceIndexCompressor(keyedSize, keyHdr, helper, compression));
     }
 
@@ -287,7 +287,7 @@ public:
             else if (strieq(compression, "inplace") || startsWithIgnoreCase(compression, "inplace:"))
                 indexCompressor.setown(new InplaceIndexCompressor(keyedSize, keyHdr, _helper, compression));
             else if (strieq(compression, "hybrid") || startsWithIgnoreCase(compression, "hybrid:"))
-                indexCompressor.setown(new HybridIndexCompressor(keyedSize, keyHdr, _helper, compression));
+                indexCompressor.setown(new HybridIndexCompressor(keyedSize, keyHdr, _helper, compression, isTLK));
             else if (strieq(compression, "legacy"))
                 indexCompressor.setown(new LegacyIndexCompressor);
             else
