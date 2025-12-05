@@ -1213,7 +1213,10 @@ CHThorIndexWriteActivity::CHThorIndexWriteActivity(IAgentContext &_agent, unsign
     clusterHandler.setown(createClusterWriteHandler(agent, &helper, NULL, lfn, filename, false));
     sizeLimit = agent.queryWorkUnit()->getDebugValueInt64("hthorDiskWriteSizeLimit", defaultHThorDiskWriteSizeLimit);
     defaultNoSeek = agent.queryWorkUnit()->getDebugValueBool("noSeekBuildIndex", isContainerized());
-    agent.queryWorkUnit()->getDebugValue("defaultIndexCompression", StringBufferAdaptor(defaultIndexCompression));
+
+    SCMStringBuffer defaultIndexCompression;
+    agent.queryWorkUnit()->getDebugValue("defaultIndexCompression", defaultIndexCompression);
+    getIndexCompressionType(indexCompressionType, &helper, defaultIndexCompression.str());
 }
 
 CHThorIndexWriteActivity::~CHThorIndexWriteActivity()
@@ -1301,7 +1304,9 @@ void CHThorIndexWriteActivity::execute()
         if (!needsSeek)
             out.setown(createNoSeekIOStream(out));
 
-        Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, keyMaxSize, nodeSize, helper.getKeyedSize(), 0, &helper, defaultIndexCompression, true, false);
+        KeyBuilderOptions options(flags, keyMaxSize, nodeSize, helper.getKeyedSize(), &helper);
+        options.setCompression(indexCompressionType);
+        Owned<IKeyBuilder> builder = createKeyBuilder(out, options);
         class BcWrapper : implements IBlobCreator
         {
             IKeyBuilder *builder;
@@ -1459,6 +1464,9 @@ void CHThorIndexWriteActivity::execute()
         keyedSize = helper.queryDiskRecordSize()->getFixedSize();
     properties.setPropInt64("@keyedSize", keyedSize);
     properties.setPropInt("@nodeSize", nodeSize);
+
+    // Set the compression type that was actually used
+    properties.setProp("@compressionType", indexCompressionType.str());
 
     char const * rececl = helper.queryRecordECL();
     if(rececl && *rececl)

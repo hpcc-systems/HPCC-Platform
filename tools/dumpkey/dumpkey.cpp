@@ -449,7 +449,10 @@ int main(int argc, const char **argv)
                     const RtlRecord &indexRecord = outmeta->queryRecordAccessor(true);
                     size32_t keyedSize = indexRecord.getFixedOffset(indexRecord.getNumKeyedFields());
                     MyIndexWriteArg helper(filename, globals->queryProp("recode"), outmeta);  // MORE - is lifetime ok? Bloom support? May need longer lifetime once we add bloom support...
-                    keyBuilder.setown(createKeyBuilder(outFileStream, flags, maxDiskRecordSize, nodeSize, keyedSize, 0, &helper, nullptr, false, index->isTopLevelKey()));
+                    KeyBuilderOptions options(flags, maxDiskRecordSize, nodeSize, keyedSize, &helper);
+                    options.enforceOrder = false;
+                    options.isTLK = index->isTopLevelKey();
+                    keyBuilder.setown(createKeyBuilder(outFileStream, options));
                 }
                 MyIndexVirtualFieldCallback callback(manager);
                 size32_t maxSizeSeen = 0;
