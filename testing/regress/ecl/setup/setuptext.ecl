@@ -529,6 +529,8 @@ shakespeareStream := normalizeWordFormat(convertTextFileToInversion(4, Directory
                     BUILD(inputStream, { kind, word, doc, segment, wpos, wip }, { flags, string original := TRIM(original), dpos }, Files.NameSearchIndex+'_inplace_var', compressed('inplace'), OVERWRITE),
                     BUILD(inputStream, { kind, word, doc, segment, wpos, wip }, { flags, original, dpos }, Files.NameSearchIndex+'_hybrid', compressed('hybrid'), OVERWRITE),
                     BUILD(inputStream, { kind, word, doc, segment, wpos, wip }, { flags, string original := TRIM(original), dpos }, Files.NameSearchIndex+'_hybrid_var', compressed('hybrid'), OVERWRITE),
+                    BUILD(inputStream, { kind, word, doc, segment, wpos, wip }, { flags, dpos, original }, Files.NameSearchIndex+'_hybridz', compressed('hybrid'), OVERWRITE),
+                    BUILD(inputStream, { kind, word, doc, segment, wpos, wip }, { flags, dpos, string original := TRIM(original)}, Files.NameSearchIndex+'_hybridz_var', compressed('hybrid'), OVERWRITE),
                     BUILD(inputStream, { kind, word, doc, segment, wpos }, { wip, flags, original, dpos }, Files.NameSearchIndex+'_nowip', OVERWRITE),
                 )
             ),
