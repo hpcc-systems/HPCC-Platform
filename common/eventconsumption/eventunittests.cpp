@@ -20,6 +20,7 @@
 #include "eventunittests.hpp"
 #include "eventfilter.h"
 #include "eventmodeling.h"
+#include "eventoperation.h"
 
 static const char* queryEventAttributeStateName(CEventAttribute::State state)
 {
@@ -153,25 +154,62 @@ void testEventVisitationLinks(const char* testData, bool strictParsing)
 
 void testEventVisitationLinks(const IPropertyTree& inputTree, const IPropertyTree& expectTree, IPropertyTreeIterator& visitationLinks, bool strictParsing)
 {
-    START_TEST
-    Owned<IEventIterator> input = new CPropertyTreeEvents(inputTree, strictParsing);
-    Owned<IEventIterator> expect = new CPropertyTreeEvents(expectTree, strictParsing);
-    Owned<IEventVisitor> visitor = new CEventVisitationLinkTester(*expect);
-    ForEach(visitationLinks)
+    class TestOp : public CEventConsumingOp
     {
-        IPropertyTree& linkTree = visitationLinks.query();
-        const char* kind = linkTree.queryProp("@kind");
-        CPPUNIT_ASSERT_MESSAGE("missing link kind", !isEmptyString(kind));
-        Owned<IEventVisitationLink> link;
-        if (strieq(kind, "event-filter"))
-            link.setown(createEventFilter(linkTree));
-        else
-            link.setown(createEventModel(linkTree));
-        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("failed to create test visitation link for kind '%s'", kind).str(), link != nullptr);
-        link->setNextLink(*visitor);
-        visitor.setown(link.getClear());
-    }
-    visitIterableEvents(*input, *visitor);
+    public: // CEventConsumingOp
+        virtual bool doOp() override
+        {
+            Owned<IEventIterator> input = new CPropertyTreeEvents(inputTree, strictParsing);
+            Owned<IEventIterator> expect = new CPropertyTreeEvents(expectTree, strictParsing);
+            Owned<IEventVisitor> visitor = new CEventVisitationLinkTester(*expect);
+            Owned<IEventVisitor> currentVisitor = LINK(visitor);
+
+            // Build the visitation chain from the links
+            ForEach(visitationLinks)
+            {
+                IPropertyTree& linkTree = visitationLinks.query();
+                const char* kind = linkTree.queryProp("@kind");
+                if (isEmptyString(kind))
+                    return false; // missing link kind
+
+                Owned<IEventVisitationLink> link;
+                if (strieq(kind, "event-filter"))
+                    link.setown(createEventFilter(linkTree, *metaState));
+                else
+                    link.setown(createEventModel(linkTree, *metaState));
+
+                if (!link)
+                    return false; // failed to create link
+
+                link->setNextLink(*currentVisitor);
+                currentVisitor.setown(link.getClear());
+            }
+
+            // Always include the meta information parser as the first link in the chain
+            metaState->setNextLink(*currentVisitor);
+            visitIterableEvents(*input, *metaState);
+            return true;
+        }
+
+    public:
+        TestOp(const IPropertyTree& _inputTree, const IPropertyTree& _expectTree, IPropertyTreeIterator& _visitationLinks, bool _strictParsing)
+            : inputTree(_inputTree)
+            , expectTree(_expectTree)
+            , visitationLinks(_visitationLinks)
+            , strictParsing(_strictParsing)
+        {
+        }
+
+    protected:
+        const IPropertyTree& inputTree;
+        const IPropertyTree& expectTree;
+        IPropertyTreeIterator& visitationLinks;
+        bool strictParsing;
+    };
+
+    START_TEST
+    TestOp op(inputTree, expectTree, visitationLinks, strictParsing);
+    CPPUNIT_ASSERT_MESSAGE("failed to process visitation links", op.doOp());
     END_TEST
 }
 

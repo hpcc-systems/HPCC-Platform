@@ -19,6 +19,11 @@
 #include "eventfilter.h"
 #include "eventmodeling.h"
 
+CEventConsumingOp::CEventConsumingOp()
+{
+    metaState.setown(new CMetaInfoState());
+}
+
 bool CEventConsumingOp::ready() const
 {
     return !inputPath.isEmpty() && out.get();
@@ -48,14 +53,14 @@ bool CEventConsumingOp::acceptModel(const IPropertyTree& config)
 {
     if (model)
         return false; // only one model per operation
-    model.setown(createEventModel(config));
+    model.setown(createEventModel(config, queryMetaInfoState()));
     return model != nullptr;
 }
 
 IEventFilter* CEventConsumingOp::ensureFilter()
 {
     if (!filter)
-        filter.setown(createEventFilter());
+        filter.setown(createEventFilter(queryMetaInfoState()));
     return filter;
 }
 
@@ -72,5 +77,10 @@ bool CEventConsumingOp::traverseEvents(const char* path, IEventVisitor& visitor)
         model->setNextLink(*actual);
         actual = model;
     }
-    return readEvents(path, *actual);
+
+    // Always include the meta information parser as the first link in the chain
+    // to ensure MetaFileInformation and EventQueryStart events are captured
+    metaState->setNextLink(*actual);
+
+    return readEvents(path, *metaState);
 }

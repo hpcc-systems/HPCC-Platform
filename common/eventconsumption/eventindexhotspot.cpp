@@ -47,11 +47,6 @@ class CHotspotEventVisitor : public CInterfaceOf<IEventVisitor>
         {
         }
 
-        void setPath(const char* _path)
-        {
-            this->path.set(_path);
-        }
-
         void recordEvent(offset_t offset, NodeKind nodeKind)
         {
             bucket_type bucket = page2bucket(offset2page(offset, defaultPageBits), granularityBits());
@@ -66,6 +61,7 @@ class CHotspotEventVisitor : public CInterfaceOf<IEventVisitor>
 
         void forEachBucket(IBucketVisitor& visitor)
         {
+            const char* path = container.operation.queryMetaInfoState().queryFilePath(id);
             visitor.arrive(id, path);
             for (unsigned kind = 0; kind < NumNodeKinds; kind++)
             {
@@ -109,7 +105,6 @@ class CHotspotEventVisitor : public CInterfaceOf<IEventVisitor>
     private:
         CHotspotEventVisitor& container; // back reference to obtain shared configuration
         __uint64 id{0};
-        StringAttr path;
         Activity activity[NumNodeKinds];
     };
 
@@ -131,8 +126,6 @@ public: // IEventVisitor
             NodeKind nodeKind = queryIndexNodeKind(event);
             if (observedEvents.count(type))
                 it->second.recordEvent(event.queryNumericValue(EvAttrFileOffset), nodeKind);
-            else
-                it->second.setPath(event.queryTextValue(EvAttrPath));
         }
         return true;
     }
@@ -146,14 +139,16 @@ public: // IEventVisitor
     }
 
 public:
-    CHotspotEventVisitor(IBucketVisitor& _analyzer, const std::set<EventType>& _observedEvents, byte _granularityBits)
-        : analyzer(&_analyzer)
+    CHotspotEventVisitor(CIndexHotspotOp& _operation, IBucketVisitor& _analyzer, const std::set<EventType>& _observedEvents, byte _granularityBits)
+        : operation(_operation)
+        , analyzer(&_analyzer)
         , granularityBits(_granularityBits)
         , observedEvents(_observedEvents)
     {
     }
 
 private:
+    CIndexHotspotOp& operation;
     // map file id (as __uint64 due to visitor interface) to index activity
     using Activity = std::map<__uint64, CActivity>;
     Linked<IBucketVisitor> analyzer;
@@ -175,7 +170,7 @@ bool CIndexHotspotOp::doOp()
     else
         analyzer.setown(createAllBucketVisitor(*out));
 
-    CHotspotEventVisitor visitor(*analyzer, observedEvents, granularityBits);
+    CHotspotEventVisitor visitor(*this, *analyzer, observedEvents, granularityBits);
     return traverseEvents(inputPath, visitor);
 }
 

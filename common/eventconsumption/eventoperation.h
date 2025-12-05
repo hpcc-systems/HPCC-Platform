@@ -20,10 +20,11 @@
 #include "eventconsumption.h"
 #include "eventfilter.h"
 #include "eventmodeling.h"
+#include "eventmetaparser.hpp"
 
-// Extension of `CEventFileOp` that supports streaming output and event filtering by trace ID,
-// thread ID, and timestamp range. This satisfies the requirements for the `event_consuming_op_t`
-// template parameter of `TEventConsumingCommand`.
+// Base operation class that provides meta parser functionality and supports streaming output
+// and event filtering by event kind and attribute values. This satisfies the requirements
+// for the `event_consuming_op_t` template parameter of `TEventConsumingCommand`.
 //
 // Subclasses are expected to add support for additional options.
 class event_decl CEventConsumingOp : public CInterface
@@ -31,6 +32,8 @@ class event_decl CEventConsumingOp : public CInterface
 public: // abstract method(s)
     virtual bool doOp() = 0;
 public:
+    CEventConsumingOp();
+    CMetaInfoState& queryMetaInfoState() { return *metaState; }
     virtual bool ready() const;
     void setInputPath(const char* path);
     void setOutput(IBufferedSerialOutputStream& _out);
@@ -41,6 +44,7 @@ protected:
     IEventFilter* ensureFilter();
     bool traverseEvents(const char* path, IEventVisitor& visitor);
 protected:
+    Owned<CMetaInfoState> metaState;
     StringAttr inputPath;
     Linked<IBufferedSerialOutputStream> out;
     Owned<IEventFilter> filter;
