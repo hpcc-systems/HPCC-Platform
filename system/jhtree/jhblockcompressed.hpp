@@ -59,11 +59,9 @@ public:
 
 class CJHBlockCompressedVarNode : public CJHBlockCompressedSearchNode 
 {
-    const char **recArray = nullptr;
+    OwnedMalloc<unsigned> offsets;
+    OwnedMalloc<KEYRECSIZE_T> sizes;
 public:
-    CJHBlockCompressedVarNode();
-    ~CJHBlockCompressedVarNode();
-
     virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy) override;
     virtual bool getKeyAt(unsigned int num, char *dest) const;         // Retrieve keyed fields
     virtual bool fetchPayload(unsigned int num, char *dest, PayloadReference & activePayload) const;       // Retrieve payload fields. Note destination is assumed to already contain keyed fields
