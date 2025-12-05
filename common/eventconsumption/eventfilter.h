@@ -20,6 +20,8 @@
 #include "eventconsumption.h"
 #include "eventvisitor.h"
 
+class CEventConsumingOp;
+
 enum class FilterTermComparison : byte
 {
     Default,
@@ -76,5 +78,5 @@ interface IEventFilter : extends IEventVisitationLink
 };
 
 // Obtain a new instance of a standard event filter.
-extern event_decl IEventFilter* createEventFilter();
-extern event_decl IEventFilter* createEventFilter(const IPropertyTree& config);
+extern event_decl IEventFilter* createEventFilter(CEventConsumingOp& operation);
+extern event_decl IEventFilter* createEventFilter(const IPropertyTree& config, CEventConsumingOp& operation);

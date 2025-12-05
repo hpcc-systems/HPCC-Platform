@@ -17,6 +17,7 @@
 
 #include "eventindexmodel.hpp"
 #include "eventutility.hpp"
+#include "eventoperation.h"
 #include <vector>
 
 void IndexMRUCache::configure(const IPropertyTree &config)
@@ -84,6 +85,9 @@ void IndexMRUCache::reserve(__uint64 needed, IndexMRUCacheReporter &reporter)
 
 class CIndexEventModel : public CInterfaceOf<IEventModel>
 {
+public:
+    CIndexEventModel(CEventConsumingOp& _operation) : operation(_operation) {}
+
 public: // IEventVisitationLink
     IMPLEMENT_IEVENTVISITATIONLINK;
 
@@ -355,11 +359,12 @@ protected:
     std::set<Suppression> suppressions;
     Storage storage;
     MemoryModel memory;
+    CEventConsumingOp& operation;
 };
 
-IEventModel *createIndexEventModel(const IPropertyTree &config)
+IEventModel *createIndexEventModel(const IPropertyTree &config, CEventConsumingOp& operation)
 {
-    Owned<CIndexEventModel> model = new CIndexEventModel;
+    Owned<CIndexEventModel> model = new CIndexEventModel(operation);
     model->configure(config);
     return model.getClear();
 }
@@ -371,8 +376,15 @@ IEventModel *createIndexEventModel(const IPropertyTree &config)
 class TestIndexEventModel : public CIndexEventModel
 {
 public:
+    TestIndexEventModel(CEventConsumingOp& operation) : CIndexEventModel(operation) {}
     Storage& getStorage() { return storage; }
     MemoryModel& getMemory() { return memory; }
+};
+
+class StubOp : public CEventConsumingOp
+{
+public:
+    bool doOp() override { UNIMPLEMENTED_X("StubOp::doOp should never be called"); }
 };
 
 class IndexEventModelTests : public CppUnit::TestFixture
@@ -1015,7 +1027,8 @@ memory:
     kind: 1
     cacheCapacity: 32 Mib
 )!!!";
-            TestIndexEventModel model;
+            StubOp operation;
+            TestIndexEventModel model(operation);
             Owned<IPropertyTree> config = createPTreeFromYAMLString(testConfig);
             model.configure(*config);
             CPPUNIT_ASSERT_EQUAL(strToBytes("0", StrToBytesFlags::ThrowOnError), model.getStorage().getCacheSize());
@@ -1037,7 +1050,8 @@ memory:
     kind: 1
     cacheCapacity: 32 Mib
 )!!!";
-            TestIndexEventModel model;
+            StubOp operation;
+            TestIndexEventModel model(operation);
             Owned<IPropertyTree> config = createPTreeFromYAMLString(testConfig);
             model.configure(*config);
             CPPUNIT_ASSERT_EQUAL(strToBytes("0", StrToBytesFlags::ThrowOnError), model.getStorage().getCacheSize());
@@ -1061,7 +1075,8 @@ memory:
     kind: 1
     cacheCapacity: 32 Mib
 )!!!";
-            TestIndexEventModel model;
+            StubOp operation;
+            TestIndexEventModel model(operation);
             Owned<IPropertyTree> config = createPTreeFromYAMLString(testConfig);
             model.configure(*config);
             CPPUNIT_ASSERT_EQUAL(strToBytes("12 mib", StrToBytesFlags::ThrowOnError), model.getStorage().getCacheSize());
@@ -1084,7 +1099,8 @@ memory:
     kind: 1
     cacheCapacity: 32 Mib
 )!!!";
-            TestIndexEventModel model;
+            StubOp operation;
+            TestIndexEventModel model(operation);
             Owned<IPropertyTree> config = createPTreeFromYAMLString(testConfig);
             model.configure(*config);
             CPPUNIT_ASSERT_EQUAL(strToBytes("8 mib", StrToBytesFlags::ThrowOnError), model.getStorage().getCacheSize());
