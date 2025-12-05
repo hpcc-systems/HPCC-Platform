@@ -238,6 +238,101 @@ void CJHNewBlobNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _fpos,
 
 //=========================================================================================================
 
+CJHBlockCompressedVarNode::CJHBlockCompressedVarNode() {}
+CJHBlockCompressedVarNode::~CJHBlockCompressedVarNode()
+{
+    delete [] recArray;
+}
+
+void CJHBlockCompressedVarNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _fpos, bool needCopy)
+{
+    CJHBlockCompressedSearchNode::load(_keyHdr, rawData, _fpos, needCopy);
+    unsigned n = getNumKeys();
+    recArray = new const char * [n];
+    const char *finger = keyBuf;
+    for (unsigned int i=0; i<getNumKeys(); i++)
+    {
+        recArray[i] = finger + sizeof(KEYRECSIZE_T);
+        KEYRECSIZE_T recsize = *(KEYRECSIZE_T *)finger;
+        _WINREV(recsize);
+        finger += recsize + sizeof(KEYRECSIZE_T);
+        if (!zeroFilePosition)
+            finger += sizeof(offset_t);
+    }
+}
+
+int CJHBlockCompressedVarNode::compareValueAt(const char *src, unsigned int index) const
+{
+    return memcmp(src, recArray[index], keyCompareLen);
+}
+
+bool CJHBlockCompressedVarNode::fetchPayload(unsigned int num, char *dst, PayloadReference & activePayload) const
+{
+    if (num >= hdr.numKeys) return false;
+
+    if (NULL != dst)
+    {
+        const char * p = recArray[num];
+        KEYRECSIZE_T reclen = ((KEYRECSIZE_T *) p)[-1];
+        _WINREV(reclen);
+        if (keyHdr->hasSpecialFileposition())
+        {
+            if (zeroFilePosition)
+            {
+                memcpy(dst+keyCompareLen, p+keyCompareLen, reclen-keyCompareLen);
+                *(offset_t*)(dst+keyLen) = 0;
+            }
+            else
+                memcpy(dst+keyCompareLen, p+keyCompareLen, reclen + sizeof(offset_t) - keyCompareLen);
+        }
+        else
+            memcpy(dst+keyCompareLen, p+keyCompareLen, reclen-keyCompareLen);
+    }
+    return true;
+}
+
+bool CJHBlockCompressedVarNode::getKeyAt(unsigned int num, char *dst) const
+{
+    if (num >= hdr.numKeys) return false;
+
+    if (NULL != dst)
+    {
+        const char * p = recArray[num];
+        KEYRECSIZE_T reclen = ((KEYRECSIZE_T *) p)[-1];
+        _WINREV(reclen);
+        assertex(reclen >= keyCompareLen);
+        memcpy(dst, p, keyCompareLen);
+    }
+    return true;
+}
+
+size32_t CJHBlockCompressedVarNode::getSizeAt(unsigned int num) const
+{
+    const char * p = recArray[num];
+    KEYRECSIZE_T reclen = ((KEYRECSIZE_T *) p)[-1];
+    _WINREV(reclen);
+    if (keyHdr->hasSpecialFileposition())
+        return reclen + sizeof(offset_t);
+    else
+        return reclen;
+}
+
+offset_t CJHBlockCompressedVarNode::getFPosAt(unsigned int num) const
+{
+    if (num >= hdr.numKeys) return 0;
+    if (!zeroFilePosition) return 0;
+
+    const char * p = recArray[num];
+    KEYRECSIZE_T reclen = ((KEYRECSIZE_T *) p)[-1];
+    _WINREV(reclen);
+    offset_t pos;
+    memcpy( &pos, p + reclen, sizeof(__int64) );
+    _WINREV(pos);
+    return pos;
+}
+
+//=========================================================================================================
+
 CBlockCompressedWriteNode::CBlockCompressedWriteNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode, const CBlockCompressedBuildContext& ctx) : 
     CWriteNode(_fpos, _keyHdr, isLeafNode), context(ctx)
 {
@@ -338,97 +433,4 @@ BlockCompressedIndexCompressor::BlockCompressedIndexCompressor(unsigned keyedSiz
     
     if (!isTLK && helper && (helper->getFlags() & TIWzerofilepos))
         context.zeroFilePos = true;
-}
-
-CJHBlockCompressedVarNode::CJHBlockCompressedVarNode() {}
-CJHBlockCompressedVarNode::~CJHBlockCompressedVarNode()
-{
-    delete [] recArray;
-}
-
-void CJHBlockCompressedVarNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _fpos, bool needCopy)
-{
-    CJHBlockCompressedSearchNode::load(_keyHdr, rawData, _fpos, needCopy);
-    unsigned n = getNumKeys();
-    recArray = new const char * [n];
-    const char *finger = keyBuf;
-    for (unsigned int i=0; i<getNumKeys(); i++)
-    {
-        recArray[i] = finger + sizeof(KEYRECSIZE_T);
-        KEYRECSIZE_T recsize = *(KEYRECSIZE_T *)finger;
-        _WINREV(recsize);
-        finger += recsize + sizeof(KEYRECSIZE_T);
-        if (!zeroFilePosition)
-            finger += sizeof(offset_t);
-    }
-}
-
-int CJHBlockCompressedVarNode::compareValueAt(const char *src, unsigned int index) const
-{
-    return memcmp(src, recArray[index], keyCompareLen);
-}
-
-bool CJHBlockCompressedVarNode::fetchPayload(unsigned int num, char *dst, PayloadReference & activePayload) const
-{
-    if (num >= hdr.numKeys) return false;
-
-    if (NULL != dst)
-    {
-        const char * p = recArray[num];
-        KEYRECSIZE_T reclen = ((KEYRECSIZE_T *) p)[-1];
-        _WINREV(reclen);
-        if (keyHdr->hasSpecialFileposition())
-        {
-            if (zeroFilePosition)
-            {
-                memcpy(dst+keyCompareLen, p+keyCompareLen, reclen-keyCompareLen);
-                *(offset_t*)(dst+keyLen) = 0;
-            }
-            else
-                memcpy(dst+keyCompareLen, p+keyCompareLen, reclen + sizeof(offset_t) - keyCompareLen);
-        }
-        else
-            memcpy(dst+keyCompareLen, p+keyCompareLen, reclen-keyCompareLen);
-    }
-    return true;
-}
-
-bool CJHBlockCompressedVarNode::getKeyAt(unsigned int num, char *dst) const
-{
-    if (num >= hdr.numKeys) return false;
-
-    if (NULL != dst)
-    {
-        const char * p = recArray[num];
-        KEYRECSIZE_T reclen = ((KEYRECSIZE_T *) p)[-1];
-        _WINREV(reclen);
-        assertex(reclen >= keyCompareLen);
-        memcpy(dst, p, keyCompareLen);
-    }
-    return true;
-}
-
-size32_t CJHBlockCompressedVarNode::getSizeAt(unsigned int num) const
-{
-    const char * p = recArray[num];
-    KEYRECSIZE_T reclen = ((KEYRECSIZE_T *) p)[-1];
-    _WINREV(reclen);
-    if (keyHdr->hasSpecialFileposition())
-        return reclen + sizeof(offset_t);
-    else
-        return reclen;
-}
-
-offset_t CJHBlockCompressedVarNode::getFPosAt(unsigned int num) const
-{
-    if (num >= hdr.numKeys) return 0;
-    if (!zeroFilePosition) return 0;
-
-    const char * p = recArray[num];
-    KEYRECSIZE_T reclen = ((KEYRECSIZE_T *) p)[-1];
-    _WINREV(reclen);
-    offset_t pos;
-    memcpy( &pos, p + reclen, sizeof(__int64) );
-    _WINREV(pos);
-    return pos;
 }
