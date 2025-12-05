@@ -102,6 +102,45 @@ static void loadResource(const char *filepath, MemoryBuffer &content)
     read(fio, 0, (size32_t) f->size(), content);
 }
 
+static bool isSourceResource(const char *type)
+{
+    return type && (strieq(type, "CPP") || strieq(type, "C"));
+}
+
+static bool isHeaderResource(const char *type)
+{
+    return type && (strieq(type, "H") || strieq(type, "HPP"));
+}
+
+static void ensureManifestTempDir(StringBuffer &tempDir, IHqlCppInstance &cppInstance)
+{
+    if (tempDir.length())
+        return;
+
+    getTempFilePath(tempDir, "eclcc", nullptr);
+    tempDir.append(PATHSEPCHAR).append("tmp.XXXXXX");
+    if (!mkdtemp((char *) tempDir.str()))
+        throw makeStringExceptionV(0, "Failed to create temporary directory %s (error %d)", tempDir.str(), errno);
+    cppInstance.addTemporaryDir(tempDir.str());
+    cppInstance.addIncludeDirectory(tempDir.str());
+}
+
+static void appendRelativeResourcePath(StringBuffer &target, const char *tempDir, const char *relativeName, const char *fallbackName)
+{
+    target.append(tempDir).append(PATHSEPCHAR);
+    if (relativeName && *relativeName)
+        target.append(relativeName);
+    else if (fallbackName && *fallbackName)
+    {
+        const char *tail = pathTail(fallbackName);
+        if (!tail || !*tail)
+            throw makeStringExceptionV(0, "Failed to resolve resource filename for %s", fallbackName);
+        target.append(tail);
+    }
+    else
+        throw makeStringException(0, "Failed to determine resource filename");
+}
+
 bool ResourceManager::getDuplicateResourceId(const char *srctype, const char *respath, const char *filepath, int &id)
 {
     StringBuffer xpath;
@@ -238,6 +277,7 @@ void ResourceManager::addManifestFile(const char *filename, ICodegenContextCallb
     }
 
     Owned<IPropertyTreeIterator> resources = manifestSrc->getElements("Resource[@filename]");
+    StringBuffer manifestTempDir;
     ForEach(*resources)
     {
         IPropertyTree &item = resources->query();
@@ -271,11 +311,33 @@ void ResourceManager::addManifestFile(const char *filename, ICodegenContextCallb
             else
             {
                 const char *type = item.queryProp("@type");
-                if (strieq(type, "CPP") || strieq(type, "C"))
+                bool isSource = isSourceResource(type);
+                bool isHeader = isHeaderResource(type);
+
+                if (isSource || isHeader)
                 {
                     if (!ctxCallback->allowAccess("cpp", isSigned))
                         throw makeStringExceptionV(0, "Embedded code via manifest file not allowed");
-                    cppInstance.useSourceFile(resourceFilename, item.queryProp("@compileFlags"), false);
+                    ensureManifestTempDir(manifestTempDir, cppInstance);
+                    StringBuffer tempFileName;
+                    appendRelativeResourcePath(tempFileName, manifestTempDir.str(), item.queryProp("@filename"), resourceFilename);
+                    if (!recursiveCreateDirectoryForFile(tempFileName))
+                        throw makeStringExceptionV(0, "Failed to create temporary file %s (error %d)", tempFileName.str(), errno);
+                    try
+                    {
+                        copyFile(tempFileName.str(), resourceFilename);
+                    }
+                    catch (IException *e)
+                    {
+                        StringBuffer msg;
+                        e->errorMessage(msg);
+                        e->Release();
+                        throw makeStringExceptionV(0, "Failed to copy manifest resource %s to %s: %s", resourceFilename, tempFileName.str(), msg.str());
+                    }
+                    if (isSource)
+                    {
+                        cppInstance.useSourceFile(tempFileName, item.queryProp("@compileFlags"), true);
+                    }
                 }
                 else
                 {
@@ -406,26 +468,26 @@ void ResourceManager::addManifestsFromArchive(IPropertyTree *archive, ICodegenCo
                             throw makeStringExceptionV(0, "MD5 mismatch %s in archive", filename);
                     }
                     const char *type = item.queryProp("@type");
-                    if (strieq(type, "CPP") || strieq(type, "C"))
+                    bool isSource = isSourceResource(type);
+                    bool isHeader = isHeaderResource(type);
+                    if (isSource || isHeader)
                     {
                         if (!ctxCallback->allowAccess("cpp", isSigned))
                             throw makeStringExceptionV(0, "Embedded code via manifest file not allowed");
-                        if (!tempDir.length())
-                        {
-                            getTempFilePath(tempDir, "eclcc", nullptr);
-                            tempDir.append(PATHSEPCHAR).append("tmp.XXXXXX"); // Note - we share same temp dir for all from this manifest
-                            if (!mkdtemp((char *) tempDir.str()))
-                                throw makeStringExceptionV(0, "Failed to create temporary directory %s (error %d)", tempDir.str(), errno);
-                            cppInstance.addTemporaryDir(tempDir.str());
-                        }
+                        ensureManifestTempDir(tempDir, cppInstance);
                         StringBuffer tempFileName;
-                        tempFileName.append(tempDir).append(PATHSEPCHAR).append(item.queryProp("@filename"));
+                        appendRelativeResourcePath(tempFileName, tempDir.str(), item.queryProp("@filename"), filename);
                         if (!recursiveCreateDirectoryForFile(tempFileName))
                             throw makeStringExceptionV(0, "Failed to create temporary file %s (error %d)", tempFileName.str(), errno);
-                        FILE *source = fopen(tempFileName.str(), "wt");
-                        fwrite(content.toByteArray(), content.length(), 1, source);
-                        fclose(source);
-                        cppInstance.useSourceFile(tempFileName, item.queryProp("@compileFlags"), true);
+                        Owned<IFile> tempFile = createIFile(tempFileName.str());
+                        Owned<IFileIO> io = tempFile->open(IFOcreate);
+                        if (!io)
+                            throw makeStringExceptionV(errno, "Failed to create file %s", tempFileName.str());
+                        io->write(0, content.length(), content.toByteArray());
+                        if (isSource)
+                        {
+                            cppInstance.useSourceFile(tempFileName, item.queryProp("@compileFlags"), true);
+                        }
                     }
                     else
                     {

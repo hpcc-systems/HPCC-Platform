@@ -1215,6 +1215,13 @@ const char * HqlCppInstance::queryTempDirectory(unsigned idx)
     return NULL;
 }
 
+const char * HqlCppInstance::queryIncludeDirectory(unsigned idx)
+{
+    if (includeDirs.isItem(idx))
+        return includeDirs.item(idx).text;
+    return NULL;
+}
+
 HqlStmts * HqlCppInstance::querySection(IAtom * section)
 {
     ForEachItemIn(idx, sections)
@@ -1362,6 +1369,11 @@ void HqlCppInstance::useSourceFile(const char * srcname, const char *flags, bool
 void HqlCppInstance::addTemporaryDir(const char * path)
 {
     insertUniqueString(tempDirs, path);
+}
+
+void HqlCppInstance::addIncludeDirectory(const char * path)
+{
+    insertUniqueString(includeDirs, path);
 }
 
 void HqlCppInstance::addHint(const char * hintXml, ICodegenContextCallback * ctxCallback)
