@@ -3312,7 +3312,7 @@ CompressionMethod translateToCompMethod(const char *compStr, CompressionMethod d
             compMethod = COMPRESS_METHOD_LZ4HC3;
         else if (strieq("LZ4", compStr))
             compMethod = COMPRESS_METHOD_LZ4;
-        else if (strieq("LZ4SHC", compStr))
+        else if (strieq("LZ4SHC", compStr) || strieq("LZ4HCS", compStr))
             compMethod = COMPRESS_METHOD_LZ4SHC;
         else if (strieq("LZ4S", compStr))
             compMethod = COMPRESS_METHOD_LZ4S;
