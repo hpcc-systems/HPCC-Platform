@@ -115,6 +115,7 @@ static bool isWorthHoisting(IHqlExpression * expr, bool asSubQuery)
         case no_sectioninput:
         case no_dataset_alias:
         case no_forcegraph:
+        case no_metaactivity:
             expr = expr->queryChild(0);
             break;
         case no_fail:

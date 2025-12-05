@@ -1508,6 +1508,7 @@ void CGraphBase::doExecute(size32_t parentExtractSz, const byte *parentExtract, 
             element.initActivity();
         }
         initialized = true;
+        startCycles = get_cycles_now();
         if (!preStart(parentExtractSz, parentExtract)) return;
         start();
         if (!wait(aborted?MEDIUMTIMEOUT:INFINITE)) // can't wait indefinitely, query may have aborted and stall, but prudent to wait a short time for underlying graphs to unwind.
@@ -1651,7 +1652,7 @@ void CGraphBase::end()
 class CGraphTraverseIteratorBase : implements IThorActivityIterator, public CInterface
 {
 protected:
-    CGraphBase &graph;
+    const CGraphBase &graph;
     Linked<CGraphElementBase> cur;
     CIArrayOf<CGraphElementBase> others;
     CGraphElementArrayCopy covered;
@@ -1721,7 +1722,7 @@ protected:
     }
 public:
     IMPLEMENT_IINTERFACE;
-    CGraphTraverseIteratorBase(CGraphBase &_graph) : graph(_graph)
+    CGraphTraverseIteratorBase(const CGraphBase &_graph) : graph(_graph)
     {
     }
     virtual bool first()
@@ -1753,7 +1754,7 @@ class CGraphTraverseConnectedIterator : public CGraphTraverseIteratorBase
 {
     bool branchOnConditional;
 public:
-    CGraphTraverseConnectedIterator(CGraphBase &graph, bool _branchOnConditional) : CGraphTraverseIteratorBase(graph), branchOnConditional(_branchOnConditional) { }
+    CGraphTraverseConnectedIterator(const CGraphBase &graph, bool _branchOnConditional) : CGraphTraverseIteratorBase(graph), branchOnConditional(_branchOnConditional) { }
     virtual bool next()
     {
         setNext(branchOnConditional);
@@ -1761,7 +1762,7 @@ public:
     }
 };
 
-IThorActivityIterator *CGraphBase::getConnectedIterator(bool branchOnConditional)
+IThorActivityIterator *CGraphBase::getConnectedIterator(bool branchOnConditional) const
 {
     return new CGraphTraverseConnectedIterator(*this, branchOnConditional);
 }

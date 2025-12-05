@@ -102,39 +102,21 @@ private:
     unsigned lastReportedMsTick;
     unsigned reportRateMSecs;
     CIArrayOf<CGraphBase> activeGraphs;
-    UnsignedArray graphStartsMsTick;
-    double thorManagerRate = 0;
-    double thorWorkerRate = 0;
     cost_type costLimit = 0;
     cost_type previousExecutionCost = 0;
     StatisticsAggregator statsAggregator;
 
-    void reportStatus(IWorkUnit *wu, CGraphBase &graph, unsigned startTime, bool finished, bool success)
+    void reportStatus(IWorkUnit *wu, CGraphBase &graph, bool finished, bool success)
     {
         const char *graphName = graph.queryJob().queryGraphName();
         unsigned wfid = graph.queryJob().getWfid();
         StringBuffer timer, graphScope;
         formatGraphTimerLabel(timer, graphName, 0, graph.queryGraphId());
         formatGraphTimerScope(graphScope, wfid, graphName, 0, graph.queryGraphId());
-        unsigned duration = msTick()-startTime;
+        // Use the elapsed time tracked in CMasterGraph (using ::getLastElapsedCycles) as the cost calculated for
+        // subgraph was based on that elapsed time
+        unsigned duration = cycle_to_millisec(graph.getLastElapsedCycles());
         updateWorkunitStat(wu, SSTsubgraph, graphScope, StTimeElapsed, timer, milliToNano(duration));
-        if (costLimit || finished)
-        {
-            const cost_type sgCost = money2cost_type(calcCost(thorManagerRate, duration) + calcCost(thorWorkerRate, duration) * queryNodeClusterWidth());
-            if (finished)
-            {
-                if (sgCost)
-                    wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTsubgraph, graphScope, StCostExecute, NULL, sgCost, 1, 0, StatsMergeReplace);
-            }
-
-            const cost_type totalCost = previousExecutionCost + sgCost + graph.getDiskAccessCost();
-
-            if (costLimit>0 && totalCost > costLimit && !finished)
-            {
-                WARNLOG("ABORT job cost exceeds limit");
-                graph.fireException(MakeThorException(TE_CostExceeded, "Job cost exceeds limit"));
-            }
-        }
         if (finished)
         {
             const char * graphId = (memcmp(graphName,"graph",5)==0) ? graphName+5 : graphName;
@@ -143,7 +125,7 @@ private:
                 wu->queryWuid(),
                 graphId,
                 (unsigned)graph.queryGraphId(),
-                duration,
+                (unsigned)duration,
                 success?"SUCCESS":"FAILED",
                 queryServerStatus().queryProperties()->queryProp("@nodeGroup"),
                 queryServerStatus().queryProperties()->queryProp("@queue"));
@@ -154,26 +136,34 @@ private:
         else
         {
             queryServerStatus().queryProperties()->setProp("@graph", graphName);
-            queryServerStatus().queryProperties()->setPropInt("@subgraph", (int)graph.queryGraphId());
+            queryServerStatus().queryProperties()->setPropInt("@subgraph", graph.queryGraphId());
             queryServerStatus().queryProperties()->setPropInt("@sg_duration", (duration+59999)/60000); // round it up
         }
     }
-    void updateGraphStats(IConstWorkUnit &currentWU, const char *graphName, unsigned wfid, CGraphBase & graph)
+    void checkCostLimit(CGraphBase &graph)
     {
-        GraphStatsCollection::updateGraphStats(currentWU, graphName, wfid, graph, statsAggregator);
+        if (costLimit)
+        {
+            const cost_type totalCost = previousExecutionCost + graph.getTotalCost();
+            if (totalCost > costLimit)
+            {
+                WARNLOG("ABORT job cost exceeds limit");
+                graph.fireException(MakeThorException(TE_CostExceeded, "Job cost exceeds limit"));
+            }
+        }
     }
-    void reportStartGraph(CGraphBase *graph, unsigned startTimeMsTick)
+    void updateGraphStats(IConstWorkUnit &wu, const char *graphName, unsigned wfid, CGraphBase & graph)
     {
-        unsigned wfid = graph->queryJob().getWfid();
-        const char *graphName = graph->queryJob().queryGraphName();
-
+        GraphStatsCollection::updateGraphStats(wu, graphName, wfid, graph, statsAggregator);
+    }
+    void recordWhenStarted(CGraphBase *graph)
+    {
+        const CJobBase &job = graph->queryJob();
+        Owned<IWorkUnit> wu = &(job.queryWorkUnit().lock());
         StringBuffer graphScope;
-        formatGraphTimerScope(graphScope, wfid, graphName, 0, graph->queryGraphId());
-
-        Owned<IWorkUnit> wu = &(graph->queryJob().queryWorkUnit().lock());
+        formatGraphTimerScope(graphScope, job.getWfid(), job.queryGraphName(), 0, graph->queryGraphId());
         wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTsubgraph, graphScope, StWhenStarted, NULL, getTimeStampNowValue(), 1, 0, StatsMergeAppend);
-
-        reportStatus(wu, *graph, startTimeMsTick, false, true);
+        reportStatus(wu, *graph, false, true);
         queryServerStatus().commitProperties();
     }
     void reportActiveGraphs(bool finished, bool success=true)
@@ -189,14 +179,15 @@ private:
                 ForEachItemIn (g, activeGraphs)
                 {
                     CGraphBase &graph = activeGraphs.item(g);
+                    graph.updateLastElapsedCycles();
                     updateGraphStats(currentWU, graphName, wfid, graph);
                 }
                 Owned<IWorkUnit> wu = &currentWU.lock();
                 ForEachItemIn (g2, activeGraphs)
                 {
                     CGraphBase &graph = activeGraphs.item(g2);
-                    unsigned startTime = graphStartsMsTick.item(g2);
-                    reportStatus(wu, graph, startTime, finished, success);
+                    reportStatus(wu, graph, finished, success);
+                    checkCostLimit(graph);
                 }
                 updateAggregates(wu);
                 queryServerStatus().commitProperties();
@@ -208,19 +199,19 @@ private:
             }
         }
     }
-    void reportGraph(CGraphBase *graph, bool finished, bool success, unsigned startTime)
+    void reportGraph(CGraphBase *graph, bool finished, bool success)
     {
+        // note: it is not necessary (and would be inefficient) to call updateAggregates here as the
+        // workflow engine/agent will call it anyway after a graph has finished
         try
         {
-            IConstWorkUnit &currentWU = graph->queryJob().queryWorkUnit();
-            const char *graphName = ((CJobMaster &)activeGraphs.item(0).queryJob()).queryGraphName();
-            unsigned wfid = graph->queryJob().getWfid();
-            updateGraphStats(currentWU, graphName, wfid, *graph);
-
+            const CJobBase &job = graph->queryJob();
+            IConstWorkUnit &currentWU = job.queryWorkUnit();
+            graph->updateLastElapsedCycles();
+            updateGraphStats(currentWU, job.queryGraphName(), job.getWfid(), *graph);
             Owned<IWorkUnit> wu = &currentWU.lock();
-            // note: it is not necessary and inefficient to call updateAggregates here as the workflow
-            // engine/agent will call it anyway after a graph has finished
-            reportStatus(wu, *graph, startTime, finished, success);
+            reportStatus(wu, *graph, finished, success);
+            checkCostLimit(*graph);
             queryServerStatus().commitProperties();
         }
         catch (IException *e)
@@ -237,8 +228,6 @@ public:
     {
         lastReportedMsTick = msTick();
         reportRateMSecs = globals->getPropInt("@watchdogProgressInterval", 30) * 1000;
-        thorManagerRate = getThorManagerRate();
-        thorWorkerRate = getThorWorkerRate();
     }
 
     virtual void takeHeartBeat(MemoryBuffer &progressMb) override
@@ -288,13 +277,11 @@ public:
         synchronized block(mutex);
 
         IConstWorkUnit & wu =  graph->queryJob().queryWorkUnit();
+        recordWhenStarted(graph);
         previousExecutionCost = aggregateCost(&wu, nullptr, StCostExecute, 3);
 
         costLimit = getGuillotineCost(&wu);
         activeGraphs.append(*LINK(graph));
-        unsigned startTime = msTick();
-        graphStartsMsTick.append(startTime);
-        reportStartGraph(graph, startTime);
     }
     virtual void endGraph(CGraphBase *graph, bool success) override
     {
@@ -302,10 +289,8 @@ public:
         unsigned g = activeGraphs.find(*graph);
         if (NotFound != g)
         {
-            unsigned startTime = graphStartsMsTick.item(g);
-            reportGraph(graph, true, success, startTime);
+            reportGraph(graph, true, success);
             activeGraphs.remove(g);
-            graphStartsMsTick.remove(g);
         }
     }
     virtual void endGraphs() override
@@ -313,7 +298,6 @@ public:
         synchronized block(mutex);
         reportActiveGraphs(true, false);
         activeGraphs.kill();
-        graphStartsMsTick.kill();
     }
     // Generates aggregates and writes any modified aggregates to workunit
     virtual void updateAggregates(IWorkUnit * lockedWu) override
