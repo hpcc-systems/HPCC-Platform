@@ -28,6 +28,6 @@ Keep checking the Red Book as it is constantly updated with new information and 
 
 HPCC Systems 8.0.0 includes the first release that is feature complete to the point where our Cloud Native platform is now ready for Cloud performance evaluation.
 
-More information about our Cloud Native platform is [available on our website](https://hpccsystems.com/about#Platform) and our [Cloud Native Platform Wiki](https://hpccsystems.atlassian.net/wiki/pages/viewpage.action?pageId=23574964). Visit our [Helm Chart GitHub Repository](https://github.com/hpcc-systems/helm-chart) and see some [examples of use](https://github.com/hpcc-systems/helm-chart/tree/master/helm/examples) to help you get setup.
+More information about our Cloud Native platform is [available on our website](https://hpccsystems.com/about#Platform) and our [Cloud Resource Center](https://hpccsystems.com/resources/?_resource_filters=cloud). Visit our [Helm Chart GitHub Repository](https://github.com/hpcc-systems/helm-chart) and see some [examples of use](https://github.com/hpcc-systems/helm-chart/tree/master/helm/examples) to help you get setup.
 
 Details of the most recent new features and improvements are available in our [HPCC Systems 8.0.0 – Cloud Native Highlights](https://hpccsystems.com/blog/platform-Cloud-800Gold) blog.
