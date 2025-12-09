@@ -8,7 +8,7 @@
 
        http://www.apache.org/licenses/LICENSE-2.0
 
-    Unless required by applicable law or agreed to in writing, software
+    Unless isRequired by applicable law or agreed to in writing, software
     distributed under the License is distributed on an "AS IS" BASIS,
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
     See the License for the specific language governing permissions and
@@ -18,6 +18,7 @@
 #pragma warning (disable : 4786)
 
 #include "WsSysInfoLogService.hpp"
+#include "exception_util.hpp"
 #include "jptree.hpp"
 #include "jtime.hpp"
 #include "jmisc.hpp"
@@ -25,11 +26,9 @@
 #include "dasess.hpp"
 #include "daclient.hpp"
 #include "jstring.hpp"
+#include <stdlib.h>
 
-#ifdef _WIN32
-#include <stdlib.h>
-#else
-#include <stdlib.h>
+#ifndef _WIN32
 #define _strtoui64(str, endptr, base) strtoull(str, endptr, base)
 #endif
 
@@ -39,24 +38,6 @@ Cws_sysinfologEx::Cws_sysinfologEx()
 
 Cws_sysinfologEx::~Cws_sysinfologEx()
 {
-}
-
-bool Cws_sysinfologEx::parseDateTime(const char* dateTimeStr, timestamp_type& ts)
-{
-    if (isEmptyString(dateTimeStr))
-        return false;
-
-    try
-    {
-        CDateTime dt;
-        dt.setString(dateTimeStr);
-        ts = dt.getSimple();
-        return true;
-    }
-    catch (...)
-    {
-        return false;
-    }
 }
 
 void Cws_sysinfologEx::init(IPropertyTree *cfg, const char *process, const char *service)
@@ -102,21 +83,18 @@ void Cws_sysinfologEx::populateMessageFromLoggerMsg(IEspSysInfoMessage* espMsg, 
 void Cws_sysinfologEx::parseFilters(IEspGetMessagesRequest &req, Owned<ISysInfoLoggerMsgFilter>& filter)
 {
     // Handle MessageID filter first (creates specific filter)
-    const char* messageID = req.getMessageID();
-    if (!isEmptyString(messageID))
-    {
-        unsigned __int64 msgId = _strtoui64(messageID, nullptr, 10);
+    unsigned __int64 msgId = 0;
+    if (getMessageIdFromReq(req, false, msgId))
         filter.setown(createSysInfoLoggerMsgFilter(msgId, nullptr));
-    }
     else
-    {
         filter.setown(createSysInfoLoggerMsgFilter(nullptr));
-    }
 
-    // Set component/source filter if provided
     const char* component = req.getComponent();
     if (!isEmptyString(component))
         filter->setMatchSource(component);
+
+    if (req.getActiveOnly() && req.getHiddenOnly())
+        throw makeStringException(-1, "Cannot set both ActiveOnly and HiddenOnly filters");
 
     // Set visibility filters
     if (req.getActiveOnly())
@@ -124,23 +102,51 @@ void Cws_sysinfologEx::parseFilters(IEspGetMessagesRequest &req, Owned<ISysInfoL
     else if (req.getHiddenOnly())
         filter->setHiddenOnly();
 
-    // Set date range filter if provided
-    if (req.getStartYear() > 0 && req.getEndYear() > 0)
+    // Values for date range filter
+    unsigned startYear = 0, startMonth = 0, startDay = 0;
+    unsigned endYear = 0, endMonth = 0, endDay = 0;
+    bool hasDateRange = false;
+
+    // Validate and set start date if provided
+    if (req.getStartYear() > 0)
     {
-        filter->setDateRange(
-            req.getStartYear(), req.getStartMonth(), req.getStartDay(),
-            req.getEndYear(), req.getEndMonth(), req.getEndDay()
-        );
+        if (req.getStartMonth() >= 1 && req.getStartMonth() <= 12 && req.getStartDay() >= 1 && req.getStartDay() <= 31)
+        {
+            startYear = req.getStartYear();
+            startMonth = req.getStartMonth();
+            startDay = req.getStartDay();
+            hasDateRange = true;
+        }
+    }
+    
+    // Validate and set end date if provided
+    if (req.getEndYear() > 0)
+    {
+        if (req.getEndMonth() >= 1 && req.getEndMonth() <= 12 && req.getEndDay() >= 1 && req.getEndDay() <= 31)
+        {
+            endYear = req.getEndYear();
+            endMonth = req.getEndMonth();
+            endDay = req.getEndDay();
+            hasDateRange = true;
+        }
     }
 
-    // Set specific timestamp matching
+    if (hasDateRange) // there's additional validation in the setDateRange method
+        filter->setDateRange(startYear, startMonth, startDay, endYear, endMonth, endDay);
+
     const char* matchTimeStr = req.getMatchTimeStamp();
     if (!isEmptyString(matchTimeStr))
     {
-        timestamp_type ts;
-        if (parseDateTime(matchTimeStr, ts))
+        try
         {
+            CDateTime dt;
+            dt.setString(matchTimeStr);
+            timestamp_type ts = dt.getSimple();
             filter->setMatchTimeStamp(ts);
+        }
+        catch (...)
+        {
+            throw makeStringExceptionV(-1, "Timestamp is invalid: %s", matchTimeStr);
         }
     }
 
@@ -173,8 +179,7 @@ void Cws_sysinfologEx::parseFilters(IEspGetMessagesRequest &req, Owned<ISysInfoL
                 msgClass = MSGCLS_event;
                 break;
             default:
-                msgClass = MSGCLS_unknown;
-                break;
+                throw makeStringExceptionV(-1, "Unknown MessageType %s", req.getTypeAsString());
         }
 
         if (msgClass != MSGCLS_unknown)
@@ -182,8 +187,32 @@ void Cws_sysinfologEx::parseFilters(IEspGetMessagesRequest &req, Owned<ISysInfoL
     }
 }
 
+template <typename ESPReqObj>
+bool Cws_sysinfologEx::getMessageIdFromReq(ESPReqObj &req, bool isRequired, unsigned __int64 & messageId) const
+{
+    const char* messageIDStr = req.getMessageID();
+    if (isEmptyString(messageIDStr))
+    {
+        if (isRequired)
+            throw makeStringException(-1, "Message ID is required");
+        return false;
+    }
+
+    unsigned __int64 messageID = _strtoui64(messageIDStr, nullptr, 10);
+    if (messageID == 0)
+    {
+        if (isRequired)
+            throw makeStringException(-1, "Invalid Message ID");
+        return false;
+    }
+    
+    messageId = messageID;
+    return true;
+}
+
 bool Cws_sysinfologEx::onGetMessages(IEspContext &context, IEspGetMessagesRequest &req, IEspGetMessagesResponse &resp)
 {
+    IArrayOf<IEspSysInfoMessage> messages;
     try
     {
         Owned<ISysInfoLoggerMsgFilter> filter;
@@ -191,21 +220,18 @@ bool Cws_sysinfologEx::onGetMessages(IEspContext &context, IEspGetMessagesReques
 
         Owned<ISysInfoLoggerMsgIterator> iter = createSysInfoLoggerMsgIterator(filter, false);
 
-        IArrayOf<IEspSysInfoMessage> messages;
-        int totalCount = 0;
         int offset = req.getOffset();
         int limit = req.getLimit();
         int currentIndex = 0;
 
         ForEach(*iter)
         {
-            totalCount++;
             if (currentIndex < offset)
             {
                 currentIndex++;
                 continue;
             }
-            if (limit > 0 && messages.length() >= limit)
+            if (limit > 0 && messages.length() >= (unsigned int)limit)
                 break;
 
             ISysInfoLoggerMsg& loggerMsg = iter->query();
@@ -215,29 +241,23 @@ bool Cws_sysinfologEx::onGetMessages(IEspContext &context, IEspGetMessagesReques
             messages.append(*msg.getClear());
             currentIndex++;
         }
-
-        resp.setMessages(messages);
-        resp.setTotalCount(totalCount);
-
-        return true;
     }
     catch(IException* e)
     {
-        StringBuffer err;
-        e->errorMessage(err);
-        throw makeStringExceptionV(-1, "Error retrieving messages: %s", err.str());
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
     }
+    resp.setMessages(messages);
+
+    return true;
 }
 
 bool Cws_sysinfologEx::onGetMessageByID(IEspContext &context, IEspGetMessageByIDRequest &req, IEspGetMessageByIDResponse &resp)
 {
     try
     {
-        const char* messageIDStr = req.getMessageID();
-        if (isEmptyString(messageIDStr))
-            throw makeStringException(-1, "Message ID is required");
+        unsigned __int64 messageID = 0;
 
-        unsigned __int64 messageID = _strtoui64(messageIDStr, nullptr, 10);
+        getMessageIdFromReq(req, true, messageID);
 
         Owned<ISysInfoLoggerMsgFilter> filter = createSysInfoLoggerMsgFilter(messageID, nullptr);
         Owned<ISysInfoLoggerMsgIterator> iter = createSysInfoLoggerMsgIterator(filter, false);
@@ -251,54 +271,42 @@ bool Cws_sysinfologEx::onGetMessageByID(IEspContext &context, IEspGetMessageByID
         }
         else
         {
-            // Return empty response instead of throwing exception
-            // Client can check if Message is set to determine if found
+            throw makeStringExceptionV(-1, "Message with ID %llu not found", messageID);
         }
-
-        return true;
     }
     catch(IException* e)
     {
-        StringBuffer err;
-        e->errorMessage(err);
-        throw makeStringExceptionV(-1, "Error retrieving message: %s", err.str());
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
     }
-}
+
+    return true;}
 
 bool Cws_sysinfologEx::onHideMessage(IEspContext &context, IEspHideMessageRequest &req, IEspHideMessageResponse &resp)
 {
     try
     {
-        const char* messageIDStr = req.getMessageID();
-        if (isEmptyString(messageIDStr))
-            throw makeStringException(-1, "Message ID is required");
-
-        unsigned __int64 messageID = _strtoui64(messageIDStr, nullptr, 10);
+        unsigned __int64 messageID = 0;
+        getMessageIdFromReq(req, true, messageID);
 
         if (hideLogSysInfoMsg(messageID))
             resp.setStatus("Message hidden successfully");
         else
             resp.setStatus("Failed to hide message or message not found");
-
-        return true;
     }
     catch(IException* e)
     {
-        StringBuffer err;
-        e->errorMessage(err);
-        throw makeStringExceptionV(-1, "Error hiding message: %s", err.str());
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
     }
+    
+    return true;
 }
 
 bool Cws_sysinfologEx::onUnhideMessage(IEspContext &context, IEspUnhideMessageRequest &req, IEspUnhideMessageResponse &resp)
 {
     try
     {
-        const char* messageIDStr = req.getMessageID();
-        if (isEmptyString(messageIDStr))
-            throw makeStringException(-1, "Message ID is required");
-
-        unsigned __int64 messageID = _strtoui64(messageIDStr, nullptr, 10);
+        unsigned __int64 messageID = 0;
+        getMessageIdFromReq(req, true, messageID);
 
         if (unhideLogSysInfoMsg(messageID))
             resp.setStatus("Message unhidden successfully");
@@ -309,8 +317,6 @@ bool Cws_sysinfologEx::onUnhideMessage(IEspContext &context, IEspUnhideMessageRe
     }
     catch(IException* e)
     {
-        StringBuffer err;
-        e->errorMessage(err);
-        throw makeStringExceptionV(-1, "Error unhiding message: %s", err.str());
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
     }
 }
