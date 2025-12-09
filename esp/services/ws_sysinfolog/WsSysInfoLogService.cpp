@@ -18,6 +18,7 @@
 #pragma warning (disable : 4786)
 
 #include "WsSysInfoLogService.hpp"
+#include "exception_util.hpp"
 #include "jptree.hpp"
 #include "jtime.hpp"
 #include "jmisc.hpp"
@@ -39,24 +40,6 @@ Cws_sysinfologEx::Cws_sysinfologEx()
 
 Cws_sysinfologEx::~Cws_sysinfologEx()
 {
-}
-
-bool Cws_sysinfologEx::parseDateTime(const char* dateTimeStr, timestamp_type& ts)
-{
-    if (isEmptyString(dateTimeStr))
-        return false;
-
-    try
-    {
-        CDateTime dt;
-        dt.setString(dateTimeStr);
-        ts = dt.getSimple();
-        return true;
-    }
-    catch (...)
-    {
-        return false;
-    }
 }
 
 void Cws_sysinfologEx::init(IPropertyTree *cfg, const char *process, const char *service)
@@ -124,23 +107,52 @@ void Cws_sysinfologEx::parseFilters(IEspGetMessagesRequest &req, Owned<ISysInfoL
     else if (req.getHiddenOnly())
         filter->setHiddenOnly();
 
-    // Set date range filter if provided
-    if (req.getStartYear() > 0 && req.getEndYear() > 0)
+    // Values for date range filter
+    unsigned startYear = 0, startMonth = 0, startDay = 0;
+    unsigned endYear = 0, endMonth = 0, endDay = 0;
+    bool hasDateRange = false;
+
+    // Validate and set start date if provided
+    if (req.getStartYear() > 0)
     {
-        filter->setDateRange(
-            req.getStartYear(), req.getStartMonth(), req.getStartDay(),
-            req.getEndYear(), req.getEndMonth(), req.getEndDay()
-        );
+        if (req.getStartMonth() <= 12 && req.getStartDay() >= 1 && req.getStartDay() <= 31)
+        {
+            startYear = req.getStartYear();
+            startMonth = req.getStartMonth();
+            startDay = req.getStartDay();
+            hasDateRange = true;
+        }
     }
+    
+    // Validate and set end date if provided
+    if (req.getEndYear() > 0)
+    {
+        if (req.getEndMonth() <= 12 && req.getEndDay() >= 1 && req.getEndDay() <= 31)
+        {
+            endYear = req.getEndYear();
+            endMonth = req.getEndMonth();
+            endDay = req.getEndDay();
+            hasDateRange = true;
+        }
+    }
+
+    if (hasDateRange)
+        filter->setDateRange(startYear, startMonth, startDay, endYear, endMonth, endDay);
 
     // Set specific timestamp matching
     const char* matchTimeStr = req.getMatchTimeStamp();
     if (!isEmptyString(matchTimeStr))
     {
-        timestamp_type ts;
-        if (parseDateTime(matchTimeStr, ts))
+        try
         {
+            CDateTime dt;
+            dt.setString(matchTimeStr);
+            timestamp_type ts = dt.getSimple();
             filter->setMatchTimeStamp(ts);
+        }
+        catch (...)
+        {
+            // Invalid timestamp format, ignore
         }
     }
 
@@ -192,14 +204,12 @@ bool Cws_sysinfologEx::onGetMessages(IEspContext &context, IEspGetMessagesReques
         Owned<ISysInfoLoggerMsgIterator> iter = createSysInfoLoggerMsgIterator(filter, false);
 
         IArrayOf<IEspSysInfoMessage> messages;
-        int totalCount = 0;
         int offset = req.getOffset();
         int limit = req.getLimit();
         int currentIndex = 0;
 
         ForEach(*iter)
         {
-            totalCount++;
             if (currentIndex < offset)
             {
                 currentIndex++;
@@ -215,17 +225,13 @@ bool Cws_sysinfologEx::onGetMessages(IEspContext &context, IEspGetMessagesReques
             messages.append(*msg.getClear());
             currentIndex++;
         }
-
         resp.setMessages(messages);
-        resp.setTotalCount(totalCount);
 
         return true;
     }
     catch(IException* e)
     {
-        StringBuffer err;
-        e->errorMessage(err);
-        throw makeStringExceptionV(-1, "Error retrieving messages: %s", err.str());
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
     }
 }
 
@@ -259,9 +265,7 @@ bool Cws_sysinfologEx::onGetMessageByID(IEspContext &context, IEspGetMessageByID
     }
     catch(IException* e)
     {
-        StringBuffer err;
-        e->errorMessage(err);
-        throw makeStringExceptionV(-1, "Error retrieving message: %s", err.str());
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
     }
 }
 
@@ -284,9 +288,7 @@ bool Cws_sysinfologEx::onHideMessage(IEspContext &context, IEspHideMessageReques
     }
     catch(IException* e)
     {
-        StringBuffer err;
-        e->errorMessage(err);
-        throw makeStringExceptionV(-1, "Error hiding message: %s", err.str());
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
     }
 }
 
@@ -309,8 +311,6 @@ bool Cws_sysinfologEx::onUnhideMessage(IEspContext &context, IEspUnhideMessageRe
     }
     catch(IException* e)
     {
-        StringBuffer err;
-        e->errorMessage(err);
-        throw makeStringExceptionV(-1, "Error unhiding message: %s", err.str());
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
     }
 }

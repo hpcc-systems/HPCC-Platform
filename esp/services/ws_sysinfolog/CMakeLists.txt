@@ -1,5 +1,5 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2024 HPCC Systems.
+#    HPCC SYSTEMS software Copyright (C) 2025 HPCC Systems.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ include_directories (
          ${CMAKE_BINARY_DIR}/oss
          ${CMAKE_BINARY_DIR}/esp/services/ws_sysinfolog
          ${HPCC_SOURCE_DIR}/common/thorhelper
+         ${HPCC_SOURCE_DIR}/esp/smc/SMCLib
     )
 
 ADD_DEFINITIONS( -D_USRDLL -Dws_sysinfolog_API_LOCAL -DESP_SERVICE_ws_sysinfolog)

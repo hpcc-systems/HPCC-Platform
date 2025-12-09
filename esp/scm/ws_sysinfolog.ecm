@@ -65,7 +65,6 @@ ESPRequest GetMessagesRequest
 ESPResponse [exceptions_inline] GetMessagesResponse
 {
     ESParray<ESPstruct SysInfoMessage, Message> Messages;
-    int TotalCount;
 };
 
 ESPRequest HideMessageRequest
