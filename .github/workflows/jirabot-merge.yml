@@ -81,7 +81,7 @@ jobs:
                 return [major, minor, point]
 
             def getTagVersionForCmd(cmd):
-                versionPattern = re.compile(r".*([0-9]+\.[0-9]+\.[0-9]+).*")
+                versionPattern = re.compile(r"[^0-9]*([0-9]+\.[0-9]+\.[0-9]+).*")
 
                 # Get latest release version
                 gitTagProcess = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
