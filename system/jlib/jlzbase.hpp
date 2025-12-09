@@ -200,7 +200,7 @@ protected:
     size32_t outputExtra = 0;
 
     //Options for configuring the compressor:
-    byte maxCompression = 20;   // Avoid compressing more than 20x because allocating when expanding is painful.
+    byte maxCompression = defaultMaxCompressionFactor;   // Avoid compressing more than a set limit because allocating when expanding is painful.
     byte maxRecompress = 1;     // How many times should the code try and recompress all the smaller streams as one?
     unsigned minSizeToCompress = 1; // If the uncompressed data is less than this size, don't bother compressing it
 };
