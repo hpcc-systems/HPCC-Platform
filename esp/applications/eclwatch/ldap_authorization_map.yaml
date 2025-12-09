@@ -180,6 +180,6 @@ ldap:
             description: Access to HPCC Archive
       ws_sysinfolog:
          Feature:
-         -  path: SysInfoLogAccess
-            resource: SysInfoLogAccess
+         -  path: WsSysInfoLogAccess
+            resource: WsSysInfoLogAccess
             description: Access to System Information Log

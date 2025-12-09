@@ -894,11 +894,7 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
             </xsl:call-template>
         </EspBinding>
     </xsl:template>
-   <xsl:template match="*" mode="copy">
-      <xsl:copy>
-         <xsl:apply-templates select="@*[string(.) != '']|node()" mode="copy"/>
-      </xsl:copy>
-   </xsl:template>
+
 
    <xsl:template match="Process" mode="copy">
       <xsl:variable name="processNameLowerCase" select="translate(@name, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')"/>

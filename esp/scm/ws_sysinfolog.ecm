@@ -59,18 +59,17 @@ ESPRequest GetMessagesRequest
     [optional] xsdDateTime MatchTimeStamp;
 
     // Message ID filtering
-    [optional] string MessageID;
+    [optional] unsigned64 MessageID;
 };
 
 ESPResponse [exceptions_inline] GetMessagesResponse
 {
     ESParray<ESPstruct SysInfoMessage, Message> Messages;
-    int TotalCount;
 };
 
 ESPRequest HideMessageRequest
 {
-    string MessageID;
+    unsigned64 MessageID;
 };
 
 ESPResponse [exceptions_inline] HideMessageResponse
@@ -80,7 +79,7 @@ ESPResponse [exceptions_inline] HideMessageResponse
 
 ESPRequest UnhideMessageRequest
 {
-    string MessageID;
+    unsigned64 MessageID;
 };
 
 ESPResponse [exceptions_inline] UnhideMessageResponse
@@ -90,7 +89,7 @@ ESPResponse [exceptions_inline] UnhideMessageResponse
 
 ESPRequest GetMessageByIDRequest
 {
-    string MessageID;
+    unsigned64 MessageID;
 };
 
 ESPResponse [exceptions_inline] GetMessageByIDResponse
