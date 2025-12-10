@@ -5133,6 +5133,21 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
     case no_createdictionary:
         if (isNull(child))
             return replaceWithNull(expr);
+        if (child->getOperator() == no_sort)
+        {
+            IHqlExpression * dataset = child->queryChild(0);
+            return replaceChildDataset(expr, dataset, 0);
+        }
+        if (child->getOperator() == no_newusertable)
+        {
+            IHqlExpression * dataset = child->queryChild(0);
+            if (dataset->getOperator() == no_sort)
+            {
+                IHqlExpression * input = dataset->queryChild(0);
+                OwnedHqlExpr unsorted = replaceChildDataset(child, input, 0);
+                return replaceChildDataset(expr, unsorted, 0);
+            }
+        }
         break;
     case no_selectmap:
         if (isNull(child))
