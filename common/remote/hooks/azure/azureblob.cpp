@@ -636,8 +636,16 @@ AzureBlob::AzureBlob(const char *_azureFileName, AzureAPIConfig &&_config) : ful
             throw makeStringExceptionV(99, "Missing container specification for device %u in plane %s", device, planeName.str());
 
         containerName.set(deviceInfo->queryProp("@name"));
-        accountName.set(deviceInfo->queryProp("@account"));
-        secretName.set(deviceInfo->queryProp("@secret"));
+        // Fallback to storageapi level if not specified in container
+        const char * account = deviceInfo->queryProp("@account");
+        if (isEmptyString(account))
+            account = storageapi->queryProp("@account");
+        accountName.set(account);
+
+        const char * secret = deviceInfo->queryProp("@secret");
+        if (isEmptyString(secret))
+            secret = storageapi->queryProp("@secret");
+        secretName.set(secret);
 
         if (isEmptyString(containerName))
             throw makeStringExceptionV(99, "Missing container name for plane %s", planeName.str());

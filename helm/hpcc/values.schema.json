@@ -811,6 +811,14 @@
               "description": "Use managed identity for authentication",
               "type": "boolean"
             },
+            "account": {
+              "description": "Default storage account name (used by containers if not specified at container level)",
+              "type": "string"
+            },
+            "secret": {
+              "description": "Default secret name for credentials (used by containers if not specified at container level)",
+              "type": "string"
+            },
             "containers": {
               "type": "array",
               "description": "List of containers",
