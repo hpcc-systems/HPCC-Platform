@@ -58,7 +58,41 @@ struct S3Config
     S3Config() = default;
     S3Config(IPropertyTree* _config);
     void loadFromConfig(IPropertyTree* _config);
+    bool operator==(const S3Config& other) const
+    {
+        return (region == other.region) &&
+               (endpoint == other.endpoint) &&
+               (useSSL == other.useSSL) &&
+               (useVirtualHosting == other.useVirtualHosting) &&
+               (readAheadSize == other.readAheadSize) &&
+               (writeBufferSize == other.writeBufferSize) &&
+               (maxRetries == other.maxRetries) &&
+               (timeoutMs == other.timeoutMs);
+    }
 };
+
+// Hash specialization for S3Config to use in unordered_map
+namespace std {
+    template<>
+    struct hash<S3Config>
+    {
+        size_t operator()(const S3Config& config) const noexcept
+        {
+            unsigned h = 0;
+            if (config.region.str())
+                h = hashc((const unsigned char*)config.region.str(), config.region.length(), h);
+            if (config.endpoint.str())
+                h = hashc((const unsigned char*)config.endpoint.str(), config.endpoint.length(), h);
+            h = hashvalue((unsigned)config.useSSL, h);
+            h = hashvalue((unsigned)config.useVirtualHosting, h);
+            h = hashvalue(config.readAheadSize, h);
+            h = hashvalue(config.writeBufferSize, h);
+            h = hashvalue(config.maxRetries, h);
+            h = hashvalue(config.timeoutMs, h);
+            return h;
+        }
+    };
+}
 
 // Modern S3 file interface
 class S3File;

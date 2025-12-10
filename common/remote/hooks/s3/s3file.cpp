@@ -129,8 +129,7 @@ class S3ClientManager
 {
 private:
     mutable CriticalSection cs;
-    std::unique_ptr<Aws::S3::S3Client> client;
-    S3Config currentConfig;
+    std::unordered_map<S3Config, std::unique_ptr<Aws::S3::S3Client>> clients;
     bool initialized = false;
 
 public:
@@ -142,12 +141,18 @@ public:
             initAWS();
             initialized = true;
         }
-        if (!client || configChanged(config))
+
+        if (auto it = clients.find(config); it != clients.end())
         {
-            client = createClient(config);
-            currentConfig = config;
+            return *(it->second);
         }
-        return *client;
+        else
+        {
+            std::unique_ptr<Aws::S3::S3Client> client = createClient(config);
+            Aws::S3::S3Client& ref = *client;
+            clients.emplace(config, std::move(client));
+            return ref;
+        }
     }
 
     void cleanup()
@@ -155,8 +160,8 @@ public:
         CriticalBlock block(cs);
         if (initialized)
         {
-            // Destroy client before shutting down AWS SDK
-            client.reset();
+            // Destroy clients before shutting down AWS SDK
+            clients.clear();
             shutdownAWS();
             initialized = false;
         }
@@ -168,14 +173,6 @@ public:
     }
 
 private:
-    bool configChanged(const S3Config& config) const
-    {
-        return (!strsame(config.region.str(), currentConfig.region.str())) ||
-               (!strsame(config.endpoint.str(), currentConfig.endpoint.str())) ||
-               (config.useSSL != currentConfig.useSSL) ||
-               (config.useVirtualHosting != currentConfig.useVirtualHosting);
-    }
-
     std::unique_ptr<Aws::S3::S3Client> createClient(const S3Config& config)
     {
         Aws::Client::ClientConfiguration clientConfig;
