@@ -56,7 +56,7 @@ constexpr size32_t minMultipartSize = 5 * 1024 * 1024; // 5MB AWS minimum
 constexpr unsigned defaultMaxRetries = 3;
 
 // Global AWS initialization with reference counting
-static std::atomic<unsigned> awsInitRefCount{0};
+static unsigned awsInitRefCount = 0;
 static CriticalSection awsCS;
 static S3Config globalS3Config;
 static Aws::SDKOptions awsOptions;
@@ -64,32 +64,34 @@ static Aws::SDKOptions awsOptions;
 static void initAWS()
 {
     CriticalBlock block(awsCS);
-    if (awsInitRefCount.fetch_add(1) == 0)
+    if (awsInitRefCount == 0)
     {
         // First initialization
         awsOptions.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Warn;
         Aws::InitAPI(awsOptions);
         PROGLOG("AWS SDK initialized for S3 file operations");
     }
+
+    awsInitRefCount++;
 }
 
 static void shutdownAWS()
 {
     CriticalBlock block(awsCS);
-    unsigned prevCount = awsInitRefCount.fetch_sub(1);
-    if (prevCount == 1)
+    if (awsInitRefCount == 1)
     {
         // Last reference - perform shutdown
         // IMPORTANT: All S3Clients must be destroyed before this point
         Aws::ShutdownAPI(awsOptions);
         PROGLOG("AWS SDK shutdown for S3 file operations");
     }
-    else if (prevCount == 0)
+    else if (awsInitRefCount == 0)
     {
         // Should never happen - more shutdowns than inits
         ERRLOG("AWS SDK shutdown called more times than init");
-        awsInitRefCount++; // Restore count
     }
+
+    awsInitRefCount--;
 }
 
 // S3Config implementation
