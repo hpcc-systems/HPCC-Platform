@@ -155,6 +155,11 @@ public:
     {
         sequence = _startSequence;
         keyHdr.setown(new CWriteKeyHdr());
+
+        //Maximum row length supported is 32K - ensure the value is capped because it is stored in a short int.
+        if (rawSize > KEYBUILD_MAXLENGTH)
+            rawSize = KEYBUILD_MAXLENGTH; // max supported in ctree
+
         keyValueSize = rawSize;
         keyedSize = _keyedSize != (unsigned) -1 ? _keyedSize : rawSize;
 
