@@ -187,4 +187,7 @@ extern jlib_decl CompressionMethod translateToCompMethod(const char *compStr, Co
 extern jlib_decl const char *translateFromCompMethod(unsigned compMethod);
 
 #define MIN_ROWCOMPRESS_RECSIZE 8
+
+constexpr unsigned defaultMaxCompressionFactor = 100;
+
 #endif
