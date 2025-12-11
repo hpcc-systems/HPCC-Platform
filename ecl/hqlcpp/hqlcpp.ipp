@@ -150,6 +150,7 @@ public:
     virtual const char * querySourceFile(unsigned idx);
     virtual const char * querySourceFlags(unsigned idx);
     virtual const char * queryTempDirectory(unsigned idx);
+    virtual const char * queryIncludeDirectory(unsigned idx);
     virtual bool querySourceIsTemp(unsigned idx);
     virtual HqlStmts * querySection(IAtom * section);
     virtual void flushHints();
@@ -162,6 +163,7 @@ public:
     virtual void getActivityRange(unsigned cppIndex, unsigned & minActivityId, unsigned & maxActivityId);
     virtual void useSourceFile(const char * srcname, const char *flags, bool isTemp);
     virtual void addTemporaryDir(const char * path);
+    virtual void addIncludeDirectory(const char * path);
     
     bool useFunction(IHqlExpression * funcdef);
     void useInclude(const char * include);
@@ -185,6 +187,7 @@ public:
     StringAttrArray     sourceFiles;
     StringAttrArray     sourceFlags;
     StringAttrArray     tempDirs;
+    StringAttrArray     includeDirs;
     StringAttrArray     includes;
     BoolArray           sourceIsTemp;
     CIArray             extra;
@@ -1101,8 +1104,8 @@ public:
 public:
     BoundRow * bindSelf(BuildCtx & ctx, IHqlExpression * dataset, const char * builder);
     BoundRow * bindSelf(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * expr, IHqlExpression * builder);
-    BoundRow * bindTableCursor(BuildCtx & ctx, IHqlExpression * dataset, const char * bound, bool isLinkCounted, node_operator no_side, IHqlExpression * selSeq);
-    BoundRow * bindTableCursor(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * bound, node_operator no_side, IHqlExpression * selSeq);
+    BoundRow * bindTableCursor(BuildCtx & ctx, IHqlExpression * dataset, const char * bound, bool isLinkCounted, node_operator no_side, IHqlExpression * selSeq, bool delayOffsetCalculation = false);
+    BoundRow * bindTableCursor(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * bound, node_operator no_side, IHqlExpression * selSeq, bool delayOffsetCalculation = false);
     BoundRow * bindCsvTableCursor(BuildCtx & ctx, IHqlExpression * dataset, const char * name, node_operator side, IHqlExpression * selSeq, bool translateVirtuals, IAtom * encoding);
     BoundRow * bindCsvTableCursor(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * bound, node_operator side, IHqlExpression * selSeq, bool translateVirtuals, IAtom * encoding);
     BoundRow * bindXmlTableCursor(BuildCtx & ctx, IHqlExpression * dataset, const char * name, node_operator side, IHqlExpression * selSeq, bool translateVirtuals);
@@ -1122,11 +1125,11 @@ public:
     void ensureRowAllocated(BuildCtx & ctx, BoundRow * row);
 
     inline BoundRow * bindTableCursor(BuildCtx & ctx, IHqlExpression * dataset, const char * bound, node_operator side, IHqlExpression * selSeq)
-           { return bindTableCursor(ctx, dataset, bound, false, side, selSeq); }
+           { return bindTableCursor(ctx, dataset, bound, false, side, selSeq, false); }
     inline BoundRow * bindTableCursor(BuildCtx & ctx, IHqlExpression * dataset, const char * bound)
-           { return bindTableCursor(ctx, dataset, bound, false, no_none, NULL); }
+           { return bindTableCursor(ctx, dataset, bound, false, no_none, NULL, false); }
     inline BoundRow * bindTableCursor(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * bound)
-           { return bindTableCursor(ctx, dataset, bound, no_none, NULL); }
+           { return bindTableCursor(ctx, dataset, bound, no_none, NULL, false); }
 
 
     IHqlExpression * getRtlFieldKey(IHqlExpression * expr, IHqlExpression * ownerRecord, bool &isPayload);

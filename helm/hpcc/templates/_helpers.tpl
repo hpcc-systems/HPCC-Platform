@@ -272,6 +272,9 @@ logAccess:
 expert:
 {{ toYaml .Values.global.expert | indent 2 }}
 {{- end }}
+{{- if .Values.global.schedulingTimeoutSecs }}
+schedulingTimeoutSecs: {{ .Values.global.schedulingTimeoutSecs }}
+{{- end }}
 {{- end -}}
 
 {{/*

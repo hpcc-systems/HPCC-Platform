@@ -277,8 +277,10 @@ public:
             // Set the compression type that was actually used
             StringBuffer defaultIndexCompression;
             container.queryJob().getWorkUnitValue("defaultIndexCompression", defaultIndexCompression);
-            const char *compressionType = getIndexCompressionType(helper, defaultIndexCompression.str());
-            props.setProp("@compressionType", compressionType);
+
+            StringBuffer compressionType;
+            getIndexCompressionType(compressionType, helper, defaultIndexCompression.str());
+            props.setProp("@compressionType", compressionType.str());
 
             size32_t keyedSize = helper->getKeyedSize();
             if (keyedSize == (size32_t)-1)

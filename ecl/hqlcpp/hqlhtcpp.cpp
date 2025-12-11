@@ -7405,10 +7405,10 @@ void HqlCppTranslator::buildRecordSerializeExtract(BuildCtx & ctx, IHqlExpressio
 
 //---------------------------------------------------------------------------
 
-BoundRow * HqlCppTranslator::bindTableCursor(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * bound, node_operator side, IHqlExpression * selSeq)
+BoundRow * HqlCppTranslator::bindTableCursor(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * bound, node_operator side, IHqlExpression * selSeq, bool delayOffsetCalculation)
 {
     IHqlExpression * record = dataset->queryRecord();
-    bool useRowAccessor = useRowAccessorClass(record, side == no_self);
+    bool useRowAccessor = !delayOffsetCalculation && useRowAccessorClass(record, side == no_self);
     BoundRow * cursor = createTableCursor(dataset, bound, useRowAccessor, side, selSeq);
     if (useRowAccessor)
         cursor->prepareAccessor(*this, ctx);
@@ -7416,14 +7416,14 @@ BoundRow * HqlCppTranslator::bindTableCursor(BuildCtx & ctx, IHqlExpression * da
     return cursor;
 }
 
-BoundRow * HqlCppTranslator::bindTableCursor(BuildCtx & ctx, IHqlExpression * dataset, const char * name, bool isLinkCounted, node_operator side, IHqlExpression * selSeq)
+BoundRow * HqlCppTranslator::bindTableCursor(BuildCtx & ctx, IHqlExpression * dataset, const char * name, bool isLinkCounted, node_operator side, IHqlExpression * selSeq, bool delayOffsetCalculation)
 {
     Owned<ITypeInfo> type = makeRowReferenceType(dataset);
     if (isLinkCounted && !hasLinkCountedModifier(type))
         type.setown(makeAttributeModifier(type.getClear(), getLinkCountedAttr()));
 
     Owned<IHqlExpression> bound = createVariable(name, type.getClear());
-    return bindTableCursor(ctx, dataset, bound, side, selSeq);
+    return bindTableCursor(ctx, dataset, bound, side, selSeq, delayOffsetCalculation);
 }
 
 BoundRow * HqlCppTranslator::rebindTableCursor(BuildCtx & ctx, IHqlExpression * dataset, BoundRow * row, node_operator side, IHqlExpression * selSeq)
@@ -16860,8 +16860,12 @@ void HqlCppTranslator::buildReturnOrder(BuildCtx & ctx, IHqlExpression *sortList
     OwnedHqlExpr rightSelect = dataset.getSelector(no_right, selSeq);
     OwnedHqlExpr order = createOrderFromSortList(dataset, sortList, leftSelect, rightSelect);
 
-    bindTableCursor(ctx, dataset.queryDataset(), "left", no_left, selSeq);
-    bindTableCursor(ctx, dataset.queryDataset(), "right", no_right, selSeq);
+    // Avoid using accessor classes with compare functions - because it is highly likely that the
+    // function will terminate long before the latter fields are accessed - leading to significantly
+    // higher times in some cases.
+    bool delayOffsetCalculation = true;
+    bindTableCursor(ctx, dataset.queryDataset(), "left", false, no_left, selSeq, delayOffsetCalculation);
+    bindTableCursor(ctx, dataset.queryDataset(), "right", false, no_right, selSeq, delayOffsetCalculation);
 
     doBuildReturnCompare(ctx, order, no_order, false, false);
 }
