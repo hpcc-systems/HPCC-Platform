@@ -274,6 +274,14 @@ public:
             unsigned nodeSize = metadata ? metadata->getPropInt("_nodeSize", NODESIZE) : NODESIZE;
             props.setPropInt64("@nodeSize", nodeSize);
 
+            // Set the compression type that was actually used
+            StringBuffer defaultIndexCompression;
+            container.queryJob().getWorkUnitValue("defaultIndexCompression", defaultIndexCompression);
+
+            StringBuffer compressionType;
+            getIndexCompressionType(compressionType, helper, defaultIndexCompression.str());
+            props.setProp("@compressionType", compressionType.str());
+
             size32_t keyedSize = helper->getKeyedSize();
             if (keyedSize == (size32_t)-1)
                 keyedSize = helper->queryDiskRecordSize()->getFixedSize();

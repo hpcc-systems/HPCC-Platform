@@ -396,3 +396,24 @@ void buildUserMetadata(Owned<IPropertyTree> & metadata, IHThorIndexWriteArg & he
         metadata->setProp(name.str(), value.str());
     }
 }
+
+void getIndexCompressionType(StringBuffer & compression, IHThorIndexWriteArg * helper, const char * defaultCompression)
+{
+    Owned<IPropertyTree> globalOptions = getGlobalConfig();
+    if (globalOptions->getProp("expert/@overrideIndexCompression", compression))
+        return;
+
+    const char * globalDefaultCompression = globalOptions->queryProp("expert/@defaultIndexCompression");
+    const char * value;
+    if (helper && (helper->getFlags() & TIWcompressdefined))
+        value = helper->queryCompression();
+    else if (!isEmptyString(defaultCompression))
+        value = defaultCompression;
+    else if (!isEmptyString(globalDefaultCompression))
+        value = globalDefaultCompression;
+    else
+        value = "legacy";
+
+    // Return the effective compression type - this matches the logic in CKeyBuilder
+    compression.set(value);
+}

@@ -482,7 +482,7 @@ private:
 
 
 //This code is copied from equivalent code inside dumpkey.cpp, and then simplied/adapted
-//A few bugs inn the original implementation have been fixed, both here and in dumpkey.cpp
+//A few bugs in the original implementation have been fixed, both here and in dumpkey.cpp
 //Later the code should be refactored to that blocks of nodes can be processsed to allow
 //progress reporting - by moving some of the logic into beginTransform/endTransform
 void CIndexTransformer::rebuildIndex(IFile * in, IFileIOStream * out, const char * outputCompression)
@@ -632,7 +632,11 @@ void CIndexTransformer::rebuildIndex(IFile * in, IFileIOStream * out, const char
 //    size32_t keyedSize = indexRecord.getFixedOffset(indexRecord.getNumKeyedFields());
 
     //MORE: Need to rebuild/copy bloom filters
-    Owned<IKeyBuilder> keyBuilder = createKeyBuilder(outFileStream, flags, maxDiskRecordSize, nodeSize, keyedSize, 0, nullptr, outputCompression, false, isTLK);
+    KeyBuilderOptions options(flags, maxDiskRecordSize, nodeSize, keyedSize, nullptr);
+    options.setCompression(outputCompression);
+    options.enforceOrder = false;
+    options.isTLK = isTLK;
+    Owned<IKeyBuilder> keyBuilder = createKeyBuilder(outFileStream, options);
 
     TrivialVirtualFieldCallback callback(manager);
     size32_t maxSizeSeen = 0;
