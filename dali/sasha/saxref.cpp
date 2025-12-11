@@ -1409,7 +1409,7 @@ public:
                                         // No previously moved file and no dir-per-part. Create in current directory
                                         parentBlock.leave();
 
-                                        file = parent->ensureFile(fn, numParts, false, filenameLen, &allocator);
+                                        file = pdir->ensureFile(fn, numParts, false, filenameLen, &allocator);
 
                                     }
                                     scopeSz += filesz;
