@@ -1,3 +1,0 @@
-Graph \w+\[\d+\], WORKER #\d+.*Watchdog has lost connectivity
-WORKER #\d+ \[\d+\.\d+\.\d+\.\d+:\d+\].*Unexpected process termination
-Graph \w+, The machine \d+\.\d+\.\d+\.\d+:\d+.*shutdown
