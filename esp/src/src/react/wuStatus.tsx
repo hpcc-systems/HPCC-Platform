@@ -60,11 +60,13 @@ const wuStep = (wu?: Workunit): number => {
 };
 
 interface WUStatus {
-    wuid: string;
+    wuid?: string;
+    workunit?: Workunit;
 }
 
 export const WUStatus: React.FunctionComponent<WUStatus> = ({
-    wuid
+    wuid,
+    workunit
 }) => {
     const [activeStep, setActiveStep] = React.useState(-1);
     const [failed, setFailed] = React.useState(false);
@@ -72,17 +74,27 @@ export const WUStatus: React.FunctionComponent<WUStatus> = ({
     const [steps, setSteps] = React.useState([]);
 
     React.useEffect(() => {
-        const wu = Workunit.attach({ baseUrl: "" }, wuid);
-        const wuWatchHandle = wu.watch(() => {
+        if (!wuid && !workunit) {
+            return;
+        }
+        const updateWUStatus = (wu: Workunit) => {
             setActiveStep(wuStep(wu));
             setFailed(wu.isFailed());
             setSteps(wuSteps(wu.ActionEx === "compile"));
-        });
-        wu.refresh(true);
+        };
+        const wu = workunit ?? Workunit.attach({ baseUrl: "" }, wuid);
+        updateWUStatus(wu);
+
+        const wuWatchHandle = wu.watch(() => updateWUStatus(wu));
+
+        if (!workunit) {
+            wu.refresh(true);
+        }
+
         return () => {
             wuWatchHandle.release();
         };
-    }, [wuid]);
+    }, [workunit, wuid]);
 
     React.useEffect(() => {
         setStepProps(steps.map((step, i) => {
