@@ -2813,7 +2813,15 @@ InplaceIndexCompressor::InplaceIndexCompressor(size32_t keyedSize, const CKeyHdr
     }
 
     if (useDefaultCompression)
-        ctx.compressionHandler = queryCompressHandler(COMPRESS_METHOD_LZ4SHC);
+    {
+        const CompressionMethod defaultMethod = COMPRESS_METHOD_LZ4SHC;
+
+        Owned<IPropertyTree> globalOptions = getGlobalConfig();
+        const char * inplaceCompression = globalOptions->queryProp("expert/@defaultInplaceCompression");
+        CompressionMethod compressionMethod = translateToCompMethod(inplaceCompression, defaultMethod);
+
+        ctx.compressionHandler = queryCompressHandler(compressionMethod);
+    }
 
     if (ctx.compressionHandler)
     {

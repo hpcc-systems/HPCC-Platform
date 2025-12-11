@@ -150,6 +150,7 @@ public:
     virtual const char * querySourceFile(unsigned idx);
     virtual const char * querySourceFlags(unsigned idx);
     virtual const char * queryTempDirectory(unsigned idx);
+    virtual const char * queryIncludeDirectory(unsigned idx);
     virtual bool querySourceIsTemp(unsigned idx);
     virtual HqlStmts * querySection(IAtom * section);
     virtual void flushHints();
@@ -162,6 +163,7 @@ public:
     virtual void getActivityRange(unsigned cppIndex, unsigned & minActivityId, unsigned & maxActivityId);
     virtual void useSourceFile(const char * srcname, const char *flags, bool isTemp);
     virtual void addTemporaryDir(const char * path);
+    virtual void addIncludeDirectory(const char * path);
     
     bool useFunction(IHqlExpression * funcdef);
     void useInclude(const char * include);
@@ -185,6 +187,7 @@ public:
     StringAttrArray     sourceFiles;
     StringAttrArray     sourceFlags;
     StringAttrArray     tempDirs;
+    StringAttrArray     includeDirs;
     StringAttrArray     includes;
     BoolArray           sourceIsTemp;
     CIArray             extra;

@@ -4263,13 +4263,14 @@ class IKeyManagerSlowTest : public CppUnit::TestFixture
             out.setown(createNoSeekIOStream(out));
         unsigned maxRecSize = variable ? 18 : 10;
         unsigned keyedSize = 10;
-        Owned<IKeyBuilder> builder = createKeyBuilder(out, COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY |
-                (quickCompressed ? HTREE_QUICK_COMPRESSED_KEY : 0) |
-                (variable ? HTREE_VARSIZE : 0) |
-                (useTrailingHeader ? USE_TRAILING_HEADER : 0) |
-                (noSeek ? TRAILING_HEADER_ONLY : 0) |
-                0,
-                maxRecSize, NODESIZE, keyedSize, 0, &helper, nullptr, true, false);
+        KeyBuilderOptions options(COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY |
+                (quickCompressed ? HTREE_QUICK_COMPRESSED_KEY : 0U) |
+                (variable ? HTREE_VARSIZE : 0U) |
+                (useTrailingHeader ? USE_TRAILING_HEADER : 0U) |
+                (noSeek ? TRAILING_HEADER_ONLY : 0U) |
+                0U,
+                maxRecSize, NODESIZE, keyedSize, &helper);
+        Owned<IKeyBuilder> builder = createKeyBuilder(out, options);
 
         char keybuf[18];
         memset(keybuf, '0', 18);

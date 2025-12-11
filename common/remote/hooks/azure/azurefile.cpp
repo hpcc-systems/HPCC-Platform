@@ -343,8 +343,16 @@ AzureFile::AzureFile(const char *_azureFileName) : fullName(_azureFileName)
             throw makeStringExceptionV(99, "Missing container specification for device %u in plane %s", device, planeName.str());
 
         shareName.set(deviceInfo->queryProp("@name"));
-        accountName.set(deviceInfo->queryProp("@account"));
-        secretName.set(deviceInfo->queryProp("@secret"));
+        // Fallback to storageapi level if not specified in container
+        const char * account = deviceInfo->queryProp("@account");
+        if (isEmptyString(account))
+            account = storageapi->queryProp("@account");
+        accountName.set(account);
+
+        const char * secret = deviceInfo->queryProp("@secret");
+        if (isEmptyString(secret))
+            secret = storageapi->queryProp("@secret");
+        secretName.set(secret);
 
         if (isEmptyString(shareName))
             throw makeStringExceptionV(99, "Missing share name for plane %s", planeName.str());

@@ -231,10 +231,13 @@ storage:
   #     storageAtRest: 0.0135               # Storage at rest cost: cost per GiB/month
   #   storageapi:                           # Optional information to allow access to storage api
   #     type: azurefile | azureblob
+  #     managed: true | false               # (optional) use managed identity for authentication
+  #     account: <account-name>             # (optional) default azure storage account name
+  #     secret: <secret-for-sas-token>      # (optional) default secret name (under secrets/storage) for accessing storage account key
   #     containers: [ <container-list> ]    # a list of containers
   #       name: <container-name>            # azure storage container name
-  #       account: <account-name>           # azure storage account name
-  #       secret: <secret-for-sas-token>    # secret name (under secrets/storage) for accessing SAS token
+  #       account: <account-name>           # (optional) azure storage account name (inherits from parent if not specified)
+  #       secret: <secret-for-sas-token>    # (optional) secret name (under secrets/storage) for accessing storage account key (inherits from parent if not specified)
 
   - name: dali
     storageClass: ""

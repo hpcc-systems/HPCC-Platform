@@ -330,7 +330,14 @@ BlockCompressedIndexCompressor::BlockCompressedIndexCompressor(unsigned keyedSiz
         }
     };
 
-    processOptionString(options, processOption);
+    if (options)
+    {
+        const char * colon = strchr(options, ':');
+        if (colon)
+            processOptionString(colon+1, processOption);
+        else
+            processOptionString(options, processOption);
+    }
 
     context.compressionHandler = queryCompressHandler(compressionMethod);
     if (!context.compressionHandler)
