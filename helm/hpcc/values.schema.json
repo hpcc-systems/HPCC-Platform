@@ -931,7 +931,20 @@
       "additionalProperties": false
     },
     "resources": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "cpu": {
+          "type": "string",
+          "description": "CPU resource request/limit (e.g., \"1\", \"500m\")"
+        },
+        "memory": {
+          "type": "string",
+          "description": "Memory resource request/limit (e.g., \"1G\", \"256Mi\")"
+        }
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
     },
     "componentCost": {
       "description": "Component-level cost configuration settings",
