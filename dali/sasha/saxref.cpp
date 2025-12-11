@@ -788,9 +788,9 @@ public:
         return PeriodicTimer::hasElapsed();
     }
 
-    cycle_t queryStartCycles() const
+    int64_t queryElapsedNS() const
     {
-        return startCycles;
+        return cycle_to_nanosec(get_cycles_now() - startCycles);
     }
 
     void reset(unsigned seconds, bool suppressFirst, const char *_clustname)
@@ -923,18 +923,9 @@ public:
 
     void finishHeartbeat(const char * op)
     {
-        int64_t elapsedNS = cycle_to_nanosec(get_cycles_now() - heartbeatTimer.queryStartCycles());
-        unsigned elapsedMinutes = elapsedNS / oneSecondNS / 60;
-        unsigned elapsedHours = elapsedMinutes / 60;
-        unsigned elapsedDays = elapsedHours / 24;
-        unsigned remainingHours = elapsedHours % 24;
-        unsigned remainingMinutes = elapsedMinutes % 60;
-        if (elapsedDays > 0)
-            log(true, "%s complete. Total time: %ud %uh %um, Total dirs: %lu, Total files: %lu", op, elapsedDays, remainingHours, remainingMinutes, processedDirs.load(), processedFiles.load());
-        else if (elapsedHours > 0)
-            log(true, "%s complete. Total time: %uh %um, Total dirs: %lu, Total files: %lu", op, elapsedHours, remainingMinutes, processedDirs.load(), processedFiles.load());
-        else
-            log(true, "%s complete. Total time: %um, Total dirs: %lu, Total files: %lu", op, elapsedMinutes, processedDirs.load(), processedFiles.load());
+        StringBuffer time;
+        formatTime(time, heartbeatTimer.queryElapsedNS());
+        log(true, "%s complete. Total time: %s, Total dirs: %lu, Total files: %lu", op, time.str(), processedDirs.load(), processedFiles.load());
     }
 
     void checkHeartbeat(const char * op)
