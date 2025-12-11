@@ -970,6 +970,11 @@ export function joinPath(pathSegment, pathSep: string = "/") {
     return path;
 }
 
+export function normalizePath(path: string) {
+    if (!path) return "";
+    return path?.endsWith("/") ? path.slice(0, -1) : path;
+}
+
 export function getImageURL(name) {
     return getURL("img/" + name);
 }

@@ -6,6 +6,7 @@ import { scopedLogger } from "@hpcc-js/util";
 import * as iframe from "dojo/request/iframe";
 import { TpDropZoneQuery } from "src/WsTopology";
 import { lfEncode } from "src/FileSpray";
+import { normalizePath } from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { deleteDropZoneFile, getUserFiles, removeUserFile } from "../comms/fileSpray";
 import { useConfirm } from "../hooks/confirm";
@@ -128,8 +129,9 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
                 const machine = dropzone?.TpMachines?.TpMachine?.find(m => m.ConfigNetaddress === filter.Server);
 
                 if (machine) {
+                    const machineDir = normalizePath(machine.Directory);
                     const data = files.map((file: any) => {
-                        const fullPath = machine.Directory + "/" + (file.Path === null ? "" : (file.Path + "/")) + file.name;
+                        const fullPath = machineDir + "/" + (file.Path === null ? "" : (file.Path + "/")) + file.name;
                         const fullFolderPathParts = fullPath.split("/");
                         fullFolderPathParts.pop();
                         const netAddress = machine.Netaddress;
@@ -190,6 +192,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
 
             if (dropzone && machine) {
                 const machineId = `machine-${dropzoneName}-${machineAddress}`;
+                const machineDir = normalizePath(machine.Directory);
                 setLoadingItems(prev => new Set(prev).add(machineId));
                 setLoadedItems(prev => new Set(prev).add(machineId));
 
@@ -198,15 +201,14 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
                 fileSprayService.FileList({
                     DropZoneName: dropzoneName,
                     Netaddr: machine.Netaddress,
-                    Path: machine.Directory === "/" ? "/" : machine.Directory + "/",
+                    Path: machineDir + "/",
                     Mask: "",
                     OS: machine.OS.toString()
                 }).then(response => {
                     const files = response?.files?.PhysicalFileStruct || [];
 
                     const transformedFiles = files.map((file: any) => {
-                        const basePath = machine.Directory === "/" ? "" : machine.Directory;
-                        const fullPath = basePath + "/" + file.name + (file.isDir ? "/" : "");
+                        const fullPath = machineDir + "/" + file.name + (file.isDir ? "/" : "");
 
                         // fullFolderPath should be the Path field from the response (the directory containing this item)
                         const fullFolderPath = file.Path === "/" ? "/" : file.Path;
@@ -396,6 +398,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
 
         if (dropzone && machine) {
             const machineId = `machine-${dropZoneName}-${netAddress}`;
+            const machineDir = normalizePath(machine.Directory);
 
             // ensure the machine remains expanded
             setExpandedNodes(prev => new Set(prev).add(machineId));
@@ -419,15 +422,14 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
             fileSprayService.FileList({
                 DropZoneName: dropZoneName,
                 Netaddr: machine.Netaddress,
-                Path: machine.Directory === "/" ? "/" : machine.Directory + "/",
+                Path: machineDir + "/",
                 Mask: "",
                 OS: machine.OS.toString()
             }).then(response => {
                 const files = response?.files?.PhysicalFileStruct || [];
 
                 const transformedFiles = files.map((file: any) => {
-                    const basePath = machine.Directory === "/" ? "" : machine.Directory;
-                    const fullPath = basePath + "/" + file.name + (file.isDir ? "/" : "");
+                    const fullPath = machineDir + "/" + file.name + (file.isDir ? "/" : "");
                     const fullFolderPath = file.Path === "/" ? "/" : file.Path;
 
                     return {
@@ -456,7 +458,9 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
                 logger.error(err);
             });
         }
-    }, [targetDropzones, filterData]); const copyButtons = React.useMemo(() => [], []);
+    }, [targetDropzones, filterData]);
+
+    const copyButtons = React.useMemo(() => [], []);
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
