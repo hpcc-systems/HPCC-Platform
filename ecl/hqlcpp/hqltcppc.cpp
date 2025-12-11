@@ -2108,7 +2108,7 @@ void CSpecialStringColumnInfo::setColumn(HqlCppTranslator & translator, BuildCtx
             {
                 OwnedHqlExpr transLen = createTranslated(boundLength);
                 OwnedHqlExpr compare = createBoolExpr(no_lt, LINK(transLen), getSizetConstant(maxLength));
-                OwnedHqlExpr minLen = createValue(no_if, sizetType, LINK(compare), LINK(transLen), getSizetConstant(maxLength));
+                OwnedHqlExpr minLen = createValue(no_if, LINK(sizetType), LINK(compare), LINK(transLen), getSizetConstant(maxLength));
                 CHqlBoundExpr newLength;
                 translator.buildTempExpr(ctx, minLen, newLength);
                 bound.length.set(newLength.expr);
