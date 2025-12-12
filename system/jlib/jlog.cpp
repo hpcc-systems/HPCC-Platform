@@ -3490,6 +3490,91 @@ IRemoteLogAccess *queryRemoteLogAccessor()
     );
 }
 
+void diagnoseLogAccessPluginLoad(LogAccessPluginDiagnostics & diagnostics)
+{
+    constexpr const char * methodName = "diagnoseLogAccessPluginLoad";
+    constexpr const char * instFactoryName = "createInstance";
+
+    try
+    {
+        Owned<IPropertyTree> logAccessPluginConfig = getGlobalConfigSP()->getPropTree("logAccess");
+
+        if (!logAccessPluginConfig)
+        {
+            diagnostics.logAccessPluginLoadState = LogAccessDiagnosticState::ConfigNotFound;
+            diagnostics.statusMessage.setf("%s: No logaccess configuration found in global config", methodName);
+            return;
+        }
+
+        logAccessPluginConfig->getProp("@type", diagnostics.pluginType);
+        if (diagnostics.pluginType.isEmpty())
+        {
+            diagnostics.logAccessPluginLoadState = LogAccessDiagnosticState::ConfigFoundNoType;
+            diagnostics.statusMessage.setf("%s: RemoteLogAccess plugin type not specified in configuration", methodName);
+            return;
+        }
+
+        StringBuffer libName;
+        libName.append("lib").append(diagnostics.pluginType.str()).append("logaccess");
+        diagnostics.libName.set(libName.str());
+
+        //Attempt to load the DLL/SO
+        HINSTANCE logAccessPluginLib = nullptr;
+        try
+        {
+            logAccessPluginLib = LoadSharedObject(libName.str(), false, false); // raiseOnError=false to capture error
+            if (!logAccessPluginLib)
+            {
+                diagnostics.logAccessPluginLoadState = LogAccessDiagnosticState::LoadFailed;
+                diagnostics.statusMessage.setf("%s: Failed to load shared library '%s': Library not found or load failed", methodName, libName.str());
+                return;
+            }
+
+            // Try to get the factory procedure
+            void * xproc = GetSharedProcedure(logAccessPluginLib, instFactoryName);
+            if (xproc == nullptr)
+            {
+                diagnostics.logAccessPluginLoadState = LogAccessDiagnosticState::LoadFailed;
+                diagnostics.statusMessage.setf("%s: Cannot locate procedure '%s' in library '%s'", methodName, instFactoryName, libName.str());
+                FreeSharedObject(logAccessPluginLib);
+                return;
+            }
+
+            diagnostics.logAccessPluginLoadState = LogAccessDiagnosticState::LoadSucceeded;
+            diagnostics.statusMessage.setf("%s: Plugin library and factory procedure verified successfully", methodName);
+            FreeSharedObject(logAccessPluginLib);
+        }
+        catch (IException *e)
+        {
+            diagnostics.logAccessPluginLoadState = LogAccessDiagnosticState::LoadFailed;
+            StringBuffer errorMsg;
+            e->errorMessage(errorMsg);
+            diagnostics.statusMessage.setf("%s: Failed to load or verify plugin library '%s': %s", methodName, libName.str(), errorMsg.str());
+            if (logAccessPluginLib)
+                FreeSharedObject(logAccessPluginLib);
+            e->Release();
+        }
+        catch (...)
+        {
+            diagnostics.logAccessPluginLoadState = LogAccessDiagnosticState::LoadFailed;
+            diagnostics.statusMessage.setf("%s: Failed to load or verify plugin library '%s': Unknown error", methodName, libName.str());
+            if (logAccessPluginLib)
+                FreeSharedObject(logAccessPluginLib);
+        }
+    }
+    catch (IException *e)
+    {
+        StringBuffer msg;
+        e->errorMessage(msg);
+        diagnostics.statusMessage.setf("%s: Exception during plugin diagnostics: %s", methodName, msg.str());
+        e->Release();
+    }
+    catch (...)
+    {
+        diagnostics.statusMessage.setf("%s: Unknown exception during plugin diagnostics", methodName);
+    }
+}
+
 void setDefaultJobName(const char * name)
 {
     setDefaultJobId(theManager->addJobId(name));

@@ -403,8 +403,87 @@ bool Cws_logaccessEx::onGetHealthReport(IEspContext &context, IEspGetHealthRepor
     StringBuffer code;
     if (!queryRemoteLogAccessor())
     {
-        messages.append("Configuration Error - LogAccess plugin not available, review logAccess configuration!");
-        code.set("Fail");
+        // No logaccess plugins are loaded - perform enhanced diagnostics
+        LogAccessPluginDiagnostics diagnostics;
+        diagnoseLogAccessPluginLoad(diagnostics);
+
+        switch (diagnostics.logAccessPluginLoadState)
+        {
+            case LogAccessDiagnosticState::ConfigNotFound:
+            {
+                messages.append("Warning: No logaccess plugin configuration found.");
+                code.set("Warning");
+                break;
+            }
+            case LogAccessDiagnosticState::ConfigFoundNoType:
+            {
+                VStringBuffer configTypeMsg("LogAccess configuration found but plugin type not specified: '%s'", diagnostics.statusMessage.str());
+                messages.append(configTypeMsg.str());
+                code.set("Fail");
+                break;
+            }
+            case LogAccessDiagnosticState::LoadFailed:
+            {
+                // Configuration exists, report on load attempt
+                VStringBuffer configMsg("LogAccess configuration found - Plugin Type: '%s'", diagnostics.pluginType.str());
+                messages.append(configMsg.str());
+
+                VStringBuffer failMsg("Failed to verify plugin '%s': %s", diagnostics.libName.str(), diagnostics.statusMessage.str());
+                messages.append(failMsg.str());
+                code.set("Fail");
+                break;
+            }
+            case LogAccessDiagnosticState::LoadSucceeded:
+            {
+                VStringBuffer configMsg("LogAccess configuration found - Plugin Type: '%s'", diagnostics.pluginType.str());
+                messages.append(configMsg.str());
+                VStringBuffer successMsg("Plugin library '%s' and factory procedure verified successfully. Plugin instance failed to initialize during service startup - check service logs for initialization errors.", diagnostics.libName.str());
+                messages.append(successMsg.str());
+                code.set("Warning");
+                break;
+            }
+            default:
+            {
+                messages.append("Unknown diagnostic state encountered");
+                code.set("Fail");
+                break;
+            }
+        }
+
+        // Add configuration details if requested
+        if (options.IncludeConfiguration)
+        {
+            const char* stateStr = "";
+            switch (diagnostics.logAccessPluginLoadState)
+            {
+                case LogAccessDiagnosticState::ConfigNotFound:
+                    stateStr = "ConfigNotFound";
+                    break;
+                case LogAccessDiagnosticState::ConfigFoundNoType:
+                    stateStr = "ConfigFoundNoType";
+                    break;
+                case LogAccessDiagnosticState::LoadFailed:
+                    stateStr = "LoadFailed";
+                    break;
+                case LogAccessDiagnosticState::LoadSucceeded:
+                    stateStr = "LoadSucceeded";
+                    break;
+                default:
+                    stateStr = "Unknown";
+                    break;
+            }
+
+            VStringBuffer configReport("LogAccess Configuration Status:\n"
+                                        "  Diagnostic State: %s\n"
+                                        "  Plugin Type: %s\n"
+                                        "  Library Name: %s\n"
+                                        "  Details: %s\n",
+                                        stateStr,
+                                        diagnostics.pluginType.str(),
+                                        diagnostics.libName.str(),
+                                        diagnostics.statusMessage.str());
+            resp.setConfiguration(configReport.str());
+        }
     }
     else
     {
