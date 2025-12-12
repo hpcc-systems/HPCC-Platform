@@ -45,7 +45,9 @@ find_package(yaml CONFIG REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(CURL CONFIG REQUIRED)
 if (USE_OPENTEL_GRPC)
+    message(STATUS "USE_OPENTEL_GRPC is ${USE_OPENTEL_GRPC}, searching for gRPC...")
     find_package(gRPC CONFIG REQUIRED)
+    message(STATUS "gRPC found: ${gRPC_VERSION}")
 endif ()
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(opentelemetry-cpp CONFIG REQUIRED)
@@ -237,6 +239,10 @@ ADD_DEFINITIONS( -DCPPHTTPLIB_USE_POLL )
 
 ADD_DEFINITIONS( -D_USRDLL -DJLIB_EXPORTS )
 HPCC_ADD_LIBRARY( jlib SHARED ${SRCS} ${INCLUDES} )
+
+if (USE_OPENTEL_GRPC)
+    target_compile_definitions(jlib PRIVATE USE_OPENTEL_GRPC)
+endif ()
 
 target_link_libraries ( jlib
         lzma
