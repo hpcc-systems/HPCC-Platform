@@ -682,7 +682,8 @@ void CSocketTarget::startAsyncConnect()
     struct sockaddr * addr = nullptr;
     try
     {
-        if (sender.asyncSender)
+        bool enableAsyncConnect = false;
+        if (enableAsyncConnect && sender.asyncSender)
         {
             size32_t addrlen = 0;
             socket.setown(ISocket::createForAsyncConnect(ep, addr, addrlen));
