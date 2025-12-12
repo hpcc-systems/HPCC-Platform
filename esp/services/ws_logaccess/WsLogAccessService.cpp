@@ -422,13 +422,13 @@ bool Cws_logaccessEx::onGetHealthReport(IEspContext &context, IEspGetHealthRepor
             {
                 if (diagnostics.loadSucceeded)
                 {
-                    VStringBuffer successMsg("Plugin library '%s' loaded successfully, but plugin instance creation may have failed", diagnostics.libName.str());
+                    VStringBuffer successMsg("Plugin library '%s' and factory procedure verified successfully. Instance creation failed during normal initialization - check plugin logs for details.", diagnostics.libName.str());
                     messages.append(successMsg.str());
                     code.set("Warning");
                 }
                 else
                 {
-                    VStringBuffer failMsg("Failed to load plugin library '%s': %s", diagnostics.libName.str(), diagnostics.errorMessage.str());
+                    VStringBuffer failMsg("Failed to verify plugin '%s': %s", diagnostics.libName.str(), diagnostics.errorMessage.str());
                     messages.append(failMsg.str());
                     code.set("Fail");
                 }

@@ -3534,44 +3534,36 @@ void diagnoseLogAccessPluginLoad(LogAccessPluginDiagnostics & diagnostics)
                 diagnostics.errorMessage.setf("Failed to load shared library '%s': Library not found or load failed", libName.str());
                 return;
             }
-        }
-        catch (IException *e)
-        {
-            StringBuffer errorMsg;
-            e->errorMessage(errorMsg);
-            diagnostics.errorMessage.setf("Failed to load shared library '%s': %s", libName.str(), errorMsg.str());
-            e->Release();
-            return;
-        }
-        catch (...)
-        {
-            diagnostics.errorMessage.setf("Failed to load shared library '%s': Unknown error", libName.str());
-            return;
-        }
 
-        // Try to get the factory procedure
-        try
-        {
+            // Try to get the factory procedure
             void * xproc = GetSharedProcedure(logAccessPluginLib, instFactoryName);
             if (xproc == nullptr)
             {
                 diagnostics.errorMessage.setf("Cannot locate procedure '%s' in library '%s'", instFactoryName, libName.str());
+                FreeSharedObject(logAccessPluginLib);
                 return;
             }
 
             diagnostics.loadSucceeded = true;
-            diagnostics.errorMessage.set("Plugin library loaded successfully");
+            diagnostics.errorMessage.set("Plugin library and factory procedure verified successfully");
+            FreeSharedObject(logAccessPluginLib);
         }
         catch (IException *e)
         {
             StringBuffer errorMsg;
             e->errorMessage(errorMsg);
-            diagnostics.errorMessage.setf("Failed to get procedure '%s' from library '%s': %s", instFactoryName, libName.str(), errorMsg.str());
+            diagnostics.errorMessage.setf("Failed to load or verify plugin library '%s': %s", libName.str(), errorMsg.str());
+            if (logAccessPluginLib)
+                FreeSharedObject(logAccessPluginLib);
             e->Release();
+            return;
         }
         catch (...)
         {
-            diagnostics.errorMessage.setf("Failed to get procedure '%s' from library '%s': Unknown error", instFactoryName, libName.str());
+            diagnostics.errorMessage.setf("Failed to load or verify plugin library '%s': Unknown error", libName.str());
+            if (logAccessPluginLib)
+                FreeSharedObject(logAccessPluginLib);
+            return;
         }
     }
     catch (IException *e)
