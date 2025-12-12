@@ -441,7 +441,7 @@ spec:
 ---
 {{    include "hpcc.addEgress" (dict "root" $ "me" $roxie "labels" $commonCtx.instanceNames) }}
 {{-   if hasKey . "hpa" }}
-{{-    include "hpcc.addHorizontalPodAutoscaler" (dict "name" $roxie.name "kind" "Deployment" "hpa" $roxie.hpa) }}
+{{-    include "hpcc.addHorizontalPodAutoscalerByReference" (dict "name" $roxie.name "hpaRef" $roxie.hpa "kind" "Deployment" "root" $) }}
 {{-   end }}
 {{-  end }}{{/* if not disabled */}}
 {{- end }}{{/* range */}}

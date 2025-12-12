@@ -1112,6 +1112,7 @@ Pass in dict with me, and params
     - {{ $container.process }}
  {{- end }}
  {{- include "hpcc.addSecurityContext" . | indent 2 }}
+ {{- include "hpcc.addMonitoringResources" (dict "me" .me.monitoringResources "root" .root) | indent 2 }}
   volumeMounts:
   {{- include "hpcc.addTempVolumeMount" (.me | merge (dict "noSubPath" "true")) | nindent 2 }}
   {{- include "hpcc.addRuntimeVolumeMount" (.me | merge (dict "noSubPath" "true")) | nindent 2 }}
@@ -1488,6 +1489,19 @@ Pass in dict with root, me and instances defined
 {{- $stubInstanceResources := .me | default .root.Values.global.stubInstanceResources | default dict }}
 {{- $cpuResource := $stubInstanceResources.cpu | default "200m" }}
 {{- $memoryResource := $stubInstanceResources.memory | default "400Mi" }}
+{{- $resources := dict "memory" $memoryResource "cpu" $cpuResource -}}
+{{- include "hpcc.addResources" (dict "me" $resources "root" .root) }}
+{{- end -}}
+
+{{/*
+Add resources object for monitoring pods
+Pass in dict with root, me and instances defined
+This template sets default low-impact CPU and memory resources suitable for monitoring containers.
+*/}}
+{{- define "hpcc.addMonitoringResources" -}}
+{{- $monitoringResources := .me | default .root.Values.global.monitoringResources | default dict }}
+{{- $cpuResource := $monitoringResources.cpu | default "5m" }}
+{{- $memoryResource := $monitoringResources.memory | default "30Mi" }}
 {{- $resources := dict "memory" $memoryResource "cpu" $cpuResource -}}
 {{- include "hpcc.addResources" (dict "me" $resources "root" .root) }}
 {{- end -}}
@@ -2922,6 +2936,32 @@ selectPolicy: {{ .behaviorScale.selectPolicy }}
   {{- end }}
  {{- end }}
 {{- end }}
+{{- end -}}
+
+{{/*
+Add a HorizontalPodAutoscaler by reference to a named entry in global.hpas.
+If the name matches an entry in global.hpas, includes hpcc.addHorizontalPodAutoscaler.
+Otherwise, fails the process with an explicit error.
+
+Usage:
+{{- include "hpcc.addHorizontalPodAutoscalerByReference" (dict "name" <workload-name> "hpaRef" <hpa-ref-name> "kind" <kind> "root" $) }}
+
+Pass in:
+- name: workload resource name (e.g., Deployment name)
+- hpaRef: reference name in global.hpas
+- kind: workload kind (e.g., "Deployment")
+- root: root context ($)
+
+*/}}
+{{- define "hpcc.addHorizontalPodAutoscalerByReference" -}}
+{{- $hpaRef := .hpaRef -}}
+{{- $root := .root -}}
+{{- if and $root.Values.global.hpas (hasKey $root.Values.global.hpas $hpaRef) -}}
+  {{- $hpaConfig := get $root.Values.global.hpas $hpaRef -}}
+  {{- include "hpcc.addHorizontalPodAutoscaler" (dict "name" .name "kind" .kind "hpa" $hpaConfig.hpa) }}
+{{- else -}}
+  {{- $_ := fail (printf "HPA reference '%s' not found in global.hpas. Please define it in your values file." $hpaRef) }}
+{{- end -}}
 {{- end -}}
 
 {{/*
