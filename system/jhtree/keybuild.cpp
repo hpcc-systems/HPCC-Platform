@@ -223,8 +223,14 @@ public:
     {
         sequence = options.startSequence;
         keyHdr.setown(new CWriteKeyHdr());
-        keyValueSize = options.rawSize;
-        keyedSize = options.keyFieldSize != (unsigned) -1 ? options.keyFieldSize : options.rawSize;
+
+        //Maximum row length supported is 32K - ensure the value is capped because it is stored in a short int.
+        unsigned rawSize = options.rawSize;
+        if (rawSize > KEYBUILD_MAXLENGTH)
+            rawSize = KEYBUILD_MAXLENGTH; // max supported in ctree
+
+        keyValueSize = rawSize;
+        keyedSize = options.keyFieldSize != (unsigned) -1 ? options.keyFieldSize : rawSize;
 
         levels = 0;
         records = 0;
