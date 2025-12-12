@@ -403,8 +403,65 @@ bool Cws_logaccessEx::onGetHealthReport(IEspContext &context, IEspGetHealthRepor
     StringBuffer code;
     if (!queryRemoteLogAccessor())
     {
-        messages.append("Configuration Error - LogAccess plugin not available, review logAccess configuration!");
-        code.set("Fail");
+        // No logaccess plugins are loaded - perform enhanced diagnostics
+        LogAccessPluginDiagnostics diagnostics;
+        diagnoseLogAccessPluginLoad(diagnostics);
+
+        if (!diagnostics.configFound)
+        {
+            messages.append("Warning: No logaccess plugin configuration found.");
+            code.set("Warning");
+        }
+        else
+        {
+            // Configuration exists, report on load attempt
+            VStringBuffer configMsg("LogAccess configuration found - Plugin Type: %s", diagnostics.pluginType.str());
+            messages.append(configMsg.str());
+
+            if (diagnostics.loadAttempted)
+            {
+                if (diagnostics.loadSucceeded)
+                {
+                    VStringBuffer successMsg("Plugin library '%s' and factory procedure verified successfully. Plugin instance failed to initialize during service startup - check service logs for initialization errors.", diagnostics.libName.str());
+                    messages.append(successMsg.str());
+                    code.set("Warning");
+                }
+                else
+                {
+                    VStringBuffer failMsg("Failed to verify plugin '%s': %s", diagnostics.libName.str(), diagnostics.errorMessage.str());
+                    messages.append(failMsg.str());
+                    code.set("Fail");
+                }
+            }
+            else
+            {
+                VStringBuffer errorMsg("Plugin loading was not attempted: %s", diagnostics.errorMessage.str());
+                messages.append(errorMsg.str());
+                code.set("Fail");
+            }
+        }
+
+        // Add configuration details if requested
+        if (options.IncludeConfiguration)
+        {
+            VStringBuffer configReport("LogAccess Configuration Status:\n"
+                                        "  Config Found: %s\n",
+                                        diagnostics.configFound ? "Yes" : "No");
+            if (diagnostics.configFound)
+            {
+                configReport.appendf("  Plugin Type: %s\n"
+                                     "  Library Name: %s\n"
+                                     "  Load Attempted: %s\n"
+                                     "  Load Succeeded: %s\n"
+                                     "  Details: %s\n",
+                                     diagnostics.pluginType.str(),
+                                     diagnostics.libName.str(),
+                                     diagnostics.loadAttempted ? "Yes" : "No",
+                                     diagnostics.loadSucceeded ? "Yes" : "No",
+                                     diagnostics.errorMessage.str());
+            }
+            resp.setConfiguration(configReport.str());
+        }
     }
     else
     {
