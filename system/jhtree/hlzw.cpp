@@ -99,7 +99,7 @@ void KeyCompressor::openBlob(CompressionMethod compression, void *blk,int blksiz
     method = comp->getCompressionMethod();
 }
 
-int KeyCompressor::writekey(offset_t fPtr, const char *key, unsigned datalength, unsigned options)
+int KeyCompressor::writekey(offset_t fPtr, const char *key, unsigned datalength, unsigned options, unsigned keyedDelta)
 {
     assert(!isBlob);
     assertex(__BYTE_ORDER == __LITTLE_ENDIAN); // otherwise the following code is wrong.
@@ -108,16 +108,32 @@ int KeyCompressor::writekey(offset_t fPtr, const char *key, unsigned datalength,
     tempKeyBuffer.clear();
     if (isVariable)
     {
-        KEYRECSIZE_T rs = datalength;
-        tempKeyBuffer.appendSwap(sizeof(rs), &rs);
+        if (keyedDelta)
+        {
+            unsigned payloadLength = datalength - keyedDelta;
+            assertex(payloadLength <= 0x7FFF);
+            if (payloadLength < 0x80)
+            {
+                tempKeyBuffer.append((byte)payloadLength);
+            }
+            else
+            {
+                byte firstByte = (byte)(payloadLength >> 8) | 0x80;
+                tempKeyBuffer.append(firstByte);
+                tempKeyBuffer.append((byte)payloadLength);
+            }
+        }
+        else
+        {
+            KEYRECSIZE_T rs = datalength;
+            tempKeyBuffer.appendSwap(sizeof(rs), &rs);
+        }
     }
 
-    bool hasTrailingFilePos = (options & TrailingFilePosition) != 0 && (options & NoFilePosition) == 0;
-    bool hasLeadingFilePos = (options & NoFilePosition) == 0 && !hasTrailingFilePos;
-    if (hasLeadingFilePos)
+    if (options & LeadingFilePosition)
         tempKeyBuffer.appendSwap(sizeof(offset_t), &fPtr);
     tempKeyBuffer.append(datalength, key);
-    if (hasTrailingFilePos)
+    if (options & TrailingFilePosition)
         tempKeyBuffer.appendSwap(sizeof(offset_t), &fPtr);
 
     size32_t toWrite = tempKeyBuffer.length();
