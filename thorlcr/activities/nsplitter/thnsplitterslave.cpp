@@ -209,6 +209,8 @@ public:
     {
         // NB: called by 1st output to start()
         CriticalBlock block(prepareInputLock);
+        if (writeAheadException)
+            throw LINK(writeAheadException);
         if (!inputPrepared)
         {
             inputPrepared = true;
