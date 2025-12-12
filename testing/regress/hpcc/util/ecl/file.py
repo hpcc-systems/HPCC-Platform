@@ -71,6 +71,7 @@ class ECLFile:
         self.engine = args.engine;
         self.baseEcl = os.path.basename(ecl)
         self.basename = os.path.splitext(self.baseEcl)[0]
+        self.isEclXml = self.baseEcl.endswith('.eclxml')
         self.baseXml = self.basename + '.xml'
         self.baseQueryXml = self.basename+'.queryxml'
         self.ecl = self.baseEcl
