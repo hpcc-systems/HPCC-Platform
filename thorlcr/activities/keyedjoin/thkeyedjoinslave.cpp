@@ -1572,8 +1572,13 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                     crc = 0;
                 RemoteFilename rfn;
                 part.getFilename(copy, rfn);
+
+                // NB: normally, a remote handler would have the part locally, so only the local path (getLocalPath) is needed.
+                // However, if the files are off-cluster and stripedOutOfClusterLookups is set, then the full remote path is needed.
+                // So we send the full remote path in all cases, but if local it will devolve to local path at the other end.
                 StringBuffer fname;
-                rfn.getLocalPath(fname);
+                rfn.getRemotePath(fname);
+
                 msg.append(activity.queryId()).append(fname).append(crc); // lookup key
                 // serialize onCreate context
                 DelayedSizeMarker sizeMark(msg);
@@ -1940,8 +1945,13 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 IPartDescriptor &part = activity.allDataParts.item(partNo);
                 RemoteFilename rfn;
                 part.getFilename(copy, rfn);
+
+                // NB: normally, a remote handler would have the part locally, so only the local path (getLocalPath) is needed.
+                // However, if the files are off-cluster and stripedOutOfClusterLookups is set, then the full remote path is needed.
+                // So we send the full remote path in all cases, but if local it will devolve to local path at the other end.
                 StringBuffer fname;
-                rfn.getLocalPath(fname);
+                rfn.getRemotePath(fname);
+
                 msg.append(fname);
                 msg.append(activity.messageCompression);
 
