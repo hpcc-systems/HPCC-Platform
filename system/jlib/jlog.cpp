@@ -3529,24 +3529,23 @@ void diagnoseLogAccessPluginLoad(LogAccessPluginDiagnostics & diagnostics)
         try
         {
             logAccessPluginLib = LoadSharedObject(libName.str(), false, false); // raiseOnError=false to capture error
+            if (!logAccessPluginLib)
+            {
+                diagnostics.errorMessage.setf("Failed to load shared library '%s': Library not found or load failed", libName.str());
+                return;
+            }
         }
         catch (IException *e)
         {
-            VStringBuffer msg("Failed to load shared library '%s': ", libName.str());
-            e->errorMessage(diagnostics.errorMessage.clear());
-            diagnostics.errorMessage.insert(0, msg.str());
+            StringBuffer errorMsg;
+            e->errorMessage(errorMsg);
+            diagnostics.errorMessage.setf("Failed to load shared library '%s': %s", libName.str(), errorMsg.str());
             e->Release();
             return;
         }
         catch (...)
         {
             diagnostics.errorMessage.setf("Failed to load shared library '%s': Unknown error", libName.str());
-            return;
-        }
-
-        if (!logAccessPluginLib)
-        {
-            diagnostics.errorMessage.setf("Failed to load shared library '%s': Library not found or load failed", libName.str());
             return;
         }
 
@@ -3565,9 +3564,9 @@ void diagnoseLogAccessPluginLoad(LogAccessPluginDiagnostics & diagnostics)
         }
         catch (IException *e)
         {
-            VStringBuffer msg("Failed to get procedure '%s' from library '%s': ", instFactoryName, libName.str());
-            e->errorMessage(diagnostics.errorMessage.clear());
-            diagnostics.errorMessage.insert(0, msg.str());
+            StringBuffer errorMsg;
+            e->errorMessage(errorMsg);
+            diagnostics.errorMessage.setf("Failed to get procedure '%s' from library '%s': %s", instFactoryName, libName.str(), errorMsg.str());
             e->Release();
         }
         catch (...)

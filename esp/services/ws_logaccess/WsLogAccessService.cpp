@@ -444,16 +444,21 @@ bool Cws_logaccessEx::onGetHealthReport(IEspContext &context, IEspGetHealthRepor
         // Add configuration details if requested
         if (options.IncludeConfiguration)
         {
-            StringBuffer configReport;
-            configReport.append("LogAccess Configuration Status:\n");
-            configReport.appendf("  Config Found: %s\n", diagnostics.configFound ? "Yes" : "No");
+            VStringBuffer configReport("LogAccess Configuration Status:\n"
+                                        "  Config Found: %s\n",
+                                        diagnostics.configFound ? "Yes" : "No");
             if (diagnostics.configFound)
             {
-                configReport.appendf("  Plugin Type: %s\n", diagnostics.pluginType.str());
-                configReport.appendf("  Library Name: %s\n", diagnostics.libName.str());
-                configReport.appendf("  Load Attempted: %s\n", diagnostics.loadAttempted ? "Yes" : "No");
-                configReport.appendf("  Load Succeeded: %s\n", diagnostics.loadSucceeded ? "Yes" : "No");
-                configReport.appendf("  Details: %s\n", diagnostics.errorMessage.str());
+                configReport.appendf("  Plugin Type: %s\n"
+                                     "  Library Name: %s\n"
+                                     "  Load Attempted: %s\n"
+                                     "  Load Succeeded: %s\n"
+                                     "  Details: %s\n",
+                                     diagnostics.pluginType.str(),
+                                     diagnostics.libName.str(),
+                                     diagnostics.loadAttempted ? "Yes" : "No",
+                                     diagnostics.loadSucceeded ? "Yes" : "No",
+                                     diagnostics.errorMessage.str());
             }
             resp.setConfiguration(configReport.str());
         }
