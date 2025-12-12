@@ -41,7 +41,16 @@ enum CompressionMethod : byte
     COMPRESS_METHOD_LZ4HC3,
     COMPRESS_METHOD_ZSTDS,
     COMPRESS_METHOD_ZSTD,
-    COMPRESS_METHOD_LAST,
+    COMPRESS_METHOD_LAST_PERSISTED,
+
+    //The following values are NEVER persisted.  They provide aliases for compression methods with different levels of compression.
+    COMPRESS_METHOD_ZSTD3,
+    COMPRESS_METHOD_ZSTD6,
+    COMPRESS_METHOD_ZSTD9,
+    COMPRESS_METHOD_ZSTDS3,
+    COMPRESS_METHOD_ZSTDS6,
+    COMPRESS_METHOD_ZSTDS9,
+    COMPRESS_METHOD_LAST_ALIAS,
 
 
     COMPRESS_METHOD_AES = 0x80,
@@ -168,7 +177,8 @@ extern jlib_decl IPropertyTree *getBlockedFileDetails(IFile *file);
 interface ICompressHandler : extends IInterface
 {
     virtual const char *queryType() const = 0;
-    virtual CompressionMethod queryMethod() const = 0;
+    virtual CompressionMethod queryPersistMethod() const = 0;
+    virtual CompressionMethod queryAliasMethod() const = 0;
     virtual ICompressor *getCompressor(const char *options=NULL) = 0;
     virtual IExpander *getExpander(const char *options=NULL) = 0;
 };
