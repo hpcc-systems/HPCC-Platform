@@ -409,7 +409,7 @@ bool CLegacyWriteNode::add(offset_t pos, const void *indata, size32_t insize, un
             bool rowCompressed = (keyType&HTREE_QUICK_COMPRESSED_KEY)==HTREE_QUICK_COMPRESSED_KEY;
             lzwcomp.open(keyPtr, maxBytes-hdr.keyBytes, isVariable, rowCompressed, fixedKeySize);
         }
-        if (0xffff == hdr.numKeys || 0 == lzwcomp.writekey(pos, (const char *)indata, insize))
+        if (0xffff == hdr.numKeys || 0 == lzwcomp.writekey(pos, (const char *)indata, insize, KeyCompressor::LeadingFilePosition, 0))
             return false;
     }
     else
