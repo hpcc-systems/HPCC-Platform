@@ -71,15 +71,13 @@ if (WIN32)
     endif ()
 endif()
 
-HPCC_ADD_EXECUTABLE ( saserver ${SRCS} )
-install ( TARGETS saserver RUNTIME DESTINATION ${EXEC_DIR})
-
+HPCC_ADD_LIBRARY ( sashaLib SHARED ${SRCS} )
 
 if ( ${HAVE_LIBCRYPT} )
-target_link_libraries ( saserver crypt)
+target_link_libraries ( sashaLib crypt)
 endif ( ${HAVE_LIBCRYPT} )
 
-target_link_libraries ( saserver 
+target_link_libraries ( sashaLib
          jlib 
          dafsclient 
          dalibase 
@@ -91,8 +89,15 @@ target_link_libraries ( saserver
     )
 
 if (NOT CONTAINERIZED)
-    target_link_libraries ( saserver environment )
+    target_link_libraries ( sashaLib environment )
 endif()
+
+HPCC_ADD_EXECUTABLE ( saserver saserverStub.cpp )
+install ( TARGETS saserver RUNTIME DESTINATION ${EXEC_DIR})
+
+target_link_libraries ( saserver
+         sashaLib
+    )
 
 set (    SRCS 
          sacmd.cpp 
@@ -119,6 +124,16 @@ target_link_libraries ( sasha
          saruncmdlib
     )
 
+if (USE_CPPUNIT)
 
+    # Install sashaLib so any unit tests are automatically picked up
+    install ( TARGETS sashaLib LIBRARY DESTINATION ${LIB_DIR} )
 
+    include_directories ( ${HPCC_SOURCE_DIR}/testing/unittests )
+
+    target_link_libraries ( sashaLib
+        ${CppUnit_LIBRARIES}
+    )
+
+endif()
 
