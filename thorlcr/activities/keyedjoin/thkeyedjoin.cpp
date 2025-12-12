@@ -40,6 +40,7 @@ class CKeyedJoinMaster : public CMasterActivity
     bool remoteKeyedLookup = false;
     bool remoteKeyedFetch = false;
     bool assumePrimary = false;
+    bool stripeOutOfClusterLookups = false;
     unsigned totalIndexParts = 0;
     unsigned indexFileStatsTableEntry = NotFound;
     unsigned dataFileStatsTableEntry = NotFound;
@@ -112,6 +113,7 @@ class CKeyedJoinMaster : public CMasterActivity
             unsigned numParts = fileDesc->numParts();
             unsigned nextGroupStartPos = 0;
 
+            const SocketEndpoint localhost("localhost");
             IDistributedFile *subFile = file;
             for (unsigned p=0; p<numParts; p++)
             {
@@ -186,7 +188,24 @@ class CKeyedJoinMaster : public CMasterActivity
                                     // workers via remote key lookup handlers.
                                     // remoteKeyedLookup=false will disabled this default behaviour, causing all parts
                                     // to be handled locally by each worker.
-                                    if (isContainerized() || partNode->equals(&dfsGroup.queryNode(gn)))
+
+                                    bool stripeLookups = activity.stripeOutOfClusterLookups; // always stripe, even if out of cluster file parts
+                                    if (!stripeLookups)
+                                    {
+                                        if (isContainerized())
+                                        {
+                                            // stripe if part is local (mounted)
+                                            const SocketEndpoint &partEp = partNode->endpoint();
+                                            if (partEp.equals(localhost))
+                                                stripeLookups = true;
+                                        }
+                                        else
+                                        {
+                                            // stripe if part node is same as cluster node
+                                            stripeLookups = partNode->equals(&dfsGroup.queryNode(gn));
+                                        }
+                                    }
+                                    if (stripeLookups)
                                     {
                                         /* NB: If there's >1 slave per node (e.g. slavesPerNode>1) then there are multiple matching node's in the dfsGroup
                                         * Which means a copy of a part may already be assigned to a cluster slave map. This check avoid handling it again if it has.
@@ -286,6 +305,9 @@ public:
             remoteKeyedFetch = true;
 
         assumePrimary = getOptBool(THOROPT_KJ_ASSUME_PRIMARY);
+
+        // NB: defaulting to false for now, meaning all out-of-cluster files will be handled locally by each worker (not striped and via remote handlers)
+        stripeOutOfClusterLookups = remoteKeyedLookup && getOptBool(THOROPT_KJ_STRIPE_OUT_OF_CLUSTER_LOOKUPS);
 
         if (helper->diskAccessRequired())
             numTags += 2;
