@@ -3488,6 +3488,95 @@ IRemoteLogAccess *queryRemoteLogAccessor()
     );
 }
 
+void diagnoseLogAccessPluginLoad(LogAccessPluginDiagnostics & diagnostics)
+{
+    constexpr const char * methodName = "diagnoseLogAccessPluginLoad";
+    constexpr const char * instFactoryName = "createInstance";
+
+    try
+    {
+        Owned<IPropertyTree> logAccessPluginConfig = getGlobalConfigSP()->getPropTree("logAccess");
+
+        if (!logAccessPluginConfig)
+        {
+            diagnostics.configFound = false;
+            diagnostics.statusMessage.set("No logaccess configuration found in global config");
+            return;
+        }
+
+        diagnostics.configFound = true;
+
+        StringBuffer type;
+        logAccessPluginConfig->getProp("@type", type);
+        if (type.isEmpty())
+        {
+            diagnostics.statusMessage.set("RemoteLogAccess plugin type not specified in configuration");
+            return;
+        }
+
+        diagnostics.pluginType.set(type.str());
+
+        StringBuffer libName;
+        libName.append("lib").append(type.str()).append("logaccess");
+        diagnostics.libName.set(libName.str());
+
+        diagnostics.loadAttempted = true;
+
+        //Attempt to load the DLL/SO
+        HINSTANCE logAccessPluginLib = nullptr;
+        try
+        {
+            logAccessPluginLib = LoadSharedObject(libName.str(), false, false); // raiseOnError=false to capture error
+            if (!logAccessPluginLib)
+            {
+                diagnostics.statusMessage.setf("Failed to load shared library '%s': Library not found or load failed", libName.str());
+                return;
+            }
+
+            // Try to get the factory procedure
+            void * xproc = GetSharedProcedure(logAccessPluginLib, instFactoryName);
+            if (xproc == nullptr)
+            {
+                diagnostics.statusMessage.setf("Cannot locate procedure '%s' in library '%s'", instFactoryName, libName.str());
+                FreeSharedObject(logAccessPluginLib);
+                return;
+            }
+
+            diagnostics.loadSucceeded = true;
+            diagnostics.statusMessage.set("Plugin library and factory procedure verified successfully");
+            FreeSharedObject(logAccessPluginLib);
+        }
+        catch (IException *e)
+        {
+            StringBuffer errorMsg;
+            e->errorMessage(errorMsg);
+            diagnostics.statusMessage.setf("Failed to load or verify plugin library '%s': %s", libName.str(), errorMsg.str());
+            if (logAccessPluginLib)
+                FreeSharedObject(logAccessPluginLib);
+            e->Release();
+            return;
+        }
+        catch (...)
+        {
+            diagnostics.statusMessage.setf("Failed to load or verify plugin library '%s': Unknown error", libName.str());
+            if (logAccessPluginLib)
+                FreeSharedObject(logAccessPluginLib);
+            return;
+        }
+    }
+    catch (IException *e)
+    {
+        StringBuffer msg;
+        e->errorMessage(msg);
+        diagnostics.statusMessage.setf("%s: Exception during plugin diagnostics: %s", methodName, msg.str());
+        e->Release();
+    }
+    catch (...)
+    {
+        diagnostics.statusMessage.setf("%s: Unknown exception during plugin diagnostics", methodName);
+    }
+}
+
 void setDefaultJobName(const char * name)
 {
     setDefaultJobId(theManager->addJobId(name));
