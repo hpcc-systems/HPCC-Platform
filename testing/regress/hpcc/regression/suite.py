@@ -85,7 +85,7 @@ class Suite:
 
         exceptions =  ''
         for file in allfiles:
-            if file.endswith(".ecl"):
+            if file.endswith(".ecl") or file.endswith(".eclxml"):
                 try:
                     ecl = os.path.join(self.dir_ec, file)
                     eclfile = ECLFile(ecl, self.dir_a, self.dir_ex,
