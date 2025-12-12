@@ -1799,6 +1799,16 @@ struct LogAccessHealthReportOptions
     bool IncludeSampleQuery = true;
 };
 
+struct LogAccessPluginDiagnostics
+{
+    StringAttr pluginType;
+    StringAttr libName;
+    bool configFound = false;
+    bool loadAttempted = false;
+    bool loadSucceeded = false;
+    StringBuffer errorMessage;
+};
+
 // Log Access Interface - Provides filtered access to persistent logging - independent of the log storage mechanism
 //                      -- Declares method to retrieve log entries based on options set
 //                      -- Declares method to retrieve remote log access type (eg elasticstack, etc)
@@ -1841,5 +1851,6 @@ extern jlib_decl bool fetchComponentLog(LogQueryResultDetails & resultDetails, S
 extern jlib_decl bool fetchLogByAudience(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, MessageAudience audience, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format);
 extern jlib_decl bool fetchLogByClass(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, LogMsgClass logclass, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format);
 extern jlib_decl IRemoteLogAccess * queryRemoteLogAccessor();
+extern jlib_decl void diagnoseLogAccessPluginLoad(LogAccessPluginDiagnostics & diagnostics);
 
 #endif
