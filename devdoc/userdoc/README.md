@@ -21,7 +21,6 @@ This is less-formal documentation intended to be produced and released more quic
 
 ## HPCC Website documentation
 -   [HPCC Published Documentation](https://hpccsystems.com/training/documentation/): All platform user docs
--   [Wiki](https://wiki.hpccsystems.com/):  hpccsystems.com wiki page
 -   [Blogs](https://hpccsystems.com/resources/?_resource_filters=blogs):  hpccsystems.com blog page
 
 
