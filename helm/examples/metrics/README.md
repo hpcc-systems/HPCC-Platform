@@ -348,26 +348,26 @@ First, create the secret in the Kubernetes cluster using the following command. 
 in clear text and is stored in the secret in clear text. Therefore, it does not need to be decrypted 
 before use. 
 
-```code
+```bash
 kubectl create secret generic elasticsecret --from-literal=username=<username> --from-literal=password=<password>
 ```
 
 If using a certification where you must map the cert file into the pod, use the following to create a secret
 that maps the certificate file into the pod:
 
-```code
+```bash
 kubectl create secret generic elastic-ca-cert --from-file=<cert-name>=<filepath to cert>
 ```
 
 Then, in the yaml config for the sink, use the following to reference the secret for the cert file:
 
-```code
+```yaml
 certificateFilePath: "/opt/HPCCSystems/secrets/system/elastic-ca-cert/<cert-name>"
 ```
 
 Additionally, use the following yaml snippet in a helm chart values file to map the secrets into cluster pods:
 
-```code
+```yaml
 secrets:
   system:
     elastic-ca-cert: "elastic-ca-cert"
