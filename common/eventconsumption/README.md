@@ -312,9 +312,19 @@ The number of nanoseconds required to expand the node one time. For nodes also r
 
 If algorithm estimation is enabled, the value is replaced. If the node will not be referenced by model input events, the value can be any positive integral value. Otherwise, the value must match the first non-zero `InMemorySize` value observed in an input event. Node sizes are not expected to change between observations, and the model does not account for unexpected changes. Once a node is in the cache with size `X`, it must always have size `X`.
 
+
+
+### CMetaInfoState
+
+A concrete implementation of `IEventVisitationLink` that observes all `FileInformation` and `QueryStart` events. The relationships between `FileId` and `Path` attributes, and also `EventTraceId` and `ServiceName` attributes, are retained and made available to operations and other event visitors. When visited before a filter, the state information is available to all operations and visitors even if the filter suppresses the observed events.
+
+# CEventVisitationLinkTester
+
+A concrete implementation of `IEventVisitor` used to test iterated events. Given an *expected* event iterator, each visited event is compared with the next expected event. Any discrepancy is a unit test failure.
+
 # CEventConsumingOp
 
-An abstract base class for handling requests to traverse and act upon an event data file. It provides common handling of an input event file name, an output stream for text output, a single occurrence of event filters, and a single event model.
+An abstract base class for handling requests to traverse and act upon an event data file. It provides common handling of an input event file name, an output stream for text output, an optional single occurrence of event filters, an optional single event model, and one CMetaInfoState. When using the traverseEvents method, the meta state instance is guaranteed to be the first visitor in the visitation chain, before the optional event filter.
 
 Whether events are filtered before or after an event model is hard coded. Filtering applies after a model so model-generated events can be filtered. Subclasses needing more control are responsible for hiding the relevant base methods.
 
@@ -485,3 +495,13 @@ A concrete implementation of `CEventConsumingOp` that collects statistics about 
 Statistics are collected per index node. Values include memory usage, event counters, read timing (total, minimum, maximum, and average read time), and expansion timing (total, minimum, maximum, and average).
 
 The index node statistics can be aggregated by file ID or node kind. Grouping by file ID reveals branch and leaf activity for every observed file. Grouping by node kind provides model configuration guidance for cache sizes, expansion estimations, and storage plane performance.
+
+## TestOp
+
+A concrete implementations of `CEventConsumingOp` used with unit tests. Defined within `testEventVisitationLinks`, the `doOp` method assembles the configured visitation chain and iterates the configured input events. The visitation chain begins with the inherited [meta state](#cmetainfostate) link, any explicitly configured links, and ends with the [test visitor](#ceventvisitationlinktester).
+
+The only base functionality used by this class is the meta state link. The model and filter instances are ignored, as are the input file path and output stream.
+
+## StubOp
+
+A concrete implementation of `CEventConsumingOp` that does nothing. It exists as a placeholder in unit tests that directly instantiate visitation links that require an operation. Attempting to use the operation is an error that throws an exception.
