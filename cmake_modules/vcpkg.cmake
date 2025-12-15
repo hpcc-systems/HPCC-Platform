@@ -4,7 +4,7 @@ if ("${VCPKG_DONE}" STREQUAL "")
 # vcpkg submodule management (skip entirely if disabled)
 if(VCPKG_AUTO_UPDATE_SUBMODULE)
     if(NOT EXISTS "${HPCC_SOURCE_DIR}/vcpkg/.git")
-        message(FATAL_ERROR "vcpkg submodule not initialized. Please run: 'git submodule update --init --recursive', and updated your configuration 'git config --global submodule.recurse true' to automatically update the submodules.")
+        message(FATAL_ERROR "vcpkg submodule not initialized. Please run: 'git submodule update --init --recursive', and update your configuration 'git config --global submodule.recurse true' to automatically update the submodules.")
     endif()
 
     # Check if vcpkg submodule is out of sync using git native commands
