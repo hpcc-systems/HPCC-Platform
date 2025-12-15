@@ -24,7 +24,7 @@
 //version compression='inplace:blob(lzw)'
 //version compression='inplace:blob(zstd)'
 //version compression='inplace:zstds'
-//comma in string not supported by the regression test engine: //version compression='inplace:zstds,blob(zstd)'
+//comma in string not supported by the regression test engine: compression='inplace:zstds,blob(zstd)'
 //version compression='inplace:blob(zstd3)'
 //version compression='inplace:blob(zstd6)'
 //version compression='inplace:blob(zstd9)'
