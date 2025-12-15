@@ -300,6 +300,7 @@ protected:
     bool compressed;
     bool encrypted;
     bool useGenericReadWrites = false;
+    const char * compressHint = nullptr;
     CachedOutputMetaData serializedOutputMeta;
     offset_t uncompressedBytesWritten;
     Owned<ILogicalRowWriter> outSeq;
@@ -335,7 +336,7 @@ protected:
 public:
     IMPLEMENT_SINKACTIVITY;
 
-    CHThorDiskWriteActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorGenericDiskWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph);
+    CHThorDiskWriteActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorGenericDiskWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree * _node);
     ~CHThorDiskWriteActivity();
     virtual void execute();
     virtual void ready();
@@ -345,7 +346,7 @@ public:
 class CHThorSpillActivity : public CHThorDiskWriteActivity
 {
 public:
-    CHThorSpillActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorSpillArg &_arg, ThorActivityKind _kind, EclGraph & _graph);
+    CHThorSpillActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorSpillArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree * _node);
 
     virtual void setInput(unsigned, IHThorInput *);
     virtual void stop();
@@ -368,7 +369,7 @@ class CHThorCsvWriteActivity : public CHThorDiskWriteActivity
     virtual void setFormat(IFileDescriptor * desc);
     virtual bool isFixedWidth() { return false; }
 public:
-    CHThorCsvWriteActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorCsvWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph);
+    CHThorCsvWriteActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorCsvWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree * _node);
     virtual void execute();
 };
 
@@ -383,7 +384,7 @@ class CHThorXmlWriteActivity : public CHThorDiskWriteActivity
     virtual void setFormat(IFileDescriptor * desc);
     virtual bool isFixedWidth() { return false; }
 public:
-    CHThorXmlWriteActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph);
+    CHThorXmlWriteActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree * _node);
     virtual void execute();
 };
 
@@ -3107,6 +3108,10 @@ protected:
 #define MAKEFACTORY(NAME) \
 extern HTHOR_API IHThorActivity * create ## NAME ## Activity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThor ## NAME ## Arg &arg, ThorActivityKind kind, EclGraph & _graph) \
 {   return new CHThor ## NAME ##Activity(_agent, _activityId, _subgraphId, arg, kind, _graph); }
+
+#define MAKEFACTORY_NODE(NAME) \
+extern HTHOR_API IHThorActivity * create ## NAME ## Activity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThor ## NAME ## Arg &arg, ThorActivityKind kind, EclGraph & _graph, IPropertyTree * _node) \
+{   return new CHThor ## NAME ##Activity(_agent, _activityId, _subgraphId, arg, kind, _graph, _node); }
 
 #define MAKEFACTORY_ARG(NAME, ARGNAME) \
 extern HTHOR_API IHThorActivity * create ## NAME ## Activity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThor ## ARGNAME ## Arg &arg, ThorActivityKind kind, EclGraph & _graph) \

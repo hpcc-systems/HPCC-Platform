@@ -54,7 +54,7 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
     {
     case TAKdiskwrite:
     case TAKspillwrite:
-        return createDiskWriteActivity(agent, activityId, subgraphId, (IHThorGenericDiskWriteArg &)arg, kind, graph);
+        return createDiskWriteActivity(agent, activityId, subgraphId, (IHThorGenericDiskWriteArg &)arg, kind, graph, node);
     case TAKsort:
         return createGroupSortActivity(agent, activityId, subgraphId, (IHThorSortArg &)arg, kind, graph);
     case TAKdedup:
@@ -145,10 +145,10 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
     case TAKpipewrite:
         return createPipeWriteActivity(agent, activityId, subgraphId, (IHThorPipeWriteArg &)arg, kind, graph);
     case TAKcsvwrite:
-        return createCsvWriteActivity(agent, activityId, subgraphId, (IHThorCsvWriteArg &)arg, kind, graph);
+        return createCsvWriteActivity(agent, activityId, subgraphId, (IHThorCsvWriteArg &)arg, kind, graph, node);
     case TAKxmlwrite:
     case TAKjsonwrite:
-        return createXmlWriteActivity(agent, activityId, subgraphId, (IHThorXmlWriteArg &)arg, kind, graph);
+        return createXmlWriteActivity(agent, activityId, subgraphId, (IHThorXmlWriteArg &)arg, kind, graph, node);
     case TAKpipethrough:
         return createPipeThroughActivity(agent, activityId, subgraphId, (IHThorPipeThroughArg &)arg, kind, graph);
     case TAKchoosesetsenth:
@@ -162,7 +162,7 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
     case TAKworkunitread:
         return createWorkunitReadActivity(agent, activityId, subgraphId, (IHThorWorkunitReadArg &)arg, kind, graph);
     case TAKspill:
-        return createSpillActivity(agent, activityId, subgraphId, (IHThorSpillArg &)arg, kind, graph);
+        return createSpillActivity(agent, activityId, subgraphId, (IHThorSpillArg &)arg, kind, graph, node);
     case TAKlimit:
         return createLimitActivity(agent, activityId, subgraphId, (IHThorLimitArg &)arg, kind, graph);
     case TAKskiplimit:
