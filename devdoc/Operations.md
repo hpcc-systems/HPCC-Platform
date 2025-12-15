@@ -7,7 +7,7 @@ This document serves as a comprehensive guide for system administrators, providi
 [Version Support](VersionSupport.md)
 Details on Supported Versions
 
-[Red Book](https://hpcc-systems.github.io/HPCC-Platform/devdoc/red_book/HPCC-Systems-Red-Book.md)
+[Red Book](./red_book/HPCC-Systems-Red-Book.md)
 The Platform Red Book provides notices about changes in platform releases that may require some changes to coding practices or operational procedures.
 
 [Platform Overview](../README.md)

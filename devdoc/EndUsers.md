@@ -109,11 +109,19 @@ The ECL IDE is the simple and easy way to create Queries into your data, and ECL
 
 ### ECL Language Extension for Visual Studio Code
 
-This extension adds rich language support for HPCC Systems ECL language for the HPCC-Platform) to VS Code.
+This extension adds rich language support for HPCC Systems ECL language to VS Code.
 
 [ECL Extension on Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=hpcc-systems.ecl)
 
+[VS Code and HPCC Systems Instalation Cheat Sheet](./userdoc/VSCode-and-HPCC-Installation-Cheat-Sheet.md)
+
 ## ECL Watch
+
+### ECL Watch 9.0
+
+This guide is designed to help you transition from using ECL Watch versions prior to Version 9.0.x.
+
+[ECL Watch 9.0 Transition Guide](./userdoc/ECLWatch9-Transition-Guide/ECL-Watch-9.0-Transition-Guide.md)
 
 ## ECLCC
 
@@ -141,6 +149,12 @@ Documentation for ESP API tool.
 Security-related documentation for ESDL library.
 
 [ESDL functions](ESDLFunctions.md) List of ESDL Functions with links to details.
+
+## How to... Video Library
+
+A collection of “How To...” recordings that demonstrate specific tasks and include tips and tricks to help you get the most out of HPCC Systems.
+
+[How to... Youtube Video Library](./userdoc/How-to-Youtube-Library/How-to-YouTube-Video-Library.md)
 
 ## Security
 
