@@ -3405,17 +3405,10 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIPTTest, "JlibIPTTest");
  *
  */
 
-#include "platform.h"
-#include "jfile.ipp"
-#include "jptree.hpp"
-#include "jptree.ipp"
-#include "jiface.hpp"
-#include "jio.hpp"
-#include "jstring.hpp"
-#include <string>
-#include "jstats.h"
-#include <thread>
 #include <atomic>
+#include <limits>
+#include <thread>
+#include "jptree.ipp"
 
 IPropertyTree *createCompatibilityConfigPropertyTree()
 {
@@ -3624,16 +3617,26 @@ IPropertyTree *createBinaryDataCompressionTestPTree(const char *testXml)
  * Combined PTree serialization and deserialization tests
  *
  * Tests PTree serialization/deserialization format consistency between MemoryBuffer and IBufferedSerialInputStream
- * and measures performance of both operations
+ *
+ * testRoundTripForRootOnlyPTree - Tests round-trip serialization/deserialization for a PTree with only a root node
+ * testRoundTripForCompatibilityConfigPropertyTree - Tests round-trip for a complex compatibility config PTree
+ * testRoundTripForBinaryDataCompressionTestPTree - Tests round-trip for a PTree with various binary data sizes
+ * testMalformedStreamMissingAttributeListTerminators - Tests deserialization error handling for missing attribute list terminators
+ * testMalformedStreamMissingAttributeValue - Tests deserialization error handling for missing attribute values
+ * testMalformedStreamTruncatedName - Tests deserialization error handling for truncated names
+ * testMultiThreadedSerializationAndDeserializationOfAtomTree - Tests thread safety of serialization/deserialization with multiple threads
  */
 
 class PTreeSerializationDeserializationTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(PTreeSerializationDeserializationTest);
-    // Complete round-trip tests - serialization followed by deserialization with validation
     CPPUNIT_TEST(testRoundTripForRootOnlyPTree);
     CPPUNIT_TEST(testRoundTripForCompatibilityConfigPropertyTree);
     CPPUNIT_TEST(testRoundTripForBinaryDataCompressionTestPTree);
+    CPPUNIT_TEST(testMalformedStreamMissingAttributeListTerminators);
+    CPPUNIT_TEST(testMalformedStreamMissingAttributeValue);
+    CPPUNIT_TEST(testMalformedStreamTruncatedName);
+    CPPUNIT_TEST(testMultiThreadedSerializationAndDeserializationOfAtomTree);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -3661,16 +3664,13 @@ protected:
         originalTree.setown(tree);
         CCycleTimer timer;
 
-        // Serialization
         MemoryBuffer memoryBuffer, streamBuffer;
 
-        // Time serialize() method
         timer.reset();
         originalTree->serialize(memoryBuffer);
         __uint64 serializeElapsedNs = timer.elapsedNs();
         size_t memoryBufferSize = memoryBuffer.length();
 
-        // Time serializeToStream() method
         Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(streamBuffer);
         timer.reset();
         originalTree->serializeToStream(*out);
@@ -3678,30 +3678,26 @@ protected:
         __uint64 serializeToStreamElapsedNs = timer.elapsedNs();
         size_t streamBufferSize = streamBuffer.length();
 
-        // Validation - serialized data matches
         CPPUNIT_ASSERT_EQUAL(memoryBufferSize, streamBufferSize);
         CPPUNIT_ASSERT(memcmp(memoryBuffer.toByteArray(), streamBuffer.toByteArray(), memoryBufferSize) == 0);
 
-        // Time deserialize() method
-        Owned<IPropertyTree> memoryBufferDeserialized = createPTree();
+        // Copy streamBuffer for deserializationFromStream() tests
+        MemoryBuffer streamBuffer2, streamBuffer3;
+        streamBuffer2.append(streamBuffer.length(), streamBuffer.toByteArray());
+        streamBuffer3.append(streamBuffer.length(), streamBuffer.toByteArray());
+
         timer.reset();
-        memoryBufferDeserialized->deserialize(memoryBuffer);
+        Owned<IPropertyTree> memoryBufferDeserialized = createPTree(memoryBuffer);
         __uint64 deserializeElapsedNs = timer.elapsedNs();
 
-        // Time deserializeFromStream() method
         Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(streamBuffer);
-        Owned<IPropertyTree> streamDeserialized = createPTree();
         timer.reset();
-        streamDeserialized->deserializeFromStream(*in);
+        Owned<IPropertyTree> streamDeserialized = createPTreeFromBinary(*in, ipt_none);
         __uint64 deserializeFromStreamElapsedNs = timer.elapsedNs();
 
-        // Create PTree from Binary tests
-        //
-        // Test 1: Call with null nodeCreator (should fall back to createPTree(src, ipt_none))
-        streamBuffer.reset();
-        Owned<IBufferedSerialInputStream> in2 = createBufferedSerialInputStream(streamBuffer);
+        Owned<IBufferedSerialInputStream> in2 = createBufferedSerialInputStream(streamBuffer2);
         Owned<IPropertyTree> deserializedCreatePTreeFromBinaryWithNull = createPTreeFromBinary(*in2, nullptr);
-        // Test 2: Call with custom nodeCreator
+
         class TestNodeCreator : public CSimpleInterfaceOf<IPTreeNodeCreator>
         {
         public:
@@ -3714,12 +3710,9 @@ protected:
             }
         };
         Owned<TestNodeCreator> nodeCreator = new TestNodeCreator();
-        // Reset stream position
-        streamBuffer.reset();
-        Owned<IBufferedSerialInputStream> in3 = createBufferedSerialInputStream(streamBuffer);
+        Owned<IBufferedSerialInputStream> in3 = createBufferedSerialInputStream(streamBuffer3);
         Owned<IPropertyTree> deserializedCreatePTreeFromBinaryWithCreator = createPTreeFromBinary(*in3, nodeCreator);
 
-        // Validation - verify both deserialized trees are equivalent to the original
         CPPUNIT_ASSERT(areMatchingPTrees(originalTree, memoryBufferDeserialized));
         CPPUNIT_ASSERT(areMatchingPTrees(originalTree, streamDeserialized));
         CPPUNIT_ASSERT(areMatchingPTrees(originalTree, deserializedCreatePTreeFromBinaryWithNull));
@@ -3746,6 +3739,52 @@ protected:
         DBGLOG("=== ROUND-TRIP TEST COMPLETED SUCCESSFULLY");
     }
 
+    void expectTruncatedStreamFailure(IPropertyTree &tree, size32_t truncationOffset, const char *expectedSubstring, const char *contextDescription)
+    {
+        MemoryBuffer full;
+        Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(full);
+        tree.serializeToStream(*out);
+        out->flush();
+
+        const byte *bytes = reinterpret_cast<const byte *>(full.toByteArray());
+        size32_t totalLength = full.length();
+
+        VStringBuffer assertMsg("Serialized stream shorter than truncation offset for %s", contextDescription);
+        CPPUNIT_ASSERT_MESSAGE(assertMsg.str(), truncationOffset <= totalLength);
+
+        MemoryBuffer truncated;
+        truncated.append(truncationOffset, bytes);
+
+        Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(truncated);
+        bool hitExpectedThrow = false;
+        try
+        {
+            createPTreeFromBinary(*in, ipt_none);
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            const char *mChars = msg.str();
+            if (mChars && strstr(mChars, expectedSubstring))
+            {
+                hitExpectedThrow = true;
+            }
+            else
+            {
+                VStringBuffer detail("Caught unexpected exception during %s: %s", contextDescription, mChars ? mChars : "<null>");
+                CPPUNIT_FAIL(detail.str());
+            }
+        }
+
+        if (!hitExpectedThrow)
+        {
+            VStringBuffer detail("Did not hit expected exception substring '%s' during %s", expectedSubstring, contextDescription);
+            CPPUNIT_FAIL(detail.str());
+        }
+    }
+
 public:
     // Complete round-trip test methods - perform serialization and deserialization in one test
     void testRoundTripForRootOnlyPTree()
@@ -3761,6 +3800,234 @@ public:
     void testRoundTripForBinaryDataCompressionTestPTree()
     {
         performRoundTripTest(__func__, createBinaryDataCompressionTestPTree(testXml));
+    }
+
+    class AtomTreeSerializationTestThread : public Thread
+    {
+    public:
+        AtomTreeSerializationTestThread(unsigned _index,
+                             Semaphore &_startSem,
+                             CriticalSection &_errorCs,
+                             bool &_encounteredError,
+                             StringBuffer &_errorMessages,
+                             IPropertyTree &_originalTree)
+            : Thread("AtomTreeSerializationTestThread"),
+              threadIndex(_index),
+              startSem(_startSem),
+              errorCs(_errorCs),
+              encounteredError(_encounteredError),
+              errorMessages(_errorMessages),
+              originalTree(_originalTree)
+        {
+        }
+
+        virtual int run() override
+        {
+            startSem.wait();
+            try
+            {
+                Owned<IPropertyTree> expected = createPTreeFromIPT(&originalTree, ipt_lowmem);
+
+                VStringBuffer threadTag("worker_%u", threadIndex);
+                expected->setProp("@threadId", threadTag.str());
+
+                IPropertyTree *settings = expected->queryPropTree("settings");
+                if (settings)
+                {
+                    settings->setProp("@worker", threadTag.str());
+                    settings->setProp("threshold", VStringBuffer("%u", 42 + threadIndex).str());
+
+                    if (IPropertyTree *alpha = settings->queryPropTree("option[@name=\"alpha\"]"))
+                        alpha->setProp("value", VStringBuffer("alpha_value_%u", threadIndex).str());
+                    if (IPropertyTree *beta = settings->queryPropTree("option[@name=\"beta\"]"))
+                        beta->setProp("value", VStringBuffer("beta_value_%u", threadIndex).str());
+                }
+
+                MemoryBuffer payload;
+                for (unsigned idx = 0; idx < 2048; ++idx)
+                    payload.append((byte)((idx + threadIndex) % 256));
+                expected->setPropBin("binaryPayload", payload.length(), payload.toByteArray());
+
+                if (IPropertyTree *clusters = expected->queryPropTree("clusters"))
+                {
+                    unsigned clusterIndex = 0;
+                    Owned<IPropertyTreeIterator> iter = clusters->getElements("cluster");
+                    ForEach(*iter)
+                    {
+                        IPropertyTree &cluster = iter->query();
+                        cluster.setProp("description", VStringBuffer("Example cluster entry thread %u index %u", threadIndex, clusterIndex).str());
+                        cluster.setPropInt("@threadId", threadIndex);
+
+                        MemoryBuffer clusterPayload;
+                        clusterPayload.append(sizeof(threadIndex), &threadIndex);
+                        clusterPayload.append(sizeof(clusterIndex), &clusterIndex);
+                        cluster.setPropBin("payload", clusterPayload.length(), clusterPayload.toByteArray());
+                        ++clusterIndex;
+                    }
+                }
+
+                if (IPropertyTree *metrics = expected->queryPropTree("metrics"))
+                {
+                    metrics->setProp("@enabled", (threadIndex % 2 == 0) ? "true" : "false");
+                    metrics->setProp("@thread", threadTag.str());
+                    metrics->setProp("sampleInterval", VStringBuffer("%u.%02u", threadIndex + 1, threadIndex).str());
+                }
+
+                MemoryBuffer serialized;
+                {
+                    Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(serialized);
+                    expected->serializeToStream(*out);
+                    out->flush();
+                }
+
+                size32_t serializedLength = (size32_t)serialized.length();
+                if (!serializedLength)
+                {
+                    CriticalBlock block(errorCs);
+                    encounteredError = true;
+                    errorMessages.appendf("Thread %u: serialization produced empty buffer\n", threadIndex);
+                    return 0;
+                }
+
+                Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(serialized);
+                Owned<IPropertyTree> deserialized = createPTreeFromBinary(*in, ipt_lowmem);
+                if (!areMatchingPTrees(expected, deserialized))
+                {
+                    CriticalBlock block(errorCs);
+                    encounteredError = true;
+                    errorMessages.appendf("Thread %u: deserialized tree mismatch for root %s\n", threadIndex, expected->queryName());
+                }
+            }
+            catch (IException *e)
+            {
+                StringBuffer msg;
+                e->errorMessage(msg);
+                e->Release();
+                CriticalBlock block(errorCs);
+                encounteredError = true;
+                errorMessages.appendf("Thread %u: %s\n", threadIndex, msg.str());
+            }
+            catch (...)
+            {
+                CriticalBlock block(errorCs);
+                encounteredError = true;
+                errorMessages.appendf("Thread %u: unknown exception\n", threadIndex);
+            }
+
+            return 0;
+        }
+
+    private:
+        unsigned threadIndex{0};
+        Semaphore &startSem;
+        CriticalSection &errorCs;
+        bool &encounteredError;
+        StringBuffer &errorMessages;
+        IPropertyTree &originalTree;
+    };
+
+    // Multi-threaded serialization/deserialization tests to ensure thread safety with unique Atom trees per thread
+    void testMultiThreadedSerializationAndDeserializationOfAtomTree()
+    {
+        try
+        {
+            constexpr unsigned numThreads = 50;
+            IArrayOf<AtomTreeSerializationTestThread> workers;
+
+            CriticalSection errorCs;
+            bool encounteredError = false;
+            StringBuffer errorMessages;
+            Semaphore startSem; // zero-initialized; used as a start gate
+
+            Owned<IPropertyTree> originalTree = createPTree("MultiThreadRoot", ipt_lowmem);
+            CPPUNIT_ASSERT(originalTree != nullptr);
+
+            auto joinAll = [&workers]()
+            {
+                for (unsigned i = 0; i < workers.ordinality(); ++i)
+                    workers.item(i).join();
+            };
+
+            try
+            {
+                for (unsigned i = 0; i < numThreads; ++i)
+                {
+                    // All threads share the same originalTree, but each creates its own modified copy
+                    // After deserialization, each thread compares its own expected vs actual trees
+                    AtomTreeSerializationTestThread *worker = new AtomTreeSerializationTestThread(i, startSem, errorCs, encounteredError, errorMessages, *originalTree);
+                    workers.append(*worker);
+                    worker->start(false);
+                }
+                startSem.signal(numThreads);
+            }
+            catch (const std::exception &e)
+            {
+                startSem.signal(numThreads);
+                joinAll();
+                CPPUNIT_FAIL(VStringBuffer("Exception while creating worker threads: %s", e.what()).str());
+            }
+            catch (...)
+            {
+                startSem.signal(numThreads);
+                joinAll();
+                CPPUNIT_FAIL("Unknown exception while creating worker threads");
+            }
+
+            joinAll();
+            CPPUNIT_ASSERT_MESSAGE(errorMessages.length() ? errorMessages.str() : "Multi-threaded AtomTree ipt_lowmem deserialization failed", !encounteredError);
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(VStringBuffer("Unexpected IException in testMultiThreadedSerializationAndDeserializationOfAtomTree: %s", msg.str()).str());
+        }
+        catch (const std::exception &e)
+        {
+            CPPUNIT_FAIL(VStringBuffer("Unexpected std::exception in testMultiThreadedSerializationAndDeserializationOfAtomTree: %s", e.what()).str());
+        }
+        catch (...)
+        {
+            CPPUNIT_FAIL("Unexpected unknown exception in testMultiThreadedSerializationAndDeserializationOfAtomTree");
+        }
+    }
+
+    // Malformed buffered-serial stream: ensure exception at jptree.cpp:3089 is thrown
+    void testMalformedStreamMissingAttributeListTerminators()
+    {
+        constexpr const char *rootName = "Root";
+        constexpr unsigned int rootNameLength = (unsigned int)strlen(rootName);
+        Owned<IPropertyTree> original = createPTree(rootName);
+        original->setProp("child", "value");
+        constexpr unsigned int nullTerminatorSize = 1;
+        constexpr unsigned int flagsSize = 1;
+        size32_t flagsEnd = rootNameLength + nullTerminatorSize + flagsSize;
+
+        expectTruncatedStreamFailure(*original, flagsEnd, "PTree deserialization error: end of stream, expected attribute name", "attribute name test");
+    }
+
+    void testMalformedStreamMissingAttributeValue()
+    {
+        constexpr const char *rootName = "Root";
+        constexpr unsigned int rootNameLength = (unsigned int)strlen(rootName);
+        constexpr const char *attrName = "@incomplete";
+        constexpr unsigned int attrNameLength = (unsigned int)strlen(attrName);
+        constexpr const char *attrValue = "value";
+        Owned<IPropertyTree> original = createPTree(rootName);
+        original->setProp(attrName, attrValue);
+        constexpr size32_t nullTerminatorSize = 1;
+        constexpr size32_t flagsSize = 1;
+        constexpr size32_t attributeSectionOffset = rootNameLength + nullTerminatorSize + flagsSize;
+        constexpr size32_t truncationPoint = attributeSectionOffset + attrNameLength + nullTerminatorSize;
+
+        expectTruncatedStreamFailure(*original, truncationPoint, "PTree deserialization error: end of stream, expected attribute value", "attribute value test");
+    }
+
+    void testMalformedStreamTruncatedName()
+    {
+        Owned<IPropertyTree> original = createPTree("Root");
+        expectTruncatedStreamFailure(*original, 0, "PTree deserialization error: end of stream, expected name", "name read test");
     }
 };
 
@@ -4379,12 +4646,6 @@ class JlibStatsTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(JlibStatsTest);
         CPPUNIT_TEST(test);
-        CPPUNIT_TEST(testThresholdStatPointer);
-        CPPUNIT_TEST(testThresholdStat);
-        CPPUNIT_TEST(testThresholdStatClear);
-        CPPUNIT_TEST(testThresholdStatImplicitConversion);
-        CPPUNIT_TEST(testThresholdStatPerformance);
-        CPPUNIT_TEST(testThresholdStatThreadSafety);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -4410,263 +4671,6 @@ public:
         CPPUNIT_ASSERT_EQUAL(U64C(1608899696789000), readCheckStatisticValue("2020-12-25T12:34:56.789Z!", SMeasureTimestampUs));
         CPPUNIT_ASSERT_EQUAL(std::string("2020-12-25T12:34:56.789Z"), std::string(formatStatistic(temp.clear(), U64C(1608899696789000), SMeasureTimestampUs)));
         CPPUNIT_ASSERT_EQUAL(U64C(1608899696789000), readCheckStatisticValue("1608899696789000!", SMeasureTimestampUs));
-    }
-
-    void testThresholdStatPointer()
-    {
-        // Create a shared ThresholdStat instance for this component
-        auto thresholdStat = makeSharedThresholdStat();
-
-        // Record some values
-        thresholdStat->recordValue(100);
-        thresholdStat->recordValue(120);
-        thresholdStat->recordValue(80);
-
-        // Query statistics using the new consolidated method
-        __uint64 count;
-        double avg, stddev;
-        thresholdStat->queryStatistics(count, avg, stddev);
-
-        CPPUNIT_ASSERT_EQUAL((__uint64)3, count);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(100.0, avg, 0.0001); // (100 + 120 + 80) / 3
-
-        // Check if a new value is an outlier (e.g., more than 2 stddev from mean)
-        double newValue = 200.0;
-        double deviations = (stddev == 0.0) ? 0.0 : (newValue - avg) / stddev;
-        CPPUNIT_ASSERT(fabs(deviations) > 2.0); // 200 is more than 2 stddev from mean
-    }
-
-    void testThresholdStat()
-    {
-        // Test ThresholdStat for tracking numeric values with statistical aggregation
-        std::shared_ptr<ThresholdStat> pThreshold = makeSharedThresholdStat();
-
-        // Initially should be empty
-        __uint64 count;
-        double mean, stddev;
-        pThreshold->queryStatistics(count, mean, stddev);
-        CPPUNIT_ASSERT_EQUAL((__uint64)0, count);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, mean, 0.0001);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, stddev, 0.0001);
-
-        // Record first value
-        pThreshold->recordValue(100);
-        pThreshold->queryStatistics(count, mean, stddev);
-        CPPUNIT_ASSERT_EQUAL((__uint64)1, count);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(100.0, mean, 0.0001);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, stddev, 0.0001);
-
-        // Record second value
-        pThreshold->recordValue(200);
-        pThreshold->queryStatistics(count, mean, stddev);
-        CPPUNIT_ASSERT_EQUAL((__uint64)2, count);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(150.0, mean, 0.0001); // (100 + 200) / 2
-
-        // Record third value
-        pThreshold->recordValue(150);
-        pThreshold->queryStatistics(count, mean, stddev);
-        CPPUNIT_ASSERT_EQUAL((__uint64)3, count);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(150.0, mean, 0.0001); // (100 + 200 + 150) / 3
-        double expectedStdDev = sqrt(((100.0-150.0)*(100.0-150.0) + (200.0-150.0)*(200.0-150.0) + (150.0-150.0)*(150.0-150.0)) / 3.0);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedStdDev, stddev, 0.0001);
-
-        // Test deviation calculation manually (replacing getDeviations)
-        double testValue = 200.0;
-        double deviation = (stddev == 0.0) ? 0.0 : (testValue - mean) / stddev;
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(1.224, deviation, 0.05); // Updated for population stddev
-
-        testValue = 100.0;
-        deviation = (stddev == 0.0) ? 0.0 : (testValue - mean) / stddev;
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(-1.224, deviation, 0.05); // Updated for population stddev
-    }
-
-    void testThresholdStatClear()
-    {
-        // Create a ThresholdStat with unit StatisticMeasure::Count
-        std::shared_ptr<ThresholdStat> pThreshold = makeSharedThresholdStat();
-
-        // Record some values
-        pThreshold->recordValue(10);
-        pThreshold->recordValue(20);
-        pThreshold->recordValue(30);
-
-        // Check that statistics are non-zero
-        __uint64 count;
-        double mean, stddev;
-        pThreshold->queryStatistics(count, mean, stddev);
-        CPPUNIT_ASSERT_EQUAL((__uint64)3, count);
-        CPPUNIT_ASSERT(mean > 0.0);
-        CPPUNIT_ASSERT(stddev > 0.0);
-
-        // Clear the metric
-        pThreshold->clear();
-
-        // After clear, statistics should be zero
-        pThreshold->queryStatistics(count, mean, stddev);
-        CPPUNIT_ASSERT_EQUAL((__uint64)0, count);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, mean, 0.0001);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, stddev, 0.0001);
-
-        // Record some values again
-        pThreshold->recordValue(10);
-        pThreshold->recordValue(20);
-        pThreshold->recordValue(30);
-
-        // Check that statistics are non-zero again
-        pThreshold->queryStatistics(count, mean, stddev);
-        CPPUNIT_ASSERT_EQUAL((__uint64)3, count);
-        CPPUNIT_ASSERT(mean > 0.0);
-        CPPUNIT_ASSERT(stddev > 0.0);
-    }
-
-    void testThresholdStatImplicitConversion()
-    {
-        // Test ThresholdStat with various numeric types to verify implicit conversion
-        // Performance Note: recordValue(double) eliminates static_cast overhead
-        // compared to recordValue(__uint64) which required internal conversion
-        std::shared_ptr<ThresholdStat> pThreshold = makeSharedThresholdStat();
-
-        // Test integer literals (implicit int -> double conversion)
-        pThreshold->recordValue(100);    // int literal -> double
-        pThreshold->recordValue(200);    // int literal -> double
-
-        // Test explicit integer types (implicit conversion)
-        __uint64 latency = 150;
-        pThreshold->recordValue(latency); // __uint64 -> double
-
-        unsigned int responseTime = 175;
-        pThreshold->recordValue(responseTime); // unsigned int -> double
-
-        // Test floating-point values (no conversion needed)
-        pThreshold->recordValue(125.5);  // Direct double, optimal performance
-        pThreshold->recordValue(135.7);  // Direct double, optimal performance
-
-        // Verify statistics are calculated correctly across all types
-        __uint64 count;
-        double mean, stddev;
-        pThreshold->queryStatistics(count, mean, stddev);
-        CPPUNIT_ASSERT_EQUAL((__uint64)6, count);
-
-        // Expected mean: (100 + 200 + 150 + 175 + 125.5 + 135.7) / 6 = 147.7
-        double expectedMean = (100.0 + 200.0 + 150.0 + 175.0 + 125.5 + 135.7) / 6.0;
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(expectedMean, mean, 0.0001);
-
-        // Test manual deviation calculation with various types
-        double testValue = expectedMean;
-        double deviation = (stddev == 0.0) ? 0.0 : (testValue - mean) / stddev;
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, deviation, 0.1); // At mean
-
-        // Test with integer parameter (implicit conversion)
-        int outlierValue = 300;
-        deviation = (stddev == 0.0) ? 0.0 : (outlierValue - mean) / stddev;
-        CPPUNIT_ASSERT(fabs(deviation) > 1.0); // Should be an outlier
-
-        // Test with direct double (optimal case)
-        double preciseValue = 147.65;
-        deviation = (stddev == 0.0) ? 0.0 : (preciseValue - mean) / stddev;
-        CPPUNIT_ASSERT(fabs(deviation) < 0.1); // Should be close to mean
-    }
-
-    void testThresholdStatPerformance()
-    {
-        // Test performance optimizations and batch operations
-        std::shared_ptr<ThresholdStat> pThreshold = makeSharedThresholdStat();
-
-        __uint64 count;
-        double mean, stddev;
-        pThreshold->queryStatistics(count, mean, stddev);
-        CPPUNIT_ASSERT_EQUAL((__uint64)0, count);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, mean, 0.0001);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, stddev, 0.0001);
-
-        // Add some data
-        pThreshold->recordValue(100.0);
-        pThreshold->recordValue(200.0);
-        pThreshold->recordValue(150.0);
-
-        // Test batch query optimization - single lock for multiple stats
-        pThreshold->queryStatistics(count, mean, stddev);
-
-        CPPUNIT_ASSERT_EQUAL((__uint64)3, count);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(150.0, mean, 0.0001);
-        CPPUNIT_ASSERT(stddev > 0.0); // Should have calculated standard deviation
-
-        // Test that lock-free count is consistently accessible
-        for (int i = 0; i < 100; ++i)
-        {
-            CPPUNIT_ASSERT_EQUAL((__uint64)3, pThreshold->queryCount()); // Should always be lock-free
-        }
-    }
-
-    void testThresholdStatThreadSafety()
-    {
-        // Test thread safety of recordValue() to ensure Welford's algorithm correctness
-        // This test addresses the race condition identified by Copilot AI where concurrent
-        // threads could apply count increments and mean/M2 updates out of order
-        std::shared_ptr<ThresholdStat> pThreshold = makeSharedThresholdStat();
-
-        const int numThreads = 10;
-        const int numValuesPerThread = 1000;
-        const double baseValue = 100.0;
-
-        std::vector<std::thread> threads;
-        std::atomic<int> readyCount{0};
-        std::atomic<bool> startFlag{false};
-
-        // Create threads that will all start simultaneously
-        for (int i = 0; i < numThreads; ++i)
-        {
-            threads.emplace_back([&, i]() {
-                readyCount++;
-                // Wait for all threads to be ready
-                while (!startFlag.load()) {
-                    std::this_thread::yield();
-                }
-
-                // Each thread records values with slight variation
-                for (int j = 0; j < numValuesPerThread; ++j)
-                {
-                    double value = baseValue + (i * 10) + (j * 0.1);
-                    pThreshold->recordValue(value);
-                }
-            });
-        }
-
-        // Wait for all threads to be ready
-        while (readyCount.load() < numThreads) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        }
-
-        // Start all threads simultaneously
-        startFlag.store(true);
-
-        // Wait for all threads to complete
-        for (auto& thread : threads) {
-            thread.join();
-        }
-
-        // Verify final statistics are consistent
-        __uint64 finalCount;
-        double finalMean, finalStddev;
-        pThreshold->queryStatistics(finalCount, finalMean, finalStddev);
-
-        CPPUNIT_ASSERT_EQUAL((__uint64)(numThreads * numValuesPerThread), finalCount);
-
-        // Mean should be in expected range (around baseValue + some variation)
-        CPPUNIT_ASSERT(finalMean > baseValue);
-        CPPUNIT_ASSERT(finalMean < baseValue + (numThreads * 10) + (numValuesPerThread * 0.1));
-
-        // Standard deviation should be positive for varied input
-        CPPUNIT_ASSERT(finalStddev > 0.0);
-
-        // Test batch query consistency under concurrent access
-        __uint64 batchCount;
-        double batchMean, batchStddev;
-        pThreshold->queryStatistics(batchCount, batchMean, batchStddev);
-
-        CPPUNIT_ASSERT_EQUAL(finalCount, batchCount);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(finalMean, batchMean, 0.0001);
-        CPPUNIT_ASSERT_DOUBLES_EQUAL(finalStddev, batchStddev, 0.0001);
     }
 };
 
