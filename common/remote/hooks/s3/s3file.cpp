@@ -40,6 +40,8 @@
 #include "jptree.hpp"
 #include "jexcept.hpp"
 #include "jtime.hpp"
+#include "jplane.hpp"
+#include "jsecrets.hpp"
 
 #include "s3file.hpp"
 
@@ -50,15 +52,14 @@
 using namespace Aws;
 
 // Constants
-constexpr const char* s3FilePrefix = "s3://";
-constexpr size_t s3FilePrefixLen = 5;  // Length of "s3://" for pointer arithmetic
+constexpr const char* s3FilePrefix = "s3:";
+constexpr size_t s3FilePrefixLen = 3;  // Length of "s3:" for pointer arithmetic
 constexpr size32_t minMultipartSize = 5 * 1024 * 1024; // 5MB AWS minimum
 constexpr unsigned defaultMaxRetries = 3;
 
 // Global AWS initialization with reference counting
 static unsigned awsInitRefCount = 0;
 static CriticalSection awsCS;
-static S3Config globalS3Config;
 static Aws::SDKOptions awsOptions;
 
 static void initAWS()
@@ -94,46 +95,43 @@ static void shutdownAWS()
     awsInitRefCount--;
 }
 
-// S3Config implementation
-S3Config::S3Config(IPropertyTree* _config)
+// S3 Client cache key based on plane and device
+struct S3ClientKey
 {
-    loadFromConfig(_config);
+    StringAttr planeName;
+    unsigned device;
+
+    bool operator==(const S3ClientKey& other) const
+    {
+        return (planeName == other.planeName) && (device == other.device);
+    }
+};
+
+// Hash specialization for S3ClientKey
+namespace std {
+    template<>
+    struct hash<S3ClientKey>
+    {
+        size_t operator()(const S3ClientKey& key) const noexcept
+        {
+            unsigned h = 0;
+            if (key.planeName.str())
+                h = hashc((const unsigned char*)key.planeName.str(), key.planeName.length(), h);
+            h = hashvalue(key.device, h);
+            return h;
+        }
+    };
 }
 
-void S3Config::loadFromConfig(IPropertyTree* _config)
-{
-    if (!_config)
-        return;
-
-    // Store strings using StringAttr to own the memory
-    const char* regionStr = _config->queryProp("@region");
-    const char* endpointStr = _config->queryProp("@endpoint");
-
-    region.set(regionStr ? regionStr : "us-east-1");
-    endpoint.set(endpointStr ? endpointStr : "");
-
-    useSSL = _config->getPropBool("@useSSL", true);
-    useVirtualHosting = _config->getPropBool("@useVirtualHosting", true);
-    readAheadSize = _config->getPropInt("@readAheadSize", 4 * 1024 * 1024);
-    writeBufferSize = _config->getPropInt("@writeBufferSize", 5 * 1024 * 1024);
-    maxRetries = _config->getPropInt("@maxRetries", 3);
-    timeoutMs = _config->getPropInt("@timeoutMs", 30000);
-
-    // Validate settings
-    if (writeBufferSize < minMultipartSize)
-        writeBufferSize = minMultipartSize;
-}
-
-// S3 Client management
 class S3ClientManager
 {
 private:
     mutable CriticalSection cs;
-    std::unordered_map<S3Config, std::unique_ptr<Aws::S3::S3Client>> clients;
+    std::unordered_map<S3ClientKey, std::unique_ptr<Aws::S3::S3Client>> clients;
     bool initialized = false;
 
 public:
-    Aws::S3::S3Client& getClient(const S3Config& config)
+    Aws::S3::S3Client& getClient(const char* planeName, unsigned device)
     {
         CriticalBlock block(cs);
         if (!initialized)
@@ -142,15 +140,19 @@ public:
             initialized = true;
         }
 
-        if (auto it = clients.find(config); it != clients.end())
+        S3ClientKey key;
+        key.planeName.set(planeName);
+        key.device = device;
+
+        if (auto it = clients.find(key); it != clients.end())
         {
             return *(it->second);
         }
         else
         {
-            std::unique_ptr<Aws::S3::S3Client> client = createClient(config);
+            std::unique_ptr<Aws::S3::S3Client> client = createClient(planeName, device);
             Aws::S3::S3Client& ref = *client;
-            clients.emplace(config, std::move(client));
+            clients.emplace(key, std::move(client));
             return ref;
         }
     }
@@ -173,29 +175,64 @@ public:
     }
 
 private:
-    std::unique_ptr<Aws::S3::S3Client> createClient(const S3Config& config)
+    std::unique_ptr<Aws::S3::S3Client> createClient(const char* planeName, unsigned device)
     {
+        // Load plane configuration
+        Owned<const IPropertyTree> plane = getStoragePlaneConfig(planeName, true);
+        const IPropertyTree * storageapi = plane->queryPropTree("storageapi");
+        if (!storageapi)
+            throw makeStringExceptionV(99, "No storage api defined for plane %s", planeName);
+
+        // Get bucket configuration by device index
+        VStringBuffer childPath("buckets[%u]", device);
+        const IPropertyTree * bucketInfo = storageapi->queryPropTree(childPath);
+        if (!bucketInfo)
+            throw makeStringExceptionV(99, "Missing bucket specification for device %u in plane %s", device, planeName);
+
+        // Build AWS client configuration
         Aws::Client::ClientConfiguration clientConfig;
 
-        if (!config.region.isEmpty())
+        const char* regionStr = storageapi->queryProp("@region");
+        if (regionStr && !isEmptyString(regionStr))
+            clientConfig.region = regionStr;
+
+        const char* endpointStr = storageapi->queryProp("@endpoint");
+        if (endpointStr && !isEmptyString(endpointStr))
+            clientConfig.endpointOverride = endpointStr;
+
+        clientConfig.scheme = storageapi->getPropBool("@useSSL", true) ? Aws::Http::Scheme::HTTPS : Aws::Http::Scheme::HTTP;
+        clientConfig.connectTimeoutMs = storageapi->getPropInt("@timeoutMs", 30000);
+        clientConfig.requestTimeoutMs = clientConfig.connectTimeoutMs * 2;
+        clientConfig.retryStrategy = std::make_shared<Aws::Client::DefaultRetryStrategy>(storageapi->getPropInt("@maxRetries", defaultMaxRetries));
+
+        // Use secret-based credentials if provided, otherwise use default credential chain
+        const char* secretName = bucketInfo->queryProp("@secret");
+
+        if (secretName && !isEmptyString(secretName))
         {
-            clientConfig.region = config.region.str();
-        }
-        // If no region specified in config, don't set a default - let AWS SDK auto-detect
-        // from environment variables, AWS config file, or use the bucket's region
+            StringBuffer accessKey, keyId;
+            getSecretValue(accessKey, "storage", secretName, "aws-access-key", true);
+            getSecretValue(keyId, "storage", secretName, "aws-key-id", true);
 
-        if (!config.endpoint.isEmpty())
+            auto credentials = Aws::Auth::AWSCredentials(keyId.str(), accessKey.str());
+            return std::make_unique<Aws::S3::S3Client>(
+                credentials, 
+                clientConfig, 
+                Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::RequestDependent, 
+                true,  // useVirtualAddressing
+                Aws::S3::US_EAST_1_REGIONAL_ENDPOINT_OPTION::NOT_SET);
+        }
+        else
         {
-            clientConfig.endpointOverride = config.endpoint.str();
+            // Environment variables or ~/.aws/credentials
+            auto credentialsProvider = std::make_shared<Aws::Auth::DefaultAWSCredentialsProviderChain>();
+            return std::make_unique<Aws::S3::S3Client>(
+                credentialsProvider, 
+                clientConfig, 
+                Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::RequestDependent, 
+                true,  // useVirtualAddressing
+                Aws::S3::US_EAST_1_REGIONAL_ENDPOINT_OPTION::NOT_SET);
         }
-
-        clientConfig.scheme = config.useSSL ? Aws::Http::Scheme::HTTPS : Aws::Http::Scheme::HTTP;
-        clientConfig.connectTimeoutMs = config.timeoutMs;
-        clientConfig.requestTimeoutMs = config.timeoutMs * 2;
-        clientConfig.retryStrategy = std::make_shared<Aws::Client::DefaultRetryStrategy>(config.maxRetries);
-
-        auto credentialsProvider = std::make_shared<Aws::Auth::DefaultAWSCredentialsProviderChain>();
-        return std::make_unique<Aws::S3::S3Client>(credentialsProvider, clientConfig, Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::RequestDependent, false);
     }
 };
 
@@ -229,19 +266,6 @@ static void logAwsError(const char* operation, const Aws::Client::AWSError<Aws::
            operation, bucket, key,
            error.GetExceptionName().c_str(),
            error.GetMessage().c_str());
-}
-
-static void parseS3Url(const char* s3Url, StringBuffer& bucket, StringBuffer& key)
-{
-    if (!s3Url)
-        throw makeStringException(-1, "S3 URL cannot be null");
-    const char* path = s3Url + s3FilePrefixLen;
-    const char* slash = strchr(path, '/');
-    if (!slash)
-        throw makeStringExceptionV(-1, "Invalid S3 URL format: %s (expected s3://bucket/key)", s3Url);
-
-    bucket.append(slash - path, path);
-    key.set(slash + 1);
 }
 
 static void handleRequestBackoff(const char* message, unsigned attempt, unsigned maxRetries)
@@ -289,6 +313,10 @@ static void handleRequestException(const std::exception& e, const char* op, unsi
 
     handleRequestBackoff(msg, attempt, maxRetries);
 }
+
+//---------------------------------------------------------------------------------------------------------------------
+// Forward declarations
+class S3File;
 
 //---------------------------------------------------------------------------------------------------------------------
 // ReadAhead buffer for efficient S3 reading
@@ -371,14 +399,13 @@ class S3FileReadIO : implements CInterfaceOf<IFileIO>
 {
 private:
     Linked<S3File> file;
-    S3Config config;
     FileIOStats stats;
     std::unique_ptr<S3ReadAheadBuffer> readAheadBuffer;
     CriticalSection ioCS;
     offset_t cachedFileSize;
 
 public:
-    S3FileReadIO(S3File* _file, const S3Config& _config);
+    S3FileReadIO(S3File* _file);
 
     // IFileIO interface
     virtual size32_t read(offset_t pos, size32_t len, void* data) override;
@@ -409,20 +436,21 @@ private:
 class S3MultipartUpload
 {
 private:
+    StringAttr planeName;
+    unsigned device;
     StringAttr bucket;
     StringAttr key;
     StringAttr uploadId;
     StringBuffer fullPath;
     Aws::Vector<Aws::S3::Model::CompletedPart> completedParts;
     unsigned partNumber = 1;
-    S3Config config;
     bool active = false;
 
 public:
-    S3MultipartUpload(const char* _bucket, const char* _key, const S3Config& _config)
-        : bucket(_bucket), key(_key), config(_config)
+    S3MultipartUpload(const char* _planeName, unsigned _device, const char* _bucket, const char* _key)
+        : planeName(_planeName), device(_device), bucket(_bucket), key(_key)
     {
-        fullPath.appendf("s3://%s/%s", _bucket, _key);
+        fullPath.appendf("s3:%s/%s", _planeName, _key);
     }
 
     ~S3MultipartUpload()
@@ -437,7 +465,7 @@ public:
     bool abort();
 
 private:
-    Aws::S3::S3Client& getClient() { return getS3ClientManager().getClient(config); }
+    Aws::S3::S3Client& getClient() { return getS3ClientManager().getClient(planeName.str(), device); }
 };
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -446,7 +474,6 @@ class S3FileWriteIO : implements CInterfaceOf<IFileIO>
 {
 private:
     Linked<S3File> file;
-    S3Config config;
     FileIOStats stats;
     MemoryBuffer writeBuffer;
     std::unique_ptr<S3MultipartUpload> multipartUpload;
@@ -455,7 +482,7 @@ private:
     offset_t currentPos = 0;
 
 public:
-    S3FileWriteIO(S3File* _file, const S3Config& _config);
+    S3FileWriteIO(S3File* _file);
     virtual void beforeDispose() override;
 
     // IFileIO interface
@@ -491,9 +518,14 @@ class S3File : implements CInterfaceOf<IFile>
 
 private:
     StringBuffer fullName;
+    StringAttr planeName;
     StringBuffer bucketName;
     StringBuffer keyName;
-    S3Config config;
+    unsigned device = 1;
+
+    // Configuration from plane
+    size32_t readAheadSize = 4 * 1024 * 1024; // 4MB default
+    size32_t writeBufferSize = 5 * 1024 * 1024; // 5MB minimum for multipart
 
     // Cached metadata
     mutable CriticalSection metaCS;
@@ -504,7 +536,7 @@ private:
     mutable time_t modifiedTime = 0;
 
 public:
-    S3File(const char* s3FileName, const S3Config& _config);
+    S3File(const char* s3FileName);
 
     // IFile interface - query methods
     virtual const char* queryFilename() override { return fullName.str(); }
@@ -546,16 +578,16 @@ protected:
     void ensureMetadata() const;
     void gatherMetadata() const;
     void invalidateMeta() { CriticalBlock block(metaCS); haveMeta = false; }
-    Aws::S3::S3Client& getClient() const { return getS3ClientManager().getClient(config); }
+    Aws::S3::S3Client& getClient() const { return getS3ClientManager().getClient(planeName.str(), device); }
 };
 
 //---------------------------------------------------------------------------------------------------------------------
 // Implementation of S3FileReadIO
 
-S3FileReadIO::S3FileReadIO(S3File* _file, const S3Config& _config)
-    : file(_file), config(_config), cachedFileSize(_file->size())
+S3FileReadIO::S3FileReadIO(S3File* _file)
+    : file(_file), cachedFileSize(_file->size())
 {
-    readAheadBuffer = std::make_unique<S3ReadAheadBuffer>(config.readAheadSize);
+    readAheadBuffer = std::make_unique<S3ReadAheadBuffer>(file->readAheadSize);
 }
 
 size32_t S3FileReadIO::read(offset_t pos, size32_t len, void* data)
@@ -594,7 +626,7 @@ size32_t S3FileReadIO::read(offset_t pos, size32_t len, void* data)
 
 void S3FileReadIO::fillReadAheadBuffer(offset_t pos)
 {
-    size32_t readSize = config.readAheadSize;
+    size32_t readSize = file->readAheadSize;
     if (pos + readSize > cachedFileSize)
         readSize = (size32_t)(cachedFileSize - pos);
 
@@ -839,10 +871,10 @@ bool S3MultipartUpload::abort()
 //---------------------------------------------------------------------------------------------------------------------
 // Implementation of S3FileWriteIO
 
-S3FileWriteIO::S3FileWriteIO(S3File* _file, const S3Config& _config)
-    : file(_file), config(_config)
+S3FileWriteIO::S3FileWriteIO(S3File* _file)
+    : file(_file)
 {
-    writeBuffer.ensureCapacity(config.writeBufferSize);
+    writeBuffer.ensureCapacity(file->writeBufferSize);
 }
 
 void S3FileWriteIO::beforeDispose()
@@ -884,7 +916,7 @@ size32_t S3FileWriteIO::write(offset_t pos, size32_t len, const void* data)
     currentPos += len;
 
     // If buffer is full, flush it
-    if (writeBuffer.length() >= config.writeBufferSize)
+    if (writeBuffer.length() >= file->writeBufferSize)
         flushBuffer();
 
     stats.ioWrites++;
@@ -920,7 +952,7 @@ void S3FileWriteIO::flushBuffer()
         {
             // Use multipart upload for large files
             multipartUpload = std::make_unique<S3MultipartUpload>(
-                file->bucketName.str(), file->keyName.str(), config);
+                file->planeName.str(), file->device, file->bucketName.str(), file->keyName.str());
             if (!multipartUpload->initiate())
                 throw makeStringException(-1, "Failed to initiate multipart upload");
         }
@@ -1013,10 +1045,71 @@ IFile* S3FileWriteIO::queryFile() const
 //---------------------------------------------------------------------------------------------------------------------
 // Implementation of S3File
 
-S3File::S3File(const char* s3FileName, const S3Config& _config)
-    : fullName(s3FileName), config(_config)
+S3File::S3File(const char* s3FileName)
+    : fullName(s3FileName)
 {
-    parseS3Url(s3FileName, bucketName, keyName);
+    if (startsWith(fullName, s3FilePrefix))
+    {
+        //format is s3:plane[/device]/path
+        const char * filename = fullName + strlen(s3FilePrefix);
+        const char * slash = strchr(filename, '/');
+        if (!slash)
+            throw makeStringException(99, "Missing / in s3: file reference");
+
+        StringBuffer planeNameBuf(slash-filename, filename);
+        planeName.set(planeNameBuf);
+        Owned<const IPropertyTree> plane = getStoragePlaneConfig(planeNameBuf, true);
+        const IPropertyTree * storageapi = plane->queryPropTree("storageapi");
+        if (!storageapi)
+            throw makeStringExceptionV(99, "No storage api defined for plane %s", planeNameBuf.str());
+        filename = slash+1; // advance past slash
+
+        const char * api = storageapi->queryProp("@type");
+        if (!api)
+            throw makeStringExceptionV(99, "No storage api defined for plane %s", planeNameBuf.str());
+
+        if (!strieq(api, "s3"))
+            throw makeStringExceptionV(99, "Storage api for plane %s is not s3", planeNameBuf.str());
+
+        unsigned numDevices = plane->getPropInt("@numDevices", 1);
+        if (numDevices != 1)
+        {
+            //The device from the path is used to identify which device is in use
+            //but it is then stripped from the path
+            if (filename[0] != 'd')
+                throw makeStringExceptionV(99, "Expected a device number in the filename %s", fullName.str());
+
+            char * endDevice = nullptr;
+            device = strtol(filename+1, &endDevice, 10);
+            if ((device == 0) || (device > numDevices))
+                throw makeStringExceptionV(99, "Device %d out of range for plane %s", device, planeNameBuf.str());
+
+            if (!endDevice || (*endDevice != '/'))
+                throw makeStringExceptionV(99, "Unexpected end of device partition %s", fullName.str());
+
+            filename = endDevice+1;
+        }
+
+        VStringBuffer childPath("buckets[%u]", device);
+        const IPropertyTree * deviceInfo = storageapi->queryPropTree(childPath);
+        if (!deviceInfo)
+            throw makeStringExceptionV(99, "Missing bucket specification for device %u in plane %s", device, planeNameBuf.str());
+
+        const char * bucket = deviceInfo->queryProp("@name");
+        if (isEmptyString(bucket))
+            throw makeStringExceptionV(99, "Missing bucket name for plane %s", planeNameBuf.str());
+
+        bucketName.set(bucket);
+        keyName.set(filename);
+
+        // Load buffer sizes from plane configuration
+        readAheadSize = storageapi->getPropInt("@readAheadSize", 4 * 1024 * 1024);
+        writeBufferSize = storageapi->getPropInt("@writeBufferSize", 5 * 1024 * 1024);
+        if (writeBufferSize < minMultipartSize)
+            writeBufferSize = minMultipartSize;
+    }
+    else
+        throw makeStringExceptionV(99, "Unexpected prefix on S3 filename %s", fullName.str());
 }
 
 bool S3File::exists()
@@ -1075,10 +1168,10 @@ IFileIO* S3File::open(IFOmode mode, IFEflags extraFlags)
         case IFOread:
             if (!exists())
                 return nullptr;
-            return new S3FileReadIO(this, config);
+            return new S3FileReadIO(this);
         case IFOcreate:
         case IFOwrite:
-            return new S3FileWriteIO(this, config);
+            return new S3FileWriteIO(this);
         default:
             throw makeStringException(-1, "Unsupported file open mode for S3 file");
     }
@@ -1121,140 +1214,12 @@ bool S3File::remove()
 
 bool S3File::createDirectory()
 {
-    // In S3, directories are virtual - they don't really exist as separate entities.
-    // This method creates parent directory markers only, similar to Azure's implementation.
-    // It does NOT create the file itself - that happens during write operations.
+    // For S3, we don't need to create directory markers explicitly
+    // S3 is a flat namespace where directories are just key prefixes
+    // Directory markers are optional and not required for file operations
+    // When we write the file, S3 will automatically handle the key structure
 
-    try
-    {
-        // First, verify the bucket exists with retry logic
-        unsigned attempt = 0;
-        const char* filename = queryFilename();
-
-        for (;;)
-        {
-            try
-            {
-                Aws::S3::Model::HeadBucketRequest bucketRequest;
-                bucketRequest.SetBucket(bucketName.str());
-
-                auto bucketOutcome = getClient().HeadBucket(bucketRequest);
-                if (bucketOutcome.IsSuccess())
-                {
-                    break; // Bucket exists and is accessible
-                }
-                else
-                {
-                    // Bucket doesn't exist or we don't have access
-                    const auto& error = bucketOutcome.GetError();
-
-                    // Don't retry if bucket doesn't exist or we lack permissions
-                    if (error.GetErrorType() == Aws::S3::S3Errors::NO_SUCH_BUCKET ||
-                        error.GetErrorType() == Aws::S3::S3Errors::ACCESS_DENIED)
-                    {
-                        StringBuffer errorMsg;
-                        errorMsg.append("S3 bucket verification failed for ").append(bucketName.str());
-
-                        if (!error.GetExceptionName().empty())
-                            errorMsg.append(": ").append(error.GetExceptionName().c_str());
-
-                        if (!error.GetMessage().empty())
-                            errorMsg.append(" - ").append(error.GetMessage().c_str());
-
-                        errorMsg.appendf(" (HTTP Status: %d)", static_cast<int>(error.GetResponseCode()));
-
-                        throw makeStringExceptionV(-1, "%s", errorMsg.str());
-                    }
-
-                    // Retry for transient errors
-                    attempt++;
-                    handleRequestException(error, "S3File::createDirectory::HeadBucket", attempt, defaultMaxRetries, filename);
-                }
-            }
-            catch (const std::exception& e)
-            {
-                attempt++;
-                handleRequestException(e, "S3File::createDirectory::HeadBucket", attempt, defaultMaxRetries, filename);
-            }
-        }
-
-        // Create directory markers for parent directories only (not the file itself)
-        const char *start = keyName.str();
-        if (!isEmptyString(start))
-        {
-            StringBuffer currentPath;
-            while (true)
-            {
-                const char *slash = strchr(start, '/');
-                if (!slash)
-                    break; // Stop before the filename
-
-                // Append this directory component
-                if (!currentPath.isEmpty())
-                    currentPath.append('/');
-                currentPath.append(slash - start, start);
-
-                // Create directory marker with trailing slash
-                StringBuffer dirKey(currentPath);
-                dirKey.append('/');
-
-                // Use retry logic for directory marker creation
-                unsigned dirAttempt = 0;
-                StringBuffer dirFilename;
-                dirFilename.appendf("s3://%s/%s", bucketName.str(), dirKey.str());
-
-                for (;;)
-                {
-                    try
-                    {
-                        Aws::S3::Model::PutObjectRequest request;
-                        request.SetBucket(bucketName.str());
-                        request.SetKey(dirKey.str());
-
-                        // Set an empty body for the directory marker
-                        auto body = std::make_shared<std::stringstream>();
-                        request.SetBody(body);
-                        request.SetContentLength(0);
-
-                        auto outcome = getClient().PutObject(request);
-                        if (outcome.IsSuccess())
-                            break;
-                        else
-                        {
-                            const auto& error = outcome.GetError();
-                            // Conflict means it already exists - that's fine, don't retry
-                            if (error.GetResponseCode() == Aws::Http::HttpResponseCode::CONFLICT)
-                                break;
-
-                            dirAttempt++;
-                            handleRequestException(error, "S3File::createDirectory::PutObject", dirAttempt, defaultMaxRetries, dirFilename.str());
-                        }
-                    }
-                    catch (const std::exception& e)
-                    {
-                        dirAttempt++;
-                        handleRequestException(e, "S3File::createDirectory::PutObject", dirAttempt, defaultMaxRetries, dirFilename.str());
-                    }
-                }
-
-                start = slash + 1;
-                if (!*start)
-                    break;
-            }
-        }
-
-        return true;
-    }
-    catch (IException* e)
-    {
-        // Re-throw IException (including the ones we created above)
-        throw;
-    }
-    catch (const std::exception& e)
-    {
-        // Wrap standard exceptions in IException
-        throw makeStringExceptionV(-1, "Exception in S3 createDirectory: %s", e.what());
-    }
+    return true;
 }
 
 void S3File::ensureMetadata() const
@@ -1323,7 +1288,7 @@ void S3File::gatherMetadata() const
 
 extern S3FILE_API IFile *createS3File(const char *s3FileName)
 {
-    return new S3File(s3FileName, globalS3Config);
+    return new S3File(s3FileName);
 }
 
 extern S3FILE_API bool isS3FileName(const char *fileName)
@@ -1331,10 +1296,13 @@ extern S3FILE_API bool isS3FileName(const char *fileName)
     if (!fileName || !startsWith(fileName, s3FilePrefix))
         return false;
 
-    const char *bucketName = fileName + s3FilePrefixLen;
-    const char *slash = strchr(bucketName, '/');
-    // Require a non-empty key after the slash
-    return (slash != nullptr && *(slash + 1) != '\0');
+    const char *planeName = fileName + s3FilePrefixLen;
+    const char *slash = strchr(planeName, '/');
+    // Require:
+    // - a non-empty plane name (slash not at the start)
+    // - a slash separating plane name from path
+    // - content after the slash
+    return (slash != nullptr && slash != planeName && *(slash + 1) != '\0');
 }
 
 class S3FileHook : public CInterfaceOf<IContainedFileHook>
@@ -1392,7 +1360,7 @@ MODULE_EXIT()
     // 2. Delete file hook (no AWS calls here)
     // 3. Clean up S3ClientManager (destroys all clients BEFORE ShutdownAPI)
     // 4. ClientManager destructor calls shutdownAWS() when refcount reaches zero
-    
+
     if (s3FileHook)
     {
         removeContainedFileHook(s3FileHook);

@@ -28,7 +28,10 @@
 #endif
 
 /*
- * Modern S3 file access implementation
+ * Modern S3 file access implementation using storage planes
+ *
+ * Provides S3 file access for filenames of the form s3:planeName/bucketName/path
+ * Configuration is retrieved from storage plane definitions.
  *
  * Features:
  * - Uses latest AWS C++ SDK with modern patterns
@@ -40,74 +43,12 @@
  * - Support for S3-compatible services (MinIO, etc.)
  */
 
-// Forward declarations
-class StringAttr;
-
-// Configuration structure for S3 operations
-struct S3Config
-{
-    StringAttr region;
-    StringAttr endpoint;  // For S3-compatible services
-    bool useSSL = true;
-    bool useVirtualHosting = true;
-    size32_t readAheadSize = 4 * 1024 * 1024; // 4MB default
-    size32_t writeBufferSize = 5 * 1024 * 1024; // 5MB minimum for multipart
-    unsigned maxRetries = 3;
-    unsigned timeoutMs = 30000; // 30 seconds
-
-    S3Config() = default;
-    S3Config(IPropertyTree* _config);
-    void loadFromConfig(IPropertyTree* _config);
-    bool operator==(const S3Config& other) const
-    {
-        return (region == other.region) &&
-               (endpoint == other.endpoint) &&
-               (useSSL == other.useSSL) &&
-               (useVirtualHosting == other.useVirtualHosting) &&
-               (readAheadSize == other.readAheadSize) &&
-               (writeBufferSize == other.writeBufferSize) &&
-               (maxRetries == other.maxRetries) &&
-               (timeoutMs == other.timeoutMs);
-    }
-};
-
-// Hash specialization for S3Config to use in unordered_map
-namespace std {
-    template<>
-    struct hash<S3Config>
-    {
-        size_t operator()(const S3Config& config) const noexcept
-        {
-            unsigned h = 0;
-            if (config.region.str())
-                h = hashc((const unsigned char*)config.region.str(), config.region.length(), h);
-            if (config.endpoint.str())
-                h = hashc((const unsigned char*)config.endpoint.str(), config.endpoint.length(), h);
-            h = hashvalue((unsigned)config.useSSL, h);
-            h = hashvalue((unsigned)config.useVirtualHosting, h);
-            h = hashvalue(config.readAheadSize, h);
-            h = hashvalue(config.writeBufferSize, h);
-            h = hashvalue(config.maxRetries, h);
-            h = hashvalue(config.timeoutMs, h);
-            return h;
-        }
-    };
-}
-
 // Modern S3 file interface
-class S3File;
-
-// Forward declarations for implementation classes
-class S3FileReadIO;
-class S3FileWriteIO;
-
 extern "C" {
     extern S3FILE_API void installFileHook();
     extern S3FILE_API void removeFileHook();
     extern S3FILE_API IFile *createS3File(const char* s3FileName);
     extern S3FILE_API bool isS3FileName(const char* fileName);
-
 };
-
 
 #endif // S3FILE_HPP
