@@ -281,10 +281,10 @@ public:
 
     virtual unsigned queryNumStripes() const override
     {
-        if (config->hasProp("@hostGroup"))
+        if (!isStriped())
             return 1;
 
-        return config->getPropInt("@numDevices", 1);
+        return numDevices();
     }
 
     virtual IStoragePlaneAlias *getAliasMatch(AccessMode desiredModes) const override
@@ -329,6 +329,18 @@ public:
         return ::isAccessible(config);
     }
 
+    virtual bool isStriped() const
+    {
+        //For bare metal systems, striped containers need to be explicitly configured.
+        if (config->hasProp("@hostGroup") || !isContainerized())
+        {
+            if (!config->getPropBool("@striped"))
+               return false;
+        }
+
+        return devices > 1;
+    }
+
     virtual unsigned __int64 getAttribute(PlaneAttributeType attr) const override
     {
         assertex(attr < PlaneAttributeCount);
@@ -349,6 +361,11 @@ public:
     virtual const char * queryCompression() const
     {
         return compression;
+    }
+
+    virtual unsigned queryDefaultCopies() const override
+    {
+        return config->getPropInt("@redundancy", 0) + 1;
     }
 
 private:
@@ -524,6 +541,9 @@ IPropertyTreeIterator * getRemoteStoragesIterator()
 
 const IStoragePlane * getStoragePlaneByName(const char * name, bool required)
 {
+    if (isEmptyString(name))
+        return nullptr;
+
     CriticalBlock b(storagePlaneMapCrit);
     const CStoragePlane *e = doFindStoragePlaneByName(name, required);
     if (!e)
@@ -548,6 +568,9 @@ const IStoragePlane * getStoragePlaneFromPath(const char *filePath, bool require
 //This will not support inheriting values from the defaults.
 const IPropertyTree * getStoragePlaneConfig(const char * name, bool required)
 {
+    if (isEmptyString(name))
+        return nullptr;
+
     CriticalBlock b(storagePlaneMapCrit);
     auto it = storagePlaneMap.find(name);
     if (it != storagePlaneMap.end())
@@ -775,17 +798,14 @@ static const IPropertyTree *getPlaneHostGroup(const IPropertyTree *plane)
 
 unsigned getNumPlaneStripes(const char *clusterName)
 {
-    Owned<const IPropertyTree> storagePlane = getStoragePlaneConfig(clusterName, false);
+    Owned<const IStoragePlane> storagePlane = getStoragePlaneByName(clusterName, false);
     if (!storagePlane)
     {
-        OWARNLOG("lookupNumStripedDevices: Storage plane %s not found", clusterName);
+        OWARNLOG("getNumPlaneStripes: Storage plane %s not found", clusterName);
         return 1;
     }
 
-    unsigned numDevices = storagePlane->getPropInt("@numDevices");
-    bool isPlaneStriped = !storagePlane->hasProp("@hostGroup") && (numDevices>1);
-
-    return isPlaneStriped ? numDevices : 1;
+    return storagePlane->queryNumStripes();
 }
 
 bool isHostInPlane(IPropertyTree *plane, const char *host, bool ipMatch)
