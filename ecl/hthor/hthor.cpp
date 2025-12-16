@@ -1303,19 +1303,7 @@ void CHThorIndexWriteActivity::execute()
         KeyBuilderOptions options(flags, keyMaxSize, nodeSize, helper.getKeyedSize(), &helper);
         options.setCompression(indexCompressionType);
         Owned<IKeyBuilder> builder = createKeyBuilder(out, options);
-        class BcWrapper : implements IBlobCreator
-        {
-            IKeyBuilder *builder;
-            offset_t totalSize = 0;
-        public:
-            BcWrapper(IKeyBuilder *_builder) : builder(_builder) {}
-            virtual unsigned __int64 createBlob(size32_t size, const void * ptr)
-            {
-                totalSize += size;
-                return builder->createBlob(size, (const char *) ptr);
-            }
-            offset_t queryTotalSize() const { return totalSize; }
-        } bc(builder);
+        BlobCreatorWrapper bc(builder);
         size32_t maxRecordSizeSeen = 0;
         for (;;)
         {

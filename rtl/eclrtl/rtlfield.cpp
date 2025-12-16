@@ -717,7 +717,10 @@ size32_t RtlBlobTypeInfo::build(ARowBuilder &builder, size32_t offset, const Rtl
 
 size32_t RtlBlobTypeInfo::buildInt(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, __int64 val) const
 {
-    throwUnexpected();  // This is only expected to be used for reading at present
+    builder.ensureCapacity(offset + sizeof(offset_t), queryName(field));
+    *(offset_t *)(builder.getSelf() + offset) = val;
+    offset += sizeof(offset_t);
+    return offset;
 }
 
 size32_t RtlBlobTypeInfo::buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t size, const char *value) const

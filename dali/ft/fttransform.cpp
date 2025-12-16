@@ -545,6 +545,7 @@ void CIndexTransformer::rebuildIndex(IFile * in, IFileIOStream * out, const char
     const RtlRecord &inrec = diskmeta->queryRecordAccessor(true);
     manager.setown(createLocalKeyManager(inrec, index, nullptr, true, false));
     size32_t minRecSize = 0;
+    bool createTranslator = false;
     if (fieldSelection)
     {
         StringArray fieldNames;
@@ -568,7 +569,7 @@ void CIndexTransformer::rebuildIndex(IFile * in, IFileIOStream * out, const char
         fields.append(nullptr);
         outRecType = new RtlRecordTypeInfo(type_record, minRecSize, fields.getArray(0));
         outmeta.setown(new CDynamicOutputMetaData(*outRecType));
-        translator.setown(createRecordTranslator(outmeta->queryRecordAccessor(true), inrec));
+        createTranslator = true;
     }
     else
     {
@@ -581,9 +582,7 @@ void CIndexTransformer::rebuildIndex(IFile * in, IFileIOStream * out, const char
             {
                 if (isTLK)
                     continue;  // blob IDs in TLK are not valid
-                // See above - blob field in source needs special treatment
-                field = new RtlFieldStrInfo(field->name, field->xpath, field->type->queryChildType());
-                deleteFields.append(field);
+                createTranslator = true;
             }
             fields.append(field);
             minRecSize += field->type->getMinSize();
@@ -616,6 +615,8 @@ void CIndexTransformer::rebuildIndex(IFile * in, IFileIOStream * out, const char
     unsigned flags = COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY | USE_TRAILING_HEADER | TRAILING_HEADER_ONLY;
     if (!outmeta->isFixedSize())
         flags |= HTREE_VARSIZE;
+    if (isTLK)
+        flags |= HTREE_TOPLEVEL_KEY;
     //if (quickCompressed)
     //    flags |= HTREE_QUICK_COMPRESSED_KEY;
     // MORE - other global options
@@ -637,6 +638,10 @@ void CIndexTransformer::rebuildIndex(IFile * in, IFileIOStream * out, const char
     options.enforceOrder = false;
     options.isTLK = isTLK;
     Owned<IKeyBuilder> keyBuilder = createKeyBuilder(outFileStream, options);
+    BlobCreatorWrapper blobCreator(keyBuilder);
+
+    if (createTranslator)
+        translator.setown(createRecordBlobTranslator(outmeta->queryRecordAccessor(true), inrec, &blobCreator));
 
     TrivialVirtualFieldCallback callback(manager);
     size32_t maxSizeSeen = 0;
@@ -652,8 +657,16 @@ void CIndexTransformer::rebuildIndex(IFile * in, IFileIOStream * out, const char
             size = translator->translate(aBuilder, callback, buffer);
             if (size)
             {
-                // MORE - think about fpos
-                keyBuilder->processKeyData((const char *) aBuilder.getSelf(), 0, size);
+                if (fileposSize)
+                {
+                    offset_t fpos = manager->queryFPos();
+                    offset_t recordFilePos = rtlReadSwapInt8(aBuilder.getSelf() + size - fileposSize);
+                    assertex(fpos == recordFilePos);
+                    size -= fileposSize;
+                    keyBuilder->processKeyData((const char *) aBuilder.getSelf(), fpos, size);
+                }
+                else
+                    keyBuilder->processKeyData((const char *) aBuilder.getSelf(), 0, size);
             }
         }
         else
