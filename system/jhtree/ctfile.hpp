@@ -204,6 +204,7 @@ public:
     inline bool isRowCompressed() const { return (hdr.ktype & (HTREE_QUICK_COMPRESSED_KEY|HTREE_VARSIZE)) == HTREE_QUICK_COMPRESSED_KEY; }
     inline offset_t queryBloomHead() const { return hdr.bloomHead; }
     inline unsigned getKeyId() const { return keyId; }
+    inline bool containsBlobs() const { return hdr.blobHead != 0; }
     __uint64 getPartitionFieldMask() const
     {
         if (hdr.partitionFieldMask == (__uint64) -1)
