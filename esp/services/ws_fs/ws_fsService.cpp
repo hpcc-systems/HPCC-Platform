@@ -533,44 +533,47 @@ bool CFileSprayEx::ParseLogicalPath(const char * pLogicalPath, const char* group
 
     if(groupName != NULL && *groupName != '\0')
     {
-#ifdef _CONTAINERIZED
         Owned<const IPropertyTree> plane = getStoragePlaneConfig(groupName, false);
         if (plane)
             defaultFolder.append(plane->queryProp("@prefix"));
-#else
-        StringBuffer basedir;
-        GroupType groupType;
-        Owned<IGroup> group = queryNamedGroupStore().lookup(groupName, basedir, groupType);
-        if (group) {
-            switch (queryOS(group->queryNode(0).endpoint())) {
-            case MachineOsW2K:
-                os = DFD_OSwindows; break;
-            case MachineOsSolaris:
-            case MachineOsLinux:
-                os = DFD_OSunix; break;
-            }
-            if (directories.get())
-            {
-                switch (groupType)
+
+#ifndef _CONTAINERIZED
+        if (defaultFolder.isEmpty())
+        {
+            StringBuffer basedir;
+            GroupType groupType;
+            Owned<IGroup> group = queryNamedGroupStore().lookup(groupName, basedir, groupType);
+            if (group) {
+                switch (queryOS(group->queryNode(0).endpoint())) {
+                case MachineOsW2K:
+                    os = DFD_OSwindows; break;
+                case MachineOsSolaris:
+                case MachineOsLinux:
+                    os = DFD_OSunix; break;
+                }
+                if (directories.get())
                 {
-                case grp_roxie:
-                    getConfigurationDirectory(directories, "data", "roxie", cluster, defaultFolder);
-                    getConfigurationDirectory(directories, "data2", "roxie", cluster, defaultReplicateFolder);
-                    // MORE - should extend to systems with higher redundancy
-                    break;
-                case grp_hthor:
-                    getConfigurationDirectory(directories, "data", "eclagent", cluster, defaultFolder);
-                    break;
-                case grp_thor:
-                default:
-                    getConfigurationDirectory(directories, "data", "thor", cluster, defaultFolder);
-                    getConfigurationDirectory(directories, "mirror", "thor", cluster, defaultReplicateFolder);
+                    switch (groupType)
+                    {
+                    case grp_roxie:
+                        getConfigurationDirectory(directories, "data", "roxie", cluster, defaultFolder);
+                        getConfigurationDirectory(directories, "data2", "roxie", cluster, defaultReplicateFolder);
+                        // MORE - should extend to systems with higher redundancy
+                        break;
+                    case grp_hthor:
+                        getConfigurationDirectory(directories, "data", "eclagent", cluster, defaultFolder);
+                        break;
+                    case grp_thor:
+                    default:
+                        getConfigurationDirectory(directories, "data", "thor", cluster, defaultFolder);
+                        getConfigurationDirectory(directories, "mirror", "thor", cluster, defaultReplicateFolder);
+                    }
                 }
             }
-        }
-        else
-        {
-            // Error here?
+            else
+            {
+                // Error here?
+            }
         }
 #endif
     }

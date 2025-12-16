@@ -7897,12 +7897,9 @@ StringBuffer &CDistributedFilePart::getPartDirectory(StringBuffer &ret,unsigned 
             plane.setown(createStoragePlane(remoteStoragePlane));
         else // local environment
         {
-            if (isContainerized())
-            {
-                const char *planeName = cluster.queryGroupName();
-                if (!isEmptyString(planeName))
-                    plane.setown(getDataStoragePlane(planeName, false));
-            }
+            const char *planeName = cluster.queryGroupName();
+            if (!isEmptyString(planeName))
+                plane.setown(getDataStoragePlane(planeName, false));
         }
         if (plane)
         {
