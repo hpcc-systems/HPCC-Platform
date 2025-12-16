@@ -183,9 +183,9 @@
     </sect2>
 
     <sect2 id="authenticate-setting-element">
-      <title>AuthenticateSetting Element</title>
+      <title>Authenticate Setting Element</title>
 
-      <para>The <emphasis role="bold">AuthenticateSetting</emphasis> element
+      <para>The <emphasis role="bold">Authenticate Setting</emphasis> element
       allows an <emphasis>EspBinding</emphasis> to specify which user
       properties (settings) should be loaded by the security manager for
       authenticated users. This enables advanced customization, such as using
@@ -222,7 +222,7 @@
       <sect3 id="authenticate-setting-configuration">
         <title>Configuration</title>
 
-        <para>Add <emphasis>AuthenticateSetting</emphasis> elements to your
+        <para>Add <emphasis>Authenticate Setting</emphasis> elements to your
         <emphasis>EspBinding</emphasis> configuration. Each element includes
         the following attributes:</para>
 
@@ -263,7 +263,7 @@
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <programlisting>&lt;AuthenticateSetting include="Yes"
+        <programlisting>&lt;Authenticate Setting include="Yes"
                      path="user.department"
                      resource="Department"
                      description="User's department"/&gt;</programlisting>
@@ -274,15 +274,14 @@
 
         <itemizedlist>
           <listitem>
-            <para>XSLT transforms convert
-            <emphasis>AuthenticateSetting</emphasis> elements into
-            <emphasis>Setting</emphasis> elements in the runtime
-            configuration.</para>
+            <para>XSLT transforms convert <emphasis>Authenticate
+            Setting</emphasis> elements into <emphasis>Setting</emphasis>
+            elements in the runtime configuration.</para>
           </listitem>
 
           <listitem>
             <para>Service logic (e.g., <emphasis>WsDeployService</emphasis>)
-            manages <emphasis>AuthenticateSetting</emphasis> elements
+            manages <emphasis>Authenticate Setting</emphasis> elements
             similarly to <emphasis>Feature</emphasis> elements.</para>
           </listitem>
 
