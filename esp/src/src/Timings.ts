@@ -33,6 +33,7 @@ export class WUTimelinePatched extends WUTimeline {
         this._gantt
             .bucketHeight(22)
             .gutter(4)
+            .preserveZoom(true)
             .overlapTolerence(-100)
             .oddSeriesBackground("transparent")
             .evenSeriesBackground("transparent")
