@@ -1661,6 +1661,7 @@ IKeyCursor *CKeyIndex::getCursor(const IIndexFilterList *filter, bool logExcessi
     return new CKeyCursor(*this, filter, logExcessiveSeeks, blockedIOSize);
 }
 
+
 const CJHSearchNode *CKeyIndex::getIndexNodeUsingLoader(const INodeLoader &nodeLoader, offset_t offset, NodeType type, IContextLogger *ctx) const
 {
     latestGetNodeOffset = offset;
@@ -1701,53 +1702,46 @@ bool CKeyIndex::hasPayload()
     return keyHdr->hasPayload();
 }
 
-const CJHBlobNode *CKeyIndex::getBlobNode(offset_t nodepos, IContextLogger *ctx, CLoadNodeCacheState & readState)
+const CJHBlobNode *CKeyIndex::getBlobNode(const INodeLoader &nodeLoader, offset_t nodepos, IContextLogger *ctx)
 {
     Owned<const CJHBlobNode> match;
-    cycle_t readCycles = 0;
-    cycle_t fetchCycles = 0;
+
     {
         CriticalBlock b(cacheCrit);
-        if (nodepos != cachedBlobNodePos)
-        {
-
-            CCycleTimer blobLoadTimer;
-            Owned<const CJHTreeNode> node = loadNode(&fetchCycles, nodepos, readState); // note - don't use the cache
-            assertex(node->isBlob());
-            cachedBlobNode.setown(static_cast<const CJHBlobNode *>(node.getClear()));
-            cachedBlobNodePos = nodepos;
-            readCycles = blobLoadTimer.elapsedCycles();
-        }
-        match.set(cachedBlobNode);
+        if (nodepos == cachedBlobNodePos)
+            match.set(cachedBlobNode);
     }
 
-    if (ctx)
+    if (match)
     {
-        if (readCycles != 0)
-        {
-            ctx->noteStatistic(StNumBlobCacheAdds, 1);
-            ctx->noteStatistic(StCycleBlobLoadCycles, readCycles);
-            ctx->noteStatistic(StCycleBlobReadCycles, fetchCycles);
-            if (fetchCycles >= fetchThresholdCycles)
-            {
-                ctx->noteStatistic(StNumBlobDiskFetches, 1);
-                ctx->noteStatistic(StCycleBlobFetchCycles, fetchCycles);
-            }
-        }
-        else
+        if (ctx)
             ctx->noteStatistic(StNumBlobCacheHits, 1);
+        return match.getClear();
+    }
+
+    // There is a possibility that two threads will each concurrently be loading the same blob node
+    // but on balance it is better to load twice than have parallel blob loads block each other
+    // If the LRU blob cache is enabled then concurrent loads will be deduped.
+    const CJHTreeNode * loaded = getIndexNodeUsingLoader(nodeLoader, nodepos, NodeBlob, ctx);
+    match.setown(static_cast<const CJHBlobNode *>(loaded));
+    assertex(match->isBlob());
+
+    Linked<const CJHBlobNode> temp(match); // Ensure the link and release is performed outside crit
+    {
+        CriticalBlock b(cacheCrit);
+        cachedBlobNode.swap(temp);
+        cachedBlobNodePos = nodepos;
     }
 
     return match.getClear();
 }
 
-const byte *CKeyIndex::loadBlob(unsigned __int64 blobid, size32_t &blobSize, IContextLogger *ctx)
+const byte *CKeyIndex::loadBlob(const INodeLoader &nodeLoader, unsigned __int64 blobid, size32_t &blobSize, IContextLogger *ctx)
 {
     offset_t nodepos = blobid & I64C(0xffffffffffff);
     size32_t offset = (size32_t) ((blobid & I64C(0xffff000000000000)) >> 44);
 
-    CLoadNodeCacheState readState;
-    Owned<const CJHBlobNode> blobNode = getBlobNode(nodepos, ctx, readState);
+    Owned<const CJHBlobNode> blobNode = getBlobNode(nodeLoader, nodepos, ctx);
     size32_t sizeRemaining = blobNode->getTotalBlobSize(offset);
     blobSize = sizeRemaining;
     byte *ret = (byte *) malloc(sizeRemaining);
@@ -1760,7 +1754,7 @@ const byte *CKeyIndex::loadBlob(unsigned __int64 blobid, size32_t &blobSize, ICo
         finger += gotHere;
         if (!sizeRemaining)
             break;
-        blobNode.setown(getBlobNode(blobNode->getRightSib(), ctx, readState));
+        blobNode.setown(getBlobNode(nodeLoader, blobNode->getRightSib(), ctx));
         offset = 0;
     }
     return ret;
@@ -2581,7 +2575,7 @@ void CKeyCursor::deserializeCursorPos(MemoryBuffer &mb, IContextLogger *ctx)
 
 const byte *CKeyCursor::loadBlob(unsigned __int64 blobid, size32_t &blobsize, IContextLogger *ctx)
 {
-    return key.loadBlob(blobid, blobsize, ctx);
+    return key.loadBlob(*this, blobid, blobsize, ctx);
 }
 
 bool CKeyCursor::lookup(bool exact, IContextLogger *ctx)
@@ -3330,7 +3324,33 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
     // check cacheEnabled[cacheType] avoid the critical section (and testing the flag within the critical section)
     CNodeMRUCache & typeCache = cache[cacheType];
     if (unlikely(!typeCache.enabled))
-        return nodeLoader.loadNode(nullptr, pos);
+    {
+        cycle_t fetchCycles = 0;
+        cycle_t startLoadCycles = get_cycles_now();
+        const CJHTreeNode *node = nodeLoader.loadNode(&fetchCycles, pos);
+        cycle_t endLoadCycles = get_cycles_now();
+        cycle_t loadCycles = endLoadCycles - startLoadCycles;
+
+        if (unlikely(recordingEvents()))
+        {
+            stat_type fetchTimeNs = cycle_to_nanosec(fetchCycles);
+            queryRecorder().recordIndexLoad(iD, pos, type, node->getMemSize(), cycle_to_nanosec(loadCycles) - fetchTimeNs, fetchTimeNs);
+        }
+
+        if (ctx)
+        {
+            ctx->noteStatistic(addStatId[cacheType], 1);
+            ctx->noteStatistic(loadStatId[cacheType], loadCycles);
+            ctx->noteStatistic(readStatId[cacheType], fetchCycles);
+            if (fetchCycles >= fetchThresholdCycles)
+            {
+                ctx->noteStatistic(fetchStatId[cacheType], 1);
+                ctx->noteStatistic(fetchTimeId[cacheType], fetchCycles);
+            }
+        }
+
+        return node;
+    }
 
     CCacheReservation cacheReservation;
     CKeyIdAndPos key(iD, pos);
