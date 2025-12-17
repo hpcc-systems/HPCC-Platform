@@ -20,7 +20,7 @@ jobs:
           PULL_REQUEST_AUTHOR_NAME : ${{ github.event.pull_request.user.login }}
           PULL_URL: ${{ github.event.pull_request.html_url }}
           COMMENTS_URL: ${{ github.event.pull_request.comments_url }}
-          BRANCH_NAME: ${{ github.ref_name }}
+          BRANCH_NAME: ${{ github.base_ref }}
         run: |
           echo "JIRA_URL: $JIRA_URL"
           echo "Pull Request Number: $PULL_REQUEST_NUMBER"
@@ -58,7 +58,7 @@ jobs:
           PROJECT_CONFIG: ${{ vars.PROJECT_CONFIG}}
           COMMENTS_URL: ${{ github.event.pull_request.comments_url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BRANCH_NAME: ${{ github.ref_name }}
+          BRANCH_NAME: ${{ github.base_ref }}
         shell: python
         run: |
             import os
@@ -81,7 +81,7 @@ jobs:
                 return [major, minor, point]
 
             def getTagVersionForCmd(cmd):
-                versionPattern = re.compile(r"[^0-9]*([0-9]+\.[0-9]+\.[0-9]+).*")
+                versionPattern = re.compile(r".*[^0-9]+([0-9]+\.[0-9]+\.[0-9]+).*")
 
                 # Get latest release version
                 gitTagProcess = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
