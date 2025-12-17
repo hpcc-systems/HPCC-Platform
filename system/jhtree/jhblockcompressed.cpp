@@ -234,7 +234,7 @@ void CJHNewBlobNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _fpos,
     CJHTreeNode::load(_keyHdr, rawData, _fpos, needCopy);
     const byte *data = ((const byte *) rawData) + sizeof(hdr);
     CompressionMethod method = (CompressionMethod)*data++;
-    inMemorySize = keyHdr->getNodeSize();
+    // Blobs are stored expanded, so inMemorySize is set by the expand function
     keyBuf = expandData(queryCompressHandler(method), data, inMemorySize);
 }
 
