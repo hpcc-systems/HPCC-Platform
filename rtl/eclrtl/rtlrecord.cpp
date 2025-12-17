@@ -383,7 +383,12 @@ RtlRecord::~RtlRecord()
         {
             const RtlFieldInfo *thisField = *finger;
             if (thisField->flags & RFTMdynamic)
-                delete thisField;
+            {
+                if (thisField->flags & RFTMinifblock)
+                    delete (RtlCondFieldStrInfo *)thisField;
+                else
+                    delete thisField;
+            }
         }
         delete [] fields;
     }
