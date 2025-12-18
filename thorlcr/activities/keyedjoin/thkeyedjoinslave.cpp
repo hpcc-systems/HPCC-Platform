@@ -1572,8 +1572,12 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                     crc = 0;
                 RemoteFilename rfn;
                 part.getFilename(copy, rfn);
+
+                // NB: getPath will return a URL if filename is a non local (localhost) file part (e.g. off-cluster, foreign..)
+                // which the remote side needs to access the index part.
                 StringBuffer fname;
-                rfn.getLocalPath(fname);
+                rfn.getPath(fname);
+
                 msg.append(activity.queryId()).append(fname).append(crc); // lookup key
                 // serialize onCreate context
                 DelayedSizeMarker sizeMark(msg);
@@ -1940,8 +1944,12 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 IPartDescriptor &part = activity.allDataParts.item(partNo);
                 RemoteFilename rfn;
                 part.getFilename(copy, rfn);
+
+                // NB: getPath will return a URL if filename is a non local (localhost) file part (e.g. off-cluster, foreign..)
+                // which the remote side needs to access the index part.
                 StringBuffer fname;
-                rfn.getLocalPath(fname);
+                rfn.getPath(fname);
+
                 msg.append(fname);
                 msg.append(activity.messageCompression);
 
