@@ -145,7 +145,7 @@ public:
             }
             case CompressToBuffer:
             {
-                compressToBuffer(compressed, srcLen, ptr, handler.queryMethod(), options);
+                compressToBuffer(compressed, srcLen, ptr, handler.queryAliasMethod(), options);
                 break;
             }
             case FixedBlockCompress:
@@ -377,6 +377,7 @@ class JlibCompressionStandardTest : public JlibCompressionTestBase
 {
     CPPUNIT_TEST_SUITE(JlibCompressionStandardTest);
         CPPUNIT_TEST(disableBacktraceOnAssert);
+        CPPUNIT_TEST(testCompressionRegistration);
         CPPUNIT_TEST(testSingle);
         CPPUNIT_TEST(testKeyRollback);
         CPPUNIT_TEST(testTinyCompression);
@@ -545,6 +546,39 @@ public:
             EXCLOG(e, nullptr);
             ::Release(e);
             CPPUNIT_FAIL(msg.str());
+        }
+    }
+
+    void testCompressionRegistration()
+    {
+        for (unsigned i= COMPRESS_METHOD_NONE+1; i < COMPRESS_METHOD_LAST_ALIAS; i++)
+        {
+            switch (i)
+            {
+            case COMPRESS_METHOD_LAST_PERSISTED: // Not a real method
+            case COMPRESS_METHOD_ROWDIF:    // Does not have a standard compresasor/decompressor
+            case COMPRESS_METHOD_LZMA:      // A strange compression only used in keydiff
+                continue;
+            }
+
+            CompressionMethod method = (CompressionMethod)i;
+            const char * type = translateFromCompMethod(method);
+            ICompressHandler * handler1 = queryCompressHandler(method);
+            ICompressHandler * handler2 = queryCompressHandler(type);
+            CPPUNIT_ASSERT_MESSAGE(VStringBuffer("No handler by enum for method %s[%u]", type, i), handler1);
+            CPPUNIT_ASSERT_MESSAGE(VStringBuffer("No handler by name for method %s[%u]", type, i), handler2);
+            CPPUNIT_ASSERT_MESSAGE(VStringBuffer("Handlers do not match for method %s", type), handler1 == handler2);
+
+            CPPUNIT_ASSERT_MESSAGE(VStringBuffer("Handlers method does not match for method %s", type), handler1->queryAliasMethod() == method);
+            if (i < COMPRESS_METHOD_LAST_PERSISTED && i != COMPRESS_METHOD_LZ4HC3)
+                CPPUNIT_ASSERT_MESSAGE(VStringBuffer("Handlers persist method does not match for method %s", type), handler1->queryPersistMethod() == method);
+            else
+                CPPUNIT_ASSERT_MESSAGE(VStringBuffer("Handlers persist method matches for method %s", type), handler1->queryPersistMethod() != method);
+
+            Owned<ICompressor> compressor = handler1->getCompressor(nullptr);
+            CPPUNIT_ASSERT_MESSAGE(VStringBuffer("No compressor for method %s", type), compressor);
+
+            CPPUNIT_ASSERT_MESSAGE(VStringBuffer("Inconsistent persist method for method %s", type), compressor->getCompressionMethod() == handler1->queryPersistMethod());
         }
     }
 };

@@ -374,14 +374,14 @@ bool EventRecorder::startRecording(const char * optionsText, const char * filena
             if (isdigit(*valueText))
             {
                 compressionType = (byte) atoi(valueText);
-                if (compressionType >= COMPRESS_METHOD_LAST)
+                if (compressionType >= COMPRESS_METHOD_LAST_ALIAS)
                     compressionType = COMPRESS_METHOD_LZ4;
             }
             else
             {
                 ICompressHandler * compression = queryCompressHandler(valueText);
                 if (compression)
-                    compressionType = compression->queryMethod();
+                    compressionType = compression->queryAliasMethod();
             }
         }
         else if (strieq(option, "log"))

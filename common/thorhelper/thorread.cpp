@@ -483,7 +483,7 @@ void FileAccessOptions::updateFromReadHelper(IHThorGenericDiskReadBaseArg & help
     }
 }
 
-void FileAccessOptions::updateFromWriteHelper(IHThorGenericDiskWriteArg & helper, const char * defaultStoragePlaneName)
+void FileAccessOptions::updateFromWriteHelper(IHThorGenericDiskWriteArg & helper, const char * defaultStoragePlaneName, bool forceCompression, const char * compressionHint)
 {
     unsigned helperFlags = helper.getFlags();
     bool isGeneric = (helperFlags & TDXgeneric) != 0;
@@ -498,17 +498,32 @@ void FileAccessOptions::updateFromWriteHelper(IHThorGenericDiskWriteArg & helper
     if (!targetPlaneName)
         targetPlaneName = defaultStoragePlaneName;
 
-    updateFromStoragePlane(targetPlaneName, IFOwrite);
-
     formatOptions->setPropBool("@grouped", ((helperFlags & TDXgrouped) != 0));
 
-    bool forceCompressed = (helperFlags & (TDXcompress|TDWnewcompress)) != 0;
-    if (forceCompressed)
+    // Compression precedence:
+    // If running in a container, default to compressing, or if forceCompression is set (e.g., by eclagent options)
+    if (isContainerized() || forceCompression)
         setCompression(true, nullptr);
-    providerOptions->setPropBool("@forceCompressed", forceCompressed);
-    //Explicitly disable compression if TDWnocompress is set
+
+    // If the helper requests compression (TDXcompress or TDWnewcompress) then enable it
+    bool helperForceCompressed = (helperFlags & (TDXcompress|TDWnewcompress)) != 0;
+    if (helperForceCompressed)
+        setCompression(true, nullptr);
+
+    // Explicitly disable compression if TDWnocompress is set
     if (helperFlags & TDWnocompress)
         setCompression(false, nullptr);
+
+    // If output is compressed, change the default compression for jobtemps and persists
+    if (isCompressed() && (helperFlags & (TDXjobtemp|TDWpersist)))
+        setCompression(true, "zstd");
+
+    // Storage plane can specify the compression
+    updateFromStoragePlane(targetPlaneName, IFOwrite);
+
+    // Finally an hint on the output activity has the highest precedence
+    if (compressionHint)
+        setCompression(true, compressionHint);
 
     providerOptions->setPropBool("@extend", (helperFlags & TDWextend) != 0);
     providerOptions->setPropBool("@overwrite", (helperFlags & TDWoverwrite) != 0);
@@ -551,6 +566,15 @@ void FileAccessOptions::setCompression(bool enable, const char * method)
         providerOptions->setProp("@compression", method);
     else if (!enable)
         providerOptions->setProp("@compression", nullptr);
+}
+
+CompressionMethod FileAccessOptions::queryCompressionMethod() const
+{
+    if (!isCompressed())
+        return COMPRESS_METHOD_NONE;
+
+    const char * method = providerOptions->queryProp("@compression");
+    return translateToCompMethod(method, COMPRESS_METHOD_LZ4);
 }
 
 void updatePlaneFromHelper(StringBuffer & plane, IHThorDiskWriteArg & helper)

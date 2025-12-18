@@ -449,7 +449,7 @@ unsigned temporaryFileMask(IConstWorkUnit * wu)
 
 //=====================================================================================================
 
-CHThorDiskWriteActivity::CHThorDiskWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGenericDiskWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
+CHThorDiskWriteActivity::CHThorDiskWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGenericDiskWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree * _node) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     incomplete = false;
     helperFlags = helper.getFlags();
@@ -457,6 +457,7 @@ CHThorDiskWriteActivity::CHThorDiskWriteActivity(IAgentContext &_agent, unsigned
     grouped = (helperFlags & TDXgrouped) != 0;
     extend = ((helperFlags & TDWextend) != 0);
     overwrite = ((helperFlags & TDWoverwrite) != 0);
+    compressHint = _node->queryProp("hint[@name='compression']/@value");
 }
 
 CHThorDiskWriteActivity::~CHThorDiskWriteActivity()
@@ -530,10 +531,8 @@ void CHThorDiskWriteActivity::resolve()
     getDefaultWritePlane(defaultPlane, helperFlags);
     updatePlaneFromHelper(defaultPlane, helper);
 
-    fileAccessOptions.updateFromStoragePlane(defaultPlane, IFOwrite);
-    if (agent.queryWorkUnit()->getDebugValueBool("compressAllOutputs", isContainerized()))
-        fileAccessOptions.setCompression(true, nullptr);
-    fileAccessOptions.updateFromWriteHelper(helper, defaultPlane.str());
+    bool forceCompression = agent.queryWorkUnit()->getDebugValueBool("compressAllOutputs", isContainerized());
+    fileAccessOptions.updateFromWriteHelper(helper, defaultPlane.str(), forceCompression, compressHint);
 
     if((helperFlags & temporaryFileMask(agent.queryWorkUnit())) == 0)
     {
@@ -643,9 +642,10 @@ void CHThorDiskWriteActivity::open()
         encrypted = true;
         compressed = true;
     }
-    if(compressed)
+
+    CompressionMethod compMethod = fileAccessOptions.queryCompressionMethod();
+    if(compMethod != COMPRESS_METHOD_NONE)
     {
-        compMethod = (helperFlags & (TDXjobtemp|TDWpersist)) ? COMPRESS_METHOD_ZSTD : COMPRESS_METHOD_LZ4;
         size32_t compBlockSize = 0; // i.e. default
         size32_t blockedIoSize = -1; // i.e. default
         io.setown(createCompressedFileWriter(file, extend, true, ecomp, compMethod, compBlockSize, blockedIoSize, IFEnone));
@@ -934,7 +934,7 @@ void CHThorDiskWriteActivity::checkSizeLimit()
 
 //=====================================================================================================
 
-CHThorSpillActivity::CHThorSpillActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSpillArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph)
+CHThorSpillActivity::CHThorSpillActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSpillArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree * _node) : CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph, _node)
 {
 }
 
@@ -985,7 +985,7 @@ void CHThorSpillActivity::stop()
 //=====================================================================================================
 
 
-CHThorCsvWriteActivity::CHThorCsvWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCsvWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, (IHThorGenericDiskWriteArg &)_arg, _kind, _graph), helper(_arg)
+CHThorCsvWriteActivity::CHThorCsvWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCsvWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree * _node) : CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, (IHThorGenericDiskWriteArg &)_arg, _kind, _graph, _node), helper(_arg)
 {
     csvOutput.init(helper.queryCsvParameters(),agent.queryWorkUnit()->getDebugValueBool("oldCSVoutputFormat", false));
 }
@@ -1063,7 +1063,7 @@ void CHThorCsvWriteActivity::setFormat(IFileDescriptor * desc)
 
 //=====================================================================================================
 
-CHThorXmlWriteActivity::CHThorXmlWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, (IHThorGenericDiskWriteArg &)_arg, _kind, _graph), helper(_arg), headerLength(0), footerLength(0)
+CHThorXmlWriteActivity::CHThorXmlWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree * _node) : CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, (IHThorGenericDiskWriteArg &)_arg, _kind, _graph, _node), helper(_arg), headerLength(0), footerLength(0)
 {
     OwnedRoxieString xmlpath(helper.getXmlIteratorPath());
     if (!xmlpath)
@@ -11637,8 +11637,8 @@ const void *CHThorNewDiskReadActivity::nextRow()
 
 //=====================================================================================================
 
-extern HTHOR_API IHThorActivity * createDiskWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGenericDiskWriteArg &arg, ThorActivityKind kind, EclGraph & _graph) \
-{   return new CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, arg, kind, _graph); }
+extern HTHOR_API IHThorActivity * createDiskWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGenericDiskWriteArg &arg, ThorActivityKind kind, EclGraph & _graph, IPropertyTree *_node) \
+{   return new CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, arg, kind, _graph, _node); }
 
 MAKEFACTORY(Iterate);
 MAKEFACTORY(Filter);
@@ -11684,8 +11684,8 @@ MAKEFACTORY_ARG(ChooseSetsEnth, ChooseSetsEx);
 MAKEFACTORY(WorkunitRead);
 MAKEFACTORY(PipeRead);
 MAKEFACTORY(PipeWrite);
-MAKEFACTORY(CsvWrite);
-MAKEFACTORY(XmlWrite);
+MAKEFACTORY_NODE(CsvWrite);
+MAKEFACTORY_NODE(XmlWrite);
 MAKEFACTORY(PipeThrough);
 MAKEFACTORY(If);
 
@@ -11703,7 +11703,7 @@ MAKEFACTORY(Null);
 MAKEFACTORY(SideEffect);
 MAKEFACTORY(Action);
 MAKEFACTORY(SelectN);
-MAKEFACTORY(Spill);
+MAKEFACTORY_NODE(Spill);
 MAKEFACTORY(Limit);
 MAKEFACTORY_ARG(SkipLimit, Limit);
 MAKEFACTORY_ARG(OnFailLimit, Limit);
