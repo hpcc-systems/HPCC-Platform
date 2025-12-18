@@ -37,6 +37,7 @@ protected:
     bool partitionKey = false;
     StringBuffer fileName;
     unsigned fileStatsTableStart = NotFound;
+    mptag_t limitAbortTag = TAG_NULL;
 
     rowcount_t aggregateToLimit()
     {
@@ -228,8 +229,16 @@ public:
     {
         indexBaseHelper = (IHThorIndexReadBaseArg *)queryHelper();
         if (!container.queryLocalOrGrouped())
+        {
             mpTag = container.queryJob().allocateMPTag();
+            limitAbortTag = container.queryJob().allocateMPTag();
+        }
         reInit = 0 != (indexBaseHelper->getFlags() & (TIRvarfilename|TIRdynamicfilename));
+    }
+    ~CIndexReadBase()
+    {
+        if (limitAbortTag != TAG_NULL)
+            container.queryJob().freeMPTag(limitAbortTag);
     }
     virtual void init() override
     {
@@ -277,7 +286,10 @@ public:
     {
         dst.append(fileName);
         if (!container.queryLocalOrGrouped())
+        {
             dst.append(mpTag);
+            dst.append(limitAbortTag);
+        }
         IArrayOf<IPartDescriptor> parts;
         if (fileDesc.get())
         {
@@ -306,6 +318,8 @@ public:
     {
         CMasterActivity::abort();
         cancelReceiveMsg(RANK_ALL, mpTag);
+        if (limitAbortTag != TAG_NULL)
+            cancelReceiveMsg(RANK_ALL, limitAbortTag);
     }
     virtual void deserializeStats(unsigned node, MemoryBuffer &mb) override
     {
