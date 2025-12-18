@@ -1169,6 +1169,7 @@ IHqlExpression * HqlGram::processIndexBuild(const attribute &err, attribute & in
         //Recalculated because it might be updated in modifyIndexPayloadRecord() above
         record.setown(checkBuildIndexRecord(record.getClear(), *recordAttr));
         record.setown(checkIndexRecord(record, *recordAttr, flags));
+        record.setown(checkPackIndexRecord(record, flags));
         projectedDataset.setown(createDataset(no_selectfields, { LINK(dataset), LINK(record) }));
         warnIfRecordPacked(projectedDataset, *recordAttr);
     }
@@ -1181,13 +1182,16 @@ IHqlExpression * HqlGram::processIndexBuild(const attribute &err, attribute & in
         {
             numPayload = (unsigned)getIntValue(payloadAttr->queryChild(0));
             flags.setown(createComma(flags.getClear(), LINK(payloadAttr)));
+            OwnedHqlExpr packedRecord = checkPackIndexRecord(record, flags);
+            if (packedRecord != record)
+                UNIMPLEMENTED;//projectedDataset.setown(createDataset(no_selectfields, { LINK(dataset), LINK(packedRecord) }));
         }
-        checkIndexRecordType(dataset->queryRecord(), numPayload, false, indexAttr);
+        checkIndexRecordType(projectedDataset->queryRecord(), numPayload, false, indexAttr);
     }
 
     // If the trim attribute is specified, then add a project to trim all the input strings
     // When generating code the optimizer will combine this with the previous usertable/selectfields
-    if (queryAttributeInList(trimAtom, flags))
+    if (queryAttributeInList(trimAtom, flags) || queryAttributeInList(packedAtom, flags))
     {
         OwnedHqlExpr trimTransform = queryCreateTrimTransform(projectedDataset);
         if (trimTransform)
@@ -7489,7 +7493,8 @@ IHqlExpression * HqlGram::createBuildIndexFromIndex(attribute & indexAttr, attri
 
     // If the trim attribute is present on the index, then add a project to trim all the input strings
     // When generating code the optimizer will combine this with the previous usertable/selectfields
-    if (hasAttribute(trimAtom, buildOptions) || index->hasAttribute(trimAtom))
+    if (hasAttribute(trimAtom, buildOptions) || index->hasAttribute(trimAtom) ||
+        hasAttribute(packedAtom, buildOptions) || index->hasAttribute(packedAtom))
     {
         OwnedHqlExpr trimTransform = queryCreateTrimTransform(select);
         if (trimTransform)
@@ -7856,9 +7861,24 @@ IHqlExpression * HqlGram::checkIndexRecord(IHqlExpression * record, const attrib
     {
         indexAttrs.setown(createComma(indexAttrs.getClear(), createExprAttribute(filepositionAtom, createConstant(false))));
     }
-    return LINK(record);
+
+    return checkPackIndexRecord(record, indexAttrs);
 }
 
+IHqlExpression * HqlGram::checkPackIndexRecord(IHqlExpression * record, IHqlExpression * indexAttrs)
+{
+    IHqlExpression * packedAttr = queryAttributeInList(packedAtom, indexAttrs);
+    IHqlExpression * payload = queryAttributeInList(_payload_Atom, indexAttrs);
+    assertex(payload);
+    if (packedAttr)
+    {
+        const unsigned defaultPackMinLength = 5;
+        unsigned minFieldLength = getIntValue(packedAttr->queryChild(0), defaultPackMinLength);
+        unsigned firstPayload = firstPayloadField(record, getIntValue(payload->queryChild(0), 0));
+        return createPackedStringRecord(record, firstPayload, minFieldLength);
+    }
+    return LINK(record);
+}
 
 void HqlGram::reportUnsupportedFieldType(ITypeInfo * type, const attribute & errpos)
 {
