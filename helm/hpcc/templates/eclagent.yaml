@@ -191,7 +191,7 @@ spec:
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "name" .name "component" $apptype "includeRemote" true) | indent 6 }}
 ---
 {{- if and (hasKey . "hpa") .useChildProcesses }}
- {{- include "hpcc.addHorizontalPodAutoscaler" (dict "name" .name "kind" "Deployment" "hpa" .hpa) }}
+ {{- include "hpcc.addHorizontalPodAutoscalerByReference" (dict "name" .name "hpaRef" .hpa "kind" "Deployment" "root" $) }}
 {{- end }}
 ---
 kind: ConfigMap 
