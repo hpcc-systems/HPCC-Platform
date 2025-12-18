@@ -22,17 +22,41 @@
 
 */}}
 {{/*
+Set Thor component cost configuration with cost inheritance.
+Pass in dict with root, me, subComponent (e.g., "manager", "worker", "eclagent"), and cost (dict to populate)
+Modifies the cost dict in place, always setting the cost key (to empty dict if no cost defined)
+*/}}
+{{- define "setThorComponentCost" -}}
+ {{- if and (hasKey .me .subComponent) (hasKey (index .me .subComponent) "cost") -}}
+  {{- $_ := set .cost "cost" (index .me .subComponent).cost -}}
+ {{- else if and .root.Values.global (hasKey .root.Values.global "cost") (hasKey .root.Values.global.cost "perCpu") -}}
+  {{- $_ := set .cost "cost" (dict "perCpu" .root.Values.global.cost.perCpu) -}}
+ {{- else -}}
+  {{- $_ := set .cost "cost" dict -}}
+ {{- end -}}
+{{- end -}}
+
+{{/*
 Thor configmap
 Pass in dict with root and me
 */}}
 {{- define "hpcc.thorConfigMap" -}}
 {{- $eclAgentType := .me.eclAgentType | default "hthor" }}
 {{- $hthorName := printf "%s-%s" .me.name $eclAgentType }}
-{{- $eclAgentScope := dict "name" .eclAgentName "type" $eclAgentType "useChildProcesses" .eclAgentUseChildProcesses "replicas" .eclAgentReplicas "maxActive" .me.maxJobs | merge (pick .me "auxQueues" "expert" "keepJobs" "logging" "tracing" "cost" "schedulingTimeoutSecs") ((hasKey .me "holdAgent") | ternary (dict "hold" .me.holdAgent) dict) }}
-{{- $thorAgentScope := dict "name" .thorAgentName "targetName" .me.name "replicas" .thorAgentReplicas "maxActive" .me.maxGraphs | merge (pick .me "expert" "keepJobs" "logging" "tracing" "schedulingTimeoutSecs") ((hasKey .me "holdThorAgent") | ternary (dict "hold" .me.holdThorAgent) dict) }}
+{{- $eclAgentCostConfig := dict -}}
+{{- $_ := include "setThorComponentCost" (dict "root" .root "me" .me "subComponent" "eclagent" "cost" $eclAgentCostConfig) -}}
+{{- $eclAgentSpecifications := pick .me "eclagent" | default (dict "eclagent" (dict "cost" $eclAgentCostConfig.cost)) -}}
+{{- $eclAgentScope := dict "name" .eclAgentName "type" $eclAgentType "useChildProcesses" .eclAgentUseChildProcesses "replicas" .eclAgentReplicas "maxActive" .me.maxJobs | merge (pick .me "auxQueues" "expert" "keepJobs" "logging" "tracing" "schedulingTimeoutSecs") ((hasKey .me "holdAgent") | ternary (dict "hold" .me.holdAgent) dict) $eclAgentSpecifications.eclagent }}
+{{- $thorAgentScope := dict "name" .thorAgentName "targetName" .me.name "replicas" .thorAgentReplicas "maxActive" .me.maxGraphs | merge (pick .me "expert" "keepJobs" "logging" "tracing" "schedulingTimeoutSecs") ((hasKey .me "holdThorAgent") | ternary (dict "hold" .me.holdThorAgent) dict) $eclAgentSpecifications.eclagent }}
 {{- $eclAgentResources := .me.eclAgentResources | default dict -}}
-{{- $hthorScope := dict "name" $hthorName "jobMemorySectionName" "eclAgentMemory" | merge (pick .me "expert" "logging" "maxGraphStartupTime" "tracing" "cost" "schedulingTimeoutSecs") | merge (dict "resources" (deepCopy $eclAgentResources))  ((hasKey .me "holdWorkflow") | ternary (dict "hold" .me.holdWorkflow) dict)}}
-{{- $thorScope := omit .me "eclagent" "thoragent" "hthor" "env" "eclAgentResources" "eclAgentUseChildProcesses" "eclAgentReplicas" "thorAgentReplicas" "eclAgentType" }}
+{{- $hthorScope := dict "name" $hthorName "jobMemorySectionName" "eclAgentMemory" "cost" $eclAgentCostConfig.cost | merge (pick .me "expert" "logging" "maxGraphStartupTime" "tracing" "schedulingTimeoutSecs") | merge (dict "resources" (deepCopy $eclAgentResources))  ((hasKey .me "holdWorkflow") | ternary (dict "hold" .me.holdWorkflow) dict )}}
+{{- $managerCostConfig := dict -}}
+{{- $_ := include "setThorComponentCost" (dict "root" .root "me" .me "subComponent" "manager" "cost" $managerCostConfig) -}}
+{{- $managerSpecifications := pick .me "manager" | default (dict "manager" (dict "cost" $managerCostConfig.cost)) -}}
+{{- $workerCostConfig := dict -}}
+{{- $_ := include "setThorComponentCost" (dict "root" .root "me" .me "subComponent" "worker" "cost" $workerCostConfig) -}}
+{{- $workerSpecifications := pick .me "worker" | default (dict "worker" (dict "cost" $workerCostConfig.cost)) -}}
+{{- $thorScope := omit .me "thoragent" "hthor" "env" "eclAgentResources" "eclAgentUseChildProcesses" "eclAgentReplicas" "thorAgentReplicas" "eclAgentType" "manager" "worker" "eclagent" "cost" | merge $managerSpecifications $workerSpecifications $eclAgentSpecifications }}
 {{- $misc := .root.Values.global.misc | default dict }}
 {{- $postJobCommand := $misc.postJobCommand | default "" }}
 {{- $eclAgentJobName := printf "%s-job-_HPCC_JOBNAME_" $eclAgentType }}
@@ -76,7 +100,8 @@ data:
 {{- include "hpcc.generateTracingConfig" (dict "root" .root "me" $thorAgentScope) | indent 6 }}
       type: thor
     global:
-{{ include "hpcc.generateGlobalConfigMap" .root| indent 6 }}
+{{/* Thor uses sub-component costs (manager, worker, eclagent), so exclude global perCpu */}}
+{{ include "hpcc.generateGlobalConfigMap" (dict "root" .root "excludePerCpuCost" true) | indent 6 }}
 
 {{- if not .eclAgentUseChildProcesses }}
   {{- $_ := set . "lifeCycleCtx" (dict "containers" list) }}
