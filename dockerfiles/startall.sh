@@ -152,7 +152,17 @@ if [[ "${CMD}" = "upgrade" ]]; then
   fi
 fi
 [[ -n ${INPUT_DOCKER_REPO} ]] && DOCKER_REPO=${INPUT_DOCKER_REPO}
-[[ -z ${LABEL} ]] && LABEL=$(docker image ls | fgrep "${DOCKER_REPO}/platform-core" | head -n 1 | awk '{print $2}')
+# Validate repository input to avoid shell injection via docker filter argument.
+if ! [[ ${DOCKER_REPO} =~ ^[A-Za-z0-9._-]+(:[0-9]+)?(/[A-Za-z0-9._-]+)*$ ]]; then
+  echo "ERROR: Docker repository '${DOCKER_REPO}' contains invalid characters." >&2
+  echo "       Allowed characters: letters, numbers, '.', '-', '_', optional ':<port>', and '/'." >&2
+  exit 1
+fi
+[[ -z ${LABEL} ]] && LABEL=$(docker image ls --format '{{.Tag}}' --filter "reference=${DOCKER_REPO}/platform-core:*" | grep -v '<none>' | head -n 1)
+if [[ -z ${LABEL} ]]; then
+  echo "ERROR: No local image tag found for ${DOCKER_REPO}/platform-core. Build it with ${scriptdir}/image.sh or supply -l <tag>." >&2
+  exit 1
+fi
 
 if [[ -n ${PERSIST} ]] ; then
   PERSIST=$(realpath -q $PERSIST || echo $PERSIST)
