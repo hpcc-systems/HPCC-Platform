@@ -1372,8 +1372,8 @@ IBufferedSerialOutputStream * createBufferedSerialOutputStream(MemoryBuffer & ta
 class CBufferSerialInputStream final : public CInterfaceOf<IBufferedSerialInputStream>
 {
 public:
-    CBufferSerialInputStream(MemoryBuffer & _source)
-    : source(_source)
+    CBufferSerialInputStream(MemoryBuffer & _source, bool _fillConsumedMemory)
+    : source(_source), fillConsumedMemory(_fillConsumedMemory)
     {
     }
 
@@ -1381,7 +1381,7 @@ public:
     {
         size32_t available = source.remaining();
         size32_t toCopy = std::min(len, available);
-        if (fillInvalidMemory)
+        if (fillConsumedMemory)
         {
             const byte * data = source.readDirect(toCopy);
             memcpy(ptr, data, toCopy);
@@ -1395,7 +1395,7 @@ public:
     virtual void skip(size32_t len) override
     {
         assertex(len <= source.remaining());
-        if (fillInvalidMemory)
+        if (fillConsumedMemory)
             memset(const_cast<byte *>(source.readDirect(0)), 0xcc, len);
         source.skip(len);
     }
@@ -1429,11 +1429,17 @@ public:
 
 protected:
     MemoryBuffer & source;
+    bool fillConsumedMemory = false;
 };
 
 IBufferedSerialInputStream * createBufferedSerialInputStream(MemoryBuffer & source)
 {
-    return new CBufferSerialInputStream(source);
+    return new CBufferSerialInputStream(source, false);
+}
+
+IBufferedSerialInputStream * createBufferedSerialInputStreamFillMemory(MemoryBuffer & source)
+{
+    return new CBufferSerialInputStream(source, true);
 }
 
 ISerialInputStream *createProgressStream(ISerialInputStream *stream, offset_t offset, offset_t len, const char *msg, unsigned periodSecs)

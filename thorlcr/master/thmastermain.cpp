@@ -293,6 +293,8 @@ public:
         unsigned maxRegistrationMins = (unsigned)getExpertOptInt64("maxWorkerRegistrationMins", defaultMaxRegistrationMins);
         constexpr unsigned oneMinMs = 60000;
 
+        constexpr unsigned defaultPendingTimeSecs = 600;
+        unsigned pendingTimeoutSecs = getConfigInt("@schedulingTimeoutSecs", defaultPendingTimeSecs);
         PROGLOG("Waiting for %u workers to register - max registration time = %u minutes", workers, maxRegistrationMins);
         CTimeMon registerTM(maxRegistrationMins * oneMinMs);
         while (remaining)
@@ -307,7 +309,7 @@ public:
                 if (isContainerized())
                 {
                     // NB: this is checking for error only, will throw an exception if any found.
-                    k8s::waitJob("thorworker", "job", cloudJobName.str(), 0, 0, k8s::KeepJobs::all);
+                    k8s::waitJob("thorworker", "job", cloudJobName.str(), pendingTimeoutSecs, 0, k8s::KeepJobs::all);
                 }
 
                 // NB: will not reach here if waitJob fails.
