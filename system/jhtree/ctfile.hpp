@@ -121,11 +121,11 @@ enum CompressionType : byte
 {
     LegacyCompression = 0,    // Keys built prior to 8.12.x will always have 0 here
     // Additional compression formats can be added here...
-    SplitPayload = 1,         // A proof-of-concept using separate compression blocks for keyed fields vs payload
-    InplaceCompression = 2,
-    ExperimentalCompression = 3,    // Used for testing new compression methods
-    BlockCompression = 3,           // Renumber once the format is fixed.
-    NewBlobCompression = 4,
+    SplitPayload = 1,               // A proof-of-concept using separate compression blocks for keyed fields vs payload
+    InplaceCompression = 2,         // Inplace compression - used for hybrid branches and inplace leaves and branches.
+    ExperimentalCompression = 3,    // Placeholder for testing new compression methods
+    NewBlobCompression = 4,         // Blobs encoded with non-lzw compression
+    BlockCompression = 5,           // Used for leaves in hybrid indexes
 };
 
 //#pragma pack(1)
