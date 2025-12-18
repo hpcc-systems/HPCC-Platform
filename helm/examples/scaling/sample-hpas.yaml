@@ -1,0 +1,33 @@
+# ------------------------------------------------------------------------------
+# Sample HPCC Platform Horizontal Pod Autoscaler (HPA) configurations
+#
+# This file demonstrates how to define named HPA profiles under the `global.hpas`
+# section for use in HPCC Platform Helm deployments.
+#
+# Each entry provides a reusable scaling policy, including replica limits and
+# metric targets, which can be referenced by components to control autoscaling
+# behavior based on workload characteristics.
+#
+# ------------------------------------------------------------------------------
+global:
+  hpas: #list of named HPA configurations, to be referenced from component definitions
+    HighCPULowReplicaHPAType: #example HPA profile for high CPU scaling trigger, with low replica count
+      hpa:
+        minReplicas: 1
+        maxReplicas: 2
+        metrics:
+        - type: Resource
+          name: cpu
+          target:
+            type: Utilization
+            value: "90"
+    LowCPULowReplicaHPAType: #example HPA profile for low CPU scaling trigger, with low replica count
+      hpa:
+        minReplicas: 1
+        maxReplicas: 2
+        metrics:
+        - type: Resource
+          name: cpu
+          target:
+            type: Utilization
+            value: "5"

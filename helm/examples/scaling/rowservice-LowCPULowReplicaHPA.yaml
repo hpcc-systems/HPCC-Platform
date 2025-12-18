@@ -1,0 +1,14 @@
+# Example Helm values file for deploying rowservice with a named HPA configuration
+# HPA configuration is defined globally and referenced by name here
+certificates:   #Not necessary for HPA functionality
+  enabled: true #but included because it is required for proper rowservice deployment
+dafilesrv:
+  - name: rowservice
+    disabled: false
+    application: stream
+    service:
+      servicePort: 7600
+      visibility: global
+    resources:
+      cpu: "500m"
+    hpa: "LowCPULowReplicaHPAType" # Reference to a named HPA configuration defined in global HPAs

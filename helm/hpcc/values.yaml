@@ -48,6 +48,12 @@ global:
   #  memory: "200Mi"
   #  cpu: "20m"
 
+  ## resource settings for monitoring sidecar components
+  # such as post-mortem collectors
+  #monitoringInstanceResources:
+  #  memory: "30Mi"
+  #  cpu: "5m"
+
   ## env adds default environment variables for all components. Environment settings can also be added or overridden locally
   #env:
   #- name: SMTPserver
@@ -162,6 +168,22 @@ global:
   #       azure.workload.identity/client-id: "33333333-3333-3333-3333-333333333333"
   #     labels:
   #       azure.workload.identity/use: "true"
+
+  # The hpas block contains Horizontal Pod Autoscaler (HPA) configuration definitions.
+  # The hpas entries can be referenced by name from individual components to apply the HPA configuration.
+  # Each entry describes autoscaling policies, including minimum and maximum replica counts and scaling metrics (CPU or memory).
+  #
+  #hpas:
+  #  HighCPULowReplicaHPAType: # name for this HPA configuration, to be referenced from components that want to use it
+  #   hpa:
+  #    minReplicas: 1
+  #    maxReplicas: 2
+  #    metrics:
+  #    - type: Resource
+  #      name: cpu
+  #      target:
+  #        type: Utilization
+  #        value: "90"
 
 # For pod placement instruction and examples please reference docs/placements.md
 # The following is for tolerations of Spot Node Pool on Azure. Other cloud providers

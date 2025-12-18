@@ -505,7 +505,7 @@ public:
         {
             MemoryBuffer buffer;
             Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(buffer);
-            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(buffer);
+            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStreamFillMemory(buffer);
 
             CCycleTimer timer;
             offset_t totalWritten = 0;
@@ -1032,7 +1032,7 @@ public:
         {
             CCycleTimer timer;
             MemoryBuffer clone(buffer.length(), buffer.toByteArray());
-            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(clone);
+            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStreamFillMemory(clone);
             testVarStringRead(*in, minFileLength);
             DBGLOG("Buffer:testVarStringRead took %lluus", timer.elapsedNs()/1000);
         }
@@ -1040,7 +1040,7 @@ public:
         {
             CCycleTimer timer;
             MemoryBuffer clone(buffer.length(), buffer.toByteArray());
-            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(clone);
+            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStreamFillMemory(clone);
             testVarStringPeek(*in, minFileLength);
             DBGLOG("Buffer:testVarStringPeek took %lluus", timer.elapsedNs()/1000);
         }
@@ -1048,7 +1048,7 @@ public:
         {
             CCycleTimer timer;
             MemoryBuffer clone(buffer.length(), buffer.toByteArray());
-            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(clone);
+            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStreamFillMemory(clone);
             testKVStringPeek(*in, minFileLength);
             DBGLOG("Buffer:testKVStringPeek took %lluus", timer.elapsedNs()/1000);
         }
@@ -1056,7 +1056,7 @@ public:
         {
             CCycleTimer timer;
             MemoryBuffer clone(buffer.length(), buffer.toByteArray());
-            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(clone);
+            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStreamFillMemory(clone);
             testStringListPeek(*in);
             DBGLOG("Buffer:testStringListPeek took %lluus", timer.elapsedNs()/1000);
         }

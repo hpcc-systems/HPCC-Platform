@@ -3660,33 +3660,57 @@ protected:
         originalTree.setown(tree);
         CCycleTimer timer;
 
-        // Serialization
-        MemoryBuffer memoryBuffer, streamBuffer;
+        MemoryBuffer memoryBuffer;
 
         // Time serialize() method
-        timer.reset();
-        originalTree->serialize(memoryBuffer);
-        __uint64 serializeElapsedNs = timer.elapsedNs();
-        size_t memoryBufferSize = memoryBuffer.length();
+        __uint64 serializeElapsedNs = 0;
+        {
+            timer.reset();
+            originalTree->serialize(memoryBuffer);
+            serializeElapsedNs = timer.elapsedNs();
+        }
 
         // Time serializeToStream() method
-        Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(streamBuffer);
-        timer.reset();
-        originalTree->serializeToStream(*out);
-        out->flush();
-        __uint64 serializeToStreamElapsedNs = timer.elapsedNs();
-        size_t streamBufferSize = streamBuffer.length();
+        __uint64 serializeToStreamElapsedNs = 0;
+        {
+            MemoryBuffer streamBuffer;
+            Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(streamBuffer);
+            timer.reset();
+            originalTree->serializeToStream(*out);
+            out->flush();
+            serializeToStreamElapsedNs = timer.elapsedNs();
 
-        // Validation - serialized data matches
-        CPPUNIT_ASSERT_EQUAL(memoryBufferSize, streamBufferSize);
-        CPPUNIT_ASSERT(memcmp(memoryBuffer.toByteArray(), streamBuffer.toByteArray(), memoryBufferSize) == 0);
+            // Validation - serialized data matches
+            CPPUNIT_ASSERT_EQUAL(memoryBuffer.length(), streamBuffer.length());
+            CPPUNIT_ASSERT(memcmp(memoryBuffer.toByteArray(), streamBuffer.toByteArray(), memoryBuffer.length()) == 0);
+        }
 
         // Time deserialize() method
+        __uint64 deserializeElapsedNs = 0;
+        {
+            Owned<IPropertyTree> memoryBufferDeserialized = createPTree();
+            timer.reset();
+            memoryBufferDeserialized->deserialize(memoryBuffer);
+            deserializeElapsedNs = timer.elapsedNs();
+            CPPUNIT_ASSERT(areMatchingPTrees(originalTree, memoryBufferDeserialized));
+        }
+        
         timer.reset();
         Owned<IPropertyTree> memoryBufferDeserialized = createPTree(memoryBuffer);
         __uint64 deserializeElapsedNs = timer.elapsedNs();
 
         // Time deserializeFromStream() method
+        __uint64 deserializeFromStreamElapsedNs = 0;
+        {
+            MemoryBuffer clone(memoryBuffer.length(), memoryBuffer.toByteArray());
+            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStreamFillMemory(clone);
+            Owned<IPropertyTree> streamDeserialized = createPTree();
+            timer.reset();
+            streamDeserialized->deserializeFromStream(*in);
+            deserializeFromStreamElapsedNs = timer.elapsedNs();
+            CPPUNIT_ASSERT(areMatchingPTrees(originalTree, streamDeserialized));
+        }
+
         Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(streamBuffer);
         timer.reset();
         Owned<IPropertyTree> streamDeserialized = createPTreeFromBinary(*in, ipt_none);
@@ -3695,33 +3719,34 @@ protected:
         // Create PTree from Binary tests
         //
         // Test 1: Call with null nodeCreator (should fall back to createPTree(src, ipt_none))
-        streamBuffer.reset();
-        Owned<IBufferedSerialInputStream> in2 = createBufferedSerialInputStream(streamBuffer);
-        Owned<IPropertyTree> deserializedCreatePTreeFromBinaryWithNull = createPTreeFromBinary(*in2, nullptr);
-        // Test 2: Call with custom nodeCreator
-        class TestNodeCreator : public CSimpleInterfaceOf<IPTreeNodeCreator>
         {
-        public:
-            bool wasCalled = false;
+            MemoryBuffer clone(memoryBuffer.length(), memoryBuffer.toByteArray());
+            Owned<IBufferedSerialInputStream> in2 = createBufferedSerialInputStreamFillMemory(clone);
+            Owned<IPropertyTree> deserializedCreatePTreeFromBinaryWithNull = createPTreeFromBinary(*in2, nullptr);
+            CPPUNIT_ASSERT(areMatchingPTrees(originalTree, deserializedCreatePTreeFromBinaryWithNull));
+        }
 
-            virtual IPropertyTree *create(const char *tag) override
+        // Test 2: Call with custom nodeCreator
+        {
+            class TestNodeCreator : public CSimpleInterfaceOf<IPTreeNodeCreator>
             {
-                wasCalled = true;
-                return createPTree(tag);
-            }
-        };
-        Owned<TestNodeCreator> nodeCreator = new TestNodeCreator();
-        // Reset stream position
-        streamBuffer.reset();
-        Owned<IBufferedSerialInputStream> in3 = createBufferedSerialInputStream(streamBuffer);
-        Owned<IPropertyTree> deserializedCreatePTreeFromBinaryWithCreator = createPTreeFromBinary(*in3, nodeCreator);
+            public:
+                bool wasCalled = false;
 
-        // Validation - verify both deserialized trees are equivalent to the original
-        CPPUNIT_ASSERT(areMatchingPTrees(originalTree, memoryBufferDeserialized));
-        CPPUNIT_ASSERT(areMatchingPTrees(originalTree, streamDeserialized));
-        CPPUNIT_ASSERT(areMatchingPTrees(originalTree, deserializedCreatePTreeFromBinaryWithNull));
-        CPPUNIT_ASSERT(nodeCreator->wasCalled); // Verify nodeCreator was called
-        CPPUNIT_ASSERT(areMatchingPTrees(originalTree, deserializedCreatePTreeFromBinaryWithCreator));
+                virtual IPropertyTree *create(const char *tag) override
+                {
+                    wasCalled = true;
+                    return createPTree(tag);
+                }
+            };
+
+            MemoryBuffer clone(memoryBuffer.length(), memoryBuffer.toByteArray());
+            Owned<TestNodeCreator> nodeCreator = new TestNodeCreator();
+            Owned<IBufferedSerialInputStream> in3 = createBufferedSerialInputStreamFillMemory(clone);
+            Owned<IPropertyTree> deserializedCreatePTreeFromBinaryWithCreator = createPTreeFromBinary(*in3, nodeCreator);
+            CPPUNIT_ASSERT(nodeCreator->wasCalled); // Verify nodeCreator was called
+            CPPUNIT_ASSERT(areMatchingPTrees(originalTree, deserializedCreatePTreeFromBinaryWithCreator));
+        }
 
         double serializeTimeMs = serializeElapsedNs / 1e6;
         double serializeToStreamTimeMs = serializeToStreamElapsedNs / 1e6;
@@ -3730,8 +3755,7 @@ protected:
         DBGLOG("  serialize() time: %.6f ms", serializeTimeMs);
         DBGLOG("  serializeToStream() time: %.6f ms", serializeToStreamTimeMs);
         DBGLOG("  Performance ratio (serializeToStream/serialize): %.6f", serializeToStreamTimeMs / serializeTimeMs);
-        DBGLOG("  serialize() data size: %zu bytes", memoryBufferSize);
-        DBGLOG("  serializeToStream() data size: %zu bytes", streamBufferSize);
+        DBGLOG("  serialize()/serializeToStream() data size: %u bytes", memoryBuffer.length());
 
         double deserializeTimeMs = deserializeElapsedNs / 1e6;
         double deserializeFromStreamTimeMs = deserializeFromStreamElapsedNs / 1e6;

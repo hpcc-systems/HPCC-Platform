@@ -52,7 +52,13 @@ public:
     virtual void * bufptr() override { return outbuf;}
     virtual size32_t buflen() override { return outlen;}
     virtual bool adjustLimit(size32_t newLimit) override;
-    virtual CompressionMethod getCompressionMethod() const override { return COMPRESS_METHOD_LZW; }
+    virtual CompressionMethod getCompressionMethod() const override
+    {
+        if (supportbigendian)
+            return COMPRESS_METHOD_LZW;
+        else
+            return COMPRESS_METHOD_LZW_LITTLE_ENDIAN;
+    }
     virtual bool supportsBlockCompression() const override { return false; }
     virtual bool supportsIncrementalCompression() const override { return true; }
     virtual size32_t compressBlock(size32_t destSize, void * dest, size32_t srcSize, const void * src) override { return 0; }

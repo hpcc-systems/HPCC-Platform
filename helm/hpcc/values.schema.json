@@ -246,8 +246,8 @@
           "expert": {
             "$ref": "#/definitions/expert"
           },
-          "hpa": {
-            "$ref": "#/definitions/hpa"
+          "hpa":{
+            "$ref": "#/definitions/hpaReference"
           }
         },
         "additionalProperties": { "type": ["integer", "string", "boolean"] },
@@ -446,6 +446,20 @@
             "sinks" : {
               "$ref" : "#/definitions/sinks"
             }
+          }
+        },
+        "hpas": {
+          "type": "object",
+          "description" : "Global HPAs configuration",
+          "additionalProperties": {
+            "type": "object",
+            "properties":
+            {
+              "hpa": {
+                "$ref": "#/definitions/hpa"
+              }
+            },
+            "additionalProperties": false
           }
         },
         "visibilities": {
@@ -1692,7 +1706,7 @@
           "$ref" : "#/definitions/egress"
         },
         "hpa": {
-          "$ref": "#/definitions/hpa"
+          "$ref": "#/definitions/hpaReference"
         },
         "expert": {
           "$ref": "#/definitions/expert"
@@ -1810,7 +1824,7 @@
           "$ref" : "#/definitions/egress"
         },
         "hpa": {
-          "$ref": "#/definitions/hpa"
+          "$ref": "#/definitions/hpaReference"
         },
         "expert": {
           "$ref": "#/definitions/expert"
@@ -1904,7 +1918,7 @@
           "$ref" : "#/definitions/allowedPipePrograms"
         },
         "hpa": {
-          "$ref": "#/definitions/hpa"
+          "$ref": "#/definitions/hpaReference"
         },
         "mapHttpCallUrlsToSecrets": {
           "type": "boolean",
@@ -2655,7 +2669,7 @@
           "$ref" : "#/definitions/allowedPipePrograms"
         },
         "hpa": {
-          "$ref": "#/definitions/hpa"
+          "$ref": "#/definitions/hpaReference"
         },
         "plugins": {
           "$ref": "#/definitions/plugins"
@@ -2699,7 +2713,7 @@
           "additionalProperties": { "type": "string" }
         },
         "hpa": {
-          "$ref": "#/definitions/hpa"
+          "$ref": "#/definitions/hpaReference"
         },
         "expert": {
           "$ref": "#/definitions/expert"
@@ -3371,8 +3385,8 @@
         "egress": {
           "$ref" : "#/definitions/egress"
         },
-        "hpa": {
-          "$ref": "#/definitions/hpa"
+        "hpa":{
+          "$ref": "#/definitions/hpaReference"
         },
         "expert": {
           "$ref": "#/definitions/expert"
@@ -3650,6 +3664,23 @@
         "additionalProperties": false
       }
     },
+    "monitoringInstanceResources": {
+      "type": "object",
+      "description" : "Resource definitions per instance for monitoring sidecars",
+      "properties": {
+        "memory": {
+          "description": "Default per monitoring sidecar instance memory requirements",
+          "type": "string",
+          "default": "30Mi"
+        },
+        "cpu": {
+          "description": "Default per monitoring sidecar instance CPU requirements",
+          "type": "string",
+          "default": "5m"
+        },
+        "additionalProperties": false
+      }
+    },
     "remoteClients": {
       "type": "array",
       "items": {
@@ -3723,6 +3754,10 @@
       "description": "Permitted list of programs that can be used by the ECL PIPE directive",
       "type": "array",
       "items": { "type": "string" }
+    },
+    "hpaReference": {
+      "description": "Named reference to an HPAs configuration",
+      "type": "string"
     },
     "hpa" : {
       "type": "object",

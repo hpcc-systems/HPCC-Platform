@@ -85,6 +85,7 @@ public:
     explicit FileAccessOptions(const FileAccessOptions & original); // clone - ready for subsequent modification
 
     bool isCompressed() const;
+    CompressionMethod queryCompressionMethod() const;
     void setCompression(bool enable, const char * method);
 
     void updateFromFile(IDistributedFile * file);
@@ -93,7 +94,7 @@ public:
     void updateFromStoragePlane(const IStoragePlane * storagePlane, IFOmode mode);
     void updateFromStoragePlane(const char * storagePlaneName, IFOmode mode);
 
-    void updateFromWriteHelper(IHThorGenericDiskWriteArg & helper, const char * defaultStoragePlaneName);
+    void updateFromWriteHelper(IHThorGenericDiskWriteArg & helper, const char * defaultStoragePlaneName, bool forceCompression, const char * compressionHint);
 
 //MORE: These members should probably be made private, and accessor methods added for extracting values from the format/provider options.
 //      or (better) the logic for setting properties for publishing in dali should become a member function.

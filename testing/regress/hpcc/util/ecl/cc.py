@@ -19,6 +19,7 @@
 
 import os
 import logging
+import shutil
 
 from ...common.error import Error
 from ...common.shell import Shell
@@ -57,6 +58,11 @@ class ECLCC(Shell):
                 os.mkdir(dirname)
             if os.path.isfile(filename):
                 os.unlink(filename)
+            if ecl.isEclXml:
+                logger.debug("%3d. makeArchive - copying .eclxml file directly (no compilation needed)", ecl.getTaskId())
+                shutil.copy2(ecl.getEcl(), filename)
+                retVal = True
+                return retVal
             result, stderr = self.getArchive(ecl)
 
             if result.startswith( 'Error('):

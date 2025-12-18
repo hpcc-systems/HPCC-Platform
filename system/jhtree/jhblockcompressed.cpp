@@ -402,7 +402,6 @@ void CBlockCompressedWriteNode::finalize()
 
 BlockCompressedIndexCompressor::BlockCompressedIndexCompressor(unsigned keyedSize, IHThorIndexWriteArg *helper, const char* options, bool isTLK)
 {
-    CompressionMethod compressionMethod = COMPRESS_METHOD_ZSTDS;
     StringBuffer compressionOptions;
 
     auto processOption = [this] (const char * option, const char * value)
@@ -433,9 +432,9 @@ BlockCompressedIndexCompressor::BlockCompressedIndexCompressor(unsigned keyedSiz
             processOptionString(options, processOption);
     }
 
-    context.compressionHandler = queryCompressHandler(compressionMethod);
+    context.compressionHandler = queryCompressHandler(context.compressionMethod);
     if (!context.compressionHandler)
-        throw MakeStringException(0, "Unknown compression method %d", (int)compressionMethod);
+        throw MakeStringException(0, "Unknown compression method %d", (int)context.compressionMethod);
     
     if (!isTLK && helper && (helper->getFlags() & TIWzerofilepos))
         context.zeroFilePos = true;

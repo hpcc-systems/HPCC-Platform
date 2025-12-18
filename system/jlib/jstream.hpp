@@ -113,6 +113,11 @@ extern jlib_decl ISerialOutputStream * createCompressingOutputStream(IBufferedSe
 extern jlib_decl ISerialOutputStream * createSerialOutputStream(IFileIO * output, offset_t offset=0);
 
 extern jlib_decl IBufferedSerialInputStream * createBufferedSerialInputStream(MemoryBuffer & source);
+
+// For testing/validation. This version fills the consumed part of the memory buffer, so that the implementation
+// doesn't depend on it/reuse it.
+extern jlib_decl IBufferedSerialInputStream * createBufferedSerialInputStreamFillMemory(MemoryBuffer & source);
+
 extern jlib_decl IBufferedSerialOutputStream * createBufferedSerialOutputStream(StringBuffer & target);
 extern jlib_decl IBufferedSerialOutputStream * createBufferedSerialOutputStream(MemoryBuffer & target);
 
