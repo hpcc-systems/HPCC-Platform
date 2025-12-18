@@ -74,7 +74,7 @@ public:
     stat_type getTimePenalty() const { return timePenalty; }
     cost_type getCostPenalty() const { return costPenalty; }
 
-private:
+    private:
     AnalyzerErrorCode errorCode = ANA_GENERICERROR_ID;
     StringBuffer filename;
     unsigned line = 0;
@@ -96,6 +96,10 @@ enum WutOptionType
     watPreFilteredKJThreshold,
     watClusterCostPerHour,
     watOptMaxExecuteTime,
+    watOptSoapCallTimeAggregateThreshold,
+    watOptSoapCallRowAvgThreshold,
+    watOptSoapCallWarnClusterSize,
+    watOptClusterSize,
     watOptMax
 };
 
