@@ -130,6 +130,36 @@ if [ -z "$MALLOC_ARENA_MAX" ]; then
     export MALLOC_ARENA_MAX=$num_arenas
 fi
 
+# search env or conf file for useJemalloc=true/false setting and if true, add libjemalloc to LD_PRELOAD
+HPCC_XMLFILE=${HPCC_XMLFILE:-${CONFIG_DIR}/${ENV_XML_FILE}}
+
+usejem=""
+jemline=$(sed -n '/\<envsettings/I,/\/envsettings/I{//!p;}' "${HPCC_XMLFILE}" 2>/dev/null | grep -i '<usejemalloc>')
+if [[ "$jemline" != "" ]] ; then
+    usejem=$(echo "$jemline" | awk -F '[<>]' 'tolower($0)~/usejemalloc/{print $3}' 2>/dev/null)
+fi
+if [[ "$usejem" == "" ]] ; then
+    jemline=$(grep -i usejemalloc "${HPCC_CONFIG}" 2>/dev/null)
+    if [[ "$jemline" != "" ]] ; then
+        item1=$(echo $jemline 2>/dev/null | awk '{print $1}' | cut -c 1)
+        if [[ "$item1" != '#' ]] ; then
+            usejem=$(echo $jemline 2>/dev/null | awk -F= '{print $2}' 2>/dev/null)
+        fi
+    fi
+fi
+
+if [[ "$usejem" != "" ]] ; then
+    usejem=$(echo "$usejem" | tr -d "[:blank:]" | tr "[:upper:]" "[:lower:]")
+fi
+
+if [[ "$usejem" == "true" ]] ; then
+    if [[ -s ${INSTALL_DIR}/lib/libjemalloc.so ]] ; then
+        if [[ ! "${LD_PRELOAD}" =~ .*libjemalloc.* ]] ; then
+            export LD_PRELOAD="${INSTALL_DIR}/lib/libjemalloc.so${LD_PRELOAD:+:${LD_PRELOAD}}"
+        fi
+    fi
+fi
+
 PATH_PREFIX=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^path *= *" | sed -e 's/^path *= *//'`
 
 export PID=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^pid *= *" | sed -e 's/^pid *= *//'`
