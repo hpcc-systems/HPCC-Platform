@@ -116,6 +116,7 @@ static bool isWorthHoisting(IHqlExpression * expr, bool asSubQuery)
         case no_dataset_alias:
         case no_forcegraph:
         case no_metaactivity:
+        case no_createdictionary:
             expr = expr->queryChild(0);
             break;
         case no_fail:
@@ -8998,7 +8999,7 @@ void AutoScopeMigrateTransformer::doAnalyseConditionalExpr(IHqlExpression * expr
 void AutoScopeMigrateTransformer::doAnalyseExpr(IHqlExpression * expr)
 {
     AutoScopeMigrateInfo * extra = queryBodyExtra(expr);
-    if (activityDepth && expr->isDataset())
+    if (activityDepth && (expr->isDataset() || expr->isDictionary()))
     {
         if (isWorthHoisting(expr, true) && isIndependentOfScope(expr) && !isContextDependent(expr))
         {
