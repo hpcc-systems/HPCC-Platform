@@ -209,6 +209,12 @@ public:
     {
         // NB: called by 1st output to start()
         CriticalBlock block(prepareInputLock);
+
+        // if at start (0 == recsReady) and writeAheadException set, it means another CSplitterOutput::start()->prepareInput hit and set
+        // the exception, as opposed to it being set in writeahead(), after a successful prepareInput()
+        if ((0 == recsReady) && writeAheadException)
+            throw LINK(writeAheadException);
+
         if (!inputPrepared)
         {
             inputPrepared = true;
