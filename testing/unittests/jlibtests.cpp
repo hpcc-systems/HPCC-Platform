@@ -3695,26 +3695,16 @@ protected:
             CPPUNIT_ASSERT(areMatchingPTrees(originalTree, memoryBufferDeserialized));
         }
         
-        timer.reset();
-        Owned<IPropertyTree> memoryBufferDeserialized = createPTree(memoryBuffer);
-        __uint64 deserializeElapsedNs = timer.elapsedNs();
-
         // Time deserializeFromStream() method
         __uint64 deserializeFromStreamElapsedNs = 0;
         {
             MemoryBuffer clone(memoryBuffer.length(), memoryBuffer.toByteArray());
             Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStreamFillMemory(clone);
-            Owned<IPropertyTree> streamDeserialized = createPTree();
             timer.reset();
-            streamDeserialized->deserializeFromStream(*in);
+            Owned<IPropertyTree> streamDeserialized = createPTreeFromBinary(*in, ipt_none);
             deserializeFromStreamElapsedNs = timer.elapsedNs();
             CPPUNIT_ASSERT(areMatchingPTrees(originalTree, streamDeserialized));
         }
-
-        Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(streamBuffer);
-        timer.reset();
-        Owned<IPropertyTree> streamDeserialized = createPTreeFromBinary(*in, ipt_none);
-        __uint64 deserializeFromStreamElapsedNs = timer.elapsedNs();
 
         // Create PTree from Binary tests
         //
