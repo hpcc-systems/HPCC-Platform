@@ -372,9 +372,9 @@ bool CIndexPlotOp::doXAxis(LinkChanges& linkChanges, size_t yAxisIdx)
                 const char* kind = linkTree.queryProp("@kind");
                 Owned<IEventVisitationLink> link;
                 if (strieq(kind, "event-filter"))
-                    link.setown(createEventFilter(linkTree));
+                    link.setown(createEventFilter(linkTree, *metaState));
                 else
-                    link.setown(createEventModel(linkTree));
+                    link.setown(createEventModel(linkTree, *metaState));
                 link->setNextLink(*chain);
                 chain.setown(link.getClear());
             }

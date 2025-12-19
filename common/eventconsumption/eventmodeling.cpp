@@ -17,16 +17,16 @@
 
 #include "eventmodeling.h"
 
-extern IEventModel* createIndexEventModel(const IPropertyTree& config);
+extern IEventModel* createIndexEventModel(const IPropertyTree& config, CMetaInfoState& metaState);
 
 // Use the model type, `@kind`, to choose the correct model class to instantiate. The first model,
 // `index-events`, is the default if the type is not given.
-IEventModel* createEventModel(const IPropertyTree& config)
+IEventModel* createEventModel(const IPropertyTree& config, CMetaInfoState& metaState)
 {
     const char* kind = config.queryProp("@kind");
     if (isEmptyString(kind)) // create default model
-        return createIndexEventModel(config);
+        return createIndexEventModel(config, metaState);
     if (strieq(kind, "index-events"))
-        return createIndexEventModel(config);
+        return createIndexEventModel(config, metaState);
     return nullptr;
 }

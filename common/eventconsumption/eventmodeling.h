@@ -21,6 +21,8 @@
 #include "eventvisitor.h"
 #include "jptree.hpp"
 
+class CMetaInfoState;
+
 // Abstract extension of IEventVisitationLink that distinguishes between model and any other type
 // of visitation link. This may also be a placeholder for future model-specific methods should
 // they become necessary.
@@ -34,4 +36,4 @@ interface IEventModel : extends IEventVisitationLink
 // Within `model`, the `kind` attribute is used to determine the type of model to create. Accepted
 // values are:
 // - `index-events` (default): An index event model.
-extern event_decl IEventModel* createEventModel(const IPropertyTree& config);
+extern event_decl IEventModel* createEventModel(const IPropertyTree& config, CMetaInfoState& metaState);

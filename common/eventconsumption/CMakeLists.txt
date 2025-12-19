@@ -36,6 +36,7 @@ set (
     ${CMAKE_CURRENT_SOURCE_DIR}/eventindexplot.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventindexsummarize.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventiterator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/eventmetaparser.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventmodeling.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventoperation.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventsaveas.cpp
