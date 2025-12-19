@@ -244,7 +244,15 @@ public:
                 const char *sourceText = msg.querySource();
                 if (sourceText && *sourceText)
                 {
-                    escapedSource.append('"').append(sourceText).append('"');
+                    escapedSource.append('"');
+                    for (const char *p = sourceText; *p; p++)
+                    {
+                        if (*p == '"')
+                            escapedSource.append("\"\""); // Escape quotes by doubling them
+                        else
+                            escapedSource.append(*p);
+                    }
+                    escapedSource.append('"');
                 }
                 
                 StringBuffer line;
