@@ -735,6 +735,7 @@ CrcIOStream::CrcIOStream(IFileIOStream * _stream, unsigned startCRC)
 
 void CrcIOStream::flush()
 {
+    stream->flush();
 }
 
 size32_t CrcIOStream::read(size32_t len, void * data)
