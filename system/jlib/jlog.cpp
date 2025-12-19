@@ -2485,6 +2485,9 @@ LogHandlerFormat getConfigHandlerFormat(const IPropertyTree *logConfig)
     return currentFormat != newFormat ? newFormat : LOGFORMAT_undefined;
 }
 
+static TraceFlags baseTraceFlags = TraceFlags::None; // used by update function as base
+static std::initializer_list<TraceOption> componentTraceOptions;
+
 void updateStdErrLogHandler(const IPropertyTree *logConfig)
 {
     if (logConfig->hasProp(logFieldsAtt))
@@ -2514,6 +2517,9 @@ void updateStdErrLogHandler(const IPropertyTree *logConfig)
         Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(msgAudiences, msgClasses, logDetail, local);
         theManager->changeMonitorFilter(theStderrHandler, filter);
     }
+    // NB: will affect new threads only, existing thread will continue to use old trace flags!
+    const IPropertyTree *traceFlags = logConfig->queryPropTree("traceFlags");
+    updateTraceFlags(loadTraceFlags(traceFlags, componentTraceOptions, baseTraceFlags), true);
 }
 
 static void loggingSetupUpdate(const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
@@ -2540,7 +2546,7 @@ static CConfigUpdateHook configUpdateHook;
 
 // NB: it is not thread-safe to change the handler whilst other threads are logging.
 // This should only be called at startup.
-void setupContainerizedLogMsgHandler()
+void setupContainerizedLogMsgHandler(const std::initializer_list<TraceOption> &optNames)
 {
     Owned<IPropertyTree> logConfig = getComponentConfigSP()->getPropTree("logging");
     if (logConfig && logConfig->getPropBool(logDisabledAtt, false))
@@ -2605,7 +2611,16 @@ void setupContainerizedLogMsgHandler()
         updateStdErrLogHandler(logConfig);
     }
     configUpdateHook.installOnce(loggingSetupUpdate, false);
+    baseTraceFlags = queryTraceFlags();
+    componentTraceOptions = optNames;
 }
+
+void setupContainerizedLogMsgHandler()
+{
+    constexpr std::initializer_list<TraceOption> noTraceOptions;
+    setupContainerizedLogMsgHandler(noTraceOptions);
+}
+
 
 ILogMsgManager * queryLogMsgManager()
 {
