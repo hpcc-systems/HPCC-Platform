@@ -3499,28 +3499,22 @@ void diagnoseLogAccessPluginLoad(LogAccessPluginDiagnostics & diagnostics)
 
         if (!logAccessPluginConfig)
         {
-            diagnostics.configFound = false;
-            diagnostics.statusMessage.set("No logaccess configuration found in global config");
+            diagnostics.logAccessPluginLoadState = LogAccessDiagnosticState::ConfigNotFound;
+            diagnostics.statusMessage.setf("%s: No logaccess configuration found in global config", methodName);
             return;
         }
 
-        diagnostics.configFound = true;
-
-        StringBuffer type;
-        logAccessPluginConfig->getProp("@type", type);
-        if (type.isEmpty())
+        logAccessPluginConfig->getProp("@type", diagnostics.pluginType);
+        if (diagnostics.pluginType.isEmpty())
         {
-            diagnostics.statusMessage.set("RemoteLogAccess plugin type not specified in configuration");
+            diagnostics.logAccessPluginLoadState = LogAccessDiagnosticState::ConfigFoundNoType;
+            diagnostics.statusMessage.setf("%s: RemoteLogAccess plugin type not specified in configuration", methodName);
             return;
         }
-
-        diagnostics.pluginType.set(type.str());
 
         StringBuffer libName;
-        libName.append("lib").append(type.str()).append("logaccess");
+        libName.append("lib").append(diagnostics.pluginType.str()).append("logaccess");
         diagnostics.libName.set(libName.str());
-
-        diagnostics.loadAttempted = true;
 
         //Attempt to load the DLL/SO
         HINSTANCE logAccessPluginLib = nullptr;
@@ -3529,7 +3523,8 @@ void diagnoseLogAccessPluginLoad(LogAccessPluginDiagnostics & diagnostics)
             logAccessPluginLib = LoadSharedObject(libName.str(), false, false); // raiseOnError=false to capture error
             if (!logAccessPluginLib)
             {
-                diagnostics.statusMessage.setf("Failed to load shared library '%s': Library not found or load failed", libName.str());
+                diagnostics.logAccessPluginLoadState = LogAccessDiagnosticState::LoadFailed;
+                diagnostics.statusMessage.setf("%s: Failed to load shared library '%s': Library not found or load failed", methodName, libName.str());
                 return;
             }
 
@@ -3537,20 +3532,22 @@ void diagnoseLogAccessPluginLoad(LogAccessPluginDiagnostics & diagnostics)
             void * xproc = GetSharedProcedure(logAccessPluginLib, instFactoryName);
             if (xproc == nullptr)
             {
-                diagnostics.statusMessage.setf("Cannot locate procedure '%s' in library '%s'", instFactoryName, libName.str());
+                diagnostics.logAccessPluginLoadState = LogAccessDiagnosticState::LoadFailed;
+                diagnostics.statusMessage.setf("%s: Cannot locate procedure '%s' in library '%s'", methodName, instFactoryName, libName.str());
                 FreeSharedObject(logAccessPluginLib);
                 return;
             }
 
-            diagnostics.loadSucceeded = true;
-            diagnostics.statusMessage.set("Plugin library and factory procedure verified successfully");
+            diagnostics.logAccessPluginLoadState = LogAccessDiagnosticState::LoadSucceeded;
+            diagnostics.statusMessage.setf("%s: Plugin library and factory procedure verified successfully", methodName);
             FreeSharedObject(logAccessPluginLib);
         }
         catch (IException *e)
         {
+            diagnostics.logAccessPluginLoadState = LogAccessDiagnosticState::LoadFailed;
             StringBuffer errorMsg;
             e->errorMessage(errorMsg);
-            diagnostics.statusMessage.setf("Failed to load or verify plugin library '%s': %s", libName.str(), errorMsg.str());
+            diagnostics.statusMessage.setf("%s: Failed to load or verify plugin library '%s': %s", methodName, libName.str(), errorMsg.str());
             if (logAccessPluginLib)
                 FreeSharedObject(logAccessPluginLib);
             e->Release();
@@ -3558,7 +3555,8 @@ void diagnoseLogAccessPluginLoad(LogAccessPluginDiagnostics & diagnostics)
         }
         catch (...)
         {
-            diagnostics.statusMessage.setf("Failed to load or verify plugin library '%s': Unknown error", libName.str());
+            diagnostics.logAccessPluginLoadState = LogAccessDiagnosticState::LoadFailed;
+            diagnostics.statusMessage.setf("%s: Failed to load or verify plugin library '%s': Unknown error", methodName, libName.str());
             if (logAccessPluginLib)
                 FreeSharedObject(logAccessPluginLib);
             return;

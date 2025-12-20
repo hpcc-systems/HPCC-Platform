@@ -1799,14 +1799,20 @@ struct LogAccessHealthReportOptions
     bool IncludeSampleQuery = true;
 };
 
+enum class LogAccessDiagnosticState
+{
+    ConfigNotFound,      // No logaccess configuration found
+    ConfigFoundNoType,   // Configuration found but no type specified
+    LoadFailed,          // Configuration found, load attempted but failed
+    LoadSucceeded        // Configuration found, library loaded and verified successfully
+};
+
 // Diagnostic information collected during logaccess plugin loading attempt
 struct LogAccessPluginDiagnostics
 {
-    StringAttr pluginType;
+    LogAccessDiagnosticState logAccessPluginLoadState = LogAccessDiagnosticState::ConfigNotFound;
+    StringBuffer pluginType;
     StringAttr libName;
-    bool configFound = false;
-    bool loadAttempted = false;
-    bool loadSucceeded = false;
     StringBuffer statusMessage;  // Contains diagnostic message (error or success)
 };
 

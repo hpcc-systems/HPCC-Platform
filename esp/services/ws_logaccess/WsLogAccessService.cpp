@@ -407,68 +407,81 @@ bool Cws_logaccessEx::onGetHealthReport(IEspContext &context, IEspGetHealthRepor
         LogAccessPluginDiagnostics diagnostics;
         diagnoseLogAccessPluginLoad(diagnostics);
 
-        if (!diagnostics.configFound)
+        switch (diagnostics.logAccessPluginLoadState)
         {
-            messages.append("Warning: No logaccess plugin configuration found.");
-            code.set("Warning");
-        }
-        else
-        {
-            if (diagnostics.loadAttempted)
+            case LogAccessDiagnosticState::ConfigNotFound:
+            {
+                messages.append("Warning: No logaccess plugin configuration found.");
+                code.set("Warning");
+                break;
+            }
+            case LogAccessDiagnosticState::ConfigFoundNoType:
+            {
+                VStringBuffer configTypeMsg("LogAccess configuration found but plugin type not specified: '%s'", diagnostics.statusMessage.str());
+                messages.append(configTypeMsg.str());
+                code.set("Fail");
+                break;
+            }
+            case LogAccessDiagnosticState::LoadFailed:
             {
                 // Configuration exists, report on load attempt
                 VStringBuffer configMsg("LogAccess configuration found - Plugin Type: '%s'", diagnostics.pluginType.str());
                 messages.append(configMsg.str());
 
-                if (diagnostics.loadSucceeded)
-                {
-                    VStringBuffer successMsg("Plugin library '%s' and factory procedure verified successfully. Plugin instance failed to initialize during service startup - check service logs for initialization errors.", diagnostics.libName.str());
-                    messages.append(successMsg.str());
-                    code.set("Warning");
-                }
-                else
-                {
-                    VStringBuffer failMsg("Failed to verify plugin '%s': %s", diagnostics.libName.str(), diagnostics.statusMessage.str());
-                    messages.append(failMsg.str());
-                    code.set("Fail");
-                }
+                VStringBuffer failMsg("Failed to verify plugin '%s': %s", diagnostics.libName.str(), diagnostics.statusMessage.str());
+                messages.append(failMsg.str());
+                code.set("Fail");
+                break;
             }
-            else
+            case LogAccessDiagnosticState::LoadSucceeded:
             {
-                // Load was not attempted - check if there's a diagnostic message
-                if (!diagnostics.statusMessage.isEmpty())
-                {
-                    VStringBuffer errorMsg("Plugin loading was not attempted: %s", diagnostics.statusMessage.str());
-                    messages.append(errorMsg.str());
-                    code.set("Fail");
-                }
-                else
-                {
-                    // Load was not attempted - likely due to missing or invalid plugin type
-                    messages.append("LogAccess configuration found but plugin loading was not attempted: RemoteLogAccess plugin type not specified in configuration");
-                }
+                VStringBuffer configMsg("LogAccess configuration found - Plugin Type: '%s'", diagnostics.pluginType.str());
+                messages.append(configMsg.str());
+                VStringBuffer successMsg("Plugin library '%s' and factory procedure verified successfully. Plugin instance failed to initialize during service startup - check service logs for initialization errors.", diagnostics.libName.str());
+                messages.append(successMsg.str());
+                code.set("Warning");
+                break;
+            }
+            default:
+            {
+                messages.append("Unknown diagnostic state encountered");
+                code.set("Fail");
+                break;
             }
         }
 
         // Add configuration details if requested
         if (options.IncludeConfiguration)
         {
-            VStringBuffer configReport("LogAccess Configuration Status:\n"
-                                        "  Config Found: %s\n",
-                                        diagnostics.configFound ? "Yes" : "No");
-            if (diagnostics.configFound)
+            const char* stateStr = "";
+            switch (diagnostics.logAccessPluginLoadState)
             {
-                configReport.appendf("  Plugin Type: %s\n"
-                                     "  Library Name: %s\n"
-                                     "  Load Attempted: %s\n"
-                                     "  Load Succeeded: %s\n"
-                                     "  Details: %s\n",
-                                     diagnostics.pluginType.str(),
-                                     diagnostics.libName.str(),
-                                     diagnostics.loadAttempted ? "Yes" : "No",
-                                     diagnostics.loadSucceeded ? "Yes" : "No",
-                                     diagnostics.statusMessage.str());
+                case LogAccessDiagnosticState::ConfigNotFound:
+                    stateStr = "ConfigNotFound";
+                    break;
+                case LogAccessDiagnosticState::ConfigFoundNoType:
+                    stateStr = "ConfigFoundNoType";
+                    break;
+                case LogAccessDiagnosticState::LoadFailed:
+                    stateStr = "LoadFailed";
+                    break;
+                case LogAccessDiagnosticState::LoadSucceeded:
+                    stateStr = "LoadSucceeded";
+                    break;
+                default:
+                    stateStr = "Unknown";
+                    break;
             }
+
+            VStringBuffer configReport("LogAccess Configuration Status:\n"
+                                        "  Diagnostic State: %s\n"
+                                        "  Plugin Type: %s\n"
+                                        "  Library Name: %s\n"
+                                        "  Details: %s\n",
+                                        stateStr,
+                                        diagnostics.pluginType.str(),
+                                        diagnostics.libName.str(),
+                                        diagnostics.statusMessage.str());
             resp.setConfiguration(configReport.str());
         }
     }
