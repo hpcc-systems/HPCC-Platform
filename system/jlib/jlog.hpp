@@ -1799,6 +1799,23 @@ struct LogAccessHealthReportOptions
     bool IncludeSampleQuery = true;
 };
 
+enum class LogAccessDiagnosticState
+{
+    ConfigNotFound,      // No logaccess configuration found
+    ConfigFoundNoType,   // Configuration found but no type specified
+    LoadFailed,          // Configuration found, load attempted but failed
+    LoadSucceeded        // Configuration found, library loaded and verified successfully
+};
+
+// Diagnostic information collected during logaccess plugin loading attempt
+struct LogAccessPluginDiagnostics
+{
+    LogAccessDiagnosticState logAccessPluginLoadState = LogAccessDiagnosticState::ConfigNotFound;
+    StringBuffer pluginType;
+    StringAttr libName;
+    StringBuffer statusMessage;  // Contains diagnostic message (error or success)
+};
+
 // Log Access Interface - Provides filtered access to persistent logging - independent of the log storage mechanism
 //                      -- Declares method to retrieve log entries based on options set
 //                      -- Declares method to retrieve remote log access type (eg elasticstack, etc)
@@ -1841,5 +1858,9 @@ extern jlib_decl bool fetchComponentLog(LogQueryResultDetails & resultDetails, S
 extern jlib_decl bool fetchLogByAudience(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, MessageAudience audience, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format);
 extern jlib_decl bool fetchLogByClass(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, LogMsgClass logclass, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format);
 extern jlib_decl IRemoteLogAccess * queryRemoteLogAccessor();
+// Performs diagnostic analysis of logaccess plugin loading issues without raising exceptions
+// Safely attempts to load the plugin library and verify factory procedure availability
+// Returns detailed diagnostic information in the provided diagnostics struct
+extern jlib_decl void diagnoseLogAccessPluginLoad(LogAccessPluginDiagnostics & diagnostics);
 
 #endif
