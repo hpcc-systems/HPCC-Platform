@@ -280,23 +280,25 @@ public:
     virtual void threadmain() override
     {
         Owned<IException> exception;
-        bool sharedK8sJob = false;
+        bool sharedK8sJob = false; // set to true if agent uses a k8s job that is shared by multiple jobs (only thor for now)
+        bool wasScheduled = false;
         try
         {
             StringAttr jobSpecName(apptype);
             StringAttr processName(apptype);
 
+            Owned<const IPropertyTree> compConfig = getComponentConfig();
+            bool useChildProcesses = compConfig->getPropBool("@useChildProcesses");
             if (isThorAgent)
             {
                 // JCSMORE - ideally apptype, image and executable name would all be same.
                 jobSpecName.set("thormanager");
                 processName.set("thormaster_lcr");
+                if (isContainerized() && !useChildProcesses) // i.e. using k8s job
+                    sharedK8sJob = true;
             }
-            Owned<const IPropertyTree> compConfig = getComponentConfig();
-            bool useChildProcesses = compConfig->getPropBool("@useChildProcesses");
             if (isContainerized() && !useChildProcesses)
             {
-                sharedK8sJob = true;
                 constexpr unsigned queueWaitingCheckPeriodMs = 1000;
                 // NB: queueJobIfQueueWaiting is a legacy mechanism (should be deleted), for now only used if disableQueuePriority=true
                 if (!owner.lingerQueue || !queueJobIfQueueWaiting(owner.lingerQueue, item, queueWaitingCheckPeriodMs, queueWaitingCheckPeriodMs))
@@ -357,7 +359,7 @@ public:
                         workunit->setContainerizedProcessInfo("AgentExec", compConfig->queryProp("@name"), k8s::queryMyPodName(), k8s::queryMyContainerName(), graphName, nullptr);
                         addTimeStamp(workunit, wfid, graphName, StWhenK8sLaunched);
                     }
-                    k8s::runJob(jobSpecName, wuid, jobName, params);
+                    k8s::runJob(jobSpecName, wuid, jobName, params, wasScheduled);
                 }
             }
             else
@@ -395,20 +397,39 @@ public:
         if (exception)
         {
             EXCLOG(exception);
-            Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-            Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
-            if (cw)
+
+            // after scheduling, the job instance "owns" the workunit state and will modify it as needed
+            //
+            // NB: a caveat to that, in the isThorAgent=true case, is that if the k8s job *abruptly* fails after
+            // scheduling and hasn't had a chance to update the workunit, then the agent will see the k8s job exception
+            // here, but does not know which wuid to update (because the k8s instance will have processed an
+            // arbitrary number of jobs since launch). See HPCC-35523
+            if (!sharedK8sJob || !wasScheduled)
             {
-                if (!sharedK8sJob && ((cw->getState() == WUStateRunning) || (cw->getState() == WUStateBlocked) || (cw->getState() == WUStateWait)))
+                Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+                Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
+                if (cw)
                 {
-                    Owned<IWorkUnit> workunit = &cw->lock();
-                    // recheck now locked
-                    if ((workunit->getState() == WUStateRunning) || (workunit->getState() == WUStateBlocked) || (workunit->getState() == WUStateWait))
+                    Owned<IWorkUnit> workunit;
+                    // NB: if sharedK8sJob && !wasScheduled, the state should be WUStateBlocked at this stage.
+                    for (unsigned iter = 1; iter <= 2; ++iter)
                     {
-                        workunit->setState(WUStateFailed);
-                        StringBuffer eStr;
-                        addExceptionToWorkunit(workunit, SeverityError, "agentexec", exception->errorCode(), exception->errorMessage(eStr).str(), nullptr, 0, 0, 0);
-                        workunit->commit();
+                        WUState state = iter==1 ? cw->getState() : workunit->getState();
+                        if (state == WUStateCompleted || state == WUStateFailed || state == WUStateAborted)
+                            break;
+                        if (1 == iter)
+                        {
+                            workunit.setown(&cw->lock());
+                            assertex(workunit);
+                            // now locked, continue around to iter 2
+                        }
+                        else // iter 2
+                        {
+                            workunit->setState(WUStateFailed);
+                            StringBuffer eStr;
+                            addExceptionToWorkunit(workunit, SeverityError, "agentexec", exception->errorCode(), exception->errorMessage(eStr).str(), nullptr, 0, 0, 0);
+                            workunit->commit();
+                        }
                     }
                 }
             }

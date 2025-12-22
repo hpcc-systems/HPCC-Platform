@@ -986,7 +986,8 @@ public:
             StringBuffer jobName;
             jobName.append("eclcc-").append(instanceName).append("-").append(k8s::queryPodSuffix()).append("-").append(instanceNumber);
 
-            k8s::runJob("compile", nullptr, jobName, params);
+            bool wasScheduled = false;
+            k8s::runJob("compile", nullptr, jobName, params, wasScheduled);
         }
         catch (IException *E)
         {

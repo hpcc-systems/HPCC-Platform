@@ -106,8 +106,9 @@ bool checkExitCodes(StringBuffer &output, const char *podStatuses)
     return false;
 }
 
-void waitJob(const char *componentName, const char *resourceType, const char *job, unsigned pendingTimeoutSecs, unsigned totalWaitTimeSecs, KeepJobs keepJob)
+void waitJob(const char *componentName, const char *resourceType, const char *job, unsigned pendingTimeoutSecs, unsigned totalWaitTimeSecs, KeepJobs keepJob, bool &wasScheduled)
 {
+    wasScheduled = false;
     VStringBuffer jobName("%s-%s-%s", componentName, resourceType, job);
     jobName.toLowerCase();
     VStringBuffer waitJob("kubectl get jobs %s -o jsonpath={.status.active}", jobName.str());
@@ -173,17 +174,22 @@ void waitJob(const char *componentName, const char *resourceType, const char *jo
                     // cycle around, check .status.active again
                 }
             }
-            runKubectlCommand(nullptr, getScheduleStatus, nullptr, &output.clear());
-
-            // Check whether pod has been scheduled yet - if resources are not available pods may block indefinitely waiting to be scheduled, and
-            // we would prefer them to fail instead.
-            bool pending = streq(output, "False");
-            if (pendingTimeoutSecs && pending && msTick()-start > pendingTimeoutSecs*1000)
+            if (!wasScheduled)
             {
-                schedulingTimeout = true;
-                VStringBuffer getReason("kubectl get pods --selector=job-name=%s \"--output=jsonpath={range .items[*].status.conditions[?(@.type=='PodScheduled')]}{.reason}{': '}{.message}{end}\"", jobName.str());
-                runKubectlCommand(componentName, getReason, nullptr, &output.clear());
-                throw makeStringExceptionV(0, "Failed to run %s - pod not scheduled after %u seconds: %s ", jobName.str(), pendingTimeoutSecs, output.str());
+                runKubectlCommand(nullptr, getScheduleStatus, nullptr, &output.clear());
+
+                // Check whether pod has been scheduled yet - if resources are not available pods may block indefinitely waiting to be scheduled, and
+                // we would prefer them to fail instead.
+                bool pending = streq(output, "False");
+                if (pendingTimeoutSecs && pending && msTick()-start > pendingTimeoutSecs*1000)
+                {
+                    schedulingTimeout = true;
+                    VStringBuffer getReason("kubectl get pods --selector=job-name=%s \"--output=jsonpath={range .items[*].status.conditions[?(@.type=='PodScheduled')]}{.reason}{': '}{.message}{end}\"", jobName.str());
+                    runKubectlCommand(componentName, getReason, nullptr, &output.clear());
+                    throw makeStringExceptionV(0, "Failed to run %s - pod not scheduled after %u seconds: %s ", jobName.str(), pendingTimeoutSecs, output.str());
+                }
+                else if (streq(output, "True"))
+                    wasScheduled = true;
             }
             if (0 == totalWaitTimeSecs)
                 break;
@@ -297,8 +303,9 @@ bool applyYaml(const char *componentName, const char *wuid, const char *job, con
 }
 
 static constexpr unsigned defaultPendingTimeSecs = 600;
-void runJob(const char *componentName, const char *wuid, const char *jobName, const std::list<std::pair<std::string, std::string>> &extraParams)
+void runJob(const char *componentName, const char *wuid, const char *jobName, const std::list<std::pair<std::string, std::string>> &extraParams, bool &wasScheduled)
 {
+    wasScheduled = false;
     Owned<IPropertyTree> compConfig = getComponentConfig();
     KeepJobs keepJob = translateKeepJobs(compConfig->queryProp("@keepJobs"));
     unsigned __int64 val = getConfigInt64("@schedulingTimeoutSecs", UINT64_MAX);
@@ -314,7 +321,7 @@ void runJob(const char *componentName, const char *wuid, const char *jobName, co
     Owned<IException> exception;
     try
     {
-        waitJob(componentName, "job", jobName, pendingTimeoutSecs, INFINITE, keepJob);
+        waitJob(componentName, "job", jobName, pendingTimeoutSecs, INFINITE, keepJob, wasScheduled);
     }
     catch (IException *e)
     {

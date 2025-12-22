@@ -37,9 +37,9 @@ constexpr unsigned defaultDeleteJobGracePeriod = 120; // this is time during del
 
 jlib_decl bool isActiveService(const char *serviceName);
 jlib_decl void deleteResource(const char *componentName, const char *job, const char *resource);
-jlib_decl void waitJob(const char *componentName, const char *resourceType, const char *job, unsigned pendingTimeoutSecs, unsigned totalWaitTimeSecs, KeepJobs keepJob);
+jlib_decl void waitJob(const char *componentName, const char *resourceType, const char *job, unsigned pendingTimeoutSecs, unsigned totalWaitTimeSecs, KeepJobs keepJob, bool &wasScheduled);
 jlib_decl bool applyYaml(const char *componentName, const char *wuid, const char *job, const char *resourceType, const std::list<std::pair<std::string, std::string>> &extraParams, bool optional, bool autoCleanup);
-jlib_decl void runJob(const char *componentName, const char *wuid, const char *job, const std::list<std::pair<std::string, std::string>> &extraParams={});
+jlib_decl void runJob(const char *componentName, const char *wuid, const char *job, const std::list<std::pair<std::string, std::string>> &extraParams, bool &wasScheduled);
 
 constexpr unsigned defaultKubectlRetrySecs = 60;
 extern jlib_decl void runKubectlCommand(const char *title, const char *cmd, const char *input, StringBuffer *output, unsigned retrySecs=defaultKubectlRetrySecs);
