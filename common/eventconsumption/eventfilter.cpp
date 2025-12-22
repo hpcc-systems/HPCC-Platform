@@ -20,7 +20,9 @@
 #include "eventmetaparser.hpp"
 #include "jregexp.hpp"
 #include "jutil.hpp"
+#include <map>
 #include <set>
+#include <unordered_map>
 #include <unordered_set>
 
 class CEventFilter : public CInterfaceOf<IEventFilter>
@@ -110,11 +112,27 @@ protected:
     {
         StringMatchHelper helper;
 
+        // Cache of previously evaluated values used to avoid potentially redundant pattern
+        // matching. The contents persist for the lifetime of the filter term. For values known
+        // to have a shorter lifetime, e.g., TraceId, a subclass may manage the cache differently.
+        //
+        // The map is mutable because it is used exclusively within a const method. The method is
+        // const because the base class requires it to be so. Concurrent access is not a concern
+        // because event traversal and iteration are not multi-threaded activities. Synchronization
+        // is not required.
+        mutable std::unordered_map<std::string, bool> knownValues;
+
         using FilterTerm::FilterTerm;
 
         bool matches(const CEvent&, const CEventAttribute& attribute) const override
         {
-            return helper.matches(attribute.queryTextValue());
+            std::string value = attribute.queryTextValue();
+            auto knownIt = knownValues.find(value);
+            if (knownIt != knownValues.end())
+                return knownIt->second;
+            bool match = helper.matches(value.c_str());
+            knownValues.emplace(std::move(value), match);
+            return match;
         }
 
         bool acceptToken(const char* token, FilterTermComparison comp) override
@@ -282,6 +300,48 @@ protected:
 
         StringMatchHelper helper;
         mutable std::set<__uint64> matchedPaths;
+    };
+
+    struct TraceIdFilterTerm : public StringFilterTerm
+    {
+        using StringFilterTerm::StringFilterTerm;
+
+        // Override of the base class method to accept the corresponding service name, which is
+        // not required to exist, as a match. The base method cannot be used because it cannot
+        // convey whether a result of false indicates a known non-match or the value is previously
+        // unseen, forcing the subclass to repeat lookups.
+        bool matches(const CEvent& event, const CEventAttribute& attribute) const override
+        {
+            if (attribute.queryId() != EvAttrEventTraceId)
+                throw makeStringExceptionV(0, "TraceIdFilterTerm can only evaluate EventTraceId attributes, but received attribute ID: %u", unsigned(attribute.queryId()));
+            std::string traceId = attribute.queryTextValue();
+            auto knownIt = knownValues.find(traceId);
+            bool match;
+            if (knownIt != knownValues.end())
+            {
+                match = knownIt->second;
+                // A QueryStop event with an EventTraceId attribute is required to attempt to purge
+                // what is now presumed to be an inactive ID from the knownValues map. The cache
+                // cleanup cannot occur with any other combination of event type and attribute ID.
+                if (match && EventQueryStop == event.queryType())
+                    knownValues.erase(knownIt);
+            }
+            else
+            {
+                if (helper.matches(traceId.c_str()))
+                    match = true;
+                else
+                {
+                    const char* serviceName = metaInfoState.queryServiceName(traceId.c_str());
+                    match = (!isEmptyString(serviceName) && helper.matches(serviceName));
+                }
+                // Only cache the result if this is not a QueryStop event, since QueryStop events
+                // trigger cache cleanup rather than cache population.
+                if (EventQueryStop != event.queryType())
+                    knownValues.emplace(std::move(traceId), match);
+            }
+            return match;
+        }
     };
 
     struct TimestampFilterTerm : public UnsignedFilterTerm
@@ -524,6 +584,8 @@ public: // IEventFilter
                 throw makeStringException(-1, "event attribute EvAttrPath has a conflicting filter term for EvAttrFileId");
             return term->accept(values);
         }
+        else if (EvAttrEventTraceId == id)
+            return ensureTerm<TraceIdFilterTerm>(id)->accept(values);
         else if (EvAttrNodeKind == id)
             return ensureTerm<NodeKindFilterTerm>(id)->accept(values);
         else
@@ -660,6 +722,7 @@ class EventFilterTests : public CppUnit::TestFixture
     CPPUNIT_TEST(testFilterByAttributeByTimestamp1);
     CPPUNIT_TEST(testFilterByAttributeByTimestamp2);
     CPPUNIT_TEST(testFilterByAttributeByTimestamp3);
+    CPPUNIT_TEST(testFilterByAttributeByTraceId);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -1338,6 +1401,34 @@ public:
                     <event type="IndexCacheMiss" NodeKind="1"/>
                     <event type="IndexCacheMiss" NodeKind="2"/>
                     <event type="IndexCacheMiss" NodeKind="2"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData, false);
+    }
+
+    void testFilterByAttributeByTraceId()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link kind="event-filter">
+                    <attribute id="EventTraceId" values="trace-001,dali*"/>
+                </link>
+                <input>
+                    <event type="QueryStart" EventTraceId="trace-001" ServiceName="roxie-service"/>
+                    <event type="QueryStart" EventTraceId="trace-002" ServiceName="thor-service"/>
+                    <event type="QueryStart" EventTraceId="trace-003" ServiceName="dali-backend"/>
+                    <event type="QueryStart" EventTraceId="trace-004" ServiceName="esp-service"/>
+                    <event type="IndexCacheHit" EventTraceId="trace-001"/>
+                    <event type="IndexCacheHit" EventTraceId="trace-002"/>
+                    <event type="IndexCacheHit" EventTraceId="trace-003"/>
+                    <event type="IndexCacheHit" EventTraceId="trace-004"/>
+                </input>
+                <expect>
+                    <event type="QueryStart" EventTraceId="trace-001" ServiceName="roxie-service"/>
+                    <event type="QueryStart" EventTraceId="trace-003" ServiceName="dali-backend"/>
+                    <event type="IndexCacheHit" EventTraceId="trace-001"/>
+                    <event type="IndexCacheHit" EventTraceId="trace-003"/>
                 </expect>
             </test>
         )!!!";

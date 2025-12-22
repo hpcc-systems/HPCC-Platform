@@ -131,6 +131,12 @@ Events using `NodeKind` can be filtered by either the numerical value (0, 1, or 
 
 Remember that `IndexPayload` does not use `NodeKind` but has an implied logical value of `LeafNode`. Likewise for `FileInformation`, even though the value has no meaning for the meta event. `NodeKind` cannot, by itself, be used to block all index events for leaf nodes.
 
+3. TraceID Attribute
+
+All events may include a `TraceId` attribute, subject to options specified when recording started. Many, but not all, events are recorded within the scope of `QueryStart` and `QueryStop` events, which means the `TraceId` is associated with a `ServiceName` attribute. `TraceId` filter terms can include service names, resulting in the acceptance of all `TraceId` values associated with the named services.
+
+Where the distinction between `FileId` and `Path` is naturally disambiguated by their data types, both `TraceId` and `ServiceName` are text. Term tokens are not disambiguated. A token pattern that matches both a trace ID and a service name will accept both the ID and name.
+
 ### IEventModel
 
 An extension of `IEventVisitationLink`, this abstraction describes visitors whose purpose is to more broadly transform the event stream. Possible changes include:
