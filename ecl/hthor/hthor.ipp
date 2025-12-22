@@ -302,7 +302,7 @@ protected:
     bool outputPlaneCompressed = false;
     bool useGenericReadWrites = false;
     CachedOutputMetaData serializedOutputMeta;
-    offset_t uncompressedBytesWritten;
+    offset_t uncompressedBytesWritten = 0;
     Owned<ILogicalRowWriter> outSeq;
     unsigned __int64 numRecords = 0;
     stat_type numDiskWrites = 0;
