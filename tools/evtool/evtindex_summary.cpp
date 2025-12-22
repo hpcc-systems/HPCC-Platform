@@ -39,6 +39,9 @@ public:
             case 'n':
                 op.setSummarization(IndexSummarization::byNode);
                 break;
+            case 't':
+                op.setSummarization(IndexSummarization::byTrace);
+                break;
             default:
                 return false;
         }
@@ -48,8 +51,9 @@ public:
     virtual const char* getVerboseDescription() const override
     {
         return R"!!!(Summarize the index events in a binary event file. Activity can be aggregate
-by either index file ID, node kind, or individual node (as identified by file
-ID and file offset). One line of output is produced for each event group.
+by either index file ID, node kind, individual node (as identified by file
+ID and file offset), or trace ID. One line of output is produced for each
+event group.
 )!!!";
     }
 
@@ -71,6 +75,7 @@ ID and file offset). One line of output is produced for each event group.
 R"!!!(    -f                        Summarize activity by file.
     -k                        Summarize activity by node kind.
     -n                        Summarize activity by node.
+    -t                        Summarize activity by trace ID.
 )!!!";
         size32_t usageStrLength = size32_t(strlen(usageStr));
         out.put(usageStrLength, usageStr);
