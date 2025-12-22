@@ -47,6 +47,12 @@ const defaultUIState = {
     wuCanDown: false
 };
 
+const isDFUWorkunit = (wuid: string): boolean => {
+    if (!wuid) return false;
+    const firstChar = wuid.trim().charAt(0).toUpperCase();
+    return firstChar === "D" || firstChar === "P";
+}
+
 interface ActivitiesProps {
 }
 
@@ -104,7 +110,8 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
                             return `<img src='${img}'/>&nbsp;${_name}`;
                         }
                     }
-                    return `<img src='${img}'/>&nbsp;<a href='#/workunits/${row.Wuid}' class='dgrid-row-url'>${row.Wuid}</a>`;
+                    const route = isDFUWorkunit(row.Wuid) ? "dfuworkunits" : "workunits";
+                    return `<img src='${img}'/>&nbsp;<a href='#/${route}/${row.Wuid}' class='dgrid-row-url'>${row.Wuid}</a>`;
                 }
             }),
             GID: {
@@ -180,14 +187,16 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
                 if (selection.length === 1) {
                     let url = `#/operations/clusters/${selection[0].ClusterName}`;
                     if (selection[0].Wuid) {
-                        url = `#/workunits/${selection[0].Wuid}`;
+                        const route = isDFUWorkunit(selection[0].Wuid) ? "dfuworkunits" : "workunits";
+                        url = `#/${route}/${selection[0].Wuid}`;
                     }
                     window.location.href = url;
                 } else {
                     for (let i = selection.length - 1; i >= 0; --i) {
                         let url = `#/operations/clusters/${selection[i].ClusterName}`;
                         if (selection[i].Wuid) {
-                            url = `#/workunits/${selection[i].Wuid}`;
+                            const route = isDFUWorkunit(selection[i].Wuid) ? "dfuworkunits" : "workunits";
+                            url = `#/${route}/${selection[i].Wuid}`;
                         }
                         window.open(url, "_blank");
                     }
