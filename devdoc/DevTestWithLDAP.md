@@ -40,7 +40,7 @@ These instructions create a persistent volume for the DS inside your directory, 
 
     **What this does:** The `dsconf backend create` command configures the LDAP server to manage a specific DN subtree (in this case `dc=example,dc=com`). This is a server-side configuration that tells 389 Directory Server "I will handle queries for this naming context," but it does **not** create any actual directory entries yet.
 
-4. Verify the backend was created successfully.  You should see the response "The database was successfully created". You can also verify by checking that files were created in your mounted volume (`${HOME}/389ds` or your configured path from `${HOME}/ldap/docker-compose.yaml`), or by running this command and confirming that `dc=example,dc=com` is listed:
+4. Verify the backend was created successfully. You should see the response "The database was successfully created". You can also verify by checking that files were created in your mounted volume (`${HOME}/389ds` or your configured path from `${HOME}/ldap/docker-compose.yaml`), or by running this command and confirming that `dc=example,dc=com` is listed:
 
     ```bash
     docker exec -i -t 389ds /usr/sbin/dsconf localhost backend suffix list
@@ -49,9 +49,9 @@ These instructions create a persistent volume for the DS inside your directory, 
     **Note:** At this point, phpLDAPadmin will not yet be able to browse the directory tree because the base DN entry itself doesn't exist. Only the server configuration has been set up.
 
 5. Initialize the LDAP directory structure by running HPCC Platform for the first time. Before using phpLDAPadmin to manage the directory, you must start the HPCC Platform at least once (see sections below for bare-metal or containerized setup). On first startup, the platform will: 
-   - Detect that the base DN entry (`dc=example,dc=com`) is missing
-   - Automatically create the base DN entry and all necessary organizational units (OUs) for users, groups, and resources
-   - Initialize the HPCCAdministrators group and admin user
+    - Detect that the base DN entry (`dc=example,dc=com`) is missing
+    - Automatically create the base DN entry and all necessary organizational units (OUs) for users, groups, and resources
+    - Initialize the HPCCAdministrators group and admin user
 
    After the platform has initialized the directory structure, you can verify and manage your LDAP server using phpLDAPadmin at `http://localhost:8080`. Login with:
    - **username:** `cn=Directory Manager`
