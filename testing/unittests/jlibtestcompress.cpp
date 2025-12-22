@@ -421,7 +421,7 @@ public:
 
                 //zstds needs to support partial writes to be able to support LargeBlockCompress/MBBlockCompress
                 //(That would be good for compressing network packets so worth revisiting)
-                if (strieq(type, "zstds"))
+                if (startsWithIgnoreCase(type, "zstds"))
                     continue;
 
                 testCompressor(handler, options, rowSz, src.length(), src.bytes(), LargeBlockCompress);
