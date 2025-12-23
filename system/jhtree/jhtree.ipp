@@ -118,7 +118,7 @@ protected:
     CJHTreeNode *loadNodeFromMemory(const void *nodeData, offset_t pos, bool needsCopy) const;
     CJHTreeNode *_createNode(const NodeHdr &hdr) const;
     const CJHSearchNode *getIndexNodeUsingLoader(const INodeLoader &nodeLoader, offset_t offset, NodeType type, IContextLogger *ctx) const;
-    const CJHBlobNode *getBlobNode(offset_t nodepos, IContextLogger *ctx, CLoadNodeCacheState & readState);
+    const CJHBlobNode *getBlobNode(const INodeLoader &nodeLoader, offset_t nodepos, IContextLogger *ctx);
 
     CKeyIndex(unsigned _iD, const char *_name, bool _forceTLK);
     ~CKeyIndex();
@@ -153,7 +153,6 @@ public:
     virtual IKeyIndex *queryPart(unsigned idx) { return idx ? NULL : this; }
     virtual unsigned queryScans() { return keyScans; }
     virtual unsigned querySeeks() { return keySeeks; }
-    virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize, IContextLogger *ctx);
     virtual offset_t queryBlobHead() { return keyHdr->getHdrStruct()->blobHead; }
     virtual void resetCounts() { keyScans.store(0); keySeeks.store(0); }
     virtual offset_t queryLatestGetNodeOffset() const { return latestGetNodeOffset; }
@@ -173,6 +172,7 @@ public:
     virtual const char *queryFileName() const = 0;
     virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, CLoadNodeCacheState & readState) const = 0;  // Must be implemented in derived classes
 
+    const byte *loadBlob(const INodeLoader &nodeLoader, unsigned __int64 blobid, size32_t &blobsize, IContextLogger *ctx);
     unsigned getBranchDepth() const { return keyHdr->getHdrStruct()->hdrseq; }
     bool bloomFilterReject(const IIndexFilterList &segs, IContextLogger *ctx) const;
 
@@ -243,6 +243,7 @@ public:
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override { ::mergeStats(stats, io); }
 };
 
+
 class jhtree_decl CKeyCursor : public CInterfaceOf<IKeyCursor>, implements INodeLoader
 {
 protected:
@@ -292,6 +293,17 @@ public:
     {
         return key.loadNode(fetchCycles, offset, readState);
     }
+
+    // This is the main function that is used to load a node from an index for the current cursor.  The
+    // typical function flow is
+    //
+    // CKeyCursor::getCursorNode()
+    //  IKeyIndex::getIndexNodeUsingLoader(loader)
+    //   CNodeCache::getCachedNode(loader)
+    //    CKeyCursor(INodeLoader)::loadNode()
+    //     IKeyIndex::loadNode(readState);
+    //      CKeyIndex::loadNodeFromMemory(data)
+
     const CJHSearchNode *getCursorNode(offset_t offset, NodeType type, IContextLogger *ctx) const
     {
         return key.getIndexNodeUsingLoader(*this, offset, type, ctx);
