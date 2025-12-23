@@ -1863,9 +1863,9 @@ void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
             }
         }
         if (keepCompressedPayload)
-            assertex((data - (const byte *)keyBuf) == len);
+            assertex((size32_t)(data - (const byte *)keyBuf) == len);
         else
-            assertex((data - originalData) == len);
+            assertex((size32_t)(data - originalData) == len);
 
         if (isLeaf() && !expandPayloadOnDemand)
             loadExpandTime = expansionTimer.elapsedNs();
@@ -2346,7 +2346,6 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
     LeafFilepositionInfo savedPositionInfo = positionInfo;
     const byte * data = (const byte *)_data;
     unsigned oldSize = getDataSize(true);
-    size32_t oldCompressedSize = getCompressedPayloadSize();
     builder.add(keyCompareLen, data);
 
     if (positions.ordinality())
@@ -2410,7 +2409,7 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
             maxUsedSpace += maxSizePayloadLength;
 
         size32_t maxPayloadSize = maxBytes - maxUsedSpace;
-        if (maxBytes < maxUsedSpace)
+        if ((size32_t)maxBytes < maxUsedSpace)
             hasSpace = false;
         else if (useCompressedPayload && !ctx.options.recompress)
         {
@@ -2520,7 +2519,7 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
         unsigned nowSize = getDataSize(true);
         assertex(oldSize == nowSize);
 
-        if (nowSize > maxBytes)
+        if (nowSize > (size32_t)maxBytes)
             throw makeStringExceptionV(0, "Internal error: Leaf grew too large after ignoring row @%llu:%u (%u > %u)", getFpos(), hdr.numKeys, hdr.keyBytes, maxBytes);
 
 #ifdef TRACE_BUILDING

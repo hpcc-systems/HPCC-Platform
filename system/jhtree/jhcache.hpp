@@ -55,13 +55,6 @@ protected:
 };
 
 
-class CCacheReservation
-{
-// The interpretation of this data is cache implementation dependent
-// Allocate with void * members to ensure it is 8 byte aligned.
-    void * reserved[4];
-};
-
 //This is the interface that is used to interface with the page cache
 //
 // NOTE: The size of the pages in the cache is unlikely to match the size of the nodes in an index.  That means
