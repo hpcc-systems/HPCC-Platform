@@ -1508,7 +1508,7 @@ void CDiskKeyIndex::ensureReady()
             //Check the file size field matches the actual size of the file.
             __int64 phyrec = candidateHdr->phyrec;
             _WINREV(phyrec);
-            if (phyrec != actualSize-1)
+            if ((offset_t)phyrec != actualSize-1)
                 continue;
 
             // This should never be false - possibly an internal error instead
@@ -3332,7 +3332,6 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
     if (unlikely(!typeCache.enabled))
         return nodeLoader.loadNode(nullptr, pos);
 
-    CCacheReservation cacheReservation;
     CKeyIdAndPos key(iD, pos);
     unsigned hashcode = typeCache.getKeyHash(key);
     unsigned subCache = cacheBits == 0 ? 0 : hashcode >> cacheShift;

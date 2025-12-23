@@ -309,7 +309,7 @@ public:
             rc = pread64(cacheFd, data, toRead, cacheFileOffset);
 #endif // preadv2
 
-        if (rc == toRead)
+        if ((unsigned)rc == toRead)
         {
             if (ioMethod == DIRECT)
                 memcpy(data, &alignedAddr[critIndex * pageSize], toRead);
@@ -355,7 +355,7 @@ public:
             rc = pwrite64(cacheFd, data, pageSize, cacheFileOffset);
 #endif // pwritev2
 
-        return (rc == pageSize);
+        return ((unsigned)rc == pageSize);
     }
 #endif
 
