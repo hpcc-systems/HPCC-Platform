@@ -108,9 +108,11 @@ interface IStoragePlane: extends IInterface
     virtual unsigned numDefaultSprayParts() const = 0 ;
     virtual bool queryDirPerPart() const = 0;
     virtual unsigned queryNumStripes() const = 0;
+    virtual unsigned queryDefaultCopies() const = 0;
     virtual IStoragePlaneAlias *getAliasMatch(AccessMode desiredModes) const = 0;
     virtual IStorageApiInfo *getStorageApiInfo() const = 0;
     virtual bool isAccessible() const = 0;
+    virtual bool isStriped() const = 0;
     virtual unsigned __int64 getAttribute(PlaneAttributeType attr) const = 0;
     virtual bool isAnyDeviceLocal() const = 0;
     virtual bool compressOnWrite() const = 0;

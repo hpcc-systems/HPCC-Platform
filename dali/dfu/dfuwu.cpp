@@ -1053,11 +1053,14 @@ public:
             if (getGroupName(clustnum,gs).length())
                 grpname = gs.str();
             Owned<IGroup> grp(getGroup(clustnum));
+            Owned<const IStoragePlane> plane = getStoragePlaneByName(grpname, false);
             if (dirgot&&grp.get()&&partmask.length()) {  // not sure if need dir here
                 if (!initdone) {
                     ret->setNumParts(n); // NB first cluster determines number of parts
                     initdone = true;
                 }
+                if (plane)
+                    mspec.defaultCopies = plane->queryDefaultCopies();
                 ret->addCluster(grpname,grp,mspec);
             }
             else if (!initdone) { // don't do if added cluster already

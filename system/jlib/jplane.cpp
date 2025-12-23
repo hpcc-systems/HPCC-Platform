@@ -329,6 +329,14 @@ public:
         return ::isAccessible(config);
     }
 
+    virtual bool isStriped() const
+    {
+        //For bare metal systems, striped containers need to be explicitly configured.
+        if (!isContainerized() && !config->getPropBool("@striped"))
+            return false;
+        return devices > 1;
+    }
+
     virtual unsigned __int64 getAttribute(PlaneAttributeType attr) const override
     {
         assertex(attr < PlaneAttributeCount);
@@ -349,6 +357,11 @@ public:
     virtual const char * queryCompression() const
     {
         return compression;
+    }
+
+    virtual unsigned queryDefaultCopies() const override
+    {
+        return config->getPropInt("@redundancy", 0) + 1;
     }
 
 private:
@@ -524,6 +537,9 @@ IPropertyTreeIterator * getRemoteStoragesIterator()
 
 const IStoragePlane * getStoragePlaneByName(const char * name, bool required)
 {
+    if (isEmptyString(name))
+        return nullptr;
+
     CriticalBlock b(storagePlaneMapCrit);
     const CStoragePlane *e = doFindStoragePlaneByName(name, required);
     if (!e)
@@ -548,6 +564,9 @@ const IStoragePlane * getStoragePlaneFromPath(const char *filePath, bool require
 //This will not support inheriting values from the defaults.
 const IPropertyTree * getStoragePlaneConfig(const char * name, bool required)
 {
+    if (isEmptyString(name))
+        return nullptr;
+
     CriticalBlock b(storagePlaneMapCrit);
     auto it = storagePlaneMap.find(name);
     if (it != storagePlaneMap.end())
