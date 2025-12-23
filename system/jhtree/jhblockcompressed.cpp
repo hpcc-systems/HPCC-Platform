@@ -284,7 +284,7 @@ bool CJHBlockCompressedVarNode::fetchPayload(unsigned int num, char *dst, Payloa
             if (zeroFilePosition)
             {
                 memcpy(dst+keyCompareLen, p+keyCompareLen, reclen-keyCompareLen);
-                *(offset_t*)(dst+keyLen) = 0;
+                *(offset_t*)(dst+reclen) = 0;
             }
             else
                 memcpy(dst+keyCompareLen, p+keyCompareLen, reclen + sizeof(offset_t) - keyCompareLen);
