@@ -128,6 +128,8 @@ void CJHBlockCompressedSearchNode::load(CKeyHdr *_keyHdr, const void *rawData, o
     CCycleTimer expansionTimer(true);
     keyBuf = expandBlock(keys, inMemorySize, compressionMethod);
     loadExpandTime = expansionTimer.elapsedNs();
+    fileposFetchSize = keyHdr->hasSpecialFileposition() && !zeroFilePosition ? sizeof(offset_t) : 0;
+    clearFilepos = keyHdr->hasSpecialFileposition() && zeroFilePosition;
 }
 
 int CJHBlockCompressedSearchNode::compareValueAt(const char *src, unsigned int index) const
@@ -143,20 +145,9 @@ bool CJHBlockCompressedSearchNode::fetchPayload(unsigned int index, char *dst, P
     if (!dst) return true;
 
     const char * p = keyBuf + index*keyRecLen;
-    if (keyHdr->hasSpecialFileposition())
-    {
-        if (zeroFilePosition)
-        {
-            memcpy(dst+keyCompareLen, p+keyCompareLen, keyLen-keyCompareLen);
-            *(offset_t*)(dst+keyLen) = 0;
-        }
-        else
-            memcpy(dst+keyCompareLen, p+keyCompareLen, keyLen + sizeof(offset_t) - keyCompareLen);
-    }
-    else
-    {
-        memcpy(dst+keyCompareLen, p+keyCompareLen, keyLen-keyCompareLen);
-    }
+    memcpy(dst+keyCompareLen, p+keyCompareLen, keyLen + fileposFetchSize - keyCompareLen);
+    if (clearFilepos)
+        *(offset_t*)(dst+keyLen) = 0;
     return true;
 }
 
@@ -274,24 +265,14 @@ int CJHBlockCompressedVarNode::compareValueAt(const char *src, unsigned int inde
 bool CJHBlockCompressedVarNode::fetchPayload(unsigned int num, char *dst, PayloadReference & activePayload) const
 {
     if (num >= hdr.numKeys) return false;
+    if (!dst) return true;
 
-    if (NULL != dst)
-    {
-        const char * p = keyBuf + offsets[num];
-        KEYRECSIZE_T reclen = sizes[num];
-        if (keyHdr->hasSpecialFileposition())
-        {
-            if (zeroFilePosition)
-            {
-                memcpy(dst+keyCompareLen, p+keyCompareLen, reclen-keyCompareLen);
-                *(offset_t*)(dst+reclen) = 0;
-            }
-            else
-                memcpy(dst+keyCompareLen, p+keyCompareLen, reclen + sizeof(offset_t) - keyCompareLen);
-        }
-        else
-            memcpy(dst+keyCompareLen, p+keyCompareLen, reclen-keyCompareLen);
-    }
+    const char * p = keyBuf + offsets[num];
+    KEYRECSIZE_T reclen = sizes[num];
+    memcpy(dst+keyCompareLen, p+keyCompareLen, reclen + fileposFetchSize - keyCompareLen);
+    if (clearFilepos)
+        *(offset_t*)(dst+reclen) = 0;
+
     return true;
 }
 
