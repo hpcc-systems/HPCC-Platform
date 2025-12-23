@@ -130,65 +130,6 @@ class LegacyIndexCompressor : public CInterfaceOf<IIndexCompressor>
     }
 };
 
-class HybridIndexCompressor : public CInterfaceOf<IIndexCompressor>
-{
-protected:
-    Owned<IIndexCompressor> leafCompressor;
-    Owned<IIndexCompressor> branchCompressor;
-    CompressionMethod blobCompression = COMPRESS_METHOD_ZSTD6;
-public:
-    HybridIndexCompressor(unsigned keyedSize, const CKeyHdr* keyHdr, IHThorIndexWriteArg *helper, const char * compression, bool isTLK)
-    {
-        leafCompressor.setown(new BlockCompressedIndexCompressor(keyedSize, helper, compression, isTLK));
-        branchCompressor.setown(new InplaceIndexCompressor(keyedSize, keyHdr, helper, compression));
-
-        const char * colon= strchr(compression, ':');
-        if (colon)
-        {
-            auto processOption = [this](const char * option, const char * value)
-            {
-                if (strieq(option, "blob"))
-                {
-                    CompressionMethod method = translateToCompMethod(value, COMPRESS_METHOD_NONE);
-                    if (method != COMPRESS_METHOD_NONE)
-                        blobCompression = method;
-                }
-                else
-                {
-                    //ignore any unrecognised options
-                }
-            };
-
-            processOptionString(colon+1, processOption);
-        }
-    }
-
-    virtual const char *queryName() const override { return "Hybrid"; }
-    virtual CWriteNodeBase *createNode(offset_t _fpos, CKeyHdr *_keyHdr, NodeType nodeType) const override
-    {
-        switch (nodeType)
-        {
-        case NodeLeaf:
-            return leafCompressor->createNode(_fpos, _keyHdr, nodeType);
-        case NodeBranch:
-            return branchCompressor->createNode(_fpos, _keyHdr, nodeType);
-        case NodeBlob:
-            return new CNewBlobWriteNode(blobCompression, _fpos, _keyHdr);
-        default:
-            throwUnexpected();
-        }
-    }
-    virtual offset_t queryBranchMemorySize() const override
-    {
-        return branchCompressor->queryBranchMemorySize();
-    }
-    virtual offset_t queryLeafMemorySize() const override
-    {
-        return leafCompressor->queryLeafMemorySize();
-    }
-};
-
-
 //---------------------------------------------------------------------------------------------------------------------
 
 KeyBuilderOptions::KeyBuilderOptions(unsigned _flags, unsigned _rawSize, unsigned _nodeSize, unsigned _keyFieldSize, IHThorIndexWriteArg *_helper)

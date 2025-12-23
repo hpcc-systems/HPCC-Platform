@@ -25,6 +25,7 @@
 #include "jio.hpp"
 #include "jfile.hpp"
 #include "ctfile.hpp"
+#include "jhinplace.hpp"
 
 
 class CJHBlockCompressedSearchNode : public CJHSearchNode
@@ -106,38 +107,20 @@ public:
     virtual size32_t getMemorySize() const override { return memorySize; }
 };
 
-class BlockCompressedIndexCompressor : public CInterfaceOf<IIndexCompressor>
+//---------------------------------------------------------------------------------------------------------------------
+class HybridIndexCompressor : public CInterfaceOf<IIndexCompressor>
 {
-    CBlockCompressedBuildContext context;
+protected:
+    Owned<IIndexCompressor> branchCompressor;
+    CBlockCompressedBuildContext leafContext;
+    CompressionMethod blobCompression = COMPRESS_METHOD_ZSTD6;
 public:
-    BlockCompressedIndexCompressor(unsigned keyedSize, IHThorIndexWriteArg *helper, const char* options, bool isTLK);
+    HybridIndexCompressor(unsigned keyedSize, const CKeyHdr* keyHdr, IHThorIndexWriteArg *helper, const char * compression, bool isTLK);
 
-    virtual const char *queryName() const override { return "Block"; }
-
-    virtual CWriteNodeBase *createNode(offset_t _fpos, CKeyHdr *_keyHdr, NodeType nodeType) const override
-    {
-        switch (nodeType)
-        {
-        case NodeLeaf:
-            return new CBlockCompressedWriteNode(_fpos, _keyHdr, true, context);
-        case NodeBranch:
-            return new CBlockCompressedWriteNode(_fpos, _keyHdr, false, context);
-        case NodeBlob:
-            return new CBlobWriteNode(_fpos, _keyHdr);
-        default:
-            throwUnexpected();
-        }
-    }
-
-    virtual offset_t queryBranchMemorySize() const override
-    {
-        return 0;
-    }
-
-    virtual offset_t queryLeafMemorySize() const override
-    {
-        return 0;
-    }
+    virtual const char *queryName() const override { return "Hybrid"; }
+    virtual CWriteNodeBase *createNode(offset_t _fpos, CKeyHdr *_keyHdr, NodeType nodeType) const override;
+    virtual offset_t queryBranchMemorySize() const override;
+    virtual offset_t queryLeafMemorySize() const override;
 };
 
 #endif
