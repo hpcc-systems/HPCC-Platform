@@ -372,9 +372,7 @@ bool CBlockCompressedWriteNode::add(offset_t pos, const void *indata, size32_t i
         bool isVariable = keyHdr->isVariable();
         bool hasFilepos = !context.zeroFilePos;
         size32_t fixedKeySize = isVariable ? 0 : (hasFilepos ? keyLen + sizeof(offset_t) : keyLen);
-
-        ICompressHandler * handler = queryCompressHandler(context.compressionMethod);
-        compressor.open(keyPtr, maxBytes-hdr.keyBytes, handler, context.compressionOptions, isVariable, fixedKeySize);
+        compressor.open(keyPtr, maxBytes-hdr.keyBytes, context.compressor, isVariable, fixedKeySize);
     }
 
     unsigned writeOptions = (context.zeroFilePos ? KeyCompressor::NoFilePosition : KeyCompressor::TrailingFilePosition);
@@ -399,6 +397,15 @@ void CBlockCompressedWriteNode::finalize()
 }
 
 //=========================================================================================================
+
+void CBlockCompressedBuildContext::initCompressor()
+{
+    compressionHandler = queryCompressHandler(compressionMethod);
+    if (!compressionHandler)
+        throw MakeStringException(0, "Unknown compression method %d", (int)compressionMethod);
+
+    compressor.setown(compressionHandler->getCompressor(compressionOptions.str()));
+}
 
 HybridIndexCompressor::HybridIndexCompressor(unsigned keyedSize, const CKeyHdr* keyHdr, IHThorIndexWriteArg *helper, const char * compression, bool isTLK)
 {
@@ -438,9 +445,7 @@ HybridIndexCompressor::HybridIndexCompressor(unsigned keyedSize, const CKeyHdr* 
     if (colon)
         processOptionString(colon+1, processOption);
 
-    leafContext.compressionHandler = queryCompressHandler(leafContext.compressionMethod);
-    if (!leafContext.compressionHandler)
-        throw MakeStringException(0, "Unknown compression method %d", (int)leafContext.compressionMethod);
+    leafContext.initCompressor();
 
     if (!isTLK && helper && (helper->getFlags() & TIWzerofilepos))
         leafContext.zeroFilePos = true;
