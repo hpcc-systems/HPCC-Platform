@@ -265,6 +265,8 @@ protected:
     size32_t inMemorySize = 0;
     unsigned loadExpandTime = 0;
     char *keyBuf = nullptr;
+    byte fileposFetchSize = 0;
+    bool clearFilepos = false;
 
     static char *expandData(ICompressHandler * handler, const void *src,size32_t &retsize);
     static char *expandData(const void *src,size32_t &retsize);
