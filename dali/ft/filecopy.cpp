@@ -3781,22 +3781,29 @@ cost_type FileSprayer::updateTargetProperties()
             Owned<IAttributeIterator> aiter = srcAttr->getAttributes();
             ForEach(*aiter) {
                 const char *aname = aiter->queryName();
-                if (!curProps.hasProp(aname)&&
-                    ((stricmp(aname,"@job")==0)||
-                     (stricmp(aname,"@workunit")==0)||
-                     (stricmp(aname,"@description")==0)||
-                     (stricmp(aname,"@eclCRC")==0)||
-                     (stricmp(aname,"@formatCrc")==0)||
-                     (stricmp(aname,"@owner")==0)||
-                     ((stricmp(aname,FArecordCount)==0)&&!gotrc) ||
-                     ((stricmp(aname,"@blockCompressed")==0)&&copyCompressed) ||
-                     ((stricmp(aname,"@rowCompressed")==0)&&copyCompressed)||
-                     (stricmp(aname,"@local")==0)||
-                     (stricmp(aname,"@recordCount")==0) ||
-                     (stricmp(aname,"@lfnHash")==0)
-                     )
-                    )
-                    curProps.setProp(aname,aiter->queryValue());
+                if (!curProps.hasProp(aname))
+                {
+                    //The following is a list of attributes that should be copied
+                    if ((stricmp(aname,"@job")==0)||
+                        (stricmp(aname,"@workunit")==0)||
+                        (stricmp(aname,"@description")==0)||
+                        (stricmp(aname,"@eclCRC")==0)||
+                        (stricmp(aname,"@formatCrc")==0)||
+                        (stricmp(aname,"@keyedSize")==0)||
+                        (stricmp(aname,"@nodeSize")==0)||
+                        (stricmp(aname,"@owner")==0)||
+                        ((stricmp(aname,FArecordCount)==0)&&!gotrc) ||
+                        ((stricmp(aname,"@blockCompressed")==0)&&copyCompressed) ||
+                        ((stricmp(aname,"@rowCompressed")==0)&&copyCompressed)||
+                        ((stricmp(aname,"@compressionType")==0)&&copyCompressed)||
+                        (stricmp(aname,"@local")==0)||
+                        (stricmp(aname,"@recordCount")==0) ||
+                        (stricmp(aname,"@lfnHash")==0)
+                        )
+                    {
+                        curProps.setProp(aname,aiter->queryValue());
+                    }
+                }
             }
 
             // Keep source kind
@@ -3931,6 +3938,8 @@ cost_type FileSprayer::updateTargetProperties()
         int expireDays = options->getPropInt("@expireDays", -1);
         if (expireDays != -1)
             curProps.setPropInt("@expireDays", expireDays);
+        if (!isEmptyString(keyCompression))
+            curProps.setProp("@compressionType", keyCompression);
         return totalWriteCost;
     }
     if (error)

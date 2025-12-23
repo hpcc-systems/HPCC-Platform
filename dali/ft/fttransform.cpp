@@ -429,7 +429,13 @@ public:
 
     virtual bool setPartition(RemoteFilename & remoteInputName, offset_t _startOffset, offset_t _length, bool compressedInput, const char *decryptKey) override
     {
-        return CTransformerBase::setPartition(remoteInputName, _startOffset, _length);
+        if (!CTransformerBase::setPartition(remoteInputName, _startOffset, _length))
+            return false;
+
+        inputIO.setown(inputFile->open(IFOread));
+        if (!inputIO)
+            throw MakeStringException(999, "Failed to open file %s", inputFile->queryFilename());
+        return true;
     }
 
     virtual size32_t getBlock(IFileIOStream * out) override;
@@ -441,15 +447,17 @@ public:
 
     virtual stat_type getStatistic(StatisticKind kind) override
     {
-        //MORE:
+        if (inputIO)
+            return inputIO->getStatistic(kind);
         return 0;
     }
 
 protected:
-    void rebuildIndex(IFile * in, IFileIOStream * out, const char * outputCompression);
+    void rebuildIndex(IFileIOStream * out, const char * outputCompression);
 
 protected:
     StringAttr targetCompression;
+    Owned<IFileIO> inputIO;
     offset_t sizeRead = 0;
 };
 
@@ -485,16 +493,13 @@ private:
 //A few bugs in the original implementation have been fixed, both here and in dumpkey.cpp
 //Later the code should be refactored to that blocks of nodes can be processsed to allow
 //progress reporting - by moving some of the logic into beginTransform/endTransform
-void CIndexTransformer::rebuildIndex(IFile * in, IFileIOStream * out, const char * outputCompression)
+void CIndexTransformer::rebuildIndex(IFileIOStream * out, const char * outputCompression)
 {
     const char * fieldSelection = nullptr; // could allow projection...
-    const char * keyName = in->queryFilename();
-    Owned<IFileIO> io = in->open(IFOread);
-    if (!io)
-        throw MakeStringException(999, "Failed to open file %s", keyName);
+    const char * keyName = inputFile->queryFilename();
 
     //read with a buffer size of 4MB - for optimal speed, and minimize azure read costs
-    Owned <IKeyIndex> index(createKeyIndex(keyName, 0, *io, -1, false, 0x400000));
+    Owned <IKeyIndex> index(createKeyIndex(keyName, 0, *inputIO, -1, false, 0x400000));
     size32_t key_size = index->keySize();  // NOTE - in variable size case, this may be 32767 + sizeof(offset_t)
     size32_t keyedSize = index->keyedSize();
     unsigned nodeSize = index->getNodeSize();
@@ -545,6 +550,7 @@ void CIndexTransformer::rebuildIndex(IFile * in, IFileIOStream * out, const char
     const RtlRecord &inrec = diskmeta->queryRecordAccessor(true);
     manager.setown(createLocalKeyManager(inrec, index, nullptr, true, false));
     size32_t minRecSize = 0;
+    bool createTranslator = false;
     if (fieldSelection)
     {
         StringArray fieldNames;
@@ -568,7 +574,7 @@ void CIndexTransformer::rebuildIndex(IFile * in, IFileIOStream * out, const char
         fields.append(nullptr);
         outRecType = new RtlRecordTypeInfo(type_record, minRecSize, fields.getArray(0));
         outmeta.setown(new CDynamicOutputMetaData(*outRecType));
-        translator.setown(createRecordTranslator(outmeta->queryRecordAccessor(true), inrec));
+        createTranslator = true;
     }
     else
     {
@@ -581,9 +587,7 @@ void CIndexTransformer::rebuildIndex(IFile * in, IFileIOStream * out, const char
             {
                 if (isTLK)
                     continue;  // blob IDs in TLK are not valid
-                // See above - blob field in source needs special treatment
-                field = new RtlFieldStrInfo(field->name, field->xpath, field->type->queryChildType());
-                deleteFields.append(field);
+                createTranslator = true;
             }
             fields.append(field);
             minRecSize += field->type->getMinSize();
@@ -616,6 +620,8 @@ void CIndexTransformer::rebuildIndex(IFile * in, IFileIOStream * out, const char
     unsigned flags = COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY | USE_TRAILING_HEADER | TRAILING_HEADER_ONLY;
     if (!outmeta->isFixedSize())
         flags |= HTREE_VARSIZE;
+    if (isTLK)
+        flags |= HTREE_TOPLEVEL_KEY;
     //if (quickCompressed)
     //    flags |= HTREE_QUICK_COMPRESSED_KEY;
     // MORE - other global options
@@ -637,6 +643,10 @@ void CIndexTransformer::rebuildIndex(IFile * in, IFileIOStream * out, const char
     options.enforceOrder = false;
     options.isTLK = isTLK;
     Owned<IKeyBuilder> keyBuilder = createKeyBuilder(outFileStream, options);
+    BlobCreatorWrapper blobCreator(keyBuilder);
+
+    if (createTranslator)
+        translator.setown(createRecordBlobTranslator(outmeta->queryRecordAccessor(true), inrec, &blobCreator));
 
     TrivialVirtualFieldCallback callback(manager);
     size32_t maxSizeSeen = 0;
@@ -652,8 +662,16 @@ void CIndexTransformer::rebuildIndex(IFile * in, IFileIOStream * out, const char
             size = translator->translate(aBuilder, callback, buffer);
             if (size)
             {
-                // MORE - think about fpos
-                keyBuilder->processKeyData((const char *) aBuilder.getSelf(), 0, size);
+                if (fileposSize)
+                {
+                    offset_t fpos = manager->queryFPos();
+                    offset_t recordFilePos = rtlReadSwapInt8(aBuilder.getSelf() + size - fileposSize);
+                    assertex(fpos == recordFilePos);
+                    size -= fileposSize;
+                    keyBuilder->processKeyData((const char *) aBuilder.getSelf(), fpos, size);
+                }
+                else
+                    keyBuilder->processKeyData((const char *) aBuilder.getSelf(), 0, size);
             }
         }
         else
@@ -692,13 +710,17 @@ void CIndexTransformer::rebuildIndex(IFile * in, IFileIOStream * out, const char
         delete deleteFields.item(idx);
     }
 
-    sizeRead = io->size();
+    sizeRead = inputIO->size();
+
+    //Ensure the file is removed from the key store - in case the input is overwritten and the process repeated
+    index.clear();
+    clearKeyStoreCacheEntry(keyName);
 }
 
 //The index transform reads an entire index, and outputs the final index as a single block - no recovery etc.
 size32_t CIndexTransformer::getBlock(IFileIOStream * out)
 {
-    rebuildIndex(inputFile, out, targetCompression);
+    rebuildIndex(out, targetCompression);
     return 0;
 }
 
@@ -1049,6 +1071,12 @@ void TransferServer::transferChunk(unsigned chunkIndex)
     }
 }
 
+void TransferServer::createOutputStream(IFileIO * outio)
+{
+    size32_t bufferSize = getBlockedSequentialIO(outio);
+    out.setown(createBufferedIOStream(outio, bufferSize));
+}
+
 bool TransferServer::pull()
 {
     unsigned curOutput = (unsigned)-1;
@@ -1098,7 +1126,7 @@ bool TransferServer::pull()
             {
                 if (out)
                     out->close();
-                out.setown(createIOStream(outio));
+                createOutputStream(outio);
                 out->seek(progressOffset, IFSbegin);
                 wrapOutInCRC(curProgress.outputCRC);
 
@@ -1198,7 +1226,7 @@ processedProgress:
 
             if (out)
                 out->close();
-            out.setown(createIOStream(outio));
+            createOutputStream(outio);
             out->seek(0, IFSbegin);
             wrapOutInCRC(0);
 
@@ -1315,7 +1343,7 @@ bool TransferServer::push()
                 outio.setown(createCompressedFileWriter(outio, false, true, compressor, COMPRESS_METHOD_LZ4));
             }
 
-            out.setown(createIOStream(outio));
+            createOutputStream(outio);
             if (!compressOutput)
                 out->seek(curPartition.outputOffset + curProgress.outputLength, IFSbegin);
             wrapOutInCRC(curProgress.outputCRC);

@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2019 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2025 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,36 +15,22 @@
     limitations under the License.
 ############################################################################## */
 
-//version useEmbedded=true,noSeek=true
-//version useEmbedded=true,noSeek=false
-//version useEmbedded=false,noSeek=true
-//version useEmbedded=false,noSeek=false
+#onwarning (4523, ignore);
+
 //version compression='hybrid'
-//version compression='inplace'
-//version compression='inplace:blob(lzw)'
-//version compression='inplace:blob(zstd)'
-//version compression='inplace:zstds'
-//comma in string not supported by the regression test engine: compression='inplace:zstds,blob(zstd)'
-//version compression='inplace:blob(zstd3)'
-//version compression='inplace:blob(zstd6)'
-//version compression='inplace:blob(zstd9)'
+//version compression='hybrid:blob(lzw)'
+//version compression='hybrid:blob(zstd)'
 //version compression='hybrid:blob(zstd3)'
 //version compression='hybrid:blob(zstd6)'
 //version compression='hybrid:blob(zstd9)'
+//version compression='inplace:zstds6'
 
 import ^ as root;
 import $.setup;
 import Std.File AS FileServices;
 
-useEmbedded := #IFDEFINED(root.useEmbedded, false);
 noSeek := #IFDEFINED(root.noSeek, true);
-compressionType := #IFDEFINED(root.compression, 'legacy');
-
-#if (useEmbedded)
-attr := 'EMBEDDED';
-#else
-attr := '';
-#end
+compressionType := #IFDEFINED(root.compression, 'hybrid');
 
 #option ('noSeekBuildIndex', noSeek);
 
@@ -57,12 +43,12 @@ END;
 
 childRec := RECORD
  string f1;
- #expand(attr) DATASET(grandchildrec) gkids;
+ DATASET(grandchildrec) gkids;
 END;
 
 parentRec := RECORD
  unsigned uid;
- #expand(attr) DATASET(childRec) kids1;
+ DATASET(childRec) kids1;
 END;
 
 numParents := 10000;
@@ -86,23 +72,35 @@ idxRecord := RECORD
  DATASET(childRec) payload{BLOB};
 END;
 
-indexName := prefix+'anindex'+IF(useEmbedded,'E','L')+'_'+compressionType;
+indexName1 := prefix+'testindex';
+indexName2 := indexName1 + '_' + compressionType;
 
 p := PROJECT(ds, TRANSFORM(idxRecord, SELF.payload := LEFT.kids1; SELF := LEFT));
 
 //Duplicate the uid into the "fileposition" field so the value can be verified.
-i := INDEX(p, {uid}, {p, unsigned8 uid2 := uid}, indexName, compressed(compressionType));
+i1 := INDEX(p, {uid}, {p, unsigned8 uid2 := uid }, indexName1, compressed('legacy'));
+i2 := INDEX(i1, indexName2);
 
-lhsRec := RECORD
- unsigned uid;
-END;
-lhs := DATASET(numParents, TRANSFORM(lhsRec, SELF.uid := (HASH(COUNTER) % numParents) + 1));
-j := JOIN(lhs, i, LEFT.uid=RIGHT.uid, KEEP(1));
+compareFiles(ds1, ds2) := FUNCTIONMACRO
+    c := COMBINE(ds1, ds2, transform({ boolean same, RECORDOF(LEFT) l, RECORDOF(RIGHT) r,  }, SELF.same := LEFT = RIGHT; SELF.l := LEFT; SELF.r := RIGHT ), LOCAL);
+    RETURN output(choosen(c(not same), 10));
+ENDMACRO;
+
 
 SEQUENTIAL(
- BUILD(i, OVERWRITE);
- OUTPUT(count(nofold(j)) - numParents);
+    BUILD(i1, OVERWRITE);
 
- // Clean-up
- FileServices.DeleteLogicalFile(indexName),
+    FileServices.Copy(
+            sourceLogicalName := indexName1,
+            destinationLogicalName := indexName2,
+            destinationGroup := '',
+            replicate := false,
+            noSplit := true,
+            allowoverwrite := true,
+            keyCompression := compressionType);
+
+    compareFiles(i1, i2);
+
+    FileServices.DeleteLogicalFile(indexName1);
+    FileServices.DeleteLogicalFile(indexName2);
 );

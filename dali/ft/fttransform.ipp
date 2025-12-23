@@ -215,6 +215,7 @@ public:
 
 protected:
     void appendTransformed(unsigned whichChunk, ITransformer * input);
+    void createOutputStream(IFileIO * outio);
     unsigned queryLastOutput(unsigned outputIndex);
     void sendProgress(OutputProgress & curProgress);
     void transferChunk(unsigned chunkIndex);
