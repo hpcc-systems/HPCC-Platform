@@ -277,7 +277,8 @@ public:
             {
                 const ISysInfoLoggerMsg &msg = iter->query();
                 
-                // Escape special characters in message content for CSV format (RFC 4180)
+                // Properly quote and escape message content for CSV format per RFC 4180
+                // Fields containing newlines, quotes, or commas are quoted; quotes are escaped by doubling
                 StringBuffer escapedMsg;
                 const char *msgText = msg.queryMsg();
                 if (msgText && *msgText)
@@ -287,12 +288,8 @@ public:
                     {
                         if (*p == '"')
                             escapedMsg.append("\"\""); // Escape quotes by doubling them
-                        else if (*p == '\n')
-                            escapedMsg.append("\\n"); // Escape newlines
-                        else if (*p == '\r')
-                            escapedMsg.append("\\r"); // Escape carriage returns
                         else
-                            escapedMsg.append(*p);
+                            escapedMsg.append(*p); // Preserve all other characters including newlines
                     }
                     escapedMsg.append('"');
                 }
