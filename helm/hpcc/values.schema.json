@@ -3316,13 +3316,13 @@
             "default": 30
           },
           "hideAfterDays": {
-            "type": "integer", 
+            "type": "integer",
             "description": "Number of days after which messages are automatically hidden",
             "default": 7
           },
           "archiveAfterDays": {
             "type": "integer",
-            "description": "Number of days after which messages are archived", 
+            "description": "Number of days after which messages are archived",
             "default": 14
           },
           "archivePath": {
@@ -3336,7 +3336,7 @@
             "default": false
           },
           "enableAutoDelete": {
-            "type": "boolean", 
+            "type": "boolean",
             "description": "Whether to automatically delete old messages",
             "default": false
           },
