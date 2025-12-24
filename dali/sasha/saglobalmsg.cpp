@@ -195,34 +195,38 @@ public:
     /**
      * Helper function to escape a string field for CSV output with backslash escaping.
      * Quotes the field and escapes special characters: quotes (doubled), backslashes, newlines, and carriage returns.
+     * Always outputs quoted field, even for empty strings.
      */
     void escapeCsvField(StringBuffer & out, const char * text)
     {
-        if (!text || !*text)
-            return;
-        
         out.append('"');
-        for (const char *p = text; *p; p++)
+        
+        if (text && *text)
         {
-            if (*p == '"')
-                out.append("\"\""); // Escape quotes by doubling them
-            else if (*p == '\\')
-                out.append("\\\\"); // Escape backslashes
-            else if (*p == '\r')
+            for (const char *p = text; *p; p++)
             {
-                if (*(p+1) == '\n')
+                if (*p == '"')
+                    out.append("\"\""); // Escape quotes by doubling them
+                else if (*p == '\\')
+                    out.append("\\\\"); // Escape backslashes
+                else if (*p == '\r')
                 {
-                    out.append("\\n"); // Handle Windows line endings as single unit
-                    p++; // Skip the \n
+                    // Check if next char is \n (safe because strings are null-terminated)
+                    if (*(p+1) == '\n')
+                    {
+                        out.append("\\n"); // Handle Windows line endings as single unit
+                        p++; // Skip the \n
+                    }
+                    else
+                        out.append("\\r"); // Escape standalone carriage returns
                 }
+                else if (*p == '\n')
+                    out.append("\\n"); // Escape Unix newlines
                 else
-                    out.append("\\r"); // Escape standalone carriage returns
+                    out.append(*p);
             }
-            else if (*p == '\n')
-                out.append("\\n"); // Escape Unix newlines
-            else
-                out.append(*p);
         }
+        
         out.append('"');
     }
 
@@ -320,11 +324,11 @@ public:
                 line.appendf("%" I64F "u,%" I64F "u,%s,%s,%u,%s,%s\n",
                             msg.queryLogMsgId(),
                             msg.queryTimeStamp(),
-                            escapedSource.length() ? escapedSource.str() : "\"\"",
+                            escapedSource.str(),
                             LogMsgClassToFixString(msg.queryClass()),
                             msg.queryLogMsgCode(),
                             msg.queryIsHidden() ? "true" : "false",
-                            escapedMsg.length() ? escapedMsg.str() : "\"\"");
+                            escapedMsg.str());
                 
                 fileIO->write(writeOffset, line.length(), line.str());
                 writeOffset += line.length();
