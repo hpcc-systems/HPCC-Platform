@@ -42,6 +42,7 @@ set ( ESPSCM_SRCS
       ws_elk.ecm
       ws_codesign.ecm
       ws_resources.ecm
+      ws_sysinfolog.ecm
     )
 
 if (CONTAINERIZED)

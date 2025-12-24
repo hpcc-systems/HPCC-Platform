@@ -65,3 +65,4 @@ eclwatch:
             default: false
             maxValSize: 32768
    ws_logaccess:
+   ws_sysinfolog:
