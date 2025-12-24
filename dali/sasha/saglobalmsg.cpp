@@ -193,6 +193,40 @@ public:
     }
 
     /**
+     * Helper function to escape a string field for CSV output with backslash escaping.
+     * Quotes the field and escapes special characters: quotes (doubled), backslashes, newlines, and carriage returns.
+     */
+    void escapeCsvField(StringBuffer & out, const char * text)
+    {
+        if (!text || !*text)
+            return;
+        
+        out.append('"');
+        for (const char *p = text; *p; p++)
+        {
+            if (*p == '"')
+                out.append("\"\""); // Escape quotes by doubling them
+            else if (*p == '\\')
+                out.append("\\\\"); // Escape backslashes
+            else if (*p == '\r')
+            {
+                if (*(p+1) == '\n')
+                {
+                    out.append("\\n"); // Handle Windows line endings as single unit
+                    p++; // Skip the \n
+                }
+                else
+                    out.append("\\r"); // Escape standalone carriage returns
+            }
+            else if (*p == '\n')
+                out.append("\\n"); // Escape Unix newlines
+            else
+                out.append(*p);
+        }
+        out.append('"');
+    }
+
+    /**
      * Archive global messages older than a given age into CSV files and remove them from storage.
      *
      * The cutoff date is computed as "now minus cutoffDays". All messages strictly older than this
@@ -277,47 +311,20 @@ public:
             {
                 const ISysInfoLoggerMsg &msg = iter->query();
                 
-                // Escape special characters in message content for CSV compatibility
-                // Using backslash escaping for newlines for better readability and compatibility
-                // with simple CSV readers that may not fully support RFC 4180 quoted fields
-                StringBuffer escapedMsg;
-                const char *msgText = msg.queryMsg();
-                if (msgText && *msgText)
-                {
-                    escapedMsg.append('"');
-                    for (const char *p = msgText; *p; p++)
-                    {
-                        if (*p == '"')
-                            escapedMsg.append("\"\""); // Escape quotes by doubling them
-                        else if (*p == '\\')
-                            escapedMsg.append("\\\\"); // Escape backslashes
-                        else if (*p == '\r')
-                        {
-                            if (*(p+1) == '\n')
-                            {
-                                escapedMsg.append("\\n"); // Handle Windows line endings as single unit
-                                p++; // Skip the \n
-                            }
-                            else
-                                escapedMsg.append("\\r"); // Escape standalone carriage returns
-                        }
-                        else if (*p == '\n')
-                            escapedMsg.append("\\n"); // Escape Unix newlines
-                        else
-                            escapedMsg.append(*p);
-                    }
-                    escapedMsg.append('"');
-                }
+                // Escape string fields for CSV format
+                StringBuffer escapedSource, escapedMsg;
+                escapeCsvField(escapedSource, msg.querySource());
+                escapeCsvField(escapedMsg, msg.queryMsg());
                 
                 StringBuffer line;
                 line.appendf("%" I64F "u,%" I64F "u,%s,%s,%u,%s,%s\n",
                             msg.queryLogMsgId(),
                             msg.queryTimeStamp(),
-                            msg.querySource(),
+                            escapedSource.length() ? escapedSource.str() : "\"\"",
                             LogMsgClassToFixString(msg.queryClass()),
                             msg.queryLogMsgCode(),
                             msg.queryIsHidden() ? "true" : "false",
-                            escapedMsg.length() ? escapedMsg.str() : "");
+                            escapedMsg.length() ? escapedMsg.str() : "\"\"");
                 
                 fileIO->write(writeOffset, line.length(), line.str());
                 writeOffset += line.length();
