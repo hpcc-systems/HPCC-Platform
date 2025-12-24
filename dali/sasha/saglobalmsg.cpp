@@ -35,6 +35,33 @@ static constexpr bool defaultEnableArchiving = false;
 static constexpr bool defaultEnableAutoDelete = false;
 static constexpr bool defaultEnableHideOldMessages = true;
 
+/**
+ * CSashaGlobalMessageServer
+ *
+ * Implements the Sasha server responsible for managing the lifecycle of
+ * global messages stored in the system. This component runs as a background
+ * housekeeping thread and is exposed via the ISashaServer interface.
+ *
+ * Responsibilities:
+ *  - Periodically scan persisted global messages at a configurable interval.
+ *  - Hide old messages after a configurable number of days, if enabled.
+ *  - Archive older messages to a filesystem location, if archiving is enabled.
+ *  - Permanently delete messages that exceed the configured retention period,
+ *    if automatic deletion is enabled.
+ *
+ * Configuration:
+ *  - Housekeeping interval in hours (intervalHours).
+ *  - Message retention period in days (retentionPeriodDays).
+ *  - Hide-after age in days (hideAfterDays) when enableHideOldMessages is true.
+ *  - Archive-after age in days (archiveAfterDays) when enableArchiving is true.
+ *  - Archive destination path (archivePath) for stored message archives.
+ *  - Flags to enable/disable archiving, auto-deletion and hiding of old messages.
+ *
+ * The server loads these settings from the Sasha configuration (see
+ * loadConfiguration()) and then executes maintenance operations on global
+ * messages until stopped. An instance is created via createSashaGlobalMessageServer()
+ * and typically managed as a singleton within the Sasha framework.
+ */
 class CSashaGlobalMessageServer : public ISashaServer, public Thread
 {
     std::atomic<bool> stopped{true};
@@ -132,9 +159,13 @@ public:
         unsigned hiddenCount = 0;
         unsigned archivedCount = 0; 
         unsigned deletedCount = 0;
-        
+
+        if (enableArchiving && enableAutoDelete && retentionPeriodDays <= archiveAfterDays)
+        {
+            WARNLOG("Global Message maintenance: retentionPeriodDays (%u) should be greater than archiveAfterDays (%u). Adjusting retentionPeriodDays to %u days for this run", retentionPeriodDays, archiveAfterDays, archiveAfterDays + 1);
+            retentionPeriodDays = archiveAfterDays + 1;
+        }
         try {
-            
             // Archive old messages if archiving is enabled
             if (enableArchiving)
                 archivedCount = archiveOldMessages(archiveAfterDays);
@@ -161,6 +192,29 @@ public:
         }
     }
 
+    /**
+     * Archive global messages older than a given age into CSV files and remove them from storage.
+     *
+     * The cutoff date is computed as "now minus cutoffDays". All messages strictly older than this
+     * cutoff are selected using a SysInfoLogger message filter and written to one or more CSV
+     * files under the configured archive path (archivePath). The archive files follow a
+     * predictable naming convention (typically including timestamp and/or date information) so
+     * that multiple maintenance runs produce distinct archive files without overwriting previous
+     * archives.
+     *
+     * After a message is successfully written to an archive file, that message is deleted from
+     * the underlying message storage so that only the archived copy remains. This function
+     * therefore both exports and prunes old messages.
+     *
+     * @param cutoffDays  Number of days back from the current time; messages older than this many
+     *                    days are archived and removed. For example, a value of 14 archives
+     *                    messages older than 14 days.
+     *
+     * @return The number of messages that were successfully archived (and deleted). If an error
+     *         occurs during archiving, the error is logged, any thrown IException is caught and
+     *         released, processing is aborted, and 0 is returned. Archive files that were already
+     *         written may remain on disk even if a later error occurs.
+     */
     unsigned archiveOldMessages(unsigned cutoffDays)
     {
         try {
@@ -239,19 +293,11 @@ public:
                     escapedMsg.append('"');
                 }
                 
-                // Escape source field too
-                StringBuffer escapedSource;
-                const char *sourceText = msg.querySource();
-                if (sourceText && *sourceText)
-                {
-                    escapedSource.append('"').append(sourceText).append('"');
-                }
-                
                 StringBuffer line;
                 line.appendf("%" I64F "u,%" I64F "u,%s,%s,%u,%s,%s\n",
                             msg.queryLogMsgId(),
                             msg.queryTimeStamp(),
-                            escapedSource.length() ? escapedSource.str() : "",
+                            msg.querySource(),
                             LogMsgClassToFixString(msg.queryClass()),
                             msg.queryLogMsgCode(),
                             msg.queryIsHidden() ? "true" : "false",
@@ -270,7 +316,7 @@ public:
             PROGLOG("Archived %u global messages to: %s", archivedCount, archiveFile.str());
             
             // Delete the archived messages
-            unsigned deletedCount = deleteOlderThanLogSysInfoMsg(true, true, cutoffYear, cutoffMonth, cutoffDay, nullptr);
+            unsigned deletedCount = deleteOlderThanLogSysInfoMsg(false, false, cutoffYear, cutoffMonth, cutoffDay, nullptr);
             PROGLOG("Deleted %u archived messages from storage", deletedCount);
             
             return archivedCount;
@@ -323,7 +369,7 @@ public:
             unsigned year, month, day;
             cutoff.getDate(year, month, day);
             
-            unsigned deletedCount = deleteOlderThanLogSysInfoMsg(true, false, year, month, day, nullptr);
+            unsigned deletedCount = deleteOlderThanLogSysInfoMsg(false, false, year, month, day, nullptr);
             
             return deletedCount;
         }
