@@ -211,8 +211,8 @@ public:
                     out.append("\\\\"); // Escape backslashes
                 else if (*p == '\r')
                 {
-                    // Check if next char is \n (safe because strings are null-terminated)
-                    if (*(p+1) == '\n')
+                    // Check if next char is \n (safe because loop ensures *p != '\0', so p+1 is valid)
+                    if (p[1] == '\n')
                     {
                         out.append("\\n"); // Handle Windows line endings as single unit
                         p++; // Skip the \n
