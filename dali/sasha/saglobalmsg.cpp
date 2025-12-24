@@ -160,10 +160,12 @@ public:
         unsigned archivedCount = 0; 
         unsigned deletedCount = 0;
 
-        if (enableArchiving && enableAutoDelete && retentionPeriodDays <= archiveAfterDays)
+        // Use a local variable for retention period to avoid modifying the member variable
+        unsigned effectiveRetentionPeriodDays = retentionPeriodDays;
+        if (enableArchiving && enableAutoDelete && effectiveRetentionPeriodDays <= archiveAfterDays)
         {
             WARNLOG("Global Message maintenance: retentionPeriodDays (%u) should be greater than archiveAfterDays (%u). Adjusting retentionPeriodDays to %u days for this run", retentionPeriodDays, archiveAfterDays, archiveAfterDays + 1);
-            retentionPeriodDays = archiveAfterDays + 1;
+            effectiveRetentionPeriodDays = archiveAfterDays + 1;
         }
         try {
             // Archive old messages if archiving is enabled
@@ -172,7 +174,7 @@ public:
 
             // Delete messages outside retention period if auto-delete is enabled
             if (enableAutoDelete)
-                deletedCount = deleteOldMessages(retentionPeriodDays);
+                deletedCount = deleteOldMessages(effectiveRetentionPeriodDays);
 
             // Hide old messages if auto-hide is enabled
             if (enableHideOldMessages)
