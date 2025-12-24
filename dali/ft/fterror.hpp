@@ -88,6 +88,7 @@
 #define DFTERR_NoMatchingDropzonePlane          8115
 #define DFTERR_CannotConvertKeyFile             8116
 #define DFTERR_CannotCompressKey                8117
+#define DFTERR_InconsistentQuoteSeparator       8118
 
 //Internal errors
 #define DFTERR_UnknownFormatType                8190
@@ -163,6 +164,7 @@
 #define DFTERR_InvalidSuperindexCopy_Text       "Source file %s is a super index file but copying as a simple logical file"
 #define DFTERR_CannotConvertKeyFile_Text        "Cannot convert key file to a different format"
 #define DFTERR_CannotCompressKey_Text           "Compress output is not compatible with copying a key file"
+#define DFTERR_InconsistentQuoteSeparator_Text  "The quote character %s and separator %s are inconsistent with the file contents"
 
 #define DFTERR_UnknownFormatType_Text           "INTERNAL: Save unknown format type"
 #define DFTERR_OutputOffsetMismatch_Text        "INTERNAL: Output offset does not match expected (%" I64F "d expected %" I64F "d) at %s of block %d"
