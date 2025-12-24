@@ -291,15 +291,18 @@ public:
                             escapedMsg.append("\"\""); // Escape quotes by doubling them
                         else if (*p == '\\')
                             escapedMsg.append("\\\\"); // Escape backslashes
-                        else if (*p == '\r' && *(p+1) == '\n')
+                        else if (*p == '\r')
                         {
-                            escapedMsg.append("\\n"); // Handle Windows line endings as single unit
-                            p++; // Skip the \n
+                            if (*(p+1) == '\n')
+                            {
+                                escapedMsg.append("\\n"); // Handle Windows line endings as single unit
+                                p++; // Skip the \n
+                            }
+                            else
+                                escapedMsg.append("\\r"); // Escape standalone carriage returns
                         }
                         else if (*p == '\n')
                             escapedMsg.append("\\n"); // Escape Unix newlines
-                        else if (*p == '\r')
-                            escapedMsg.append("\\r"); // Escape standalone carriage returns
                         else
                             escapedMsg.append(*p);
                     }
