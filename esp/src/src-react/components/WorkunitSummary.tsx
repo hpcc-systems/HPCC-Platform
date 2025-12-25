@@ -287,7 +287,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
                         <div className="pane-content">
                             <div style={{ zIndex: 2, display: "flex", flexDirection: "row", justifyContent: "space-between" }}>
                                 <WorkunitPersona wuid={wuid} />
-                                <WUStatus wuid={wuid}></WUStatus>
+                                <WUStatus workunit={workunit}></WUStatus>
                             </div>
                             <TableGroup fields={{
                                 "wuid": { label: nlsHPCC.WUID, type: "string", value: wuid, readonly: true },
