@@ -711,6 +711,11 @@
               "type": "integer",
               "default": 0
             },
+            "protectGroup": {
+              "description": "If true, plane group changes will not automatically overwrite existing Dali group definitions",
+              "type": "boolean",
+              "default": false
+            },
             "components": {},
             "prefix": {},
             "subPath": {},
