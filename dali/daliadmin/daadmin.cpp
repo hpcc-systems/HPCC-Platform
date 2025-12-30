@@ -146,15 +146,18 @@ bool doImport(const char *path,const char *head,const char *tail,const char *xml
 {
     Owned<IPropertyTree> branch = createPTreeFromXMLString(xml);
     Owned<IRemoteConnection> conn = querySDS().connect(head,myProcessSession(),0, daliConnectTimeoutMs);
-    if (!conn) {
+    if (!conn)
+    {
         out.appendf("Could not connect to %s",path);
         return false;
     }
     StringAttr newtail; // must be declared outside the following if
     Owned<IPropertyTree> root = conn->getRoot();
-    if (!add) {
+    if (!add)
+    {
         Owned<IPropertyTree> child = root->getPropTree(tail);
-        if (!child) {
+        if (!child)
+        {
             out.appendf("Invalid path: %s",path);
             return false;
         }
