@@ -2261,7 +2261,8 @@ unsigned CClientSDSManager::queryCount(const char *xpath)
 #define MIN_UPDTENV_SVER "3.9"
 bool CClientSDSManager::updateEnvironment(IPropertyTree *newEnv, bool forceGroupUpdate, StringBuffer &response)
 {
-    CDaliVersion serverVersionNeeded(MIN_QUERYCOUNT_SVER);
+    // NB: legacy, and for bare-metal only
+    CDaliVersion serverVersionNeeded(MIN_UPDTENV_SVER);
     if (queryDaliServerVersion().compare(serverVersionNeeded) < 0)
     {
         // have to do the old fashioned way, from client
@@ -2283,7 +2284,7 @@ bool CClientSDSManager::updateEnvironment(IPropertyTree *newEnv, bool forceGroup
             conn->commit();
             conn->close();
             StringBuffer messages;
-            initClusterGroups(forceGroupUpdate, messages, oldEnvironment);
+            initClusterAndStoragePlaneGroups(messages, forceGroupUpdate, oldEnvironment);
             if (messages.length())
                 PROGLOG("CClientSDSManager::updateEnvironment: %s", messages.str());
             PROGLOG("Environment and node groups updated");

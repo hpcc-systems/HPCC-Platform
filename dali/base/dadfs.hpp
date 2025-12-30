@@ -877,8 +877,7 @@ interface IDaliServer;
 extern da_decl IDaliServer *createDaliDFSServer(); // called for coven members
 
 // to initialize clustergroups after clusters change in the environment
-extern da_decl void initClusterGroups(bool force, StringBuffer &response, IPropertyTree *oldEnvironment, unsigned timems=INFINITE);
-extern da_decl void initClusterAndStoragePlaneGroups(bool force, IPropertyTree *oldEnvironment, unsigned timems=INFINITE);
+extern da_decl void initClusterAndStoragePlaneGroups(StringBuffer &response, bool force, IPropertyTree *oldEnvironment, unsigned timems=INFINITE);
 extern da_decl bool resetClusterGroup(const char *clusterName, const char *type, bool spares, StringBuffer &response, unsigned timems=INFINITE);
 extern da_decl bool addClusterSpares(const char *clusterName, const char *type, const std::vector<std::string> &hosts, StringBuffer &response, unsigned timems=INFINITE);
 extern da_decl bool removeClusterSpares(const char *clusterName, const char *type, const std::vector<std::string> &hosts, StringBuffer &response, unsigned timems=INFINITE);

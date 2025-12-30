@@ -146,15 +146,18 @@ bool doImport(const char *path,const char *head,const char *tail,const char *xml
 {
     Owned<IPropertyTree> branch = createPTreeFromXMLString(xml);
     Owned<IRemoteConnection> conn = querySDS().connect(head,myProcessSession(),0, daliConnectTimeoutMs);
-    if (!conn) {
+    if (!conn)
+    {
         out.appendf("Could not connect to %s",path);
         return false;
     }
     StringAttr newtail; // must be declared outside the following if
     Owned<IPropertyTree> root = conn->getRoot();
-    if (!add) {
+    if (!add)
+    {
         Owned<IPropertyTree> child = root->getPropTree(tail);
-        if (!child) {
+        if (!child)
+        {
             out.appendf("Invalid path: %s",path);
             return false;
         }
@@ -169,20 +172,30 @@ bool doImport(const char *path,const char *head,const char *tail,const char *xml
             tail = newtail;
         }
     }
-    Owned<IPropertyTree> oldEnvironment;
-    if (streq(path,"Environment"))
-        oldEnvironment.setown(createPTreeFromIPT(conn->queryRoot()));
-    root->addPropTree(tail,LINK(branch));
-    conn->commit();
-    conn->close();
-    if (*path=='/')
-        path++;
-    if (strcmp(path,"Environment")==0) {
-        out.appendf("Refreshing cluster groups from Environment.");
-        StringBuffer response;
-        initClusterGroups(false, response, oldEnvironment);
-        if (response.length())
-            out.appendf(" Updating Environment via import path=%s : %s.", path, response.str());
+    if (isContainerized()) // /Environment has no special meaning in containerized deployments
+    {
+        root->addPropTree(tail,LINK(branch));
+        conn->commit();
+        conn->close();
+    }
+    else
+    {
+        Owned<IPropertyTree> oldEnvironment;
+        if (streq(path,"Environment"))
+            oldEnvironment.setown(createPTreeFromIPT(conn->queryRoot()));
+        root->addPropTree(tail,LINK(branch));
+        conn->commit();
+        conn->close();
+        if (*path=='/')
+            path++;
+        if (strcmp(path,"Environment")==0)
+        {
+            out.appendf("Refreshing cluster groups from Environment.");
+            StringBuffer response;
+            initClusterAndStoragePlaneGroups(response, false, oldEnvironment);
+            if (response.length())
+                out.appendf(" Updating Environment via import path=%s : %s.", path, response.str());
+        }
     }
     return true;
 }

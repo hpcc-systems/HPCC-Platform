@@ -10623,8 +10623,10 @@ class CInitGroups
         // see if identical
         const char *oldKind = oldClusterGroup->queryProp("@kind");
         const char *oldDir = oldClusterGroup->queryProp("@dir");
+        bool oldHasProtected = oldClusterGroup->hasProp("@protected");
         const char *newKind = newClusterGroup->queryProp("@kind");
         const char *newDir = newClusterGroup->queryProp("@dir");
+        bool newHasProtected = newClusterGroup->hasProp("@protected");
         if (oldKind)
         {
             if (newKind)
@@ -10649,7 +10651,15 @@ class CInitGroups
         }
         else if (NULL!=newDir)
             return false;
-
+        if (oldHasProtected != newHasProtected)
+            return false;
+        else if (oldHasProtected && newHasProtected)
+        {
+            bool oldProtected = oldClusterGroup->getPropBool("@protected");
+            bool newProtected = newClusterGroup->getPropBool("@protected");
+            if (oldProtected != newProtected)
+                return false;
+        }
         unsigned oldGroupCount = oldClusterGroup->getCount("Node");
         unsigned newGroupCount = newClusterGroup->getCount("Node");
         if (oldGroupCount != newGroupCount)
@@ -10895,6 +10905,7 @@ class CInitGroups
 
     bool constructGroup(const IPropertyTree &cluster, const char *altName, IPropertyTree *oldEnvCluster, GroupType groupType, bool force, StringBuffer &messages)
     {
+        dbgassertex(!isContainerized());
         /* a 'realCluster' is a cluster who's name matches it's nodeGroup
          * if the nodeGroup differs it implies it's sharing the nodeGroup with other thor instance(s).
          */
@@ -10938,6 +10949,10 @@ class CInitGroups
         IPropertyTree *existingClusterGroup = queryExistingGroup(gname);
         bool matchOldEnv = false;
         Owned<IPropertyTree> newClusterGroup = createClusterGroupFromEnvCluster(groupType, cluster, defDir, realCluster, true);
+        // All BM groups are protected by default, except dropzones.
+        // Meaning, they will not automatically be updated if the Environment cluster definition changes.
+        if (newClusterGroup && (grp_dropzone != groupType))
+            newClusterGroup->setPropBool("@protected", true);
         bool matchExisting = !force && clusterGroupCompare(newClusterGroup, existingClusterGroup);
         if (oldEnvCluster)
         {
@@ -10976,6 +10991,10 @@ class CInitGroups
             VStringBuffer msg("New cluster layout for cluster %s", gname.str());
             UWARNLOG("%s", msg.str());
             messages.append(msg).newline();
+            // All BM groups are protected by default, except dropzones.
+            // Meaning, they will not automatically be updated if the Environment cluster definition changes.
+            if (grp_dropzone != groupType)
+                newClusterGroup->setPropBool("@protected", true);
             addClusterGroup(gname.str(), newClusterGroup.getClear(), realCluster);
             return true;
         }
@@ -11002,6 +11021,7 @@ class CInitGroups
                     if (ins>1)
                         gname.append('_').append(ins);
                     Owned<IPropertyTree> clusterGroup = createClusterGroup(grp_hthor, { na }, nullptr, &cluster, true, false);
+                    clusterGroup->setPropBool("@protected", true);
                     addClusterGroup(gname.str(), clusterGroup.getClear(), true);
                 }
             }
@@ -11077,6 +11097,7 @@ public:
     }
     bool resetClusterGroup(const char *clusterName, const char *type, bool spares, StringBuffer &messages)
     {
+        dbgassertex(!isContainerized());
         Owned<IRemoteConnection> conn = querySDS().connect("/Environment", myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
         if (!conn)
             return false;
@@ -11187,20 +11208,61 @@ public:
         }
         return true;
     }
-    void clearLZGroups()
+    void clearUnprotectedGroups()
     {
         if (!writeLock)
-            throw makeStringException(0, "CInitGroups::clearLZGroups called in read-only mode");
-        IPropertyTree *root = groupsconnlock.conn->queryRoot();
-        std::vector<IPropertyTree *> toDelete;
-        Owned<IPropertyTreeIterator> groups = root->getElements("Group[@kind='dropzone']");
+            throw makeStringException(0, "CInitGroups::clearUnprotectedGroups called in read-only mode");
+
+        Owned<IPropertyTree> globalConfig = getGlobalConfig();
+        IPropertyTree * storage = globalConfig->queryPropTree("storage");
+        if (!storage)
+            return;
+        std::vector<IPropertyTree *> toRemove;
+        IPropertyTree *groupsRoot = groupsconnlock.conn->queryRoot();
+        Owned<IPropertyTreeIterator> groups = groupsRoot->getElements("Group");
+        bool firstBareMetalProtectedRun = true;
+        if (isContainerized())
+            firstBareMetalProtectedRun = false;
+        else
+        {
+            // check if any protected groups. Unless this is the 1st BM run since this feature was added,
+            // there will be >0 (one for each cluster group in the environment from previous runs).
+            ForEach(*groups)
+            {
+                IPropertyTree &group = groups->query();
+                if (group.hasProp("@protected"))
+                {
+                    firstBareMetalProtectedRun = false;
+                    break;
+                }
+            }
+        }
         ForEach(*groups)
-            toDelete.push_back(&groups->query());
-        for (auto &group: toDelete)
-            root->removeTree(group);
+        {
+            IPropertyTree &group = groups->query();
+            bool doDelete = false;
+            if (firstBareMetalProtectedRun)
+            {
+                doDelete = strsame("dropzone", group.queryProp("@kind"));
+                if (!doDelete)
+                {
+                    // Protect all non dropzone BM groups created on 1st run
+                    // This preserves legacy semantics, where Dali groups will not automatically be
+                    // overwritten by a change in the topology in the environment.
+                    group.setPropBool("@protected", true);
+                }
+            }
+            else
+                doDelete = !group.getPropBool("@protected");
+            if (doDelete)
+                toRemove.push_back(&group);
+        }
+        for (auto &group: toRemove)
+            groupsRoot->removeTree(group);
     }
     void constructGroups(bool force, StringBuffer &messages, IPropertyTree *oldEnvironment)
     {
+        dbgassertex(!isContainerized());
         Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
         if (!conn)
             return;
@@ -11279,11 +11341,13 @@ public:
         return createClusterGroup(grp_unknown, hosts, path, nullptr, false, false);
     }
 
-    void ensureConsistentStorageGroup(bool force, const char * name, IPropertyTree * newClusterGroup, StringBuffer & messages)
+    void ensureConsistentStorageGroup(const char * name, IPropertyTree * newClusterGroup, StringBuffer & messages)
     {
         IPropertyTree *existingClusterGroup = queryExistingGroup(name);
         bool matchExisting = clusterGroupCompare(newClusterGroup, existingClusterGroup);
-        if (!existingClusterGroup || !matchExisting)
+        bool oldProtected = existingClusterGroup ? existingClusterGroup->getPropBool("@protected") : false;
+        bool newProtected = newClusterGroup->getPropBool("@protected");
+        if (!existingClusterGroup || !matchExisting || (oldProtected != newProtected))
         {
             if (!existingClusterGroup)
             {
@@ -11292,7 +11356,7 @@ public:
                 messages.append(msg).newline();
                 addClusterGroup(name, LINK(newClusterGroup), false);
             }
-            else if (force)
+            else if (!oldProtected || !newProtected) // i.e. allow overwrite if either old wasn't protected, or if was, but new isn't
             {
                 VStringBuffer msg("Forcing new group layout for storageplane %s", name);
                 UWARNLOG("%s", msg.str());
@@ -11308,17 +11372,7 @@ public:
         }
     }
 
-    void ensureStorageGroup(bool force, const char * name, unsigned numDevices, const char * path, StringBuffer & messages)
-    {
-        //Lower case the group name - see CNamedGroupStore::dolookup which lower cases before resolving.
-        StringBuffer gname;
-        gname.append(name).toLowerCase();
-
-        Owned<IPropertyTree> newClusterGroup = createStorageGroup(gname, numDevices, path);
-        ensureConsistentStorageGroup(force, gname, newClusterGroup, messages);
-    }
-
-    void constructStorageGroups(bool force, StringBuffer &messages)
+    void constructStorageGroups(StringBuffer &messages)
     {
         Owned<IPropertyTree> globalConfig = getGlobalConfig();
         IPropertyTree * storage = globalConfig->queryPropTree("storage");
@@ -11372,7 +11426,29 @@ public:
                     unsigned numDevices = plane.getPropInt("@numDevices", 1);
                     newClusterGroup.setown(createStorageGroup(gname, numDevices, prefix));
                 }
-                ensureConsistentStorageGroup(force, gname, newClusterGroup, messages);
+                // Storage planes are the single source of truth for storage layout.
+                // Dali groups are created to reflect storage plane definitions.
+                // If a plane definition changes, the corresponding Dali group is overwritten
+                // (with a warning issued).
+                //
+                // Setting @protectGroup=true on an individual plane prevents a changed plane
+                // definition from overwriting the existing Dali group layout.
+                //
+                // Note: For bare-metal Environment-based groups, the existing group is protected
+                // by default. In containerized environments, the plane definition always takes
+                // precedence unless it is explicitly protected.
+                //
+                // The @protectGroup option should only be used if existing logical files reference
+                // an old plane layout and there is a need to prevent them from pointing to a new group
+                // layout (which could make physical file parts inaccessible). However, such plane
+                // topology changes should be avoided. Instead, a new plane should be defined, with the
+                // existing plane definition being left untouched, so that existing files that reference
+                // it are unaffected.
+                if (plane.getPropBool("@protectGroup"))
+                    newClusterGroup->setPropBool("@protected", true);
+                else
+                    newClusterGroup->removeProp("@protected");
+                ensureConsistentStorageGroup(gname, newClusterGroup, messages);
             }
         }
     }
@@ -11389,31 +11465,29 @@ public:
     }
 };
 
-void initClusterGroups(bool force, StringBuffer &response, IPropertyTree *oldEnvironment, unsigned timems)
+void initClusterAndStoragePlaneGroups(StringBuffer &response, bool force, IPropertyTree *oldEnvironment, unsigned timems)
 {
     CInitGroups init(timems, true);
-    init.clearLZGroups(); // clear existing LZ groups, current ones will be recreated
-    init.constructGroups(force, response, oldEnvironment);
-}
-
-void initClusterAndStoragePlaneGroups(bool force, IPropertyTree *oldEnvironment, unsigned timems)
-{
-    CInitGroups init(timems, true);
-    init.clearLZGroups(); // clear existing LZ groups, current ones will be recreated
-
-    StringBuffer response;
-    init.constructGroups(force, response, oldEnvironment);
-    if (response.length())
-        MLOG("DFS group initialization : %s", response.str()); // should this be a syslog?
-
-    response.clear();
-    init.constructStorageGroups(false, response);
-    if (response.length())
-        MLOG("StoragePlane group initialization : %s", response.str()); // should this be a syslog?
+    // clearUnprotectedGroups clears all unprotected groups - BM hthor, thor, roxie Environment groups are
+    // protected to maintain existing semantics, and to protect logical files which reference them.
+    init.clearUnprotectedGroups();
+    if (!isContainerized())
+    {
+        // Create groups based on the Environment
+        // Detects mismatches between existing Dali groups and new Environment definitions
+        // and avoids replacing them unless forced. This is to avoid situations where existing
+        // logical files reference existing groups, changing their definition may render the
+        // logical file parts inaccessible.
+        // NB: these groups derived from Environment, are tagged with @kind thor, roxie, hthor, dropzone etc.
+        init.constructGroups(force, response, oldEnvironment);
+    }
+    // Create storage plane groups based on the global config storage/planes definitions
+    init.constructStorageGroups(response);
 }
 
 bool resetClusterGroup(const char *clusterName, const char *type, bool spares, StringBuffer &response, unsigned timems)
 {
+    dbgassertex(!isContainerized());
     CInitGroups init(timems, true);
     return init.resetClusterGroup(clusterName, type, spares, response);
 }
