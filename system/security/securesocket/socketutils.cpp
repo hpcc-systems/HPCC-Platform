@@ -733,6 +733,12 @@ void CSocketTarget::onAsyncComplete(int result)
         case State::Reconnecting:
             if (result < 0)
             {
+                StringBuffer epText, cause;
+                const char * stateText = (state == State::Connecting) ? "connect" : "reconnect";
+                ep.getEndpointHostText(epText);
+                getSocketErrorMessage(cause, -result);
+                OERRLOG("Failed to %s to %s: %s", stateText, epText.str(), cause.str());
+
                 // Connection failed - clean up socket
                 socket.clear();
                 
