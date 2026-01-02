@@ -19,7 +19,6 @@ proxyItems.forEach(item => {
     };
 });
 
-
 const plugins = [
     new DojoWebpackPlugin({
         loaderConfig: require("./eclwatch/dojoConfig"),
@@ -39,37 +38,7 @@ const plugins = [
         /^xstyle\/css!/, function (data) {
             data.request = data.request.replace(/^xstyle\/css!/, "!style-loader!css-loader!");
         }
-    ),
-
-    // Custom plugin to remove "use strict" from final bundles
-    {
-        apply: (compiler) => {
-            compiler.hooks.thisCompilation.tap('RemoveUseStrictPlugin', (compilation) => {
-                compilation.hooks.processAssets.tap(
-                    {
-                        name: 'RemoveUseStrictPlugin',
-                        stage: compilation.constructor.PROCESS_ASSETS_STAGE_OPTIMIZE_INLINE
-                    },
-                    () => {
-                        try {
-                            for (const filename of Object.keys(compilation.assets)) {
-                                if (filename.endsWith('.js')) {
-                                    const asset = compilation.assets[filename];
-                                    const source = asset.source();
-                                    const newSource = source.replace(/["']use strict["'];?\s*/g, "\n");
-                                    if (source !== newSource) {
-                                        compilation.assets[filename] = new webpack.sources.RawSource(newSource);
-                                    }
-                                }
-                            }
-                        } catch (error) {
-                            console.warn('RemoveUseStrictPlugin warning:', error.message);
-                        }
-                    }
-                );
-            });
-        }
-    }
+    )
 ];
 
 module.exports = function (env) {
@@ -108,7 +77,7 @@ module.exports = function (env) {
                     test: /\.css$/,
                     use: ["style-loader", "css-loader"]
                 }, {
-                    test: /\.js$/,
+                    test: /\.[cm]?js$/,
                     enforce: "pre",
                     use: [{
                         loader: "source-map-loader",
@@ -148,7 +117,7 @@ module.exports = function (env) {
 
         target: "web",
         mode: isProduction ? "production" : "development",
-        devtool: isProduction ? undefined : "cheap-module-source-map",
+        devtool: isProduction ? undefined : "source-map",
 
         watchOptions: isProduction ? undefined : {
             aggregateTimeout: 600
