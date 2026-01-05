@@ -3462,22 +3462,22 @@ IRemoteLogAccess *queryRemoteLogAccessor()
                 constexpr const char * methodName = "queryRemoteLogAccessor";
                 constexpr const char * instFactoryName = "createInstance";
 
-                StringBuffer libName; //lib<type>logaccess.so
+                StringBuffer pluginName; //<type>logaccess - pre and postfix handled by LoadSharedObject
                 StringBuffer type;
                 logAccessPluginConfig->getProp("@type", type);
                 if (type.isEmpty())
                     throw makeStringExceptionV(-1, "%s RemoteLogAccess plugin kind not specified.", methodName);
-                libName.append("lib").append(type.str()).append("logaccess");
+                pluginName.append(type.str()).append("logaccess");
 
-                //Load the DLL/SO
-                HINSTANCE logAccessPluginLib = LoadSharedObject(libName.str(), false, true);
+                //Load the DLL/SO - distro specific pre/postfix handled by LoadSharedObject
+                HINSTANCE logAccessPluginLib = LoadSharedObject(pluginName.str(), false, true);
 
                 newLogAccessPluginMethod_t_ xproc = (newLogAccessPluginMethod_t_)GetSharedProcedure(logAccessPluginLib, instFactoryName);
                 if (xproc == nullptr)
-                    throw makeStringExceptionV(-1, "%s cannot locate procedure %s in library '%s'", methodName, instFactoryName, libName.str());
-
+                    throw makeStringExceptionV(-1, "%s cannot locate procedure %s in library '%s'", methodName, instFactoryName, pluginName.str());
                 //Call logaccessplugin instance factory and return the new instance
-                DBGLOG("Calling '%s' in log access plugin '%s'", instFactoryName, libName.str());
+                DBGLOG("Calling '%s' in log access plugin '%s' (%s%s%s)", instFactoryName, pluginName.str(), SharedObjectPrefix, pluginName.str(), SharedObjectExtension);
+
                 remoteLogAccessor = xproc(*logAccessPluginConfig);
             }
             catch (IException *e)
@@ -3514,19 +3514,19 @@ void diagnoseLogAccessPluginLoad(LogAccessPluginDiagnostics & diagnostics)
             return;
         }
 
-        StringBuffer libName;
-        libName.append("lib").append(diagnostics.pluginType.str()).append("logaccess");
-        diagnostics.libName.set(libName.str());
+        StringBuffer pluginName;
+        pluginName.append(diagnostics.pluginType.str()).append("logaccess");
+        diagnostics.libName.set(pluginName.str());
 
         //Attempt to load the DLL/SO
         HINSTANCE logAccessPluginLib = nullptr;
         try
         {
-            logAccessPluginLib = LoadSharedObject(libName.str(), false, false); // raiseOnError=false to capture error
+            logAccessPluginLib = LoadSharedObject(pluginName.str(), false, false); // raiseOnError=false to capture error
             if (!logAccessPluginLib)
             {
                 diagnostics.logAccessPluginLoadState = LogAccessDiagnosticState::LoadFailed;
-                diagnostics.statusMessage.setf("%s: Failed to load shared library '%s': Library not found or load failed", methodName, libName.str());
+                diagnostics.statusMessage.setf("%s: Failed to load plugin '%s' (%s%s%s): Library not found or load failed", methodName, pluginName.str(), SharedObjectPrefix, pluginName.str(), SharedObjectExtension);
                 return;
             }
 
@@ -3535,7 +3535,7 @@ void diagnoseLogAccessPluginLoad(LogAccessPluginDiagnostics & diagnostics)
             if (xproc == nullptr)
             {
                 diagnostics.logAccessPluginLoadState = LogAccessDiagnosticState::LoadFailed;
-                diagnostics.statusMessage.setf("%s: Cannot locate procedure '%s' in library '%s'", methodName, instFactoryName, libName.str());
+                diagnostics.statusMessage.setf("%s: Cannot locate procedure '%s' in library '%s'", methodName, instFactoryName, diagnostics.libName.str());
                 FreeSharedObject(logAccessPluginLib);
                 return;
             }
@@ -3549,7 +3549,7 @@ void diagnoseLogAccessPluginLoad(LogAccessPluginDiagnostics & diagnostics)
             diagnostics.logAccessPluginLoadState = LogAccessDiagnosticState::LoadFailed;
             StringBuffer errorMsg;
             e->errorMessage(errorMsg);
-            diagnostics.statusMessage.setf("%s: Failed to load or verify plugin library '%s': %s", methodName, libName.str(), errorMsg.str());
+            diagnostics.statusMessage.setf("%s: Failed to load or verify plugin library '%s': %s", methodName, diagnostics.libName.str(), errorMsg.str());
             if (logAccessPluginLib)
                 FreeSharedObject(logAccessPluginLib);
             e->Release();
@@ -3557,7 +3557,7 @@ void diagnoseLogAccessPluginLoad(LogAccessPluginDiagnostics & diagnostics)
         catch (...)
         {
             diagnostics.logAccessPluginLoadState = LogAccessDiagnosticState::LoadFailed;
-            diagnostics.statusMessage.setf("%s: Failed to load or verify plugin library '%s': Unknown error", methodName, libName.str());
+            diagnostics.statusMessage.setf("%s: Failed to load or verify plugin library '%s': Unknown error", methodName, diagnostics.libName.str());
             if (logAccessPluginLib)
                 FreeSharedObject(logAccessPluginLib);
         }
