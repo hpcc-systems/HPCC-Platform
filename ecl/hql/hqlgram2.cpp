@@ -7854,7 +7854,12 @@ IHqlExpression * HqlGram::checkIndexRecord(IHqlExpression * record, const attrib
 {
     if (record->numChildren() && getBoolAttributeInList(indexAttrs, filepositionAtom, true) && !hasTrailingFilePos(record))
     {
-        indexAttrs.setown(createComma(indexAttrs.getClear(), createExprAttribute(filepositionAtom, createConstant(false))));
+        HqlExprArray children;
+        if (indexAttrs)
+            indexAttrs->unwindList(children, no_comma);
+        removeAttribute(children, filepositionAtom);
+        children.append(*createExprAttribute(filepositionAtom, createConstant(false)));
+        indexAttrs.setown(createComma(children));
     }
     return LINK(record);
 }

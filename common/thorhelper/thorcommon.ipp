@@ -120,7 +120,7 @@ private:
     unsigned metaFlags;
 };
 
-template<class T> class CClassMeta : implements CInterfaceOf<IOutputMetaData>
+template<class T> class CClassMeta final : implements CInterfaceOf<IOutputMetaData>
 {
 public:
     virtual size32_t getRecordSize(const void *rec)         { return sizeof(T); }
@@ -178,7 +178,7 @@ protected:
 
 //------------------------------------------------------------------------------------------------
 
-class THORHELPER_API AggregateRowBuilder : public RtlDynamicRowBuilder
+class THORHELPER_API AggregateRowBuilder final : public RtlDynamicRowBuilder
 {
 public:
     void Link() const;

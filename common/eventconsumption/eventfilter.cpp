@@ -17,13 +17,19 @@
 
 #include "eventfilter.h"
 #include "eventindex.hpp"
+#include "eventmetaparser.hpp"
 #include "jregexp.hpp"
 #include "jutil.hpp"
+#include <map>
 #include <set>
+#include <unordered_map>
 #include <unordered_set>
 
 class CEventFilter : public CInterfaceOf<IEventFilter>
 {
+public:
+    CEventFilter(CMetaInfoState& _metaState) : metaState(_metaState) {}
+
 protected:
     class StringMatchHelper
     {
@@ -79,6 +85,7 @@ protected:
 
     struct FilterTerm : public CInterface
     {
+        FilterTerm(CMetaInfoState& _metaInfoState) : metaInfoState(_metaInfoState) {}
         virtual void observe(const CEvent& event) const {}
         virtual bool matches(const CEvent& event, const CEventAttribute& attribute) const { return true; }
         virtual bool accept(const char* values)
@@ -97,15 +104,35 @@ protected:
             return true;
         }
         virtual bool acceptToken(const char* token, FilterTermComparison comp) = 0;
+    protected:
+        CMetaInfoState& metaInfoState;
     };
 
     struct StringFilterTerm : public FilterTerm
     {
         StringMatchHelper helper;
 
+        // Cache of previously evaluated values used to avoid potentially redundant pattern
+        // matching. The contents persist for the lifetime of the filter term. For values known
+        // to have a shorter lifetime, e.g., TraceId, a subclass may manage the cache differently.
+        //
+        // The map is mutable because it is used exclusively within a const method. The method is
+        // const because the base class requires it to be so. Concurrent access is not a concern
+        // because event traversal and iteration are not multi-threaded activities. Synchronization
+        // is not required.
+        mutable std::unordered_map<std::string, bool> knownValues;
+
+        using FilterTerm::FilterTerm;
+
         bool matches(const CEvent&, const CEventAttribute& attribute) const override
         {
-            return helper.matches(attribute.queryTextValue());
+            std::string value = attribute.queryTextValue();
+            auto knownIt = knownValues.find(value);
+            if (knownIt != knownValues.end())
+                return knownIt->second;
+            bool match = helper.matches(value.c_str());
+            knownValues.emplace(std::move(value), match);
+            return match;
         }
 
         bool acceptToken(const char* token, FilterTermComparison comp) override
@@ -116,6 +143,8 @@ protected:
 
     struct BoolFilterTerm : public FilterTerm
     {
+        using FilterTerm::FilterTerm;
+
         bool accepted[2]{false, false};
 
         bool matches(const CEvent&, const CEventAttribute& attribute) const override
@@ -135,6 +164,8 @@ protected:
     struct UnsignedFilterTerm : public FilterTerm
     {
         std::set<std::pair<std::pair<__uint64, __uint64>, FilterTermComparison>> accepted;
+
+        using FilterTerm::FilterTerm;
 
         bool matches(const CEvent&, const CEventAttribute& attribute) const override
         {
@@ -231,6 +262,8 @@ protected:
 
     struct FileIdFilterTerm : public UnsignedFilterTerm
     {
+        using UnsignedFilterTerm::UnsignedFilterTerm;
+
         virtual void observe(const CEvent& event) const override
         {
             if (MetaFileInformation == event.queryType())
@@ -245,9 +278,13 @@ protected:
             switch (attribute.queryId())
             {
             case EvAttrFileId:
-                return matchedPaths.count(attribute.queryNumericValue()) || UnsignedFilterTerm::matches(event, attribute);
+                return matchedPaths.count(event.queryNumericValue(EvAttrFileId)) || UnsignedFilterTerm::matches(event, attribute);
             case EvAttrPath:
-                return matchedPaths.count(event.queryNumericValue(EvAttrFileId));
+                {
+                    __uint64 fileId = event.queryNumericValue(EvAttrFileId);
+                    const char* filePath = metaInfoState.queryFilePath(fileId);
+                    return filePath && helper.matches(filePath);
+                }
             default:
                 return false;
             }
@@ -265,8 +302,52 @@ protected:
         mutable std::set<__uint64> matchedPaths;
     };
 
+    struct TraceIdFilterTerm : public StringFilterTerm
+    {
+        using StringFilterTerm::StringFilterTerm;
+
+        // Override of the base class method to accept the corresponding service name, which is
+        // not required to exist, as a match. The base method cannot be used because it cannot
+        // convey whether a result of false indicates a known non-match or the value is previously
+        // unseen, forcing the subclass to repeat lookups.
+        bool matches(const CEvent& event, const CEventAttribute& attribute) const override
+        {
+            if (attribute.queryId() != EvAttrEventTraceId)
+                throw makeStringExceptionV(0, "TraceIdFilterTerm can only evaluate EventTraceId attributes, but received attribute ID: %u", unsigned(attribute.queryId()));
+            std::string traceId = attribute.queryTextValue();
+            auto knownIt = knownValues.find(traceId);
+            bool match;
+            if (knownIt != knownValues.end())
+            {
+                match = knownIt->second;
+                // A QueryStop event with an EventTraceId attribute is required to attempt to purge
+                // what is now presumed to be an inactive ID from the knownValues map. The cache
+                // cleanup cannot occur with any other combination of event type and attribute ID.
+                if (match && EventQueryStop == event.queryType())
+                    knownValues.erase(knownIt);
+            }
+            else
+            {
+                if (helper.matches(traceId.c_str()))
+                    match = true;
+                else
+                {
+                    const char* serviceName = metaInfoState.queryServiceName(traceId.c_str());
+                    match = (!isEmptyString(serviceName) && helper.matches(serviceName));
+                }
+                // Only cache the result if this is not a QueryStop event, since QueryStop events
+                // trigger cache cleanup rather than cache population.
+                if (EventQueryStop != event.queryType())
+                    knownValues.emplace(std::move(traceId), match);
+            }
+            return match;
+        }
+    };
+
     struct TimestampFilterTerm : public UnsignedFilterTerm
     {
+        using UnsignedFilterTerm::UnsignedFilterTerm;
+
         bool acceptToken(const char* token, FilterTermComparison comp) override
         {
             // Digits and hyphen only is presumed to be a nanosecond timestamp range.
@@ -319,6 +400,8 @@ protected:
 
     struct NodeKindFilterTerm : public UnsignedFilterTerm
     {
+        using UnsignedFilterTerm::UnsignedFilterTerm;
+
         bool acceptToken(const char* token, FilterTermComparison comp) override
         {
             NodeKind kind = mapNodeKind(token);
@@ -329,6 +412,7 @@ protected:
 public: // IEventVisitationLink
     IMPLEMENT_IEVENTVISITATIONLINK;
 
+public: // IEventVisitor
     virtual bool visitEvent(CEvent& event) override
     {
         // Allow all filter terms the opportunity to see the event before it may be filtered.
@@ -500,6 +584,8 @@ public: // IEventFilter
                 throw makeStringException(-1, "event attribute EvAttrPath has a conflicting filter term for EvAttrFileId");
             return term->accept(values);
         }
+        else if (EvAttrEventTraceId == id)
+            return ensureTerm<TraceIdFilterTerm>(id)->accept(values);
         else if (EvAttrNodeKind == id)
             return ensureTerm<NodeKindFilterTerm>(id)->accept(values);
         else
@@ -534,7 +620,7 @@ protected:
         if (id <= EvAttrNone || id >= EvAttrMax)
             throw makeStringExceptionV(-1, "event attribute id %d out of range", int(id));
         if (!terms[id])
-            terms[id].setown(new term_type_t);
+            terms[id].setown(new term_type_t(metaState));
 #if defined(_DEBUG)
         else if (dynamic_cast<term_type_t*>(terms[id].get()) == nullptr)
             throw makeStringExceptionV(-1, "event attribute id %d has a different type of filter term", int(id));
@@ -580,6 +666,7 @@ protected:
     static std::map<std::string, FilterTermComparison> comparisonMap;
     Owned<FilterTerm> terms[EvAttrMax];
     std::unordered_set<EventType> acceptedEvents;
+    CMetaInfoState& metaState;
 };
 
 std::map<std::string, FilterTermComparison> CEventFilter::comparisonMap{
@@ -597,14 +684,14 @@ std::map<std::string, FilterTermComparison> CEventFilter::comparisonMap{
     {"except", FilterTermComparison::Except},
 };
 
-IEventFilter* createEventFilter()
+IEventFilter* createEventFilter(CMetaInfoState& metaState)
 {
-    return new CEventFilter;
+    return new CEventFilter(metaState);
 }
 
-IEventFilter* createEventFilter(const IPropertyTree& config)
+IEventFilter* createEventFilter(const IPropertyTree& config, CMetaInfoState& metaState)
 {
-    Owned<IEventFilter> filter = createEventFilter();
+    Owned<IEventFilter> filter = createEventFilter(metaState);
     filter->configure(config);
     return filter.getClear();
 }
@@ -635,6 +722,7 @@ class EventFilterTests : public CppUnit::TestFixture
     CPPUNIT_TEST(testFilterByAttributeByTimestamp1);
     CPPUNIT_TEST(testFilterByAttributeByTimestamp2);
     CPPUNIT_TEST(testFilterByAttributeByTimestamp3);
+    CPPUNIT_TEST(testFilterByAttributeByTraceId);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -1313,6 +1401,34 @@ public:
                     <event type="IndexCacheMiss" NodeKind="1"/>
                     <event type="IndexCacheMiss" NodeKind="2"/>
                     <event type="IndexCacheMiss" NodeKind="2"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData, false);
+    }
+
+    void testFilterByAttributeByTraceId()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link kind="event-filter">
+                    <attribute id="EventTraceId" values="trace-001,dali*"/>
+                </link>
+                <input>
+                    <event type="QueryStart" EventTraceId="trace-001" ServiceName="roxie-service"/>
+                    <event type="QueryStart" EventTraceId="trace-002" ServiceName="thor-service"/>
+                    <event type="QueryStart" EventTraceId="trace-003" ServiceName="dali-backend"/>
+                    <event type="QueryStart" EventTraceId="trace-004" ServiceName="esp-service"/>
+                    <event type="IndexCacheHit" EventTraceId="trace-001"/>
+                    <event type="IndexCacheHit" EventTraceId="trace-002"/>
+                    <event type="IndexCacheHit" EventTraceId="trace-003"/>
+                    <event type="IndexCacheHit" EventTraceId="trace-004"/>
+                </input>
+                <expect>
+                    <event type="QueryStart" EventTraceId="trace-001" ServiceName="roxie-service"/>
+                    <event type="QueryStart" EventTraceId="trace-003" ServiceName="dali-backend"/>
+                    <event type="IndexCacheHit" EventTraceId="trace-001"/>
+                    <event type="IndexCacheHit" EventTraceId="trace-003"/>
                 </expect>
             </test>
         )!!!";

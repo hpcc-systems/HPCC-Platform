@@ -426,17 +426,15 @@ struct CClusterInfo: implements IClusterInfo, public CInterface
     {
         if (!name.isEmpty())
         {
-#ifdef _CONTAINERIZED
+            mspec.numStripedDevices = 1;
             Owned<const IStoragePlane> plane = getDataStoragePlane(name, false);
-            mspec.numStripedDevices = plane ? plane->numDevices() : 1;
+            if (plane && plane->isStriped())
+                mspec.numStripedDevices = plane->numDevices();
+
             if (mspec.numStripedDevices>1)
                 mspec.flags |= CPDMSF_striped;
             else
                 mspec.flags &= ~CPDMSF_striped;
-#else
-            // Bare-metal can have multiple devices per plane (e.g. data + mirror), but it doesn't stripe across them
-            mspec.numStripedDevices = 1;
-#endif
         }
     }
 public:
@@ -678,7 +676,7 @@ public:
     }
 };
 
-class CPartDescriptor : implements IPartDescriptor
+class CPartDescriptor final : implements IPartDescriptor
 {
 protected: friend class CFileDescriptor;
 
@@ -2710,10 +2708,20 @@ IFileDescriptor *createFileDescriptor(const char *lname, const char *clusterType
     fileDesc->setPartMask(partMask);
     fileDesc->setDefaultDir(curDir);
 
+    Owned<const IStoragePlane> plane = getStoragePlaneByName(groupName, false);
     ClusterPartDiskMapSpec mspec;
-    mspec.defaultCopies = DFD_DefaultCopies;
+    if (plane)
+    {
+        mspec.defaultCopies = plane->queryDefaultCopies();
+        if (plane->isStriped())
+        {
+            mspec.numStripedDevices = plane->numDevices();
+            mspec.flags |= CPDMSF_striped;
+        }
+    }
+    else
+        mspec.defaultCopies = DFD_DefaultCopies;
     fileDesc->addCluster(groupName, group, mspec);
-
     return fileDesc.getClear();
 }
 
@@ -3569,7 +3577,7 @@ public:
     unsigned ordinality() const { return hosts.ordinality(); }
 
     bool checkIsSubset(const GroupInformation & other); // save information if it is a subset of other
-    void createStoragePlane(IPropertyTree * storage, unsigned copy) const;
+    void createStoragePlane(IPropertyTree * storage, unsigned copy, unsigned defaultCopies) const;
 
 public:
     StringBuffer name;
@@ -3616,7 +3624,7 @@ bool GroupInformation::checkIsSubset(const GroupInformation & other)
     return false;
 }
 
-void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned copy) const
+void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned copy, unsigned defaultCopies) const
 {
     StringBuffer mirrorname;
     const char * planeName = name;
@@ -3692,6 +3700,9 @@ void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned copy
         const char * category = (dropZoneIndex != 0) ? "lz" : "data";
         plane->setProp("@category", category);
     }
+
+    if (!plane->hasProp("@redundancy"))
+        plane->setPropInt("@redundancy", defaultCopies-1);
 
     //MORE: If container is identical to this except for the name we could generate an information tag @alias
 }
@@ -3886,9 +3897,10 @@ static void doInitializeStorageGroups(bool createPlanesFromGroups, IPropertyTree
         ForEachItemIn(i, allGroups)
         {
             const GroupInformation & cur = allGroups.item(i);
-            cur.createStoragePlane(storage, 0);
+            unsigned defaultCopies = !isContainerized() ? 2 : 1;
+            cur.createStoragePlane(storage, 0, defaultCopies);
             if (cur.groupType == grp_thor)
-                cur.createStoragePlane(storage, 1);
+                cur.createStoragePlane(storage, 1, defaultCopies);
         }
 
         //Uncomment the following to trace the values that been generated

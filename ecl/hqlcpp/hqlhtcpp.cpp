@@ -10873,6 +10873,12 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
         IHqlExpression * lastField = queryLastField(record);
         lastFieldAlwaysZero = lastField && lastField->hasAttribute(_implicitFpos_Atom);
     }
+    else
+    {
+        // Really hasFileposition should be passed through to the builder, but until that happens it should be treated
+        // as always zero
+        lastFieldAlwaysZero = true;
+    }
 
     LinkedHqlExpr serializedRecord = record;
     unsigned numPayload = numPayloadFields(expr);

@@ -1508,7 +1508,7 @@ void CDiskKeyIndex::ensureReady()
             //Check the file size field matches the actual size of the file.
             __int64 phyrec = candidateHdr->phyrec;
             _WINREV(phyrec);
-            if (phyrec != actualSize-1)
+            if ((offset_t)phyrec != actualSize-1)
                 continue;
 
             // This should never be false - possibly an internal error instead
@@ -3268,7 +3268,6 @@ void CNodeCache::getCacheInfo(ICacheInfoRecorder &cacheInfo)
 
 //Use a critical section in each node to prevent multiple threads loading the same node at the same time.
 //Critical sections are 40bytes on linux so < 0.5% overhead for an 8K page and trivial overhead when constructed (<10ns)
-static std::atomic<cycle_t> lastLockingReportCycles{0};
 static std::atomic<cycle_t> lastLoadReportCycles{0};
 
 //Keep track of the total time that is taken to resolve a node from the cache - including loading it from disk.
@@ -3332,7 +3331,6 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
     if (unlikely(!typeCache.enabled))
         return nodeLoader.loadNode(nullptr, pos);
 
-    CCacheReservation cacheReservation;
     CKeyIdAndPos key(iD, pos);
     unsigned hashcode = typeCache.getKeyHash(key);
     unsigned subCache = cacheBits == 0 ? 0 : hashcode >> cacheShift;

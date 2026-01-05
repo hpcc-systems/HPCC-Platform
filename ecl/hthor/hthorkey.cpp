@@ -563,7 +563,7 @@ void CHThorIndexReadActivityBase::initPart()
     const RtlRecord & actualRecInfo = layoutTrans ? layoutTrans->querySourceMeta() : eclKeySize.queryRecordAccessor(true);
     klManager.setown(createLocalKeyManager(actualRecInfo, keyIndex, &contextLogger, helper.hasNewSegmentMonitors(), false));
     initManager(klManager, false);
-    callback.setManager(klManager, nullptr);
+    callback.setManager(klManager, &contextLogger);
 }
 
 void CHThorIndexReadActivityBase::killPart()
@@ -856,7 +856,7 @@ bool CHThorIndexReadActivity::nextPart()
         klManager.setown(createKeyMerger(actualRecInfo, keyIndexCache, seekGEOffset, NULL, helper.hasNewSegmentMonitors(), false));
         keyIndexCache.clear();
         initManager(klManager, false);
-        callback.setManager(klManager, nullptr);
+        callback.setManager(klManager, &contextLogger);
         return true;
     }
     else if (seekGEOffset || localSortKey)
@@ -4035,8 +4035,7 @@ public:
                 agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
             return true;
         }
-        IContextLogger * ctx = nullptr;
-        KLBlobProviderAdapter adapter(manager, ctx);
+        KLBlobProviderAdapter adapter(manager, &contextLogger);
         byte const * rhs = manager->queryKeyBuffer();
         if(indexReadMatch(jg->queryLeft(), rhs, &adapter))
         {

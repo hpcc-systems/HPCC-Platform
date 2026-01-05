@@ -833,7 +833,10 @@ void TransferServer::appendTransformed(unsigned chunkIndex, ITransformer * input
 
         if (gpfFrequency || !gotLength || ((unsigned)(msTick() - lastTick)) > updateFrequency)
         {
-            out->flush();
+            // If compressing, only flush when the job is completed - to prevent compressed output creating
+            // extra blocks.
+            if (!gotLength || !compressOutput)
+                out->flush();
 
             lastTick = msTick();
 

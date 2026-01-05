@@ -128,6 +128,8 @@ void CJHBlockCompressedSearchNode::load(CKeyHdr *_keyHdr, const void *rawData, o
     CCycleTimer expansionTimer(true);
     keyBuf = expandBlock(keys, inMemorySize, compressionMethod);
     loadExpandTime = expansionTimer.elapsedNs();
+    fileposFetchSize = keyHdr->hasSpecialFileposition() && !zeroFilePosition ? sizeof(offset_t) : 0;
+    clearFilepos = keyHdr->hasSpecialFileposition() && zeroFilePosition;
 }
 
 int CJHBlockCompressedSearchNode::compareValueAt(const char *src, unsigned int index) const
@@ -143,20 +145,9 @@ bool CJHBlockCompressedSearchNode::fetchPayload(unsigned int index, char *dst, P
     if (!dst) return true;
 
     const char * p = keyBuf + index*keyRecLen;
-    if (keyHdr->hasSpecialFileposition())
-    {
-        if (zeroFilePosition)
-        {
-            memcpy(dst+keyCompareLen, p+keyCompareLen, keyLen-keyCompareLen);
-            *(offset_t*)(dst+keyLen) = 0;
-        }
-        else
-            memcpy(dst+keyCompareLen, p+keyCompareLen, keyLen + sizeof(offset_t) - keyCompareLen);
-    }
-    else
-    {
-        memcpy(dst+keyCompareLen, p+keyCompareLen, keyLen-keyCompareLen);
-    }
+    memcpy(dst+keyCompareLen, p+keyCompareLen, keyLen + fileposFetchSize - keyCompareLen);
+    if (clearFilepos)
+        *(offset_t*)(dst+keyLen) = 0;
     return true;
 }
 
@@ -274,24 +265,14 @@ int CJHBlockCompressedVarNode::compareValueAt(const char *src, unsigned int inde
 bool CJHBlockCompressedVarNode::fetchPayload(unsigned int num, char *dst, PayloadReference & activePayload) const
 {
     if (num >= hdr.numKeys) return false;
+    if (!dst) return true;
 
-    if (NULL != dst)
-    {
-        const char * p = keyBuf + offsets[num];
-        KEYRECSIZE_T reclen = sizes[num];
-        if (keyHdr->hasSpecialFileposition())
-        {
-            if (zeroFilePosition)
-            {
-                memcpy(dst+keyCompareLen, p+keyCompareLen, reclen-keyCompareLen);
-                *(offset_t*)(dst+keyLen) = 0;
-            }
-            else
-                memcpy(dst+keyCompareLen, p+keyCompareLen, reclen + sizeof(offset_t) - keyCompareLen);
-        }
-        else
-            memcpy(dst+keyCompareLen, p+keyCompareLen, reclen-keyCompareLen);
-    }
+    const char * p = keyBuf + offsets[num];
+    KEYRECSIZE_T reclen = sizes[num];
+    memcpy(dst+keyCompareLen, p+keyCompareLen, reclen + fileposFetchSize - keyCompareLen);
+    if (clearFilepos)
+        *(offset_t*)(dst+reclen) = 0;
+
     return true;
 }
 
@@ -400,42 +381,75 @@ void CBlockCompressedWriteNode::finalize()
 
 //=========================================================================================================
 
-BlockCompressedIndexCompressor::BlockCompressedIndexCompressor(unsigned keyedSize, IHThorIndexWriteArg *helper, const char* options, bool isTLK)
+HybridIndexCompressor::HybridIndexCompressor(unsigned keyedSize, const CKeyHdr* keyHdr, IHThorIndexWriteArg *helper, const char * compression, bool isTLK)
 {
-    StringBuffer compressionOptions;
+    //Process options for leaf (block-compressed) nodes
+    leafContext.compressionMethod = COMPRESS_METHOD_ZSTDS6;
 
-    auto processOption = [this] (const char * option, const char * value)
+    auto processOption = [this](const char * option, const char * value)
     {
         CompressionMethod method = translateToCompMethod(option, COMPRESS_METHOD_NONE);
         if (method != COMPRESS_METHOD_NONE)
         {
-            context.compressionMethod = method;
+            leafContext.compressionMethod = method;
             if (!streq(value, "1"))
-                context.compressionOptions.append(',').append(value);
+                leafContext.compressionOptions.append(',').append(value);
         }
         else if (strieq(option, "compression"))
         {
-            context.compressionMethod = translateToCompMethod(value, COMPRESS_METHOD_ZSTDS);
+            leafContext.compressionMethod = translateToCompMethod(value, leafContext.compressionMethod);
         }
         else if (strieq(option, "compressopt"))
         {
-            context.compressionOptions.append(',').append(value);
+            leafContext.compressionOptions.append(',').append(value);
+        }
+        else if (strieq(option, "blob"))
+        {
+            CompressionMethod blobMethod = translateToCompMethod(value, COMPRESS_METHOD_NONE);
+            if (blobMethod != COMPRESS_METHOD_NONE)
+                blobCompression = blobMethod;
+        }
+        else
+        {
+            //ignore any unrecognised options
         }
     };
 
-    if (options)
-    {
-        const char * colon = strchr(options, ':');
-        if (colon)
-            processOptionString(colon+1, processOption);
-        else
-            processOptionString(options, processOption);
-    }
+    const char * colon = strchr(compression, ':');
+    if (colon)
+        processOptionString(colon+1, processOption);
 
-    context.compressionHandler = queryCompressHandler(context.compressionMethod);
-    if (!context.compressionHandler)
-        throw MakeStringException(0, "Unknown compression method %d", (int)context.compressionMethod);
-    
+    leafContext.compressionHandler = queryCompressHandler(leafContext.compressionMethod);
+    if (!leafContext.compressionHandler)
+        throw MakeStringException(0, "Unknown compression method %d", (int)leafContext.compressionMethod);
+
     if (!isTLK && helper && (helper->getFlags() & TIWzerofilepos))
-        context.zeroFilePos = true;
+        leafContext.zeroFilePos = true;
+
+    branchCompressor.setown(new InplaceIndexCompressor(keyedSize, keyHdr, helper, compression));
+}
+
+CWriteNodeBase *HybridIndexCompressor::createNode(offset_t _fpos, CKeyHdr *_keyHdr, NodeType nodeType) const
+{
+    switch (nodeType)
+    {
+    case NodeLeaf:
+        return new CBlockCompressedWriteNode(_fpos, _keyHdr, true, leafContext);
+    case NodeBranch:
+        return branchCompressor->createNode(_fpos, _keyHdr, nodeType);
+    case NodeBlob:
+        return new CNewBlobWriteNode(blobCompression, _fpos, _keyHdr);
+    default:
+        throwUnexpected();
+    }
+}
+
+offset_t HybridIndexCompressor::queryBranchMemorySize() const
+{
+    return branchCompressor->queryBranchMemorySize();
+}
+
+offset_t HybridIndexCompressor::queryLeafMemorySize() const
+{
+    return 0;
 }

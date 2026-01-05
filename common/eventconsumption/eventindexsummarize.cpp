@@ -31,8 +31,9 @@ public: // IEventVisitor
     {
     }
 public:
-    CSummaryCollector(IndexSummarization _summarization, IBufferedSerialOutputStream* _out)
-        : summarization(_summarization)
+    CSummaryCollector(CIndexFileSummary& _operation, IndexSummarization _summarization, IBufferedSerialOutputStream* _out)
+        : operation(_operation)
+        , summarization(_summarization)
         , out(_out)
     {
     }
@@ -121,8 +122,7 @@ protected:
         line.clear();
     }
 protected:
-    using FileInfo = std::map<unsigned, StringAttr>;
-    FileInfo fileInfo;
+    CIndexFileSummary& operation;
     IndexSummarization summarization;
     Linked<IBufferedSerialOutputStream> out;
 };
@@ -175,7 +175,7 @@ public: // IEventVisitor
             return true;
         __uint64 fileId = event.queryNumericValue(EvAttrFileId);
         if (event.queryType() == MetaFileInformation)
-            fileInfo[fileId].set(event.queryTextValue(EvAttrPath));
+            return true; // Handled by CMetaInformationParser
         else
         {
             IndexHashKey key(event.queryNumericValue(EvAttrFileId), event.queryNumericValue(EvAttrFileOffset));
@@ -366,7 +366,8 @@ protected:
 
         for (SummaryStats::value_type& e : summary)
         {
-            appendCSVColumns(line, e.first, fileInfo[e.first].str());
+            const char* filePath = operation.queryMetaInfoState().queryFilePath(e.first);
+            appendCSVColumns(line, e.first, filePath ? filePath : "");
             for (unsigned nodeKind = 0; nodeKind < NumNodeKinds; nodeKind++)
             {
                 if (!haveNodeKindEntries[nodeKind])
@@ -487,7 +488,8 @@ protected:
             {
                 const IndexHashKey& key = entry.first;
                 NodeStats& nodeStats = entry.second;
-                appendCSVColumns(line, key.fileId, fileInfo[key.fileId].str(), key.offset);
+                const char* filePath = operation.queryMetaInfoState().queryFilePath(key.fileId);
+                appendCSVColumns(line, key.fileId, filePath ? filePath : "", key.offset);
                 appendCSVColumn(line, mapNodeKind((NodeKind)nodeKind));
                 appendCSVColumn(line, nodeStats.inMemorySize);
                 appendCSVEvents(line, nodeStats.events);
@@ -518,7 +520,7 @@ bool CIndexFileSummary::doOp()
     case IndexSummarization::byFile:
     case IndexSummarization::byNodeKind:
     case IndexSummarization::byNode:
-        collector.setown(new CNodeCollector(summarization, out));
+        collector.setown(new CNodeCollector(*this, summarization, out));
         break;
     default:
         return false;

@@ -7897,12 +7897,9 @@ StringBuffer &CDistributedFilePart::getPartDirectory(StringBuffer &ret,unsigned 
             plane.setown(createStoragePlane(remoteStoragePlane));
         else // local environment
         {
-            if (isContainerized())
-            {
-                const char *planeName = cluster.queryGroupName();
-                if (!isEmptyString(planeName))
-                    plane.setown(getDataStoragePlane(planeName, false));
-            }
+            const char *planeName = cluster.queryGroupName();
+            if (!isEmptyString(planeName))
+                plane.setown(getDataStoragePlane(planeName, false));
         }
         if (plane)
         {
@@ -8220,8 +8217,8 @@ static unsigned loadGroup(const IPropertyTree *groupTree, SocketEndpointArray &e
         SocketEndpoint ep(host);
         if (ep.isNull())
         {
-            IWARNLOG("loadGroup: failed to resolve host '%s'", host);
-            return 0;
+            const char *groupName = nullText(groupTree->queryProp("@name"));
+            throw makeStringExceptionV(-1, "loadGroup: failed to resolve host '%s' in group '%s'", host, groupName);
         }
         epa.append(ep);
     }
@@ -8517,9 +8514,14 @@ public:
             return;
         Owned<IPropertyTree> groupTree = doAddHosts(connlock, name.str(), hosts, cluster, dir);
         SocketEndpointArray eps;
-        if (!loadGroup(groupTree, eps, nullptr, nullptr))
+        try
         {
-            IWARNLOG("CNamedGroupStore.add: failed to add group '%s', due to unresolved hosts", name.str());
+            loadGroup(groupTree, eps, nullptr, nullptr);
+        }
+        catch (IException *e)
+        {
+            IWARNLOG(e, "CNamedGroupStore.add");
+            e->Release();
             return;
         }
         Owned<IGroup> group = createIGroup(eps);
@@ -8619,8 +8621,16 @@ public:
         if (!groupTree)
             return 0;
         SocketEndpointArray epa;
-        if (!loadGroup(groupTree, epa, nullptr, nullptr))
+        try
+        {
+            loadGroup(groupTree, epa, nullptr, nullptr);
+        }
+        catch (IException *e)
+        {
+            IWARNLOG(e, "removeNode");
+            e->Release();
             return 0;
+        }
 
         unsigned numNodes = epa.ordinality();
         Owned<IGroup> group = createIGroup(epa);
@@ -8713,9 +8723,14 @@ public:
             group.getProp("@name", name);
 
             SocketEndpointArray eps;
-            if (!loadGroup(&group, eps, nullptr, nullptr))
+            try
             {
-                IWARNLOG("swapNode: failed to load group: '%s'", name.str());
+                loadGroup(&group, eps, nullptr, nullptr);
+            }
+            catch (IException *e)
+            {
+                IWARNLOG(e, "swapNode");
+                e->Release();
                 return;
             }
 
@@ -11159,9 +11174,14 @@ public:
         {
             SocketEndpointArray existingGroupBoundEps;
             StringAttr groupDir;
-            if (!loadGroup(existing, existingGroupBoundEps, nullptr, nullptr))
+            try
             {
-                IWARNLOG("removeSpares: failed to load group: '%s'", groupName.str());
+                loadGroup(existing, existingGroupBoundEps, nullptr, nullptr);
+            }
+            catch (IException *e)
+            {
+                IWARNLOG(e, "removeSpares");
+                e->Release();
                 return false;
             }
             for (const auto &boundHostToRemove: boundHostsToRemove)
