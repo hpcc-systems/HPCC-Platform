@@ -1894,7 +1894,7 @@ protected:
 
 //---------------------------------------------------------------------------------------------------------------------
 #ifdef _USE_PARQUET
-class CParquetActivityContext : public IThorActivityContext
+class CParquetActivityContext final : public IThorActivityContext
 {
 public:
     CParquetActivityContext(bool _local, unsigned _numWorkers, unsigned _curWorker)

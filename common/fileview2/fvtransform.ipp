@@ -205,7 +205,7 @@ public:
     ViewFieldTransformerArray transformers;
 };
 
-class FILEVIEW_API ViewTransformerRegistry : implements IViewTransformerRegistry
+class FILEVIEW_API ViewTransformerRegistry final : implements IViewTransformerRegistry
 {
 public:
     virtual void addFieldStringTransformer(const char * name, stringFieldTransformerFunction func);

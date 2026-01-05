@@ -144,7 +144,7 @@ public:
 };
 
 //NOTE: The lifetime of this class is withing a start()/stop() of the containing activity.
-class THORHELPER_API CSteppedConjunctionOptimizer : implements ISteppedConjunctionCollector
+class THORHELPER_API CSteppedConjunctionOptimizer final : implements ISteppedConjunctionCollector
 {
 public:
     CSteppedConjunctionOptimizer(IEngineRowAllocator * _inputAllocator, IHThorNWayMergeJoinArg & _arg, ISteppedInput * _root);
