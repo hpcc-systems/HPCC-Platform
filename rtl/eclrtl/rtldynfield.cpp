@@ -1007,7 +1007,8 @@ enum FieldMatchType : unsigned
     match_virtual     = 0x1000,  // at least one affected field is a virtual field (set on translator)
 
     // This flag may be set in conjunction with the others
-    match_inifblock   = 0x1000000,   // matching to a field in an ifblock - may not be present
+    match_reblob      = 0x0800000,  // target needs to create a blob before assigning
+    match_inifblock   = 0x1000000,  // matching to a field in an ifblock - may not be present
     match_deblob      = 0x2000000,  // source needs fetching from a blob prior to translation
     match_dynamic     = 0x4000000,  // source needs fetching from dynamic source (callback)
     match_filepos     = 0x8000000,  // type moving in or out of filepos field - cast required
@@ -1032,7 +1033,8 @@ StringBuffer &describeFlags(StringBuffer &out, FieldMatchType flags)
     if (flags & match_keyedchange) out.append("|keyedchange");
     if (flags & match_fail) out.append("|fail");
     if (flags & match_virtual) out.append("|virtual");
-    if (flags & match_deblob) out.append("|blob");
+    if (flags & match_deblob) out.append("|deblob");
+    if (flags & match_reblob) out.append("|reblob");
     if (flags & match_dynamic) out.append("|dynamic");
     if (flags & match_filepos) out.append("|filepos");
     assertex(out.length() > origlen);
@@ -1045,8 +1047,8 @@ inline FieldMatchType &operator|=(FieldMatchType &a, FieldMatchType b) { return 
 class GeneralRecordTranslator : public CInterfaceOf<IDynamicTransform>
 {
 public:
-    GeneralRecordTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo, bool _binarySource, type_vals _callbackRawType = type_any)
-        : destRecInfo(_destRecInfo), sourceRecInfo(_srcRecInfo), binarySource(_binarySource), callbackRawType(_callbackRawType)
+    GeneralRecordTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo, bool _binarySource, IBlobCreator * _blobCreator, type_vals _callbackRawType)
+        : destRecInfo(_destRecInfo), sourceRecInfo(_srcRecInfo), binarySource(_binarySource), blobCreator(_blobCreator), callbackRawType(_callbackRawType)
     {
         matchInfo = new MatchInfo[destRecInfo.getNumFields()];
         createMatchInfo();
@@ -1227,14 +1229,15 @@ private:
                     source = rtlRow.queryRow() + sourceOffset;
                     copySize = rtlRow.getSize(matchField);
                 }
-                if (match.matchType & match_deblob)
+                if (match.matchType & (match_deblob|match_reblob))
                 {
                     offset_t blobId = sourceType->getInt(source);
                     sourceType = sourceType->queryChildType();
                     sourceOffset = 0;
                     source = callback.lookupBlob(blobId);
                     copySize = sourceType->size(source, source);
-                    hasBlobs = true;
+                    if (match.matchType & match_deblob)
+                        hasBlobs = true;
                 }
                 if (copySize == 0 && (match.matchType & match_inifblock))  // Field is missing because of an ifblock - use default value
                 {
@@ -1242,12 +1245,12 @@ private:
                 }
                 else
                 {
-                    switch (match.matchType & ~(match_inifblock|match_deblob))
+                    switch (match.matchType & ~(match_inifblock|match_deblob|match_reblob))
                     {
                     case match_perfect:
                     {
                         // Look ahead for other perfect matches and combine the copies
-                        if (!(match.matchType & match_deblob))
+                        if (!(match.matchType & (match_deblob|match_reblob)))
                         {
                             while (idx < destRecInfo.getNumFields()-1)
                             {
@@ -1262,9 +1265,19 @@ private:
                             }
                             copySize = ((const RtlRow *)sourceRow)->getOffset(matchField+1) - sourceOffset;
                         }
-                        builder.ensureCapacity(offset+copySize, field->name);
-                        memcpy(builder.getSelf()+offset, source, copySize);
-                        offset += copySize;
+                        if (match.matchType & match_reblob)
+                        {
+                            offset_t blobId = blobCreator->createBlob(copySize, source);
+                            assertex(type->getMinSize() == sizeof(offset_t));
+                            type->buildInt(builder, offset, field, blobId);
+                            offset += type->getMinSize();
+                        }
+                        else
+                        {
+                            builder.ensureCapacity(offset+copySize, field->name);
+                            memcpy(builder.getSelf()+offset, source, copySize);
+                            offset += copySize;
+                        }
                         break;
                     }
                     case match_truncate:
@@ -1487,6 +1500,7 @@ private:
     const RtlRecord &destRecInfo;
     const RtlRecord &sourceRecInfo;
     bool binarySource = true;
+    IBlobCreator * blobCreator = nullptr;
     type_vals callbackRawType;
     int fixedDelta = 0;  // total size difference from all fixed size mappings
     UnsignedArray allUnmatched;  // List of all source fields that are unmatched (so that we can trace them)
@@ -1658,6 +1672,7 @@ private:
             else
             {
                 bool deblob = false;
+                bool reblob = false;
                 const RtlTypeInfo *sourceType = sourceRecInfo.queryType(info.matchIdx);
                 unsigned sourceFlags = sourceRecInfo.queryField(info.matchIdx)->flags;
                 unsigned destFlags = field->flags;
@@ -1665,6 +1680,8 @@ private:
                 {
                     if (type->isBlob())
                     {
+                        if (blobCreator)
+                            reblob = true;
                     }
                     else
                     {
@@ -1702,7 +1719,7 @@ private:
                             const RtlRecord *subDest = destRecInfo.queryNested(idx);
                             const RtlRecord *subSrc = sourceRecInfo.queryNested(info.matchIdx);
                             assertex(subSrc);
-                            info.subTrans = new GeneralRecordTranslator(*subDest, *subSrc, binarySource);
+                            info.subTrans = new GeneralRecordTranslator(*subDest, *subSrc, binarySource, nullptr, type_any);
                             if (!info.subTrans->needsTranslate())
                             {
                                 if (!binarySource)
@@ -1801,6 +1818,8 @@ private:
                     info.matchType = match_typecast;
                 if (deblob)
                     info.matchType |= match_deblob;
+                if (reblob)
+                    info.matchType |= match_reblob;
                 if (sourceFlags & RFTMinifblock || field->flags & RFTMinifblock)
                     info.matchType |= match_inifblock;  // Avoids incorrect commoning up of adjacent matches
                 // MORE - could note the highest interesting fieldnumber in the source and not bother filling in offsets after that
@@ -1917,14 +1936,19 @@ private:
     }
 };
 
+extern ECLRTL_API const IDynamicTransform *createRecordBlobTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo, IBlobCreator * blobCreator)
+{
+    return new GeneralRecordTranslator(_destRecInfo, _srcRecInfo, true, blobCreator, type_any);
+}
+
 extern ECLRTL_API const IDynamicTransform *createRecordTranslator(const RtlRecord &destRecInfo, const RtlRecord &srcRecInfo)
 {
-    return new GeneralRecordTranslator(destRecInfo, srcRecInfo, true);
+    return new GeneralRecordTranslator(destRecInfo, srcRecInfo, true, nullptr, type_any);
 }
 
 extern ECLRTL_API const IDynamicTransform *createRecordTranslatorViaCallback(const RtlRecord &destRecInfo, const RtlRecord &srcRecInfo, type_vals rawType)
 {
-    return new GeneralRecordTranslator(destRecInfo, srcRecInfo, false, rawType);
+    return new GeneralRecordTranslator(destRecInfo, srcRecInfo, false, nullptr, rawType);
 }
 
 //---------------------------------------------------------------------------------------------------------------------

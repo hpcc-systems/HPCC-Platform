@@ -138,4 +138,18 @@ interface IKeyDesprayer : public IInterface
 extern jhtree_decl IKeyDesprayer * createKeyDesprayer(IFile * in, IFileIOStream * out);
 extern jhtree_decl bool checkReservedMetadataName(const char *name);
 
+class jhtree_decl BlobCreatorWrapper : implements IBlobCreator
+{
+    IKeyBuilder *builder;
+    offset_t totalSize = 0;
+public:
+    BlobCreatorWrapper(IKeyBuilder *_builder) : builder(_builder) {}
+    virtual unsigned __int64 createBlob(size32_t size, const void * ptr)
+    {
+        totalSize += size;
+        return builder->createBlob(size, (const char *) ptr);
+    }
+    offset_t queryTotalSize() const { return totalSize; }
+};
+
 #endif
