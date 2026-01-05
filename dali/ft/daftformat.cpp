@@ -1087,7 +1087,28 @@ size32_t CCsvPartitioner::deduceStartNextLine(const byte * start, unsigned maxTo
                 if (quoteStateKnown)
                 {
                     if (quote == 0)
+                    {
                         quote = match;
+                        switch (kind(prevMatch))
+                        {
+                        case UNKNOWN:
+                        case QUOTE:
+                        case SEPARATOR:
+                        case TERMINATOR:
+                            //possibleDoubleQuote will already be false if prev is SEPARATOR or TERMINATOR
+                            break;
+                        default:
+                            // A quote following a non-special must be the end of a field. But we have already established this is the start of the field
+                            // Almost certainly this means the quote character is incorrectly defined
+                            {
+                                StringBuffer quoteText;
+                                appendStringAsQuotedCPP(quoteText, format.quote.length(), format.quote.get(), false);
+                                StringBuffer separatorText;
+                                appendStringAsQuotedCPP(separatorText, format.separate.length(), format.separate.get(), false);
+                                throwError2(DFTERR_InconsistentQuoteSeparator, quoteText.str(), separatorText.str());
+                            }
+                        }
+                    }
                     else if (quote == match)
                     {
                         //Check for double quote... although I suspect this special case is not required
@@ -1097,7 +1118,9 @@ size32_t CCsvPartitioner::deduceStartNextLine(const byte * start, unsigned maxTo
                             match = NONE;
                         }
                         else
+                        {
                             quote = 0;
+                        }
                     }
                 }
                 else
@@ -2650,6 +2673,7 @@ class CsvDeduceLineTest : public CppUnit::TestFixture
         CPPUNIT_TEST(testAlternatingQuoteNewline);
         CPPUNIT_TEST(testQuoteCommaNewlinePattern);
         CPPUNIT_TEST(testMultipleEmptyQuotedFields);
+        CPPUNIT_TEST(testInvalidQuote);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -2822,6 +2846,33 @@ protected:
 
         size32_t result2 = partitioner.deduceStartNextLine((const byte *)data, strlen(data), false);
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Should handle multiple empty quoted fields", (size32_t)-1, result2);
+    }
+
+    //This is one example seen in real life, where the fields are not quoted, but the options claimed it was
+    //If the quote value is incorrect the quote state can be mis-deduced, leading to failure to find the newline
+    void testInvalidQuote()
+    {
+        FileFormat format;
+        format.type = FFTcsv;
+        format.separate.set("|||");
+        format.quote.set("\"");
+        format.terminate.set("\n");
+        format.maxRecordSize = 8192;
+
+        CCsvPartitioner partitioner(format);
+
+        const char * data = "abc|||def|||ghi|||{ abc: \"help\" }|||def\n"; // quote is not defined correctly
+        try
+        {
+            size32_t result = partitioner.deduceStartNextLine((const byte *)data, strlen(data), false);
+            CPPUNIT_FAIL("Should throw exception for invalid partition");
+        }
+        catch (IException * e)
+        {
+            DBGLOG(e, "testInvalidQuote");
+            // Exception is expected for invalid input
+            e->Release();
+        }
     }
 };
 
