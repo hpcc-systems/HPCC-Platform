@@ -1911,6 +1911,11 @@ IPropertyTree * CKeyIndex::getMetadata()
     return ret;
 }
 
+bool CKeyIndex::containsBlobs() const
+{
+    return keyHdr->containsBlobs();
+}
+
 bool CKeyIndex::prewarmPage(INodeLoader & nodeLoader, offset_t offset, NodeType type)
 {
     try
@@ -3150,6 +3155,7 @@ public:
     virtual offset_t queryLatestGetNodeOffset() const { return realKey ? realKey->queryLatestGetNodeOffset() : 0; }
     virtual offset_t queryMetadataHead() { return checkOpen().queryMetadataHead(); }
     virtual IPropertyTree * getMetadata() { return checkOpen().getMetadata(); }
+    virtual bool containsBlobs() const { return checkOpen().containsBlobs(); }
     virtual unsigned getNodeSize() { return checkOpen().getNodeSize(); }
     virtual const IFileIO *queryFileIO() const override { return iFileIO; } // NB: if not yet opened, will be null
     virtual bool hasSpecialFileposition() const { return checkOpen().hasSpecialFileposition(); }

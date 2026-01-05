@@ -158,6 +158,7 @@ public:
     virtual offset_t queryLatestGetNodeOffset() const { return latestGetNodeOffset; }
     virtual offset_t queryMetadataHead();
     virtual IPropertyTree * getMetadata();
+    virtual bool containsBlobs() const override;
 
     virtual unsigned getNodeSize() { return keyHdr->getNodeSize(); }
     virtual bool hasSpecialFileposition() const;
