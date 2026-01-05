@@ -678,7 +678,7 @@ public:
     }
 };
 
-class CPartDescriptor : implements IPartDescriptor
+class CPartDescriptor final : implements IPartDescriptor
 {
 protected: friend class CFileDescriptor;
 

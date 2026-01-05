@@ -674,7 +674,7 @@ protected:
 };
 
 class MemoryBuffer;
-class ECLRTL_API MemoryBufferBuilder : public RtlRowBuilderBase
+class ECLRTL_API MemoryBufferBuilder final : public RtlRowBuilderBase
 {
 public:
     MemoryBufferBuilder(MemoryBuffer & _buffer, unsigned _minSize)
