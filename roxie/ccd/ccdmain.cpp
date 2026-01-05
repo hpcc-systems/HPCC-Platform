@@ -910,9 +910,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         if (useTcpTransport || isBatchRoxie)
             packetAcknowledgeTimeout = 500;
 
-        //Enabling the localNVMeCache will also by default enable remote file related optimizations
-        bool mimicLegacyCompression = topology->getPropBool("@mimicLegacyCompression", !usingRemoteStorage);
-
         // --- End of options dependent on batch/transport/remote roxie
 
         if (!topology->hasProp("@resolveLocally"))
@@ -1396,10 +1393,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             setNodeFetchThresholdNs(topology->getPropInt64("@nodeFetchThresholdNs"));
         setIndexWarningThresholds(topology);
 
-        unsigned inplaceSizeFactor = topology->getPropInt("@inplaceSizeFactor", mimicLegacyCompression ? 100 : 0);
-        unsigned lz4SpeedFactor = topology->getPropInt("@lz4SpeedFactor", mimicLegacyCompression ? 600 : 0);             // If lz4 is 5x faster then value should be 500
-        unsigned zStdSpeedFactor = topology->getPropInt("@zStdSpeedFactor", mimicLegacyCompression ? 350 : 0);
-        setIndexScaling(inplaceSizeFactor, lz4SpeedFactor, zStdSpeedFactor);
         if (pageCache)
             initializeDiskPageCache(pageCache);
 
