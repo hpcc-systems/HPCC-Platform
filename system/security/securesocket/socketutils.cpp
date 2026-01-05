@@ -523,6 +523,11 @@ CSocketTarget::CSocketTarget(CTcpSender & _sender, const SocketEndpoint & _ep) :
 {
 }
 
+CSocketTarget::~CSocketTarget()
+{
+    free(addr);
+}
+
 void CSocketTarget::connect()
 {
     // Must be called within a critical section....
@@ -679,10 +684,9 @@ void CSocketTarget::startAsyncConnect()
     state = numConnects ? State::Reconnecting : State::Connecting;
 
     // Prepare socket for async connection
-    struct sockaddr * addr = nullptr;
     try
     {
-        bool enableAsyncConnect = false;
+        bool enableAsyncConnect = true;
         if (enableAsyncConnect && sender.asyncSender)
         {
             size32_t addrlen = 0;
@@ -691,14 +695,9 @@ void CSocketTarget::startAsyncConnect()
             {
                 // Queue the async connect operation
                 sender.asyncSender->enqueueSocketConnect(socket, addr, addrlen, *this);
-                free(addr);
-                addr = nullptr;
             }
             else
             {
-                // No async processor - fall back to sync connect
-                free(addr);
-                addr = nullptr;
                 connect();
                 int result = socket ? 0 : -1;
                 onAsyncComplete(result);
@@ -714,7 +713,6 @@ void CSocketTarget::startAsyncConnect()
     }
     catch (IException * e)
     {
-        free(addr);
         socket.clear();
         e->Release();
         onAsyncComplete(-1);
@@ -731,6 +729,11 @@ void CSocketTarget::onAsyncComplete(int result)
         {
         case State::Connecting:
         case State::Reconnecting:
+            if (addr)
+            {
+                free(addr);
+                addr = nullptr;
+            }
             if (result < 0)
             {
                 // Connection failed - clean up socket

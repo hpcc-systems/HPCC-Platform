@@ -2152,7 +2152,7 @@ CKeyCursor::CKeyCursor(CKeyIndex &_key, const IIndexFilterList *_filter, bool _l
         if (pageCachePageSize && (_blockedIOSize > pageCachePageSize))
         {
             if ((_blockedIOSize % pageCachePageSize) != 0)
-                throw makeStringExceptionV(-1, "Blocked IO size must be a multiple of the page cache page size (%u)", pageCachePageSize);
+                throw makeStringExceptionV(-1, "Blocked IO size %u must be a multiple of the page cache page size (%u)", _blockedIOSize, pageCachePageSize);
         }
         readState.preferredReadSize = _blockedIOSize;
     }

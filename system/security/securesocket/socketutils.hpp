@@ -193,6 +193,7 @@ class SECURESOCKET_API CSocketTarget : public CInterface, public IAsyncCallback
     };
 public:
     CSocketTarget(CTcpSender & _sender, const SocketEndpoint & _ep);
+    ~CSocketTarget();
 
     size32_t writeSync(const void * data, size32_t len);
     void writeAsync(const void * data, size32_t len, void * ownedBuffer); // calls writeSync if no async processor is set
@@ -219,6 +220,7 @@ protected:
     CTcpSender & sender;
     const SocketEndpoint ep;
     Owned<ISocket> socket;
+    struct sockaddr * addr = nullptr;   // This must persist until after the connect completes
     unsigned threadsWaiting{0};
     unsigned numConnects{0};
     Semaphore waitSem;
