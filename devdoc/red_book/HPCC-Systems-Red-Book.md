@@ -14,6 +14,7 @@ Keep checking the Red Book as it is constantly updated with new information and 
 
 - [HPCC Systems 10.0.x Releases](HPCC-Systems-10.0.x-Releases.md)
 - [HPCC Systems 9.14.x Releases](HPCC-Systems-9.14.x-Releases.md)
+- [HPCC Systems 9.12.x Releases](HPCC-Systems-9.12.x-Releases.md)
 - [HPCC Systems 9.10.x Releases](HPCC-Systems-9.10.x-Releases.md)
 - [HPCC Systems 9.8.x Releases](HPCC-Systems-9.8.x-Releases.md)
 - [HPCC Systems 9.6.x Releases](HPCC-Systems-9.6.x-Releases.md)
