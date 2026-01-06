@@ -103,7 +103,7 @@ jobs:
           fi
 
           # ---- Require at least ONE ----
-          if [ "$DCO_OK" = "true" || "$GPG_OK" = "true" ]; then
+          if [ "$DCO_OK" = "true" ] || [ "$GPG_OK" = "true" ]; then
             echo "First commit is signed (DCO or GPG)"
           else
             echo "✗ First commit is not signed"
