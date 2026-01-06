@@ -8,7 +8,7 @@
                     hpcc:docid="daFs.t">
             <xs:complexType>
                 <xs:attributeGroup name="executionSettings">
-                    <xs:attribute name="parallelRequestLimit" type="percent" hpcc:presetValue="20"
+                    <xs:attribute name="parallelRequestLimit" type="percent" hpcc:presetValue="80"
                                   hpcc:tooltip="Defines the maximum number of concurrent dafilesrv requests allowed. Requests that exceed the limit will be delayed. A value of 0 disables throttling. Overrides global settting."/>
                     <xs:attribute name="throttleDelayMs" type="xs:nonNegativeInteger"
                                   hpcc:presetValue="5000"

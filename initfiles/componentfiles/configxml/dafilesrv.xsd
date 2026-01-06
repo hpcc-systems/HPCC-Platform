@@ -60,7 +60,7 @@
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>
-                        <xs:attribute name="parallelRequestLimit" type="xs:nonNegativeInteger" use="optional" default="20">
+                        <xs:attribute name="parallelRequestLimit" type="xs:nonNegativeInteger" use="optional" default="80">
                             <xs:annotation>
                                 <xs:appinfo>
                                     <tooltip>Defines the maximum number of concurrent dafilesrv requests allowed. Requests that exceed the limit will be delayed. A value of 0 disables throttling. Overrides global settting.</tooltip>
@@ -120,7 +120,7 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="parallelRequestLimit" type="xs:nonNegativeInteger" use="optional" default="20">
+            <xs:attribute name="parallelRequestLimit" type="xs:nonNegativeInteger" use="optional" default="80">
                 <xs:annotation>
                     <xs:appinfo>
                         <tooltip>Defines the maximum number of concurrent dafilesrv requests allowed. Requests that exceed the limit will be delayed. A value of 0 disables throttling. This a global setting.</tooltip>
