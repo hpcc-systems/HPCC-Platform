@@ -739,6 +739,10 @@ public:
                 continue;
             if (iter.matchFlag(optCloneActiveState, ECLOPT_CLONE_ACTIVE_STATE))
                 continue;
+            if (iter.matchFlag(optSuspendPrevious, ECLOPT_SUSPEND_PREVIOUS)||iter.matchFlag(optSuspendPrevious, ECLOPT_SUSPEND_PREVIOUS_S))
+                continue;
+            if (iter.matchFlag(optDeletePrevious, ECLOPT_DELETE_PREVIOUS)||iter.matchFlag(optDeletePrevious, ECLOPT_DELETE_PREVIOUS_S))
+                continue;
             if (iter.matchFlag(optDontCopyFiles, ECLOPT_DONT_COPY_FILES))
                 continue;
             if (iter.matchFlag(optAllQueries, ECLOPT_ALL))
@@ -772,6 +776,16 @@ public:
             fputs("source and destination querysets must both be specified.\n", stderr);
             return false;
         }
+        if (!optCloneActiveState && (optSuspendPrevious || optDeletePrevious))
+        {
+            fputs("Error: --suspend-prev and --delete-prev require --clone-active-state.\n", stderr);
+            return false;
+        }
+        if (optSuspendPrevious && optDeletePrevious)
+        {
+            fputs("Error: --suspend-prev and --delete-prev are mutually exclusive options.\n", stderr);
+            return false;
+        }
         return true;
     }
 
@@ -796,6 +810,14 @@ public:
         req->setDfsServer(optDaliIP.get());
         req->setSourceProcess(optSourceProcess);
         req->setCloneActiveState(optCloneActiveState);
+        if (optDeletePrevious)
+            req->setActivate(CWUQueryActivationMode_ActivateDeletePrevious);
+        else if (optSuspendPrevious)
+            req->setActivate(CWUQueryActivationMode_ActivateSuspendPrevious);
+        else if (optCloneActiveState)
+            req->setActivate(CWUQueryActivationMode_ActivateSuspendPrevious);
+        else
+            req->setActivate(CWUQueryActivationMode_NoActivate);
         req->setOverwriteDfs(optOverwrite);
         req->setUpdateSuperFiles(optUpdateSuperfiles);
         req->setUpdateCloneFrom(optUpdateCloneFrom);
@@ -862,6 +884,8 @@ public:
             "   --daliip=<ip>          Remote Dali DFS to use for copying file information\n"
             "   --source-process       Process cluster to copy files from\n"
             "   --clone-active-state   Make copied queries active if active on source\n"
+            "   -sp, --suspend-prev    Suspend previously active query\n"
+            "   -dp, --delete-prev     Delete previously active query\n"
             "   -O, --overwrite        Completely replace existing DFS file information (dangerous)\n"
             "   --update-super-files   Update local DFS super-files if remote DALI has changed\n"
             "   --update-clone-from    Update local clone from location if remote DALI has changed\n"
@@ -887,6 +911,8 @@ private:
     bool optDontCopyFiles;
     bool optAllowForeign;
     bool optAllQueries;
+    bool optSuspendPrevious = false;
+    bool optDeletePrevious = false;
     bool optSourceSSL = false; //user explicitly turning on SSL for accessing the remote source location (ssl defaults to use SSL if we are hitting ESP via SSL)
     bool optSourceNoSSL = false; //user explicitly turning OFF SSL for accessing the remote source location (ssl defaults to not use SSL if we are not hitting ESP via SSL)
 };
