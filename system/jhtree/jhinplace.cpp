@@ -1682,7 +1682,6 @@ void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
 
     const byte * nullRow = nullptr; //MORE: This should be implemented
     unsigned numKeys = hdr.numKeys;
-    unsigned originalKeyedSize = keyCompareLen * numKeys;
     if (numKeys)
     {
          // only time the follow code if we are going to try and match the old timing.
