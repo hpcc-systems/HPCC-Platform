@@ -3066,6 +3066,7 @@ public:
         IPropertyTree *entry = toBePublished->addPropTree("Publish");
         entry->setProp("@wuid", wuid);
         entry->setProp("@name", name);
+        entry->setPropBool("@makeActive", makeActive);
         entry->setPropInt("@activationMode", makeActive ? activationMode : DO_NOT_ACTIVATE);
         entry->setProp("@userid", userid);
         entry->addPropTree("Info", createPTreeFromIPT(query));
@@ -3087,7 +3088,12 @@ public:
             IPropertyTree &entry = entries->query();
             StringBuffer newQueryId;
             Owned<IWorkUnit> workunit = factory->updateWorkUnit(entry.queryProp("@wuid"));
-            addQueryToQuerySet(workunit, destQuerySet, entry.queryProp("@name"), entry.getPropInt("@activationMode"), newQueryId, entry.queryProp("@userid"));
+            int queryActivationMode = DO_NOT_ACTIVATE;
+            if (entry.hasProp("@activationMode"))
+                queryActivationMode = entry.getPropInt("@activationMode");
+            else if (entry.getPropBool("@makeActive"))
+                queryActivationMode = ACTIVATE_SUSPEND_PREVIOUS;
+            addQueryToQuerySet(workunit, destQuerySet, entry.queryProp("@name"), queryActivationMode, newQueryId, entry.queryProp("@userid"));
             copiedQueryIds.append(newQueryId);
             IPropertyTree *info = entry.queryPropTree("Info");
             if (info)
