@@ -504,7 +504,7 @@ public:
 
                 //The stream compressors only currently support fixed size outputs
                 //They also do not support partial writes - so largeBlockCompress will fail.
-                if (strieq(type, "lz4s") || strieq(type, "lz4shc") || strieq(type, "zstds"))
+                if (strieq(type, "lz4s") || strieq(type, "lz4shc") || startsWithIgnoreCase(type, "zstds"))
                     continue;
 
                 testCompressor(handler, options, rowSz, src.length(), src.bytes(), CompressToBuffer);
@@ -629,7 +629,7 @@ public:
                     testCompressor(handler, "hclevel=8", rowSz, src.length(), src.bytes(), RowCompress);
                     testCompressor(handler, "hclevel=10", rowSz, src.length(), src.bytes(), RowCompress);
                 }
-                if (strieq(type, "lz4s") || strieq(type, "lz4shc") || strieq(type, "zstds"))
+                if (strieq(type, "lz4s") || strieq(type, "lz4shc") || startsWithIgnoreCase(type, "zstds"))
                 {
                     testCompressor(handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
                     continue;
