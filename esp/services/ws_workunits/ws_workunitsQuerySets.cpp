@@ -3359,19 +3359,19 @@ bool CWsWorkunitsEx::onWUCopyQuerySet(IEspContext &context, IEspWUCopyQuerySetRe
     QueryCloner cloner(&context, srcAddress, srcTarget, target, req.getSourceSSL());
     cloner.setQueryDirectory(queryDirectory);
 
-    int activationMode = ACTIVATE_SUSPEND_PREVIOUS;
+    int queryActivationMode = ACTIVATE_SUSPEND_PREVIOUS;
     if (req.getActivate_isNull())
     {
         // For backward compatibility: if Activate is not set, use CloneActiveState behavior
         // CloneActiveState true means activate with suspend-previous (default behavior)
-        activationMode = req.getCloneActiveState() ? ACTIVATE_SUSPEND_PREVIOUS : DO_NOT_ACTIVATE;
+        queryActivationMode = req.getCloneActiveState() ? ACTIVATE_SUSPEND_PREVIOUS : DO_NOT_ACTIVATE;
     }
     else
     {
         // Use the new Activate enum if provided
-        activationMode = req.getActivate();
+        queryActivationMode = req.getActivate();
     }
-    cloner.setActivationMode(activationMode);
+    cloner.setActivationMode(queryActivationMode);
 
     SCMStringBuffer process;
     StringBuffer publisherWuid(req.getDfuPublisherWuid());

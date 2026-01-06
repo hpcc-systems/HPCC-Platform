@@ -778,12 +778,12 @@ public:
         }
         if (!optCloneActiveState && (optSuspendPrevious || optDeletePrevious))
         {
-            fputs("invalid --suspend-prev and --delete-prev require --clone-active-state.\n", stderr);
+            fputs("Error: --suspend-prev and --delete-prev require --clone-active-state.\n", stderr);
             return false;
         }
         if (optSuspendPrevious && optDeletePrevious)
         {
-            fputs("invalid --suspend-prev and --delete-prev are mutually exclusive options.\n", stderr);
+            fputs("Error: --suspend-prev and --delete-prev are mutually exclusive options.\n", stderr);
             return false;
         }
         return true;
