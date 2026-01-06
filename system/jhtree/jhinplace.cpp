@@ -1670,8 +1670,6 @@ int CJHInplaceTreeNode::locateGT(const char * search, unsigned minIndex) const
 }
 
 
-constexpr static bool traceInplaceLoadStats = false;
-
 void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _fpos, bool needCopy)
 {
     CJHSearchNode::load(_keyHdr, rawData, _fpos, needCopy);
