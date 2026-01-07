@@ -3093,7 +3093,7 @@ public:
                 queryActivationMode = entry.getPropInt("@activationMode");
             else if (entry.getPropBool("@makeActive"))
                 queryActivationMode = ACTIVATE_SUSPEND_PREVIOUS;
-            addQueryToQuerySet(workunit, destQuerySet, entry.queryProp("@name"), queryActivationMode, newQueryId, entry.queryProp("@userid"));
+            addQueryToQuerySet(workunit, destQuerySet, entry.queryProp("@name"), (WUQueryActivationOptions)queryActivationMode, newQueryId, entry.queryProp("@userid"));
             copiedQueryIds.append(newQueryId);
             IPropertyTree *info = entry.queryPropTree("Info");
             if (info)
@@ -3142,7 +3142,7 @@ public:
         {
             existingQueryIds.append(existingQueryId.str());
             if (makeActive)
-                activateQuery(destQuerySet, activationMode, queryName, existingQueryId.str(), context->queryUserId());
+                activateQuery(destQuerySet, (WUQueryActivationOptions)activationMode, queryName, existingQueryId.str(), context->queryUserId());
             return;
         }
         addToBePublished(wuid, queryName, makeActive, context->queryUserId(), query);
@@ -3169,7 +3169,7 @@ public:
         {
             existingQueryIds.append(existingQueryId.str());
             if (makeActive)
-                activateQuery(destQuerySet, activationMode, queryName, existingQueryId.str(), context->queryUserId());
+                activateQuery(destQuerySet, (WUQueryActivationOptions)activationMode, queryName, existingQueryId.str(), context->queryUserId());
             return;
         }
         StringBuffer newQueryId;
@@ -3365,19 +3365,7 @@ bool CWsWorkunitsEx::onWUCopyQuerySet(IEspContext &context, IEspWUCopyQuerySetRe
     QueryCloner cloner(&context, srcAddress, srcTarget, target, req.getSourceSSL());
     cloner.setQueryDirectory(queryDirectory);
 
-    int queryActivationMode = ACTIVATE_SUSPEND_PREVIOUS;
-    if (req.getActivate_isNull())
-    {
-        // For backward compatibility: if Activate is not set, use CloneActiveState behavior
-        // CloneActiveState true means activate with suspend-previous (default behavior)
-        queryActivationMode = req.getCloneActiveState() ? ACTIVATE_SUSPEND_PREVIOUS : DO_NOT_ACTIVATE;
-    }
-    else
-    {
-        // Use the new Activate enum if provided
-        queryActivationMode = req.getActivate();
-    }
-    cloner.setActivationMode(queryActivationMode);
+    cloner.setActivationMode(req.getActivate());
 
     SCMStringBuffer process;
     StringBuffer publisherWuid(req.getDfuPublisherWuid());
