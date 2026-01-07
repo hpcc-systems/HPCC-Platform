@@ -1,9 +1,9 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("V9 Activities", () => {
 
     test.beforeEach(async ({ page }) => {
-        await page.goto("index.html#/activities");
+        await page.goto("index.html#/activities-legacy");
         await page.waitForLoadState("networkidle");
     });
 
@@ -123,7 +123,7 @@ test.describe("V9 Activities", () => {
         await expect(page.getByRole("link", { name: "ECL Watch" })).toBeVisible();
         await expect(page.locator(".fui-NavDrawerBody")).toBeVisible();
 
-        await page.goto("index.html#/activities");
+        await page.goto("index.html#/activities-legacy");
         await page.waitForLoadState("networkidle");
 
         await expect(page.getByText("Target/Wuid")).toBeVisible();

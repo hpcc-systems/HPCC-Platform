@@ -79,13 +79,13 @@ export const routes: RoutesEx = [
         mainNav: ["activities"],
         path: "/activities",
         children: [
-            { path: "", action: (context) => import("./components/Activities").then(_ => <_.Activities />) },
+            { path: "", action: (context) => import("./components/ActivitiesCards").then(_ => <_.Activities />) },
         ]
     }, {
         mainNav: ["activities"],
-        path: "/activities-preview",
+        path: "/activities-legacy",
         children: [
-            { path: "", action: (context) => import("./components/ActivitiesCards").then(_ => <_.Activities />) },
+            { path: "", action: (context) => import("./components/Activities").then(_ => <_.Activities />) },
         ]
     },
     {

@@ -51,7 +51,7 @@ const isDFUWorkunit = (wuid: string): boolean => {
     if (!wuid) return false;
     const firstChar = wuid.trim().charAt(0).toUpperCase();
     return firstChar === "D" || firstChar === "P";
-}
+};
 
 interface ActivitiesProps {
 }

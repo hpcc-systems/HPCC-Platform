@@ -22,7 +22,6 @@ export = {
     ActiveWorkunit: "Unidad activa",
     Activities: "Actividades",
     ActivitiesLegacy: "Actividades (L)",
-    ActivitiesPreview: "Actividades (P)",
     Activity: "Actividad",
     ActivityLabel: "Etiqueta de actividad",
     ActivityMap: "Mapa de Actividades",

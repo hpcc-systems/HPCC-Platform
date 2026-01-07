@@ -22,7 +22,6 @@ export = {
     ActiveWorkunit: "已激活工作单元",
     Activities: "活动",
     ActivitiesLegacy: "活动（L）",
-    ActivitiesPreview: "活动（P）",
     Activity: "活动",
     ActivityLabel: "活动标签",
     ActivityMap: "活动图",

@@ -22,7 +22,6 @@ export = {
     ActiveWorkunit: "Aktivna Radna Jedinica",
     Activities: "Aktivnosti",
     ActivitiesLegacy: "Aktivnosti (l)",
-    ActivitiesPreview: "Aktivnosti (P)",
     Activity: "Aktivnost",
     ActivityLabel: "Oznaka aktivnosti",
     ActivityMap: "Mapa Aktivnosti",

@@ -350,7 +350,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             iconProps: { iconName: uiState.isUTC ? "Globe" : "Clock" },
             onClick: toggleTimezone,
         },
-    ], [currentUser, filter, hasFilter, refreshTable, selection, setShowDeleteConfirm, store, total, uiState.hasSelection, viewByScope, uiState.isUTC]);
+    ], [currentUser.username, filter, hasFilter, refreshTable, selection, setShowDeleteConfirm, store, total, uiState.hasSelection, uiState.isUTC, viewByScope]);
 
     //  Filter  ---
     const filterFields: Fields = {};
