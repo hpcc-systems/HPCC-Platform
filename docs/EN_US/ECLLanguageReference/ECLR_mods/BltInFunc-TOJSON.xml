@@ -4,22 +4,31 @@
 <sect1 id="TOJSON">
   <title>TOJSON</title>
 
-  <para><emphasis role="bold">TOJSON<indexterm>
+  <para><emphasis role="bold">TOJSON(</emphasis><emphasis> record
+  </emphasis><emphasis role="bold">[,ALL])</emphasis><indexterm>
       <primary>TOJSON</primary>
     </indexterm><indexterm>
       <primary>TOJSON function</primary>
-    </indexterm>(</emphasis><emphasis> record </emphasis><emphasis
-  role="bold">)</emphasis></para>
+    </indexterm></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="77.95pt" />
+        <colspec colwidth="77.95pt"/>
 
         <tbody>
           <row>
             <entry><emphasis>record</emphasis></entry>
 
             <entry>The row (record) of data to convert to JSON format.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALL</emphasis></entry>
+
+            <entry>Specifies fields with empty strings are included in the
+            output. Without the ALL flag, <emphasis
+            role="bold">TOJSON</emphasis> omits fields that contain only
+            whitespace or are empty after trimming.</entry>
           </row>
 
           <row>
