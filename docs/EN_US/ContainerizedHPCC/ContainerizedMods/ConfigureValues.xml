@@ -1221,8 +1221,8 @@ thor:
 
             <listitem>
               <para>TLS Using Public CA: Use a public Certificate Authority to
-              establish trust between external clients and a
-              publicly-exposed component such as ECL Watch</para>
+              establish trust between external clients and a publicly-exposed
+              component such as ECL Watch</para>
             </listitem>
           </itemizedlist></para>
 
@@ -1264,11 +1264,9 @@ thor:
                   <term>Note:</term>
 
                   <listitem>
-                    <para>Although an effort was made to standardize on the
-                    term TLS throughout this section, there may be references
-                    to the older SSL standard it replaced. Any SSL references
-                    should be taken as colloquial or legacy nomenclature that
-                    actually refers to a TLS implementation.</para>
+                    <para>Any SSL references should be taken as colloquial or
+                    legacy nomenclature that actually refers to a TLS
+                    implementation.</para>
                   </listitem>
                 </varlistentry>
               </variablelist>
@@ -1281,11 +1279,17 @@ thor:
         root of the HPCC Systems Platform repository. Adjust as needed for
         your environment.</para>
 
-        <para>A prerequisite to all these examples is installing cert-manager
-        to your Kubernetes cluster:</para>
+        <sect4 id="CnstallCertManager">
+          <title>Install cert-manager</title>
 
-        <para>Add Jetstack helm repo: <programlisting>helm repo add jetstack https://charts.jetstack.io</programlisting>
-        Install cert-manager. <programlisting>helm install cert-manager jetstack/cert-manager --set crds.enabled=true --namespace cert-manager --create-namespace</programlisting></para>
+          <para>A prerequisite to all these examples is installing
+          <emphasis>cert-manager</emphasis> to your Kubernetes cluster. To
+          install the cert-manager: <programlisting>helm repo add jetstack https://charts.jetstack.io 
+          
+helm repo update
+          
+helm install cert-manager jetstack/cert-manager --set crds.enabled=true --namespace cert-manager --create-namespace</programlisting></para>
+        </sect4>
 
         <sect4 id="MutualTLSWithinCluster">
           <title>Cluster mTLS</title>
@@ -1314,7 +1318,7 @@ thor:
           testing script at the end to show the example is working.</para>
 
           <programlisting>openssl req -x509 -newkey rsa:2048 -nodes -keyout signingca.key -sha256 \
-            -days 1825 -out signingca.crt -config examples/certmanager/ca-req.cfg</programlisting>
+            -days 1825 -out signingca.crt -config helm/examples/certmanager/ca-req.cfg</programlisting>
 
           <para>Create a Kubernetes TLS secret from the generated signing root
           certificate and private key</para>
@@ -1337,8 +1341,7 @@ thor:
           use mutual TLS, using the local client certificate, and to verify
           the server using the local certificate authority certificate.</para>
 
-          <para>You should see a result similar to this, possibly with some
-          additional headers:</para>
+          <para>You should see a result similar to this:</para>
 
           <programlisting>          &lt;Result&gt;
             &lt;Dataset name='localHttpEchoResult'&gt;
@@ -1346,10 +1349,9 @@ thor:
                 &lt;Method&gt;GET&lt;/Method&gt;
                 &lt;UrlPath&gt;/WsSmc/HttpEcho&lt;/UrlPath&gt;
                 &lt;UrlParameters&gt;name=doe,joe&amp;number=1&lt;/UrlParameters&gt;
-                &lt;Headers&gt;
-                  &lt;Header&gt;Accept-Encoding: gzip, deflate&lt;/Header&gt;
-                  &lt;Header&gt;Accept: text/xml&lt;/Header&gt;
-                &lt;/Headers&gt;
+                 &lt;Headers&gt;
+                         ...
+                 &lt;/Headers&gt;
               &lt;/Row&gt;
             &lt;/Dataset&gt;
           &lt;/Result&gt;       </programlisting>
@@ -1423,11 +1425,9 @@ thor:
 
             <para>Add Hashicorp Helm repository:</para>
 
-            <programlisting>helm repo add hashicorp https://helm.releases.hashicorp.com</programlisting>
+            <programlisting>helm repo add hashicorp https://helm.releases.hashicorp.com
 
-            <para>Update Helm repositories.</para>
-
-            <programlisting>helm repo update</programlisting>
+            helm repo update</programlisting>
 
             <para>Install Vault server.</para>
 
@@ -1539,9 +1539,9 @@ kubectl create secret tls hpcc-signing-issuer-key-pair --cert=hpcc1signing.crt -
             remote issuer that hpcc1 will use to access the Vault pki
             engine</para>
 
-            <programlisting>kubectl create secret generic cert-manager-vault-token --from-literal=token=root -n hpcc1</programlisting>
+            <programlisting>kubectl create secret generic cert-manager-vault-token --from-literal=token=root -n hpcc1
 
-            <programlisting>helm install myhpcc hpcc/hpcc --values helm/examples/vault-pki-remote/values-hpcc1.yaml -n hpcc1</programlisting>
+            helm install myhpcc hpcc/hpcc --values helm/examples/vault-pki-remote/values-hpcc1.yaml -n hpcc1</programlisting>
 
             <para>Use kubectl to check the status of the deployed pods. Wait
             until all pods are running before continuing.</para>
@@ -1575,9 +1575,9 @@ kubectl create secret tls hpcc-signing-issuer-key-pair --cert=hpcc2signing.crt -
             remote issuer that hpcc1 will use to access the Vault pki
             engine</para>
 
-            <programlisting>kubectl create secret generic cert-manager-vault-token --from-literal=token=root -n hpcc2</programlisting>
+            <programlisting>kubectl create secret generic cert-manager-vault-token --from-literal=token=root -n hpcc2
 
-            <programlisting>helm install myhpcc hpcc/hpcc --values helm/examples/vault-pki-remote/values-hpcc2.yaml -n hpcc2</programlisting>
+            helm install myhpcc hpcc/hpcc --values helm/examples/vault-pki-remote/values-hpcc2.yaml -n hpcc2</programlisting>
 
             <para>Use <literal>kubectl</literal> to check the status of the
             deployed pods. Wait until all pods are running before
@@ -1634,12 +1634,46 @@ ecl publish roxie2 --ssl --port 28010 remote_echo.ecl</programlisting>
             browser and run the <literal>remote_echo</literal> query from
             there. You should see results similar to the following:</para>
 
-            <programlisting language="json">{"remote_echoResponse":  {"sequence": 0, "Results":  {"remoteResult": {"Row": [{"Dataset": {"Row": [{"name": {"first": "Joeseph", "last": "Johnson"}, "address": {"city": "Fresno", "state": "CA", "zipcode": "11111"}}, {"name": {"first": "Joeseph", "last": "Johnson"}, "address": {"city": "Fresno", "state": "CA", "zipcode": "22222"}}, {"name": {"first": "Joeseph", "last": "Johnson"}, "address": {"city": "Fresno", "state": "CA", "zipcode": "33333"}}, {"name": {"first": "Joeseph", "last": "Johnson"}, "address": {"city": "Fresno", "state": "CA", "zipcode": "44444"}}, {"name": {"first": "Joeseph", "last": "Johnson"}, "address": {"city": "Fresno", "state": "CA", "zipcode": "55555"}}]}, "Exception": {"Code": "0"}}]}}}}}</programlisting>
+            <programlisting language="json">{"remote_echoResponse":  {"sequence": 0, "Results":  {"remoteResult": {"Row": [{"Dataset": {"Row": [{"name": {"first": "Joeseph", "last": "Johnson"}, "address": {"city": "Fresno", "state": "CA", "zipcode": "11111"}}, ... }]}, "Exception": {"Code": "0"}}]}}}}}</programlisting>
           </sect5>
         </sect4>
 
+        <sect4 id="UsingPublicCA">
+          <title>TLS Using Public CA</title>
+
+          <para>The HPCC Systems Helm chart templates support using a Public
+          CA issuer such as Let's Encrypt or ZeroSSL through cert-manager, but
+          most of the work is external to configuring the platform itself and
+          is out of scope for this document. This section outlines the
+          configuration changes needed in the platform to make use of a Public
+          CA issuer setup outside the platform deployment process.</para>
+
+          <para>Assume you're using Let's Encrypt as your Public CA issuer,
+          and you've named it <emphasis>letsencrypt-prod</emphasis>. Then set
+          the platform's public issuer to use that name:</para>
+
+          <programlisting>            certificates:
+              issuers:
+                public:
+                  name: letsencrypt-prod
+                  kind: ClusterIssuer        </programlisting>
+
+          <variablelist>
+            <varlistentry>
+              <term>Note:</term>
+
+              <listitem>
+                <para><literal>ClusterIssuer</literal> is usually preferred
+                for Public CA configurations to centralize certificate
+                management across all namespaces in a cluster and help avoid
+                hitting Public CA usage limits.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+        </sect4>
+
         <sect4 id="SSLTLSTroubleshooting">
-          <title>SSL/TLS Troubleshooting</title>
+          <title>Troubleshooting</title>
 
           <para>Common issues and solutions when configuring SSL/TLS for ESP
           in containerized deployments:</para>
@@ -1673,40 +1707,6 @@ ecl publish roxie2 --ssl --port 28010 remote_echo.ecl</programlisting>
                 <para>Check cert-manager logs and Certificate resource status.
                 Ensure DNS is properly configured for ACME challenges when
                 using Let's Encrypt.</para>
-              </listitem>
-            </varlistentry>
-          </variablelist>
-        </sect4>
-
-        <sect4 id="UsingPublicCA">
-          <title>TLS Using Public CA</title>
-
-          <para>The HPCC Systems Helm chart templates support using a Public
-          CA issuer such as Let's Encrypt or ZeroSSL through cert-manager, but
-          most of the work is external to configuring the platform itself and
-          is out of scope for this document. This section outlines the
-          configuration changes needed in the platform to make use of a Public
-          CA issuer setup outside the platform deployment process.</para>
-
-          <para>Assume you're using Let's Encrypt as your Public CA issuer,
-          and you've named it <emphasis>letsencrypt-prod</emphasis>. Then set
-          the platform's public issuer to use that name:</para>
-
-          <programlisting>            certificates:
-              issuers:
-                public:
-                  name: letsencrypt-prod
-                  kind: ClusterIssuer        </programlisting>
-
-          <variablelist>
-            <varlistentry>
-              <term>Note:</term>
-
-              <listitem>
-                <para><literal>ClusterIssuer</literal> is usually preferred
-                for Public CA configurations to centralize certificate
-                management across all namespaces in a cluster and help avoid
-                hitting Public CA usage limits.</para>
               </listitem>
             </varlistentry>
           </variablelist>
@@ -1774,23 +1774,15 @@ ecl publish roxie2 --ssl --port 28010 remote_echo.ecl</programlisting>
             </listitem>
           </itemizedlist>
 
-          <sect5 id="Remote_Issuer_Configuration">
-            <title>Remote Issuer Configuration</title>
-
-            <para>The <literal>remote</literal> issuer is specifically
-            designed for generating certificates that can be used by remote
-            clients to securely connect to HPCC Systems services. This issuer
-            supports advanced domain configuration options.</para>
-          </sect5>
-
           <sect5 id="Alternative_Domains_Support">
             <title>Alternative Domains Support</title>
 
-            <para>The <literal>certificates.issuers.remote</literal> section
-            supports an <literal>alternativeDomains</literal> array
-            configuration option. This feature allows certificates to be valid
-            for multiple domains in addition to the primary domain specified
-            in the issuer configuration.</para>
+            <para>The <literal>certificates.issuers.remote</literal> and
+            <literal>certificates.issuers.public</literal>sections support an
+            <literal>alternativeDomains</literal> array configuration option.
+            This feature allows certificates to be valid for multiple domains
+            in addition to the primary domain specified in the issuer
+            configuration.</para>
 
             <para><emphasis role="bold">Configuration Syntax</emphasis></para>
 
