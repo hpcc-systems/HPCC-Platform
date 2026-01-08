@@ -36,6 +36,7 @@ interface IEventVisitationLink : extends IEventVisitor
 {
     virtual void configure(const IPropertyTree& config) = 0;
     virtual void setNextLink(IEventVisitor& visitor) = 0;
+    virtual void clearNextLink(bool recursive) = 0;
 };
 
 // Shortcut to standard implementations of visitFile and departFile in a visitation link
@@ -45,5 +46,15 @@ protected: \
     Linked<IEventVisitor> nextLink; \
 public: \
     void setNextLink(IEventVisitor& visitor) override { nextLink.set(&visitor); } \
+    void clearNextLink(bool recursive) override \
+    { \
+        if (recursive) \
+        { \
+            IEventVisitationLink* tmp = dynamic_cast<IEventVisitationLink*>(nextLink.get()); \
+            if (tmp) \
+                tmp->clearNextLink(recursive); \
+        } \
+        nextLink.clear(); \
+    } \
     bool visitFile(const char* filename, uint32_t version) override { if (!nextLink) return false; return nextLink->visitFile(filename, version); } \
     void departFile(uint32_t bytesRead) override { if (!nextLink) return; nextLink->departFile(bytesRead); }

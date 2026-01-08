@@ -187,7 +187,21 @@ void testEventVisitationLinks(const IPropertyTree& inputTree, const IPropertyTre
 
             // Always include the meta information parser as the first link in the chain
             metaState->setNextLink(*currentVisitor);
-            visitIterableEvents(*input, *metaState);
+
+            // Iterate the events and always break the visitation links to avoid potential
+            // memory leaks from circular references and segmentation faults related to
+            // order of desstruction.
+            try
+            {
+                visitIterableEvents(*input, *metaState);
+            }
+            catch (...)
+            {
+                metaState->clearNextLink(true);
+                throw;
+            }
+            metaState->clearNextLink(true);
+
             return true;
         }
 

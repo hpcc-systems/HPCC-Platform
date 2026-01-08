@@ -82,5 +82,19 @@ bool CEventConsumingOp::traverseEvents(const char* path, IEventVisitor& visitor)
     // to ensure MetaFileInformation and EventQueryStart events are captured
     metaState->setNextLink(*actual);
 
-    return readEvents(path, *metaState);
+    // Parse the event file and always break the visitation links to avoid potential
+    // memory leaks from circular references and segmentation faults related to
+    // order of desstruction.
+    bool result = false;
+    try
+    {
+        result = readEvents(path, *metaState);
+    }
+    catch (...)
+    {
+        metaState->clearNextLink(true);
+        throw;
+    }
+    metaState->clearNextLink(true);
+    return result;
 }
