@@ -359,7 +359,7 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
 
     React.useEffect(() => {
         packageService
-            .GetPackageMapSelectOptions({ IncludeProcesses: true })
+            .GetPackageMapSelectOptions({ IncludeProcesses: true, IncludeProcessFilters: true })
             .then(({ ProcessFilters, Targets }) => {
                 setProcessFilters(ProcessFilters?.Item.map(item => {
                     return { key: item, text: item };
