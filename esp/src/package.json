@@ -61,7 +61,7 @@
     "@hpcc-js/map": "3.2.15",
     "@hpcc-js/other": "3.2.10",
     "@hpcc-js/phosphor": "3.2.10",
-    "@hpcc-js/timeline": "3.2.2",
+    "@hpcc-js/timeline": "3.3.0",
     "@hpcc-js/util": "3.3.9",
     "@hpcc-js/wasm-duckdb": "1.9.0",
     "@hpcc-js/wasm-graphviz": "1.11.0",
