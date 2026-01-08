@@ -105,6 +105,10 @@
             "platform": "osx"
         },
         {
+            "name": "jemalloc",
+            "platform": "linux"
+        },
+        {
             "name": "libmemcached",
             "platform": "@VCPKG_MEMCACHED@ & !windows & !osx"
         },

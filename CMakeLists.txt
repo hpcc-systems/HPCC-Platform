@@ -552,6 +552,14 @@ if(PLATFORM OR CLIENTTOOLS OR REMBED)
     install(FILES ${HPCC_SOURCE_DIR}/${LICENSE_FILE} DESTINATION "." COMPONENT Runtime)
 endif()
 
+# Install jemalloc library from vcpkg
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND PLATFORM)
+    file(GLOB JEMALLOC_LIBS "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib/libjemalloc.so*")
+    if (JEMALLOC_LIBS)
+        install(FILES ${JEMALLOC_LIBS} DESTINATION "lib")
+    endif()
+endif()
+
 add_subdirectory(devel)
 
 #uninstall target
