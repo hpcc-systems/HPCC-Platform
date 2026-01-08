@@ -4,16 +4,16 @@
 <sect1 id="TOXML">
   <title>TOXML</title>
 
-  <para><emphasis role="bold">TOXML<indexterm>
+  <para><emphasis role="bold">TOXML(</emphasis><emphasis> record
+  </emphasis><emphasis role="bold">[,ALL])</emphasis><indexterm>
       <primary>TOXML</primary>
     </indexterm><indexterm>
       <primary>TOXML function</primary>
-    </indexterm>(</emphasis><emphasis> record </emphasis><emphasis
-  role="bold">)</emphasis></para>
+    </indexterm></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="77.95pt" />
+        <colspec colwidth="77.95pt"/>
 
         <tbody>
           <row>
@@ -24,6 +24,15 @@
           </row>
 
           <row>
+            <entry><emphasis role="bold">ALL</emphasis></entry>
+
+            <entry>Specifies fields with empty strings are included in the
+            output. Without the ALL flag, <emphasis
+            role="bold">TOXML</emphasis> omits fields that contain only
+            whitespace or are empty after trimming.</entry>
+          </row>
+
+          <row>
             <entry>Return:</entry>
 
             <entry>TOXML returns a UTF8.</entry>
@@ -31,8 +40,6 @@
         </tbody>
       </tgroup>
     </informaltable></para>
-
-  <para></para>
 
   <para>The <emphasis role="bold">TOXML </emphasis>function returns a single
   UTF-8 string with the data in the <emphasis>record</emphasis> re-formatted
