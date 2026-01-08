@@ -6454,15 +6454,15 @@ primexpr1
                                 parser->reportError(ERR_NEGATIVE_WIDTH, $5, "REALFORMAT does not support negative widths");
                             $$.setExpr(createValue(no_realformat, makeStringType(UNKNOWN_LENGTH, NULL, NULL), $3.getExpr(), $5.getExpr(), $7.getExpr()));
                         }
-    | TOXML '(' dataRow ')'
+    | TOXML '(' dataRow optToXMLToJSONFlags ')'
                         {
                             //MORE Could allow ,NOTRIM,OPT,???flags
-                            $$.setExpr(createValue(no_toxml, makeUtf8Type(UNKNOWN_LENGTH, NULL), $3.getExpr()));
+                            $$.setExpr(createValue(no_toxml, makeUtf8Type(UNKNOWN_LENGTH, NULL), $3.getExpr(), $4.getExpr()));
                         }
-    | TOJSON '(' dataRow ')'
+    | TOJSON '(' dataRow optToXMLToJSONFlags ')'
                         {
                             //MORE Could allow ,NOTRIM,OPT,???flags
-                            $$.setExpr(createValue(no_tojson, makeUtf8Type(UNKNOWN_LENGTH, NULL), $3.getExpr()));
+                            $$.setExpr(createValue(no_tojson, makeUtf8Type(UNKNOWN_LENGTH, NULL), $3.getExpr(), $4.getExpr()));
                         }
     | REGEXFIND '(' expression ',' expression regexOpt ')'
                         {
@@ -7445,6 +7445,11 @@ regexOpt
     ;
 
 xmlEncodeFlags
+    :                   { $$.setNullExpr(); }
+    | ',' ALL           { $$.setExpr(createAttribute(allAtom)); }
+    ;
+
+optToXMLToJSONFlags
     :                   { $$.setNullExpr(); }
     | ',' ALL           { $$.setExpr(createAttribute(allAtom)); }
     ;
