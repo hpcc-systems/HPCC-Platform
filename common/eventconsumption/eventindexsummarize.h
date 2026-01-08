@@ -30,6 +30,7 @@ enum class IndexSummarization
     byNodeKind,
     byNode,
     byTrace,
+    byService,
 };
 
 class event_decl CIndexFileSummary : public CEventConsumingOp

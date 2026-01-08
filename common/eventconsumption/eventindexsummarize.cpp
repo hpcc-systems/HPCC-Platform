@@ -665,6 +665,11 @@ protected:
 public: // IEventVisitor
     virtual bool visitEvent(CEvent& event) override
     {
+        // Allow EventQueryStart events to pass through; trace ID to service name
+        // mapping is built earlier by the metadata parser (CMetaInfoState::visitEvent)
+        if (event.queryType() == EventQueryStart)
+            return true;
+
         // Implicit event filter applied unconditionally
         if (queryEventContext(event.queryType()) != EventCtxIndex)
             return true;
@@ -688,7 +693,7 @@ public: // CSummaryCollector
     virtual void summarize() override
     {
         // Determine which node kinds have data
-        bool haveNodeKindEntries[NumNodeKinds] = {false,};
+        std::fill_n(haveNodeKindEntries, NumNodeKinds, false);
         for (Cache::value_type& entry : stats)
         {
             TraceStats& traceStats = entry.second;
@@ -701,23 +706,18 @@ public: // CSummaryCollector
                 }
             }
         }
+        if (summarization == IndexSummarization::byService)
+            summarizeByService();
+        else
+            summarizeByTrace();
+    }
 
+protected:
+    void summarizeByTrace()
+    {
         StringBuffer line;
         appendCSVColumns(line, "Trace ID", "Service Name", "First Timestamp", "Last Timestamp", "Unique Files");
-
-        // Add aggregate statistics headers
-        appendNodeKindHeaders(line, "Total ");
-
-        // Add node kind specific headers only for kinds that have data
-        for (unsigned nodeKind = 0; nodeKind < NumNodeKinds; nodeKind++)
-        {
-            if (!haveNodeKindEntries[nodeKind])
-                continue;
-            const char* nodeKindName = mapNodeKind((NodeKind)nodeKind);
-            VStringBuffer prefix("%c%s ", toupper(*nodeKindName), nodeKindName + 1);
-            appendNodeKindHeaders(line, prefix);
-        }
-
+        appendNodeKindHeaders(line);
         outputLine(line);
 
         for (Cache::value_type& entry : stats)
@@ -749,7 +749,6 @@ public: // CSummaryCollector
 
             // Create aggregate statistics across all node kinds
             NodeKindStats aggregateStats = {};
-            std::unordered_map<IndexHashKey, uint32_t, IndexHashKeyHash> allNodeMemory;
 
             for (unsigned nodeKind = 0; nodeKind < NumNodeKinds; nodeKind++)
                 aggregateStats.addStats(traceStats.kinds[nodeKind]);
@@ -770,7 +769,115 @@ public: // CSummaryCollector
         }
     }
 
+    void summarizeByService()
+    {
+        // Extended TraceStats with trace counter for service summarization
+        class ServiceStats : public TraceStats
+        {
+        public:
+            uint32_t traceCount{0}; // Count of traces represented in this service
+            NodeKindStats totals;
+
+            ServiceStats() = default;
+            void addStats(const TraceStats& other)
+            {
+                for (unsigned nodeKind = 0; nodeKind < NumNodeKinds; nodeKind++)
+                {
+                    const NodeKindStats& nodeKindStats = other.kinds[nodeKind];
+                    kinds[nodeKind].addStats(nodeKindStats);
+                    totals.addStats(nodeKindStats);
+                }
+            }
+        };
+
+        // Aggregate trace stats by service name
+        std::unordered_map<std::string, ServiceStats> serviceStats;
+
+        for (Cache::value_type& entry : stats)
+        {
+            const TraceHashKey& traceKey = entry.first;
+            TraceStats& traceStats = entry.second;
+
+            // Find service name for this trace ID, or use empty string if not found
+            const char* serviceName = operation.queryMetaInfoState().queryServiceName(traceKey.traceId.str());
+            if (!serviceName)
+                serviceName = "";
+            ServiceStats& serviceAggregateStats = serviceStats[serviceName];
+
+            // Aggregate the stats
+            serviceAggregateStats.addStats(traceStats);
+
+            // Increment trace count
+            serviceAggregateStats.traceCount++;
+
+            // Merge unique files
+            serviceAggregateStats.uniqueFileIds.insert(traceStats.uniqueFileIds.begin(), traceStats.uniqueFileIds.end());
+
+            // Update timestamp ranges
+            if (traceStats.firstTimestamp != UINT64_MAX)
+                serviceAggregateStats.firstTimestamp = std::min(serviceAggregateStats.firstTimestamp, traceStats.firstTimestamp);
+            if (traceStats.lastTimestamp > 0)
+                serviceAggregateStats.lastTimestamp = std::max(serviceAggregateStats.lastTimestamp, traceStats.lastTimestamp);
+        }
+
+        // Output aggregated service stats
+        StringBuffer line;
+        appendCSVColumns(line, "Service Name", "Trace Count", "First Timestamp", "Last Timestamp", "Unique Files");
+        appendNodeKindHeaders(line);
+        outputLine(line);
+
+        for (auto& serviceEntry : serviceStats)
+        {
+            const std::string& serviceName = serviceEntry.first;
+            ServiceStats& serviceStatsEntry = serviceEntry.second;
+
+            // Format timestamps using CDateTime (empty if no valid timestamps were found)
+            StringBuffer firstTsStr, lastTsStr;
+            if (serviceStatsEntry.firstTimestamp != UINT64_MAX)
+            {
+                CDateTime firstDt;
+                firstDt.setTimeStampNs(serviceStatsEntry.firstTimestamp);
+                firstDt.getString(firstTsStr);
+            }
+            if (serviceStatsEntry.lastTimestamp > 0)
+            {
+                CDateTime lastDt;
+                lastDt.setTimeStampNs(serviceStatsEntry.lastTimestamp);
+                lastDt.getString(lastTsStr);
+            }
+
+            const char* displayServiceName = serviceName.empty() ? "<no service>" : serviceName.c_str();
+            appendCSVColumns(line, displayServiceName, serviceStatsEntry.traceCount, firstTsStr.str(), lastTsStr.str(), serviceStatsEntry.uniqueFileIds.size());
+            appendNodeKindData(line, serviceStatsEntry.totals);
+            for (unsigned nodeKind = 0; nodeKind < NumNodeKinds; nodeKind++)
+            {
+                if (!haveNodeKindEntries[nodeKind])
+                    continue;
+                const NodeKindStats& nodeStats = serviceStatsEntry.kinds[nodeKind];
+                appendNodeKindData(line, nodeStats);
+            }
+            outputLine(line);
+        }
+    }
+
 protected:
+
+    void appendNodeKindHeaders(StringBuffer& line)
+    {
+        // Add aggregate statistics headers
+        appendNodeKindHeaders(line, "Total ");
+
+        // Add node kind specific headers only for kinds that have data
+        for (unsigned nodeKind = 0; nodeKind < NumNodeKinds; nodeKind++)
+        {
+            if (!haveNodeKindEntries[nodeKind])
+                continue;
+            const char* nodeKindName = mapNodeKind((NodeKind)nodeKind);
+            VStringBuffer prefix("%c%s ", toupper(*nodeKindName), nodeKindName + 1);
+            appendNodeKindHeaders(line, prefix);
+        }
+    }
+
     void appendNodeKindHeaders(StringBuffer& line, const char* prefix)
     {
         appendCSVEventsHeaders(line, prefix);
@@ -807,6 +914,8 @@ protected:
 protected:
     using Cache = std::unordered_map<TraceHashKey, TraceStats, TraceHashKeyHash>;
     Cache stats;
+    bool haveNodeKindEntries[NumNodeKinds] = {false,};
+
 };
 
 bool CIndexFileSummary::doOp()
@@ -820,6 +929,7 @@ bool CIndexFileSummary::doOp()
         collector.setown(new CNodeCollector(*this, summarization, out));
         break;
     case IndexSummarization::byTrace:
+    case IndexSummarization::byService:
         collector.setown(new CTraceCollector(*this, summarization, out));
         break;
     default:
