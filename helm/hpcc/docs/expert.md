@@ -95,23 +95,23 @@ its own cache.  Threads/channels within a process share that process's cache.
 If set to true, components will use jemalloc memory allocator via LD_PRELOAD.
 jemalloc can provide better memory allocation performance and lower fragmentation compared to the default glibc allocator.
 This setting can be applied globally or on a per-component basis via the component's expert section.
-Default: true
+Default: false
 
 Note: jemalloc is automatically disabled when valgrind is enabled for a component, as valgrind requires its own memory management.
 
-Example of disabling jemalloc globally:
+Example of enabling jemalloc globally:
 ```
 global:
   expert:
-    useJemalloc: false
+    useJemalloc: true
 ```
 
-Example of disabling jemalloc for a specific Thor component:
+Example of enabling jemalloc for a specific Thor component:
 ```
 thor:
 - name: mythor
   expert:
-    useJemalloc: false
+    useJemalloc: true
 ```
 
 Note: This requires that libjemalloc is installed in the container image at /usr/lib/x86_64-linux-gnu/libjemalloc.so.2
@@ -156,6 +156,46 @@ roxie:
 Note: Roxie also has a separate `@workerSendUseIOUring` topology setting that specifically controls io_uring for worker-to-worker 
 send operations (see Roxie documentation for details). The global `expert/@useIOUring` setting takes precedence—if set to false, 
 it will disable all io_uring regardless of component-specific topology settings, including `@workerSendUseIOUring`.
+
+## useTLSIOUring (boolean)
+
+Controls whether TLS (SSL/TLS encrypted) socket operations use io_uring for asynchronous I/O. This setting provides 
+granular control over io_uring usage specifically for TLS communications, separate from general io_uring usage.
+
+Default: false (disabled for backward compatibility)
+
+When set to true, TLS async operations (accept, connect, read, write) will use io_uring when available.
+When set to false, TLS operations fall back to synchronous I/O even if io_uring is enabled and available.
+
+This setting only has effect when `expert/@useIOUring` is also enabled. The hierarchy is:
+1. If `expert/@useIOUring` is false, all io_uring is disabled (including TLS)
+2. If `expert/@useIOUring` is true and `expert/@useTLSIOUring` is false, TLS uses sync I/O but other operations can use io_uring
+3. If both are true, TLS operations use io_uring for async I/O
+
+Use cases for disabling TLS io_uring while keeping general io_uring enabled:
+- Debugging TLS-specific issues without affecting other async I/O
+- Working around potential TLS/io_uring interaction issues
+- Testing performance differences between sync and async TLS
+- Compatibility with specific TLS configurations or certificate setups
+
+Example of enabling TLS io_uring globally:
+```
+global:
+  expert:
+    useIOUring: true
+    useTLSIOUring: true
+```
+
+This setting can be applied globally or on a per-component basis via the component's expert section.
+
+Example of enabling TLS io_uring for a specific component:
+```
+esp:
+- name: eclwatch
+  expert:
+    useIOUring: true
+    useTLSIOUring: true
+```
 
 ## fileSizeCheckMode (unsigned)
 

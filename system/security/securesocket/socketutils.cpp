@@ -669,14 +669,75 @@ void CSocketConnectionListener::handleAcceptedConnection(int socketfd)
             {
                 Owned<ISecureSocket> ssock = secureContextServer->createSecureSocket(sock.getClear());
                 int tlsTraceLevel = SSLogMin;
-                int status = ssock->secure_accept(tlsTraceLevel);
-                if (status < 0)
+                
+                // Use async TLS accept if io_uring is available
+                if (asyncReader)
                 {
-                    ssock->close();
-                    PROGLOG("MP Connect Thread: failed to accept secure connection");
+                    // Create a callback handler for async TLS accept
+                    class CAsyncTLSAcceptCallback : public CInterface, implements IAsyncCallback
+                    {
+                    private:
+                        CSocketConnectionListener * listener;
+                        Owned<ISecureSocket> secureSocket;
+                        
+                    public:
+                        IMPLEMENT_IINTERFACE;
+                        
+                        CAsyncTLSAcceptCallback(CSocketConnectionListener * _listener, ISecureSocket * _secureSocket)
+                            : listener(_listener), secureSocket(_secureSocket)
+                        {
+                        }
+                        
+                        virtual void onAsyncComplete(int result) override
+                        {
+                            if (result < 0)
+                            {
+                                secureSocket->close();
+                                if (result != PORT_CHECK_SSL_ACCEPT_ERROR)
+                                    PROGLOG("MP Connect Thread: failed to async accept secure connection (result=%d)", result);
+                                Release(); // Release self-ownership
+                                return;
+                            }
+                            
+                            // Success - add the socket to the handler
+                            try
+                            {
+#ifdef _FULLTRACE
+                                StringBuffer s;
+                                SocketEndpoint ep1;
+                                secureSocket->getPeerEndpoint(ep1);
+                                PROGLOG("MP: Connect Thread: async TLS socket accepted from %s", ep1.getEndpointHostText(s).str());
+#endif
+                                secureSocket->set_keep_alive(true);
+                                listener->add(secureSocket.getClear());
+                            }
+                            catch (IException *e)
+                            {
+                                EXCLOG(e, "Error adding async accepted connection");
+                                e->Release();
+                                secureSocket->close();
+                            }
+                            Release(); // Release self-ownership
+                        }
+                    };
+                    
+                    Owned<CAsyncTLSAcceptCallback> callback = new CAsyncTLSAcceptCallback(this, ssock);
+                    ssock->startAsyncAccept(asyncReader, *callback.getLink(), tlsTraceLevel);
+                    // The callback will handle completion - don't add socket here
                     return;
                 }
-                sock.setown(ssock.getClear());
+                else
+                {
+                    // Fallback to synchronous TLS accept
+                    int status = ssock->secure_accept(tlsTraceLevel);
+                    if (status < 0)
+                    {
+                        ssock->close();
+                        PROGLOG("MP Connect Thread: failed to accept secure connection");
+                        return;
+                    }
+                    sock.setown(ssock.getClear());
+                }
             }
 #endif // OPENSSL
 
