@@ -42,87 +42,90 @@ class CHotspotEventVisitor : public CInterfaceOf<IEventVisitor>
             Range range{std::numeric_limits<bucket_type>::max(), 0};
 
             Activity() = default;
+
             bool hasActivity() const
             {
                 return !buckets.empty();
             }
+
+            void recordEvent(bucket_type bucket)
+            {
+                bucket_type key = bucket2activityKey(bucket);
+                unsigned short index = bucket2activityIndex(bucket);
+                buckets[key][index]++;
+                if (bucket < range.first)
+                    range.first = bucket;
+                if (bucket > range.second)
+                    range.second = bucket;
+            }
+
+            void forEachBucket(IBucketVisitor& visitor, NodeKind nodeKind)
+            {
+                if (!hasActivity())
+                    return;
+                for (bucket_type bucket = range.first; bucket <= range.second; bucket++)
+                {
+                    stat_type events = queryBucket(buckets, bucket);
+                    if (events)
+                        visitor.visitBucket(bucket, nodeKind, events);
+                }
+            }
+
+        protected:
+            bucket_type bucket2activityKey(offset_t bucket)
+            {
+                return bucket >> bucketArrayBits;
+            }
+
+            unsigned short bucket2activityIndex(offset_t bucket)
+            {
+                return bucket & bucketArrayMask;
+            }
+
+            stat_type queryBucket(const Buckets& buckets, bucket_type bucket)
+            {
+                Buckets::const_iterator it = buckets.find(bucket2activityKey(bucket));
+                if (it != buckets.end())
+                    return it->second[bucket2activityIndex(bucket)];
+                return 0;
+            }
         };
     public:
-        CActivity(CHotspotEventVisitor& _container, __uint64 _id)
-            : container(_container)
+        CActivity(CMetaInfoState& _metaInfoState, __uint64 _id)
+            : metaInfoState(_metaInfoState)
             , id(_id)
         {
         }
 
-        void recordEvent(offset_t offset, NodeKind nodeKind)
+        void recordEvent(offset_t offset, NodeKind nodeKind, byte granularityBits)
         {
-            bucket_type bucket = page2bucket(offset2page(offset, defaultPageBits), granularityBits());
-            bucket_type key = bucket2activityKey(bucket);
-            unsigned short index = bucket2activityIndex(bucket);
-            activity[nodeKind].buckets[key][index]++;
-            if (bucket < activity[nodeKind].range.first)
-                activity[nodeKind].range.first = bucket;
-            if (bucket > activity[nodeKind].range.second)
-                activity[nodeKind].range.second = bucket;
+            activity[nodeKind].recordEvent(page2bucket(offset2page(offset, defaultPageBits), granularityBits));
         }
 
         void forEachBucket(IBucketVisitor& visitor)
         {
-            const char* path = container.operation.queryMetaInfoState().queryFilePath(id);
             if (!hasActivity()) // suppress inactive files
                 return;
+            const char* path = metaInfoState.queryFilePath(id);
             visitor.arrive(id, path);
             for (unsigned kind = 0; kind < NumNodeKinds; kind++)
-            {
-                Activity& act = activity[kind];
-                if (act.hasActivity())
-                {
-                    for (bucket_type bucket = act.range.first; bucket <= act.range.second; bucket++)
-                    {
-                        stat_type events = queryBucket(act.buckets, bucket);
-                        if (events)
-                            visitor.visitBucket(bucket, NodeKind(kind), events);
-                    }
-                }
-            }
+                activity[kind].forEachBucket(visitor, NodeKind(kind));
             visitor.depart();
         }
 
     protected:
-        inline byte granularityBits() const
-        {
-            return container.granularityBits;
-        }
-        inline bucket_type bucket2activityKey(offset_t bucket)
-        {
-            return bucket >> bucketArrayBits;
-        }
-
-        inline unsigned short bucket2activityIndex(offset_t bucket)
-        {
-            return bucket & bucketArrayMask;
-        }
-
-        stat_type queryBucket(const Buckets& buckets, bucket_type bucket)
-        {
-            Buckets::const_iterator it = buckets.find(bucket2activityKey(bucket));
-            if (it != buckets.end())
-                return it->second[bucket2activityIndex(bucket)];
-            return 0;
-        }
-
         bool hasActivity() const
         {
-            for (const Activity& act : activity)
+            for (unsigned kind = 0; kind < NumNodeKinds; kind++)
             {
-                if (act.hasActivity())
+                if (activity[kind].hasActivity())
                     return true;
             }
             return false;
         }
 
     private:
-        CHotspotEventVisitor& container; // back reference to obtain shared configuration
+        CMetaInfoState& metaInfoState;
         __uint64 id{0};
         Activity activity[NumNodeKinds];
     };
@@ -135,41 +138,43 @@ public: // IEventVisitor
 
     virtual bool visitEvent(CEvent& event) override
     {
-        if (event.hasAttribute(EvAttrFileId))
-        {
-            EventType type = event.queryType();
-            if (type == MetaFileInformation || observedEvents.count(type) == 0)
-                return true;
-            __uint64 fileId = event.queryNumericValue(EvAttrFileId);
-            auto [it, inserted] = activity.try_emplace(fileId, *this, fileId);
-            NodeKind nodeKind = queryIndexNodeKind(event);
-            it->second.recordEvent(event.queryNumericValue(EvAttrFileOffset), nodeKind);
-        }
+        EventType type = event.queryType();
+        if (MetaFileInformation == type)
+            return true;
+        if (observedEvents.find(type) == observedEvents.end())
+            return true;
+        __uint64 fileId = event.queryNumericValue(EvAttrFileId);
+        NodeKind nodeKind = queryIndexNodeKind(event);
+        auto [it, inserted] = activity.try_emplace(fileId, operation.queryMetaInfoState(), fileId);
+        it->second.recordEvent(event.queryNumericValue(EvAttrFileOffset), nodeKind, granularityBits);
         return true;
     }
 
-    virtual void departFile(uint32_t bytesRead) override
+    virtual void departFile(uint32_t) override
     {
-        analyzer->begin(observedEvents, granularityBits);
-        for (auto& [fileId, activity] : activity)
-            activity.forEachBucket(*analyzer);
-        analyzer->end();
+        // Intentionally empty.
     }
 
 public:
-    CHotspotEventVisitor(CIndexHotspotOp& _operation, IBucketVisitor& _analyzer, const std::set<EventType>& _observedEvents, byte _granularityBits)
+    CHotspotEventVisitor(CIndexHotspotOp& _operation, const std::set<EventType>& _observedEvents, byte _granularityBits)
         : operation(_operation)
-        , analyzer(&_analyzer)
         , granularityBits(_granularityBits)
         , observedEvents(_observedEvents)
     {
+    }
+
+    void generateReport(IBucketVisitor& analyzer)
+    {
+        analyzer.begin(observedEvents, granularityBits);
+        for (auto& [fileId, activity] : activity)
+            activity.forEachBucket(analyzer);
+        analyzer.end();
     }
 
 private:
     CIndexHotspotOp& operation;
     // map file id (as __uint64 due to visitor interface) to index activity
     using Activity = std::map<__uint64, CActivity>;
-    Linked<IBucketVisitor> analyzer;
     byte granularityBits{0};
     Activity activity;
     std::set<EventType> observedEvents;
@@ -182,14 +187,18 @@ bool CIndexHotspotOp::ready() const
 
 bool CIndexHotspotOp::doOp()
 {
-    Owned<IBucketVisitor> analyzer;
-    if (limit)
-        analyzer.setown(createTopBucketVisitor(*out, limit));
-    else
-        analyzer.setown(createAllBucketVisitor(*out));
-
-    CHotspotEventVisitor visitor(*this, *analyzer, observedEvents, granularityBits);
-    return traverseEvents(inputPath, visitor);
+    Owned<CHotspotEventVisitor> visitor = new CHotspotEventVisitor(*this, observedEvents, granularityBits);
+    if (traverseEvents(inputPath, *visitor))
+    {
+        Owned<IBucketVisitor> analyzer;
+        if (limit)
+            analyzer.setown(createTopBucketVisitor(*out, limit));
+        else
+            analyzer.setown(createAllBucketVisitor(*out));
+        visitor->generateReport(*analyzer);
+        return true;
+    }
+    return false;
 }
 
 void CIndexHotspotOp::addObservedEvent(EventType observedEvent)
