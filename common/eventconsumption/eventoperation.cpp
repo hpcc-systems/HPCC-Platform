@@ -77,10 +77,8 @@ bool CEventConsumingOp::traverseEvents(const char* path, IEventVisitor& visitor)
         model->setNextLink(*actual);
         actual = model;
     }
+    Owned<IEventVisitationLink> metaCollector = metaState->getCollector();
+    metaCollector->setNextLink(*actual);
 
-    // Always include the meta information parser as the first link in the chain
-    // to ensure MetaFileInformation and EventQueryStart events are captured
-    metaState->setNextLink(*actual);
-
-    return readEvents(path, *metaState);
+    return readEvents(path, *metaCollector);
 }

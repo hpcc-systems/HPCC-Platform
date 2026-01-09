@@ -186,8 +186,9 @@ void testEventVisitationLinks(const IPropertyTree& inputTree, const IPropertyTre
             }
 
             // Always include the meta information parser as the first link in the chain
-            metaState->setNextLink(*currentVisitor);
-            visitIterableEvents(*input, *metaState);
+            Owned<IEventVisitationLink> metaCollector = metaState->getCollector();
+            metaCollector->setNextLink(*currentVisitor);
+            visitIterableEvents(*input, *metaCollector);
             return true;
         }
 
