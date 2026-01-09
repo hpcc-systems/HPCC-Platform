@@ -20,6 +20,7 @@
 #include "rtlembed.hpp"
 #include "rtlds_imp.hpp"
 #include "jfile.hpp"
+#include "jutil.hpp"
 #include "rtlrecord.hpp"
 
 static constexpr const char *MODULE_NAME = "parquet";
@@ -382,6 +383,23 @@ void xpathOrName(StringBuffer &outXPath, const RtlFieldInfo *field)
 }
 
 /**
+ * @brief Wrapper around deduceMask to simplify calling.
+ *
+ * @param filename The filename to check for a partmask
+ * @param totalParts Reference parameter to return the total parts from the part mask
+ *
+ * @return true if the partmask exists and is valid
+ */
+bool deduceMask(const char *filename, unsigned &totalParts)
+{
+    unsigned partNum;
+    unsigned filenameLen;
+    StringAttr mask;
+    return deduceMask(filename, false, mask, partNum, totalParts, filenameLen);
+}
+
+
+/**
  * @brief Contructs a ParquetReader for a specific file location.
  *
  * @param option The read or write option as well as information about partitioning.
@@ -411,6 +429,25 @@ ParquetReader::ParquetReader(const char *option, const char *_location, int _max
 ParquetReader::~ParquetReader()
 {
     pool->ReleaseUnused();
+}
+
+/**
+ * @brief Constructs a Parquet file reader for the given file path. The constructed
+ * reader is added to the parquetFileReaders vector.
+ *
+ * @param fullPath The full path to the Parquet file.
+ * @return arrow::Status indicating success or failure.
+ */
+arrow::Status ParquetReader::constructParquetFileReader(const char *fullPath)
+{
+    std::shared_ptr<arrow::io::RandomAccessFile> input;
+    ARROW_ASSIGN_OR_RAISE(input, arrow::io::ReadableFile::Open(fullPath));
+
+    std::unique_ptr<parquet::arrow::FileReader> parquetFileReader;
+    ARROW_ASSIGN_OR_RAISE(parquetFileReader, parquet::arrow::OpenFile(input, pool));
+
+    parquetFileReaders.emplace_back(fullPath, std::move(parquetFileReader));
+    return arrow::Status::OK();
 }
 
 /**
@@ -462,24 +499,46 @@ arrow::Status ParquetReader::openReadFile()
     }
     else
     {
+        // Check if file has only a single part before looking for files with a partmask
+        bool foundExactFile = false;
+        Owned<IFile> exactFile = createIFile(location.c_str());
+        if (exactFile->exists())
+        {
+            if (exactFile->isFile() == fileBool::foundYes)
+            {
+                reportIfFailure(constructParquetFileReader(location.c_str()));
+                foundExactFile = true;
+            }
+            else if (exactFile->isFile() == fileBool::foundNo)
+                failx("Target location %s is a directory, but no partitioning option was specified.", location.c_str());
+            else
+                assertex(false); // should not be possible
+        }
+
         StringBuffer filename;
         StringBuffer path;
         splitFilename(location.c_str(), nullptr, &path, &filename, nullptr, false);
-        Owned<IDirectoryIterator> itr = createDirectoryIterator(path.str(), filename.append("*.parquet"));
+        Owned<IDirectoryIterator> itr = createDirectoryIterator(path.str(), filename.append("._*_of_*.parquet"));
 
-        auto readerProperties = parquet::ReaderProperties(pool);
-        auto arrowReaderProps = parquet::ArrowReaderProperties();
+        unsigned totalParts = 0;
         ForEach (*itr)
         {
             IFile &file = itr->query();
-            const char *filename = file.queryFilename();
-            parquet::arrow::FileReaderBuilder readerBuilder;
-            reportIfFailure(readerBuilder.OpenFile(filename, false, readerProperties));
-            readerBuilder.memory_pool(pool);
-            readerBuilder.properties(arrowReaderProps);
-            std::unique_ptr<parquet::arrow::FileReader> parquetFileReader;
-            reportIfFailure(readerBuilder.Build(&parquetFileReader));
-            parquetFileReaders.emplace_back(filename, std::move(parquetFileReader));
+            unsigned totalPartsFromMask;
+            if (deduceMask(file.queryFilename(), totalPartsFromMask)) // only process files that match partmask
+            {
+                // Throw error if single file and files with partmasks are found
+                if (foundExactFile)
+                    failx("Inconsistent part counts detected (1, %d) in Parquet file at %s", totalPartsFromMask, location.c_str());
+
+                // Check that a dataset of a different part count is not being mixed in
+                if (totalParts == 0)
+                    totalParts = totalPartsFromMask;
+                else if (totalParts != totalPartsFromMask)
+                    failx("Inconsistent part counts detected (%d, %d) in Parquet file at %s", totalParts, totalPartsFromMask, location.c_str());
+
+                reportIfFailure(constructParquetFileReader(file.queryFilename()));
+            }
         }
 
         auto sortFileReaders = [](NamedFileReader &a, NamedFileReader &b) -> bool
@@ -841,10 +900,9 @@ ParquetWriter::ParquetWriter(const char *option, const char *_destination, int _
     : maxRowCountInBatch(_maxRowCountInBatch), partOption(option), destination(_destination), overwrite(_overwrite), activityCtx(_activityCtx), compressionOption(_compressionOption)
 {
     pool = arrow::default_memory_pool();
-    if (activityCtx->querySlave() == 0 && startsWithIgnoreCase(partOption.c_str(), "write"))
-    {
-        reportIfFailure(checkDirContents());
-    }
+    dbgassertex(startsWithIgnoreCase(partOption.c_str(), "write"));
+
+    // Verify partition fields before calling checkDirContents and deleting existing files
     if (endsWithIgnoreCase(partOption.c_str(), "partition"))
     {
         std::stringstream ss(_partitionFields);
@@ -853,6 +911,16 @@ ParquetWriter::ParquetWriter(const char *option, const char *_destination, int _
         {
             partitionFields.push_back(field);
         }
+        if (partitionFields.empty())
+            failx("Partition fields must be specified when writing partitioned Parquet files.");
+    }
+
+    if (activityCtx->querySlave() == 0)
+    {
+        // To avoid race conditions when one thread is deleting files while others are writing to them,
+        // 1. Worker 0 runs `checkDirContents()` (deletes mismatched files)
+        // 2. All workers call `openWriteFile()` (truncates matching files)
+        reportIfFailure(checkDirContents());
     }
 }
 
@@ -887,16 +955,18 @@ arrow::Status ParquetWriter::openWriteFile()
         if(!endsWith(destination.c_str(), ".parquet"))
             failx("Error opening file: Invalid file extension for file %s", destination.c_str());
 
-        // Currently under the assumption that all channels and workers are given a worker id and no matter
-        // the configuration will show up in activityCtx->numSlaves()
-        if (activityCtx->numSlaves() > 1)
+        // querySlave() returns the thread index regardless of channels per worker
+        // i.e. all threads across all workers will have a unique index
+        unsigned numSlaves = activityCtx->numSlaves();
+        if (numSlaves > 1)
         {
-            destination.insert(destination.find(".parquet"), std::to_string(activityCtx->querySlave()));
+            std::string partMask = "._" + std::to_string(activityCtx->querySlave()+1) + "_of_" + std::to_string(numSlaves);
+            destination.insert(destination.find(".parquet"), partMask);
         }
 
         recursiveCreateDirectoryForFile(destination.c_str());
         std::shared_ptr<arrow::io::FileOutputStream> outfile;
-        PARQUET_ASSIGN_OR_THROW(outfile, arrow::io::FileOutputStream::Open(destination));
+        PARQUET_ASSIGN_OR_THROW(outfile, arrow::io::FileOutputStream::Open(destination, false)); // false = do not append. Will truncate existing file to 0 bytes
 
         // Choose compression
         std::shared_ptr<parquet::WriterProperties> props = parquet::WriterProperties::Builder().compression(compressionOption)->build();
@@ -958,7 +1028,7 @@ void ParquetWriter::writeRecordBatch()
  * @brief A helper method for updating the current row on writes and keeping
  * it within the boundary of the maxRowCountInBatch set by the user when creating RowGroups.
  */
-void ParquetWriter::updateRow()
+void ParquetWriter::incrementRecordBatchIndex()
 {
     if (++currentRow == maxRowCountInBatch)
         currentRow = 0;
@@ -1215,47 +1285,76 @@ void ParquetWriter::endRow()
 arrow::Status ParquetWriter::checkDirContents()
 {
     if (destination.empty())
-    {
         failx("Missing target location when writing Parquet data.");
-    }
+
     StringBuffer path;
     StringBuffer filename;
     StringBuffer ext;
     splitFilename(destination.c_str(), nullptr, &path, &filename, &ext, false);
 
-    ARROW_ASSIGN_OR_RAISE(auto filesystem, arrow::fs::FileSystemFromUriOrPath(destination));
+    // Check if destination is directory for partitioned dataset or if single part file exists
+    unsigned numThreads = activityCtx->numSlaves();
+    Owned<IFile> exactFile = createIFile(destination.c_str());
+    if (exactFile->exists())
+    {
+        // Check if file is single part before looking for files with a partmask
+        if (exactFile->isFile() == fileBool::foundNo)
+        {
+            if (!endsWithIgnoreCase(partOption.c_str(), "partition"))
+                failx("The target location %s is a directory. Only partitioned datasets take a directory as a target. To write a partitioned dataset, use either ParquetIO.HivePartition.Write or ParquetIO.DirectoryPartition.Write", exactFile->queryFilename());
+            // If a directory is found, clean up subdirs for writing partitioned dataset
+            if (overwrite)
+            {
+                DBGLOG("Parquet file write: deleting directory contents in '%s'", path.str());
+                ARROW_ASSIGN_OR_RAISE(auto filesystem, arrow::fs::FileSystemFromUriOrPath(destination));
+                reportIfFailure(filesystem->DeleteDirContents(path.str()));
+                return arrow::Status::OK();
+            }
+            else
+                failx("The target directory %s is not empty. To delete the contents of the directory set the overwrite option to true.", path.str());
+        }
+        else if (overwrite)
+        {
+            if (numThreads > 1)
+            {
+                // Delete single-part file found in location where multi-part files will be written
+                DBGLOG("Parquet file write: removing existing file '%s'", exactFile->queryFilename());
+                if (!exactFile->remove())
+                    failx("Failed to remove file %s", exactFile->queryFilename());
+            }
+            // Let arrow truncate the single file to 0 bytes when writing
+        }
+        else
+            failx("The target file %s already exists. To delete the file set the overwrite option to true.", exactFile->queryFilename());
+    }
 
-    Owned<IDirectoryIterator> itr = createDirectoryIterator(path.str(), filename.appendf("*%s", ext.str()));
+    // Check for files with part mask pattern
+    StringBuffer searchPattern;
+    searchPattern.appendf("%s._*_of_*%s", filename.str(), ext.str());
+    Owned<IDirectoryIterator> itr = createDirectoryIterator(path.str(), searchPattern.str());
+
     ForEach (*itr)
     {
         IFile &file = itr->query();
-        if (file.isFile() == fileBool::foundYes)
+        unsigned totalParts;
+        if (deduceMask(file.queryFilename(), totalParts))
         {
-            if(overwrite)
-            {
-                if (!file.remove())
-                {
-                    failx("Failed to remove file %s", file.queryFilename());
-                }
-            }
-            else
-            {
+            if (!overwrite)
                 failx("The target file %s already exists. To delete the file set the overwrite option to true.", file.queryFilename());
-            }
-        }
-        else
-        {
-            if (overwrite)
+            else if (totalParts != numThreads)
             {
-                reportIfFailure(filesystem->DeleteDirContents(path.str()));
-                break;
+                // We should only delete the file if it was written by a different sized cluster to avoid race conditions
+                // with other threads/workers writing files. We don't need to delete files with the same total parts.
+                // When an existing file is opened, Arrow truncates it to 0 bytes before writing.
+                DBGLOG("Parquet file write: removing existing file '%s'", file.queryFilename());
+                if (!file.remove())
+                    failx("Failed to remove file %s", file.queryFilename());
             }
-            else
-            {
-                failx("The target directory %s is not empty. To delete the contents of the directory set the overwrite option to true.", path.str());
-            }
+            // totalParts == numThreads - Will be truncated by Arrow when opened for writing
         }
+        // Files without a part mask should be ignored, single part files should exactly match the filename
     }
+
     return arrow::Status::OK();
 }
 
@@ -2636,26 +2735,25 @@ bool ParquetDatasetBinder::bindNext()
  */
 void ParquetDatasetBinder::executeAll()
 {
-    if (bindNext())
+    // Always open a file before attempting to write which may cause some files to have 0 records
+    // This is because multi-part files have the suffix ._N_of_M, where N is the part number and M
+    // is the total number of parts, and we want behaviour similar to the platform. (XRef checks for all parts to be present)
+    reportIfFailure(parquetWriter->openWriteFile());
+
+    int rowCount = 0;
+    int maxRowCountInBatch = parquetWriter->getMaxRowSize();
+    while (bindNext())
     {
-        reportIfFailure(parquetWriter->openWriteFile());
+        rowCount++;
 
-        int i = 1;
-        int maxRowCountInBatch = parquetWriter->getMaxRowSize();
-        do
-        {
-            if (i % maxRowCountInBatch == 0)
-                parquetWriter->writeRecordBatch();
-
-            parquetWriter->updateRow();
-            i++;
-        }
-        while (bindNext());
-
-        i--;
-        if (i % maxRowCountInBatch != 0)
+        if (rowCount % maxRowCountInBatch == 0)
             parquetWriter->writeRecordBatch();
+
+        parquetWriter->incrementRecordBatchIndex();
     }
+
+    if (rowCount % maxRowCountInBatch != 0)
+        parquetWriter->writeRecordBatch();
 }
 
 /**
