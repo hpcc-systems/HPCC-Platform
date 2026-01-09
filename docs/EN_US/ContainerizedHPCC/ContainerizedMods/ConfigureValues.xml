@@ -1226,7 +1226,7 @@ thor:
             </listitem>
           </itemizedlist></para>
 
-        <para>The cert-manager is used In all these configurations to manage
+        <para>The cert-manager is used in all these configurations to manage
         the Kubernetes certificate-related resources. Vault is used as the PKI
         (Public Key Infrastructure) when establishing trust between components
         in separate HPCC clusters.</para>
@@ -1243,21 +1243,24 @@ thor:
             <listitem>
               <para>Set the <emphasis>enabled</emphasis> property to
               <emphasis>true</emphasis> for the specific issuer you want to
-              use: local, public or remote</para>
+              use: local, public, or remote</para>
             </listitem>
 
             <listitem>
               <para>Set the component's <emphasis>visibility</emphasis>
               property to the value that assigns it the issuer you want to
-              use: `cluster` visibility for `local` issuer, `local` or
-              `global` visibility for the `public` issuer.</para>
+              use: <emphasis>cluster</emphasis> visibility for
+              <emphasis>local</emphasis> issuer, <emphasis>local</emphasis> or
+              <emphasis>global</emphasis> visibility for the
+              <emphasis>public</emphasis> issuer.</para>
             </listitem>
 
             <listitem>
-              <para>To use the `remote` issuer, set the component's
-              `visibility` property to `local` or `global`, and its
-              `trustClients` array to the list of remote trusted
-              clients.</para>
+              <para>To use the <emphasis>remote</emphasis> issuer, set the
+              component's <emphasis>visibility</emphasis> property to
+              <emphasis>local</emphasis> or <emphasis>global</emphasis>, and
+              its <emphasis>trustClients</emphasis> array to the list of
+              remote trusted clients.</para>
 
               <variablelist>
                 <varlistentry>
@@ -1336,7 +1339,7 @@ helm install cert-manager jetstack/cert-manager --set crds.enabled=true --namesp
 
           <programlisting>ecl run --ssl hthor helm/examples/certmanager/localhttpcall.ecl</programlisting>
 
-          <para>Note that for the HTTPCALL in our ECL example the url now
+          <para>Note that for the HTTPCALL in our ECL example the URL now
           starts with <literal>mtls:</literal> this tells HTTPCALL/SOAPCALL to
           use mutual TLS, using the local client certificate, and to verify
           the server using the local certificate authority certificate.</para>
@@ -1498,7 +1501,7 @@ helm install cert-manager jetstack/cert-manager --set crds.enabled=true --namesp
             <para>For our local mTLS certificates we will use our Kubernetes
             namespace as our domain name. This will allow us to recognize
             where these components reside. For our public TLS certificates for
-            this demo we will use myhpcc.com as our domain.</para>
+            this demo we will use example.com as our domain.</para>
 
             <para>Configure a role named hpccremote that enables the creation
             of certificates in the <emphasis>hpcc1</emphasis> and
@@ -1612,7 +1615,7 @@ kubectl create secret tls hpcc-signing-issuer-key-pair --cert=hpcc2signing.crt -
                 <para>Publish remote_echo.ecl to the hpcc2 namespace. It calls
                 roxie_echo.ecl in the hpcc1 namespace using remote mTLS. This
                 is accomplished by using the <literal>remote-mtls:</literal>
-                prefix in the url to signal that the call should be made using
+                prefix in the URL to signal that the call should be made using
                 the certificate associated with the <literal>remote</literal>
                 issuer.</para>
               </listitem>
@@ -2170,7 +2173,7 @@ certificates:
         k8s-published-name</literal> where <literal>platform-name</literal> is
         the name of the secret as it is referred to in the platform, and
         <literal>k8s-published-name</literal> is the name of the secret as it
-        is published to the kubernetes cluster.</para>
+        is published to the Kubernetes cluster.</para>
 
         <para>For example, the category named "eclUser" is for placing secrets
         that you want to be readable directly from ECL code. Other secret
@@ -2763,7 +2766,7 @@ certificates:
       </sect3>
 
       <sect3 id="CV_Affinity-AntiAffinity">
-        <title>Affinity and Anti-Affinity`</title>
+        <title>Affinity and Anti-Affinity'</title>
 
         <para>Affinity and anti-affinity expands the types of constraints that
         you can define. The affinity and anti-affinity rules are still based
