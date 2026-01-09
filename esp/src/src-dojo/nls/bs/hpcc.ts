@@ -544,7 +544,7 @@ export = {
     LogFilterSelectColumnModeTooltip: "Navedite koje kolone treba uključiti u log fajl",
     LogFilterSortByTooltip: "ASC - najstariji prvo, DESC - prvo najnoviji",
     LogFilterStartDateTooltip: "Uključite redove log dnevnika od početka datog vremenskog raspona",
-    LogFiltersUnavailable:"Filteri dnevnika nisu dostupni",
+    LogFiltersUnavailable: "Filteri dnevnika nisu dostupni",
     LogFilterTimeRequired: "Odaberite ili \"Od - do datume\" ili \"Relativni vremenski raspon\"",
     LogFilterWildcardFilterTooltip: "Tekst koje se koristi za filtriranje log dnevnika",
     LogFormat: "Format log dnevnika",
