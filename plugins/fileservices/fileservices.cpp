@@ -118,6 +118,9 @@ static IPropertyTree *getEnvironmentTree(IConstEnvironment * daliEnv)
 
 static void setServerAccess(CClientFileSpray &server, IConstWorkUnit * wu)
 {
+    if (!wu)
+        throw makeStringException(-1, "Distributed access token not supported for stand-alone workunits");
+
     SCMStringBuffer token;
     wu->getWorkunitDistributedAccessToken(token);
     server.setUsernameToken(wu->queryUser(), token.str(), "");//use workunit token as password
@@ -193,6 +196,9 @@ static const char *getAccessibleEspServerURL(const char *param, IConstWorkUnit *
 {
     if (param&&*param)
         return param;
+
+    if (!wu)
+        throw makeStringException(-1, "Server URL must be provided for stand-alone workunits");
 
     CriticalBlock b(espURLcrit);
     if (isUrlListEmpty())

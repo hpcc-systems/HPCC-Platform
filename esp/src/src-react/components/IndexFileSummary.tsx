@@ -61,7 +61,7 @@ export const IndexFileSummary: React.FunctionComponent<IndexFileSummaryProps> = 
     });
 
     const isDFUWorkunit = React.useMemo(() => {
-        return file?.Wuid?.length && file?.Wuid[0] === "D";
+        return file?.Wuid?.length && (file?.Wuid[0] === "D" || file?.Wuid[0] === "P");
     }, [file?.Wuid]);
 
     React.useEffect(() => {

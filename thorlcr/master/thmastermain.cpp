@@ -309,7 +309,8 @@ public:
                 if (isContainerized())
                 {
                     // NB: this is checking for error only, will throw an exception if any found.
-                    k8s::waitJob("thorworker", "job", cloudJobName.str(), pendingTimeoutSecs, 0, k8s::KeepJobs::all);
+                    bool wasScheduled = false;
+                    k8s::waitJob("thorworker", "job", cloudJobName.str(), pendingTimeoutSecs, 0, k8s::KeepJobs::all, wasScheduled);
                 }
 
                 // NB: will not reach here if waitJob fails.
