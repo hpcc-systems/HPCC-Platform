@@ -2766,7 +2766,7 @@ certificates:
       </sect3>
 
       <sect3 id="CV_Affinity-AntiAffinity">
-        <title>Affinity and Anti-Affinity'</title>
+        <title>Affinity and Anti-Affinity</title>
 
         <para>Affinity and anti-affinity expands the types of constraints that
         you can define. The affinity and anti-affinity rules are still based
