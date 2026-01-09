@@ -510,7 +510,7 @@ void CStreamCompressor::open(void *buf, size32_t max, size32_t fixedRowSize, boo
 
 void CStreamCompressor::open(MemoryBuffer &mb, size32_t initialSize, size32_t fixedRowSize)
 {
-    throw makeStringException(99, "CLZ4StreamCompressor does not support MemoryBuffer output");
+    throw makeStringException(99, "Stream compressors does not support MemoryBuffer output");
 }
 
 void CStreamCompressor::close()

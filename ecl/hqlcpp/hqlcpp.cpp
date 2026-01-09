@@ -8133,11 +8133,15 @@ void HqlCppTranslator::doBuildAssignFormat(IIdAtom * func, BuildCtx & ctx, const
 void HqlCppTranslator::doBuildAssignToXmlorJson(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr)
 {
     IHqlExpression * row = expr->queryChild(0);
+    int flags = XWFtrim|XWFopt|XWFnoindent;
+
+    if (expr->hasAttribute(allAtom))
+        flags &= ~XWFopt;
 
     HqlExprArray args;
     args.append(*buildMetaParameter(row));
     args.append(*LINK(row));
-    args.append(*getSizetConstant(XWFtrim|XWFopt|XWFnoindent));
+    args.append(*getSizetConstant(flags));
     node_operator op = expr->getOperator();
     OwnedHqlExpr call = bindFunctionCall((op==no_tojson) ? ctxGetRowJsonId : ctxGetRowXmlId, args);
     buildExprAssign(ctx, target, call);

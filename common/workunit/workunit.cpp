@@ -14571,7 +14571,8 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
             params.push_back({ "_HPCC_JOB_VERSION_", optPlatformVersion.str() });
 
         VStringBuffer job("%s-%s", wuid.str(), graphName);
-        k8s::runJob("thormanager", wuid, job, params);
+        bool wasScheduled = false;
+        k8s::runJob("thormanager", wuid, job, params, wasScheduled);
     }
 
     /* In k8s, Thor feeds back the terminating exception via the workunit.

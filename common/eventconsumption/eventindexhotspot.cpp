@@ -35,10 +35,17 @@ class CHotspotEventVisitor : public CInterfaceOf<IEventVisitor>
         // The lowest and highest bucket number with observed activity.
         using Range = std::pair<bucket_type, bucket_type>;
         // The observed activity for a single bucket kind.
-        struct Activity
+        class Activity
         {
+        public:
             Buckets buckets;
             Range range{std::numeric_limits<bucket_type>::max(), 0};
+
+            Activity() = default;
+            bool hasActivity() const
+            {
+                return !buckets.empty();
+            }
         };
     public:
         CActivity(CHotspotEventVisitor& _container, __uint64 _id)
@@ -62,11 +69,13 @@ class CHotspotEventVisitor : public CInterfaceOf<IEventVisitor>
         void forEachBucket(IBucketVisitor& visitor)
         {
             const char* path = container.operation.queryMetaInfoState().queryFilePath(id);
+            if (!hasActivity()) // suppress inactive files
+                return;
             visitor.arrive(id, path);
             for (unsigned kind = 0; kind < NumNodeKinds; kind++)
             {
                 Activity& act = activity[kind];
-                if (act.range.first != std::numeric_limits<bucket_type>::max() && !act.buckets.empty())
+                if (act.hasActivity())
                 {
                     for (bucket_type bucket = act.range.first; bucket <= act.range.second; bucket++)
                     {
@@ -100,6 +109,16 @@ class CHotspotEventVisitor : public CInterfaceOf<IEventVisitor>
             if (it != buckets.end())
                 return it->second[bucket2activityIndex(bucket)];
             return 0;
+        }
+
+        bool hasActivity() const
+        {
+            for (const Activity& act : activity)
+            {
+                if (act.hasActivity())
+                    return true;
+            }
+            return false;
         }
 
     private:

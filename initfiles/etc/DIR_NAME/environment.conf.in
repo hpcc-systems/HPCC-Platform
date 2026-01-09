@@ -30,6 +30,11 @@ mpStart=7101
 mpEnd=7500
 mpSoMaxConn=128
 mpTraceLevel=0
+
+# enable jemalloc memory allocator in all HPCC components
+# which can help reduce process memory usage (and OOM kills) from system allocator fragmentation
+#useJemalloc=true
+
 # enable SSL for dafilesrv remote file access (SSLNone/false | SSLOnly/true | SSLFirst | UnsecureFirst | UnsecureAndSSL)
 # Enabling requires setting the HPCCPassPhrase, HPCCCertFile, and HPCCPrivateKeyFile values
 #dfsUseSSL=SSLNone
