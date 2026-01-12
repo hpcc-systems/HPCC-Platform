@@ -25,6 +25,13 @@
 #include "thorhelper.hpp"
 #include "libbase58.h"
 
+#include <limits>
+#include <errno.h>
+#include <cstdlib>
+
+extern void setDaliBinaryFilePath(const char *path);
+extern void setPtreeBinaryIterations(unsigned iterations);
+
 /*
  * This is the main unittest driver for HPCC. From here,
  * all unit tests, be they internal or external (API),
@@ -50,14 +57,16 @@ void usage()
     "    unittests <options> <testnames>\n"
     "\n"
     "Options:\n"
-    "    -a  --all        Include all tests, including timing and stress tests\n"
-    "    -d  --load path  Dynamically load a library/all libraries in a directory.\n"
-    "                     By default, the HPCCSystems lib directory is loaded.\n"
-    "    -e  --exact      Match subsequent test names exactly\n"
-    "    -h  --help       Display this help text\n"
-    "    -l  --list       List matching tests but do not execute them\n"
-    "    -u  --unload     Unload dynamically-loaded dlls before termination (may crash on some systems)\n"
-    "    -x  --exclude    Exclude subsequent test names\n"
+    "    -a  --all               Include all tests, including timing and stress tests\n"
+    "    -d  --load path         Dynamically load a library/all libraries in a directory.\n"
+    "                            By default, the HPCCSystems lib directory is loaded.\n"
+    "    -e  --exact             Match subsequent test names exactly\n"
+    "    -h  --help              Display this help text\n"
+    "    -l  --list              List matching tests but do not execute them\n"
+    "    -b  --dali-binary path  Provide the Dali binary test data path\n"
+    "    -i  --iterations value  Override default PTree timing iterations\n"
+    "    -u  --unload            Unload dynamically-loaded dlls before termination (may crash on some systems)\n"
+    "    -x  --exclude           Exclude subsequent test names\n"
     "\n");
 }
 
@@ -149,6 +158,9 @@ int main(int argc, const char *argv[])
     bool list = false;
     bool useDefaultLocations = true;
     bool unloadDlls = false;
+    const char *daliBinaryPath = nullptr;
+    constexpr unsigned defaultPtreeIterations = 100;
+    unsigned ptreeIterations = defaultPtreeIterations;
 
     //NB: required initialization for anything that may call getGlobalConfig*() or getComponentConfig*()
     Owned<IPropertyTree> globals = loadConfiguration(defaultYaml, argv, "unittests", nullptr, nullptr, nullptr, nullptr, false);
@@ -170,6 +182,39 @@ int main(int argc, const char *argv[])
                 list = true;
             else if (streq(arg, "-u") || streq(arg, "-unload"))
                 unloadDlls = true;
+            else if (streq(arg, "-b") || streq(arg, "--dali-binary") || streq(arg, "--dali-binary-file"))
+            {
+                argNo++;
+                if (argNo < argc)
+                    daliBinaryPath = argv[argNo];
+                else
+                {
+                    fprintf(stderr, "Option %s requires a path argument\n", arg);
+                    exit(4);
+                }
+            }
+            else if (streq(arg, "-i") || streq(arg, "--iterations"))
+            {
+                argNo++;
+                if (argNo < argc)
+                {
+                    const char *value = argv[argNo];
+                    char *end = nullptr;
+                    errno = 0;
+                    unsigned long parsed = strtoul(value, &end, 10);
+                    if (errno || !end || *end || parsed > std::numeric_limits<unsigned>::max())
+                    {
+                        fprintf(stderr, "Invalid iteration count '%s'\n", value);
+                        exit(4);
+                    }
+                    ptreeIterations = static_cast<unsigned>(parsed);
+                }
+                else
+                {
+                    fprintf(stderr, "Option %s requires an iteration count\n", arg);
+                    exit(4);
+                }
+            }
             else if (streq(arg, "-d") || streq(arg, "--load"))
             {
                 useDefaultLocations = false;
@@ -194,6 +239,9 @@ int main(int argc, const char *argv[])
                 includeNames.append(arg);
         }
     }
+    setPtreeBinaryIterations(ptreeIterations);
+    if (daliBinaryPath)
+        setDaliBinaryFilePath(daliBinaryPath);
     if (verbose)
         queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_trace|MSGFIELD_span|MSGFIELD_time|MSGFIELD_microTime|MSGFIELD_milliTime|MSGFIELD_thread);
     else
@@ -971,7 +1019,7 @@ class RelaxedAtomicTimingTest : public CppUnit::TestFixture
 
         for (int a = 0; a < 201; a++)
             ra[a] = 0;
-        
+
         class T : public CThreaded
         {
         public:
@@ -1037,7 +1085,7 @@ class RelaxedAtomicTimingTest : public CppUnit::TestFixture
             CriticalSection &lock;
         } t1a(count, ra[0], lock[0], mode), t2a(count, ra[0], lock[0], mode), t3a(count, ra[0], lock[0], mode),
           t1b(count, ra[0], lock[0], mode), t2b(count, ra[1], lock[1], mode), t3b(count, ra[2], lock[2], mode),
-          t1c(count, ra[0], lock[0], mode), t2c(count, ra[100], lock[100], mode), t3c(count, ra[200], lock[200], mode);;  
+          t1c(count, ra[0], lock[0], mode), t2c(count, ra[100], lock[100], mode), t3c(count, ra[200], lock[200], mode);;
         DBGLOG("Testing RelaxedAtomics (test mode %u)", mode);
         t1a.start(false);
         t2a.start(false);
@@ -1080,7 +1128,7 @@ class compressToBufferTest : public CppUnit::TestFixture
 
     bool testOne(unsigned len, CompressionMethod method, bool prevResult, const char *options=nullptr)
     {
-        constexpr const char *in = 
+        constexpr const char *in =
           "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
           "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
           "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
@@ -1119,7 +1167,7 @@ class compressToBufferTest : public CppUnit::TestFixture
                DBGLOG("compressToBuffer %x size %u did not compress", (byte) method, len);
             ret = false;
         }
-        else 
+        else
         {
             if (!prevResult)
                 DBGLOG("compressToBuffer %x size %u compressed to %u in %lluns", (byte) method, len, compressed.length(), start.elapsedNs());
