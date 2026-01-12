@@ -77,7 +77,7 @@ export = {
     AutoRefreshIncrement: "Atualização automática do incremento",
     Back: "voltar",
     BackupDFUWorkunit: "WU DFU de backup",
-    BackupECLWorkunit: "Backup workunit ECL",
+    BackupECLWorkunit: "WU ECL de backup",
     BannerColor: "Cor da Faixa",
     BannerColorTooltip: "Alterar a cor de fundo da navegação superior",
     BannerMessage: "Mensagem da Faixa",
