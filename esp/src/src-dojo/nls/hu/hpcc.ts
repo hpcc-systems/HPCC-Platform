@@ -22,7 +22,6 @@ export = {
     ActiveWorkunit: "Aktív feladat",
     Activities: "Tevékenységek",
     ActivitiesLegacy: "Tevékenységek (L)",
-    ActivitiesPreview: "Tevékenységek (P)",
     Activity: "Tevékenység",
     ActivityLabel: "Tevékenység címke",
     ActivityMap: "Aktivitás-térkép",

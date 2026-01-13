@@ -47,7 +47,7 @@ define([
 
             this.legacyClustersProcessesIframeWidget = new IFrameWidget({
                 id: this.id + "_LegacyClustersProcessesIframeWidget",
-                title: "Clusters Processes (legacy)",
+                title: "Clusters Processes (L)",
                 style: "border: 0; width: 100%; height: 100%"
             });
             this.legacyClustersProcessesIframeWidget.placeAt(this._tabContainer, "last");

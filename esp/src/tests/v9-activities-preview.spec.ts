@@ -1,9 +1,9 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("V9 Activities", () => {
 
     test.beforeEach(async ({ page }) => {
-        await page.goto("index.html#/activities-preview");
+        await page.goto("index.html#/activities");
         await page.waitForLoadState("networkidle");
     });
 

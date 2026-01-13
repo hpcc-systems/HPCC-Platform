@@ -22,7 +22,6 @@ export = {
     ActiveWorkunit: "Activer Workunit",
     Activities: "Activités",
     ActivitiesLegacy: "Activités (l)",
-    ActivitiesPreview: "Activités (p)",
     Activity: "Activité",
     ActivityLabel: "Valide étiquette",
     ActivityMap: "Plan d'activité",

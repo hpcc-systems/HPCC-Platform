@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe("V9 Landing Zone - File Operations", () => {
     test.beforeEach(async ({ page }) => {
