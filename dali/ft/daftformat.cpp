@@ -143,7 +143,9 @@ void CPartitioner::commonCalcPartitions()
         //Don't add an empty block on the start of the this chunk to transfer.
         if ((split != firstSplit) || (inputOffset != startInputOffset))
         {
-            results.append(*new PartitionPoint(whichInput, split-1, startInputOffset-thisOffset+thisHeaderSize, inputOffset - startInputOffset - cursor.trimLength, cursor.outputOffset-startOutputOffset));
+            offset_t startInputOffsetWithTrim = startInputOffset + cursor.trimLength;
+            assertex(startInputOffsetWithTrim <= inputOffset); // guard against length underflow
+            results.append(*new PartitionPoint(whichInput, split-1, startInputOffset-thisOffset+thisHeaderSize, inputOffset - startInputOffsetWithTrim, cursor.outputOffset-startOutputOffset));
             JSON_DBGLOG("commonCalcPartitions: startInputOffset:%lld, inputOffset: %lld, startOutputOffset: %lld, cursor.outputOffset: %lld",startInputOffset ,inputOffset, startOutputOffset, cursor.outputOffset);
             startInputOffset = inputOffset;
             startOutputOffset = cursor.outputOffset;
