@@ -333,7 +333,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
         },
         { key: "divider_5", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
-            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser?.username || !total, iconProps: { iconName: "Contact" }, canCheck: true, checked: filter["Owner"] === currentUser.username,
+            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser?.username, iconProps: { iconName: "Contact" }, canCheck: true, checked: filter["Owner"] === currentUser.username,
             onClick: () => {
                 if (filter["Owner"] === currentUser.username) {
                     filter["Owner"] = "";
@@ -350,7 +350,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             iconProps: { iconName: uiState.isUTC ? "Globe" : "Clock" },
             onClick: toggleTimezone,
         },
-    ], [currentUser, filter, hasFilter, refreshTable, selection, setShowDeleteConfirm, store, total, uiState.hasSelection, viewByScope, uiState.isUTC]);
+    ], [currentUser, filter, hasFilter, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection, viewByScope, uiState.isUTC]);
 
     //  Filter  ---
     const filterFields: Fields = {};
