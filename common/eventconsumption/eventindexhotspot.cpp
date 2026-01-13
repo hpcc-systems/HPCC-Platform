@@ -138,13 +138,12 @@ public: // IEventVisitor
         if (event.hasAttribute(EvAttrFileId))
         {
             EventType type = event.queryType();
-            if (type != MetaFileInformation && observedEvents.count(type) == 0)
+            if (type == MetaFileInformation || observedEvents.count(type) == 0)
                 return true;
             __uint64 fileId = event.queryNumericValue(EvAttrFileId);
             auto [it, inserted] = activity.try_emplace(fileId, *this, fileId);
             NodeKind nodeKind = queryIndexNodeKind(event);
-            if (observedEvents.count(type))
-                it->second.recordEvent(event.queryNumericValue(EvAttrFileOffset), nodeKind);
+            it->second.recordEvent(event.queryNumericValue(EvAttrFileOffset), nodeKind);
         }
         return true;
     }

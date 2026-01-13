@@ -148,7 +148,12 @@ public:
             lines.append("  ").append(mapNodeKind(nodeKind)).append('\n');
             firstOfKind[nodeKind] = false;
         }
-        lines.append("  - first-node: ").append(bucket2page(bucket, currentGranularity)).append('\n');
+
+        auto firstNode = bucket2page(bucket, currentGranularity);
+        auto lastNode = bucket2page(bucket + 1, currentGranularity) - 1;
+
+        lines.append("  - node-range: ").append(firstNode).append('-').append(lastNode).append('\n');
+        lines.append("    offset-range: ").append(page2Offset(firstNode, defaultPageBits)).append('-').append(page2Offset(lastNode + 1, defaultPageBits) - 1).append('\n');
         lines.append("    events: ").append(stat).append('\n');
         out->put(lines.length(), lines.str());
     }
@@ -281,7 +286,11 @@ protected:
         lines.append("    bucket:\n");
         for (const Hit& hit : info.hits)
         {
-            lines.append("    - first-node: ").append(bucket2page(hit.second, currentGranularity)).append('\n');
+            auto firstNode = bucket2page(hit.second, currentGranularity);
+            auto lastNode = bucket2page(hit.second + 1, currentGranularity) - 1;
+
+            lines.append("    - node-range: ").append(firstNode).append('-').append(lastNode).append('\n');
+            lines.append("      offset-range: ").append(page2Offset(firstNode, defaultPageBits)).append('-').append(page2Offset(lastNode + 1, defaultPageBits) - 1).append('\n');
             lines.append("      events: ").append(hit.first).append('\n');
         }
         if (info.droppedCount)
