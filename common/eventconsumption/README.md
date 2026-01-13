@@ -320,9 +320,13 @@ If algorithm estimation is enabled, the value is replaced. If the node will not 
 
 
 
-### CMetaInfoState
+### CMetaInfoState::CCollector
 
-A concrete implementation of `IEventVisitationLink` that observes all `FileInformation` and `QueryStart` events. The relationships between `FileId` and `Path` attributes, and also `EventTraceId` and `ServiceName` attributes, are retained and made available to operations and other event visitors. When visited before a filter, the state information is available to all operations and visitors even if the filter suppresses the observed events.
+`CMetaInfoState` provides a runtime repository of event-defined state information, including values from the `FileInformation` and `QueryStart` events. As a concrete implementation of `IEventVisitationLink`, `CCollector` is a companion class that extracts event data for the repository.
+
+To avoid data loss, this link must precede all other links. It is the responsibility of event iterating code to ensure this requirement is satisfied.
+
+The repository is available to all operations and all other visitors. The collector itself is not.
 
 # CEventVisitationLinkTester
 
