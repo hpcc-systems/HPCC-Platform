@@ -411,6 +411,7 @@ export = {
         GetVersion: "Get Version",
         GetPart: "Get Part",
         GetSoftwareInformation: "Get Software Information",
+        GlobalMetrics: "Global Metrics",
         Graph: "Graph",
         Graphs: "Graphs",
         GraphControl: "Graph Control",

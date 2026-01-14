@@ -791,7 +791,7 @@ public:
 };
 
 extern jlib_decl void shutdownAndCloseNoThrow(ISocket * optSocket);     // Safely shutdown and close a socket without throwing an exception.
-
+extern jlib_decl void getSocketErrorMessage(StringBuffer & str, int err);
 
 #ifdef _WIN32
 #define SOCKETERRNO() WSAGetLastError()

@@ -361,6 +361,12 @@ export const routes: RoutesEx = [
                 })
             },
             {
+                path: "/global-stats", action: (ctx) => import("./components/GlobalMetrics").then(_ => {
+                    const filter = parseSearch(ctx.search) as any;
+                    return <_.GlobalMetrics from={filter?.from} to={filter?.to} />;
+                })
+            },
+            {
                 path: "/security",
                 action: () => { if (!dojoConfig.isAdmin) { replaceUrl("/topology"); } },
                 children: [
@@ -512,7 +518,12 @@ export const routes: RoutesEx = [
                 })
             },
             {
-
+                path: "/global-stats", action: (ctx) => import("./components/GlobalMetrics").then(_ => {
+                    const filter = parseSearch(ctx.search) as any;
+                    return <_.GlobalMetrics from={filter?.from} to={filter?.to} />;
+                })
+            },
+            {
                 path: "/security",
                 action: () => { if (!dojoConfig.isAdmin) { replaceUrl("/operations"); } },
                 children: [

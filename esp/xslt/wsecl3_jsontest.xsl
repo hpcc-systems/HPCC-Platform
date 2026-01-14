@@ -48,7 +48,7 @@
         </style>
 
         <script>dojoConfig = {async:true, parseOnLoad:false}</script>
-        <script src="/esp/files/dist/dojoLib.eclwatch.js"></script>
+        <script src="/esp/files/dist/src-dojo.eclwatch.js"></script>
         <script type="text/javascript" src="files_/logout.js"/>
 
         <script type="text/javascript">

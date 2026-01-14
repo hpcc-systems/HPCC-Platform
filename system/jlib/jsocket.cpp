@@ -153,7 +153,6 @@ static RelaxedAtomic<unsigned> pre_conn_unreach_cnt{0};    // global count of pr
 
 #define IPV6_SERIALIZE_PREFIX (0x00ff00ff)
 
-
 class jlib_thrown_decl SocketException: public IJSOCK_Exception, public CInterface
 {
 public:
@@ -289,6 +288,11 @@ private:
     int     errcode;
     char *msg;
 };
+
+void getSocketErrorMessage(StringBuffer & str, int err)
+{
+    SocketException::geterrormessage(err, str);
+}
 
 IJSOCK_Exception* createJSocketException(int jsockErr, const char *_msg, const char *file, unsigned line)
 {

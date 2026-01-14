@@ -24,17 +24,23 @@
 #include <string>
 
 // Visitor that parses and caches file ID to path mappings and trace ID to service name mappings
-class event_decl CMetaInfoState : public CInterfaceOf<IEventVisitationLink>
+class event_decl CMetaInfoState : public CInterface
 {
+    class event_decl CCollector : public CInterfaceOf<IEventVisitationLink>
+    {
+    public: // IEventVisitor
+        virtual bool visitEvent(CEvent& event) override;
+    public: // IEventVisitationLink
+        IMPLEMENT_IEVENTVISITATIONLINK
+        virtual void configure(const IPropertyTree& config) override;
+    public:
+        CCollector(CMetaInfoState& _metaState);
+    private:
+        Linked<CMetaInfoState> metaState;
+    };
+
 public:
-    CMetaInfoState() = default;
-    ~CMetaInfoState() = default;
-
-    // IEventVisitationLink interface
-    IMPLEMENT_IEVENTVISITATIONLINK
-    virtual void configure(const IPropertyTree& config) override;
-    virtual bool visitEvent(CEvent& event) override;
-
+    IEventVisitationLink* getCollector();
     // Accessor functions for file ID to path mappings
     const char* queryFilePath(__uint64 fileId) const;
     bool hasFileMapping(__uint64 fileId) const;

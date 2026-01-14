@@ -47,6 +47,7 @@ protected:
     Owned<CMetaInfoState> metaState;
     StringAttr inputPath;
     Linked<IBufferedSerialOutputStream> out;
+private:
     Owned<IEventFilter> filter;
     Owned<IEventModel> model;
 };
