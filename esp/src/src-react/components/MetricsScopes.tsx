@@ -2,6 +2,7 @@ import nlsHPCC from "src/nlsHPCC";
 import { Database } from "@hpcc-js/common";
 import { splitMetric, IScope } from "@hpcc-js/comms";
 import { CellFormatter, ColumnFormat, ColumnType, DBStore, RowType, Table } from "@hpcc-js/dgrid";
+import * as Utility from "src/Utility";
 
 class ColumnFormatEx extends ColumnFormat {
     formatterFunc(): CellFormatter | undefined {
@@ -94,7 +95,7 @@ export class ScopesTable extends Table {
     }
 
     _rawDataMap: { [id: number]: string } = {};
-    metrics(metrics: IScope[], scopeTypes: string[], properties: string[], scopeFilter: string, matchCase: boolean, matchWholeWord: boolean): this {
+    metrics(metrics: IScope[], scopeTypes: string[], properties: string[], scopeFilter: string, matchCase: boolean, matchWholeWord: boolean, timeFormatHumanReadable: boolean = true): this {
         this
             .columns(["##"])    //  Reset hash to force recalculation of default widths
             .columns(["##", nlsHPCC.Type, "StdDevs", nlsHPCC.Scope, ...properties, "__StdDevs"])
@@ -122,12 +123,25 @@ export class ScopesTable extends Table {
                     }
                     row.__hpcc_id = row.name;
                     return [idx, row.type, row.__StdDevs === 0 ? undefined : row.__StdDevs, row.name, ...properties.map(p => {
-                        return row.__groupedProps[p]?.Value ??
-                            row.__groupedProps[p]?.Max ??
-                            row.__groupedProps[p]?.Avg ??
+                        const groupedProp = row.__groupedProps[p];
+                        const value = groupedProp?.Value ??
+                            groupedProp?.Max ??
+                            groupedProp?.Avg ??
                             row.__formattedProps[p] ??
                             row[p] ??
                             "";
+
+                        // Format time properties using RawValue and Measure
+                        if (p.startsWith("Time") && groupedProp?.RawValue !== undefined && groupedProp?.Measure) {
+                            const rawValue = +groupedProp.RawValue;
+                            const measure = groupedProp.Measure;
+
+                            // Convert nanoseconds to seconds if measure is "ns"
+                            const seconds = measure === "ns" ? rawValue / 1000000000 : rawValue;
+                            return Utility.formatDuration(seconds, timeFormatHumanReadable);
+                        }
+
+                        return value;
                     }), row.__StdDevs === 0 ? "" : row.__StdDevsSource, row];
                 }))
             ;

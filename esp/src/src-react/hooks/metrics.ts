@@ -32,6 +32,7 @@ export interface MetricsView {
     sql: string;
     layout?: DockPanelLayout;
     showTimeline: boolean;
+    timeFormatHumanReadable: boolean;
 }
 export type StringMetricsViewMap = { [id: string]: MetricsView };
 
@@ -52,7 +53,8 @@ const DefaultMetricsViews: StringMetricsViewMap = {
 SELECT type, name, CostExecute, TimeElapsed, id
     FROM metrics`,
         layout: undefined,
-        showTimeline: true
+        showTimeline: true,
+        timeFormatHumanReadable: true
     },
     Graphs: {
         scopeTypes: ["graph", "subgraph"],
@@ -66,7 +68,8 @@ SELECT type, name, CostExecute, TimeElapsed, id
     FROM metrics
     WHERE type = 'graph' OR type = 'subgraph'`,
         layout: undefined,
-        showTimeline: true
+        showTimeline: true,
+        timeFormatHumanReadable: true
     },
     Activities: {
         scopeTypes: ["activity"],
@@ -80,7 +83,8 @@ SELECT type, name, TimeLocalExecute, TimeTotalExecute, id
     FROM metrics
     WHERE type = 'activity'`,
         layout: undefined,
-        showTimeline: true
+        showTimeline: true,
+        timeFormatHumanReadable: true
     },
     Peaks: {
         scopeTypes: ["subgraph"],
@@ -94,7 +98,8 @@ SELECT type, name, NodeMaxPeakMemory, NodeMaxPeakRowMemory, NodeMinPeakMemory, N
     FROM metrics
     WHERE type = 'subgraph'`,
         layout: undefined,
-        showTimeline: true
+        showTimeline: true,
+        timeFormatHumanReadable: true
     }
 };
 

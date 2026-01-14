@@ -183,10 +183,10 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
             return metricGraph.itemStatus(row) !== "unknown";
         });
         scopesTable
-            .metrics(scopesTableMetrics, view.scopeTypes, view.properties, scopeFilter, matchCase, matchWholeWord)
+            .metrics(scopesTableMetrics, view.scopeTypes, view.properties, scopeFilter, matchCase, matchWholeWord, view.timeFormatHumanReadable)
             .lazyRender()
             ;
-    }, [includePendingItems, matchCase, matchWholeWord, metricGraph, metrics, scopeFilter, scopesTable, view.properties, view.scopeTypes]);
+    }, [includePendingItems, matchCase, matchWholeWord, metricGraph, metrics, scopeFilter, scopesTable, view.properties, view.scopeTypes, view.timeFormatHumanReadable]);
 
     const updateScopesTable = React.useCallback((selection?: IScope[]) => {
         if (scopesTable?.renderCount() > 0 && selectedMetricsSource !== "scopesTable") {
@@ -294,13 +294,19 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
             }
         },
         {
+            key: "timeFormat", text: nlsHPCC.TimeFormat, canCheck: true, checked: view.timeFormatHumanReadable, iconProps: { iconName: "Clock" },
+            onClick: () => {
+                updateView({ timeFormatHumanReadable: !view.timeFormatHumanReadable }, true);
+            }
+        },
+        {
             key: "options", text: nlsHPCC.Options, iconProps: { iconName: "Settings" },
             onClick: () => {
                 updateView({ layout: dockpanel.getLayout() });
                 setShowMetricOptions(true);
             }
         }
-    ], [dockpanel, hotspots, onHotspot, refresh, setViewId, timeline, updateView, view.showTimeline, viewId, viewIds]);
+    ], [dockpanel, hotspots, onHotspot, refresh, setViewId, timeline, updateView, view.showTimeline, view.timeFormatHumanReadable, viewId, viewIds]);
 
     const formatColumns = React.useMemo((): Utility.ColumnMap => {
         const copyColumns: Utility.ColumnMap = {};
