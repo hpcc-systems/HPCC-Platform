@@ -16,13 +16,10 @@ const logger = scopedLogger("src-react/hooks/metrics.ts");
 
 const METRIC_OPTIONS_2 = "MetricOptions-2";
 const METRIC_OPTIONS_3 = "MetricOptions-3";
-const METRIC_OPTIONS_4 = "MetricOptions-4";
-
-export const METRICS_GRAPH_TRACK_SELECTION = "metrics_graph_trackSelection";
 
 export function resetMetricsViews() {
     const store = userKeyValStore();
-    return Promise.all([store?.delete(METRIC_OPTIONS_2), store?.delete(METRIC_OPTIONS_3), store?.delete(METRIC_OPTIONS_4), store?.delete(METRICS_GRAPH_TRACK_SELECTION)]);
+    return Promise.all([store?.delete(METRIC_OPTIONS_2), store?.delete(METRIC_OPTIONS_3)]);
 }
 
 export interface MetricsView {
@@ -35,6 +32,7 @@ export interface MetricsView {
     sql: string;
     layout?: DockPanelLayout;
     showTimeline: boolean;
+    timeFormatHumanReadable: boolean;
 }
 export type StringMetricsViewMap = { [id: string]: MetricsView };
 
@@ -43,10 +41,9 @@ interface UserMetricsView {
     views: StringMetricsViewMap;
 }
 
-// When changing the default view - update the store ID (METRIC_OPTIONS_4) to a new version...
 const DefaultMetricsViews: StringMetricsViewMap = {
     Default: {
-        scopeTypes: ["workflow", "graph", "subgraph", "activity"],
+        scopeTypes: ["workflow", "graph", "subgraph", "child", "activity", "operation"],
         properties: ["CostExecute", "TimeElapsed"],
         ignoreGlobalStoreOutEdges: true,
         subgraphTpl: "%id% - %TimeElapsed%",
@@ -56,7 +53,8 @@ const DefaultMetricsViews: StringMetricsViewMap = {
 SELECT type, name, CostExecute, TimeElapsed, id
     FROM metrics`,
         layout: undefined,
-        showTimeline: true
+        showTimeline: true,
+        timeFormatHumanReadable: true
     },
     Graphs: {
         scopeTypes: ["graph", "subgraph"],
@@ -70,35 +68,23 @@ SELECT type, name, CostExecute, TimeElapsed, id
     FROM metrics
     WHERE type = 'graph' OR type = 'subgraph'`,
         layout: undefined,
-        showTimeline: true
+        showTimeline: true,
+        timeFormatHumanReadable: true
     },
     Activities: {
         scopeTypes: ["activity"],
-        properties: ["TimeLocalExecute", "SizeDiskRead", "NumDiskRead"],
+        properties: ["TimeMaxLocalExecute", "TimeMaxTotalExecute"],
         ignoreGlobalStoreOutEdges: true,
         subgraphTpl: "%id% - %TimeElapsed%",
         activityTpl: "%Label%",
         edgeTpl: "%Label%\n%NumRowsProcessed%\n%SkewMinRowsProcessed% / %SkewMaxRowsProcessed%",
         sql: `\
-SELECT type, name, TimeLocalExecute, SizeDiskRead, NumDiskRead, id
+SELECT type, name, TimeLocalExecute, TimeTotalExecute, id
     FROM metrics
     WHERE type = 'activity'`,
         layout: undefined,
-        showTimeline: true
-    },
-    Operations: {
-        scopeTypes: ["operation"],
-        properties: ["TimeElapsed"],
-        ignoreGlobalStoreOutEdges: true,
-        subgraphTpl: "%id%",
-        activityTpl: "%Label%",
-        edgeTpl: "%Label%",
-        sql: `\
-SELECT type, name, TimeElapsed, id
-    FROM metrics
-    WHERE type = 'operation'`,
-        layout: undefined,
-        showTimeline: true
+        showTimeline: true,
+        timeFormatHumanReadable: true
     },
     Peaks: {
         scopeTypes: ["subgraph"],
@@ -112,7 +98,8 @@ SELECT type, name, NodeMaxPeakMemory, NodeMaxPeakRowMemory, NodeMinPeakMemory, N
     FROM metrics
     WHERE type = 'subgraph'`,
         layout: undefined,
-        showTimeline: true
+        showTimeline: true,
+        timeFormatHumanReadable: true
     }
 };
 
@@ -130,50 +117,17 @@ export function clone<T>(_: T): T {
 // }
 
 export interface useMetricsViewsResult {
-    loaded: boolean;
     viewIds: string[];
     viewId: string;
     setViewId: (id: string, forceRefresh?: boolean) => void;
     view: MetricsView;
     addView: (label: string, view: Partial<MetricsView>) => void;
-    deleteView: (id: string) => void;
-    renameView: (oldId: string, newId: string) => void;
-    isDefaultView: (id: string) => boolean;
     updateView: (view: Partial<MetricsView>, forceRefresh?: boolean) => void;
     resetView: (forceRefresh?: boolean) => void;
     save: () => void;
 }
 
 const defaultUserMetricViews = JSON.stringify({ viewId: "Default", views: DefaultMetricsViews });
-
-const logicalGraphView: MetricsView = {
-    scopeTypes: ["workflow", "graph", "subgraph", "child", "activity", "operation"],
-    properties: ["Kind", "Label", "Filename", "EclNameList", "EclText", "DefinitionList"],
-    ignoreGlobalStoreOutEdges: false,
-    subgraphTpl: "%id%",
-    activityTpl: "%Label%",
-    edgeTpl: "%Label%",
-    sql: `\
-SELECT type, name, id, Kind, Label, EclNameList, EclText
-    FROM metrics`,
-    layout: undefined,
-    showTimeline: false
-};
-
-const logicalGraphResult: useMetricsViewsResult = {
-    loaded: true,
-    viewIds: ["LogicalGraph"],
-    viewId: "LogicalGraph",
-    setViewId: () => { },
-    view: logicalGraphView,
-    addView: () => { },
-    deleteView: () => { },
-    renameView: () => { },
-    isDefaultView: () => true,
-    updateView: () => { },
-    resetView: () => { },
-    save: () => { }
-};
 
 const _loaded = signal(false);
 const _origViews = signal<StringMetricsViewMap>(clone(DefaultMetricsViews));
@@ -182,7 +136,8 @@ const _viewIds = signal<string[]>(Object.keys(_views.get()));
 const _viewId = signal<string>(_viewIds.get()[0]);
 const _view = signal<MetricsView>(_views.get()[_viewId.get()]);
 
-export function useMetricsViews(logicalGraph: boolean): useMetricsViewsResult {
+export function useMetricsViews(): useMetricsViewsResult {
+
     const loaded = useSignal(_loaded);
     const origViews = useSignal(_origViews);
     const views = useSignal(_views);
@@ -196,7 +151,7 @@ export function useMetricsViews(logicalGraph: boolean): useMetricsViewsResult {
         _viewId.set(id);
     }, []);
 
-    const [metricViewStr, setMetricViewStr, _resetMetricsViewStr] = useUserStore<string>(METRIC_OPTIONS_4, defaultUserMetricViews);
+    const [metricViewStr, setMetricViewStr, _resetMetricsViewStr] = useUserStore<string>(METRIC_OPTIONS_3, defaultUserMetricViews);
     React.useEffect(() => {
         if (metricViewStr && !loaded) {
             try {
@@ -213,7 +168,6 @@ export function useMetricsViews(logicalGraph: boolean): useMetricsViewsResult {
                 _views.set(def);
                 _viewIds.set(keys);
                 setViewId(keys[0]);
-                _loaded.set(true);
             }
         }
     }, [loaded, metricViewStr, setViewId]);
@@ -223,46 +177,13 @@ export function useMetricsViews(logicalGraph: boolean): useMetricsViewsResult {
     }, [viewId, views]);
 
     const addView = React.useCallback((label: string, _: Partial<MetricsView>) => {
-        if (label in views) return;
-        const newView = clone(view);
+        origViews[label] = clone(view);
         for (const key in _) {
-            newView[key] = _[key];
+            origViews[label] = _[key];
         }
-        views[label] = newView;
-        origViews[label] = clone(newView);
-        _viewIds.set(Object.keys(views));
         setViewId(label);
-        setMetricViewStr(JSON.stringify({ viewId: label, views }));
         refresh();
-    }, [origViews, refresh, setMetricViewStr, setViewId, view, views]);
-
-    const deleteView = React.useCallback((id: string) => {
-        if (id in DefaultMetricsViews) return;
-        delete views[id];
-        delete origViews[id];
-        _viewIds.set(Object.keys(views));
-        setViewId("Default");
-        setMetricViewStr(JSON.stringify({ viewId: "Default", views }));
-        refresh();
-    }, [origViews, refresh, setMetricViewStr, setViewId, views]);
-
-    const renameView = React.useCallback((oldId: string, newId: string) => {
-        if (oldId in DefaultMetricsViews) return;
-        if (oldId === newId || !newId) return;
-        if (newId in views) return;
-        views[newId] = views[oldId];
-        origViews[newId] = origViews[oldId];
-        delete views[oldId];
-        delete origViews[oldId];
-        _viewIds.set(Object.keys(views));
-        setViewId(newId);
-        setMetricViewStr(JSON.stringify({ viewId: newId, views }));
-        refresh();
-    }, [origViews, refresh, setMetricViewStr, setViewId, views]);
-
-    const isDefaultView = React.useCallback((id: string) => {
-        return id in DefaultMetricsViews;
-    }, []);
+    }, [origViews, refresh, setViewId, view]);
 
     const updateView = React.useCallback((_: Partial<MetricsView>, forceRefresh = false) => {
         for (const key in _) {
@@ -287,20 +208,12 @@ export function useMetricsViews(logicalGraph: boolean): useMetricsViewsResult {
         return setMetricViewStr(JSON.stringify({ viewId, views }));
     }, [viewId, views, setMetricViewStr]);
 
-    if (logicalGraph) {
-        return logicalGraphResult;
-    }
-
     return {
-        loaded,
         viewIds,
         viewId,
         setViewId,
         view,
         addView,
-        deleteView,
-        renameView,
-        isDefaultView,
         updateView,
         resetView,
         save
@@ -334,53 +247,13 @@ export enum FetchStatus {
     COMPLETE
 }
 
-export enum ScopeType {
-    none = "none",
-    all = "all",
-    global = "global",
-    graph = "graph",
-    subgraph = "subgraph",
-    activity = "activity",
-    allocator = "allocator",
-    section = "section",
-    operation = "operation",
-    edge = "edge",
-    function = "function",
-    workflow = "workflow",
-    file = "file",
-    channel = "channel",
-    unknown = "unknown",
-    max = "max"
-}
-
-export const WURootScopeTypes = [
-    ScopeType.subgraph,
-    ScopeType.activity,
-    ScopeType.allocator,
-    ScopeType.section,
-    ScopeType.operation,
-    ScopeType.workflow,
-    ScopeType.file,
-    ScopeType.channel,
-    ScopeType.unknown
-];
-
-export const WULogicalRootScopeTypes = [
-    ScopeType.graph
-];
-
-export const scopeFilterMetrics: Partial<WsWorkunits.ScopeFilter> = {
-    MaxDepth: 1,
-    ScopeTypes: WURootScopeTypes
-};
-
-export const scopeFilterLogicalGraph: Partial<WsWorkunits.ScopeFilter> = {
-    MaxDepth: 1,
-    ScopeTypes: WULogicalRootScopeTypes
+const scopeFilterDefault: Partial<WsWorkunits.ScopeFilter> = {
+    MaxDepth: 999999,
+    ScopeTypes: []
 };
 
 const nestedFilterDefault: WsWorkunits.NestedFilter = {
-    Depth: 999999,
+    Depth: 0,
     ScopeTypes: []
 };
 
@@ -401,7 +274,7 @@ export interface IScopeEx extends IScope {
 
 export function useWorkunitMetrics(
     wuid: string,
-    scopeFilter: Partial<WsWorkunits.ScopeFilter> = scopeFilterMetrics,
+    scopeFilter: Partial<WsWorkunits.ScopeFilter> = scopeFilterDefault,
     nestedFilter: WsWorkunits.NestedFilter = nestedFilterDefault
 ): useMetricsResult {
 
@@ -483,7 +356,7 @@ export function useWorkunitMetrics(
 export function useQueryMetrics(
     querySet: string,
     queryId: string,
-    scopeFilter: Partial<WsWorkunits.ScopeFilter> = scopeFilterMetrics,
+    scopeFilter: Partial<WsWorkunits.ScopeFilter> = scopeFilterDefault,
     nestedFilter: WsWorkunits.NestedFilter = nestedFilterDefault
 ): useMetricsResult {
 
@@ -548,7 +421,7 @@ export function useWUQueryMetrics(
     wuid: string,
     querySet: string,
     queryId: string,
-    scopeFilter: Partial<WsWorkunits.ScopeFilter> = scopeFilterMetrics,
+    scopeFilter: Partial<WsWorkunits.ScopeFilter> = scopeFilterDefault,
     nestedFilter: WsWorkunits.NestedFilter = nestedFilterDefault
 ): useMetricsResult {
     const isQuery = querySet && queryId;

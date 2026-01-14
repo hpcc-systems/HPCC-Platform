@@ -6,6 +6,7 @@ import { SizeMe } from "../layouts/SizeMe";
 import { defaultSort, emptyFilter, getStateImage, WUQueryStore, formatQuery } from "src/ESPWorkunit";
 import * as WsWorkunits from "src/WsWorkunits";
 import { formatCost } from "src/Session";
+import * as Utility from "src/Utility";
 import { userKeyValStore } from "src/KeyValStore";
 import { QuerySortItem } from "src/store/Store";
 import nlsHPCC from "src/nlsHPCC";
@@ -57,10 +58,14 @@ const defaultUIState = {
 };
 
 const WORKUNITS_SHOWTIMELINE = "workunits_showTimeline";
+const WORKUNITS_TIMEFORMAT_HUMANREADABLE = "workunits_timeFormatHumanReadable";
 
 export function resetWorkunitOptions() {
     const store = userKeyValStore();
-    return store?.delete(WORKUNITS_SHOWTIMELINE);
+    return Promise.all([
+        store?.delete(WORKUNITS_SHOWTIMELINE),
+        store?.delete(WORKUNITS_TIMEFORMAT_HUMANREADABLE)
+    ]);
 }
 
 interface WorkunitsProps {
@@ -84,6 +89,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     const { currentUser } = useMyAccount();
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [showTimeline, setShowTimeline] = useUserStore<boolean>(WORKUNITS_SHOWTIMELINE, true);
+    const [timeFormatHumanReadable, setTimeFormatHumanReadable] = useUserStore<boolean>(WORKUNITS_TIMEFORMAT_HUMANREADABLE, true);
     const {
         selection, setSelection,
         pageNum, setPageNum,
@@ -140,6 +146,9 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             TotalClusterTime: {
                 label: nlsHPCC.TotalClusterTime, width: 120,
                 justify: "right",
+                sortable: true,
+                formatter: (time, row) => Utility.formatDuration(row.TotalClusterTime, timeFormatHumanReadable),
+                csvFormatter: (time, row) => Utility.espTime2Seconds(row.TotalClusterTime).toString(),
             },
             "Compile Cost": {
                 label: nlsHPCC.CompileCost, width: 100,
@@ -160,7 +169,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                 csvFormatter: (cost, row) => row.FileAccessCost,
             }
         };
-    }, [filter]);
+    }, [filter, timeFormatHumanReadable]);
 
     const copyButtons = useCopyButtons(columns, selection, "workunits");
 
@@ -277,10 +286,16 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             }
         },
         {
+            key: "timeFormat", text: nlsHPCC.TimeFormat, canCheck: true, checked: timeFormatHumanReadable, iconProps: { iconName: "Clock" },
+            onClick: () => {
+                setTimeFormatHumanReadable(!timeFormatHumanReadable);
+            }
+        },
+        {
             key: "zapImport", text: nlsHPCC.Import, disabled: !!store,
             onClick: () => { setShowZapImport(true); }
         },
-    ], [currentUser.username, filter, hasFilter, refreshTable, selection, setShowAbortConfirm, setShowDeleteConfirm, setShowTimeline, showTimeline, store, total, uiState.hasNotCompleted, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
+    ], [currentUser.username, filter, hasFilter, refreshTable, selection, setShowAbortConfirm, setShowDeleteConfirm, setShowTimeline, setShowZapImport, setTimeFormatHumanReadable, showTimeline, store, timeFormatHumanReadable, total, uiState.hasNotCompleted, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
 
     //  Selection  ---
     React.useEffect(() => {
