@@ -18,11 +18,11 @@
 #include "eventmetaparser.hpp"
 #include "jevent.hpp"
 
-void CMetaInfoState::configure(const IPropertyTree& config)
+void CMetaInfoState::CCollector::configure(const IPropertyTree& config)
 {
 }
 
-bool CMetaInfoState::visitEvent(CEvent& event)
+bool CMetaInfoState::CCollector::visitEvent(CEvent& event)
 {
     switch (event.queryType())
     {
@@ -32,8 +32,8 @@ bool CMetaInfoState::visitEvent(CEvent& event)
             const char* path = event.queryTextValue(EvAttrPath);
             if (!isEmptyString(path))
             {
-                fileIdToPath[fileId].set(path);
-                pathToFileId[path] = fileId;
+                metaState->fileIdToPath[fileId].set(path);
+                metaState->pathToFileId[path] = fileId;
             }
         }
         break;
@@ -44,7 +44,7 @@ bool CMetaInfoState::visitEvent(CEvent& event)
                 const char* traceId = event.queryTextValue(EvAttrEventTraceId);
                 const char* serviceName = event.queryTextValue(EvAttrServiceName);
                 if (!isEmptyString(traceId) && !isEmptyString(serviceName))
-                    traceIdToService.emplace(traceId, serviceName);
+                    metaState->traceIdToService.emplace(traceId, serviceName);
             }
         }
         break;
@@ -54,6 +54,16 @@ bool CMetaInfoState::visitEvent(CEvent& event)
     if (nextLink)
         return nextLink->visitEvent(event);
     return true;
+}
+
+CMetaInfoState::CCollector::CCollector(CMetaInfoState& _metaState)
+    : metaState(&_metaState)
+{
+}
+
+IEventVisitationLink* CMetaInfoState::getCollector()
+{
+    return new CCollector(*this);
 }
 
 const char* CMetaInfoState::queryFilePath(__uint64 fileId) const

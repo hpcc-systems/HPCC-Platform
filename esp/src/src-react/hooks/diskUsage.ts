@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { MachineService, WsDFUXRefEx, WsMachineEx } from "@hpcc-js/comms";
+import { MachineService, WsMachineEx } from "@hpcc-js/comms";
 
 export interface DirectoryEx {
     Cluster: string;
@@ -11,11 +11,6 @@ export interface DirectoryEx {
     MinIP: string;
     Size: number;
     PositiveSkew: string;
-}
-
-export interface XREFDirectories {
-    nodes: WsDFUXRefEx.XRefNode[];
-    directories: DirectoryEx[];
 }
 
 export interface UseAsyncResult<T> {
