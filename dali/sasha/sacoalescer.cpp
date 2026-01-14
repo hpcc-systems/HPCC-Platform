@@ -50,7 +50,7 @@ void coalesceDatastore(IPropertyTree *coalesceProps, bool force)
 
         offset_t minDeltaSize = force?0:coalesceProps->getPropInt64("@minDeltaSize", DEFAULT_MINDELTASIZE);
 
-        bool saveBinary = confProps.getPropBool("Client/@saveBinary", false);
+        bool saveBinary = confProps.getPropBool("Client/@saveBinary", true);
         bool saveAsync = confProps.getPropBool("Client/@saveAsync", true);
 
         for (;;) {
