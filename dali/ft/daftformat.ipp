@@ -563,11 +563,13 @@ protected:
         JSON_DBGLOG("CJsonInputPartitioner::findSplitPoint: splitOffset %lld", splitOffset);
         JSON_DBGLOG("CJsonInputPartitioner::findSplitPoint: cursor(inputOffset: %lld, nextInputOffset: %lld, outputOffset: %lld, trimLength: %lld",
                         cursor.inputOffset, cursor.nextInputOffset, cursor.outputOffset, cursor.trimLength);
-        cursor.inputOffset = 0;
         if (!splitOffset) //header + 0 is first offset
+        {
+            cursor.inputOffset = 0;
             return;
+        }
 
-        if (eof)
+        if (eof) // leave cursor.inputOffset untouched
             return;
 
         // To prevent the splitOffset points into an already processed file area
@@ -579,15 +581,12 @@ protected:
         bool foundRowEnd = json->findRowEnd(splitOffset-thisOffset + thisHeaderSize, prevRowEnd);
         JSON_DBGLOG("CJsonInputPartitioner::findSplitPoint: thisOffset: %lld, thisHeaderSize: %u, prevRowEnd: %lld, foundRowEnd:%s ", thisOffset, thisHeaderSize, prevRowEnd, (foundRowEnd ? "True" : "False"));
         if (! foundRowEnd) //false return just means we're processing the end
-        {
-            //cursor.inputOffset = prevRowEnd;
-            return;
-        }
+            return; // leave cursor.inputOffset untouched
 
         bool checkFoundRowStartRes = json->checkFoundRowStart();
         JSON_DBGLOG("CJsonInputPartitioner::findSplitPoint: checkFoundRowStartRes:%s)", (checkFoundRowStartRes ? "True" : "False"));
         if (!checkFoundRowStartRes)
-            return;
+            return; // leave cursor.inputOffset untouched
 
         bool isNewRowSet = json->newRowSet;
         JSON_DBGLOG("CJsonInputPartitioner::findSplitPoint: isNewRowSet:%s", (isNewRowSet ? "True" : "False"));
