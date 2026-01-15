@@ -73,7 +73,7 @@ public:
             // will be sent without having to wait for the next request to send a packet.
             // It also means that disconnects will be detected and retried more quickly.
             bool useThreadForCompletion = true;
-            Owned<IAsyncProcessor> asyncSender = createURingProcessor(config, useThreadForCompletion);
+            Owned<IAsyncProcessor> asyncSender = createURingProcessorIfEnabled(config, useThreadForCompletion);
             if (asyncSender)
             {
                 sender.setAsyncProcessor(asyncSender);

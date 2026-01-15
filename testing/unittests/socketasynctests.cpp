@@ -31,7 +31,9 @@ unsigned short randomPort()
     return 32768 + getRandom() % 10000;
 }
 
-// RAII wrapper for sockaddr to prevent memory leaks
+// RAII wrapper for sockaddr allocated with malloc() to prevent memory leaks
+// This is specifically for managing sockaddr structures allocated by createForAsyncConnect()
+// which uses malloc() and must be freed with free()
 class SockAddrHolder
 {
 private:
@@ -875,7 +877,7 @@ public:
                     while (messagesSent < totalMessages)
                     {
                         char sendBuf[64];
-                        sprintf(sendBuf, "Message_%u", messagesSent);
+                        snprintf(sendBuf, sizeof(sendBuf), "Message_%u", messagesSent);
                         size_t msgLen = strlen(sendBuf);
                         
                         try

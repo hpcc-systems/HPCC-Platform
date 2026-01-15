@@ -5,38 +5,36 @@ import { DuckDB } from "@hpcc-js/wasm-duckdb";
 
 const logger = scopedLogger("src-react/hooks/duckdb.ts");
 
-type AsyncDuckDB = any;
-type AsyncDuckDBConnection = any;
+type DuckDBConnection = ReturnType<typeof DuckDB.prototype.connect>;
 
-export function useDuckDB(): [AsyncDuckDB] {
+export function useDuckDB(): [DuckDB | undefined] {
 
-    const [db, setDb] = React.useState<AsyncDuckDB>();
+    const [duckDB, setDuckDB] = React.useState<DuckDB | undefined>(undefined);
 
     React.useEffect(() => {
-        const duckdb = DuckDB.load().then(duckdb => {
-            setDb(duckdb.db);
-            return duckdb;
+        DuckDB.load().then(duckdb => {
+            setDuckDB(duckdb);
         });
-
-        return () => {
-            duckdb?.then(d => {
-                d.db?.terminate();
-            }).catch(e => logger.error(e));
-        };
     }, []);
 
-    return [db];
+    return [duckDB];
 }
 
-export function useDuckDBConnection(scopes: IScope[], name: string): AsyncDuckDBConnection | undefined {
+export function useDuckDBConnection(scopes: IScope[], name: string): { duckDB: DuckDB, connection: DuckDBConnection } | undefined {
 
-    const [db] = useDuckDB();
-    const [connection, setConnection] = React.useState<AsyncDuckDBConnection | undefined>(undefined);
+    const normalizedName = name
+        .toLowerCase()
+        .replace(/[^a-z0-9_]/g, "_")
+        .replace(/^(\d)/, "_$1");
+
+    const [duckDB] = useDuckDB();
+    const [connection, setConnection] = React.useState<DuckDBConnection | undefined>(undefined);
 
     React.useEffect(() => {
-        let c: AsyncDuckDBConnection | undefined;
-        if (db) {
-            db.connect().then(async connection => {
+        let c: DuckDBConnection | undefined;
+        if (duckDB) {
+            const conn: DuckDBConnection = duckDB.connect();
+            try {
                 const scopesStr = JSON.stringify(scopes.map((scope, idx) => {
                     const row = {};
                     for (const key in scope) {
@@ -46,29 +44,36 @@ export function useDuckDBConnection(scopes: IScope[], name: string): AsyncDuckDB
                     }
                     return row;
                 }));
-                await db.registerFileText(`${name}.json`, scopesStr);
-                await connection.insertJSONFromPath(`${name}.json`, { name });
-                await connection.close();
-                c = await db.connect();
-                try { //  TODO:  Move to @hpcc-js/wasm
-                    await c.query("LOAD autocomplete").catch(e => {
-                        console.log(e.message);
-                    });
-                } catch (e) {
-                    console.log(e.message);
-                }
-                setConnection(c);
-            });
+                duckDB.registerFileString(`${normalizedName}.json`, scopesStr);
+                const result = conn.queryToJSON(`CREATE TABLE metrics AS SELECT * FROM read_json('${normalizedName}.json');`);
+                logger.debug("useDuckDBConnection: Loaded scopes - " + result);
+            } catch (e) {
+                logger.error(e);
+            } finally {
+                conn.delete();
+            }
+
+            c = duckDB.connect();
+            try {
+                const result = c.queryToJSON("LOAD autocomplete");
+                logger.debug("useDuckDBConnection: Loaded autocomplete - " + result);
+            } catch (e) {
+                logger.error(e);
+            }
+            setConnection(c);
         }
         return () => {
             try {
-                c?.query(`DROP TABLE ${name}`);
+                const result = c?.queryToJSON("DROP TABLE metrics");
+                logger.debug("useDuckDBConnection: Dropped table - " + result);
+            } catch (e) {
+                logger.error(e);
             } finally {
-                c?.close();
+                c?.delete();
+                duckDB?.unregisterFile(`${normalizedName}.json`);
             }
-
         };
-    }, [db, name, scopes]);
+    }, [duckDB, normalizedName, scopes]);
 
-    return connection;
+    return { duckDB, connection };
 }

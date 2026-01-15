@@ -37,6 +37,7 @@
 #include "jregexp.hpp"
 #include "jdebug.hpp"
 #include "jiouring.hpp"
+#include "jptree.hpp"
 
 //#define TRACE_MAX_MESSAGES
 
@@ -246,7 +247,7 @@ CReadSelectHandler::CReadSelectHandler(unsigned inactiveCloseTimeoutMs, unsigned
         Owned<IPropertyTree> config = createPTreeFromXMLString("<iouring poll='1'/>");
         // MORE: Update queue depth to allow the max number of connections
         constexpr bool useThreadForCompletion = true;
-        asyncReader.setown(createURingProcessor(config, useThreadForCompletion));
+        asyncReader.setown(createURingProcessorIfEnabled(config, useThreadForCompletion));
     }
 
     if (!asyncReader)
@@ -275,11 +276,44 @@ CReadSelectHandler::CReadSelectHandler(unsigned inactiveCloseTimeoutMs, unsigned
 
 CReadSelectHandler::~CReadSelectHandler()
 {
+    // Ensure aborting is set to stop any new operations
+    aborting = true;
+    
     if (timeoutCycles)
     {
-        aborting = true;
         maintenanceSem.signal();
         maintenanceThread.join();
+    }
+    
+    // Close all remaining handlers before destruction
+    // This prevents handlers from calling virtual methods on a partially-destroyed object
+    std::vector<Owned<CReadSocketHandler>> toClose;
+    {
+        CriticalBlock b(handlersCS);
+        for (auto it = handlers.begin(); it != handlers.end(); )
+        {
+            CReadSocketHandler *handler = *it;
+            if (handler->close())
+            {
+                toClose.push_back(LINK(handler));
+                if (selectHandler)
+                    selectHandler->remove(handler->querySocket());
+            }
+            it = handlers.erase(it);
+        }
+    }
+    
+    // Close all sockets outside the critical section
+    for (auto &handler : toClose)
+    {
+        try
+        {
+            handler->querySocket()->close();
+        }
+        catch (...)
+        {
+            // Ignore exceptions during cleanup
+        }
     }
 }
 
@@ -328,7 +362,8 @@ void CReadSelectHandler::closeConnection(CReadSocketHandler &socketHandler, IJSO
     Linked<CReadSocketHandler> handler = &socketHandler;
     {
         CriticalBlock b(handlersCS);
-        selectHandler->remove(socketHandler.querySocket());
+        if (selectHandler)
+            selectHandler->remove(socketHandler.querySocket());
         handlers.remove(&socketHandler);
     }
     handler->querySocket()->close();
@@ -337,7 +372,8 @@ void CReadSelectHandler::closeConnection(CReadSocketHandler &socketHandler, IJSO
 void CReadSelectHandler::stopProcessing(CReadSocketHandler & socket)
 {
     CriticalBlock b(handlersCS);
-    selectHandler->remove(socket.querySocket());
+    if (selectHandler)
+        selectHandler->remove(socket.querySocket());
     handlers.remove(&socket);
 }
 
@@ -384,18 +420,31 @@ void CReadSelectHandler::clearupSocketHandlers()
 
 //---------------------------------------------------------------------------------------------------------------------
 
-
-static constexpr bool useIOUring = true;
-CSocketConnectionListener::CSocketConnectionListener(unsigned port, bool _useTLS, unsigned _inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets)
-    : CReadSelectHandler(_inactiveCloseTimeoutMs, _maxListenHandlerSockets, useIOUring), Thread("CSocketConnectionListener"), useTLS(_useTLS)
+CSocketConnectionListener::CSocketConnectionListener(unsigned port, bool _useTLS, unsigned _inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets, bool _useIOUring)
+    : CReadSelectHandler(_inactiveCloseTimeoutMs, _maxListenHandlerSockets, _useIOUring), Thread("CSocketConnectionListener"), useTLS(_useTLS)
 {
+    // Check if we have io_uring support available and can use multishot accept
+    // Note: asyncReader will be null if io_uring is disabled via configuration or unavailable
+    useMultishotAccept = (asyncReader != nullptr) && _useIOUring;
+
     if (port)
         startPort(port);
 
     if (useTLS)
         secureContextServer.setown(createSecureSocketContextSecretSrv("local", nullptr, true));
 
-    PROGLOG("CSocketConnectionListener TLS: %s", useTLS ? "on" : "off");
+    PROGLOG("CSocketConnectionListener TLS: %s, multishot accept: %s", useTLS ? "on" : "off", useMultishotAccept ? "on" : "off");
+}
+
+CSocketConnectionListener::~CSocketConnectionListener()
+{
+    // Ensure stop() has been called
+    stop();
+    
+    // Terminate the async reader before base class destructors run
+    // This ensures URingCompletionThread stops before we destroy handlers/selectHandler
+    if (asyncReader)
+        asyncReader->terminate();
 }
 
 bool CSocketConnectionListener::checkSelfDestruct(const void *p,size32_t sz)
@@ -426,7 +475,22 @@ void CSocketConnectionListener::startPort(unsigned short port)
         listenSocket.setown(ISocket::create(port, listenQueueSize));
     }
 
-    Thread::start(false);
+    if (useMultishotAccept)
+    {
+        // Only start multishot accept if not already running
+        unsigned expected = 0;
+        if (pendingAcceptCallbacks.compare_exchange_strong(expected, 1))
+        {
+            // Start the multishot accept operation
+            asyncReader->enqueueSocketMultishotAccept(listenSocket, *this);
+        }
+        // If already running, do nothing (expected would be non-zero)
+    }
+    else
+    {
+        // Fall back to the traditional accept thread
+        Thread::start(false);
+    }
 }
 
 int CSocketConnectionListener::run()
@@ -477,7 +541,7 @@ int CSocketConnectionListener::run()
 
             // NB: creates a CSocketHandler that is added to the select handler.
             // it will manage the handling of the incoming ConnectHdr header only.
-            // After that, the socket will be removed from the connectSelectHamndler,
+            // After that, the socket will be removed from the connectSelectHandler,
             // a CMPChannel will be estalbished, and the socket will be added to the MP CMPPacketReader select handler.
             // See handleAcceptedSocket.
             CReadSelectHandler::add(sock);
@@ -509,12 +573,183 @@ void CSocketConnectionListener::stop()
     if (!aborting)
     {
         aborting = true;
-        listenSocket->cancel_accept();
 
-        // ensure CSocketConnectionListener::run() has exited, and is not accepting more sockets
-        if (!join(1000*60*5))   // should be pretty instant
-            printf("CSocketConnectionListener::stop timed out\n");
+        if (useMultishotAccept)
+        {
+            // Cancel the multishot accept operation
+            if (asyncReader && listenSocket)
+                asyncReader->cancelMultishotAccept(listenSocket);
+            
+            // Wait for any pending callbacks to complete (with timeout)
+            // The cancellation will trigger a final callback with -ECANCELED
+            constexpr unsigned timeoutMs = 5000; // 5 seconds should be plenty
+            if (!shutdownSem.wait(timeoutMs))
+            {
+                // Check if cancellation actually completed before we started waiting
+                if (pendingAcceptCallbacks.load() > 0)
+                    OERRLOG("Timeout waiting for multishot accept cancellation to complete");
+                // else: cancellation completed before we started waiting (race condition, but harmless)
+            }
+        }
+        else
+        {
+            // Cancel the blocking accept call for the thread
+            listenSocket->cancel_accept();
+
+            // ensure CSocketConnectionListener::run() has exited, and is not accepting more sockets
+            if (!join(1000*60*5))   // should be pretty instant
+                printf("CSocketConnectionListener::stop timed out\n");
+        }
+        
+        // Close the listen socket to prevent any further connections
+        if (listenSocket)
+        {
+            try
+            {
+                shutdownAndCloseNoThrow(listenSocket);
+                listenSocket.clear();
+            }
+            catch (...)
+            {
+                OERRLOG("CSocketConnectionListener::stop socket close failure");
+            }
+        }
     }
+}
+
+void CSocketConnectionListener::handleAcceptedConnection(int socketfd)
+{
+    Owned<ISocket> sock;
+    try
+    {
+        sock.setown(ISocket::attach(socketfd));
+
+        if (sock)
+        {
+#if defined(_USE_OPENSSL)
+            if (useTLS)
+            {
+                Owned<ISecureSocket> ssock = secureContextServer->createSecureSocket(sock.getClear());
+                int tlsTraceLevel = SSLogMin;
+                int status = ssock->secure_accept(tlsTraceLevel);
+                if (status < 0)
+                {
+                    ssock->close();
+                    PROGLOG("MP Connect Thread: failed to accept secure connection");
+                    return;
+                }
+                sock.setown(ssock.getClear());
+            }
+#endif // OPENSSL
+
+#ifdef _FULLTRACE
+            StringBuffer s;
+            SocketEndpoint ep1;
+            sock->getPeerEndpoint(ep1);
+            PROGLOG("MP: Connect Thread: socket accepted from %s",ep1.getEndpointHostText(s).str());
+#endif
+            sock->set_keep_alive(true);
+            CReadSelectHandler::add(sock);
+        }
+        else
+        {
+            // ISocket::attach() returned null - close the FD manually
+            ::close(socketfd);
+        }
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e, "Error handling accepted connection");
+        e->Release();
+        // Ensure the socket is closed if attach succeeded but later operations failed
+        if (sock)
+            sock->close();
+        else
+            ::close(socketfd);  // If attach failed, close the raw FD
+    }
+    catch (...)
+    {
+        OERRLOG("Unexpected exception handling accepted connection");
+        if (sock)
+            sock->close();
+        else
+            ::close(socketfd);
+    }
+}
+
+void CSocketConnectionListener::onAsyncComplete(int result)
+{
+    // Check if we're shutting down first to avoid accessing members during destruction
+    if (aborting.load())
+    {
+        // If this is a cancellation during shutdown, signal completion
+        if (result == -ECANCELED)
+        {
+            unsigned expected = 1;
+            if (pendingAcceptCallbacks.compare_exchange_strong(expected, 0))
+                shutdownSem.signal();
+        }
+        return;
+    }
+    
+    // This is called when a new connection is accepted via multishot accept
+    if (result < 0)
+    {
+        int err = -result; // To make subsequent code-checking code clearer
+
+        // For transient/recoverable errors, multishot accept continues
+        if (err == ECANCELED)
+        {
+            // Cancellation - should have been handled at function entry if aborting
+            WARNLOG("Multishot accept cancelled unexpectedly (not aborting)");
+            return;
+        }
+        
+        if (!aborting)
+        {
+            if (err == EAGAIN || err == EWOULDBLOCK)
+            {
+                // These are transient errors - multishot accept will continue automatically
+#ifdef _FULLTRACE
+                DBGLOG("Transient accept error: %d", result);
+#endif
+            }
+            else if (err == ECONNABORTED)
+            {
+                // Connection aborted before accept completed - this is normal, continue
+#ifdef _FULLTRACE
+                DBGLOG("Connection aborted before accept: %d", result);
+#endif
+            }
+            else if (err == EMFILE || err == ENFILE)
+            {
+                // File descriptor exhaustion - log as error but multishot will continue
+                OERRLOG("File descriptor limit reached during accept (error: %d). Connection dropped.", result);
+            }
+            else if (err == ENOBUFS || err == ENOMEM)
+            {
+                // Out of memory/buffers - serious but transient
+                OERRLOG("Memory/buffer exhaustion during accept (error: %d). Connection dropped.", result);
+            }
+            else
+            {
+                // For other unexpected errors, the multishot operation may have stopped or may be recoverable
+                // Log as warning since we're not aborting and the error is unexpected
+                WARNLOG("Multishot accept unexpected error: %d. Operation may have stopped or may be recoverable.", result);
+                // If the error is fatal and stops multishot, decrement the callback counter and signal shutdown if needed
+                if (pendingAcceptCallbacks.fetch_sub(1) == 1)
+                    shutdownSem.signal();
+            }
+        }
+        return;
+    }
+
+    // result contains the file descriptor of the accepted socket
+    // With multishot accept, the operation continues to accept connections automatically
+    // until it's cancelled or encounters an error
+    if (aborting.load())
+        return;
+    handleAcceptedConnection(result);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -694,6 +929,7 @@ void CSocketTarget::startAsyncConnect()
             if (socket)
             {
                 // Queue the async connect operation
+                // io_uring copies the addr data during submission, so we must free it after the call
                 sender.asyncSender->enqueueSocketConnect(socket, addr, addrlen, *this);
             }
             else
@@ -706,6 +942,7 @@ void CSocketTarget::startAsyncConnect()
         else
         {
             // sender is not async - fall back to sync connect
+            // addr is guaranteed to be nullptr here (never allocated in this path)
             connect();
             int result = socket ? 0 : -1;
             onAsyncComplete(result);
@@ -715,6 +952,13 @@ void CSocketTarget::startAsyncConnect()
     {
         socket.clear();
         e->Release();
+        onAsyncComplete(-1);
+    }
+    catch (...)
+    {
+        free(addr);
+        addr = nullptr;
+        socket.clear();
         onAsyncComplete(-1);
     }
 }

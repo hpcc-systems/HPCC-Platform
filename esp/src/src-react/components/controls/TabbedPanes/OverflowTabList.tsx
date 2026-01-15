@@ -20,6 +20,10 @@ export const OverflowTabList: React.FunctionComponent<OverflowTabListProps> = ({
 
     const state = `${window.location.hash}${window.location.search}`;
 
+    const tabsKey = React.useMemo(() => {
+        return tabs.map(t => `${t.id}:${t.label}:${t.count ?? ""}`).join("|");
+    }, [tabs]);
+
     const [overflowItems, tabsIndex] = React.useMemo(() => {
         const tabsIndex = {};
         return [tabs.map(tab => {
@@ -39,7 +43,7 @@ export const OverflowTabList: React.FunctionComponent<OverflowTabListProps> = ({
         onTabSelect(tabsIndex[data.value as string]);
     }, [onTabSelect, tabsIndex]);
 
-    return <Overflow minimumVisible={2}>
+    return <Overflow key={tabsKey} minimumVisible={2}>
         <TabList selectedValue={selected} onTabSelect={localTabSelect} size={size}>
             {...overflowItems}
             <OverflowMenu onMenuSelect={onTabSelect} menuItems={tabs} />

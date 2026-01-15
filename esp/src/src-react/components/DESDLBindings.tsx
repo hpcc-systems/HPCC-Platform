@@ -1,6 +1,7 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
+import { tokens } from "@fluentui/react-components";
 import { scopedLogger } from "@hpcc-js/util";
 import { Observable } from "src-dojo/index";
 import nlsHPCC from "src/nlsHPCC";
@@ -39,6 +40,10 @@ export const DESDLBindings: React.FunctionComponent<ESDLBindingProps> = ({
     const [showAddBinding, setShowAddBinding] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
+    const linkStyle = React.useMemo(() => {
+        return `color: ${tokens.colorBrandForeground1}; text-decoration: none;`;
+    }, []);
+
     //  Grid ---
     const store = useConst(() => new Observable(new TreeStore("__hpcc_id", { Name: true })));
     const { Grid, selection, refreshTable } = useGrid({
@@ -67,7 +72,7 @@ export const DESDLBindings: React.FunctionComponent<ESDLBindingProps> = ({
                         img = Utility.getImageHTML("machine.png") + nlsHPCC.Port + ":";
                     } else if (row.type === "binding") {
                         img = Utility.getImageHTML("sync.png");
-                        name = `<a href="#/desdl/bindings/${name}">${name}</a>`;
+                        name = `<a href="#/desdl/bindings/${name}" style="${linkStyle}">${name}</a>`;
                     }
                     return img + "&nbsp;" + name;
                 },
