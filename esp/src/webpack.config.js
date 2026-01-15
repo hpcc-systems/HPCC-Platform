@@ -104,6 +104,12 @@ module.exports = function (env) {
         },
         resolve: {
             fallback: {
+                "@hpcc-js/wasm-duckdb": [
+                    path.resolve(__dirname, "../../../hpcc-js-wasm/packages/duckdb")
+                ],
+                "@hpcc-js/wasm-graphviz": [
+                    path.resolve(__dirname, "../../../hpcc-js-wasm/packages/graphviz")
+                ],
                 "@hpcc-js": [
                     path.resolve(__dirname, "../../../hpcc-js/packages"),
                     path.resolve(__dirname, "../../../Visualization/packages")
