@@ -260,7 +260,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
         message: nlsHPCC.DeleteSelectedFiles,
-        items: selection.map(s => s.Name),
+        items: selection.map(s => s?.Name).filter(name => name !== undefined),
         onSubmit: React.useCallback(() => {
             WsDfu.DFUArrayAction(selection, "Delete")
                 .then(({ DFUArrayActionResponse }) => {
@@ -394,10 +394,10 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 }</SizeMe>
                 <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
                 <RemoteCopy showForm={showRemoteCopy} setShowForm={setShowRemoteCopy} refreshGrid={refreshTable.call} />
-                <CopyFile logicalFiles={selection.map(s => s.Name)} showForm={showCopy} setShowForm={setShowCopy} refreshGrid={refreshTable.call} />
-                <RenameFile logicalFiles={selection.map(s => s.Name)} showForm={showRenameFile} setShowForm={setShowRenameFile} refreshGrid={refreshTable.call} />
-                <AddToSuperfile logicalFiles={selection.map(s => s.Name)} showForm={showAddToSuperfile} setShowForm={setShowAddToSuperfile} refreshGrid={refreshTable.call} />
-                <DesprayFile logicalFiles={selection.map(s => s.Name)} showForm={showDesprayFile} setShowForm={setShowDesprayFile} />
+                <CopyFile logicalFiles={selection.map(s => s?.Name).filter(name => name !== undefined)} showForm={showCopy} setShowForm={setShowCopy} refreshGrid={refreshTable.call} />
+                <RenameFile logicalFiles={selection.map(s => s?.Name).filter(name => name !== undefined)} showForm={showRenameFile} setShowForm={setShowRenameFile} refreshGrid={refreshTable.call} />
+                <AddToSuperfile logicalFiles={selection.map(s => s?.Name).filter(name => name !== undefined)} showForm={showAddToSuperfile} setShowForm={setShowAddToSuperfile} refreshGrid={refreshTable.call} />
+                <DesprayFile logicalFiles={selection.map(s => s?.Name).filter(name => name !== undefined)} showForm={showDesprayFile} setShowForm={setShowDesprayFile} />
                 <DeleteConfirm />
             </>
         }

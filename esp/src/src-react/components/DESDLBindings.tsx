@@ -154,7 +154,7 @@ export const DESDLBindings: React.FunctionComponent<ESDLBindingProps> = ({
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
-        message: nlsHPCC.YouAreAboutToDeleteBinding + "\n\n" + selection.map(binding => binding.Name).join("\n"),
+        message: nlsHPCC.YouAreAboutToDeleteBinding + "\n\n" + selection.map(binding => binding?.Name).filter(name => name !== undefined).join("\n"),
         onSubmit: React.useCallback(() => {
             const requests = [];
             selection.forEach(binding => {
