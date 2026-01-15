@@ -274,7 +274,7 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="saveBinary" type="xs:boolean" default="false">
+    <xs:attribute name="saveBinary" type="xs:boolean" default="true">
       <xs:annotation>
         <xs:appinfo>
           <tooltip>Switch on saving the store in binary format</tooltip>

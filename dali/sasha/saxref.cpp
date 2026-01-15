@@ -381,6 +381,7 @@ private:
             maxnode[drv] = 0;
             maxsize[drv] = 0;
         }
+        dirPerPartNum = readDigits(_name, sl, false);
     }
 
 public:
@@ -396,6 +397,7 @@ public:
     offset_t maxsize[2];                //  largest node size
     unsigned short minnode[2];          //  smallest node (1..)
     unsigned short maxnode[2];          //  largest node (1..)
+    unsigned dirPerPartNum = 0;         //  only >0 if the directory *looks* like a dir-per-part dir
 
     byte name[1];                     // first byte length  NB this is the tail name
     // char namestr[*name]
@@ -459,6 +461,57 @@ public:
         return buf.append((size32_t)name[0],(const char *)name+1);
     }
 
+    const char *queryName() const
+    {
+        return (const char *)name+1;
+    }
+
+    size32_t getNameLen() const
+    {
+        return (size32_t)name[0];
+    }
+
+    bool isDirPerPartCandidate() const
+    {
+        return dirPerPartNum > 0; // I look like a dir-per-dir directory
+    }
+
+    bool isDirPerPartMatch(unsigned partNum) const
+    {
+        assertex(isDirPerPartCandidate());
+        return partNum==(dirPerPartNum-1);
+    }
+
+    cFileDesc *getFile(const char *filename)
+    {
+        CriticalBlock block(filesCrit);
+        auto it = files.find(filename);
+        if (it != files.end())
+            return it->second.get();
+        return nullptr;
+    }
+
+    cFileDesc *ensureFile(const char *filename, unsigned numParts, bool isDirPerPart, unsigned filenameLen, XRefAllocator *allocator)
+    {
+        CriticalBlock block(filesCrit);
+        auto it = files.find(filename);
+        cFileDesc *file = nullptr;
+        if (it != files.end())
+            file = it->second.get();
+        else
+        {
+            file = cFileDesc::create(filename, numParts, isDirPerPart, filenameLen, allocator);
+            files.emplace(filename, file);
+        }
+        return file;
+    }
+
+    void addExistingFile(const char *filename, cFileDesc *file)
+    {
+        CriticalBlock block(filesCrit);
+        files.emplace(filename, file);
+    }
+
     cDirDesc *lookupDirNonThreadSafe(const char *name, XRefAllocator *allocator)
     {
         auto it = dirs.find(name);
@@ -481,7 +534,7 @@ public:
         return lookupDirNonThreadSafe(name, allocator);
     }
 
-    const char *decodeName(unsigned drv,const char *name,unsigned node, unsigned numnodes,
+    static const char *decodeName(unsigned drv,const char *name,unsigned node, unsigned numnodes,
                     StringAttr &mask,       // decoded mask
                     unsigned &pf,           // part node
                     unsigned &nf,           // num parts
@@ -499,7 +552,7 @@ public:
         return fn;
     }
 
-    bool isMisplaced(unsigned partNum, unsigned numParts, const SocketEndpoint &ep, IGroup &grp, const char *fullPath, unsigned filePathOffset, unsigned stripeNum, unsigned numStripedDevices)
+    static bool isMisplaced(unsigned partNum, unsigned numParts, const SocketEndpoint &ep, IGroup &grp, const char *fullPath, unsigned filePathOffset, unsigned stripeNum, unsigned numStripedDevices)
     {
         // External files (i.e. no ._n_of_m suffix) are considered misplaced so we can get
         // the node where the external file was found for addExternalFoundFile later
@@ -624,47 +677,28 @@ public:
             return numParts!=grp.ordinality() || partNum>=grp.ordinality() || !grp.queryNode(partNum).endpoint().equals(ep);
     }
 
-    cFileDesc *addFile(unsigned drv,const char *name,const char *filePath,unsigned filePathOffset,unsigned node,const SocketEndpoint &ep,IGroup &grp,unsigned numnodes,unsigned stripeNum,unsigned numStripedDevices,XRefAllocator *allocator)
+    void setMisplacedAndPresent(cFileDesc *file, bool misplaced, unsigned partNum, unsigned drv, const char *filePath, unsigned node, unsigned numnodes)
     {
-        unsigned nf;          // num parts
-        unsigned pf;          // part num
-        unsigned filenameLen; // length of file name excluding extension i.e. ._$P$_of_$N$
-        StringAttr mask;
-        const char *fn = decodeName(drv,name,node,numnodes,mask,pf,nf,filenameLen);
-        bool misplaced = isMisplaced(pf,nf,ep,grp,filePath,filePathOffset,stripeNum,numStripedDevices);
-
         CriticalBlock block(filesCrit);
-        auto it = files.find(fn);
-        cFileDesc *file = nullptr;
-
-        if (it != files.end()) {
-            file = it->second.get();
-        } else {
-            // dirPerPart is set to false during scanDirectories, and later updated in listOrphans by mergeDirPerPartDirs
-            file = cFileDesc::create(fn,nf,false,filenameLen,allocator);
-            files.emplace(fn, file);
-        }
 
         if (misplaced) {
             cMisplacedRec *mp = file->misplaced;
             while (mp) {
-                if (mp->eq(drv,pf,node,numnodes)) {
-                    OERRLOG(LOGPFX "Duplicate file with mismatched tail (%d,%d) %s",pf,node,filePath);
-                    return NULL;
+                if (mp->eq(drv,partNum,node,numnodes)) {
+                    OERRLOG(LOGPFX "Duplicate file with mismatched tail (%d,%d) %s",partNum,node,filePath);
+                    return;
                 }
                 mp = mp->next;
             }
             mp = cMisplacedRec::create(allocator);
-            mp->init(drv,pf,node,numnodes);
+            mp->init(drv,partNum,node,numnodes);
             mp->next = file->misplaced;
             file->misplaced = mp;
             // NB: still perform setpresent() below, so that later 'orphan' and 'found' scanning can spot the part as orphaned or part of a found file.
         }
-        if (file->setpresent(drv,pf)) {
-            OERRLOG(LOGPFX "Duplicate file with mismatched tail (%d) %s",pf,filePath);
-            file = NULL;
-        }
-        return file;
+
+        if (file->setpresent(drv,partNum))
+            OERRLOG(LOGPFX "Duplicate file with mismatched tail (%d) %s",partNum,filePath);
     }
 
     bool markFile(unsigned drv,const char *name, unsigned node, const SocketEndpoint &ep, IGroup &grp, unsigned numnodes)
@@ -747,95 +781,6 @@ struct cMessage: public CInterface
 };
 
 
-// A found file that has a dir-per-part directory will have multiple cFileDesc entries in each of the dir-per-part
-// cDirDescs. For found files, we do not know if it is a dir-per-part file since there is no metadata. We only merge
-// cFileDescs where only a single file was marked present, and we find matching files in the dir-per-part directories.
-static void mergeDirPerPartDirs(cDirDesc *parent, cDirDesc *dir, const char *currentPath)
-{
-    if (!isContainerized())
-        return;
-    if (dir->files.empty() || !dir->dirs.empty())
-        return;
-
-    // Check if dir name is a number
-    StringBuffer dirName;
-    dir->getName(dirName);
-    unsigned dirPerPartNum = readDigits(dirName.str());
-    if (dirPerPartNum == 0)
-        return;
-
-    for (auto fileItr = dir->files.begin(); fileItr != dir->files.end();)
-    {
-        cFileDesc *file = fileItr->second.get();
-        // If this is a dir-per-part directory, the dirPerPartNum cannot be larger than the number of file parts,
-        // and there should be enough subdirectories under the parent directory for each file part
-        if (dirPerPartNum > file->N)
-        {
-            fileItr++;
-            continue;
-        }
-
-        // A dir-per-part file will have only the part matching the dir name marked present
-        // If more than one file is marked present, it is not a dir-per-part file
-        unsigned present = 0;
-        for (unsigned j=0;j<file->N;j++)
-        {
-            if (file->testpresent(0, j))
-                present++;
-        }
-
-        // Avoid merging if multiple parts are marked present in a single directory
-        if (present != 1)
-        {
-            fileItr++;
-            continue;
-        }
-
-        std::string fname = fileItr->first;
-
-        cFileDesc *movedFile = nullptr;
-        bool currentErased = false; // True if fileItr is erased from current directory
-        unsigned numFileParts = file->N; // file may be deleted during for loop, save the number of parts
-        for (unsigned k=0;k<numFileParts;k++)
-        {
-            auto dirPerPartDirItr = parent->dirs.find(std::to_string(k+1)); // If not end(), dir-per-part directory k+1
-            if (dirPerPartDirItr == parent->dirs.end())
-                continue;
-
-            cDirDesc *dirPerPartDir = dirPerPartDirItr->second.get(); // dir-per-part directory k+1 under parent directory
-            auto dirPerPartFileItr = dirPerPartDir->files.find(fname);
-            if (dirPerPartFileItr != dirPerPartDir->files.end())
-            {
-                auto &dirPerPartFile = dirPerPartFileItr->second;
-                if (movedFile == nullptr)
-                {
-                    // Move the file from dirPerPartDir to parent
-                    movedFile = dirPerPartFile.get();
-                    parent->files[fname] = std::move(dirPerPartFile);
-                    movedFile->isDirPerPart = true;
-                }
-                else
-                {
-                    movedFile->setpresent(0, k);
-                    if (dirPerPartFile->testmarked(0, k))
-                        movedFile->setmarked(0, k);
-                }
-                // Delete cFileDesc from part directories since it has been moved to parent
-                // If deleting file under dir, update fileItr because we are modifying the container
-                if (dirPerPartDir == dir)
-                {
-                    fileItr = dirPerPartDir->files.erase(dirPerPartFileItr);
-                    currentErased = true;
-                }
-                else
-                    dirPerPartDir->files.erase(dirPerPartFileItr);
-            }
-        }
-        if (!currentErased)
-            fileItr++;
-    }
-}
-
 constexpr int64_t oneSecondNS = 1000 * 1000 * 1000; // 1 second in nanoseconds
 constexpr int64_t oneHourNS = 60 * 60 * oneSecondNS; // 1 hour in nanoseconds
 class XRefPeriodicTimer : public PeriodicTimer
@@ -856,6 +801,11 @@ public:
         // MORE: Could make PeriodicTimer::hasElapsed thread safe and remove CriticalBlock
         CriticalBlock block(timerSect);
         return PeriodicTimer::hasElapsed();
+    }
+
+    int64_t queryElapsedNS() const
+    {
+        return cycle_to_nanosec(get_cycles_now() - startCycles);
     }
 
     void reset(unsigned seconds, bool suppressFirst, const char *_clustname)
@@ -985,6 +935,13 @@ public:
         processedFiles = 0;
         heartbeatTimer.reset(60, true, clustname.get()); // 1 minute interval
         log(true, "%s heartbeat started (interval: 1 minute)", op);
+    }
+
+    void finishHeartbeat(const char * op)
+    {
+        StringBuffer time;
+        formatTime(time, heartbeatTimer.queryElapsedNS());
+        log(true, "%s complete. Total time: %s, Total dirs: %lu, Total files: %lu", op, time.str(), processedDirs.load(), processedFiles.load());
     }
 
     void checkHeartbeat(const char * op)
@@ -1440,7 +1397,7 @@ public:
     }
 
 
-    bool scanDirectory(unsigned node,const SocketEndpoint &ep,StringBuffer &path, unsigned drv, cDirDesc *pdir, IFile *cachefile, unsigned level, unsigned filePathOffset, unsigned stripeNum)
+    bool scanDirectory(unsigned node, const SocketEndpoint &ep, StringBuffer &path, unsigned drv, cDirDesc *pdir, IFile *cachefile, unsigned filePathOffset, unsigned stripeNum, cDirDesc *parent, offset_t &parentScopeSz)
     {
         checkHeartbeat("Directory scan");
         size32_t dsz = path.length();
@@ -1468,53 +1425,100 @@ public:
             return false;
         }
         StringBuffer fname;
-        offset_t nsz = 0;
+        offset_t scopeSz = 0;
         StringArray dirs;
         ForEach(*iter) {
             iter->getName(fname.clear());
             if (iswin)
                 fname.toLowerCase();
             addPathSepChar(path).append(fname);
-            if (iter->isDir())  {
-                // NB: Check if a subdirectory is a stripe directory under certain conditions
-                // Stripe directories must be under root. The level is 0 if root
-                // Only look for stripe directories if the plane details say it is striped
-                if ((level == 0) && isPlaneStriped) {
-                    const char *dir = fname.str();
-                    bool isDirStriped = dir[0] == 'd' && dir[1] != '\0'; // Directory may be striped if it starts with 'd' and longer than one character
-                    if (isDirStriped) {
-                        dir++;
-                        while (*dir) {
-                            if (!isdigit(*(dir++))) {
-                                isDirStriped = false;
-                                break;
-                            }
-                        }
-                        if (isDirStriped) {
-                            // To properly match all file parts, we need to remove the stripe directory from the path
-                            // so that the cDirDesc hierarchy matches the logical scope hierarchy
-                            // /var/lib/HPCCSystems/hpcc-data/d1/somescope/otherscope/afile.1_of_2
-                            // /var/lib/HPCCSystems/hpcc-data/d2/somescope/otherscope/afile.2_of_2
-                            // These files would never be matched if we didn't build up the cDirDesc structure without the stripe directory
-                            if (!scanDirectory(node,ep,path,drv,pdir,NULL,level+1,filePathOffset,stripeNum))
-                                return false;
-
-                            path.setLength(dsz);
-                            continue;
-                        }
-                    }
-                    // Top-level directory is not striped, but isPlaneStriped is true. Throw an error, but continue processing directory as normal
-                    OERRLOG(LOGPFX "Top-level directory striping mismatch for %s: isPlaneStriped=%d", path.str(), isPlaneStriped);
-                }
+            if (iter->isDir())
                 dirs.append(fname.str());
-            }
             else {
                 CDateTime dt;
-                nsz += iter->getFileSize();
+                offset_t filesz = iter->getFileSize();
                 iter->getModifiedTime(dt);
                 if (!fileFiltered(path.str(),dt)) {
                     try {
-                        pdir->addFile(drv,fname.str(),path.str(),filePathOffset,node,ep,*grp,numnodes,stripeNum,numStripedDevices,&allocator);
+                        unsigned numParts;    // num parts
+                        unsigned partNum;     // part num
+                        unsigned filenameLen; // length of file name excluding extension i.e. ._$P$_of_$N$
+                        StringAttr mask;
+                        const char *fn = cDirDesc::decodeName(drv,fname,node,numnodes,mask,partNum,numParts,filenameLen);
+                        bool misplaced = cDirDesc::isMisplaced(partNum,numParts,ep,*grp,path,filePathOffset,stripeNum,numStripedDevices);
+
+                        cFileDesc *file = nullptr;
+                        bool addToParent = false;
+                        if (isContainerized()&&parent&&!misplaced) // misplaced files should not be candidates for dir-per-part logic
+                        {
+                            if (pdir->isDirPerPartCandidate())
+                            {
+                                if (pdir->isDirPerPartMatch(partNum))
+                                {
+                                    // In a containerized deployment, a dir-per-part is on by default, and this branch
+                                    // is expected to be the normal/common case, all other branches are exceptions.
+                                    file = pdir->getFile(fn);
+                                    if (file && !file->isDirPerPart)
+                                    {
+                                        // If the current file part matched the directory name and a non-dir-per-part file
+                                        // was found in the current directory, likely this whole file is not a dir-per-part
+                                        // file, and this part is the only match.
+                                        scopeSz += filesz;
+                                    }
+                                    else
+                                    {
+                                        // This is still in a directory that looks like a dir-per-part, and the file was not found
+                                        // so create it in the parent (above the dir-per-part directory), i.e. effectively ignoring
+                                        // the dir-per-part dir itself.
+                                        file = parent->ensureFile(fn, numParts, true, filenameLen, &allocator);
+                                        parentScopeSz += filesz;
+                                        addToParent = true;
+                                    }
+                                }
+                                else // we are in a dir-per-part directory, but part doesn't look like it belongs in a dir-per-part structure
+                                {
+                                    // Not a dir-per-part file, check for previously moved file
+                                    CLeavableCriticalBlock parentBlock(parent->filesCrit);
+                                    auto it = parent->files.find(fn);
+                                    if (it != parent->files.end() && it->second->isDirPerPart)
+                                    {
+                                        // Move file to current directory
+                                        it->second->isDirPerPart = false;
+                                        file = it->second.release();
+                                        parent->files.erase(it);
+                                        parentScopeSz -= filesz;
+
+                                        parentBlock.leave();
+
+                                        pdir->addExistingFile(fn, file);
+                                        scopeSz += filesz; // moved file - MORE this isn't really correct
+                                    }
+                                    else
+                                    {
+                                        // No previously moved file and no dir-per-part. Create in current directory
+                                        parentBlock.leave();
+
+                                        file = pdir->ensureFile(fn, numParts, false, filenameLen, &allocator);
+
+                                    }
+                                    scopeSz += filesz;
+                                }
+                            }
+                            else
+                            {
+                                file = pdir->ensureFile(fn, numParts, false, filenameLen, &allocator);
+                                scopeSz += filesz;
+                            }
+                        }
+                        else
+                        {
+                            file = pdir->ensureFile(fn, numParts, false, filenameLen, &allocator);
+                            scopeSz += filesz;
+                        }
+
+                        cDirDesc *currentOrParent = addToParent ? parent : pdir;
+                        currentOrParent->setMisplacedAndPresent(file, misplaced, partNum, drv, path, node, numnodes);
+
                         processedFiles++;
                     }
                     catch (IException *e) {
@@ -1532,12 +1536,12 @@ public:
             addPathSepChar(path).append(dirs.item(i));
             if (file.get()&&!resetRemoteFilename(file,path.str())) // sneaky way of avoiding cache
                 file.clear();
-            if (!scanDirectory(node,ep,path,drv,pdir->lookupDir(dirs.item(i),&allocator),file,level+1,filePathOffset,stripeNum))
+            if (!scanDirectory(node,ep,path,drv,pdir->lookupDir(dirs.item(i),&allocator),file,filePathOffset,stripeNum,pdir,scopeSz))
                 return false;
             path.setLength(dsz);
         }
 
-        pdir->addNodeStats(node,drv,nsz);
+        pdir->addNodeStats(node,drv,scopeSz);
         processedDirs++;
 
         return true;
@@ -1591,7 +1595,8 @@ public:
                     addPathSepChar(path).append('d').append(i+1);
 
                     parent.log(false,"Scanning %s directory %s",parent.storagePlane->queryProp("@name"),path.str());
-                    if (!parent.scanDirectory(0,localEP,path,0,parent.root.get(),NULL,1,path.length(),i+1))
+                    offset_t rootsz = 0;
+                    if (!parent.scanDirectory(0,localEP,path,0,parent.root.get(),NULL,path.length(),i+1,nullptr,rootsz))
                     {
                         ok = false;
                         return;
@@ -1602,7 +1607,8 @@ public:
                     StringBuffer hostStr;
                     SocketEndpoint ep = parent.rawgrp->queryNode(i).endpoint();
                     parent.log(false,"Scanning %s directory %s",ep.getEndpointHostText(hostStr).str(),path.str());
-                    if (!parent.scanDirectory(i,ep,path,0,NULL,NULL,0,path.length(),0)) {
+                    offset_t rootsz = 0;
+                    if (!parent.scanDirectory(i,ep,path,0,NULL,NULL,path.length(),0,nullptr,rootsz)) {
                         ok = false;
                         return;
                     }
@@ -1611,8 +1617,9 @@ public:
                         i = (i+r)%n;
                         setReplicateFilename(path,1);
                         ep = parent.rawgrp->queryNode(i).endpoint();
+                        rootsz = 0;
                         parent.log(false,"Scanning %s directory %s",ep.getEndpointHostText(hostStr.clear()).str(),path.str());
-                        if (!parent.scanDirectory(i,ep,path,1,NULL,NULL,0,path.length(),0)) {
+                        if (!parent.scanDirectory(i,ep,path,1,NULL,NULL,path.length(),0,nullptr,rootsz)) {
                             ok = false;
                         }
                     }
@@ -1630,7 +1637,7 @@ public:
         startHeartbeat("Directory scan"); // Initialize heartbeat mechanism
         afor.For(numMaxThreads,numThreads,true,numThreads>1);
         if (afor.ok)
-            log(true,"Directory scan complete");
+            finishHeartbeat("Directory scan");
         else
             log(true,"Errors occurred during scan");
         return afor.ok;
@@ -2070,8 +2077,7 @@ public:
         for (unsigned drv=0;drv<drvs;drv++) {
             if (abort)
                 return;
-            if ((!d->files.empty())||(d->totalsize[drv]!=0)||d->empty(drv)) { // final empty() is to make sure only truly empty dirs get added
-                                                                                  // but not empty parents
+            if (!d->empty(drv)) {
                 Owned<IPropertyTree> dt = createPTree("Directory");
                 if (drv) {
                     StringBuffer tmp(name);
@@ -2139,7 +2145,6 @@ public:
 
         for (auto& dirPair : d->dirs) {
             cDirDesc *dir = dirPair.second.get();
-            mergeDirPerPartDirs(d,dir,basedir);
             listOrphans(dir,basedir,scope,abort,recentCutoffDays);
             if (abort)
                 return;
@@ -2188,7 +2193,7 @@ public:
         listOrphans(NULL,basedir,scope,abort,recentCutoffDays);
         if (abort)
             return;
-        log(true,"Orphan scan complete");
+        finishHeartbeat("Orphan scan");
         sorteddirs.sort(compareDirs);   // NB sort reverse
         while (!abort&&sorteddirs.ordinality())
             dirbranch->addPropTree("Directory",&sorteddirs.popGet());

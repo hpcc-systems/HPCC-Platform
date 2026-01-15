@@ -25,9 +25,13 @@
         "typeRoots": [],
         "types": [],
         "paths": {
-            "@hpcc-js/wasm": [
-                "./node_modules/@hpcc-js/wasm",
-                "../../../hpcc-js-wasm"
+            "@hpcc-js/wasm-duckdb": [
+                "./node_modules/@hpcc-js/wasm-duckdb",
+                "../../../hpcc-js-wasm/packages/duckdb"
+            ],
+            "@hpcc-js/wasm-graphviz": [
+                "./node_modules/@hpcc-js/wasm-graphviz",
+                "../../../hpcc-js-wasm/packages/graphviz"
             ],
             "@hpcc-js/*": [
                 "./node_modules/@hpcc-js/*",

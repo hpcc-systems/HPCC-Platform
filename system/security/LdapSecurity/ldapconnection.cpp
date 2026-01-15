@@ -1629,7 +1629,6 @@ private:
     };
     ReadWriteLock             m_unknownSIDCacheLock;
     CIArrayOf<MemoryAttrItem> m_unknownSIDCache;//cache Security Identifier Structure (SID) of previously deleted/orphaned LDAP objects
-    bool m_useLegacySuperUserStatusCheck = false;
 
 
 public:
@@ -4680,13 +4679,6 @@ public:
 
         const char* username = user->getName();
 
-        // Only check username against sys user if legacy behavior is enabled
-        if (m_useLegacySuperUserStatusCheck)
-        {
-            const char* sysuser = m_ldapconfig->getSysUser();
-            if (sysuser != NULL && strieq(sysuser, username))
-                return true;
-        }
         StringBuffer userdn;
         getUserDN(username, userdn);
         return userInGroup(userdn.str(), m_ldapconfig->getAdminGroupDN());
@@ -4775,12 +4767,6 @@ public:
         else
             return m_pwscheme.str();
     }
-
-    virtual void setUseLegacySuperUserStatusCheck(bool value)
-    {
-        m_useLegacySuperUserStatusCheck = value;
-    }
-
 
 private:
     class SDServerCtlWrapper

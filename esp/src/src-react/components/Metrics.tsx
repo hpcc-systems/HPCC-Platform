@@ -383,7 +383,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                         />
                     </DockPanelItem>
                     <DockPanelItem key="metricsSql" title={nlsHPCC.MetricsSQL} location="tab-after" relativeTo="scopesTable">
-                        <MetricsSQL defaultSql={view.sql} scopes={metrics} onSelectionChanged={selection => scopesSelectionChanged("scopesSqlTable", lineageSelection, selection)}></MetricsSQL>
+                        <MetricsSQL wuid={wuid} defaultSql={view.sql} scopes={metrics} onSelectionChanged={selection => scopesSelectionChanged("scopesSqlTable", lineageSelection, selection)}></MetricsSQL>
                     </DockPanelItem>
                     <DockPanelItem key="metricGraph" title={nlsHPCC.Graph} location="split-right" relativeTo="scopesTable" >
                         <MetricsGraph
@@ -397,7 +397,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                         </MetricsGraph>
                     </DockPanelItem>
                     <DockPanelItem key="propsTable" title={nlsHPCC.Properties} location="split-bottom" relativeTo="scopesTable" >
-                        <MetricsPropertiesTables wuid={wuid} scopesTableColumns={scopesTable.columns()} scopes={selectedMetrics}></MetricsPropertiesTables>
+                        <MetricsPropertiesTables wuid={wuid} querySet={querySet} queryId={queryId} scopesTableColumns={scopesTable.columns()} scopes={selectedMetrics}></MetricsPropertiesTables>
                     </DockPanelItem>
                     <DockPanelItem key="propsTable2" title={nlsHPCC.CrossTab} location="tab-after" relativeTo="propsTable" >
                         <AutosizeHpccJSComponent widget={crossTabTable}></AutosizeHpccJSComponent>

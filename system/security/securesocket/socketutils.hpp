@@ -139,22 +139,37 @@ protected:
 
 // This class starts a thread that listens on a socket.  When a connection is made it adds the socket to a select handler.
 // When data is written to the socket it will call the notify handler.
-class SECURESOCKET_API CSocketConnectionListener : protected CReadSelectHandler, public Thread
+// 
+// io_uring support: By default uses io_uring (if available) for multishot accept to improve performance.
+// Can be disabled via configuration: expert/@useIOUring=false, or by passing _useIOUring=false to constructor.
+class SECURESOCKET_API CSocketConnectionListener : protected CReadSelectHandler, public Thread, public IAsyncCallback
 {
 public:
-    CSocketConnectionListener(unsigned port, bool _useTLS, unsigned _inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets);
+    // _useIOUring: true to enable io_uring multishot accept (if available), false to use traditional thread-based accept
+    //              Defaults to true, but can be overridden by expert/@useIOUring configuration setting
+    CSocketConnectionListener(unsigned port, bool _useTLS, unsigned _inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets, bool _useIOUring = true);
+    ~CSocketConnectionListener() override;
 
     void startPort(unsigned short port);
     void stop();
     bool checkSelfDestruct(const void *p,size32_t sz);
+    bool isUsingMultishotAccept() const { return useMultishotAccept; }
 
     virtual int run() override;
 
+// interface IAsyncCallback
+    virtual void onAsyncComplete(int result) override;
+
 private:
+    void handleAcceptedConnection(int socketfd);
+
     Owned<ISocket> listenSocket;
     Owned<ISecureSocketContext> secureContextServer;
     bool useTLS;
     std::atomic<bool> aborting{false};
+    std::atomic<bool> useMultishotAccept{false};
+    std::atomic<unsigned> pendingAcceptCallbacks{0};
+    Semaphore shutdownSem;
 };
 
 struct HashSocketEndpoint

@@ -630,9 +630,6 @@ void CLdapSecManager::init(const char *serviceName, IPropertyTree* cfg)
     m_passwordExpirationWarningDays = cfg->getPropInt(".//@passwordExpirationWarningDays", 10); //Default to 10 days
     m_checkViewPermissions = cfg->getPropBool(".//@checkViewPermissions", false);
     m_hpccInternalScope.set(queryDfsXmlBranchName(DXB_Internal)).append("::");//HpccInternal::
-
-    bool useLegacySuperUserStatusCheck = cfg->getPropBool("@useLegacySuperUserStatusCheck", true);
-    m_ldap_client->setUseLegacySuperUserStatusCheck(useLegacySuperUserStatusCheck);
 };
 
 
