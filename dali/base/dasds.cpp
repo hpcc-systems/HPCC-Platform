@@ -5278,7 +5278,7 @@ class CStoreHelper : implements IStoreHelper, public CInterface
     unsigned keepStores{0};
     SessionId mySessId{0};
     size32_t bufferSize{0};
-    bool saveBinary{false};
+    bool saveBinary{true};
     bool saveAsync{false};
 
     void clearStoreInfo(const char *base, const char *location, unsigned edition, CStoreInfo *storeInfo=NULL)
@@ -6270,7 +6270,7 @@ CCovenSDSManager::CCovenSDSManager(ICoven &_coven, const char *_dataPath, const 
     clientProps->setPropBool("@serverIterAvailable", true);
     clientProps->setPropBool("@useAppendOpt", true);
     clientProps->setPropBool("@serverGetIdsAvailable", true);
-    bool saveBinary = config->getPropBool("@saveBinary", isDebugBuild());
+    bool saveBinary = config->getPropBool("@saveBinary", true);
     clientProps->setPropBool("@saveBinary", saveBinary);
     bool saveAsync = config->getPropBool("@saveAsync", true);
     clientProps->setPropBool("@saveAsync", saveAsync);

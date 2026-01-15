@@ -52,7 +52,7 @@
                                   hpcc:displayName="Enable Autorecover for Delta Files" hpcc:presetValue="true"
                                   hpcc:tooltip="Switch on to autorecover from corruption to delta files on load"/>
                     <xs:attribute name="saveBinary" type="xs:boolean"
-                                  hpcc:displayName="Enable Saving Store in Binary Format" hpcc:presetValue="false"
+                                  hpcc:displayName="Enable Saving Store in Binary Format" hpcc:presetValue="true"
                                   hpcc:tooltip="Switch on to save the store in binary format"/>
                     <xs:attribute name="saveAsync" type="xs:boolean"
                                   hpcc:displayName="Enable Saving Store Asynchronously in XML and Binary formats" hpcc:presetValue="true"

@@ -1602,8 +1602,8 @@
         },
         "saveBinary": {
           "type": "boolean",
-          "default": false,
-          "description": "Save the store in binary format after the store was saved in XML format"
+          "default": true,
+          "description": "When enabled, also save the store in binary format. If saveAsync is true, XML and binary saves occur in parallel; if saveAsync is false, XML is saved first and then binary."
         },
         "saveAsync": {
           "type": "boolean",
