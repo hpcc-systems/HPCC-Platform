@@ -170,14 +170,6 @@ CRemoteConnection::CRemoteConnection(ISDSConnectionManager &manager, ConnectionI
     lockCount = 0;
 }
 
-void CRemoteConnection::clearCommitChanges()
-{
-    CClientRemoteTree *tree = (CClientRemoteTree *) queryRoot();
-    bool lazyFetch = setLazyFetch(false);
-    tree->clearCommitChanges();
-    setLazyFetch(lazyFetch);
-}
-
 void CRemoteConnection::getDetails(MemoryBuffer &mb)
 {
     mb.append(connectionId);
