@@ -29,7 +29,6 @@ import argparse
 import sys
 import xml.etree.ElementTree as ET
 from typing import List, Dict, Optional, Set
-from urllib.parse import urljoin
 import json
 
 try:
@@ -366,8 +365,9 @@ class PackageMapGenerator:
                 elem.tail = indent
             for child in elem:
                 self._indent(child, level + 1)
-            if not child.tail or not child.tail.strip():
-                child.tail = indent
+            # Set tail for the last child
+            if not elem[-1].tail or not elem[-1].tail.strip():
+                elem[-1].tail = indent
         else:
             if level and (not elem.tail or not elem.tail.strip()):
                 elem.tail = indent
