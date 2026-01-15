@@ -1108,7 +1108,6 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
         {
             bool addedOne = false;
 
-#ifdef _CONTAINERIZED
             // put the localEnoughLocations next in the list
             ForEachItemIn(plane_idx, localEnoughLocationInfo)
             {
@@ -1136,47 +1135,51 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                     E->Release();
                 }
             }
-#else
-            // put the peerRoxieLocations next in the list
+
+            //If the file is local enough - e.g. it is on local enough remote storage, do not try and copy it.
             StringArray localLocations;
-            if (selfTestMode)
-                localLocations.append("test.buddy");
-            else
-                appendRemoteLocations(pdesc, localLocations, localLocation, roxieName, true);  // Adds all locations on the same cluster
-            ForEachItemIn(roxie_idx, localLocations)
+            if (!isContainerized() && !addedOne)
             {
-                try
+                // put the peerRoxieLocations next in the list
+                if (selfTestMode)
+                    localLocations.append("test.buddy");
+                else
+                    appendRemoteLocations(pdesc, localLocations, localLocation, roxieName, true);  // Adds all locations on the same cluster
+                ForEachItemIn(roxie_idx, localLocations)
                 {
-                    const char *remoteName = localLocations.item(roxie_idx);
-                    Owned<IFile> remote = createIFile(remoteName);
-                    RoxieFileStatus status = fileUpToDate(remote, size, modified, isCompressed);
-                    if (status==FileIsValid)
+                    try
                     {
-                        if (miscDebugTraceLevel > 5)
-                            DBGLOG("adding peer location %s", remoteName);
-                        ret->addSource(remote.getClear());
-                        addedOne = true;
+                        const char *remoteName = localLocations.item(roxie_idx);
+                        Owned<IFile> remote = createIFile(remoteName);
+                        RoxieFileStatus status = fileUpToDate(remote, size, modified, isCompressed);
+                        if (status==FileIsValid)
+                        {
+                            if (miscDebugTraceLevel > 5)
+                                DBGLOG("adding peer location %s", remoteName);
+                            ret->addSource(remote.getClear());
+                            addedOne = true;
+                        }
+                        else if (status==FileNotFound)
+                        {
+                            // Even though it's not on the buddy (yet), add it to the locations since it may well be there
+                            // by the time we come to copy (and if it is, we want to copy from there)
+                            if (miscDebugTraceLevel > 5)
+                                DBGLOG("adding missing peer location %s", remoteName);
+                            ret->addSource(remote.getClear());
+                            // Don't set addedOne - we need to go to remote too
+                        }
+                        else if (miscDebugTraceLevel > 10)
+                            DBGLOG("Checked peer roxie location %s, status=%d", remoteName, (int) status);
                     }
-                    else if (status==FileNotFound)
+                    catch (IException *E)
                     {
-                        // Even though it's not on the buddy (yet), add it to the locations since it may well be there
-                        // by the time we come to copy (and if it is, we want to copy from there)
-                        if (miscDebugTraceLevel > 5)
-                            DBGLOG("adding missing peer location %s", remoteName);
-                        ret->addSource(remote.getClear());
-                        // Don't set addedOne - we need to go to remote too
+                        EXCLOG(MCoperatorError, E, "While creating remote file reference");
+                        E->Release();
                     }
-                    else if (miscDebugTraceLevel > 10)
-                        DBGLOG("Checked peer roxie location %s, status=%d", remoteName, (int) status);
+                    ret->setRemote(true);
                 }
-                catch (IException *E)
-                {
-                    EXCLOG(MCoperatorError, E, "While creating remote file reference");
-                    E->Release();
-                }
-                ret->setRemote(true);
             }
-#endif
+
             if (!addedOne && (copyResources || useRemoteResources || selfTestMode))  // If no peer locations available, go to remote
             {
                 ForEachItemIn(idx, remoteLocationInfo)
@@ -1194,10 +1197,9 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                                 DBGLOG("adding remote location %s", remoteName);
                             RemoteFilename rfn;
                             rfn.setRemotePath(remoteName);
-#ifndef _CONTAINERIZED
+
                             // MORE - may want to change this to mark some other locations as "local enough"
-                            if (!rfn.isLocal())    // MORE - may still want to copy files even if they are on a posix-accessible path, for local caching? Probably really want to know if hooked or not...
-#endif
+                            if (isContainerized() || !rfn.isLocal())    // MORE - may still want to copy files even if they are on a posix-accessible path, for local caching? Probably really want to know if hooked or not...
                                 ret->setRemote(true);
                             ret->addSource(remote.getClear());
                             addedOne = true;
@@ -1221,16 +1223,12 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                 {
                     if (doTrace(TraceFlags::Always, TraceFlags::Standard))
                     {
-#ifndef _CONTAINERIZED
                         DBGLOG("Failed to open file at any of the following %d local locations:", localLocations.length());
                         ForEachItemIn(local_idx, localLocations)
                         {
                             DBGLOG("%d: %s", local_idx+1, localLocations.item(local_idx));
                         }
                         DBGLOG("Or at any of the following %d remote locations:", remoteLocationInfo.length());
-#else
-                        DBGLOG("Failed to open file at any of the following %d remote locations:", remoteLocationInfo.length());
-#endif
                         ForEachItemIn(remote_idx, remoteLocationInfo)
                         {
                             DBGLOG("%d: %s", remote_idx+1, remoteLocationInfo.item(remote_idx));
@@ -1862,20 +1860,15 @@ public:
             }
             else
             {
+                const char * myCluster = roxieName.str();
                 if (isContainerized())
-                {
-                    const char *myCluster = (ROXIE_KEY == fileType) ? defaultIndexBuildPlane.str() : defaultPlane.str();
-                    StringArray localEnoughPlanes;
-                    if (getDirectAccessStoragePlanes(localEnoughPlanes))
-                        appendRemoteLocations(pdesc, localEnoughLocations, NULL, localEnoughPlanes, true);
-                    localEnoughPlanes.append(myCluster);
-                    appendRemoteLocations(pdesc, remoteLocations, NULL, localEnoughPlanes, false);      // Add from any plane on same dali, other than default or local enough
-                }
-                else
-                {
-                    const char *myCluster = roxieName.str();
-                    appendRemoteLocations(pdesc, remoteLocations, NULL, myCluster, false);      // Add from any cluster on same dali, other than mine
-                }
+                    myCluster = (ROXIE_KEY == fileType) ? defaultIndexBuildPlane.str() : defaultPlane.str();
+
+                StringArray localEnoughPlanes;
+                if (getDirectAccessStoragePlanes(localEnoughPlanes))
+                    appendRemoteLocations(pdesc, localEnoughLocations, NULL, localEnoughPlanes, true);
+                localEnoughPlanes.append(myCluster);
+                appendRemoteLocations(pdesc, remoteLocations, NULL, localEnoughPlanes, false);      // Add from any plane on same dali, other than default or local enough
             }
             if (remotePDesc)
                 appendRemoteLocations(remotePDesc, remoteLocations, NULL, NULL, false);    // Then any remote on remote dali
