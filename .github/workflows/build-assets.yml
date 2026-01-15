@@ -192,10 +192,15 @@ jobs:
       contents: write
       actions: write
       packages: read
-    uses: ./.github/workflows/build-clienttools-macos-13.yml
+    strategy:
+      matrix:
+        cmake-config-extras: [ "-DCMAKE_OSX_ARCHITECTURES=x86_64 -DUSE_PYTHON3=OFF", "" ]
+      fail-fast: false
+    uses: ./.github/workflows/build-clienttools-macos-14.yml
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
       make-latest: ${{ needs.preamble.outputs.is_latest != 'false' }}
+      cmake-configuration-ex: ${{ matrix.cmake-config-extras }}
     secrets: inherit
 
   build-clienttools-internal-macos:
@@ -204,11 +209,16 @@ jobs:
       contents: read
       actions: write
       packages: read
-    uses: ./.github/workflows/build-clienttools-macos-13.yml
+    strategy:
+      matrix:
+        cmake-config-extras: [ "-DCMAKE_OSX_ARCHITECTURES=x86_64 -DUSE_PYTHON3=OFF", "" ]
+      fail-fast: false
+    uses: ./.github/workflows/build-clienttools-macos-14.yml
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
       ln-ref: ${{ needs.preamble.outputs.internal_ref }}
       make-latest: ${{ needs.preamble.outputs.is_latest != 'false' }}
+      cmake-configuration-ex: ${{ matrix.cmake-config-extras }}
     secrets: inherit
 
   build-clienttools-community-windows:
