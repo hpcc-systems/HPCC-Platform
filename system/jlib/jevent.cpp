@@ -1472,6 +1472,17 @@ public:
 };
 static EventAttributeStates eventAttributeStates;
 
+CEvent& CEvent::operator = (const CEvent& other)
+{
+    if (this != &other)
+    {
+        reset(other.queryType());
+        for (CEventAttribute& attr : definedAttributes)
+            attr = other.queryAttribute(attr.queryId());
+    }
+    return *this;
+}
+
 void CEvent::reset(EventType _type)
 {
     assertex(_type < EventMax);
@@ -1501,129 +1512,216 @@ const std::initializer_list<EventAttr>& CEvent::queryOrderedAttributeIds() const
     return eventInformation[type].attributes;
 }
 
-class CEventFileReader : public CInterface
+class CEventFileConsumer : public CInterface
 {
-private:
-    Owned<IBufferedSerialInputStream> stream;
-    Owned<IFile> file;
-    Linked<IEventVisitor> visitor;
-    CEvent event;
-    unsigned version{0};
-    uint32_t options{0};
-    __uint64 baseTimestamp{0};
-    size32_t bytesRead{0};
-
 public:
-    bool traverse(const char* filename, IEventVisitor& _visitor)
+    bool openFile(const char* path)
     {
-        file.setown(locateEventFile(filename));
+        file.setown(locateEventFile(path));
         stream.setown(openEventFileForReading(*file));
-        visitor.set(&_visitor);
-
-        //MORE: Need to handle multiple file versions
-        if (version != currentVersion)
-            throw makeStringExceptionV(-1, "unsupported file version %u (required %u)", version, currentVersion);
-
-        return traverseHeader() && traverseEvents() && traverseFooter();
-    }
-
-private:
-    bool traverseHeader()
-    {
-        readToken(options);
-        readToken(baseTimestamp);
-        return visitor->visitFile(file->queryFilename(), version);
-    }
-
-    bool traverseEvents()
-    {
-        for (;;)
-        {
-            // no more data means no more events
-            size32_t got = 0;
-            stream->peek(1, got);
-            if (!got)
-                break;
-
-            EventType eventType;
-            readToken(eventType);
-            if (eventType >= EventMax)
-                throw makeStringExceptionV(-1, "invalid event type %u", eventType);
-            event.reset(eventType);
-            if ((EventNone != eventType) && !traverseAttributes())
-                return false;
-        }
+        if (!stream)
+            return false;
+        properties.path.set(path);
         return true;
     }
 
-    bool traverseAttributes()
+    void readHeader()
     {
-        if (!finishAttribute<__uint64>(EvAttrEventTimestamp))
+        uint32_t options = 0;
+        readToken(options);
+        if (options & ERFtraceid)
+            properties.options.includeTraceIds = true;
+        if (options & ERFthreadid)
+            properties.options.includeThreadIds = true;
+        if (options & ERFstacktrace)
+            properties.options.includeStackTraces = true;
+        readToken(baseTimestamp);
+    }
+
+    bool readEvent(CEvent& event)
+    {
+        // no more data means no more events
+        size32_t got = 0;
+        stream->peek(1, got);
+        if (!got)
             return false;
-        if ((options & ERFtraceid) && !finishDataAttribute(EvAttrEventTraceId, 16))
+
+        EventType eventType;
+        readToken(eventType);
+        if (eventType >= EventMax)
+            throw makeStringExceptionV(-1, "invalid event type %u", eventType);
+        event.reset(eventType);
+        switch (eventType)
+        {
+        case EventNone:
             return false;
-        if ((options & ERFthreadid) && !finishAttribute<__uint64>(EvAttrEventThreadId))
+        case EventRecordingSource:
+            // At most one occurrence of RecordingSource is allowed per file. The single instance,
+            // if present, must be the first recorded element.
+            if (properties.eventsRead || haveRecordingSource)
+                throw makeStringException(0, "RecordingSource can only be the first recorded event");
+            haveRecordingSource = true;
+            if (!readAttributes(event))
+                return false;
+            if (event.hasAttribute(EvAttrProcessDescriptor))
+                properties.processDescriptor.set(event.queryTextValue(EvAttrProcessDescriptor));
+            if (event.hasAttribute(EvAttrChannelId))
+            {
+                __uint64 channelId = event.queryNumericValue(EvAttrChannelId);
+                if (channelId > UINT8_MAX)
+                    throw makeStringExceptionV(0, "ChannelId value %llu exceeds maximum allowed value %u", channelId, UINT8_MAX);
+                properties.channelId = static_cast<byte>(channelId);
+            }
+            if (event.hasAttribute(EvAttrReplicaId))
+            {
+                __uint64 replicaId = event.queryNumericValue(EvAttrReplicaId);
+                if (replicaId > UINT8_MAX)
+                    throw makeStringExceptionV(0, "ReplicaId value %llu exceeds maximum allowed value %u", replicaId, UINT8_MAX);
+                properties.replicaId = static_cast<byte>(replicaId);
+            }
+            if (event.hasAttribute(EvAttrInstanceId))
+                properties.instanceId = event.queryNumericValue(EvAttrInstanceId);
+            // Do not distribute this event. Distribute the next event. The recursive call will
+            // read at most one additional element because properties.eventsRead must be zero for
+            // repeated recursion.
+            return readEvent(event);
+        default:
+            break;
+        }
+        if (!readAttributes(event))
             return false;
-        for (;;)
+        properties.eventsRead++;
+        return true;
+    }
+
+    bool readAttributes(CEvent& event)
+    {
+        if (!finishAttribute<__uint64>(event, EvAttrEventTimestamp))
+            return false;
+        if (properties.options.includeTraceIds && !finishDataAttribute(event, EvAttrEventTraceId, 16))
+            return false;
+        if (properties.options.includeThreadIds && !finishAttribute<__uint64>(event, EvAttrEventThreadId))
+            return false;
+        bool good = true;
+        while (good)
         {
             EventAttr attr;
             readToken(attr);
             if (EvAttrNone == attr)
-                return finishEvent();
+                return true;
             if (attr >= EvAttrMax)
                 throw makeStringExceptionV(-1, "invalid attribute type %u", attr);
             switch (attrInformation[attr].type)
             {
             case EATnone:
-                throw makeStringExceptionV(-1, "no data type for attribute %u", attr);
-                break;
+                throw makeStringExceptionV(-1, "no data type for attribute %s", queryEventAttributeName(attr));
+            default:
+                throw makeStringExceptionV(-1, "unknown data type %d for attribute %s", attrInformation[attr].type, queryEventAttributeName(attr));
             case EATbool:
-                if (!finishAttribute<bool>(attr))
-                    return false;
+                good = finishAttribute<bool>(event, attr);
                 break;
             case EATu1:
-                if (!finishAttribute<uint8_t>(attr))
-                    return false;
+                good = finishAttribute<uint8_t>(event, attr);
                 break;
             case EATu2:
-                if (!finishAttribute<uint16_t>(attr))
-                    return false;
+                good = finishAttribute<uint16_t>(event, attr);
                 break;
             case EATu4:
-                if (!finishAttribute<uint32_t>(attr))
-                    return false;
+                good = finishAttribute<uint32_t>(event, attr);
                 break;
             case EATu8:
             case EATtimestamp:
-                if (!finishAttribute<__uint64>(attr))
-                    return false;
+                good = finishAttribute<__uint64>(event, attr);
                 break;
             case EATstring:
-                if (!finishAttribute(attr))
-                    return false;
+                good = finishAttribute(event, attr);
                 break;
             case EATtraceid:
-                if (!finishAttribute(attr, 32))
-                    return false;
+                good = finishAttribute(event, attr, 32);
                 break;
             }
         }
-        return true;
+        return false;
     }
 
-    bool traverseFooter()
+protected:
+    IFile* locateEventFile(const char* filename)
     {
-        (void)visitor->departFile(bytesRead);
-        return true;
+        if (isEmptyString(filename))
+            return nullptr;
+        const char * path = filename;
+        Owned<IFile> file = createIFile(path);
+        if (!file || !file->exists())
+            throw makeStringExceptionV(-1, "file '%s' not found", path);
+        return file.getClear();
     }
 
-    bool finishEvent()
+    IBufferedSerialInputStream* openEventFileForReading(IFile& file)
     {
-        return visitor->visitEvent(event);
+        Owned<IFileIO> fileIO = file.open(IFOread);
+        if (!fileIO)
+            throw makeStringExceptionV(-1, "file '%s' not opened for reading", file.queryFilename());
+        Owned<ISerialInputStream> baseStream = createSerialInputStream(fileIO);
+        Owned<IBufferedSerialInputStream> bufferedStream = createBufferedInputStream(baseStream, 0x100000, false);
+
+        char header[sizeof(magicHeader)];
+        bufferedStream->read(sizeof(header), header);
+        if (memcmp(header, magicHeader, sizeof(magicHeader)) != 0)
+            throw makeStringExceptionV(-1, "file '%s' is not an event file", file.queryFilename());
+
+        bufferedStream->read(sizeof(properties.version), &properties.version);
+        //MORE: Need to handle multiple file versions
+        if (properties.version != currentVersion)
+            throw makeStringExceptionV(-1, "unsupported file version %u (required %u)", properties.version, currentVersion);
+
+        byte compressionType;
+        bufferedStream->read(sizeof(compressionType), &compressionType);
+
+        properties.bytesRead += sizeof(header) + sizeof(properties.version) + sizeof(compressionType);
+        if (compressionType != COMPRESS_METHOD_NONE)
+        {
+            ICompressHandler * compressHandler = queryCompressHandler((CompressionMethod)compressionType);
+            const char *compressOptions = nullptr; // at least for now!
+            Owned<IExpander> expander = compressHandler->getExpander(compressOptions);
+
+            Owned<ISerialInputStream> decompressedStream = createDecompressingInputStream(bufferedStream, expander);
+            Owned<IBufferedSerialInputStream> bufferedDecompressedStream = createBufferedInputStream(decompressedStream, 0x100000, false);
+            return bufferedDecompressedStream.getClear();
+        }
+        return bufferedStream.getClear();
+    }
+
+    //Read a strongly typed value from a buffered stream.
+    template<typename T>
+    T readToken(T& token)
+    {
+        if (stream->read(sizeof(token), &token) != sizeof(token))
+            throw makeStringException(-1, "unexpected eof");
+        properties.bytesRead += sizeof(token);
+        return token;
+    }
+
+    //Read a fixed length, unterminated, string from a buffered stream.
+    StringBuffer& readToken(StringBuffer& token, size32_t len)
+    {
+        assertex(len);
+        token.setLength(len);
+        if (stream->read(len, const_cast<char*>(token.str())) != len)
+            throw makeStringExceptionV(-1, "eof before end of %u byte string", len);
+        properties.bytesRead += len;
+        return token;
+    }
+
+    //Read a NULL terminated string from a buffered stream.
+    StringBuffer& readToken(StringBuffer& token)
+    {
+        if (!readZeroTerminatedString(token, *stream))
+            throw makeStringExceptionV(-1, "eof before end of NULL terminated string");
+        return token;
     }
 
     template <typename T>
-    bool finishAttribute(EventAttr attr)
+    bool finishAttribute(CEvent& event, EventAttr attr)
     {
         T value;
         readToken(value);
@@ -1649,14 +1747,14 @@ private:
         return event.setValue(attr, __uint64(value));
     }
 
-    bool finishAttribute(EventAttr attr)
+    bool finishAttribute(CEvent& event, EventAttr attr)
     {
         StringBuffer value;
         readToken(value);
         return event.setValue(attr, value.str());
     }
 
-    bool finishAttribute(EventAttr attr, size32_t len)
+    bool finishAttribute(CEvent& event, EventAttr attr, size32_t len)
     {
         StringBuffer value;
         readToken(value, len);
@@ -1664,12 +1762,12 @@ private:
     }
 
     //Read as data, but pass through as a hex encoded string
-    bool finishDataAttribute(EventAttr attr, size32_t len)
+    bool finishDataAttribute(CEvent& event, EventAttr attr, size32_t len)
     {
         MemoryAttr buffer(len);
         if (stream->read(len, buffer.mem()) != len)
             throw makeStringExceptionV(-1, "eof before end of %u byte string", len);
-        bytesRead += len;
+        properties.bytesRead += len;
 
         StringBuffer hexText;
         hexText.ensureCapacity(len*2);
@@ -1678,112 +1776,85 @@ private:
         return event.setValue(attr, hexText.str());
     }
 
-    //Read a strongly typed value from a buffered stream.
-    template<typename T>
-    T readToken(T& token)
+protected:
+    Owned<IBufferedSerialInputStream> stream;
+    Owned<IFile> file;
+    EventFileProperties properties;
+    __uint64 baseTimestamp{0};
+    bool haveRecordingSource{false};
+};
+
+class CEventFilePusher : public CEventFileConsumer
+{
+private:
+    Linked<IEventVisitor> visitor;
+    CEvent event;
+
+public:
+    bool traverse(const char* path, IEventVisitor& _visitor)
     {
-        if (stream->read(sizeof(token), &token) != sizeof(token))
-            throw makeStringException(-1, "unexpected eof");
-        bytesRead += sizeof(token);
-        return token;
+        if (!openFile(path))
+            return false;
+        visitor.set(&_visitor);
+        return traverseHeader() && traverseEvents() && traverseFooter();
     }
 
-    //Read a fixed length, unterminated, string from a buffered stream.
-    StringBuffer& readToken(StringBuffer& token, size32_t len)
+private:
+    bool traverseHeader()
     {
-        assertex(len);
-        token.setLength(len);
-        if (stream->read(len, const_cast<char*>(token.str())) != len)
-            throw makeStringExceptionV(-1, "eof before end of %u byte string", len);
-        bytesRead += len;
-        return token;
+        readHeader();
+        return visitor->visitFile(properties.path.str(), properties.version);
     }
 
-    //Read a NULL terminated string from a buffered stream.
-    StringBuffer& readToken(StringBuffer& token)
+    bool traverseEvents()
     {
-        size32_t got = 0;
-        for (;;) {
-            const char *s = (const char*)stream->peek(1,got);
-            if (!s)
-                throw makeStringExceptionV(-1, "eof before end of NULL terminated string");
-            const char *p = s;
-            const char *e = p + got;
-            while (p != e)
-            {
-                if (!*p)
-                {
-                    token.append(p - s, s);
-                    stream->skip(p - s + 1);
-                    bytesRead += token.length() + 1;
-                    return token;
-                }
-                p++;
-            }
-            token.append(got, s);
-            stream->skip(got);
-        }
-        return token;
-    }
-
-    IFile* locateEventFile(const char* filename)
-    {
-        if (isEmptyString(filename))
-            return nullptr;
-        const char * path = filename;
-    #if 0
-        StringBuffer outputFilename;
-        if (!isAbsolutePath(filename))
+        while (readEvent(event))
         {
-            getTempFilePath(outputFilename, "eventrecorder", nullptr);
-            outputFilename.append(PATHSEPCHAR).append(filename);
-            path = outputFilename.str();
+            if (!visitor->visitEvent(event))
+                return false;
         }
-    #endif
-        Owned<IFile> file = createIFile(path);
-        if (!file || !file->exists())
-            throw makeStringExceptionV(-1, "file '%s' not found", path);
-        return file.getClear();
+        return true;
     }
-
-    IBufferedSerialInputStream* openEventFileForReading(IFile& file)
+    bool traverseFooter()
     {
-        Owned<IFileIO> fileIO = file.open(IFOread);
-        if (!fileIO)
-            throw makeStringExceptionV(-1, "file '%s' not opened for reading", file.queryFilename());
-        Owned<ISerialInputStream> baseStream = createSerialInputStream(fileIO);
-        Owned<IBufferedSerialInputStream> bufferedStream = createBufferedInputStream(baseStream, 0x100000, false);
-
-        char header[sizeof(magicHeader)];
-        bufferedStream->read(sizeof(header), header);
-        if (memcmp(header, magicHeader, sizeof(magicHeader)) != 0)
-            throw makeStringExceptionV(-1, "file '%s' is not an event file", file.queryFilename());
-
-        bufferedStream->read(sizeof(version), &version);
-        byte compressionType;
-        bufferedStream->read(sizeof(compressionType), &compressionType);
-
-        bytesRead += sizeof(header) + sizeof(version) + sizeof(compressionType);
-
-        if (compressionType != COMPRESS_METHOD_NONE)
-        {
-            ICompressHandler * compressHandler = queryCompressHandler((CompressionMethod)compressionType);
-            const char *compressOptions = nullptr; // at least for now!
-            Owned<IExpander> expander = compressHandler->getExpander(compressOptions);
-
-            Owned<ISerialInputStream> decompressedStream = createDecompressingInputStream(bufferedStream, expander);
-            Owned<IBufferedSerialInputStream> bufferedDecompressedStream = createBufferedInputStream(decompressedStream, 0x100000, false);
-            return bufferedDecompressedStream.getClear();
-        }
-        return bufferedStream.getClear();
+        (void)visitor->departFile(properties.bytesRead);
+        return true;
     }
 };
 
 bool readEvents(const char* filename, IEventVisitor& visitor)
 {
-    CEventFileReader reader;
+    CEventFilePusher reader;
     return reader.traverse(filename, visitor);
 }
+
+class CEventFilePuller : implements IEventReader, public CEventFileConsumer
+{
+public:
+    IMPLEMENT_IINTERFACE_USING(CEventFileConsumer);
+
+    virtual bool nextEvent(CEvent& event) override
+    {
+        return readEvent(event);
+    }
+
+    virtual const EventFileProperties& queryFileProperties() const override
+    {
+        return properties;
+    }
+};
+
+IEventReader* createEventReader(const char* path)
+{
+    Owned<CEventFilePuller> reader = new CEventFilePuller;
+    if (reader->openFile(path))
+    {
+        reader->readHeader();
+        return reader.getClear();
+    }
+    return nullptr;
+}
+
 
 // GH->TK
 // Next steps:
