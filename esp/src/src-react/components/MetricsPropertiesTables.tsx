@@ -57,12 +57,16 @@ class TableEx extends Table {
 
 export interface MetricsPropertiesTablesProps {
     wuid?: string;
+    querySet?: string;
+    queryId?: string;
     scopesTableColumns?: string[];
     scopes?: IScopeEx[];
 }
 
 export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesTablesProps> = ({
     wuid = "",
+    querySet = "",
+    queryId = "",
     scopesTableColumns = [],
     scopes = []
 }) => {
@@ -144,7 +148,13 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
                     case "name":
                         const splitMetricName = row.Value.split(":");
                         const lastMetricNode = splitMetricName.pop();
-                        rowValue = `<a href="#/workunits/${wuid}/metrics/${splitMetricName.join(":")}/${lastMetricNode}">${row.Value}</a>`;
+                        if (wuid) {
+                            rowValue = `<a href="#/workunits/${wuid}/metrics/${splitMetricName.join(":")}/${lastMetricNode}">${row.Value}</a>`;
+                        } else if (querySet && queryId) {
+                            rowValue = `<a href="#/queries/${querySet}/${queryId}/metrics/statistics/${splitMetricName.join(":")}/${lastMetricNode}">${row.Value}</a>`;
+                        } else {
+                            rowValue = row.Value;
+                        }
                         break;
                     default:
                         rowValue = row.Value;
@@ -177,7 +187,7 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
             .data(props)
             .lazyRender()
             ;
-    }, [archive, findArchiveItemByPath, propsTable, scopes, sortByColumns, wuid]);
+    }, [archive, findArchiveItemByPath, propsTable, queryId, querySet, scopes, sortByColumns, wuid]);
 
     return <AutosizeHpccJSComponent widget={propsTable}></AutosizeHpccJSComponent>;
 };
