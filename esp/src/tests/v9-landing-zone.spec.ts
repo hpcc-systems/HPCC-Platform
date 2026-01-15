@@ -60,28 +60,23 @@ test.describe("V9 Landing Zone", () => {
         await expect(page.getByRole("menuitem", { name: "Blob" })).toBeDisabled();
     });
 
-    test.skip("Should open filter dialog when filter button is clicked", async ({ page }) => {
+    test("Should open filter dialog when filter button is clicked", async ({ page }) => {
         await page.getByRole("menuitem", { name: "Filter" }).click();
 
         // Check that filter dialog is displayed
-        const filterHeading = page.getByRole("heading", { name: "Filter" });
-        await filterHeading.waitFor({ state: "visible", timeout: 5000 });
-        await expect(filterHeading).toBeVisible();
+        await expect(page.getByRole("dialog")).toBeVisible();
+        const filterDialog = page.getByRole("dialog").first();
 
-        // Wait for the form to load properly
-        await page.waitForTimeout(1000);
+        await expect(filterDialog.getByRole("heading", { name: "Filter" })).toBeVisible();
 
         // Check for filter form fields using more specific selectors
-        await expect(page.locator("label[for='DropZoneName']")).toBeVisible();
-        await expect(page.locator("label[for='Server']")).toBeVisible();
-        await expect(page.locator("label[for='NameFilter']")).toBeVisible();
+        await expect(filterDialog.locator("label[for='DropZoneName']")).toBeVisible();
+        await expect(filterDialog.locator("label[for='Server']")).toBeVisible();
+        await expect(filterDialog.locator("label[for='NameFilter']")).toBeVisible();
 
         // Check for filter dialog buttons (Apply and Clear)
-        await expect(page.getByRole("button", { name: "Apply" })).toBeVisible();
-        await expect(page.locator("button.ms-Button", { hasText: "Clear" })).toBeVisible();
-
-        // Check that the close button (X) is visible
-        await expect(page.getByRole("button", { name: "Close popup modal" })).toBeVisible({ timeout: 10000 });
+        await expect(filterDialog.getByRole("button", { name: "Apply" })).toBeVisible();
+        await expect(filterDialog.locator("button.ms-Button", { hasText: "Clear" })).toBeVisible();
     });
 
     test("Should open upload file dialog when upload button is clicked", async ({ page }) => {

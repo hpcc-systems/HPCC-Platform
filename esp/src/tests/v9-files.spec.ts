@@ -43,7 +43,7 @@ test.describe("V9 Files - Logical Files", () => {
         await expect(page.locator(".ms-DetailsRow")).not.toHaveCount(0);
     });
 
-    test.skip("Should allow filtering logical files and display filtered results", async ({ page }) => {
+    test("Should allow filtering logical files and display filtered results", async ({ page }) => {
         await expect(page.getByRole("menubar")).toBeVisible();
         await expect(page.getByRole("menuitem", { name: "Refresh" })).toBeVisible();
 
@@ -54,10 +54,11 @@ test.describe("V9 Files - Logical Files", () => {
             test.skip(true, "Filter functionality not available on this configuration");
         }
 
-        await page.waitForTimeout(2000);
-        const hasInitialData = await page.locator(".ms-DetailsRow").count() > 0;
-
-        if (!hasInitialData) {
+        // Wait for initial data to load
+        try {
+            const firstRow = page.locator(".ms-DetailsRow").first();
+            await firstRow.waitFor({ state: "visible", timeout: 10000 });
+        } catch {
             test.skip(true, "No logical files data available - cannot test filtering");
         }
 
@@ -65,12 +66,9 @@ test.describe("V9 Files - Logical Files", () => {
 
         await filterMenuItem.click();
 
-        const filterDialog = page.locator(".ms-Modal.is-open").filter({ hasText: "Filter" }).first();
-
         // Wait for the dialog to appear
-        await filterDialog.waitFor({ state: "visible", timeout: 5000 });
-
-        await expect(filterDialog).toBeVisible({ timeout: 10000 });
+        await expect(page.getByRole("dialog")).toBeVisible();
+        const filterDialog = page.getByRole("dialog").first();
 
         const logicalNameInput = filterDialog.locator("input[name=\"LogicalName\"]").or(
             filterDialog.getByLabel("Name")
@@ -78,18 +76,19 @@ test.describe("V9 Files - Logical Files", () => {
             filterDialog.locator("input[type=\"text\"]").first()
         );
 
-        await expect(logicalNameInput).toBeVisible({ timeout: 5000 });
+        await expect(logicalNameInput).toBeVisible();
         await logicalNameInput.fill("*global*");
 
-        await page.getByRole("button", { name: "Apply" }).click();
-        await expect(filterDialog).toBeHidden({ timeout: 5000 });
+        await filterDialog.getByRole("button", { name: "Apply" }).click();
+        await expect(filterDialog).toBeHidden();
 
-        await page.waitForTimeout(2000);
+        // Wait for filter to be applied by checking for network idle or row changes
+        await page.waitForLoadState("networkidle");
 
         const filteredRowCount = await page.locator(".ms-DetailsRow").count();
 
         if (filteredRowCount > 0) {
-            await page.locator(".ms-DetailsRow").first().waitFor({ state: "visible", timeout: 5000 });
+            await expect(page.locator(".ms-DetailsRow").first()).toBeVisible();
             console.log(`Filter applied successfully. Rows: ${initialRowCount} -> ${filteredRowCount}`);
         } else {
             console.log(`Filter applied successfully. No results found for filter '*global*'. Rows: ${initialRowCount} -> 0`);
