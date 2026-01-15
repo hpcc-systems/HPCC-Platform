@@ -3466,14 +3466,11 @@ IRemoteLogAccess *queryRemoteLogAccessor()
                 if (type.isEmpty())
                     throw makeStringExceptionV(JLIBERR_PluginKindNotSpecified, "%s: RemoteLogAccess plugin kind not specified.", methodName);
 
-                StringBuffer libName;
-                libName.append("lib").append(type.str()).append("logaccess");
-
                 // Store the actual platform-specific filename for diagnostics
                 VStringBuffer actualLibName("%s%slogaccess%s", SharedObjectPrefix, type.str(), SharedObjectExtension);
 
                 //Load the DLL/SO
-                HINSTANCE logAccessPluginLib = LoadSharedObject(libName.str(), false, true);
+                HINSTANCE logAccessPluginLib = LoadSharedObject(actualLibName.str(), false, true);
 
                 if (!logAccessPluginLib) //should not happen, defensive check.
                     throw makeStringExceptionV(JLIBERR_UnableToLoadLibrary, "%s: failed to load library '%s' for RemoteLogAccess plugin", methodName, actualLibName.str());
