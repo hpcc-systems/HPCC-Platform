@@ -1,4 +1,4 @@
-name: Build Clienttools macos-13
+name: Build Clienttools macos-14
 
 env:
   VCPKG_BINARY_SOURCES: "clear;nuget,GitHub,read"
@@ -21,6 +21,11 @@ on:
         description: 'CMake config options'
         required: false
         default: "-DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DUSE_NATIVE_LIBRARIES=ON -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_PARQUET=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF"
+      cmake-configuration-ex:
+        type: string
+        description: 'CMake extra configuration options'
+        required: false
+        default: ""
       cmake-build-options:
         type: string
         description: 'CMake build options'
@@ -33,9 +38,9 @@ on:
         default: false
 
 jobs:
-  generate_macos_13_clienttools:
-    name: Generate MacOS 13 Clienttools
-    runs-on: "macos-13"
+  generate_macos_14_clienttools:
+    name: Generate MacOS 14 Clienttools
+    runs-on: "macos-14"
 
     steps:
       - name: Dependencies
@@ -97,7 +102,7 @@ jobs:
         shell: "bash"
         run: |
           mkdir -p ./build
-          cmake -S ${{ steps.setup_source.outputs.source_dir }} -B ./build ${{ inputs.cmake-config-options }}
+          cmake -S ${{ steps.setup_source.outputs.source_dir }} -B ./build ${{ inputs.cmake-config-options }} ${{ inputs.cmake-configuration-ex }}
           cmake --build ./build ${{ inputs.cmake-build-options }} --target package
 
       - name: Release Community Clienttools
@@ -117,13 +122,18 @@ jobs:
           cd ./build
           packages=($(ls -1 hpccsystems-clienttools-internal*.pkg ))
           for _package in ${packages[@]}; do
-            curl -u${{ secrets.JFROG_USERNAME }}:${{ secrets.JFROG_PASSWORD }} "https://${{ secrets.JFROG_REGISTRY }}/hpccpl-macos-local/LN/macos/x86_64/${_package}" -T ${_package}
+            _arch=$(echo "${_package}" | grep -oE '(x86_64|arm64)')
+            if [ -z "$_arch" ]; then
+              echo "Error: Could not determine architecture from package filename '$_package'. Skipping upload." >&2
+              continue
+            fi
+            curl -u${{ secrets.JFROG_USERNAME }}:${{ secrets.JFROG_PASSWORD }} "https://${{ secrets.JFROG_REGISTRY }}/hpccpl-macos-local/LN/macos/${_arch}/${_package}" -T ${_package}
           done
 
       - name: Upload Error Logs
         if: ${{ failure() || cancelled() }}
         uses: actions/upload-artifact@v4
         with:
-          name: macos-13-clienttools-logs-${{ github.job }}-${{ github.run_number }}
+          name: macos-14-clienttools-logs-${{ github.job }}-${{ github.run_number }}
           path: ./build/**/*.log
           retention-days: 1
