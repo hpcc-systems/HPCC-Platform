@@ -1,5 +1,6 @@
 import * as React from "react";
 import { useConst } from "@fluentui/react-hooks";
+import { tokens } from "@fluentui/react-components";
 import { d3Event, Palette } from "@hpcc-js/common";
 import { ColumnFormat, Table } from "@hpcc-js/dgrid";
 import { formatDecimal } from "src/Utility";
@@ -110,6 +111,10 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
         propsTable.render();
     }, [propsTable, isDark]);
 
+    const linkStyle = React.useMemo(() => {
+        return `color: ${tokens.colorBrandForeground1}; text-decoration: none;`;
+    }, []);
+
     React.useEffect(() => {
         const props = [];
         scopes.forEach((item, idx) => {
@@ -123,7 +128,7 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
                 switch (row.Key) {
                     case "Filename":
                     case "Indexname":
-                        rowValue = `<a href="#/files/${row.Value}">${row.Value}</a>`;
+                        rowValue = `<a href="#/files/${row.Value}" style="${linkStyle}">${row.Value}</a>`;
                         break;
                     case "DefinitionList":
                         const matches = row.Value?.match(/[/\\]([^/\\]+)\((\d+),(\d+)\)/);
@@ -132,15 +137,15 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
                             const lineNum = matches[2];
                             const archiveItem = findArchiveItemByPath(archive.attributes, row.Value);
                             const selectionId = archiveItem?.id || fileName.replace(/\.[^.]+$/, "");
-                            rowValue = `<a href="#/workunits/${wuid}/eclsummary/${selectionId}/${lineNum}">${row.Value}</a>`;
+                            rowValue = `<a href="#/workunits/${wuid}/eclsummary/${selectionId}/${lineNum}" style="${linkStyle}">${row.Value}</a>`;
                         } else {
                             rowValue = row.Value;
                         } break;
                     case "id":
                         if (isDfuWu(row.Value)) {
-                            rowValue = `<a href="#/dfuworkunits/${row.Value}/summary">${row.Value}</a>`;
+                            rowValue = `<a href="#/dfuworkunits/${row.Value}/summary" style="${linkStyle}">${row.Value}</a>`;
                         } else if (isEclWu(row.Value)) {
-                            rowValue = `<a href="#/workunits/${row.Value}/summary">${row.Value}</a>`;
+                            rowValue = `<a href="#/workunits/${row.Value}/summary" style="${linkStyle}">${row.Value}</a>`;
                         } else {
                             rowValue = row.Value;
                         }
@@ -149,9 +154,9 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
                         const splitMetricName = row.Value.split(":");
                         const lastMetricNode = splitMetricName.pop();
                         if (wuid) {
-                            rowValue = `<a href="#/workunits/${wuid}/metrics/${splitMetricName.join(":")}/${lastMetricNode}">${row.Value}</a>`;
+                            rowValue = `<a href="#/workunits/${wuid}/metrics/${splitMetricName.join(":")}/${lastMetricNode}" style="${linkStyle}">${row.Value}</a>`;
                         } else if (querySet && queryId) {
-                            rowValue = `<a href="#/queries/${querySet}/${queryId}/metrics/statistics/${splitMetricName.join(":")}/${lastMetricNode}">${row.Value}</a>`;
+                            rowValue = `<a href="#/queries/${querySet}/${queryId}/metrics/statistics/${splitMetricName.join(":")}/${lastMetricNode}" style="${linkStyle}">${row.Value}</a>`;
                         } else {
                             rowValue = row.Value;
                         }
@@ -187,7 +192,7 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
             .data(props)
             .lazyRender()
             ;
-    }, [archive, findArchiveItemByPath, propsTable, queryId, querySet, scopes, sortByColumns, wuid]);
+    }, [archive, findArchiveItemByPath, linkStyle, propsTable, queryId, querySet, scopes, sortByColumns, wuid]);
 
     return <AutosizeHpccJSComponent widget={propsTable}></AutosizeHpccJSComponent>;
 };
