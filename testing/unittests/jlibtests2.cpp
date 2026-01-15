@@ -98,6 +98,8 @@ public:
         CPPUNIT_TEST(testReadEvents);
         CPPUNIT_TEST(testIterateAllAttributes);
         CPPUNIT_TEST(testIterateEventAttributes);
+        CPPUNIT_TEST(testRecordingSource);
+        CPPUNIT_TEST(testEventCompleteness);
         CPPUNIT_TEST(testFailCreate);
         CPPUNIT_TEST(testCleanup);
     CPPUNIT_TEST_SUITE_END();
@@ -369,6 +371,7 @@ public:
         {
             removeFile("eventtrace.evt");
             removeFile("testfile.bin");
+            removeFile("recordingsource.evt");
         }
     }
 
@@ -470,7 +473,7 @@ attribute: DataSize = 73
 
     void testIterateAllAttributes()
     {
-        std::set<unsigned> expectedDefined({EvAttrEventTimestamp, EvAttrEventTraceId, EvAttrEventThreadId, EvAttrEventStackTrace, EvAttrEnabled});
+        std::set<unsigned> expectedDefined({EvAttrEventTimestamp, EvAttrEventTraceId, EvAttrEventThreadId, EvAttrEventStackTrace, EvAttrEnabled, EvAttrChannelId, EvAttrReplicaId, EvAttrInstanceId});
         std::set<unsigned> expectedAssigned;
         std::set<unsigned> actualDefined;
         std::set<unsigned> actualAssigned;
@@ -499,10 +502,10 @@ attribute: DataSize = 73
 
     void testIterateEventAttributes()
     {
-        std::vector<unsigned> expectedDefined({EvAttrEventTimestamp, EvAttrEventTraceId, EvAttrEventThreadId, EvAttrEventStackTrace, EvAttrEnabled});
-        std::vector<unsigned> expectedAssigned;
-        std::vector<unsigned> actualDefined;
-        std::vector<unsigned> actualAssigned;
+        std::set<unsigned> expectedDefined({EvAttrEventTimestamp, EvAttrEventTraceId, EvAttrEventThreadId, EvAttrEventStackTrace, EvAttrEnabled, EvAttrChannelId, EvAttrReplicaId, EvAttrInstanceId});
+        std::set<unsigned> expectedAssigned;
+        std::set<unsigned> actualDefined;
+        std::set<unsigned> actualAssigned;
         size_t actualUnusedCount = 0;
         CEvent evt;
         evt.reset(EventRecordingActive);
@@ -511,10 +514,10 @@ attribute: DataSize = 73
             switch (attr.queryState())
             {
             case CEventAttribute::State::Defined:
-                actualDefined.push_back(attr.queryId());
+                actualDefined.insert(attr.queryId());
                 break;
             case CEventAttribute::State::Assigned:
-                actualAssigned.push_back(attr.queryId());
+                actualAssigned.insert(attr.queryId());
                 break;
             case CEventAttribute::State::Unused:
                 actualUnusedCount++;
@@ -527,17 +530,17 @@ attribute: DataSize = 73
         actualDefined.clear();
         actualUnusedCount = 0;
         evt.setValue(EvAttrEnabled, true);
-        expectedAssigned.push_back(EvAttrEnabled);
-        expectedDefined.erase(std::find(expectedDefined.begin(), expectedDefined.end(), EvAttrEnabled));
+        expectedAssigned.insert(EvAttrEnabled);
+        expectedDefined.erase(EvAttrEnabled);
         for (auto& attr : evt.definedAttributes)
         {
             switch (attr.queryState())
             {
             case CEventAttribute::State::Defined:
-                actualDefined.push_back(attr.queryId());
+                actualDefined.insert(attr.queryId());
                 break;
             case CEventAttribute::State::Assigned:
-                actualAssigned.push_back(attr.queryId());
+                actualAssigned.insert(attr.queryId());
                 break;
             case CEventAttribute::State::Unused:
                 actualUnusedCount++;
@@ -556,10 +559,10 @@ attribute: DataSize = 73
             switch (attr.queryState())
             {
             case CEventAttribute::State::Defined:
-                actualDefined.push_back(attr.queryId());
+                actualDefined.insert(attr.queryId());
                 break;
             case CEventAttribute::State::Assigned:
-                actualAssigned.push_back(attr.queryId());
+                actualAssigned.insert(attr.queryId());
                 break;
             case CEventAttribute::State::Unused:
                 actualUnusedCount++;
@@ -569,6 +572,296 @@ attribute: DataSize = 73
         CPPUNIT_ASSERT_EQUAL(containerToString(expectedDefined), containerToString(actualDefined));
         CPPUNIT_ASSERT_EQUAL(containerToString(expectedAssigned), containerToString(actualAssigned));
         CPPUNIT_ASSERT_EQUAL(size_t(0), actualUnusedCount);
+    }
+
+    void testRecordingSource()
+    {
+        try
+        {
+            EventRecorder &recorder = queryRecorder();
+            EventRecordingSummary summary;
+
+            // Start recording
+            CPPUNIT_ASSERT(recorder.startRecording("traceid", "recordingsource.evt", false));
+            CPPUNIT_ASSERT(recorder.isRecording());
+
+            // Record RecordingSource event
+            recorder.recordRecordingSource("test", 1, 2, 3);
+
+            // Record IndexCacheMiss with default recordIndexCacheMiss function (no ChannelId, ReplicaId, InstanceId)
+            recorder.recordIndexCacheMiss(100, 200, NodeLeaf);
+
+            // Create and record a CEvent with IndexCacheMiss that includes ChannelId, ReplicaId, InstanceId
+            CEvent event;
+            event.reset(EventIndexCacheMiss);
+            event.setValue(EvAttrFileId, 100U);
+            event.setValue(EvAttrFileOffset, 200ULL);
+            event.setValue(EvAttrNodeKind, (unsigned)NodeLeaf);
+            event.setValue(EvAttrChannelId, 1U);
+            event.setValue(EvAttrReplicaId, 2U);
+            event.setValue(EvAttrInstanceId, 3ULL);
+            recorder.recordEvent(event);
+
+            // Stop recording
+            CPPUNIT_ASSERT(recorder.stopRecording(&summary));
+            CPPUNIT_ASSERT(!recorder.isRecording());
+            CPPUNIT_ASSERT_EQUAL(3U, summary.numEvents);
+
+            // Read and verify events
+            class VerifyVisitor : public CInterfaceOf<IEventVisitor>
+            {
+            public:
+                virtual bool visitFile(const char* filename, uint32_t version) override
+                {
+                    return true;
+                }
+                virtual bool visitEvent(CEvent& event) override
+                {
+                    eventCount++;
+
+                    if (eventCount == 1)
+                    {
+                        // First event should be RecordingSource
+                        CPPUNIT_ASSERT_EQUAL((int)EventRecordingSource, (int)event.queryType());
+                        CPPUNIT_ASSERT(event.hasAttribute(EvAttrProcessDescriptor));
+                        CPPUNIT_ASSERT_EQUAL_STR("test", event.queryTextValue(EvAttrProcessDescriptor));
+                        CPPUNIT_ASSERT(event.hasAttribute(EvAttrChannelId));
+                        CPPUNIT_ASSERT_EQUAL(1ULL, event.queryNumericValue(EvAttrChannelId));
+                        CPPUNIT_ASSERT(event.hasAttribute(EvAttrReplicaId));
+                        CPPUNIT_ASSERT_EQUAL(2ULL, event.queryNumericValue(EvAttrReplicaId));
+                        CPPUNIT_ASSERT(event.hasAttribute(EvAttrInstanceId));
+                        CPPUNIT_ASSERT_EQUAL(3ULL, event.queryNumericValue(EvAttrInstanceId));
+                    }
+                    else if (eventCount == 2)
+                    {
+                        // Second event should be IndexCacheMiss without ChannelId, ReplicaId, InstanceId assigned
+                        CPPUNIT_ASSERT_EQUAL((int)EventIndexCacheMiss, (int)event.queryType());
+                        CPPUNIT_ASSERT(event.hasAttribute(EvAttrFileId));
+                        CPPUNIT_ASSERT_EQUAL(100ULL, event.queryNumericValue(EvAttrFileId));
+                        CPPUNIT_ASSERT(event.hasAttribute(EvAttrFileOffset));
+                        CPPUNIT_ASSERT_EQUAL(200ULL, event.queryNumericValue(EvAttrFileOffset));
+                        CPPUNIT_ASSERT(event.hasAttribute(EvAttrNodeKind));
+                        CPPUNIT_ASSERT_EQUAL((int)NodeLeaf, (int)event.queryNumericValue(EvAttrNodeKind));
+                        // Verify ChannelId, ReplicaId, InstanceId are defined but not assigned
+                        CPPUNIT_ASSERT(event.isAttribute(EvAttrChannelId));
+                        CPPUNIT_ASSERT(!event.hasAttribute(EvAttrChannelId));
+                        CPPUNIT_ASSERT(event.isAttribute(EvAttrReplicaId));
+                        CPPUNIT_ASSERT(!event.hasAttribute(EvAttrReplicaId));
+                        CPPUNIT_ASSERT(event.isAttribute(EvAttrInstanceId));
+                        CPPUNIT_ASSERT(!event.hasAttribute(EvAttrInstanceId));
+                    }
+                    else if (eventCount == 3)
+                    {
+                        // Third event should be IndexCacheMiss with all attributes assigned
+                        CPPUNIT_ASSERT_EQUAL((int)EventIndexCacheMiss, (int)event.queryType());
+                        CPPUNIT_ASSERT(event.hasAttribute(EvAttrFileId));
+                        CPPUNIT_ASSERT_EQUAL(100ULL, event.queryNumericValue(EvAttrFileId));
+                        CPPUNIT_ASSERT(event.hasAttribute(EvAttrFileOffset));
+                        CPPUNIT_ASSERT_EQUAL(200ULL, event.queryNumericValue(EvAttrFileOffset));
+                        CPPUNIT_ASSERT(event.hasAttribute(EvAttrNodeKind));
+                        CPPUNIT_ASSERT_EQUAL((int)NodeLeaf, (int)event.queryNumericValue(EvAttrNodeKind));
+                        // Verify ChannelId, ReplicaId, InstanceId are assigned with correct values
+                        CPPUNIT_ASSERT(event.hasAttribute(EvAttrChannelId));
+                        CPPUNIT_ASSERT_EQUAL(1ULL, event.queryNumericValue(EvAttrChannelId));
+                        CPPUNIT_ASSERT(event.hasAttribute(EvAttrReplicaId));
+                        CPPUNIT_ASSERT_EQUAL(2ULL, event.queryNumericValue(EvAttrReplicaId));
+                        CPPUNIT_ASSERT(event.hasAttribute(EvAttrInstanceId));
+                        CPPUNIT_ASSERT_EQUAL(3ULL, event.queryNumericValue(EvAttrInstanceId));
+                    }
+
+                    return true;
+                }
+                virtual void departFile(uint32_t bytesRead) override
+                {
+                }
+                unsigned eventCount = 0;
+            };
+
+            VerifyVisitor visitor;
+            CPPUNIT_ASSERT(readEvents("recordingsource.evt", visitor));
+            CPPUNIT_ASSERT_EQUAL(3U, visitor.eventCount);
+        }
+        catch (IException * e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+
+    void testEventCompleteness()
+    {
+        try
+        {
+            // Test IndexCacheMiss event with only required attributes (no header or source)
+            {
+                CEvent event;
+                event.reset(EventIndexCacheMiss);
+                // Without required attributes, should not be complete
+                CPPUNIT_ASSERT(!event.isComplete());
+
+                // Add required attributes
+                event.setValue(EvAttrFileId, 100U);
+                event.setValue(EvAttrFileOffset, 200ULL);
+                event.setValue(EvAttrNodeKind, (unsigned)NodeLeaf);
+
+                // Should be complete with only required attributes (header/source are optional)
+                CPPUNIT_ASSERT(event.isComplete());
+            }
+
+            // Test that header attributes are optional and don't affect completeness
+            {
+                CEvent event;
+                event.reset(EventIndexCacheMiss);
+                event.setValue(EvAttrFileId, 100U);
+                event.setValue(EvAttrFileOffset, 200ULL);
+                event.setValue(EvAttrNodeKind, (unsigned)NodeLeaf);
+
+                // Should be complete without header attributes
+                CPPUNIT_ASSERT(event.isComplete());
+
+                // Add some header attributes - should still be complete
+                event.setValue(EvAttrEventTimestamp, 123456ULL);
+                CPPUNIT_ASSERT(event.isComplete());
+
+                event.setValue(EvAttrEventThreadId, 789ULL);
+                CPPUNIT_ASSERT(event.isComplete());
+            }
+
+            // Test that source attributes are optional and don't affect completeness
+            {
+                CEvent event;
+                event.reset(EventIndexCacheMiss);
+                event.setValue(EvAttrFileId, 100U);
+                event.setValue(EvAttrFileOffset, 200ULL);
+                event.setValue(EvAttrNodeKind, (unsigned)NodeLeaf);
+
+                // Should be complete without source attributes
+                CPPUNIT_ASSERT(event.isComplete());
+
+                // Add some source attributes - should still be complete
+                event.setValue(EvAttrChannelId, 1U);
+                CPPUNIT_ASSERT(event.isComplete());
+
+                event.setValue(EvAttrReplicaId, 2U);
+                CPPUNIT_ASSERT(event.isComplete());
+
+                event.setValue(EvAttrInstanceId, 3ULL);
+                CPPUNIT_ASSERT(event.isComplete());
+            }
+
+            // Test with all combinations of header and source attributes
+            {
+                CEvent event;
+                event.reset(EventIndexCacheMiss);
+                event.setValue(EvAttrFileId, 100U);
+                event.setValue(EvAttrFileOffset, 200ULL);
+                event.setValue(EvAttrNodeKind, (unsigned)NodeLeaf);
+
+                // Add all header attributes
+                event.setValue(EvAttrEventTimestamp, 123456ULL);
+                event.setValue(EvAttrEventTraceId, "00000000000000000000000000000000");
+                event.setValue(EvAttrEventThreadId, 789ULL);
+                event.setValue(EvAttrEventStackTrace, "stack trace");
+
+                // Add all source attributes
+                event.setValue(EvAttrChannelId, 1U);
+                event.setValue(EvAttrReplicaId, 2U);
+                event.setValue(EvAttrInstanceId, 3ULL);
+
+                // Should still be complete
+                CPPUNIT_ASSERT(event.isComplete());
+            }
+
+            // Test RecordingSource event requires source attributes
+            {
+                CEvent event;
+                event.reset(EventRecordingSource);
+
+                // Without required ProcessDescriptor, should not be complete
+                CPPUNIT_ASSERT(!event.isComplete());
+
+                // Add required ProcessDescriptor attribute
+                event.setValue(EvAttrProcessDescriptor, "test");
+
+                // Should NOT be complete without source attributes (they are required for RecordingSource)
+                CPPUNIT_ASSERT(!event.isComplete());
+
+                // Add only some source attributes - still not complete
+                event.setValue(EvAttrChannelId, 1U);
+                CPPUNIT_ASSERT(!event.isComplete());
+
+                event.setValue(EvAttrReplicaId, 2U);
+                CPPUNIT_ASSERT(!event.isComplete());
+
+                // Add final source attribute - now complete
+                event.setValue(EvAttrInstanceId, 3ULL);
+                CPPUNIT_ASSERT(event.isComplete());
+
+                // Add header attributes - should still be complete
+                event.setValue(EvAttrEventTimestamp, 123456ULL);
+                event.setValue(EvAttrEventThreadId, 789ULL);
+                CPPUNIT_ASSERT(event.isComplete());
+            }
+
+            // Test IndexCacheHit with multiple required attributes
+            {
+                CEvent event;
+                event.reset(EventIndexCacheHit);
+
+                // Missing required attributes - not complete
+                CPPUNIT_ASSERT(!event.isComplete());
+
+                // Add some but not all required attributes
+                event.setValue(EvAttrFileId, 100U);
+                event.setValue(EvAttrFileOffset, 200ULL);
+                CPPUNIT_ASSERT(!event.isComplete());
+
+                // Add more required attributes
+                event.setValue(EvAttrNodeKind, (unsigned)NodeLeaf);
+                event.setValue(EvAttrInMemorySize, 1024U);
+                CPPUNIT_ASSERT(!event.isComplete());
+
+                // Add final required attribute
+                event.setValue(EvAttrExpandTime, 500ULL);
+                CPPUNIT_ASSERT(event.isComplete());
+
+                // Event is complete with no header or source attributes
+                // Now add header and source - should still be complete
+                event.setValue(EvAttrEventTimestamp, 123456ULL);
+                event.setValue(EvAttrChannelId, 1U);
+                CPPUNIT_ASSERT(event.isComplete());
+            }
+
+            // Test RecordingActive event with boolean attribute
+            {
+                CEvent event;
+                event.reset(EventRecordingActive);
+
+                // Without required Enabled attribute, should not be complete
+                CPPUNIT_ASSERT(!event.isComplete());
+
+                // Add required boolean attribute
+                event.setValue(EvAttrEnabled, true);
+
+                // Should be complete
+                CPPUNIT_ASSERT(event.isComplete());
+
+                // Test with header and source attributes
+                event.setValue(EvAttrEventTimestamp, 123456ULL);
+                event.setValue(EvAttrChannelId, 1U);
+                event.setValue(EvAttrReplicaId, 2U);
+                CPPUNIT_ASSERT(event.isComplete());
+            }
+        }
+        catch (IException * e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
     }
 
     IEventVisitor* createVisitor(StringBuffer& out)

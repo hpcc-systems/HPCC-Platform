@@ -50,6 +50,7 @@ enum EventType : byte
     EventIndexPayload,            // payload of a leaf node accessed
     EventQueryStart,
     EventQueryStop,
+    EventRecordingSource,         // information about the source of the recording
     EventMax
 };
 
@@ -87,6 +88,10 @@ enum EventAttr : byte
     EvAttrExpandTime,
     EvAttrFirstUse,
     EvAttrServiceName,
+    EvAttrChannelId,
+    EvAttrReplicaId,
+    EvAttrInstanceId,
+    EvAttrProcessDescriptor,
     EvAttrMax
 };
 
@@ -427,6 +432,8 @@ public:
 
     void recordQueryStart(const char * queryName);
     void recordQueryStop();
+
+    void recordRecordingSource(const char* processDescriptor, byte channelId, byte replicaId, __uint64 instanceId);
 
     void recordEvent(CEvent& event);
 
