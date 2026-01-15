@@ -1,6 +1,7 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
+import { tokens } from "@fluentui/react-components";
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsAccess from "src/ws_access";
 import nlsHPCC from "src/nlsHPCC";
@@ -32,6 +33,10 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
 
     const [, { opsCategory }] = useBuildInfo();
 
+    const linkStyle = React.useMemo(() => {
+        return `color: ${tokens.colorBrandForeground1}; text-decoration: none;`;
+    }, []);
+
     const [grid, setGrid] = React.useState<any>(undefined);
     const [selection, setSelection] = React.useState([]);
 
@@ -60,7 +65,7 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
             label: nlsHPCC.Name,
             formatter: function (_name, idx) {
                 if (idx.__hpcc_parent) {
-                    return `<a href="#/${opsCategory}/security/permissions/${_name}/${idx.__hpcc_parent.name}">${_name}</a>`;
+                    return `<a href="#/${opsCategory}/security/permissions/${_name}/${idx.__hpcc_parent.name}" style="${linkStyle}">${_name}</a>`;
                 } else {
                     return _name;
                 }

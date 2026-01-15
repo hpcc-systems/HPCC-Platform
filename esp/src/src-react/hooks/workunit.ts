@@ -9,7 +9,7 @@ import { useCounter } from "./util";
 import { Archive } from "../util/metricArchive";
 
 const logger = scopedLogger("../hooks/workunit.ts");
-type RefreshFunc = (full?: boolean) => Promise<Workunit>;
+type RefreshFunc = (full?: boolean, request?: Partial<WsWorkunits.WUInfo>) => Promise<Workunit>;
 interface useWorkunitResult {
     workunit: Workunit;
     state: number;
@@ -24,7 +24,7 @@ export function useWorkunit(wuid: string, full: boolean = false): useWorkunitRes
     const [state, setState] = React.useState<number>(WUStateID.NotFound);
     const [lastUpdate, setLastUpdate] = React.useState<number>(Date.now());
     const [isComplete, setIsComplete] = React.useState<boolean>(false);
-    const [refresh, setRefresh] = React.useState<RefreshFunc>(() => (full?: boolean) => Promise.resolve(undefined));
+    const [refresh, setRefresh] = React.useState<RefreshFunc>(() => (full?: boolean, request?: Partial<WsWorkunits.WUInfo>) => Promise.resolve(undefined));
 
     React.useEffect(() => {
         if (!wuid) {
@@ -32,16 +32,24 @@ export function useWorkunit(wuid: string, full: boolean = false): useWorkunitRes
             setState(WUStateID.NotFound);
             setLastUpdate(Date.now());
             setIsComplete(false);
-            setRefresh(() => (full?: boolean) => Promise.resolve(undefined));
+            setRefresh(() => (full?: boolean, request?: Partial<WsWorkunits.WUInfo>) => Promise.resolve(undefined));
             return;
         }
 
         const wu = Workunit.attach({ baseUrl: "" }, wuid);
         const doRefresh = singletonDebounce(wu, "refresh");
-        setRefresh(() => (full?: boolean) => {
+        setRefresh(() => (full?: boolean, request?: Partial<WsWorkunits.WUInfo>) => {
             setLastUpdate(Date.now());
-            return doRefresh(full);
+            const wuInfoRequest: Partial<WsWorkunits.WUInfo> = {
+                ...(request ?? {}),
+                IncludeTotalClusterTime: true
+            };
+            return doRefresh(full, wuInfoRequest);
         });
+
+        if (full) {
+            doRefresh(full, { IncludeTotalClusterTime: true }).catch(err => logger.error(err));
+        }
 
         let cancelled = false;
         const handle = wu.watch(() => {
