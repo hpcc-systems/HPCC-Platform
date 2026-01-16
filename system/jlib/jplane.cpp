@@ -352,7 +352,7 @@ public:
 
     const char * queryName() const { return name.c_str(); }
 
-    const IPropertyTree * queryConfig() const { return config; }
+    virtual const IPropertyTree * queryConfig() const { return config; }
 
     const char * queryCategory() const { return category.c_str(); }
 
@@ -677,6 +677,13 @@ bool getRenameSupportedFromPath(const char *filePath) // NB: no default, let the
         CriticalBlock b(storagePlaneMapCrit);
         plane.set(doFindStoragePlaneFromPath(filePath, false));
     }
+
+    return getRenameSupportedFromPlane(plane);
+}
+
+
+bool getRenameSupportedFromPlane(const IStoragePlane * plane) // NB: no default, let the plane type determine the default
+{
     if (plane)
     {
         // return if configured
