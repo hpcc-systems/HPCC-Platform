@@ -341,18 +341,6 @@ public:
         return devices > 1;
     }
 
-    virtual bool isStriped() const
-    {
-        //For bare metal systems, striped containers need to be explicitly configured.
-        if (config->hasProp("@hostGroup") || !isContainerized())
-        {
-            if (!config->getPropBool("@striped"))
-               return false;
-        }
-
-        return devices > 1;
-    }
-
     virtual unsigned __int64 getAttribute(PlaneAttributeType attr, unsigned __int64 defaultValue) const override
     {
         assertex(attr < PlaneAttributeCount);
