@@ -324,10 +324,13 @@ public:
         return ::isAccessible(config);
     }
 
-    virtual unsigned __int64 getAttribute(PlaneAttributeType attr) const override
+    virtual unsigned __int64 getAttribute(PlaneAttributeType attr, unsigned __int64 defaultValue) const override
     {
         assertex(attr < PlaneAttributeCount);
-        return attributeValues[attr];
+        unsigned __int64  value = attributeValues[attr];
+        if (value == unsetPlaneAttrValue)
+            return defaultValue;
+        return value;
     }
 
     const char * queryName() const { return name.c_str(); }
@@ -556,11 +559,8 @@ unsigned __int64 getPlaneAttributeValue(const char *planeName, PlaneAttributeTyp
     CriticalBlock b(storagePlaneMapCrit);
     auto it = storagePlaneMap.find(planeName);
     if (it != storagePlaneMap.end())
-    {
-        unsigned __int64 v = it->second->getAttribute(planeAttrType);
-        if (v != unsetPlaneAttrValue)
-            return v;
-    }
+        return it->second->getAttribute(planeAttrType, defaultValue);
+
     return defaultValue;
 }
 
@@ -582,11 +582,7 @@ bool findPlaneAttrFromPath(const char *filePath, PlaneAttributeType planeAttrTyp
     const CStoragePlane *e = doFindStoragePlaneFromPath(filePath, false);
     if (e)
     {
-        unsigned __int64 value = e->getAttribute(planeAttrType);
-        if (unsetPlaneAttrValue != value)
-            resultValue = value;
-        else
-            resultValue = defaultValue;
+        resultValue = e->getAttribute(planeAttrType, defaultValue);
         return true;
     }
     return false;
@@ -640,7 +636,7 @@ bool getRenameSupportedFromPath(const char *filePath) // NB: no default, let the
     if (plane)
     {
         // return if configured
-        unsigned __int64 value = plane->getAttribute(RenameSupported);
+        unsigned __int64 value = plane->getAttribute(RenameSupported, unsetPlaneAttrValue);
         if (unsetPlaneAttrValue != value)
             return value > 0;
     }

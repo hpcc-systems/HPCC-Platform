@@ -109,7 +109,7 @@ interface IStoragePlane: extends IInterface
     virtual IStoragePlaneAlias *getAliasMatch(AccessMode desiredModes) const = 0;
     virtual IStorageApiInfo *getStorageApiInfo() const = 0;
     virtual bool isAccessible() const = 0;
-    virtual unsigned __int64 getAttribute(PlaneAttributeType attr) const = 0;
+    virtual unsigned __int64 getAttribute(PlaneAttributeType attr, unsigned __int64 defaultValue) const = 0;
     virtual bool isAnyDeviceLocal() const = 0;
 };
 
