@@ -117,6 +117,7 @@ interface IStoragePlane: extends IInterface
     virtual bool isAnyDeviceLocal() const = 0;
     virtual bool compressOnWrite() const = 0;
     virtual const char * queryCompression() const = 0;
+    virtual const IPropertyTree * queryConfig() const = 0; // More specific functions strongly preferred
 };
 
 extern jlib_decl const IStoragePlane * getStoragePlaneByName(const char * name, bool required);
@@ -130,6 +131,7 @@ extern jlib_decl bool getDefaultSpillPlane(StringBuffer &ret);
 extern jlib_decl bool getDefaultIndexBuildStoragePlane(StringBuffer &ret);
 extern jlib_decl bool getDefaultPersistPlane(StringBuffer &ret);
 extern jlib_decl bool getDefaultJobTempPlane(StringBuffer &ret);
+extern jlib_decl bool getRenameSupportedFromPlane(const IStoragePlane * plane); // NB: no default
 
 
 extern jlib_decl unsigned getNumPlaneStripes(const char *clusterName);
