@@ -113,7 +113,7 @@ interface IStoragePlane: extends IInterface
     virtual IStorageApiInfo *getStorageApiInfo() const = 0;
     virtual bool isAccessible() const = 0;
     virtual bool isStriped() const = 0;
-    virtual unsigned __int64 getAttribute(PlaneAttributeType attr) const = 0;
+    virtual unsigned __int64 getAttribute(PlaneAttributeType attr, unsigned __int64 defaultValue) const = 0;
     virtual bool isAnyDeviceLocal() const = 0;
     virtual bool compressOnWrite() const = 0;
     virtual const char * queryCompression() const = 0;
