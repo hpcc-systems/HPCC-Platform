@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ContextualMenuItemType, DefaultButton, IconButton, IContextualMenuItem, IIconProps, IPersonaSharedProps, Link, mergeStyleSets, Persona, PersonaSize, Stack, Text, useTheme } from "@fluentui/react";
+import { ContextualMenuItemType, DefaultButton, IconButton, IContextualMenuItem, IIconProps, IPersonaSharedProps, Link, mergeStyleSets, Persona, PersonaSize, Stack, Text } from "@fluentui/react";
 import { Button, ButtonProps, CounterBadgeProps, CounterBadge, SearchBox, Toaster } from "@fluentui/react-components";
 import { WindowNewRegular } from "@fluentui/react-icons";
 import { Level, scopedLogger } from "@hpcc-js/util";
@@ -8,6 +8,7 @@ import { cookie } from "src-dojo/index";
 import nlsHPCC from "src/nlsHPCC";
 import * as Utility from "src/Utility";
 
+import { useUserTheme } from "../hooks/theme";
 import { useBanner } from "../hooks/banner";
 import { useConfirm } from "../hooks/confirm";
 import { replaceUrl } from "../util/history";
@@ -58,9 +59,8 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
 }) => {
 
     const [, { opsCategory }] = useBuildInfo();
-    const theme = useTheme();
+    const { theme } = useUserTheme();
     const { userSession, setUserSession, deleteUserSession } = useUserSession();
-    const toolbarThemeDefaults = { active: false, text: "", color: theme.palette.themeLight };
     const [logIconColor, setLogIconColor] = React.useState<CounterBadgeProps["color"]>();
 
     const [showAbout, setShowAbout] = React.useState(false);
@@ -69,9 +69,9 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     const { currentUser, isAdmin } = useMyAccount();
 
     const [showTitlebarConfig, setShowTitlebarConfig] = React.useState(false);
-    const [showEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Active", toolbarThemeDefaults.active, true);
-    const [environmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Text", toolbarThemeDefaults.text, true);
-    const [titlebarColor] = useGlobalStore("HPCCPlatformWidget_Toolbar_Color", toolbarThemeDefaults.color, true);
+    const [showEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Active", false, true);
+    const [environmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Text", undefined, true);
+    const [titlebarColor] = useGlobalStore("HPCCPlatformWidget_Toolbar_Color", undefined, true);
 
     const [showBannerConfig, setShowBannerConfig] = React.useState(false);
     const [BannerMessageBar, BannerConfig] = useBanner({ showForm: showBannerConfig, setShowForm: setShowBannerConfig });
@@ -353,7 +353,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
         </Stack>
         <About eclwatchVersion="9" show={showAbout} onClose={() => setShowAbout(false)} ></About>
         <MyAccount currentUser={currentUser} show={showMyAccount} onClose={() => setShowMyAccount(false)}></MyAccount>
-        <TitlebarConfig toolbarThemeDefaults={toolbarThemeDefaults} showForm={showTitlebarConfig} setShowForm={setShowTitlebarConfig} />
+        <TitlebarConfig showForm={showTitlebarConfig} setShowForm={setShowTitlebarConfig} />
         <BannerConfig />
         <PasswordExpiredConfirm />
     </div>;
