@@ -231,6 +231,7 @@ class CRemoteTreeBase : public SDS_PTREE
 public:
     CRemoteTreeBase(MemoryBuffer &mb);
     CRemoteTreeBase(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL);
+    CRemoteTreeBase(IBufferedSerialInputStream &in, PTreeDeserializeContext &ctx);
 
     void deserializeRT(MemoryBuffer &src);
     virtual void deserializeSelfRT(MemoryBuffer &src);
