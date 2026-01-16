@@ -190,6 +190,15 @@ public:
 
     const void * peekAndExpand(size32_t wanted, size32_t &got) __attribute__((noinline))
     {
+        // When very large rows are being read (e.g. many MBs, it is worth reallocating the buffer upfront to avoid
+        // large numbers of reallocations + clones)
+        size32_t roundedWanted = ((wanted + blockReadSize - 1) / blockReadSize) * blockReadSize;
+
+        // Check for wrapping on very large allocations
+        if (unlikely(roundedWanted == 0))
+            throw makeStringExceptionV(-1, "Blocked input stream record too large to read %u at offset %llu", wanted, nextBlockOffset);
+        expandBuffer(roundedWanted);
+
         while (unlikely(wanted > available()))
         {
             if (endOfStream)
@@ -301,6 +310,10 @@ private:
 
             //This can occur when decompressing - if the next block is too big to fit in the requested buffer
             nextReadSize += blockReadSize;
+
+            // Check for wrapping on very large allocations
+            if (unlikely(nextReadSize < blockReadSize))
+                throw makeStringExceptionV(-1, "Blocked input stream record too large to read %u at offset %llu", nextReadSize - blockReadSize, nextBlockOffset);
         }
     }
 

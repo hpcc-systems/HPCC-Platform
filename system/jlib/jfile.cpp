@@ -7675,7 +7675,7 @@ static size32_t getBlockedSizeFromFile(IFile *file, PlaneAttributeType type, siz
         {
             Owned<const IStoragePlane> plane = getStoragePlaneFromPath(filename, false);
             if (plane)
-                return plane->getAttribute(type);
+                return plane->getAttribute(type, defaultSize);
             else
                 return defaultSize;
         }
