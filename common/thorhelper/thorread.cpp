@@ -415,7 +415,7 @@ void FileAccessOptions::updateFromStoragePlane(const IStoragePlane * storagePlan
     if (!storagePlane)
         return;
 
-    providerOptions->setPropInt64("@sizeIoBuffer", storagePlane->getAttribute(BlockedSequentialIO));
+    providerOptions->setPropInt64("@sizeIoBuffer", storagePlane->getAttribute(BlockedSequentialIO, defaultReadBufferSize));
 
     if (mode == IFOwrite)
     {
@@ -430,7 +430,7 @@ void FileAccessOptions::updateFromStoragePlane(const IStoragePlane * storagePlan
         else if (storagePlane->compressOnWrite())
             setCompression(true, nullptr);
 
-        providerOptions->setPropBool("@renameAfterWrite", storagePlane->getAttribute(RenameSupported));
+        providerOptions->setPropBool("@renameAfterWrite", getRenameSupportedFromPlane(storagePlane));
     }
 }
 
