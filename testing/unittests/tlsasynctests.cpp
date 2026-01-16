@@ -277,6 +277,13 @@ private:
         {
         }
 
+        void start()
+        {
+            // Self-ownership: Link() ourselves so handler survives until callback completes.
+            // Created with refcount=0, this brings it to 1. Handler now owns itself.
+            Link();
+        }
+
         virtual void onAsyncComplete(int result) override
         {
             if (result == 0 && owner->running)
@@ -284,7 +291,7 @@ private:
                 owner->acceptCount++;
                 owner->handleClient(secureSocket.getClear());
             }
-            // Release self - we were Link()'ed when startAsyncAccept was called
+            // Relinquish self-ownership, destroys handler (refcount 1->0)
             Release();
         }
     };
@@ -360,10 +367,11 @@ public:
 
                     // Perform TLS accept asynchronously
                     ISecureSocket *secureClient = secureContext->createSecureSocket(client.getClear());
-                    Owned<AsyncAcceptHandler> handler = new AsyncAcceptHandler(this, secureClient);
-                    handler->Link(); // Keep handler alive until callback completes
+                    // Use self-ownership pattern: handler created with refcount=0, calls Link() on itself
+                    AsyncAcceptHandler *handler = new AsyncAcceptHandler(this, secureClient);
+                    handler->start(); // Takes self-ownership (refcount 0->1)
                     secureClient->startAsyncAccept(processor, *handler, SSLogMin);
-                    // Handler now owns secureClient and will release it when done
+                    // Handler now owns itself and secureClient; will Release() itself on completion
                 }
                 catch (IJSOCK_Exception *e)
                 {

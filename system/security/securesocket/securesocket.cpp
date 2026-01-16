@@ -897,6 +897,13 @@ CAsyncTLSAcceptHandler::CAsyncTLSAcceptHandler(CSecureSocket * _secureSocket, SS
         network_bio = secureSocket->network_bio;
         internal_bio = SSL_get_rbio(ssl);
     }
+    
+    // Set socket to non-blocking mode for async I/O operations.
+    // This is a permanent one-way transition - the socket will remain in non-blocking mode
+    // for its lifetime. All subsequent I/O on this socket must use async operations.
+    // Note: Sync fallback (when !processor || !isTLSIOUringEnabled() || !network_bio) 
+    // occurs before this handler is created, so sync operations never execute on a 
+    // non-blocking socket.
     socket->set_nonblock(true);
 }
 
@@ -919,6 +926,13 @@ CAsyncTLSConnectHandler::CAsyncTLSConnectHandler(CSecureSocket * _secureSocket, 
         network_bio = secureSocket->network_bio;
         internal_bio = SSL_get_rbio(ssl);
     }
+    
+    // Set socket to non-blocking mode for async I/O operations.
+    // This is a permanent one-way transition - the socket will remain in non-blocking mode
+    // for its lifetime. All subsequent I/O on this socket must use async operations.
+    // Note: Sync fallback (when !processor || !isTLSIOUringEnabled() || !network_bio) 
+    // occurs before this handler is created, so sync operations never execute on a 
+    // non-blocking socket.
     socket->set_nonblock(true);
 }
 
@@ -929,9 +943,19 @@ CAsyncTLSReadHandler::CAsyncTLSReadHandler(CSecureSocket * _secureSocket, SSL * 
     : ssl(_ssl), processor(_processor), socket(_socket),
       appBuffer(_buf), minSize(_minSize), maxSize(_maxSize), finalCallback(_finalCallback)
 {
-    // Use existing BIOs from SSL context (must be set up during async handshake)
+    // Use existing BIOs from SSL context (must be set up during async handshake).
+    // PRECONDITION: network_bio must be non-null - verified by startAsyncRead() before
+    // creating this handler. If network_bio is null, code falls back to sync read.
     internal_bio = SSL_get_rbio(ssl);
     network_bio = _secureSocket->network_bio;
+    assertex(network_bio != nullptr);  // Should never be null - checked before handler creation
+    
+    // Set socket to non-blocking mode for async I/O operations.
+    // This is a permanent one-way transition - the socket will remain in non-blocking mode
+    // for its lifetime. All subsequent I/O on this socket must use async operations.
+    // Note: Sync fallback (when !processor || !isTLSIOUringEnabled() || !network_bio) 
+    // occurs before this handler is created, so sync operations never execute on a 
+    // non-blocking socket.
     socket->set_nonblock(true);
     encryptedBuffer.ensure(16384);  // Pre-allocate buffer for encrypted data
 }
@@ -942,8 +966,11 @@ CAsyncTLSWriteHandler::CAsyncTLSWriteHandler(CSecureSocket * _secureSocket, SSL 
     : ssl(_ssl), processor(_processor), socket(_socket), finalCallback(_finalCallback),
       plainBuf((const byte *)_buf), plainSize(_size), totalWritten(0)
 {
-    // Use existing network BIO from CSecureSocket (must be set up during async handshake)
+    // Use existing network BIO from CSecureSocket (must be set up during async handshake).
+    // PRECONDITION: network_bio must be non-null - verified by startAsyncWrite() before
+    // creating this handler. If network_bio is null, code falls back to sync write.
     network_bio = _secureSocket->network_bio;
+    assertex(network_bio != nullptr);  // Should never be null - checked before handler creation
     
     // Allocate buffer for encrypted data (max TLS record is 16KB + overhead)
     encryptedBuffer.allocate(17000);
@@ -1587,7 +1614,7 @@ void CAsyncTLSReadHandler::tryRead()
         {
             // Need more encrypted data from socket
             // First check if SSL has generated any data to send (e.g., renegotiation)
-            int pending = BIO_ctrl_pending(network_bio);
+            int pending = BIO_pending(network_bio);
             if (pending > 0)
             {
                 // Send data SSL generated before reading more
@@ -1607,7 +1634,7 @@ void CAsyncTLSReadHandler::tryRead()
         else if (ssl_error == SSL_ERROR_WANT_WRITE)
         {
             // Need to send data (renegotiation)
-            int pending = BIO_ctrl_pending(network_bio);
+            int pending = BIO_pending(network_bio);
             if (pending > 0)
             {
                 state = TLSReadState::WantWrite;
