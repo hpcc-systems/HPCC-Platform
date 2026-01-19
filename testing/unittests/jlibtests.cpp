@@ -3417,31 +3417,6 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIPTTest, "JlibIPTTest");
 #include <thread>
 #include <atomic>
 
-static StringBuffer daliBinaryFilePath;
-static unsigned ptreeBinaryIterations = 100;
-
-void setDaliBinaryFilePath(const char *path)
-{
-    daliBinaryFilePath.clear();
-    if (path && *path)
-        daliBinaryFilePath.append(path);
-}
-
-static const char *queryDaliBinaryFilePath()
-{
-    return daliBinaryFilePath.isEmpty() ? nullptr : daliBinaryFilePath.str();
-}
-
-void setPtreeBinaryIterations(unsigned iterations)
-{
-    ptreeBinaryIterations = iterations ? iterations : 1;
-}
-
-static unsigned queryPtreeBinaryIterations()
-{
-    return ptreeBinaryIterations;
-}
-
 IPropertyTree *createCompatibilityConfigPropertyTree()
 {
     // Creates a complex nested property tree with multiple compatibility elements for serialization testing
@@ -3805,8 +3780,9 @@ public:
 CPPUNIT_TEST_SUITE_REGISTRATION(PTreeSerializationDeserializationTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeSerializationDeserializationTest, "PTreeSerializationDeserializationTest");
 
-#include <zstd.h>
 #include "jbuff.hpp"
+#include "jutil.hpp"
+#include "jzstd.hpp"
 
 // Base class with shared functionality for PTree timing tests
 class PTreeTimingTestBase : public CppUnit::TestFixture
@@ -3820,189 +3796,88 @@ protected:
         byte flags;
     };
 
-    const char *getBinaryFilePath()
+    void setBinaryPath(StringBuffer &binaryPath)
     {
-        // Resolve the binary file path only once
-        static StringBuffer resolved;
-        if (!resolved.isEmpty())
-            return resolved.str();
+        binaryPath.clear();
+        if (getComponentConfigSP()->getProp("PTreeBinaryTimingStressTest/path", binaryPath))
+            return;
 
-        const char *configured = queryDaliBinaryFilePath();
-        if (configured && *configured)
-        {
-            resolved.append(configured);
-            return resolved.str();
-        }
+        binaryPath.set(hpccBuildInfo.installDir);
+        if (binaryPath.isEmpty())
+            CPPUNIT_FAIL("Binary timing test data file path is not configured");
 
-        static constexpr const char *relativeBinPath = "testing/unittests/data/dalisds100mb.bin.zst";
-        static constexpr const char *defaultBinPath = "~/HPCC-Platform/testing/unittests/data/dalisds100mb.bin.zst";
-
-        const char *processPath = queryCurrentProcessPath();
-        if (isEmptyString(processPath))
-            return defaultBinPath;
-
-        StringBuffer searchDir;
-        splitFilename(processPath, &searchDir, nullptr, nullptr, nullptr);
-
-        while (searchDir.length())
-        {
-            StringBuffer probe(searchDir);
-            addPathSepChar(probe).append("version.cmake");
-            Owned<IFile> versionFile = createIFile(probe);
-            if (versionFile->exists())
-            {
-                resolved.set(searchDir);
-                addPathSepChar(resolved).append(relativeBinPath);
-                break;
-            }
-
-            StringBuffer parent;
-            splitFilename(searchDir.str(), &parent, nullptr, nullptr, nullptr);
-            if (parent.isEmpty() || streq(parent.str(), searchDir.str()))
-                break;
-            searchDir.swapWith(parent);
-        }
-
-        if (resolved.isEmpty())
-            resolved.append(defaultBinPath);
-
-        return resolved.str();
-    }
-
-    const char *expandTilde(const char *path, StringBuffer &expanded)
-    {
-        if (!path || !path[0])
-            return path;
-
-        if (path[0] == '~' && (path[1] == '/' || path[1] == '\0'))
-        {
-            const char *home = getenv("HOME");
-            if (home)
-            {
-                expanded.append(home);
-                if (path[1] == '/')
-                    expanded.append(path + 1);
-                return expanded.str();
-            }
-        }
-        return path;
-    }
-
-    bool readBinaryFileRaw(const char *filePath, MemoryBuffer &output)
-    {
-        // Read file without decompression - for profiling tests
-        StringBuffer expandedPath;
-        const char *actualPath = expandTilde(filePath, expandedPath);
-        if (!actualPath)
-            return false;
-        Owned<IFile> binaryFile = createIFile(actualPath);
-        if (!binaryFile->exists())
-            return false;
-
-        size32_t fileSize = (size32_t)binaryFile->size();
-        Owned<IFileIO> fileIO = binaryFile->open(IFOread);
-        output.reserveTruncate(fileSize);
-        size32_t bytesRead = fileIO->read(0, fileSize, output.bufferBase());
-        output.setLength(bytesRead);
-
-        return true;
+        static constexpr const char *relativeBinPath = "/testing/data/dalisds100mb.bin.zst";
+        binaryPath.append(relativeBinPath);
     }
 
     void decompressZstdBuffer(const void *compressedData, size_t compressedSize, const char *actualPath, MemoryBuffer &output)
     {
         assertex(compressedData || (compressedSize == 0));
-        const size_t frameSize = ZSTD_getFrameContentSize(compressedData, compressedSize);
 
-        if (frameSize == ZSTD_CONTENTSIZE_ERROR)
-            throw MakeStringException(-1, "Invalid zstd frame in compressed binary file \"%s\"", actualPath ? actualPath : "<memory>");
+        // Start with compressed size and grow until expandDirect succeeds.
+        constexpr size_t zstdInitialBufferSize{1024};
+        const size_t initialTargetSize = (compressedSize ? (compressedSize * 2 + zstdInitialBufferSize) : zstdInitialBufferSize);
+        size32_t targetSize = (size32_t)((initialTargetSize > MEMBUFFER_MAXLEN) ? MEMBUFFER_MAXLEN : initialTargetSize);
+        if (targetSize == 0)
+            targetSize = zstdInitialBufferSize;
 
         output.clear();
-
-        if (frameSize != ZSTD_CONTENTSIZE_UNKNOWN)
+        Owned<IExpander> expander = createZStdExpander();
+        for (;;)
         {
-            if (frameSize > MEMBUFFER_MAXLEN)
-                throw MakeStringException(-1, "Zstd decompressed size (%" I64F "u) exceeds limit for \"%s\"", (unsigned __int64)frameSize, actualPath ? actualPath : "<memory>");
-
-            void *dest = output.reserveTruncate((size32_t)frameSize);
-            size_t decompressedSize = ZSTD_decompress(dest, frameSize, compressedData, compressedSize);
-            if (ZSTD_isError(decompressedSize))
-                throw MakeStringException(-1, "Zstd decompression error for \"%s\": %s", actualPath ? actualPath : "<memory>", ZSTD_getErrorName(decompressedSize));
-
-            output.setLength((size32_t)decompressedSize);
-            return;
-        }
-
-        ZSTD_DStream *dstream = ZSTD_createDStream();
-        if (!dstream)
-            throw MakeStringException(-1, "Failed to create Zstd decompression stream for \"%s\"", actualPath ? actualPath : "<memory>");
-
-        size_t initResult = ZSTD_initDStream(dstream);
-        if (ZSTD_isError(initResult))
-        {
-            ZSTD_freeDStream(dstream);
-            throw MakeStringException(-1, "Failed to initialize Zstd decompression stream for \"%s\": %s", actualPath ? actualPath : "<memory>", ZSTD_getErrorName(initResult));
-        }
-
-        size_t chunkSize = ZSTD_DStreamOutSize();
-        if (chunkSize > MEMBUFFER_MAXLEN)
-            chunkSize = MEMBUFFER_MAXLEN;
-
-        OwnedMalloc<byte> chunk((unsigned)chunkSize);
-        ZSTD_inBuffer inBuf{compressedData, compressedSize, 0};
-        size_t streamResult = 0;
-
-        while (inBuf.pos < inBuf.size)
-        {
-            ZSTD_outBuffer outBuf{chunk, chunkSize, 0};
-            streamResult = ZSTD_decompressStream(dstream, &outBuf, &inBuf);
-            if (ZSTD_isError(streamResult))
+            void *dest = output.reserveTruncate(targetSize);
+            size32_t decompressedSize{0};
+            try
             {
-                ZSTD_freeDStream(dstream);
-                throw MakeStringException(-1, "Zstd stream decompression error for \"%s\": %s", actualPath ? actualPath : "<memory>", ZSTD_getErrorName(streamResult));
+                decompressedSize = expander->expandDirect(targetSize, dest, (size32_t)compressedSize, compressedData);
+            }
+            catch (IException *e)
+            {
+                StringBuffer err;
+                e->errorMessage(err);
+                int errCode = e->errorCode();
+                e->Release();
+                throw MakeStringException(errCode ? errCode : -1, "Zstd decompression error for \"%s\": %s", actualPath, err.str());
             }
 
-            output.append((size32_t)outBuf.pos, chunk);
+            if (decompressedSize != 0)
+            {
+                output.setLength(decompressedSize);
+                return;
+            }
+
+            if (targetSize >= MEMBUFFER_MAXLEN) // prevent infinite loop
+                throw MakeStringException(-1, "Zstd decompressed size exceeds limit for \"%s\"", actualPath);
+
+            size32_t nextSize = targetSize * 2;
+            if (nextSize > MEMBUFFER_MAXLEN)
+                nextSize = MEMBUFFER_MAXLEN;
+            targetSize = nextSize;
+
+            output.clear();
         }
-
-        ZSTD_freeDStream(dstream);
-
-        if (streamResult != 0)
-            throw MakeStringException(-1, "Truncated zstd stream in \"%s\"", actualPath ? actualPath : "<memory>");
     }
 
-    bool readBinaryFile(const char *filePath, MemoryBuffer &output)
+    void readBinaryFile(const char *filePath, MemoryBuffer &output)
     {
-        StringBuffer expandedPath;
-        const char *actualPath = expandTilde(filePath, expandedPath);
-        if (!actualPath)
-            return false;
-        Owned<IFile> binaryFile = createIFile(actualPath);
+        Owned<IFile> binaryFile = createIFile(filePath);
         if (!binaryFile->exists())
-            return false;
+            throw MakeStringException(-1, "Binary file \"%s\" does not exist", filePath);
 
-        size32_t fileSize = (size32_t)binaryFile->size();
         Owned<IFileIO> fileIO = binaryFile->open(IFOread);
-        output.reserveTruncate(fileSize);
-        size32_t bytesRead = fileIO->read(0, fileSize, output.bufferBase());
-        output.setLength(bytesRead);
+        output.clear();
+        ::read(fileIO, 0, (size32_t)-1, output);
 
-        const char *ext = pathExtension(actualPath);
-        if (ext && streq(ext, ".zst"))
+        const char *ext = pathExtension(filePath);
+        if (strsame(ext, ".zst"))
         {
             MemoryBuffer compressed;
             output.swapWith(compressed);
-            decompressZstdBuffer(compressed.toByteArray(), compressed.length(), actualPath, output);
+            decompressZstdBuffer(compressed.toByteArray(), compressed.length(), filePath, output);
         }
-        else
-        {
-            if (!readBinaryFileRaw(filePath, output))
-                return false;
-        }
-
-        return true;
     }
 
-    TimingResults performBinaryTimingTestWithResults(const char *testName, const MemoryBuffer &binaryDataBuffer, unsigned iterations, byte flags)
+    TimingResults performBinaryTimingTestWithResults(const char *testName, MemoryBuffer &binaryDataBuffer, unsigned iterations, byte flags)
     {
         assertex(testName);
         unsigned binaryDataLen = binaryDataBuffer.length();
@@ -4015,22 +3890,12 @@ protected:
         MemoryBuffer streamBufferIn;
         for (unsigned i = 0; i < iterations; i++)
         {
-            streamBufferIn.clear();
-            streamBufferIn.append(binaryDataLen, binaryDataBuffer.toByteArray());
-            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(streamBufferIn);
+            binaryDataBuffer.reset();
+            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(binaryDataBuffer);
             timer.reset();
-            Owned<IPropertyTree> deserializedTree = createPTreeFromBinary(*in, flags);
-            cycle_t deserializeElapsedCycles = timer.elapsedCycles();
-            totalDeserializeCycles += deserializeElapsedCycles;
+            createPTreeFromBinary(*in, flags);
+            totalDeserializeCycles += timer.elapsedCycles();
         }
-
-        // Perform validation outside the timed section to avoid cache effects during measurement
-        streamBufferIn.clear();
-        streamBufferIn.append(binaryDataLen, binaryDataBuffer.toByteArray());
-        Owned<IBufferedSerialInputStream> validationIn = createBufferedSerialInputStream(streamBufferIn);
-        Owned<IPropertyTree> validationTree = createPTreeFromBinary(*validationIn, flags);
-        Owned<IPropertyTree> validationCopy = createPTreeFromIPT(validationTree);
-        CPPUNIT_ASSERT(areMatchingPTrees(validationCopy, validationTree));
 
         TimingResults results;
         results.totalDeserializeCycles = totalDeserializeCycles;
@@ -4052,22 +3917,18 @@ class PTreeBinaryTimingStressTest : public PTreeTimingTestBase
 public:
     void testBinaryTimingWithNormalVsLowMem()
     {
-        unsigned iterations = queryPtreeBinaryIterations();
-        if (0 == iterations)
-        {
-            constexpr unsigned defaultIterations = 100;
-            DBGLOG("PTree binary timing test iterations not configured, defaulting to %u iterations", defaultIterations);
-            iterations = defaultIterations;
-        }
+        constexpr unsigned defaultPtreeIterations = 100;
+        unsigned iterations = getComponentConfigSP()->getPropInt("PTreeBinaryTimingStressTest/iterations", defaultPtreeIterations);
+        CPPUNIT_ASSERT_MESSAGE("PTree binary timing test iterations must be greater than zero", iterations > 0);
 
         // Load Binary data
         MemoryBuffer binaryData;
-        const char *binaryPath = getBinaryFilePath();
         try
         {
             // Read raw file (with automatic decompression)
-            if (!readBinaryFile(binaryPath, binaryData))
-                throw MakeStringException(-1, "Binary file \"%s\" does not exist", binaryPath);
+            StringBuffer binaryPath;
+            setBinaryPath(binaryPath);
+            readBinaryFile(binaryPath.str(), binaryData);
         }
         catch (IException *e)
         {

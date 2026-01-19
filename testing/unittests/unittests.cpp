@@ -29,9 +29,6 @@
 #include <errno.h>
 #include <cstdlib>
 
-extern void setDaliBinaryFilePath(const char *path);
-extern void setPtreeBinaryIterations(unsigned iterations);
-
 /*
  * This is the main unittest driver for HPCC. From here,
  * all unit tests, be they internal or external (API),
@@ -57,16 +54,16 @@ void usage()
     "    unittests <options> <testnames>\n"
     "\n"
     "Options:\n"
-    "    -a  --all               Include all tests, including timing and stress tests\n"
-    "    -d  --load path         Dynamically load a library/all libraries in a directory.\n"
-    "                            By default, the HPCCSystems lib directory is loaded.\n"
-    "    -e  --exact             Match subsequent test names exactly\n"
-    "    -h  --help              Display this help text\n"
-    "    -l  --list              List matching tests but do not execute them\n"
-    "    -b  --dali-binary path  Provide the Dali binary test data path\n"
-    "    -i  --iterations value  Override default PTree timing iterations\n"
-    "    -u  --unload            Unload dynamically-loaded dlls before termination (may crash on some systems)\n"
-    "    -x  --exclude           Exclude subsequent test names\n"
+    "    -a  --all                                           Include all tests, including timing and stress tests\n"
+    "    -d  --load=/x/y/z/                                  Dynamically load a library/all libraries in a directory.\n"
+    "                                                        By default, the HPCCSystems lib directory is loaded.\n"
+    "    -e  --exact                                         Match subsequent test names exactly\n"
+    "    -h  --help                                          Display this help text\n"
+    "    -l  --list                                          List matching tests but do not execute them\n"
+    "    -u  --unload                                        Unload dynamically-loaded dlls before termination (may crash on some systems)\n"
+    "    -x  --exclude                                       Exclude subsequent test names\n"
+    "    --PTreeBinaryTimingStressTest.path=/x/y/z/file.bin  Provide the Dali binary test data path. Can be .bin or .bin.zst (Zstd compressed)\n"
+    "    --PTreeBinaryTimingStressTest.iterations=999        Override default PTree timing iterations\n"
     "\n");
 }
 
@@ -127,7 +124,9 @@ void loadDlls(IArray &objects, const char * libDirectory, bool optUnloadDlls)
 static constexpr const char * defaultYaml = R"!!(
 version: "1.0"
 unittests:
-  name: unittests
+- name: PTreeBinaryTimingStressTest
+  path: ""
+  iterations: 100
 global:
   storage:
     planes:
@@ -158,9 +157,6 @@ int main(int argc, const char *argv[])
     bool list = false;
     bool useDefaultLocations = true;
     bool unloadDlls = false;
-    const char *daliBinaryPath = nullptr;
-    constexpr unsigned defaultPtreeIterations = 100;
-    unsigned ptreeIterations = defaultPtreeIterations;
 
     //NB: required initialization for anything that may call getGlobalConfig*() or getComponentConfig*()
     Owned<IPropertyTree> globals = loadConfiguration(defaultYaml, argv, "unittests", nullptr, nullptr, nullptr, nullptr, false);
@@ -182,38 +178,17 @@ int main(int argc, const char *argv[])
                 list = true;
             else if (streq(arg, "-u") || streq(arg, "-unload"))
                 unloadDlls = true;
-            else if (streq(arg, "-b") || streq(arg, "--dali-binary") || streq(arg, "--dali-binary-file"))
+            else if (streq(arg, "--PTreeBinaryTimingStressTest.path"))
             {
                 argNo++;
                 if (argNo < argc)
-                    daliBinaryPath = argv[argNo];
-                else
-                {
-                    fprintf(stderr, "Option %s requires a path argument\n", arg);
-                    exit(4);
-                }
+                    getComponentConfigSP()->setProp("PTreeBinaryTimingStressTest/path", argv[argNo]);
             }
-            else if (streq(arg, "-i") || streq(arg, "--iterations"))
+            else if (streq(arg, "--PTreeBinaryTimingStressTest.iterations"))
             {
                 argNo++;
                 if (argNo < argc)
-                {
-                    const char *value = argv[argNo];
-                    char *end = nullptr;
-                    errno = 0;
-                    unsigned long parsed = strtoul(value, &end, 10);
-                    if (errno || !end || *end || parsed > std::numeric_limits<unsigned>::max())
-                    {
-                        fprintf(stderr, "Invalid iteration count '%s'\n", value);
-                        exit(4);
-                    }
-                    ptreeIterations = static_cast<unsigned>(parsed);
-                }
-                else
-                {
-                    fprintf(stderr, "Option %s requires an iteration count\n", arg);
-                    exit(4);
-                }
+                    getComponentConfigSP()->setProp("PTreeBinaryTimingStressTest/iterations", argv[argNo]);
             }
             else if (streq(arg, "-d") || streq(arg, "--load"))
             {
@@ -239,9 +214,6 @@ int main(int argc, const char *argv[])
                 includeNames.append(arg);
         }
     }
-    setPtreeBinaryIterations(ptreeIterations);
-    if (daliBinaryPath)
-        setDaliBinaryFilePath(daliBinaryPath);
     if (verbose)
         queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_trace|MSGFIELD_span|MSGFIELD_time|MSGFIELD_microTime|MSGFIELD_milliTime|MSGFIELD_thread);
     else
