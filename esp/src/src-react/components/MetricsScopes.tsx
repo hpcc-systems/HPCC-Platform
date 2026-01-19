@@ -73,6 +73,16 @@ export class ScopesTable extends Table {
             return matchText(rawValue, normalizedFilter) || matchText(formattedValue, normalizedFilter);
         };
 
+        const matchExactField = (field: string, searchTerm: string): boolean => {
+            const rawValue = row[field]?.toString();
+            const formattedValue = row.__formattedProps?.[field]?.toString();
+            if (!rawValue && !formattedValue) return false;
+            const normalizedSearchTerm = matchCase ? searchTerm : searchTerm.toLowerCase();
+            const normalizedRawValue = matchCase ? rawValue : rawValue?.toLowerCase();
+            const normalizedFormattedValue = matchCase ? formattedValue : formattedValue?.toLowerCase();
+            return normalizedRawValue === normalizedSearchTerm || normalizedFormattedValue === normalizedSearchTerm;
+        };
+
         const colonIdx = filter.indexOf(":");
         if (colonIdx > 0) {
             let field = filter.substring(0, colonIdx).trim();
@@ -87,6 +97,11 @@ export class ScopesTable extends Table {
             }
 
             const searchTerm = filter.substring(colonIdx + 1).trim();
+            const isExactMatch = searchTerm.length >= 2 && searchTerm.startsWith("\"") && searchTerm.endsWith("\"");
+            const exactTerm = isExactMatch ? searchTerm.substring(1, searchTerm.length - 1) : "";
+            if (isExactMatch) {
+                return matchExactField(field, exactTerm) || matchExactField("name", exactTerm);
+            }
             const normalizedSearchTerm = matchCase ? searchTerm : searchTerm.toLowerCase();
             return matchField(field, normalizedSearchTerm) || matchField("name", normalizedFilter); // fallback to scopename + normalizedFilter if no field matches
         }
