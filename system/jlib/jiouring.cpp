@@ -60,6 +60,8 @@ public:
 
     virtual void lockMemory(const void * buffer, size_t len) override;
 
+    virtual bool supportsMultishotAccept() const override;
+
     bool dequeueCompletion(CompletionResponse & response);
     bool isAborting() const { return aborting; }
 
@@ -71,11 +73,11 @@ protected:
     void processCompletions();
 
 protected:
-    CriticalSection requestCrit;        // Protect against queuing two operations at the same time
+    mutable CriticalSection requestCrit;        // Protect against queuing two operations at the same time
     bool isMultiThreaded{true};         // If false, the critical section is not used
     bool alive{false};
     std::atomic<bool> aborting{false};
-    io_uring ring;
+    mutable io_uring ring;
     const byte * startLockedMemory{nullptr};
     const byte * endLockedMemory{nullptr};
 };
@@ -299,6 +301,24 @@ bool URingProcessor::isFixedBuffer(size32_t len, const void * buf) const
     //MORE: Check that the buffer does not overlap a 1GB boundary
     const byte * start = static_cast<const byte *>(buf);
     return (start >= startLockedMemory) && (start + len <= endLockedMemory);
+}
+
+bool URingProcessor::supportsMultishotAccept() const
+{
+    bool supported = false;
+
+#ifdef IORING_OP_MULTISHOT_ACCEPT
+    CLeavableCriticalBlock block(requestCrit, isMultiThreaded);
+    struct io_uring_probe *probe = io_uring_get_probe_ring(&ring);
+    if (probe) {
+        supported = io_uring_opcode_supported(probe, IORING_OP_MULTISHOT_ACCEPT);
+        io_uring_free_probe(probe);
+    }
+#else
+    OWARNLOG("io_uring built without IORING_OP_MULTISHOT_ACCEPT support");
+#endif
+
+    return supported;
 }
 
 void URingProcessor::lockMemory(const void * buffer, size_t len)

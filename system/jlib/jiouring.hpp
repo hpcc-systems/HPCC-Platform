@@ -73,6 +73,8 @@ interface IAsyncProcessor : public IInterface
     virtual void checkForCompletions() = 0;
     virtual void lockMemory(const void * buffer, size_t len) = 0; // Avoid memcpy by locking the memory
     virtual void terminate() = 0;
+
+    virtual bool supportsMultishotAccept() const = 0;
 };
 
 // Create an instance of the IAsyncProcessor interface - may return null if not supported

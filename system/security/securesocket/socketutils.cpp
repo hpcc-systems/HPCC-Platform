@@ -425,7 +425,7 @@ CSocketConnectionListener::CSocketConnectionListener(unsigned port, bool _useTLS
 {
     // Check if we have io_uring support available and can use multishot accept
     // Note: asyncReader will be null if io_uring is disabled via configuration or unavailable
-    useMultishotAccept = (asyncReader != nullptr) && _useIOUring;
+    useMultishotAccept = (asyncReader != nullptr) && _useIOUring && asyncReader->supportsMultishotAccept();
 
     if (port)
         startPort(port);
@@ -733,9 +733,12 @@ void CSocketConnectionListener::onAsyncComplete(int result)
             }
             else
             {
+                StringBuffer epText, cause;
+                getSocketErrorMessage(cause, err);
+
                 // For other unexpected errors, the multishot operation may have stopped or may be recoverable
                 // Log as warning since we're not aborting and the error is unexpected
-                WARNLOG("Multishot accept unexpected error: %d. Operation may have stopped or may be recoverable.", result);
+                WARNLOG("Multishot accept unexpected error: %d: %s. Operation may have stopped or may be recoverable.", err, cause.str());
                 // If the error is fatal and stops multishot, decrement the callback counter and signal shutdown if needed
                 if (pendingAcceptCallbacks.fetch_sub(1) == 1)
                     shutdownSem.signal();
