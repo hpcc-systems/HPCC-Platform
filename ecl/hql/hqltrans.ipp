@@ -1281,6 +1281,8 @@ extern HQL_API void clearTransformStats();
 extern HQL_API unsigned getExpressionCount(IHqlExpression * expr, bool onlyActivities, bool processColon, bool processSequential);
 extern HQL_API unsigned getExpressionCount(const HqlExprArray & exprs, bool onlyActivities, bool processColon, bool processSequential);
 
+extern HQL_API IHqlExpression * createPackedStringRecord(IHqlExpression * record, unsigned firstPayloadIndex, unsigned minFieldLength);
+
 #ifdef OPTIMIZE_TRANSFORM_ALLOCATOR
 size32_t beginTransformerAllocator();
 void endTransformerAllocator(size32_t prevSize);

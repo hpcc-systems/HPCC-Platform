@@ -16253,10 +16253,24 @@ IHqlExpression * queryRecord(ITypeInfo * type)
 //NB: An ifblock is counted as a single payload field.
 unsigned numPayloadFields(IHqlExpression * index)
 {
+    assertex(isKey(index) || (index->getOperator() == no_buildindex));
     IHqlExpression * payloadAttr = index->queryAttribute(_payload_Atom);
     if (payloadAttr)
         return (unsigned)getIntValue(payloadAttr->queryChild(0));
     if (getBoolAttribute(index, filepositionAtom, true))
+        return 1;
+    return 0;
+}
+
+unsigned numPayloadFieldsFromAttrList(IHqlExpression * attrs)
+{
+    if (!attrs)
+        return 1;
+    assertex(!isKey(attrs));
+    IHqlExpression * payloadAttr = queryAttributeInList(_payload_Atom, attrs);
+    if (payloadAttr)
+        return (unsigned)getIntValue(payloadAttr->queryChild(0));
+    if (getBoolAttributeInList(attrs, filepositionAtom, true))
         return 1;
     return 0;
 }
