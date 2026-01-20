@@ -98,17 +98,20 @@ struct EventInformation
 #define DEFINE_EVENT(event, ctx, attrs) { Event##event, #event, false, EventNone, ctx, attrs }
 #define DEFINE_META(meta, ctx, attrs) { Meta##meta, #meta, true, EventNone, ctx, attrs }
 #define ATTR_HEADER           EvAttrEventTimestamp, EvAttrEventTraceId, EvAttrEventThreadId, EvAttrEventStackTrace
-#define INDEX_HEADER          ATTR_HEADER, EvAttrFileId, EvAttrFileOffset, EvAttrNodeKind
+#define SOURCE_ATTRS          EvAttrChannelId, EvAttrReplicaId, EvAttrInstanceId
+#define COMMON_ATTRS          ATTR_HEADER, SOURCE_ATTRS
+#define INDEX_HEADER          COMMON_ATTRS, EvAttrFileId, EvAttrFileOffset, EvAttrNodeKind
 #define INDEXCACHEHIT_ATTRS   INDEX_HEADER, EvAttrInMemorySize, EvAttrExpandTime
 #define INDEXCACHEMISS_ATTRS  INDEX_HEADER
 #define INDEXLOAD_ATTRS       INDEX_HEADER, EvAttrInMemorySize, EvAttrExpandTime, EvAttrReadTime
 #define INDEXEVICTION_ATTRS   INDEX_HEADER, EvAttrInMemorySize
-#define DALI_ATTRS            ATTR_HEADER, EvAttrPath, EvAttrConnectId, EvAttrElapsedTime, EvAttrDataSize
-#define FILEINFORMATION_ATTRS ATTR_HEADER, EvAttrFileId, EvAttrPath
-#define RECORDINGACTIVE_ATTRS ATTR_HEADER, EvAttrEnabled
-#define INDEXPAYLOAD_ATTRS    ATTR_HEADER, EvAttrFileId, EvAttrFileOffset, EvAttrFirstUse, EvAttrExpandTime
-#define QUERYSTART_ATTRS      ATTR_HEADER, EvAttrServiceName
-#define QUERYSTOP_ATTRS       ATTR_HEADER
+#define DALI_ATTRS            COMMON_ATTRS, EvAttrPath, EvAttrConnectId, EvAttrElapsedTime, EvAttrDataSize
+#define FILEINFORMATION_ATTRS COMMON_ATTRS, EvAttrFileId, EvAttrPath
+#define RECORDINGACTIVE_ATTRS COMMON_ATTRS, EvAttrEnabled
+#define INDEXPAYLOAD_ATTRS    COMMON_ATTRS, EvAttrFileId, EvAttrFileOffset, EvAttrFirstUse, EvAttrExpandTime
+#define QUERYSTART_ATTRS      COMMON_ATTRS, EvAttrServiceName
+#define QUERYSTOP_ATTRS       COMMON_ATTRS
+#define RECORDINGSOURCE_ATTRS COMMON_ATTRS, EvAttrProcessDescriptor
 
 static constexpr EventInformation eventInformation[] {
     DEFINE_EVENT(None, EventCtxMax, { EvAttrNone } ),
@@ -130,6 +133,7 @@ static constexpr EventInformation eventInformation[] {
     DEFINE_EVENT(IndexPayload, EventCtxIndex, { INDEXPAYLOAD_ATTRS } ),
     DEFINE_EVENT(QueryStart, EventCtxIndex, { QUERYSTART_ATTRS } ),
     DEFINE_EVENT(QueryStop, EventCtxIndex, { QUERYSTOP_ATTRS } ),
+    DEFINE_EVENT(RecordingSource, EventCtxOther, { RECORDINGSOURCE_ATTRS } ),
 };
 static_assert(_elements_in(eventInformation) == EventMax);
 
@@ -180,6 +184,10 @@ static constexpr EventAttrInformation attrInformation[] = {
     DEFINE_ATTR(ExpandTime, u8),
     DEFINE_ATTR(FirstUse, bool),
     DEFINE_ATTR(ServiceName, string),
+    DEFINE_ATTR(ChannelId, u1),
+    DEFINE_ATTR(ReplicaId, u1),
+    DEFINE_ATTR(InstanceId, u8),
+    DEFINE_ATTR(ProcessDescriptor, string),
 };
 
 static_assert(_elements_in(attrInformation) == EvAttrMax);
@@ -246,6 +254,19 @@ bool isHeaderAttribute(EventAttr attr)
     case EvAttrEventTraceId:
     case EvAttrEventThreadId:
     case EvAttrEventStackTrace:
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool isSourceAttribute(EventAttr attr)
+{
+    switch (attr)
+    {
+    case EvAttrChannelId:
+    case EvAttrReplicaId:
+    case EvAttrInstanceId:
         return true;
     default:
         return false;
@@ -848,6 +869,29 @@ void EventRecorder::recordQueryStop()
     writeEventFooter(pos, requiredSize, writeOffset);
 }
 
+void EventRecorder::recordRecordingSource(const char *processDescriptor, byte channelId, byte replicaId, __uint64 instanceId)
+{
+    if (!isStarted || isStopped)
+        return;
+
+    if (unlikely(outputToLog))
+    {
+        StringBuffer tmpDescriptor;
+        encodeJSON(tmpDescriptor, processDescriptor);
+        TRACEEVENT("{ \"name\": \"RecordingSource\", \"ProcessDescriptor\": \"%s\", \"ChannelId\": %u, \"ReplicaId\": %u, \"InstanceId\": %llu }", tmpDescriptor.str(), unsigned(channelId), unsigned(replicaId), instanceId);
+    }
+
+    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(processDescriptor, channelId, replicaId, instanceId);
+    offset_type writeOffset = reserveEvent(requiredSize);
+    offset_type pos = writeOffset;
+    writeEventHeader(EventRecordingSource, pos);
+    write(pos, EvAttrProcessDescriptor, processDescriptor);
+    write(pos, EvAttrChannelId, channelId);
+    write(pos, EvAttrReplicaId, replicaId);
+    write(pos, EvAttrInstanceId, instanceId);
+    writeEventFooter(pos, requiredSize, writeOffset);
+}
+
 void EventRecorder::recordDaliChangeMode(__int64 id, stat_type elapsedNs, size32_t dataSize)
 {
     recordDaliEvent(EventDaliChangeMode, id, elapsedNs, dataSize);
@@ -899,6 +943,7 @@ void EventRecorder::recordEvent(CEvent& event)
     switch (event.queryType())
     {
     case MetaFileInformation:
+    case EventRecordingSource:
         if (!isStarted || isStopped)
             return;
         break;
@@ -941,7 +986,7 @@ void EventRecorder::recordEvent(CEvent& event)
 
     // Prepare to write the event data.
     size32_t requiredSize = sizeMessageHeaderFooter;
-    for (CEventAttribute&  attr : event.definedAttributes)
+    for (CEventAttribute&  attr : event.assignedAttributes)
     {
         if (isHeaderAttribute(attr.queryId())) // already counted
             continue;
@@ -975,7 +1020,7 @@ void EventRecorder::recordEvent(CEvent& event)
 
     // Write the event data. Note the critical assumption that the defined attributes are presented in expected recording order.
     writeEventHeader(event.queryType(), pos, event.queryNumericValue(EvAttrEventTimestamp), event.queryTextValue(EvAttrEventTraceId), event.queryNumericValue(EvAttrEventThreadId));
-    for (CEventAttribute& attr : event.definedAttributes)
+    for (CEventAttribute& attr : event.assignedAttributes)
     {
         if (isHeaderAttribute(attr.queryId())) // already written
             continue;
@@ -1291,7 +1336,13 @@ bool CEvent::isComplete() const
 {
     for (EventAttr attr : eventInformation[type].attributes)
     {
-        if (!isHeaderAttribute(attr) && attributes[attr].isDefined())
+        // Header attributes are always optional
+        if (isHeaderAttribute(attr))
+            continue;
+        // Source attributes are required for RecordingSource, optional for all other events
+        if (isSourceAttribute(attr) && type != EventRecordingSource)
+            continue;
+        if (attributes[attr].isDefined())
             return false;
     }
     return true;
