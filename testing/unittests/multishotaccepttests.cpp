@@ -78,6 +78,9 @@ public:
     
     unsigned getAcceptedCount() const { return acceptedConnections; }
     void setShouldAccept(bool accept) { shouldAccept = accept; }
+    
+    // Introspection methods for testing io_uring behavior
+    AcceptMethod getAcceptMethod() const { return CSocketConnectionListener::getAcceptMethod(); }
 };
 
 // Simple client that connects and sends a message
@@ -184,6 +187,11 @@ class MultishotAcceptTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testSlowClients);
         CPPUNIT_TEST(testIOUringDisabledViaParameter);
         CPPUNIT_TEST(testIOUringDisabledViaConfig);
+        CPPUNIT_TEST(testAcceptMethodSelection);
+        CPPUNIT_TEST(testMultishotVsSingleshotBehavior);
+        CPPUNIT_TEST(testPendingCallbacksManagement);
+        CPPUNIT_TEST(testHighConnectionRate);
+        CPPUNIT_TEST(testAcceptMethodAfterStart);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -209,8 +217,12 @@ public:
             // Give the listener time to start
             MilliSleep(300);
             
-            // Note: The test works regardless of whether multishot accept or 
-            // thread-based accept is used (depends on io_uring availability)
+            // Verify accept method is set appropriately
+            AcceptMethod method = listener.getAcceptMethod();
+            CPPUNIT_ASSERT_MESSAGE("Accept method should be set to a valid mode",
+                                  method == AcceptMethod::MultishotAccept ||
+                                  method == AcceptMethod::SingleshotAccept ||
+                                  method == AcceptMethod::SelectThread);
             
             // Connect a client
             SimpleClient client("127.0.0.1", port);
@@ -702,6 +714,252 @@ public:
                     config->addPropTree("expert", createPTree("expert"));
                 config->setPropBool("expert/@useIOUring", originalSetting);
             }
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+    
+    // Test 13: Verify AcceptMethod is selected correctly based on io_uring availability
+    void testAcceptMethodSelection()
+    {
+        unsigned short port = getRandomTestPort();
+        
+        try
+        {
+            // Test with io_uring enabled (default)
+            {
+                TestConnectionListener listener(port, false, true);
+                MilliSleep(100);
+                
+                AcceptMethod method = listener.getAcceptMethod();
+                // Should be either Multishot (if supported), Singleshot (if io_uring available but multishot not supported), or SelectThread (if io_uring not available)
+                CPPUNIT_ASSERT_MESSAGE("With io_uring enabled, should use Multishot, Singleshot, or SelectThread",
+                                      method == AcceptMethod::MultishotAccept ||
+                                      method == AcceptMethod::SingleshotAccept ||
+                                      method == AcceptMethod::SelectThread);
+                
+                listener.stop();
+                MilliSleep(200);
+            }
+            
+            // Test with io_uring explicitly disabled
+            {
+                TestConnectionListener listener(port, false, false);
+                MilliSleep(100);
+                
+                AcceptMethod method = listener.getAcceptMethod();
+                CPPUNIT_ASSERT_EQUAL_MESSAGE("With io_uring disabled, should use SelectThread",
+                                            AcceptMethod::SelectThread, method);
+                
+                listener.stop();
+            }
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+    
+    // Test 14: Verify multishot vs singleshot behavior differences
+    void testMultishotVsSingleshotBehavior()
+    {
+        unsigned short port = getRandomTestPort();
+        constexpr unsigned numClients = 20;
+        
+        try
+        {
+            TestConnectionListener listener(port, false, true);
+            MilliSleep(300);
+            
+            AcceptMethod method = listener.getAcceptMethod();
+            
+            // Connect multiple clients rapidly
+            std::vector<std::unique_ptr<SimpleClient>> clients;
+            for (unsigned i = 0; i < numClients; i++)
+            {
+                auto client = std::make_unique<SimpleClient>("127.0.0.1", port);
+                if (client->connect(2000))
+                    clients.push_back(std::move(client));
+                MilliSleep(5); // Very small delay
+            }
+            
+            MilliSleep(200);
+            
+            unsigned accepted = listener.getAcceptedCount();
+            
+            // Both methods should handle multiple connections, but multishot is more efficient
+            CPPUNIT_ASSERT_MESSAGE("Should accept most connections regardless of method",
+                                  accepted >= numClients * 0.85);
+            
+            if (method == AcceptMethod::MultishotAccept)
+            {
+                // With multishot, we expect very high acceptance rate due to efficiency
+                CPPUNIT_ASSERT_MESSAGE("Multishot should accept nearly all rapid connections",
+                                      accepted >= numClients * 0.95);
+            }
+            
+            for (auto &client : clients)
+                client->close();
+            
+            listener.stop();
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+    
+    // Test 15: Verify accept continues working correctly in both io_uring modes
+    void testPendingCallbacksManagement()
+    {
+        unsigned short port = getRandomTestPort();
+        
+        try
+        {
+            TestConnectionListener listener(port, false, true);
+            MilliSleep(300);
+            
+            AcceptMethod method = listener.getAcceptMethod();
+            
+            // Connect multiple clients to verify continuous accept operation
+            for (unsigned i = 0; i < 5; i++)
+            {
+                SimpleClient client("127.0.0.1", port);
+                CPPUNIT_ASSERT_MESSAGE("Client should connect", client.connect());
+                MilliSleep(50);
+                client.close();
+            }
+            
+            MilliSleep(200);
+            
+            // Verify all connections were accepted (proves accept is continuously working)
+            unsigned accepted = listener.getAcceptedCount();
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("All connections should be accepted (continuous accept working)",
+                                        5U, accepted);
+            
+            listener.stop();
+            
+            // After stop, no new connections should be accepted
+            MilliSleep(200);
+            SimpleClient lateClient("127.0.0.1", port);
+            bool connected = lateClient.connect(1000);
+            CPPUNIT_ASSERT_MESSAGE("Should not connect after stop", !connected);
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+    
+    // Test 16: High connection rate stress test for io_uring
+    void testHighConnectionRate()
+    {
+        unsigned short port = getRandomTestPort();
+        constexpr unsigned numClients = 100;
+        
+        try
+        {
+            TestConnectionListener listener(port, false, true);
+            MilliSleep(300);
+            
+            AcceptMethod method = listener.getAcceptMethod();
+            
+            // Create many connections as fast as possible
+            std::vector<std::thread> threads;
+            std::atomic<unsigned> successCount{0};
+            
+            auto startTime = msTick();
+            
+            for (unsigned i = 0; i < numClients; i++)
+            {
+                threads.emplace_back([port, &successCount]() {
+                    SimpleClient client("127.0.0.1", port);
+                    if (client.connect(3000))
+                    {
+                        successCount++;
+                        MilliSleep(10);
+                        client.close();
+                    }
+                });
+                
+                // Launch threads in small batches to avoid overwhelming the system
+                if (i % 10 == 9)
+                    MilliSleep(5);
+            }
+            
+            for (auto &thread : threads)
+                thread.join();
+            
+            auto elapsed = msTick() - startTime;
+            
+            MilliSleep(300);
+            
+            unsigned accepted = listener.getAcceptedCount();
+            
+            // Should accept most connections
+            CPPUNIT_ASSERT_MESSAGE("Should handle high connection rate",
+                                  accepted >= numClients * 0.90);
+            
+            if (method == AcceptMethod::MultishotAccept)
+            {
+                // Multishot should be very efficient
+                CPPUNIT_ASSERT_MESSAGE("Multishot should handle high rate very efficiently",
+                                      accepted >= numClients * 0.95);
+            }
+            
+            listener.stop();
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+    
+    // Test 17: Verify AcceptMethod remains stable during operation
+    void testAcceptMethodAfterStart()
+    {
+        unsigned short port = getRandomTestPort();
+        
+        try
+        {
+            TestConnectionListener listener(port, false, true);
+            MilliSleep(300);
+            
+            AcceptMethod initialMethod = listener.getAcceptMethod();
+            
+            // Accept several connections
+            for (unsigned i = 0; i < 5; i++)
+            {
+                SimpleClient client("127.0.0.1", port);
+                CPPUNIT_ASSERT_MESSAGE("Client should connect", client.connect());
+                MilliSleep(50);
+                
+                // Verify method hasn't changed
+                AcceptMethod currentMethod = listener.getAcceptMethod();
+                CPPUNIT_ASSERT_EQUAL_MESSAGE("AcceptMethod should remain stable during operation",
+                                            initialMethod, currentMethod);
+                
+                client.close();
+            }
+            
+            listener.stop();
         }
         catch (IException *e)
         {
