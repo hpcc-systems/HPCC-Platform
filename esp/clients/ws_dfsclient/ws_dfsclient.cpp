@@ -139,7 +139,14 @@ protected:
 public:
     CServiceDistributedFileBase(IDFSFile *_dfsFile) : dfsFile(_dfsFile)
     {
-        logicalName.set(dfsFile->queryFileMeta()->queryProp("@name"));
+        const char *remoteName = dfsFile->queryRemoteName();
+        const char *remoteLfnName = dfsFile->queryFileMeta()->queryProp("@name");
+        CDfsLogicalFileName dlfn;
+        if (!isEmptyString(remoteName))
+            dlfn.setRemote(remoteName, remoteLfnName);
+        else
+            dlfn.set(remoteLfnName);
+        logicalName.set(dlfn.get());
     }
 
     virtual unsigned numParts() override { return legacyDFSFile->numParts(); }

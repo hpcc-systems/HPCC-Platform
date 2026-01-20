@@ -428,7 +428,7 @@ void CDfsLogicalFileName::set(const CDfsLogicalFileName &other)
 
 bool CDfsLogicalFileName::isForeign(SocketEndpoint *ep) const
 {
-    if (localpos!=0) // NB: localpos is position of logical filename following a foreign::<nodeip>:: qualifier.
+    if (localpos!=0 && !foreignep.isNull()) // NB: localpos is position of logical filename following a foreign::<nodeip>:: qualifier.
     {
         if (ep)
             *ep = foreignep;
@@ -466,7 +466,7 @@ void CDfsLogicalFileName::expand(IUserDescriptor *user)
                     full.append(',');
                 const CDfsLogicalFileName &item = multi->item(i1);
                 StringAttr norm;
-                normalizeName(item.get(), norm, false, true);
+                normalizeName(item.get(), norm, false, true, false);
                 full.append(norm);
                 if (item.isExternal())
                     external = external || item.isExternal();
@@ -608,7 +608,7 @@ bool expandExternalPath(StringBuffer &dir, StringBuffer &tail, const char * file
     return true;
 }
 
-void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool strict, bool nameIsRoot)
+void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool strict, bool nameIsRoot, bool stripLeadingSelfScope)
 {
     // NB: If !strict(default) allows spaces to exist either side of scopes (no idea why would want to permit that, but preserving for bwrd compat.)
     StringBuffer nametmp;
@@ -705,7 +705,7 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
             {
                 s+=2;
                 const char *ns = strstr(s,"::");
-                if ((ns || str.length()>1) && skipScope && selfScopeTranslation)
+                if ((ns || stripLeadingSelfScope || str.length()>1) && skipScope && selfScopeTranslation)
                 {
                     str.setLength(scopeStart);
                     skipScope = false;
@@ -824,9 +824,11 @@ bool CDfsLogicalFileName::normalizeExternal(const char * name, StringAttr &res, 
     if (ns1)
     {
         str.append("::");
+        if (lfntype_remote == lfnType)
+            localpos = str.length();
         // handle trailing scopes+name
         StringAttr tail;
-        normalizeName(ns1+2, tail, strict, false); // +2 skipping "::", validated at start
+        normalizeName(ns1+2, tail, strict, false, true); // +2 skipping "::", validated at start
         // normalizeName sets tailpos relative to ns1+2
         tailpos += str.length(); // length of <file|plane|remote>::<name>::
         str.append(tail);
@@ -835,7 +837,7 @@ bool CDfsLogicalFileName::normalizeExternal(const char * name, StringAttr &res, 
     return true;
 }
 
-void CDfsLogicalFileName::set(const char *name, bool removeForeign, bool skipAddRootScopeIfNone)
+void CDfsLogicalFileName::set(const char *name, bool removeForeignOrRemote, bool skipAddRootScopeIfNone)
 {
     clear();
     if (!name)
@@ -880,22 +882,30 @@ void CDfsLogicalFileName::set(const char *name, bool removeForeign, bool skipAdd
     if (normalizeExternal(name, lfn, false))
         external = true;
     else
+        normalizeName(name, lfn, false, !skipAddRootScopeIfNone, false);
+    if (removeForeignOrRemote)
     {
-        normalizeName(name, lfn, false, !skipAddRootScopeIfNone);
-        if (removeForeign)
-        {
-            StringAttr _lfn = get(true);
-            lfn.clear();
-            lfn.set(_lfn);
-        }
+        StringAttr _lfn = get(true);
+        lfn.clear();
+        lfn.set(_lfn);
     }
 }
 
-bool CDfsLogicalFileName::setValidate(const char *lfn, bool removeForeign)
+void CDfsLogicalFileName::setRemote(const char *remoteName, const char *logicalName)
+{
+    StringBuffer str;
+    str.append(REMOTE_SCOPE "::");
+    str.append(remoteName);
+    str.append("::");
+    str.append(logicalName);
+    set(str.str());
+}
+
+bool CDfsLogicalFileName::setValidate(const char *lfn, bool removeForeignOrRemote)
 {
     try
     {
-        set(lfn, removeForeign);
+        set(lfn, removeForeignOrRemote);
         return true;
     }
     catch (IException *e)
@@ -1168,12 +1178,12 @@ void CDfsLogicalFileName::setCluster(const char *cname)
 
 
 
-const char *CDfsLogicalFileName::get(bool removeforeign) const
+const char *CDfsLogicalFileName::get(bool removeForeignOrRemote) const
 {
     const char *ret = lfn.get();
     if (!ret)
         return "";
-    if (removeforeign) {
+    if (removeForeignOrRemote) {
         if (multi)
             DBGLOG("CDfsLogicalFileName::get with removeforeign set called on multi-lfn %s",get());
         ret += localpos;
@@ -1181,9 +1191,9 @@ const char *CDfsLogicalFileName::get(bool removeforeign) const
     return ret;
 }
 
-StringBuffer &CDfsLogicalFileName::get(StringBuffer &str, bool removeforeign, bool withCluster) const
+StringBuffer &CDfsLogicalFileName::get(StringBuffer &str, bool removeForeignOrRemote, bool withCluster) const
 {
-    str.append(get(removeforeign));
+    str.append(get(removeForeignOrRemote));
     if (withCluster && cluster.length())
         str.append("@").append(cluster);
     return str;
@@ -1206,7 +1216,7 @@ StringBuffer &CDfsLogicalFileName::getTail(StringBuffer &buf) const
     return buf.append(queryTail());
 }
 
-StringBuffer &CDfsLogicalFileName::getScopes(StringBuffer &buf,bool removeforeign) const
+StringBuffer &CDfsLogicalFileName::getScopes(StringBuffer &buf,bool removeForeignOrRemote) const
 {
     if (multi)
         DBGLOG("CDfsLogicalFileName::getScopes called on multi-lfn %s",get());
@@ -1214,7 +1224,7 @@ StringBuffer &CDfsLogicalFileName::getScopes(StringBuffer &buf,bool removeforeig
     if (!s||(tailpos<=2))
         return buf;
     size32_t sz = tailpos-2;
-    if (removeforeign) {
+    if (removeForeignOrRemote) {
         s += localpos;
         if (sz<=localpos)
             return buf;
@@ -1223,14 +1233,14 @@ StringBuffer &CDfsLogicalFileName::getScopes(StringBuffer &buf,bool removeforeig
     return buf.append(sz,s);
 }
 
-unsigned CDfsLogicalFileName::numScopes(bool removeforeign) const
+unsigned CDfsLogicalFileName::numScopes(bool removeForeignOrRemote) const
 {
     const char *s =lfn.get();
     if (!s)
         return 0;
     if (multi)
         DBGLOG("CDfsLogicalFileName::getScopes called on multi-lfn %s",get());
-    if (removeforeign)
+    if (removeForeignOrRemote)
         s += localpos;
     // num scopes = number of "::"s
     unsigned ret = 0;
@@ -1243,14 +1253,14 @@ unsigned CDfsLogicalFileName::numScopes(bool removeforeign) const
     }
 }
 
-StringBuffer &CDfsLogicalFileName::getScope(StringBuffer &buf,unsigned idx,bool removeforeign) const
+StringBuffer &CDfsLogicalFileName::getScope(StringBuffer &buf,unsigned idx,bool removeForeignOrRemote) const
 {
     const char *s =lfn.get();
     if (!s)
         return buf;
     if (multi)
         DBGLOG("CDfsLogicalFileName::getScopes called on multi-lfn %s",get());
-    if (removeforeign)
+    if (removeForeignOrRemote)
         s += localpos;
     // num scopes = number of "::"s
     for (;;) {
@@ -1274,7 +1284,7 @@ StringBuffer &CDfsLogicalFileName::makeScopeQuery(StringBuffer &query, bool abso
     if (absolute)
         query.append(SDS_DFS_ROOT "/");
     // returns full xpath for containing scope
-    const char *s=get(true);    // skip foreign
+    const char *s=get(true);    // skip foreign or remote
     bool first=true;
     for (;;) {
         const char *e=strstr(s,"::");
@@ -1299,7 +1309,7 @@ StringBuffer &CDfsLogicalFileName::makeFullnameQuery(StringBuffer &query, DfsXml
 
 StringBuffer &CDfsLogicalFileName::makeXPathLName(StringBuffer &lfnNodeName) const
 {
-    const char *s=get(true);    // skip foreign
+    const char *s=get(true);    // skip foreign or remote
     // Ensure only chars that are accepted by jptree in an xpath element are used
     for (;;)
     {
