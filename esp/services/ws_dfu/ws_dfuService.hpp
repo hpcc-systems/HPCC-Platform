@@ -249,9 +249,7 @@ private:
     void getFilePartsOnClusters(IEspContext &context, const char *clusterReq, StringArray &clusters, IDistributedFile *df,
         IEspDFUFileDetail &fileDetails);
     bool getQueryFile(const char *logicalName, const char *querySet, const char *queryID, IEspDFUFileDetail &fileDetails);
-    void queryFieldNames(IEspContext &context, const char *fileName, const char *cluster,
-        unsigned __int64 fieldMask, StringArray &fieldNames);
-    void parseFieldMask(unsigned __int64 fieldMask, unsigned &fieldCount, IntArray &fieldIndexArray);
+    void queryFieldNames(IEspContext &context, IDistributedFile * df, const char *fileName, unsigned __int64 fieldMask, StringArray &fieldNames);
     void getFilePartsInfo(IEspContext &context, const char *dafilesrvHost, IFileDescriptor &fileDesc, bool forFileCreate, IEspDFUFileAccessInfo &accessInfo);
     void getFileDafilesrvConfiguration(StringBuffer &keyPairName, unsigned &port, bool &secure, const char *fileName, std::vector<std::string> &groups);
     void getFileDafilesrvConfiguration(StringBuffer &keyPairName, unsigned &retPort, bool &retSecure, const char *group);
