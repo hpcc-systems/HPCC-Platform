@@ -242,13 +242,53 @@ export enum FetchStatus {
     COMPLETE
 }
 
-const scopeFilterDefault: Partial<WsWorkunits.ScopeFilter> = {
-    MaxDepth: 999999,
-    ScopeTypes: []
+export enum ScopeType {
+    none = "none",
+    all = "all",
+    global = "global",
+    graph = "graph",
+    subgraph = "subgraph",
+    activity = "activity",
+    allocator = "allocator",
+    section = "section",
+    operation = "operation",
+    edge = "edge",
+    function = "function",
+    workflow = "workflow",
+    file = "file",
+    channel = "channel",
+    unknown = "unknown",
+    max = "max"
+}
+
+export const WURootScopeTypes = [
+    ScopeType.subgraph,
+    ScopeType.activity,
+    ScopeType.allocator,
+    ScopeType.section,
+    ScopeType.operation,
+    ScopeType.workflow,
+    ScopeType.file,
+    ScopeType.channel,
+    ScopeType.unknown
+];
+
+export const WULogicalRootScopeTypes = [
+    ScopeType.graph
+];
+
+export const scopeFilterMetrics: Partial<WsWorkunits.ScopeFilter> = {
+    MaxDepth: 1,
+    ScopeTypes: WURootScopeTypes
+};
+
+export const scopeFilterLogicalGraph: Partial<WsWorkunits.ScopeFilter> = {
+    MaxDepth: 1,
+    ScopeTypes: WULogicalRootScopeTypes
 };
 
 const nestedFilterDefault: WsWorkunits.NestedFilter = {
-    Depth: 0,
+    Depth: 999999,
     ScopeTypes: []
 };
 
@@ -269,7 +309,7 @@ export interface IScopeEx extends IScope {
 
 export function useWorkunitMetrics(
     wuid: string,
-    scopeFilter: Partial<WsWorkunits.ScopeFilter> = scopeFilterDefault,
+    scopeFilter: Partial<WsWorkunits.ScopeFilter> = scopeFilterMetrics,
     nestedFilter: WsWorkunits.NestedFilter = nestedFilterDefault
 ): useMetricsResult {
 
@@ -351,7 +391,7 @@ export function useWorkunitMetrics(
 export function useQueryMetrics(
     querySet: string,
     queryId: string,
-    scopeFilter: Partial<WsWorkunits.ScopeFilter> = scopeFilterDefault,
+    scopeFilter: Partial<WsWorkunits.ScopeFilter> = scopeFilterMetrics,
     nestedFilter: WsWorkunits.NestedFilter = nestedFilterDefault
 ): useMetricsResult {
 
@@ -416,7 +456,7 @@ export function useWUQueryMetrics(
     wuid: string,
     querySet: string,
     queryId: string,
-    scopeFilter: Partial<WsWorkunits.ScopeFilter> = scopeFilterDefault,
+    scopeFilter: Partial<WsWorkunits.ScopeFilter> = scopeFilterMetrics,
     nestedFilter: WsWorkunits.NestedFilter = nestedFilterDefault
 ): useMetricsResult {
     const isQuery = querySet && queryId;

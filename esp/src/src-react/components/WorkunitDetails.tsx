@@ -41,8 +41,8 @@ interface WorkunitDetailsProps {
     parentUrl?: string;
     tab?: string;
     fullscreen?: boolean;
-    state?: { outputs?: string, metrics?: { lineageSelection?: string, selection?: string[] }, resources?: string, helpers?: string, eclsummary?: any };
-    queryParams?: { summary?: StringStringMap, outputs?: StringStringMap, inputs?: StringStringMap, metrics?: StringStringMap, resources?: StringStringMap, helpers?: StringStringMap, logs?: StringStringMap };
+    state?: { outputs?: string, metrics?: { lineageSelection?: string, selection?: string[] }, resources?: string, helpers?: string, eclsummary?: any, logicalgraph?: { lineageSelection?: string, selection?: string[] } };
+    queryParams?: { summary?: StringStringMap, outputs?: StringStringMap, inputs?: StringStringMap, metrics?: StringStringMap, resources?: StringStringMap, helpers?: StringStringMap, logs?: StringStringMap, logicalgraph?: StringStringMap };
 }
 
 export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
@@ -191,6 +191,10 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
             id: "eclsummary",
             label: nlsHPCC.ECL
         }, {
+            id: "logicalgraph",
+            label: nlsHPCC.LogicalGraph,
+            disabled: workunit?.Archived
+        }, {
             id: "xml",
             label: nlsHPCC.XML
         }];
@@ -256,6 +260,18 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                         selection={state?.eclsummary?.lineageSelection ?? state?.eclsummary}
                         lineNum={state?.eclsummary?.selection ? state?.eclsummary?.selection[0] : undefined}
                     />
+                </DelayLoadedPanel>
+                <DelayLoadedPanel visible={tab === "logicalgraph"} size={size}>
+                    <React.Suspense fallback={
+                        <>
+                            <Shimmer />
+                            <Shimmer />
+                            <Shimmer />
+                            <Shimmer />
+                        </>
+                    }>
+                        <Metrics wuid={wuid} logicalGraph={true} parentUrl={`${parentUrl}/${wuid}/logicalgraph`} lineageSelection={state?.logicalgraph?.lineageSelection} selection={state?.logicalgraph?.selection} />
+                    </React.Suspense>
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "xml"} size={size}>
                     <WUXMLSourceEditor wuid={wuid} />
