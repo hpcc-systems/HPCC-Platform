@@ -159,7 +159,7 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
         message: nlsHPCC.DeleteSelectedWorkunits,
-        items: selection.map(s => s.Wuid),
+        items: selection.map(s => s?.Wuid).filter(wuid => wuid !== undefined),
         onSubmit: React.useCallback(() => {
             FileSpray.DFUWorkunitsAction(selection, nlsHPCC.Delete).then(() => refreshTable.call(true));
         }, [refreshTable, selection])
@@ -197,7 +197,7 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
         {
             key: "restore", text: nlsHPCC.Restore, disabled: !uiState.hasSelection,
             onClick: () => {
-                const wuids = selection.map(item => item.Wuid || item.ID);
+                const wuids = selection.map(item => item?.Wuid || item.ID).filter(wuid => wuid !== undefined);
                 Promise.all(wuids.map(wuid =>
                     sashaService.RestoreWU({
                         Wuid: wuid,

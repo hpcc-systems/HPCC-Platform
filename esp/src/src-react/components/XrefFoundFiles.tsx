@@ -72,7 +72,7 @@ export const XrefFoundFiles: React.FunctionComponent<XrefFoundFilesProps> = ({
     const [AttachConfirm, setShowAttachConfirm] = useConfirm({
         title: nlsHPCC.Attach,
         message: nlsHPCC.AddTheseFilesToDali,
-        items: selection.map(file => file.Name),
+        items: selection.map(file => file?.Name).filter(name => name !== undefined),
         onSubmit: React.useCallback(() => {
             WsDFUXref.DFUXRefArrayAction(selection, nlsHPCC.Attach, name, "Found")
                 .then(response => {
@@ -86,7 +86,7 @@ export const XrefFoundFiles: React.FunctionComponent<XrefFoundFilesProps> = ({
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
         message: nlsHPCC.DeleteSelectedFiles,
-        items: selection.map(file => file.Name),
+        items: selection.map(file => file?.Name).filter(name => name !== undefined),
         onSubmit: React.useCallback(() => {
             WsDFUXref.DFUXRefArrayAction(selection, nlsHPCC.Delete, name, "Found")
                 .then(response => {

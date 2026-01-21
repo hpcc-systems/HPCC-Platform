@@ -174,14 +174,14 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
         message: nlsHPCC.DeleteSelectedWorkunits,
-        items: selection.map(s => s.Wuid),
+        items: selection.map(s => s?.Wuid).filter(wuid => wuid !== undefined),
         onSubmit: () => doActionWithWorkunits("Delete")
     });
 
     const [AbortConfirm, setShowAbortConfirm] = useConfirm({
         title: nlsHPCC.Abort,
         message: nlsHPCC.AbortSelectedWorkunits,
-        items: selection.map(s => s.Wuid),
+        items: selection.map(s => s?.Wuid).filter(wuid => wuid !== undefined),
         onSubmit: () => doActionWithWorkunits("Abort")
     });
 
@@ -227,7 +227,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         {
             key: "restore", text: nlsHPCC.Restore, disabled: !(filter.Type === true && uiState.hasSelection),
             onClick: () => {
-                const wuids = selection.map(item => item.Wuid || item.ID);
+                const wuids = selection.map(item => item?.Wuid || item.ID).filter(wuid => wuid !== undefined);
                 Promise.all(wuids.map(wuid =>
                     sashaService.RestoreWU({
                         Wuid: wuid,

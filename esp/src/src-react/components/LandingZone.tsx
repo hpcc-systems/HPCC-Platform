@@ -465,7 +465,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
         message: nlsHPCC.DeleteSelectedFiles,
-        items: selection.map(s => s.name),
+        items: selection.map(s => s?.name).filter(name => name !== undefined),
         onSubmit: React.useCallback(() => {
             const userFiles = selection.filter(item => item._isUserFile);
             const regularFiles = selection.filter(item => !item._isUserFile);
