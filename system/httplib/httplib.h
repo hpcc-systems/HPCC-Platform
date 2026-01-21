@@ -926,6 +926,7 @@ protected:
     client_cert_path_ = rhs.client_cert_path_;
     client_key_path_ = rhs.client_key_path_;
     connection_timeout_sec_ = rhs.connection_timeout_sec_;
+    connection_timeout_usec_ = rhs.connection_timeout_usec_;
     read_timeout_sec_ = rhs.read_timeout_sec_;
     read_timeout_usec_ = rhs.read_timeout_usec_;
     write_timeout_sec_ = rhs.write_timeout_sec_;
@@ -1182,7 +1183,7 @@ private:
   bool is_ssl() const override;
 
   bool connect_with_proxy(Socket &sock, Response &res, bool &success);
-  bool initialize_ssl(Socket &socket);
+  bool initialize_ssl(Socket &socket, unsigned timeoutMs);
 
   bool load_certs();
 
@@ -4638,24 +4639,32 @@ inline bool ClientImpl::send(const Request &req, Response &res) {
     }
 
     if (!is_alive) {
+#ifdef CPPHTTPLIB_OPENSSL_SUPPORT
+      CCycleTimer timer;
+#endif
       if (!create_and_connect_socket(socket_))
       {
         OERRLOG("HTTPLIB Error create_and_connect_socket failed");
         return false;
       }
-
 #ifdef CPPHTTPLIB_OPENSSL_SUPPORT
       // TODO: refactoring
       if (is_ssl()) {
         auto &scli = static_cast<SSLClient &>(*this);
         if (!proxy_host_.empty()) {
           bool success = false;
+          // NOTE: if using proxy then up to 2x connect time
           if (!scli.connect_with_proxy(socket_, res, success)) {
             return success;
           }
         }
 
-        if (!scli.initialize_ssl(socket_))
+        unsigned connTimeMs = (connection_timeout_sec_ * 1000) + (connection_timeout_usec_ / 1000);
+        unsigned remainingMs = timer.remainingMs(connTimeMs);
+        if (remainingMs == 0)
+          return false;
+
+        if (!scli.initialize_ssl(socket_, remainingMs))
         {
           OERRLOG("HTTPLIB Error initialize_ssl failed");
           return false;
@@ -5457,8 +5466,91 @@ inline void ClientImpl::set_logger(Logger logger) {
  * SSL Implementation
  */
 #ifdef CPPHTTPLIB_OPENSSL_SUPPORT
-namespace detail {
 
+enum SSLMethod { SSL_ACCEPT_METHOD, SSL_CONNECT_METHOD };
+
+inline int SSL_handleWait(SSL *ssl, socket_t sock, int errCode, int *sslErr, unsigned remainingMs)
+{
+    if (remainingMs == 0)
+        return 0;
+
+    int retCode;
+    unsigned secs = remainingMs / 1000;
+    unsigned usecs = (remainingMs % 1000) * 1000;
+    *sslErr = SSL_get_error(ssl, errCode);
+    switch (*sslErr)
+    {
+        case SSL_ERROR_WANT_READ:
+        {
+            retCode = detail::select_read(sock, secs, usecs);
+            break;
+        }
+        case SSL_ERROR_WANT_WRITE:
+        {
+            retCode = detail::select_write(sock, secs, usecs);
+            break;
+        }
+        default:
+        {
+            retCode = -1;
+            break;
+        }
+    }
+
+    return retCode;
+}
+
+inline int SSL_timedAcceptorConnect(SSL *ssl, socket_t sock, SSLMethod method, unsigned timeoutMs=60000)
+{
+    unsigned remainingMs;
+    CCycleTimer timer;
+    int retCode;
+    int result;
+    int sslErr;
+
+    while (true)
+    {
+        ERR_clear_error();
+
+        switch (method)
+        {
+            case SSL_ACCEPT_METHOD:
+                retCode = SSL_accept(ssl);
+                break;
+            case SSL_CONNECT_METHOD:
+                retCode = SSL_connect(ssl);
+                break;
+            default:
+                OERRLOG("HTTPLIB Error : invalid method (%d)", (int)method);
+                return -1;
+        }
+
+        if (retCode > 0)
+            return 1;
+
+        remainingMs = timer.remainingMs(timeoutMs);
+
+        result = SSL_handleWait(ssl, sock, retCode, &sslErr, remainingMs);
+        if (result == 0)
+        {
+            OERRLOG("HTTPLIB Error : %s timed out", (method == SSL_ACCEPT_METHOD ? "SSL_accept" : "SSL_connect"));
+            break;
+        }
+        else if (result < 0)
+        {
+            char errbuf[512];
+            ERR_error_string_n(ERR_get_error(), errbuf, 512);
+            VStringBuffer errmsg("%s %d - %s", (method == SSL_ACCEPT_METHOD ? "SSL_accept" : "SSL_connect"), sslErr, errbuf);
+            OERRLOG("HTTPLIB Error : %s", errmsg.str());
+            break;
+        }
+        // another attempt ...
+    }
+
+    return result;
+}
+
+namespace detail {
 template <typename U, typename V>
 inline SSL *ssl_new(socket_t sock, SSL_CTX *ctx, std::mutex &ctx_mutex,
                     U SSL_connect_or_accept, V setup) {
@@ -5469,10 +5561,19 @@ inline SSL *ssl_new(socket_t sock, SSL_CTX *ctx, std::mutex &ctx_mutex,
   }
 
   if (ssl) {
+    set_nonblocking(static_cast<int>(sock), true);
     auto bio = BIO_new_socket(static_cast<int>(sock), BIO_NOCLOSE);
     SSL_set_bio(ssl, bio, bio);
 
-    if (!setup(ssl) || SSL_connect_or_accept(ssl) != 1) {
+    int retCode = 0;
+    bool setupResult = setup(ssl);
+
+    if (setupResult)
+      retCode = SSL_connect_or_accept(ssl);
+
+    set_nonblocking(static_cast<int>(sock), false);
+
+    if (!setupResult || retCode != 1) {
       SSL_shutdown(ssl);
       {
         std::lock_guard<std::mutex> guard(ctx_mutex);
@@ -5704,8 +5805,11 @@ inline SSLServer::~SSLServer() {
 inline bool SSLServer::is_valid() const { return ctx_; }
 
 inline bool SSLServer::process_and_close_socket(socket_t sock) {
-  auto ssl = detail::ssl_new(sock, ctx_, ctx_mutex_, SSL_accept,
-                             [](SSL * /*ssl*/) { return true; });
+  auto ssl = detail::ssl_new(sock, ctx_, ctx_mutex_,
+      [&](SSL *ssl) {
+        return SSL_timedAcceptorConnect(ssl, sock, SSL_ACCEPT_METHOD);
+      },
+      [](SSL * /*ssl*/) { return true; });
 
   if (ssl) {
     auto ret = detail::process_server_socket_ssl(
@@ -5882,7 +5986,7 @@ inline bool SSLClient::load_certs() {
   return ret;
 }
 
-inline bool SSLClient::initialize_ssl(Socket &socket) {
+inline bool SSLClient::initialize_ssl(Socket &socket, unsigned timeoutMs) {
   auto ssl = detail::ssl_new(
       socket.sock, ctx_, ctx_mutex_,
       [&](SSL *ssl) {
@@ -5895,7 +5999,7 @@ inline bool SSLClient::initialize_ssl(Socket &socket) {
           SSL_set_verify(ssl, SSL_VERIFY_NONE, nullptr);
         }
 
-        if (SSL_connect(ssl) != 1) {
+        if (SSL_timedAcceptorConnect(ssl, socket.sock, SSL_CONNECT_METHOD, timeoutMs) != 1) {
           OERRLOG("HTTPLIB Error connecting ssl");
           error_ = Error::SSLConnection;
           return false;
