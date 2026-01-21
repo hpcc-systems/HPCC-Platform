@@ -9,7 +9,7 @@ import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { WUTimelineNoFetch } from "src/Timings";
 import * as Utility from "src/Utility";
-import { useMetricsViews, useWUQueryMetrics } from "../hooks/metrics";
+import { useMetricsViews, useWUQueryMetrics, scopeFilterMetrics, scopeFilterLogicalGraph } from "../hooks/metrics";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 import { DockPanel, DockPanelItem, ResetableDockPanel } from "../layouts/DockPanel";
@@ -33,6 +33,7 @@ const TIMELINE_FIXEDHEIGHT = 152;
 
 interface MetricsProps {
     wuid: string;
+    logicalGraph?: boolean;
     targetsRoxie?: boolean;
     querySet?: string;
     queryId?: string;
@@ -43,10 +44,11 @@ interface MetricsProps {
 
 export const Metrics: React.FunctionComponent<MetricsProps> = ({
     wuid,
+    logicalGraph = false,
     targetsRoxie = false,
     querySet = "",
     queryId = "",
-    parentUrl = `/workunits/${wuid}/metrics`,
+    parentUrl = `/workunits/${wuid}/${logicalGraph ? "logicalgraph" : "metrics"}`,
     lineageSelection,
     selection
 }) => {
@@ -55,8 +57,8 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     }
     const { isDark } = useUserTheme();
     const [selectedMetricsSource, setSelectedMetricsSource] = React.useState<SelectedMetricsSource>("");
-    const { metrics, columns, status, refresh } = useWUQueryMetrics(wuid, querySet, queryId);
-    const { viewIds, viewId, setViewId, view, updateView } = useMetricsViews();
+    const { metrics, columns, status, refresh } = useWUQueryMetrics(wuid, querySet, queryId, logicalGraph ? scopeFilterLogicalGraph : scopeFilterMetrics);
+    const { viewIds, viewId, setViewId, view, updateView } = useMetricsViews(logicalGraph);
     const metricGraphData = useMetricsGraphData(metrics, view, lineageSelection, selection);
     const { metricGraph, selectedMetrics, dot } = metricGraphData;
     const [showMetricOptions, setShowMetricOptions] = React.useState(false);
@@ -143,14 +145,14 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     }, [timeline, lineageSelection, parentUrl, pushSelectedMetricsUrl]);
 
     React.useEffect(() => {
-        if (view.showTimeline) {
+        if (!logicalGraph && view.showTimeline) {
             timeline
                 .scopes(metrics)
                 .height(TIMELINE_FIXEDHEIGHT)
                 .lazyRender()
                 ;
         }
-    }, [metrics, timeline, view.showTimeline]);
+    }, [logicalGraph, metrics, timeline, view.showTimeline]);
 
     //  Scopes Table  ---
     const onChangeScopeFilter = React.useCallback((event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
@@ -272,12 +274,12 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
             }
         },
         {
-            key: "hotspot", text: nlsHPCC.Hotspots, iconProps: { iconName: "SpeedHigh" },
+            key: "hotspot", text: nlsHPCC.Hotspots, hidden: logicalGraph, iconProps: { iconName: "SpeedHigh" },
             disabled: !hotspots, onClick: () => onHotspot()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
-            key: "views", text: viewId, iconProps: { iconName: "View" },
+            key: "views", text: viewId, hidden: logicalGraph, iconProps: { iconName: "View" },
             subMenuProps: {
                 items: viewIds.map(v => ({
                     key: v, text: v, onClick: () => {
@@ -288,19 +290,19 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
             },
         },
         {
-            key: "timeline", text: nlsHPCC.Timeline, canCheck: true, checked: view.showTimeline, iconProps: { iconName: "TimelineProgress" },
+            key: "timeline", text: nlsHPCC.Timeline, canCheck: true, checked: view.showTimeline, hidden: logicalGraph, iconProps: { iconName: "TimelineProgress" },
             onClick: () => {
                 updateView({ showTimeline: !view.showTimeline }, true);
             }
         },
         {
-            key: "options", text: nlsHPCC.Options, iconProps: { iconName: "Settings" },
+            key: "options", text: nlsHPCC.Options, hidden: logicalGraph, iconProps: { iconName: "Settings" },
             onClick: () => {
                 updateView({ layout: dockpanel.getLayout() });
                 setShowMetricOptions(true);
             }
         }
-    ], [dockpanel, hotspots, onHotspot, refresh, setViewId, timeline, updateView, view.showTimeline, viewId, viewIds]);
+    ].filter(item => item.hidden !== true), [dockpanel, hotspots, logicalGraph, onHotspot, refresh, setViewId, timeline, updateView, view.showTimeline, viewId, viewIds]);
 
     const formatColumns = React.useMemo((): Utility.ColumnMap => {
         const copyColumns: Utility.ColumnMap = {};
@@ -361,7 +363,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     return <HolyGrail
         header={<>
             <CommandBar items={buttons} farItems={rightButtons} />
-            <AutosizeHpccJSComponent widget={timeline} fixedHeight={`${TIMELINE_FIXEDHEIGHT + 8}px`} padding={4} hidden={!view.showTimeline} />
+            <AutosizeHpccJSComponent widget={timeline} fixedHeight={`${TIMELINE_FIXEDHEIGHT + 8}px`} padding={4} hidden={logicalGraph || !view.showTimeline} />
         </>}
         main={
             <ErrorBoundary>
@@ -402,7 +404,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                         <AutosizeHpccJSComponent widget={crossTabTable}></AutosizeHpccJSComponent>
                     </DockPanelItem>
                 </DockPanel>
-                <MetricsOptions show={showMetricOptions} setShow={setShowMetricOptionsHook} />
+                <MetricsOptions show={showMetricOptions} setShow={setShowMetricOptionsHook} logicalGraph={logicalGraph} />
             </ErrorBoundary >
         }
     />;

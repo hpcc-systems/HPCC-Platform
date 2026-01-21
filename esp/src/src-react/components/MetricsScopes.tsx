@@ -95,6 +95,34 @@ export class ScopesTable extends Table {
 
     _rawDataMap: { [id: number]: string } = {};
     metrics(metrics: IScope[], scopeTypes: string[], properties: string[], scopeFilter: string, matchCase: boolean, matchWholeWord: boolean): this {
+        let hasStdDevs = false;
+        const data = metrics
+            .filter(m => this.scopeFilterFunc(m, scopeFilter, matchCase, matchWholeWord))
+            .filter(row => {
+                return scopeTypes.indexOf(row.type) >= 0;
+            }).map((row, idx) => {
+                if (row.__StdDevs !== 0) {
+                    hasStdDevs = true;
+                }
+                if (idx === 0) {
+                    this._rawDataMap = {
+                        0: "##", 1: "type", 2: "__StdDevs", 3: "name"
+                    };
+                    properties.forEach((p, idx2) => {
+                        this._rawDataMap[4 + idx2] = p;
+                    });
+                }
+                row.__hpcc_id = row.name;
+                return [idx, row.type, row.__StdDevs === 0 ? undefined : row.__StdDevs, row.name, ...properties.map(p => {
+                    return row.__groupedProps[p]?.Value ??
+                        row.__groupedProps[p]?.Max ??
+                        row.__groupedProps[p]?.Avg ??
+                        row.__formattedProps[p] ??
+                        row[p] ??
+                        "";
+                }), row.__StdDevs === 0 ? "" : row.__StdDevsSource, row];
+            });
+
         this
             .columns(["##"])    //  Reset hash to force recalculation of default widths
             .columns(["##", nlsHPCC.Type, "StdDevs", nlsHPCC.Scope, ...properties, "__StdDevs"])
@@ -102,34 +130,13 @@ export class ScopesTable extends Table {
                 new ColumnFormatEx()
                     .column("StdDevs")
                     .min(0)
-                    .max(6),
+                    .max(6)
+                    .width(hasStdDevs ? null : 0),
                 new ColumnFormat()
                     .column("__StdDevs")
                     .width(0)
             ])
-            .data(metrics
-                .filter(m => this.scopeFilterFunc(m, scopeFilter, matchCase, matchWholeWord))
-                .filter(row => {
-                    return scopeTypes.indexOf(row.type) >= 0;
-                }).map((row, idx) => {
-                    if (idx === 0) {
-                        this._rawDataMap = {
-                            0: "##", 1: "type", 2: "__StdDevs", 3: "name"
-                        };
-                        properties.forEach((p, idx2) => {
-                            this._rawDataMap[4 + idx2] = p;
-                        });
-                    }
-                    row.__hpcc_id = row.name;
-                    return [idx, row.type, row.__StdDevs === 0 ? undefined : row.__StdDevs, row.name, ...properties.map(p => {
-                        return row.__groupedProps[p]?.Value ??
-                            row.__groupedProps[p]?.Max ??
-                            row.__groupedProps[p]?.Avg ??
-                            row.__formattedProps[p] ??
-                            row[p] ??
-                            "";
-                    }), row.__StdDevs === 0 ? "" : row.__StdDevsSource, row];
-                }))
+            .data(data)
             ;
         return this;
     }
