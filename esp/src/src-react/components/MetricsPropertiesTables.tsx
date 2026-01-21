@@ -186,9 +186,13 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
             }
         });
 
+        if (propsTable.data().length === 0) {
+            propsTable
+                .columns([])
+                .columns([nlsHPCC.Property, nlsHPCC.Value, "Avg", "Min", "Max", "Delta", "StdDev", "SkewMin", "SkewMax", "NodeMin", "NodeMax", "StdDevs"])
+                ;
+        }
         propsTable
-            .columns([])
-            .columns([nlsHPCC.Property, nlsHPCC.Value, "Avg", "Min", "Max", "Delta", "StdDev", "SkewMin", "SkewMax", "NodeMin", "NodeMax", "StdDevs"])
             .data(props)
             .lazyRender()
             ;
