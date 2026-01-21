@@ -1692,6 +1692,22 @@ static void CheckNotInTransaction(ICodeContext *ctx, const char *fn)
     }
 }
 
+static IDistributedSuperFile *lookupRemoteOrForeignSuper(ICodeContext *ctx, const char *caller, const char *superfn)
+{
+    CDfsLogicalFileName slfn;
+    slfn.set(superfn);
+    if (ctx->querySuperFileTransaction()->active())
+        throw makeStringExceptionV(0, "%s: Cannot access %s superfile %s within a transaction", caller, slfn.isRemote() ? "remote" : "foreign", superfn);
+    Owned<IDistributedFile> df = wsdfs::lookup(slfn, ctx->queryUserDescriptor(), AccessMode::readMeta, false, false, nullptr, defaultPrivilegedUser, INFINITE);
+    if (!df)
+        throw makeStringExceptionV(0, "%s: Could not locate superfile: %s", caller, slfn.get());
+    IDistributedSuperFile *superFile = df->querySuperFile();
+    if (!superFile)
+        throw makeStringExceptionV(0, "%s: File is not a superfile: %s", caller, slfn.get());
+    return LINK(superFile);
+}
+
+
 FILESERVICES_API void FILESERVICES_CALL fsCreateSuperFile(ICodeContext *ctx, const char *lsuperfn, bool sequentialparts, bool ifdoesnotexist)
 {
     IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
@@ -1739,14 +1755,22 @@ FILESERVICES_API void FILESERVICES_CALL fsDeleteSuperFile(ICodeContext *ctx, con
 
 FILESERVICES_API unsigned FILESERVICES_CALL fsGetSuperFileSubCount(ICodeContext *ctx, const char *lsuperfn)
 {
-    Owned<ISimpleSuperFileEnquiry> enq = getSimpleSuperFileEnquiry(ctx, lsuperfn);
-    if (enq)
-        return enq->numSubFiles();
-    CImplicitSuperTransaction implicitTransaction(ctx->querySuperFileTransaction());
-    Owned<IDistributedSuperFile> file;
-    StringBuffer lsfn;
-    lookupSuperFile(ctx, lsuperfn, AccessMode::readMeta, file, true, lsfn, true);
-    return file->numSubFiles();
+    CDfsLogicalFileName slfn;
+    slfn.set(lsuperfn);
+    std::unique_ptr<CImplicitSuperTransaction> implicitTransaction;
+    Owned<IDistributedSuperFile> superFile;
+    if (slfn.isRemote() || slfn.isForeign())
+        superFile.setown(lookupRemoteOrForeignSuper(ctx, "fsGetSuperFileSubCount", lsuperfn));
+    else
+    {
+        Owned<ISimpleSuperFileEnquiry> enq = getSimpleSuperFileEnquiry(ctx, lsuperfn);
+        if (enq)
+            return enq->numSubFiles();
+        implicitTransaction = std::make_unique<CImplicitSuperTransaction>(ctx->querySuperFileTransaction());
+        StringBuffer lsfn;
+        lookupSuperFile(ctx, lsuperfn, AccessMode::readMeta, superFile, true, lsfn, true);
+    }
+    return superFile->numSubFiles();
 }
 
 FILESERVICES_API char *  FILESERVICES_CALL fsGetSuperFileSubName(ICodeContext *ctx, const char *lsuperfn,unsigned filenum, bool abspath)
@@ -1754,39 +1778,58 @@ FILESERVICES_API char *  FILESERVICES_CALL fsGetSuperFileSubName(ICodeContext *c
     StringBuffer ret;
     if (abspath)
         ret.append('~');
-    Owned<ISimpleSuperFileEnquiry> enq = getSimpleSuperFileEnquiry(ctx, lsuperfn);
-    if (enq) {
-        if (!filenum||!enq->getSubFileName(filenum-1,ret))
-            return CTXSTRDUP(parentCtx, "");
-        return ret.detach();
+    Owned<IDistributedSuperFile> superFile;
+    std::unique_ptr<CImplicitSuperTransaction> implicitTransaction;
+    CDfsLogicalFileName slfn;
+    slfn.set(lsuperfn);
+    if (slfn.isRemote() || slfn.isForeign())
+        superFile.setown(lookupRemoteOrForeignSuper(ctx, "GetSuperFileSubName", lsuperfn));
+    else
+    {
+        Owned<ISimpleSuperFileEnquiry> enq = getSimpleSuperFileEnquiry(ctx, lsuperfn);
+        if (enq)
+        {
+            if (!filenum||!enq->getSubFileName(filenum-1,ret))
+                return CTXSTRDUP(parentCtx, "");
+            return ret.detach();
+        }
+        implicitTransaction = std::make_unique<CImplicitSuperTransaction>(ctx->querySuperFileTransaction());
+        StringBuffer lsfn;
+        lookupSuperFile(ctx, lsuperfn, AccessMode::readMeta, superFile, true, lsfn, true);
     }
-    CImplicitSuperTransaction implicitTransaction(ctx->querySuperFileTransaction());
-    Owned<IDistributedSuperFile> file;
-    StringBuffer lsfn;
-    lookupSuperFile(ctx, lsuperfn, AccessMode::readMeta, file, true, lsfn, true);
-    if (!filenum||filenum>file->numSubFiles())
+    if (!filenum||filenum>superFile->numSubFiles())
         return CTXSTRDUP(parentCtx, "");
-    ret.append(file->querySubFile(filenum-1).queryLogicalName());
+    ret.append(superFile->querySubFile(filenum-1).queryLogicalName());
     return ret.detach();
 }
 
-FILESERVICES_API unsigned FILESERVICES_CALL fsFindSuperFileSubName(ICodeContext *ctx, const char *lsuperfn,const char *_lfn)
+FILESERVICES_API unsigned FILESERVICES_CALL fsFindSuperFileSubName(ICodeContext *ctx, const char *lsuperfn, const char *_lfn)
 {
+    std::unique_ptr<CImplicitSuperTransaction> implicitTransaction;
+    Owned<IDistributedSuperFile> superFile;
+    CDfsLogicalFileName slfn;
+    slfn.set(lsuperfn);
     StringBuffer lfn;
     constructLogicalName(ctx, _lfn, lfn);
-    Owned<ISimpleSuperFileEnquiry> enq = getSimpleSuperFileEnquiry(ctx, lsuperfn);
-    if (enq) {
-        unsigned n = enq->findSubName(lfn.str());
-        return (n==NotFound)?0:n+1;
+    if (slfn.isRemote() || slfn.isForeign())
+        superFile.setown(lookupRemoteOrForeignSuper(ctx, "GetSuperFileSubName", lsuperfn));
+    else
+    {
+        Owned<ISimpleSuperFileEnquiry> enq = getSimpleSuperFileEnquiry(ctx, lsuperfn);
+        if (enq)
+        {
+            unsigned n = enq->findSubName(lfn.str());
+            return (n==NotFound)?0:n+1;
+        }
+        implicitTransaction = std::make_unique<CImplicitSuperTransaction>(ctx->querySuperFileTransaction());
+        StringBuffer lsfn;
+        lookupSuperFile(ctx, lsuperfn, AccessMode::readMeta, superFile, true, lsfn, true);
     }
-    CImplicitSuperTransaction implicitTransaction(ctx->querySuperFileTransaction());
-    Owned<IDistributedSuperFile> file;
-    StringBuffer lsfn;
-    lookupSuperFile(ctx, lsuperfn, AccessMode::readMeta, file, true, lsfn, true);
     unsigned n = 0;
     // could do with better version of this TBD
-    Owned<IDistributedFileIterator> iter = file->getSubFileIterator();
-    ForEach(*iter) {
+    Owned<IDistributedFileIterator> iter = superFile->getSubFileIterator();
+    ForEach(*iter)
+    {
         n++;
         if (stricmp(iter->query().queryLogicalName(),lfn.str())==0)
             return n;
@@ -2336,10 +2379,12 @@ FILESERVICES_API void FILESERVICES_CALL fsSuperFileContents(ICodeContext *ctx, s
     Owned<ISimpleSuperFileEnquiry> enq;
     if (!recurse)
         enq.setown(getSimpleSuperFileEnquiry(ctx, lsuperfn));
-    if (enq) {
+    if (enq)
+    {
         StringArray subs;
         enq->getContents(subs);
-        ForEachItemIn(i,subs) {
+        ForEachItemIn(i,subs)
+        {
             const char *name = subs.item(i);
             size32_t sz = strlen(name);
             if (!sz)
@@ -2347,14 +2392,25 @@ FILESERVICES_API void FILESERVICES_CALL fsSuperFileContents(ICodeContext *ctx, s
             mb.append(sz).append(sz,name);
         }
     }
-    else {
-        CImplicitSuperTransaction implicitTransaction(ctx->querySuperFileTransaction());
-        Owned<IDistributedSuperFile> file;
-        StringBuffer lsfn;
-        lookupSuperFile(ctx, lsuperfn, AccessMode::readMeta, file, true, lsfn, true);
-        Owned<IDistributedFileIterator> iter = file->getSubFileIterator(recurse);
+    else
+    {
+        Owned<IDistributedSuperFile> superFile;
+
+        CDfsLogicalFileName slfn;
+        slfn.set(lsuperfn);
+        std::unique_ptr<CImplicitSuperTransaction> implicitTransaction;
+        if (slfn.isRemote() || slfn.isForeign())
+            superFile.setown(lookupRemoteOrForeignSuper(ctx, "SuperFileContents", lsuperfn));
+        else
+        {
+            implicitTransaction.reset(new CImplicitSuperTransaction(ctx->querySuperFileTransaction()));
+            StringBuffer lsfn;
+            lookupSuperFile(ctx, lsuperfn, AccessMode::readMeta, superFile, true, lsfn, true);
+        }
+        Owned<IDistributedFileIterator> iter = superFile->getSubFileIterator(recurse);
         StringBuffer name;
-        ForEach(*iter) {
+        ForEach(*iter)
+        {
             iter->getName(name.clear());
             size32_t sz = name.length();
             if (!sz)
