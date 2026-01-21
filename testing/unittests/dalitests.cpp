@@ -3296,7 +3296,7 @@ public:
             try
             {
                 ASSERT(internalFile == normalizeExternal(lfn, res, false));
-                normalizeName(lfn, res, false, true);
+                normalizeName(lfn, res, false, true, false);
                 PROGLOG("res = '%s'", res.str());
                 ASSERT(fileNameMatch == streq(res.str(), validInternalLfns[nlfn][normalizedFileName]))
             }
