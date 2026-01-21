@@ -115,8 +115,9 @@ private:
         formatGraphTimerScope(graphScope, wfid, graphName, 0, graph.queryGraphId());
         // Use the elapsed time tracked in CMasterGraph (using ::getLastElapsedCycles) as the cost calculated for
         // subgraph was based on that elapsed time
-        unsigned duration = cycle_to_millisec(graph.getLastElapsedCycles());
-        updateWorkunitStat(wu, SSTsubgraph, graphScope, StTimeElapsed, timer, milliToNano(duration));
+        unsigned __int64 durationNs = cycle_to_nanosec(graph.getLastElapsedCycles());
+        updateWorkunitStat(wu, SSTsubgraph, graphScope, StTimeElapsed, timer, durationNs);
+        unsigned duration = (unsigned)nanoToMilli(durationNs); // Convert to milliseconds for audit log
         if (finished)
         {
             const char * graphId = (memcmp(graphName,"graph",5)==0) ? graphName+5 : graphName;
