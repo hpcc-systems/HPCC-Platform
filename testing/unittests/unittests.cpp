@@ -25,10 +25,6 @@
 #include "thorhelper.hpp"
 #include "libbase58.h"
 
-#include <limits>
-#include <errno.h>
-#include <cstdlib>
-
 /*
  * This is the main unittest driver for HPCC. From here,
  * all unit tests, be they internal or external (API),
@@ -55,7 +51,7 @@ void usage()
     "\n"
     "Options:\n"
     "    -a  --all                                           Include all tests, including timing and stress tests\n"
-    "    -d  --load=/x/y/z/                                  Dynamically load a library/all libraries in a directory.\n"
+    "    -d  --load /x/y/z/                                  Dynamically load a library/all libraries in a directory.\n"
     "                                                        By default, the HPCCSystems lib directory is loaded.\n"
     "    -e  --exact                                         Match subsequent test names exactly\n"
     "    -h  --help                                          Display this help text\n"
@@ -124,9 +120,9 @@ void loadDlls(IArray &objects, const char * libDirectory, bool optUnloadDlls)
 static constexpr const char * defaultYaml = R"!!(
 version: "1.0"
 unittests:
-- name: PTreeBinaryTimingStressTest
-  path: ""
-  iterations: 100
+- PTreeBinaryTimingStressTest:
+    path: ""
+    iterations: 100
 global:
   storage:
     planes:
@@ -161,6 +157,9 @@ int main(int argc, const char *argv[])
     //NB: required initialization for anything that may call getGlobalConfig*() or getComponentConfig*()
     Owned<IPropertyTree> globals = loadConfiguration(defaultYaml, argv, "unittests", nullptr, nullptr, nullptr, nullptr, false);
 
+    constexpr const char * pTreeBinaryTimingStressTestPathParameter       = "--PTreeBinaryTimingStressTest.path";
+    constexpr const char * pTreeBinaryTimingStressTestIterationsParameter = "--PTreeBinaryTimingStressTest.iterations";
+
     for (int argNo = 1; argNo < argc; argNo++)
     {
         const char *arg = argv[argNo];
@@ -178,17 +177,11 @@ int main(int argc, const char *argv[])
                 list = true;
             else if (streq(arg, "-u") || streq(arg, "-unload"))
                 unloadDlls = true;
-            else if (streq(arg, "--PTreeBinaryTimingStressTest.path"))
+            else if (startsWith(arg, pTreeBinaryTimingStressTestPathParameter))
             {
-                argNo++;
-                if (argNo < argc)
-                    getComponentConfigSP()->setProp("PTreeBinaryTimingStressTest/path", argv[argNo]);
             }
-            else if (streq(arg, "--PTreeBinaryTimingStressTest.iterations"))
+            else if (startsWith(arg, pTreeBinaryTimingStressTestIterationsParameter))
             {
-                argNo++;
-                if (argNo < argc)
-                    getComponentConfigSP()->setProp("PTreeBinaryTimingStressTest/iterations", argv[argNo]);
             }
             else if (streq(arg, "-d") || streq(arg, "--load"))
             {

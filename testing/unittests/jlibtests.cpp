@@ -3787,6 +3787,13 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeSerializationDeserializationTest, "PT
 // Base class with shared functionality for PTree timing tests
 class PTreeTimingTestBase : public CppUnit::TestFixture
 {
+public:
+    PTreeTimingTestBase()
+    {
+        setBinaryPath();
+        setIterations();
+    }
+
 protected:
     struct TimingResults
     {
@@ -3796,11 +3803,11 @@ protected:
         byte flags;
     };
 
-    void setBinaryPath(StringBuffer &binaryPath)
+    void setBinaryPath()
     {
-        binaryPath.clear();
-        if (getComponentConfigSP()->getProp("PTreeBinaryTimingStressTest/path", binaryPath))
-            return;
+        if (getComponentConfigSP()->getProp("PTreeBinaryTimingStressTest/@path", binaryPath))
+            if (!binaryPath.isEmpty())
+                return;
 
         binaryPath.set(hpccBuildInfo.installDir);
         if (binaryPath.isEmpty())
@@ -3810,51 +3817,51 @@ protected:
         binaryPath.append(relativeBinPath);
     }
 
+    void setIterations()
+    {
+        constexpr unsigned defaultPtreeIterations = 100;
+        iterations = getComponentConfigSP()->getPropInt("PTreeBinaryTimingStressTest/@iterations", defaultPtreeIterations);
+        if (iterations == 0)
+            CPPUNIT_FAIL("PTree binary timing test iterations must be greater than zero");
+    }
+
     void decompressZstdBuffer(const void *compressedData, size_t compressedSize, const char *actualPath, MemoryBuffer &output)
     {
-        assertex(compressedData || (compressedSize == 0));
+        assertex(compressedData && compressedSize);
 
-        // Start with compressed size and grow until expandDirect succeeds.
-        constexpr size_t zstdInitialBufferSize{1024};
-        const size_t initialTargetSize = (compressedSize ? (compressedSize * 2 + zstdInitialBufferSize) : zstdInitialBufferSize);
-        size32_t targetSize = (size32_t)((initialTargetSize > MEMBUFFER_MAXLEN) ? MEMBUFFER_MAXLEN : initialTargetSize);
-        if (targetSize == 0)
-            targetSize = zstdInitialBufferSize;
+        Owned<IExpander> expander = createZStdExpander();
+
+        size32_t targetSize{0};
+        try
+        {
+            targetSize = expander->init(compressedData);
+        }
+        catch (IException *e)
+        {
+            StringBuffer err;
+            e->errorMessage(err);
+            int errCode = e->errorCode();
+            e->Release();
+            throw makeStringExceptionV(errCode ? errCode : -1, "Zstd decompression error for \"%s\": %s", actualPath, err.str());
+        }
+
+        if (targetSize == 0 || targetSize > MEMBUFFER_MAXLEN)
+            throw makeStringExceptionV(-1, "Zstd decompressed size %u out of bounds for \"%s\"", targetSize, actualPath);
 
         output.clear();
-        Owned<IExpander> expander = createZStdExpander();
-        for (;;)
+        void *dest = output.reserveTruncate(targetSize);
+        try
         {
-            void *dest = output.reserveTruncate(targetSize);
-            size32_t decompressedSize{0};
-            try
-            {
-                decompressedSize = expander->expandDirect(targetSize, dest, (size32_t)compressedSize, compressedData);
-            }
-            catch (IException *e)
-            {
-                StringBuffer err;
-                e->errorMessage(err);
-                int errCode = e->errorCode();
-                e->Release();
-                throw MakeStringException(errCode ? errCode : -1, "Zstd decompression error for \"%s\": %s", actualPath, err.str());
-            }
-
-            if (decompressedSize != 0)
-            {
-                output.setLength(decompressedSize);
-                return;
-            }
-
-            if (targetSize >= MEMBUFFER_MAXLEN) // prevent infinite loop
-                throw MakeStringException(-1, "Zstd decompressed size exceeds limit for \"%s\"", actualPath);
-
-            size32_t nextSize = targetSize * 2;
-            if (nextSize > MEMBUFFER_MAXLEN)
-                nextSize = MEMBUFFER_MAXLEN;
-            targetSize = nextSize;
-
-            output.clear();
+            size32_t decompressedSize = expander->expandDirect(targetSize, dest, compressedSize, compressedData);
+            output.setLength(decompressedSize);
+        }
+        catch (IException *e)
+        {
+            StringBuffer err;
+            e->errorMessage(err);
+            int errCode = e->errorCode();
+            e->Release();
+            throw makeStringExceptionV(errCode ? errCode : -1, "Zstd decompression error for \"%s\": %s", actualPath, err.str());
         }
     }
 
@@ -3862,7 +3869,7 @@ protected:
     {
         Owned<IFile> binaryFile = createIFile(filePath);
         if (!binaryFile->exists())
-            throw MakeStringException(-1, "Binary file \"%s\" does not exist", filePath);
+            throw makeStringExceptionV(-1, "Binary file \"%s\" does not exist", filePath);
 
         Owned<IFileIO> fileIO = binaryFile->open(IFOread);
         output.clear();
@@ -3893,7 +3900,7 @@ protected:
             binaryDataBuffer.reset();
             Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(binaryDataBuffer);
             timer.reset();
-            createPTreeFromBinary(*in, flags);
+            Owned<IPropertyTree> deserializedTree = createPTreeFromBinary(*in, flags);
             totalDeserializeCycles += timer.elapsedCycles();
         }
 
@@ -3905,6 +3912,9 @@ protected:
 
         return results;
     }
+
+    StringBuffer binaryPath;
+    unsigned iterations{0};
 };
 
 // Test suite for Binary timing tests
@@ -3917,17 +3927,11 @@ class PTreeBinaryTimingStressTest : public PTreeTimingTestBase
 public:
     void testBinaryTimingWithNormalVsLowMem()
     {
-        constexpr unsigned defaultPtreeIterations = 100;
-        unsigned iterations = getComponentConfigSP()->getPropInt("PTreeBinaryTimingStressTest/iterations", defaultPtreeIterations);
-        CPPUNIT_ASSERT_MESSAGE("PTree binary timing test iterations must be greater than zero", iterations > 0);
-
         // Load Binary data
         MemoryBuffer binaryData;
         try
         {
             // Read raw file (with automatic decompression)
-            StringBuffer binaryPath;
-            setBinaryPath(binaryPath);
             readBinaryFile(binaryPath.str(), binaryData);
         }
         catch (IException *e)
@@ -3936,10 +3940,6 @@ public:
             e->errorMessage(msg);
             e->Release();
             CPPUNIT_FAIL(msg.str());
-        }
-        catch (...)
-        {
-            CPPUNIT_FAIL("Failed to load test data binary file");
         }
 
         unsigned binaryDataLen = (unsigned)binaryData.length();
