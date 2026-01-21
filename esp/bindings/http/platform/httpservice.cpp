@@ -38,10 +38,11 @@
 #ifdef _USE_OPENSSL
 #include <openssl/rand.h>
 #include <openssl/err.h>
-#include <openssl/sha.h>
+#include <openssl/evp.h>
 #endif
 
 #include <map>
+#include <cinttypes>
 
 // Helper function to convert a 128-bit session ID string to a 32-bit unsigned session token
 // This maintains backward compatibility with the ISecCredentials interface
@@ -65,22 +66,17 @@ static void generateExternalSessionID(const char* sessionID, StringBuffer& exter
     }
 
 #ifdef _USE_OPENSSL
-    // Use SHA256 hash for external ID (similar to jwtSecurity)
-    SHA256_CTX context;
-    unsigned char hashedValue[SHA256_DIGEST_LENGTH];
-    
-    if (SHA256_Init(&context) && 
-        SHA256_Update(&context, (const unsigned char*)sessionID, strlen(sessionID)) &&
-        SHA256_Final(hashedValue, &context))
+    // Use OpenSSL one-shot EVP_Digest() for SHA-256
+    unsigned char hashedValue[EVP_MAX_MD_SIZE];
+    unsigned int hashedLen = 0;
+    if (EVP_Digest((const unsigned char*)sessionID, strlen(sessionID), hashedValue, &hashedLen, EVP_sha256(), NULL) == 1)
     {
-        // Convert to hex string
-        for (size_t i = 0; i < SHA256_DIGEST_LENGTH; i++)
+        for (unsigned int i = 0; i < hashedLen; ++i)
             externalID.appendf("%02x", hashedValue[i]);
     }
     else
     {
-        // SHA256 failed, use fallback
-        UWARNLOG("SHA256 hashing failed for external session ID, using fallback");
+        UWARNLOG("SHA256 (EVP) one-shot hashing failed for external session ID, using fallback");
         unsigned hash = hashc((const unsigned char*)sessionID, strlen(sessionID), 1);
         externalID.appendf("%08x", hash);
     }
@@ -2448,9 +2444,8 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, const 
         ESPLOG(LogMin, "Updated %s for (/%s/%s) : %ld", PropSessionTimeoutAt, authReq.serviceName.isEmpty() ? "" : authReq.serviceName.str(),
             authReq.methodName.isEmpty() ? "" : authReq.methodName.str(), timeoutAt);
     }
-    ///authReq.ctx->setAuthorized(true);
-    VStringBuffer sessionIDStr("%u", sessionID);
-    addCookie(authReq.authBinding->querySessionIDCookieName(), sessionIDStr.str(), 0, true);
+
+    addCookie(authReq.authBinding->querySessionIDCookieName(), sessionID, 0, true);
     addCookie(SESSION_AUTH_OK_COOKIE, "true", 0, false); //client can access this cookie.
     if (getLoginPage)
         m_response->redirect(*m_request, "/");
