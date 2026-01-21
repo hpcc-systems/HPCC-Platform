@@ -561,6 +561,9 @@ void CIndexTransformer::rebuildIndex(IFileIOStream * out, const char * outputCom
             if (fieldNum == (unsigned) -1)
                 throw MakeStringException(0, "Requested output field '%s' not found", fieldNames.item(idx));
             const RtlFieldInfo *field = inrec.queryOriginalField(fieldNum);
+            if (isTLK && (field->flags & RFTMispayloadfield))
+                continue;  // payload fields not include in the TLK
+
             if (field->type->getType() == type_blob)
             {
                 // We can't just use the original source field in this case (as blobs are only supported in the input)
@@ -583,12 +586,12 @@ void CIndexTransformer::rebuildIndex(IFileIOStream * out, const char * outputCom
         for (unsigned idx = 0; idx < numFields;idx++)
         {
             const RtlFieldInfo *field = inrec.queryOriginalField(idx);
+            if (isTLK && (field->flags & RFTMispayloadfield))
+                continue;  // payload fields not include in the TLK
+
             if (field->type->getType() == type_blob)
-            {
-                if (isTLK)
-                    continue;  // blob IDs in TLK are not valid
                 createTranslator = true;
-            }
+
             fields.append(field);
             minRecSize += field->type->getMinSize();
         }
@@ -653,7 +656,7 @@ void CIndexTransformer::rebuildIndex(IFileIOStream * out, const char * outputCom
     while (manager->lookup(true))
     {
         byte const * buffer = manager->queryKeyBuffer();
-        size32_t size = manager->queryRowSize();
+        size32_t size = isTLK ? keyedSize : manager->queryRowSize();
         unsigned __int64 seq = manager->querySequence();
         if (translator)
         {
@@ -676,7 +679,7 @@ void CIndexTransformer::rebuildIndex(IFileIOStream * out, const char * outputCom
         }
         else
         {
-            if (hasTrailingFileposition(outmeta->queryTypeInfo()))
+            if (!isTLK && hasTrailingFileposition(outmeta->queryTypeInfo()))
                 size -= sizeof(offset_t);
             keyBuilder->processKeyData((const char *) buffer, manager->queryFPos(), size);
             if (size > maxSizeSeen)
