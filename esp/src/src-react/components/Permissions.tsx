@@ -123,7 +123,7 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
         message: nlsHPCC.DeleteSelectedPermissions,
-        items: selection.map(file => file.name),
+        items: selection.map(file => file?.name).filter(name => name !== undefined),
         onSubmit: React.useCallback(() => {
             const deleteRequests = {};
             const requests = [];

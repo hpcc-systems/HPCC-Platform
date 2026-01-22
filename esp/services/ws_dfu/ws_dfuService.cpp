@@ -48,6 +48,7 @@
 #include "thorcommon.hpp"
 #include "jstats.h"
 #include "thorfile.hpp"
+#include "hqlexpr.hpp"
 
 #include "jstring.hpp"
 #include "exception_util.hpp"
@@ -2170,49 +2171,59 @@ void CWsDfuEx::getFilePartsOnClusters(IEspContext &context, const char *clusterR
     }
 }
 
-void CWsDfuEx::parseFieldMask(unsigned __int64 fieldMask, unsigned &fieldCount, IntArray &fieldIndexArray)
+static void expandFieldNames(StringArray & fieldNames, StringBuffer & prefix, IHqlExpression * record, unsigned __int64 & mask)
 {
-    while (fieldMask > 0)
+    ForEachChild(i, record)
     {
-        if (fieldMask & 1)
-            fieldIndexArray.append(fieldCount); //index from 0
-        fieldMask >>= 1;
-        fieldCount++;
-    }
+        if (mask == 0)
+            return;
+
+        IHqlExpression * field = record->queryChild(i);
+        switch (field->getOperator())
+        {
+        case no_field:
+            {
+                size32_t prefixLen = prefix.length();
+                if (field->isDatarow())
+                {
+                    prefix.append(field->queryName()).append(".");
+                    expandFieldNames(fieldNames, prefix, field->queryRecord(), mask);
+                }
+                else
+                {
+                    if (mask & 1)
+                    {
+                        prefix.append(field->queryName());
+                        fieldNames.append(prefix);
+                    }
+                    mask >>= 1;
+                }
+                prefix.setLength(prefixLen);
+                break;
+            }
+        case no_record:
+            expandFieldNames(fieldNames, prefix, field, mask);
+            break;
+        case no_ifblock:
+            expandFieldNames(fieldNames, prefix, field->queryChild(1), mask);
+            break;
+        }
+   }
 }
 
-void CWsDfuEx::queryFieldNames(IEspContext &context, const char *fileName, const char *cluster,
-    unsigned __int64 fieldMask, StringArray &fieldNames)
+void CWsDfuEx::queryFieldNames(IEspContext &context, IDistributedFile * df, const char *fileName, unsigned __int64 fieldMask, StringArray &fieldNames)
 {
-    if (!fileName || !*fileName)
-        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "File name required");
+    IPropertyTree & properties = df->queryAttributes();
+    const char * recordEcl = properties.queryProp("ECL");
+    OwnedHqlExpr diskRecord;
+    if (recordEcl)
+        diskRecord.setown(getEclRecordDefinition(recordEcl));
 
-    Owned<IResultSetFactory> resultSetFactory = getSecResultSetFactory(context.querySecManager(), context.queryUser(), context.queryUserId(), context.queryPassword());
-    Owned<INewResultSet> result = resultSetFactory->createNewFileResultSet(fileName, cluster);
-    if (!result)
-        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Failed to access FileResultSet for %s.", fileName);
+    if (!diskRecord)
+        throwError1(FVERR_BadRecordDesc, fileName);
 
-    unsigned fieldCount = 0;
-    IntArray fieldIndexArray;
-    parseFieldMask(fieldMask, fieldCount, fieldIndexArray);
-
-    const IResultSetMetaData& metaData = result->getMetaData();
-    unsigned totalColumns = (unsigned) metaData.getColumnCount();
-    if (fieldCount > totalColumns)
-        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid FieldMask %" I64F "u: total fields %u, ask for %u.",
-            fieldMask, totalColumns, fieldCount);
-
-    ForEachItemIn(i, fieldIndexArray)
-    {
-        int fieldIndex = fieldIndexArray.item(i);
-
-        SCMStringBuffer columnLabel;
-        if (metaData.hasSetTranslation(fieldIndex))
-            metaData.getNaturalColumnLabel(columnLabel, fieldIndex);
-        if (columnLabel.length() < 1)
-            metaData.getColumnLabel(columnLabel, fieldIndex);
-        fieldNames.append(columnLabel.str());
-    }
+    StringBuffer prefix;
+    expandFieldNames(fieldNames, prefix, diskRecord, fieldMask);
 }
 
 void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, const char *name, const char *cluster,
@@ -2394,7 +2405,7 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
         {
             StringArray partitionFieldNames;
             unsigned __int64 partitionFieldMask = df->queryAttributes().getPropInt64("@partitionFieldMask");
-            queryFieldNames(context, name, cluster, partitionFieldMask, partitionFieldNames);
+            queryFieldNames(context, df, name, partitionFieldMask, partitionFieldNames);
 
             IEspDFUFilePartition &partition = FileDetails.updatePartition();
             partition.setFieldMask(partitionFieldMask);
@@ -2409,7 +2420,7 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
 
             StringArray bloomFieldNames;
             unsigned __int64 bloomFieldMask = bloomTree.getPropInt64("@bloomFieldMask");
-            queryFieldNames(context, name, cluster, bloomFieldMask, bloomFieldNames);
+            queryFieldNames(context, df, name, bloomFieldMask, bloomFieldNames);
 
             Owned<IEspDFUFileBloom> bloom= createDFUFileBloom();
             bloom->setFieldMask(bloomFieldMask);

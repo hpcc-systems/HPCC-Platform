@@ -1077,23 +1077,28 @@ public:
         Linked<INode> srcdali = foreigndalinode;
         CDfsLogicalFileName slfn;
         slfn.set(srclfn);
-        if (slfn.isForeign()) { // trying to confuse me
+        if (slfn.isForeign()) // trying to confuse me
+        {
             SocketEndpoint ep;
             slfn.getEp(ep);
             slfn.clearForeign();
             srcdali.setown(createINode(ep));
         }
-        Owned<IPropertyTree> ftree = queryDistributedFileDirectory().getFileTree(srclfn,ctx.srcuser,srcdali, FOREIGN_DALI_TIMEOUT, GetFileTreeOpts::appendForeign);
-        if (!ftree.get()) {
+        Owned<IDistributedFile> file = wsdfs::lookup(srclfn, ctx.user, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser, INFINITE);
+
+        if (!file.get())
+        {
             StringBuffer s;
             throw MakeStringException(-1,"Source file %s could not be found in Dali %s",slfn.get(),srcdali?srcdali->endpoint().getEndpointHostText(s).str():"(local)");
         }
         // now we can create name
         StringBuffer newroxieprefix;
-        constructDestinationName(dstlfn,ftree->queryProp("Attr/@roxiePrefix"),ctx.superdestination,dlfn,newroxieprefix);
-        if (!srcdali.get()||queryCoven().inCoven(srcdali)) {
+        constructDestinationName(dstlfn,file->queryAttributes().queryProp("@roxiePrefix"),ctx.superdestination,dlfn,newroxieprefix);
+        if (!srcdali.get()||queryCoven().inCoven(srcdali))
+        {
             // if dali is local and filenames same
-            if (strcmp(slfn.get(),dlfn.get())==0) {
+            if (strcmp(slfn.get(),dlfn.get())==0)
+            {
                 PROGLOG("File copy of %s not done as file local",slfn.get());
                 ctx.level--;
                 return;
@@ -1102,15 +1107,17 @@ public:
 
         // first see if target exists (and remove if does and overwrite specified)
         Owned<IDistributedFile> dfile = wsdfs::lookup(dlfn,ctx.user,AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser,INFINITE);
-        if (dfile) {
+        if (dfile)
+        {
             if (!ctx.superoptions->getOverwrite())
                 throw MakeStringException(-1,"Destination file %s already exists",dlfn.get());
             if (!dfile->querySuperFile())
             {
                 if (ctx.superoptions->getIfModified()&&
-                    (ftree->hasProp("Attr/@fileCrc")&&ftree->getPropInt64("Attr/@size")&&
-                    ((unsigned)ftree->getPropInt64("Attr/@fileCrc")==(unsigned)dfile->queryAttributes().getPropInt64("@fileCrc"))&&
-                    (ftree->getPropInt64("Attr/@size")==dfile->getFileSize(false,false)))) {
+                    (file->queryAttributes().hasProp("@fileCrc")&&file->queryAttributes().getPropInt64("@size")&&
+                    ((unsigned)file->queryAttributes().getPropInt64("@fileCrc")==(unsigned)dfile->queryAttributes().getPropInt64("@fileCrc"))&&
+                    (file->queryAttributes().getPropInt64("@size")==dfile->getFileSize(false,false))))
+                {
                     PROGLOG("File copy of %s not done as file unchanged",srclfn);
                     return;
                 }
@@ -1118,29 +1125,32 @@ public:
             dfile->detach();
             dfile.clear();
         }
-        if (strcmp(ftree->queryName(),queryDfsXmlBranchName(DXB_File))==0) {
+        const IPropertyTree &fileAttrs = file->queryAttributes();
+        IDistributedSuperFile *sourceSuperfile = file->querySuperFile();
+        if (!sourceSuperfile)
+        {
             StringAttr wuid;
-            const char *kind = ftree->queryProp("@kind");
+            const char *kind = fileAttrs.queryProp("@kind");
             bool iskey = kind&&(strcmp(kind,"key")==0);
             // note  dstlfn doesn't have roxie prefix
             if (!doSubFileCopy(ctx,dstlfn,srcdali,srclfn,wuid,iskey,newroxieprefix.str()))
                 throw MakeStringException(-1,"File %s could not be copied - see %s",dstlfn,wuid.isEmpty()?"unknown":wuid.get());
 
         }
-        else if (strcmp(ftree->queryName(),queryDfsXmlBranchName(DXB_SuperFile))==0) {
-            unsigned numtodo=0;
-            StringArray subfiles;
-            Owned<IPropertyTreeIterator> piter = ftree->getElements("SubFile");
-            ForEach(*piter) {
-                numtodo++;
-            }
+        else
+        {
+            unsigned numtodo = sourceSuperfile->numSubFiles();
+            Owned<IDistributedFileIterator> sIter = sourceSuperfile->getSubFileIterator();
             unsigned numdone=0;
-            ForEach(*piter) {
-                const char *name = piter->query().queryProp("@name");
+            StringArray subfiles;
+            ForEach(*sIter)
+            {
+                IDistributedFile &sub = sIter->query();
+                const char *name = sub.queryLogicalName();
                 CDfsLogicalFileName dlfnsub;
                 dlfnsub.set(name);
                 CDfsLogicalFileName dlfnres;
-                doSuperForeignCopy(ctx,dlfnsub.get(true),foreigndalinode,name,dlfnres);
+                doSuperForeignCopy(ctx, dlfnsub.get(true), foreigndalinode, name, dlfnres);
                 numdone++;
                 subfiles.append(dlfnres.get());
                 if ((ctx.level==1)&&ctx.feedback)
@@ -1150,18 +1160,13 @@ public:
             Owned<IDistributedSuperFile> sfile = queryDistributedFileDirectory().createSuperFile(dlfn.get(),ctx.user,true,false);
             if (!sfile)
                 throw MakeStringException(-1,"SuperFile %s could not be created",dlfn.get());
-            ForEachItemIn(i,subfiles) {
+            ForEachItemIn(i,subfiles)
                 sfile->addSubFile(subfiles.item(i));
-            }
-            if (newroxieprefix.length()) {
+            if (newroxieprefix.length())
+            {
                 DistributedFilePropertyLock lock(sfile);
                 lock.queryAttributes().setProp("@roxiePrefix",newroxieprefix.str());
             }
-
-        }
-        else {
-            StringBuffer s;
-            throw MakeStringException(-1,"Source file %s in Dali %s is not a file or superfile",srclfn,srcdali?srcdali->endpoint().getEndpointHostText(s).str():"(local)");
         }
         if ((ctx.level==1)&&ctx.feedback)
             ctx.feedback->displaySummary("0",0);

@@ -50,6 +50,7 @@ enum EventType : byte
     EventIndexPayload,            // payload of a leaf node accessed
     EventQueryStart,
     EventQueryStop,
+    EventRecordingSource,         // information about the source of the recording
     EventMax
 };
 
@@ -87,6 +88,10 @@ enum EventAttr : byte
     EvAttrExpandTime,
     EvAttrFirstUse,
     EvAttrServiceName,
+    EvAttrChannelId,
+    EvAttrReplicaId,
+    EvAttrInstanceId,
+    EvAttrProcessDescriptor,
     EvAttrMax
 };
 
@@ -362,6 +367,7 @@ public:
 
 public:
     CEvent();
+    CEvent& operator = (const CEvent& other);
     void reset(EventType _type);
     // Reset the event type while retaining attribute values common to both the
     // original and new event types.
@@ -427,6 +433,8 @@ public:
 
     void recordQueryStart(const char * queryName);
     void recordQueryStop();
+
+    void recordRecordingSource(const char* processDescriptor, byte channelId, byte replicaId, __uint64 instanceId);
 
     void recordEvent(CEvent& event);
 
@@ -548,6 +556,85 @@ interface IEventVisitor : extends IInterface
     virtual bool visitEvent(CEvent& event) = 0;
     virtual void departFile(uint32_t bytesRead) = 0;
 };
+
+// Properties related to an event data file being read. It is a combination of static and
+// runtime properties.
+//
+// Static properties are set as the file is read:
+// - path is set when the file is successfully opened
+// - version and options are set when the file header is parsed
+// - processDescriptor, channelId, replicaId, instanceId are set when the first RecordingSource
+//   event is encountered; values remain unchanged if no such event is present; a second such
+//   event is an error yielding an exception
+//
+// Runtime properties are updated as events are read.
+struct jlib_decl EventFileProperties
+{
+    StringAttr path;              // location of the event data file
+    uint32_t version{0};          // event file version number
+    struct {
+        bool includeTraceIds{false};
+        bool includeThreadIds{false};
+        bool includeStackTraces{false};
+    } options;
+    StringAttr processDescriptor;
+    byte channelId{0};
+    byte replicaId{0};
+    __uint64 instanceId{0};
+    uint32_t eventsRead{0};
+    uint32_t bytesRead{0};
+};
+
+// Pull-based interface for reading events from a binary event data file.
+//
+// An IEventReader provides an iterator-like API over the events contained in a single file.
+// It is the counterpart to the push-based readEvents() helper:
+//   - Use IEventReader when the caller wants explicit control over when the next event is read,
+//     for example to integrate with existing loops, apply back-pressure, or stop after a
+//     partial read.
+//   - Use readEvents() when all events should be processed in one pass via an IEventVisitor
+//     implementation.
+//
+// Implementations are expected to:
+//   - Open the underlying file and parse its header before any events are returned.
+//   - Populate queryFileProperties() as information becomes available (see EventFileProperties
+//     for details of which fields are set when).
+//   - Throw an IException-derived exception on I/O or format errors.
+interface IEventReader : extends IInterface
+{
+    // Reads the next event from the file.
+    //
+    // On success, returns true and populates 'event' with the next parsed event.
+    // Returns false when the end of the file is reached and no more events are available.
+    // Throws an IException-derived exception if an error occurs while reading or parsing.
+    virtual bool nextEvent(CEvent& event) = 0;
+
+    // Returns the current properties of the underlying event file.
+    //
+    // The returned reference remains valid for the lifetime of the reader. Fields are populated
+    // as they become known:
+    //   - path and version are set once the file is opened and its header parsed;
+    //   - options are derived from the header;
+    //   - processDescriptor, channelId, replicaId and instanceId are set when a RecordingSource
+    //     event is first encountered;
+    //   - eventsRead and bytesRead are updated as events are consumed via nextEvent().
+    virtual const EventFileProperties& queryFileProperties() const = 0;
+};
+
+// Creates an IEventReader for the specified event data file.
+//
+// The path identifies a single binary event file previously produced by the event recording
+// infrastructure. The returned reader exposes a pull-based API via nextEvent(), allowing
+// callers to iterate over events at their own pace. This is functionally equivalent to
+// readEvents(), but gives the caller more control over iteration and lifetime.
+//
+// On success, returns a new IEventReader instance. The caller is responsible for releasing
+// the interface when it is no longer needed, using the standard IInterface reference-counting
+// conventions.
+//
+// Throws an IException-derived exception if the file cannot be opened, the header cannot be
+// parsed, or the contents are not a supported event file format.
+extern jlib_decl IEventReader* createEventReader(const char* path);
 
 // Opens and parses a single binary event data file. Parsed data is passed to the given visitor
 // until parsing completes or the visitor requests it to stop.

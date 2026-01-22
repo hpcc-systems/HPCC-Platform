@@ -741,4 +741,6 @@ extern graph_decl void saveWuidToFile(const char *wuid);
 
 extern graph_decl bool hasTLK(IDistributedFile &file, CActivityBase *activity);
 extern graph_decl std::vector<std::string> captureDebugInfo(const char *dir, const char *prefix, const char *suffix);
+
+extern graph_decl offset_t verifyFileSize(IFile *file, offset_t expectedSize, unsigned maxRetries=5, unsigned retryDelayMs=200);
 #endif

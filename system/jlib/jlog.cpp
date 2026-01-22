@@ -20,7 +20,7 @@
 
 #include <algorithm>
 #include "stdio.h"
-#include "jlog.hpp"
+#include "jerror.hpp"
 #include "jlog.ipp"
 #include "jmutex.hpp"
 #include "jarray.hpp"
@@ -2414,6 +2414,7 @@ public:
 
 static CNullManager nullManager;
 static Singleton<IRemoteLogAccess> logAccessor;
+static Owned<IException> logAccessorError;
 
 
 MODULE_INIT(INIT_PRIORITY_JLOG)
@@ -3425,10 +3426,13 @@ IRemoteLogAccess *queryRemoteLogAccessor()
     return logAccessor.query([]
         {
             PROGLOG("Loading remote log access plug-in.");
-
             IRemoteLogAccess *remoteLogAccessor = nullptr;
+
             try
             {
+                constexpr const char * methodName = "queryRemoteLogAccessor";
+                constexpr const char * instFactoryName = "createInstance";
+
                 Owned<IPropertyTree> logAccessPluginConfig = getGlobalConfigSP()->getPropTree("logAccess");
 #ifdef LOGACCESSDEBUG
                 if (!logAccessPluginConfig)
@@ -3457,37 +3461,65 @@ IRemoteLogAccess *queryRemoteLogAccessor()
 #endif
 
                 if (!logAccessPluginConfig)
-                    throw makeStringException(-1, "RemoteLogAccessLoader: logaccess configuration not available!");
+                    throw makeStringException(JLIBERR_FeatureConfigNotFound, "RemoteLogAccessLoader: logaccess configuration not available!");
 
-                constexpr const char * methodName = "queryRemoteLogAccessor";
-                constexpr const char * instFactoryName = "createInstance";
-
-                StringBuffer libName; //lib<type>logaccess.so
                 StringBuffer type;
                 logAccessPluginConfig->getProp("@type", type);
                 if (type.isEmpty())
-                    throw makeStringExceptionV(-1, "%s RemoteLogAccess plugin kind not specified.", methodName);
-                libName.append("lib").append(type.str()).append("logaccess");
+                    throw makeStringExceptionV(JLIBERR_PluginKindNotSpecified, "%s: RemoteLogAccess plugin kind not specified.", methodName);
+
+                // Store the actual platform-specific filename for diagnostics
+                VStringBuffer actualLibName("%s%slogaccess%s", SharedObjectPrefix, type.str(), SharedObjectExtension);
 
                 //Load the DLL/SO
-                HINSTANCE logAccessPluginLib = LoadSharedObject(libName.str(), false, true);
+                HINSTANCE logAccessPluginLib = LoadSharedObject(actualLibName.str(), false, true);
+
+                if (!logAccessPluginLib) //should not happen, defensive check.
+                    throw makeStringExceptionV(JLIBERR_UnableToLoadLibrary, "%s: failed to load library '%s' for RemoteLogAccess plugin", methodName, actualLibName.str());
 
                 newLogAccessPluginMethod_t_ xproc = (newLogAccessPluginMethod_t_)GetSharedProcedure(logAccessPluginLib, instFactoryName);
+
                 if (xproc == nullptr)
-                    throw makeStringExceptionV(-1, "%s cannot locate procedure %s in library '%s'", methodName, instFactoryName, libName.str());
+                    throw makeStringExceptionV(JLIBERR_FactoryFunctionNotFound, "%s: cannot locate procedure %s in library '%s'", methodName, instFactoryName, actualLibName.str());
 
                 //Call logaccessplugin instance factory and return the new instance
-                DBGLOG("Calling '%s' in log access plugin '%s'", instFactoryName, libName.str());
+                DBGLOG("Calling '%s' in log access plugin '%s'", instFactoryName, actualLibName.str());
                 remoteLogAccessor = xproc(*logAccessPluginConfig);
+
+                // Verify the factory returned a valid instance
+                if (!remoteLogAccessor)
+                    throw makeStringExceptionV(JLIBERR_FactoryReturnedNull, "%s: Plugin factory returned null instance for library '%s'", methodName, actualLibName.str());
+
+                return remoteLogAccessor;
             }
             catch (IException *e)
             {
                 EXCLOG(e, "Could not load remote log access plug-in: ");
-                e->Release();
+                logAccessorError.setown(e);
             }
             return remoteLogAccessor;
         }
     );
+}
+
+/** Query error that might have occurred while loading the remote log access plugin.
+ *
+ * This function should be called after queryRemoteLogAccessor() has been
+ * invoked, for example if queryRemoteLogAccessor() returns nullptr and the caller
+ * needs to determine the reason plugin loading failed.
+ *
+ * @return A pointer to the IException describing the plugin load failure, or
+ *         nullptr if the remote log accessor plugin loaded successfully and no
+ *         error was recorded. The returned exception is owned by the logging
+ *         subsystem and must not be released or modified by the caller.
+ *
+ * Thread safety: This function is safe to call from multiple threads. If a load
+ * error was recorded, callers may concurrently read the returned exception; the
+ * underlying object is immutable and shared.
+ */
+IException * queryRemoteLogAccessorLoadError()
+{
+    return logAccessorError;
 }
 
 void setDefaultJobName(const char * name)

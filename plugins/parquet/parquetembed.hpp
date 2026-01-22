@@ -405,6 +405,7 @@ private:
     void splitTable(std::shared_ptr<arrow::Table> &table);
     std::shared_ptr<parquet::arrow::RowGroupReader> queryCurrentTable(__int64 currTable);
     arrow::Result<std::shared_ptr<arrow::Table>> queryRows();
+    arrow::Status constructParquetFileReader(const char *fullPath);
 
 private:
     // Count of processed rows and tables for both partitioned and regular files.
@@ -452,8 +453,7 @@ public:
     arrow::Status openWriteFile();
     arrow::Status writePartition(std::shared_ptr<arrow::Table> table);
     void writeRecordBatch();
-    void writeRecordBatch(std::size_t newSize);
-    void updateRow();
+    void incrementRecordBatchIndex();
     std::shared_ptr<arrow::NestedType> makeChildRecord(const RtlFieldInfo *field);
     arrow::Status fieldToNode(const RtlFieldInfo *field, std::vector<std::shared_ptr<arrow::Field>> &arrowFields);
     arrow::Status fieldsToSchema(const RtlTypeInfo *typeInfo);

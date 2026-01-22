@@ -157,6 +157,25 @@ Note: Roxie also has a separate `@workerSendUseIOUring` topology setting that sp
 send operations (see Roxie documentation for details). The global `expert/@useIOUring` setting takes precedence—if set to false, 
 it will disable all io_uring regardless of component-specific topology settings, including `@workerSendUseIOUring`.
 
+## fileSizeCheckMode (unsigned)
+
+Controls how Thor write activities verify expected disk file sizes against actual filesystem sizes.
+This setting currently applies to Thor index writes, disk writes
+
+Values:
+- 0 (default): Verify with retries. Compares expected size (from writer statistics) against IFile::size() with up to 5 retries and 200ms delays. Throws exception if mismatch persists.
+- 1: Trust expected size. Returns the expected size from writer statistics without calling IFile::size(), avoiding filesystem queries entirely.
+- 2: Call size() with warning. Always calls IFile::size() and returns the actual size, but logs a warning if it doesn't match the expected size (no error thrown).
+
+Default: 0
+
+Example:
+```
+global:
+  expert:
+    fileSizeCheckMode: 0
+```
+
 
 # Plane Expert Settings
 
