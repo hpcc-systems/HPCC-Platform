@@ -78,7 +78,7 @@ export const XrefLostFiles: React.FunctionComponent<XrefLostFilesProps> = ({
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
         message: nlsHPCC.DeleteSelectedFiles,
-        items: selection.map(file => file.Name),
+        items: selection.map(file => file?.Name).filter(name => name !== undefined),
         onSubmit: React.useCallback(() => {
             WsDFUXref.DFUXRefArrayAction(selection, "DeleteLogical", name, "Lost")
                 .then(response => {

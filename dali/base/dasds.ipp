@@ -328,11 +328,6 @@ public:
         t->setPropInt(NULL, l);
     }
 
-    void clearChanges()
-    {
-        changeMap.kill();
-    }
-
     void clearChanges(IPropertyTree &owner)
     {
         IPropertyTree *_owner = &owner;

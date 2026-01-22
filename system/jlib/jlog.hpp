@@ -1842,4 +1842,6 @@ extern jlib_decl bool fetchLogByAudience(LogQueryResultDetails & resultDetails, 
 extern jlib_decl bool fetchLogByClass(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, LogMsgClass logclass, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format);
 extern jlib_decl IRemoteLogAccess * queryRemoteLogAccessor();
 
+extern jlib_decl IException * queryRemoteLogAccessorLoadError();
+
 #endif

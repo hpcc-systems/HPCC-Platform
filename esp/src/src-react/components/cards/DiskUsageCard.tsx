@@ -6,6 +6,7 @@ import { Gauge } from "@hpcc-js/chart";
 import { ClusterGauge as ClusterGaugeWidget } from "src/DiskUsage";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
+import { useUserTheme } from "../../hooks/theme";
 import { AutosizeHpccJSComponent } from "../../layouts/HpccJSAdapter";
 import { pushUrl } from "../../util/history";
 import { useAllClustersDiskUsage, useClusterDiskUsage, useTargetClusterUsageEx } from "../../hooks/diskUsage";
@@ -72,6 +73,7 @@ const DiskUsageCard: React.FunctionComponent<DiskUsageCardProps> = ({
     className,
     style
 }) => {
+    const { theme } = useUserTheme();
     const styles = useStyles();
     const [minimized, setMinimized] = React.useState<boolean>(defaultMinimized);
     const [metrics, setMetrics] = React.useState<{ percentUsed: number; machines: number; disks: number; inUseStr: string; totalStr: string } | undefined>(() => {
@@ -84,14 +86,24 @@ const DiskUsageCard: React.FunctionComponent<DiskUsageCardProps> = ({
     const { data: usage, loading: usageLoading } = useTargetClusterUsageEx(cluster);
 
     const gauge = React.useMemo(() => {
-        const w = new ClusterGaugeWidget(cluster || "");
-        w.on("click", () => {
-            if (cluster) {
-                pushUrl(`/operations/clusters/${cluster}/usage`);
-            }
-        });
-        return w.refresh(false);
+        return new ClusterGaugeWidget(cluster || "")
+            .on("click", () => {
+                if (cluster) {
+                    pushUrl(`/operations/clusters/${cluster}/usage`);
+                }
+            })
+            .refresh(false)
+            ;
     }, [cluster]);
+
+    React.useEffect(() => {
+        gauge
+            .emptyColor(theme.palette.neutralLight)
+            .tickColor(tokens.colorNeutralForeground1)
+            .titleClickColor(tokens.colorBrandForeground1)
+            .lazyRender()
+            ;
+    }, [gauge, theme.palette.neutralLight]);
 
     React.useEffect(() => {
         if (!cluster) return;
@@ -228,6 +240,7 @@ const FolderDiskUsageCard: React.FunctionComponent<FolderDiskUsageCardProps> = (
     defaultMinimized = true,
     expandInGrid = false
 }) => {
+    const { theme } = useUserTheme();
     const styles = useStyles();
     const [minimized, setMinimized] = React.useState<boolean>(defaultMinimized);
 
@@ -245,9 +258,11 @@ const FolderDiskUsageCard: React.FunctionComponent<FolderDiskUsageCardProps> = (
             .title(folder)
             .value(percent / 100)
             .valueDescription(`${percent}%`)
+            .emptyColor(theme.palette.neutralLight)
+            .titleColor(tokens.colorNeutralForeground1)
             .lazyRender()
             ;
-    }, [gauge, folder, percent]);
+    }, [folder, gauge, percent, theme.palette.neutralLight]);
 
     return <GenericCard
         className={className}

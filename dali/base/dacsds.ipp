@@ -70,7 +70,6 @@ public:
     inline bool queryUseAppendOpt() const { return useAppendOpt; }
 
     void getDetails(MemoryBuffer &mb);
-    void clearCommitChanges();
     IPropertyTreeIterator *doGetElements(CClientRemoteTree *tree, const char *xpath, IPTIteratorCodes flags);
     void _rollbackChildren(IPropertyTree *parent, bool force);
 

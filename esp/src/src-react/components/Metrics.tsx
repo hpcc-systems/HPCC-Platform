@@ -1,8 +1,8 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, IIconProps, SearchBox, Stack, TooltipHost } from "@fluentui/react";
-import { ToggleButton } from "@fluentui/react-components";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Stack, TooltipHost } from "@fluentui/react";
+import { makeStyles, SearchBox, SearchBoxChangeEvent, ToggleButton } from "@fluentui/react-components";
 import { useConst } from "@fluentui/react-hooks";
-import { TextCaseTitleRegular, TextCaseTitleFilled, BranchForkHintRegular, BranchForkFilled, TextWholeWordFilled, TextWholeWordRegular } from "@fluentui/react-icons";
+import { TextCaseTitleRegular, TextCaseTitleFilled, BranchForkHintRegular, BranchForkFilled, TextWholeWordFilled, TextWholeWordRegular, FilterRegular } from "@fluentui/react-icons";
 import { WorkunitsServiceEx, IScope } from "@hpcc-js/comms";
 import { Table } from "@hpcc-js/dgrid";
 import { scopedLogger } from "@hpcc-js/util";
@@ -26,7 +26,14 @@ import { useUserTheme } from "../hooks/theme";
 
 const logger = scopedLogger("src-react/components/Metrics.tsx");
 
-const filterIcon: IIconProps = { iconName: "Filter" };
+const filterIcon = <FilterRegular />;
+
+const useStyles = makeStyles({
+    searchBox: {
+        width: "100%",
+        maxWidth: "none"
+    }
+});
 
 type SelectedMetricsSource = "" | "scopesTable" | "scopesSqlTable" | "metricGraphWidget" | "hotspot" | "reset";
 const TIMELINE_FIXEDHEIGHT = 152;
@@ -53,6 +60,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     if (querySet && queryId) {
         wuid = "";
     }
+    const styles = useStyles();
     const { isDark } = useUserTheme();
     const [selectedMetricsSource, setSelectedMetricsSource] = React.useState<SelectedMetricsSource>("");
     const { metrics, columns, status, refresh } = useWUQueryMetrics(wuid, querySet, queryId);
@@ -129,6 +137,8 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     );
 
     const [scopeFilter, setScopeFilter] = React.useState("");
+    const [scopeFilterVersion, setScopeFilterVersion] = React.useState(0);
+
     React.useEffect(() => {
         timeline
             .on("click", (row, col, sel) => {
@@ -136,6 +146,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                     timeline.selection([]);
                     setSelectedMetricsSource("scopesTable");
                     setScopeFilter(`name:${row[7].__hpcc_id}`);
+                    setScopeFilterVersion(prev => prev + 1);
                     pushSelectedMetricsUrl(parentUrl, lineageSelection, [row[7]]);
                 }
             }, true)
@@ -153,8 +164,8 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     }, [metrics, timeline, view.showTimeline]);
 
     //  Scopes Table  ---
-    const onChangeScopeFilter = React.useCallback((event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
-        setScopeFilter(newValue ?? "");
+    const onChangeScopeFilter = React.useCallback((event: SearchBoxChangeEvent, data: { value: string }) => {
+        setScopeFilter(data?.value ?? "");
     }, []);
 
     const scopesSelectionChanged = React.useCallback((source: SelectedMetricsSource, lineageSelection?: string, selection: IScope[] = []) => {
@@ -368,11 +379,11 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                 <DockPanel layout={view?.layout} onCreate={setDockpanel}>
                     <DockPanelItem key="scopesTable" title={nlsHPCC.Metrics}>
                         <HolyGrail
-                            header={<Stack horizontal>
+                            header={<Stack horizontal tokens={{ childrenGap: 4 }}>
                                 <ToggleButton appearance="subtle" icon={includePendingItems ? <BranchForkFilled /> : <BranchForkHintRegular />} title={nlsHPCC.IncludePendingItems} checked={includePendingItems} onClick={() => { setIncludePendingItems(!includePendingItems); }} />
                                 <Stack.Item grow>
                                     <TooltipHost content={nlsHPCC.FilterMetricsTooltip}>
-                                        <SearchBox value={scopeFilter} onChange={onChangeScopeFilter} iconProps={filterIcon} placeholder={nlsHPCC.Filter} />
+                                        <SearchBox key={scopeFilterVersion} defaultValue={scopeFilter} onChange={onChangeScopeFilter} placeholder={nlsHPCC.Filter} contentBefore={filterIcon} className={styles.searchBox} />
                                     </TooltipHost>
                                 </Stack.Item>
                                 <ToggleButton appearance="subtle" icon={matchCase ? <TextCaseTitleFilled /> : <TextCaseTitleRegular />} title={nlsHPCC.MatchCase} checked={matchCase} onClick={() => { setMatchCase(!matchCase); }} />

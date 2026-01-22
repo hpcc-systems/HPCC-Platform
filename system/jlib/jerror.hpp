@@ -35,6 +35,12 @@
 #define JLIBERR_UnexpectedValue                 6004
 #define JLIBERR_K8sServiceError                 6005
 
+#define JLIBERR_PluginKindNotSpecified         6010
+#define JLIBERR_UnableToLoadLibrary            6011
+#define JLIBERR_FactoryFunctionNotFound        6012
+#define JLIBERR_FeatureConfigNotFound          6013
+#define JLIBERR_FactoryReturnedNull            6014
+
 //---- Text for all errors (make it easy to internationalise) ---------------------------
 
 #define JLIBERR_BadlyFormedDateTime_Text        "Badly formatted date/time '%s'"

@@ -105,7 +105,7 @@ export const EventScheduler: React.FunctionComponent<EventSchedulerProps> = ({
     const [DescheduleConfirm, setShowDescheduleConfirm] = useConfirm({
         title: nlsHPCC.Deschedule,
         message: nlsHPCC.DescheduleSelectedWorkunits,
-        items: selection.map(s => s.Wuid),
+        items: selection.map(s => s?.Wuid).filter(wuid => wuid !== undefined),
         onSubmit: () => {
             WsWorkunits.WUAction(selection, "Deschedule").then(function (response) {
                 refreshTable.call(true);
