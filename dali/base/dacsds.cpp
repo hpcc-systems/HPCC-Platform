@@ -553,15 +553,14 @@ void CClientRemoteTree::Link() const
 
 bool CClientRemoteTree::Release() const
 {
-    //Note: getLinkCount() is not thread safe.
-    if (1 < getLinkCount())  //NH -> JCS - you sure this is best way to do this?
-    {
-        bool res = CRemoteTreeBase::Release();
-        connection.Release(); // if this tree is not being destroyed then decrement usage count on connection
-        return res;
-    }
-    else
-        return CRemoteTreeBase::Release();
+    //Save a pointer to connection, because "this" object may be destroyed by the call to BASE::Release()
+    CRemoteConnection * savedConnection = &connection;
+    bool res = CRemoteTreeBase::Release();
+    // if this tree is not being destroyed then decrement usage count on connection
+    // (another concurrent thread may have destroyed this before this check)
+    if (!res)
+        savedConnection->Release();
+    return res;
 }
 
 void CClientRemoteTree::deserializeSelfRT(MemoryBuffer &mb)
