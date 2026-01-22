@@ -1,5 +1,6 @@
 import * as React from "react";
-import { CommandBar, ICommandBarItemProps, Pivot, PivotItem, Sticky, StickyPositionType } from "@fluentui/react";
+import { CommandBar, ICommandBarItemProps, Sticky, StickyPositionType } from "@fluentui/react";
+import { SelectTabData, SelectTabEvent, Tab, TabList, makeStyles } from "@fluentui/react-components";
 import { scopedLogger } from "@hpcc-js/util";
 import { SizeMe } from "../layouts/SizeMe";
 import nlsHPCC from "src/nlsHPCC";
@@ -12,6 +13,13 @@ import { TableGroup } from "./forms/Groups";
 import { XMLSourceEditor } from "./SourceEditor";
 
 const logger = scopedLogger("../components/PackageMapDetails.tsx");
+
+const useStyles = makeStyles({
+    container: {
+        height: "100%",
+        position: "relative"
+    }
+});
 
 interface PackageMapDetailsProps {
     name: string;
@@ -114,31 +122,43 @@ export const PackageMapDetails: React.FunctionComponent<PackageMapDetailsProps> 
         },
     ], [_package, isActive, setShowDeleteConfirm]);
 
+    const onTabSelect = React.useCallback((_: SelectTabEvent, data: SelectTabData) => {
+        pushUrl(`/packagemaps/${name}/${data.value as string}`);
+    }, [name]);
+
+    const styles = useStyles();
+
     return <>
         <SizeMe>{({ size }) =>
-            <Pivot
-                overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab}
-                onLinkClick={evt => {
-                    pushUrl(`/packagemaps/${name}/${evt.props.itemKey}`);
-                }}
-            >
-                <PivotItem headerText={name} itemKey="summary" style={pivotItemStyle(size)} >
-                    <Sticky stickyPosition={StickyPositionType.Header}>
-                        <CommandBar items={buttons} />
-                    </Sticky>
-                    <TableGroup fields={{
-                        "target": { label: nlsHPCC.ID, type: "string", value: _package?.Id, readonly: true },
-                        "process": { label: nlsHPCC.ClusterName, type: "string", value: _package?.Process, readonly: true },
-                        "active": { label: nlsHPCC.Active, type: "string", value: isActive ? "true" : "false", readonly: true },
-                    }} />
-                </PivotItem>
-                <PivotItem headerText={nlsHPCC.XML} itemKey="xml" style={pivotItemStyle(size, 0)}>
-                    <XMLSourceEditor text={xml} readonly={true} />
-                </PivotItem>
-                <PivotItem headerText={nlsHPCC.title_PackageParts} itemKey="parts" style={pivotItemStyle(size, 0)}>
-                    <PackageMapParts name={name} />
-                </PivotItem>
-            </Pivot>
+            <div className={styles.container}>
+                <TabList selectedValue={tab} onTabSelect={onTabSelect} size="medium">
+                    <Tab value="summary">{name}</Tab>
+                    <Tab value="xml">{nlsHPCC.XML}</Tab>
+                    <Tab value="parts">{nlsHPCC.title_PackageParts}</Tab>
+                </TabList>
+                {tab === "summary" &&
+                    <div style={pivotItemStyle(size)}>
+                        <Sticky stickyPosition={StickyPositionType.Header}>
+                            <CommandBar items={buttons} />
+                        </Sticky>
+                        <TableGroup fields={{
+                            "target": { label: nlsHPCC.ID, type: "string", value: _package?.Id, readonly: true },
+                            "process": { label: nlsHPCC.ClusterName, type: "string", value: _package?.Process, readonly: true },
+                            "active": { label: nlsHPCC.Active, type: "string", value: isActive ? "true" : "false", readonly: true },
+                        }} />
+                    </div>
+                }
+                {tab === "xml" &&
+                    <div style={pivotItemStyle(size, 0)}>
+                        <XMLSourceEditor text={xml} readonly={true} />
+                    </div>
+                }
+                {tab === "parts" &&
+                    <div style={pivotItemStyle(size, 0)}>
+                        <PackageMapParts name={name} />
+                    </div>
+                }
+            </div>
         }</SizeMe>
         <DeleteConfirm />
     </>;

@@ -1,5 +1,6 @@
 import * as React from "react";
-import { CommandBar, ICommandBarItemProps, MessageBar, MessageBarType, Pivot, PivotItem, Sticky, StickyPositionType } from "@fluentui/react";
+import { CommandBar, ICommandBarItemProps, MessageBar, MessageBarType, Sticky, StickyPositionType } from "@fluentui/react";
+import { SelectTabData, SelectTabEvent, Tab, TabList, makeStyles } from "@fluentui/react-components";
 import { SizeMe } from "../layouts/SizeMe";
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsAccess from "src/ws_access";
@@ -12,6 +13,13 @@ import { UserGroups } from "./UserGroups";
 import { pushUrl } from "../util/history";
 
 const logger = scopedLogger("src-react/components/UserDetails.tsx");
+
+const useStyles = makeStyles({
+    container: {
+        height: "100%",
+        position: "relative"
+    }
+});
 
 interface UserDetailsProps {
     username?: string;
@@ -99,66 +107,82 @@ export const UserDetails: React.FunctionComponent<UserDetailsProps> = ({
             ;
     }, [username, setUser]);
 
+    const onTabSelect = React.useCallback((_: SelectTabEvent, data: SelectTabData) => {
+        const account = user?.username ?? username ?? "";
+        pushUrl(`/${opsCategory}/security/users/${account}/${data.value as string}`);
+    }, [opsCategory, user?.username, username]);
+
+    const styles = useStyles();
+
     return <SizeMe>{({ size }) =>
-        <Pivot
-            overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab}
-            onLinkClick={evt => {
-                pushUrl(`/${opsCategory}/security/users/${user?.username}/${evt.props.itemKey}`);
-            }}
-        >
-            <PivotItem headerText={user?.username} itemKey="summary" style={pivotItemStyle(size)} >
-                <Sticky stickyPosition={StickyPositionType.Header}>
-                    <CommandBar items={buttons} />
-                </Sticky>
-                {showError &&
-                    <MessageBar messageBarType={MessageBarType.error} isMultiline={true} onDismiss={() => setShowError(false)} dismissButtonAriaLabel="Close">
-                        {errorMessage}
-                    </MessageBar>
-                }
-                <TableGroup fields={{
-                    "username": { label: nlsHPCC.Name, type: "string", value: username, readonly: true },
-                    "employeeID": { label: nlsHPCC.EmployeeID, type: "string", value: employeeID },
-                    "employeeNumber": { label: nlsHPCC.EmployeeNumber, type: "string", value: employeeNumber },
-                    "firstname": { label: nlsHPCC.FirstName, type: "string", value: firstName },
-                    "lastname": { label: nlsHPCC.LastName, type: "string", value: lastName },
-                    "password1": { label: nlsHPCC.NewPassword, type: "password", value: password1 },
-                    "password2": { label: nlsHPCC.ConfirmPassword, type: "password", value: password2 },
-                    "PasswordExpiration": { label: nlsHPCC.PasswordExpiration, type: "string", value: user?.PasswordExpiration, readonly: true },
-                }} onChange={(id, value) => {
-                    switch (id) {
-                        case "employeeID":
-                            setEmployeeID(value);
-                            break;
-                        case "employeeNumber":
-                            setEmployeeNumber(value);
-                            break;
-                        case "firstname":
-                            setFirstName(value);
-                            break;
-                        case "lastname":
-                            setLastName(value);
-                            break;
-                        case "password1":
-                            setPassword1(value);
-                            break;
-                        case "password2":
-                            setPassword2(value);
-                            break;
-                        default:
-                            console.log(id, value);
+        <div className={styles.container}>
+            <TabList selectedValue={tab} onTabSelect={onTabSelect} size="medium">
+                <Tab value="summary">{user?.username ?? username}</Tab>
+                <Tab value="groups">{nlsHPCC.MemberOf}</Tab>
+                <Tab value="activePermissions">{nlsHPCC.title_ActivePermissions}</Tab>
+                <Tab value="availablePermissions">{nlsHPCC.title_AvailablePermissions}</Tab>
+            </TabList>
+            {tab === "summary" &&
+                <div style={pivotItemStyle(size)}>
+                    <Sticky stickyPosition={StickyPositionType.Header}>
+                        <CommandBar items={buttons} />
+                    </Sticky>
+                    {showError &&
+                        <MessageBar messageBarType={MessageBarType.error} isMultiline={true} onDismiss={() => setShowError(false)} dismissButtonAriaLabel="Close">
+                            {errorMessage}
+                        </MessageBar>
                     }
-                }} />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.MemberOf} itemKey="groups" style={pivotItemStyle(size, 0)}>
-                <UserGroups username={username} />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.title_ActivePermissions} itemKey="activePermissions" style={pivotItemStyle(size, 0)}>
-                <DojoAdapter widgetClassID="ShowAccountPermissionsWidget" params={{ IsGroup: false, IncludeGroup: true, AccountName: username }} />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.title_AvailablePermissions} itemKey="availablePermissions" style={pivotItemStyle(size, 0)}>
-                <DojoAdapter widgetClassID="PermissionsWidget" params={{ username: username }} />
-            </PivotItem>
-        </Pivot>
+                    <TableGroup fields={{
+                        "username": { label: nlsHPCC.Name, type: "string", value: username, readonly: true },
+                        "employeeID": { label: nlsHPCC.EmployeeID, type: "string", value: employeeID },
+                        "employeeNumber": { label: nlsHPCC.EmployeeNumber, type: "string", value: employeeNumber },
+                        "firstname": { label: nlsHPCC.FirstName, type: "string", value: firstName },
+                        "lastname": { label: nlsHPCC.LastName, type: "string", value: lastName },
+                        "password1": { label: nlsHPCC.NewPassword, type: "password", value: password1 },
+                        "password2": { label: nlsHPCC.ConfirmPassword, type: "password", value: password2 },
+                        "PasswordExpiration": { label: nlsHPCC.PasswordExpiration, type: "string", value: user?.PasswordExpiration, readonly: true },
+                    }} onChange={(id, value) => {
+                        switch (id) {
+                            case "employeeID":
+                                setEmployeeID(value);
+                                break;
+                            case "employeeNumber":
+                                setEmployeeNumber(value);
+                                break;
+                            case "firstname":
+                                setFirstName(value);
+                                break;
+                            case "lastname":
+                                setLastName(value);
+                                break;
+                            case "password1":
+                                setPassword1(value);
+                                break;
+                            case "password2":
+                                setPassword2(value);
+                                break;
+                            default:
+                                console.log(id, value);
+                        }
+                    }} />
+                </div>
+            }
+            {tab === "groups" &&
+                <div style={pivotItemStyle(size, 0)}>
+                    <UserGroups username={username} />
+                </div>
+            }
+            {tab === "activePermissions" &&
+                <div style={pivotItemStyle(size, 0)}>
+                    <DojoAdapter widgetClassID="ShowAccountPermissionsWidget" params={{ IsGroup: false, IncludeGroup: true, AccountName: username }} />
+                </div>
+            }
+            {tab === "availablePermissions" &&
+                <div style={pivotItemStyle(size, 0)}>
+                    <DojoAdapter widgetClassID="PermissionsWidget" params={{ username: username }} />
+                </div>
+            }
+        </div>
     }</SizeMe>;
 
 };

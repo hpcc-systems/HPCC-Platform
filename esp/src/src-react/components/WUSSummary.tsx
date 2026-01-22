@@ -54,9 +54,9 @@ function partialStringMatch(strings: string[], placeholder: string = "{unique}")
 function severityIcon(severity: string, colorize: boolean = false) {
     switch (severity) {
         case "Warning":
-            return <WarningRegular color={colorize && severityForegroundColor(severity)} />;
+            return <WarningRegular color={colorize ? severityForegroundColor(severity) : undefined} />;
         case "Error":
-            return <DismissCircleRegular color={colorize && severityForegroundColor(severity)} />;
+            return <DismissCircleRegular color={colorize ? severityForegroundColor(severity) : undefined} />;
     }
     return <InfoRegular />;
 }

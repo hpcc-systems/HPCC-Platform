@@ -1,7 +1,7 @@
 import * as React from "react";
-import { DefaultButton, Dropdown, PrimaryButton, Checkbox, Pivot, PivotItem, TextField, IDropdownOption, SelectionMode, Selection } from "@fluentui/react";
+import { DefaultButton, Dropdown, PrimaryButton, Checkbox, TextField, IDropdownOption, SelectionMode, Selection } from "@fluentui/react";
 import { useConst, useForceUpdate } from "@fluentui/react-hooks";
-import { Button } from "@fluentui/react-components";
+import { Button, SelectTabData, SelectTabEvent, Tab, TabList, makeStyles } from "@fluentui/react-components";
 import { BookmarkAddRegular, DeleteRegular } from "@fluentui/react-icons";
 import { StackShim, StackItemShim } from "@fluentui/react-migration-v8-v9";
 import nlsHPCC from "src/nlsHPCC";
@@ -13,6 +13,18 @@ import { DockPanelLayout } from "../layouts/DockPanel";
 
 const width = 640;
 const innerHeight = 400;
+
+const useStyles = makeStyles({
+    metricsPanel: {
+        overflow: "auto"
+    },
+    sqlPanel: {},
+    graphPanel: {
+        overflow: "auto"
+    },
+    layoutPanel: {},
+    allPanel: {}
+});
 
 interface GridOptionsProps {
     label: string;
@@ -133,6 +145,7 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
     const { viewIds, viewId, setViewId, view, addView, updateView } = useMetricsViews();
     const [dirtyView, setDirtyView] = React.useState<MetricsView>(clone(view));
     const [showAdd, setShowAdd] = React.useState(false);
+    const [selectedTab, setSelectedTab] = React.useState("metrics");
     const forceRefresh = useForceUpdate();
 
     const options = React.useMemo(() => {
@@ -157,6 +170,12 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
             addView(label, { ...view, ...dirtyView });
         }
     }, [addView, dirtyView, view]);
+
+    const onTabSelect = React.useCallback((_: SelectTabEvent, data: SelectTabData) => {
+        setSelectedTab(data.value as string);
+    }, []);
+
+    const styles = useStyles();
 
     return <>
         <MessageBox title={nlsHPCC.Options} show={show && !showAdd} setShow={setShow} minWidth={width}
@@ -194,86 +213,91 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
                     <Button appearance="subtle" icon={<DeleteRegular />} title={nlsHPCC.Delete} disabled hidden onClick={() => {
                     }} />
                 </StackShim>
-                <Pivot>
-                    <PivotItem key="metrics" headerText={nlsHPCC.Metrics}>
-                        <div style={{ height: innerHeight, overflow: "auto" }}>
-                            <StackShim horizontal>
-                                <StackItemShim grow={1}>
-                                    <GridOptions
-                                        label={nlsHPCC.ScopeTypes}
-                                        strArray={globalScopeTypes}
-                                        strSelection={dirtyView.scopeTypes}
-                                        setSelection={scopeTypes => {
-                                            dirtyView.scopeTypes = [...scopeTypes];
-                                        }}
-                                    ></GridOptions>
-                                </StackItemShim>
-                                <StackItemShim grow={1}>
-                                    <GridOptions
-                                        label={nlsHPCC.ScopeColumns}
-                                        strArray={globalProperties}
-                                        strSelection={dirtyView.properties}
-                                        setSelection={properties => {
-                                            dirtyView.properties = [...properties];
-                                        }}
-                                    ></GridOptions>
-                                </StackItemShim>
-                            </StackShim>
-                        </div>
-                    </PivotItem>
-                    <PivotItem key="sql" headerText={nlsHPCC.SQL} >
-                        <div style={{ height: innerHeight }}>
-                            <SourceEditor mode="sql" text={dirtyView.sql} toolbar={false} onTextChange={sql => {
-                                dirtyView.sql = sql;
+                <TabList selectedValue={selectedTab} onTabSelect={onTabSelect} size="medium">
+                    <Tab value="metrics">{nlsHPCC.Metrics}</Tab>
+                    <Tab value="sql">{nlsHPCC.SQL}</Tab>
+                    <Tab value="graph">{nlsHPCC.Graph}</Tab>
+                    <Tab value="layout">{nlsHPCC.Layout}</Tab>
+                    <Tab value="all">{nlsHPCC.All}</Tab>
+                </TabList>
+                {selectedTab === "metrics" &&
+                    <div className={styles.metricsPanel} style={{ height: innerHeight }}>
+                        <StackShim horizontal>
+                            <StackItemShim grow={1}>
+                                <GridOptions
+                                    label={nlsHPCC.ScopeTypes}
+                                    strArray={globalScopeTypes}
+                                    strSelection={dirtyView.scopeTypes}
+                                    setSelection={scopeTypes => {
+                                        dirtyView.scopeTypes = [...scopeTypes];
+                                    }}
+                                ></GridOptions>
+                            </StackItemShim>
+                            <StackItemShim grow={1}>
+                                <GridOptions
+                                    label={nlsHPCC.ScopeColumns}
+                                    strArray={globalProperties}
+                                    strSelection={dirtyView.properties}
+                                    setSelection={properties => {
+                                        dirtyView.properties = [...properties];
+                                    }}
+                                ></GridOptions>
+                            </StackItemShim>
+                        </StackShim>
+                    </div>
+                }
+                {selectedTab === "sql" &&
+                    <div className={styles.sqlPanel} style={{ height: innerHeight }}>
+                        <SourceEditor mode="sql" text={dirtyView.sql} toolbar={false} onTextChange={sql => {
+                            dirtyView.sql = sql;
+                            forceRefresh();
+                        }} />
+                    </div>
+                }
+                {selectedTab === "graph" &&
+                    <div className={styles.graphPanel} style={{ height: innerHeight }}>
+                        <Checkbox label={nlsHPCC.IgnoreGlobalStoreOutEdges} checked={dirtyView.ignoreGlobalStoreOutEdges} onChange={(ev, checked) => {
+                            dirtyView.ignoreGlobalStoreOutEdges = checked;
+                            forceRefresh();
+                        }} />
+                        <TextField label={nlsHPCC.SubgraphLabel} value={dirtyView.subgraphTpl} multiline autoAdjustHeight onChange={(evt, newValue) => {
+                            dirtyView.subgraphTpl = newValue;
+                            forceRefresh();
+                        }} />
+                        <TextField label={nlsHPCC.ActivityLabel} value={dirtyView.activityTpl} multiline autoAdjustHeight onChange={(evt, newValue) => {
+                            dirtyView.activityTpl = newValue;
+                            forceRefresh();
+                        }} />
+                        <TextField label={nlsHPCC.EdgeLabel} value={dirtyView.edgeTpl} multiline autoAdjustHeight onChange={(evt, newValue) => {
+                            dirtyView.edgeTpl = newValue;
+                            forceRefresh();
+                        }} />
+                    </div>
+                }
+                {selectedTab === "layout" &&
+                    <div className={styles.layoutPanel} style={{ height: innerHeight }}>
+                        <Checkbox label={nlsHPCC.Timeline} checked={dirtyView.showTimeline} onChange={(ev, checked) => {
+                            dirtyView.showTimeline = checked;
+                            forceRefresh();
+                        }} />
+                        <JSONSourceEditor json={dirtyView.layout} toolbar={false} onChange={obj => {
+                            if (obj) {
+                                dirtyView.layout = obj as DockPanelLayout;
                                 forceRefresh();
-                            }} />
-                        </div>
-                    </PivotItem>
-                    <PivotItem key="graph" headerText={nlsHPCC.Graph}>
-                        <div style={{ height: innerHeight, overflow: "auto" }}>
-                            <Checkbox label={nlsHPCC.IgnoreGlobalStoreOutEdges} checked={dirtyView.ignoreGlobalStoreOutEdges} onChange={(ev, checked) => {
-                                dirtyView.ignoreGlobalStoreOutEdges = checked;
+                            }
+                        }} />
+                    </div>
+                }
+                {selectedTab === "all" &&
+                    <div className={styles.allPanel} style={{ height: innerHeight }}>
+                        <JSONSourceEditor json={dirtyView} toolbar={false} onChange={(obj?: MetricsView) => {
+                            if (obj) {
+                                setDirtyView(obj);
                                 forceRefresh();
-                            }} />
-                            <TextField label={nlsHPCC.SubgraphLabel} value={dirtyView.subgraphTpl} multiline autoAdjustHeight onChange={(evt, newValue) => {
-                                dirtyView.subgraphTpl = newValue;
-                                forceRefresh();
-                            }} />
-                            <TextField label={nlsHPCC.ActivityLabel} value={dirtyView.activityTpl} multiline autoAdjustHeight onChange={(evt, newValue) => {
-                                dirtyView.activityTpl = newValue;
-                                forceRefresh();
-                            }} />
-                            <TextField label={nlsHPCC.EdgeLabel} value={dirtyView.edgeTpl} multiline autoAdjustHeight onChange={(evt, newValue) => {
-                                dirtyView.edgeTpl = newValue;
-                                forceRefresh();
-                            }} />
-                        </div>
-                    </PivotItem>
-                    <PivotItem key="layout" headerText={nlsHPCC.Layout} >
-                        <div style={{ height: innerHeight }}>
-                            <Checkbox label={nlsHPCC.Timeline} checked={dirtyView.showTimeline} onChange={(ev, checked) => {
-                                dirtyView.showTimeline = checked;
-                                forceRefresh();
-                            }} />
-                            <JSONSourceEditor json={dirtyView.layout} toolbar={false} onChange={obj => {
-                                if (obj) {
-                                    dirtyView.layout = obj as DockPanelLayout;
-                                    forceRefresh();
-                                }
-                            }} />
-                        </div>
-                    </PivotItem>
-                    <PivotItem key="all" headerText={nlsHPCC.All} >
-                        <div style={{ height: innerHeight }}>
-                            <JSONSourceEditor json={dirtyView} toolbar={false} onChange={(obj?: MetricsView) => {
-                                if (obj) {
-                                    setDirtyView(obj);
-                                    forceRefresh();
-                                }
-                            }} />
-                        </div>
-                    </PivotItem>
-                </Pivot>
+                            }
+                        }} />
+                    </div>
+                }
             </>
         </MessageBox>
         <AddLabel show={showAdd} setShow={setShowAdd} onOk={onAddLabel} />

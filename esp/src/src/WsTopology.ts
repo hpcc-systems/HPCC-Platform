@@ -7,7 +7,7 @@ import { arrayUtil, Deferred, lang, Observable, QueryResults, on, aspect } from 
 import * as ESPRequest from "./ESPRequest";
 import * as Utility from "./Utility";
 
-const logger = scopedLogger("src/ESPRequest.ts");
+const logger = scopedLogger("src/WsTopology.ts");
 
 declare const dojoConfig;
 

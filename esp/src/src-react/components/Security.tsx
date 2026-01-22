@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Pivot, PivotItem } from "@fluentui/react";
+import { SelectTabData, SelectTabEvent, Tab, TabList, makeStyles } from "@fluentui/react-components";
 import { SizeMe } from "../layouts/SizeMe";
 import { pushUrl } from "../util/history";
 import { Groups } from "./Groups";
@@ -9,6 +9,13 @@ import { Users } from "./Users";
 import { useBuildInfo } from "../hooks/platform";
 import { pivotItemStyle } from "../layouts/pivot";
 import nlsHPCC from "src/nlsHPCC";
+
+const useStyles = makeStyles({
+    container: {
+        height: "100%",
+        position: "relative"
+    }
+});
 
 interface SecurityProps {
     filter?: object;
@@ -42,27 +49,41 @@ export const Security: React.FunctionComponent<SecurityProps> = ({
         }
     }, [name, baseDn]);
 
+    const onTabSelect = React.useCallback((_: SelectTabEvent, data: SelectTabData) => {
+        pushUrl(`/${opsCategory}/security/${data.value as string}`);
+    }, [opsCategory]);
+
+    const styles = useStyles();
+
     return <>
         <SizeMe>{({ size }) =>
-            <Pivot
-                overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab}
-                onLinkClick={evt => pushUrl(`/${opsCategory}/security/${evt.props.itemKey}`)}
-            >
-                <PivotItem headerText={nlsHPCC.Users} itemKey="users" style={pivotItemStyle(size)}>
-                    <Users filter={filter} page={page} />
-                </PivotItem>
-                <PivotItem headerText={nlsHPCC.Groups} itemKey="groups" style={pivotItemStyle(size)}>
-                    <Groups page={page} />
-                </PivotItem>
-                <PivotItem headerText={permissionTabTitle} itemKey="permissions" style={pivotItemStyle(size)}>
-                    {!name && !baseDn &&
-                        <Permissions />
-                    }
-                    {name && baseDn &&
-                        <PermissionsEditor BaseDn={baseDn} Name={name} />
-                    }
-                </PivotItem>
-            </Pivot>
+            <div className={styles.container}>
+                <TabList selectedValue={tab} onTabSelect={onTabSelect} size="medium">
+                    <Tab value="users">{nlsHPCC.Users}</Tab>
+                    <Tab value="groups">{nlsHPCC.Groups}</Tab>
+                    <Tab value="permissions">{permissionTabTitle}</Tab>
+                </TabList>
+                {tab === "users" &&
+                    <div style={pivotItemStyle(size)}>
+                        <Users filter={filter} page={page} />
+                    </div>
+                }
+                {tab === "groups" &&
+                    <div style={pivotItemStyle(size)}>
+                        <Groups page={page} />
+                    </div>
+                }
+                {tab === "permissions" &&
+                    <div style={pivotItemStyle(size)}>
+                        {!name && !baseDn &&
+                            <Permissions />
+                        }
+                        {name && baseDn &&
+                            <PermissionsEditor BaseDn={baseDn} Name={name} />
+                        }
+                    </div>
+                }
+            </div>
         }</SizeMe>
     </>;
 
