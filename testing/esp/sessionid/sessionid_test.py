@@ -218,7 +218,7 @@ class WSESPControlClient:
             return False
     
     def query_sessions(self, user_id: Optional[str] = None, 
-                      from_ip: Optional[str] = None) -> Optional[list]:
+                      from_ip: Optional[str] = None) -> Optional[requests.Response]:
         """
         Query active sessions.
         
