@@ -7,6 +7,7 @@ interface FieldsTableProps {
     fields: Fields;
     width?: string;
     onChange?: (id: string, newValue: any) => void;
+    onSubmit?: () => void;
 }
 
 const tableGroupStyles = mergeStyleSets({
@@ -27,21 +28,31 @@ const tableGroupStyles = mergeStyleSets({
 export const TableGroup: React.FunctionComponent<FieldsTableProps> = ({
     fields,
     width = "initial",
-    onChange = (id: string, newValue: any) => { }
+    onChange = (id: string, newValue: any) => { },
+    onSubmit
 }) => {
 
     const formFields: { id: string, label: string, field: any }[] = createInputs(fields, onChange);
 
-    return <table className={tableGroupStyles.root} style={{ width }}>
-        <tbody>
-            {formFields.map((ff) => {
-                return <tr key={ff.id}>
-                    <td style={{ whiteSpace: "nowrap" }}><Label htmlFor={ff.id}>{ff.label}</Label></td>
-                    <td style={{ width: "80%", paddingLeft: 8 }}>{ff.field}</td>
-                </tr>;
-            })}
-        </tbody>
-    </table>;
+    const handleSubmit = React.useCallback((e: React.FormEvent) => {
+        e.preventDefault();
+        if (onSubmit) {
+            onSubmit();
+        }
+    }, [onSubmit]);
+
+    return <form onSubmit={handleSubmit}>
+        <table className={tableGroupStyles.root} style={{ width }}>
+            <tbody>
+                {formFields.map((ff) => {
+                    return <tr key={ff.id}>
+                        <td style={{ whiteSpace: "nowrap" }}><Label htmlFor={ff.id}>{ff.label}</Label></td>
+                        <td style={{ width: "80%", paddingLeft: 8 }}>{ff.field}</td>
+                    </tr>;
+                })}
+            </tbody>
+        </table>
+    </form>;
 };
 
 interface MultiColumnTableGroupProps {
