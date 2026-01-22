@@ -60,7 +60,7 @@ export const GetLogicalFilePart: React.FunctionComponent<GetLogicalFilePartProps
                 default:
                     logger.debug(`${id}:  ${value}`);
             }
-        }} /><DefaultButton onClick={onSubmit} text={nlsHPCC.Submit} /></span>}
+        }} onSubmit={onSubmit} /><DefaultButton onClick={onSubmit} text={nlsHPCC.Submit} /></span>}
         main={<SizeMe>{({ size }) => {
             const height = `${size.height}px`;
             return <div style={{ position: "relative", width: "100%", height: "100%" }}>

@@ -49,7 +49,7 @@ export const GetValue: React.FunctionComponent<GetValueProps> = ({
             "Path": { label: nlsHPCC.Path, type: "string", value: path },
         }} onChange={(id, value) => {
             setPath(value);
-        }} /><DefaultButton onClick={onSubmit} text={nlsHPCC.Submit} /></span>}
+        }} onSubmit={onSubmit} /><DefaultButton onClick={onSubmit} text={nlsHPCC.Submit} /></span>}
         main={<SizeMe>{({ size }) => {
             const height = `${size.height}px`;
             return <div style={{ position: "relative", width: "100%", height: "100%" }}>
