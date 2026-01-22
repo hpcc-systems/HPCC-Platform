@@ -1797,3 +1797,41 @@ std::vector<std::string> captureDebugInfo(const char *_dir, const char *prefix, 
     }
     return { stacksFName.str() }; // JCSMORE capture/return other files
 }
+
+offset_t verifyFileSize(IFile *file, offset_t expectedSize, unsigned maxRetries, unsigned retryDelayMs)
+{
+    assertex(file);
+    if (UINT_MAX == expectedSize) // if unset use IFile::size() directly
+        return file->size();
+
+    // Mode: 0=verify with retries (default), 1=trust expectedSize, 2=call size() and warn on mismatch
+    static unsigned mode = getConfigInt("expert/@fileSizeCheckMode", 0);
+    if (mode == 1)
+        return expectedSize;
+    else if (mode == 2)
+    {
+        offset_t actualSize = file->size();
+        if (actualSize != expectedSize)
+            OWARNLOG("File size mismatch for '%s': expected %" I64F "d, got %" I64F "d",
+                     file->queryFilename(), expectedSize, actualSize);
+        return actualSize;
+    }
+
+    // Mode 0: verify with retries
+    const char *filename = file->queryFilename();
+    offset_t actualSize = UINT_MAX;
+    for (unsigned attempt = 0; attempt < maxRetries; attempt++)
+    {
+        actualSize = file->size();
+        if (actualSize == expectedSize)
+            return expectedSize; // Size matches, all good
+
+        OWARNLOG("File size mismatch for '%s': expected %" I64F "d, got %" I64F "d (attempt %u/%u)",
+                 filename, expectedSize, actualSize, attempt + 1, maxRetries);
+
+        if (attempt + 1 < maxRetries)
+            MilliSleep(retryDelayMs);
+    }
+    throw makeStringExceptionV(0, "File size mismatch for '%s' after %u retries: expected %" I64F "d, got %" I64F "d",
+                filename, maxRetries, expectedSize, actualSize);
+}

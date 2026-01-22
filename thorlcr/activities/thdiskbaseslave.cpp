@@ -436,11 +436,12 @@ void CDiskWriteSlaveActivityBase::close()
                 CriticalBlock block(statsCs);
                 // ensure it is released/destroyed after releasing crit, since the IFileIO might involve a final copy and take considerable time.
                 tmpFileIO.setown(outputIO.getClear());
-                mergeStats(inactiveStats, tmpFileIO, diskWriteRemoteStatistics);
-                if (tmpUsage)
-                    tmpUsage->setSize(tmpFileIO->getStatistic(StSizeDiskWrite));
             }
             tmpFileIO->close(); // NB: close now, do not rely on close in dtor
+            mergeStats(inactiveStats, tmpFileIO, diskWriteRemoteStatistics); // needs to be after close() for complete stats
+            partDiskSize = tmpFileIO->getStatistic(StSizeDiskWrite);
+            if (tmpUsage)
+                tmpUsage->setSize(partDiskSize);
         }
 
         if (!rfsQueryParallel && dlfn.isExternal() && !lastNode())
@@ -472,6 +473,7 @@ CDiskWriteSlaveActivityBase::CDiskWriteSlaveActivityBase(CGraphElementBase *cont
     grouped = false;
     compress = false;
     uncompressedBytesWritten = 0;
+    partDiskSize = UINT_MAX; // unset
     replicateDone = 0;
     usageCount = 0;
     rfsQueryParallel = false;
@@ -550,6 +552,7 @@ void CDiskWriteSlaveActivityBase::process()
         compress = true;
     }
     uncompressedBytesWritten = 0;
+    partDiskSize = UINT_MAX; // unset
     replicateDone = 0;
     StringBuffer tmpStr;
     fName.set(getPartFilename(*partDesc, 0, tmpStr).str());
@@ -605,8 +608,9 @@ void CDiskWriteSlaveActivityBase::processDone(MemoryBuffer &mb)
         return;
     rowcount_t _processed = processed & THORDATALINK_COUNT_MASK;
     Owned<IFile> ifile = createIFile(fName);
-    offset_t sz = ifile->size();
-    mb.append(_processed).append(compress?uncompressedBytesWritten:sz).append(sz);
+    if (tempExternalName.isEmpty() || firstNode()) // else, previous workers have written to same file, cannot verify stat. against IFile::size
+        partDiskSize = verifyFileSize(ifile, partDiskSize);
+    mb.append(_processed).append(compress?uncompressedBytesWritten:partDiskSize).append(partDiskSize);
 
     CDateTime createTime, modifiedTime, accessedTime;
     ifile->getTime(&createTime, &modifiedTime, &accessedTime);

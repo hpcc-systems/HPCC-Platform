@@ -120,6 +120,7 @@ protected:
     StringAttr fName;
     bool compress, grouped, rfsQueryParallel;
     offset_t uncompressedBytesWritten;
+    offset_t partDiskSize;
     unsigned replicateDone;
     Owned<ICompressor> ecomp;
     unsigned usageCount;
