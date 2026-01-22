@@ -223,7 +223,7 @@ class WSESPControlClient:
         Query active sessions.
         
         Returns:
-            List of session objects or None on error
+            Response object or None on error
         """
         url = f"{self.config.base_url}/WSESPControl/SessionQuery"
         params = {}
