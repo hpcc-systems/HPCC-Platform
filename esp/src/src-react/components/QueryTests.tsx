@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Pivot, PivotItem } from "@fluentui/react";
+import { SelectTabData, SelectTabEvent, Tab, TabList, makeStyles } from "@fluentui/react-components";
 import { join, scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import * as ESPQuery from "src/ESPQuery";
@@ -10,6 +10,13 @@ import { pushUrl } from "../util/history";
 import { XMLSourceEditor } from "./SourceEditor";
 
 const logger = scopedLogger("src-react/components/QueryTests.tsx");
+
+const useStyles = makeStyles({
+    container: {
+        height: "100%",
+        position: "relative"
+    }
+});
 
 const buildFrameUrl = (url, suffix) => {
     const urlParts = url.split("&src=");
@@ -99,41 +106,74 @@ export const QueryTests: React.FunctionComponent<QueryTestsProps> = ({
         setResultNames(names);
     }, [wuResults]);
 
-    return <Pivot
-        overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab}
-        onLinkClick={evt => {
-            pushUrl(`/queries/${querySet}/${queryId}/testPages/${evt.props.itemKey}`);
-        }}
-    >
-        <PivotItem headerText={nlsHPCC.Form} itemKey="form" style={frameStyle}>
-            <IFrame src={formUrl} />
-        </PivotItem>
-        <PivotItem headerText={nlsHPCC.SOAP} itemKey="soap" style={frameStyle} >
-            <IFrame src={soapUrl} />
-        </PivotItem>
-        <PivotItem headerText={nlsHPCC.JSON} itemKey="json" style={frameStyle}>
-            <IFrame src={jsonUrl} />
-        </PivotItem>
-        <PivotItem headerText={nlsHPCC.WSDL} itemKey="wsdl" style={frameStyle}>
-            <IFrame src={wsdlUrl} />
-        </PivotItem>
-        <PivotItem headerText={nlsHPCC.RequestSchema} itemKey="requestSchema" style={frameStyle}>
-            <IFrame src={requestSchemaUrl} />
-        </PivotItem>
-        <PivotItem headerText={nlsHPCC.ResponseSchema} itemKey="responseSchema" style={frameStyle}>
-            {responseSchemas.map((schema, idx) => <XMLSourceEditor key={`responseSchema_${idx}`} text={schema} readonly={true} />)}
-        </PivotItem>
-        <PivotItem headerText={nlsHPCC.SampleRequest} itemKey="sampleRequest" style={frameStyle}>
-            <IFrame src={exampleRequestUrl} />
-        </PivotItem>
-        <PivotItem headerText={nlsHPCC.SampleResponse} itemKey="sampleResponse" style={frameStyle}>
-            <IFrame src={exampleResponseUrl} />
-        </PivotItem>
-        <PivotItem headerText={nlsHPCC.ParameterXML} itemKey="parameterXml" style={frameStyle}>
-            <IFrame src={parameterXmlUrl} />
-        </PivotItem>
-        <PivotItem headerText={nlsHPCC.Links} itemKey="links" style={frameStyle}>
-            <IFrame src={linksUrl} />
-        </PivotItem>
-    </Pivot>;
+    const onTabSelect = React.useCallback((_: SelectTabEvent, data: SelectTabData) => {
+        pushUrl(`/queries/${querySet}/${queryId}/testPages/${data.value as string}`);
+    }, [queryId, querySet]);
+
+    const styles = useStyles();
+
+    return <div className={styles.container}>
+        <TabList selectedValue={tab} onTabSelect={onTabSelect} size="medium">
+            <Tab value="form">{nlsHPCC.Form}</Tab>
+            <Tab value="soap">{nlsHPCC.SOAP}</Tab>
+            <Tab value="json">{nlsHPCC.JSON}</Tab>
+            <Tab value="wsdl">{nlsHPCC.WSDL}</Tab>
+            <Tab value="requestSchema">{nlsHPCC.RequestSchema}</Tab>
+            <Tab value="responseSchema">{nlsHPCC.ResponseSchema}</Tab>
+            <Tab value="sampleRequest">{nlsHPCC.SampleRequest}</Tab>
+            <Tab value="sampleResponse">{nlsHPCC.SampleResponse}</Tab>
+            <Tab value="parameterXml">{nlsHPCC.ParameterXML}</Tab>
+            <Tab value="links">{nlsHPCC.Links}</Tab>
+        </TabList>
+        {tab === "form" &&
+            <div style={frameStyle}>
+                <IFrame src={formUrl} />
+            </div>
+        }
+        {tab === "soap" &&
+            <div style={frameStyle}>
+                <IFrame src={soapUrl} />
+            </div>
+        }
+        {tab === "json" &&
+            <div style={frameStyle}>
+                <IFrame src={jsonUrl} />
+            </div>
+        }
+        {tab === "wsdl" &&
+            <div style={frameStyle}>
+                <IFrame src={wsdlUrl} />
+            </div>
+        }
+        {tab === "requestSchema" &&
+            <div style={frameStyle}>
+                <IFrame src={requestSchemaUrl} />
+            </div>
+        }
+        {tab === "responseSchema" &&
+            <div style={frameStyle}>
+                {responseSchemas.map((schema, idx) => <XMLSourceEditor key={`responseSchema_${idx}`} text={schema} readonly={true} />)}
+            </div>
+        }
+        {tab === "sampleRequest" &&
+            <div style={frameStyle}>
+                <IFrame src={exampleRequestUrl} />
+            </div>
+        }
+        {tab === "sampleResponse" &&
+            <div style={frameStyle}>
+                <IFrame src={exampleResponseUrl} />
+            </div>
+        }
+        {tab === "parameterXml" &&
+            <div style={frameStyle}>
+                <IFrame src={parameterXmlUrl} />
+            </div>
+        }
+        {tab === "links" &&
+            <div style={frameStyle}>
+                <IFrame src={linksUrl} />
+            </div>
+        }
+    </div>;
 };

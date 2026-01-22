@@ -1,5 +1,6 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, DefaultButton, Dropdown, ICommandBarItemProps, IDropdownOption, IStackTokens, Label, Link, mergeStyleSets, MessageBar, MessageBarType, Pivot, PivotItem } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, DefaultButton, Dropdown, ICommandBarItemProps, IDropdownOption, IStackTokens, Label, Link, mergeStyleSets, MessageBar, MessageBarType } from "@fluentui/react";
+import { SelectTabData, SelectTabEvent, Tab, TabList, makeStyles } from "@fluentui/react-components";
 import { StackShim } from "@fluentui/react-migration-v8-v9";
 import { scopedLogger } from "@hpcc-js/util";
 import { PackageProcessService } from "@hpcc-js/comms";
@@ -19,6 +20,13 @@ import { selector } from "./DojoGrid";
 import { TextSourceEditor, XMLSourceEditor } from "./SourceEditor";
 
 const logger = scopedLogger("../components/PackageMaps.tsx");
+
+const useStyles = makeStyles({
+    container: {
+        height: "100%",
+        position: "relative"
+    }
+});
 
 const packageService = new PackageProcessService({ baseUrl: "" });
 
@@ -85,7 +93,7 @@ export type TypedDropdownOption = IDropdownOption & { type?: string };
 export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
     filter = emptyFilter,
     store,
-    tab = "packageMaps"
+    tab = "list"
 }) => {
 
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
@@ -395,6 +403,21 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
         setUIState(state);
     }, [selection]);
 
+    const onTabSelect = React.useCallback((_: SelectTabEvent, data: SelectTabData) => {
+        const nextTab = data.value as string;
+        if (["activeMap", "packageContents"].includes(nextTab)) {
+            pushUrl(`/packagemaps/validate/${nextTab}`);
+        } else {
+            if (nextTab === "list") {
+                pushUrl("/packagemaps");
+            } else {
+                pushUrl(`/packagemaps/${nextTab}`);
+            }
+        }
+    }, []);
+
+    const styles = useStyles();
+
     return <>
         {showError &&
             <MessageBar messageBarType={MessageBarType.error} isMultiline={false} onDismiss={() => setShowError(false)} dismissButtonAriaLabel="Close">
@@ -402,117 +425,115 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
             </MessageBar>
         }
         <SizeMe>{({ size }) =>
-            <Pivot
-                overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab}
-                onLinkClick={evt => {
-                    if (["activeMap", "packageContents"].indexOf(evt.props.itemKey) > -1) {
-                        pushUrl(`/packagemaps/validate/${evt.props.itemKey}`);
-                    } else {
-                        if (evt.props.itemKey === "list") {
-                            pushUrl("/packagemaps");
-                        } else {
-                            pushUrl(`/packagemaps/${evt.props.itemKey}`);
-                        }
-                    }
-                }}
-            >
-                <PivotItem headerText={nlsHPCC.PackageMaps} itemKey="list" style={pivotItemStyle(size)} >
-                    <HolyGrail
-                        header={<CommandBar items={buttons} farItems={copyButtons} />}
-                        main={<FluentGrid
-                            data={data}
-                            primaryID={"Id"}
-                            sort={{ attribute: "Id", descending: true }}
-                            columns={columns}
-                            setSelection={setSelection}
-                            setTotal={setTotal}
-                            refresh={refreshTable}
-                        ></FluentGrid>}
-                    />
-                    <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
-                </PivotItem>
-                <PivotItem headerText={nlsHPCC.ValidateActivePackageMap} itemKey="activeMap" style={pivotItemStyle(size, 0)}>
-                    <HolyGrail
-                        header={
-                            <StackShim horizontal tokens={validateMapStackTokens}>
+            <div className={styles.container}>
+                <TabList selectedValue={tab} onTabSelect={onTabSelect} size="medium">
+                    <Tab value="list">{nlsHPCC.PackageMaps}</Tab>
+                    <Tab value="activeMap">{nlsHPCC.ValidateActivePackageMap}</Tab>
+                    <Tab value="packageContents">{nlsHPCC.ValidatePackageContent}</Tab>
+                </TabList>
+                {tab === "list" &&
+                    <div style={pivotItemStyle(size)}>
+                        <HolyGrail
+                            header={<CommandBar items={buttons} farItems={copyButtons} />}
+                            main={<FluentGrid
+                                data={data}
+                                primaryID={"Id"}
+                                sort={{ attribute: "Id", descending: true }}
+                                columns={columns}
+                                setSelection={setSelection}
+                                setTotal={setTotal}
+                                refresh={refreshTable}
+                            ></FluentGrid>}
+                        />
+                        <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
+                    </div>
+                }
+                {tab === "activeMap" &&
+                    <div style={pivotItemStyle(size, 0)}>
+                        <HolyGrail
+                            header={
                                 <StackShim horizontal tokens={validateMapStackTokens}>
-                                    <Label>{nlsHPCC.Target}</Label>
-                                    <Dropdown
-                                        id="activeMapTarget" className={validateMapStyles.dropdown}
-                                        options={targets} placeholder={nlsHPCC.SelectEllipsis}
-                                        onChange={changeActiveMapTarget}
-                                    />
+                                    <StackShim horizontal tokens={validateMapStackTokens}>
+                                        <Label>{nlsHPCC.Target}</Label>
+                                        <Dropdown
+                                            id="activeMapTarget" className={validateMapStyles.dropdown}
+                                            options={targets} placeholder={nlsHPCC.SelectEllipsis}
+                                            onChange={changeActiveMapTarget}
+                                        />
+                                    </StackShim>
+                                    <StackShim horizontal tokens={validateMapStackTokens}>
+                                        <Label>{nlsHPCC.Process}</Label>
+                                        <Dropdown
+                                            id="activeMapProcess" className={validateMapStyles.dropdown}
+                                            options={processes} placeholder={nlsHPCC.SelectEllipsis}
+                                            onChange={changeActiveMapProcess}
+                                        />
+                                    </StackShim>
+                                    <StackShim horizontal tokens={validateMapStackTokens}>
+                                        <DefaultButton id="validateMap" text={nlsHPCC.Validate} onClick={validateActiveMap} />
+                                    </StackShim>
                                 </StackShim>
+                            }
+                            main={
+                                <ReflexContainer orientation="vertical">
+                                    <ReflexElement>
+                                        <XMLSourceEditor text={activeMapXml} readonly={true} />
+                                    </ReflexElement>
+                                    <ReflexSplitter />
+                                    <ReflexElement>
+                                        <TextSourceEditor text={activeMapValidationResult} readonly={true} />
+                                    </ReflexElement>
+                                </ReflexContainer>
+                            }
+                        />
+                    </div>
+                }
+                {tab === "packageContents" &&
+                    <div style={pivotItemStyle(size, 0)}>
+                        <HolyGrail
+                            header={
                                 <StackShim horizontal tokens={validateMapStackTokens}>
-                                    <Label>{nlsHPCC.Process}</Label>
-                                    <Dropdown
-                                        id="activeMapProcess" className={validateMapStyles.dropdown}
-                                        options={processes} placeholder={nlsHPCC.SelectEllipsis}
-                                        onChange={changeActiveMapProcess}
-                                    />
+                                    <StackShim horizontal tokens={validateMapStackTokens}>
+                                        <Label>{nlsHPCC.Target}</Label>
+                                        <Dropdown
+                                            id="contentsTarget" className={validateMapStyles.dropdown}
+                                            options={targets} selectedKey={contentsTarget} placeholder={nlsHPCC.SelectEllipsis}
+                                            onChange={changeContentsTarget}
+                                        />
+                                    </StackShim>
+                                    <StackShim horizontal tokens={validateMapStackTokens}>
+                                        <Label>{nlsHPCC.Process}</Label>
+                                        <Dropdown
+                                            id="contentsProcess" className={validateMapStyles.dropdown}
+                                            options={processes} selectedKey={contentsProcess} placeholder={nlsHPCC.SelectEllipsis}
+                                            onChange={changeContentsProcess}
+                                        />
+                                    </StackShim>
+                                    <StackShim horizontal tokens={validateMapStackTokens}>
+                                        <input id="uploadMapFromFile" type="file" className={validateMapStyles.displayNone} accept="*.xml" onChange={handleFileSelect} />
+                                        <DefaultButton
+                                            id="loadMapFromFile" text={nlsHPCC.LoadPackageFromFile}
+                                            onClick={handleLoadMapFromFileClick}
+                                        />
+                                        <DefaultButton id="validateMap" text={nlsHPCC.Validate} onClick={validateContents} />
+                                    </StackShim>
                                 </StackShim>
-                                <StackShim horizontal tokens={validateMapStackTokens}>
-                                    <DefaultButton id="validateMap" text={nlsHPCC.Validate} onClick={validateActiveMap} />
-                                </StackShim>
-                            </StackShim>
-                        }
-                        main={
-                            <ReflexContainer orientation="vertical">
-                                <ReflexElement>
-                                    <XMLSourceEditor text={activeMapXml} readonly={true} />
-                                </ReflexElement>
-                                <ReflexSplitter />
-                                <ReflexElement>
-                                    <TextSourceEditor text={activeMapValidationResult} readonly={true} />
-                                </ReflexElement>
-                            </ReflexContainer>
-                        }
-                    />
-                </PivotItem>
-                <PivotItem headerText={nlsHPCC.ValidatePackageContent} itemKey="packageContents" style={pivotItemStyle(size, 0)}>
-                    <HolyGrail
-                        header={
-                            <StackShim horizontal tokens={validateMapStackTokens}>
-                                <StackShim horizontal tokens={validateMapStackTokens}>
-                                    <Label>{nlsHPCC.Target}</Label>
-                                    <Dropdown
-                                        id="contentsTarget" className={validateMapStyles.dropdown}
-                                        options={targets} selectedKey={contentsTarget} placeholder={nlsHPCC.SelectEllipsis}
-                                        onChange={changeContentsTarget}
-                                    />
-                                </StackShim>
-                                <StackShim horizontal tokens={validateMapStackTokens}>
-                                    <Label>{nlsHPCC.Process}</Label>
-                                    <Dropdown
-                                        id="contentsProcess" className={validateMapStyles.dropdown}
-                                        options={processes} selectedKey={contentsProcess} placeholder={nlsHPCC.SelectEllipsis}
-                                        onChange={changeContentsProcess}
-                                    />
-                                </StackShim>
-                                <StackShim horizontal tokens={validateMapStackTokens}>
-                                    <input id="uploadMapFromFile" type="file" className={validateMapStyles.displayNone} accept="*.xml" onChange={handleFileSelect} />
-                                    <DefaultButton
-                                        id="loadMapFromFile" text={nlsHPCC.LoadPackageFromFile}
-                                        onClick={handleLoadMapFromFileClick}
-                                    />
-                                    <DefaultButton id="validateMap" text={nlsHPCC.Validate} onClick={validateContents} />
-                                </StackShim>
-                            </StackShim>
-                        }
-                        main={
-                            <ReflexContainer orientation="vertical">
-                                <ReflexElement>
-                                    <XMLSourceEditor text={contentsXml} readonly={true} />
-                                </ReflexElement>
-                                <ReflexSplitter />
-                                <ReflexElement>
-                                    <TextSourceEditor text={contentsValidationResult} readonly={true} />
-                                </ReflexElement>
-                            </ReflexContainer>
-                        }
-                    />
-                </PivotItem>
-            </Pivot>
+                            }
+                            main={
+                                <ReflexContainer orientation="vertical">
+                                    <ReflexElement>
+                                        <XMLSourceEditor text={contentsXml} readonly={true} />
+                                    </ReflexElement>
+                                    <ReflexSplitter />
+                                    <ReflexElement>
+                                        <TextSourceEditor text={contentsValidationResult} readonly={true} />
+                                    </ReflexElement>
+                                </ReflexContainer>
+                            }
+                        />
+                    </div>
+                }
+            </div>
         }</SizeMe>
         <AddPackageMap
             showForm={showAddForm} setShowForm={setShowAddForm}

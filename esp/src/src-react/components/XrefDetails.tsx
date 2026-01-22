@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Pivot, PivotItem } from "@fluentui/react";
+import { Tab, TabList, SelectTabData, SelectTabEvent, makeStyles } from "@fluentui/react-components";
 import { scopedLogger } from "@hpcc-js/util";
 import { SizeMe } from "../layouts/SizeMe";
 import { pivotItemStyle } from "../layouts/pivot";
@@ -14,6 +14,13 @@ import nlsHPCC from "src/nlsHPCC";
 import * as Utility from "src/Utility";
 
 const logger = scopedLogger("src-react/components/XrefDetails.tsx");
+
+const useStyles = makeStyles({
+    container: {
+        height: "100%",
+        position: "relative"
+    }
+});
 
 interface XrefDetailsProps {
     name: string;
@@ -50,58 +57,80 @@ export const XrefDetails: React.FunctionComponent<XrefDetailsProps> = ({
             ;
     }, [name]);
 
+    const onTabSelect = React.useCallback((_: SelectTabEvent, data: SelectTabData) => {
+        pushUrl(`/xref/${name}/${data.value as string}`);
+    }, [name]);
+
+    const styles = useStyles();
+
     return <>
         <SizeMe>{({ size }) =>
-            <Pivot
-                overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab}
-                onLinkClick={evt => pushUrl(`/xref/${name}/${evt.props.itemKey}`)}
-            >
-                <PivotItem headerText={nlsHPCC.Summary} itemKey="summary" style={pivotItemStyle(size)}>
-
-                    <h2>
-                        <img src={Utility.getImageURL("cluster.png")} />&nbsp;<span className="bold">{name}</span>
-                    </h2>
-                    <table style={{ padding: 4 }}>
-                        <tbody>
-                            <tr>
-                                <td style={{ fontWeight: "bold" }}>{nlsHPCC.LastRun}</td>
-                                <td style={{ width: "80%", paddingLeft: 8 }}>{lastRun}</td>
-                            </tr>
-                            <tr>
-                                <td style={{ fontWeight: "bold" }}>{nlsHPCC.LastMessage}</td>
-                                <td style={{ width: "80%", paddingLeft: 8 }}>{status}</td>
-                            </tr>
-                            <tr>
-                                <td style={{ fontWeight: "bold" }}>{nlsHPCC.FoundFile}</td>
-                                <td style={{ width: "80%", paddingLeft: 8 }}>{nlsHPCC.FoundFileMessage}</td>
-                            </tr>
-                            <tr>
-                                <td style={{ fontWeight: "bold" }}>{nlsHPCC.OrphanFile2}</td>
-                                <td style={{ width: "80%", paddingLeft: 8 }}>{nlsHPCC.OrphanMessage}</td>
-                            </tr>
-                            <tr>
-                                <td style={{ fontWeight: "bold" }}>{nlsHPCC.LostFile}</td>
-                                <td style={{ width: "80%", paddingLeft: 8 }}>{nlsHPCC.LostFileMessage}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </PivotItem>
-                <PivotItem headerText={nlsHPCC.FoundFile} itemKey="foundFiles" style={pivotItemStyle(size)}>
-                    <XrefFoundFiles name={name} />
-                </PivotItem>
-                <PivotItem headerText={nlsHPCC.OrphanFile} itemKey="orphanFiles" style={pivotItemStyle(size)}>
-                    <XrefOrphanFiles name={name} />
-                </PivotItem>
-                <PivotItem headerText={nlsHPCC.LostFile} itemKey="lostFiles" style={pivotItemStyle(size)}>
-                    <XrefLostFiles name={name} />
-                </PivotItem>
-                <PivotItem headerText={nlsHPCC.Directories} itemKey="directories" style={pivotItemStyle(size)}>
-                    <XrefDirectories name={name} />
-                </PivotItem>
-                <PivotItem headerText={nlsHPCC.ErrorWarnings} itemKey="errors" style={pivotItemStyle(size)}>
-                    <XrefErrors name={name} />
-                </PivotItem>
-            </Pivot>
+            <div className={styles.container}>
+                <TabList selectedValue={tab} onTabSelect={onTabSelect} size="medium">
+                    <Tab value="summary">{nlsHPCC.Summary}</Tab>
+                    <Tab value="foundFiles">{nlsHPCC.FoundFile}</Tab>
+                    <Tab value="orphanFiles">{nlsHPCC.OrphanFile}</Tab>
+                    <Tab value="lostFiles">{nlsHPCC.LostFile}</Tab>
+                    <Tab value="directories">{nlsHPCC.Directories}</Tab>
+                    <Tab value="errors">{nlsHPCC.ErrorWarnings}</Tab>
+                </TabList>
+                {tab === "summary" &&
+                    <div style={pivotItemStyle(size)}>
+                        <h2>
+                            <img src={Utility.getImageURL("cluster.png")} />&nbsp;<span className="bold">{name}</span>
+                        </h2>
+                        <table style={{ padding: 4 }}>
+                            <tbody>
+                                <tr>
+                                    <td style={{ fontWeight: "bold" }}>{nlsHPCC.LastRun}</td>
+                                    <td style={{ width: "80%", paddingLeft: 8 }}>{lastRun}</td>
+                                </tr>
+                                <tr>
+                                    <td style={{ fontWeight: "bold" }}>{nlsHPCC.LastMessage}</td>
+                                    <td style={{ width: "80%", paddingLeft: 8 }}>{status}</td>
+                                </tr>
+                                <tr>
+                                    <td style={{ fontWeight: "bold" }}>{nlsHPCC.FoundFile}</td>
+                                    <td style={{ width: "80%", paddingLeft: 8 }}>{nlsHPCC.FoundFileMessage}</td>
+                                </tr>
+                                <tr>
+                                    <td style={{ fontWeight: "bold" }}>{nlsHPCC.OrphanFile2}</td>
+                                    <td style={{ width: "80%", paddingLeft: 8 }}>{nlsHPCC.OrphanMessage}</td>
+                                </tr>
+                                <tr>
+                                    <td style={{ fontWeight: "bold" }}>{nlsHPCC.LostFile}</td>
+                                    <td style={{ width: "80%", paddingLeft: 8 }}>{nlsHPCC.LostFileMessage}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                {tab === "foundFiles" &&
+                    <div style={pivotItemStyle(size)}>
+                        <XrefFoundFiles name={name} />
+                    </div>
+                }
+                {tab === "orphanFiles" &&
+                    <div style={pivotItemStyle(size)}>
+                        <XrefOrphanFiles name={name} />
+                    </div>
+                }
+                {tab === "lostFiles" &&
+                    <div style={pivotItemStyle(size)}>
+                        <XrefLostFiles name={name} />
+                    </div>
+                }
+                {tab === "directories" &&
+                    <div style={pivotItemStyle(size)}>
+                        <XrefDirectories name={name} />
+                    </div>
+                }
+                {tab === "errors" &&
+                    <div style={pivotItemStyle(size)}>
+                        <XrefErrors name={name} />
+                    </div>
+                }
+            </div>
         }</SizeMe>
     </>;
 
