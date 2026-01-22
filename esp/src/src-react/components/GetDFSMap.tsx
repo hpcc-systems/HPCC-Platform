@@ -50,7 +50,7 @@ export const GetDFSMap: React.FunctionComponent<GetDFSMapProps> = ({
             "FileName": { label: nlsHPCC.FileName, type: "string", value: fileName },
         }} onChange={(id, value) => {
             setFileName(value);
-        }} /><DefaultButton onClick={onSubmit} text={nlsHPCC.Submit} /></span>}
+        }} onSubmit={onSubmit} /><DefaultButton onClick={onSubmit} text={nlsHPCC.Submit} /></span>}
         main={<SizeMe>{({ size }) => {
             const height = `${size.height}px`;
             return <div style={{ position: "relative", width: "100%", height: "100%" }}>
