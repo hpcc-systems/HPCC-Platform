@@ -1,123 +1,152 @@
-Docker images
-=============
+# Docker tooling for HPCC Platform
 
-Docker images related to HPCC are structured as follows
+This folder contains Dockerfiles and helper scripts used for:
 
-**hpccsystems/platform-build-base**
+- building HPCC Platform in containerized build environments (multiple OS targets)
+- producing a runnable `platform-core` image from your current working tree (debug/release)
+- spinning up a local Kubernetes deployment using the repo Helm charts
 
-This image contains all the development packages required to build the hpcc platform,
-but no HPCC code or sources. It changes rarely. The current version is tagged 7.10 and
-is based on Ubuntu 20.04 base image
+## Prerequisites
 
-**hpccsystems/platform-build**
+- Docker (BuildKit enabled). Some workflows use `docker buildx`.
+- For `startall.sh` / `stopall.sh`: `helm`, `kubectl`, and access to a Kubernetes cluster.
+- Optional: a `.env` file at the repo root with `DOCKER_USERNAME` / `DOCKER_PASSWORD` (used by `build.sh` for `docker login`).
 
-Building this image builds and installs the HPCC codebase for a specified git tag
-of the HPCC platform sources. The Dockerfile takes arguments naming the version of
-the platform-build-base image to use and the git tag to use. Sources are fetched from
-github. An image will be pushed to Dockerhub for every public tag on the HPCC-Platform
-repository in GitHub, which developers can use as a base for their own development.
+## Common workflows
 
-There is a second Dockerfile in platform-build-incremental that can be used by developers
-working on a branch that is not yet tagged or merged into upstream, that uses 
-hpccsystems/platform-build as a base in order to avoid the need for full rebuilds each time
-the image is built.
+### Build a local `platform-core` image from this working tree
 
-**hpccsystems/plaform-core**
+This is the main developer workflow.
 
-This uses the build artefacts file from a hpccsystems/plaform-build image to install a copy of the
-full platform code, which can be used to run any HPCC component.
+```bash
+cd dockerfiles
 
-If you need additional components installed on your cluster, such as Python libraries, you can create
-a Docker image based on platform-core with additional components installed. An example can be found
-in the examples/numpy directory. You will then override the image name when deploying a helm chart in
-order to enabled your additional components.
+# Debug build + install into an image
+./image.sh build -m debug
 
+# Release build + package (.deb) + install into an image
+./image.sh build -m release
 
----
-Bash scripts
-============
-buildall.sh - Used to create and publish a docker container corresponding to a github tag
-clean.sh    - Clean up old docker images (if disk gets full)
-incr.sh     - Build local images for testing (delta from a published image)
-startall.sh - Start a local k8s cluster, and optional Elastic Stack for log processing purposes
-stopall.sh  - Stop a local k8s cluster, and optional Elastic Stack
+# Faster incremental debug build (equivalent to build -m debug)
+./image.sh incr
 
----
+# Re-run CMake configure step
+./image.sh build -m debug -r
 
-Helm chart
-==========
+# Keep separate build volumes per git branch
+./image.sh build -m debug -t
 
-The Helm chart in helm/hpcc/ can be used to deploy an entire HPCC environment to a K8s cluster.
+# Select the build OS image (default is ubuntu-22.04)
+BUILD_OS=ubuntu-24.04 ./image.sh build -m debug
 
-values.yaml sections
---------------------
-
-global:
-    # The global section applies to all components within the HPCC system.
-
-dali:
-esp:
-roxie:
-eclccserver:
-etc
-    # Each section will specify a list of one or more components of the specified type
-    # Within each section, there's a map specifying settings specific to that instance of the component,
-    # including (at least) name, plus any other required settings (which vary according to component type).
-
-Template structure
-------------------
-
-There are some helper templates in _util.tpl to assist in generation of the k8s yaml for each component.
-Many of these are used for standard boilerplate that ends up in every component:
-
-hpcc.utils.addImageAttrs
- - adds information about the container image source, version and pull mode
-hpcc.utils.addConfigVolumeMount
-hpcc.utils.addConfigVolume
- - add information that mount the global and local configuration information into /etc/config using k8s ConfigMap
-hpcc.utils.generateConfigMap
- - generates local and global config files for the above
-hpcc.utils.configArg
- - generates the parameter to pass to the container naming the config file 
-hpcc.utils.daliArg
- - generates the parameter to pass to the container naming the dali to connect to 
-
-Configuration files
--------------------
-
-Each component can specify local configuration via config: or configFile: settings - configFile names a file
-that is copied verbatim into the relevant ConfigMap, while config: allows the config file's contents to be
-specified inline.
-
-In addition, global config info (same for every component) is generated into a global.json file and made
-available via ConfigMap mechanism. So far, this only contains
-
-```json
-   "version": "{{ .root.Values.global.image.version | quote }}"
+# Override architecture detection
+./image.sh build -a arm64 -m debug
 ```
 
-but we can add more.
+Notes:
 
-Roxie modes under K8s
----------------------
+- `image.sh` uses Docker volumes to cache sources and build artifacts.
+- The final image is tagged as `hpccsystems/platform-core:<branch>-<mode>-<crc>` and also as `incr-core:<mode>`.
+- Run `./image.sh status` to see the resolved environment values.
 
-When running under K8s, Roxie has 3 fundamental modes of operation:
+### Create an image from a local artifact
 
-  1. Scalable array of one-way roxie servers
+Use `install` to create an image from either a local `.deb` or a local build folder.
 
-     Set localSlave=true, replicas=initial number of pods
+```bash
+cd dockerfiles
 
-  2. Per-channel-scalable array of combined servers/slaves
+# From a .deb
+./image.sh install /path/to/hpccsystems-platform-community_*.deb
 
-     localSlave=false, numChannels=nn, replicas=initial number of pods per channel (default 2)
+# From a build folder (must contain CMakeCache.txt)
+./image.sh install /path/to/build/folder
+```
 
-     There will be numChannels*replicas pods in total
+### Build containerized CMake builds across OS targets
 
-  3. Scalable array of servers with per-channel-scalable array of slaves
+`build.sh` builds an OS-specific container image and runs a CMake/Ninja build inside it.
 
-     localSlave=false, numChannels=nn, replicas=pods/channel, serverReplicas=initial number of server pods
+```bash
+cd dockerfiles
 
-     There will be numChannels*replicas slave pods and serverReplicas server pods in total
-  
-     This mode is somewhat experimental at present!
-  
+# Run several builds in parallel (logs go to build/docker-logs/)
+./build.sh
+
+# Single target
+./build.sh ubuntu-22.04
+
+# Override architecture
+ARCH=arm64 ./build.sh ubuntu-22.04
+```
+
+Build output is written back into the repo under `build/<target>/`.
+
+### Deploy to a local Kubernetes cluster
+
+`startall.sh` and `stopall.sh` use the Helm charts in `../helm/`.
+
+```bash
+cd dockerfiles
+
+# Start or upgrade an HPCC install (defaults to cluster name "mycluster")
+./startall.sh -n mycluster -l <image-tag>
+
+# Stop it
+./stopall.sh -n mycluster
+```
+
+Run `./startall.sh -h` for supported flags (including optional Elastic/Prometheus/Loki deployments).
+
+## Dockerfiles in this folder
+
+### Build environment images
+
+These `*.dockerfile` files create “build environment” images that are thin wrappers over prebuilt
+`hpccsystems/platform-build-base-<os>:<vcpkg-ref>` images.
+
+- `ubuntu-20.04.dockerfile`, `ubuntu-22.04.dockerfile`, `ubuntu-24.04.dockerfile`
+- `rockylinux-8.dockerfile`
+- `centos-7.dockerfile`
+- `wasm32-emscripten.dockerfile`
+
+They’re used by `build.sh` and `image.sh`.
+
+### Runtime base images (`platform-core-*`)
+
+These Dockerfiles install runtime dependencies, create the `hpcc` user, and set up the container
+filesystem layout (but do not build HPCC on their own).
+
+- `platform-core-ubuntu-20.04.dockerfile`
+- `platform-core-ubuntu-22.04.dockerfile`
+- `platform-core-ubuntu-24.04.dockerfile`
+- `platform-core-debug-ubuntu-22.04.dockerfile` (adds `gdb` ptrace capability via `setcap`)
+
+`image.sh` uses these as a base and then installs HPCC from your build output.
+
+### Build-from-deb Dockerfile
+
+`platform-core-ubuntu-22.04/Dockerfile` is a standalone Dockerfile that expects an HPCC `.deb` to be present
+in the Docker build context (see `PKG_FILE` in that Dockerfile). It can be useful for CI or manual builds where
+you already have a packaged `.deb` and want a simple `docker build`.
+
+## Helper scripts
+
+- `image.sh`: build/install HPCC into a `platform-core` image from the current repo checkout.
+- `build.sh`: run builds in OS-specific build containers; can build multiple targets in parallel.
+- `cleanup.sh`: remove dangling images and older `hpccsystems/*` tags.
+- `startall.sh` / `stopall.sh`: deploy/remove HPCC (and optional logging/metrics stacks) using Helm.
+
+## Examples
+
+- `examples/numpy/`: example of layering extra Python packages on top of `platform-core` (builds `hpccsystems/platform-core:numpy`).
+- `examples/ldap/`: a `docker-compose.yaml` that starts a local LDAP server and phpLDAPadmin for development/testing.
+
+## Notes about CI files
+
+This folder also contains `action.yml` and `buildall-common.sh`, which are intended for CI publishing workflows.
+As of this folder’s current contents, `action.yml` references a `Dockerfile` next to it, but there is no
+top-level `Dockerfile` in this directory. The Dockerfiles in this folder live in subfolders (for example
+`platform-core-ubuntu-22.04/Dockerfile` and `examples/numpy/addnumpy/Dockerfile`). If you intend to use
+`action.yml` directly as a Docker Action, verify the expected `Dockerfile` is present or adjust the action accordingly.
+
