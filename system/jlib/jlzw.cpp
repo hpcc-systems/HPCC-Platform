@@ -523,12 +523,13 @@ void CLZWExpander::expand(void *buf)
     GETCODE(oldcode);
     int ch=oldcode;
     *(out++)=(unsigned char)ch;
+    unsigned char * stackend = stack+sizeof(stack);
     while (out!=outend) {
         int newcode;
         GETCODE(newcode);
-        unsigned char *sp = stack;
+        unsigned char *sp = stackend;
         if (newcode >= dict.nextcode) {
-            *(sp++) = (unsigned char) ch;
+            *(--sp) = (unsigned char) ch;
             ch = oldcode;
         }
         else if (newcode == BUMP_CODE) {
@@ -549,7 +550,7 @@ void CLZWExpander::expand(void *buf)
         else 
             ch = newcode;
         while (ch > 255) {
-            *(sp++) = dict.dictchar[ch];
+            *(--sp) = dict.dictchar[ch];
             ch = dict.dictparent[ch];
         }
 #ifdef _DEBUG
@@ -559,8 +560,12 @@ void CLZWExpander::expand(void *buf)
         dict.dictchar[dict.nextcode++] = (unsigned char) ch;
         oldcode = newcode;
         *(out++) = ch;
-        while ((sp!=stack)&&(out!=outend)) {
-            *(out++)=(unsigned char)*(--sp);
+        unsigned len = stackend - sp;
+        unsigned len2 = (unsigned)(outend - out);
+        if (len2 < len)
+            len = len2;
+        for (unsigned i=0; i < len; i++) {
+            *(out++)=(unsigned char)*(sp++);
         }
     }
 }

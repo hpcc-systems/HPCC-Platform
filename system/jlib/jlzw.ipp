@@ -34,7 +34,7 @@ public:
     int nextcode;
     int curbits;
     int nextbump;
-    int dictparent[LZW_HASH_TABLE_SIZE];
+    short dictparent[LZW_HASH_TABLE_SIZE];
     unsigned char dictchar[LZW_HASH_TABLE_SIZE];
 };
 
