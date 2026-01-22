@@ -41,6 +41,11 @@
 
 //#define TRACE_MAX_MESSAGES
 
+// Enable multishot accept support (disable for testing single-shot fallback)
+#ifndef USE_MULTISHOT_ACCEPT
+#define USE_MULTISHOT_ACCEPT 1
+#endif
+
 //---------------------------------------------------------------------------------------------------------------------
 
 CReadSocketHandler::CReadSocketHandler(ISocketMessageProcessor & _processor, IAsyncProcessor * _asyncReader, ISocket *_socket, size32_t _minSize, size32_t _maxSize)
@@ -423,9 +428,14 @@ void CReadSelectHandler::clearupSocketHandlers()
 CSocketConnectionListener::CSocketConnectionListener(unsigned port, bool _useTLS, unsigned _inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets, bool _useIOUring)
     : CReadSelectHandler(_inactiveCloseTimeoutMs, _maxListenHandlerSockets, _useIOUring), Thread("CSocketConnectionListener"), useTLS(_useTLS)
 {
-    // Check if we have io_uring support available and can use multishot accept
-    // Note: asyncReader will be null if io_uring is disabled via configuration or unavailable
-    useMultishotAccept = (asyncReader != nullptr) && _useIOUring;
+    // Determine accept method based on io_uring availability and configuration
+    // Priority: MultishotAccept > SingleshotAccept > SelectThread
+    // Note: asyncReader only exists if io_uring is enabled, so we start with Multishot
+    // and may fall back to Singleshot at runtime if EINVAL is returned
+    if (asyncReader)
+        acceptMethod.store(AcceptMethod::MultishotAccept);
+    else
+        acceptMethod.store(AcceptMethod::SelectThread);
 
     if (port)
         startPort(port);
@@ -433,7 +443,14 @@ CSocketConnectionListener::CSocketConnectionListener(unsigned port, bool _useTLS
     if (useTLS)
         secureContextServer.setown(createSecureSocketContextSecretSrv("local", nullptr, true));
 
-    PROGLOG("CSocketConnectionListener TLS: %s, multishot accept: %s", useTLS ? "on" : "off", useMultishotAccept ? "on" : "off");
+    const char *acceptMethodStr = "unknown";
+    switch (acceptMethod.load())
+    {
+    case AcceptMethod::MultishotAccept: acceptMethodStr = "io_uring multishot"; break;
+    case AcceptMethod::SingleshotAccept: acceptMethodStr = "io_uring singleshot"; break;
+    case AcceptMethod::SelectThread: acceptMethodStr = "select()"; break;
+    }
+    PROGLOG("CSocketConnectionListener TLS: %s, accept method: %s", useTLS ? "on" : "off", acceptMethodStr);
 }
 
 CSocketConnectionListener::~CSocketConnectionListener()
@@ -475,16 +492,30 @@ void CSocketConnectionListener::startPort(unsigned short port)
         listenSocket.setown(ISocket::create(port, listenQueueSize));
     }
 
-    if (useMultishotAccept)
+    AcceptMethod method = acceptMethod.load();
+    if (method == AcceptMethod::MultishotAccept)
     {
-        // Only start multishot accept if not already running
+        // Only start accept if not already running
         unsigned expected = 0;
         if (pendingAcceptCallbacks.compare_exchange_strong(expected, 1))
         {
+#if USE_MULTISHOT_ACCEPT
             // Start the multishot accept operation
             asyncReader->enqueueSocketMultishotAccept(listenSocket, *this);
+#else
+            // USE_MULTISHOT_ACCEPT disabled - fall back to single-shot
+            acceptMethod.store(AcceptMethod::SingleshotAccept);
+            startSingleshotAccept();
+#endif
         }
         // If already running, do nothing (expected would be non-zero)
+    }
+    else if (method == AcceptMethod::SingleshotAccept)
+    {
+        // Start single-shot io_uring accept
+        unsigned expected = 0;
+        if (pendingAcceptCallbacks.compare_exchange_strong(expected, 1))
+            startSingleshotAccept();
     }
     else
     {
@@ -574,11 +605,12 @@ void CSocketConnectionListener::stop()
     {
         aborting = true;
 
-        if (useMultishotAccept)
+        AcceptMethod method = acceptMethod.load();
+        if (method != AcceptMethod::SelectThread)
         {
-            // Cancel the multishot accept operation
+            // Cancel io_uring accept operations (both multishot and single-shot)
             if (asyncReader && listenSocket)
-                asyncReader->cancelMultishotAccept(listenSocket);
+                asyncReader->cancelAccept(listenSocket);
             
             // Wait for any pending callbacks to complete (with timeout)
             // The cancellation will trigger a final callback with -ECANCELED
@@ -587,7 +619,7 @@ void CSocketConnectionListener::stop()
             {
                 // Check if cancellation actually completed before we started waiting
                 if (pendingAcceptCallbacks.load() > 0)
-                    OERRLOG("Timeout waiting for multishot accept cancellation to complete");
+                    OERRLOG("Timeout waiting for accept cancellation to complete");
                 // else: cancellation completed before we started waiting (race condition, but harmless)
             }
         }
@@ -615,6 +647,12 @@ void CSocketConnectionListener::stop()
             }
         }
     }
+}
+
+void CSocketConnectionListener::startSingleshotAccept()
+{
+    if (asyncReader && listenSocket)
+        asyncReader->enqueueSocketAccept(listenSocket, *this);
 }
 
 void CSocketConnectionListener::handleAcceptedConnection(int socketfd)
@@ -731,13 +769,32 @@ void CSocketConnectionListener::onAsyncComplete(int result)
                 // Out of memory/buffers - serious but transient
                 OERRLOG("Memory/buffer exhaustion during accept (error: %d). Connection dropped.", result);
             }
+            else if (err == EINVAL)
+            {
+                // EINVAL implies multishot accept is not supported - fall back to single-shot
+                AcceptMethod currentMethod = acceptMethod.load();
+                if (currentMethod == AcceptMethod::MultishotAccept)
+                {
+                    acceptMethod.store(AcceptMethod::SingleshotAccept);
+                    PROGLOG("Multishot accept not supported (EINVAL), falling back to single-shot accept");
+                    startSingleshotAccept();
+                    return;
+                }
+                // If we get EINVAL on single-shot, that's a fatal error - io_uring accept is not working
+                // Decrement callback counter and signal shutdown
+                OERRLOG("Unexpected EINVAL on %s accept - accept mechanism has failed", currentMethod == AcceptMethod::SingleshotAccept ? "single-shot" : "select-thread");
+                unsigned expected = 1;
+                if (pendingAcceptCallbacks.compare_exchange_strong(expected, 0))
+                    shutdownSem.signal();
+            }
             else
             {
                 // For other unexpected errors, the multishot operation may have stopped or may be recoverable
                 // Log as warning since we're not aborting and the error is unexpected
                 WARNLOG("Multishot accept unexpected error: %d. Operation may have stopped or may be recoverable.", result);
                 // If the error is fatal and stops multishot, decrement the callback counter and signal shutdown if needed
-                if (pendingAcceptCallbacks.fetch_sub(1) == 1)
+                unsigned expected = 1;
+                if (pendingAcceptCallbacks.compare_exchange_strong(expected, 0))
                     shutdownSem.signal();
             }
         }
@@ -749,7 +806,12 @@ void CSocketConnectionListener::onAsyncComplete(int result)
     // until it's cancelled or encounters an error
     if (aborting.load())
         return;
+    
     handleAcceptedConnection(result);
+    
+    // If using single-shot accept (not multishot), we need to re-queue another accept
+    if (acceptMethod.load() == AcceptMethod::SingleshotAccept)
+        startSingleshotAccept();
 }
 
 //---------------------------------------------------------------------------------------------------------------------

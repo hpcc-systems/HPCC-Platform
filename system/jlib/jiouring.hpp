@@ -57,6 +57,11 @@ interface IAsyncProcessor : public IInterface
     virtual void enqueueSocketWrite(ISocket * socket, const void * buf, size32_t len, IAsyncCallback & callback) = 0;
     virtual void enqueueSocketWriteMany(ISocket * socket, const iovec * buffers, unsigned numBuffers, IAsyncCallback & callback) = 0;
     
+    // Enqueue a single-shot accept operation
+    // socket: Listening socket to accept connections on
+    // callback: Will be called once when a connection is accepted (result = file descriptor for new connection)
+    virtual void enqueueSocketAccept(ISocket * socket, IAsyncCallback & callback) = 0;
+    
     // Enqueue a multishot accept operation that continuously accepts connections
     // socket: Listening socket to accept connections on
     // callback: Will be called for each accepted connection (result = file descriptor for new connection)
@@ -65,9 +70,9 @@ interface IAsyncProcessor : public IInterface
     //           or the processor is terminated. Caller is responsible for ensuring callback lifetime.
     virtual void enqueueSocketMultishotAccept(ISocket * socket, IAsyncCallback & callback) = 0;
     
-    // Cancel an active multishot accept operation
-    // socket: The listening socket to cancel multishot accept for
-    virtual void cancelMultishotAccept(ISocket * socket) = 0;
+    // Cancel active accept operations on a socket (works for both single-shot and multishot)
+    // socket: The listening socket to cancel accept operations for
+    virtual void cancelAccept(ISocket * socket) = 0;
 
 // Functions for managing the completion queue - particularly non-threaded urings
     virtual void checkForCompletions() = 0;
