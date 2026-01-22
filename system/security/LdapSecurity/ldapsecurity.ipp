@@ -34,6 +34,9 @@
 #endif
 #include "seclib.hpp"
 
+// forward declare the new FailedAuthCache used by the manager
+class FailedAuthCache;
+
 #ifndef LDAPSECURITY_EXPORTS
     #define LDAPSECURITY_API DECL_IMPORT
 #else
@@ -380,8 +383,8 @@ private:
     StringBuffer m_description;
     unsigned m_passwordExpirationWarningDays;
     bool m_checkViewPermissions;
-    unsigned m_maxFailedAuthAttempts;
-    unsigned m_failedAuthCacheTimeout;
+    static FailedAuthCache s_failedAuthCache;
+    static CriticalSection s_failedAuthCacheInitLock;
     static const SecFeatureSet s_safeFeatures = SMF_ALL_FEATURES;
     static const SecFeatureSet s_implementedFeatures = s_safeFeatures & ~(SMF_RetrieveUserData | SMF_RemoveResources);
     StringBuffer m_hpccInternalScope;
@@ -524,6 +527,9 @@ public:
     virtual void removeViewMembers(const char * viewName, StringArray & viewUsers, StringArray & viewGroups) override;
     virtual void queryViewMembers(const char * viewName, StringArray & viewUsers, StringArray & viewGroups) override;
     virtual bool userInView(const char * user, const char* viewName) override;
+
+private:
+    bool doUserAuthenticate(ISecUser* user);
 };
 
 #ifdef _MSC_VER
