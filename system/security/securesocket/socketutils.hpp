@@ -137,6 +137,17 @@ protected:
     std::atomic<bool> aborting{false};
 };
 
+// Accept method priority (best to worst):
+// 1. MultishotAccept - io_uring multishot accept (best performance, one operation handles multiple connections)
+// 2. SingleshotAccept - io_uring single-shot accept (good performance, requires re-queuing after each accept)
+// 3. SelectThread - traditional select/epoll with blocking accept in a thread (fallback)
+enum class AcceptMethod
+{
+    SelectThread,      // Traditional thread-based accept (lowest priority)
+    SingleshotAccept,  // io_uring single-shot accept
+    MultishotAccept    // io_uring multishot accept (highest priority)
+};
+
 // This class starts a thread that listens on a socket.  When a connection is made it adds the socket to a select handler.
 // When data is written to the socket it will call the notify handler.
 // 
@@ -153,7 +164,8 @@ public:
     void startPort(unsigned short port);
     void stop();
     bool checkSelfDestruct(const void *p,size32_t sz);
-    bool isUsingMultishotAccept() const { return useMultishotAccept; }
+    AcceptMethod getAcceptMethod() const { return acceptMethod.load(); }
+    bool isUsingMultishotAccept() const { return acceptMethod.load() == AcceptMethod::MultishotAccept; }
 
     virtual int run() override;
 
@@ -161,13 +173,14 @@ public:
     virtual void onAsyncComplete(int result) override;
 
 private:
+    void startSingleshotAccept();
     void handleAcceptedConnection(int socketfd);
 
     Owned<ISocket> listenSocket;
     Owned<ISecureSocketContext> secureContextServer;
     bool useTLS;
     std::atomic<bool> aborting{false};
-    std::atomic<bool> useMultishotAccept{false};
+    std::atomic<AcceptMethod> acceptMethod{AcceptMethod::SelectThread};
     std::atomic<unsigned> pendingAcceptCallbacks{0};
     Semaphore shutdownSem;
 };

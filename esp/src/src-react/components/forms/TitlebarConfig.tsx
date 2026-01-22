@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Checkbox, ColorPicker, DefaultButton, getColorFromString, IColor, Label, PrimaryButton, Spinner, TextField, TooltipHost } from "@fluentui/react";
 import { useForm, Controller } from "react-hook-form";
+import { useUserTheme } from "../../hooks/theme";
 import { MessageBox } from "../../layouts/MessageBox";
 import { useGlobalStore } from "../../hooks/store";
 
@@ -19,7 +20,6 @@ const defaultValues: TitlebarConfigValues = {
 };
 
 interface TitlebarConfigProps {
-    toolbarThemeDefaults: Readonly<{ active: boolean, text: string, color: string }>;
     showForm: boolean;
     setShowForm: (_: boolean) => void;
 }
@@ -27,18 +27,18 @@ interface TitlebarConfigProps {
 const white = getColorFromString("#ffffff");
 
 export const TitlebarConfig: React.FunctionComponent<TitlebarConfigProps> = ({
-    toolbarThemeDefaults,
     showForm,
     setShowForm
 }) => {
+    const { theme } = useUserTheme();
     const { handleSubmit, control, reset } = useForm<TitlebarConfigValues>({ defaultValues });
     const [submitDisabled, setSubmitDisabled] = React.useState(false);
     const [spinnerHidden, setSpinnerHidden] = React.useState(true);
     const [color, setColor] = React.useState(white);
     const updateColor = React.useCallback((evt: any, colorObj: IColor) => setColor(colorObj), []);
-    const [showEnvironmentTitle, setShowEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Active", toolbarThemeDefaults.active, true);
-    const [environmentTitle, setEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Text", toolbarThemeDefaults.text, true);
-    const [titlebarColor, setTitlebarColor] = useGlobalStore("HPCCPlatformWidget_Toolbar_Color", toolbarThemeDefaults.color, true);
+    const [showEnvironmentTitle, setShowEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Active", false, true);
+    const [environmentTitle, setEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Text", undefined, true);
+    const [titlebarColor, setTitlebarColor] = useGlobalStore("HPCCPlatformWidget_Toolbar_Color", undefined, true);
 
     const closeForm = React.useCallback(() => {
         setShowForm(false);
@@ -63,9 +63,9 @@ export const TitlebarConfig: React.FunctionComponent<TitlebarConfigProps> = ({
         )();
     }, [closeForm, color, handleSubmit, setEnvironmentTitle, setShowEnvironmentTitle, setTitlebarColor]);
 
-    const [, , resetShowEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Active", toolbarThemeDefaults.active, true);
-    const [, , resetEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Text", toolbarThemeDefaults.text, true);
-    const [, , resetTitlebarColor] = useGlobalStore("HPCCPlatformWidget_Toolbar_Color", toolbarThemeDefaults.color, true);
+    const [, , resetShowEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Active", false, true);
+    const [, , resetEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Text", undefined, true);
+    const [, , resetTitlebarColor] = useGlobalStore("HPCCPlatformWidget_Toolbar_Color", undefined, true);
 
     const onReset = React.useCallback(() => {
         resetShowEnvironmentTitle();
@@ -74,13 +74,13 @@ export const TitlebarConfig: React.FunctionComponent<TitlebarConfigProps> = ({
     }, [resetEnvironmentTitle, resetShowEnvironmentTitle, resetTitlebarColor]);
 
     React.useEffect(() => {
-        setColor(getColorFromString(titlebarColor));
+        setColor(getColorFromString(titlebarColor ?? theme.palette.themeLight));
         const values = {
             showEnvironmentTitle: showEnvironmentTitle,
-            environmentTitle: environmentTitle || ""
+            environmentTitle: environmentTitle ?? "ECL Watch"
         };
         reset(values);
-    }, [environmentTitle, reset, showEnvironmentTitle, titlebarColor]);
+    }, [environmentTitle, reset, showEnvironmentTitle, theme.palette.themeLight, titlebarColor]);
 
     return <MessageBox show={showForm} setShow={closeForm} title={nlsHPCC.SetToolbarColor} minWidth={400}
         footer={<>

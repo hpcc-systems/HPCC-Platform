@@ -152,7 +152,7 @@ if [[ "$usejem" != "" ]] ; then
     usejem=$(echo "$usejem" | tr -d "[:blank:]" | tr "[:upper:]" "[:lower:]")
 fi
 
-if [[ "$usejem" == "true" ]] ; then
+if [[ "$usejem" == "" || "$usejem" == "true" ]] ; then # i.e. "" defaults to true
     if [[ -s ${INSTALL_DIR}/lib/libjemalloc.so ]] ; then
         if [[ ! "${LD_PRELOAD}" =~ .*libjemalloc.* ]] ; then
             export LD_PRELOAD="${INSTALL_DIR}/lib/libjemalloc.so${LD_PRELOAD:+:${LD_PRELOAD}}"

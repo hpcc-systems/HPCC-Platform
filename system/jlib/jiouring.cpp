@@ -55,8 +55,9 @@ public:
     virtual void enqueueSocketRead(ISocket * socket, void * buf, size32_t len, IAsyncCallback & callback) override;
     virtual void enqueueSocketWrite(ISocket * socket, const void * buf, size32_t len, IAsyncCallback & callback) override;
     virtual void enqueueSocketWriteMany(ISocket * socket, const iovec * buffers, unsigned numBuffers, IAsyncCallback & callback) override;
+    virtual void enqueueSocketAccept(ISocket * socket, IAsyncCallback & callback) override;
     virtual void enqueueSocketMultishotAccept(ISocket * socket, IAsyncCallback & callback) override;
-    virtual void cancelMultishotAccept(ISocket * socket) override;
+    virtual void cancelAccept(ISocket * socket) override;
 
     virtual void lockMemory(const void * buffer, size_t len) override;
 
@@ -254,6 +255,21 @@ void URingProcessor::enqueueSocketWriteMany(ISocket * socket, const iovec * buff
     submitRequests();
 }
 
+void URingProcessor::enqueueSocketAccept(ISocket * socket, IAsyncCallback & callback)
+{
+    CLeavableCriticalBlock block(requestCrit, isMultiThreaded);
+
+    io_uring_sqe * sqe = allocRequest(block);
+
+    int socketfd = socket->OShandle();
+    // Use single-shot accept - this will accept one connection then complete
+    io_uring_prep_accept(sqe, socketfd, nullptr, nullptr, 0);
+
+    io_uring_sqe_set_data(sqe, &callback);
+
+    submitRequests();
+}
+
 void URingProcessor::enqueueSocketMultishotAccept(ISocket * socket, IAsyncCallback & callback)
 {
     CLeavableCriticalBlock block(requestCrit, isMultiThreaded);
@@ -269,14 +285,14 @@ void URingProcessor::enqueueSocketMultishotAccept(ISocket * socket, IAsyncCallba
     submitRequests();
 }
 
-void URingProcessor::cancelMultishotAccept(ISocket * socket)
+void URingProcessor::cancelAccept(ISocket * socket)
 {
     CLeavableCriticalBlock block(requestCrit, isMultiThreaded);
 
     io_uring_sqe * sqe = allocRequest(block);
 
     int socketfd = socket->OShandle();
-    // Cancel the multishot accept operation for this socket
+    // Cancel all accept operations for this socket
     // This will generate completions:
     // 1. One for the cancel operation itself (with the sentinel callback, which is discarded)
     // 2. One for the cancelled multishot accept (with its original callback and -ECANCELED result)

@@ -101,7 +101,7 @@ export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
     const [DeleteSubfilesConfirm, setShowDeleteSubfilesConfirm] = useConfirm({
         title: nlsHPCC.Delete,
         message: nlsHPCC.RemoveSubfiles2,
-        items: selection.map(item => item.Name),
+        items: selection.map(item => item?.Name).filter(name => name !== undefined),
         onSubmit: React.useCallback(() => {
             WsDfu.SuperfileAction("remove", file.Name, selection, false).then(() => refreshSubfiles());
         }, [file, refreshSubfiles, selection])

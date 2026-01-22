@@ -81,7 +81,12 @@ public:
 
 struct CBlockCompressedBuildContext
 {
+public:
+    void initCompressor();
+
+public:
     ICompressHandler* compressionHandler = nullptr;
+    Owned<ICompressor> compressor;
     StringBuffer compressionOptions;
     CompressionMethod compressionMethod = COMPRESS_METHOD_ZSTDS6;
     bool zeroFilePos = false;

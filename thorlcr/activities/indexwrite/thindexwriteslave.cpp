@@ -55,6 +55,8 @@ class IndexWriteSlaveActivity : public ProcessSlaveActivity, public ILookAheadSt
     size32_t lastRowSize, firstRowSize, maxRecordSizeSeen, keyedSize;
     offset_t uncompressedSize = 0;
     offset_t originalBlobSize = 0;
+    offset_t partDiskSize = UINT_MAX; // unset
+    offset_t tlkDiskSize = UINT_MAX; // unset
 
     MemoryBuffer rowBuff;
     OwnedConstThorRow lastRow, firstRow;
@@ -66,6 +68,7 @@ class IndexWriteSlaveActivity : public ProcessSlaveActivity, public ILookAheadSt
     unsigned partCrc, tlkCrc;
     mptag_t mpTag2;
     Owned<IRowServer> rowServer;
+    bool needsSeek = true;
 
     void init()
     {
@@ -77,6 +80,10 @@ class IndexWriteSlaveActivity : public ProcessSlaveActivity, public ILookAheadSt
         fewcapwarned = false;
         needFirstRow = true;
         receivingTag2 = false;
+        uncompressedSize = 0;
+        originalBlobSize = 0;
+        partDiskSize = UINT_MAX; // unset
+        tlkDiskSize = UINT_MAX; // unset
     }
 public:
     IMPLEMENT_IINTERFACE_USING(PARENT);
@@ -182,7 +189,7 @@ public:
         maxRecordSizeSeen = 0;
 
         ActPrintLog("INDEXWRITE: created fixed output stream %s", partFname.str());
-        bool needsSeek = true;
+        needsSeek = true;
         unsigned flags = COL_PREFIX;
         if (TIWrowcompress & helper->getFlags())
             flags |= HTREE_COMPRESSED_KEY|HTREE_QUICK_COMPRESSED_KEY;
@@ -247,7 +254,16 @@ public:
                 if (tmpBuilder)
                 {
                     tmpBuilder->finish(metadata, &crc, maxRecordSizeSeen, nullptr);
+                    // Get the disk size from the builder before merging stats
                     mergeStats(inactiveStats, tmpBuilder, indexWriteActivityStatistics);
+                    if (!needsSeek) // if seek needed, can't use StSizeDiskWrite, leave unset and verifyFileSize will use IFile::size()
+                    {
+                        offset_t diskSize = tmpBuilder->getStatistic(StSizeDiskWrite);
+                        if (isTLK)
+                            tlkDiskSize = diskSize;
+                        else
+                            partDiskSize = diskSize;
+                    }
                 }
             }
         }
@@ -614,8 +630,8 @@ public:
             StringBuffer partFname;
             getPartFilename(*partDesc, 0, partFname);
             Owned<IFile> ifile = createIFile(partFname.str());
-            offset_t sz = ifile->size();
-            mb.append(sz);
+            partDiskSize = verifyFileSize(ifile, partDiskSize);
+            mb.append(partDiskSize);
             CDateTime createTime, modifiedTime, accessedTime;
             ifile->getTime(&createTime, &modifiedTime, &accessedTime);
             modifiedTime.serialize(mb);
@@ -630,8 +646,8 @@ public:
                 StringBuffer path;
                 getPartFilename(*tlkDesc, 0, path);
                 ifile.setown(createIFile(path.str()));
-                sz = ifile->size();
-                mb.append(sz);
+                tlkDiskSize = verifyFileSize(ifile, tlkDiskSize);
+                mb.append(tlkDiskSize);
                 ifile->getTime(&createTime, &modifiedTime, &accessedTime);
                 modifiedTime.serialize(mb);
             }

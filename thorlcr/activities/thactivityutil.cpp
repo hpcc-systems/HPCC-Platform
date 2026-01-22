@@ -655,7 +655,7 @@ class CWriteHandler : implements IFileIO, public CInterface
             return;
         closed = true;
         primaryio->close();
-        primaryio.clear();
+        // NB: do not clear 'primaryio', keep around after close for this object's getStatistic calls.
         if (aborted && *aborted)
         {
             primary->remove(); // i.e. never completed, so remove partial (temp) primary
