@@ -2043,7 +2043,7 @@ lifecycle:
  {{- $_ := set .lifeCycleCtx "containers" (append .lifeCycleCtx.containers (dict "name" $containerName "process" .process "config" $configCtx.name)) -}}
 {{- end -}}
 {{- if not .me.valgrind -}}
- {{- $useJemalloc := (hasKey $meExpert "useJemalloc") | ternary $meExpert.useJemalloc ($globalExpert.useJemalloc | default false) -}}
+ {{- $useJemalloc := (hasKey $meExpert "useJemalloc") | ternary $meExpert.useJemalloc ((hasKey $globalExpert "useJemalloc") | ternary $globalExpert.useJemalloc true) -}}
  {{- if $useJemalloc -}}
   {{- $args = append $args "-j" -}}
  {{- end -}}

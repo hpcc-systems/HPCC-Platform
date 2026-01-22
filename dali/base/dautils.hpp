@@ -56,7 +56,7 @@ class da_decl CDfsLogicalFileName
 {
     StringAttr lfn;
     unsigned tailpos;
-    unsigned localpos; // if 0 not foreign
+    unsigned localpos; // if 0 not foreign or remote
     StringAttr cluster; 
     CMultiDLFN *multi;   // for temp superfile
     bool external;
@@ -95,6 +95,7 @@ public:
     void setExternal(const char *location,const char *path);
     void setExternal(const SocketEndpoint &dafsip,const char *path);
     void setExternal(const RemoteFilename &rfn);
+    void setRemote(const char *remoteName, const char *logicalName);
     void setPlaneExternal(const char *planeName,const char *path);
     bool isExternal() const { return external; }
     bool isExternalPlane() const;
@@ -119,14 +120,14 @@ public:
     void setCluster(const char *cname); 
     StringBuffer &getCluster(StringBuffer &cname) const { return cname.append(cluster); }
 
-    const char *get(bool removeforeign=false) const;
-    StringBuffer &get(StringBuffer &str,bool removeforeign=false, bool withCluster=false) const;
+    const char *get(bool removeForeignOrRemote=false) const;
+    StringBuffer &get(StringBuffer &str,bool removeForeignOrRemote=false, bool withCluster=false) const;
     const char *queryTail() const;
     StringBuffer &getTail(StringBuffer &buf) const;
 
-    StringBuffer &getScopes(StringBuffer &buf,bool removeforeign=false) const;
-    unsigned numScopes(bool removeforeign=false) const; // not including tail
-    StringBuffer &getScope(StringBuffer &buf,unsigned idx,bool removeforeign=false) const;
+    StringBuffer &getScopes(StringBuffer &buf,bool removeForeignOrRemote=false) const;
+    unsigned numScopes(bool removeForeignOrRemote=false) const; // not including tail
+    StringBuffer &getScope(StringBuffer &buf,unsigned idx,bool removeForeignOrRemote=false) const;
 
     StringBuffer &makeScopeQuery(StringBuffer &query, bool absolute=true) const; // returns xpath for containing scope
     StringBuffer &makeFullnameQuery(StringBuffer &query, DfsXmlBranchKind kind, bool absolute=true) const; // return xpath for branch
@@ -155,7 +156,7 @@ public:
     void expand(IUserDescriptor *user);
 
 protected:
-    void normalizeName(const char * name, StringAttr &res, bool strict, bool nameIsRoot);
+    void normalizeName(const char * name, StringAttr &res, bool strict, bool nameIsRoot, bool stripLeadingSelfScope);
     bool normalizeExternal(const char * name, StringAttr &res, bool strict);
 };
 

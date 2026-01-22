@@ -71,6 +71,7 @@ void handleSyntax()
     out.append("        format=fixed|csv|delimited|xml|json|variable|recfmv|recfmvb\n");
     out.append("        prefix=filename{:length},filesize{:[B|L][1-8]}\n");
     out.append("        expireDays=<days-to-auto-delete-file>  -- optional, default is '' (empty), no expire\n");
+    out.append("        dstNumParts=<number-of-destination-parts>  -- optional, specify number of destination parts\n");
     out.append("        options for fixed:\n");
     out.append("            recordsize=<record-size>\n");
     out.append("        options for csv/delimited:\n");

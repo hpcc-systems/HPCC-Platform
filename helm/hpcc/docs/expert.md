@@ -95,23 +95,23 @@ its own cache.  Threads/channels within a process share that process's cache.
 If set to true, components will use jemalloc memory allocator via LD_PRELOAD.
 jemalloc can provide better memory allocation performance and lower fragmentation compared to the default glibc allocator.
 This setting can be applied globally or on a per-component basis via the component's expert section.
-Default: false
+Default: true
 
 Note: jemalloc is automatically disabled when valgrind is enabled for a component, as valgrind requires its own memory management.
 
-Example of enabling jemalloc globally:
+Example of disabling jemalloc globally:
 ```
 global:
   expert:
-    useJemalloc: true
+    useJemalloc: false
 ```
 
-Example of enabling jemalloc for a specific Thor component:
+Example of disabling jemalloc for a specific Thor component:
 ```
 thor:
 - name: mythor
   expert:
-    useJemalloc: true
+    useJemalloc: false
 ```
 
 Note: This requires that libjemalloc is installed in the container image at /usr/lib/x86_64-linux-gnu/libjemalloc.so.2
@@ -156,6 +156,25 @@ roxie:
 Note: Roxie also has a separate `@workerSendUseIOUring` topology setting that specifically controls io_uring for worker-to-worker 
 send operations (see Roxie documentation for details). The global `expert/@useIOUring` setting takes precedence—if set to false, 
 it will disable all io_uring regardless of component-specific topology settings, including `@workerSendUseIOUring`.
+
+## fileSizeCheckMode (unsigned)
+
+Controls how Thor write activities verify expected disk file sizes against actual filesystem sizes.
+This setting currently applies to Thor index writes, disk writes
+
+Values:
+- 0 (default): Verify with retries. Compares expected size (from writer statistics) against IFile::size() with up to 5 retries and 200ms delays. Throws exception if mismatch persists.
+- 1: Trust expected size. Returns the expected size from writer statistics without calling IFile::size(), avoiding filesystem queries entirely.
+- 2: Call size() with warning. Always calls IFile::size() and returns the actual size, but logs a warning if it doesn't match the expected size (no error thrown).
+
+Default: 0
+
+Example:
+```
+global:
+  expert:
+    fileSizeCheckMode: 0
+```
 
 
 # Plane Expert Settings

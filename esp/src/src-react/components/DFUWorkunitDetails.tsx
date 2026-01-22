@@ -108,6 +108,8 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
                 if (fieldId.key === "SourceFilePath") {
                     const href = `#/landingzone/preview/~file::${workunit["SourceIP"]}::${FileSpray.lfEncode(value)}`;
                     _sourceFields[fieldId.key] = { label: fieldId.label, value: value ?? null, type: "link", href, readonly: true };
+                } else if (fieldId.key === "SourceLogicalName" && value) {
+                    _sourceFields[fieldId.key] = { label: fieldId.label, value, type: "link", href: `#/files/${value}`, readonly: true };
                 } else {
                     _sourceFields[fieldId.key] = { label: fieldId.label, value: value ?? null, type: "string", readonly: true };
                 }

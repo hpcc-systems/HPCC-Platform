@@ -446,6 +446,8 @@ bool CDfuPlusHelper::fixedSpray(const char* srcxml,const char* srcip,const char*
 
     if(globals->hasProp("expireDays"))
         req->setExpireDays(globals->getPropInt("expireDays"));
+    if(globals->hasProp("dstNumParts"))
+        req->setDestNumParts(globals->getPropInt("dstNumParts"));
 
     Owned<IClientSprayFixedResponse> result = sprayclient->SprayFixed(req);
     const char *wuid = result->getWuid();
@@ -596,6 +598,8 @@ bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const ch
 
     if(globals->hasProp("expireDays"))
         req->setExpireDays(globals->getPropInt("expireDays"));
+    if(globals->hasProp("dstNumParts"))
+        req->setDestNumParts(globals->getPropInt("dstNumParts"));
 
     Owned<IClientSprayResponse> result = sprayclient->SprayVariable(req);
     const char *wuid = result->getWuid();
