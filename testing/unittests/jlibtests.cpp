@@ -3784,7 +3784,12 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeSerializationDeserializationTest, "PT
 #include "jutil.hpp"
 #include "jzstd.hpp"
 
-// Test suite for PTree Binary timing tests
+/* Test suite for PTree Binary timing tests
+ *
+ * Custom specific unittest parameters:
+ * --PTreeBinaryTimingStressTest.path=/x/y/z/file.bin  Provide the Dali binary test data path. Can be .bin or .bin.zst (Zstd compressed)\n"
+ * --PTreeBinaryTimingStressTest.iterations=999        Override default PTree timing iterations\n"
+*/
 class PTreeBinaryTimingStressTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(PTreeBinaryTimingStressTest);
@@ -3867,12 +3872,10 @@ protected:
     {
         assertex(compressedData && compressedSize);
 
-        Owned<IExpander> expander = createZStdExpander();
-
-        size32_t targetSize{0};
         try
         {
-            targetSize = expander->init(compressedData);
+            Owned<IExpander> expander = createZStdExpander();
+            size32_t targetSize = expander->init(compressedData);
             if (targetSize == 0 || targetSize > MEMBUFFER_MAXLEN)
                 throw makeStringExceptionV(-1, "Zstd decompressed size %u out of bounds for \"%s\"", targetSize, actualPath);
 

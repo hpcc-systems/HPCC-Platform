@@ -41,10 +41,6 @@
  * statically linked together.
  *
  * CPPUnit will automatically recognise and run them all.
- *
- * Custom specific unittest parameters:
- * --PTreeBinaryTimingStressTest.path=/x/y/z/file.bin  Provide the Dali binary test data path. Can be .bin or .bin.zst (Zstd compressed)\n"
- * --PTreeBinaryTimingStressTest.iterations=999        Override default PTree timing iterations\n"
  */
 
 void usage()
@@ -189,7 +185,7 @@ int main(int argc, const char *argv[])
                 // is it a test option of the form --<test>.<option> (or --<test>.<option>=<value>)
                 const char *dot = strchr(arg + 2, '.');
                 const char *equals = strchr(arg + 2, '='); // in case value contains a dot
-                bool testArg = dot && (dot > arg+2) && isalpha(dot[1]) && (!equals || (equals > dot));;
+                bool testArg = dot && (dot > arg+2) && isalpha(dot[1]) && (!equals || (equals > dot));
                 if (!testArg)
                 {
                     usage();
