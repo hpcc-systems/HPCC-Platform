@@ -2114,8 +2114,8 @@ public:
             int status = secureSocket->secure_connect(SSLogMin);
             ASSERT(status == 0);
 
-            // Test large write (32KB)
-            const size32_t dataSize = 32768;
+            // Test large write (100KB - requires chunking to avoid exceeding 16KB BIO buffer)
+            const size32_t dataSize = 102400;  // 100KB
             MemoryAttr sendData;
             sendData.allocate(dataSize);
             byte *sendBuf = (byte *)sendData.get();
@@ -2139,7 +2139,7 @@ public:
             WriteCallback writeCallback;
             secureSocket->startAsyncWrite(uring, sendBuf, dataSize, writeCallback);
 
-            bool signaled = writeCallback.completed.wait(10000);  // Longer timeout for large data
+            bool signaled = writeCallback.completed.wait(15000);  // Longer timeout for large data
             ASSERT(signaled);
             ASSERT(writeCallback.result == (int)dataSize);
 
@@ -2148,7 +2148,7 @@ public:
             recvData.allocate(dataSize);
             byte *recvBuf = (byte *)recvData.get();
             size32_t bytesRead = 0;
-            secureSocket->read(recvBuf, dataSize, dataSize, bytesRead, 10);
+            secureSocket->read(recvBuf, dataSize, dataSize, bytesRead, 15);
 
             ASSERT(bytesRead == dataSize);
             ASSERT(memcmp(sendBuf, recvBuf, dataSize) == 0);
