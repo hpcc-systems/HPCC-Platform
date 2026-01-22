@@ -1256,8 +1256,8 @@ public:
         IConstDFUoptions *options = wu->queryOptions();
         Owned<IPropertyTree> opttree = createPTreeFromIPT(options->queryTree());
 
-        // in bare-metal continue by default to use ftslave
-        bool defaultUseFtSlave = isContainerized() ? false : true;
+        // both bare-metal and containerized default to dafilesrv (useFtSlave=false)
+        bool defaultUseFtSlave = false;
         bool useFtSlave = config->getPropBool("@useFtSlave", defaultUseFtSlave);
         opttree->setPropBool("@useFtSlave", useFtSlave);
         opttree->setProp("@sprayServiceName", config->queryProp("@sprayServiceName"));
