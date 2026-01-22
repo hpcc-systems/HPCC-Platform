@@ -75,6 +75,8 @@ public:
         }
         if (event.hasAttribute(EvAttrEventThreadId))
             event.setValue(EvAttrEventThreadId, 100ULL);
+        if (event.hasAttribute(EvAttrEventTraceId))
+            event.setValue(EvAttrEventTraceId, "00000000000000000000000000000000");
         return CNoOpEventVisitorDecorator::visitEvent(event);
     }
 public:
@@ -99,7 +101,12 @@ public:
         CPPUNIT_TEST(testIterateAllAttributes);
         CPPUNIT_TEST(testIterateEventAttributes);
         CPPUNIT_TEST(testRecordingSource);
+        CPPUNIT_TEST(testRecordingSourceOptional);
+        CPPUNIT_TEST(testRecordingSourceMustBeFirst);
+        CPPUNIT_TEST(testRecordingSourceOnlyOnce);
+        CPPUNIT_TEST(testRecordingSourceRecursionLimit);
         CPPUNIT_TEST(testEventCompleteness);
+        CPPUNIT_TEST(testPullEvents);
         CPPUNIT_TEST(testFailCreate);
         CPPUNIT_TEST(testCleanup);
     CPPUNIT_TEST_SUITE_END();
@@ -372,6 +379,11 @@ public:
             removeFile("eventtrace.evt");
             removeFile("testfile.bin");
             removeFile("recordingsource.evt");
+            removeFile("recordingsource_optional.evt");
+            removeFile("recordingsource_notfirst.evt");
+            removeFile("recordingsource_multiple.evt");
+            removeFile("recordingsource_recursion.evt");
+            removeFile("pullevents.evt");
         }
     }
 
@@ -608,6 +620,7 @@ attribute: DataSize = 73
             CPPUNIT_ASSERT_EQUAL(3U, summary.numEvents);
 
             // Read and verify events
+            // Note: RecordingSource is consumed internally and not exposed to visitors
             class VerifyVisitor : public CInterfaceOf<IEventVisitor>
             {
             public:
@@ -621,20 +634,7 @@ attribute: DataSize = 73
 
                     if (eventCount == 1)
                     {
-                        // First event should be RecordingSource
-                        CPPUNIT_ASSERT_EQUAL((int)EventRecordingSource, (int)event.queryType());
-                        CPPUNIT_ASSERT(event.hasAttribute(EvAttrProcessDescriptor));
-                        CPPUNIT_ASSERT_EQUAL_STR("test", event.queryTextValue(EvAttrProcessDescriptor));
-                        CPPUNIT_ASSERT(event.hasAttribute(EvAttrChannelId));
-                        CPPUNIT_ASSERT_EQUAL(1ULL, event.queryNumericValue(EvAttrChannelId));
-                        CPPUNIT_ASSERT(event.hasAttribute(EvAttrReplicaId));
-                        CPPUNIT_ASSERT_EQUAL(2ULL, event.queryNumericValue(EvAttrReplicaId));
-                        CPPUNIT_ASSERT(event.hasAttribute(EvAttrInstanceId));
-                        CPPUNIT_ASSERT_EQUAL(3ULL, event.queryNumericValue(EvAttrInstanceId));
-                    }
-                    else if (eventCount == 2)
-                    {
-                        // Second event should be IndexCacheMiss without ChannelId, ReplicaId, InstanceId assigned
+                        // First event should be IndexCacheMiss without ChannelId, ReplicaId, InstanceId assigned
                         CPPUNIT_ASSERT_EQUAL((int)EventIndexCacheMiss, (int)event.queryType());
                         CPPUNIT_ASSERT(event.hasAttribute(EvAttrFileId));
                         CPPUNIT_ASSERT_EQUAL(100ULL, event.queryNumericValue(EvAttrFileId));
@@ -650,9 +650,9 @@ attribute: DataSize = 73
                         CPPUNIT_ASSERT(event.isAttribute(EvAttrInstanceId));
                         CPPUNIT_ASSERT(!event.hasAttribute(EvAttrInstanceId));
                     }
-                    else if (eventCount == 3)
+                    else if (eventCount == 2)
                     {
-                        // Third event should be IndexCacheMiss with all attributes assigned
+                        // Second event should be IndexCacheMiss with all attributes assigned
                         CPPUNIT_ASSERT_EQUAL((int)EventIndexCacheMiss, (int)event.queryType());
                         CPPUNIT_ASSERT(event.hasAttribute(EvAttrFileId));
                         CPPUNIT_ASSERT_EQUAL(100ULL, event.queryNumericValue(EvAttrFileId));
@@ -679,7 +679,7 @@ attribute: DataSize = 73
 
             VerifyVisitor visitor;
             CPPUNIT_ASSERT(readEvents("recordingsource.evt", visitor));
-            CPPUNIT_ASSERT_EQUAL(3U, visitor.eventCount);
+            CPPUNIT_ASSERT_EQUAL(2U, visitor.eventCount);
         }
         catch (IException * e)
         {
@@ -688,6 +688,142 @@ attribute: DataSize = 73
             e->Release();
             CPPUNIT_FAIL(msg.str());
         }
+    }
+
+    void testRecordingSourceOptional()
+    {
+        try
+        {
+            EventRecorder &recorder = queryRecorder();
+            EventRecordingSummary summary;
+
+            CPPUNIT_ASSERT_MESSAGE("Should be able to start recording without RecordingSource event", recorder.startRecording("traceid", "recordingsource_optional.evt", false));
+            CPPUNIT_ASSERT_MESSAGE("Recording should be active", recorder.isRecording());
+
+            recorder.recordIndexCacheMiss(100, 200, NodeLeaf);
+            recorder.recordIndexCacheHit(100, 300, NodeBranch, 1024, 500);
+
+            CPPUNIT_ASSERT_MESSAGE("Should be able to stop recording", recorder.stopRecording(&summary));
+            CPPUNIT_ASSERT_MESSAGE("Recording should be inactive after stop", !recorder.isRecording());
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Should have recorded 2 events", 2U, summary.numEvents);
+
+            class CountingVisitor : public CInterfaceOf<IEventVisitor>
+            {
+            public:
+                virtual bool visitFile(const char* filename, uint32_t version) override { return true; }
+                virtual bool visitEvent(CEvent& event) override
+                {
+                    eventCount++;
+                    return true;
+                }
+                virtual void departFile(uint32_t bytesRead) override {}
+                unsigned eventCount = 0;
+            };
+
+            CountingVisitor visitor;
+            CPPUNIT_ASSERT_MESSAGE("Should be able to read file without RecordingSource event", readEvents("recordingsource_optional.evt", visitor));
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Should have read 2 events", 2U, visitor.eventCount);
+
+            Owned<IEventReader> reader = createEventReader("recordingsource_optional.evt");
+            CPPUNIT_ASSERT_MESSAGE("Should be able to create event reader", reader.get());
+
+            const EventFileProperties& props = reader->queryFileProperties();
+            CPPUNIT_ASSERT_MESSAGE("Process descriptor should not be set when RecordingSource is absent", !props.processDescriptor.get());
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Channel ID should be 0 when RecordingSource is absent", byte(0), props.channelId);
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Replica ID should be 0 when RecordingSource is absent", byte(0), props.replicaId);
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Instance ID should be 0 when RecordingSource is absent", 0U, (unsigned)props.instanceId);
+        }
+        catch (IException * e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+
+    void testRecordingSourceMustBeFirst()
+    {
+        EventRecorder &recorder = queryRecorder();
+        EventRecordingSummary summary;
+
+        CPPUNIT_ASSERT_MESSAGE("Should be able to start recording", recorder.startRecording("traceid", "recordingsource_notfirst.evt", false));
+        CPPUNIT_ASSERT_MESSAGE("Recording should be active", recorder.isRecording());
+
+        recorder.recordIndexCacheMiss(100, 200, NodeLeaf);
+        recorder.recordRecordingSource("test", 1, 2, 3);
+        recorder.recordIndexCacheHit(100, 300, NodeBranch, 1024, 500);
+
+        CPPUNIT_ASSERT_MESSAGE("Should be able to stop recording", recorder.stopRecording(&summary));
+        CPPUNIT_ASSERT_MESSAGE("Recording should be inactive after stop", !recorder.isRecording());
+
+        class DummyVisitor : public CInterfaceOf<IEventVisitor>
+        {
+        public:
+            virtual bool visitFile(const char* filename, uint32_t version) override { return true; }
+            virtual bool visitEvent(CEvent& event) override { return true; }
+            virtual void departFile(uint32_t bytesRead) override {}
+        };
+
+        DummyVisitor visitor;
+        CPPUNIT_ASSERT_THROWS_IEXCEPTION(readEvents("recordingsource_notfirst.evt", visitor), "Expected exception when RecordingSource is not the first event");
+    }
+
+    void testRecordingSourceOnlyOnce()
+    {
+        EventRecorder &recorder = queryRecorder();
+        EventRecordingSummary summary;
+
+        CPPUNIT_ASSERT_MESSAGE("Should be able to start recording", recorder.startRecording("traceid", "recordingsource_multiple.evt", false));
+        CPPUNIT_ASSERT_MESSAGE("Recording should be active", recorder.isRecording());
+
+        recorder.recordRecordingSource("test1", 1, 2, 3);
+        recorder.recordIndexCacheMiss(100, 200, NodeLeaf);
+        recorder.recordRecordingSource("test2", 4, 5, 6);
+        recorder.recordIndexCacheHit(100, 300, NodeBranch, 1024, 500);
+
+        CPPUNIT_ASSERT_MESSAGE("Should be able to stop recording", recorder.stopRecording(&summary));
+        CPPUNIT_ASSERT_MESSAGE("Recording should be inactive after stop", !recorder.isRecording());
+
+        class DummyVisitor : public CInterfaceOf<IEventVisitor>
+        {
+        public:
+            virtual bool visitFile(const char* filename, uint32_t version) override { return true; }
+            virtual bool visitEvent(CEvent& event) override { return true; }
+            virtual void departFile(uint32_t bytesRead) override {}
+        };
+
+        DummyVisitor visitor;
+        CPPUNIT_ASSERT_THROWS_IEXCEPTION(readEvents("recordingsource_multiple.evt", visitor), "Expected exception when multiple RecordingSource events are present");
+    }
+
+    void testRecordingSourceRecursionLimit()
+    {
+        EventRecorder &recorder = queryRecorder();
+        EventRecordingSummary summary;
+
+        CPPUNIT_ASSERT_MESSAGE("Should be able to start recording", recorder.startRecording("traceid", "recordingsource_recursion.evt", false));
+        CPPUNIT_ASSERT_MESSAGE("Recording should be active", recorder.isRecording());
+
+        recorder.recordRecordingSource("test1", 1, 2, 3);
+        recorder.recordRecordingSource("test2", 4, 5, 6);
+        recorder.recordRecordingSource("test3", 7, 8, 9);
+        recorder.recordIndexCacheMiss(100, 200, NodeLeaf);
+
+        CPPUNIT_ASSERT_MESSAGE("Should be able to stop recording", recorder.stopRecording(&summary));
+        CPPUNIT_ASSERT_MESSAGE("Recording should be inactive after stop", !recorder.isRecording());
+
+        Owned<IEventReader> reader = createEventReader("recordingsource_recursion.evt");
+        CPPUNIT_ASSERT_MESSAGE("Should be able to create event reader", reader.get());
+
+        CEvent event;
+        CPPUNIT_ASSERT_THROWS_IEXCEPTION(reader->nextEvent(event), "Expected exception when attempting to read past first RecordingSource");
+
+        const EventFileProperties& props = reader->queryFileProperties();
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("No events passed out - RecordingSource events are consumed internally", 0U, props.eventsRead);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Properties should be from first RecordingSource", byte(1), props.channelId);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Properties should be from first RecordingSource", byte(2), props.replicaId);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Properties should be from first RecordingSource", 3U, (unsigned)props.instanceId);
     }
 
     void testEventCompleteness()
@@ -854,6 +990,172 @@ attribute: DataSize = 73
                 event.setValue(EvAttrReplicaId, 2U);
                 CPPUNIT_ASSERT(event.isComplete());
             }
+        }
+        catch (IException * e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+
+    void testPullEvents()
+    {
+        try
+        {
+            EventRecorder &recorder = queryRecorder();
+            EventRecordingSummary summary;
+
+            // Record a variety of events to a test file
+            CPPUNIT_ASSERT(recorder.startRecording("traceid", "pullevents.evt", false));
+            CPPUNIT_ASSERT(recorder.isRecording());
+
+            // Record different event types with various attributes
+            recorder.recordRecordingSource("testprocess", 1, 2, 3);
+            recorder.recordIndexCacheMiss(100, 200, NodeLeaf);
+            recorder.recordIndexCacheHit(100, 300, NodeBranch, 1024, 500);
+            recorder.recordIndexLoad(200, 400, NodeLeaf, 2048, 600, 400);
+            recorder.recordDaliConnect("/Test/Path", 12345, 100, 50);
+
+            CPPUNIT_ASSERT(recorder.stopRecording(&summary));
+            CPPUNIT_ASSERT(!recorder.isRecording());
+            CPPUNIT_ASSERT_EQUAL(5U, summary.numEvents);
+
+            // Read events using visitor pattern (push API)
+            class CollectingVisitor : public CInterfaceOf<IEventVisitor>
+            {
+            public:
+                virtual bool visitFile(const char* filename, uint32_t version) override
+                {
+                    fileVisited = true;
+                    visitedFilename.set(filename);
+                    visitedVersion = version;
+                    return true;
+                }
+                virtual bool visitEvent(CEvent& event) override
+                {
+                    eventsRead++;
+                    // Store a copy of each event
+                    events.emplace_back();
+                    CEvent& copy = events.back();
+                    copy.reset(event.queryType());
+                    for (auto& attr : event.definedAttributes)
+                    {
+                        if (attr.isAssigned())
+                        {
+                            EventAttr attrId = attr.queryId();
+                            if (attr.isText())
+                                copy.setValue(attrId, attr.queryTextValue());
+                            else if (attr.isBoolean())
+                                copy.setValue(attrId, attr.queryBooleanValue());
+                            else
+                                copy.setValue(attrId, attr.queryNumericValue());
+                        }
+                    }
+                    return true;
+                }
+                virtual void departFile(uint32_t bytesRead) override
+                {
+                    fileCompleted = true;
+                    visitedBytesRead = bytesRead;
+                }
+
+                bool fileVisited = false;
+                bool fileCompleted = false;
+                StringAttr visitedFilename;
+                uint32_t visitedVersion = 0;
+                uint32_t visitedBytesRead = 0;
+                uint32_t eventsRead = 0;
+                std::vector<CEvent> events;
+            };
+
+            CollectingVisitor visitor;
+            CPPUNIT_ASSERT(readEvents("pullevents.evt", visitor));
+            CPPUNIT_ASSERT(visitor.fileVisited);
+            CPPUNIT_ASSERT(visitor.fileCompleted);
+            CPPUNIT_ASSERT_EQUAL(4U, (unsigned)visitor.events.size());
+
+            // Read events using pull API (IEventReader)
+            Owned<IEventReader> reader = createEventReader("pullevents.evt");
+            CPPUNIT_ASSERT(reader.get());
+
+            const EventFileProperties& props = reader->queryFileProperties();
+
+            // Verify file properties available immediately (from file header)
+            CPPUNIT_ASSERT(visitor.visitedFilename.get());
+            CPPUNIT_ASSERT_EQUAL_STR(visitor.visitedFilename.get(), props.path.get());
+            CPPUNIT_ASSERT_EQUAL(visitor.visitedVersion, props.version);
+
+            // Read all events using pull API and compare with visitor results
+            CEvent readerEvent;
+            unsigned eventIndex = 0;
+            while (reader->nextEvent(readerEvent))
+            {
+                CPPUNIT_ASSERT(eventIndex < visitor.events.size());
+                CEvent& visitorEvent = visitor.events[eventIndex];
+
+                // Verify event types match
+                CPPUNIT_ASSERT_EQUAL((int)visitorEvent.queryType(), (int)readerEvent.queryType());
+
+                // Verify all defined attributes match
+                for (auto& attr : readerEvent.definedAttributes)
+                {
+                    EventAttr attrId = attr.queryId();
+
+                    // Both events should have the same attribute defined
+                    CPPUNIT_ASSERT(visitorEvent.isAttribute(attrId));
+
+                    // Check if assigned state matches
+                    if (attr.isAssigned())
+                    {
+                        CPPUNIT_ASSERT(visitorEvent.hasAttribute(attrId));
+
+                        // Compare values based on type
+                        if (attr.isText())
+                        {
+                            CPPUNIT_ASSERT_EQUAL_STR(visitorEvent.queryTextValue(attrId),
+                                                    readerEvent.queryTextValue(attrId));
+                        }
+                        else if (attr.isBoolean())
+                        {
+                            CPPUNIT_ASSERT_EQUAL(visitorEvent.queryBooleanValue(attrId),
+                                               readerEvent.queryBooleanValue(attrId));
+                        }
+                        else
+                        {
+                            CPPUNIT_ASSERT_EQUAL(visitorEvent.queryNumericValue(attrId),
+                                               readerEvent.queryNumericValue(attrId));
+                        }
+                    }
+                    else
+                    {
+                        // Attribute should be defined but not assigned in both
+                        CPPUNIT_ASSERT(!visitorEvent.hasAttribute(attrId));
+                    }
+                }
+
+                eventIndex++;
+            }
+
+            // Verify we read the same number of events
+            CPPUNIT_ASSERT_EQUAL((unsigned)visitor.events.size(), eventIndex);
+
+            // Verify nextEvent returns false after all events are consumed
+            CPPUNIT_ASSERT(!reader->nextEvent(readerEvent));
+
+            // Now verify runtime properties that are populated during event reading
+            CPPUNIT_ASSERT_EQUAL(visitor.visitedBytesRead, props.bytesRead);
+            // Note: props.eventsRead only includes events passed to visitors - RecordingSource is consumed internally
+            CPPUNIT_ASSERT_EQUAL(4U, props.eventsRead);
+            CPPUNIT_ASSERT_EQUAL(4U, visitor.eventsRead);
+
+            // Verify recording source attributes from the RecordingSource event were captured in properties
+            CPPUNIT_ASSERT(props.processDescriptor.get());
+            CPPUNIT_ASSERT_EQUAL_STR("testprocess", props.processDescriptor.get());
+            CPPUNIT_ASSERT_EQUAL(byte(1), props.channelId);
+            CPPUNIT_ASSERT_EQUAL(byte(2), props.replicaId);
+            CPPUNIT_ASSERT_EQUAL(3U, (unsigned)props.instanceId);
         }
         catch (IException * e)
         {
