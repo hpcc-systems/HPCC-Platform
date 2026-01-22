@@ -43,7 +43,7 @@ import sys
 import time
 import unittest
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Optional, Dict, Set
+from typing import Optional, Dict, Set, List
 
 try:
     import requests
@@ -357,16 +357,16 @@ class TestSessionIDFormat(unittest.TestCase):
                 logging.debug(f"Could not decode response text: {e}")
             logging.debug("=== End Raw Response ===")
 
-    def assertResponseSuccess(self, response: requests.Response, msg: str = None):
+    def getResponseFailureReasons(self, response: requests.Response) -> List[str]:
         """
-        Assert that a response was successful with no redirects and status 200.
+        Get a list of reasons the response is a failure response.
         
         Args:
             response: The response object to check
-            msg: Optional custom failure message
             
-        Raises:
-            AssertionError: If response contains redirects or status is not 200
+        Returns:
+            List of failure reasons (empty if successful)
+
         """
         failure_reasons = []
         
@@ -381,6 +381,22 @@ class TestSessionIDFormat(unittest.TestCase):
         
         if response.text and "Authentication failed: invalid session." in response.text:
             failure_reasons.append("Response body includes: 'Authentication failed: invalid session.'")
+
+        return failure_reasons
+
+    def assertResponseSuccess(self, response: requests.Response, msg: str = None):
+        """
+        Assert that a response was successful with no redirects and status 200.
+        
+        Args:
+            response: The response object to check
+            msg: Optional custom failure message
+            
+        Raises:
+            AssertionError: If response contains redirects, status is not 200
+            or failure message in body
+        """
+        failure_reasons = self.getResponseFailureReasons(response)
 
         if failure_reasons:
             failure_msg = "; ".join(failure_reasons)
@@ -399,30 +415,22 @@ class TestSessionIDFormat(unittest.TestCase):
             msg: Optional custom failure message
 
         Returns:
-            Reason for failure (string)
+            Reason(s) for failure (string)
             
         Raises:
             AssertionError: If response is unexpectedly successful
         """
-        has_redirect = bool(response.history)
-        is_success = response.status_code == 200
-        has_failure_body = response.text and "Authentication failed: invalid session." in response.text
+        failure_reasons = self.getResponseFailureReasons(response)
         
-        if not has_failure_body:
-            if not has_redirect and is_success:
-                failure_msg = "Response was unexpectedly successful (200 with no redirects)"
-                if msg:
-                    failure_msg = f"{msg}: {failure_msg}"
-                self.debugResponseDetails(response)
-                self.fail(failure_msg)
+        if not failure_reasons:
+            failure_msg = "Response was unexpectedly successful"
+            if msg:
+                failure_msg = f"{msg}: {failure_msg}"
+            self.debugResponseDetails(response)
+            self.fail(failure_msg)
         
         # Return reason for expected failure
-        if not is_success:
-            return f"Status {response.status_code}"
-        elif has_redirect:
-            return "Redirected to login"
-        elif has_failure_body:
-            return "Authentication failed message in response body"
+        return "; ".join(failure_reasons)
 
     def test_new_format_validation(self):
         """Test 1: Validate new 128-bit session ID format after login."""
@@ -610,7 +618,7 @@ class TestSessionIDFormat(unittest.TestCase):
         
         logging.info(f"✓ Created {len(successful_sessions)} concurrent sessions")
         for idx, sid in successful_sessions:
-            logging.info(f"  Session {idx}: {sid}")
+            logging.debug(f"  Session {idx}: {sid}")
         
         # Verify all sessions are active
         active_count = 0
@@ -620,14 +628,17 @@ class TestSessionIDFormat(unittest.TestCase):
             esp_session.set_custom_session_id(sid)
             try:
                 response = esp_session.make_authenticated_request("/WsSMC/Activity")
-                if response.status_code == 200:
+                failures = self.getResponseFailureReasons(response)
+                if failures == []:
                     active_count += 1
-            except:
-                pass
+                else:
+                    logging.warning(f"Session {idx} inactive: {', '.join(failures)}")
+            except Exception as e:
+                logging.debug(f"Session {idx} verification failed: {e}")
         
         logging.info(f"✓ {active_count}/{len(successful_sessions)} sessions are active")
         
-        self.assertGreater(active_count, 0, "At least some sessions should be active")
+        self.assertEqual(active_count, len(successful_sessions), "All successful sessions should be active")
     
     def test_session_id_uniqueness(self):
         """Generate many session IDs and verify no duplicates."""
