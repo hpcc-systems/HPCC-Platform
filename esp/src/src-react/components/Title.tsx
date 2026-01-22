@@ -15,6 +15,8 @@ import { useECLWatchLogger } from "../hooks/logging";
 import { useBuildInfo, useModernMode, useCheckFeatures } from "../hooks/platform";
 import { useGlobalStore } from "../hooks/store";
 import { PasswordStatus, useMyAccount, useUserSession } from "../hooks/user";
+import { useSearchAutocomplete, SearchSuggestion } from "../hooks/autocomplete";
+import { formatSuggestionText, getSuggestionRoute } from "../util/searchSuggestions";
 
 import { TitlebarConfig } from "./forms/TitlebarConfig";
 import { switchTechPreview } from "./controls/ComingSoon";
@@ -67,6 +69,13 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     const [searchValue, setSearchValue] = React.useState("");
     const [showMyAccount, setShowMyAccount] = React.useState(false);
     const { currentUser, isAdmin } = useMyAccount();
+    const { suggestions, filterSuggestions, saveRecentSearch, isSearching } = useSearchAutocomplete();
+    const [showSuggestions, setShowSuggestions] = React.useState(false);
+    const [filteredSuggestions, setFilteredSuggestions] = React.useState<SearchSuggestion[]>([]);
+    const searchBoxRef = React.useRef<HTMLDivElement>(null);
+    const suggestionsBoxRef = React.useRef<HTMLDivElement>(null);
+    const [highlightedIndex, setHighlightedIndex] = React.useState(-1);
+    const searchRequestIdRef = React.useRef(0);
 
     const [showTitlebarConfig, setShowTitlebarConfig] = React.useState(false);
     const [showEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Active", toolbarThemeDefaults.active, true);
@@ -85,23 +94,221 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
         }, [])
     });
 
-    const onSearchKeyUp = debounce((evt) => {
-        if (evt.key === "Enter") {
-            if (!evt.target.value) return;
-            if (evt.ctrlKey) {
-                window.open(`#/search/${searchValue.trim()}`);
-            } else {
-                window.location.href = `#/search/${searchValue.trim()}`;
-            }
+    // Debounced filter function to prevent excessive API calls
+    const debouncedFilter = React.useRef(
+        debounce((value: string, requestId: number) => {
+            filterSuggestions(value).then(filtered => {
+                // Ignore stale results
+                if (requestId !== searchRequestIdRef.current) {
+                    return;
+                }
+                setFilteredSuggestions(filtered);
+                setShowSuggestions(filtered.length > 0);
+            }).catch(err => {
+                console.error("Failed to filter suggestions:", err);
+                // Don't hide suggestions on error, keep showing what we have
+            });
+        }, 300)
+    ).current;
+
+    const onSearchChange = React.useCallback((evt, data) => {
+        const value = data?.value ?? "";
+        setSearchValue(value);
+        setHighlightedIndex(-1);
+        const requestId = ++searchRequestIdRef.current;
+
+        // Immediately show/hide suggestions based on whether we have a value
+        if (!value.trim()) {
+            setFilteredSuggestions(suggestions);
+            setShowSuggestions(true);
         } else {
-            setSearchValue(evt.target.value);
+            debouncedFilter(value, requestId);
         }
-    }, 100);
+    }, [suggestions, debouncedFilter]);
+
+    const onSearchKeyDown = React.useCallback((evt) => {
+        if (evt.key === "ArrowDown") {
+            evt.preventDefault();
+            if (!showSuggestions || filteredSuggestions.length === 0) return;
+            setHighlightedIndex(prev =>
+                prev < filteredSuggestions.length - 1 ? prev + 1 : prev
+            );
+        } else if (evt.key === "ArrowUp") {
+            evt.preventDefault();
+            if (!showSuggestions || filteredSuggestions.length === 0) return;
+            setHighlightedIndex(prev => prev > 0 ? prev - 1 : -1);
+        } else if (evt.key === "Enter") {
+            evt.preventDefault();
+            const inputValue = (evt.target as HTMLInputElement)?.value;
+            if (!inputValue) return;
+            const trimmedValue = inputValue.trim();
+
+            // Ctrl+Enter always searches all categories
+            if (evt.ctrlKey) {
+                saveRecentSearch(trimmedValue);
+                setShowSuggestions(false);
+                setHighlightedIndex(-1);
+                window.open(`#/search/${trimmedValue}`);
+                return;
+            }
+
+            // Enter without Ctrl: navigate to highlighted or first suggestion
+            if (highlightedIndex >= 0 && highlightedIndex < filteredSuggestions.length) {
+                const highlightedSuggestion = filteredSuggestions[highlightedIndex];
+
+                if (highlightedSuggestion.requiresAdmin && !isAdmin) {
+                    return;
+                }
+
+                saveRecentSearch(highlightedSuggestion.text);
+                setShowSuggestions(false);
+                setHighlightedIndex(-1);
+
+                const route = getSuggestionRoute(highlightedSuggestion);
+                window.location.href = `#${route}`;
+                return;
+            }
+
+            // No highlighted suggestion, check for first available suggestion
+            const requestId = ++searchRequestIdRef.current;
+
+            filterSuggestions(trimmedValue).then(filtered => {
+                // Ignore stale results
+                if (requestId !== searchRequestIdRef.current) {
+                    return;
+                }
+
+                if (filtered.length > 0) {
+                    const firstSuggestion = filtered[0];
+
+                    if (firstSuggestion.requiresAdmin && !isAdmin) {
+                        return;
+                    }
+
+                    saveRecentSearch(trimmedValue);
+                    setShowSuggestions(false);
+                    setHighlightedIndex(-1);
+
+                    const route = getSuggestionRoute(firstSuggestion);
+                    window.location.href = `#${route}`;
+                } else {
+                    // No suggestions, search all categories
+                    saveRecentSearch(trimmedValue);
+                    setShowSuggestions(false);
+                    setHighlightedIndex(-1);
+                    window.location.href = `#/search/${trimmedValue}`;
+                }
+            }).catch(err => {
+                console.error("Failed to navigate to suggestion:", err);
+                // On error, fall back to general search
+                saveRecentSearch(trimmedValue);
+                setShowSuggestions(false);
+                setHighlightedIndex(-1);
+                window.location.href = `#/search/${trimmedValue}`;
+            });
+        } else if (evt.key === "Escape") {
+            setShowSuggestions(false);
+            setHighlightedIndex(-1);
+        }
+    }, [filterSuggestions, isAdmin, saveRecentSearch, showSuggestions, filteredSuggestions, highlightedIndex]);
 
     const onSearchNewTabClick = React.useCallback(() => {
         if (!searchValue) return;
-        window.open(`#/search/${searchValue.trim()}`);
-    }, [searchValue]);
+        const trimmedValue = searchValue.trim();
+        const requestId = ++searchRequestIdRef.current;
+
+        filterSuggestions(trimmedValue).then(filtered => {
+            // Ignore stale results
+            if (requestId !== searchRequestIdRef.current) {
+                return;
+            }
+
+            if (filtered.length > 0) {
+                const firstSuggestion = filtered[0];
+
+                if (firstSuggestion.requiresAdmin && !isAdmin) {
+                    return;
+                }
+
+                saveRecentSearch(trimmedValue);
+                setShowSuggestions(false);
+
+                const route = getSuggestionRoute(firstSuggestion);
+                window.open(`#${route}`);
+            } else {
+                saveRecentSearch(trimmedValue);
+                setShowSuggestions(false);
+                window.open(`#/search/${trimmedValue}`);
+            }
+        }).catch(err => {
+            console.error("Failed to open suggestion in new tab:", err);
+            // On error, fall back to general search
+            saveRecentSearch(trimmedValue);
+            setShowSuggestions(false);
+            window.open(`#/search/${trimmedValue}`);
+        });
+    }, [filterSuggestions, isAdmin, saveRecentSearch, searchValue]);
+
+    const onSuggestionClick = React.useCallback((suggestion: SearchSuggestion) => {
+        if (suggestion.requiresAdmin && !isAdmin) {
+            return;
+        }
+
+        setSearchValue(suggestion.text);
+        setShowSuggestions(false);
+        setHighlightedIndex(-1);
+        saveRecentSearch(suggestion.text);
+        const route = getSuggestionRoute(suggestion);
+        window.location.href = `#${route}`;
+    }, [isAdmin, saveRecentSearch]);
+
+    const onSearchFocus = React.useCallback(() => {
+        setHighlightedIndex(-1);
+        const requestId = ++searchRequestIdRef.current;
+
+        filterSuggestions(searchValue).then(filtered => {
+            // Ignore stale results
+            if (requestId !== searchRequestIdRef.current) {
+                return;
+            }
+            setFilteredSuggestions(filtered);
+            setShowSuggestions(filtered.length > 0);
+        }).catch(err => {
+            console.error("Failed to load suggestions on focus:", err);
+            // Show empty state suggestions on error
+            setFilteredSuggestions(suggestions);
+            setShowSuggestions(suggestions.length > 0);
+        });
+    }, [filterSuggestions, searchValue, suggestions]);
+
+    const onSuggestionMouseEnter = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+        const index = parseInt(e.currentTarget.getAttribute("data-index") || "-1", 10);
+        if (index >= 0) {
+            setHighlightedIndex(index);
+        }
+    }, []);
+
+    const onSuggestionMouseLeave = React.useCallback(() => {
+        setHighlightedIndex(-1);
+    }, []);
+
+    const searchStatusText = React.useMemo(() => {
+        if (isSearching) {
+            return nlsHPCC.Searching;
+        }
+
+        if (!searchValue.trim()) {
+            return "Search for pages, workunits, files, queries...";
+        }
+
+        if (filteredSuggestions.length > 0) {
+            const firstSuggestion = filteredSuggestions[highlightedIndex >= 0 ? highlightedIndex : 0];
+            const suggestionName = firstSuggestion?.text || "";
+            return `Press ↵ to open "${suggestionName}" or Ctrl+↵ to search all`;
+        }
+
+        return "Press ↵ to search all categories";
+    }, [isSearching, searchValue, filteredSuggestions, highlightedIndex]);
 
     const titlebarColorSet = React.useMemo(() => {
         return titlebarColor && titlebarColor !== theme.palette.themeLight;
@@ -159,8 +366,8 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     const advMenuProps = React.useMemo(() => {
         return {
             items: [
-                { key: "banner", text: nlsHPCC.SetBanner, disabled: currentUser?.username !== "" && !isAdmin, onClick: () => setShowBannerConfig(true) },
-                { key: "toolbar", text: nlsHPCC.SetToolbar, disabled: currentUser?.username !== "" && !isAdmin, onClick: () => setShowTitlebarConfig(true) },
+                { key: "banner", text: nlsHPCC.SetBanner, disabled: !!currentUser?.username && !isAdmin, onClick: () => setShowBannerConfig(true) },
+                { key: "toolbar", text: nlsHPCC.SetToolbar, disabled: !!currentUser?.username && !isAdmin, onClick: () => setShowTitlebarConfig(true) },
                 { key: "divider_1", itemType: ContextualMenuItemType.Divider },
                 { key: "docs", href: "https://hpccsystems.com/training/documentation/", text: nlsHPCC.Documentation, target: "_blank" },
                 { key: "downloads", href: "https://hpccsystems.com/download", text: nlsHPCC.Downloads, target: "_blank" },
@@ -287,6 +494,30 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
         }
     }, [features.maturity, features.timestamp]);
 
+    // Sync suggestions from hook when search is empty
+    React.useEffect(() => {
+        if (!searchValue.trim() && suggestions.length > 0) {
+            setFilteredSuggestions(suggestions);
+        }
+    }, [suggestions, searchValue]);
+
+    React.useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as Node;
+            // Only close if clicking outside both the search box AND the suggestions dropdown
+            if (searchBoxRef.current && !searchBoxRef.current.contains(target) &&
+                suggestionsBoxRef.current && !suggestionsBoxRef.current.contains(target)) {
+                setShowSuggestions(false);
+                setHighlightedIndex(-1);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
     React.useEffect(() => {
         if (!currentUser.username) return;
         if (!cookie("PasswordExpiredCheck")) {
@@ -300,7 +531,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                 case null:
                     break;
                 default:
-                    if (currentUser?.passwordDaysRemaining <= currentUser?.passwordExpirationWarningDays) {
+                    if (currentUser?.passwordDaysRemaining != null && currentUser.passwordDaysRemaining <= (currentUser?.passwordExpirationWarningDays ?? 0)) {
                         if (confirm(nlsHPCC.PasswordExpirePrefix + currentUser.passwordDaysRemaining + nlsHPCC.PasswordExpirePostfix)) {
                             setShowMyAccount(true);
                         }
@@ -330,7 +561,85 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                 </Stack>
             </Stack.Item>
             <Stack.Item align="center">
-                <SearchBox onKeyUp={onSearchKeyUp} contentAfter={<NewTabButton onClick={onSearchNewTabClick} />} placeholder={nlsHPCC.PlaceholderFindText} style={{ minWidth: 320 }} />
+                <div ref={searchBoxRef} style={{ position: "relative" }}>
+                    <SearchBox
+                        type="text"
+                        value={searchValue}
+                        onChange={onSearchChange}
+                        onKeyDown={onSearchKeyDown}
+                        onFocus={onSearchFocus}
+                        contentAfter={<NewTabButton onClick={onSearchNewTabClick} />}
+                        placeholder={nlsHPCC.PlaceholderFindText}
+                        style={{ minWidth: 320 }}
+                        aria-autocomplete="list"
+                        aria-controls={showSuggestions ? "search-suggestions-listbox" : undefined}
+                        aria-expanded={showSuggestions}
+                        aria-activedescendant={highlightedIndex >= 0 ? `search-suggestion-${highlightedIndex}` : undefined}
+                    />
+                    {showSuggestions && (filteredSuggestions.length > 0 || isSearching) && (
+                        <div
+                            ref={suggestionsBoxRef}
+                            id="search-suggestions-listbox"
+                            role="listbox"
+                            aria-label="Search suggestions"
+                            style={{
+                                position: "absolute",
+                                top: "100%",
+                                left: 0,
+                                right: 0,
+                                backgroundColor: theme.palette.white,
+                                border: `1px solid ${theme.palette.neutralLight}`,
+                                borderRadius: 4,
+                                boxShadow: theme.effects.elevation8,
+                                maxHeight: 300,
+                                overflowY: "auto",
+                                zIndex: 1000,
+                                marginTop: 2
+                            }}>
+                            {isSearching ? (
+                                <div style={{
+                                    padding: "12px",
+                                    textAlign: "center",
+                                    color: theme.palette.neutralSecondary,
+                                    fontSize: 14
+                                }}>
+                                    {nlsHPCC.Searching}
+                                </div>
+                            ) : (
+                                filteredSuggestions.map((suggestion, index) => (
+                                    <div
+                                        key={suggestion.key}
+                                        id={`search-suggestion-${index}`}
+                                        data-index={index}
+                                        role="option"
+                                        aria-selected={highlightedIndex === index}
+                                        onClick={() => onSuggestionClick(suggestion)}
+                                        style={{
+                                            padding: "8px 12px",
+                                            cursor: "pointer",
+                                            borderBottom: `1px solid ${theme.palette.neutralLighter}`,
+                                            fontSize: 14,
+                                            backgroundColor: highlightedIndex === index ? theme.palette.neutralLighter : "transparent"
+                                        }}
+                                        onMouseEnter={onSuggestionMouseEnter}
+                                        onMouseLeave={onSuggestionMouseLeave}
+                                    >
+                                        {formatSuggestionText(suggestion)}
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    )}
+                    <div style={{
+                        marginTop: 4,
+                        fontSize: 12,
+                        color: theme.palette.neutralSecondary,
+                        textAlign: "center",
+                        minHeight: 18
+                    }}>
+                        {searchStatusText}
+                    </div>
+                </div>
             </Stack.Item>
             <Stack.Item align="center" >
                 <Stack horizontal>
