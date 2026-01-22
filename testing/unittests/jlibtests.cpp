@@ -3784,46 +3784,84 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeSerializationDeserializationTest, "PT
 #include "jutil.hpp"
 #include "jzstd.hpp"
 
-// Base class with shared functionality for PTree timing tests
-class PTreeTimingTestBase : public CppUnit::TestFixture
+// Test suite for PTree Binary timing tests
+class PTreeBinaryTimingStressTest : public CppUnit::TestFixture
 {
+    CPPUNIT_TEST_SUITE(PTreeBinaryTimingStressTest);
+    CPPUNIT_TEST(testBinaryTimingWithNormalVsLowMem);
+    CPPUNIT_TEST_SUITE_END();
+
 public:
-    PTreeTimingTestBase()
+    PTreeBinaryTimingStressTest()
     {
-        setBinaryPath();
-        setIterations();
-    }
-
-protected:
-    struct TimingResults
-    {
-        cycle_t avgDeserializeCycles = 0;
-        cycle_t totalDeserializeCycles = 0;
-        const char *testName;
-        byte flags;
-    };
-
-    void setBinaryPath()
-    {
-        if (getComponentConfigSP()->getProp("PTreeBinaryTimingStressTest/@path", binaryPath))
-            if (!binaryPath.isEmpty())
-                return;
-
-        binaryPath.set(hpccBuildInfo.installDir);
+        getComponentConfigSP()->getProp("PTreeBinaryTimingStressTest/@path", binaryPath);
         if (binaryPath.isEmpty())
-            CPPUNIT_FAIL("Binary timing test data file path is not configured");
+        {
+            binaryPath.set(hpccBuildInfo.installDir);
+            constexpr const char *relativeBinPath = "/testing/data/dalisds100mb.bin.zst";
+            binaryPath.append(relativeBinPath);
+        }
 
-        static constexpr const char *relativeBinPath = "/testing/data/dalisds100mb.bin.zst";
-        binaryPath.append(relativeBinPath);
-    }
-
-    void setIterations()
-    {
         constexpr unsigned defaultPtreeIterations = 100;
         iterations = getComponentConfigSP()->getPropInt("PTreeBinaryTimingStressTest/@iterations", defaultPtreeIterations);
         if (iterations == 0)
             CPPUNIT_FAIL("PTree binary timing test iterations must be greater than zero");
     }
+
+    void testBinaryTimingWithNormalVsLowMem()
+    {
+        // Load Binary data
+        MemoryBuffer binaryData;
+        try
+        {
+            // Read raw file (with automatic decompression)
+            readBinaryFile(binaryPath.str(), binaryData);
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+
+        unsigned binaryDataLen = (unsigned)binaryData.length();
+        CPPUNIT_ASSERT_MESSAGE("Binary timing test data is empty", binaryDataLen > 0);
+
+        // Run Binary timing tests
+        TimingResults binaryNormalResults = performBinaryTimingTestWithResults("Binary Normal", binaryData, iterations, ipt_none);
+        TimingResults binaryLowMemResults = performBinaryTimingTestWithResults("Binary Low Memory", binaryData, iterations, ipt_lowmem);
+
+        // Calculate differences
+        double lowMemDeserializeDiff = 0.0;
+        if (binaryNormalResults.avgDeserializeCycles)
+            lowMemDeserializeDiff = ((double)binaryLowMemResults.avgDeserializeCycles - (double)binaryNormalResults.avgDeserializeCycles) / (double)binaryNormalResults.avgDeserializeCycles * 100.0;
+
+        // Display results
+        DBGLOG("=== BINARY TIMING COMPARISON TEST ===");
+        DBGLOG("Binary data size: %u bytes", binaryDataLen);
+        DBGLOG("Iterations: %u", iterations);
+        DBGLOG("┌──────────────────────┬─────────────────┐");
+        DBGLOG("│ Mode                 │ Avg Deserialize │");
+        DBGLOG("│                      │ (cycles)        │");
+        DBGLOG("├──────────────────────┼─────────────────┤");
+        DBGLOG("│ Binary Normal        │ %15llu │",
+               (unsigned long long)binaryNormalResults.avgDeserializeCycles);
+        DBGLOG("│ Binary Low Memory    │ %15llu │",
+               (unsigned long long)binaryLowMemResults.avgDeserializeCycles);
+        DBGLOG("│ Binary LowMem Diff   │ %+14.2f%% │",
+               lowMemDeserializeDiff);
+        DBGLOG("└──────────────────────┴─────────────────┘");
+    }
+
+protected:
+    struct TimingResults
+    {
+        cycle_t avgDeserializeCycles{0};
+        cycle_t totalDeserializeCycles{0};
+        const char *testName{nullptr};
+        byte flags{ipt_none};
+    };
 
     void decompressZstdBuffer(const void *compressedData, size_t compressedSize, const char *actualPath, MemoryBuffer &output)
     {
@@ -3835,23 +3873,11 @@ protected:
         try
         {
             targetSize = expander->init(compressedData);
-        }
-        catch (IException *e)
-        {
-            StringBuffer err;
-            e->errorMessage(err);
-            int errCode = e->errorCode();
-            e->Release();
-            throw makeStringExceptionV(errCode ? errCode : -1, "Zstd decompression error for \"%s\": %s", actualPath, err.str());
-        }
+            if (targetSize == 0 || targetSize > MEMBUFFER_MAXLEN)
+                throw makeStringExceptionV(-1, "Zstd decompressed size %u out of bounds for \"%s\"", targetSize, actualPath);
 
-        if (targetSize == 0 || targetSize > MEMBUFFER_MAXLEN)
-            throw makeStringExceptionV(-1, "Zstd decompressed size %u out of bounds for \"%s\"", targetSize, actualPath);
-
-        output.clear();
-        void *dest = output.reserveTruncate(targetSize);
-        try
-        {
+            output.clear();
+            void *dest = output.reserveTruncate(targetSize);
             size32_t decompressedSize = expander->expandDirect(targetSize, dest, compressedSize, compressedData);
             output.setLength(decompressedSize);
         }
@@ -3915,62 +3941,6 @@ protected:
 
     StringBuffer binaryPath;
     unsigned iterations{0};
-};
-
-// Test suite for Binary timing tests
-class PTreeBinaryTimingStressTest : public PTreeTimingTestBase
-{
-    CPPUNIT_TEST_SUITE(PTreeBinaryTimingStressTest);
-    CPPUNIT_TEST(testBinaryTimingWithNormalVsLowMem);
-    CPPUNIT_TEST_SUITE_END();
-
-public:
-    void testBinaryTimingWithNormalVsLowMem()
-    {
-        // Load Binary data
-        MemoryBuffer binaryData;
-        try
-        {
-            // Read raw file (with automatic decompression)
-            readBinaryFile(binaryPath.str(), binaryData);
-        }
-        catch (IException *e)
-        {
-            StringBuffer msg;
-            e->errorMessage(msg);
-            e->Release();
-            CPPUNIT_FAIL(msg.str());
-        }
-
-        unsigned binaryDataLen = (unsigned)binaryData.length();
-        CPPUNIT_ASSERT_MESSAGE("Binary timing test data is empty", binaryDataLen > 0);
-
-        // Run Binary timing tests
-        TimingResults binaryNormalResults = performBinaryTimingTestWithResults("Binary Normal", binaryData, iterations, ipt_none);
-        TimingResults binaryLowMemResults = performBinaryTimingTestWithResults("Binary Low Memory", binaryData, iterations, ipt_lowmem);
-
-        // Calculate differences
-        double lowMemDeserializeDiff = 0.0;
-        if (binaryNormalResults.avgDeserializeCycles)
-            lowMemDeserializeDiff = ((double)binaryLowMemResults.avgDeserializeCycles - (double)binaryNormalResults.avgDeserializeCycles) / (double)binaryNormalResults.avgDeserializeCycles * 100.0;
-
-        // Display results
-        DBGLOG("=== BINARY TIMING COMPARISON TEST ===");
-        DBGLOG("Binary data size: %u bytes", binaryDataLen);
-        DBGLOG("Iterations: %u", iterations);
-        DBGLOG("┌──────────────────────┬─────────────────┐");
-        DBGLOG("│ Mode                 │ Avg Deserialize │");
-        DBGLOG("│                      │ (cycles)        │");
-        DBGLOG("├──────────────────────┼─────────────────┤");
-        DBGLOG("│ Binary Normal        │ %15llu │",
-               (unsigned long long)binaryNormalResults.avgDeserializeCycles);
-        DBGLOG("│ Binary Low Memory    │ %15llu │",
-               (unsigned long long)binaryLowMemResults.avgDeserializeCycles);
-        DBGLOG("│ Binary LowMem Diff   │ %+14.2f%% │",
-               lowMemDeserializeDiff);
-        DBGLOG("└──────────────────────┴─────────────────┘");
-        fflush(stdout);
-    }
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(PTreeBinaryTimingStressTest);

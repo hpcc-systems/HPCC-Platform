@@ -41,6 +41,10 @@
  * statically linked together.
  *
  * CPPUnit will automatically recognise and run them all.
+ *
+ * Custom specific unittest parameters:
+ * --PTreeBinaryTimingStressTest.path=/x/y/z/file.bin  Provide the Dali binary test data path. Can be .bin or .bin.zst (Zstd compressed)\n"
+ * --PTreeBinaryTimingStressTest.iterations=999        Override default PTree timing iterations\n"
  */
 
 void usage()
@@ -50,16 +54,15 @@ void usage()
     "    unittests <options> <testnames>\n"
     "\n"
     "Options:\n"
-    "    -a  --all                                           Include all tests, including timing and stress tests\n"
-    "    -d  --load /x/y/z/                                  Dynamically load a library/all libraries in a directory.\n"
-    "                                                        By default, the HPCCSystems lib directory is loaded.\n"
-    "    -e  --exact                                         Match subsequent test names exactly\n"
-    "    -h  --help                                          Display this help text\n"
-    "    -l  --list                                          List matching tests but do not execute them\n"
-    "    -u  --unload                                        Unload dynamically-loaded dlls before termination (may crash on some systems)\n"
-    "    -x  --exclude                                       Exclude subsequent test names\n"
-    "    --PTreeBinaryTimingStressTest.path=/x/y/z/file.bin  Provide the Dali binary test data path. Can be .bin or .bin.zst (Zstd compressed)\n"
-    "    --PTreeBinaryTimingStressTest.iterations=999        Override default PTree timing iterations\n"
+    "    -a  --all                            Include all tests, including timing and stress tests\n"
+    "    -d  --load /x/y/z/                   Dynamically load a library/all libraries in a directory.\n"
+    "                                         By default, the HPCCSystems lib directory is loaded.\n"
+    "    -e  --exact                          Match subsequent test names exactly\n"
+    "    -h  --help                           Display this help text\n"
+    "    -l  --list                           List matching tests but do not execute them\n"
+    "    -u  --unload                         Unload dynamically-loaded dlls before termination (may crash on some systems)\n"
+    "    -x  --exclude                        Exclude subsequent test names\n"
+    "    --<unittestname>.<option>[=<value>]  A custom setting for a specific unittest\n"
     "\n");
 }
 
@@ -157,9 +160,6 @@ int main(int argc, const char *argv[])
     //NB: required initialization for anything that may call getGlobalConfig*() or getComponentConfig*()
     Owned<IPropertyTree> globals = loadConfiguration(defaultYaml, argv, "unittests", nullptr, nullptr, nullptr, nullptr, false);
 
-    constexpr const char * pTreeBinaryTimingStressTestPathParameter       = "--PTreeBinaryTimingStressTest.path";
-    constexpr const char * pTreeBinaryTimingStressTestIterationsParameter = "--PTreeBinaryTimingStressTest.iterations";
-
     for (int argNo = 1; argNo < argc; argNo++)
     {
         const char *arg = argv[argNo];
@@ -177,12 +177,6 @@ int main(int argc, const char *argv[])
                 list = true;
             else if (streq(arg, "-u") || streq(arg, "-unload"))
                 unloadDlls = true;
-            else if (startsWith(arg, pTreeBinaryTimingStressTestPathParameter))
-            {
-            }
-            else if (startsWith(arg, pTreeBinaryTimingStressTestIterationsParameter))
-            {
-            }
             else if (streq(arg, "-d") || streq(arg, "--load"))
             {
                 useDefaultLocations = false;
@@ -190,10 +184,22 @@ int main(int argc, const char *argv[])
                 if (argNo<argc)
                    loadLocations.append(argv[argNo]);
             }
+            else if (startsWith(arg, "--")) // let test style arguments through
+            {
+                // is it a test option of the form --<test>.<option> (or --<test>.<option>=<value>)
+                const char *dot = strchr(arg + 2, '.');
+                const char *equals = strchr(arg + 2, '='); // in case value contains a dot
+                bool testArg = dot && (dot > arg+2) && isalpha(dot[1]) && (!equals || (equals > dot));;
+                if (!testArg)
+                {
+                    usage();
+                    exit(streq(arg, "--help")?0:4);
+                }
+            }
             else
             {
                 usage();
-                exit(streq(arg, "-h") || streq(arg, "--help")?0:4);
+                exit(streq(arg, "-h")?0:4);
             }
         }
         else
