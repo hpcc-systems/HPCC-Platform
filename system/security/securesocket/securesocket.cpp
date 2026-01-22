@@ -331,8 +331,10 @@ private:
         }
         
         // Try to write remaining plaintext data through SSL
+        // Limit each write to 16KB to avoid exceeding BIO buffer capacity
         size32_t remaining = plainSize - totalWritten;
-        int ret = SSL_write(ssl, plainBuf + totalWritten, remaining);
+        size32_t chunkSize = std::min(remaining, (size32_t)16384);
+        int ret = SSL_write(ssl, plainBuf + totalWritten, chunkSize);
         
         if (ret > 0)
         {
