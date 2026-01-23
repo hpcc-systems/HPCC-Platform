@@ -123,6 +123,7 @@
             </xsl:attribute>
             <xsl:copy-of select="./expert"/>
             <xsl:copy-of select="./pageCache"/>
+            <xsl:copy-of select="./directAccessPlanes"/>
             <xsl:copy-of select="/Environment/Software/vaults"/>
             <xsl:copy-of select="/Environment/Software/Directories"/>
             <xsl:choose>
