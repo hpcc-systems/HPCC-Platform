@@ -1,6 +1,6 @@
-# HPCC Systems 10.0.x Releases
+# HPCC Systems 9.12.x Releases
 
-Welcome to the Red Book for HPCC Systems® 10.0.x series.
+Welcome to the Red Book for HPCC Systems® 9.12.x series.
 
 You may benefit from glancing at other Red Book entries when making a large jump between releases.
 
@@ -11,22 +11,9 @@ Here's how to contact us if you find an issue or want to add something to the Re
 - To add a note to the RedBook, please contact [Jim DeFabia](mailto:james.defabia@lexisnexisrisk.com) with full details.
 
 ---
+
 ## OpenTelemetry (OTel) Trace Issue
 
 If you plan to use JTrace for OTel based tracing, you should be aware that a recent change inadvertently affected OTel GRPC trace exporting functionality. 
 
 For more detailed information, see [OpenTelemetry Trace Issue](OpenTelemetryTraceIssue.md).
-
-
-## New Std.OpenSSL library
-
-We have replaced the legacy `Std.Crypto` library with the robust `Std.OpenSSL` library, providing better performance, enhanced security algorithms, and improved maintainability.
-
-For more details, see: [OpenSSL Migration Guide](https://hpcc-systems.github.io/HPCC-Platform/devdoc/userdoc/Migrating-from-StdCrypto-to-StdOpenSSL.html)
-
----
-
-## Strengthened Security & Authentication
-
-- **Improved LDAP Integration**: Enhanced LDAP authentication mechanisms with improved error handling and connection stability.
-- **Security Fixes**: Multiple security improvements to ensure your data remains protected and compliant with enterprise standards.
