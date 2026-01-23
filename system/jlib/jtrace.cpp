@@ -60,6 +60,7 @@
 #include "jtrace.hpp"
 #include "lnuid.h"
 #include <variant>
+#include <mutex>
 
 //This seems to be defined in some window builds - avoid conflicts with the functions below
 #undef max
@@ -737,12 +738,28 @@ private:
     bool optAlwaysCreateTraceIds = true;
     StringAttr moduleName;
     nostd::shared_ptr<opentelemetry::trace::Tracer> tracer;
+    StringArray initMessages;
+    IArrayOf<IException> initExceptions;
 
     void initTracerProviderAndGlobalInternals(const IPropertyTree * traceConfig);
     void initTracer(const IPropertyTree * traceConfig);
     void cleanupTracer();
     std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> createExporter(const IPropertyTree * exportConfig, bool & shouldBatch);
     std::unique_ptr<opentelemetry::sdk::trace::SpanProcessor> createProcessor(const IPropertyTree * exportConfig);
+
+    // Instance setter for init messages
+    void appendInitMessage(const char * msg)
+    {
+        initMessages.append(msg);
+    }
+    void appendInitException(IException *e)
+    {
+        if (e)
+        {
+            initExceptions.append(*e);
+            e->Release(); // array now owns the reference
+        }
+    }
 
 public:
     CTraceManager(const char * componentName, const IPropertyTree * componentConfig, const IPropertyTree * globalConfig);
@@ -759,6 +776,23 @@ public:
     }
 
 // Internal public inteface
+
+    // Log all buffered init-time messages and exceptions, then clear the buffers
+    virtual void logInitMessages() override
+    {
+        ForEachItemIn(idx, initMessages)
+        {
+            LOG(MCoperatorInfo, "%s", initMessages.item(idx));
+        }
+        initMessages.kill();
+
+        ForEachItemIn(eidx, initExceptions)
+        {
+            EXCLOG(&initExceptions.item(eidx), "TraceManager::Init");
+        }
+        initExceptions.kill();
+    }
+
     bool alwaysCreateGlobalIds() const
     {
         return optAlwaysCreateGlobalIds;
@@ -1471,12 +1505,14 @@ std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> CTraceManager::createEx
     StringBuffer exportType;
     exportConfig->getProp("@type", exportType);
 
-    LOG(MCoperatorInfo, "Exporter type: %s", exportType.str());
+    VStringBuffer initMsg("Exporter type: %s", exportType.str());
+    initMessages.append(initMsg.str());
+
     if (!exportType.isEmpty())
     {
         if (stricmp(exportType.str(), "OS")==0) //To stdout/err
         {
-            LOG(MCoperatorInfo, "Tracing exporter set OS");
+            initMessages.append("Tracing exporter set OS");
             shouldBatch = false;
             return opentelemetry::exporter::trace::OStreamSpanExporterFactory::Create();
         }
@@ -1493,7 +1529,7 @@ std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> CTraceManager::createEx
             // Whether to print the status of the exporter in the console
             trace_opts.console_debug = exportConfig->getPropBool("@consoleDebug", false);
 
-            LOG(MCoperatorInfo,"Tracing exporter set to OTLP/HTTP to: (%s)", trace_opts.url.c_str());
+            initMessages.append(initMsg.setf("Tracing exporter set to OTLP/HTTP to: (%s)", trace_opts.url.c_str()).str());
             return opentelemetry::exporter::otlp::OtlpHttpExporterFactory::Create(trace_opts);
         }
 #ifdef USE_OPENTEL_GRPC
@@ -1519,7 +1555,8 @@ std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> CTraceManager::createEx
             if (exportConfig->hasProp("@timeOutSecs")) //grpc deadline timeout in seconds
                 opts.timeout = std::chrono::seconds(exportConfig->getPropInt("@timeOutSecs"));
 
-            LOG(MCoperatorInfo, "Tracing exporter set to OTLP/GRPC to: (%s)", opts.endpoint.c_str());
+            initMessages.append(initMsg.setf("Tracing exporter set to OTLP/GRPC to: (%s)", opts.endpoint.c_str()).str());
+
             return otlp::OtlpGrpcExporterFactory::Create(opts);
         }
 #endif
@@ -1565,14 +1602,15 @@ std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> CTraceManager::createEx
 
 
             shouldBatch = false;
-            LOG(MCoperatorInfo, "Tracing exporter set to JLog: logFlags( LogAttributes LogParentInfo %s)", logFlagsStr.str());
+            initMessages.append(initMsg.setf("Tracing exporter set to JLog: logFlags( LogAttributes LogParentInfo %s)", logFlagsStr.str()).str());
+
             return JLogSpanExporterFactory::Create(logFlags, exportConfig);
         }
         else
-            LOG(MCoperatorWarning, "Tracing exporter type not supported: '%s'", exportType.str());
+            initMessages.append(initMsg.setf("Tracing exporter type not supported: '%s'", exportType.str()).str());
     }
     else
-        LOG(MCoperatorWarning, "Tracing exporter type not specified");
+        initMessages.append("Tracing exporter type not specified");
     return nullptr;
 }
 
@@ -1591,11 +1629,11 @@ std::unique_ptr<opentelemetry::sdk::trace::SpanProcessor> CTraceManager::createP
     }
     catch(const std::exception& e) //polymorphic type std::exception
     {
-        LOG(MCoperatorError, "JTRACE: Error creating Tracing exporter: %s", e.what());
+        initMessages.append(e.what());
     }
     catch (...)
     {
-        LOG(MCoperatorError, "JTRACE: Unknown error creating Tracing exporter");
+        initMessages.append("JTRACE: Unknown error creating Tracing exporter");
     }
 
     if (!exporter)
@@ -1626,7 +1664,7 @@ std::unique_ptr<opentelemetry::sdk::trace::SpanProcessor> CTraceManager::createP
     return opentelemetry::sdk::trace::SimpleSpanProcessorFactory::Create(std::move(exporter));
 }
 
-static std::unique_ptr<opentelemetry::sdk::trace::Sampler> createSampler(IPropertyTree * samplerTree)
+static std::unique_ptr<opentelemetry::sdk::trace::Sampler> createSampler(IPropertyTree * samplerTree, const std::function<void(const char *)> &appendMessage)
 {
     std::unique_ptr<opentelemetry::sdk::trace::Sampler> sampler;
 
@@ -1652,12 +1690,14 @@ static std::unique_ptr<opentelemetry::sdk::trace::Sampler> createSampler(IProper
                 }
                 else
                 {
-                    OERRLOG("JTrace invalid ratio sampling configuration. Ratio must be between 0.0 and 1.0");
+                    appendMessage("JTrace invalid ratio sampling configuration. Ratio must be between 0.0 and 1.0");
                 }
             }
             else
             {
-                WARNLOG("JTrace initialization: Invalid sampling type configured: '%s'", samplerType);
+                StringBuffer msg;
+                msg.appendf("JTrace initialization: Invalid sampling type configured: '%s'", samplerType);
+                appendMessage(msg.str());
             }
 
             if (sampler && samplerTree->getPropBool("@parentBased", true))
@@ -1696,7 +1736,7 @@ void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * t
     bool enableDefaultLogExporter = isDebugBuild();
     if (traceConfig)
     {
-        sampler = createSampler(traceConfig->queryPropTree("sampling"));
+        sampler = createSampler(traceConfig->queryPropTree("sampling"), [this](const char *msg) { appendInitMessage(msg); });
 
         IPropertyTree * resourceAttributesTree = traceConfig->queryPropTree("resourceAttributes");
         if (resourceAttributesTree)
@@ -1837,8 +1877,7 @@ void CTraceManager::initTracer(const IPropertyTree * traceConfig)
     }
     catch (IException * e)
     {
-        EXCLOG(e);
-        e->Release();
+        appendInitException(e);
     }
 }
 
@@ -2017,9 +2056,23 @@ void initTraceManager(const char * componentName, const IPropertyTree * componen
     theTraceManager.query([=] () { return new CTraceManager(componentName, componentConfig, globalConfig); });
 }
 
+static std::once_flag traceInitLogOnceFlag;
+
 ITraceManager & queryTraceManager()
 {
-    return *theTraceManager.query([] () { return new CTraceManager; }); //throws if not initialized
+    auto &mgr = *theTraceManager.query([] () { return new CTraceManager; });
+    std::call_once(traceInitLogOnceFlag, [&]()
+    {
+        try
+        {
+            mgr.logInitMessages();
+        }
+        catch (...)
+        {
+            WARNLOG("JTRACE: Unknown error logging TraceManager init messages");
+        }
+    });
+    return mgr;
 }
 
 #if defined(_MSC_VER) && _MSC_VER < 1939 // _MSC_VER < VS 2022 17.9
