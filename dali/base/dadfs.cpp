@@ -14146,6 +14146,14 @@ static IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsi
                 setIsCompressed(attr);
             }
 
+            if (options.includeField(DFUQResultField::compressedsize))
+            {
+                // Falls back to origsize if not compressed for more sensible sorting
+                // Really should distinguish between size, compressed size and disk size (where disk size === compressed size or orig size when uncompressed)
+                const char *compressedSizeProp = getDFUQResultFieldName(DFUQResultField::compressedsize);
+                attr->setPropInt64(compressedSizeProp, isCompressed(*attr) ? attr->getPropInt64(compressedSizeProp, -1) : attr->getPropInt64(getDFUQResultFieldName(DFUQResultField::origsize), -1));
+            }
+
             if (options.includeField(DFUQResultField::cost))
             {
                 // JCSMORE - cost could be computed in Dali instead - would simplify filtering/projecting code
