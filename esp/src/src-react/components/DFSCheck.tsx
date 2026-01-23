@@ -43,7 +43,7 @@ export const DFSCheck: React.FunctionComponent<DFSCheckProps> = ({
             "DFSCheck": { label: nlsHPCC.DFSCheck, type: "checkbox", value: dfsCheck },
         }} onChange={(id, value) => {
             setDFSCheck(value);
-        }} /><DefaultButton onClick={onSubmit} text={nlsHPCC.Submit} /></span>}
+        }} onSubmit={onSubmit} /><DefaultButton onClick={onSubmit} text={nlsHPCC.Submit} /></span>}
         main={<SizeMe>{({ size }) => {
             const height = `${size.height}px`;
             return <div style={{ position: "relative", width: "100%", height: "100%" }}>
