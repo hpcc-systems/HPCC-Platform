@@ -29,6 +29,7 @@ class CSashaCommand: public CInterface, implements ISashaCommand
     StringAttr state;
     StringAttr owner;
     StringAttr cluster;
+    StringAttr filterScopes;
     StringAttr jobname;
     StringAttr outputformat;
     StringAttr priority;
@@ -156,6 +157,8 @@ public:
             mb.read(afterWU);
             mb.read(beforeWU);
         }
+        if (mb.remaining() > 0)
+            mb.read(filterScopes);
     }
 
     void serialize(MemoryBuffer &mb)
@@ -206,6 +209,7 @@ public:
             mb.append(afterWU);
             mb.append(beforeWU);
         }
+        mb.append(filterScopes);
     }
 
     SashaCommandAction getAction()
@@ -359,6 +363,16 @@ public:
     void setCluster(const char *val)
     {
         cluster.set(val);
+    }
+
+    const char *queryFilterScopes()
+    {
+        return retstr(filterScopes);
+    }
+
+    void setFilterScopes(const char *val)
+    {
+        filterScopes.set(val);
     }
     
     bool getWUSmode()
