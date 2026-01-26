@@ -15,6 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
+#include "jlog.hpp"
 #define AXA_API DECL_EXPORT
 
 #include "ldapsecurity.ipp"
@@ -27,6 +28,19 @@
 using namespace cryptohelper;
 
 #include "workunit.hpp"
+#include <ctime>
+
+/**********************************************************
+ *     Failed Authentication Cache                        *
+ **********************************************************/
+
+#include "failedAuthCache.hpp"
+#include <mutex>
+
+// Static, class-scoped failed-auth cache instance. It will be initialized once
+// (on first manager init) with values from configuration.
+FailedAuthCache CLdapSecManager::s_failedAuthCache;
+CriticalSection CLdapSecManager::s_failedAuthCacheInitLock;
 
 /**********************************************************
  *     CLdapSecUser                                       *
@@ -570,6 +584,9 @@ ISecProperty* CLdapSecResourceList::findProperty(const char* name)
 }
 
 
+// The failed-auth helper functions are now provided by FailedAuthCache.
+
+
 /**********************************************************
  *     CLdapSecManager                                    *
  **********************************************************/
@@ -629,7 +646,18 @@ void CLdapSecManager::init(const char *serviceName, IPropertyTree* cfg)
 
     m_passwordExpirationWarningDays = cfg->getPropInt(".//@passwordExpirationWarningDays", 10); //Default to 10 days
     m_checkViewPermissions = cfg->getPropBool(".//@checkViewPermissions", false);
+    unsigned maxFailedAuthAttempts = cfg->getPropInt(".//@maxFailedAuthAttempts", FailedAuthCache::defaultMaxFailedAttempts);
+    unsigned failedAuthCacheTimeout = cfg->getPropInt(".//@failedAuthCacheTimeoutSeconds", FailedAuthCache::defaultCacheTimeoutSeconds);
+    unsigned maxAllowedFailedAuthEntries = cfg->getPropInt(".//@maxAllowedFailedAuthEntries", FailedAuthCache::defaultMaxAllowedEntries);
     m_hpccInternalScope.set(queryDfsXmlBranchName(DXB_Internal)).append("::");//HpccInternal::
+
+    // Initialize/update the shared failed-auth cache with configured values
+    {
+        CriticalBlock block(CLdapSecManager::s_failedAuthCacheInitLock);
+        CLdapSecManager::s_failedAuthCache.setMaxFailedAttempts(maxFailedAuthAttempts);
+        CLdapSecManager::s_failedAuthCache.setCacheTimeoutSeconds(failedAuthCacheTimeout);
+        CLdapSecManager::s_failedAuthCache.setMaxAllowedEntries(maxAllowedFailedAuthEntries);
+    }
 
     bool useLegacySuperUserStatusCheck = cfg->getPropBool("@useLegacySuperUserStatusCheck", true);
     m_ldap_client->setUseLegacySuperUserStatusCheck(useLegacySuperUserStatusCheck);
@@ -694,6 +722,34 @@ bool CLdapSecManager::authenticate(ISecUser* user)
         return false;
     }
 
+    const char* username = user->getName();
+    if (isEmptyString(username))
+    {
+        DBGLOG("CLdapSecManager::authenticate username cannot be empty");
+        return false;
+    }
+    
+    // Check failed-auth cache before proceeding (initialized in init())
+    if (CLdapSecManager::s_failedAuthCache.isUserLockedOut(username))
+    {
+        user->setAuthenticateStatus(AS_INVALID_CREDENTIALS);
+        m_permissionsCache->removePermissions(*user);
+        m_permissionsCache->removeFromUserCache(*user);
+        return false;
+    }
+
+    bool rc = doUserAuthenticate(user);
+    if (rc)
+        CLdapSecManager::s_failedAuthCache.removeUser(username);
+    else    
+        CLdapSecManager::s_failedAuthCache.updateUserLockoutStatus(username);
+    
+    return rc;
+}
+
+bool CLdapSecManager::doUserAuthenticate(ISecUser* user)
+{
+    const char* username = user->getName();
     bool isCaching = m_permissionsCache->isCacheEnabled() && !m_usercache_off;//caching enabled?
     bool isUserCached = false;
     Owned<ISecUser> cachedUser = new CLdapSecUser(user->getName(), "");
@@ -754,12 +810,9 @@ bool CLdapSecManager::authenticate(ISecUser* user)
     }
 
     if (isUserCached && cachedUser->getAuthenticateStatus() == AS_AUTHENTICATED)//only authenticated users will be cached
-    {
         return true;
-    }
 
     //User not in cache. Look for session token, or call LDAP to authenticate
-
     if (0 != user->credentials().getSessionToken())//check for token existence
     {
         user->setAuthenticateStatus(AS_AUTHENTICATED);
@@ -767,22 +820,20 @@ bool CLdapSecManager::authenticate(ISecUser* user)
     else if (m_ldap_client->authenticate(*user)) //call LDAP to authenticate
         user->setAuthenticateStatus(AS_AUTHENTICATED);
 
-    if (AS_AUTHENTICATED == user->getAuthenticateStatus())
+    CLdapSecManager::s_failedAuthCache.removeUser(username);
+    if (isCaching)
+        m_permissionsCache->add(*user);
+    else if (isEmptyString(user->credentials().getPassword()) && (0 == user->credentials().getSessionToken()) && isEmptyString(user->credentials().getSignature()))
     {
-        if (isCaching)
-            m_permissionsCache->add(*user);
-        else if (isEmptyString(user->credentials().getPassword()) && (0 == user->credentials().getSessionToken()) && isEmptyString(user->credentials().getSignature()))
+        //No need to sign if password or authenticated session based user
+        if (!pDSM)
+            pDSM = queryDigitalSignatureManagerInstanceFromEnv();
+        if (pDSM && pDSM->isDigiSignerConfigured())
         {
-            //No need to sign if password or authenticated session based user
-            if (!pDSM)
-                pDSM = queryDigitalSignatureManagerInstanceFromEnv();
-            if (pDSM && pDSM->isDigiSignerConfigured())
-            {
-               //Set user digital signature
-               StringBuffer b64Signature;
-               pDSM->digiSign(b64Signature, user->getName());
-               user->credentials().setSignature(b64Signature);
-            }
+            //Set user digital signature
+            StringBuffer b64Signature;
+            pDSM->digiSign(b64Signature, user->getName());
+            user->credentials().setSignature(b64Signature);
         }
     }
 
