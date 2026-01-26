@@ -56,6 +56,7 @@
 
 #include "platform.h"
 #include "jlib.hpp"
+#include "jlog.hpp"
 #include "jmisc.hpp"
 #include "jtrace.hpp"
 #include "lnuid.h"
@@ -730,6 +731,14 @@ private:
 
 //---------------------------------------------------------------------------------------------------------------------
 using namespace opentelemetry::v1::context::propagation;
+
+struct InitLogMessage
+{
+    LogMsgCategory category;
+    StringAttr message;
+    InitLogMessage(LogMsgCategory cat, const char *msg) : category(cat), message(msg) {}
+};
+
 class CTraceManager : implements ITraceManager, public CInterface
 {
 private:
@@ -738,8 +747,7 @@ private:
     bool optAlwaysCreateTraceIds = true;
     StringAttr moduleName;
     nostd::shared_ptr<opentelemetry::trace::Tracer> tracer;
-    StringArray initMessages;
-    IArrayOf<IException> initExceptions;
+    ArrayOf<InitLogMessage> initMessages;
 
     void initTracerProviderAndGlobalInternals(const IPropertyTree * traceConfig);
     void initTracer(const IPropertyTree * traceConfig);
@@ -748,16 +756,18 @@ private:
     std::unique_ptr<opentelemetry::sdk::trace::SpanProcessor> createProcessor(const IPropertyTree * exportConfig);
 
     // Instance setter for init messages
-    void appendInitMessage(const char * msg)
+    void appendInitMessage(LogMsgCategory cat, const char * msg)
     {
-        initMessages.append(msg);
+        initMessages.append(*new InitLogMessage(cat, msg));
     }
-    void appendInitException(IException *e)
+    void appendInitMessage(IException *e)
     {
         if (e)
         {
-            initExceptions.append(*e);
-            e->Release(); // array now owns the reference
+            StringBuffer msg;
+            e->errorMessage(msg);
+            initMessages.append(*new InitLogMessage(MCoperatorError, msg.str()));
+            e->Release();
         }
     }
 
@@ -782,15 +792,10 @@ public:
     {
         ForEachItemIn(idx, initMessages)
         {
-            LOG(MCoperatorInfo, "%s", initMessages.item(idx));
+            const InitLogMessage &entry = initMessages.item(idx);
+            LOG(entry.category, "%s", entry.message.get());
         }
         initMessages.kill();
-
-        ForEachItemIn(eidx, initExceptions)
-        {
-            EXCLOG(&initExceptions.item(eidx), "TraceManager::Init");
-        }
-        initExceptions.kill();
     }
 
     bool alwaysCreateGlobalIds() const
@@ -1506,13 +1511,13 @@ std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> CTraceManager::createEx
     exportConfig->getProp("@type", exportType);
 
     VStringBuffer initMsg("Exporter type: %s", exportType.str());
-    initMessages.append(initMsg.str());
+    appendInitMessage(MCoperatorInfo, initMsg.str());
 
     if (!exportType.isEmpty())
     {
         if (stricmp(exportType.str(), "OS")==0) //To stdout/err
         {
-            initMessages.append("Tracing exporter set OS");
+            appendInitMessage(MCuserInfo, "Tracing exporter set OS");
             shouldBatch = false;
             return opentelemetry::exporter::trace::OStreamSpanExporterFactory::Create();
         }
@@ -1529,7 +1534,7 @@ std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> CTraceManager::createEx
             // Whether to print the status of the exporter in the console
             trace_opts.console_debug = exportConfig->getPropBool("@consoleDebug", false);
 
-            initMessages.append(initMsg.setf("Tracing exporter set to OTLP/HTTP to: (%s)", trace_opts.url.c_str()).str());
+            appendInitMessage(MCuserInfo, initMsg.setf("Tracing exporter set to OTLP/HTTP to: (%s)", trace_opts.url.c_str()).str());
             return opentelemetry::exporter::otlp::OtlpHttpExporterFactory::Create(trace_opts);
         }
 #ifdef USE_OPENTEL_GRPC
@@ -1555,7 +1560,7 @@ std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> CTraceManager::createEx
             if (exportConfig->hasProp("@timeOutSecs")) //grpc deadline timeout in seconds
                 opts.timeout = std::chrono::seconds(exportConfig->getPropInt("@timeOutSecs"));
 
-            initMessages.append(initMsg.setf("Tracing exporter set to OTLP/GRPC to: (%s)", opts.endpoint.c_str()).str());
+            appendInitMessage(MCuserInfo, initMsg.setf("Tracing exporter set to OTLP/GRPC to: (%s)", opts.endpoint.c_str()).str());
 
             return otlp::OtlpGrpcExporterFactory::Create(opts);
         }
@@ -1602,15 +1607,15 @@ std::unique_ptr<opentelemetry::sdk::trace::SpanExporter> CTraceManager::createEx
 
 
             shouldBatch = false;
-            initMessages.append(initMsg.setf("Tracing exporter set to JLog: logFlags( LogAttributes LogParentInfo %s)", logFlagsStr.str()).str());
+            appendInitMessage(MCuserInfo, initMsg.setf("Tracing exporter set to JLog: logFlags( LogAttributes LogParentInfo %s)", logFlagsStr.str()).str());
 
             return JLogSpanExporterFactory::Create(logFlags, exportConfig);
         }
         else
-            initMessages.append(initMsg.setf("Tracing exporter type not supported: '%s'", exportType.str()).str());
+            appendInitMessage(MCuserInfo, initMsg.setf("Tracing exporter type not supported: '%s'", exportType.str()).str());
     }
     else
-        initMessages.append("Tracing exporter type not specified");
+        appendInitMessage(MCuserInfo, "Tracing exporter type not specified");
     return nullptr;
 }
 
@@ -1629,11 +1634,11 @@ std::unique_ptr<opentelemetry::sdk::trace::SpanProcessor> CTraceManager::createP
     }
     catch(const std::exception& e) //polymorphic type std::exception
     {
-        initMessages.append(e.what());
+        appendInitMessage(MCuserInfo, e.what());
     }
     catch (...)
     {
-        initMessages.append("JTRACE: Unknown error creating Tracing exporter");
+        appendInitMessage(MCuserInfo, "JTRACE: Unknown error creating Tracing exporter");
     }
 
     if (!exporter)
@@ -1736,7 +1741,7 @@ void CTraceManager::initTracerProviderAndGlobalInternals(const IPropertyTree * t
     bool enableDefaultLogExporter = isDebugBuild();
     if (traceConfig)
     {
-        sampler = createSampler(traceConfig->queryPropTree("sampling"), [this](const char *msg) { appendInitMessage(msg); });
+        sampler = createSampler(traceConfig->queryPropTree("sampling"), [this](const char *msg) { appendInitMessage(MCuserInfo, msg); });
 
         IPropertyTree * resourceAttributesTree = traceConfig->queryPropTree("resourceAttributes");
         if (resourceAttributesTree)
@@ -1877,7 +1882,7 @@ void CTraceManager::initTracer(const IPropertyTree * traceConfig)
     }
     catch (IException * e)
     {
-        appendInitException(e);
+        appendInitMessage(e);
     }
 }
 
