@@ -66,16 +66,21 @@ const useStyles = makeStyles({
         display: "flex",
         alignItems: "center",
         columnGap: "2px",
-        marginLeft: "auto",
-        minWidth: 0
+        flex: "0 0 auto"
     },
     jobWuid: {
-        whiteSpace: "nowrap"
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        minWidth: 0,
+        flex: "0 1 auto"
     },
     jobName: {
         overflow: "hidden",
         textOverflow: "ellipsis",
-        whiteSpace: "nowrap"
+        whiteSpace: "nowrap",
+        minWidth: 0,
+        flex: "0 1 auto"
     },
     muted: {
         color: tokens.colorNeutralForeground3
@@ -217,37 +222,37 @@ const ActiveWorkunit: React.FunctionComponent<ActiveWorkunitProps> = ({ wu, idx,
                 <div className={styles.jobRow}>
                     {wimg && <img className={styles.jobIcon} alt="state" src={wimg} />}
                     <div className={styles.jobTexts}>
-                        <Link className={styles.jobWuid} href={wu.isDFU ? `#/dfuworkunits/${wuid}` : `#/workunits/${wuid}`}>{wuid}</Link>
+                        <Link className={styles.jobWuid} href={wu.isDFU ? `#/dfuworkunits/${wuid}` : `#/workunits/${wuid}`} aria-label={jobName ? `${jobName} workunit ${wuid}` : wuid}>{jobName ? `${jobName} (${wuid})` : wuid}</Link>
+                    </div>
+                    <div className={styles.jobRight}>
+                        <Link className={styles.jobName} href={`#/workunits/${wuid}/metrics/${graphName}`}>
+                            {gid ? `${graphName}-${gid}` : graphName}
+                        </Link>
                         {priorityIcon && <img className={styles.jobIcon} alt="priority" src={priorityIcon} />}
-                        <div className={styles.jobRight}>
-                            <Link className={styles.jobName} href={`#/workunits/${wuid}/metrics/${graphName}`}>
-                                {gid ? `${graphName}-${gid}` : graphName}
-                            </Link>
-                            <Button
-                                appearance="transparent"
-                                size="small"
-                                aria-label={nlsHPCC.Resume}
-                                title={`${nlsHPCC.Resume} (Ctrl+Click = ${nlsHPCC.PauseNow || "Pause Now"})`}
-                                icon={wu.isPaused ? <Play16Regular className={styles.jobIcon} /> : <Pause16Regular className={styles.jobIcon} />}
-                                onClick={(e) => {
-                                    if (wu.isPaused) {
-                                        wuResume(wu);
-                                    } else {
-                                        wuPause(wu, (e as React.MouseEvent).ctrlKey);
-                                    }
-                                }}
-                            />
-                            <ActiveWorkunitMenu
-                                wu={wu}
-                                canUp={canUp}
-                                canDown={canDown}
-                                setPriority={setPriority}
-                                moveTop={moveTop}
-                                moveUp={moveUp}
-                                moveDown={moveDown}
-                                moveBottom={moveBottom}
-                            />
-                        </div>
+                        <Button
+                            appearance="transparent"
+                            size="small"
+                            aria-label={nlsHPCC.Resume}
+                            title={`${nlsHPCC.Resume} (Ctrl+Click = ${nlsHPCC.PauseNow || "Pause Now"})`}
+                            icon={wu.isPaused ? <Play16Regular className={styles.jobIcon} /> : <Pause16Regular className={styles.jobIcon} />}
+                            onClick={(e) => {
+                                if (wu.isPaused) {
+                                    wuResume(wu);
+                                } else {
+                                    wuPause(wu, (e as React.MouseEvent).ctrlKey);
+                                }
+                            }}
+                        />
+                        <ActiveWorkunitMenu
+                            wu={wu}
+                            canUp={canUp}
+                            canDown={canDown}
+                            setPriority={setPriority}
+                            moveTop={moveTop}
+                            moveUp={moveUp}
+                            moveDown={moveDown}
+                            moveBottom={moveBottom}
+                        />
                     </div>
                 </div>
             </Tooltip>
