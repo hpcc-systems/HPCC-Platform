@@ -116,6 +116,50 @@ export function espTime2SecondsTests() {
     }, this);
 }
 
+export function formatDuration(seconds: number | string, humanReadable: boolean = true): string {
+    // Convert string time format to seconds if needed
+    const totalSeconds = typeof seconds === "string" ? espTime2Seconds(seconds) : seconds;
+
+    if (isNaN(totalSeconds) || totalSeconds < 0) {
+        return "";
+    }
+
+    // If not human readable, return all values in seconds
+    if (!humanReadable) {
+        return totalSeconds.toFixed(2) + "s";
+    }
+
+    // Human readable format with smart units
+    if (totalSeconds < 60) {
+        // Less than 1 minute: show seconds
+        return totalSeconds.toFixed(2) + "s";
+    } else if (totalSeconds < 3600) {
+        // Less than 1 hour: show minutes (and seconds if significant)
+        const minutes = Math.floor(totalSeconds / 60);
+        const secs = totalSeconds % 60;
+        if (secs < 1) {
+            return minutes + "m";
+        }
+        return minutes + "m " + secs.toFixed(0) + "s";
+    } else if (totalSeconds < 86400) {
+        // Less than 1 day: show hours (and minutes if significant)
+        const hours = Math.floor(totalSeconds / 3600);
+        const mins = Math.floor((totalSeconds % 3600) / 60);
+        if (mins < 1) {
+            return hours + "h";
+        }
+        return hours + "h " + mins + "m";
+    } else {
+        // 1 day or more: show days and hours
+        const days = Math.floor(totalSeconds / 86400);
+        const hours = Math.floor((totalSeconds % 86400) / 3600);
+        if (hours < 1) {
+            return days + "d";
+        }
+        return days + "d " + hours + "h";
+    }
+}
+
 export function convertedSize(intsize: number): string {
     const unitConversion = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
     if (isNaN(intsize) || intsize < 1) {

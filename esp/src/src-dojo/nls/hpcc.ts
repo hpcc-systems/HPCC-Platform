@@ -1041,6 +1041,7 @@ export = {
         Table: "Table",
         Time: "Time",
         Timeline: "Timeline",
+        TimeFormat: "Time Format",
         TimeMaxTotalExecuteMinutes: "Time Max Total Execute Minutes",
         TimeMeanTotalExecuteMinutes: "Time Mean Total Execute Minutes",
         TimeMinTotalExecuteMinutes: "Time Min Total Execute Minutes",
