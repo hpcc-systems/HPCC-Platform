@@ -2456,10 +2456,9 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     }
     size32_t getBlockedRandomBufferSize(IFileIO *fileIO)
     {
-        constexpr size32_t bufferSize1mb = 0x100000;
-        size32_t bufferSize = bufferSize1mb;
+        size32_t bufferSize{0};
         unsigned __int64 value;
-        if (fileIO && fileIO->queryFile() && findPlaneAttrFromPath(fileIO->queryFile()->queryFilename(), BlockedRandomIO, bufferSize1mb, value))
+        if (fileIO && fileIO->queryFile() && findPlaneAttrFromPath(fileIO->queryFile()->queryFilename(), BlockedRandomIO, 0, value))
         {
             if (value > std::numeric_limits<size32_t>::max())
                 throw makeStringExceptionV(0, "BlockedRandomIO buffer size attribute too large: %" I64F "u (max allowed: %u)", value, std::numeric_limits<size32_t>::max());
@@ -3117,8 +3116,7 @@ public:
                     Owned<IFileIO> iFileIO = createIFileI(lenArray.item(p), tlkMb.toByteArray()+posArray.item(p));
                     StringBuffer name("TLK");
                     name.append('_').append(container.queryId()).append('_');
-                    size32_t bufferSize = getBlockedRandomBufferSize(iFileIO);
-                    Owned<IKeyIndex> tlkKeyIndex = createKeyIndex(name.append(p).str(), 0, *iFileIO, (unsigned) -1, true, bufferSize); // MORE - not the right crc
+                    Owned<IKeyIndex> tlkKeyIndex = createKeyIndex(name.append(p).str(), 0, *iFileIO, (unsigned) -1, true, 0); // MORE - not the right crc
                     tlkKeyIndexes.append(*tlkKeyIndex.getClear());
                 }
             }
