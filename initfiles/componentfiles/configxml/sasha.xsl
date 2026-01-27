@@ -248,6 +248,11 @@
                        <xsl:value-of select="@ExpiryDefault"/>
                     </xsl:attribute>
                 </xsl:if>
+                <xsl:if test="string(@MaxFileLimit) != ''">
+                    <xsl:attribute name="maxFileLimit">
+                       <xsl:value-of select="@MaxFileLimit"/>
+                    </xsl:attribute>
+                </xsl:if>
             </xsl:element>
             <xsl:element name="ThorQMon">
                 <xsl:attribute name="queues">
