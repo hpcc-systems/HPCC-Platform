@@ -27,6 +27,10 @@ cd plugins/parquet
 doxygen Doxyfile
 ```
 
+## Before you begin
+
+The plugin can only see files locally. When writing, the plugin cannot write files across the network (e.g. to an external dropzone or other Thor worker). When reading, the plugin only knows about the files on the computer it is running on. If you are reading an external file (not written by the plugin), ensure it is located where all Thor Workers or HThor is running. When reading, the plugin will use as many threads as there are parts up to the max number of threads (For thor, slavesPerNode * channelsPerSlave). If there are more files than threads, each thread will read from multiple contiguous parts leaving as little skew as possible.
+
 ## Features
 
 The Parquet Plugin offers the following main functions:
