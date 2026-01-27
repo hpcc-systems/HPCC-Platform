@@ -10,7 +10,7 @@ Then we'll cover the configuration changes to deploy a minimal HPCC platform, bo
 
 ## Initial State
 
-When the platform launches it ensures the LDAP DS is initialized with the base DN (distinguished name) and OUs (organizational units) needed. Among others, OUs for groups, users and esp authorization resources are created. An HPCC Admin user is created and added to the administrator's group.
+When the platform launches it ensures the LDAP DS is initialized with the base DN (distinguished name) and OUs (organizational units) needed. Among others, OUs for groups, users and ESP authorization resources are created. An HPCC Admin user is created and added to the administrator's group.
 
 If you need any other security settings beyond that, such as non-administrative users and groups, you'll need to create them using ECL Watch. The administrator account itself has the privileges to make these kinds of changes. You may see that the admin doesn't by default have _all_ permissions, but it can add any it needs to the admin group.
 
