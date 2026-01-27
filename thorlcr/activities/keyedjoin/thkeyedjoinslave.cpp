@@ -2462,6 +2462,18 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         }
         return tlkKeyIndexes.ordinality();
     }
+    size32_t getBlockedRandomBufferSize(IFileIO *fileIO)
+    {
+        size32_t bufferSize{0};
+        unsigned __int64 value;
+        if (fileIO && fileIO->queryFile() && findPlaneAttrFromPath(fileIO->queryFile()->queryFilename(), BlockedRandomIO, 0, value))
+        {
+            if (value > std::numeric_limits<size32_t>::max())
+                throw makeStringExceptionV(0, "BlockedRandomIO buffer size attribute too large: %" I64F "u (max allowed: %u)", value, std::numeric_limits<size32_t>::max());
+            bufferSize = (size32_t)value;
+        }
+        return bufferSize;
+    }
     IKeyIndex *createPartKeyIndex(unsigned partNo, unsigned copy)
     {
         IPartDescriptor &filePart = allIndexParts.item(partNo);
@@ -2477,7 +2489,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             * The underlying IFileIO can later be closed by fhe file caching mechanism.
             */
         Owned<IFileIO> lazyIFileIO = queryThor().queryFileCache().lookupIFileIO(*this, indexName, filePart, nullptr);
-        return createKeyIndex(filename, crc, *lazyIFileIO, (unsigned) -1, false, 0);
+        size32_t bufferSize = getBlockedRandomBufferSize(lazyIFileIO);
+        return createKeyIndex(filename, crc, *lazyIFileIO, (unsigned) -1, false, bufferSize);
     }
     IKeyManager *createPartKeyManager(unsigned partNo, unsigned copy, IContextLogger *ctx)
     {
