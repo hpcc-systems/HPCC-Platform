@@ -160,13 +160,15 @@ void cloneFileInfoToDali(StringBuffer &publisherWuid, unsigned updateFlags, Stri
     StringArray locations;
     SCMStringBuffer processName;
     dstInfo->getRoxieProcess(processName);
-    locations.append(processName.str());
-    wufiles->resolveFiles(locations, remoteLocation, remotePrefix, srcCluster, !(updateFlags & (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM)), false, false, false, (updateFlags & DFU_UPDATEF_REMOTESTORAGE)!=0);
-
-    StringBuffer defReplicateFolder;
-    getConfigurationDirectory(NULL, "data2", "roxie", processName.str(), defReplicateFolder);
 
     const char *destPlane = !isEmptyString(dfuTargetPlane) ? dfuTargetPlane : processName.str();
+    locations.append(destPlane);
+    wufiles->resolveFiles(locations, remoteLocation, remotePrefix, srcCluster, !(updateFlags & (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM)), false, false, false, (updateFlags & DFU_UPDATEF_REMOTESTORAGE)!=0);
+
+    Owned<const IStoragePlane> plane = getStoragePlaneByName(destPlane, true);
+    StringBuffer defReplicateFolder;
+    defReplicateFolder.set(plane->queryMirrorPrefix());
+
     wufiles->cloneAllInfo(publisherWuid, destPlane, updateFlags, helper, true, false, dstInfo->getRoxieRedundancy(), dstInfo->getChannelsPerNode(), dstInfo->getRoxieReplicateOffset(), defReplicateFolder);
 #endif
 

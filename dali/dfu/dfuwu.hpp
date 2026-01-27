@@ -486,7 +486,7 @@ extern dfuwu_decl StringBuffer &encodeDFUcommand(DFUcmd cmd,StringBuffer &str);
 extern dfuwu_decl DFUstate decodeDFUstate(const char * str);
 extern dfuwu_decl StringBuffer &encodeDFUstate(DFUstate state,StringBuffer &str);
 
-extern dfuwu_decl bool DfuParseLogicalPath(const IPropertyTree *directories, const char * pLogicalPath, const char* groupName,
+extern dfuwu_decl bool DfuParseLogicalPath(const char * pLogicalPath, const char* groupName,
                             StringBuffer &folder, StringBuffer &title, StringBuffer &defaultFolder, StringBuffer &defaultReplicateFolder);
 
 
