@@ -1828,7 +1828,7 @@ bool readEvents(const char* filename, IEventVisitor& visitor)
     return reader.traverse(filename, visitor);
 }
 
-class CEventFilePuller : implements IEventReader, public CEventFileConsumer
+class CEventFileIterator : implements IEventIterator, public CEventFileConsumer
 {
 public:
     IMPLEMENT_IINTERFACE_USING(CEventFileConsumer);
@@ -1844,13 +1844,13 @@ public:
     }
 };
 
-IEventReader* createEventReader(const char* path)
+IEventIterator* createEventFileIterator(const char* path)
 {
-    Owned<CEventFilePuller> reader = new CEventFilePuller;
-    if (reader->openFile(path))
+    Owned<CEventFileIterator> it = new CEventFileIterator;
+    if (it->openFile(path))
     {
-        reader->readHeader();
-        return reader.getClear();
+        it->readHeader();
+        return it.getClear();
     }
     return nullptr;
 }

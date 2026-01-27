@@ -92,24 +92,15 @@ bool CPropertyTreeEvents::nextEvent(CEvent& event)
     return true;
 }
 
-const char* CPropertyTreeEvents::queryFilename() const
+const EventFileProperties& CPropertyTreeEvents::queryFileProperties() const
 {
-    return events->queryProp("@filename");
-}
-
-uint32_t CPropertyTreeEvents::queryVersion() const
-{
-    return uint32_t(events->getPropInt64("@version"));
-}
-
-uint32_t CPropertyTreeEvents::queryBytesRead() const
-{
-    return uint32_t(events->getPropInt64("@bytesRead"));
+    return properties;
 }
 
 CPropertyTreeEvents::CPropertyTreeEvents(const IPropertyTree& _events)
     : CPropertyTreeEvents(_events, true)
 {
+    // delegating constructor
 }
 
 CPropertyTreeEvents::CPropertyTreeEvents(const IPropertyTree& _events, bool _strictParsing)
@@ -119,15 +110,19 @@ CPropertyTreeEvents::CPropertyTreeEvents(const IPropertyTree& _events, bool _str
 {
     // enable the "next" event to populate from the first matching node
     (void)eventsIt->first();
+    properties.path.set(events->queryProp("@filename"));
+    properties.version = uint32_t(events->getPropInt64("@version"));
+    properties.bytesRead = uint32_t(events->getPropInt("@bytesRead"));
 }
 
 void visitIterableEvents(IEventIterator& iter, IEventVisitor& visitor)
 {
     CEvent event;
-    visitor.visitFile(iter.queryFilename(), iter.queryVersion());
+    const EventFileProperties& props = iter.queryFileProperties();
+    visitor.visitFile(props.path, props.version);
     while (iter.nextEvent(event))
         visitor.visitEvent(event);
-    visitor.departFile(iter.queryBytesRead());
+    visitor.departFile(props.bytesRead);
 }
 
 #ifdef _USE_CPPUNIT
