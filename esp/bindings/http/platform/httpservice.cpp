@@ -44,47 +44,53 @@
 #include <map>
 #include <cinttypes>
 
-// Helper function to convert a 128-bit session ID string to a 32-bit unsigned session token
-// This maintains backward compatibility with the ISecCredentials interface
-static unsigned sessionIDToToken(const char* sessionID)
+// Helper function to convert a string to a 32-bit unsigned hashed token.
+// Used in cases where a secure hash isn't available or where a compact representation is
+// sufficient- such as to maintain backward compatibility with the ISecCredentials interface.
+static unsigned makeHashcToken(const char* in)
 {
-    if (!sessionID || !*sessionID)
+    if (!in || !*in)
         return 0;
     
     // Hash the full 128-bit session ID to a 32-bit token
-    return hashc((const unsigned char*)sessionID, strlen(sessionID), 0);
+    return hashc((const unsigned char*)in, strlen(in), fnvInitialHash32);
 }
 
 // Helper function to generate external session ID for admin visibility
 // Uses SHA256 when OpenSSL is available, otherwise falls back to hashc
-static void generateExternalSessionID(const char* sessionID, StringBuffer& externalID)
+static void generateExternalSessionID(const StringBuffer& sessionID, StringBuffer& externalID)
 {
-    if (!sessionID || !*sessionID)
+    if (sessionID.isEmpty())
     {
         externalID.clear();
         return;
     }
 
+    auto generateSHA256Hash = [](const StringBuffer& sessionID, StringBuffer& externalID)
+    {
+
+        int result = 0;
 #ifdef _USE_OPENSSL
-    // Use OpenSSL one-shot EVP_Digest() for SHA-256
-    unsigned char hashedValue[EVP_MAX_MD_SIZE];
-    unsigned int hashedLen = 0;
-    if (EVP_Digest((const unsigned char*)sessionID, strlen(sessionID), hashedValue, &hashedLen, EVP_sha256(), NULL) == 1)
+        // Use OpenSSL one-shot EVP_Digest() for SHA-256
+        unsigned char hashedValue[EVP_MAX_MD_SIZE];
+        unsigned int hashedLen = 0;
+        result = EVP_Digest(sessionID.str(), sessionID.length(), hashedValue, &hashedLen, EVP_sha256(), NULL);
+        if ( 1 == result)
+        {
+            for (unsigned int i = 0; i < hashedLen; ++i)
+                externalID.appendf("%02x", hashedValue[i]);
+        }
+#endif
+        return result;
+    };
+
+    if (generateSHA256Hash(sessionID, externalID) != 1)
     {
-        for (unsigned int i = 0; i < hashedLen; ++i)
-            externalID.appendf("%02x", hashedValue[i]);
-    }
-    else
-    {
-        UWARNLOG("SHA256 (EVP) one-shot hashing failed for external session ID, using fallback");
-        unsigned hash = hashc((const unsigned char*)sessionID, strlen(sessionID), 1);
+        UWARNLOG("SHA256 (EVP) one-shot hashing failed or is not available for external session ID, using fallback");
+        unsigned hash = makeHashcToken(sessionID.str());
         externalID.appendf("%08x", hash);
     }
-#else
-    // No OpenSSL - use hashc-based fallback
-    unsigned hash = hashc((const unsigned char*)sessionID, strlen(sessionID), 1);
-    externalID.appendf("%08x", hash);
-#endif
+
 }
 
 /***************************************************************************
@@ -880,7 +886,7 @@ int CEspHttpServer::onUpdatePassword(CHttpRequest* request, CHttpResponse* respo
                 readCookie(SESSION_START_URL_COOKIE, urlCookie);
                 StringBuffer sessionID;
                 createHTTPSession(context, binding, request->getParameters()->queryProp("username"), urlCookie.isEmpty() ? "/" : urlCookie.str(), sessionID);
-                m_request->queryContext()->setSessionToken(sessionIDToToken(sessionID.str()));
+                m_request->queryContext()->setSessionToken(makeHashcToken(sessionID.str()));
                 addCookie(binding->querySessionIDCookieName(), sessionID.str(), 0, true);
                 addCookie(SESSION_AUTH_OK_COOKIE, "true", 0, false); //client can access this cookie.
                 VStringBuffer cookieStr("%u", binding->getClientSessionTimeoutSeconds());
@@ -1963,7 +1969,7 @@ EspAuthState CEspHttpServer::authNewSession(EspAuthRequest& authReq, const char*
 
     StringBuffer sessionID;
     createHTTPSession(authReq.ctx, authReq.authBinding, _userName, sessionStartURL, sessionID);
-    authReq.ctx->setSessionToken(sessionIDToToken(sessionID.str()));
+    authReq.ctx->setSessionToken(makeHashcToken(sessionID.str()));
 
     ESPLOG(LogMax, "Authenticated for %s@%s", _userName, peer.str());
 
@@ -2405,7 +2411,7 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, const 
     StringAttr userID = sessionTree->queryProp(PropSessionUserID);
     authReq.ctx->setUserID(userID.str());
     authReq.authBinding->populateRequest(m_request.get());
-    authReq.ctx->setSessionToken(sessionIDToToken(sessionID));
+    authReq.ctx->setSessionToken(makeHashcToken(sessionID));
     authReq.ctx->queryUser()->setAuthenticateStatus(AS_AUTHENTICATED);
     authReq.ctx->setAuthStatus(AUTH_STATUS_OK); //May be changed to AUTH_STATUS_NOACCESS if failed in feature level authorization.
     setDomainAuthDataInSecureContext(authReq.ctx, sessionTree);
@@ -2605,35 +2611,11 @@ const char* CEspHttpServer::createHTTPSession(IEspContext* ctx, EspHttpBinding* 
     now.setNow();
     time_t createTime = now.getSimple();
 
-    // Helper lambda for fallback session ID generation
-    auto generateFallbackSessionID = [this, createTime](StringBuffer& outSessionID) {
-        StringBuffer peer;
-        // Use multiple diverse entropy sources and hash each independently
-        // This provides 128 bits (4 x 32-bit hashes) with different inputs for each hash
-        VStringBuffer baseStr("%s_%" PRId64, m_request->getPeer(peer).str(), (int64_t)createTime);
-        
-        // First hash: base string + random
-        unsigned rand1 = getRandom();
-        VStringBuffer input1("%s_%u", baseStr.str(), rand1);
-        outSessionID.appendf("%08x", hashc((unsigned char*)input1.str(), input1.length(), 0));
-        
-        // Second hash: base string + different random + iteration
-        unsigned rand2 = getRandom();
-        VStringBuffer input2("%s_%u_%d", baseStr.str(), rand2, 1);
-        outSessionID.appendf("%08x", hashc((unsigned char*)input2.str(), input2.length(), 1));
-        
-        // Third hash: base string + process ID + timestamp hash
-        VStringBuffer input3("%s_%d_%u", baseStr.str(), GetCurrentProcessId(), (unsigned)((createTime >> 16) & 0xFFFF));
-        outSessionID.appendf("%08x", hashc((unsigned char*)input3.str(), input3.length(), 2));
-        
-        // Fourth hash: base string + combined randoms
-        VStringBuffer input4("%s_%u%u_%u", baseStr.str(), rand1, rand2, getRandom());
-        outSessionID.appendf("%08x", hashc((unsigned char*)input4.str(), input4.length(), 3));
-    };
-
     // Helper lambda to generate a new session ID
-    auto generateNewSessionID = [&generateFallbackSessionID](StringBuffer& outSessionID) {
+    auto generateNewSessionID = [](const char* peer, time_t createTime, StringBuffer& outSessionID) {
         outSessionID.clear();
+        bool generatedSecureID = false;
+
 #ifdef _USE_OPENSSL
         unsigned char buffer[16];
         if (RAND_bytes(buffer, sizeof(buffer)) == 1)
@@ -2641,6 +2623,7 @@ const char* CEspHttpServer::createHTTPSession(IEspContext* ctx, EspHttpBinding* 
             // Convert to hex string (32 characters)
             for (size_t i = 0; i < sizeof(buffer); i++)
                 outSessionID.appendf("%02x", buffer[i]);
+            generatedSecureID = true;
         }
         else
         {
@@ -2649,14 +2632,34 @@ const char* CEspHttpServer::createHTTPSession(IEspContext* ctx, EspHttpBinding* 
             char errBuf[256];
             ERR_error_string_n(err, errBuf, sizeof(errBuf));
             ERRLOG("CRITICAL: RAND_bytes failed (%s), using fallback session ID generation with reduced entropy", errBuf);
-            
-            generateFallbackSessionID(outSessionID);
         }
-#else
-        // No OpenSSL - use hash-based fallback with multiple rounds for 128 bits
-        ERRLOG("CRITICAL: ESP compiled without OpenSSL - using hash-based session IDs with reduced cryptographic strength. Configure with _USE_OPENSSL for production use.");
-        generateFallbackSessionID(outSessionID);
 #endif
+        if (!generatedSecureID)
+        {
+            // Fallback session ID generation
+
+            // Use multiple diverse entropy sources and hash each independently
+            // This provides 128 bits (4 x 32-bit hashes) with different inputs for each hash
+            VStringBuffer baseStr("%s_%" PRId64, peer, (int64_t)createTime);
+            
+            // First hash: base string + random
+            unsigned rand1 = getRandom();
+            VStringBuffer input1("%s_%u", baseStr.str(), rand1);
+            outSessionID.appendf("%08x", makeHashcToken(input1.str()));
+            
+            // Second hash: base string + different random + iteration
+            unsigned rand2 = getRandom();
+            VStringBuffer input2("%s_%u_%d", baseStr.str(), rand2, 1);
+            outSessionID.appendf("%08x", makeHashcToken(input2.str()));
+            
+            // Third hash: base string + process ID + timestamp hash
+            VStringBuffer input3("%s_%d_%u", baseStr.str(), GetCurrentProcessId(), (unsigned)((createTime >> 16) & 0xFFFF));
+            outSessionID.appendf("%08x", makeHashcToken(input3.str()));
+            
+            // Fourth hash: base string + combined randoms
+            VStringBuffer input4("%s_%u%u_%u", baseStr.str(), rand1, rand2, getRandom());
+            outSessionID.appendf("%08x", makeHashcToken(input4.str()));
+        }
     };
 
     // Retry loop to handle session ID collisions
@@ -2667,10 +2670,10 @@ const char* CEspHttpServer::createHTTPSession(IEspContext* ctx, EspHttpBinding* 
     Owned<IRemoteConnection> conn = getSDSConnection(authBinding->querySessionSDSPath(), RTM_LOCK_WRITE, SESSION_SDS_LOCK_TIMEOUT);
     IPropertyTree* domainSessions = conn->queryRoot();
     
-    for (int attempt = 0; attempt < maxRetries; attempt++)
+    for (int attempt = 1; attempt <= maxRetries; attempt++)
     {
         // Generate a new session ID
-        generateNewSessionID(sessionID);
+        generateNewSessionID(peer.str(), createTime, sessionID);
         
         VStringBuffer sessionTag("%s%s", PathSessionSession, sessionID.str());
         IPropertyTree* sessionTree = domainSessions->queryBranch(sessionTag.str());
@@ -2692,7 +2695,7 @@ const char* CEspHttpServer::createHTTPSession(IEspContext* ctx, EspHttpBinding* 
             }
             
             // Different user or peer - collision, try again
-            ESPLOG(LogMin, "Session ID collision detected, attempt %d of %d", attempt + 1, maxRetries);
+            ESPLOG(LogMin, "Session ID collision detected, attempt %d of %d", attempt, maxRetries);
             continue;
         }
         
@@ -2705,7 +2708,7 @@ const char* CEspHttpServer::createHTTPSession(IEspContext* ctx, EspHttpBinding* 
         
         // Generate external ID for admin visibility (SHA256 hash of session ID)
         StringBuffer externalID;
-        generateExternalSessionID(sessionID.str(), externalID);
+        generateExternalSessionID(sessionID, externalID);
         ptree->setProp(PropSessionExternalID, externalID.str());
         
         ptree->setProp(PropSessionUserID, userID);
@@ -2718,7 +2721,7 @@ const char* CEspHttpServer::createHTTPSession(IEspContext* ctx, EspHttpBinding* 
     }
     
     // Failed to generate unique session ID after max retries
-    throw MakeStringException(-1, "Failed to generate unique session ID after %d attempts", maxRetries);
+    throw makeStringExceptionV(-1, "Failed to generate unique session ID after %d attempts", maxRetries);
 }
 
 void CEspHttpServer::timeoutESPSessions(EspHttpBinding* authBinding, IPropertyTree* espSessions)
