@@ -27,7 +27,9 @@
   MAXLENGTH<indexterm>
       <primary>MAXLENGTH</primary>
     </indexterm>[</emphasis>(<emphasis>**value</emphasis>**)<emphasis
-  role="bold">] ] );</emphasis></para>
+  role="bold">] ] [,TRIM<indexterm>
+      <primary>TRIM</primary>
+    </indexterm>]);</emphasis></para>
 
   <para><emphasis> attr</emphasis><emphasis role="bold"> :=
   INDEX([</emphasis><emphasis> baserecset, </emphasis><emphasis
@@ -38,14 +40,18 @@
   MAXLENGTH<indexterm>
       <primary>MAXLENGTH</primary>
     </indexterm>[</emphasis>(<emphasis>value</emphasis>)<emphasis
-  role="bold">] ]</emphasis>);</para>
+  role="bold">] ] [,TRIM<indexterm>
+      <primary>TRIM</primary>
+    </indexterm>]</emphasis>);</para>
 
   <para><emphasis> attr</emphasis><emphasis role="bold"> :=
   INDEX(</emphasis><emphasis>index,newindexfile</emphasis><emphasis
   role="bold"> [, MAXLENGTH<indexterm>
       <primary>MAXLENGTH</primary>
     </indexterm>[</emphasis>(<emphasis>value</emphasis>)<emphasis
-  role="bold">] ]); </emphasis></para>
+  role="bold">] ][,TRIM<indexterm>
+      <primary>TRIM</primary>
+    </indexterm>]); </emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -219,6 +225,13 @@
           omitted, the maximum size is calculated from the record structure.
           Variable-length records that do not specify MAXLENGTH may be
           slightly inefficient</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">TRIM</emphasis></entry>
+
+          <entry>Optional. This option specifies to trim variable length
+          strings before creating the index.</entry>
         </row>
       </tbody>
     </tgroup>

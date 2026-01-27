@@ -237,7 +237,9 @@
     (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ]
     [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">)
     ][, SET (</emphasis> <emphasis>option, value </emphasis><emphasis
-    role="bold">) ]</emphasis></para>
+    role="bold">) ] [,TRIM<indexterm>
+        <primary>TRIM</primary>
+      </indexterm>]</emphasis></para>
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
@@ -632,6 +634,13 @@
 
               <entry>The value to set the option to. This may be any type of
               value, dependent on what the option expects to be.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">TRIM</emphasis></entry>
+
+              <entry>Optional. This option specifies to trim variable length
+              strings before creating the index.</entry>
             </row>
           </tbody>
         </tgroup>
