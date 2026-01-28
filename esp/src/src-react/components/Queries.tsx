@@ -310,6 +310,5 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
             setPageSize={setPageSize}
             total={total}
         ></FluentPagedFooter>}
-        footerStyles={{}}
     />;
 };

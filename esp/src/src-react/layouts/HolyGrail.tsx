@@ -1,6 +1,54 @@
 import * as React from "react";
-import { mergeStyleSets } from "@fluentui/react";
+import { makeStyles, mergeClasses } from "@fluentui/react-components";
 import { useUserTheme } from "../hooks/theme";
+
+const useStyles = makeStyles({
+    root: {
+        display: "flex",
+        flexDirection: "column",
+        minWidth: "0",
+        minHeight: "100%",
+        overflow: "hidden",
+    },
+    fullscreen: {
+        position: "fixed",
+        top: "0",
+        left: "0",
+        width: "100%",
+        height: "100%",
+    },
+    header: {
+        flexGrow: 0,
+        flexShrink: 0,
+        minWidth: "0",
+    },
+    body: {
+        flexGrow: 1,
+        flexShrink: 1,
+        display: "flex",
+        minWidth: "0",
+    },
+    left: {
+        flexGrow: 0,
+        flexShrink: 2,
+    },
+    main: {
+        flexGrow: 1,
+        flexShrink: 1,
+        flexBasis: "auto",
+        minWidth: "1px",
+        minHeight: "1px",
+    },
+    right: {
+        flexGrow: 0,
+        flexShrink: 2,
+    },
+    footer: {
+        flexGrow: 0,
+        flexShrink: 0,
+        minWidth: "0",
+    },
+});
 
 export interface HolyGrailProps {
     header?: any;
@@ -8,7 +56,6 @@ export interface HolyGrailProps {
     main?: any;
     right?: any;
     footer?: any;
-    footerStyles?: any;
     fullscreen?: boolean;
 }
 
@@ -18,32 +65,22 @@ export const HolyGrail: React.FunctionComponent<HolyGrailProps> = ({
     main,
     right,
     footer,
-    footerStyles = { flex: "0 0", minWidth: 0 },
     fullscreen = false
 }) => {
 
     const { themeV9 } = useUserTheme();
+    const styles = useStyles();
 
-    const layoutStyles = React.useMemo(() => mergeStyleSets({
-        fullscreen: {
-            position: "fixed",
-            top: "0",
-            left: "0",
-            width: "100%",
-            height: "100%",
-            background: themeV9.colorNeutralBackground1,
-        },
-        normal: {
-        }
-    }), [themeV9.colorNeutralBackground1]);
-
-    return <div className={fullscreen ? layoutStyles.fullscreen : layoutStyles.normal} style={{ display: "flex", flexDirection: "column", minWidth: 0, minHeight: "100%", overflow: "hidden" }}>
-        <header style={{ flex: "0 0", minWidth: 0 }}>{header}</header>
-        <div style={{ flex: "1 1", display: "flex", minWidth: 0 }} >
-            <div style={{ flex: "0 2" }}>{left}</div>
-            <div style={{ flex: "1 1 auto", minWidth: 1, minHeight: 1 }}>{main}</div>
-            <div style={{ flex: "0 2" }}>{right}</div>
+    return <div
+        className={mergeClasses(styles.root, fullscreen && styles.fullscreen)}
+        style={fullscreen ? { background: themeV9.colorNeutralBackground1 } : undefined}
+    >
+        <header className={styles.header}>{header}</header>
+        <div className={styles.body}>
+            <div className={styles.left}>{left}</div>
+            <div className={styles.main}>{main}</div>
+            <div className={styles.right}>{right}</div>
         </div>
-        <footer style={footerStyles}>{footer}</footer>
+        <footer className={styles.footer}>{footer}</footer>
     </div>;
 };
