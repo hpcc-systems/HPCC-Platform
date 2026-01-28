@@ -10,7 +10,7 @@ Then we'll cover the configuration changes to deploy a minimal HPCC platform, bo
 
 ## Initial State
 
-When the platform launches it ensures the LDAP DS is initialized with the base DN (distinguished name) and OUs (organizational units) needed. Among others, OUs for groups, users and ESP authorization resources are created. An HPCC Admin user is created and added to the administrator's group.
+When the platform launches it ensures the LDAP DS is initialized with the base DN (distinguished name) and OUs (organizational units) needed. Among others, OUs for groups, users and ESP authorization resources are created.  If present in the config, an HPCC Admin user is created, and added to the administrator's group.
 
 If you need any other security settings beyond that, such as non-administrative users and groups, you'll need to create them using ECL Watch. The administrator account itself has the privileges to make these kinds of changes. You may see that the admin doesn't by default have _all_ permissions, but it can add any it needs to the admin group.
 
@@ -51,13 +51,30 @@ These instructions create a persistent volume for the DS inside your directory, 
 5. Initialize the LDAP directory structure by running HPCC Platform for the first time. Before using phpLDAPadmin to manage the directory, you must start the HPCC Platform at least once (see sections below for bare-metal or containerized setup). On first startup, the platform will: 
     - Detect that the base DN entry (`dc=example,dc=com`) is missing
     - Automatically create the base DN entry and all necessary organizational units (OUs) for users, groups, and resources
-    - Initialize the HPCCAdministrators group and admin user
+    - Initialize the HPCCAdministrators group if it is a relative path
+    - Add an admin user if present in the config
 
    After the platform has initialized the directory structure, you can verify and manage your LDAP server using phpLDAPadmin at `http://localhost:8080`. Login with:
    - **username:** `cn=Directory Manager`
    - **password:** `<directory_manager_pw>` (as configured in docker-compose.yaml)
 
-   You should now see the complete directory tree including `dc=example,dc=com` and all HPCC-created organizational units. 
+   You should now see the complete directory tree including `dc=example,dc=com` and all HPCC-created organizational units.
+
+## Fresh Start or Multiple Servers
+
+Assuming stock values from our example, the state for the Directory Server is stored `${HOME}/389ds`. If you want to wipe out your server and start fresh, delete the contents of `${HOME}/389ds` and begin again with the setup above from step 2.
+
+If you'd like to create an additional server with different settings, then:
+
+6. Copy the `dockerfiles/examples/ldap` folder to a location outside of your repo to a new unique location, say `${HOME}/ldap-alternate`. Edit the file `${HOME}/ldap-alternate/docker-compose.yaml`, customizing the admin password and PVC mount point:
+    - Change `DS_DM_PASSWORD: "<directory_manager_pw>"` placeholder with the real password you want to use. This is the password that you will use in PLA to administer the DS, and that the HPCC platform will use to interact with it using LDAP.
+    - Under volumes, replace `${HOME}/389ds` with another new unique folder to hold the server state, say `${HOME}/389ds-alternate`.
+7. From `${HOME}/ldap-alternate`, run:
+
+    ```bash
+    docker compose up -d
+    ```
+Then continue with steps 3-5 above, substituting your new `ldap-alternate` and `389ds-alternate` locations where appropriate. Now you have a second instance you can run instead of the first and its state is stored in the `389ds-alternate` folder.
 
 # Bare-Metal Platform + Docker LDAP Setup
 
