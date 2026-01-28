@@ -2804,29 +2804,33 @@ static void loadDefaultBases()
     ldbDone = true;
 
     SessionId mysessid = myProcessSession();
+    Owned<IPropertyTree> dirs;
+    // If connected to dali, then use the configuration from there, otherwise fall back to using the local config file)
     if (mysessid)
     {
         Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software/Directories", mysessid, RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
-        if (conn) {
-            IPropertyTree* dirs = conn->queryRoot();
-            for (unsigned groupType = 0; groupType < __grp_size; groupType++)
-            {
-                const char *component = componentNames[groupType];
-                for (unsigned replicationLevel = 0; replicationLevel < MAX_REPLICATION_LEVELS; replicationLevel++)
-                {
-                    StringBuffer dirout;
-                    const char *dirType = dirTypeNames[replicationLevel];
-                    if (replicationLevel==1 && groupType!=grp_roxie)
-                        dirType = "mirror";
-                    if (getConfigurationDirectory(dirs, dirType, component,
-                        "dummy",   // NB this is dummy value (but actually hopefully not used anyway)
-                        dirout))
-                       unixBaseDirectories[groupType][replicationLevel].set(dirout.str());
-                }
-            }
+        if (conn)
+            dirs.set(conn->queryRoot());
+    }
+
+    for (unsigned groupType = 0; groupType < __grp_size; groupType++)
+    {
+        const char *component = componentNames[groupType];
+        for (unsigned replicationLevel = 0; replicationLevel < MAX_REPLICATION_LEVELS; replicationLevel++)
+        {
+            StringBuffer dirout;
+            const char *dirType = dirTypeNames[replicationLevel];
+            if (replicationLevel==1 && groupType!=grp_roxie)
+                dirType = "mirror";
+            if (getConfigurationDirectory(dirs, dirType, component,
+                "dummy",   // NB this is dummy value (but actually hopefully not used anyway)
+                dirout))
+                unixBaseDirectories[groupType][replicationLevel].set(dirout.str());
         }
     }
+
     for (unsigned groupType = 0; groupType < __grp_size; groupType++)
+    {
         for (unsigned replicationLevel = 0; replicationLevel < MAX_REPLICATION_LEVELS; replicationLevel++)
         {
             if (unixBaseDirectories[groupType][replicationLevel].isEmpty())
@@ -2834,6 +2838,7 @@ static void loadDefaultBases()
             if (windowsBaseDirectories[groupType][replicationLevel].isEmpty())
                 windowsBaseDirectories[groupType][replicationLevel].set(defaultWindowsBaseDirectories[groupType][replicationLevel]);
         }
+    }
 }
 
 
