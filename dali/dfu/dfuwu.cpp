@@ -32,6 +32,7 @@
 #include "dafdesc.hpp"
 #include "wujobq.hpp"
 #include "dfuutil.hpp"
+#include "dfuerror.hpp"
 
 #include "ws_dfsclient.hpp"
 
@@ -241,7 +242,7 @@ StringBuffer &encodeDFUsortfield(DFUsortfield fmt,StringBuffer &str,bool incmodi
     return str.append(DFUsortfields[i].str);
 }
 
-bool DfuParseLogicalPath(const IPropertyTree *directories, const char * pLogicalPath, const char* groupName,
+bool DfuParseLogicalPath(const char * pLogicalPath, const char* groupName,
                 StringBuffer &folder, StringBuffer &title, StringBuffer &defaultFolder, StringBuffer &defaultReplicateFolder)
 {
     if (isEmptyString(pLogicalPath))
@@ -249,40 +250,14 @@ bool DfuParseLogicalPath(const IPropertyTree *directories, const char * pLogical
 
     if (!isEmptyString(groupName))
     {
-#ifdef _CONTAINERIZED
         Owned<const IStoragePlane> plane = getStoragePlaneByName(groupName, false);
         if (plane)
-            defaultFolder.append(plane->queryPrefix());
-#else
-        StringBuffer basedir;
-        GroupType groupType;
-        Owned<IGroup> group = queryNamedGroupStore().lookup(groupName, basedir, groupType);
-        if (group)
         {
-            if (directories)
-            {
-                switch (groupType)
-                {
-                case grp_roxie:
-                    getConfigurationDirectory(directories, "data", "roxie", nullptr, defaultFolder);
-                    getConfigurationDirectory(directories, "data2", "roxie", nullptr, defaultReplicateFolder);
-                    // MORE - should extend to systems with higher redundancy
-                    break;
-                case grp_hthor:
-                    getConfigurationDirectory(directories, "data", "eclagent", nullptr, defaultFolder);
-                    break;
-                case grp_thor:
-                default:
-                    getConfigurationDirectory(directories, "data", "thor", nullptr, defaultFolder);
-                    getConfigurationDirectory(directories, "mirror", "thor", nullptr, defaultReplicateFolder);
-                }
-            }
+            defaultFolder.append(plane->queryPrefix());
+            defaultReplicateFolder.append(plane->queryMirrorPrefix());
         }
         else
-        {
-            // Ignore at least for now for backward compatability.
-        }
-#endif
+            throw makeStringExceptionV(DFUERR_GroupNotFound, "Storage plane %s not found", groupName);
     }
 
     getLFNDirectoryUsingBaseDir(folder, pLogicalPath, defaultFolder.str());
