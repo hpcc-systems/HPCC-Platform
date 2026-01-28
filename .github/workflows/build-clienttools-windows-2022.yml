@@ -66,17 +66,21 @@ jobs:
           submodules: recursive
           path: ./LN
 
-      - name: Setup Code Signing
+      - name: Setup Certificate File
         shell: "pwsh"
         run: |
-          mkdir -p ./sign
-          cd sign
-          $pfxPath = "hpcc_code_signing.pfx"
-          $encodedBytes = [System.Convert]::FromBase64String("${{ secrets.SIGNING_CERTIFICATE }}")
-          $currentDirectory = Get-Location
-          $certificatePath = Join-Path -Path $currentDirectory -ChildPath $pfxPath
-          [IO.File]::WriteAllBytes("$certificatePath", $encodedBytes)
-          CertUtil -p ${{ secrets.SIGNING_CERTIFICATE_PASSPHRASE }} hpcc_code_signing.pfx           
+          $base64 = "${{ secrets.SM_CLIENT_CERT_FILE_B64 }}"
+          if ([string]::IsNullOrEmpty($base64)) {
+            Write-Error "Secret SM_CLIENT_CERT_FILE_B64 is empty or not set."
+            exit 1
+          }
+          $bytes = [Convert]::FromBase64String($base64)
+          $outDir = "$env:RUNNER_TEMP"
+          $p12Path = Join-Path $outDir "sm_client_cert.p12"
+          [IO.File]::WriteAllBytes($p12Path, $bytes)
+          # Make sure the path is visible to subsequent steps
+          "SM_CLIENT_CERT_FILE=$p12Path" | Out-File -FilePath $env:GITHUB_ENV -Append
+
 
       - name: vcpkg bootstrap
         shell: "bash"
@@ -107,17 +111,26 @@ jobs:
           fi
 
       - name: Build Clienttools
+        id: build_clienttools
         shell: "bash"
         run: |
           mkdir -p ./build
           cmake -S ${{ steps.setup_source.outputs.source_dir }} -B ./build ${{ inputs.cmake-config-options }}
           cmake --build ./build ${{ inputs.cmake-build-options }} --target package
+          packages=($(ls -1 ./build/hpccsystems-clienttools-*.exe ))
+          echo "packages=${packages[*]}" >> $GITHUB_OUTPUT
 
-      - name: Sign Package
-        shell: "pwsh"
-        run: |
-          cd ./build
-          C:\"Program Files (x86)"\"Microsoft SDKs"\ClickOnce\SignTool\signtool.exe sign /debug /f ../sign/hpcc_code_signing.pfx /p ${{ secrets.SIGNING_CERTIFICATE_PASSPHRASE }} /t http://timestamp.digicert.com /fd SHA256 hpccsystems-clienttools*.exe
+      - name: Sign Clienttools
+        uses: digicert/code-signing-software-trust-action@v1.0.0
+        with:
+          simple-signing-mode: true
+          keypair-alias: "RIS_Data_Services_HPCC_Systems"
+          input: "${{ steps.build_clienttools.outputs.packages }}"
+        env:
+          SM_HOST: https://clientauth.one.digicert.com
+          SM_API_KEY: ${{ secrets.DIGICERT_API_KEY }}
+          SM_CLIENT_CERT_FILE: ${{ env.SM_CLIENT_CERT_FILE }}
+          SM_CLIENT_CERT_PASSWORD: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
 
       - name: Release Community Clienttools
         if: ${{ inputs.ln-ref == '' }}
@@ -127,7 +140,7 @@ jobs:
           generateReleaseNotes: false
           prerelease: ${{ contains(github.ref, '-rc') }}
           makeLatest: ${{ inputs.make-latest }}
-          artifacts: "./build/hpccsystems-clienttools-community*.exe"
+          artifacts: "${{ steps.build_clienttools.outputs.packages }}"
 
       - name: Release Internal Clienttools to JFrog Repository
         if: ${{ inputs.ln-ref != '' && github.repository_owner == 'hpcc-systems' }}
