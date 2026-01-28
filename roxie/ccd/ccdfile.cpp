@@ -433,7 +433,7 @@ public:
     virtual size32_t write(offset_t pos, size32_t len, const void * data) { throwUnexpected(); }
     virtual void setSize(offset_t size) { throwUnexpected(); }
 
-    virtual const char *queryFilename() const { return logical->queryFilename(); }
+    virtual const char *queryFilename() const { return logical ? logical->queryFilename() : ""; }
     virtual bool isAliveAndLink() const { return CInterface::isAliveAndLink(); }
 
     virtual IMemoryMappedFile *getMappedFile() override
