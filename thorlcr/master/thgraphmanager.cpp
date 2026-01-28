@@ -1482,7 +1482,7 @@ static void computeConfigSHA(StringBuffer &shaStr)
         e->Release();
     }
 }
-
+/*
 static void computeConfigSHA(StringBuffer &shaStr, IPropertyTree *componentConfig, IPropertyTree *globalConfig)
 {
     if (!componentConfig)
@@ -1527,6 +1527,7 @@ static void computeConfigSHA(StringBuffer &shaStr, IPropertyTree *componentConfi
 }
 
 static CConfigUpdateHook configUpdateHook;
+*/
 
 static void configUpdateNotifyHandler(const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
 {
@@ -1542,10 +1543,10 @@ static void configUpdateNotifyHandler(const IPropertyTree *oldComponentConfigura
         CriticalBlock b(configSHAcs);
         if (newConfigSHA.length() && !streq(currentConfigSHA.str(), newConfigSHA.str()))
         {
-            configChangeDetected.store(true);
+            configChangeDetected = true;
             currentConfigSHA.set(newConfigSHA.str());
 
-            PROGLOG("DJPS Configuration SHA changed from '%s' to '%s' - Thor will gracefully restart after current job completes",
+            PROGLOG("DJPSX Configuration SHA changed from '%s' to '%s' - Thor will gracefully restart after current job completes",
                     currentConfigSHA.str(),
                     newConfigSHA.str());
         }
@@ -1561,7 +1562,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
         configUpdateHookId = installConfigUpdateHook(configUpdateNotifyHandler, false);
         if (configUpdateHookId)
         {
-            PROGLOG("Configuration change monitoring enabled for graceful restart with CB ID: %u", configUpdateHookId);
+            PROGLOG("DJPS Configuration change monitoring enabled for graceful restart with CB ID: %u", configUpdateHookId);
 
             // Initialize the configuration SHA baseline
             StringBuffer initialConfigSHA;
@@ -1570,11 +1571,11 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                 CriticalBlock b(configSHAcs);
                 currentConfigSHA.set(initialConfigSHA.str());
             }
-            PROGLOG("Initial configuration SHA: %s", initialConfigSHA.str());
+            PROGLOG("DJPS Initial configuration SHA: %s", initialConfigSHA.str());
         }
         else
-            IWARNLOG("Failed to install configuration change monitoring");
-
+            IWARNLOG("DJPSX Failed to install configuration change monitoring");
+/* 2 methods of detecting config changes - either use a notify handler (above), or a modifier (below)
         auto modifyFunc = [](IPropertyTree * newComponentConfiguration, IPropertyTree * newGlobalConfiguration)
         {
             PROGLOG("DJPS modifyFunc() called");
@@ -1594,7 +1595,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                 if (newConfigSHA.length() && !strsame(currentConfigSHA.str(), newConfigSHA.str()))
                 {
                     configChangeDetected = true;
-                    PROGLOG("Configuration SHA changed from '%s' to '%s' - Thor will gracefully restart after current job completes",
+                    PROGLOG("DJPSX Configuration SHA changed from '%s' to '%s' - Thor will gracefully restart after current job completes",
                             currentConfigSHA.str(),
                             newConfigSHA.str());
                     currentConfigSHA.set(newConfigSHA.str());
@@ -1608,6 +1609,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
         PROGLOG("DJPS configUpdateHook.installModifierOnce(modifyFunc, false); before");
         configUpdateHook.installModifierOnce(modifyFunc, false);
         PROGLOG("DJPS Configuration change monitoring enabled for graceful restart");
+*/
     }
 
     aborting = 0;
@@ -1797,7 +1799,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                     // Check for configuration changes and exit gracefully if detected
                     if (configChangeDetected)
                     {
-                        PROGLOG("Configuration change detected - exiting gracefully to allow pod restart with new configuration");
+                        PROGLOG("DJPSX Configuration change detected - exiting gracefully to allow pod restart with new configuration");
                         break;
                     }
 
@@ -1853,7 +1855,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
     // Cleanup configuration change monitoring
     if (configUpdateHookId)
         removeConfigUpdateHook(configUpdateHookId);
-    configUpdateHook.clear();
+//    configUpdateHook.clear(); DJPS
 
     if (multiThorMemoryThreshold)
         setMultiThorMemoryNotify(0,NULL);
