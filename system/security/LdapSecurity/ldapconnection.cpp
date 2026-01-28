@@ -16,6 +16,7 @@
 ############################################################################## */
 
 // LDAP prototypes use char* where they should be using const char *, resulting in lots of spurious warnings
+#include "jlog.hpp"
 #pragma warning( disable : 4786 )
 #ifdef __GNUC__
 #pragma GCC diagnostic ignored "-Wwrite-strings"
@@ -357,11 +358,7 @@ public:
             else
                 throw MakeStringException(-1, "Unknown LDAP serverType '%s' specified",m_cfgServerType.get());
         }
-        else
-        {
-            DBGLOG("LDAP serverType not specified, will try to deduce");
-        }
-
+        
         StringBuffer hostsbuf;
         cfg->getProp(".//@ldapAddress", hostsbuf);
         if(hostsbuf.length() == 0)
@@ -960,7 +957,6 @@ private:
                 ldap = "unknown";
                 break;
             }
-            DBGLOG("Connected to '%s' LdapServer %s using protocol %s", ldap, ldapserver, protocol);
         }
         else
         {
@@ -1001,11 +997,11 @@ public:
                 if(rc != LDAP_TIMEOUT || retries >= LDAPSEC_MAX_RETRIES)
                     break;
                 sleep(LDAPSEC_RETRY_WAIT);
-                DBGLOG("Server %s temporarily unreachable, retrying ...", hostbuf.str());
             }
             m_ldapconfig->rejectHost(hostbuf);
         }
 
+        OWARNLOG("Unable to reach any host");
         return false;
     }
 
@@ -1056,7 +1052,6 @@ public:
                     m_ld = NULL;
                     m_connected = false;
                 }
-                DBGLOG("cached connection invalid (%s), creating a new connection", ldap_err2string(err));
                 return connect(m_useSSL);//reconnect stale connection, using original protocol
             }
             else
@@ -1571,7 +1566,6 @@ static __int64 getMaxPwdAge(Owned<ILdapConnectionPool> _conns, const char * _bas
     if (lastPwdAgeCheck != 0 && (((msTick() - lastPwdAgeCheck) < HOURLY)))//in case it was retrieved whilst this thread blocked
         return maxPwdAge;
 
-    DBGLOG("Retrieving LDAP 'maxPwdAge'");
     char* attrs[] = {"maxPwdAge", NULL};
     CLDAPMessage searchResult;
     TIMEVAL timeOut = {_timeout,0};
@@ -2253,10 +2247,7 @@ public:
         const char* username = user.getName();
 
         if(username == NULL || strlen(username) == 0)
-        {
-            DBGLOG("LDAP: getUserInfo : username is empty");
             return false;
-        }
         
         {
             StringBuffer filter;
@@ -2444,10 +2435,7 @@ public:
         }
 
         if(ldap_count_entries(ld, searchResult) < 1)
-        {
-            DBGLOG("No entries are found for user with uid %0X", uid);
             return NULL;
-        }
 
         CLdapSecUser* ldapuser = new CLdapSecUser("", "");
 
@@ -2872,10 +2860,7 @@ public:
     {
         const char* usrName = usr.getName();
         if(!usrName || !*usrName)
-        {
-            DBGLOG("CLdapClient::addUserTree username must be provided");
             return;
-        }
 
         const char* fullName = usr.getFullName();
         StringBuffer sb;
@@ -2978,10 +2963,7 @@ public:
     {
         const char* username = user.getName();
         if(!username || !*username)
-        {
-            DBGLOG("CLdapClient::updateUser username must be provided");
             return false;
-        }
 
         StringBuffer userdn;
         getUserDN(username, userdn);
@@ -3238,9 +3220,7 @@ public:
             }
         }
 
-        if (rc == LDAP_SUCCESS )
-            DBGLOG("User %s successfully updated", username);
-        else
+        if (rc != LDAP_SUCCESS )
             throw MakeStringException(-1, "Error updating user %s - %s", username, ldap_err2string( rc ));
 
         return true;
@@ -3330,9 +3310,7 @@ public:
 
         rc = ldap_modify_ext_s(ld, (char*)userdn.str(), modEntry, NULL, NULL);
 
-        if (rc == LDAP_SUCCESS )
-            DBGLOG("User %s's password has been changed successfully", username);
-        else
+        if (rc != LDAP_SUCCESS )
         {
             StringBuffer errmsg;
             errmsg.appendf("Error setting password for %s - (%d) %s.", username, rc, ldap_err2string( rc ));
@@ -3373,17 +3351,8 @@ public:
     virtual bool updateUserPassword(ISecUser& user, const char* newPassword, const char* currPassword, LDAP* ld)
     {
         const char* username = user.getName();
-        if(!username || !*username)
-        {
-            DBGLOG("CLdapClient::updateUserPassword username must be provided");
+        if(!username || !*username || isEmptyString(newPassword))
             return false;
-        }
-
-        if(isEmptyString(newPassword))
-        {
-            DBGLOG("CLdapClient::updateUserPassword password must be provided");
-            return false;
-        }
 
         if (currPassword)
         {
@@ -3400,17 +3369,8 @@ public:
 
     virtual bool updateUserPassword(const char* username, const char* newPassword, LDAP* ld)
     {
-        if(!username || !*username)
-        {
-            DBGLOG("CLdapClient::updateUserPassword username must be provided");
+        if(!username || !*username || isEmptyString(newPassword))
             return false;
-        }
-
-        if(isEmptyString(newPassword))
-        {
-            DBGLOG("CLdapClient::updateUserPassword password must be provided");
-            return false;
-        }
 
         const char* sysuser = m_ldapconfig->getSysUser();
         if(sysuser && *sysuser && strcmp(username, sysuser) == 0)
@@ -3540,9 +3500,7 @@ public:
             LDAPMod* pmods[] = {&pmod, NULL};
             rc = ldap_modify_ext_s(ld, (char*)userdn.str(), pmods, NULL, NULL);
 
-            if (rc == LDAP_SUCCESS )
-                DBGLOG("User %s's password has been changed successfully", username);
-            else
+            if (rc != LDAP_SUCCESS )
             {
                 StringBuffer errmsg;
                 errmsg.appendf("Error changing password for %s - (%d) %s.", username, rc, ldap_err2string( rc ));
@@ -3672,10 +3630,7 @@ public:
     void addResourceTree(const char* name, const char* desc, IPropertyTree* elements)
     {
         if (!name || !*name)
-        {
-            DBGLOG("CLdapClient::addResourceTree resource name must be provided");
             return;
-        }
 
         Owned<IPTree> element = createPTree();
         element->addProp(getResourceFieldNames(RFName), name);
@@ -3932,10 +3887,7 @@ public:
     void addGroupTree(const char* name, const char* manageBy, const char* desc, IPropertyTree* groups)
     {
         if (!name || !*name)
-        {
-            DBGLOG("CLdapClient::addGroupTree groupname must be provided");
             return;
-        }
 
         Owned<IPTree> group = createPTree();
         group->addProp(getGroupFieldNames(GFName), name);
@@ -4148,10 +4100,8 @@ public:
             LDAPMessage *message;
 
             if(user == NULL || strlen(user) == 0)
-            {
-                DBGLOG("CLdapClient::getGroups username must be provided");
                 return;
-            }
+
             StringBuffer filter("sAMAccountName=");
             filter.append(user);
 
@@ -4242,16 +4192,11 @@ public:
     virtual bool deleteUser(ISecUser* user)
     {
         if(user == NULL)
-        {
-            DBGLOG("CLdapClient::deleteUser ISecUser must be provided");
             return false;
-        }
+
         const char* username = user->getName();
         if(username == NULL || *username == '\0')
-        {
-            DBGLOG("CLdapClient::deleteUser username must be provided");
             return false;
-        }
 
         StringBuffer userdn;
         getUserDN(username, userdn);
@@ -4289,10 +4234,7 @@ public:
     virtual void addGroup(const char* groupname, const char * groupOwner, const char * groupDesc, const char* basedn)
     {
         if(groupname == NULL || *groupname == '\0')
-        {
-            DBGLOG("CLdapClient::addGroup groupname must be provided");
             return;
-        }
 
         if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
         {
@@ -4805,10 +4747,7 @@ private:
     virtual void addDC(const char* dc)
     {
         if(dc == NULL || *dc == '\0')
-        {
-            DBGLOG("CLdapClient::addDC dc must be provided");
             return;
-        }
 
         StringBuffer dcname;
         LdapUtils::getName(dc, dcname);
@@ -4929,10 +4868,7 @@ private:
     virtual void getUidFromDN(LDAP* ld, const char* dn, StringBuffer& uid)
     {
         if(dn == NULL || *dn == '\0')
-        {
-            DBGLOG("CLdapClient::getUidFromDN dn must be provided");
             return;
-        }
 
         if(m_ldapconfig->getServerType() != ACTIVE_DIRECTORY)
         {
@@ -4984,10 +4920,8 @@ private:
     virtual void getGroupDN(const char* groupname, StringBuffer& groupdn, const char * groupBaseDN=nullptr)
     {
         if(groupname == NULL)
-        {
-            DBGLOG("CLdapClient::getGroupDN groupname must be provided");
             return;
-        }
+
         LdapServerType stype = m_ldapconfig->getServerType();
         groupdn.append("cn=").append(groupname).append(",");
         if(stype == ACTIVE_DIRECTORY && stricmp(groupname, "Administrators") == 0)
@@ -5007,10 +4941,8 @@ private:
     virtual void getGroupBaseDN(const char* groupname, StringBuffer& groupbasedn, const char * groupBaseDN=nullptr)
     {
         if(groupname == NULL)
-        {
-            DBGLOG("CLdapClient::getGroupBaseDN groupname must be provided");
             return;
-        }
+
         LdapServerType stype = m_ldapconfig->getServerType();
         if(stype == ACTIVE_DIRECTORY && stricmp(groupname, "Administrators") == 0)
         {
@@ -5188,17 +5120,11 @@ private:
     {
         int len = sdlist.length();
         if(len == 0)
-        {
-            DBGLOG("CLdapClient::getSecurityDescriptors sdlist cannot be empty");
             return;
-        }
 
         const char* rbasedn = m_ldapconfig->getResourceBasedn(rtype);
         if(rbasedn == NULL || *rbasedn == '\0')
-        {
-            DBGLOG("corresponding resource basedn is not defined");
             return;
-        }
             
         std::map<std::string, IArrayOf<CSecurityDescriptor>*> sdmap;
 
@@ -5252,10 +5178,7 @@ private:
 
         int len = sdlist.length();
         if(len == 0)
-        {
-            DBGLOG("CLdapClient::getSecurityDescriptors2 sdlist cannot be empty");
             return;
-        }
 
         StringBuffer filter;
         filter.append("(|");
@@ -5360,10 +5283,7 @@ private:
 
         int len = sdlist.length();
         if(len == 0)
-        {
-            DBGLOG("CLdapClient::getSecurityDescriptorsScope sdlist cannot be empty");
             return;
-        }
 
         LdapServerType servertype = m_ldapconfig->getServerType();
 
@@ -5540,17 +5460,12 @@ private:
     virtual void createLdapBasedn(ISecUser* user, const char* basedn, SecPermissionType ptype, const char* description)
     {
         if(basedn == NULL || basedn[0] == '\0')
-        {
-            DBGLOG("CLdapClient::createLdapBasedn basedn must be provided");
             return;
-        }
 
         const char* ptr = strstr(basedn, "ou=");
         if(ptr == NULL)
-        {
-            DBGLOG("CLdapClient::createLdapBasedn OU= missing from basedn");
             return;
-        }
+
         ptr += 3;
 
         StringBuffer oubuf;
@@ -5576,10 +5491,7 @@ private:
     virtual bool addOrganizationalUnit(ISecUser* user, const char* name, const char* basedn, SecPermissionType ptype, const char* description)
     {
         if(name == NULL || basedn == NULL)
-        {
-            DBGLOG("CLdapClient::addOrganizationalUnit OU name must be provided");
             return false;
-        }
 
         if(strchr(name, '/') != NULL || strchr(name, '=') != NULL)
         {
@@ -5665,14 +5577,9 @@ private:
         if ( rc != LDAP_SUCCESS )
         {
             if(rc == LDAP_ALREADY_EXISTS)
-            {
-                WARNLOG("CLdapClient::addOrganizationalUnit LDAP object 'ou=%s,%s' already exists", name, basedn);
                 return false;
-            }
             else
-            {
                 throw MakeStringException(-1, "ldap_add_ext_s error for ou=%s,%s: %d %s", name, basedn, rc, ldap_err2string( rc ));
-            }
         }
 
         return true;
@@ -5714,10 +5621,7 @@ private:
     virtual void name2rdn(SecResourceType rtype, const char* resourcename, StringBuffer& ldapname)
     {
         if(resourcename == NULL || *resourcename == '\0')
-        {
-            DBGLOG("CLdapClient::name2rdn resourcename must be provided");
             return;
-        }
 
         if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY && (rtype == RT_DEFAULT || rtype == RT_MODULE || rtype == RT_SERVICE))
             ldapname.append("cn=");
@@ -5770,17 +5674,11 @@ private:
     virtual bool addResource(SecResourceType rtype, ISecUser& user, ISecResource* resource, SecPermissionType ptype, const char* basedn, CSecurityDescriptor* default_sd, bool lessException=true)
     {
         if(resource == NULL)
-        {
-            DBGLOG("CLdapClient::addResource can't add resource, ISecResource must be specified");
             return true;
-        }
 
         char* resourcename = (char*)resource->getName();
         if(resourcename == NULL)
-        {
-            DBGLOG("CLdapClient::addResource can't add resource, empty resource name");
             return false;
-        }
 
         const char* rbasedn;
         StringBuffer rbasednbuf;
@@ -6091,10 +5989,7 @@ private:
         LdapServerType serverType = m_ldapconfig->getServerType();
         const char* username = user.getName();
         if(username == NULL || *username == '\0')
-        {
-            DBGLOG("Can't add user, username not set");
             throw MakeStringException(-1, "Can't add user, username not set");
-        }
 
         const char* userPassword = user.credentials().getPassword();
         if(isEmptyString(userPassword))
@@ -6277,15 +6172,9 @@ private:
         if ( rc != LDAP_SUCCESS )
         {
             if(rc == LDAP_ALREADY_EXISTS)
-            {
-                DBGLOG("Can't add user %s, an LDAP object with this name already exists", username);
                 throw MakeStringException(-1, "Can't add user %s, an LDAP object with this name already exists", username);
-            }
             else
-            {
-                DBGLOG("Error addUser %s, ldap_add_ext_s error: %s", username, ldap_err2string( rc ));
                 throw MakeStringException(-1, "Error addUser %s, ldap_add_ext_s error: %s", username, ldap_err2string( rc ));
-            }
         }
 
         if(serverType == ACTIVE_DIRECTORY)

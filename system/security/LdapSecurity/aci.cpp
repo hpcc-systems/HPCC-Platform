@@ -958,10 +958,7 @@ bool AciProcessor::retrieveUserInfo(ISecUser& user)
     CLdapSecUser* ldapuser = (CLdapSecUser*)&user;
     const char* username = user.getName();
     if(username == NULL || strlen(username) == 0)
-    {
-        DBGLOG("AciProcessor::retrieveUserInfo : username is empty");
         return false;
-    }
 
     const char* fullname = user.getFullName();
     if((fullname == NULL || *fullname == '\0') && m_ldap_client != NULL)
