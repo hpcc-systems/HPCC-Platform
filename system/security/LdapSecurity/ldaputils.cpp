@@ -106,7 +106,6 @@ LDAP* LdapUtils::LdapInit(const char* protocol, const char* host, int port, int 
 #else
         StringBuffer uri("ldap://");
         uri.appendf("%s:%d", host, port);
-        DBGLOG("connecting to %s", uri.str());
         int rc = LDAP_INIT(&ld, uri.str());
         if(rc != LDAP_SUCCESS)
         {
@@ -150,8 +149,6 @@ LDAP* LdapUtils::LdapInit(const char* protocol, const char* host, int port, int 
             if(rc != LDAP_SUCCESS)
                 ERRLOG("LdapUtils::LdapInit : ldap_set_option(LDAP_OPT_X_KEEPALIVE_PROBES, %d) error - %s", kaProbes, ldap_err2string(rc));
         }
-        if (!kaLog.isEmpty())
-            DBGLOG("LDAP tcp keepalive%s", kaLog.str());
     }
 
     return ld;
@@ -217,10 +214,8 @@ int LdapUtils::LdapBind(LDAP* ld, int ldapTimeout, const char* domain, const cha
     if(!binddone)
     {
         if(userdn == NULL)
-        {
-            DBGLOG("userdn can't be NULL in order to bind to ldap server.");
             return LDAP_INVALID_CREDENTIALS;
-        }
+
         int rc = LdapSimpleBind(ld, ldapTimeout, (char*)userdn, (char*)password);
         if (rc != LDAP_SUCCESS && server_type == OPEN_LDAP && strchr(userdn,','))
         {   //Fedora389 is happier without the domain component specified
