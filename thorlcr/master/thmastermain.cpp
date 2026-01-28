@@ -405,8 +405,8 @@ public:
             publishPodNames(workunit, graphName, &connectedWorkers);
         }
 
-        //Check that nothing has caused the global configuration to be refreshed - otherwise inconsistent values may be used by the slave
-        assertex(globals == getComponentConfigSP());
+        // assertex(globals == getComponentConfigSP()); DJPS
+        // globals is set once from thmastermain::main(...) so for 34929 we can be sure it won't change for workers.
 
         PROGLOG("Workers connected, initializing..");
         msg.clear();
@@ -656,8 +656,9 @@ int main( int argc, const char *argv[]  )
     InitModuleObjects();
     NoQuickEditSection xxx;
     {
-        bool monitorConfig = false; // Do not allow updates to the config file, otherwise the slave may not be in sync.
+// DJPS        bool monitorConfig = false; // Do not allow updates to the config file, otherwise the slave may not be in sync.
         //MORE: What about updates to storage planes - they will not be passed through to the slaves
+        bool monitorConfig{true}; // Allow updates to the config file - slaves will not be updated via the config update hook.
         globals.setown(loadConfiguration(thorDefaultConfigYaml, argv, "thor", "THOR", "thor.xml", nullptr, nullptr, monitorConfig));
     }
     updateTraceFlags(loadTraceFlags(globals, thorTraceOptions, queryTraceFlags()), true);
