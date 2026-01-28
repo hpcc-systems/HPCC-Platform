@@ -2321,6 +2321,17 @@ StringBuffer & fillConfigurationDirectoryEntry(const char *dir,const char *name,
     return dirout;
 }
 
+static Owned<IPropertyTree> cachedEnvironment;
+static CriticalSection envCrit;
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    return true;
+}
+MODULE_EXIT()
+{
+    cachedEnvironment.clear(); // Must be destroyed before jptree module destructors are called
+}
+
 IPropertyTree *getHPCCEnvironment()
 {
 #ifdef _CONTAINERIZED
@@ -2330,6 +2341,10 @@ IPropertyTree *getHPCCEnvironment()
     IERRLOG("getHPCCEnvironment() called from container system");
 #endif
 #endif
+
+    CriticalBlock b(envCrit);
+    if (cachedEnvironment)
+        return LINK(cachedEnvironment);
 
     StringBuffer envfile;
     if (queryEnvironmentConf().getProp("environment",envfile) && envfile.length())
@@ -2343,10 +2358,10 @@ IPropertyTree *getHPCCEnvironment()
         {
             Owned<IFileIO> fileio = file->open(IFOread);
             if (fileio)
-                return createPTree(*fileio, ipt_lowmem);
+                cachedEnvironment.setown(createPTree(*fileio, ipt_lowmem));
         }
     }
-    return NULL;
+    return LINK(cachedEnvironment);
 }
 
 static Owned<IProperties> envConfFile;
