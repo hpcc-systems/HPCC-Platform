@@ -17,6 +17,7 @@
 
 #include <string>
 #include <map>
+#include <unordered_map>
 #include <queue>
 #include <algorithm>
 
@@ -1535,7 +1536,7 @@ class CUdpReceiveManager : implements IReceiveManager, public CInterface
     std::atomic<bool> running = { false };
     bool encrypted = false;
 
-    typedef std::map<ruid_t, CMessageCollator*> uid_map;
+    typedef std::unordered_map<ruid_t, CMessageCollator*> uid_map;
     uid_map         collators;
     CriticalSection collatorsLock; // protects access to collators map
 
