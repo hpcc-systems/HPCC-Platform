@@ -928,6 +928,9 @@ public:
 
 void ReferencedFileList::ensureFile(const char *ln, unsigned flags, const char *pkgid, bool noDfsResolution, const StringArray *subfileNames, const char *daliip, const char *srcCluster, const char *prefix, const char *remoteStorageName)
 {
+    if (isEmptyString(ln))
+        return;
+
     if (!allowForeign && checkForeign(ln))
         throw MakeStringException(-1, "Foreign file not allowed%s: %s", (flags & RefFileInPackage) ? " (declared in package)" : "", ln);
 
@@ -993,6 +996,10 @@ void ReferencedFileList::addFilesFromPackage(IPropertyTree &package, const char 
     Owned<IPropertyTreeIterator> supers = package.getElements("SuperFile");
     ForEach(*supers)
         addFilesFromSuperFile(supers->query(), ip, cluster, prefix, effectiveRemoteStorage);
+
+    Owned<IPropertyTreeIterator> files = package.getElements("File");
+    ForEach(*files)
+        addFile(files->query().queryProp("@value"), ip, cluster, prefix, effectiveRemoteStorage);
 }
 
 void ReferencedFileList::addFilesFromPackageMap(IPropertyTree *pm)
