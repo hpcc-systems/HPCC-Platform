@@ -345,7 +345,10 @@ ESPStruct [nil_remove] ECLWUProcess
     string Name;
     string Type;
     string PodName;           //containerized only
+    [min_ver("2.04")] string ContainerName; //containerized only
+    [min_ver("2.04")] ESParray<string, Graph> Graphs; //containerized only
     int    InstanceNumber(1); //containerized only
+    [min_ver("2.04")] string Sequence;      //containerized only
     string Log;               //bare metal only
     string PID;               //bare metal only
     string Pattern;           //bare metal only
