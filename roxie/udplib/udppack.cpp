@@ -53,6 +53,9 @@ class CMessagePacker : implements IMessagePacker, public CInterface
     MemoryBuffer    metaInfo;
     bool            last_message_done;
     int             queue_number;
+    DataBuffer     *bulkBuffers[16];  // Cache for bulk-allocated buffers
+    unsigned        bulkBufferCount = 0;
+    unsigned        bulkBufferIndex = 0;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -72,7 +75,23 @@ public:
         package_header.msgSeq = _msgSeq;
 
         packed_request = false;
-        part_buffer = bufferManager->allocate();
+        
+        // Try to bulk allocate buffers for better performance
+        unsigned estimatedBuffers = 4;  // Start with a small pool
+        if (bufferManager->allocateBlock(estimatedBuffers, bulkBuffers))
+        {
+            bulkBufferCount = estimatedBuffers;
+            bulkBufferIndex = 0;
+            part_buffer = bulkBuffers[bulkBufferIndex++];
+        }
+        else
+        {
+            // Fall back to single allocation
+            part_buffer = bufferManager->allocate();
+            bulkBufferCount = 0;
+            bulkBufferIndex = 0;
+        }
+        
         assertex(data_buffer_size >= headerSize + sizeof(unsigned short));
         *(unsigned short *) (&part_buffer->data[sizeof(UdpPacketHeader)]) = headerSize;
         memcpy(&part_buffer->data[sizeof(UdpPacketHeader)+sizeof(unsigned short)], messageHeader, headerSize);
@@ -87,6 +106,11 @@ public:
     {
         if (part_buffer)
             part_buffer->Release();
+        // Release any remaining bulk-allocated buffers
+        while (bulkBufferIndex < bulkBufferCount)
+        {
+            bulkBuffers[bulkBufferIndex++]->Release();
+        }
         if (mem_buffer) free (mem_buffer);
     }
 
@@ -115,7 +139,16 @@ public:
 
         if (!part_buffer)
         {
-            part_buffer = bufferManager->allocate();
+            // Try to use a bulk-allocated buffer first
+            if (bulkBufferIndex < bulkBufferCount)
+            {
+                part_buffer = bulkBuffers[bulkBufferIndex++];
+            }
+            else
+            {
+                // Fall back to single allocation
+                part_buffer = bufferManager->allocate();
+            }
         }
         packed_request = true;
         if (variable)
@@ -150,7 +183,16 @@ public:
             {
                 if (!part_buffer)
                 {
-                    part_buffer = bufferManager->allocate();
+                    // Try to use a bulk-allocated buffer first
+                    if (bulkBufferIndex < bulkBufferCount)
+                    {
+                        part_buffer = bulkBuffers[bulkBufferIndex++];
+                    }
+                    else
+                    {
+                        // Fall back to single allocation
+                        part_buffer = bufferManager->allocate();
+                    }
                     data_used = 0;
                 }
                 unsigned chunkLen = data_buffer_size - data_used;
@@ -184,7 +226,12 @@ private:
         {
             last_message_done = true;
             if (!part_buffer)
-                part_buffer = bufferManager->allocate();
+            {
+                if (bulkBufferIndex < bulkBufferCount)
+                    part_buffer = bulkBuffers[bulkBufferIndex++];
+                else
+                    part_buffer = bufferManager->allocate();
+            }
             const char *metaData = metaInfo.toByteArray();
             unsigned metaLength = metaInfo.length();
             unsigned maxMetaLength = data_buffer_size - data_used;
@@ -196,7 +243,10 @@ private:
                 metaData += maxMetaLength;
                 data_used = 0;
                 maxMetaLength = data_buffer_size;
-                part_buffer = bufferManager->allocate();
+                if (bulkBufferIndex < bulkBufferCount)
+                    part_buffer = bulkBuffers[bulkBufferIndex++];
+                else
+                    part_buffer = bufferManager->allocate();
             }
             if (metaLength)
                 memcpy(&part_buffer->data[sizeof(UdpPacketHeader)+data_used], metaData, metaLength);

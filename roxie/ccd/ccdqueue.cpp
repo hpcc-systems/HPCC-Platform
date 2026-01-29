@@ -3117,6 +3117,9 @@ protected:
     DataBuffer *currentBuffer = nullptr;
     ArrayOf<roxiemem::OwnedDataBuffer> buffers;
     unsigned totalDataLen = 0;
+    DataBuffer *bulkBuffers[16];  // Cache for bulk-allocated buffers
+    unsigned bulkBufferCount = 0;
+    unsigned bulkBufferIndex = 0;
 public:
     LocalBlockedMessagePacker(RoxiePacketHeader &_header, bool _outOfBand, ILocalReceiveManager *_rm) : rm(_rm), outOfBand(_outOfBand)
     {
@@ -3126,6 +3129,11 @@ public:
     ~LocalBlockedMessagePacker()
     {
         free(tempBuffer);
+        // Release any remaining bulk-allocated buffers
+        while (bulkBufferIndex < bulkBufferCount)
+        {
+            bulkBuffers[bulkBufferIndex++]->Release();
+        }
     }
 
     void * getBuffer(unsigned len, bool variable) override
@@ -3161,7 +3169,32 @@ public:
             }
             if (!currentBuffer)
             {
-                currentBuffer = bufferManager->allocate();
+                // Try to use a bulk-allocated buffer first
+                if (bulkBufferIndex < bulkBufferCount)
+                {
+                    currentBuffer = bulkBuffers[bulkBufferIndex++];
+                }
+                else
+                {
+                    // Try to allocate a new bulk pool
+                    if (bufferManager->allocateBlock(8, bulkBuffers))
+                    {
+                        bulkBufferCount = 8;
+                        bulkBufferIndex = 0;
+                        currentBuffer = bulkBuffers[bulkBufferIndex++];
+                    }
+                    else if (bufferManager->allocateBlock(4, bulkBuffers))
+                    {
+                        bulkBufferCount = 4;
+                        bulkBufferIndex = 0;
+                        currentBuffer = bulkBuffers[bulkBufferIndex++];
+                    }
+                    else
+                    {
+                        // Fall back to single allocation
+                        currentBuffer = bufferManager->allocate();
+                    }
+                }
                 dataPos = sizeof (unsigned short);
                 bufferRemaining = dataBufferSize;
             }
@@ -3197,7 +3230,32 @@ public:
             {
                 if (!currentBuffer)
                 {
-                    currentBuffer = bufferManager->allocate();
+                    // Try to use a bulk-allocated buffer first
+                    if (bulkBufferIndex < bulkBufferCount)
+                    {
+                        currentBuffer = bulkBuffers[bulkBufferIndex++];
+                    }
+                    else
+                    {
+                        // Try to allocate a new bulk pool
+                        if (bufferManager->allocateBlock(8, bulkBuffers))
+                        {
+                            bulkBufferCount = 8;
+                            bulkBufferIndex = 0;
+                            currentBuffer = bulkBuffers[bulkBufferIndex++];
+                        }
+                        else if (bufferManager->allocateBlock(4, bulkBuffers))
+                        {
+                            bulkBufferCount = 4;
+                            bulkBufferIndex = 0;
+                            currentBuffer = bulkBuffers[bulkBufferIndex++];
+                        }
+                        else
+                        {
+                            // Fall back to single allocation
+                            currentBuffer = bufferManager->allocate();
+                        }
+                    }
                     dataPos = sizeof (unsigned short);
                     bufferRemaining = dataBufferSize;
                 }
