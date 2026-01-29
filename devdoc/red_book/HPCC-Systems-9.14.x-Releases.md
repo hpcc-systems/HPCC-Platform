@@ -12,6 +12,12 @@ Here's how to contact us if you find an issue or want to add something to the Re
 
 ---
 
+## OpenTelemetry (OTel) Trace Issue
+
+If you plan to use JTrace for OTel based tracing, you should be aware that a recent change inadvertently affected OTel GRPC trace exporting functionality. 
+
+For more detailed information, see [OpenTelemetry Trace Issue](OpenTelemetryTraceIssue.md).
+
 ## Security Support Improvement
 
 (Ver. 9.14.2 and later)
