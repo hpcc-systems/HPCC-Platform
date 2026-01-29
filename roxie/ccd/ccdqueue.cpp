@@ -3120,6 +3120,37 @@ protected:
     DataBuffer *bulkBuffers[16];  // Cache for bulk-allocated buffers
     unsigned bulkBufferCount = 0;
     unsigned bulkBufferIndex = 0;
+
+    DataBuffer *allocateNextBuffer()
+    {
+        // Try to use a bulk-allocated buffer first
+        if (bulkBufferIndex < bulkBufferCount)
+        {
+            return bulkBuffers[bulkBufferIndex++];
+        }
+        else
+        {
+            // Try to allocate a new bulk pool
+            if (bufferManager->allocateBlock(8, bulkBuffers))
+            {
+                bulkBufferCount = 8;
+                bulkBufferIndex = 0;
+                return bulkBuffers[bulkBufferIndex++];
+            }
+            else if (bufferManager->allocateBlock(4, bulkBuffers))
+            {
+                bulkBufferCount = 4;
+                bulkBufferIndex = 0;
+                return bulkBuffers[bulkBufferIndex++];
+            }
+            else
+            {
+                // Fall back to single allocation
+                return bufferManager->allocate();
+            }
+        }
+    }
+
 public:
     LocalBlockedMessagePacker(RoxiePacketHeader &_header, bool _outOfBand, ILocalReceiveManager *_rm) : rm(_rm), outOfBand(_outOfBand)
     {
@@ -3169,32 +3200,7 @@ public:
             }
             if (!currentBuffer)
             {
-                // Try to use a bulk-allocated buffer first
-                if (bulkBufferIndex < bulkBufferCount)
-                {
-                    currentBuffer = bulkBuffers[bulkBufferIndex++];
-                }
-                else
-                {
-                    // Try to allocate a new bulk pool
-                    if (bufferManager->allocateBlock(8, bulkBuffers))
-                    {
-                        bulkBufferCount = 8;
-                        bulkBufferIndex = 0;
-                        currentBuffer = bulkBuffers[bulkBufferIndex++];
-                    }
-                    else if (bufferManager->allocateBlock(4, bulkBuffers))
-                    {
-                        bulkBufferCount = 4;
-                        bulkBufferIndex = 0;
-                        currentBuffer = bulkBuffers[bulkBufferIndex++];
-                    }
-                    else
-                    {
-                        // Fall back to single allocation
-                        currentBuffer = bufferManager->allocate();
-                    }
-                }
+                currentBuffer = allocateNextBuffer();
                 dataPos = sizeof (unsigned short);
                 bufferRemaining = dataBufferSize;
             }
@@ -3230,32 +3236,7 @@ public:
             {
                 if (!currentBuffer)
                 {
-                    // Try to use a bulk-allocated buffer first
-                    if (bulkBufferIndex < bulkBufferCount)
-                    {
-                        currentBuffer = bulkBuffers[bulkBufferIndex++];
-                    }
-                    else
-                    {
-                        // Try to allocate a new bulk pool
-                        if (bufferManager->allocateBlock(8, bulkBuffers))
-                        {
-                            bulkBufferCount = 8;
-                            bulkBufferIndex = 0;
-                            currentBuffer = bulkBuffers[bulkBufferIndex++];
-                        }
-                        else if (bufferManager->allocateBlock(4, bulkBuffers))
-                        {
-                            bulkBufferCount = 4;
-                            bulkBufferIndex = 0;
-                            currentBuffer = bulkBuffers[bulkBufferIndex++];
-                        }
-                        else
-                        {
-                            // Fall back to single allocation
-                            currentBuffer = bufferManager->allocate();
-                        }
-                    }
+                    currentBuffer = allocateNextBuffer();
                     dataPos = sizeof (unsigned short);
                     bufferRemaining = dataBufferSize;
                 }
