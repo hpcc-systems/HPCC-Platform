@@ -1,5 +1,7 @@
 import * as React from "react";
-import { Checkbox, ChoiceGroup, ComboBox, IChoiceGroupOption, Dropdown as DropdownBase, IDropdownOption, TextField, Link, ProgressIndicator, IComboBoxOption, IComboBoxProps, IComboBox } from "@fluentui/react";
+import { Combobox as ComboBoxBase, Dropdown as DropdownBase, Option, Field as FieldV9, Input, Checkbox, RadioGroup, Radio, Link, ProgressBar } from "@fluentui/react-components";
+import type { ComboboxProps } from "@fluentui/react-components";
+import { Shimmer } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import { FileSpray } from "@hpcc-js/comms";
 import { TpDropZoneQuery, TpGroupQuery, TpServiceQuery } from "src/WsTopology";
@@ -13,6 +15,22 @@ import { useBuildInfo, useLogicalClusters } from "../../hooks/platform";
 import { useContainerNames, usePodNames } from "../../hooks/cloud";
 
 const logger = scopedLogger("src-react/components/forms/Fields.tsx");
+
+interface IDropdownOption {
+    key: string | number;
+    text: string;
+}
+
+interface IChoiceGroupOption {
+    key: string;
+    text: string;
+    disabled?: boolean;
+}
+
+interface IComboBoxOption {
+    key: string | number;
+    text: string;
+}
 
 interface DropdownProps {
     label?: string;
@@ -72,7 +90,30 @@ const Dropdown: React.FunctionComponent<DropdownProps> = ({
         return [selOpts, selRow?.key];
     }, [onChange, optional, options, selectedKey]);
 
-    return <DropdownBase label={label} errorMessage={errorMessage} required={required} selectedKey={selKey} defaultSelectedKey={defaultSelectedKey} onChange={onChange} placeholder={placeholder} options={selOptions} disabled={disabled} className={className} />;
+    const handleChange = React.useCallback((_, data) => {
+        const selectedOption = selOptions.find(opt => opt.key === data.optionValue);
+        const selectedIndex = selOptions.findIndex(opt => opt.key === data.optionValue);
+        if (selectedOption) {
+            onChange(undefined, selectedOption, selectedIndex);
+        }
+    }, [onChange, selOptions]);
+
+    return <FieldV9 label={label} validationMessage={errorMessage} required={required}>
+        <DropdownBase
+            value={selOptions.find(opt => opt.key === selKey)?.text || ""}
+            selectedOptions={selKey ? [String(selKey)] : []}
+            onOptionSelect={handleChange}
+            placeholder={placeholder}
+            disabled={disabled}
+            className={className}
+        >
+            {selOptions.map(option => (
+                <Option key={String(option.key)} value={String(option.key)} text={option.text}>
+                    {option.text}
+                </Option>
+            ))}
+        </DropdownBase>
+    </FieldV9>;
 };
 
 interface AsyncDropdownProps {
@@ -156,7 +197,11 @@ const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
                 item = selOptions?.find(row => row.key === selectedKey) ?? selOptions[0];
             }
             if (!item) return;
-            if (item.key === selectedKey) {
+
+            // Auto-select first item when required and no selection (empty or undefined)
+            const shouldAutoSelect = required && (!selectedKey || selectedKey === "") && selOptions.length > 0;
+
+            if (item.key === selectedKey && !shouldAutoSelect) {
                 // do nothing, unless
                 if (!selectedItem) {
                     setSelectedItem(item);
@@ -165,9 +210,16 @@ const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
             } else {
                 setSelectedItem(item);
                 setSelectedIdx(selOptions.indexOf(item));
+
+                // Trigger onChange for auto-selected item when required
+                if (shouldAutoSelect && onChange) {
+                    setTimeout(() => {
+                        onChange(undefined, item, selOptions.indexOf(item));
+                    }, 1);
+                }
             }
         }
-    }, [changeSelectedItems, multiSelect, selectedKey, selOptions, selectedItem, selectedItems]);
+    }, [changeSelectedItems, multiSelect, selectedKey, selOptions, selectedItem, selectedItems, required, onChange]);
 
     React.useEffect(() => {
         if (multiSelect) {
@@ -182,24 +234,65 @@ const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
         }
     }, [onChange, multiSelect, selectedItem, selectedIdx, selectedKey, selectedItems, valueSeparator]);
 
+    const handleChange = React.useCallback((_, data) => {
+        if (multiSelect) {
+            const selectedOpts = data.selectedOptions.map(optValue =>
+                selOptions.find(opt => opt.key === optValue)
+            ).filter(Boolean);
+            setSelectedItems(selectedOpts);
+        } else {
+            const selectedOption = selOptions.find(opt => opt.key === data.optionValue);
+            const selectedIndex = selOptions.findIndex(opt => opt.key === data.optionValue);
+            if (selectedOption) {
+                setSelectedItem(selectedOption);
+                setSelectedIdx(selectedIndex);
+            }
+        }
+    }, [multiSelect, selOptions]);
+
     if (multiSelect) {
         return options === undefined ?
-            <DropdownBase label={label} multiSelect dropdownWidth="auto" options={[]} placeholder={nlsHPCC.loadingMessage} disabled={true} /> :
-            <DropdownBase label={label} multiSelect dropdownWidth="auto" options={selOptions} selectedKeys={selectedItems.map(item => item.key as string)} onChange={
-                (_, item: IDropdownOption) => {
-                    if (item) {
-                        let selected = selectedItems.filter(i => i.key !== item.key);
-                        if (item.selected) {
-                            selected = [...selectedItems, item];
-                        }
-                        setSelectedItems(selected);
-                    }
-                }
-            } placeholder={placeholder} disabled={disabled} required={required} errorMessage={errorMessage} className={className} />;
+            <FieldV9 label={label} validationMessage={errorMessage} required={required}>
+                <Shimmer />
+            </FieldV9> :
+            <FieldV9 label={label} validationMessage={errorMessage} required={required}>
+                <DropdownBase
+                    multiselect
+                    value={selectedItems.map(item => item.text).join(", ")}
+                    selectedOptions={selectedItems.map(item => String(item.key))}
+                    onOptionSelect={handleChange}
+                    placeholder={placeholder}
+                    disabled={disabled}
+                    className={className}
+                >
+                    {selOptions.map(option => (
+                        <Option key={String(option.key)} value={String(option.key)} text={option.text}>
+                            {option.text}
+                        </Option>
+                    ))}
+                </DropdownBase>
+            </FieldV9>;
     } else {
         return options === undefined ?
-            <DropdownBase label={label} dropdownWidth="auto" options={[]} placeholder={nlsHPCC.loadingMessage} disabled={true} /> :
-            <DropdownBase label={label} dropdownWidth="auto" options={selOptions} selectedKey={selectedItem?.key} onChange={(_, item: IDropdownOption) => setSelectedItem(item)} placeholder={placeholder} disabled={disabled} required={required} errorMessage={errorMessage} className={className} />;
+            <FieldV9 label={label} validationMessage={errorMessage} required={required}>
+                <Shimmer />
+            </FieldV9> :
+            <FieldV9 label={label} validationMessage={errorMessage} required={required}>
+                <DropdownBase
+                    value={selectedItem?.text || ""}
+                    selectedOptions={selectedItem?.key ? [String(selectedItem.key)] : []}
+                    onOptionSelect={handleChange}
+                    placeholder={placeholder}
+                    disabled={disabled}
+                    className={className}
+                >
+                    {selOptions.map(option => (
+                        <Option key={String(option.key)} value={String(option.key)} text={option.text}>
+                            {option.text}
+                        </Option>
+                    ))}
+                </DropdownBase>
+            </FieldV9>;
     }
 };
 
@@ -230,12 +323,18 @@ const DropdownMulti: React.FunctionComponent<DropdownMultiProps> = ({
     placeholder,
     className
 }) => {
-    const defaultSelKeys = React.useMemo(() => {
-        if (defaultSelectedKeys) {
-            return defaultSelectedKeys.split(",");
+    React.useEffect(() => {
+        if (required === true && optional === true) {
+            logger.error(`${label}:  required == true and optional == true is illogical`);
         }
-        return [];
-    }, [defaultSelectedKeys]);
+        if (defaultSelectedKeys && selectedKeys) {
+            logger.error(`${label}:  DropdownMulti property 'defaultSelectedKeys' is mutually exclusive with 'selectedKeys' (${defaultSelectedKeys}, ${selectedKeys}). Use one or the other.`);
+        }
+    }, [defaultSelectedKeys, label, optional, required, selectedKeys]);
+
+    const selOptions = React.useMemo(() => {
+        return optional ? [{ key: "", text: "" }, ...options] : [...options];
+    }, [optional, options]);
 
     const selKeys = React.useMemo(() => {
         if (selectedKeys) {
@@ -244,14 +343,28 @@ const DropdownMulti: React.FunctionComponent<DropdownMultiProps> = ({
         return [];
     }, [selectedKeys]);
 
-    const localOnChange = React.useCallback((event: React.FormEvent<HTMLDivElement>, item: IDropdownOption): void => {
-        if (item) {
-            const selected = item.selected ? [...selKeys, item.key as string] : selKeys.filter(key => key !== item.key);
-            onChange(event, selected.join(","));
-        }
-    }, [onChange, selKeys]);
+    const localOnChange = React.useCallback((_, data): void => {
+        const selected = data.selectedOptions;
+        onChange(undefined, selected.join(","));
+    }, [onChange]);
 
-    return <DropdownBase label={label} errorMessage={errorMessage} required={required} multiSelect selectedKeys={selKeys} defaultSelectedKeys={defaultSelKeys} onChange={localOnChange} placeholder={placeholder} options={options} disabled={disabled} className={className} />;
+    return <FieldV9 label={label} validationMessage={errorMessage} required={required}>
+        <DropdownBase
+            multiselect
+            value={selKeys.map(key => selOptions.find(opt => opt.key === key)?.text || key).join(", ")}
+            selectedOptions={selKeys}
+            onOptionSelect={localOnChange}
+            placeholder={placeholder}
+            disabled={disabled}
+            className={className}
+        >
+            {selOptions.map(option => (
+                <Option key={String(option.key)} value={String(option.key)} text={option.text}>
+                    {option.text}
+                </Option>
+            ))}
+        </DropdownBase>
+    </FieldV9>;
 };
 
 export type FieldType = "string" | "password" | "number" | "checkbox" | "choicegroup" | "datetime" | "dropdown" | "dropdown-multi" |
@@ -650,12 +763,18 @@ export const EsdlDefinitionsTextField: React.FunctionComponent<EsdlDefinitionsTe
     return <AsyncDropdown {...props} options={definitions} />;
 };
 
-export interface TargetFolderTextFieldProps extends Omit<IComboBoxProps, "options"> {
+export interface TargetFolderTextFieldProps extends Omit<ComboboxProps, "options" | "onChange"> {
+    label?: string;
     pathSepChar?: string;
     dropzone?: string;
     machineAddress?: string;
     machineDirectory?: string;
     machineOS?: number;
+    placeholder?: string;
+    required?: boolean;
+    errorMessage?: string;
+    onInputValueChange?: (text: any) => void;
+    onChange?: (event: React.FormEvent<HTMLElement>, option?: IComboBoxOption, index?: number, value?: string) => void;
 }
 
 export const TargetFolderTextField: React.FunctionComponent<TargetFolderTextFieldProps> = (props) => {
@@ -663,11 +782,7 @@ export const TargetFolderTextField: React.FunctionComponent<TargetFolderTextFiel
     const [, { isContainer }] = useBuildInfo();
     const [folders, setFolders] = React.useState<IComboBoxOption[]>();
     const [selectedKey, setSelectedKey] = React.useState<string | number | undefined>();
-    const { pathSepChar, dropzone, machineAddress, machineDirectory, machineOS, onChange } = { ...props };
-
-    const styles = React.useMemo(() => {
-        return { root: { width: 320 }, optionsContainerWrapper: { width: 320 } };
-    }, []);
+    const { label, pathSepChar, dropzone, machineAddress, machineDirectory, machineOS, onChange, required, errorMessage } = { ...props };
 
     const fetchFolders = React.useCallback((pathSepChar: string, Netaddr: string, Path: string, OS: number, depth: number): Promise<IComboBoxOption[]> => {
         depth = depth || 0;
@@ -717,7 +832,7 @@ export const TargetFolderTextField: React.FunctionComponent<TargetFolderTextFiel
         });
     }, [dropzone, isContainer, machineDirectory, props.required]);
 
-    const onChanged = React.useCallback((event: React.FormEvent<IComboBox>, option?: IComboBoxOption, index?: number, value?: string): void => {
+    const onChanged = React.useCallback((event: React.FormEvent<HTMLElement>, option?: IComboBoxOption, index?: number, value?: string): void => {
         let key = option?.key;
         if (!option && value) {
             key = [machineDirectory, value].join(pathSepChar);
@@ -740,7 +855,19 @@ export const TargetFolderTextField: React.FunctionComponent<TargetFolderTextFiel
         _fetchFolders();
     }, [isContainer, pathSepChar, dropzone, machineAddress, machineDirectory, machineOS, fetchFolders]);
 
-    return <ComboBox {...props} allowFreeform={true} autoComplete={"on"} selectedKey={selectedKey} onChange={onChanged} options={folders} styles={styles} />;
+    return folders === undefined ? <Shimmer /> : <FieldV9 label={label} validationMessage={errorMessage} required={required}>
+        <ComboBoxBase {...props as any} freeform autoComplete="on" value={folders?.find(f => f.key === selectedKey)?.text || ""} selectedOptions={selectedKey ? [String(selectedKey)] : []} onOptionSelect={(_, data) => {
+            const option = folders?.find(f => String(f.key) === data.optionValue);
+            const index = folders?.findIndex(f => String(f.key) === data.optionValue);
+            onChanged(undefined, option, index, data.optionText);
+        }}>
+            {folders?.map(folder => (
+                <Option key={String(folder.key)} value={String(folder.key)} text={folder.text}>
+                    {folder.text}
+                </Option>
+            ))}
+        </ComboBoxBase>
+    </FieldV9>;
 };
 
 export interface UserGroupsProps extends Omit<AsyncDropdownProps, "options"> {
@@ -818,14 +945,20 @@ export const PermissionTypeField: React.FunctionComponent<PermissionTypeProps> =
     return <AsyncDropdown {...props} options={baseDns} />;
 };
 
-export interface CloudContainerNameFieldProps extends Omit<IComboBoxProps, "options"> {
+export interface CloudContainerNameFieldProps extends Omit<ComboboxProps, "options" | "onChange"> {
     name?: string;
+    label?: string;
+    selectedKey?: string;
+    disabled?: boolean;
+    onRenderLabel?: any;
+    onChange?: any;
 }
 
 export const CloudContainerNameField: React.FunctionComponent<CloudContainerNameFieldProps> = (props) => {
 
     const [cloudContainerNames] = useContainerNames();
     const [options, setOptions] = React.useState<IComboBoxOption[]>();
+    const { label } = { ...props };
 
     React.useEffect(() => {
         const options = cloudContainerNames?.map(row => {
@@ -837,17 +970,29 @@ export const CloudContainerNameField: React.FunctionComponent<CloudContainerName
         setOptions([{ key: "", text: "" }, ...options]);
     }, [cloudContainerNames]);
 
-    return <ComboBox {...props} allowFreeform={true} multiSelect autoComplete={"on"} options={options} />;
+    return options === undefined ? <Shimmer /> : <FieldV9 label={label}>
+        <ComboBoxBase {...props as any} freeform multiselect autoComplete="on" value={options?.map(o => o.text).join(", ") || ""}>
+            {options?.map(option => (
+                <Option key={String(option.key)} value={String(option.key)} text={option.text}>
+                    {option.text}
+                </Option>
+            ))}
+        </ComboBoxBase>
+    </FieldV9>;
 };
 
-export interface CloudPodNameFieldProps extends Omit<IComboBoxProps, "options"> {
+export interface CloudPodNameFieldProps extends Omit<ComboboxProps, "options" | "onChange"> {
     name?: string;
+    label?: string;
+    selectedKey?: string;
+    onChange?: any;
 }
 
 export const CloudPodNameField: React.FunctionComponent<CloudPodNameFieldProps> = (props) => {
 
     const [cloudPodNames] = usePodNames();
     const [options, setOptions] = React.useState<IComboBoxOption[]>();
+    const { label } = { ...props };
 
     React.useEffect(() => {
         const options = cloudPodNames?.map(row => {
@@ -859,7 +1004,15 @@ export const CloudPodNameField: React.FunctionComponent<CloudPodNameFieldProps> 
         setOptions(options);
     }, [cloudPodNames]);
 
-    return <ComboBox {...props} allowFreeform={true} autoComplete={"on"} options={options} />;
+    return options === undefined ? <Shimmer /> : <FieldV9 label={label}>
+        <ComboBoxBase {...props as any} freeform autoComplete="on" value={options?.[0]?.text || ""}>
+            {options?.map(option => (
+                <Option key={String(option.key)} value={String(option.key)} text={option.text}>
+                    {option.text}
+                </Option>
+            ))}
+        </ComboBoxBase>
+    </FieldV9>;
 };
 
 const formatDateForInput = (date: Date | string | undefined): string => {
@@ -923,24 +1076,24 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                 retVal.push({
                     id: fieldID,
                     label: field.label,
-                    field: <TextField
+                    field: <FieldV9
                         key={fieldID}
-                        id={fieldID}
-                        type={field.type}
-                        name={fieldID}
-                        value={field.value}
-                        title={field.value}
-                        placeholder={field.placeholder}
-                        onChange={(evt, newValue) => onChange(fieldID, newValue)}
-                        borderless={field.readonly && !field.multiline}
-                        readOnly={field.readonly}
-                        disabled={field.disabled(field) ? true : false}
+                        validationMessage={field.errorMessage ?? ""}
                         required={field.required}
-                        multiline={field.multiline}
-                        errorMessage={field.errorMessage ?? ""}
-                        canRevealPassword={field.type === "password" ? true : false}
-                        revealPasswordAriaLabel={nlsHPCC.ShowPassword}
-                    />
+                    >
+                        <Input
+                            id={fieldID}
+                            type={field.type === "string" ? "text" : field.type}
+                            name={fieldID}
+                            value={field.value}
+                            title={field.value}
+                            placeholder={field.placeholder}
+                            onChange={(evt, data) => onChange(fieldID, data.value)}
+                            readOnly={field.readonly}
+                            disabled={field.disabled(field) ? true : false}
+                            appearance={field.readonly && !field.multiline ? "filled-lighter" : "outline"}
+                        />
+                    </FieldV9>
                 });
                 break;
             case "number":
@@ -948,18 +1101,21 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                 retVal.push({
                     id: fieldID,
                     label: field.label,
-                    field: <TextField
+                    field: <FieldV9
                         key={fieldID}
-                        id={fieldID}
-                        type={field.type}
-                        name={fieldID}
-                        value={`${field.value}`}
-                        placeholder={field.placeholder}
-                        onChange={(evt, newValue) => onChange(fieldID, newValue)}
-                        borderless={field.readonly}
-                        readOnly={field.readonly}
                         required={field.required}
-                    />
+                    >
+                        <Input
+                            id={fieldID}
+                            type={field.type}
+                            name={fieldID}
+                            value={`${field.value}`}
+                            placeholder={field.placeholder}
+                            onChange={(evt, data) => onChange(fieldID, data.value)}
+                            readOnly={field.readonly}
+                            appearance={field.readonly ? "filled-lighter" : "outline"}
+                        />
+                    </FieldV9>
                 });
                 break;
             case "checkbox":
@@ -971,9 +1127,10 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                         key={fieldID}
                         id={fieldID}
                         name={fieldID}
+                        label={field.label}
                         disabled={field.disabled(fields) ? true : false}
                         checked={field.value === true ? true : false}
-                        onChange={(evt, newValue) => onChange(fieldID, newValue)}
+                        onChange={(evt, data) => onChange(fieldID, data.checked)}
                     />
                 });
                 break;
@@ -982,14 +1139,18 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                 retVal.push({
                     id: fieldID,
                     label: field.label,
-                    field: <ChoiceGroup
-                        key={fieldID}
-                        name={fieldID}
-                        disabled={field.disabled("") ? true : false}
-                        selectedKey={field.value}
-                        options={field.options ? field.options : []}
-                        onChange={(evt, newValue) => onChange(fieldID, newValue)}
-                    />
+                    field: <FieldV9 key={fieldID}>
+                        <RadioGroup
+                            name={fieldID}
+                            disabled={field.disabled("") ? true : false}
+                            value={field.value}
+                            onChange={(evt, data) => onChange(fieldID, data.value)}
+                        >
+                            {(field.options || []).map(option => (
+                                <Radio key={option.key} value={option.key} label={option.text} />
+                            ))}
+                        </RadioGroup>
+                    </FieldV9>
                 });
                 break;
             case "dropdown":
@@ -1042,21 +1203,16 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                 retVal.push({
                     id: fieldID,
                     label: field.label,
-                    field: <input
-                        key={fieldID}
-                        id={fieldID}
-                        type="datetime-local"
-                        name={fieldID}
-                        defaultValue={field.value}
-                        onChange={ev => {
-                            field.value = ev.target.value;
-                        }}
-                    />
+                    field: <FieldV9 key={fieldID} required={field.required}>
+                        <Input
+                            id={fieldID}
+                            type="datetime-local"
+                            name={fieldID}
+                            value={field.value}
+                            onChange={(ev, data) => onChange(fieldID, data.value)}
+                        />
+                    </FieldV9>
                 });
-                const el = document.querySelector(`.ms-Modal.is-open #${fieldID}`);
-                if (el && field.value === "") {
-                    el["value"] = field.value;
-                }
                 break;
             case "link":
                 retVal.push({
@@ -1065,7 +1221,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     field: <Link
                         key={fieldID}
                         href={field.href}
-                        target={field.newTab ? "_blank" : ""}
+                        target={field.newTab ? "_blank" : "_self"}
                     >{field.value || ""}</Link>
                 });
                 break;
@@ -1076,7 +1232,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     field: field.links?.map((link, idx) => <Link
                         key={`${fieldID}_${idx}`}
                         href={link.href}
-                        target={link.newTab ? "_blank" : ""}
+                        target={link.newTab ? "_blank" : "_self"}
                         style={idx > 0 ? { paddingLeft: 6 } : {}}>{link.value || ""}</Link>
                     )
                 });
@@ -1085,9 +1241,10 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                 retVal.push({
                     id: fieldID,
                     label: field.label,
-                    field: <ProgressIndicator
+                    field: <ProgressBar
                         key={fieldID}
-                        percentComplete={parseInt(field.value, 10) / 100} />
+                        value={parseInt(field.value, 10) / 100}
+                        max={1} />
                 });
                 break;
             case "workunit-state":
