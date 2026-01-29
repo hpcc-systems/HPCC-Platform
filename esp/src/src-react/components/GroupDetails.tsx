@@ -1,5 +1,6 @@
 import * as React from "react";
-import { CommandBar, ICommandBarItemProps, MessageBar, MessageBarType, Pivot, PivotItem, Sticky, StickyPositionType } from "@fluentui/react";
+import { CommandBar, ICommandBarItemProps, MessageBar, MessageBarType, Sticky, StickyPositionType } from "@fluentui/react";
+import { SelectTabData, SelectTabEvent, Tab, TabList, makeStyles } from "@fluentui/react-components";
 import { SizeMe } from "../layouts/SizeMe";
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsAccess from "src/ws_access";
@@ -12,6 +13,13 @@ import { GroupMembers } from "./GroupMembers";
 import { pushUrl } from "../util/history";
 
 const logger = scopedLogger("src-react/components/GroupDetails.tsx");
+
+const useStyles = makeStyles({
+    container: {
+        height: "100%",
+        position: "relative"
+    }
+});
 
 interface GroupDetailsProps {
     name: string;
@@ -57,47 +65,62 @@ export const GroupDetails: React.FunctionComponent<GroupDetailsProps> = ({
         }
     ], [canSave, groupName]);
 
+    const onTabSelect = React.useCallback((_: SelectTabEvent, data: SelectTabData) => {
+        pushUrl(`/${opsCategory}/security/groups/${groupName}/${data.value as string}`);
+    }, [groupName, opsCategory]);
+
+    const styles = useStyles();
+
     return <SizeMe>{({ size }) =>
-        <Pivot
-            overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab}
-            onLinkClick={evt => {
-                pushUrl(`/${opsCategory}/security/groups/${groupName}/${evt.props.itemKey}`);
-            }}
-        >
-            <PivotItem headerText={groupName} itemKey="summary" style={pivotItemStyle(size)} >
-                <Sticky stickyPosition={StickyPositionType.Header}>
-                    <CommandBar items={buttons} />
-                </Sticky>
-                {showError &&
-                    <MessageBar messageBarType={MessageBarType.error} isMultiline={true} onDismiss={() => setShowError(false)} dismissButtonAriaLabel="Close">
-                        {errorMessage}
-                    </MessageBar>
-                }
-                <h3 style={{ margin: "0.5em 0 0 0" }}>
-                    <span className="bold">{nlsHPCC.ContactAdmin}</span>
-                </h3>
-                <TableGroup fields={{
-                    "name": { label: nlsHPCC.Name, type: "string", value: groupName, readonly: true },
-                }} onChange={(id, value) => {
-                    switch (id) {
-                        case "name":
-                            setGroupName(value);
-                            break;
-                        default:
-                            console.log(id, value);
+        <div className={styles.container}>
+            <TabList selectedValue={tab} onTabSelect={onTabSelect} size="medium">
+                <Tab value="summary">{groupName}</Tab>
+                <Tab value="members">{nlsHPCC.Members}</Tab>
+                <Tab value="activePermissions">{nlsHPCC.title_ActiveGroupPermissions}</Tab>
+                <Tab value="availablePermissions">{nlsHPCC.title_AvailableGroupPermissions}</Tab>
+            </TabList>
+            {tab === "summary" &&
+                <div style={pivotItemStyle(size)}>
+                    <Sticky stickyPosition={StickyPositionType.Header}>
+                        <CommandBar items={buttons} />
+                    </Sticky>
+                    {showError &&
+                        <MessageBar messageBarType={MessageBarType.error} isMultiline={true} onDismiss={() => setShowError(false)} dismissButtonAriaLabel="Close">
+                            {errorMessage}
+                        </MessageBar>
                     }
-                }} />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.Members} itemKey="members" style={pivotItemStyle(size, 0)}>
-                <GroupMembers groupname={groupName} />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.title_ActiveGroupPermissions} itemKey="activePermissions" style={pivotItemStyle(size, 0)}>
-                <DojoAdapter widgetClassID="ShowAccountPermissionsWidget" params={{ IsGroup: true, IncludeGroup: false, AccountName: name }} />
-            </PivotItem>
-            <PivotItem headerText={nlsHPCC.title_AvailableGroupPermissions} itemKey="availablePermissions" style={pivotItemStyle(size, 0)}>
-                <DojoAdapter widgetClassID="PermissionsWidget" params={{ IsGroup: true, IncludeGroup: false, groupname: name }} />
-            </PivotItem>
-        </Pivot>
+                    <h3 style={{ margin: "0.5em 0 0 0" }}>
+                        <span className="bold">{nlsHPCC.ContactAdmin}</span>
+                    </h3>
+                    <TableGroup fields={{
+                        "name": { label: nlsHPCC.Name, type: "string", value: groupName, readonly: true },
+                    }} onChange={(id, value) => {
+                        switch (id) {
+                            case "name":
+                                setGroupName(value);
+                                break;
+                            default:
+                                console.log(id, value);
+                        }
+                    }} />
+                </div>
+            }
+            {tab === "members" &&
+                <div style={pivotItemStyle(size, 0)}>
+                    <GroupMembers groupname={groupName} />
+                </div>
+            }
+            {tab === "activePermissions" &&
+                <div style={pivotItemStyle(size, 0)}>
+                    <DojoAdapter widgetClassID="ShowAccountPermissionsWidget" params={{ IsGroup: true, IncludeGroup: false, AccountName: name }} />
+                </div>
+            }
+            {tab === "availablePermissions" &&
+                <div style={pivotItemStyle(size, 0)}>
+                    <DojoAdapter widgetClassID="PermissionsWidget" params={{ IsGroup: true, IncludeGroup: false, groupname: name }} />
+                </div>
+            }
+        </div>
     }</SizeMe>;
 
 };

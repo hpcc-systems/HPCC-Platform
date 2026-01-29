@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Pivot, PivotItem } from "@fluentui/react";
+import { SelectTabData, SelectTabEvent, Tab, TabList, makeStyles } from "@fluentui/react-components";
 import { SizeMe } from "../layouts/SizeMe";
 import nlsHPCC from "src/nlsHPCC";
 import { useBuildInfo } from "../hooks/platform";
@@ -7,6 +7,13 @@ import { DESDLBindings } from "./DESDLBindings";
 import { DESDLDefinitions } from "./DESDLDefinitions";
 import { pivotItemStyle } from "../layouts/pivot";
 import { pushUrl } from "../util/history";
+
+const useStyles = makeStyles({
+    container: {
+        height: "100%",
+        position: "relative"
+    }
+});
 
 interface ESDLBindingProps {
     tab?: string;
@@ -18,19 +25,30 @@ export const DynamicESDL: React.FunctionComponent<ESDLBindingProps> = ({
 
     const [, { opsCategory }] = useBuildInfo();
 
+    const onTabSelect = React.useCallback((_: SelectTabEvent, data: SelectTabData) => {
+        pushUrl(`/${opsCategory}/desdl/${data.value as string}`);
+    }, [opsCategory]);
+
+    const styles = useStyles();
+
     return <>
         <SizeMe>{({ size }) =>
-            <Pivot
-                overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab}
-                onLinkClick={evt => pushUrl(`/${opsCategory}/desdl/${evt.props.itemKey}`)}
-            >
-                <PivotItem headerText={nlsHPCC.title_DESDL} itemKey="bindings" style={pivotItemStyle(size)} >
-                    <DESDLBindings />
-                </PivotItem>
-                <PivotItem headerText={nlsHPCC.Definitions} itemKey="definitions" style={pivotItemStyle(size, 0)}>
-                    <DESDLDefinitions />
-                </PivotItem>
-            </Pivot>
+            <div className={styles.container}>
+                <TabList selectedValue={tab} onTabSelect={onTabSelect} size="medium">
+                    <Tab value="bindings">{nlsHPCC.title_DESDL}</Tab>
+                    <Tab value="definitions">{nlsHPCC.Definitions}</Tab>
+                </TabList>
+                {tab === "bindings" &&
+                    <div style={pivotItemStyle(size)}>
+                        <DESDLBindings />
+                    </div>
+                }
+                {tab === "definitions" &&
+                    <div style={pivotItemStyle(size, 0)}>
+                        <DESDLDefinitions />
+                    </div>
+                }
+            </div>
         }</SizeMe>
     </>;
 };
