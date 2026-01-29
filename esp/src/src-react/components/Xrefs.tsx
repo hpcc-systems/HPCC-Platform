@@ -5,7 +5,6 @@ import { HolyGrail } from "../layouts/HolyGrail";
 import nlsHPCC from "src/nlsHPCC";
 import * as WsDFUXref from "src/WsDFUXref";
 import { useConfirm } from "../hooks/confirm";
-import { useBuildInfo } from "../hooks/platform";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { ShortVerticalDivider } from "./Common";
 import { pushUrl } from "../util/history";
@@ -21,8 +20,6 @@ interface XrefsProps {
 
 export const Xrefs: React.FunctionComponent<XrefsProps> = ({
 }) => {
-
-    const [, { opsCategory }] = useBuildInfo();
 
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [data, setData] = React.useState<any[]>([]);
@@ -137,10 +134,10 @@ export const Xrefs: React.FunctionComponent<XrefsProps> = ({
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection,
             onClick: () => {
                 if (selection.length === 1) {
-                    pushUrl(`/${opsCategory}/security/users/${selection[0].username}`);
+                    pushUrl(`/xref/${selection[0].name}`);
                 } else {
-                    selection.forEach(user => {
-                        window.open(`#/${opsCategory}/security/users/${user.username}`, "_blank");
+                    selection.forEach(item => {
+                        window.open(`#/xref/${item.name}`, "_blank");
                     });
                 }
             }
@@ -152,10 +149,10 @@ export const Xrefs: React.FunctionComponent<XrefsProps> = ({
         },
         { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
-            key: "generate", text: nlsHPCC.Generate,
+            key: "generate", text: nlsHPCC.Generate, disabled: !selection.length,
             onClick: () => setShowGenerateConfirm(true)
         }
-    ], [opsCategory, refreshData, selection, setShowCancelConfirm, setShowGenerateConfirm, uiState]);
+    ], [refreshData, selection, setShowCancelConfirm, setShowGenerateConfirm, uiState]);
 
     const copyButtons = useCopyButtons(columns, selection, "xrefs");
 
