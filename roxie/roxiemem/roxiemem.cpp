@@ -7973,17 +7973,19 @@ protected:
         DataBuffer *pages[3000];
         for (i = 0; i < 3000; i++)
             pages[i] = 0;
+        
+        unsigned initialPages = dataBufferPages.load(std::memory_order_relaxed);
         //printf("\n----Begin DataBuffsActive=%d, DataBuffPages=%d ------ \n", dataBuffersActive.load(std::memory_order_relaxed), dataBufferPages.load(std::memory_order_relaxed));
         for (i = 0; i < 2046; i++)
             pages[i] = dm.allocate();
         //printf("\n----Mid 1 DataBuffsActive=%d, DataBuffPages=%d ------ \n", dataBuffersActive.load(), dataBufferPages.load());
 
-        ASSERT(dataBufferPages.load()==PAGES(2046 * DATA_ALIGNMENT_SIZE, (HEAP_ALIGNMENT_SIZE- DATA_ALIGNMENT_SIZE)));
+        ASSERT(dataBufferPages.load()==initialPages + PAGES(2046 * DATA_ALIGNMENT_SIZE, (HEAP_ALIGNMENT_SIZE- DATA_ALIGNMENT_SIZE)));
         pages[1022]->Release(); // release from first page
         pages[1022] = 0;  
         pages[2100] = dm.allocate(); // allocate from first page 
         //printf("\n----Mid 2 DataBuffsActive=%d, DataBuffPages=%d ------ \n", dataBuffersActive.load(), dataBufferPages.load());
-        ASSERT(dataBufferPages.load(std::memory_order_relaxed)==PAGES(2046 * DATA_ALIGNMENT_SIZE, (HEAP_ALIGNMENT_SIZE- DATA_ALIGNMENT_SIZE)));
+        ASSERT(dataBufferPages.load(std::memory_order_relaxed)==initialPages + PAGES(2046 * DATA_ALIGNMENT_SIZE, (HEAP_ALIGNMENT_SIZE- DATA_ALIGNMENT_SIZE)));
         pages[2101] = dm.allocate(); // allocate from a new page (third)
         //printf("\n----Mid 3 DataBuffsActive=%d, DataBuffPages=%d ------ \n", dataBuffersActive.load(), dataBufferPages.load());
         // Release all blocks, which releases all pages, except active one
@@ -7992,13 +7994,13 @@ protected:
                 pages[i]->Release();
         //printf("\n----End DataBuffsActive=%d, DataBuffPages=%d ------ \n", dataBuffersActive.load(), dataBufferPages.load());
         dm.allocate()->Release();
-        ASSERT(dataBufferPages.load()==1);
+        ASSERT(dataBufferPages.load()==initialPages + 1);
 
         for (i = 0; i < 1022; i++)
             dm.allocate()->Release();
         dm.allocate()->Release();
         dm.allocate()->Release();
-        ASSERT(dataBufferPages.load()==1);
+        ASSERT(dataBufferPages.load()==initialPages + 1);
 
         for (i = 0; i < 2000; i++)
             pages[i] = dm.allocate();
@@ -8006,12 +8008,12 @@ protected:
             pages[i]->Release();
         for (i = 0; i < 1000; i++)
             pages[i] = dm.allocate();
-        ASSERT(dataBufferPages.load()==PAGES(2000 * DATA_ALIGNMENT_SIZE, (HEAP_ALIGNMENT_SIZE- DATA_ALIGNMENT_SIZE)));
+        ASSERT(dataBufferPages.load()==initialPages + PAGES(2000 * DATA_ALIGNMENT_SIZE, (HEAP_ALIGNMENT_SIZE- DATA_ALIGNMENT_SIZE)));
         for (i = 0; i < 1999; i++)
             pages[i]->Release();
         pages[1999]->Release();
         dm.allocate()->Release();
-        ASSERT(dataBufferPages.load()==1);
+        ASSERT(dataBufferPages.load()==initialPages + 1);
 
         dm.cleanUp();
     }
