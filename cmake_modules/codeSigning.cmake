@@ -11,14 +11,15 @@ function(configure_windows_signing target_name package_file_path)
     endif()
 
     # Check for signing passphrase file
-    if(EXISTS "${PROJECT_SOURCE_DIR}/../sign/passphrase.txt")
-        file(STRINGS "${PROJECT_SOURCE_DIR}/../sign/passphrase.txt" PFX_PASSWORD LIMIT_COUNT 1)
-        message("-- Using passphrase from file: ${PROJECT_SOURCE_DIR}/../sign/passphrase.txt")
+    set(DO_CODE_SIGNING FALSE)
+    if(NOT "${DIGICERT_KEYPAIR_ALIAS}" STREQUAL "")
+        message("-- Using DIGICERT_KEYPAIR_ALIAS for code signing")
+        set(DO_CODE_SIGNING TRUE)
     endif()
 
-    if(PFX_PASSWORD)
+    if(DO_CODE_SIGNING)
         # Configure NSIS installer signing
-        set(CPACK_NSIS_FINALIZE_CMD "signtool sign /f \\\"${PROJECT_SOURCE_DIR}/../sign/hpcc_code_signing.pfx\\\" /fd SHA256 /p \\\"${PFX_PASSWORD}\\\" /tr http://timestamp.digicert.com /td SHA256")
+        set(CPACK_NSIS_FINALIZE_CMD "smctl sign --simple --keypair-alias \\\"${DIGICERT_KEYPAIR_ALIAS}\\\" --dynamic-auth --timestamp --verbose --exit-non-zero-on-fail --failfast --input")
         
         set(CPACK_NSIS_DEFINES "
             !define MUI_STARTMENUPAGE_DEFAULTFOLDER \\\"${CPACK_PACKAGE_VENDOR}\\\\${version}\\\\${CPACK_NSIS_DISPLAY_NAME}\\\"
@@ -30,7 +31,7 @@ function(configure_windows_signing target_name package_file_path)
         # Create custom target for package signing
         message("-- Signing package: ${package_file_path}")
         add_custom_target(${target_name}
-            COMMAND signtool sign /f "${PROJECT_SOURCE_DIR}/../sign/hpcc_code_signing.pfx" /fd "SHA256" /p "${PFX_PASSWORD}" /tr "http://timestamp.digicert.com" /td "SHA256" "${package_file_path}"
+            COMMAND smctl sign --simple --input "${package_file_path}" --keypair-alias "${DIGICERT_KEYPAIR_ALIAS}" --dynamic-auth --timestamp --verbose --exit-non-zero-on-fail --failfast
             COMMENT "Digital Signature"
         )
         add_dependencies(${target_name} PACKAGE)
@@ -44,6 +45,6 @@ function(configure_windows_signing target_name package_file_path)
             !define MUI_FINISHPAGE_NOAUTOCLOSE
         " PARENT_SCOPE)
         
-        message(STATUS "Code signing passphrase not found - basic NSIS configuration applied")
+        message(STATUS "Code signing keypair not found - basic NSIS configuration applied")
     endif()
 endfunction()

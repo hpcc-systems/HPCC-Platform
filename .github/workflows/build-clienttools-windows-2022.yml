@@ -30,7 +30,7 @@ on:
         type: string
         description: 'CMake config options'
         required: false
-        default: '-T host=x64 -A x64 -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_PARQUET=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
+        default: '-T host=x64 -A x64 -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_PARQUET=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF -DDIGICERT_KEYPAIR_ALIAS=RIS_Data_Services_HPCC_Systems'
       cmake-build-options:
         type: string
         description: 'CMake build options'
@@ -66,19 +66,31 @@ jobs:
           submodules: recursive
           path: ./LN
 
-      - name: Setup Code Signing
+      - name: Setup Certificate File
         shell: "pwsh"
         run: |
-          mkdir -p ./sign
-          cd sign
-          $pfxPath = "hpcc_code_signing.pfx"
-          $encodedBytes = [System.Convert]::FromBase64String("${{ secrets.SIGNING_CERTIFICATE }}")
-          $currentDirectory = Get-Location
-          $certificatePath = Join-Path -Path $currentDirectory -ChildPath $pfxPath
-          [IO.File]::WriteAllBytes("$certificatePath", $encodedBytes)
-          $passphrasePath = Join-Path -Path $currentDirectory -ChildPath "passphrase.txt"
-          Set-Content -Path $passphrasePath -Value "${{ secrets.SIGNING_CERTIFICATE_PASSPHRASE }}"
-          CertUtil -p ${{ secrets.SIGNING_CERTIFICATE_PASSPHRASE }} hpcc_code_signing.pfx           
+          $base64 = "${{ secrets.SM_CLIENT_CERT_FILE_B64 }}"
+          if ([string]::IsNullOrEmpty($base64)) {
+            Write-Error "Secret SM_CLIENT_CERT_FILE_B64 is empty or not set."
+            exit 1
+          }
+          $bytes = [Convert]::FromBase64String($base64)
+          $outDir = "$env:RUNNER_TEMP"
+          $p12Path = Join-Path $outDir "sm_client_cert.p12"
+          [IO.File]::WriteAllBytes($p12Path, $bytes)
+          # Make sure the path is visible to subsequent steps
+          "SM_CLIENT_CERT_FILE=$p12Path" | Out-File -FilePath $env:GITHUB_ENV -Append
+          
+      - name: Setup Software Trust Manager
+        uses: digicert/code-signing-software-trust-action@v1.0.1
+        with:
+          simple-signing-mode: true
+          keypair-alias: "RIS_Data_Services_HPCC_Systems"
+        env:
+          SM_HOST: https://clientauth.one.digicert.com
+          SM_API_KEY: ${{ secrets.DIGICERT_API_KEY }}
+          SM_CLIENT_CERT_FILE: ${{ env.SM_CLIENT_CERT_FILE }}
+          SM_CLIENT_CERT_PASSWORD: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
 
       - name: vcpkg bootstrap
         shell: "bash"
@@ -118,6 +130,12 @@ jobs:
           else
             cmake --build ./build ${{ inputs.cmake-build-options }} --target SIGN
           fi
+        env:
+          SM_HOST: https://clientauth.one.digicert.com
+          SM_API_KEY: ${{ secrets.DIGICERT_API_KEY }}
+          SM_CLIENT_CERT_FILE: ${{ env.SM_CLIENT_CERT_FILE }}
+          SM_CLIENT_CERT_PASSWORD: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
+
 
       - name: Release Community Clienttools
         if: ${{ inputs.ln-ref == '' }}
