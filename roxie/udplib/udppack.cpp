@@ -57,6 +57,36 @@ class CMessagePacker : implements IMessagePacker, public CInterface
     unsigned        bulkBufferCount = 0;
     unsigned        bulkBufferIndex = 0;
 
+    DataBuffer *allocateNextBuffer()
+    {
+        // Try to use a bulk-allocated buffer first
+        if (bulkBufferIndex < bulkBufferCount)
+        {
+            return bulkBuffers[bulkBufferIndex++];
+        }
+        else
+        {
+            // Try to allocate a bulk pool on first use (amortize allocation overhead)
+            if (bulkBufferCount == 0 && bufferManager->allocateBlock(8, bulkBuffers))
+            {
+                bulkBufferCount = 8;
+                bulkBufferIndex = 0;
+                return bulkBuffers[bulkBufferIndex++];
+            }
+            else if (bulkBufferCount == 0 && bufferManager->allocateBlock(4, bulkBuffers))
+            {
+                bulkBufferCount = 4;
+                bulkBufferIndex = 0;
+                return bulkBuffers[bulkBufferIndex++];
+            }
+            else
+            {
+                // Fall back to single allocation (either bulk allocation failed or pool exhausted)
+                return bufferManager->allocate();
+            }
+        }
+    }
+
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -76,21 +106,8 @@ public:
 
         packed_request = false;
         
-        // Try to bulk allocate buffers for better performance
-        unsigned estimatedBuffers = 4;  // Start with a small pool
-        if (bufferManager->allocateBlock(estimatedBuffers, bulkBuffers))
-        {
-            bulkBufferCount = estimatedBuffers;
-            bulkBufferIndex = 0;
-            part_buffer = bulkBuffers[bulkBufferIndex++];
-        }
-        else
-        {
-            // Fall back to single allocation
-            part_buffer = bufferManager->allocate();
-            bulkBufferCount = 0;
-            bulkBufferIndex = 0;
-        }
+        // Allocate first buffer individually - defer bulk allocation until we know we need more
+        part_buffer = bufferManager->allocate();
         
         assertex(data_buffer_size >= headerSize + sizeof(unsigned short));
         *(unsigned short *) (&part_buffer->data[sizeof(UdpPacketHeader)]) = headerSize;
@@ -139,16 +156,7 @@ public:
 
         if (!part_buffer)
         {
-            // Try to use a bulk-allocated buffer first
-            if (bulkBufferIndex < bulkBufferCount)
-            {
-                part_buffer = bulkBuffers[bulkBufferIndex++];
-            }
-            else
-            {
-                // Fall back to single allocation
-                part_buffer = bufferManager->allocate();
-            }
+            part_buffer = allocateNextBuffer();
         }
         packed_request = true;
         if (variable)
@@ -183,16 +191,7 @@ public:
             {
                 if (!part_buffer)
                 {
-                    // Try to use a bulk-allocated buffer first
-                    if (bulkBufferIndex < bulkBufferCount)
-                    {
-                        part_buffer = bulkBuffers[bulkBufferIndex++];
-                    }
-                    else
-                    {
-                        // Fall back to single allocation
-                        part_buffer = bufferManager->allocate();
-                    }
+                    part_buffer = allocateNextBuffer();
                     data_used = 0;
                 }
                 unsigned chunkLen = data_buffer_size - data_used;
@@ -227,10 +226,7 @@ private:
             last_message_done = true;
             if (!part_buffer)
             {
-                if (bulkBufferIndex < bulkBufferCount)
-                    part_buffer = bulkBuffers[bulkBufferIndex++];
-                else
-                    part_buffer = bufferManager->allocate();
+                part_buffer = allocateNextBuffer();
             }
             const char *metaData = metaInfo.toByteArray();
             unsigned metaLength = metaInfo.length();
@@ -243,10 +239,7 @@ private:
                 metaData += maxMetaLength;
                 data_used = 0;
                 maxMetaLength = data_buffer_size;
-                if (bulkBufferIndex < bulkBufferCount)
-                    part_buffer = bulkBuffers[bulkBufferIndex++];
-                else
-                    part_buffer = bufferManager->allocate();
+                part_buffer = allocateNextBuffer();
             }
             if (metaLength)
                 memcpy(&part_buffer->data[sizeof(UdpPacketHeader)+data_used], metaData, metaLength);
