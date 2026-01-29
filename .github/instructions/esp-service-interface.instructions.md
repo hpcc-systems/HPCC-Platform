@@ -10,6 +10,11 @@ applyTo: '**/*.ecm'
 - Increment the `version` and `default_client_version` attributes of the `ESPservice` element.
 - Include the `exceptions_inline` attribute in any new `ESPresponse` and `ESPmethod` element.
 
+## Version Bumping
+- Always bump the `ESPservice` `version` and `default_client_version` when changing request/response schemas or behavior.
+- Use the next sequential version string (for example, if current is 1.67, bump to 1.68).
+- Keep changes backward compatible; do not remove or change existing fields without a version gate.
+
 ## Naming Conventions
 - Use `PascalCase` for element names.
 - Use lower case for native types such as `string`, `integer`, `boolean`, etc.
