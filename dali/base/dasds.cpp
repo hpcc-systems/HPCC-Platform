@@ -8905,9 +8905,44 @@ bool CDeltaWriter::save(std::queue<Owned<CTransactionItem>> &todo)
     {
         IFile &iFile;
         bool done;
-        void doit() { done = true; iFile.remove(); }
+        void doit(bool throwEx)
+        {
+            // If remove() ultimately fails, 'done' remains false so a later explicit call
+            // to doit() (or the destructor's implicit call) will retry.
+            if (done)
+                return;
+            // retry loop. remove() should not fail, but if it does retry with small delay
+            unsigned attempts = 5;
+            while (true)
+            {
+                Owned<IException> e;
+                try
+                {
+                    iFile.remove();
+                    done = true;
+                    break;
+                }
+                catch (IException *_e)
+                {
+                    e.setown(_e); // deliberately keep most recent
+                }
+                bool last = 0 == --attempts;
+                const LogMsgCategory &cat = last ? MCoperatorDisaster : MCoperatorWarning;
+                VStringBuffer msg("save: failed to remove delta in progress file: %s", iFile.queryFilename());
+                LOG(cat, e, msg.str());
+
+                if (last)
+                {
+                    // NB: done remains set to false
+                    if (!throwEx)
+                        break;
+                    throw e.getClear();
+                }
+                MilliSleep(100);
+            }
+        }
         RemoveDIPBlock(IFile &_iFile) : iFile(_iFile), done(false) { }
-        ~RemoveDIPBlock () { if (!done) doit(); }
+        ~RemoveDIPBlock () { doit(false); }
     } removeDIP(*deltaIPIFile);
 
     while (true)
@@ -8935,7 +8970,7 @@ bool CDeltaWriter::save(std::queue<Owned<CTransactionItem>> &todo)
                         else
                         {
                             // *cannot block* because other op (sasha) accessing remote dali files, can access dali.
-                            removeDIP.doit();
+                            removeDIP.doit(true);
                             PROGLOG("blocked");
                             return false;
                         }
@@ -8946,7 +8981,7 @@ bool CDeltaWriter::save(std::queue<Owned<CTransactionItem>> &todo)
         }
         catch (IException *e)
         {
-            DISLOG(e, "save: failed to touch delta in progress file");
+            DISLOG(e, "save: failure whilst checking detach in progress file");
             e->Release();
         }
         // here if exception only
