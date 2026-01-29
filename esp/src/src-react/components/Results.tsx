@@ -1,5 +1,6 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link, Pivot, PivotItem } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "@fluentui/react";
+import { makeStyles } from "@fluentui/react-components";
 import { SizeMe } from "../layouts/SizeMe";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
@@ -10,10 +11,18 @@ import { hashHistory } from "../util/history";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { ShortVerticalDivider } from "./Common";
 import { Result } from "./Result";
+import { OverflowTabList, TabInfo } from "./controls/TabbedPanes/index";
 
 const defaultUIState = {
     hasSelection: false
 };
+
+const useStyles = makeStyles({
+    container: {
+        height: "100%",
+        position: "relative"
+    }
+});
 
 interface ResultsProps {
     wuid: string;
@@ -172,14 +181,41 @@ export const TabbedResults: React.FunctionComponent<TabbedResultsProps> = ({
 
     const [results] = useWorkunitResults(wuid);
 
+    const tabs = React.useMemo((): TabInfo[] => {
+        return results.map(result => ({
+            id: `${result?.Sequence ?? ""}`,
+            label: result?.ResultName ?? ""
+        }));
+    }, [results]);
+
+    const [selectedTab, setSelectedTab] = React.useState<string>("");
+
+    React.useEffect(() => {
+        const firstTab = tabs[0]?.id ?? "";
+        if (!selectedTab || !tabs.some(tab => tab.id === selectedTab)) {
+            setSelectedTab(firstTab);
+        }
+    }, [selectedTab, tabs]);
+
+    const onTabSelect = React.useCallback((tab: TabInfo) => {
+        setSelectedTab(tab.id);
+    }, []);
+
+    const selectedResult = React.useMemo(() => {
+        return results.find(result => `${result?.Sequence ?? ""}` === selectedTab) ?? results[0];
+    }, [results, selectedTab]);
+
+    const styles = useStyles();
+
     return <SizeMe>{({ size }) =>
-        <Pivot overflowBehavior="menu" style={{ height: "100%" }}>
-            {results.map(result => {
-                return <PivotItem key={`${result?.ResultName}_${result?.Sequence}`} headerText={result?.ResultName} style={pivotItemStyle(size)}>
-                    <Result wuid={wuid} resultName={result?.ResultName} filter={filter} />
-                </PivotItem>;
-            })}
-        </Pivot>
+        <div className={styles.container}>
+            <OverflowTabList tabs={tabs} selected={selectedTab} onTabSelect={onTabSelect} size="medium" />
+            {selectedResult &&
+                <div style={pivotItemStyle(size)}>
+                    <Result wuid={wuid} resultName={selectedResult?.ResultName} filter={filter} />
+                </div>
+            }
+        </div>
     }</SizeMe>;
 
 };

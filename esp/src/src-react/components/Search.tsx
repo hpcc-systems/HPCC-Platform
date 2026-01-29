@@ -1,5 +1,6 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link, Pivot, PivotItem, ProgressIndicator } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link, ProgressIndicator } from "@fluentui/react";
+import { SelectTabData, SelectTabEvent, Tab, TabList } from "@fluentui/react-components";
 import { useConst } from "@fluentui/react-hooks";
 import { ESPSearch } from "src/ESPSearch";
 import nlsHPCC from "src/nlsHPCC";
@@ -10,12 +11,11 @@ import { Workunits } from "./Workunits";
 import { Files } from "./Files";
 import { Queries } from "./Queries";
 import { DFUWorkunits } from "./DFUWorkunits";
+import { Count } from "./controls/TabbedPanes/Count";
 
 const defaultUIState = {
     hasSelection: false,
 };
-
-const disabled = { disabled: true, style: { color: "grey" } };
 
 const searchResultUrl = (result) => {
     let url = window.location.hash;
@@ -139,15 +139,18 @@ export const Search: React.FunctionComponent<SearchProps> = ({
 
     const [selectedKey, setSelectedKey] = React.useState("all");
 
+    const onTabSelect = React.useCallback((_: SelectTabEvent, data: SelectTabData) => {
+        setSelectedKey(data.value as string);
+    }, []);
+
     return <HolyGrail
-        header={<Pivot headersOnly={true} onLinkClick={(item: PivotItem) => setSelectedKey(item.props.itemKey!)
-        }>
-            <PivotItem itemKey="all" headerText={nlsHPCC.All} itemCount={data.length} />
-            <PivotItem itemKey="ecl" headerText={nlsHPCC.ECLWorkunit} headerButtonProps={search.eclStore.data.length === 0 ? disabled : undefined} itemCount={search.eclStore.data.length} />
-            <PivotItem itemKey="dfu" headerText={nlsHPCC.DFUWorkunit} headerButtonProps={search.dfuStore.data.length === 0 ? disabled : undefined} itemCount={search.dfuStore.data.length} />
-            <PivotItem itemKey="file" headerText={nlsHPCC.LogicalFile} headerButtonProps={search.fileStore.data.length === 0 ? disabled : undefined} itemCount={search.fileStore.data.length} />
-            <PivotItem itemKey="query" headerText={nlsHPCC.Query} headerButtonProps={search.queryStore.data.length === 0 ? disabled : undefined} itemCount={search.queryStore.data.length} />
-        </Pivot >}
+        header={<TabList selectedValue={selectedKey} onTabSelect={onTabSelect} size="medium">
+            <Tab value="all">{nlsHPCC.All}<Count value={data.length} /></Tab>
+            <Tab value="ecl" disabled={search.eclStore.data.length === 0}>{nlsHPCC.ECLWorkunit}<Count value={search.eclStore.data.length} /></Tab>
+            <Tab value="dfu" disabled={search.dfuStore.data.length === 0}>{nlsHPCC.DFUWorkunit}<Count value={search.dfuStore.data.length} /></Tab>
+            <Tab value="file" disabled={search.fileStore.data.length === 0}>{nlsHPCC.LogicalFile}<Count value={search.fileStore.data.length} /></Tab>
+            <Tab value="query" disabled={search.queryStore.data.length === 0}>{nlsHPCC.Query}<Count value={search.queryStore.data.length} /></Tab>
+        </TabList>}
         main={selectedKey === "all" ? <HolyGrail
             header={<>
                 <CommandBar items={buttons} farItems={copyButtons} />
