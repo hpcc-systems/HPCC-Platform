@@ -25,4 +25,5 @@ Install ( DIRECTORY regress DESTINATION "./testing" COMPONENT Runtime
 configure_file("regress/environment.xml.in" "regress/environment.xml")
 
 Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/regress/environment.xml DESTINATION "./testing/regress" COMPONENT Runtime )
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/unittests/data/dalisds100mb.bin.zst DESTINATION "./testing/data" COMPONENT Runtime )
 
