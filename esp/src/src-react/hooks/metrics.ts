@@ -42,7 +42,7 @@ interface UserMetricsView {
 
 const DefaultMetricsViews: StringMetricsViewMap = {
     Default: {
-        scopeTypes: ["workflow", "graph", "subgraph", "child", "activity", "operation"],
+        scopeTypes: ["workflow", "graph", "subgraph", "activity", "operation"],
         properties: ["CostExecute", "TimeElapsed"],
         ignoreGlobalStoreOutEdges: true,
         subgraphTpl: "%id% - %TimeElapsed%",
@@ -124,6 +124,31 @@ export interface useMetricsViewsResult {
 
 const defaultUserMetricViews = JSON.stringify({ viewId: "Default", views: DefaultMetricsViews });
 
+const logicalGraphView: MetricsView = {
+    scopeTypes: ["workflow", "graph", "subgraph", "child", "activity", "operation"],
+    properties: ["Kind", "Label", "Filename", "EclNameList", "EclText", "DefinitionList"],
+    ignoreGlobalStoreOutEdges: false,
+    subgraphTpl: "%id%",
+    activityTpl: "%Label%",
+    edgeTpl: "%Label%",
+    sql: `\
+SELECT type, name, id, Kind, Label, EclNameList, EclText
+    FROM metrics`,
+    layout: undefined,
+    showTimeline: false
+};
+
+const logicalGraphResult: useMetricsViewsResult = {
+    viewIds: ["LogicalGraph"],
+    viewId: "LogicalGraph",
+    setViewId: () => { },
+    view: logicalGraphView,
+    addView: () => { },
+    updateView: () => { },
+    resetView: () => { },
+    save: () => { }
+};
+
 const _loaded = signal(false);
 const _origViews = signal<StringMetricsViewMap>(clone(DefaultMetricsViews));
 const _views = signal<StringMetricsViewMap>(clone(DefaultMetricsViews));
@@ -131,8 +156,7 @@ const _viewIds = signal<string[]>(Object.keys(_views.get()));
 const _viewId = signal<string>(_viewIds.get()[0]);
 const _view = signal<MetricsView>(_views.get()[_viewId.get()]);
 
-export function useMetricsViews(): useMetricsViewsResult {
-
+export function useMetricsViews(logicalGraph: boolean): useMetricsViewsResult {
     const loaded = useSignal(_loaded);
     const origViews = useSignal(_origViews);
     const views = useSignal(_views);
@@ -203,6 +227,10 @@ export function useMetricsViews(): useMetricsViewsResult {
         return setMetricViewStr(JSON.stringify({ viewId, views }));
     }, [viewId, views, setMetricViewStr]);
 
+    if (logicalGraph) {
+        return logicalGraphResult;
+    }
+
     return {
         viewIds,
         viewId,
@@ -242,13 +270,53 @@ export enum FetchStatus {
     COMPLETE
 }
 
-const scopeFilterDefault: Partial<WsWorkunits.ScopeFilter> = {
-    MaxDepth: 999999,
-    ScopeTypes: []
+export enum ScopeType {
+    none = "none",
+    all = "all",
+    global = "global",
+    graph = "graph",
+    subgraph = "subgraph",
+    activity = "activity",
+    allocator = "allocator",
+    section = "section",
+    operation = "operation",
+    edge = "edge",
+    function = "function",
+    workflow = "workflow",
+    file = "file",
+    channel = "channel",
+    unknown = "unknown",
+    max = "max"
+}
+
+export const WURootScopeTypes = [
+    ScopeType.subgraph,
+    ScopeType.activity,
+    ScopeType.allocator,
+    ScopeType.section,
+    ScopeType.operation,
+    ScopeType.workflow,
+    ScopeType.file,
+    ScopeType.channel,
+    ScopeType.unknown
+];
+
+export const WULogicalRootScopeTypes = [
+    ScopeType.graph
+];
+
+export const scopeFilterMetrics: Partial<WsWorkunits.ScopeFilter> = {
+    MaxDepth: 1,
+    ScopeTypes: WURootScopeTypes
+};
+
+export const scopeFilterLogicalGraph: Partial<WsWorkunits.ScopeFilter> = {
+    MaxDepth: 1,
+    ScopeTypes: WULogicalRootScopeTypes
 };
 
 const nestedFilterDefault: WsWorkunits.NestedFilter = {
-    Depth: 0,
+    Depth: 999999,
     ScopeTypes: []
 };
 
@@ -269,7 +337,7 @@ export interface IScopeEx extends IScope {
 
 export function useWorkunitMetrics(
     wuid: string,
-    scopeFilter: Partial<WsWorkunits.ScopeFilter> = scopeFilterDefault,
+    scopeFilter: Partial<WsWorkunits.ScopeFilter> = scopeFilterMetrics,
     nestedFilter: WsWorkunits.NestedFilter = nestedFilterDefault
 ): useMetricsResult {
 
@@ -351,7 +419,7 @@ export function useWorkunitMetrics(
 export function useQueryMetrics(
     querySet: string,
     queryId: string,
-    scopeFilter: Partial<WsWorkunits.ScopeFilter> = scopeFilterDefault,
+    scopeFilter: Partial<WsWorkunits.ScopeFilter> = scopeFilterMetrics,
     nestedFilter: WsWorkunits.NestedFilter = nestedFilterDefault
 ): useMetricsResult {
 
@@ -416,7 +484,7 @@ export function useWUQueryMetrics(
     wuid: string,
     querySet: string,
     queryId: string,
-    scopeFilter: Partial<WsWorkunits.ScopeFilter> = scopeFilterDefault,
+    scopeFilter: Partial<WsWorkunits.ScopeFilter> = scopeFilterMetrics,
     nestedFilter: WsWorkunits.NestedFilter = nestedFilterDefault
 ): useMetricsResult {
     const isQuery = querySet && queryId;

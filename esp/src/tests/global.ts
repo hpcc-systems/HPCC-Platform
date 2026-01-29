@@ -75,8 +75,13 @@ export function getWuid(browser: string, idx: number): string {
 }
 
 export namespace ecl {
-    export const helloWorld = "OUTPUT('Hello World')";
+    export const helloWorld = `\
+#option('generateLogicalGraph', true);
+OUTPUT('Hello World');
+`;
+
     export const normDenorm = `\
+#option('generateLogicalGraph', true);
 ParentRec := RECORD
     INTEGER1  NameID;
     STRING20  Name;

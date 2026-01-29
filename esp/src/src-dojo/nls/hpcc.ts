@@ -554,6 +554,7 @@ export = {
         LogicalFilesAndSuperfiles: "Logical Files and Superfiles",
         LogicalFilesOnly: "Logical Files Only",
         LogicalFileType: "Logical File Type",
+        LogicalGraph: "Logical Graph",
         LogicalName: "Logical Name",
         LogicalNameMask: "Logical Name Mask",
         Log: "Log",
