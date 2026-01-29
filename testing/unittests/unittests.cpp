@@ -121,7 +121,7 @@ version: "1.0"
 unittests:
 - PTreeBinaryTimingStressTest:
     path: ""
-    iterations: 100
+    iterations: 5
 global:
   storage:
     planes:

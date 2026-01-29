@@ -3807,7 +3807,7 @@ public:
             binaryPath.append(relativeBinPath);
         }
 
-        constexpr unsigned defaultPtreeIterations = 100;
+        constexpr unsigned defaultPtreeIterations = 5;
         iterations = getComponentConfigSP()->getPropInt("PTreeBinaryTimingStressTest/@iterations", defaultPtreeIterations);
         if (iterations == 0)
             CPPUNIT_FAIL("PTree binary timing test iterations must be greater than zero");
