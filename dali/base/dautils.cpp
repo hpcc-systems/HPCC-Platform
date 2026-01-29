@@ -3843,6 +3843,11 @@ public:
         const char * logicalFileName = file->queryLogicalName();
         if (strsame(logicalFileName, "")) // Skip files without logical names (typically spill files)
             return 0;
+        CDfsLogicalFileName lfn;
+        if (!lfn.setValidate(logicalFileName)) // paranoid, it should always be valid
+            return 0;
+        if (lfn.isExternal())
+            return 0; // Skip external files. We can't update their properties
         if (!numDiskReads)
             return 0;
 
