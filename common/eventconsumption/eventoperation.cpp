@@ -17,6 +17,7 @@
 
 #include "eventoperation.h"
 #include "eventfilter.h"
+#include "eventiterator.h"
 #include "eventmodeling.h"
 
 CEventConsumingOp::CEventConsumingOp()
@@ -80,5 +81,9 @@ bool CEventConsumingOp::traverseEvents(const char* path, IEventVisitor& visitor)
     Owned<IEventVisitationLink> metaCollector = metaState->getCollector();
     metaCollector->setNextLink(*actual);
 
-    return readEvents(path, *metaCollector);
+    Owned<IEventIterator> source = createEventFileIterator(path);
+    if (!source)
+        return false;
+    visitIterableEvents(*source, *metaCollector);
+    return true;
 }
