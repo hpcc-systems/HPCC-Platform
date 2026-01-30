@@ -370,6 +370,5 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             setPageSize={setPageSize}
             total={total}
         ></FluentPagedFooter >}
-        footerStyles={{}}
     />;
 };
