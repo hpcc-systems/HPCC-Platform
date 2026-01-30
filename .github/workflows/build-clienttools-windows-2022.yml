@@ -67,6 +67,7 @@ jobs:
           path: ./LN
 
       - name: Setup Certificate File
+      - name: Setup Certificate File
         shell: "pwsh"
         run: |
           $base64 = "${{ secrets.SM_CLIENT_CERT_FILE_B64 }}"
@@ -121,6 +122,7 @@ jobs:
           fi
 
       - name: Build Clienttools
+        id: build_clienttools
         shell: "bash"
         run: |
           mkdir -p ./build
@@ -145,7 +147,7 @@ jobs:
           generateReleaseNotes: false
           prerelease: ${{ contains(github.ref, '-rc') }}
           makeLatest: ${{ inputs.make-latest }}
-          artifacts: "./build/hpccsystems-clienttools-community*.exe"
+          artifacts: "${{ steps.build_clienttools.outputs.packages }}"
 
       - name: Release Internal Clienttools to JFrog Repository
         if: ${{ inputs.ln-ref != '' && github.repository_owner == 'hpcc-systems' }}

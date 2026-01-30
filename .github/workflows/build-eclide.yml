@@ -155,6 +155,7 @@ jobs:
             -password "${{ secrets.GITHUB_TOKEN }}"
 
       - name: Setup Certificate File
+      - name: Setup Certificate File
         shell: "pwsh"
         run: |
           $base64 = "${{ secrets.SM_CLIENT_CERT_FILE_B64 }}"
