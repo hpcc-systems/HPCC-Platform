@@ -1486,52 +1486,6 @@ static void computeConfigSHA(StringBuffer &shaStr)
         e->Release();
     }
 }
-/*
-static void computeConfigSHA(StringBuffer &shaStr, IPropertyTree *componentConfig, IPropertyTree *globalConfig)
-{
-    if (!componentConfig)
-        PROGLOG("DJPS: No component config!");
-    if (!globalConfig)
-        PROGLOG("DJPS: No global config!");
-
-    shaStr.clear();
-    try
-    {
-        StringBuffer componentConfigXML;
-        if (componentConfig)
-        {
-            toXML(componentConfig, componentConfigXML, 0, 0);
-            PROGLOG("DJPS componentConfigXML: %u", componentConfigXML.length());
-            logStringInChunks(componentConfigXML.str(), "DJPS componentConfigXML: ");
-        }
-        StringBuffer globalConfigXML;
-        if (globalConfig)
-        {
-            toXML(globalConfig, globalConfigXML, 0, 0);
-            PROGLOG("DJPS globalConfigXML: %u", globalConfigXML.length());
-            logStringInChunks(globalConfigXML.str(), "DJPS globalConfigXML: ");
-        }
-
-        if (componentConfigXML.length() || globalConfigXML.length())
-        {
-            StringBuffer configXML;
-            configXML.append(componentConfigXML);
-            configXML.append(globalConfigXML);
-            PROGLOG("DJPS configXML: %u", configXML.length());
-            logStringInChunks(configXML.str(), "DJPS configXML: ");
-            hash64_t configHash = rtlHash64Data(configXML.length(), configXML.str(), 0);
-            shaStr.appendf("%" I64F "x", configHash);
-        }
-    }
-    catch (IException *e)
-    {
-        IWARNLOG(e, "DJPS Failed to compute configuration SHA");
-        e->Release();
-    }
-}
-
-static CConfigUpdateHook configUpdateHook;
-*/
 
 static void configUpdateNotifyHandler(const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
 {
@@ -1579,41 +1533,6 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
         }
         else
             IWARNLOG("DJPS17X Failed to install configuration change monitoring");
-/* 2 methods of detecting config changes - either use a notify handler (above), or a modifier (below)
-        auto modifyFunc = [](IPropertyTree * newComponentConfiguration, IPropertyTree * newGlobalConfiguration)
-        {
-            PROGLOG("DJPS modifyFunc() called");
-
-            StringBuffer newIncomingConfigSHA;
-            computeConfigSHA(newIncomingConfigSHA, newComponentConfiguration, newGlobalConfiguration);
-            PROGLOG("DJPS newIncomingConfigSHA: %s", newIncomingConfigSHA.str());
-
-            // Compute SHA of current (new) configuration
-            StringBuffer newConfigSHA;
-            computeConfigSHA(newConfigSHA);
-            PROGLOG("DJPS newConfigSHA: %s", newConfigSHA.str());
-
-            // Check and update the stored SHA, only if SHA actually changed (content change, not just file touch)
-            {
-                CriticalBlock b(configSHAcs);
-                if (newConfigSHA.length() && !strsame(currentConfigSHA.str(), newConfigSHA.str()))
-                {
-                    configChangeDetected = true;
-                    PROGLOG("DJPSX Configuration SHA changed from '%s' to '%s' - Thor will gracefully restart after current job completes",
-                            currentConfigSHA.str(),
-                            newConfigSHA.str());
-                    currentConfigSHA.set(newConfigSHA.str());
-                }
-            }
-        };
-
-        // Initialize the configuration SHA baseline
-        computeConfigSHA(currentConfigSHA);
-        PROGLOG("DJPS Initial configuration SHA: %s", currentConfigSHA.str());
-        PROGLOG("DJPS configUpdateHook.installModifierOnce(modifyFunc, false); before");
-        configUpdateHook.installModifierOnce(modifyFunc, false);
-        PROGLOG("DJPS Configuration change monitoring enabled for graceful restart");
-*/
     }
 
     aborting = 0;
@@ -1856,10 +1775,8 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
         e->Release();
     }
 
-    // Cleanup configuration change monitoring
     if (configUpdateHookId)
         removeConfigUpdateHook(configUpdateHookId);
-//    configUpdateHook.clear(); DJPS
 
     if (multiThorMemoryThreshold)
         setMultiThorMemoryNotify(0,NULL);

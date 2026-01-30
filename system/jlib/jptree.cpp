@@ -10439,6 +10439,11 @@ StringBuffer &getExpertOptPath(const char *opt, StringBuffer &out)
 #endif
 }
 
+bool hasExpertOpt(const char *opt)
+{
+    return hasExpertOpt(opt, nullptr);
+}
+
 bool hasExpertOpt(const char *opt, IPropertyTree *ipt)
 {
     StringBuffer xpath;
@@ -10448,25 +10453,23 @@ bool hasExpertOpt(const char *opt, IPropertyTree *ipt)
     return getComponentConfigSP()->hasProp(xpath);
 }
 
+bool getExpertOptBool(const char *opt, bool dft)
+{
+    return getExpertOptBool(opt, dft, nullptr);
+}
+
 bool getExpertOptBool(const char *opt, bool dft, IPropertyTree *ipt)
 {
     StringBuffer xpath;
     getExpertOptPath(opt, xpath);
     if (ipt)
-    {
-/*
-        DBGLOG("DJPS49 ipt->getPropBool(%s, %s)", xpath.str(), dft ? "true" : "false");
-        DBGLOG("DJPS49 ipt->hasProp(xpath) is %s for %s", ipt->hasProp(xpath) ? "true" : "false", xpath.str());
-        DBGLOG("DJPS49 ipt->getPropBool(xpath, dft) : %s", ipt->getPropBool(xpath, dft) ? "true" : "false");
-*/
         return ipt->getPropBool(xpath, dft);
-    }
-/*
-    DBGLOG("DJPS50 getComponentConfigSP()->getPropBool(%s, %s)", xpath.str(), dft ? "true" : "false");
-    DBGLOG("DJPS50 getComponentConfigSP()->hasProp(xpath) is %s for %s", getComponentConfigSP()->hasProp(xpath) ? "true" : "false", xpath.str());
-    DBGLOG("DJPS50 getComponentConfigSP()->getPropBool(xpath, dft) : %s", getComponentConfigSP()->getPropBool(xpath, dft) ? "true" : "false");
-*/
     return getComponentConfigSP()->getPropBool(xpath, dft);
+}
+
+__int64 getExpertOptInt64(const char *opt, __int64 dft)
+{
+    return getExpertOptInt64(opt, dft, nullptr);
 }
 
 __int64 getExpertOptInt64(const char *opt, __int64 dft, IPropertyTree *ipt)
@@ -10491,6 +10494,11 @@ StringBuffer &getExpertOptString(const char *opt, StringBuffer &out)
     getExpertOptPath(opt, xpath);
     getComponentConfigSP()->getProp(xpath, out);
     return out;
+}
+
+void setExpertOpt(const char *opt, const char *value)
+{
+    setExpertOpt(opt, value, nullptr);
 }
 
 void setExpertOpt(const char *opt, const char *value, IPropertyTree *ipt)

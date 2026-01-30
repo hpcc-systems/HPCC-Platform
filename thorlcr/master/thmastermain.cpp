@@ -405,9 +405,6 @@ public:
             publishPodNames(workunit, graphName, &connectedWorkers);
         }
 
-        // assertex(globals == getComponentConfigSP()); DJPS
-        // globals is set once from thmastermain::main(...) so for 34929 we can be sure it won't change for workers.
-
         PROGLOG("Workers connected, initializing..");
         msg.clear();
         msg.append(THOR_VERSION_MAJOR).append(THOR_VERSION_MINOR);
@@ -656,16 +653,10 @@ int main( int argc, const char *argv[]  )
     InitModuleObjects();
     NoQuickEditSection xxx;
     {
-#define DO_MONITOR_CONFIG_CHANGES
-#ifdef DONT_MONITOR_CONFIG_CHANGES
-        bool monitorConfig = false; // Do not allow updates to the config file, otherwise the slave may not be in sync.
-        //MORE: What about updates to storage planes - they will not be passed through to the slaves
-        globals.setown(loadConfiguration(thorDefaultConfigYaml, argv, "thor", "THOR", "thor.xml", nullptr, nullptr, monitorConfig));
-#else
-        bool monitorConfig{true}; // Allow updates to the config file - slaves will not be updated via the config update hook.
-        globalsUpdateable.setown(loadConfiguration(thorDefaultConfigYaml, argv, "thor", "THOR", "thor.xml", nullptr, nullptr, monitorConfig));
-        globals.setown(createPTreeFromIPT(globalsUpdateable));
-#endif
+        bool monitorConfig{true}; // Allow updates to the globalsLive ipt from  the config file - slaves will not be updated via the config update hook.
+        globalsLive.setown(loadConfiguration(thorDefaultConfigYaml, argv, "thor", "THOR", "thor.xml", nullptr, nullptr, monitorConfig));
+        // keep a copy of the loaded globals separate from the component config which may be updated
+        globals.setown(createPTreeFromIPT(globalsLive));
     }
     updateTraceFlags(loadTraceFlags(globals, thorTraceOptions, queryTraceFlags()), true);
 #ifdef _DEBUG
