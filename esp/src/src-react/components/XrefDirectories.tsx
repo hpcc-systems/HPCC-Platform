@@ -3,6 +3,7 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluen
 import { scopedLogger } from "@hpcc-js/util";
 import { HolyGrail } from "../layouts/HolyGrail";
 import nlsHPCC from "src/nlsHPCC";
+import { formatNum } from "src/Utility";
 import * as WsDFUXref from "src/WsDFUXref";
 import { useConfirm } from "../hooks/confirm";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
@@ -28,12 +29,12 @@ export const XrefDirectories: React.FunctionComponent<XrefDirectoriesProps> = ({
     const columns = React.useMemo((): FluentColumns => {
         return {
             name: { width: 600, label: nlsHPCC.Name },
-            num: { width: 100, label: nlsHPCC.Files },
-            size: { width: 100, label: nlsHPCC.TotalSize },
+            num: { width: 100, label: nlsHPCC.Files, formatter: (value) => formatNum(value) },
+            size: { width: 100, label: nlsHPCC.TotalSize, formatter: (value) => formatNum(value) },
             maxIP: { width: 100, label: nlsHPCC.MaxNode },
-            maxSize: { width: 100, label: nlsHPCC.MaxSize },
+            maxSize: { width: 100, label: nlsHPCC.MaxSize, formatter: (value) => formatNum(value) },
             minIP: { width: 100, label: nlsHPCC.MinNode },
-            minSize: { width: 100, label: nlsHPCC.MinSize },
+            minSize: { width: 100, label: nlsHPCC.MinSize, formatter: (value) => formatNum(value) },
             positiveSkew: {
                 width: 100,
                 label: nlsHPCC.SkewPositive
