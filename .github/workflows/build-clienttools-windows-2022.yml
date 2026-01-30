@@ -67,7 +67,6 @@ jobs:
           path: ./LN
 
       - name: Setup Certificate File
-      - name: Setup Certificate File
         shell: "pwsh"
         run: |
           $base64 = "${{ secrets.SM_CLIENT_CERT_FILE_B64 }}"
@@ -137,7 +136,6 @@ jobs:
           SM_API_KEY: ${{ secrets.DIGICERT_API_KEY }}
           SM_CLIENT_CERT_FILE: ${{ env.SM_CLIENT_CERT_FILE }}
           SM_CLIENT_CERT_PASSWORD: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
-
 
       - name: Release Community Clienttools
         if: ${{ inputs.ln-ref == '' }}
