@@ -156,10 +156,13 @@ define([
                                     }
                                     if (swap && value !== 0) {
                                         node.innerText = value + "%" || "N/A";
+                                        node.title = storageitem.Description + "\n" + storageitem.Available + " MB Available\n" + storageitem.Total + " MB Total" || "N/A";
                                     } else if (!value) {
                                         node.innerText = "";
+                                        node.title = "";
                                     } else {
                                         node.innerText = value + "%";
+                                        node.title = storageitem.Description + "\n" + storageitem.Available + " MB Available\n" + storageitem.Total + " MB Total";
                                     }
                                 }
                             };
