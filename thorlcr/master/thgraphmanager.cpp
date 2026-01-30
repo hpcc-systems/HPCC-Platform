@@ -1421,26 +1421,6 @@ static std::atomic<bool> configChangeDetected{false};
 static StringBuffer currentConfigSHA;
 static CriticalSection configSHAcs;
 
-// Helper function to log long strings in chunks
-static void logStringInChunks(const char *str, const char *prefix = "")
-{
-    if (!str || !*str)
-        return;
-
-    constexpr size_t chunkSize = 80;
-    size_t len = strlen(str);
-    size_t offset = 0;
-
-    while (offset < len)
-    {
-        size_t remaining = len - offset;
-        size_t chunkLen = (remaining < chunkSize) ? remaining : chunkSize;
-        StringBuffer chunk;
-        chunk.append(chunkLen, str + offset);
-        PROGLOG("%s%s", prefix, chunk.str());
-        offset += chunkLen;
-    }
-}
 // Compute SHA hash of the current configuration
 static void computeConfigSHA(StringBuffer &shaStr)
 {
@@ -1448,53 +1428,39 @@ static void computeConfigSHA(StringBuffer &shaStr)
     try
     {
         Owned<IPropertyTree> componentConfig = getComponentConfigSP();
-        if (!componentConfig)
-            PROGLOG("DJPS3 No component config!");
         Owned<IPropertyTree> globalConfig = getGlobalConfigSP();
-        if (!globalConfig)
-            PROGLOG("DJPS4 No global config!");
+        if (!componentConfig && !globalConfig)
+            IWARNLOG("DJPS Failed to compute configuration SHA as No global config nor component config!");
 
         StringBuffer componentConfigXML;
         if (componentConfig)
-        {
             toXML(componentConfig, componentConfigXML, 0, 0);
-            PROGLOG("DJPS5 componentConfigXML: %u", componentConfigXML.length());
-            logStringInChunks(componentConfigXML.str(), "DJPS6 componentConfigXML: ");
-        }
         StringBuffer globalConfigXML;
         if (globalConfig)
-        {
             toXML(globalConfig, globalConfigXML, 0, 0);
-            PROGLOG("DJPS7 globalConfigXML: %u", globalConfigXML.length());
-            logStringInChunks(globalConfigXML.str(), "DJPS8 globalConfigXML: ");
-        }
 
         if (componentConfigXML.length() || globalConfigXML.length())
         {
             StringBuffer configXML;
             configXML.append(componentConfigXML);
             configXML.append(globalConfigXML);
-            PROGLOG("DJPS9 configXML: %u", configXML.length());
-            logStringInChunks(configXML.str(), "DJPS10 configXML: ");
             hash64_t configHash = rtlHash64Data(configXML.length(), configXML.str(), 0);
             shaStr.appendf("%" I64F "x", configHash);
         }
     }
     catch (IException *e)
     {
-        IWARNLOG(e, "DJPS11 Failed to compute configuration SHA");
+        IWARNLOG(e, "DJPSFailed to compute configuration SHA");
         e->Release();
     }
 }
 
 static void configUpdateNotifyHandler(const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
 {
-    PROGLOG("DJPS12 configUpdateNotifyHandler() called");
-
     // Compute SHA of current (new) configuration
     StringBuffer newConfigSHA;
     computeConfigSHA(newConfigSHA);
-    PROGLOG("DJPS13 newConfigSHA: %s", newConfigSHA.str());
+    PROGLOG("DJPS newConfigSHA: %s", newConfigSHA.str());
 
     // Check and update the stored SHA, only if SHA actually changed (content change, not just file touch)
     {
@@ -1504,7 +1470,7 @@ static void configUpdateNotifyHandler(const IPropertyTree *oldComponentConfigura
             configChangeDetected = true;
             currentConfigSHA.set(newConfigSHA.str());
 
-            PROGLOG("DJPS14X Configuration SHA changed from '%s' to '%s' - Thor will gracefully restart after current job completes",
+            PROGLOG("DJPS Configuration SHA changed from '%s' to '%s' - ThorManager will gracefully restart after current job completes",
                     currentConfigSHA.str(),
                     newConfigSHA.str());
         }
@@ -1520,7 +1486,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
         configUpdateHookId = installConfigUpdateHook(configUpdateNotifyHandler, false);
         if (configUpdateHookId)
         {
-            PROGLOG("DJPS15 Configuration change monitoring enabled for graceful restart with CB ID: %u", configUpdateHookId);
+            PROGLOG("DJPS Configuration change monitoring enabled for graceful restart with CB ID: %u", configUpdateHookId);
 
             // Initialize the configuration SHA baseline
             StringBuffer initialConfigSHA;
@@ -1529,10 +1495,10 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                 CriticalBlock b(configSHAcs);
                 currentConfigSHA.set(initialConfigSHA.str());
             }
-            PROGLOG("DJPS16 Initial configuration SHA: %s", initialConfigSHA.str());
+            PROGLOG("DJPS Initial configuration SHA: %s", initialConfigSHA.str());
         }
         else
-            IWARNLOG("DJPS17X Failed to install configuration change monitoring");
+            IWARNLOG("DJPS Failed to install configuration change monitoring");
     }
 
     aborting = 0;
