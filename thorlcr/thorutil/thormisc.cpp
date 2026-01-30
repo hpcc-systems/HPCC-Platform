@@ -75,6 +75,7 @@ static Owned<ICommunicator> nodeComm; // communicator based on nodeGroup (master
 mptag_t managerWorkerMpTag;
 mptag_t kjServiceMpTag;
 Owned<IPropertyTree> globals;
+Owned<IPropertyTree> globalsLive;
 static Owned<IMPtagAllocator> ClusterMPAllocator;
 
 // stat. mappings shared between master and slave activities
