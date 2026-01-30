@@ -401,11 +401,16 @@ public:
 
 private:
     arrow::Status openReadFile();
+    arrow::Status openPartitionedFile();
+    arrow::Status openRegularFile();
+    arrow::Status processPartitionedReadFile();
+    arrow::Status processRegularReadFile();
     __int64 readColumns(__int64 currTable);
     void splitTable(std::shared_ptr<arrow::Table> &table);
     std::shared_ptr<parquet::arrow::RowGroupReader> queryCurrentTable(__int64 currTable);
     arrow::Result<std::shared_ptr<arrow::Table>> queryRows();
     arrow::Status constructParquetFileReader(const char *fullPath);
+    void constructFileIfAvailable(std::map<unsigned, std::string> &availablePartFiles, unsigned workerId, unsigned totalParts);
 
 private:
     // Count of processed rows and tables for both partitioned and regular files.
