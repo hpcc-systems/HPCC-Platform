@@ -1467,12 +1467,12 @@ static void configUpdateNotifyHandler(const IPropertyTree *oldComponentConfigura
         CriticalBlock b(configSHAcs);
         if (newConfigSHA.length() && !streq(currentConfigSHA.str(), newConfigSHA.str()))
         {
-            configChangeDetected = true;
-            currentConfigSHA.set(newConfigSHA.str());
-
-            PROGLOG("DJPS Configuration SHA changed from '%s' to '%s' - ThorManager will gracefully restart after current job completes",
+            PROGLOG("Configuration SHA changed from '%s' to '%s' - ThorManager will gracefully restart after current job completes",
                     currentConfigSHA.str(),
                     newConfigSHA.str());
+
+            configChangeDetected = true;
+            currentConfigSHA.set(newConfigSHA.str());
         }
     }
 }
@@ -1688,7 +1688,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                     // Check for configuration changes and exit gracefully if detected
                     if (configChangeDetected)
                     {
-                        PROGLOG("DJPS18X Configuration change detected - exiting gracefully to allow pod restart with new configuration");
+                        PROGLOG("Configuration change detected - exiting gracefully to allow pod restart with new configuration");
                         break;
                     }
 
