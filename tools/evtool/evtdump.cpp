@@ -94,7 +94,8 @@ Structured output would, if represented in a property tree, resemble:
         └── @bytesRead
 
 CSV output includes columns for event name, plus one for each event attribute
-used by the event recorder.
+that may be present in any iterated event. Event filters apply to iterated
+events, thus filters cannot be used to limit included attributes.
 )!!!";
         size32_t usageStrLength = size32_t(strlen(usageStr));
         out.put(usageStrLength, usageStr);
