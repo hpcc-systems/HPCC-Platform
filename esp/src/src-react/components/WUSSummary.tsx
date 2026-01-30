@@ -285,7 +285,5 @@ export const WUSSummary: React.FunctionComponent<WUSSummaryProps> = ({
                     </div>
                 }</SizeMe >
             }
-            footer={<></>}
-            footerStyles={{}}
-        /></ >;
+        /></>;
 };

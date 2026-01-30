@@ -409,6 +409,5 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             setPageSize={setPageSize}
             total={total}
         ></FluentPagedFooter>}
-        footerStyles={{}}
     />;
 };
