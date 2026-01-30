@@ -7212,6 +7212,7 @@ class RoxieMemTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testResize);
         CPPUNIT_TEST(testResizeLock);
         CPPUNIT_TEST(testFixedRowHeapStats);
+        CPPUNIT_TEST(testUidMapPerformance);
         //MORE: The following currently leak pages, so should go last
         CPPUNIT_TEST(testDatamanager);
         CPPUNIT_TEST(testCleanup);
@@ -7317,6 +7318,148 @@ protected:
     {
         for (auto & flags : { RHFnone, RHFpacked, RHFunique, RHFunique|RHFpacked, RHFpacked|RHFblocked  })
             testFixedRowHeapStats(flags);
+    }
+
+    void testUidMapPerformance()
+    {
+        // Use unsigned __int64 to simulate ruid_t (defined in udplib)
+        typedef unsigned __int64 test_ruid_t;
+
+        // Mock collator for testing - minimal implementation
+        class MockCollator
+        {
+        public:
+            test_ruid_t ruid;
+            MockCollator(test_ruid_t _ruid) : ruid(_ruid) {}
+        };
+
+        // Test parameters
+        const unsigned numLookups = 1000000;
+        const unsigned mapSizes[] = {10, 100, 1000, 10000};
+        const unsigned numSizes = sizeof(mapSizes) / sizeof(mapSizes[0]);
+
+        DBGLOG("Testing uid_map lookup performance (std::map vs std::unordered_map)");
+        DBGLOG("Performing %u lookups per test", numLookups);
+
+        for (unsigned sizeIdx = 0; sizeIdx < numSizes; sizeIdx++)
+        {
+            unsigned mapSize = mapSizes[sizeIdx];
+            std::vector<test_ruid_t> ruids;
+            std::vector<MockCollator*> collators;
+
+            // Create test data - simulate real ruid_t values
+            for (unsigned i = 0; i < mapSize; i++)
+            {
+                test_ruid_t ruid = 0x1000000000000000ULL + (i * 0x123456);
+                ruids.push_back(ruid);
+                collators.push_back(new MockCollator(ruid));
+            }
+
+            // Test with std::map (old implementation)
+            {
+                std::map<test_ruid_t, MockCollator*> orderedMap;
+                for (unsigned i = 0; i < mapSize; i++)
+                    orderedMap[ruids[i]] = collators[i];
+
+                cycle_t start = get_cycles_now();
+                unsigned hitCount = 0;
+                for (unsigned i = 0; i < numLookups; i++)
+                {
+                    test_ruid_t lookupRuid = ruids[i % mapSize];
+                    auto it = orderedMap.find(lookupRuid);
+                    if (it != orderedMap.end())
+                        hitCount++;
+                }
+                cycle_t elapsed = get_cycles_now() - start;
+                unsigned microsecs = cycle_to_microsec(elapsed);
+                double nsPerLookup = (double)cycle_to_nanosec(elapsed) / numLookups;
+
+                DBGLOG("  std::map         [%5u entries]: %7u us total, %.2f ns/lookup, %u hits",
+                       mapSize, microsecs, nsPerLookup, hitCount);
+            }
+
+            // Test with std::unordered_map (new implementation)
+            {
+                std::unordered_map<test_ruid_t, MockCollator*> unorderedMap;
+                for (unsigned i = 0; i < mapSize; i++)
+                    unorderedMap[ruids[i]] = collators[i];
+
+                cycle_t start = get_cycles_now();
+                unsigned hitCount = 0;
+                for (unsigned i = 0; i < numLookups; i++)
+                {
+                    test_ruid_t lookupRuid = ruids[i % mapSize];
+                    auto it = unorderedMap.find(lookupRuid);
+                    if (it != unorderedMap.end())
+                        hitCount++;
+                }
+                cycle_t elapsed = get_cycles_now() - start;
+                unsigned microsecs = cycle_to_microsec(elapsed);
+                double nsPerLookup = (double)cycle_to_nanosec(elapsed) / numLookups;
+
+                DBGLOG("  std::unordered_map [%5u entries]: %7u us total, %.2f ns/lookup, %u hits",
+                       mapSize, microsecs, nsPerLookup, hitCount);
+            }
+
+            // Test with mixed hits and misses (more realistic)
+            {
+                std::map<test_ruid_t, MockCollator*> orderedMap;
+                std::unordered_map<test_ruid_t, MockCollator*> unorderedMap;
+                for (unsigned i = 0; i < mapSize; i++)
+                {
+                    orderedMap[ruids[i]] = collators[i];
+                    unorderedMap[ruids[i]] = collators[i];
+                }
+
+                // Create lookup pattern: 80% hits, 20% misses
+                std::vector<test_ruid_t> lookupRuids;
+                for (unsigned i = 0; i < numLookups; i++)
+                {
+                    if ((i % 5) == 0)
+                        lookupRuids.push_back(0x9999999999999999ULL + i); // miss
+                    else
+                        lookupRuids.push_back(ruids[i % mapSize]); // hit
+                }
+
+                cycle_t mapStart = get_cycles_now();
+                unsigned mapHits = 0;
+                for (unsigned i = 0; i < numLookups; i++)
+                {
+                    auto it = orderedMap.find(lookupRuids[i]);
+                    if (it != orderedMap.end())
+                        mapHits++;
+                }
+                cycle_t mapElapsed = get_cycles_now() - mapStart;
+                unsigned mapMicrosecs = cycle_to_microsec(mapElapsed);
+                double mapNsPerLookup = (double)cycle_to_nanosec(mapElapsed) / numLookups;
+
+                cycle_t umapStart = get_cycles_now();
+                unsigned umapHits = 0;
+                for (unsigned i = 0; i < numLookups; i++)
+                {
+                    auto it = unorderedMap.find(lookupRuids[i]);
+                    if (it != unorderedMap.end())
+                        umapHits++;
+                }
+                cycle_t umapElapsed = get_cycles_now() - umapStart;
+                unsigned umapMicrosecs = cycle_to_microsec(umapElapsed);
+                double umapNsPerLookup = (double)cycle_to_nanosec(umapElapsed) / numLookups;
+
+                double speedup = (double)mapMicrosecs / umapMicrosecs;
+
+                DBGLOG("  Mixed (80%% hit):");
+                DBGLOG("    std::map:         %.2f ns/lookup (%u us total)", mapNsPerLookup, mapMicrosecs);
+                DBGLOG("    std::unordered_map: %.2f ns/lookup (%u us total)", umapNsPerLookup, umapMicrosecs);
+                DBGLOG("    Speedup: %.2fx", speedup);
+            }
+
+            // Cleanup
+            for (unsigned i = 0; i < mapSize; i++)
+                delete collators[i];
+
+            if (sizeIdx < numSizes - 1)
+                DBGLOG(" ");
+        }
     }
 
     void testCleanup()
