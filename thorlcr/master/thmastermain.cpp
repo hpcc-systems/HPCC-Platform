@@ -947,7 +947,6 @@ int main( int argc, const char *argv[]  )
             }
             addPathSepChar(soPath);
             globals->setProp("@query_so_dir", soPath.str());
-            DBGLOG("DJPS19 Set querySo directory: %s", soPath.str());
             recursiveCreateDirectory(soPath.str());
         }
         else

@@ -1703,20 +1703,6 @@ public:
     }
     void slaveMain(ILogMsgHandler *logHandler)
     {
-/* DJPS
-#ifdef _DEBUG
-        for(;;)
-        {
-            bool exit = false;
-            while(!exit)
-            {
-                PROGLOG("DJPS Spinning...");
-                Sleep(3000);
-            }
-            break;
-        }
-#endif
-*/
         rank_t slaveProc = queryNodeGroup().rank()-1;
         unsigned totSlaveProcs = queryNodeClusterWidth();
         StringBuffer slaveStr;
@@ -1770,7 +1756,6 @@ public:
         {
             StringBuffer soPath;
             globals->getProp("@query_so_dir", soPath);
-            DBGLOG("DJPS20 Get querySo directory: %s", soPath.str());
             StringBuffer soPattern("*.");
 #ifdef _WIN32
             soPattern.append("dll");
@@ -1784,15 +1769,12 @@ public:
         if (globals->getPropBool("@watchdogEnabled"))
             watchdog.setown(createProgressHandler(globals->getPropBool("@useUDPWatchdog")));
 
-        DBGLOG("DJPS24");
         // JCSMORE consider moving this somewhere to make generic/available to other processes
         Owned<IMemoryMonitor> memoryMonitor;
         const IPropertyTree *mcdSettings = globals->queryPropTree("expert/memoryCoreDump");
         if (mcdSettings)
         {
             StringBuffer coreDumpPath;
-            // DJPS - Use of getComponentConfigSP() - is this is ok ? Yep I think it's good as otherwise existing code would be an issue
-            //  getConfigurationDirectory calls getDefaultPlaneDirectory calls getDefaultPlane calls getComponentConfigSP()
             getConfigurationDirectory(globals->queryPropTree("Directories"), "debug", "thor", globals->queryProp("@name"), coreDumpPath);
             k8s::addInstanceContextPaths(coreDumpPath);
             addPathSepChar(coreDumpPath).append("coredumps");
@@ -1807,7 +1789,6 @@ public:
         OwnedPtr<CThorPerfTracer> perf;
         JobNameScope activeJobName;
         TraceFlags startTraceFlags = queryTraceFlags();
-        DBGLOG("DJPS25");
         while (!stopped && queryNodeComm().recv(msg, 0, managerWorkerMpTag))
         {
             doReply = true;
@@ -1819,7 +1800,6 @@ public:
                 {
                     case QueryInit:
                     {
-                        DBGLOG("DJPS26");
                         MemoryBuffer mb;
                         decompressToBuffer(mb, msg);
                         msg.swapWith(mb);
@@ -1829,89 +1809,66 @@ public:
                         StringAttr wuid, graphName;
                         StringBuffer soPath;
                         msg.read(wuid);
-                        DBGLOG("DJPS59 wuid: %s", wuid.str());
                         saveWuidToFile(wuid);
                         msg.read(graphName);
-                        DBGLOG("DJPS60 graphName: %s", graphName.str());
 
                         Owned<ILoadedDllEntry> querySo;
-                        DBGLOG("DJPS41");
                         if (!getExpertOptBool("saveQueryDlls", false, globals))
                         {
                             StringAttr soName;
-                            DBGLOG("DJPS47");
                             msg.read(soName);
                             querySo.setown(createDllEntry(soName.str(), false, NULL, false));
                             soPath.append(soName);
-                            DBGLOG("DJPS42 soPath: %s", soPath.str());
                         }
                         else
                         {
                             StringBuffer soPathTail;
                             StringAttr remoteSoPath;
                             msg.read(remoteSoPath);
-                            DBGLOG("DJPS48 remoteSoPath: %s", remoteSoPath.str());
                             bool sendSo;
                             msg.read(sendSo);
-                            DBGLOG("DJPS57 sendSo: %s", sendSo ? "true" : "false");
-                            DBGLOG("DJPS42 msg.length(): %u", msg.length());
                             RemoteFilename rfn;
                             SocketEndpoint masterEp = queryMyNode()->endpoint();
                             masterEp.port = 0;
                             rfn.setPath(masterEp, remoteSoPath);
                             rfn.getTail(soPathTail);
-                            DBGLOG("DJPS43 soPathTail: %s", soPathTail.str());
                             if (sendSo)
                             {
                                 size32_t size;
                                 msg.read(size);
-                                DBGLOG("DJPS58 size: %u", size);
                                 globals->getProp("@query_so_dir", soPath);
-                                DBGLOG("DJPS21 Get querySo directory: %s", soPath.str());
                                 if (soPath.length())
                                     addPathSepChar(soPath);
                                 soPath.append(soPathTail);
-                                DBGLOG("DJPS56 soPath: %s", soPath.str());
-                                DBGLOG("DJPS51 msg.readDirect(%u)", size);
                                 const byte *queryPtr = msg.readDirect(size);
                                 Owned<IFile> iFile = createIFile(soPath.str());
                                 try
                                 {
-                                    DBGLOG("DJPS52");
                                     iFile->setCreateFlags(S_IRWXU);
-                                    DBGLOG("DJPS53");
                                     Owned<IFileIO> iFileIO = iFile->open(IFOwrite);
-                                    DBGLOG("DJPS54");
                                     iFileIO->write(0, size, queryPtr);
-                                    DBGLOG("DJPS55");
                                     iFileIO->close();
                                 }
                                 catch (IException *e)
                                 {
-                                    DBGLOG("DJPS44 Failed to save dll: %s", soPath.str());
                                     IException *e2 = ThorWrapException(e, "Failed to save dll: %s", soPath.str());
                                     e->Release();
                                     throw e2;
                                 }
-                                DBGLOG("DJPS45");
                                 assertex(getExpertOptBool("dllsToSlaves", true, globals));
                                 querySoCache.add(soPath.str());
-                                DBGLOG("DJPS46 soPath: %s", soPath.str());
                             }
                             else
                             {
-                                DBGLOG("DJPS38");
                                 if (!rfn.isLocal())
                                 {
                                     StringBuffer _remoteSoPath;
                                     rfn.getRemotePath(_remoteSoPath);
                                     remoteSoPath.set(_remoteSoPath);
-                                    DBGLOG("DJPS39 Get remote querySo path: %s", remoteSoPath.str());
                                 }
                                 if (getExpertOptBool("dllsToSlaves", true, globals))
                                 {
                                     globals->getProp("@query_so_dir", soPath);
-                                    DBGLOG("DJPS22 Get querySo directory: %s", soPath.str());
                                     if (soPath.length())
                                         addPathSepChar(soPath);
                                     soPath.append(soPathTail);
@@ -1926,13 +1883,11 @@ public:
                                 else
                                 {
                                     soPath.append(remoteSoPath);
-                                    DBGLOG("DJPS40 soPath: %s", soPath.str());
                                 }
                             }
     #ifdef __linux__
                         // only relevant if dllsToSlaves=false and query_so_dir was fully qualified remote path (e.g. //<ip>/path/file
                             rfn.setRemotePath(soPath.str());
-                            DBGLOG("DJPS23 Get remote querySo directory: %s", soPath.str());
                             StringBuffer tempSo;
                             if (!rfn.isLocal())
                             {
@@ -1942,18 +1897,15 @@ public:
                                 soPath.clear().append(tempSo.str());
                             }
     #endif
-                            DBGLOG("DJPS40 createDllEntry(soPath: %s", soPath.str());
                             querySo.setown(createDllEntry(soPath.str(), false, NULL, false));
                         }
 
-                        DBGLOG("DJPS37");
                         Owned<IPropertyTree> workUnitInfo = createPTree(msg);
                         StringBuffer user;
                         workUnitInfo->getProp("user", user);
 
                         updateTraceFlags(wuLoadTraceFlags(workUnitInfo, thorTraceOptions, startTraceFlags), true);
 
-                        // DJPS - Use of getComponentConfigSP() - this is ok in case the logging level has changed on the fly
                         unsigned defaultConfigLogLevel = getComponentConfigSP()->getPropInt("logging/@detail", DefaultDetail);
                         unsigned maxLogDetail = workUnitInfo->getPropInt("Debug/maxlogdetail", defaultConfigLogLevel);
                         ILogMsgFilter *existingLogFilter = queryLogMsgManager()->queryMonitorFilter(logHandler);
@@ -1992,7 +1944,6 @@ public:
                     }
                     case QueryDone:
                     {
-                        DBGLOG("DJPS27");
                         StringAttr key;
                         msg.read(key);
                         CJobSlave *job = jobs.find(key.get());
@@ -2036,7 +1987,6 @@ public:
                     }
                     case GraphInit:
                     {
-                        DBGLOG("DJPS28");
                         StringAttr jobKey;
                         msg.read(jobKey);
                         CJobSlave *job = jobs.find(jobKey.get());
@@ -2100,7 +2050,6 @@ public:
                     }
                     case GraphEnd:
                     {
-                        DBGLOG("DJPS29");
                         if (memoryMonitor)
                             memoryMonitor->stop();
 
@@ -2147,7 +2096,6 @@ public:
                     }
                     case GraphAbort:
                     {
-                        DBGLOG("DJPS30");
                         StringAttr jobKey;
                         msg.read(jobKey);
                         PROGLOG("GraphAbort: %s", jobKey.get());
@@ -2180,7 +2128,6 @@ public:
                     }
                     case Shutdown:
                     {
-                        DBGLOG("DJPS31");
                         stopped = true;
                         recvShutdown = true;
                         PROGLOG("Shutdown received");
@@ -2195,7 +2142,6 @@ public:
                     }
                     case GraphGetResult:
                     {
-                        DBGLOG("DJPS32");
                         StringAttr jobKey;
                         msg.read(jobKey);
                         DBGLOG("GraphGetResult: %s", jobKey.get());
@@ -2224,7 +2170,6 @@ public:
                     }
                     case DebugRequest:
                     {
-                        DBGLOG("DJPS33");
                         StringAttr jobKey;
                         msg.read(jobKey);
                         CJobSlave *job = jobs.find(jobKey.get());
@@ -2244,20 +2189,11 @@ public:
                         break;
                     }
                     default:
-                        DBGLOG("DJPS34");
                         throwUnexpected();
                 }
             }
             catch (IException *e)
             {
-                if (e)
-                {
-                    StringBuffer errMsg;
-                    e->errorMessage(errMsg);
-                    DBGLOG("DJPS35 e: %s", errMsg.str());
-                }
-                else
-                    DBGLOG("DJPS35 e: <null>");
                 IERRLOG(e);
                 if (doReply && TAG_NULL != msg.getReplyTag())
                 {
@@ -2269,7 +2205,6 @@ public:
                 }
                 e->Release();
             }
-            DBGLOG("DJPS36");
             if (doReply && msg.getReplyTag()!=TAG_NULL)
                 queryNodeComm().reply(msg);
         }

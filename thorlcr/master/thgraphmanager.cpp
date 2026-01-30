@@ -380,7 +380,6 @@ CJobManager::CJobManager(ILogMsgHandler *_logHandler) : logHandler(_logHandler)
 
     StringBuffer soPath;
     globals->getProp("@query_so_dir", soPath);
-    DBGLOG("DJPS1 Get querySo directory: %s", soPath.str());
     StringBuffer soPattern("*.");
 #ifdef _WIN32
     soPattern.append("dll");
@@ -538,7 +537,6 @@ bool CJobManager::fireException(IException *e)
 
 bool CJobManager::execute(IConstWorkUnit *workunit, const char *wuid, const char *graphName, const SocketEndpoint &agentep)
 {
-    DBGLOG("DJPS70 CJobManager::execute(...)");
     Owned<IException> exception;
     TraceFlags startTraceFlags = queryTraceFlags();
     COnScopeExit restoreTraceFlags([&](){ updateTraceFlags(startTraceFlags, true); });
@@ -1057,14 +1055,12 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     if (!getExpertOptBool("saveQueryDlls", false, globals))
     {
         DBGLOG("Loading query name: %s", soName.str());
-        DBGLOG("DJPS69 Loading query name: %s", soName.str());
         querySo.setown(queryDllServer().loadDll(soName.str(), DllLocationLocal));
         soPath.append(querySo->queryName());
     }
     else
     {
         globals->getProp("@query_so_dir", soPath);
-        DBGLOG("DJPS2 Get querySo directory: %s", soPath.str());
         StringBuffer compoundPath;
         compoundPath.append(soPath.str());
         soPath.append(soName.str());
@@ -1430,7 +1426,7 @@ static void computeConfigSHA(StringBuffer &shaStr)
         Owned<IPropertyTree> componentConfig = getComponentConfigSP();
         Owned<IPropertyTree> globalConfig = getGlobalConfigSP();
         if (!componentConfig && !globalConfig)
-            IWARNLOG("DJPS Failed to compute configuration SHA as No global config nor component config!");
+            IWARNLOG("Failed to compute configuration SHA as No global config nor component config!");
 
         StringBuffer componentConfigXML;
         if (componentConfig)
@@ -1450,7 +1446,7 @@ static void computeConfigSHA(StringBuffer &shaStr)
     }
     catch (IException *e)
     {
-        IWARNLOG(e, "DJPSFailed to compute configuration SHA");
+        IWARNLOG(e, "Failed to compute configuration SHA");
         e->Release();
     }
 }
@@ -1460,7 +1456,6 @@ static void configUpdateNotifyHandler(const IPropertyTree *oldComponentConfigura
     // Compute SHA of current (new) configuration
     StringBuffer newConfigSHA;
     computeConfigSHA(newConfigSHA);
-    PROGLOG("DJPS newConfigSHA: %s", newConfigSHA.str());
 
     // Check and update the stored SHA, only if SHA actually changed (content change, not just file touch)
     {
@@ -1486,8 +1481,6 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
         configUpdateHookId = installConfigUpdateHook(configUpdateNotifyHandler, false);
         if (configUpdateHookId)
         {
-            PROGLOG("DJPS Configuration change monitoring enabled for graceful restart with CB ID: %u", configUpdateHookId);
-
             // Initialize the configuration SHA baseline
             StringBuffer initialConfigSHA;
             computeConfigSHA(initialConfigSHA);
@@ -1495,10 +1488,9 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                 CriticalBlock b(configSHAcs);
                 currentConfigSHA.set(initialConfigSHA.str());
             }
-            PROGLOG("DJPS Initial configuration SHA: %s", initialConfigSHA.str());
         }
         else
-            IWARNLOG("DJPS Failed to install configuration change monitoring");
+            IWARNLOG("Failed to install configuration change monitoring");
     }
 
     aborting = 0;
