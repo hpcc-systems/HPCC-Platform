@@ -444,7 +444,7 @@ arrow::Status ParquetReader::constructParquetFileReader(const char *fullPath)
     ARROW_ASSIGN_OR_RAISE(input, arrow::io::ReadableFile::Open(fullPath));
 
     std::unique_ptr<parquet::arrow::FileReader> parquetFileReader;
-    ARROW_ASSIGN_OR_RAISE(parquetFileReader, parquet::arrow::OpenFile(input, pool));
+    ARROW_ASSIGN_OR_RAISE(parquetFileReader, parquet::arrow::OpenFile(std::move(input), pool));
 
     parquetFileReaders.emplace_back(fullPath, std::move(parquetFileReader));
     return arrow::Status::OK();
