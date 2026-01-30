@@ -3,6 +3,7 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluen
 import { scopedLogger } from "@hpcc-js/util";
 import { HolyGrail } from "../layouts/HolyGrail";
 import nlsHPCC from "src/nlsHPCC";
+import { formatNum } from "src/Utility";
 import * as WsDFUXref from "src/WsDFUXref";
 import { useConfirm } from "../hooks/confirm";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
@@ -35,11 +36,11 @@ export const XrefLostFiles: React.FunctionComponent<XrefLostFilesProps> = ({
             check: { width: 27, selectorType: "checkbox" },
             Name: { width: 360, label: nlsHPCC.Name },
             modified: { width: 80, label: nlsHPCC.Modified },
-            numParts: { width: 80, label: nlsHPCC.TotalParts },
-            size: { width: 80, label: nlsHPCC.Size },
-            partsLost: { width: 80, label: nlsHPCC.PartsLost },
-            primarylost: { width: 80, label: nlsHPCC.PrimaryLost },
-            replicatedlost: { width: 80, label: nlsHPCC.ReplicatedLost }
+            numParts: { width: 80, label: nlsHPCC.TotalParts, formatter: (value) => formatNum(value) },
+            size: { width: 80, label: nlsHPCC.Size, formatter: (value) => formatNum(value) },
+            partsLost: { width: 80, label: nlsHPCC.PartsLost, formatter: (value) => formatNum(value) },
+            primarylost: { width: 80, label: nlsHPCC.PrimaryLost, formatter: (value) => formatNum(value) },
+            replicatedlost: { width: 80, label: nlsHPCC.ReplicatedLost, formatter: (value) => formatNum(value) }
         };
     }, []);
 

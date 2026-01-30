@@ -3,6 +3,7 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluen
 import { scopedLogger } from "@hpcc-js/util";
 import { HolyGrail } from "../layouts/HolyGrail";
 import nlsHPCC from "src/nlsHPCC";
+import { formatNum } from "src/Utility";
 import * as WsDFUXref from "src/WsDFUXref";
 import { useConfirm } from "../hooks/confirm";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
@@ -34,9 +35,9 @@ export const XrefOrphanFiles: React.FunctionComponent<XrefOrphanFilesProps> = ({
             check: { width: 27, selectorType: "checkbox" },
             Name: { width: 360, label: nlsHPCC.Name },
             modified: { width: 80, label: nlsHPCC.Modified },
-            partsFound: { width: 80, label: nlsHPCC.PartsFound },
-            totalParts: { width: 80, label: nlsHPCC.TotalParts },
-            size: { width: 80, label: nlsHPCC.Size }
+            partsFound: { width: 80, label: nlsHPCC.PartsFound, formatter: (value) => formatNum(value) },
+            totalParts: { width: 80, label: nlsHPCC.TotalParts, formatter: (value) => formatNum(value) },
+            size: { width: 80, label: nlsHPCC.Size, formatter: (value) => formatNum(value) }
         };
     }, []);
 

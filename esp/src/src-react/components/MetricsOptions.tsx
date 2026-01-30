@@ -135,14 +135,16 @@ export const AddLabel: React.FunctionComponent<AddLabelProps> = ({
 interface MetricsOptionsProps {
     show: boolean;
     setShow: (_: boolean) => void;
+    logicalGraph: boolean;
 }
 
 export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
     show,
     setShow,
+    logicalGraph
 }) => {
     const [globalScopeTypes, globalProperties] = useMetricMeta();
-    const { viewIds, viewId, setViewId, view, addView, updateView } = useMetricsViews();
+    const { viewIds, viewId, setViewId, view, addView, updateView } = useMetricsViews(logicalGraph);
     const [dirtyView, setDirtyView] = React.useState<MetricsView>(clone(view));
     const [showAdd, setShowAdd] = React.useState(false);
     const [selectedTab, setSelectedTab] = React.useState("metrics");

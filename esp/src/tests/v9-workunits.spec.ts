@@ -147,6 +147,7 @@ test.describe("V9 Workunits", () => {
                 "queries",
                 "resources",
                 "helpers",
+                "logicalgraph",
                 "xml"
             ];
 

@@ -21,22 +21,6 @@
 #include "jevent.hpp"
 #include "jptree.hpp"
 
-// An abstraction enabling an event pulling model. Consumers control the pace of event
-// production by calling nextEvent() as needed.
-//
-// The interface is more simplistic than other iterators. A binary event file reader is considered
-// to be a potential event source.
-//
-// The query* methods are used to identify a source of events. The queried values coincide with
-// `IEventVisitor::visitFile` and `IEventVisitor::departFile` parameters.
-interface IEventIterator : extends IInterface
-{
-    virtual bool nextEvent(CEvent& event) = 0;
-    virtual const char* queryFilename() const = 0;
-    virtual uint32_t queryVersion() const = 0;
-    virtual uint32_t queryBytesRead() const = 0;
-};
-
 // Implementation of IEventIterator that extracts event data from a property tree whose contents
 // conform to this format (shown here as YAML):
 //
@@ -62,15 +46,14 @@ class event_decl CPropertyTreeEvents : public CInterfaceOf<IEventIterator>
 {
 public:
     virtual bool nextEvent(CEvent& event) override;
-    virtual const char* queryFilename() const override;
-    virtual uint32_t queryVersion() const override;
-    virtual uint32_t queryBytesRead() const override;
+    virtual const EventFileProperties& queryFileProperties() const override;
 public:
     CPropertyTreeEvents(const IPropertyTree& events);
     CPropertyTreeEvents(const IPropertyTree& events, bool strictParsing);
 protected:
     Linked<const IPropertyTree> events;
     Owned<IPropertyTreeIterator> eventsIt;
+    EventFileProperties properties;
     bool strictParsing{true};
 };
 

@@ -2,6 +2,7 @@ import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
+import { formatNum } from "src/Utility";
 import * as WsDFUXref from "src/WsDFUXref";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { useConfirm } from "../hooks/confirm";
@@ -35,8 +36,8 @@ export const XrefFoundFiles: React.FunctionComponent<XrefFoundFilesProps> = ({
             check: { width: 27, selectorType: "checkbox" },
             Name: { width: 360, label: nlsHPCC.Name },
             modified: { width: 80, label: nlsHPCC.Modified },
-            parts: { width: 80, label: nlsHPCC.Parts },
-            size: { width: 80, label: nlsHPCC.Size }
+            parts: { width: 80, label: nlsHPCC.Parts, formatter: (value) => formatNum(value) },
+            size: { width: 80, label: nlsHPCC.Size, formatter: (value) => formatNum(value) }
         };
     }, []);
 

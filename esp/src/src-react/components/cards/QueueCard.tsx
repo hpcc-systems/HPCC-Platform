@@ -9,6 +9,7 @@ import { getStateImage as getDFUStateImage } from "src/ESPDFUWorkunit";
 import { useBuildInfo } from "../../hooks/platform";
 import { GenericCard } from "./GenericCard";
 import { CardGroup } from "./CardGroup";
+import { MessageBox } from "../../layouts/MessageBox";
 
 const useStyles = makeStyles({
     jobsList: {
@@ -66,16 +67,21 @@ const useStyles = makeStyles({
         display: "flex",
         alignItems: "center",
         columnGap: "2px",
-        marginLeft: "auto",
-        minWidth: 0
+        flex: "0 0 auto"
     },
     jobWuid: {
-        whiteSpace: "nowrap"
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        minWidth: 0,
+        flex: "0 1 auto"
     },
     jobName: {
         overflow: "hidden",
         textOverflow: "ellipsis",
-        whiteSpace: "nowrap"
+        whiteSpace: "nowrap",
+        minWidth: 0,
+        flex: "0 1 auto"
     },
     muted: {
         color: tokens.colorNeutralForeground3
@@ -217,37 +223,37 @@ const ActiveWorkunit: React.FunctionComponent<ActiveWorkunitProps> = ({ wu, idx,
                 <div className={styles.jobRow}>
                     {wimg && <img className={styles.jobIcon} alt="state" src={wimg} />}
                     <div className={styles.jobTexts}>
-                        <Link className={styles.jobWuid} href={wu.isDFU ? `#/dfuworkunits/${wuid}` : `#/workunits/${wuid}`}>{wuid}</Link>
+                        <Link className={styles.jobWuid} href={wu.isDFU ? `#/dfuworkunits/${wuid}` : `#/workunits/${wuid}`} aria-label={jobName ? `${jobName} workunit ${wuid}` : wuid}>{jobName ? `${jobName} (${wuid})` : wuid}</Link>
+                    </div>
+                    <div className={styles.jobRight}>
+                        <Link className={styles.jobName} href={`#/workunits/${wuid}/metrics/${graphName}`}>
+                            {gid ? `${graphName}-${gid}` : graphName}
+                        </Link>
                         {priorityIcon && <img className={styles.jobIcon} alt="priority" src={priorityIcon} />}
-                        <div className={styles.jobRight}>
-                            <Link className={styles.jobName} href={`#/workunits/${wuid}/metrics/${graphName}`}>
-                                {gid ? `${graphName}-${gid}` : graphName}
-                            </Link>
-                            <Button
-                                appearance="transparent"
-                                size="small"
-                                aria-label={nlsHPCC.Resume}
-                                title={`${nlsHPCC.Resume} (Ctrl+Click = ${nlsHPCC.PauseNow || "Pause Now"})`}
-                                icon={wu.isPaused ? <Play16Regular className={styles.jobIcon} /> : <Pause16Regular className={styles.jobIcon} />}
-                                onClick={(e) => {
-                                    if (wu.isPaused) {
-                                        wuResume(wu);
-                                    } else {
-                                        wuPause(wu, (e as React.MouseEvent).ctrlKey);
-                                    }
-                                }}
-                            />
-                            <ActiveWorkunitMenu
-                                wu={wu}
-                                canUp={canUp}
-                                canDown={canDown}
-                                setPriority={setPriority}
-                                moveTop={moveTop}
-                                moveUp={moveUp}
-                                moveDown={moveDown}
-                                moveBottom={moveBottom}
-                            />
-                        </div>
+                        <Button
+                            appearance="transparent"
+                            size="small"
+                            aria-label={nlsHPCC.Resume}
+                            title={`${nlsHPCC.Resume} (Ctrl+Click = ${nlsHPCC.PauseNow || "Pause Now"})`}
+                            icon={wu.isPaused ? <Play16Regular className={styles.jobIcon} /> : <Pause16Regular className={styles.jobIcon} />}
+                            onClick={(e) => {
+                                if (wu.isPaused) {
+                                    wuResume(wu);
+                                } else {
+                                    wuPause(wu, (e as React.MouseEvent).ctrlKey);
+                                }
+                            }}
+                        />
+                        <ActiveWorkunitMenu
+                            wu={wu}
+                            canUp={canUp}
+                            canDown={canDown}
+                            setPriority={setPriority}
+                            moveTop={moveTop}
+                            moveUp={moveUp}
+                            moveDown={moveDown}
+                            moveBottom={moveBottom}
+                        />
                     </div>
                 </div>
             </Tooltip>
@@ -369,6 +375,7 @@ export const QueueCard: React.FunctionComponent<QueueCardProps> = ({
     wuResume
 }) => {
     const [, { isContainer }] = useBuildInfo();
+    const [clearDialogOpen, setClearDialogOpen] = React.useState(false);
 
     const displayName = serverJobQueue.title;
     const key = `${serverJobQueue.kind}:${serverJobQueue.targetCluster?.ClusterName || serverJobQueue.serverJobQueue?.ServerName || serverJobQueue.serverJobQueue?.QueueName}`;
@@ -389,26 +396,34 @@ export const QueueCard: React.FunctionComponent<QueueCardProps> = ({
         }
         items.push(
             <OverflowItem id={`queue-${key}-clear`} key="clear">
-                <ToolbarButton icon={<Delete16Regular />} aria-label={nlsHPCC.Clear} title={nlsHPCC.Clear} onClick={() => clear(serverJobQueue)} />
+                <ToolbarButton icon={<Delete16Regular />} aria-label={nlsHPCC.Clear} title={nlsHPCC.Clear} onClick={() => setClearDialogOpen(true)} />
             </OverflowItem>
         );
         return items;
-    }, [serverJobQueue, key, isContainer, resume, pause, onOpen, clear]);
+    }, [serverJobQueue, key, isContainer, resume, pause, onOpen]);
 
-    return <GenericCard key={key} headerActionsMinVisible={3} style={{ width: "100%", height: "100%" }}
-        headerIcon={
-            <Tooltip content={serverJobQueue.paused ? nlsHPCC.Stopped : nlsHPCC.Active} relationship="label">
-                <DatabaseWindow20Regular style={{ color: serverJobQueue.paused ? tokens.colorStatusDangerForeground1 : tokens.colorStatusSuccessForeground1 }} />
-            </Tooltip>
-        }
-        headerText={
-            <Tooltip content={displayName} relationship="label">
-                <Text weight="semibold">{displayName}</Text>
-            </Tooltip>
-        }
-        headerActions={actions} footerText={serverJobQueue.paused ? nlsHPCC.Stopped : undefined} footerExtraInfo={serverJobQueue.paused ? <InfoLabel size="medium" info={<StatusDetails details={serverJobQueue.statusDetails} />}></InfoLabel> : undefined}>
-        <ActiveWorkunitList list={serverJobQueue.workunits as UIWorkunit[]} setPriority={setPriority} moveTop={moveTop} moveUp={moveUp} moveDown={moveDown} moveBottom={moveBottom} wuPause={wuPause} wuResume={wuResume} />
-    </GenericCard>;
+    return <>
+        <GenericCard key={key} headerActionsMinVisible={3} style={{ width: "100%", height: "100%" }}
+            headerIcon={
+                <Tooltip content={serverJobQueue.paused ? nlsHPCC.Stopped : nlsHPCC.Active} relationship="label">
+                    <DatabaseWindow20Regular style={{ color: serverJobQueue.paused ? tokens.colorStatusDangerForeground1 : tokens.colorStatusSuccessForeground1 }} />
+                </Tooltip>
+            }
+            headerText={
+                <Tooltip content={displayName} relationship="label">
+                    <Text weight="semibold">{displayName}</Text>
+                </Tooltip>
+            }
+            headerActions={actions} footerText={serverJobQueue.paused ? nlsHPCC.Stopped : undefined} footerExtraInfo={serverJobQueue.paused ? <InfoLabel size="medium" info={<StatusDetails details={serverJobQueue.statusDetails} />}></InfoLabel> : undefined}>
+            <ActiveWorkunitList list={serverJobQueue.workunits as UIWorkunit[]} setPriority={setPriority} moveTop={moveTop} moveUp={moveUp} moveDown={moveDown} moveBottom={moveBottom} wuPause={wuPause} wuResume={wuResume} />
+        </GenericCard>
+        <MessageBox show={clearDialogOpen} setShow={setClearDialogOpen} title={nlsHPCC.Clear} footer={<>
+            <Button appearance="primary" onClick={() => { clear(serverJobQueue); setClearDialogOpen(false); }}>{nlsHPCC.OK}</Button>
+            <Button appearance="secondary" onClick={() => setClearDialogOpen(false)}>{nlsHPCC.Cancel}</Button>
+        </>}>
+            {nlsHPCC.CancelAllMessage}
+        </MessageBox>
+    </>;
 };
 
 export interface QueueCardsProps {

@@ -587,9 +587,9 @@ struct jlib_decl EventFileProperties
 
 // Pull-based interface for reading events from a binary event data file.
 //
-// An IEventReader provides an iterator-like API over the events contained in a single file.
+// An IEventIterator provides an iterator-like API over the events contained in a single file.
 // It is the counterpart to the push-based readEvents() helper:
-//   - Use IEventReader when the caller wants explicit control over when the next event is read,
+//   - Use IEventIterator when the caller wants explicit control over when the next event is read,
 //     for example to integrate with existing loops, apply back-pressure, or stop after a
 //     partial read.
 //   - Use readEvents() when all events should be processed in one pass via an IEventVisitor
@@ -600,7 +600,7 @@ struct jlib_decl EventFileProperties
 //   - Populate queryFileProperties() as information becomes available (see EventFileProperties
 //     for details of which fields are set when).
 //   - Throw an IException-derived exception on I/O or format errors.
-interface IEventReader : extends IInterface
+interface IEventIterator : extends IInterface
 {
     // Reads the next event from the file.
     //
@@ -611,7 +611,7 @@ interface IEventReader : extends IInterface
 
     // Returns the current properties of the underlying event file.
     //
-    // The returned reference remains valid for the lifetime of the reader. Fields are populated
+    // The returned reference remains valid for the lifetime of the iterator. Fields are populated
     // as they become known:
     //   - path and version are set once the file is opened and its header parsed;
     //   - options are derived from the header;
@@ -621,20 +621,20 @@ interface IEventReader : extends IInterface
     virtual const EventFileProperties& queryFileProperties() const = 0;
 };
 
-// Creates an IEventReader for the specified event data file.
+// Creates an IEventIterator for the specified event data file.
 //
 // The path identifies a single binary event file previously produced by the event recording
-// infrastructure. The returned reader exposes a pull-based API via nextEvent(), allowing
+// infrastructure. The returned iterator exposes a pull-based API via nextEvent(), allowing
 // callers to iterate over events at their own pace. This is functionally equivalent to
 // readEvents(), but gives the caller more control over iteration and lifetime.
 //
-// On success, returns a new IEventReader instance. The caller is responsible for releasing
+// On success, returns a new IEventIterator instance. The caller is responsible for releasing
 // the interface when it is no longer needed, using the standard IInterface reference-counting
 // conventions.
 //
 // Throws an IException-derived exception if the file cannot be opened, the header cannot be
 // parsed, or the contents are not a supported event file format.
-extern jlib_decl IEventReader* createEventReader(const char* path);
+extern jlib_decl IEventIterator* createEventFileIterator(const char* path);
 
 // Opens and parses a single binary event data file. Parsed data is passed to the given visitor
 // until parsing completes or the visitor requests it to stop.
