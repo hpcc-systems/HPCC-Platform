@@ -87,6 +87,12 @@ class CTcpReceiveManager : implements IReceiveManager, public CInterface
     uid_map         collators;
     CriticalSection collatorsLock; // protects access to collators map
     roxiemem::IDataBufferManager * udpBufferManager;
+    
+    // Bulk buffer allocation cache for TCP receives
+    DataBuffer *bulkBuffers[8];
+    unsigned bulkBufferCount = 0;
+    unsigned bulkBufferIndex = 0;
+    CriticalSection bufferCacheLock;
 
     class CTcpPacketCollator : public Thread
     {
@@ -254,7 +260,37 @@ public:
         unsigned packetLength = header->length;
         dbgassertex(packetLength <= roxiemem::DATA_ALIGNMENT_SIZE);
 
-        DataBuffer * buffer = udpBufferManager->allocate();
+        DataBuffer * buffer = nullptr;
+        
+        // Try to get a buffer from the pool
+        {
+            CriticalBlock b(bufferCacheLock);
+            if (bulkBufferIndex < bulkBufferCount)
+            {
+                buffer = bulkBuffers[bulkBufferIndex++];
+            }
+            else
+            {
+                // Try to allocate a new pool
+                if (udpBufferManager->allocateBlock(8, bulkBuffers))
+                {
+                    bulkBufferCount = 8;
+                    bulkBufferIndex = 0;
+                    buffer = bulkBuffers[bulkBufferIndex++];
+                }
+                else if (udpBufferManager->allocateBlock(4, bulkBuffers))
+                {
+                    bulkBufferCount = 4;
+                    bulkBufferIndex = 0;
+                    buffer = bulkBuffers[bulkBufferIndex++];
+                }
+            }
+        }
+        
+        // Fall back to single allocation if bulk failed
+        if (!buffer)
+            buffer = udpBufferManager->allocate();
+            
         memcpy(buffer->data, header, packetLength);
         if (collateDirectly)
             collatePacket(buffer);

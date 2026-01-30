@@ -1314,6 +1314,39 @@ class CUdpReceiveManager : implements IReceiveManager, public CInterface
         std::atomic<bool> running = { false };
         Semaphore started;
         UdpRdTracker timeTracker;
+
+        DataBuffer *allocateNextBuffer(roxiemem::IDataBufferManager *udpBufferManager, DataBuffer **bulkBuffers, unsigned &bulkBufferCount, unsigned &bulkBufferIndex)
+        {
+            // Try to use a bulk-allocated buffer first
+            if (bulkBufferIndex < bulkBufferCount)
+            {
+                return bulkBuffers[bulkBufferIndex++];
+            }
+            else
+            {
+                // Try to allocate a new pool
+                if (udpBufferManager->allocateBlock(8, bulkBuffers))
+                {
+                    bulkBufferCount = 8;
+                    bulkBufferIndex = 0;
+                    return bulkBuffers[bulkBufferIndex++];
+                }
+                else if (udpBufferManager->allocateBlock(4, bulkBuffers))
+                {
+                    bulkBufferCount = 4;
+                    bulkBufferIndex = 0;
+                    return bulkBuffers[bulkBufferIndex++];
+                }
+                else
+                {
+                    // Fall back to single allocation
+                    DataBuffer *b = udpBufferManager->allocate();
+                    if (!b)
+                        throw MakeStringException(ROXIE_MEMORY_ERROR, "Failed to allocate UDP receive buffer");
+                    return b;
+                }
+            }
+        }
         
     public:
         receive_data(CUdpReceiveManager &_parent) : Thread("UdpLib::receive_data"), parent(_parent), timeTracker("receive_data", 60)
@@ -1381,7 +1414,29 @@ class CUdpReceiveManager : implements IReceiveManager, public CInterface
             unsigned lastUnwantedDiscarded = 0;
             unsigned timeout = 5000;
             roxiemem::IDataBufferManager * udpBufferManager = bufferManager;
-            DataBuffer *b = udpBufferManager->allocate();
+            
+            // Pre-allocate a pool of buffers for better performance
+            DataBuffer *bulkBuffers[8];
+            unsigned bulkBufferCount = 0;
+            unsigned bulkBufferIndex = 0;
+            if (!udpBufferManager->allocateBlock(8, bulkBuffers))
+            {
+                // Bulk allocation failed, try smaller pool
+                if (!udpBufferManager->allocateBlock(4, bulkBuffers))
+                {
+                    // Fall back to single allocation
+                    bulkBuffers[0] = udpBufferManager->allocate();
+                    if (!bulkBuffers[0])
+                        throw MakeStringException(ROXIE_MEMORY_ERROR, "Failed to allocate initial UDP receive buffer");
+                    bulkBufferCount = 1;
+                }
+                else
+                    bulkBufferCount = 4;
+            }
+            else
+                bulkBufferCount = 8;
+            
+            DataBuffer *b = bulkBuffers[bulkBufferIndex++];
             while (running) 
             {
                 try 
@@ -1447,7 +1502,16 @@ class CUdpReceiveManager : implements IReceiveManager, public CInterface
                         d.switchState(UdpRdTracker::pushing);
                         parent.input_queue->pushOwn(b);
                         d.switchState(UdpRdTracker::allocating);
-                        b = udpBufferManager->allocate();
+                        
+                        // Get next buffer from pool or allocate new pool
+                        if (bulkBufferIndex < bulkBufferCount)
+                        {
+                            b = bulkBuffers[bulkBufferIndex++];
+                        }
+                        else
+                        {
+                            b = allocateNextBuffer(udpBufferManager, bulkBuffers, bulkBufferCount, bulkBufferIndex);
+                        }
                     }
                     if (udpStatsReportInterval)
                     {
