@@ -3845,6 +3845,11 @@ public:
             return 0;
         if (!numDiskReads)
             return 0;
+        CDfsLogicalFileName lfn;
+        if (!lfn.setValidate(logicalFileName)) // paranoid, it should always be valid
+            return 0;
+        if (lfn.isExternal() || lfn.isForeign())
+            return 0; // Skip external and foreign files. We can't update their properties
 
         if (!curReadCost)
             curReadCost = calcFileAccessCost(file, 0, numDiskReads);
