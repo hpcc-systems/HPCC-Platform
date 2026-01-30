@@ -154,19 +154,32 @@ jobs:
             -username "${{ github.repository_owner }}" \
             -password "${{ secrets.GITHUB_TOKEN }}"
 
-      - name: Load code signing
+      - name: Setup Certificate File
+      - name: Setup Certificate File
         shell: "pwsh"
         run: |
-          mkdir -p ./sign
-          cd sign
-          $pfxPath = "hpcc_code_signing.pfx"
-          $encodedBytes = [System.Convert]::FromBase64String("${{ secrets.SIGNING_CERTIFICATE }}")
-          $currentDirectory = Get-Location
-          $certificatePath = Join-Path -Path $currentDirectory -ChildPath $pfxPath
-          [IO.File]::WriteAllBytes("$certificatePath", $encodedBytes)
-          $passphrasePath = Join-Path -Path $currentDirectory -ChildPath "passphrase.txt"
-          Set-Content -Path $passphrasePath -Value "${{ secrets.SIGNING_CERTIFICATE_PASSPHRASE }}"
-          CertUtil -p ${{ secrets.SIGNING_CERTIFICATE_PASSPHRASE }} hpcc_code_signing.pfx
+          $base64 = "${{ secrets.SM_CLIENT_CERT_FILE_B64 }}"
+          if ([string]::IsNullOrEmpty($base64)) {
+            Write-Error "Secret SM_CLIENT_CERT_FILE_B64 is empty or not set."
+            exit 1
+          }
+          $bytes = [Convert]::FromBase64String($base64)
+          $outDir = "$env:RUNNER_TEMP"
+          $p12Path = Join-Path $outDir "sm_client_cert.p12"
+          [IO.File]::WriteAllBytes($p12Path, $bytes)
+          # Make sure the path is visible to subsequent steps
+          "SM_CLIENT_CERT_FILE=$p12Path" | Out-File -FilePath $env:GITHUB_ENV -Append
+          
+      - name: Setup Software Trust Manager
+        uses: digicert/code-signing-software-trust-action@v1.0.1
+        with:
+          simple-signing-mode: true
+          keypair-alias: "RIS_Data_Services_HPCC_Systems"
+        env:
+          SM_HOST: https://clientauth.one.digicert.com
+          SM_API_KEY: ${{ secrets.DIGICERT_API_KEY }}
+          SM_CLIENT_CERT_FILE: ${{ env.SM_CLIENT_CERT_FILE }}
+          SM_CLIENT_CERT_PASSWORD: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
 
       - name: Check workspace
         shell: "bash"
@@ -179,8 +192,13 @@ jobs:
           cd ECLIDE
           mkdir -p ./build
           cd ./build
-          cmake -A Win32 -S ../ -B . 
+          cmake -A Win32 -S ../ -B . -DDIGICERT_KEYPAIR_ALIAS=RIS_Data_Services_HPCC_Systems 
           cmake --build . --config RelWithDebInfo --target SIGN --parallel $NUMBER_OF_PROCESSORS
+        env:
+          SM_HOST: https://clientauth.one.digicert.com
+          SM_API_KEY: ${{ secrets.DIGICERT_API_KEY }}
+          SM_CLIENT_CERT_FILE: ${{ env.SM_CLIENT_CERT_FILE }}
+          SM_CLIENT_CERT_PASSWORD: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
 
       - name: Build Internal ECLIDE
         shell: "bash"
@@ -188,8 +206,13 @@ jobs:
           cd ECLIDE
           cd ./build
           rm -rf ./CMakeCache.txt ./CMakeFiles
-          cmake -A Win32 -S ../ -B . -DHPCC_AUDIENCE=internal
+          cmake -A Win32 -S ../ -B . -DHPCC_AUDIENCE=internal -DDIGICERT_KEYPAIR_ALIAS=RIS_Data_Services_HPCC_Systems
           cmake --build . --config RelWithDebInfo --target SIGN --parallel $NUMBER_OF_PROCESSORS
+        env:
+          SM_HOST: https://clientauth.one.digicert.com
+          SM_API_KEY: ${{ secrets.DIGICERT_API_KEY }}
+          SM_CLIENT_CERT_FILE: ${{ env.SM_CLIENT_CERT_FILE }}
+          SM_CLIENT_CERT_PASSWORD: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
 
       - name: Upload Assets
         uses: ncipollo/release-action@v1.16.0

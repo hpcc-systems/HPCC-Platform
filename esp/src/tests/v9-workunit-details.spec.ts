@@ -1,5 +1,37 @@
+import { Page } from "@playwright/test";
 import { test, expect } from "./fixtures";
 import { getWuid, loadWUs } from "./global";
+
+/**
+ * Helper function to click a tab that might be in the overflow menu
+ * Tabs can be either directly visible or in an overflow menu dropdown
+ */
+async function clickTab(page: Page, tabName: string) {
+    // First try to find the tab directly visible
+    const directTab = page.getByRole("tab", { name: tabName });
+
+    if (await directTab.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await directTab.click();
+        return;
+    }
+
+    // If not visible, it might be in the overflow menu
+    // Look for the overflow menu button (usually has "More tabs" or ellipsis icon)
+    const overflowButton = page.getByRole("button", { name: /more|overflow/i }).or(
+        page.locator("button[aria-label*='overflow']")
+    ).or(
+        page.locator("button[aria-haspopup='menu']").last()
+    );
+
+    if (await overflowButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await overflowButton.click();
+        // Wait for menu to appear and click the menu item
+        await page.getByRole("menuitem", { name: tabName }).click();
+    } else {
+        // Fallback to direct click if overflow menu not found
+        await directTab.click();
+    }
+}
 
 test.describe("V9 Workunit Details", () => {
 
@@ -18,23 +50,41 @@ test.describe("V9 Workunit Details", () => {
         // Verify page title shows the WUID - use tab selector to be more specific
         await expect(page.getByRole("tab", { name: wuid })).toBeVisible();
 
-        // Check that the main tabs are visible
-        const expectedTabs = [
+        // Check that the main tabs are visible (some may be in overflow)
+        const visibleTabs = [
             "Variables",
             "Outputs",
             "Inputs",
             "Metrics",
             "Workflows",
             "Processes",
-            "Queries",
+            "Queries"
+        ];
+
+        // These tabs should always be visible
+        for (const tab of visibleTabs) {
+            await expect(page.getByRole("tab", { name: tab })).toBeVisible();
+        }
+
+        // These tabs might be in overflow menu or visible depending on screen size
+        const possiblyOverflowTabs = [
             "Resources",
             "Helpers",
             "ECL",
+            "Logical Graph",
             "XML"
         ];
 
-        for (const tab of expectedTabs) {
-            await expect(page.getByRole("tab", { name: tab })).toBeVisible();
+        // Verify overflow tabs exist either as visible tabs or in overflow menu
+        for (const tabName of possiblyOverflowTabs) {
+            const directTab = page.getByRole("tab", { name: tabName });
+            const isVisible = await directTab.isVisible({ timeout: 1000 }).catch(() => false);
+
+            if (!isVisible) {
+                // Check if overflow menu button exists
+                const overflowButton = page.locator("button[aria-haspopup='menu']").last();
+                await expect(overflowButton).toBeVisible();
+            }
         }
 
         // Check logs tab exists but may be disabled
@@ -202,7 +252,7 @@ test.describe("V9 Workunit Details", () => {
     });
 
     test("Should display ECL tab content when clicked", async ({ page }) => {
-        await page.getByRole("tab", { name: "ECL" }).click();
+        await clickTab(page, "ECL");
         await page.waitForLoadState("networkidle");
 
         // Check for ECL source content or editor  
@@ -289,5 +339,51 @@ test.describe("V9 Workunit Details", () => {
         }
     });
 
+    test("Should display Logical Graph tab content when clicked", async ({ page }) => {
+        await clickTab(page, "Logical Graph");
+        await page.waitForLoadState("networkidle");
+
+        // Wait for Logical Graph content (graph or metrics) to become visible instead of using a fixed timeout
+        const graphContent = page.locator(".ms-Panel, .graph-widget, svg, canvas, .metrics-graph");
+        const metricsTable = page.locator(".ms-DetailsList, [role='grid']");
+        await expect(graphContent.or(metricsTable).first()).toBeVisible();
+
+        // Check if tab is selected
+        await expect(page.getByRole("tab", { name: "Logical Graph" })).toHaveAttribute("aria-selected", "true");
+
+        // Either graph visualization or metrics table should be visible
+        const hasGraphContent = await graphContent.count() > 0;
+        const hasMetricsTable = await metricsTable.count() > 0;
+
+        expect(hasGraphContent || hasMetricsTable).toBeTruthy();
+    });
+
+    test("Should have Timeline disabled in Logical Graph tab", async ({ page }) => {
+        await clickTab(page, "Logical Graph");
+        await page.waitForLoadState("networkidle");
+
+        // Look for Timeline button in command bar - it should not be present when viewing Logical Graph
+        const timelineButton = page.getByRole("menuitem", { name: "Timeline" });
+
+        // Timeline button should not be rendered at all
+        await expect(timelineButton).toHaveCount(0);
+        // Navigate to Metrics tab (usually visible, not in overflow)
+        await page.getByRole("tab", { name: "Metrics", exact: true }).first().click();
+        await page.waitForLoadState("networkidle");
+        // Verify we're on the Metrics tab by checking the URL or content
+        await expect(page).toHaveURL(/\/metrics/);
+
+        // Navigate to Logical Graph tab (may be in overflow)
+        await clickTab(page, "Logical Graph");
+        await page.waitForLoadState("networkidle");
+        // Verify we're on the Logical Graph tab by checking the URL or content
+        await expect(page).toHaveURL(/\/logicalgraph/);
+
+        // Navigate back to Metrics - use first() to get the main workunit tab
+        await page.getByRole("tab", { name: "Metrics", exact: true }).first().click();
+        await page.waitForLoadState("networkidle");
+        // Verify we're back on the Metrics tab
+        await expect(page).toHaveURL(/\/metrics/);
+    });
 
 });

@@ -680,6 +680,20 @@ attribute: DataSize = 73
             VerifyVisitor visitor;
             CPPUNIT_ASSERT(readEvents("recordingsource.evt", visitor));
             CPPUNIT_ASSERT_EQUAL(2U, visitor.eventCount);
+
+            // Also verify using IEventIterator
+            Owned<IEventIterator> ei = createEventFileIterator("recordingsource.evt");
+            CPPUNIT_ASSERT_MESSAGE("Should be able to create event iterator", ei.get());
+
+            // Read first event to trigger RecordingSource processing
+            CPPUNIT_ASSERT_MESSAGE("Should be able to read first event", ei->nextEvent(event));
+
+            const EventFileProperties& props = ei->queryFileProperties();
+            CPPUNIT_ASSERT_MESSAGE("Process descriptor should be set from RecordingSource", props.processDescriptor.get());
+            CPPUNIT_ASSERT_MESSAGE("Process descriptor should match RecordingSource", props.processDescriptor.get() && strcmp(props.processDescriptor.get(), "test") == 0);
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Channel ID should be from RecordingSource", byte(1), props.channelId);
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Replica ID should be from RecordingSource", byte(2), props.replicaId);
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Instance ID should be from RecordingSource", 3U, (unsigned)props.instanceId);
         }
         catch (IException * e)
         {
@@ -724,10 +738,10 @@ attribute: DataSize = 73
             CPPUNIT_ASSERT_MESSAGE("Should be able to read file without RecordingSource event", readEvents("recordingsource_optional.evt", visitor));
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Should have read 2 events", 2U, visitor.eventCount);
 
-            Owned<IEventReader> reader = createEventReader("recordingsource_optional.evt");
-            CPPUNIT_ASSERT_MESSAGE("Should be able to create event reader", reader.get());
+            Owned<IEventIterator> ei = createEventFileIterator("recordingsource_optional.evt");
+            CPPUNIT_ASSERT_MESSAGE("Should be able to create event iterator", ei.get());
 
-            const EventFileProperties& props = reader->queryFileProperties();
+            const EventFileProperties& props = ei->queryFileProperties();
             CPPUNIT_ASSERT_MESSAGE("Process descriptor should not be set when RecordingSource is absent", !props.processDescriptor.get());
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Channel ID should be 0 when RecordingSource is absent", byte(0), props.channelId);
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Replica ID should be 0 when RecordingSource is absent", byte(0), props.replicaId);
@@ -813,13 +827,13 @@ attribute: DataSize = 73
         CPPUNIT_ASSERT_MESSAGE("Should be able to stop recording", recorder.stopRecording(&summary));
         CPPUNIT_ASSERT_MESSAGE("Recording should be inactive after stop", !recorder.isRecording());
 
-        Owned<IEventReader> reader = createEventReader("recordingsource_recursion.evt");
-        CPPUNIT_ASSERT_MESSAGE("Should be able to create event reader", reader.get());
+        Owned<IEventIterator> ei = createEventFileIterator("recordingsource_recursion.evt");
+        CPPUNIT_ASSERT_MESSAGE("Should be able to create event iterator", ei.get());
 
         CEvent event;
-        CPPUNIT_ASSERT_THROWS_IEXCEPTION(reader->nextEvent(event), "Expected exception when attempting to read past first RecordingSource");
+        CPPUNIT_ASSERT_THROWS_IEXCEPTION(ei->nextEvent(event), "Expected exception when attempting to read past first RecordingSource");
 
-        const EventFileProperties& props = reader->queryFileProperties();
+        const EventFileProperties& props = ei->queryFileProperties();
         CPPUNIT_ASSERT_EQUAL_MESSAGE("No events passed out - RecordingSource events are consumed internally", 0U, props.eventsRead);
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Properties should be from first RecordingSource", byte(1), props.channelId);
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Properties should be from first RecordingSource", byte(2), props.replicaId);
@@ -1076,11 +1090,11 @@ attribute: DataSize = 73
             CPPUNIT_ASSERT(visitor.fileCompleted);
             CPPUNIT_ASSERT_EQUAL(4U, (unsigned)visitor.events.size());
 
-            // Read events using pull API (IEventReader)
-            Owned<IEventReader> reader = createEventReader("pullevents.evt");
-            CPPUNIT_ASSERT(reader.get());
+            // Read events using pull API (IEventIterator)
+            Owned<IEventIterator> ei = createEventFileIterator("pullevents.evt");
+            CPPUNIT_ASSERT(ei.get());
 
-            const EventFileProperties& props = reader->queryFileProperties();
+            const EventFileProperties& props = ei->queryFileProperties();
 
             // Verify file properties available immediately (from file header)
             CPPUNIT_ASSERT(visitor.visitedFilename.get());
@@ -1088,18 +1102,18 @@ attribute: DataSize = 73
             CPPUNIT_ASSERT_EQUAL(visitor.visitedVersion, props.version);
 
             // Read all events using pull API and compare with visitor results
-            CEvent readerEvent;
+            CEvent iterEvent;
             unsigned eventIndex = 0;
-            while (reader->nextEvent(readerEvent))
+            while (ei->nextEvent(iterEvent))
             {
                 CPPUNIT_ASSERT(eventIndex < visitor.events.size());
                 CEvent& visitorEvent = visitor.events[eventIndex];
 
                 // Verify event types match
-                CPPUNIT_ASSERT_EQUAL((int)visitorEvent.queryType(), (int)readerEvent.queryType());
+                CPPUNIT_ASSERT_EQUAL((int)visitorEvent.queryType(), (int)iterEvent.queryType());
 
                 // Verify all defined attributes match
-                for (auto& attr : readerEvent.definedAttributes)
+                for (auto& attr : iterEvent.definedAttributes)
                 {
                     EventAttr attrId = attr.queryId();
 
@@ -1115,17 +1129,17 @@ attribute: DataSize = 73
                         if (attr.isText())
                         {
                             CPPUNIT_ASSERT_EQUAL_STR(visitorEvent.queryTextValue(attrId),
-                                                    readerEvent.queryTextValue(attrId));
+                                                    iterEvent.queryTextValue(attrId));
                         }
                         else if (attr.isBoolean())
                         {
                             CPPUNIT_ASSERT_EQUAL(visitorEvent.queryBooleanValue(attrId),
-                                               readerEvent.queryBooleanValue(attrId));
+                                               iterEvent.queryBooleanValue(attrId));
                         }
                         else
                         {
                             CPPUNIT_ASSERT_EQUAL(visitorEvent.queryNumericValue(attrId),
-                                               readerEvent.queryNumericValue(attrId));
+                                               iterEvent.queryNumericValue(attrId));
                         }
                     }
                     else
@@ -1142,7 +1156,7 @@ attribute: DataSize = 73
             CPPUNIT_ASSERT_EQUAL((unsigned)visitor.events.size(), eventIndex);
 
             // Verify nextEvent returns false after all events are consumed
-            CPPUNIT_ASSERT(!reader->nextEvent(readerEvent));
+            CPPUNIT_ASSERT(!ei->nextEvent(iterEvent));
 
             // Now verify runtime properties that are populated during event reading
             CPPUNIT_ASSERT_EQUAL(visitor.visitedBytesRead, props.bytesRead);

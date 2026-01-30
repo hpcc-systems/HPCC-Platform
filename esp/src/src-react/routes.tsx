@@ -38,6 +38,7 @@ const workunitsChildren: Route[] = [
             let state;
             switch (params.Tab) {
                 case "metrics":
+                case "logicalgraph":
                     state = { [params.Tab as string]: { selection: (params.State as string).split(",") } };
                     break;
                 case "eclsummary":

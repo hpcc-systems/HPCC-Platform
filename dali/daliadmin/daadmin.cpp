@@ -1804,16 +1804,15 @@ void listmatches(const char *path, const char *match, const char *pval)
         ForEachItemIn(pv, pvals)
         {
             const char *val = e.queryProp(pvals.item(pv));
-            if (val)
+            if (first)
             {
-                if (first)
-                {
-                    first = false;
-                    output.append(" = ").append(val);
-                }
-                else
-                    output.append(',').append(val);
+                first = false;
+                output.append(" = ");
             }
+            else
+                output.append(',');
+            if (!isEmptyString(val))
+                output.append(val);
         }
         outln(output.str());
     }
