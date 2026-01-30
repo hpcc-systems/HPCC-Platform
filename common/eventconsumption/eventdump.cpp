@@ -40,7 +40,7 @@ bool CDumpEventsOp::doOp()
         visitor.setown(createDumpYAMLEventVisitor(*out));
         break;
     case OutputFormat::csv:
-        visitor.setown(createDumpCSVEventVisitor(*out));
+        visitor.setown(createDumpCSVEventVisitor(*out, queryIteratorProperties()));
         break;
     case OutputFormat::tree:
         {
