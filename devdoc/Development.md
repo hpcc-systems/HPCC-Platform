@@ -53,6 +53,46 @@ located, and from that directory, run:
 cmake <source directory>
 ```
 
+### vcpkg Dependency Management
+
+HPCC Platform uses the vcpkg submodule for managing third-party dependencies. The build system automatically verifies and can update the vcpkg submodule to match the commit recorded in the parent repository's index.
+
+#### Automatic vcpkg Submodule Management
+
+By default, CMake will automatically update the vcpkg submodule if it doesn't match the recorded commit:
+
+```bash
+# Default behavior - automatic update enabled
+cmake <source directory>
+```
+
+#### Manual vcpkg Submodule Control
+
+To disable automatic updates and manage vcpkg manually:
+
+```bash
+# Disable auto-update
+cmake -DVCPKG_AUTO_UPDATE_SUBMODULE=OFF <source directory>
+```
+
+If you need to manually update the vcpkg submodule:
+
+```bash
+# Initialize/update vcpkg submodule to correct baseline
+git submodule update --init --recursive vcpkg
+```
+
+**Note:** Auto-update should be disabled in CI environments to avoid concurrency issues. Always review changes to the vcpkg submodule commit reference (visible in git diffs as the submodule commit hash) in pull requests for security.
+
+#### Troubleshooting vcpkg Issues
+
+If you encounter vcpkg-related build issues:
+
+1. Ensure the submodule is initialized: `git submodule update --init --recursive vcpkg`
+2. Check if you have local changes in vcpkg directory: `cd vcpkg && git status`
+3. Clean local changes if needed: `cd vcpkg && git reset --hard HEAD && git clean -fd`
+4. Re-run cmake with auto-update enabled: `cmake -DVCPKG_AUTO_UPDATE_SUBMODULE=ON <source directory>`
+
 Depending on your operating system and the compilers installed on it,
 this will create a makefile, Visual Studio .sln file, or other build
 script for building the system. If cmake was configured to create a
