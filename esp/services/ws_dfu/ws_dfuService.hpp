@@ -178,6 +178,7 @@ public:
     virtual bool onSavexml(IEspContext &context, IEspSavexmlRequest &req, IEspSavexmlResponse &resp);
     virtual bool onAdd(IEspContext &context, IEspAddRequest &req, IEspAddResponse &resp);
     virtual bool onAddRemote(IEspContext &context, IEspAddRemoteRequest &req, IEspAddRemoteResponse &resp);
+    virtual bool onDFUFileRename(IEspContext &context, IEspDFUFileRenameRequest &req, IEspDFUFileRenameResponse &resp);
     virtual bool onSuperfileList(IEspContext &context, IEspSuperfileListRequest &req, IEspSuperfileListResponse &resp);
     virtual bool onSuperfileAction(IEspContext &context, IEspSuperfileActionRequest &req, IEspSuperfileActionResponse &resp);
     virtual bool onListHistory(IEspContext &context, IEspListHistoryRequest &req, IEspListHistoryResponse &resp);
