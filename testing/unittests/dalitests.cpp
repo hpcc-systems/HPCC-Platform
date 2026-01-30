@@ -2715,7 +2715,8 @@ public:
             nullptr,                      // no fields specified (default all)
             user,                         // user context
             true,                         // recursive
-            allReceived                   // output parameter
+            allReceived,                  // output parameter
+            nullptr                       // pointer to receive total count
         );
         CPPUNIT_ASSERT(allReceived);
 
@@ -2746,7 +2747,8 @@ public:
             nullptr,                      // no fields specified (default all)
             user,                         // user context
             true,                         // recursive
-            allReceived                   // output parameter
+            allReceived,                  // output parameter
+            nullptr                       // pointer to receive total count
         ));
         CPPUNIT_ASSERT(allReceived);
 
@@ -2774,7 +2776,8 @@ public:
             fields.data(),                // select fields
             user,                         // user context
             true,                         // recursive
-            allReceived                   // output parameter
+            allReceived,                  // output parameter
+            nullptr                       // pointer to receive total count
         );
         CPPUNIT_ASSERT(allReceived);
 
@@ -2801,7 +2804,8 @@ public:
                 fields.data(),                // select fields
                 user,                         // user context
                 true,                         // recursive
-                allReceived                   // output parameter
+                allReceived,                  // output parameter
+                nullptr                       // pointer to receive total count
             ));
             CPPUNIT_ASSERT(allReceived);
             count = 0;
