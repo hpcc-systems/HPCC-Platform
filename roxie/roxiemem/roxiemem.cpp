@@ -6689,8 +6689,7 @@ public:
         {
             if (curBlock)
             {
-                DataBufferBottom *bottom = curBlock;
-                memsize_t curHeadId = bottom->freeHeadId;
+                memsize_t curHeadId = curBlock->freeHeadId;
                 if (!isNullDataId(curHeadId))
                 {
                     for (;;)
@@ -6698,9 +6697,9 @@ public:
                         DataBuffer * curFree = getPtrFromDataId(curHeadId);
                         DataBuffer * nextFree = getPtrFromDataId(curFree->nextDataId);
                         memsize_t nextHeadId = createDataId(nextFree, nextSeqFromDataId(curHeadId));
-                        if (likely(bottom->freeHeadId.compare_exchange_weak(curHeadId, nextHeadId, std::memory_order_acq_rel)))
+                        if (likely(curBlock->freeHeadId.compare_exchange_weak(curHeadId, nextHeadId, std::memory_order_acq_rel)))
                         {
-                            bottom->Link();
+                            curBlock->Link();
                             block.leave();
                             dataBuffersActive.fetch_add(1);
                             curFree->nextDataId = 0;
@@ -6715,11 +6714,11 @@ public:
                 if (nextOffset < HEAP_ALIGNMENT_SIZE)
                 {
                     curBlock->Link();
-                    char * result = nextBase+nextOffset;
+                    char * addr = nextBase+nextOffset;
                     nextOffset += DATA_ALIGNMENT_SIZE;
-                    block.leave();
                     dataBuffersActive.fetch_add(1);
-                    DataBuffer *x = ::new(result) DataBuffer();
+                    block.leave();
+                    DataBuffer *x = ::new(addr) DataBuffer();
                     if (memTraceLevel >= 4)
                         DBGLOG("RoxieMemMgr: CDataBufferManager::allocate() allocated DataBuffer - addr=%p", x);
                     return x;
@@ -6836,10 +6835,10 @@ public:
             while (allocated < numBuffers && nextOffset < HEAP_ALIGNMENT_SIZE)
             {
                 curBlock->Link();
-                char * rawBuffer = nextBase + nextOffset;
+                char * addr = nextBase + nextOffset;
                 nextOffset += DATA_ALIGNMENT_SIZE;
                 dataBuffersActive.fetch_add(1);
-                buffers[allocated++] = ::new(rawBuffer) DataBuffer();
+                buffers[allocated++] = ::new(addr) DataBuffer();
             }
         }
 
@@ -6872,17 +6871,17 @@ public:
                         // Allocate as many as we can from this block's free chain
                         while (allocated < numBuffers)
                         {
-                            memsize_t curHeadId2 = curBlock->freeHeadId;
-                            if (isNullDataId(curHeadId2))
+                            curHeadId = curBlock->freeHeadId;
+                            if (isNullDataId(curHeadId))
                                 break;
 
                             for (;;)
                             {
-                                DataBuffer * curFree = getPtrFromDataId(curHeadId2);
+                                DataBuffer * curFree = getPtrFromDataId(curHeadId);
                                 assertex(curFree);
                                 DataBuffer * nextFree = getPtrFromDataId(curFree->nextDataId);
-                                memsize_t nextHeadId = createDataId(nextFree, nextSeqFromDataId(curHeadId2));
-                                if (likely(curBlock->freeHeadId.compare_exchange_weak(curHeadId2, nextHeadId, std::memory_order_acq_rel)))
+                                memsize_t nextHeadId = createDataId(nextFree, nextSeqFromDataId(curHeadId));
+                                if (likely(curBlock->freeHeadId.compare_exchange_weak(curHeadId, nextHeadId, std::memory_order_acq_rel)))
                                 {
                                     curBlock->Link();
                                     dataBuffersActive.fetch_add(1);
@@ -6921,10 +6920,10 @@ public:
         while (allocated < numBuffers && nextOffset < HEAP_ALIGNMENT_SIZE)
         {
             curBlock->Link();
-            char * rawBuffer = nextBase + nextOffset;
+            char * addr = nextBase + nextOffset;
             nextOffset += DATA_ALIGNMENT_SIZE;
             dataBuffersActive.fetch_add(1);
-            buffers[allocated++] = ::new(rawBuffer) DataBuffer();
+            buffers[allocated++] = ::new(addr) DataBuffer();
         }
 
         assertex(allocated > 0);
