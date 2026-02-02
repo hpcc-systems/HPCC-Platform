@@ -575,17 +575,17 @@ extern roxiemem_decl IRowManager *createGlobalRowManager(memsize_t memLimit, mem
 interface IDataBufferManager : extends IInterface
 {
     virtual DataBuffer *allocate() = 0;
-    // Allocate multiple buffers atomically. Returns true if all numBuffers were successfully allocated,
-    // false otherwise (no buffers are allocated on failure). The buffers array must have space for at least
-    // numBuffers pointers. Maximum numBuffers is limited by implementation (typically 16; see maxBlockedBuffers).
+    // Allocate multiple buffers. Returns the number of buffers actually allocated (always at least 1,
+    // up to numBuffers requested). The buffers array must have space for at least numBuffers pointers.
+    // Maximum numBuffers is limited by implementation (typically 16; see maxBlockedBuffers).
+    // Stops allocating once it cannot allocate more from the current page, ensuring at least 1 is always returned.
     // Note: While any count from 1 to maximum is supported, certain counts may offer better performance
     // due to internal page alignment and allocation efficiency.
-    virtual bool allocateBlock(unsigned numBuffers, DataBuffer ** buffers) = 0;
+    virtual unsigned allocateBlock(unsigned numBuffers, DataBuffer ** buffers) = 0;
     virtual void poolStats(StringBuffer &memStats) = 0;
 };
 
 extern roxiemem_decl IDataBufferManager *createDataBufferManager(size32_t size);
-extern roxiemem_decl IDataBufferManager *createBlockedDataBufferManager(size32_t size, unsigned numBuffers);
 extern roxiemem_decl void setMemoryStatsInterval(unsigned secs);
 extern roxiemem_decl void setTotalMemoryLimit(bool allowHugePages, bool allowTransparentHugePages, bool retainMemory, bool lockMemory, memsize_t max, memsize_t largeBlockSize, const unsigned * allocSizes, ILargeMemCallback * largeBlockCallback);
 extern roxiemem_decl void setMemoryOptions(IPropertyTree * options);
