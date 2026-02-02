@@ -587,6 +587,10 @@ protected:
                         // implies that a package file had ~ in subfile names - shouldn't really, but we allow it (and just strip the ~)
                         subFileName.remove(0,1);
                     }
+                    //Catch the most likely cause of a recursive filename - which would otherwise cause a stack overflow
+                    if (strieq(fileName, subFileName.str()))
+                        throw makeStringExceptionV(ROXIE_FILE_ERROR, "Superfile %s contains itself as a subfile", fileName);
+
                     if (doTrace(traceRoxieFiles, TraceFlags::Detailed))
                         DBGLOG("Looking up subfile %s", subFileName.str());
                     AccessMode subAccessMode = AccessMode::readRandom;   // NOTE - overwriting a superfile does NOT require write access to subfiles
@@ -1124,45 +1128,48 @@ public:
                         const IResolvedFile * resolved = package->lookupExpandedFileName(filename, true, true, AccessMode::readRandom, false, true, isCodeSigned);
                         resolvedFiles[i].setown(resolved);
 
-                        //MORE: Would this be better as a separate async loop?
-                        // This code does not check lazyOpen - because the purpose of that flag is to avoid opening files that are not needed.
-                        // this code checks that the package is active - so the files are needed.
-                        unsigned numOpened = 0;
-                        unsigned totalParts = resolved->getNumTotalParts();
-                        unsigned localParts = resolved->getNumLocalParts(channelNo);
-                        bool isActiveIndex = false;
-                        if (resolved && resolved->isKey())
+                        if (resolved)
                         {
-                            isActiveIndex = packages.isActive();
-                            if (preopenActiveIndexes && isActiveIndex)
+                            //MORE: Would this be better as a separate async loop?
+                            // This code does not check lazyOpen - because the purpose of that flag is to avoid opening files that are not needed.
+                            // this code checks that the package is active - so the files are needed.
+                            unsigned numOpened = 0;
+                            unsigned totalParts = resolved->getNumTotalParts();
+                            unsigned localParts = resolved->getNumLocalParts(channelNo);
+                            bool isActiveIndex = false;
+                            if (resolved->isKey())
                             {
-                                Owned<IKeyArray> keySet = resolved->getKeyArray(isOpt, channelNo);
-                                for (unsigned partNo = 0; partNo < keySet->length(); partNo++)
+                                isActiveIndex = packages.isActive();
+                                if (preopenActiveIndexes && isActiveIndex)
                                 {
-                                    IKeyIndexBase *thisBase = keySet->queryKeyPart(partNo);
-                                    if (thisBase)
+                                    Owned<IKeyArray> keySet = resolved->getKeyArray(isOpt, channelNo);
+                                    for (unsigned partNo = 0; partNo < keySet->length(); partNo++)
                                     {
-                                        unsigned fileNo = 0;
-                                        IKeyIndex *thisKey = thisBase->queryPart(fileNo);
-                                        if (thisKey)
+                                        IKeyIndexBase *thisBase = keySet->queryKeyPart(partNo);
+                                        if (thisBase)
                                         {
-                                            thisKey->ensureReady();
-                                            numOpened++;
+                                            unsigned fileNo = 0;
+                                            IKeyIndex *thisKey = thisBase->queryPart(fileNo);
+                                            if (thisKey)
+                                            {
+                                                thisKey->ensureReady();
+                                                numOpened++;
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
 
-                        CriticalBlock block(stats.cs);
-                        stats.totalParts += totalParts;
-                        stats.localParts += localParts;
-                        stats.numIndexesOpened += numOpened;
-                        if (isActiveIndex)
-                        {
-                            stats.numActiveIndexes += 1;
-                            stats.activeTotalParts += totalParts;
-                            stats.activeLocalParts += localParts;
+                            CriticalBlock block(stats.cs);
+                            stats.totalParts += totalParts;
+                            stats.localParts += localParts;
+                            stats.numIndexesOpened += numOpened;
+                            if (isActiveIndex)
+                            {
+                                stats.numActiveIndexes += 1;
+                                stats.activeTotalParts += totalParts;
+                                stats.activeLocalParts += localParts;
+                            }
                         }
                     }
                     catch (IException *E)
