@@ -7124,8 +7124,8 @@ IPropertyTree *CCovenSDSManager::lockStoreRead() const
 
 void CCovenSDSManager::unlockStoreRead() const
 {
-    PROGLOG("unlockStoreRead() called");
     dataRWLock.unlockRead();
+    PROGLOG("unlockStoreRead() called");
 }
 
 bool CCovenSDSManager::setSDSDebug(StringArray &params, StringBuffer &reply)
