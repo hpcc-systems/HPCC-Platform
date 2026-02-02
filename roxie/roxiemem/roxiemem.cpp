@@ -6783,9 +6783,11 @@ public:
                                 {
                                     curBlock->Link();
                                     dataBuffersActive.fetch_add(1);
+                                    curFree->count.store(1, std::memory_order_relaxed);
                                     curFree->nextDataId = 0;
+                                    curFree->mgr = nullptr;
                                     curFree->changeState(DBState::freed, DBState::unowned, __func__);
-                                    buffers[allocated++] = ::new(curFree) DataBuffer();
+                                    buffers[allocated++] = curFree;
                                     break;
                                 }
                             }

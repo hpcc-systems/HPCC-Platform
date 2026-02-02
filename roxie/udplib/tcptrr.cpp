@@ -272,15 +272,9 @@ public:
             else
             {
                 // Try to allocate a new pool
-                if (udpBufferManager->allocateBlock(8, bulkBuffers))
+                bulkBufferCount = udpBufferManager->allocateBlock(8, bulkBuffers);
+                if (bulkBufferCount > 0)
                 {
-                    bulkBufferCount = 8;
-                    bulkBufferIndex = 0;
-                    buffer = bulkBuffers[bulkBufferIndex++];
-                }
-                else if (udpBufferManager->allocateBlock(4, bulkBuffers))
-                {
-                    bulkBufferCount = 4;
                     bulkBufferIndex = 0;
                     buffer = bulkBuffers[bulkBufferIndex++];
                 }

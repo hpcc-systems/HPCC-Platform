@@ -1325,26 +1325,23 @@ class CUdpReceiveManager : implements IReceiveManager, public CInterface
             else
             {
                 // Try to allocate a new pool
-                if (udpBufferManager->allocateBlock(8, bulkBuffers))
+                bulkBufferCount = udpBufferManager->allocateBlock(8, bulkBuffers);
+                if (bulkBufferCount > 0)
                 {
-                    bulkBufferCount = 8;
                     bulkBufferIndex = 0;
                     return bulkBuffers[bulkBufferIndex++];
                 }
-                else if (udpBufferManager->allocateBlock(4, bulkBuffers))
+                bulkBufferCount = udpBufferManager->allocateBlock(4, bulkBuffers);
+                if (bulkBufferCount > 0)
                 {
-                    bulkBufferCount = 4;
                     bulkBufferIndex = 0;
                     return bulkBuffers[bulkBufferIndex++];
                 }
-                else
-                {
-                    // Fall back to single allocation
-                    DataBuffer *b = udpBufferManager->allocate();
-                    if (!b)
-                        throw MakeStringException(ROXIE_MEMORY_ERROR, "Failed to allocate UDP receive buffer");
-                    return b;
-                }
+                // Fall back to single allocation
+                DataBuffer *b = udpBufferManager->allocate();
+                if (!b)
+                    throw MakeStringException(ROXIE_MEMORY_ERROR, "Failed to allocate UDP receive buffer");
+                return b;
             }
         }
         
@@ -1419,10 +1416,12 @@ class CUdpReceiveManager : implements IReceiveManager, public CInterface
             DataBuffer *bulkBuffers[8];
             unsigned bulkBufferCount = 0;
             unsigned bulkBufferIndex = 0;
-            if (!udpBufferManager->allocateBlock(8, bulkBuffers))
+            bulkBufferCount = udpBufferManager->allocateBlock(8, bulkBuffers);
+            if (bulkBufferCount == 0)
             {
                 // Bulk allocation failed, try smaller pool
-                if (!udpBufferManager->allocateBlock(4, bulkBuffers))
+                bulkBufferCount = udpBufferManager->allocateBlock(4, bulkBuffers);
+                if (bulkBufferCount == 0)
                 {
                     // Fall back to single allocation
                     bulkBuffers[0] = udpBufferManager->allocate();
@@ -1430,11 +1429,7 @@ class CUdpReceiveManager : implements IReceiveManager, public CInterface
                         throw MakeStringException(ROXIE_MEMORY_ERROR, "Failed to allocate initial UDP receive buffer");
                     bulkBufferCount = 1;
                 }
-                else
-                    bulkBufferCount = 4;
             }
-            else
-                bulkBufferCount = 8;
             
             DataBuffer *b = bulkBuffers[bulkBufferIndex++];
             while (running) 

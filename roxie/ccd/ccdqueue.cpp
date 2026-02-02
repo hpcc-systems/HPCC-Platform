@@ -3131,23 +3131,20 @@ protected:
         else
         {
             // Try to allocate a new bulk pool
-            if (bufferManager->allocateBlock(8, bulkBuffers))
+            bulkBufferCount = bufferManager->allocateBlock(8, bulkBuffers);
+            if (bulkBufferCount > 0)
             {
-                bulkBufferCount = 8;
                 bulkBufferIndex = 0;
                 return bulkBuffers[bulkBufferIndex++];
             }
-            else if (bufferManager->allocateBlock(4, bulkBuffers))
+            bulkBufferCount = bufferManager->allocateBlock(4, bulkBuffers);
+            if (bulkBufferCount > 0)
             {
-                bulkBufferCount = 4;
                 bulkBufferIndex = 0;
                 return bulkBuffers[bulkBufferIndex++];
             }
-            else
-            {
-                // Fall back to single allocation
-                return bufferManager->allocate();
-            }
+            // Fall back to single allocation
+            return bufferManager->allocate();
         }
     }
 

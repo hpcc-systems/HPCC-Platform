@@ -67,23 +67,17 @@ class CMessagePacker : implements IMessagePacker, public CInterface
         else
         {
             // Try to allocate a bulk pool on first use (amortize allocation overhead)
-            if (bulkBufferCount == 0 && bufferManager->allocateBlock(8, bulkBuffers))
+            if (bulkBufferCount == 0)
             {
-                bulkBufferCount = 8;
-                bulkBufferIndex = 0;
-                return bulkBuffers[bulkBufferIndex++];
+                bulkBufferCount = bufferManager->allocateBlock(8, bulkBuffers);
+                if (bulkBufferCount > 0)
+                {
+                    bulkBufferIndex = 0;
+                    return bulkBuffers[bulkBufferIndex++];
+                }
             }
-            else if (bulkBufferCount == 0 && bufferManager->allocateBlock(4, bulkBuffers))
-            {
-                bulkBufferCount = 4;
-                bulkBufferIndex = 0;
-                return bulkBuffers[bulkBufferIndex++];
-            }
-            else
-            {
-                // Fall back to single allocation (either bulk allocation failed or pool exhausted)
-                return bufferManager->allocate();
-            }
+            // Fall back to single allocation
+            return bufferManager->allocate();
         }
     }
 
