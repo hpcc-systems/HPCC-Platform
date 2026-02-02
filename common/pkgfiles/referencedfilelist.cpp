@@ -227,7 +227,7 @@ public:
             ep.set(NULL);
         return ep;
     }
-    virtual void cloneInfo(const IPropertyTree *directories, IDFUWorkUnit *publisherWu, unsigned updateFlags, IDFUhelper *helper, IUserDescriptor *user, const char *dstCluster, const char *srcCluster, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder, const char *dfu_queue);
+    virtual void cloneInfo(IDFUWorkUnit *publisherWu, unsigned updateFlags, IDFUhelper *helper, IUserDescriptor *user, const char *dstCluster, const char *srcCluster, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder, const char *dfu_queue);
     void cloneSuperInfo(IDFUWorkUnit *publisherWu, unsigned updateFlags, ReferencedFileList *list, IUserDescriptor *user, INode *remote);
     virtual const char *queryPackageId() const {return pkgid.get();}
     virtual __int64 getFileSize()
@@ -686,7 +686,7 @@ static void getDefaultDFUName(StringBuffer &dfuQueueName)
 #endif
 }
 
-static void dfuCopy(const IPropertyTree *directories, IDFUWorkUnit *publisherWu, IUserDescriptor *user, const char *sourceLogicalName, const char *destLogicalName, const char *destPlane, const char *srcLocation, bool supercopy, bool overwrite, bool preserveCompression, bool nosplit, bool useRemoteStorage)
+static void dfuCopy(IDFUWorkUnit *publisherWu, IUserDescriptor *user, const char *sourceLogicalName, const char *destLogicalName, const char *destPlane, const char *srcLocation, bool supercopy, bool overwrite, bool preserveCompression, bool nosplit, bool useRemoteStorage)
 {
     if(!publisherWu)
         throw makeStringException(-1, "Failed to create Publisher DFU Workunit.");
@@ -700,7 +700,7 @@ static void dfuCopy(const IPropertyTree *directories, IDFUWorkUnit *publisherWu,
     PROGLOG("Copy from %s[%s]  %s to %s", (!isEmptyString(srcLocation) && useRemoteStorage) ? "remote" : "", isEmptyString(srcLocation) ? "local" : srcLocation, sourceLogicalName, destLogicalName);
 
     StringBuffer destFolder, destTitle, defaultFolder, defaultReplicateFolder;
-    DfuParseLogicalPath(directories, destLogicalName, destPlane, destFolder, destTitle, defaultFolder, defaultReplicateFolder);
+    DfuParseLogicalPath(destLogicalName, destPlane, destFolder, destTitle, defaultFolder, defaultReplicateFolder);
 
     CDfsLogicalFileName logicalName;
     logicalName.set(sourceLogicalName);
@@ -801,7 +801,7 @@ bool ReferencedFile::needsCopying(bool cloneForeign) const
     return true;
 }
 
-void ReferencedFile::cloneInfo(const IPropertyTree *directories, IDFUWorkUnit *publisherWu, unsigned updateFlags, IDFUhelper *helper, IUserDescriptor *user, const char *dstCluster, const char *srcCluster, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder, const char *dfu_queue)
+void ReferencedFile::cloneInfo(IDFUWorkUnit *publisherWu, unsigned updateFlags, IDFUhelper *helper, IUserDescriptor *user, const char *dstCluster, const char *srcCluster, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder, const char *dfu_queue)
 {
     if (!needsCopying(cloneForeign))
         return;
@@ -820,7 +820,7 @@ void ReferencedFile::cloneInfo(const IPropertyTree *directories, IDFUWorkUnit *p
             //Whether remote or on a local plane if we get here the file is not on a plane that roxie considers an direct access plane, so if we're in copy data mode the the file will be copied
             helper->cloneRoxieSubFile(srcLFN, srcCluster, logicalName, dstCluster, filePrefix, redundancy, channelsPerNode, replicateOffset, defReplicateFolder, user, daliip, remoteStorage, updateFlags, false);
         else
-            dfuCopy(directories, publisherWu, user, srcLFN, logicalName, dstCluster, remoteStorage.isEmpty() ? daliip : remoteStorage, false, (updateFlags & DFU_UPDATEF_OVERWRITE)!=0, true, false, !remoteStorage.isEmpty());
+            dfuCopy(publisherWu, user, srcLFN, logicalName, dstCluster, remoteStorage.isEmpty() ? daliip : remoteStorage, false, (updateFlags & DFU_UPDATEF_OVERWRITE)!=0, true, false, !remoteStorage.isEmpty());
 
         flags |= RefFileCloned;
     }
@@ -1265,14 +1265,8 @@ void ReferencedFileList::cloneFileInfo(StringBuffer &publisherWuid, const char *
     ReferencedFileIterator files(this);
     if (needToCopyPhysicalFiles)
     {
-        IPropertyTree *directories = nullptr;
-#ifndef _CONTAINERIZED
-        Owned<IPropertyTree> envtree = getHPCCEnvironment();
-        if (envtree)
-            directories = envtree->queryPropTree("Software/Directories");
-#endif
         ForEach(files)
-            files.queryObject().cloneInfo(directories, publisher, updateFlags, helper, user, dstCluster, srcCluster, cloneForeign, redundancy, channelsPerNode, replicateOffset, defReplicateFolder, dfu_queue);
+            files.queryObject().cloneInfo(publisher, updateFlags, helper, user, dstCluster, srcCluster, cloneForeign, redundancy, channelsPerNode, replicateOffset, defReplicateFolder, dfu_queue);
     }
     if (cloneSuperInfo)
         ForEach(files)

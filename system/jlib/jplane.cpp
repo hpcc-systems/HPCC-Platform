@@ -163,6 +163,7 @@ public:
     {
         name = plane.queryProp("@name");
         prefix = plane.queryProp("@prefix", "");
+        mirrorPrefix = plane.queryProp("@mirrorPrefix", nullptr);
         category = plane.queryProp("@category", "");
         devices = plane.getPropInt("@numDevices", 1);
 
@@ -234,6 +235,13 @@ public:
     }
 
     virtual const char * queryPrefix() const override { return prefix.c_str(); }
+
+    virtual const char * queryMirrorPrefix() const override
+    {
+        if (mirrorPrefix)
+            return mirrorPrefix.str();
+        return prefix.c_str();
+    }
 
     virtual unsigned numDevices() const override { return devices; }
 
@@ -374,6 +382,7 @@ public:
 private:
     std::string name;
     std::string prefix;
+    StringAttr mirrorPrefix; // can be null
     std::string category;
     StringAttr compression;
     unsigned devices{1};
