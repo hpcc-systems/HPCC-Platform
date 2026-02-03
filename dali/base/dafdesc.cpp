@@ -411,7 +411,9 @@ struct CClusterInfo: implements IClusterInfo, public CInterface
                     }
                     if (mspec.defaultCopies>1 && mspec.defaultReplicateDir.isEmpty())
                     {
-                        mspec.setDefaultReplicateDir(queryBaseDirectory(groupType, 1));  // MORE - not sure this is strictly correct
+                        StringBuffer dir;
+                        getConfigurationDirectory(dir, groupType, 1, name);
+                        mspec.setDefaultReplicateDir(dir);
                     }
                     return; // ok
                 }
@@ -489,7 +491,11 @@ public:
                     mspec.setDefaultBaseDir(defaultDir);   // MORE - should possibly set up the rest of the mspec info from the group info here
 
                 if (mspec.defaultCopies>1 && (mspec.defaultReplicateDir.isEmpty() || baseDirChanged))
-                    mspec.setDefaultReplicateDir(queryBaseDirectory(groupType, 1));  // MORE - not sure this is strictly correct
+                {
+                    StringBuffer dir;
+                    getConfigurationDirectory(dir, groupType, 1, name);
+                    mspec.setDefaultReplicateDir(dir);
+                }
             }
             else
                 checkClusterName(resolver);
@@ -2850,7 +2856,16 @@ static void loadDefaultBases()
 }
 
 
-const char *queryBaseDirectory(GroupType groupType, unsigned replicateLevel, DFD_OS os)
+bool getConfigurationDirectory(StringBuffer & result, GroupType groupType, unsigned replicateLevel, const char *instance)
+{
+    const char *dirType = dirTypeNames[replicateLevel];
+    if ((replicateLevel == 1) && groupType!=grp_roxie)
+        dirType = "mirror";
+
+    return getConfigurationDirectory(nullptr, dirType, componentNames[groupType], instance, result);
+}
+
+static const char *queryBaseDirectory(GroupType groupType, unsigned replicateLevel, DFD_OS os)
 {
     if (os==DFD_OSdefault)
 #ifdef _WIN32
@@ -3702,7 +3717,12 @@ void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned copy
         else if (dir.length())
             plane->setProp("@prefix", dir);
         else
-            plane->setProp("@prefix", queryBaseDirectory(groupType, copy));
+        {
+
+            StringBuffer dir;
+            getConfigurationDirectory(dir, groupType, copy, planeName);
+            plane->setProp("@prefix", dir);
+        }
     }
 
     if (!plane->hasProp("@category"))
