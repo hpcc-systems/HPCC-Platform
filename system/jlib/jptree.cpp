@@ -10441,22 +10441,43 @@ StringBuffer &getExpertOptPath(const char *opt, StringBuffer &out)
 
 bool hasExpertOpt(const char *opt)
 {
+    return hasExpertOpt(opt, nullptr);
+}
+
+bool hasExpertOpt(const char *opt, IPropertyTree *ipt)
+{
     StringBuffer xpath;
     getExpertOptPath(opt, xpath);
+    if (ipt)
+        return ipt->hasProp(xpath);
     return getComponentConfigSP()->hasProp(xpath);
 }
 
 bool getExpertOptBool(const char *opt, bool dft)
 {
+    return getExpertOptBool(opt, dft, nullptr);
+}
+
+bool getExpertOptBool(const char *opt, bool dft, IPropertyTree *ipt)
+{
     StringBuffer xpath;
     getExpertOptPath(opt, xpath);
+    if (ipt)
+        return ipt->getPropBool(xpath, dft);
     return getComponentConfigSP()->getPropBool(xpath, dft);
 }
 
 __int64 getExpertOptInt64(const char *opt, __int64 dft)
 {
+    return getExpertOptInt64(opt, dft, nullptr);
+}
+
+__int64 getExpertOptInt64(const char *opt, __int64 dft, IPropertyTree *ipt)
+{
     StringBuffer xpath;
     getExpertOptPath(opt, xpath);
+    if (ipt)
+        return ipt->getPropInt64(xpath, dft);
     return getComponentConfigSP()->getPropInt64(xpath, dft);
 }
 
@@ -10477,9 +10498,14 @@ StringBuffer &getExpertOptString(const char *opt, StringBuffer &out)
 
 void setExpertOpt(const char *opt, const char *value)
 {
+    setExpertOpt(opt, value, nullptr);
+}
+
+void setExpertOpt(const char *opt, const char *value, IPropertyTree *ipt)
+{
     StringBuffer xpath;
     getExpertOptPath(nullptr, xpath);
-    Owned<IPropertyTree> config = getComponentConfigSP();
+    Owned<IPropertyTree> config = ipt ? Owned<IPropertyTree>(LINK(ipt)) : getComponentConfigSP();
     if (!config->hasProp(xpath))
         config->setPropTree(xpath);
     getExpertOptPath(opt, xpath.clear());

@@ -128,7 +128,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
         CRuntimeSummaryStatisticCollection podStats;
         std::vector<std::string> nodeNames; // ordered list of the unique node names
         bool collectAttempted = false;
-        
+
     public:
         CPodInfo() : podStats(podStatistics)
         {
@@ -189,7 +189,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
             reportExceptionToWorkunit(*wu, e);
         }
     } podInfo;
-    
+
     Owned<IDeMonServer> demonServer;
     std::atomic<unsigned> activeTasks;
     StringAttr          currentWuid;
@@ -580,7 +580,7 @@ bool CJobManager::execute(IConstWorkUnit *workunit, const char *wuid, const char
             wu->setDebugAgentListenerIP(sb); //tells debugger what IP to write commands to
             wu->setDebugAgentListenerPort(debugListener->getPort());
         }
-        workunitGraphCacheEnabled = getExpertOptBool("workunitGraphCacheEnabled", workunitGraphCacheEnabled);
+        workunitGraphCacheEnabled = getExpertOptBool("workunitGraphCacheEnabled", workunitGraphCacheEnabled, globals);
         return doit(workunit, graphName, agentep);
     }
     catch (IException *e)
@@ -1052,7 +1052,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     bool sendSo = false;
     Owned<ILoadedDllEntry> querySo;
     StringBuffer soPath;
-    if (!getExpertOptBool("saveQueryDlls"))
+    if (!getExpertOptBool("saveQueryDlls", false, globals))
     {
         DBGLOG("Loading query name: %s", soName.str());
         querySo.setown(queryDllServer().loadDll(soName.str(), DllLocationLocal));
@@ -1086,7 +1086,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
                 FLLOG(MCexception(e), e, "Failed to write query dll - ignoring!");
                 e->Release();
             }
-            sendSo = getExpertOptBool("dllsToSlaves", true);
+            sendSo = getExpertOptBool("dllsToSlaves", true, globals);
         }
         querySo.setown(createDllEntry(compoundPath.str(), false, NULL, false));
         soPath.swapWith(compoundPath);
@@ -1412,8 +1412,87 @@ void auditThorJobEvent(const char *eventName, const char *wuid, const char *grap
     LOG(MCauditInfo, "%s", msg.c_str());
 }
 
+// Configuration change detection for graceful restart
+static std::atomic<bool> configChangeDetected{false};
+static StringBuffer currentConfigSHA;
+static CriticalSection configSHAcs;
+
+// Compute SHA hash of the current configuration
+static void computeConfigSHA(StringBuffer &shaStr)
+{
+    shaStr.clear();
+    try
+    {
+        Owned<IPropertyTree> componentConfig = getComponentConfigSP();
+        Owned<IPropertyTree> globalConfig = getGlobalConfigSP();
+        if (!componentConfig && !globalConfig)
+            IWARNLOG("Failed to compute configuration SHA as No global config nor component config!");
+
+        StringBuffer componentConfigXML;
+        if (componentConfig)
+            toXML(componentConfig, componentConfigXML, 0, 0);
+        StringBuffer globalConfigXML;
+        if (globalConfig)
+            toXML(globalConfig, globalConfigXML, 0, 0);
+
+        if (componentConfigXML.length() || globalConfigXML.length())
+        {
+            StringBuffer configXML;
+            configXML.append(componentConfigXML);
+            configXML.append(globalConfigXML);
+            hash64_t configHash = rtlHash64Data(configXML.length(), configXML.str(), 0);
+            shaStr.appendf("%" I64F "x", configHash);
+        }
+    }
+    catch (IException *e)
+    {
+        IWARNLOG(e, "Failed to compute configuration SHA");
+        e->Release();
+    }
+}
+
+static void configUpdateNotifyHandler(const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
+{
+    // Compute SHA of current (new) configuration
+    StringBuffer newConfigSHA;
+    computeConfigSHA(newConfigSHA);
+
+    // Check and update the stored SHA, only if SHA actually changed (content change, not just file touch)
+    {
+        CriticalBlock b(configSHAcs);
+        if (newConfigSHA.length() && !streq(currentConfigSHA.str(), newConfigSHA.str()))
+        {
+            PROGLOG("Configuration SHA changed from '%s' to '%s' - ThorManager will gracefully restart after current job completes",
+                    currentConfigSHA.str(),
+                    newConfigSHA.str());
+
+            configChangeDetected = true;
+            currentConfigSHA.set(newConfigSHA.str());
+        }
+    }
+}
+
 void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphName)
 {
+    // Install configuration change detection handler for graceful restart
+    unsigned configUpdateHookId{0};
+    if (isContainerized())
+    {
+        configUpdateHookId = installConfigUpdateHook(configUpdateNotifyHandler, false);
+        if (configUpdateHookId)
+        {
+            // Initialize the configuration SHA baseline
+            StringBuffer initialConfigSHA;
+            computeConfigSHA(initialConfigSHA);
+            {
+                CriticalBlock b(configSHAcs);
+                currentConfigSHA.set(initialConfigSHA.str());
+            }
+        }
+        else
+            IWARNLOG("Failed to install configuration change monitoring");
+    }
+
     aborting = 0;
     unsigned multiThorMemoryThreshold = globals->getPropInt("@multiThorMemoryThreshold")*0x100000;
     try
@@ -1597,6 +1676,14 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                     }
 
                     currentGraphName.clear();
+
+                    // Check for configuration changes and exit gracefully if detected
+                    if (configChangeDetected)
+                    {
+                        PROGLOG("Configuration change detected - exiting gracefully to allow pod restart with new configuration");
+                        break;
+                    }
+
                     unsigned lingerRemaining;
                     if (lingerTimer.timedout(&lingerRemaining))
                         break;
@@ -1645,6 +1732,10 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
         FLLOG(MCexception(e), e,"ThorMaster");
         e->Release();
     }
+
+    if (configUpdateHookId)
+        removeConfigUpdateHook(configUpdateHookId);
+
     if (multiThorMemoryThreshold)
         setMultiThorMemoryNotify(0,NULL);
 }

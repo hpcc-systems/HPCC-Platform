@@ -1743,7 +1743,7 @@ void CJobMaster::sendQuery()
     const char *soName = queryDllEntry().queryName();
     DBGLOG("Query dll: %s", soName);
     tmp.append(soName);
-    if (getExpertOptBool("saveQueryDlls"))
+    if (getExpertOptBool("saveQueryDlls", false, globals))
     {
         tmp.append(sendSo);
         if (sendSo)
