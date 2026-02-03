@@ -2765,30 +2765,16 @@ IFileDescriptor *deserializeFileDescriptorTree(IPropertyTree *tree, INamedGroupS
     return new CFileDescriptor(tree, resolver, flags);
 }
 
-static const char * defaultWindowsBaseDirectories[__grp_size][MAX_REPLICATION_LEVELS] =
+static const char * defaultWindowsBaseDirectories[MAX_REPLICATION_LEVELS] =
     {
-            { "c:\\thordata", "d:\\thordata" },
-            { "c:\\thordata", "d:\\thordata" },
-            { "c:\\roxiedata", "d:\\roxiedata" },
-            { "c:\\hthordata", "d:\\hthordata" },
-            { "c:\\hthordata", "d:\\hthordata" },
+            "c:\\thordata", "d:\\thordata"
     };
-static const char * defaultUnixBaseDirectories[__grp_size][MAX_REPLICATION_LEVELS] =
+static const char * defaultUnixBaseDirectories[MAX_REPLICATION_LEVELS] =
     {
 #ifdef _CONTAINERIZED
-        { "/var/lib/HPCCSystems/hpcc-data", "/var/lib/HPCCSystems/hpcc-mirror" },
-        { "/var/lib/HPCCSystems/hpcc-data", "/var/lib/HPCCSystems/hpcc-mirror" },
-        { "/var/lib/HPCCSystems/hpcc-data", "/var/lib/HPCCSystems/hpcc-data2", "/var/lib/HPCCSystems/hpcc-data3", "/var/lib/HPCCSystems/hpcc-data4" },
-        { "/var/lib/HPCCSystems/hpcc-data", "/var/lib/HPCCSystems/hpcc-mirror" },
-        { "/var/lib/HPCCSystems/mydropzone", "/var/lib/HPCCSystems/mydropzone-mirror" }, // NB: this is not expected to be used
-        { "/var/lib/HPCCSystems/hpcc-data", "/var/lib/HPCCSystems/hpcc-mirror" },
+        "/var/lib/HPCCSystems/hpcc-data", "/var/lib/HPCCSystems/hpcc-mirror"
 #else
-        { "/var/lib/HPCCSystems/hpcc-data/thor", "/var/lib/HPCCSystems/hpcc-mirror/thor" },
-        { "/var/lib/HPCCSystems/hpcc-data/thor", "/var/lib/HPCCSystems/hpcc-mirror/thor" },
-        { "/var/lib/HPCCSystems/hpcc-data/roxie", "/var/lib/HPCCSystems/hpcc-data2/roxie", "/var/lib/HPCCSystems/hpcc-data3/roxie", "/var/lib/HPCCSystems/hpcc-data4/roxie" },
-        { "/var/lib/HPCCSystems/hpcc-data/eclagent", "/var/lib/HPCCSystems/hpcc-mirror/eclagent" },
-        { "/var/lib/HPCCSystems/mydropzone", "/var/lib/HPCCSystems/mydropzone-mirror" }, // NB: this is not expected to be used
-        { "/var/lib/HPCCSystems/hpcc-data/unknown", "/var/lib/HPCCSystems/hpcc-mirror/unknown" },
+        "/var/lib/HPCCSystems/hpcc-data/unknown", "/var/lib/HPCCSystems/hpcc-mirror/unknown"
 #endif
     };
 static const char *componentNames[__grp_size] =
@@ -2800,8 +2786,8 @@ static const char *dirTypeNames[MAX_REPLICATION_LEVELS] =
         "data", "data2", "data3", "data4"
     };
 
-static StringAttr windowsBaseDirectories[__grp_size][MAX_REPLICATION_LEVELS];
-static StringAttr unixBaseDirectories[__grp_size][MAX_REPLICATION_LEVELS];
+static StringAttr windowsBaseDirectories[MAX_REPLICATION_LEVELS];
+static StringAttr unixBaseDirectories[MAX_REPLICATION_LEVELS];
 
 static StringAttr defaultpartmask("$L$._$P$_of_$N$");
 
@@ -2827,31 +2813,25 @@ static void loadDefaultBases()
             dirs.set(conn->queryRoot());
     }
 
-    for (unsigned groupType = 0; groupType < __grp_size; groupType++)
+    const char *component = "unknown";
+    for (unsigned replicateLevel = 0; replicateLevel < MAX_REPLICATION_LEVELS; replicateLevel++)
     {
-        const char *component = componentNames[groupType];
-        for (unsigned replicationLevel = 0; replicationLevel < MAX_REPLICATION_LEVELS; replicationLevel++)
-        {
-            StringBuffer dirout;
-            const char *dirType = dirTypeNames[replicationLevel];
-            if (replicationLevel==1 && groupType!=grp_roxie)
-                dirType = "mirror";
-            if (getConfigurationDirectory(dirs, dirType, component,
-                "dummy",   // NB this is dummy value (but actually hopefully not used anyway)
-                dirout))
-                unixBaseDirectories[groupType][replicationLevel].set(dirout.str());
-        }
+        StringBuffer dirout;
+        const char *dirType = dirTypeNames[replicateLevel];
+        if (replicateLevel == 1)
+            dirType = "mirror";
+        if (getConfigurationDirectory(dirs, dirType, component,
+            "dummy",   // NB this is dummy value (but actually hopefully not used anyway)
+            dirout))
+            unixBaseDirectories[replicateLevel].set(dirout.str());
     }
 
-    for (unsigned groupType = 0; groupType < __grp_size; groupType++)
+    for (unsigned replicateLevel = 0; replicateLevel < MAX_REPLICATION_LEVELS; replicateLevel++)
     {
-        for (unsigned replicationLevel = 0; replicationLevel < MAX_REPLICATION_LEVELS; replicationLevel++)
-        {
-            if (unixBaseDirectories[groupType][replicationLevel].isEmpty())
-                unixBaseDirectories[groupType][replicationLevel].set(defaultUnixBaseDirectories[groupType][replicationLevel]);
-            if (windowsBaseDirectories[groupType][replicationLevel].isEmpty())
-                windowsBaseDirectories[groupType][replicationLevel].set(defaultWindowsBaseDirectories[groupType][replicationLevel]);
-        }
+        if (unixBaseDirectories[replicateLevel].isEmpty())
+            unixBaseDirectories[replicateLevel].set(defaultUnixBaseDirectories[replicateLevel]);
+        if (windowsBaseDirectories[replicateLevel].isEmpty())
+            windowsBaseDirectories[replicateLevel].set(defaultWindowsBaseDirectories[replicateLevel]);
     }
 }
 
@@ -2865,7 +2845,7 @@ bool getConfigurationDirectory(StringBuffer & result, GroupType groupType, unsig
     return getConfigurationDirectory(nullptr, dirType, componentNames[groupType], instance, result);
 }
 
-static const char *queryBaseDirectory(GroupType groupType, unsigned replicateLevel, DFD_OS os)
+const char *queryUnknownBaseDirectory(unsigned replicateLevel, DFD_OS os)
 {
     if (os==DFD_OSdefault)
 #ifdef _WIN32
@@ -2878,16 +2858,11 @@ static const char *queryBaseDirectory(GroupType groupType, unsigned replicateLev
     switch (os)
     {
     case DFD_OSwindows:
-        return windowsBaseDirectories[groupType][replicateLevel];
+        return windowsBaseDirectories[replicateLevel];
     case DFD_OSunix:
-        return unixBaseDirectories[groupType][replicateLevel];
+        return unixBaseDirectories[replicateLevel];
     }
     return NULL;
-}
-
-const char * queryUnknownBaseDirectory(unsigned replicateLevel, DFD_OS os)
-{
-    return queryBaseDirectory(grp_unknown, replicateLevel, os);
 }
 
 void setBaseDirectory(const char * dir, unsigned replicateLevel, DFD_OS os)
@@ -2911,10 +2886,10 @@ void setBaseDirectory(const char * dir, unsigned replicateLevel, DFD_OS os)
         l--;
     switch (os) {
     case DFD_OSwindows:
-        windowsBaseDirectories[grp_unknown][replicateLevel].set(dir,l);
+        windowsBaseDirectories[replicateLevel].set(dir,l);
         break;
     case DFD_OSunix:
-        unixBaseDirectories[grp_unknown][replicateLevel].set(dir,l);
+        unixBaseDirectories[replicateLevel].set(dir,l);
         break;
     }
 }
