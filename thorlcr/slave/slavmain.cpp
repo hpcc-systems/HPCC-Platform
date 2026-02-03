@@ -2434,7 +2434,7 @@ void slaveMain(bool &jobListenerStopped, ILogMsgHandler *logHandler)
         StringBuffer ipStr;
         ip.getHostText(ipStr);
         PROGLOG("Redirecting local mount to %s", ipStr.str());
-        const char *replicateDirectory = queryBaseDirectory(grp_unknown, 1); // default directories configured at start up (see thslavemain.cpp)
+        const char *replicateDirectory = queryUnknownBaseDirectory(1); // default directories configured at start up (see thslavemain.cpp)
         setLocalMountRedirect(ip, replicateDirectory, "/mnt/mirror");
     }
 
