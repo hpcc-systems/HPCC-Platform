@@ -350,6 +350,7 @@ extern da_decl StringBuffer &getLFNDirectoryUsingDefaultBaseDir(StringBuffer &re
 
 // set/get defaults
 extern da_decl const char *queryBaseDirectory(GroupType groupType, unsigned replicateLevel=0, DFD_OS os=DFD_OSdefault);
+extern da_decl const char * queryUnknownBaseDirectory(unsigned replicateLevel=0, DFD_OS os=DFD_OSdefault);
 extern da_decl void setBaseDirectory(const char * dir, unsigned replicateLevel=0, DFD_OS os=DFD_OSdefault);
 extern da_decl const char *queryPartMask();
 extern da_decl StringBuffer &getPartMask(StringBuffer &ret,const char *lname=NULL,unsigned partmax=0);

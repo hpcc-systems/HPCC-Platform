@@ -223,7 +223,7 @@ void ClusterPartDiskMapSpec::fromProp(IPropertyTree *tree)
     // if directory is specified then must match default base to be default replicated
     StringBuffer dir;
     if (tree&&tree->getProp("@directory",dir)) {
-        const char * base = queryBaseDirectory(grp_unknown, 0, SepCharBaseOs(getPathSepChar(dir.str())));
+        const char * base = queryUnknownBaseDirectory(0, SepCharBaseOs(getPathSepChar(dir.str())));
         size32_t l = strlen(base);
         if ((memcmp(base,dir.str(),l)!=0)||((l!=dir.length())&&!isPathSepChar(dir.charAt(l))))
             defrep = 0;
@@ -593,7 +593,7 @@ public:
     void getBaseDir(StringBuffer &basedir,DFD_OS os)
     {
         if (mspec.defaultBaseDir.isEmpty())  // assume current platform's default
-            basedir.append(queryBaseDirectory(grp_unknown, 0, os));
+            basedir.append(queryUnknownBaseDirectory(0, os));
         else
             basedir.append(mspec.defaultBaseDir);
     }
@@ -601,7 +601,7 @@ public:
     void getReplicateDir(StringBuffer &basedir,DFD_OS os)
     {
         if (mspec.defaultReplicateDir.isEmpty())  // assume current platform's default
-            basedir.append(queryBaseDirectory(grp_unknown, 1, os));
+            basedir.append(queryUnknownBaseDirectory(1, os));
         else
             basedir.append(mspec.defaultReplicateDir);
     }
@@ -1893,7 +1893,7 @@ public:
             if (!sc)
                 sc = getPathSepChar(dirname);
             StringBuffer tmp;
-            tmp.append(queryBaseDirectory(grp_unknown, 0, SepCharBaseOs(sc)));
+            tmp.append(queryUnknownBaseDirectory(0, SepCharBaseOs(sc)));
             if (sc != tmp.charAt(tmp.length()-1))
                 tmp.append(sc);
             tmp.append(s);
@@ -2870,6 +2870,11 @@ const char *queryBaseDirectory(GroupType groupType, unsigned replicateLevel, DFD
     return NULL;
 }
 
+const char * queryUnknownBaseDirectory(unsigned replicateLevel, DFD_OS os)
+{
+    return queryBaseDirectory(grp_unknown, replicateLevel, os);
+}
+
 void setBaseDirectory(const char * dir, unsigned replicateLevel, DFD_OS os)
 {
     // 2 possibilities
@@ -3026,7 +3031,7 @@ StringBuffer &makePhysicalPartName(const char *lname, unsigned partno, unsigned 
         result.append(diroverride);
     }
     else
-        result.append(queryBaseDirectory(grp_unknown, replicateLevel, os));
+        result.append(queryUnknownBaseDirectory(replicateLevel, os));
 
     size32_t l = result.length();
     if ((l>3)&&(result.charAt(l-1)!=OsSepChar(os))) {
@@ -3099,7 +3104,7 @@ StringBuffer &getLFNDirectoryUsingBaseDir(StringBuffer &result, const char *lnam
 {
     assertex(lname);
     if (isEmptyString(baseDir))
-        baseDir = queryBaseDirectory(grp_unknown, 0, DFD_OSdefault);
+        baseDir = queryUnknownBaseDirectory(0, DFD_OSdefault);
 
     result.append(baseDir);
     char pathSep = getPathSepChar(baseDir);
@@ -3117,7 +3122,7 @@ StringBuffer &getLFNDirectoryUsingBaseDir(StringBuffer &result, const char *lnam
 
 StringBuffer &getLFNDirectoryUsingDefaultBaseDir(StringBuffer &result, const char *lname, DFD_OS os)
 {
-    const char *baseDir = queryBaseDirectory(grp_unknown, 0, os);
+    const char *baseDir = queryUnknownBaseDirectory(0, os);
     return getLFNDirectoryUsingBaseDir(result, lname, baseDir);
 }
 
@@ -3130,7 +3135,7 @@ bool setReplicateDir(const char *dir,StringBuffer &out,bool isrep,const char *ba
     if (!sep)
         return false;
     DFD_OS os = SepCharBaseOs(*sep);
-    const char *d = baseDir?baseDir:queryBaseDirectory(grp_unknown, isrep ? 0 : 1,os);
+    const char *d = baseDir?baseDir:queryUnknownBaseDirectory(isrep ? 0 : 1,os);
     if (!d)
         return false;
     unsigned match = 0;
@@ -3144,7 +3149,7 @@ bool setReplicateDir(const char *dir,StringBuffer &out,bool isrep,const char *ba
             count++;
         }
     }
-    const char *r = repDir?repDir:queryBaseDirectory(grp_unknown, isrep ? 1 : 0,os);
+    const char *r = repDir?repDir:queryUnknownBaseDirectory(isrep ? 1 : 0,os);
     if (d[i]==0)
     {
         if (dir[i]==0)

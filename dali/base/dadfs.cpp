@@ -4957,7 +4957,7 @@ public:
                 }
             }
 #else
-            myBase.set(queryBaseDirectory(grp_unknown, 0, os));
+            myBase.set(queryUnknownBaseDirectory(0, os));
 #endif
             diroverride = myBase;
         }

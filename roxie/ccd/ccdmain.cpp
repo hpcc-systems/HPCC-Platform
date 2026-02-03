@@ -1361,8 +1361,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         setLegacyAES(topology->getPropBool("expert/@useLegacyAES", false));
 
         // NB: these directories will have been setup by topology earlier
-        const char *primaryDirectory = queryBaseDirectory(grp_unknown, 0);
-        const char *secondaryDirectory = queryBaseDirectory(grp_unknown, 1);
+        const char *primaryDirectory = queryUnknownBaseDirectory(0);
+        const char *secondaryDirectory = queryUnknownBaseDirectory(1);
 
         // MORE: Get parms from topology after it is populated from Hardware/computer types section in configenv
         //       Then if does not match and based on desired action in topolgy, either warn, or fatal exit or .... etc

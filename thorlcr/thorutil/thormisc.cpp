@@ -1462,8 +1462,8 @@ void sendInChunks(ICommunicator &comm, rank_t dst, mptag_t mpTag, IRowStream *in
 void logDiskSpace()
 {
     StringBuffer diskSpaceMsg("Disk space: ");
-    diskSpaceMsg.append(queryBaseDirectory(grp_unknown, 0)).append(" = ").append(getFreeSpace(queryBaseDirectory(grp_unknown, 0))/0x100000).append(" MB, ");
-    diskSpaceMsg.append(queryBaseDirectory(grp_unknown, 1)).append(" = ").append(getFreeSpace(queryBaseDirectory(grp_unknown, 1))/0x100000).append(" MB, ");
+    diskSpaceMsg.append(queryUnknownBaseDirectory(0)).append(" = ").append(getFreeSpace(queryUnknownBaseDirectory(0))/0x100000).append(" MB, ");
+    diskSpaceMsg.append(queryUnknownBaseDirectory(1)).append(" = ").append(getFreeSpace(queryUnknownBaseDirectory(1))/0x100000).append(" MB, ");
     const char *tempDir = globals->queryProp("@thorTempDirectory");
     diskSpaceMsg.append(tempDir).append(" = ").append(getFreeSpace(tempDir)/0x100000).append(" MB");
     PROGLOG("%s", diskSpaceMsg.str());
