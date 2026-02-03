@@ -230,7 +230,7 @@ jobs:
               if [[ ${REFERENCE:0:7} == 'mailto:' ]]
               then
                   echo -e "${LINE} -\e[34m warning: email address can't be verified by this test.\e[0m"
-                  echo "${LINE}" >> ${cwd}/warning-report.log
+                  echo "${LINE}" >> warning-report.log
                   continue
               fi
               REFERENCE="#${REFERENCE##*\#}"
