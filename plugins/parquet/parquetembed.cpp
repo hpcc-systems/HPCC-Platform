@@ -286,6 +286,9 @@ extern "C++" PARQUETEMBED_PLUGIN_API void getParquetRecordStructure(size32_t &__
         std::unique_ptr<ParquetReader> reader = std::make_unique<ParquetReader>(readType, filePath, 0, nullptr, nullptr);
         std::shared_ptr<arrow::Schema> schema = reader->getSchema();
 
+        if (schema->num_fields() == 0)
+            failx("This file has no columns. Cannot build a record structure.");
+
         StringBuffer ecl("parquetRecord := RECORD\n");
         buildEclRecord(*(schema.get()), ecl);
         ecl.append("END;\n");
@@ -424,6 +427,8 @@ ParquetReader::ParquetReader(const char *option, const char *_location, int _max
         while (std::getline(ss, field, ';'))
             partitionFields.push_back(field);
     }
+    if (expectedRecord)
+        numFields = getNumFields(expectedRecord);
 }
 
 ParquetReader::~ParquetReader()
@@ -629,8 +634,8 @@ void divide_row_groups(const IThorActivityContext *activityCtx, __int64 totalRow
  */
 __int64 ParquetReader::readColumns(__int64 currTable)
 {
+    assertex(numFields > 0);
     auto rowGroupReader = queryCurrentTable(currTable); // Sets currentTableMetadata
-    int numFields = getNumFields(expectedRecord);
     for (int i = 0; i < numFields; i++)
     {
         StringBuffer fieldName;
@@ -794,6 +799,8 @@ __int64 ParquetReader::next(TableColumns *&nextTable)
             {
                 reportIfFailure(queryCurrentTable(tablesProcessed + startRowGroup)->ReadTable(&table));
                 rowsCount = table->num_rows();
+                if (rowsCount == 0)
+                    failx("Parquet file contains table with 0 rows");
                 splitTable(table);
             }
         }
@@ -1012,6 +1019,7 @@ void ParquetWriter::writeRecordBatch()
 {
     PARQUET_ASSIGN_OR_THROW(auto recordBatch, recordBatchBuilder->Flush());
     reportIfFailure(recordBatch->ValidateFull());
+    assertex(recordBatch->num_rows() > 0);
 
     PARQUET_ASSIGN_OR_THROW(auto table, arrow::Table::FromRecordBatches(schema, {recordBatch}));
     if (endsWithIgnoreCase(partOption.c_str(), "partition"))
@@ -2098,21 +2106,6 @@ unsigned ParquetRecordBinder::checkNextParam(const RtlFieldInfo *field)
 }
 
 /**
- * @brief Counts the fields in the row.
- *
- * @return int The number of fields.
- */
-int ParquetRecordBinder::numFields()
-{
-    int count = 0;
-    const RtlFieldInfo *const *fields = typeInfo->queryFields();
-    assertex(fields);
-    while (*fields++)
-        count++;
-    return count;
-}
-
-/**
  * @brief Writes the value to the Parquet file using the StreamWriter from the ParquetWriter class.
  *
  * @param len Number of chars in value.
@@ -2593,7 +2586,7 @@ void ParquetEmbedFunctionContext::bindRowParam(const char *name, IOutputMetaData
 {
     ParquetRecordBinder binder(logctx, metaVal.queryTypeInfo(), nextParam, parquetWriter);
     binder.processRow(val);
-    nextParam += binder.numFields();
+    nextParam += binder.queryFieldCount();
 }
 
 /**
@@ -2610,7 +2603,7 @@ void ParquetEmbedFunctionContext::bindDatasetParam(const char *name, IOutputMeta
         fail("At most one dataset parameter supported");
     }
     oInputStream.setown(new ParquetDatasetBinder(logctx, LINK(val), metaVal.queryTypeInfo(), parquetWriter, nextParam));
-    nextParam += oInputStream->numFields();
+    nextParam += oInputStream->queryFieldCount();
 }
 
 void ParquetEmbedFunctionContext::bindBooleanParam(const char *name, bool val)
