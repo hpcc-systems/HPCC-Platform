@@ -8202,14 +8202,18 @@ protected:
 
 static unsigned loadGroup(const IPropertyTree *groupTree, SocketEndpointArray &epa, GroupType *type, StringAttr *groupDir)
 {
-    GroupType groupType = translateGroupType(groupTree->queryProp("@kind"));
+    const char *groupName = nullText(groupTree->queryProp("@name"));
     if (type)
-        *type = groupType;
+        *type = translateGroupType(groupTree->queryProp("@kind"));
     if (groupDir)
     {
         groupDir->set(groupTree->queryProp("@dir"));
         if (groupDir->isEmpty())
-            groupDir->set(queryBaseDirectory(groupType));
+        {
+            Owned<const IStoragePlane> plane = getStoragePlaneByName(groupName, false);
+            if (plane)
+                groupDir->set(plane->queryPrefix());
+        }
     }
     Owned<IPropertyTreeIterator> pe = groupTree->getElements("Node");
     ForEach(*pe)
@@ -8218,7 +8222,6 @@ static unsigned loadGroup(const IPropertyTree *groupTree, SocketEndpointArray &e
         SocketEndpoint ep(host);
         if (ep.isNull())
         {
-            const char *groupName = nullText(groupTree->queryProp("@name"));
             throw makeStringExceptionV(-1, "loadGroup: failed to resolve host '%s' in group '%s'", host, groupName);
         }
         epa.append(ep);

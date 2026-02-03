@@ -411,7 +411,9 @@ struct CClusterInfo: implements IClusterInfo, public CInterface
                     }
                     if (mspec.defaultCopies>1 && mspec.defaultReplicateDir.isEmpty())
                     {
-                        mspec.setDefaultReplicateDir(queryBaseDirectory(groupType, 1));  // MORE - not sure this is strictly correct
+                        Owned<const IStoragePlane> plane = getStoragePlaneByName(name, false);
+                        if (plane)
+                            mspec.setDefaultReplicateDir(plane->queryMirrorPrefix());
                     }
                     return; // ok
                 }
@@ -489,7 +491,11 @@ public:
                     mspec.setDefaultBaseDir(defaultDir);   // MORE - should possibly set up the rest of the mspec info from the group info here
 
                 if (mspec.defaultCopies>1 && (mspec.defaultReplicateDir.isEmpty() || baseDirChanged))
-                    mspec.setDefaultReplicateDir(queryBaseDirectory(groupType, 1));  // MORE - not sure this is strictly correct
+                {
+                    Owned<const IStoragePlane> plane = getStoragePlaneByName(name, false);
+                    if (plane)
+                        mspec.setDefaultReplicateDir(plane->queryMirrorPrefix());
+                }
             }
             else
                 checkClusterName(resolver);
@@ -2850,7 +2856,16 @@ static void loadDefaultBases()
 }
 
 
-const char *queryBaseDirectory(GroupType groupType, unsigned replicateLevel, DFD_OS os)
+bool getConfigurationDirectory(StringBuffer & result, GroupType groupType, unsigned replicateLevel, const char *instance)
+{
+    const char *dirType = dirTypeNames[replicateLevel];
+    if ((replicateLevel == 1) && groupType!=grp_roxie)
+        dirType = "mirror";
+
+    return getConfigurationDirectory(nullptr, dirType, componentNames[groupType], instance, result);
+}
+
+static const char *queryBaseDirectory(GroupType groupType, unsigned replicateLevel, DFD_OS os)
 {
     if (os==DFD_OSdefault)
 #ifdef _WIN32
@@ -3682,10 +3697,10 @@ void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned defa
         }
     }
 
+    const char * storageApiType = plane->queryProp("storageapi/@type");
     if (!plane->hasProp("@prefix"))
     {
         // If a storage plane does not have a prefix, but a storage api type is defined, then generate a prefix
-        const char * storageApiType = plane->queryProp("storageapi/@type");
         if (storageApiType)
         {
             // @prefix is set later in applyPlaneTransformations
@@ -3693,13 +3708,22 @@ void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned defa
         else if (dir.length())
             plane->setProp("@prefix", dir);
         else
-            plane->setProp("@prefix", queryBaseDirectory(groupType, 0));
+        {
+            //Creating a storage plane from a group - do not use getStoragePlaneByName()
+            StringBuffer dir;
+            getConfigurationDirectory(dir, groupType, 0, planeName);
+            plane->setProp("@prefix", dir);
+        }
     }
-
-    if (!plane->hasProp("@mirrorPrefix") && (defaultCopies == 2))
+    if (!storageApiType && !plane->hasProp("@mirrorPrefix") && (defaultCopies == 2))
     {
         if ((groupType == grp_thor) || (groupType == grp_roxie))
-            plane->setProp("@mirrorPrefix", queryBaseDirectory(groupType, 1));
+        {
+            //Creating a storage plane from a group - do not use getStoragePlaneByName()
+            StringBuffer dir;
+            getConfigurationDirectory(dir, groupType, 1, planeName);
+            plane->setProp("@mirrorPrefix", dir);
+        }
     }
 
     if (!plane->hasProp("@category"))
