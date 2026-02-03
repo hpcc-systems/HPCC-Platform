@@ -1838,7 +1838,7 @@ void CJobSlave::startJob()
     unsigned minFreeSpace = (unsigned)getWorkUnitValueInt("MINIMUM_DISK_SPACE", 0);
     if (minFreeSpace)
     {
-        unsigned __int64 freeSpace = getFreeSpace(queryBaseDirectory(grp_unknown, 0));
+        unsigned __int64 freeSpace = getFreeSpace(queryUnknownBaseDirectory(0));
         if (freeSpace < ((unsigned __int64)minFreeSpace)*0x100000)
         {
             SocketEndpoint ep;

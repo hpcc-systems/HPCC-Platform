@@ -4957,7 +4957,7 @@ public:
                 }
             }
 #else
-            myBase.set(queryBaseDirectory(grp_unknown, 0, os));
+            myBase.set(queryUnknownBaseDirectory(0, os));
 #endif
             diroverride = myBase;
         }
@@ -8202,13 +8202,18 @@ protected:
 
 static unsigned loadGroup(const IPropertyTree *groupTree, SocketEndpointArray &epa, GroupType *type, StringAttr *groupDir)
 {
+    const char *groupName = nullText(groupTree->queryProp("@name"));
     if (type)
         *type = translateGroupType(groupTree->queryProp("@kind"));
     if (groupDir)
     {
         groupDir->set(groupTree->queryProp("@dir"));
         if (groupDir->isEmpty())
-            groupDir->set(queryBaseDirectory(*type));
+        {
+            StringBuffer dir;
+            getConfigurationDirectory(dir, *type, 0, groupName);
+            groupDir->set(dir);
+        }
     }
     Owned<IPropertyTreeIterator> pe = groupTree->getElements("Node");
     ForEach(*pe)
@@ -8217,7 +8222,6 @@ static unsigned loadGroup(const IPropertyTree *groupTree, SocketEndpointArray &e
         SocketEndpoint ep(host);
         if (ep.isNull())
         {
-            const char *groupName = nullText(groupTree->queryProp("@name"));
             throw makeStringExceptionV(-1, "loadGroup: failed to resolve host '%s' in group '%s'", host, groupName);
         }
         epa.append(ep);
