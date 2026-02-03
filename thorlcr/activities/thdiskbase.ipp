@@ -34,6 +34,7 @@ protected:
     IHash *hash;
     StringAttr fileName;
     unsigned fileStatsTableStart = NotFound;
+    bool reInit = false;
 public:
     CDiskReadMasterBase(CMasterGraphElement *info);
     virtual void init() override;

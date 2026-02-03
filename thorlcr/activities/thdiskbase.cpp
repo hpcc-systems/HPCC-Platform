@@ -133,6 +133,19 @@ void CDiskReadMasterBase::getActivityStats(IStatisticGatherer & stats)
 void CDiskReadMasterBase::done()
 {
     diskAccessCost = calcFileReadCostStats(true);
+    
+    // Log READCLOSE audit information
+    if (file)
+    {
+        IHThorDiskReadBaseArg *helper = (IHThorDiskReadBaseArg *) queryHelper();
+        bool extended = 0 != (helper->getFlags() & TDWextend);
+        
+        // Get the actual physical bytes read from statistics
+        offset_t bytesRead = statsCollection.getStatisticSum(StSizeDiskRead);
+        
+        queryThorFileManager().noteFileReadClose(container.queryJob(), file, bytesRead, extended);
+    }
+    
     CMasterActivity::done();
 }
 
@@ -268,6 +281,11 @@ void CWriteMasterBase::init()
         if (blockCompressed)
             props.setPropBool("@blockCompressed", true);
         props.setProp("@kind", "flat");
+        
+        // Log CREATEOPEN audit information
+        bool extended = 0 != (diskHelperBase->getFlags() & TDWextend);
+        queryThorFileManager().noteFileCreateOpen(container.queryJob(), fileName, extended);
+        
         if (((TAKdiskwrite == container.getKind()) || (TAKspillwrite == container.getKind())) &&
                 (0 != (diskHelperBase->getFlags() & TDXtemporary)) && container.queryOwner().queryOwner() && (!container.queryOwner().isGlobal())) // I am in a child query
         { // do early, because this will be local act. and will not come back to master until end of owning graph.
