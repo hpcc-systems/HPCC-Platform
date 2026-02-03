@@ -35,7 +35,7 @@ basePath := Std.File.GetDefaultDropZone() + '/regress/parquet/';
 // ParquetIO.Write called from a FunctionMacro
 writeFunctionMacro(dset, fileName) := FUNCTIONMACRO
     outPath := basePath + fileName + '_macro.parquet';
-    RETURN ParquetIO.Write(DISTRIBUTE(dset, SKEW(1)), outPath, TRUE, 'LZ4');
+    RETURN ParquetIO.Write(dset, outPath, TRUE, 'LZ4');
 ENDMACRO;
 
 // Read back the data to verify
