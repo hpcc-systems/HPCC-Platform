@@ -564,7 +564,7 @@ public:
     {
         fieldCountInRecord = getNumFields(typeInfo);
         if (fieldCountInRecord == 0)
-            rtlFail(0, "parquetembed: record has no fields. Did you use FUNCTION where a FUNCTIONMACRO was needed?");
+            rtlFail(0, "parquet: Missing record structure for input dataset. Record structure is required.");
     }
     virtual ~ParquetRecordBinder() = default;
     unsigned queryFieldCount() const { return fieldCountInRecord; };
