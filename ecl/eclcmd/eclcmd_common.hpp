@@ -118,6 +118,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_DFU_QUEUE "--dfu-queue"
 #define ECLOPT_DFU_WAIT "--dfu-wait"
 #define ECLOPT_KEY_COMPRESSION "--key-compression"
+#define ECLOPT_DFU_TARGETPLANE "--target-plane"
 
 #define ECLOPT_ACTIVE "--active"
 #define ECLOPT_ACTIVE_ONLY "--active-only"
@@ -472,6 +473,7 @@ public:
         req->setOnlyCopyFiles(optOnlyCopyFiles);
         req->setDfuPublisherWuid(optDfuPublisherWuid);
         req->setKeyCompression(optKeyCompression);
+        req->setDfuTargetPlane(optDfuTargetPlane);
     }
 
     void preallocatePublisherWuid(EclCmdCommon &cmd);
@@ -512,6 +514,8 @@ public:
             return true;
         if (iter.matchOption(optKeyCompression, ECLOPT_KEY_COMPRESSION))
             return true;
+        if (iter.matchOption(optDfuTargetPlane, ECLOPT_DFU_TARGETPLANE))
+            return true;
         return false;
     }
     void usage()
@@ -530,7 +534,8 @@ public:
             "                          Otherwise, copy the files needed for the query, but don't publish the query\n"
             "   --init-publisher-wuid  Allocate and display the publisher wuid immediately, so that it can be tracked\n"
             "                           even if the command line is disconnected\n"
-            "   --keyCompression       When copyying a key file, allows the copy to be re-encoded using the new compression\n",
+            "   --key-compression      When copying a key file, allows the copy to be re-encoded using the new compression\n"
+            "   --target-plane         Override the destination plane (defaults to target cluster) for DFU copy\n",
             stdout);
     }
 public:
@@ -538,6 +543,7 @@ public:
     StringAttr optRemoteStorage;
     StringAttr optDfuQueue;
     StringAttr optKeyCompression;
+    StringAttr optDfuTargetPlane;
     unsigned optDfuWaitSec = 1800; //30 minutes
     bool optDfuCopyFiles = false;
     bool optDfuOverwrite = false;
