@@ -2853,7 +2853,7 @@ void getLogicalFileSuperSubList(MemoryBuffer &mb, IUserDescriptor *user)
 
     bool allMatchingFilesReceived;
     Owned<IPropertyTreeIterator> iter = queryDistributedFileDirectory().getDFAttributesFilteredIterator(filterBuf,
-        nullptr, selectiveFields.data(), user, true, allMatchingFilesReceived);
+        nullptr, selectiveFields.data(), user, true, allMatchingFilesReceived, nullptr);
     ForEach(*iter)
     {
         IPropertyTree &attr = iter->query();

@@ -104,7 +104,7 @@ public:
         }
         flushcommitted();
         size32_t totlen = outlen+sizeof(size32_t)+inlen;
-        assertex(blksz>=totlen);
+        assertex(totlen <= (dynamicOutSz ? dynamicOutSz : blksz));
         size32_t *tsize = (size32_t *)(outbuf+outlen);
         *tsize = inlen;
         memcpy(tsize+1,inbuf,inlen);
@@ -148,8 +148,14 @@ public:
                 {
                     if (outBufMb) // sizing input buffer, but outBufMb!=NULL is condition of whether in use or not
                     {
-                        blksz += len > FCMP_BUFFER_SIZE ? len : FCMP_BUFFER_SIZE;
-                        verifyex(inma.ensureCapacity(blksz));
+                        // How much space is required?
+                        size32_t delta = len + inlen - inmax;
+
+                        // round delta up to nearest FCMP_BUFFER_SIZE
+                        delta = ((delta + FCMP_BUFFER_SIZE - 1) / FCMP_BUFFER_SIZE) * FCMP_BUFFER_SIZE;
+
+                        // (inmax will increase less than blksz, so this may loop, but rounding the size will prevent excessive looping).
+                        verifyex(inma.ensureCapacity(blksz + delta));
                         blksz = inma.capacity();
                         inbuf = (byte *)inma.bufferBase();
                         wrmax = blksz;

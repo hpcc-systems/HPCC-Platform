@@ -109,7 +109,7 @@ export interface MetricsGraphProps {
     selection?: string[];
     selectedMetricsSource: string;
     status: FetchStatus;
-    onLineageSelectionChange: (selection?: string) => void;
+    onLineageSelectionChange: (selection?: string, replace?: boolean) => void;
     onSelectionChange: (selection?: string[]) => void;
 }
 
@@ -129,8 +129,8 @@ export const MetricsGraph: React.FunctionComponent<MetricsGraphProps> = ({
 
     // Data ---
     React.useEffect(() => {
-        if (isLayoutComplete(layoutStatus) && lineage.length && lineage.find(item => item.name === lineageSelection) === undefined) {
-            onLineageSelectionChange(lineage[lineage.length - 1]?.name);
+        if (isLayoutComplete(layoutStatus) && lineage.length && lineageSelection && lineage.find(item => item.name === lineageSelection) === undefined) {
+            onLineageSelectionChange(lineage[lineage.length - 1]?.name, true);
         }
     }, [layoutStatus, lineage, lineageSelection, onLineageSelectionChange]);
 
@@ -290,7 +290,7 @@ export const MetricsGraph: React.FunctionComponent<MetricsGraphProps> = ({
     return <HolyGrail
         header={<>
             <CommandBar items={graphButtons} farItems={graphRightButtons} />
-            <OverflowBreadcrumb breadcrumbs={breadcrumbs} selected={lineageSelection} onSelect={(item => onLineageSelectionChange(item.id))} />
+            <OverflowBreadcrumb breadcrumbs={breadcrumbs} selected={lineageSelection} onSelect={(item => onLineageSelectionChange(item.id, false))} />
         </>}
         main={<>
             <AutosizeComponent hidden={!spinnerLabel}>

@@ -3,9 +3,9 @@ services:
     image: 389ds/dirsrv:latest
     container_name: 389ds
     environment:
-      DS_DM_PASSWORD: "admin"
+      DS_DM_PASSWORD: "<directory_manager_pw>"
       # The base Distinguished Name (DN) of the directory
-      # I think must match what is used in the platform config
+      # Must match 'systemBasedn' in the platform config
       DS_SUFFIX_NAME: "dc=example,dc=com"
     ports:
       # Map from the nonstandard internal ports to standard ports
