@@ -1262,7 +1262,7 @@ public:
     IDistributedFileIterator *getIterator(const char *wildname, bool includesuper,IUserDescriptor *user,bool isPrivilegedUser);
     IPropertyTreeIterator *getDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive, bool includesuper,INode *foreigndali,unsigned foreigndalitimeout);
     IPropertyTreeIterator *getDFAttributesFilteredIterator(const char *filters, const char *localFilters, const DFUQResultField *fields,
-        IUserDescriptor *user, bool recursive, bool& allMatchingFilesReceived, INode *foreigndali,unsigned foreigndalitimeout);
+        IUserDescriptor *user, bool recursive, bool& allMatchingFilesReceived, unsigned *total, INode *foreigndali,unsigned foreigndalitimeout);
 
     IDFScopeIterator *getScopeIterator(IUserDescriptor *user, const char *subscope,bool recursive,bool includeempty);
     bool loadScopeContents(const char *scopelfn,StringArray *scopes,    StringArray *supers,StringArray *files, bool includeemptyscopes);
@@ -3065,7 +3065,7 @@ public:
 
         bool allMatchingFilesReceived;
         Owned<IPropertyTreeIterator> attriter = queryDistributedFileDirectory().getDFAttributesFilteredIterator(filterBuf,
-            nullptr, nullptr, user, recursive, allMatchingFilesReceived);
+            nullptr, nullptr, user, recursive, allMatchingFilesReceived, nullptr);
 
         ForEach(*attriter) {
             IPropertyTree &pt = attriter->query();
@@ -12218,7 +12218,7 @@ IPropertyTreeIterator *CDistributedFileDirectory::getDFAttributesIterator(const 
     filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFFileNameWithPrefix).append(DFUQFilterSeparator).append(wildname).append(DFUQFilterSeparator);
 
     bool allMatchingFilesReceived;
-    return getDFAttributesFilteredIterator(filterBuf, nullptr, nullptr, user, recursive, allMatchingFilesReceived, foreigndali, foreigndalitimeout);
+    return getDFAttributesFilteredIterator(filterBuf, nullptr, nullptr, user, recursive, allMatchingFilesReceived, nullptr, foreigndali, foreigndalitimeout);
 }
 
 IDFScopeIterator *CDistributedFileDirectory::getScopeIterator(IUserDescriptor *user, const char *basescope, bool recursive,bool includeempty)
@@ -14288,7 +14288,7 @@ static StringBuffer &convertDFUQResultFields(StringBuffer &res, const DFUQResult
 }
 
 IPropertyTreeIterator *CDistributedFileDirectory::getDFAttributesFilteredIterator(const char* filters, const char* localFilters, const DFUQResultField *fields,
-    IUserDescriptor* user, bool recursive, bool& allMatchingFilesReceived, INode* foreigndali, unsigned foreigndalitimeout)
+    IUserDescriptor* user, bool recursive, bool& allMatchingFilesReceived, unsigned *total, INode* foreigndali, unsigned foreigndalitimeout)
 {
     CMessageBuffer mb;
     bool iptRquestFmtSupport = false;
@@ -14347,6 +14347,8 @@ IPropertyTreeIterator *CDistributedFileDirectory::getDFAttributesFilteredIterato
 
     unsigned numfiles;
     mb.read(numfiles);
+    if (total)
+        *total = numfiles;
     mb.read(allMatchingFilesReceived);
     return deserializeFileAttrIterator(mb, numfiles, localFilters, useFields ? fieldsStr.str() : nullptr);
 }
@@ -14389,7 +14391,7 @@ IPropertyTreeIterator* CDistributedFileDirectory::getLogicalFiles(
         virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree> &elements)
         {
             Owned<IPropertyTreeIterator> fi = queryDistributedFileDirectory().getDFAttributesFilteredIterator(filters.get(),
-                localFilters, fields.data(), udesc, recursive, allMatchingFilesReceived);
+                localFilters, fields.data(), udesc, recursive, allMatchingFilesReceived, nullptr);
             StringArray unknownAttributes;
             sortElements(fi, sorted ? sortOrder.get() : NULL, NULL, NULL, unknownAttributes, elements);
             return NULL;
