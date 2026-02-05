@@ -227,6 +227,13 @@ jobs:
             for LINE in $( cat internalLinks.txt )
             do 
               REFERENCE=$( echo $LINE | cut -d ':' -f3- )
+              if [[ ${REFERENCE:0:7} == 'mailto:' ]]
+              then
+                  echo -e "${LINE} -\e[34m warning: email address can't be verified by this test.\e[0m"
+                  echo "${LINE}" >> warning-report.log
+                  continue
+              fi
+              REFERENCE="#${REFERENCE##*\#}"
               FILE=$( echo $LINE | cut -d ':' -f1 )
               if [[ ${REFERENCE:0:1} == '#' ]]; then 
                 LINK_TEXT=$( cat $FILE | grep  -oE "\[.*\]\(${REFERENCE}\)" | sed 's/\[//' | cut -d ']' -f1 )
@@ -263,10 +270,17 @@ jobs:
 
       - name: Report Error links
         run: | 
+          echo "Report Error/Warning links"
+          echo -e "\e[32mNo. of files scanned : $( cat *FilesList.txt | wc -l )\e[0m"
+
+          if [[ -f warning-report.log ]]; then
+              echo -e "\e[34mNo. of 'mailto:' warning links : $( cat warning-report.log | cut -d: -f3- | sort | uniq | wc -l )\e[0m"
+          fi
+
           if [[ -f error-report.log ]]; then 
             NUMBER_OF_404_LINKS=$( cat error-report.log | wc -l )
           fi
-          echo -e "\e[32mNo. of files scanned : $( cat *FilesList.txt | wc -l )\e[0m"
+          
           if [[ $NUMBER_OF_404_LINKS -ne 0 ]]; then
             echo -e "\e[31mNo. of unique broken links : $( cat error-report.log | cut -d: -f3- | sort | uniq | wc -l )\e[0m"
             echo -e "\e[31mTotal No. of reference to broken links : $( cat error-report.log | cut -d: -f3- | sort | wc -l )\e[0m"

@@ -438,6 +438,8 @@ The below are the possible reasons why the hyperlinks testing workflow may fail,
 4. Tag contains a valid URL, for example:
    [https://hpcc-systems.github.io/HPCC-Platform/dali/sasha/sasha.html](https://hpcc-systems.github.io/HPCC-Platform/dali/sasha/sasha.html)
    and this confuses the checker. (Fixed in HPCC-35299)
+5. Mailto
+   To fix any further problem, please contact [Attila Vamos](mailto:attila.vamos@lexisnexisrisk.com) with full details.
 
 ## Steps to integrate hyperlinks testing workflow in other workflows
 
