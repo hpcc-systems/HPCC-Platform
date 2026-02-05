@@ -2,6 +2,7 @@ import * as React from "react";
 import { LogicalFile, WsDfu } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import * as Utility from "src/Utility";
+import * as Utility from "src/Utility";
 import { singletonDebounce } from "../util/throttle";
 import { useCounter } from "./util";
 
@@ -19,7 +20,7 @@ function formatRatio(isCompressed: boolean, compressedSize: number, totalSize: n
     if (!isCompressed || totalSize <= 0) return "";
     const ratio = compressedSize / totalSize;
     if (!isFinite(ratio)) return "";
-    return Utility.formatDecimal(100 - ratio * 100, "%");
+    return Utility.formatDecimal(100 - ratio * 100, "", "%");
 }
 
 function formatCompressionEx(file?: LogicalFileEx): string {

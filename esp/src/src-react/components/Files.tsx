@@ -227,10 +227,10 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 label: nlsHPCC.Parts, width: 40,
             },
             MinSkew: {
-                label: nlsHPCC.MinSkew, width: 60, formatter: (value, row) => value ? `-${Utility.formatDecimal(value / 100, "%")}` : ""
+                label: nlsHPCC.MinSkew, width: 60, formatter: (value, row) => value ? `${Utility.formatDecimal(value / 100, "-", "%")}` : ""
             },
             MaxSkew: {
-                label: nlsHPCC.MaxSkew, width: 60, formatter: (value, row) => value ? `${Utility.formatDecimal(value / 100, "%")}` : ""
+                label: nlsHPCC.MaxSkew, width: 60, formatter: (value, row) => value ? `${Utility.formatDecimal(value / 100, "", "%")}` : ""
             },
             Accessed: {
                 label: uiState.isUTC ? nlsHPCC.LastAccessed : nlsHPCC.LastAccessedLocalTime,
