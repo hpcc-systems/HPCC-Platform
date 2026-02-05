@@ -3130,20 +3130,14 @@ protected:
         }
         else
         {
-            // Try to allocate a new bulk pool
+            // Try to allocate a new bulk pool - allocateBlock returns as many as available (1-8)
             bulkBufferCount = bufferManager->allocateBlock(8, bulkBuffers);
             if (bulkBufferCount > 0)
             {
                 bulkBufferIndex = 0;
                 return bulkBuffers[bulkBufferIndex++];
             }
-            bulkBufferCount = bufferManager->allocateBlock(4, bulkBuffers);
-            if (bulkBufferCount > 0)
-            {
-                bulkBufferIndex = 0;
-                return bulkBuffers[bulkBufferIndex++];
-            }
-            // Fall back to single allocation
+            // Fall back to single allocation if bulk allocation failed
             return bufferManager->allocate();
         }
     }
