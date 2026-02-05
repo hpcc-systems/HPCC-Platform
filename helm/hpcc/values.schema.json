@@ -3197,6 +3197,11 @@
           "description": "Default number of days to delete unused standard files that are flagged with EXPIRY",
           "default": "14"
         },
+        "maxFileLimit": {
+          "type": "integer",
+          "description": "Override of server limit of maximum files that can be retrieved",
+          "default": 100000
+        },
         "disabled": {},
         "interval": {},
         "user": {},

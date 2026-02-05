@@ -504,6 +504,13 @@
                 </xs:appinfo>
             </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="MaxFileLimit" type="xs:nonNegativeInteger" use="optional" default="100000">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>Maximum number of files that can be retrieved</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
     </xs:attributeGroup>
     <xs:attributeGroup name="ThorQMon">
      <!--DOC-Autobuild-code-->
