@@ -12,6 +12,7 @@ We encourage feedback, particularly from our early adopters who provide us with 
 
 Keep checking the Red Book as it is constantly updated with new information and tips as soon as we know about them.
 
+- [HPCC Systems 10.2.x Releases](HPCC-Systems-10.2.x-Releases.md)
 - [HPCC Systems 10.0.x Releases](HPCC-Systems-10.0.x-Releases.md)
 - [HPCC Systems 9.14.x Releases](HPCC-Systems-9.14.x-Releases.md)
 - [HPCC Systems 9.12.x Releases](HPCC-Systems-9.12.x-Releases.md)
