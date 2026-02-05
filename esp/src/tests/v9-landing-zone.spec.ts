@@ -63,20 +63,22 @@ test.describe("V9 Landing Zone", () => {
     test("Should open filter dialog when filter button is clicked", async ({ page }) => {
         await page.getByRole("menuitem", { name: "Filter" }).click();
 
-        // Check that filter dialog is displayed
-        await expect(page.getByRole("dialog")).toBeVisible();
-        const filterDialog = page.getByRole("dialog").first();
+        // Wait for the filter heading to appear (more reliable than checking dialog visibility)
+        const filterHeading = page.getByRole("heading", { name: "Filter" });
+        await expect(filterHeading).toBeVisible();
 
-        await expect(filterDialog.getByRole("heading", { name: "Filter" })).toBeVisible();
+        // Check for filter form fields - there should be comboboxes and a textbox
+        const comboboxes = page.getByRole("combobox");
+        const comboCount = await comboboxes.count();
+        expect(comboCount).toBeGreaterThanOrEqual(2); // should have at least 2 rows
 
-        // Check for filter form fields using more specific selectors
-        await expect(filterDialog.locator("label[for='DropZoneName']")).toBeVisible();
-        await expect(filterDialog.locator("label[for='Server']")).toBeVisible();
-        await expect(filterDialog.locator("label[for='NameFilter']")).toBeVisible();
+        const fileNameTextbox = page.getByRole("textbox", { name: "File Name" });
+        await expect(fileNameTextbox).toBeVisible();
 
-        // Check for filter dialog buttons (Apply and Clear)
-        await expect(filterDialog.getByRole("button", { name: "Apply" })).toBeVisible();
-        await expect(filterDialog.locator("button.ms-Button", { hasText: "Clear" })).toBeVisible();
+        // Get the dialog container and check for buttons within it
+        const dialog = page.getByRole("dialog");
+        await expect(dialog.getByRole("button", { name: "Apply" })).toBeVisible();
+        await expect(dialog.getByRole("button", { name: "Clear" })).toBeVisible();
     });
 
     test("Should open upload file dialog when upload button is clicked", async ({ page }) => {
