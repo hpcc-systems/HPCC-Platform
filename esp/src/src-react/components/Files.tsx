@@ -1,5 +1,6 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Link } from "@fluentui/react";
+import { makeStyles, tokens } from "@fluentui/react-components";
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsDfu from "src/WsDfu";
 import { CreateDFUQueryStore, Get } from "src/ESPLogicalFile";
@@ -23,6 +24,13 @@ import { ShortVerticalDivider } from "./Common";
 import { SizeMe } from "../layouts/SizeMe";
 
 const logger = scopedLogger("src-react/components/Files.tsx");
+
+const useStyles = makeStyles({
+    dimmed: {
+        opacity: "0.666",
+        color: tokens.colorNeutralForeground3
+    }
+});
 
 const FilterFields: Fields = {
     "LogicalName": { type: "string", label: nlsHPCC.Name, placeholder: nlsHPCC.somefile },
@@ -103,6 +111,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
     store
 }) => {
 
+    const styles = useStyles();
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
 
     const [showFilter, setShowFilter] = React.useState(false);
@@ -216,11 +225,24 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 },
                 csvFormatter: (value, row) => row.IntSize,
             },
-            CompressedFileSizeString: {
+            CompressedFileSize: {
                 label: nlsHPCC.CompressedSize,
                 sortable: false,
                 formatter: (value, row) => {
-                    return Utility.convertedSize(row.CompressedFileSize);
+                    if (row.IsCompressed) {
+                        return Utility.convertedSize(row.CompressedFileSize);
+                    }
+                    const fileSize = Utility.convertedSize(row.IntSize);
+                    if (fileSize) {
+                        return `[${fileSize}]`;
+                    }
+                    return "";
+                },
+                className: (value: any, row: any) => {
+                    if (!row.IsCompressed) {
+                        return styles.dimmed;
+                    }
+                    return "";
                 },
                 csvFormatter: (value, row) => row.CompressedFileSize,
             },

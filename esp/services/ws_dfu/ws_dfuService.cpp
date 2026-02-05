@@ -2920,6 +2920,38 @@ __int64 CWsDfuEx::findPositionBySize(const __int64 size, bool descend, IArrayOf<
     return addToPos;
 }
 
+__int64 CWsDfuEx::findPositionByCompressedSize(const __int64 size, bool descend, IArrayOf<IEspDFULogicalFile>& LogicalFiles)
+{
+    __int64 addToPos = -1;
+
+    ForEachItemIn(i, LogicalFiles)
+    {
+        IEspDFULogicalFile& File = LogicalFiles.item(i);
+        __int64 nSize;
+        if (File.getIsCompressed())
+        {
+            nSize = File.getCompressedFileSize();
+        }
+        else
+        {
+            const char* sSize = File.getLongSize();
+            nSize = atoi64_l(sSize,strlen(sSize));
+        }
+        if (descend && size > nSize)
+        {
+            addToPos = i;
+            break;
+        }
+        if (!descend && size < nSize)
+        {
+            addToPos = i;
+            break;
+        }
+    }
+
+    return addToPos;
+}
+
 __int64 CWsDfuEx::findPositionByParts(const __int64 parts, bool descend, IArrayOf<IEspDFULogicalFile>& LogicalFiles)
 {
     __int64 addToPos = -1;
@@ -3368,6 +3400,11 @@ void CWsDfuEx::getAPageOfSortedLogicalFile(IEspContext &context, IUserDescriptor
                 {
                     addToPos = findPositionBySize(size, descending, LogicalFileList);
                 }
+                else if (stricmp(sortBy, "CompressedFileSize")==0)
+                {
+                    __int64 compressedSize = attr.getPropInt64("@compressedSize", size);
+                    addToPos = findPositionByCompressedSize(compressedSize, descending, LogicalFileList);
+                }
                 else if (stricmp(sortBy, "Parts")==0)
                 {
                     addToPos = findPositionByParts(parts, descending, LogicalFileList);
@@ -3769,6 +3806,7 @@ void CWsDfuEx::setDFUQuerySortOrder(IEspDFUQueryRequest& req, StringBuffer& sort
     static const std::unordered_map<std::string_view, std::string_view> legacyMappings =
     {
         {"FileSize", "@DFUSFsize"},
+        {"CompressedFileSize", "@compressedSize"},
         {"ContentType", "@kind"},
         {"IsCompressed", "@compressed"},
         {"Records", "@recordcount"},
