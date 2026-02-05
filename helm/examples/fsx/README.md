@@ -29,7 +29,7 @@ Another option is to keep the kubectl version the same while changing the versio
 
 # Prepare Environment
 Fill in the following information in the fsx-env file
-```code
+```
 ACCOUNT_ID        # AWS Account ID
 EKS_NAME          # Name of your EKS cluster: kubectl config get-clusters  (The first part of the name before ".")
 
@@ -56,7 +56,7 @@ aws-fsx-csi-driver	kube-system	1       	2023-08-22 10:07:40.503648 -0400 EDT	dep
 
 # Apply aws-fsx-auto Storage Class
 The storageclass.yaml file is generated after running the script. It creates the "aws-fsx-auto" storage class, which is used to dynamically provision the FSx file systems.
-```code
+```yaml
 kind: StorageClass
 apiVersion: storage.k8s.io/v1
 metadata:
