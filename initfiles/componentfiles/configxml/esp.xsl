@@ -274,6 +274,7 @@
             </xsl:variable>
             <xsl:apply-templates select="exslt:node-set($importedServiceDefinitionFiles)" mode="processImportedServiceDefinitions"/>
             <xsl:apply-templates select="node()"/>
+            <xsl:copy-of select="/Environment/Software/vaults"/>
         </xsl:copy>
 
     </xsl:template>
