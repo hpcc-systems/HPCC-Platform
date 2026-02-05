@@ -3769,6 +3769,8 @@ void CWsDfuEx::setDFUQuerySortOrder(IEspDFUQueryRequest& req, StringBuffer& sort
     static const std::unordered_map<std::string_view, std::string_view> legacyMappings =
     {
         {"FileSize", "@DFUSFsize"},
+        {"Size", "@origsize"},
+        {"CompressedFileSize", "@compressedSize"},
         {"ContentType", "@kind"},
         {"IsCompressed", "@compressed"},
         {"Records", "@recordcount"},

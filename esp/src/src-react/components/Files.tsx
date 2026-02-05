@@ -9,6 +9,7 @@ import { QuerySortItem } from "src/store/Store";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
 import { useMyAccount } from "../hooks/user";
+import { formatCompression } from "../hooks/file";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
@@ -102,7 +103,6 @@ export const Files: React.FunctionComponent<FilesProps> = ({
     page = 1,
     store
 }) => {
-
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
 
     const [showFilter, setShowFilter] = React.useState(false);
@@ -210,28 +210,27 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 csvFormatter: (value, row) => row.IntRecordCount,
             },
             FileSize: {
-                label: nlsHPCC.Size,
+                label: nlsHPCC.FileSize,
                 formatter: (value, row) => {
-                    return Utility.convertedSize(row.IntSize);
+                    return Utility.convertedSize(row.IsCompressed ? row.CompressedFileSize : row.IntSize);
                 },
-                csvFormatter: (value, row) => row.IntSize,
+                csvFormatter: (value, row) => row.IsCompressed ? row.CompressedFileSize : row.IntSize,
             },
-            CompressedFileSizeString: {
-                label: nlsHPCC.CompressedSize,
+            Compression: {
+                label: nlsHPCC.Compression,
                 sortable: false,
                 formatter: (value, row) => {
-                    return Utility.convertedSize(row.CompressedFileSize);
-                },
-                csvFormatter: (value, row) => row.CompressedFileSize,
+                    return formatCompression(row);
+                }
             },
             Parts: {
                 label: nlsHPCC.Parts, width: 40,
             },
             MinSkew: {
-                label: nlsHPCC.MinSkew, width: 60, formatter: (value, row) => value ? `-${Utility.formatDecimal(value / 100)}%` : ""
+                label: nlsHPCC.MinSkew, width: 60, formatter: (value, row) => value ? `-${Utility.formatDecimal(value / 100, "%")}` : ""
             },
             MaxSkew: {
-                label: nlsHPCC.MaxSkew, width: 60, formatter: (value, row) => value ? `${Utility.formatDecimal(value / 100)}%` : ""
+                label: nlsHPCC.MaxSkew, width: 60, formatter: (value, row) => value ? `${Utility.formatDecimal(value / 100, "%")}` : ""
             },
             Accessed: {
                 label: uiState.isUTC ? nlsHPCC.LastAccessed : nlsHPCC.LastAccessedLocalTime,

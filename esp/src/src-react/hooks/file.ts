@@ -1,10 +1,37 @@
 import * as React from "react";
 import { LogicalFile, WsDfu } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
+import * as Utility from "src/Utility";
 import { singletonDebounce } from "../util/throttle";
 import { useCounter } from "./util";
 
 const logger = scopedLogger("../hooks/file.ts");
+
+export interface LogicalFileEx extends LogicalFile {
+    IntSize: number;
+}
+
+function isLogicalFileEx(file: LogicalFile): file is LogicalFileEx {
+    return (file as LogicalFileEx).IntSize !== undefined;
+}
+
+function formatRatio(isCompressed: boolean, compressedSize: number, totalSize: number): string {
+    if (!isCompressed || totalSize <= 0) return "";
+    const ratio = compressedSize / totalSize;
+    if (!isFinite(ratio)) return "";
+    return Utility.formatDecimal(100 - ratio * 100, "%");
+}
+
+function formatCompressionEx(file?: LogicalFileEx): string {
+    return formatRatio(file.IsCompressed, file.CompressedFileSize, file.IntSize);
+}
+
+export function formatCompression(file?: LogicalFile): string {
+    if (!file) return "";
+    if (file.isSuperfile) return "";
+    if (isLogicalFileEx(file)) return formatCompressionEx(file);
+    return formatRatio(file.IsCompressed, file.CompressedFileSize, file.FileSizeInt64);
+}
 
 interface useFileResponse {
     file: LogicalFile;
