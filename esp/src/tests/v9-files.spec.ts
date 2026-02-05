@@ -25,8 +25,8 @@ test.describe("V9 Files - Logical Files", () => {
         await expect(page.getByText("Description")).toBeVisible();
         await expect(page.getByText("Cluster", { exact: true })).toBeVisible();
         await expect(page.getByText("Records")).toBeVisible();
-        await expect(page.getByText("Size", { exact: true })).toBeVisible();
-        await expect(page.getByText("Compressed Size")).toBeVisible();
+        await expect(page.getByText("File Size")).toBeVisible();
+        await expect(page.getByText("Compression")).toBeVisible();
         await expect(page.getByText("Parts")).toBeVisible();
         await expect(page.getByText("Min Skew")).toBeVisible();
         await expect(page.getByText("Max Skew")).toBeVisible();
