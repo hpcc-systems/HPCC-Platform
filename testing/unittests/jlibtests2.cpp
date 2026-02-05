@@ -634,7 +634,8 @@ attribute: DataSize = 73
 
                     if (eventCount == 1)
                     {
-                        // First event should be IndexCacheMiss without ChannelId, ReplicaId, InstanceId assigned
+                        // First event should be IndexCacheMiss with ChannelId, ReplicaId, InstanceId
+                        // assigned from RecordingSource (even though not originally recorded with them)
                         CPPUNIT_ASSERT_EQUAL((int)EventIndexCacheMiss, (int)event.queryType());
                         CPPUNIT_ASSERT(event.hasAttribute(EvAttrFileId));
                         CPPUNIT_ASSERT_EQUAL(100ULL, event.queryNumericValue(EvAttrFileId));
@@ -642,13 +643,14 @@ attribute: DataSize = 73
                         CPPUNIT_ASSERT_EQUAL(200ULL, event.queryNumericValue(EvAttrFileOffset));
                         CPPUNIT_ASSERT(event.hasAttribute(EvAttrNodeKind));
                         CPPUNIT_ASSERT_EQUAL((int)NodeLeaf, (int)event.queryNumericValue(EvAttrNodeKind));
-                        // Verify ChannelId, ReplicaId, InstanceId are defined but not assigned
-                        CPPUNIT_ASSERT(event.isAttribute(EvAttrChannelId));
-                        CPPUNIT_ASSERT(!event.hasAttribute(EvAttrChannelId));
-                        CPPUNIT_ASSERT(event.isAttribute(EvAttrReplicaId));
-                        CPPUNIT_ASSERT(!event.hasAttribute(EvAttrReplicaId));
-                        CPPUNIT_ASSERT(event.isAttribute(EvAttrInstanceId));
-                        CPPUNIT_ASSERT(!event.hasAttribute(EvAttrInstanceId));
+                        // Verify ChannelId, ReplicaId, InstanceId are assigned with correct values
+                        // from RecordingSource by the iterator
+                        CPPUNIT_ASSERT(event.hasAttribute(EvAttrChannelId));
+                        CPPUNIT_ASSERT_EQUAL(1ULL, event.queryNumericValue(EvAttrChannelId));
+                        CPPUNIT_ASSERT(event.hasAttribute(EvAttrReplicaId));
+                        CPPUNIT_ASSERT_EQUAL(2ULL, event.queryNumericValue(EvAttrReplicaId));
+                        CPPUNIT_ASSERT(event.hasAttribute(EvAttrInstanceId));
+                        CPPUNIT_ASSERT_EQUAL(3ULL, event.queryNumericValue(EvAttrInstanceId));
                     }
                     else if (eventCount == 2)
                     {

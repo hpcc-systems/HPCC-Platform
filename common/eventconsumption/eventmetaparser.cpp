@@ -18,42 +18,53 @@
 #include "eventmetaparser.hpp"
 #include "jevent.hpp"
 
+bool operator < (const CMetaInfoState::IndexFileProperties& left, const CMetaInfoState::IndexFileProperties& right)
+{
+    return strcmp(left.path->str(), right.path->str()) < 0;
+}
+
+bool operator < (const char* left, const CMetaInfoState::IndexFileProperties& right)
+{
+    return strcmp(left, right.path->str()) < 0;
+}
+
+bool operator < (const CMetaInfoState::IndexFileProperties& left, const char* right)
+{
+    return strcmp(left.path->str(), right) < 0;
+}
+
+void CMetaInfoState::CCollector::setNextLink(IEventVisitor& visitor)
+{
+    nextLink.set(&visitor);
+}
+
 void CMetaInfoState::CCollector::configure(const IPropertyTree& config)
 {
 }
 
+bool CMetaInfoState::CCollector::visitFile(const char* filename, uint32_t version)
+{
+    metaState->onFile(filename, version);
+    if (nextLink)
+        return nextLink->visitFile(filename, version);
+    return true;
+}
+
 bool CMetaInfoState::CCollector::visitEvent(CEvent& event)
 {
-    switch (event.queryType())
-    {
-    case MetaFileInformation:
-        {
-            __uint64 fileId = event.queryNumericValue(EvAttrFileId);
-            const char* path = event.queryTextValue(EvAttrPath);
-            if (!isEmptyString(path))
-            {
-                metaState->fileIdToPath[fileId].set(path);
-                metaState->pathToFileId[path] = fileId;
-            }
-        }
-        break;
-    case EventQueryStart:
-        {
-            if (event.hasAttribute(EvAttrEventTraceId) && event.hasAttribute(EvAttrServiceName))
-            {
-                const char* traceId = event.queryTextValue(EvAttrEventTraceId);
-                const char* serviceName = event.queryTextValue(EvAttrServiceName);
-                if (!isEmptyString(traceId) && !isEmptyString(serviceName))
-                    metaState->traceIdToService.emplace(traceId, serviceName);
-            }
-        }
-        break;
-    }
+    metaState->onEvent(event);
 
     // Always forward to next link in chain
     if (nextLink)
         return nextLink->visitEvent(event);
     return true;
+}
+
+void CMetaInfoState::CCollector::departFile(uint32_t bytesRead)
+{
+    // Forward to next link in chain
+    if (nextLink)
+        nextLink->departFile(bytesRead);
 }
 
 CMetaInfoState::CCollector::CCollector(CMetaInfoState& _metaState)
@@ -69,7 +80,7 @@ IEventVisitationLink* CMetaInfoState::getCollector()
 const char* CMetaInfoState::queryFilePath(__uint64 fileId) const
 {
     auto it = fileIdToPath.find(fileId);
-    return (it != fileIdToPath.end()) ? it->second.str() : nullptr;
+    return (it != fileIdToPath.end()) ? it->second->str() : nullptr;
 }
 
 bool CMetaInfoState::hasFileMapping(__uint64 fileId) const
@@ -80,7 +91,8 @@ bool CMetaInfoState::hasFileMapping(__uint64 fileId) const
 void CMetaInfoState::clearFileMappings()
 {
     fileIdToPath.clear();
-    pathToFileId.clear();
+    sourceToProps.clear();
+    indexFiles.clear();
 }
 
 const char* CMetaInfoState::queryServiceName(const char* traceId) const
@@ -109,15 +121,75 @@ void CMetaInfoState::clearAll()
     clearServiceMappings();
 }
 
-/**
- * Returns the fileId for the given path.
- * Returns 0 if the input path is empty.
- * Returns UINT64_MAX if the path is not found.
- */
-__uint64 CMetaInfoState::queryFileIdByPath(const char* path) const
+void CMetaInfoState::onFile(const char* filename, uint32_t version)
 {
-    if (isEmptyString(path))
-        return 0;
-    auto it = pathToFileId.find(std::string(path));
-    return (it != pathToFileId.end()) ? it->second : UINT64_MAX;
+    ++sourceCount;
+}
+
+void CMetaInfoState::onEvent(CEvent& event)
+{
+    if (event.hasAttribute(EvAttrFileId))
+    {
+        if (MetaFileInformation == event.queryType())
+        {
+            const char* path = event.queryTextValue(EvAttrPath);
+            if (isEmptyString(path))
+                return;
+            if (sourceCount > 1)
+            {
+                auto indexFilesIt = indexFiles.find(path);
+                if (indexFiles.end() == indexFilesIt)
+                    indexFilesIt = indexFiles.emplace(new String(path), generateRuntimeFileId(event)).first;
+                sourceToProps.emplace(generateSourceFileId(event), &(*indexFilesIt));
+                fileIdToPath.emplace(std::make_pair(indexFilesIt->id, indexFilesIt->path.getLink()));
+                event.setValue(EvAttrFileId, indexFilesIt->id);
+            }
+            else
+            {
+                fileIdToPath.emplace(std::make_pair(event.queryNumericValue(EvAttrFileId), new String(path)));
+            }
+        }
+        else
+        {
+            if (sourceCount > 1)
+            {
+                auto sourcePropsIt = sourceToProps.find(generateSourceFileId(event));
+                if (sourcePropsIt != sourceToProps.end())
+                {
+                    event.setValue(EvAttrFileId, sourcePropsIt->second->id);
+                }
+            }
+        }
+    }
+    else if (EventQueryStart == event.queryType())
+    {
+        if (event.hasAttribute(EvAttrEventTraceId) && event.hasAttribute(EvAttrServiceName))
+        {
+            const char* traceId = event.queryTextValue(EvAttrEventTraceId);
+            const char* serviceName = event.queryTextValue(EvAttrServiceName);
+            if (!isEmptyString(traceId) && !isEmptyString(serviceName))
+                traceIdToService.emplace(std::make_pair(traceId, serviceName));
+        }
+    }
+}
+
+uint32_t CMetaInfoState::generateSourceFileId(const CEvent& event)
+{
+    __uint64 parts[4] = {0,};
+    if (event.hasAttribute(EvAttrChannelId))
+        parts[0] = event.queryNumericValue(EvAttrChannelId);
+    if (event.hasAttribute(EvAttrReplicaId))
+        parts[1] = event.queryNumericValue(EvAttrReplicaId);
+    if (event.hasAttribute(EvAttrInstanceId))
+        parts[2] = event.queryNumericValue(EvAttrInstanceId);
+    if (event.hasAttribute(EvAttrFileId))
+        parts[3] = event.queryNumericValue(EvAttrFileId);
+    return hashc_fnv1a(reinterpret_cast<const byte *>(&parts), sizeof(parts), fnvInitialHash32);
+}
+
+uint32_t CMetaInfoState::generateRuntimeFileId(const CEvent& event)
+{
+    if (indexFiles.size() == UINT32_MAX)
+        throw makeStringExceptionV(-1, "Exceeded maximum number of index files (=%u) supported in event meta parser", UINT32_MAX);
+    return static_cast<uint32_t>(indexFiles.size() + 1);
 }

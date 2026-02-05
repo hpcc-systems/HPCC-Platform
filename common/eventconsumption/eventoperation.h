@@ -21,6 +21,8 @@
 #include "eventfilter.h"
 #include "eventmodeling.h"
 #include "eventmetaparser.hpp"
+#include <set>
+#include <string>
 
 // Base operation class that provides meta parser functionality and supports streaming output
 // and event filtering by event kind and attribute values. This satisfies the requirements
@@ -35,6 +37,7 @@ public:
     CEventConsumingOp();
     CMetaInfoState& queryMetaInfoState() { return *metaState; }
     virtual bool ready() const;
+    // Add unique and non-empty paths to the collection of input paths.
     void setInputPath(const char* path);
     void setOutput(IBufferedSerialOutputStream& _out);
     bool acceptEvents(const char* eventNames);
@@ -42,10 +45,10 @@ public:
     bool acceptModel(const IPropertyTree& config);
 protected:
     IEventFilter* ensureFilter();
-    bool traverseEvents(const char* path, IEventVisitor& visitor);
+    bool traverseEvents(IEventVisitor& visitor);
 protected:
     Owned<CMetaInfoState> metaState;
-    StringAttr inputPath;
+    std::set<std::string> inputPaths;
     Linked<IBufferedSerialOutputStream> out;
 private:
     Owned<IEventFilter> filter;

@@ -54,9 +54,9 @@ public:
         EventRecorder& recorder = queryRecorder();
         if (!recorder.startRecording(options, name, false))
             throw makeStringException(-1, "failed to start event recording");
-        CPropertyTreeEvents eventsIt(*input);
+        Owned<IEventIterator> eventsIt = createPropertyTreeEvents(*input, PTEFliteralParsing);
         CEvent event;
-        while (eventsIt.nextEvent(event))
+        while (eventsIt->nextEvent(event))
             recorder.recordEvent(event);
         if (!recorder.stopRecording(nullptr))
             throw makeStringException(-1, "failed to stop event recording");

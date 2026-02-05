@@ -44,6 +44,6 @@ interface IEventVisitationLink : extends IEventVisitor
 protected: \
     Linked<IEventVisitor> nextLink; \
 public: \
-    void setNextLink(IEventVisitor& visitor) override { nextLink.set(&visitor); } \
-    bool visitFile(const char* filename, uint32_t version) override { if (!nextLink) return false; return nextLink->visitFile(filename, version); } \
-    void departFile(uint32_t bytesRead) override { if (!nextLink) return; nextLink->departFile(bytesRead); }
+    virtual void setNextLink(IEventVisitor& visitor) override { nextLink.set(&visitor); } \
+    virtual bool visitFile(const char* filename, uint32_t version) override { if (!nextLink) return false; return nextLink->visitFile(filename, version); } \
+    virtual void departFile(uint32_t bytesRead) override { if (!nextLink) return; nextLink->departFile(bytesRead); }

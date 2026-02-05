@@ -57,7 +57,7 @@ bool CEventSavingOp::doOp()
     Owned<IEventVisitor> terminalVisitor = new CEventSavingVisitor(*this);
     try
     {
-        traverseEvents(inputPath, *terminalVisitor);
+        traverseEvents(*terminalVisitor);
         recorder.stopRecording(&summary);
     }
     catch (...)

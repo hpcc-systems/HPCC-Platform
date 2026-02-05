@@ -1512,6 +1512,23 @@ const std::initializer_list<EventAttr>& CEvent::queryOrderedAttributeIds() const
     return eventInformation[type].attributes;
 }
 
+void CEvent::fixup(const EventFileProperties& properties)
+{
+    // RecordingSource events are the origin of ChannelId, ReplicaId, InstanceId, and
+    // processDescriptor properties. RecordingSource events never require fixed, and other
+    // events only require fixing when a prior RecordingSource event provided a descriptor.
+    bool shouldApplyRecordingSourceIds = (queryType() != EventRecordingSource) && !properties.processDescriptor.isEmpty();
+    if (shouldApplyRecordingSourceIds)
+    {
+        if (!hasAttribute(EvAttrChannelId))
+            setValue(EvAttrChannelId, __uint64(properties.channelId));
+        if (!hasAttribute(EvAttrReplicaId))
+            setValue(EvAttrReplicaId, __uint64(properties.replicaId));
+        if (!hasAttribute(EvAttrInstanceId))
+            setValue(EvAttrInstanceId, properties.instanceId);
+    }
+}
+
 class CEventFileConsumer : public CInterface
 {
 public:
@@ -1530,11 +1547,11 @@ public:
         uint32_t options = 0;
         readToken(options);
         if (options & ERFtraceid)
-            properties.options.includeTraceIds = true;
+            properties.options.includeTraceIds = EventFileOption::Enabled;
         if (options & ERFthreadid)
-            properties.options.includeThreadIds = true;
+            properties.options.includeThreadIds = EventFileOption::Enabled;
         if (options & ERFstacktrace)
-            properties.options.includeStackTraces = true;
+            properties.options.includeStackTraces = EventFileOption::Enabled;
         readToken(baseTimestamp);
     }
 
@@ -1590,6 +1607,7 @@ public:
         }
         if (!readAttributes(event))
             return false;
+        event.fixup(properties);
         properties.eventsRead++;
         return true;
     }
@@ -1598,9 +1616,9 @@ public:
     {
         if (!finishAttribute<__uint64>(event, EvAttrEventTimestamp))
             return false;
-        if (properties.options.includeTraceIds && !finishDataAttribute(event, EvAttrEventTraceId, 16))
+        if (properties.options.includeTraceIds != EventFileOption::Disabled && !finishDataAttribute(event, EvAttrEventTraceId, 16))
             return false;
-        if (properties.options.includeThreadIds && !finishAttribute<__uint64>(event, EvAttrEventThreadId))
+        if (properties.options.includeThreadIds != EventFileOption::Disabled && !finishAttribute<__uint64>(event, EvAttrEventThreadId))
             return false;
         bool good = true;
         while (good)
@@ -1854,7 +1872,6 @@ IEventIterator* createEventFileIterator(const char* path)
     }
     return nullptr;
 }
-
 
 // GH->TK
 // Next steps:

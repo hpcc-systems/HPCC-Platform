@@ -45,7 +45,7 @@ bool CDumpEventsOp::doOp()
     case OutputFormat::tree:
         {
             Owned<IEventPTreeCreator> creator = createEventPTreeCreator();
-            if (traverseEvents(inputPath.str(), creator->queryVisitor()))
+            if (traverseEvents(creator->queryVisitor()))
             {
                 StringBuffer yaml;
                 toYAML(creator->queryTree(), yaml, 2, 0);
@@ -58,5 +58,5 @@ bool CDumpEventsOp::doOp()
     default:
         throw makeStringExceptionV(-1, "unsupported output format: %d", (int)format);
     }
-    return traverseEvents(inputPath.str(), *visitor);
+    return traverseEvents(*visitor);
 }
