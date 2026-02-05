@@ -13,7 +13,7 @@ import { useMetricsViews, useWUQueryMetrics } from "../hooks/metrics";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 import { DockPanel, DockPanelItem, ResetableDockPanel } from "../layouts/DockPanel";
-import { pushUrl } from "../util/history";
+import { pushUrl, replaceUrl } from "../util/history";
 import { debounce } from "../util/throttle";
 import { ErrorBoundary } from "../util/errorBoundary";
 import { ShortVerticalDivider } from "./Common";
@@ -99,10 +99,14 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         }
     }, [targetsRoxie, wuid]);
 
-    const pushSelectionUrl = React.useCallback((parentUrl: string, lineageSelection: string, selection: string[]) => {
+    const pushSelectionUrl = React.useCallback((parentUrl: string, lineageSelection?: string, selection?: string[], replace: boolean = false) => {
         const lineageSelectionStr = lineageSelection?.length ? `/${lineageSelection}` : "";
         const selectionStr = selection?.length ? `/${selection.join(",")}` : "";
-        pushUrl(`${parentUrl}${lineageSelectionStr}${selectionStr}`);
+        if (replace) {
+            replaceUrl(`${parentUrl}${lineageSelectionStr}${selectionStr}`);
+        } else {
+            pushUrl(`${parentUrl}${lineageSelectionStr}${selectionStr}`);
+        }
     }, []);
 
     const pushSelectedMetricsUrl = React.useCallback((parentUrl: string, lineageSelection: string, selectedMetrics: IScope[]) => {
@@ -360,8 +364,8 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         setShowMetricOptions(show);
     }, []);
 
-    const onLineageSelectionChange = React.useCallback((lineageSelection: string) => {
-        pushSelectionUrl(parentUrl, lineageSelection, selection);
+    const onLineageSelectionChange = React.useCallback((lineageSelection?: string, replace?: boolean) => {
+        pushSelectionUrl(parentUrl, lineageSelection, selection, replace);
     }, [parentUrl, pushSelectionUrl, selection]);
 
     const onSelectionChange = React.useCallback((selection: string[]) => {

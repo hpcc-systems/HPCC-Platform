@@ -370,6 +370,38 @@ public:
             ::Release(e);
         }
     }
+
+    void testOverflowBug()
+    {
+        // Test for bug where compressor crashes on close() with buffer overflow
+        // caused by large rows causing an excessive growth in the buffer size
+
+        ICompressHandler * handler = queryCompressHandler("lz4");
+        CPPUNIT_ASSERT(handler);
+        Owned<ICompressor> compressor = handler->getCompressor(nullptr);
+
+        MemoryBuffer compressed;
+        size32_t initialSize = 0x100000;  // 1MB initial size
+
+        compressor->open(compressed, initialSize, 1);
+
+        // Write enough incompressible data to trigger buffer growth
+        // Write in chunks to trigger the write() path that resizes blksz
+        size32_t chunkSizes[] = { 0x8000000, 0x8001000, 0x20020000 }; // chosen to hit the pathological resizing case
+
+        for (size32_t chunkSize : chunkSizes)
+        {
+            MemoryBuffer chunk(chunkSize);
+            for (size32_t j = 0; j < chunkSize; j++)
+                chunk.append((byte)j);
+            size32_t written = compressor->write(chunk.bytes(), chunk.length());
+            CPPUNIT_ASSERT_EQUAL(chunk.length(), written);
+        }
+
+        compressor->close();  // This previously crashed with a buffer overflow
+
+        CPPUNIT_ASSERT(compressed.length() > 0);
+    }
 };
 
 
@@ -381,6 +413,7 @@ class JlibCompressionStandardTest : public JlibCompressionTestBase
         CPPUNIT_TEST(testKeyRollback);
         CPPUNIT_TEST(testTinyCompression);
         CPPUNIT_TEST(test);
+        CPPUNIT_TEST(testOverflowBug);
     CPPUNIT_TEST_SUITE_END();
 
 public:
