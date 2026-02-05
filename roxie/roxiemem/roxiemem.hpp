@@ -575,6 +575,13 @@ extern roxiemem_decl IRowManager *createGlobalRowManager(memsize_t memLimit, mem
 interface IDataBufferManager : extends IInterface
 {
     virtual DataBuffer *allocate() = 0;
+    // Allocate multiple buffers. Returns the number of buffers actually allocated (always at least 1,
+    // up to numBuffers requested). The buffers array must have space for at least numBuffers pointers.
+    // Maximum numBuffers is limited by implementation (typically 16; see maxBlockedBuffers).
+    // Stops allocating once it cannot allocate more from the current page, ensuring at least 1 is always returned.
+    // Note: While any count from 1 to maximum is supported, certain counts may offer better performance
+    // due to internal page alignment and allocation efficiency.
+    virtual unsigned allocateBlock(unsigned numBuffers, DataBuffer ** buffers) = 0;
     virtual void poolStats(StringBuffer &memStats) = 0;
 };
 
