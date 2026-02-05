@@ -244,8 +244,6 @@ export const GlobalMetrics: React.FunctionComponent<GlobalMetricsProps> = ({
                     </div>
                 }</SizeMe>
             }
-            footer={<></>}
-            footerStyles={{}}
         />
     </>;
 };
