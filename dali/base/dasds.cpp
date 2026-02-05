@@ -6084,13 +6084,15 @@ static CConfigUpdateHook configUpdateHook;
 static void initializeStorageGroups(IPropertyTree *oldEnvironment) // oldEnvironment always null in containerized
 {
     bool forceGroupUpdate = getComponentConfigSP()->getPropBool("dfs/@forceGroupUpdate");
-    initClusterAndStoragePlaneGroups(forceGroupUpdate, oldEnvironment);
+    StringBuffer response;
+    initClusterAndStoragePlaneGroups(response, forceGroupUpdate, oldEnvironment);
     if (isContainerized())
     {
         auto updateFunc = [](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
         {
             bool forceGroupUpdate = getComponentConfigSP()->getPropBool("dfs/@forceGroupUpdate");
-            initClusterAndStoragePlaneGroups(forceGroupUpdate, nullptr);
+            StringBuffer response;
+            initClusterAndStoragePlaneGroups(response, forceGroupUpdate, nullptr);
         };
         configUpdateHook.installOnce(updateFunc, false);
     }
@@ -8454,6 +8456,7 @@ void CCovenSDSManager::blockingSave(unsigned *writeTransactions)
 
 bool CCovenSDSManager::updateEnvironment(IPropertyTree *newEnv, bool forceGroupUpdate, StringBuffer &response)
 {
+    // for BM only
     Owned<IRemoteConnection> conn = querySDS().connect("/",myProcessSession(),0, INFINITE);
     if (conn)
     {
@@ -8469,7 +8472,7 @@ bool CCovenSDSManager::updateEnvironment(IPropertyTree *newEnv, bool forceGroupU
         conn->commit();
         conn->close();
         StringBuffer messages;
-        initClusterGroups(forceGroupUpdate, messages, oldEnvironment);
+        initClusterAndStoragePlaneGroups(messages, forceGroupUpdate, oldEnvironment);
         response.append(messages);
         PROGLOG("Environment and node groups updated");
     }
