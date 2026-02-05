@@ -5453,7 +5453,12 @@ class CStoreHelper : implements IStoreHelper, public CInterface
             OwnedIFile iFileStore = createIFile(storeFilename);
             OwnedIFileIO iFileIOStore = iFileStore->open(IFOread);
             if (!iFileIOStore)
-                throw MakeSDSException(SDSExcpt_OpenStoreFailed, "%s", storeFilename.str());
+            {
+                if (isBinary)
+                    return nullptr;
+                else
+                    throw MakeSDSException((SDSExcpt_OpenStoreFailed), "xml file: %s", storeFilename.str());
+            }
 
             offset_t fSize = iFileIOStore->size();
             PROGLOG("Loading %s store %u (size=%.2f MB, storedCrc=%x)", isBinary ? "Binary" : "XML", queryCurrentEdition(), ((double)fSize) / 0x100000, storedCrc);
