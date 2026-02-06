@@ -7,6 +7,7 @@ interface FieldsTableProps {
     fields: Fields;
     width?: string;
     onChange?: (id: string, newValue: any) => void;
+    onSubmit?: () => void;
 }
 
 const tableGroupStyles = mergeStyleSets({
@@ -27,12 +28,20 @@ const tableGroupStyles = mergeStyleSets({
 export const TableGroup: React.FunctionComponent<FieldsTableProps> = ({
     fields,
     width = "initial",
-    onChange = (id: string, newValue: any) => { }
+    onChange = (id: string, newValue: any) => { },
+    onSubmit
 }) => {
 
     const formFields: { id: string, label: string, field: any }[] = createInputs(fields, onChange);
 
-    return <table className={tableGroupStyles.root} style={{ width }}>
+    const handleSubmit = React.useCallback((e: React.FormEvent) => {
+        e.preventDefault();
+        if (onSubmit) {
+            onSubmit();
+        }
+    }, [onSubmit]);
+
+    const tableElement = <table className={tableGroupStyles.root} style={{ width }}>
         <tbody>
             {formFields.map((ff) => {
                 return <tr key={ff.id}>
@@ -42,6 +51,8 @@ export const TableGroup: React.FunctionComponent<FieldsTableProps> = ({
             })}
         </tbody>
     </table>;
+
+    return onSubmit ? <form onSubmit={handleSubmit}>{tableElement}</form> : tableElement;
 };
 
 interface MultiColumnTableGroupProps {
