@@ -388,7 +388,10 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         CKeyLookupContext(CKJService &_service, CActivityContext *_activityCtx, const CLookupKey &_key)
             : CContext(_service, _activityCtx), key(_key)
         {
-            keyIndex.setown(createKeyIndex(key.fname, key.crc, false, 0));
+            size32_t blockedIOSize = getBlockedRandomIO(key.fname.str());
+            if ((size32_t)-1 == blockedIOSize)
+                blockedIOSize = 0;
+            keyIndex.setown(createKeyIndex(key.fname, key.crc, false, blockedIOSize));
             expectedFormat.set(activityCtx->queryHelper()->queryIndexRecordSize());
             expectedFormatCrc = activityCtx->queryHelper()->getIndexFormatCrc();
         }
@@ -2349,7 +2352,7 @@ public:
         }
         write();
     }
-    
+
 // IFileInProgressHandler
     virtual void add(const char *fip)
     {

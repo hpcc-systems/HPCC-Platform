@@ -2477,7 +2477,10 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             * The underlying IFileIO can later be closed by fhe file caching mechanism.
             */
         Owned<IFileIO> lazyIFileIO = queryThor().queryFileCache().lookupIFileIO(*this, indexName, filePart, nullptr);
-        return createKeyIndex(filename, crc, *lazyIFileIO, (unsigned) -1, false, 0);
+        size32_t blockedIOSize = getBlockedRandomIO(lazyIFileIO);
+        if ((size32_t)-1 == blockedIOSize)
+            blockedIOSize = 0;
+        return createKeyIndex(filename, crc, *lazyIFileIO, (unsigned)-1, false, blockedIOSize);
     }
     IKeyManager *createPartKeyManager(unsigned partNo, unsigned copy, IContextLogger *ctx)
     {
