@@ -17,6 +17,7 @@
 
 #include <string>
 #include <map>
+#include <unordered_map>
 #include <queue>
 #include <algorithm>
 
@@ -83,7 +84,7 @@ class CTcpReceiveManager : implements IReceiveManager, public CInterface
     bool encrypted = false;
     const bool collateDirectly = true;
 
-    typedef std::map<ruid_t, CMessageCollator*> uid_map;
+    typedef std::unordered_map<ruid_t, CMessageCollator*> uid_map;
     uid_map         collators;
     CriticalSection collatorsLock; // protects access to collators map
     roxiemem::IDataBufferManager * udpBufferManager;
