@@ -442,6 +442,7 @@ static IPropertyTree * extractLegacyOptions(IPropertyTree * legacyOptions)
     IPropertyTree * legacyProcessConfig = legacyOptions->queryPropTree("Software/EspProcess[1]");
     Owned<IPropertyTree> extractedOptions = createPTree();
     copyTree(extractedOptions, legacyProcessConfig, "tracing");
+    copyTree(extractedOptions, legacyProcessConfig, "vaults");
     return extractedOptions.getClear();
 }
 
