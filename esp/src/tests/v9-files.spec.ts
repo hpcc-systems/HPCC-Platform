@@ -66,21 +66,19 @@ test.describe("V9 Files - Logical Files", () => {
 
         await filterMenuItem.click();
 
-        // Wait for the dialog to appear
-        await expect(page.getByRole("dialog")).toBeVisible();
-        const filterDialog = page.getByRole("dialog").first();
+        // Wait for the filter heading to appear (more reliable than checking dialog visibility)
+        await expect(page.getByRole("heading", { name: "Filter" })).toBeVisible();
 
-        const logicalNameInput = filterDialog.locator("input[name=\"LogicalName\"]").or(
-            filterDialog.getByLabel("Name")
-        ).or(
-            filterDialog.locator("input[type=\"text\"]").first()
-        );
+        // Use ID selector to avoid matching the column header button
+        const logicalNameInput = page.locator("#LogicalName");
 
         await expect(logicalNameInput).toBeVisible();
         await logicalNameInput.fill("*global*");
 
-        await filterDialog.getByRole("button", { name: "Apply" }).click();
-        await expect(filterDialog).toBeHidden();
+        await page.getByRole("button", { name: "Apply" }).click();
+
+        // Wait a moment for the dialog to close
+        await expect(page.getByRole("heading", { name: "Filter" })).toBeHidden();
 
         // Wait for filter to be applied by checking for network idle or row changes
         await page.waitForLoadState("networkidle");
