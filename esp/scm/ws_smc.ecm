@@ -272,6 +272,21 @@ ESPresponse [exceptions_inline] SetBannerResponse
 {
 };
 
+ESPrequest [nil_remove, min_ver("1.30")] GetBannerRequest
+{
+};
+
+ESPresponse [exceptions_inline, min_ver("1.30")] GetBannerResponse
+{
+    string BannerContent;
+    string BannerColor;
+    string BannerSize;
+    string BannerScroll;
+    string ChatURL;
+    int BannerAction(0);
+    int ShowChatURL(0);
+};
+
 ESPrequest NotInCommunityEditionRequest
 {
     string EEPortal; 
@@ -489,7 +504,7 @@ ESPresponse [exceptions_inline, nil_remove] RecordGlobalMetricsResponse
     string Result;                              // Success or partial success message
 };
 
-ESPservice [auth_feature("DEFERRED"), noforms, version("1.29"), default_client_version("1.29"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
+ESPservice [auth_feature("DEFERRED"), noforms, version("1.30"), default_client_version("1.30"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
 {
     ESPmethod Index(SMCIndexRequest, SMCIndexResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/index.xslt")] Activity(ActivityRequest, ActivityResponse);
@@ -510,6 +525,7 @@ ESPservice [auth_feature("DEFERRED"), noforms, version("1.29"), default_client_v
     ESPmethod GetThorQueueAvailability(GetThorQueueAvailabilityRequest, GetThorQueueAvailabilityResponse);
 //this one ensures superuser, but no feature check is done, Kevin/Tony?
     ESPmethod [auth_feature("NONE")] SetBanner(SetBannerRequest, SetBannerResponse);
+    ESPmethod [auth_feature("NONE"), min_ver("1.30")] GetBanner(GetBannerRequest, GetBannerResponse);
 //this one ensures superuser, but no feature check is done, Kevin/Tony?
     ESPmethod [auth_feature("NONE")] NotInCommunityEdition(NotInCommunityEditionRequest, NotInCommunityEditionResponse);
 
