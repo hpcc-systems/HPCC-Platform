@@ -1,0 +1,186 @@
+<Dataset name='Result 1'>
+ <Row><Result_1>=== Creating Test Files ===</Result_1></Row>
+</Dataset>
+<Dataset name='Result 2'>
+</Dataset>
+<Dataset name='Result 3'>
+</Dataset>
+<Dataset name='Result 4'>
+</Dataset>
+<Dataset name='Result 5'>
+</Dataset>
+<Dataset name='Result 6'>
+</Dataset>
+<Dataset name='Result 7'>
+</Dataset>
+<Dataset name='Result 8'>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><Result_9>=== Test Files Created ===</Result_9></Row>
+</Dataset>
+<Dataset name='Result 10'>
+ <Row><Result_10>Test 1: Basic usage (all test files)</Result_10></Row>
+</Dataset>
+<Dataset name='Test1_Count'>
+ <Row><Test1_Count>8</Test1_Count></Row>
+</Dataset>
+<Dataset name='Test1_LimitBreached'>
+ <Row><Test1_LimitBreached>false</Test1_LimitBreached></Row>
+</Dataset>
+<Dataset name='Test1_FileCount'>
+ <Row><Test1_FileCount>8</Test1_FileCount></Row>
+</Dataset>
+<Dataset name='Result 14'>
+ <Row><Result_14>Test 2: With file limit and breach detection</Result_14></Row>
+</Dataset>
+<Dataset name='Test2_Count'>
+ <Row><Test2_Count>5</Test2_Count></Row>
+</Dataset>
+<Dataset name='Test2_LimitBreached'>
+ <Row><Test2_LimitBreached>true</Test2_LimitBreached></Row>
+</Dataset>
+<Dataset name='Test2_LimitRespected'>
+ <Row><Test2_LimitRespected>true</Test2_LimitRespected></Row>
+</Dataset>
+<Dataset name='Test2_ActualFileCount'>
+ <Row><Test2_ActualFileCount>5</Test2_ActualFileCount></Row>
+</Dataset>
+<Dataset name='Result 19'>
+ <Row><Result_19>Test 3: Pattern matching (testfile*)</Result_19></Row>
+</Dataset>
+<Dataset name='Test3_Count'>
+ <Row><Test3_Count>2</Test3_Count></Row>
+</Dataset>
+<Dataset name='Test3_FileCount'>
+ <Row><Test3_FileCount>2</Test3_FileCount></Row>
+</Dataset>
+<Dataset name='Result 22'>
+ <Row><Result_22>Test 4: SuperFiles only</Result_22></Row>
+</Dataset>
+<Dataset name='Test4_Count'>
+ <Row><Test4_Count>1</Test4_Count></Row>
+</Dataset>
+<Dataset name='Test4_FileCount'>
+ <Row><Test4_FileCount>1</Test4_FileCount></Row>
+</Dataset>
+<Dataset name='Result 25'>
+ <Row><Result_25>Test 5: Normal files only (not superfiles)</Result_25></Row>
+</Dataset>
+<Dataset name='Test5_Count'>
+ <Row><Test5_Count>7</Test5_Count></Row>
+</Dataset>
+<Dataset name='Test5_FileCount'>
+ <Row><Test5_FileCount>7</Test5_FileCount></Row>
+</Dataset>
+<Dataset name='Result 28'>
+ <Row><Result_28>Test 6: Record count range (100 &lt;= rowcount &lt; 1000)</Result_28></Row>
+</Dataset>
+<Dataset name='Test6_Count'>
+ <Row><Test6_Count>6</Test6_Count></Row>
+</Dataset>
+<Dataset name='Test6_ExpectedCount'>
+ <Row><Test6_ExpectedCount>true</Test6_ExpectedCount></Row>
+</Dataset>
+<Dataset name='Test6_FileCount'>
+ <Row><Test6_FileCount>6</Test6_FileCount></Row>
+</Dataset>
+<Dataset name='Result 32'>
+ <Row><Result_32>Test 7: Combined filters (200 &lt;= rowcount &lt;= 500 AND normal files)</Result_32></Row>
+</Dataset>
+<Dataset name='Test7_Count'>
+ <Row><Test7_Count>4</Test7_Count></Row>
+</Dataset>
+<Dataset name='Test7_ExpectedCount'>
+ <Row><Test7_ExpectedCount>true</Test7_ExpectedCount></Row>
+</Dataset>
+<Dataset name='Test7_FileCount'>
+ <Row><Test7_FileCount>4</Test7_FileCount></Row>
+</Dataset>
+<Dataset name='Result 36'>
+ <Row><Result_36>Test 8: Modified &lt;= &lt;YESTERDAY&gt; (should exclude all test files)</Result_36></Row>
+</Dataset>
+<Dataset name='Test8_Count'>
+ <Row><Test8_Count>0</Test8_Count></Row>
+</Dataset>
+<Dataset name='Test8_ExpectedZero'>
+ <Row><Test8_ExpectedZero>true</Test8_ExpectedZero></Row>
+</Dataset>
+<Dataset name='Test8_FileCount'>
+ <Row><Test8_FileCount>0</Test8_FileCount></Row>
+</Dataset>
+<Dataset name='Result 40'>
+ <Row><Result_40>Test 9: Files not in superfiles (!has:SuperOwners)</Result_40></Row>
+</Dataset>
+<Dataset name='Test9_Count'>
+ <Row><Test9_Count>6</Test9_Count></Row>
+</Dataset>
+<Dataset name='Test9_ExpectedCount'>
+ <Row><Test9_ExpectedCount>true</Test9_ExpectedCount></Row>
+</Dataset>
+<Dataset name='Test9_FileCount'>
+ <Row><Test9_FileCount>6</Test9_FileCount></Row>
+</Dataset>
+<Dataset name='Result 44'>
+ <Row><Result_44>Test 10: Default fields (backward compatible)</Result_44></Row>
+</Dataset>
+<Dataset name='Test10_Count'>
+ <Row><Test10_Count>8</Test10_Count></Row>
+</Dataset>
+<Dataset name='Test10_AllFilesReturned'>
+ <Row><Test10_AllFilesReturned>true</Test10_AllFilesReturned></Row>
+</Dataset>
+<Dataset name='Test10_Files'>
+ <Row><name>file1</name><size>30400</size><rowcount>100</rowcount><superfile>false</superfile></Row>
+ <Row><name>file2</name><size>60800</size><rowcount>200</rowcount><superfile>false</superfile></Row>
+ <Row><name>file3</name><size>152000</size><rowcount>500</rowcount><superfile>false</superfile></Row>
+ <Row><name>file4</name><size>304000</size><rowcount>1000</rowcount><superfile>false</superfile></Row>
+ <Row><name>file5</name><size>608000</size><rowcount>2000</rowcount><superfile>false</superfile></Row>
+ <Row><name>testfile1</name><size>91200</size><rowcount>300</rowcount><superfile>false</superfile></Row>
+ <Row><name>testfile2</name><size>121600</size><rowcount>400</rowcount><superfile>false</superfile></Row>
+ <Row><name>super1</name><size>91200</size><rowcount>300</rowcount><superfile>true</superfile></Row>
+</Dataset>
+<Dataset name='Result 48'>
+ <Row><Result_48>Test 11: Name field auto-added (requested only size)</Result_48></Row>
+</Dataset>
+<Dataset name='Test11_Count'>
+ <Row><Test11_Count>8</Test11_Count></Row>
+</Dataset>
+<Dataset name='Test11_AllFilesReturned'>
+ <Row><Test11_AllFilesReturned>true</Test11_AllFilesReturned></Row>
+</Dataset>
+<Dataset name='Test11_Files'>
+ <Row><name>file1</name><size>30400</size></Row>
+ <Row><name>file2</name><size>60800</size></Row>
+ <Row><name>file3</name><size>152000</size></Row>
+ <Row><name>file4</name><size>304000</size></Row>
+ <Row><name>file5</name><size>608000</size></Row>
+ <Row><name>testfile1</name><size>91200</size></Row>
+ <Row><name>testfile2</name><size>121600</size></Row>
+ <Row><name>super1</name><size>91200</size></Row>
+</Dataset>
+<Dataset name='Result 52'>
+ <Row><Result_52>Test 12: Custom fields + filters combined</Result_52></Row>
+</Dataset>
+<Dataset name='Test12_Count'>
+ <Row><Test12_Count>6</Test12_Count></Row>
+</Dataset>
+<Dataset name='Test12_ExpectedCount'>
+ <Row><Test12_ExpectedCount>true</Test12_ExpectedCount></Row>
+</Dataset>
+<Dataset name='Test12_Files'>
+ <Row><name>file2</name><superfile>false</superfile><size>60800</size></Row>
+ <Row><name>file3</name><superfile>false</superfile><size>152000</size></Row>
+ <Row><name>file4</name><superfile>false</superfile><size>304000</size></Row>
+ <Row><name>file5</name><superfile>false</superfile><size>608000</size></Row>
+ <Row><name>testfile1</name><superfile>false</superfile><size>91200</size></Row>
+ <Row><name>testfile2</name><superfile>false</superfile><size>121600</size></Row>
+</Dataset>
+<Dataset name='Result 56'>
+ <Row><Result_56>=== Test Suite Complete ===</Result_56></Row>
+</Dataset>
+<Dataset name='Result 57'>
+ <Row><Result_57>=== Cleaning Up Test Files ===</Result_57></Row>
+</Dataset>
+<Dataset name='Result 58'>
+ <Row><Result_58>=== Cleanup Complete ===</Result_58></Row>
+</Dataset>

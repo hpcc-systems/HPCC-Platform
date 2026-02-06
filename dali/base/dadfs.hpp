@@ -334,6 +334,7 @@ extern da_decl DFUQResultFieldType getDFUQResultFieldType(DFUQResultField field)
 extern da_decl DFUQResultField getDFUQResultField(const char *fieldName);
 extern da_decl DFUQResultField getDFUQResultFieldAndType(const char *fieldName);
 extern da_decl const char* getDFUQResultFieldTypeName(DFUQResultField field);
+extern da_decl bool getFileAttributePath(const char *fieldName, StringBuffer &attributePath, DFUQResultField &field, DFUQResultFieldType &type);
 
 
 /**
