@@ -6,21 +6,28 @@
 
   <para><indexterm>
       <primary>auth_feature</primary>
-    </indexterm>The auth_feature attribute (valid only for an ESPService or
-  ESPMethod) allows you to specify a means to verify a user's permission to
-  execute a method.</para>
+    </indexterm>The <emphasis role="bold">auth_feature</emphasis> attribute
+  (valid only for <literal>ESPmethod</literal> or
+  <literal>ESPservice</literal>) allows you to specify a means to verify a
+  user's permission to execute a method. The auth_feature attribute for
+  <literal>ESPmethod</literal> and <literal>ESPservice</literal> elements
+  specifies required feature access levels for each method using a
+  comma-delimited list of tokens. These attributes should be handled
+  consistently across static and dynamic services.</para>
+
+  <para>When the <emphasis role="bold">auth_feature</emphasis> attribute is
+  defined at the service level, all tokens apply to all methods in the
+  service. When defined at the method level, all tokens apply to that method.
+  When defined in both, all tokens from both attributes apply to the
+  method.</para>
 
   <para>In order to enable this feature, your system must be configured to use
   a form of security that supports feature level authentication, such as LDAP
-  security included in the Community edition of the platform. Once LDAP is
-  configured, you would add the tag name provided as the value for the
-  <emphasis role="bold">authFeature</emphasis> attribute to the feature level
-  authentication list in the Security section of ECL Watch. Then you would set
-  permissions for users and/or groups.</para>
-
-  <para>If you are using a third-party Security Manager plugin, consult their
-  documentation for details on adding the tag name to their security
-  configuration.</para>
+  security included in the Community edition of the HPCC Systems platform.
+  Once LDAP is configured, you would add the tag name provided as the value
+  for the <emphasis role="bold">authFeature</emphasis> attribute to the
+  feature level authentication list in the Security section of ECL Watch. Then
+  you would set permissions for users and/or groups.</para>
 
   <para>The auth_feature attribute is required for every method, but can be
   specified at the ESPService level to apply to all methods within a service.
@@ -30,6 +37,10 @@
   <para>Setting auth_feature("NONE") means no authentication is needed.
   Setting auth_feature("DEFERRED") defers the authentication to the business
   logic in the ESP developer's method implementation logic.</para>
+
+  <para>NOTE: If you are using a third-party Security Manager plugin, consult
+  their documentation for details on adding the tag name to their security
+  configuration.</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
@@ -45,4 +56,205 @@
     ]
    MyMethod2(MyMethod2Request, MyMethod2Response);
  };</programlisting>
+
+  <sect2 id="ESDL_AuthFeature_FeatureIndependentTokens">
+    <title>Feature-Independent Tokens</title>
+
+    <para>The following tokens are universally supported and do not reference
+    any specific feature:</para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="120pt"/>
+
+        <tbody>
+          <row>
+            <entry><literal>None</literal></entry>
+
+            <entry>No feature access required. When used standalone, no access
+            is required; when combined with other tokens, it is ignored.
+            Supported by <literal>esdllib</literal> and
+            <literal>hidl</literal>.</entry>
+          </row>
+
+          <row>
+            <entry><literal>Deferred</literal></entry>
+
+            <entry>Equivalent to <literal>None</literal>; security may be
+            enforced later by the method handler. Supported by
+            <literal>esdllib</literal> and <literal>hidl</literal>.</entry>
+          </row>
+
+          <row>
+            <entry><literal>!X</literal> (where X is any value)</entry>
+
+            <entry>Reserved for future semantics; constraints on X will be
+            defined later. New syntax.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+  </sect2>
+
+  <sect2 id="ESDL_AuthFeature_PermittedTokens">
+    <title>Permitted Feature-Specific Tokens</title>
+
+    <para>Given a feature named <literal>MyFeature</literal>, the following
+    tokens are permitted:</para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="3">
+        <colspec colwidth="130pt"/>
+
+        <colspec colwidth="170pt"/>
+
+        <tbody>
+          <row>
+            <entry><literal>Token</literal></entry>
+
+            <entry><literal>SecAccess Required</literal></entry>
+
+            <entry><literal>Supported By</literal></entry>
+          </row>
+
+          <row>
+            <entry><literal>MyFeature</literal></entry>
+
+            <entry>SecAccess_Read</entry>
+
+            <entry>esdllib</entry>
+          </row>
+
+          <row>
+            <entry><literal>MyFeature:Access</literal></entry>
+
+            <entry>SecAccess_Access</entry>
+
+            <entry>esdllib, hidl</entry>
+          </row>
+
+          <row>
+            <entry><literal>MyFeature:Read</literal></entry>
+
+            <entry>SecAccess_Read</entry>
+
+            <entry>esdllib, hidl</entry>
+          </row>
+
+          <row>
+            <entry><literal>MyFeature:Write</literal></entry>
+
+            <entry>SecAccess_Write</entry>
+
+            <entry>esdllib, hidl</entry>
+          </row>
+
+          <row>
+            <entry><literal>MyFeature:Full</literal></entry>
+
+            <entry>SecAccess_Full</entry>
+
+            <entry>esdllib, hidl</entry>
+          </row>
+
+          <row>
+            <entry><literal>MyFeature:None</literal></entry>
+
+            <entry>No access required (overrides service attribute)</entry>
+
+            <entry>esdllib, hidl</entry>
+          </row>
+
+          <row>
+            <entry><literal>MyFeature:Deferred</literal></entry>
+
+            <entry>Equivalent to None</entry>
+
+            <entry>esdllib, hidl</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+  </sect2>
+
+  <sect2 id="ESDL_AuthFeature_ForbiddenTokens">
+    <title>Forbidden Tokens</title>
+
+    <para>The following tokens are not permitted for feature
+    <literal>MyFeature</literal>:</para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="120pt"/>
+
+        <tbody>
+          <row>
+            <entry><literal>MyFeature:</literal></entry>
+
+            <entry>Not permitted; shortcut not needed; accepted by hidl as
+            equivalent to <literal>MyFeature:Read</literal>.</entry>
+          </row>
+
+          <row>
+            <entry><literal>MyFeature:X</literal> (where X is not listed
+            above)</entry>
+
+            <entry>An invalid token; treated as an error; accepted by hidl as
+            equivalent to <literal>MyFeature:Full</literal>.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+  </sect2>
+
+  <sect2 id="ESDL_AuthFeature_Examples">
+    <title>Examples</title>
+
+    <para><emphasis role="bold">Example 1: Service-level
+    authentication</emphasis></para>
+
+    <programlisting>
+ESPservice [auth_feature("DataAccess:Read")] DataService
+{
+  ESPmethod GetData(GetDataRequest, GetDataResponse);
+  ESPmethod ListData(ListDataRequest, ListDataResponse);
+};
+    </programlisting>
+
+    <para>Both <literal>GetData</literal> and <literal>ListData</literal>
+    require <literal>SecAccess_Read</literal> access for
+    <literal>DataAccess</literal>.</para>
+
+    <para><emphasis role="bold">Example 2: Combined service and method
+    authentication</emphasis></para>
+
+    <programlisting>
+ESPservice [auth_feature("DataAccess:Read")] DataService
+{
+  ESPmethod GetData(GetDataRequest, GetDataResponse);
+  ESPmethod [auth_feature("DataAccess:Write")] UpdateData(UpdateDataRequest, UpdateDataResponse);
+};
+    </programlisting>
+
+    <para><literal>GetData</literal> requires
+    <literal>SecAccess_Read</literal>; <literal>UpdateData</literal> requires
+    both <literal>SecAccess_Read</literal> and
+    <literal>SecAccess_Write</literal> for
+    <literal>DataAccess</literal>.</para>
+
+    <para><emphasis role="bold">Example 3: Method bypassing service
+    authentication</emphasis></para>
+
+    <programlisting>
+ESPservice [auth_feature("DataAccess:Full")] DataService
+{
+  ESPmethod GetData(GetDataRequest, GetDataResponse);
+  ESPmethod [auth_feature("DataAccess:None")] GetPublicData(GetPublicDataRequest, GetPublicDataResponse);
+};
+    </programlisting>
+
+    <para><literal>GetData</literal> requires
+    <literal>SecAccess_Full</literal> access; <literal>GetPublicData</literal>
+    requires no access for <literal>DataAccess</literal>.</para>
+  </sect2>
 </sect1>
