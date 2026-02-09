@@ -188,7 +188,7 @@ bool CIndexHotspotOp::ready() const
 bool CIndexHotspotOp::doOp()
 {
     Owned<CHotspotEventVisitor> visitor = new CHotspotEventVisitor(*this, observedEvents, granularityBits);
-    if (traverseEvents(inputPath, *visitor))
+    if (traverseEvents(*visitor))
     {
         Owned<IBucketVisitor> analyzer;
         if (limit)
