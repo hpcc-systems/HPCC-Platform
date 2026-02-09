@@ -1308,36 +1308,14 @@ class CUdpReceiveManager : implements IReceiveManager, public CInterface
 
     class receive_data : public Thread 
     {
+        static constexpr unsigned maxReceiveBuffers = 8;  // Maximum buffers to pre-allocate for receiving
+
         CUdpReceiveManager &parent;
         ISocket *receive_socket = nullptr;
         ISocket *selfFlowSocket = nullptr;
         std::atomic<bool> running = { false };
         Semaphore started;
         UdpRdTracker timeTracker;
-
-        DataBuffer *allocateNextBuffer(roxiemem::IDataBufferManager *udpBufferManager, DataBuffer **bulkBuffers, unsigned &bulkBufferCount, unsigned &bulkBufferIndex)
-        {
-            // Try to use a bulk-allocated buffer first
-            if (bulkBufferIndex < bulkBufferCount)
-            {
-                return bulkBuffers[bulkBufferIndex++];
-            }
-            else
-            {
-                // Try to allocate a new pool - allocateBlock returns as many as available (1-8)
-                bulkBufferCount = udpBufferManager->allocateBlock(8, bulkBuffers);
-                if (bulkBufferCount > 0)
-                {
-                    bulkBufferIndex = 0;
-                    return bulkBuffers[bulkBufferIndex++];
-                }
-                // Fall back to single allocation if bulk allocation failed
-                DataBuffer *b = udpBufferManager->allocate();
-                if (!b)
-                    throw MakeStringException(ROXIE_MEMORY_ERROR, "Failed to allocate UDP receive buffer");
-                return b;
-            }
-        }
         
     public:
         receive_data(CUdpReceiveManager &_parent) : Thread("UdpLib::receive_data"), parent(_parent), timeTracker("receive_data", 60)
@@ -1407,21 +1385,9 @@ class CUdpReceiveManager : implements IReceiveManager, public CInterface
             roxiemem::IDataBufferManager * udpBufferManager = bufferManager;
             
             // Pre-allocate a pool of buffers for better performance
-            DataBuffer *bulkBuffers[8];
-            unsigned bulkBufferCount = 0;
-            unsigned bulkBufferIndex = 0;
-            // allocateBlock returns as many as available (1-8)
-            bulkBufferCount = udpBufferManager->allocateBlock(8, bulkBuffers);
-            if (bulkBufferCount == 0)
-            {
-                // Fall back to single allocation if bulk allocation failed
-                bulkBuffers[0] = udpBufferManager->allocate();
-                if (!bulkBuffers[0])
-                    throw MakeStringException(ROXIE_MEMORY_ERROR, "Failed to allocate initial UDP receive buffer");
-                bulkBufferCount = 1;
-            }
+            roxiemem::DataBufferAllocator<maxReceiveBuffers> allocator(udpBufferManager);
             
-            DataBuffer *b = bulkBuffers[bulkBufferIndex++];
+            DataBuffer *b = allocator.allocate();
             while (running) 
             {
                 try 
@@ -1488,15 +1454,8 @@ class CUdpReceiveManager : implements IReceiveManager, public CInterface
                         parent.input_queue->pushOwn(b);
                         d.switchState(UdpRdTracker::allocating);
                         
-                        // Get next buffer from pool or allocate new pool
-                        if (bulkBufferIndex < bulkBufferCount)
-                        {
-                            b = bulkBuffers[bulkBufferIndex++];
-                        }
-                        else
-                        {
-                            b = allocateNextBuffer(udpBufferManager, bulkBuffers, bulkBufferCount, bulkBufferIndex);
-                        }
+                        // Get next buffer from pool
+                        b = allocator.allocate();
                     }
                     if (udpStatsReportInterval)
                     {
@@ -1548,11 +1507,7 @@ class CUdpReceiveManager : implements IReceiveManager, public CInterface
                     MilliSleep(1000);
                 }
             }
-            // Release any remaining unused buffers in the pool
-            for (unsigned i = bulkBufferIndex; i < bulkBufferCount; i++)
-            {
-                ::Release(bulkBuffers[i]);
-            }
+            // allocator destructor automatically releases remaining buffers
             ::Release(b);
             return 0;
         }
