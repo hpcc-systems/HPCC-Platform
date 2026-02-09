@@ -57,7 +57,51 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  precheck-branch-changes:
+    runs-on: ubuntu-latest
+    env:
+      EVENT_CONTEXT: ${{ toJSON(github.event) }}
+      EVENT_ACTION: ${{ github.event.action }}
+    outputs:
+      branch_changed: ${{ steps.branch_changed.outputs.branch_changed }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fetch previous commit tip (for force-push / amend detection)
+        if: ${{ github.event.action == 'synchronize' }}
+        run: |
+          echo "Fetching old tip commit: ${{ github.event.before }}"
+          git fetch origin ${{ github.event.before }} --depth=1 || true
+      - name: Compare Tree Hashes between Branches
+        id: branch_changed
+        run: |
+          echo "Comparing tree hashes between base and head branches..."
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            echo "Not a pull request event. Treating as changed."
+            echo "branch_changed=true" >> $GITHUB_OUTPUT
+          elif [[ "$EVENT_ACTION" == "opened" ]]; then
+            echo "This is a new pull request with no previous commit. Treating as changed."
+            echo "branch_changed=true" >> $GITHUB_OUTPUT
+          elif [[ "$EVENT_ACTION" == "synchronize" ]]; then
+            OLD_SHA=${{ github.event.before }}
+            NEW_SHA=${{ github.event.after }}
+            if git diff --quiet $OLD_SHA $NEW_SHA; then
+              echo "branch_changed=false" >> $GITHUB_OUTPUT
+              echo "No code changes detected (metadata only). Skipping build and tests."
+            else
+              echo "branch_changed=true" >> $GITHUB_OUTPUT
+              echo "Branches have changes."
+            fi
+          else
+            echo "Unhandled event action: $EVENT_ACTION. Defaulting to changed."
+            echo "branch_changed=true" >> $GITHUB_OUTPUT
+          fi
+
   main:
+    needs: precheck-branch-changes
+    if: ${{ needs.precheck-branch-changes.outputs.branch_changed == 'true' }}
     runs-on: ubuntu-22.04
     steps: 
       - name: Checkout repository
