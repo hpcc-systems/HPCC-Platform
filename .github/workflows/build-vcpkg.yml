@@ -60,6 +60,46 @@ permissions:
   actions: write
 
 jobs:
+  precheck-branch-changes:
+    if: ${{ contains('pull_request', github.event_name) }}
+    runs-on: ubuntu-latest
+    env:
+      EVENT_CONTEXT: ${{ toJSON(github.event) }}
+      EVENT_ACTION: ${{ github.event.action }}
+    outputs:
+      branch_changed: ${{ steps.branch_changed.outputs.branch_changed }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fetch previous commit tip (for force-push / amend detection)
+        if: ${{ github.event.action == 'synchronize' }}
+        run: |
+          echo "Fetching old tip commit: ${{ github.event.before }}"
+          git fetch origin ${{ github.event.before }} --depth=1 || true
+      - name: Compare Tree Hashes between Branches
+        id: branch_changed
+        run: |
+          echo "Comparing tree hashes between base and head branches..."
+          if [[ "$EVENT_ACTION" == "opened" ]]; then
+            echo "This is a new pull request with no previous commit. Treating as changed."
+            echo "branch_changed=true" >> $GITHUB_OUTPUT
+          elif [[ "$EVENT_ACTION" == "synchronize" ]]; then
+            OLD_SHA=${{ github.event.before }}
+            NEW_SHA=${{ github.event.after }}
+            if git diff --quiet $OLD_SHA $NEW_SHA; then
+              echo "branch_changed=false" >> $GITHUB_OUTPUT
+              echo "No code changes detected (metadata only). Skipping build and tests."
+            else
+              echo "branch_changed=true" >> $GITHUB_OUTPUT
+              echo "Branches have changes."
+            fi
+          else
+            echo "Unhandled event action: $EVENT_ACTION. Defaulting to changed."
+            echo "branch_changed=true" >> $GITHUB_OUTPUT
+          fi
+
 
   build-workflow-dispatch:
     if: ${{ contains('workflow_dispatch', github.event_name) }}
@@ -81,7 +121,8 @@ jobs:
     secrets: inherit
 
   build-docker-ubuntu-24_04-arm:
-    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: precheck-branch-changes
+    if: ${{ contains('pull_request,push', github.event_name) && needs.precheck-branch-changes.outputs.branch_changed == 'true' }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ubuntu-24.04
@@ -89,14 +130,16 @@ jobs:
     secrets: inherit
 
   build-docker-ubuntu-24_04:
-    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: precheck-branch-changes
+    if: ${{ contains('pull_request,push', github.event_name) && needs.precheck-branch-changes.outputs.branch_changed == 'true' }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ubuntu-24.04
     secrets: inherit
 
   build-docker-ubuntu-22_04-arm:
-    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: precheck-branch-changes
+    if: ${{ contains('pull_request,push', github.event_name) && needs.precheck-branch-changes.outputs.branch_changed == 'true' }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ubuntu-22.04
@@ -104,7 +147,8 @@ jobs:
     secrets: inherit
 
   build-docker-ubuntu-22_04:
-    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: precheck-branch-changes
+    if: ${{ contains('pull_request,push', github.event_name) && needs.precheck-branch-changes.outputs.branch_changed == 'true' }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ubuntu-22.04
@@ -113,8 +157,8 @@ jobs:
     secrets: inherit
 
   test-smoke-docker-ubuntu-22_04:
-    if: ${{ contains('pull_request,push', github.event_name) }}
-    needs: build-docker-ubuntu-22_04
+    needs: [ precheck-branch-changes, build-docker-ubuntu-22_04 ]
+    if: ${{ contains('pull_request,push', github.event_name) && needs.precheck-branch-changes.outputs.branch_changed == 'true' }}
     uses: ./.github/workflows/test-smoke-gh_runner.yml
     with:
       os: ubuntu-22.04
@@ -122,7 +166,8 @@ jobs:
     secrets: inherit
 
   test-regression-suite-k8s-ubuntu-22_04:
-    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: [ precheck-branch-changes, build-docker-ubuntu-22_04 ]
+    if: ${{ contains('pull_request,push', github.event_name) && needs.precheck-branch-changes.outputs.branch_changed == 'true' }}
     uses: ./.github/workflows/test-regression-suite-k8s.yml
     secrets: inherit
     with:
@@ -130,8 +175,8 @@ jobs:
       asset-name: 'docker-ubuntu-22_04-containerized'
 
   test-unit-docker-ubuntu-22_04:
-    if: ${{ contains('pull_request,push', github.event_name) }}
-    needs: build-docker-ubuntu-22_04
+    needs: [ precheck-branch-changes, build-docker-ubuntu-22_04 ]
+    if: ${{ contains('pull_request,push', github.event_name) && needs.precheck-branch-changes.outputs.branch_changed == 'true' }}
     uses: ./.github/workflows/test-unit-gh_runner.yml
     with:
       os: ubuntu-22.04
@@ -139,8 +184,8 @@ jobs:
     secrets: inherit
 
   test-bundles-on-thor-ubuntu-22_04:
-    if: ${{ contains('pull_request,push', github.event_name) }}
-    needs: build-docker-ubuntu-22_04
+    needs: [ precheck-branch-changes, build-docker-ubuntu-22_04 ]
+    if: ${{ contains('pull_request,push', github.event_name) && needs.precheck-branch-changes.outputs.branch_changed == 'true' }}
     uses: ./.github/workflows/bundleTest-thor.yml
     with:
       os: ubuntu-22.04
@@ -149,8 +194,8 @@ jobs:
     secrets: inherit
 
   test-eclwatch-gh_runner-ubuntu-22_04:
-    if: ${{ contains('pull_request,push', github.event_name) }}
-    needs: build-docker-ubuntu-22_04
+    needs: [ precheck-branch-changes, build-docker-ubuntu-22_04 ]
+    if: ${{ contains('pull_request,push', github.event_name) && needs.precheck-branch-changes.outputs.branch_changed == 'true' }}
     uses: ./.github/workflows/test-eclwatch.yml
     with:
       os: ubuntu-22.04
@@ -158,7 +203,8 @@ jobs:
     secrets: inherit
 
   check-documentation-changes:
-    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: precheck-branch-changes
+    if: ${{ contains('pull_request,push', github.event_name) && needs.precheck-branch-changes.outputs.branch_changed == 'true' }}
     runs-on: ubuntu-22.04
     outputs:
       documentation_contents_changed: ${{ steps.variables.outputs.documentation_contents_changed }}
@@ -202,10 +248,21 @@ jobs:
     secrets: inherit
 
   build-docker-centos-7:
-    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: precheck-branch-changes
+    if: ${{ contains('pull_request,push', github.event_name) && needs.precheck-branch-changes.outputs.branch_changed == 'true' }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: centos-7
+    secrets: inherit
+
+  build-docker-wasm32-emscripten:
+    needs: precheck-branch-changes
+    if: ${{ contains('pull_request,push', github.event_name) && needs.precheck-branch-changes.outputs.branch_changed == 'true' }}
+    uses: ./.github/workflows/build-docker.yml
+    with:
+      os: wasm32-emscripten
+      cmake-configuration-ex: '-DEMSCRIPTEN=ON'
+      build-type: 'MinSizeRel'
     secrets: inherit
 
   build-gh_runner-ubuntu-22_04:
@@ -216,7 +273,8 @@ jobs:
     secrets: inherit
 
   build-gh_runner-windows-2022:
-    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: precheck-branch-changes
+    if: ${{ contains('pull_request,push', github.event_name) && needs.precheck-branch-changes.outputs.branch_changed == 'true' }}
     uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: windows-2022
@@ -232,7 +290,8 @@ jobs:
     secrets: inherit
 
   build-gh_runner-macos-14-x86_64:
-    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: precheck-branch-changes
+    if: ${{ contains('pull_request,push', github.event_name) && needs.precheck-branch-changes.outputs.branch_changed == 'true' }}
     uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: macos-14
@@ -241,7 +300,8 @@ jobs:
     secrets: inherit
 
   build-gh_runner-macos-14-arm64:
-    if: ${{ contains('pull_request,push', github.event_name) }}
+    needs: precheck-branch-changes
+    if: ${{ contains('pull_request,push', github.event_name) && needs.precheck-branch-changes.outputs.branch_changed == 'true' }}
     uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: macos-14
