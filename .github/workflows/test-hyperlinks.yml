@@ -57,7 +57,75 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  precheck-branch-changes:
+    runs-on: ubuntu-latest
+    env:
+      EVENT_ACTION: ${{ github.event.action }}
+      GH_TOKEN: ${{ github.token }}
+    outputs:
+      branch_changed: ${{ steps.branch_changed.outputs.branch_changed }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fetch previous commit tip (for force-push / amend detection)
+        if: ${{ github.event.action == 'synchronize' }}
+        run: |
+          echo "Fetching old tip commit: ${{ github.event.before }}"
+          git fetch origin ${{ github.event.before }} --depth=1 || true
+      - name: Check if previous run failed
+        id: check_previous_run
+        if: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' }}
+        run: |
+          WORKFLOW_FILE="test-hyperlinks.yml"
+          PREV_RUN=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "/repos/${{ github.repository }}/actions/workflows/${WORKFLOW_FILE}/runs" \
+            --jq ".workflow_runs[] | select(.head_sha == \"${{ github.event.before }}\" and .event == \"pull_request\") | .conclusion" \
+            | head -n 1)
+          echo "Previous run conclusion: ${PREV_RUN:-none}"
+          if [[ "$PREV_RUN" == "failure" || "$PREV_RUN" == "cancelled" || "$PREV_RUN" == "timed_out" ]]; then
+            echo "Previous run failed or was cancelled. Will not skip."
+            echo "prev_failed=true" >> $GITHUB_OUTPUT
+          else
+            echo "prev_failed=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Compare Tree Hashes between Branches
+        id: branch_changed
+        run: |
+          echo "Comparing tree hashes between base and head branches..."
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            echo "Not a pull request event. Treating as changed."
+            echo "branch_changed=true" >> $GITHUB_OUTPUT
+          elif [[ "$EVENT_ACTION" == "opened" ]]; then
+            echo "This is a new pull request with no previous commit. Treating as changed."
+            echo "branch_changed=true" >> $GITHUB_OUTPUT
+          elif [[ "$EVENT_ACTION" == "synchronize" ]]; then
+            OLD_SHA=${{ github.event.before }}
+            NEW_SHA=${{ github.event.after }}
+            PREV_FAILED=${{ steps.check_previous_run.outputs.prev_failed }}
+            if git diff --quiet $OLD_SHA $NEW_SHA; then
+              if [[ "$PREV_FAILED" == "true" ]]; then
+                echo "No code changes detected, but previous run failed. Re-Running."
+                echo "branch_changed=true" >> $GITHUB_OUTPUT
+              else
+                echo "branch_changed=false" >> $GITHUB_OUTPUT
+                echo "No code changes detected (metadata only). Skipping build and tests."
+              fi
+            else
+              echo "branch_changed=true" >> $GITHUB_OUTPUT
+              echo "Branches have changes."
+            fi
+          else
+            echo "Unhandled event action: $EVENT_ACTION. Defaulting to changed."
+            echo "branch_changed=true" >> $GITHUB_OUTPUT
+          fi
+
   main:
+    needs: precheck-branch-changes
+    if: ${{ needs.precheck-branch-changes.outputs.branch_changed == 'true' }}
     runs-on: ubuntu-22.04
     steps: 
       - name: Checkout repository
