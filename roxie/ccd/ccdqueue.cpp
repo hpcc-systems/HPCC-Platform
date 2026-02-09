@@ -3109,6 +3109,8 @@ public:
 
 class LocalBlockedMessagePacker : public CInterfaceOf<IMessagePacker>
 {
+    static constexpr unsigned maxBulkBuffers = 8;
+
 protected:
     unsigned lastput = 0;
     MemoryBuffer meta;
@@ -3125,7 +3127,7 @@ protected:
     DataBuffer *currentBuffer = nullptr;
     ArrayOf<roxiemem::OwnedDataBuffer> buffers;
     unsigned totalDataLen = 0;
-    DataBuffer *bulkBuffers[16];  // Cache for bulk-allocated buffers
+    DataBuffer *bulkBuffers[maxBulkBuffers];  // Cache for bulk-allocated buffers
     unsigned bulkBufferCount = 0;
     unsigned bulkBufferIndex = 0;
 
@@ -3138,15 +3140,10 @@ protected:
         }
         else
         {
-            // Try to allocate a new bulk pool - allocateBlock returns as many as available (1-8)
-            bulkBufferCount = bufferManager->allocateBlock(8, bulkBuffers);
-            if (bulkBufferCount > 0)
-            {
-                bulkBufferIndex = 0;
-                return bulkBuffers[bulkBufferIndex++];
-            }
-            // Fall back to single allocation if bulk allocation failed
-            return bufferManager->allocate();
+            // Allocate a new bulk pool - allocateBlock always returns at least 1
+            bulkBufferCount = bufferManager->allocateBlock(maxBulkBuffers, bulkBuffers);
+            bulkBufferIndex = 0;
+            return bulkBuffers[bulkBufferIndex++];
         }
     }
 
