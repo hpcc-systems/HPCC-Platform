@@ -6686,150 +6686,161 @@ public:
 
     unsigned allocateBlock(unsigned numBuffers, DataBuffer ** buffers) override
     {
-        assertex(numBuffers > 0 && numBuffers <= maxBlockedBuffers);
-
-        CriticalBlock block(crit);
-
         if (memTraceLevel >= 5)
             DBGLOG("RoxieMemMgr: CDataBufferManager::allocateBlock() allocating %u buffers", numBuffers);
 
-        // Handle freePending flag
-        if (freePending.load(std::memory_order_acquire))
-        {
-            freePending.store(false, std::memory_order_release);
-            freeUnused();
-        }
-
         unsigned allocated = 0;
+        unsigned allocatedFromFreeChain = 0;  // Track how many came from free chain (already constructed)
 
-        // Try to allocate from current block (free chain + contiguous space)
-        if (curBlock)
         {
-            // First try from current block's free chain
-            while (allocated < numBuffers)
-            {
-                memsize_t curHeadId = curBlock->freeHeadId;
-                if (isNullDataId(curHeadId))
-                    break;
+            CriticalBlock block(crit);
 
-                for (;;)
+            // Handle freePending flag
+            if (freePending.load(std::memory_order_acquire))
+            {
+                freePending.store(false, std::memory_order_release);
+                freeUnused();
+            }
+
+            // Try to allocate from current block
+            if (curBlock)
+            {
+                // First try from current block's free chain
+                while (allocated < numBuffers)
                 {
-                    DataBuffer * curFree = getPtrFromDataId(curHeadId);
-                    DataBuffer * nextFree = getPtrFromDataId(curFree->nextDataId);
-                    memsize_t nextHeadId = createDataId(nextFree, nextSeqFromDataId(curHeadId));
-                    if (likely(curBlock->freeHeadId.compare_exchange_weak(curHeadId, nextHeadId, std::memory_order_acq_rel)))
-                    {
-                        curBlock->Link();
-                        dataBuffersActive.fetch_add(1);
-                        curFree->nextDataId = 0;
-                        curFree->changeState(DBState::freed, DBState::unowned, __func__);
-                        buffers[allocated++] = ::new(curFree) DataBuffer();
+                    memsize_t curHeadId = curBlock->freeHeadId;
+                    if (isNullDataId(curHeadId))
                         break;
+
+                    for (;;)
+                    {
+                        DataBuffer * curFree = getPtrFromDataId(curHeadId);
+                        DataBuffer * nextFree = getPtrFromDataId(curFree->nextDataId);
+                        memsize_t nextHeadId = createDataId(nextFree, nextSeqFromDataId(curHeadId));
+                        if (likely(curBlock->freeHeadId.compare_exchange_weak(curHeadId, nextHeadId, std::memory_order_acq_rel)))
+                        {
+                            curBlock->Link();
+                            buffers[allocated++] = curFree;
+                            break;
+                        }
                     }
                 }
-            }
+                allocatedFromFreeChain = allocated;
+                if (allocated > 0)
+                    dataBuffersActive.fetch_add(allocated);
 
-            // Then try from current block's contiguous space
-            while (allocated < numBuffers && nextOffset < HEAP_ALIGNMENT_SIZE)
-            {
-                curBlock->Link();
-                char * addr = nextBase + nextOffset;
-                nextOffset += DATA_ALIGNMENT_SIZE;
-                dataBuffersActive.fetch_add(1);
-                buffers[allocated++] = ::new(addr) DataBuffer();
-            }
-        }
-
-        // If we allocated any from current block, return early
-        if (allocated > 0)
-        {
-            if (memTraceLevel >= 4)
-                DBGLOG("RoxieMemMgr: CDataBufferManager::allocateBlock() allocated %u buffers from current block", allocated);
-            return allocated;
-        }
-
-        // Current block exhausted - try other blocks' free chains
-        DataBufferBottom *finger = freeChain;
-        if (finger)
-        {
-            for (;;)
-            {
-                memsize_t curHeadId = finger->freeHeadId;
-                if (!isNullDataId(curHeadId))
+                // Then try from current block's contiguous space
+                while (allocated < numBuffers && nextOffset < HEAP_ALIGNMENT_SIZE)
                 {
-                    if (finger->isAliveAndLink())
+                    curBlock->Link();
+                    buffers[allocated++] = (DataBuffer*)(nextBase + nextOffset);
+                    nextOffset += DATA_ALIGNMENT_SIZE;
+                }
+                if (allocated > allocatedFromFreeChain)
+                    dataBuffersActive.fetch_add(allocated - allocatedFromFreeChain);
+            }
+
+            // If didn't allocate from current block - try other blocks or allocate new page
+            if (allocated == 0)
+            {
+                // Try other blocks' free chains
+                DataBufferBottom *finger = freeChain;
+                if (finger)
+                {
+                    for (;;)
                     {
-                        // Set this as current block and allocate from it
-                        if (curBlock)
-                            curBlock->Release();
-                        curBlock = finger;
-                        nextBase = nullptr;
-                        nextOffset = HEAP_ALIGNMENT_SIZE;
-
-                        // Allocate as many as we can from this block's free chain
-                        while (allocated < numBuffers)
+                        memsize_t curHeadId = finger->freeHeadId;
+                        if (!isNullDataId(curHeadId))
                         {
-                            curHeadId = curBlock->freeHeadId;
-                            if (isNullDataId(curHeadId))
-                                break;
-
-                            for (;;)
+                            if (finger->isAliveAndLink())
                             {
-                                DataBuffer * curFree = getPtrFromDataId(curHeadId);
-                                assertex(curFree);
-                                DataBuffer * nextFree = getPtrFromDataId(curFree->nextDataId);
-                                memsize_t nextHeadId = createDataId(nextFree, nextSeqFromDataId(curHeadId));
-                                if (likely(curBlock->freeHeadId.compare_exchange_weak(curHeadId, nextHeadId, std::memory_order_acq_rel)))
+                                // Set this as current block and allocate from it
+                                if (curBlock)
+                                    curBlock->Release();
+                                curBlock = finger;
+                                nextBase = nullptr;
+                                nextOffset = HEAP_ALIGNMENT_SIZE;
+
+                                // Allocate as many as we can from this block's free chain
+                                while (allocated < numBuffers)
                                 {
-                                    curBlock->Link();
-                                    dataBuffersActive.fetch_add(1);
-                                    curFree->count.store(1, std::memory_order_relaxed);
-                                    curFree->nextDataId = 0;
-                                    curFree->mgr = nullptr;
-                                    curFree->msgNext = nullptr;
-                                    curFree->changeState(DBState::freed, DBState::unowned, __func__);
-                                    buffers[allocated++] = curFree;
-                                    break;
+                                    curHeadId = curBlock->freeHeadId;
+                                    if (isNullDataId(curHeadId))
+                                        break;
+
+                                    for (;;)
+                                    {
+                                        DataBuffer * curFree = getPtrFromDataId(curHeadId);
+                                        assertex(curFree);
+                                        DataBuffer * nextFree = getPtrFromDataId(curFree->nextDataId);
+                                        memsize_t nextHeadId = createDataId(nextFree, nextSeqFromDataId(curHeadId));
+                                        if (likely(curBlock->freeHeadId.compare_exchange_weak(curHeadId, nextHeadId, std::memory_order_acq_rel)))
+                                        {
+                                            curBlock->Link();
+                                            buffers[allocated++] = curFree;
+                                            break;
+                                        }
+                                    }
                                 }
+                                allocatedFromFreeChain = allocated;
+                                dataBuffersActive.fetch_add(allocated);
+                                assertex(allocated > 0); // Must have allocated at least one
+                                break;
                             }
                         }
-                        assertex(allocated > 0); // Must have allocated at least one
-                        if (memTraceLevel >= 4)
-                            DBGLOG("RoxieMemMgr: CDataBufferManager::allocateBlock() allocated %u buffers from free block", allocated);
-                        return allocated;
+                        finger = finger->nextBottom;
+                        if (finger == freeChain)
+                            break;
                     }
                 }
-                finger = finger->nextBottom;
-                if (finger == freeChain)
-                    break;
+
+                // No free buffers - allocate a new page
+                if (allocated == 0)
+                {
+                    if (curBlock)
+                        curBlock->Release();
+                    nextBase = (char *)suballoc_aligned(1, false);
+                    nextOffset = DATA_ALIGNMENT_SIZE;
+                    curBlock = (DataBufferBottom *)nextBase;
+                    dataBufferPages.fetch_add(1);
+                    assertex(curBlock);
+                    if (memTraceLevel >= 3)
+                        DBGLOG("RoxieMemMgr: CDataBufferManager::allocateBlock() allocated new DataBuffers Page - addr=%p", curBlock);
+                    freeChain = ::new(curBlock) DataBufferBottom(this, freeChain);
+
+                    // Allocate from the new page
+                    while (allocated < numBuffers && nextOffset < HEAP_ALIGNMENT_SIZE)
+                    {
+                        curBlock->Link();
+                        buffers[allocated++] = (DataBuffer*)(nextBase + nextOffset);
+                        nextOffset += DATA_ALIGNMENT_SIZE;
+                    }
+                    dataBuffersActive.fetch_add(allocated);
+                    assertex(allocated > 0);
+                }
             }
         }
 
-        // No free buffers - allocate a new page
-        if (curBlock)
-            curBlock->Release();
-        nextBase = (char *)suballoc_aligned(1, false);
-        nextOffset = DATA_ALIGNMENT_SIZE;
-        curBlock = (DataBufferBottom *)nextBase;
-        dataBufferPages.fetch_add(1);
-        assertex(curBlock);
-        if (memTraceLevel >= 3)
-            DBGLOG("RoxieMemMgr: CDataBufferManager::allocateBlock() allocated new DataBuffers Page - addr=%p", curBlock);
-        freeChain = ::new(curBlock) DataBufferBottom(this, freeChain);
-
-        // Allocate from the new page
-        while (allocated < numBuffers && nextOffset < HEAP_ALIGNMENT_SIZE)
+        // Initialize buffers outside the lock
+        // Buffers [0..allocatedFromFreeChain) are from free chain - already constructed, just reset state
+        for (unsigned i = 0; i < allocatedFromFreeChain; i++)
         {
-            curBlock->Link();
-            char * addr = nextBase + nextOffset;
-            nextOffset += DATA_ALIGNMENT_SIZE;
-            dataBuffersActive.fetch_add(1);
-            buffers[allocated++] = ::new(addr) DataBuffer();
+            DataBuffer * buf = buffers[i];
+            // Free chain buffers are already constructed DataBuffer objects being reused
+            // The released() method already ensured nextDataId is in chain, now reset for reuse
+            buf->count.store(1, std::memory_order_relaxed);
+            buf->nextDataId = 0;
+            buf->mgr = nullptr;
+            buf->msgNext = nullptr;
+            buf->changeState(DBState::freed, DBState::unowned, __func__);
         }
 
-        assertex(allocated > 0);
+        // Buffers [allocatedFromFreeChain..allocated) are from contiguous space - need construction
+        for (unsigned i = allocatedFromFreeChain; i < allocated; i++)
+            buffers[i] = ::new(buffers[i]) DataBuffer();
+
         if (memTraceLevel >= 4)
-            DBGLOG("RoxieMemMgr: CDataBufferManager::allocateBlock() allocated %u buffers from new page", allocated);
+            DBGLOG("RoxieMemMgr: CDataBufferManager::allocateBlock() allocated %u buffers", allocated);
         return allocated;
     }
 

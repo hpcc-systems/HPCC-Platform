@@ -585,6 +585,71 @@ interface IDataBufferManager : extends IInterface
     virtual void poolStats(StringBuffer &memStats) = 0;
 };
 
+// Helper class for efficient bulk allocation of DataBuffers
+// Maintains a pool of pre-allocated buffers to reduce allocation overhead
+template<unsigned MAX_BUFFERS = 8>
+class DataBufferAllocator
+{
+private:
+    IDataBufferManager *manager;
+    DataBuffer *buffers[MAX_BUFFERS];
+    unsigned count = 0;
+    unsigned index = 0;
+
+public:
+    explicit DataBufferAllocator(IDataBufferManager *_manager)
+        : manager(_manager)
+    {
+    }
+
+    ~DataBufferAllocator()
+    {
+        // Release any unused buffers
+        while (index < count)
+        {
+            buffers[index++]->Release();
+        }
+    }
+
+    // Allocate a single buffer from the pool
+    DataBuffer *allocate()
+    {
+        if (index < count)
+        {
+            return buffers[index++];
+        }
+        else if (count == 0)
+        {
+            // First allocation - do bulk allocation
+            count = manager->allocateBlock(MAX_BUFFERS, buffers);
+            index = 0;
+            return buffers[index++];
+        }
+        else
+        {
+            // Pool exhausted, fall back to single allocation
+            return manager->allocate();
+        }
+    }
+
+    // Reset the allocator (releases all buffers and clears state)
+    void reset()
+    {
+        while (index < count)
+        {
+            buffers[index++]->Release();
+        }
+        count = 0;
+        index = 0;
+    }
+
+    // Check if any buffers remain in the pool
+    bool hasBuffers() const
+    {
+        return index < count;
+    }
+};
+
 extern roxiemem_decl IDataBufferManager *createDataBufferManager(size32_t size);
 extern roxiemem_decl void setMemoryStatsInterval(unsigned secs);
 extern roxiemem_decl void setTotalMemoryLimit(bool allowHugePages, bool allowTransparentHugePages, bool retainMemory, bool lockMemory, memsize_t max, memsize_t largeBlockSize, const unsigned * allocSizes, ILargeMemCallback * largeBlockCallback);
