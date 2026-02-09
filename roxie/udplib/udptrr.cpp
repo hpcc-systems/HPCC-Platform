@@ -1548,6 +1548,11 @@ class CUdpReceiveManager : implements IReceiveManager, public CInterface
                     MilliSleep(1000);
                 }
             }
+            // Release any remaining unused buffers in the pool
+            for (unsigned i = bulkBufferIndex; i < bulkBufferCount; i++)
+            {
+                ::Release(bulkBuffers[i]);
+            }
             ::Release(b);
             return 0;
         }

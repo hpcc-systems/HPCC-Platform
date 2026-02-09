@@ -6786,6 +6786,7 @@ public:
                                     curFree->count.store(1, std::memory_order_relaxed);
                                     curFree->nextDataId = 0;
                                     curFree->mgr = nullptr;
+                                    curFree->msgNext = nullptr;
                                     curFree->changeState(DBState::freed, DBState::unowned, __func__);
                                     buffers[allocated++] = curFree;
                                     break;

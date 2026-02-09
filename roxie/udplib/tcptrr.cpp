@@ -165,6 +165,14 @@ public:
         input_queue->interrupt();
         if (!collateDirectly)
             collatorThread.join();
+        // Release any remaining cached buffers
+        {
+            CriticalBlock b(bufferCacheLock);
+            for (unsigned i = bulkBufferIndex; i < bulkBufferCount; i++)
+            {
+                ::Release(bulkBuffers[i]);
+            }
+        }
         delete input_queue;
     }
 
