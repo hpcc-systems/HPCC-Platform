@@ -409,7 +409,7 @@ public:
 
     bool isRecording() const { return recordingEvents.load(std::memory_order_acquire); }    // Are events being recorded? false if recording is paused
 
-    bool startRecording(const char * optionsText, const char * filename, bool pause);
+    bool startRecording(const char * optionsText, const char * filename, const char * processName, unsigned channelId, unsigned replicaId, __uint64 instanceId, bool pause);
     bool stopRecording(EventRecordingSummary * optSummary);
     bool pauseRecording(bool pause, bool recordChange);
 
@@ -660,6 +660,6 @@ extern jlib_decl IEventIterator* createEventFileIterator(const char* path);
 // returned if all data was parsed successfully.
 extern jlib_decl bool readEvents(const char* filename, IEventVisitor & visitor);
 
-extern jlib_decl bool startComponentRecording(const char * component, const char * optionsText, const char * filename, bool pause);
+extern jlib_decl bool startComponentRecording(const char * component, const char * optionsText, const char * filename, unsigned channelId, unsigned replicaId, bool pause);
 
 #endif
