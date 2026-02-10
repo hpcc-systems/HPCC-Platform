@@ -857,6 +857,128 @@ thor: []
     </sect2>
   </sect1>
 
+  <sect1 id="DFSClientCerts" role="nobrk">
+    <title>Configuring DFS Client Certificates for Secure External Access</title>
+    <para>This section describes how to configure HPCC Systems<superscript>®</superscript> to require and validate client certificates for external DFS (dafilesrv) access, using Kubernetes, cert-manager, and mTLS.</para>
+
+    <sect2 id="DFSClientCerts-Overview">
+      <title>Overview</title>
+      <para>By default, dafilesrv pods in HPCC containerized deployments use internal certificates for pod-to-pod encryption. To allow secure access from external clients (e.g., remote ECL IDE, DFUPlus, or custom tools), you must configure dafilesrv to require and validate client certificates signed by a trusted Certificate Authority (CA).</para>
+    </sect2>
+
+    <sect2 id="DFSClientCerts-GenerateCA">
+      <title>Step 1: Create a Certificate Authority (CA)</title>
+      <para>Use <emphasis role="strong">cert-manager</emphasis> to create a CA in your Kubernetes cluster. For example:</para>
+      <programlisting>
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: dfs-ca-issuer
+spec:
+  selfSigned: {}
+      </programlisting>
+      <para>Then create a CA certificate:</para>
+      <programlisting>
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: dfs-ca-root
+spec:
+  isCA: true
+  commonName: dfs-ca-root
+  secretName: dfs-ca-root
+  issuerRef:
+    name: dfs-ca-issuer
+    kind: ClusterIssuer
+      </programlisting>
+    </sect2>
+
+    <sect2 id="DFSClientCerts-ServerCert">
+      <title>Step 2: Issue Server Certificates for dafilesrv</title>
+      <para>Issue a server certificate for dafilesrv using the CA. Example:</para>
+      <programlisting>
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: dafilesrv-server
+spec:
+  secretName: dafilesrv-server-tls
+  commonName: dafilesrv.hpcc.local
+  dnsNames:
+    - dafilesrv.hpcc.local
+  issuerRef:
+    name: dfs-ca-issuer
+    kind: ClusterIssuer
+      </programlisting>
+      <para>Reference this secret in your <emphasis role="strong">values.yaml</emphasis> under the <emphasis>dafilesrv.tls</emphasis> section:</para>
+      <programlisting>
+dafilesrv:
+  tls:
+    enabled: true
+    secret: dafilesrv-server-tls
+    caCertSecret: dfs-ca-root
+      </programlisting>
+    </sect2>
+
+    <sect2 id="DFSClientCerts-ClientCerts">
+      <title>Step 3: Issue Client Certificates</title>
+      <para>Issue client certificates for each external user or tool. Example:</para>
+      <programlisting>
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: dfs-client-alice
+spec:
+  secretName: dfs-client-alice-tls
+  commonName: alice
+  issuerRef:
+    name: dfs-ca-issuer
+    kind: ClusterIssuer
+      </programlisting>
+      <para>Export the client certificate and key from the secret for use by the external client.</para>
+    </sect2>
+
+    <sect2 id="DFSClientCerts-ClientConfig">
+      <title>Step 4: Configure External Clients</title>
+      <para>Configure your external client (e.g., dfuplus, ECL IDE, or custom application) to use the client certificate and key, and to trust the CA certificate. For example, with <emphasis>dfuplus</emphasis>:</para>
+      <programlisting>
+dfuplus ...
+  -tlsclientcert=alice.crt \
+  -tlsclientkey=alice.key \
+  -tlscacert=ca.crt ...
+      </programlisting>
+      <para>Ensure the dafilesrv endpoint is reachable and matches the certificate DNS name.</para>
+    </sect2>
+
+    <sect2 id="DFSClientCerts-HelmValues">
+      <title>Step 5: Helm Chart Configuration</title>
+      <para>In your <emphasis role="strong">values.yaml</emphasis> overlay, enable mTLS and specify the CA and server certificate secrets:</para>
+      <programlisting>
+dafilesrv:
+  tls:
+    enabled: true
+    requireClientCert: true
+    secret: dafilesrv-server-tls
+    caCertSecret: dfs-ca-root
+      </programlisting>
+      <para>Apply your configuration with:</para>
+      <programlisting>
+helm upgrade mycluster hpcc/hpcc -f myvalues.yaml
+      </programlisting>
+    </sect2>
+
+    <sect2 id="DFSClientCerts-Troubleshooting">
+      <title>Troubleshooting</title>
+      <para>If external clients cannot connect:</para>
+      <itemizedlist>
+        <listitem><para>Check that the client certificate is signed by the correct CA.</para></listitem>
+        <listitem><para>Verify the dafilesrv pod logs for TLS handshake errors.</para></listitem>
+        <listitem><para>Ensure the client is presenting its certificate and the CA is trusted by dafilesrv.</para></listitem>
+        <listitem><para>Confirm the DNS name used matches the certificate.</para></listitem>
+      </itemizedlist>
+    </sect2>
+  </sect1>
+
   <sect1 id="CostTracking1">
     <title>Container Cost Tracking</title>
 
