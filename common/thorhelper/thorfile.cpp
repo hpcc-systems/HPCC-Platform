@@ -412,7 +412,7 @@ void getIndexCompressionType(StringBuffer & compression, IHThorIndexWriteArg * h
     else if (!isEmptyString(globalDefaultCompression))
         value = globalDefaultCompression;
     else
-        value = "legacy";
+        value = "hybrid";
 
     // Return the effective compression type - this matches the logic in CKeyBuilder
     compression.set(value);
