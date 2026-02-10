@@ -161,7 +161,9 @@ protected:
     {
         constexpr const char* usageStr = R"!!!(
 Parameters:
-    <filename>                Full path to an event data file.
+    <filename>                Full path to an event data file. One is required.
+                              Multiple are accepted, with the effect of merge-
+                              sorting the events from each by timestamp.
 )!!!";
         size32_t usageStrLength = size32_t(strlen(usageStr));
         out.put(usageStrLength, usageStr);

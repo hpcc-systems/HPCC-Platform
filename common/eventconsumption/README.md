@@ -318,8 +318,6 @@ The number of nanoseconds required to expand the node one time. For nodes also r
 
 If algorithm estimation is enabled, the value is replaced. If the node will not be referenced by model input events, the value can be any positive integral value. Otherwise, the value must match the first non-zero `InMemorySize` value observed in an input event. Node sizes are not expected to change between observations, and the model does not account for unexpected changes. Once a node is in the cache with size `X`, it must always have size `X`.
 
-
-
 ### CMetaInfoState::CCollector
 
 `CMetaInfoState` provides a runtime repository of event-defined state information, including values from the `FileInformation` and `QueryStart` events. As a concrete implementation of `IEventVisitationLink`, `CCollector` is a companion class that extracts event data for the repository.
@@ -515,3 +513,25 @@ The only base functionality used by this class is the meta state link. The model
 ## StubOp
 
 A concrete implementation of `CEventConsumingOp` that does nothing. It exists as a placeholder in unit tests that directly instantiate visitation links that require an operation. Attempting to use the operation is an error that throws an exception.
+
+# IEventIterator
+
+Where `IEventVisitor` has events pushed to it, this interface allows its user to pull events from a source on demand. The `IEventReader` interface in `/system/jlib/jevent.hpp` describes an event pulling mechanism. This is an abstraction modeled on `IEventReader` for pulling events from arbitrary event sources.
+
+Iteration occurs using the `nextEvent` method. Other methods provide access to information provided by `IEventVisitor::visitFile` and `IEventVisitor::departFile`.
+
+Whereas standard library iteratorss tend to feature begin and end semantics, and jlib iterators use first and next, the event iterator relies solely on `nextEvent`. Event file consumers, of which the file iterator is one example, offer only a `nextEvent` option because they don't go back to previously read content. Iteration, then, can be implemented as
+
+```cpp
+    while (iter.nextEvent(event))
+        visitor.visitEvent(event);
+```
+Note that this snippet assumes the visitor will not attempt to abort event traversal by returning *false*. A check for *false* can easily be included if needed.
+
+## CEventMultiplexer
+
+Implementation of `IEventIterator` that uses other iterators as event sources, merging events from each source into a single output event stream in chronological order.
+
+Merging events from multiple sources is not intuitive, at least not when index events are included. The file ID associated with an index file path cannot be predicted. Assuming two event inputs that reference paths `foo` and `bar`, the file IDs associated with `foo` may not be the same in each input. In fact, the ID's for `foo` and `bar` could be swapped between inputs.
+
+To address this, within each input each distinct FileId attribute value is replaced with a unique number. In other words, within an input file every occurrence of FileId `N` is replaced with `M`, and across all inputs substitute value `M` is only used with one index file.
