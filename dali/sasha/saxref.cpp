@@ -482,6 +482,26 @@ public:
         return partNum==(dirPerPartNum-1);
     }
 
+    bool isSafeToDelete() const
+    {
+        // Only delete empty dir-per-part directories in containerized environments
+        if (!isContainerized())
+            return false;
+        if (!isDirPerPartCandidate())
+            return false;
+        // Only delete if no files and no subdirectories
+        return files.empty() && dirs.empty();
+    }
+
+    void remove(cDirDesc *dir)
+    {
+        StringBuffer dirName;
+        dir->getName(dirName);
+
+        CriticalBlock block(dirsCrit);
+        dirs.erase(dirName.str());
+    }
+
     cFileDesc *getFile(const char *filename)
     {
         CriticalBlock block(filesCrit);
@@ -1412,13 +1432,17 @@ public:
             file.setown(createIFile(rfn));
         Owned<IDirectoryIterator> iter;
         Owned<IException> e;
-        try {
+        try
+        {
             iter.setown(file->directoryFiles(NULL,false,true));
         }
-        catch (IException *_e) {
+        catch (IException *_e)
+        {
             e.setown(_e);
         }
-        if (e) {
+
+        if (e)
+        {
             StringBuffer tmp(LOGPFX "scanDirectory ");
             rfn.getRemotePath(tmp);
             EXCLOG(e,tmp.str());
@@ -1427,19 +1451,23 @@ public:
         StringBuffer fname;
         offset_t scopeSz = 0;
         StringArray dirs;
-        ForEach(*iter) {
+        ForEach(*iter)
+        {
             iter->getName(fname.clear());
             if (iswin)
                 fname.toLowerCase();
             addPathSepChar(path).append(fname);
             if (iter->isDir())
                 dirs.append(fname.str());
-            else {
+            else
+            {
                 CDateTime dt;
                 offset_t filesz = iter->getFileSize();
                 iter->getModifiedTime(dt);
-                if (!fileFiltered(path.str(),dt)) {
-                    try {
+                if (!fileFiltered(path.str(),dt))
+                {
+                    try
+                    {
                         unsigned numParts;    // num parts
                         unsigned partNum;     // part num
                         unsigned filenameLen; // length of file name excluding extension i.e. ._$P$_of_$N$
@@ -1521,7 +1549,8 @@ public:
 
                         processedFiles++;
                     }
-                    catch (IException *e) {
+                    catch (IException *e)
+                    {
                         StringBuffer filepath, errMsg;
                         addPathSepChar(rfn.getRemotePath(filepath)).append(fname);
                         error(filepath.str(), "scanDirectory Error adding file : %s", e->errorMessage(errMsg).str());
@@ -1532,7 +1561,8 @@ public:
             path.setLength(dsz);
         }
         iter.clear();
-        ForEachItemIn(i,dirs) {
+        ForEachItemIn(i,dirs)
+        {
             addPathSepChar(path).append(dirs.item(i));
             if (file.get()&&!resetRemoteFilename(file,path.str())) // sneaky way of avoiding cache
                 file.clear();
@@ -1541,7 +1571,15 @@ public:
             path.setLength(dsz);
         }
 
-        pdir->addNodeStats(node,drv,scopeSz);
+        if (parent && pdir->isSafeToDelete())
+        {
+            // This is safe to remove as each thread works on its own stripe directory which contains a unique set of dir-per-part directories
+            parent->remove(pdir);
+            // Skip adding node stats and incrementing processedDirs for deleted directories
+        }
+        else
+            pdir->addNodeStats(node,drv,scopeSz);
+
         processedDirs++;
 
         return true;
