@@ -102,7 +102,7 @@ void CIndexPlotOp::departFile(uint32_t bytesRead)
 bool CIndexPlotOp::hasInputPath() const
 {
     // Check if any input paths are available
-    return !inputPath.isEmpty();
+    return !inputPaths.empty();
 }
 
 void CIndexPlotOp::setOpConfig(const IPropertyTree& _config)
@@ -125,15 +125,15 @@ void CIndexPlotOp::setOpConfig(const IPropertyTree& _config)
         throw makeStringException(0, "Invalid or missing command name, expected 'index.plot'");
 
     // Accept input path (conditional)
-    const char* path = command->queryProp("@input");
-    if (!isEmptyString(path))
+    Owned<IPropertyTreeIterator> inputIter = command->getElements("input");
+    ForEach(*inputIter)
     {
-        if (!hasInputPath())
-            inputPath.set(path);
-        else if (!strieq(path, inputPath.get()))
-            throw makeStringExceptionV(0, "Conflicting input paths: '%s' and '%s'", path, inputPath.get());
+        IPropertyTree& inputSpec = inputIter->query();
+        const char* path = inputSpec.queryProp(".");
+        setInputPath(path);
     }
-
+    const char* path = command->queryProp("@input"); // backward compatibility
+    setInputPath(path);
     // Parse link configurations (required)
     Owned<IPropertyTreeIterator> linkIter = command->getElements("link");
     ForEach(*linkIter)
@@ -381,7 +381,7 @@ bool CIndexPlotOp::doXAxis(LinkChanges& linkChanges, size_t yAxisIdx)
 
             // visit the input events to produce one plot value
             cellValue = 0;
-            if (!traverseEvents(inputPath, *chain))
+            if (!traverseEvents(*chain))
                 return false;
             cellData.append(cellValue);
         }

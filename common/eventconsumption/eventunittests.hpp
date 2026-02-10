@@ -45,9 +45,9 @@ private:
 
 // Extracts `input`, `expect`, and `link` property tree sections from `testData`, passing them to
 // `testEventVisitationLinks(input, expect, links)` for processing. The markup may be XML, JSON,
-// or 'YAML' format.
-extern void testEventVisitationLinks(const char* testData, bool strictParsing);
-inline void testEventVisitationLinks(const char* testData) { testEventVisitationLinks(testData, true); }
+// or YAML format.
+extern void testEventVisitationLinks(const char* testData, unsigned flags);
+inline void testEventVisitationLinks(const char* testData) { testEventVisitationLinks(testData, PTEFnone); }
 
 // Uses a `CEventVisitationLinkTester` instance to iterate over the `input` events, verifying that
 // the events received by the tester match the `expected` events after modification by visitation
@@ -55,9 +55,7 @@ inline void testEventVisitationLinks(const char* testData) { testEventVisitation
 //
 // Multiple links may be configured. Within the iteration, the first link is closest to the tester
 // and the last link receives the input events.
-//
-// At this time, only model links are supported. Filters may be supported by a future update.
-extern void testEventVisitationLinks(const IPropertyTree& input, const IPropertyTree& expect, IPropertyTreeIterator& links, bool strictParsing);
+extern void testEventVisitationLinks(const IPropertyTree& input, const IPropertyTree& expect, IPropertyTreeIterator& links, unsigned flags);
 
 extern IPropertyTree* createTestConfiguration(const char* configText);
 

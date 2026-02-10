@@ -27,12 +27,13 @@ CEventConsumingOp::CEventConsumingOp()
 
 bool CEventConsumingOp::ready() const
 {
-    return !inputPath.isEmpty() && out.get();
+    return !inputPaths.empty() && out.get();
 }
 
 void CEventConsumingOp::setInputPath(const char* path)
 {
-    inputPath.set(path);
+    if (!isEmptyString(path))
+        inputPaths.insert(path);
 }
 
 void CEventConsumingOp::setOutput(IBufferedSerialOutputStream& _out)
@@ -65,25 +66,44 @@ IEventFilter* CEventConsumingOp::ensureFilter()
     return filter;
 }
 
-bool CEventConsumingOp::traverseEvents(const char* path, IEventVisitor& visitor)
+bool CEventConsumingOp::traverseEvents(IEventVisitor& visitor)
 {
-    IEventVisitor* actual = &visitor;
+    IEventVisitor* visitationHead = &visitor;
     if (filter)
     {
-        filter->setNextLink(*actual);
-        actual = filter;
+        filter->setNextLink(*visitationHead);
+        visitationHead = filter;
     }
     if (model)
     {
-        model->setNextLink(*actual);
-        actual = model;
+        model->setNextLink(*visitationHead);
+        visitationHead = model;
     }
-    Owned<IEventVisitationLink> metaCollector = metaState->getCollector();
-    metaCollector->setNextLink(*actual);
 
-    Owned<IEventIterator> source = createEventFileIterator(path);
-    if (!source)
-        return false;
-    visitIterableEvents(*source, *metaCollector);
+    Owned<IEventIterator> source;
+    Owned<IEventVisitationLink> metaCollector;
+    if (inputPaths.size() > 1)
+    {
+        Owned<IEventMultiplexer> multiplexer = createEventMultiplexer(*metaState);
+        source.set(multiplexer.get());
+        for (const std::string& path : inputPaths)
+        {
+            Owned<IEventIterator> input = createEventFileIterator(path.c_str());
+            if (!input)
+                throw makeStringExceptionV(0, "Failed to open event file: %s", path.c_str());
+            multiplexer->addSource(*input);
+        }
+    }
+    else
+    {
+        source.setown(createEventFileIterator(inputPaths.begin()->c_str()));
+        if (!source)
+            throw makeStringExceptionV(0, "Failed to open event file: %s", inputPaths.begin()->c_str());
+        metaCollector.setown(metaState->getCollector());
+        metaCollector->setNextLink(*visitationHead);
+        visitationHead = metaCollector;
+    }
+
+    visitIterableEvents(*source, *visitationHead);
     return true;
 }

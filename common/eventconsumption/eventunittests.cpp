@@ -139,7 +139,7 @@ IPropertyTree* createTestConfiguration(const char* testData)
     return tree.getClear();
 }
 
-void testEventVisitationLinks(const char* testData, bool strictParsing)
+void testEventVisitationLinks(const char* testData, unsigned flags)
 {
     START_TEST
     Owned<IPropertyTree> testTree = createTestConfiguration(testData);
@@ -148,19 +148,40 @@ void testEventVisitationLinks(const char* testData, bool strictParsing)
     IPropertyTree* expectTree = testTree->queryBranch("expect");
     CPPUNIT_ASSERT_MESSAGE("missing expected results section", expectTree != nullptr);
     Owned<IPropertyTreeIterator> links = testTree->getElements("link");
-    testEventVisitationLinks(*inputTree, *expectTree, *links, strictParsing);
+    testEventVisitationLinks(*inputTree, *expectTree, *links, flags);
     END_TEST
 }
 
-void testEventVisitationLinks(const IPropertyTree& inputTree, const IPropertyTree& expectTree, IPropertyTreeIterator& visitationLinks, bool strictParsing)
+void testEventVisitationLinks(const IPropertyTree& inputTree, const IPropertyTree& expectTree, IPropertyTreeIterator& visitationLinks, unsigned flags)
 {
     class TestOp : public CEventConsumingOp
     {
     public: // CEventConsumingOp
         virtual bool doOp() override
         {
-            Owned<IEventIterator> input = new CPropertyTreeEvents(inputTree, strictParsing);
-            Owned<IEventIterator> expect = new CPropertyTreeEvents(expectTree, strictParsing);
+            Owned<IEventIterator> input;
+            Owned<IPropertyTreeIterator> sourcesIter = inputTree.getElements("source");
+            std::vector<Owned<IEventIterator>> sources;
+            ForEach(*sourcesIter)
+                sources.emplace_back(createPropertyTreeEvents(sourcesIter->query(), flags));
+            switch (sources.size())
+            {
+            case 0: // implied single source using inputTree
+                input.setown(createPropertyTreeEvents(inputTree, flags));
+                break;
+            case 1:
+                input.setown(sources[0].getClear());
+                break;
+            default:
+                {
+                    Owned<IEventMultiplexer> multiplexer = createEventMultiplexer(*metaState);
+                    for (auto& s : sources)
+                        multiplexer->addSource(*s.getClear());
+                    input.setown(multiplexer.getClear());
+                }
+                break;
+            }
+            Owned<IEventIterator> expect = createPropertyTreeEvents(expectTree, flags);
             Owned<IEventVisitor> visitor = new CEventVisitationLinkTester(*expect);
             Owned<IEventVisitor> currentVisitor = LINK(visitor);
 
@@ -193,11 +214,11 @@ void testEventVisitationLinks(const IPropertyTree& inputTree, const IPropertyTre
         }
 
     public:
-        TestOp(const IPropertyTree& _inputTree, const IPropertyTree& _expectTree, IPropertyTreeIterator& _visitationLinks, bool _strictParsing)
+        TestOp(const IPropertyTree& _inputTree, const IPropertyTree& _expectTree, IPropertyTreeIterator& _visitationLinks, unsigned _flags)
             : inputTree(_inputTree)
             , expectTree(_expectTree)
             , visitationLinks(_visitationLinks)
-            , strictParsing(_strictParsing)
+            , flags(_flags)
         {
         }
 
@@ -205,11 +226,11 @@ void testEventVisitationLinks(const IPropertyTree& inputTree, const IPropertyTre
         const IPropertyTree& inputTree;
         const IPropertyTree& expectTree;
         IPropertyTreeIterator& visitationLinks;
-        bool strictParsing;
+        unsigned flags;
     };
 
     START_TEST
-    TestOp op(inputTree, expectTree, visitationLinks, strictParsing);
+    TestOp op(inputTree, expectTree, visitationLinks, flags);
     CPPUNIT_ASSERT_MESSAGE("failed to process visitation links", op.doOp());
     END_TEST
 }
