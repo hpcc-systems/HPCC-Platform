@@ -82,7 +82,7 @@ export const TitlebarConfig: React.FunctionComponent<TitlebarConfigProps> = ({
         reset(values);
     }, [environmentTitle, reset, showEnvironmentTitle, theme.palette.themeLight, titlebarColor]);
 
-    return <MessageBox show={showForm} setShow={closeForm} blocking={true} modeless={false} title={nlsHPCC.SetToolbarColor} minWidth={400}
+    return <MessageBox show={showForm} setShow={closeForm} title={nlsHPCC.SetToolbarColor} minWidth={400}
         footer={<>
             <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
             <PrimaryButton text={nlsHPCC.OK} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
