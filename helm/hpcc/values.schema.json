@@ -3315,20 +3315,15 @@
             "description": "Number of days to keep messages before deletion",
             "default": 30
           },
-          "hideAfterDays": {
-            "type": "integer",
-            "description": "Number of days after which messages are automatically hidden",
-            "default": 7
-          },
           "archiveAfterDays": {
             "type": "integer",
             "description": "Number of days after which messages are archived",
             "default": 14
           },
-          "archivePath": {
+          "archivePlane": {
             "type": "string",
-            "description": "Directory path for archived messages",
-            "default": "/var/lib/HPCCSystems/globalmessages"
+            "description": "Storage plane name for archived messages (subdirectory will be created within the plane)",
+            "default": "sasha"
           },
           "enableArchiving": {
             "type": "boolean",
@@ -3339,11 +3334,6 @@
             "type": "boolean",
             "description": "Whether to automatically delete old messages",
             "default": false
-          },
-          "enableHideOldMessages": {
-            "type": "boolean",
-            "description": "Whether to automatically hide old messages",
-            "default": true
           }
         },
         "additionalProperties": false
