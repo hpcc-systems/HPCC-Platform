@@ -2803,27 +2803,33 @@ static void loadDefaultBases()
         return;
     ldbDone = true;
 
-    SessionId mysessid = myProcessSession();
-    Owned<IPropertyTree> dirs;
-    // If connected to dali, then use the configuration from there, otherwise fall back to using the local config file)
-    if (mysessid)
+    // If this code is override the default directories is used on a containerized build it will fail - because
+    // it will try and resolve a storage plane called "dummy", which will not exist.
+    // The concept of a directory for a storage plane of unknown type should be removed - for future refactoring HPCC-35813
+    if (!isContainerized())
     {
-        Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software/Directories", mysessid, RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
-        if (conn)
-            dirs.set(conn->queryRoot());
-    }
+        SessionId mysessid = myProcessSession();
+        Owned<IPropertyTree> dirs;
+        // If connected to dali, then use the configuration from there, otherwise fall back to using the local config file)
+        if (mysessid)
+        {
+            Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software/Directories", mysessid, RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
+            if (conn)
+                dirs.set(conn->queryRoot());
+        }
 
-    const char *component = "unknown";
-    for (unsigned replicateLevel = 0; replicateLevel < MAX_REPLICATION_LEVELS; replicateLevel++)
-    {
-        StringBuffer dirout;
-        const char *dirType = dirTypeNames[replicateLevel];
-        if (replicateLevel == 1)
-            dirType = "mirror";
-        if (getConfigurationDirectory(dirs, dirType, component,
-            "dummy",   // NB this is dummy value (but actually hopefully not used anyway)
-            dirout))
-            unixBaseDirectories[replicateLevel].set(dirout.str());
+        const char *component = "unknown";
+        for (unsigned replicateLevel = 0; replicateLevel < MAX_REPLICATION_LEVELS; replicateLevel++)
+        {
+            StringBuffer dirout;
+            const char *dirType = dirTypeNames[replicateLevel];
+            if (replicateLevel == 1)
+                dirType = "mirror";
+            if (getConfigurationDirectory(dirs, dirType, component,
+                "dummy",   // NB this is dummy value (but actually hopefully not used anyway)
+                dirout))
+                unixBaseDirectories[replicateLevel].set(dirout.str());
+        }
     }
 
     for (unsigned replicateLevel = 0; replicateLevel < MAX_REPLICATION_LEVELS; replicateLevel++)
@@ -3692,13 +3698,10 @@ void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned defa
     }
     if (!storageApiType && !plane->hasProp("@mirrorPrefix") && (defaultCopies == 2))
     {
-        if ((groupType == grp_thor) || (groupType == grp_roxie))
-        {
-            //Creating a storage plane from a group - do not use getStoragePlaneByName()
-            StringBuffer dir;
-            getConfigurationDirectory(dir, groupType, 1, planeName);
-            plane->setProp("@mirrorPrefix", dir);
-        }
+        // Creating a storage plane from a group - do not use getStoragePlaneByName()
+        StringBuffer dir;
+        getConfigurationDirectory(dir, groupType, 1, planeName);
+        plane->setProp("@mirrorPrefix", dir);
     }
 
     if (!plane->hasProp("@category"))
