@@ -548,6 +548,9 @@ int init_main(int argc, const char* argv[])
         openEspLogFile(envpt.get(), procpt.get());
 
         DBGLOG("Esp starting %s", hpccBuildInfo.buildTag);
+#ifndef _USE_OPENSSL
+        UWARNLOG("OpenSSL not in use. ESP Session ID generation is less secure. To use OpenSSL, build ESP with OpenSSL support.");
+#endif
 
         StringBuffer componentfilesDir;
         if(procpt->hasProp("@componentfilesDir"))
