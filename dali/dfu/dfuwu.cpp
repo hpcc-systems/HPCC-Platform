@@ -647,8 +647,33 @@ public:
     }
     DFUstate getState() const
     {
+        DFUstate state = DFUstate_unknown;
+
         CriticalBlock block(parent->crit);
-        return decodeDFUstate(queryRoot()->queryProp("@state"));
+        state = queryDfuStateUnderLock();
+        switch (state)
+        {
+        case DFUstate_scheduled:
+        case DFUstate_queued:
+        case DFUstate_started:
+        case DFUstate_monitoring:
+        case DFUstate_aborting:
+        {
+            IPropertyTree *recovery = parent->root ? parent->root->queryPropTree("Recovery") : nullptr;
+            if (recovery)
+            {
+                SessionId sessionId = (SessionId)recovery->getPropInt64("@session", 0);
+                if ((sessionId > 0) && querySessionManager().sessionStopped(sessionId, 0))
+                {
+                    const_cast<CDFUprogress *>(this)->setStateWhileLocked(DFUstate_failed);
+                    state = DFUstate_failed;
+                }
+            }
+        }
+        break;
+        }
+
+        return state;
     }
     CDateTime &getTimeStarted(CDateTime &val) const
     {
@@ -723,53 +748,17 @@ public:
     void setState(DFUstate state)
     {
         CriticalBlock block(parent->crit);
-        CDateTime dt;
-        bool noted = queryRoot()->getPropBool("@noted", false);
-        bool subtask = isSubTaskWuid(parent->queryId());
-        switch (state) {
-        case DFUstate_started:
-            dt.setTimeStamp(getTimeStampNowValue());
-            setTimeStarted(dt);
-            break;
-        case DFUstate_aborting:
-            {
-                DFUstate oldstate = getState();
-                if ((oldstate==DFUstate_aborted)||(oldstate==DFUstate_failed)||(oldstate==DFUstate_finished))
-                    state = oldstate;
-            }
-            // fall through
-        case DFUstate_aborted:
-        case DFUstate_failed:
-        case DFUstate_finished:
-            if (parent->removeQueue()&&(state==DFUstate_aborting))
-                state = DFUstate_aborted;
-            dt.setTimeStamp(getTimeStampNowValue());
-            setTimeStopped(dt);
-            if (subtask && !noted)
-                queryRoot()->setPropBool("@noted", true);
-            break;
-        }
-        StringBuffer s;
-        encodeDFUstate(state,s);
-        queryRoot()->setProp("@state",s.str());
-
-        parent->commit();
-        if (subtask && !noted)
-            notePublisherSubTaskState(parent->queryId(), state);
+        setStateWhileLocked(state);
     }
     void setTimeStarted(const CDateTime &val)
     {
         CriticalBlock block(parent->crit);
-        StringBuffer str;
-        val.getString(str);
-        queryRoot()->setProp("@timestarted",str.str());
+        setTimeStartedWhileLocked(val);
     }
     void setTimeStopped(const CDateTime &val)
     {
         CriticalBlock block(parent->crit);
-        StringBuffer str;
-        val.getString(str);
-        queryRoot()->setProp("@timestopped",str.str());
+        setTimeStoppedWhileLocked(val);
     }
     void setTotalNodes(unsigned val)
     {
@@ -825,6 +814,69 @@ public:
         queryRoot()->setPropTree("TransferOptions", createPTreeFromIPT(options));
     }
 
+private:
+    DFUstate queryDfuStateUnderLock() const
+    {
+        return decodeDFUstate(queryRoot()->queryProp("@state"));
+    }
+
+    void setTimeStartedWhileLocked(const CDateTime &val)
+    {
+        StringBuffer str;
+        val.getString(str);
+        queryRoot()->setProp("@timestarted", str.str());
+    }
+
+    void setTimeStoppedWhileLocked(const CDateTime &val)
+    {
+        StringBuffer str;
+        val.getString(str);
+        queryRoot()->setProp("@timestopped", str.str());
+    }
+
+    void setStateWhileLocked(DFUstate state)
+    {
+        CDateTime dt;
+        bool noted = queryRoot()->getPropBool("@noted", false);
+        bool subtask = isSubTaskWuid(parent->queryId());
+        switch (state)
+        {
+        case DFUstate_started:
+            dt.setTimeStamp(getTimeStampNowValue());
+            setTimeStartedWhileLocked(dt);
+            break;
+        case DFUstate_aborting:
+        {
+            DFUstate oldstate = queryDfuStateUnderLock();
+            switch (oldstate)
+            {
+            case DFUstate_aborted:
+            case DFUstate_failed:
+            case DFUstate_finished:
+                state = oldstate;
+                break;
+            }
+        }
+            // fall through
+        case DFUstate_aborted:
+        case DFUstate_failed:
+        case DFUstate_finished:
+            if (parent->removeQueue() && (state == DFUstate_aborting))
+                state = DFUstate_aborted;
+            dt.setTimeStamp(getTimeStampNowValue());
+            setTimeStoppedWhileLocked(dt);
+            if (subtask && !noted)
+                queryRoot()->setPropBool("@noted", true);
+            break;
+        }
+        StringBuffer s;
+        encodeDFUstate(state, s);
+        queryRoot()->setProp("@state", s.str());
+
+        parent->commit();
+        if (subtask && !noted)
+            notePublisherSubTaskState(parent->queryId(), state);
+    }
 };
 
 class CDFUmonitor: public CLinkedDFUWUchild, implements IDFUmonitor
