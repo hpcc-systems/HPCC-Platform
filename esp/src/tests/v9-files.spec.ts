@@ -66,9 +66,10 @@ test.describe("V9 Files - Logical Files", () => {
 
         await filterMenuItem.click();
 
-        // Wait for the dialog to appear
-        await expect(page.getByRole("dialog")).toBeVisible();
+        // Wait for the dialog to appear - wait for the heading instead of the dialog role
+        // because the modal has pointerEvents: "none" on root which makes Playwright think it's hidden
         const filterDialog = page.getByRole("dialog").first();
+        await expect(filterDialog.getByRole("heading", { name: "Filter" })).toBeVisible();
 
         const logicalNameInput = filterDialog.locator("input[name=\"LogicalName\"]").or(
             filterDialog.getByLabel("Name")
