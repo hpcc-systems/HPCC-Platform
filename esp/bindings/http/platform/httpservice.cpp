@@ -2608,7 +2608,6 @@ static void generateNewSessionID(const char* peer, time_t createTime, StringBuff
     }
     else
     {
-        // Log critical error and use fallback
         unsigned long err = ERR_get_error();
         char errBuf[256];
         ERR_error_string_n(err, errBuf, sizeof(errBuf));
@@ -2617,7 +2616,6 @@ static void generateNewSessionID(const char* peer, time_t createTime, StringBuff
     if (!generatedSecureID)
     {
         // Fallback session ID generation uses original method
-        DBGLOG("Failed to generate secure random session ID, falling back to less secure method. Consider installing OpenSSL for improved security.");
         VStringBuffer baseStr("%s_%ld", peer, (int64_t)createTime);
         outSessionID.append(makeHashcToken(baseStr.str()));
     }
