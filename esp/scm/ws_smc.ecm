@@ -283,7 +283,7 @@ ESPresponse [exceptions_inline, min_ver("1.30")] GetBannerResponse
     string BannerSize;
     string BannerScroll;
     string ChatURL;
-    int BannerAction(0);
+    int ShowBanner(0);
     int ShowChatURL(0);
 };
 
