@@ -52,7 +52,6 @@ static unsigned makeHashcToken(const char* in)
     if (!in || !*in)
         return 0;
     
-    // Hash the full 128-bit session ID to a 32-bit token
     return hashc((const unsigned char*)in, strlen(in), fnvInitialHash32);
 }
 
@@ -60,37 +59,26 @@ static unsigned makeHashcToken(const char* in)
 // Uses SHA256 when OpenSSL is available, otherwise falls back to hashc
 static void generateExternalSessionID(const StringBuffer& sessionID, StringBuffer& externalID)
 {
+    externalID.clear();
     if (sessionID.isEmpty())
-    {
-        externalID.clear();
         return;
-    }
 
-    auto generateSHA256Hash = [](const StringBuffer& sessionID, StringBuffer& externalID)
-    {
-
-        int result = 0;
 #ifdef _USE_OPENSSL
-        // Use OpenSSL one-shot EVP_Digest() for SHA-256
-        unsigned char hashedValue[EVP_MAX_MD_SIZE];
-        unsigned int hashedLen = 0;
-        result = EVP_Digest(sessionID.str(), sessionID.length(), hashedValue, &hashedLen, EVP_sha256(), NULL);
-        if ( 1 == result)
-        {
-            for (unsigned int i = 0; i < hashedLen; ++i)
-                externalID.appendf("%02x", hashedValue[i]);
-        }
-#endif
-        return result;
-    };
-
-    if (generateSHA256Hash(sessionID, externalID) != 1)
+    // Use OpenSSL one-shot EVP_Digest() for SHA-256
+    unsigned char hashedValue[EVP_MAX_MD_SIZE];
+    unsigned int hashedLen = 0;
+    if (EVP_Digest(sessionID.str(), sessionID.length(), hashedValue, &hashedLen, EVP_sha256(), NULL) == 1)
     {
-        UWARNLOG("SHA256 (EVP) one-shot hashing failed or is not available for external session ID, using fallback");
+        for (unsigned int i = 0; i < hashedLen; ++i)
+            externalID.appendf("%02x", hashedValue[i]);
+    }
+#endif
+
+    if (externalID.isEmpty()) // Check if hashing was successful, if not use fallback
+    {
         unsigned hash = makeHashcToken(sessionID.str());
         externalID.appendf("%08x", hash);
     }
-
 }
 
 /***************************************************************************
@@ -2605,62 +2593,39 @@ bool CEspHttpServer::changeRedirectURL(EspAuthRequest& authReq)
     return false;
 }
 
+static void generateNewSessionID(const char* peer, time_t createTime, StringBuffer& outSessionID) {
+    outSessionID.clear();
+    bool generatedSecureID = false;
+
+#ifdef _USE_OPENSSL
+    unsigned char buffer[16];
+    if (RAND_bytes(buffer, sizeof(buffer)) == 1)
+    {
+        // Convert to hex string (32 characters)
+        for (size_t i = 0; i < sizeof(buffer); i++)
+            outSessionID.appendf("%02x", buffer[i]);
+        generatedSecureID = true;
+    }
+    else
+    {
+        // Log critical error and use fallback
+        unsigned long err = ERR_get_error();
+        char errBuf[256];
+        ERR_error_string_n(err, errBuf, sizeof(errBuf));
+    }
+#endif
+    if (!generatedSecureID)
+    {
+        // Fallback session ID generation uses original method
+        DBGLOG("Failed to generate secure random session ID, falling back to less secure method. Consider installing OpenSSL for improved security.");
+        VStringBuffer baseStr("%s_%ld", peer, (int64_t)createTime);
+        outSessionID.append(makeHashcToken(baseStr.str()));
+    }
+};
+
 const char* CEspHttpServer::createHTTPSession(IEspContext* ctx, EspHttpBinding* authBinding, const char* userID, const char* sessionStartURL, StringBuffer& sessionID)
 {
     CDateTime now;
-    now.setNow();
-    time_t createTime = now.getSimple();
-
-    // Helper lambda to generate a new session ID
-    auto generateNewSessionID = [](const char* peer, time_t createTime, StringBuffer& outSessionID) {
-        outSessionID.clear();
-        bool generatedSecureID = false;
-
-#ifdef _USE_OPENSSL
-        unsigned char buffer[16];
-        if (RAND_bytes(buffer, sizeof(buffer)) == 1)
-        {
-            // Convert to hex string (32 characters)
-            for (size_t i = 0; i < sizeof(buffer); i++)
-                outSessionID.appendf("%02x", buffer[i]);
-            generatedSecureID = true;
-        }
-        else
-        {
-            // Log critical error and use fallback
-            unsigned long err = ERR_get_error();
-            char errBuf[256];
-            ERR_error_string_n(err, errBuf, sizeof(errBuf));
-            ERRLOG("CRITICAL: RAND_bytes failed (%s), using fallback session ID generation with reduced entropy", errBuf);
-        }
-#endif
-        if (!generatedSecureID)
-        {
-            // Fallback session ID generation
-
-            // Use multiple diverse entropy sources and hash each independently
-            // This provides 128 bits (4 x 32-bit hashes) with different inputs for each hash
-            VStringBuffer baseStr("%s_%" PRId64, peer, (int64_t)createTime);
-            
-            // First hash: base string + random
-            unsigned rand1 = getRandom();
-            VStringBuffer input1("%s_%u", baseStr.str(), rand1);
-            outSessionID.appendf("%08x", makeHashcToken(input1.str()));
-            
-            // Second hash: base string + different random + iteration
-            unsigned rand2 = getRandom();
-            VStringBuffer input2("%s_%u_%d", baseStr.str(), rand2, 1);
-            outSessionID.appendf("%08x", makeHashcToken(input2.str()));
-            
-            // Third hash: base string + process ID + timestamp hash
-            VStringBuffer input3("%s_%d_%u", baseStr.str(), GetCurrentProcessId(), (unsigned)((createTime >> 16) & 0xFFFF));
-            outSessionID.appendf("%08x", makeHashcToken(input3.str()));
-            
-            // Fourth hash: base string + combined randoms
-            VStringBuffer input4("%s_%u%u_%u", baseStr.str(), rand1, rand2, getRandom());
-            outSessionID.appendf("%08x", makeHashcToken(input4.str()));
-        }
-    };
 
     // Retry loop to handle session ID collisions
     constexpr int maxRetries = 3;
@@ -2672,6 +2637,8 @@ const char* CEspHttpServer::createHTTPSession(IEspContext* ctx, EspHttpBinding* 
     
     for (int attempt = 1; attempt <= maxRetries; attempt++)
     {
+        now.setNow();
+        time_t createTime = now.getSimple();
         // Generate a new session ID
         generateNewSessionID(peer.str(), createTime, sessionID);
         
@@ -2680,27 +2647,9 @@ const char* CEspHttpServer::createHTTPSession(IEspContext* ctx, EspHttpBinding* 
         
         if (sessionTree)
         {
-            // Collision detected - verify if it's the same user and peer
-            const char* existingUser = sessionTree->queryProp(PropSessionUserID);
-            const char* existingPeer = sessionTree->queryProp(PropSessionNetworkAddress);
-            
-            if (existingUser && existingPeer && 
-                streq(existingUser, userID) && streq(existingPeer, peer.str()))
-            {
-                // Same user and peer - reuse the existing session
-                sessionTree->setPropInt64(PropSessionLastAccessed, createTime);
-                if (!sessionTree->getPropBool(PropSessionTimeoutByAdmin, false))
-                    sessionTree->setPropInt64(PropSessionTimeoutAt, createTime + authBinding->getServerSessionTimeoutSeconds());
-                return sessionID.str();
-            }
-            
-            // Different user or peer - collision, try again
             ESPLOG(LogMin, "Session ID collision detected, attempt %d of %d", attempt, maxRetries);
             continue;
         }
-        
-        // No collision - create new session
-        ESPLOG(LogMax, "New sessionID <%s> at <%ld> in createHTTPSession()", sessionID.str(), createTime);
         
         IPropertyTree* ptree = domainSessions->addPropTree(sessionTag.str());
         ptree->setProp(PropSessionNetworkAddress, peer.str());
@@ -2710,6 +2659,7 @@ const char* CEspHttpServer::createHTTPSession(IEspContext* ctx, EspHttpBinding* 
         StringBuffer externalID;
         generateExternalSessionID(sessionID, externalID);
         ptree->setProp(PropSessionExternalID, externalID.str());
+        ESPLOG(LogMax, "New session: externalSessionID <%s> at <%ld> in createHTTPSession()", externalID.str(), createTime);
         
         ptree->setProp(PropSessionUserID, userID);
         ptree->setPropInt64(PropSessionCreateTime, createTime);

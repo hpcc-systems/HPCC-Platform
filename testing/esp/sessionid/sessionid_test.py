@@ -61,6 +61,8 @@ DEFAULT_ADMIN = "hpcc_admin"
 
 # Session ID validation
 SESSION_ID_PATTERN = re.compile(r'^[0-9a-fA-F]{32}$')  # 128-bit = 32 hex chars
+# Old session ID pattern (legacy numeric IDs) — 1 to 10 digits
+OLD_SESSION_ID_PATTERN = re.compile(r'^[0-9]{1,10}$')
 # Extract "external" ID from XML/JSON WsESPControl responses
 ID_EXTRACTION_PATTERN = re.compile(r'<ID>([0-9a-fA-F]+)</ID>|"ID"\s*:\s*"([0-9a-fA-F]+)"')
 
@@ -70,7 +72,8 @@ class ESPTestConfig:
     
     def __init__(self, protocol: str, host: str, port: str,
                  user: str, user_password: str,
-                 admin: str, admin_password: str):
+                 admin: str, admin_password: str,
+                 original_scheme: bool = False):
         self.protocol = protocol
         self.host = host
         self.port = port
@@ -79,10 +82,12 @@ class ESPTestConfig:
         self.admin = admin
         self.admin_password = admin_password
         self.base_url = f"{protocol}://{host}:{port}"
+        self.original_scheme = original_scheme
         
     def __repr__(self):
         return (f"ESPTestConfig(base_url={self.base_url}, "
-                f"user={self.user}, admin={self.admin})")
+                f"user={self.user}, admin={self.admin}, "
+                f"original_scheme={self.original_scheme})")
 
 
 class ESPSession:
@@ -102,6 +107,10 @@ class ESPSession:
         Returns:
             True if login successful, False otherwise
         """
+        # For original scheme, pause 1 second before each login to ensure unique timestamps
+        if self.config.original_scheme:
+            time.sleep(1)
+        
         login_url = f"{self.config.base_url}/esp/login"
         
         try:
@@ -204,7 +213,10 @@ class WSESPControlClient:
     def login_as_admin(self) -> bool:
         """Login as admin user."""
         login_url = f"{self.config.base_url}/esp/login"
-        
+
+        if self.config.original_scheme:
+            time.sleep(1)  # Ensure unique session ID if using original scheme
+
         try:
             response = self.session.post(
                 login_url,
@@ -325,6 +337,12 @@ class TestSessionIDFormat(unittest.TestCase):
         if not cls.config:
             raise RuntimeError("Test configuration not set")
     
+    def setUp(self):
+        """Set up for each test - add pause for original scheme."""
+        # For original scheme, ensure 1-second pause between tests
+        if self.config.original_scheme:
+            time.sleep(1)
+    
     def tearDown(self):
         """Clean up sessions after each test."""
         self.cleanup_user_sessions()
@@ -434,6 +452,9 @@ class TestSessionIDFormat(unittest.TestCase):
 
     def test_new_format_validation(self):
         """Test 1: Validate new 128-bit session ID format after login."""
+        if self.config.original_scheme:
+            self.skipTest("Skipped for original session ID scheme")
+        
         logging.info("=== Test 1: New Format Validation ===")
         
         esp_session = ESPSession(self.config)
@@ -465,6 +486,45 @@ class TestSessionIDFormat(unittest.TestCase):
         self.assertResponseSuccess(response, "Authenticated request with valid session ID should succeed")
         
         logging.info("✓ Authenticated request successful with valid session ID")
+        
+        # Logout
+        esp_session.logout()
+    
+    def test_old_format_validation(self):
+        """Test original session ID format 0-10 digits."""
+        if not self.config.original_scheme:
+            self.skipTest("Only run with --original-scheme flag")
+        
+        logging.info("=== Test: Old Format Validation ===")
+        
+        esp_session = ESPSession(self.config)
+        
+        # Login and capture session ID (with 1-second pause built into login)
+        self.assertTrue(
+            esp_session.login(self.config.user, self.config.user_password),
+            "Failed to login as regular user"
+        )
+        
+        session_id = esp_session.session_id
+        self.assertIsNotNone(session_id, "Session ID should not be None")
+        
+        # Validate old format: 0-10 digits
+        self.assertRegex(
+            session_id,
+            OLD_SESSION_ID_PATTERN,
+            f"Session ID '{session_id}' does not match old format (0-10 digits)"
+        )
+        
+        logging.info(f"✓ Session ID old format valid: {session_id}")
+        
+        # Make an authenticated request to verify session works
+        response = esp_session.make_authenticated_request("/WsSMC/Activity")
+        
+        self.debugResponseDetails(response)
+        
+        self.assertResponseSuccess(response, "Authenticated request with valid session ID should succeed")
+        
+        logging.info("✓ Authenticated request successful with valid old-format session ID")
         
         # Logout
         esp_session.logout()
@@ -642,6 +702,9 @@ class TestSessionIDFormat(unittest.TestCase):
     
     def test_session_id_uniqueness(self):
         """Generate many session IDs and verify no duplicates."""
+        if self.config.original_scheme:
+            self.skipTest("Skipped for original session ID scheme")
+        
         logging.info("=== Session ID Uniqueness Test ===")
         
         target_sessions = 1000
@@ -744,6 +807,9 @@ class TestSessionIDFormat(unittest.TestCase):
     
     def test_active_session_id_collision_detection(self):
         """ID uniqueness and collision detection with many concurrent active sessions."""
+        if self.config.original_scheme:
+            self.skipTest("Skipped for original session ID scheme")
+        
         logging.info("=== Active Session ID Collision Detection ===")
         
         target_sessions = 1000
@@ -843,6 +909,19 @@ Examples:
 
   # Use custom host and credentials
   python3 sessionid_test.py --host 192.168.1.100 --user myuser --user-pw mypass
+
+Original Session ID Scheme Testing:
+  Previously the sessionID was based on the creation time to the second so will
+  produce collisions if multiple sessions are created within the same second.
+  Using the --original-scheme flag accommodates the old format by pausing for
+  one second before creating each session to ensure unique session IDs, and by
+  skipping tests that are known to fail with the old format:
+
+    test_new_format_validation
+    test_session_id_uniqueness
+    test_active_session_id_collision_detection
+
+  An alternate, test_old_format_validation, will run to validate the old format.
         """
     )
     
@@ -864,6 +943,8 @@ Examples:
                        help='Enable verbose output')
     parser.add_argument('-t', '--test', 
                        help='Run specific test (e.g., test_new_format_validation)')
+    parser.add_argument('--original-scheme', action='store_true',
+                        help='Test assuming use of original session ID scheme')
     
     args = parser.parse_args()
     
@@ -899,13 +980,17 @@ def main():
         user=args.user,
         user_password=user_pw,
         admin=args.admin,
-        admin_password=admin_pw
+        admin_password=admin_pw,
+        original_scheme=args.original_scheme
     )
     
     logging.info("=" * 70)
     logging.info(f"ESP Session ID Test Suite v{__version__}")
     logging.info("=" * 70)
     logging.info(f"Configuration: {config}")
+    if config.original_scheme:
+        logging.info("*** Testing with ORIGINAL session ID scheme ***")
+        logging.info("*** 1-second pauses enabled between session creations ***")
     logging.info("")
     
     # Set configuration for test classes
