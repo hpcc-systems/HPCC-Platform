@@ -1292,6 +1292,13 @@ public:
         IRemoteConnection *recoveryconn;
         Owned<IRemoteConnection> runningconn;
         wu->queryRecoveryStore(recoveryconn,recovery,runningpath.clear());
+        if (recovery)
+        {
+            // Record the owning process session so stalled recovery can be detected later.
+            recovery->setPropInt64("@session", myProcessSession());
+            if (recoveryconn)
+                recoveryconn->commit();
+        }
         DFUstate s = progress->getState();
         switch (s) {
         case DFUstate_aborting:
@@ -1986,11 +1993,24 @@ public:
                                 break;
                             }
                         }
+
+                        // Clear existing recovery details before replication starts,
+                        // while preserving the owning session id across this reset.
+                        SessionId recoverySession = myProcessSession();
+                        if (recovery)
+                        {
+                            SessionId existingSession = (SessionId) recovery->getPropInt64("@session", 0);
+                            if (existingSession > 0)
+                                recoverySession = existingSession;
+                        }
                         wu->removeRecoveryStore();
                         wu->queryRecoveryStore(recoveryconn,recovery,runningpath.clear());
-                        if (recoveryconn&&recovery) {
-                            recovery->setPropBool("@replicating",true);
-                            recoveryconn->commit();
+                        if (recovery)
+                        {
+                            recovery->setPropBool("@replicating", true);
+                            recovery->setPropInt64("@session", recoverySession);
+                            if (recoveryconn)
+                                recoveryconn->commit();
                         }
                         fsys.replicate(fdesc.get(), mode, recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid);
                         if (!abortnotify.abortRequested()) {
