@@ -5897,7 +5897,7 @@ void CWsDeployFileInfo::saveEnvironment(IEspContext* pContext, IConstWsDeployReq
     {
       m_Environment->commit();
       StringBuffer response;
-      initClusterGroups(false, response, NULL);
+      initClusterAndStoragePlaneGroups(response, false, NULL);
       if (response.length())
         PROGLOG("CWsDeployFileInfo::saveEnvironment: %s", response.str());
     }

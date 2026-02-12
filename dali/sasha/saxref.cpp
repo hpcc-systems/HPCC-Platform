@@ -226,6 +226,7 @@ public:
         {
             // numParts==NotFound is used for files without a part mask. Treat them as single files
             mapLen = 1;
+            numParts = 1;
         }
         else if (numParts<=0xfff)
             mapLen = (numParts*4+7)/8;
@@ -273,7 +274,7 @@ public:
     unsigned getSize() const
     {
         size32_t nameLen = name[0];
-        size32_t mapLen = N==(unsigned short)NotFound ? 1 : (N*4+7)/8; // N==(unsigned short)NotFound is used for files without a part mask. Treat them as single files
+        size32_t mapLen = (N*4+7)/8;
         return sizeof(cFileDesc)+nameLen+mapLen;
     }
     inline byte *map() const
@@ -970,7 +971,7 @@ public:
         heartbeatTimer.updatePeriod();
     }
 
-    void saveBranchToSashaPlane(const char *sashaDir, const char *name, IPropertyTree *branch)
+    void saveBranchToSashaPlane(const char *sashaDir, const char *name, IPropertyTree *branch, size32_t blockSize)
     {
         if (!branch)
             return;
@@ -980,9 +981,6 @@ public:
             StringBuffer filepath(sashaDir);
             addPathSepChar(filepath).append(name).append(".xml");
 
-            StringBuffer datastr;
-            toXML(branch,datastr);
-
             Owned<IFile> file = createIFile(filepath.str());
             Owned<IFileIO> fileIO = file->open(IFOcreate);
             if (!fileIO)
@@ -990,8 +988,14 @@ public:
                 warn(filepath.str(), "Failed to create file");
                 return;
             }
-            fileIO->write(0, datastr.length(), datastr.str());
+
+            PROGLOG(LOGPFX "Saving branch %s to %s", name, filepath.str());
+
+            Owned<IFileIOStream> stream = createBufferedIOStream(fileIO, blockSize);
+            saveXML(*stream, branch, 0, XML_Format);
+            stream.clear();
             fileIO->close();
+
             PROGLOG(LOGPFX "Saved branch %s to %s", name, filepath.str());
         }
         catch (IException *e)
@@ -1109,15 +1113,21 @@ public:
                 throw makeStringExceptionV(0, LOGPFX "Failed to create directory: %s", sashaDir.str());
             PROGLOG(LOGPFX "Using Sasha storage at: %s", sashaDir.str());
 
+            // Get block size once based on the plane of the file path
+            StringBuffer planeName;
+            findPlaneFromPath(sashaDir.str(), planeName);
+            constexpr size32_t defaultBlockSize = 0x400000; // 4MB
+            size32_t blockSize = (planeName.length() == 0) ? defaultBlockSize : getBlockedFileIOSize(planeName, defaultBlockSize);
+
             // Save branches to Sasha plane files
-            saveBranchToSashaPlane(sashaDir.str(), "Orphans", orphansbranch);
-            saveBranchToSashaPlane(sashaDir.str(), "Lost", lostbranch);
-            saveBranchToSashaPlane(sashaDir.str(), "Found", foundbranch);
-            saveBranchToSashaPlane(sashaDir.str(), "Directories", dirbranch);
+            saveBranchToSashaPlane(sashaDir.str(), "Orphans", orphansbranch, blockSize);
+            saveBranchToSashaPlane(sashaDir.str(), "Lost", lostbranch, blockSize);
+            saveBranchToSashaPlane(sashaDir.str(), "Found", foundbranch, blockSize);
+            saveBranchToSashaPlane(sashaDir.str(), "Directories", dirbranch, blockSize);
 
             // Save Messages
             Owned<IPropertyTree> message = createErrorWarningMessageTree();
-            saveBranchToSashaPlane(sashaDir.str(), "Messages", message);
+            saveBranchToSashaPlane(sashaDir.str(), "Messages", message, blockSize);
 
             StringBuffer savePath(sashaDir);
             // Store path reference in Dali

@@ -457,7 +457,7 @@ define([
             } else if (name === "Cost") {
                 this.updateInput("FormattedCost", oldValue, Session.formatCost(newValue));
             } else if (name === "MinSkew") {
-                domAttr.set(this.id + "MinSkew", "innerHTML", this.logicalFile.MinSkew ? Math.abs(this.logicalFile.MinSkew) + "%" : "");
+                domAttr.set(this.id + "MinSkew", "innerHTML", this.logicalFile.MinSkew ? this.logicalFile.MinSkew + "%" : "");
             } else if (name === "MaxSkew") {
                 domAttr.set(this.id + "MaxSkew", "innerHTML", this.logicalFile.MaxSkew ? this.logicalFile.MaxSkew + "%" : "");
             }
