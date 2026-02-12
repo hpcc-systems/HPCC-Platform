@@ -8,7 +8,8 @@ applyTo: '**/*.ecm'
 - Add a version attribute to any new or deprecated element.
 - Use the next highest version number in the service's `*.ecm` file for versioning changes.
 - Increment the `version` and `default_client_version` attributes of the `ESPservice` element.
-- Include the `exceptions_inline` attribute in any new `ESPresponse` and `ESPmethod` element.
+- Include the `exceptions_inline` attribute in any new `ESPresponse` element.
+- Include the `exceptions_inline` attribute in any new `ESPmethod` element only if its parent `ESPservice` element doesn't have an `exceptions_inline` attribute.
 
 ## Naming Conventions
 - Use `PascalCase` for element names.

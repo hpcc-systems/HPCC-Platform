@@ -368,9 +368,10 @@ void EventRecorder::checkAttrValue(EventAttr attr, size_t size)
     assertex(expectedSize == 0 || expectedSize == size);
 }
 
-bool EventRecorder::startRecording(const char * optionsText, const char * filename, bool pause)
+bool EventRecorder::startRecording(const char * optionsText, const char * filename, const char * processName, unsigned channelId, unsigned replicaId, __uint64 instanceId, bool pause)
 {
     assertex(filename);
+    assertex((channelId < 256) && (replicaId < 256));
     CriticalBlock block(cs);
     if (!isStopped)
         return false;
@@ -458,7 +459,8 @@ bool EventRecorder::startRecording(const char * optionsText, const char * filena
     else
         outputStream.set(bufferedDiskStream);
 
-    startTimestamp.store(getTimeStampNowValue()*1000, std::memory_order_release);
+    __uint64 timestamp = getTimeStampNowValue()*1000;
+    startTimestamp.store(timestamp, std::memory_order_release);
     numEvents = 0;
     startCycles.store(get_cycles_now(), std::memory_order_release);
 
@@ -471,6 +473,7 @@ bool EventRecorder::startRecording(const char * optionsText, const char * filena
     for (unsigned i=0; i < numBlocks; i++)
         pendingEventCounts[i] = 0;
 
+    recordRecordingSource(processName, (byte)channelId, (byte)replicaId, instanceId);
     recordingEvents.store(!pause, std::memory_order_release);
     return true;
 }
@@ -874,6 +877,9 @@ void EventRecorder::recordRecordingSource(const char *processDescriptor, byte ch
     if (!isStarted || isStopped)
         return;
 
+    if (!processDescriptor)
+        return;
+
     if (unlikely(outputToLog))
     {
         StringBuffer tmpDescriptor;
@@ -1167,7 +1173,7 @@ void EventRecorder::writeBlock(offset_type startOffset, size32_t size)
 
 //---------------------------------------------------------------------------------------------------------------------
 
-bool startComponentRecording(const char * component, const char * optionsText, const char * filename, bool pause)
+bool startComponentRecording(const char * component, const char * optionsText, const char * filename, unsigned channelId, unsigned replicaId, bool pause)
 {
     StringBuffer defaultOptions;
     if (isEmptyString(optionsText))
@@ -1178,29 +1184,28 @@ bool startComponentRecording(const char * component, const char * optionsText, c
         optionsText = defaultOptions.str();
     }
 
+    // Generate a random instance id, to distinguish between different runs of the same process.
+    // This is not guaranteed to be unique, but should be good enough for our purposes.
+    __uint64 timestamp = getTimeStampNowValue()*1000;
+    __uint64 instanceId = get_cycles_now() ^ timestamp;
+
     StringBuffer outputFilename;
-    const char * path = filename;
     if (!isAbsolutePath(filename))
     {
         getTempFilePath(outputFilename, "eventrecorder", nullptr);
         outputFilename.append(PATHSEPCHAR);
-        if (!isEmptyString(filename))
-        {
-            outputFilename.append(filename);
-        }
-        else
-        {
-            //MORE: Revisit this at a later date
-            unsigned seq = (unsigned)(get_cycles_now() % 100000);
-            outputFilename.append(component).append("events.").append((unsigned)GetCurrentProcessId()).append(".").append(seq).append(".evt");
-        }
-
-        path = outputFilename.str();
-        //MORE: The caller will need to know the full pathname
     }
+    if (!isEmptyString(filename))
+        outputFilename.append(filename);
+    else
+        outputFilename.append(component).append("events_").append(instanceId % 100000000ULL); // Add 8 digits of the instance id.
 
-    recursiveCreateDirectoryForFile(path);
-    if (!queryRecorder().startRecording(optionsText, path, pause))
+    //If no extension is supplied, append channelid and replicaid so that multiple nodes do not overwrite each other when used shared storage.
+    if (!pathExtension(outputFilename.str()))
+        outputFilename.append("_").append(channelId).append("_").append(replicaId).append(".evt");
+
+    recursiveCreateDirectoryForFile(outputFilename.str());
+    if (!queryRecorder().startRecording(optionsText, outputFilename.str(), component, channelId, replicaId, instanceId, pause))
         return false;
 
     return true;

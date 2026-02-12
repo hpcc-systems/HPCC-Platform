@@ -70,5 +70,6 @@ extern void closeWorkerRequestSockets();
 extern void sendUnloadMessage(hash64_t hash, const char *id, const IRoxieContextLogger &logctx);
 
 extern unsigned getReplicationLevel(unsigned channel);
+extern unsigned getMySubChannel(unsigned channel);
 
 #endif

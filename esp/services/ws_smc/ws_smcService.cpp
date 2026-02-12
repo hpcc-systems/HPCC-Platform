@@ -2065,6 +2065,28 @@ bool CWsSMCEx::onSetBanner(IEspContext &context, IEspSetBannerRequest &req, IEsp
     return true;
 }
 
+bool CWsSMCEx::onGetBanner(IEspContext &context, IEspGetBannerRequest &req, IEspGetBannerResponse& resp)
+{
+    context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_SMC_ACCESS_DENIED, SMC_ACCESS_DENIED);
+    
+    try
+    {
+        // Similar to setBannerAndChatData, return the banner information stored in member variables
+        resp.setShowBanner(m_BannerAction);
+        resp.setShowChatURL(m_EnableChatURL);
+        resp.setBannerContent(m_Banner.str());
+        resp.setBannerSize(m_BannerSize.str());
+        resp.setBannerColor(m_BannerColor.str());
+        resp.setBannerScroll(m_BannerScroll.str());
+        resp.setChatURL(m_ChatURL.str());
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
 bool CWsSMCEx::onNotInCommunityEdition(IEspContext &context, IEspNotInCommunityEditionRequest &req, IEspNotInCommunityEditionResponse &resp)
 {
    return true;

@@ -633,7 +633,7 @@ export function resolve(hpccWidget, callback) {
             require(["hpcc/viz/DojoD3NDChart"], doLoad);
             break;
         case "DataPatternsWidget":
-            require(["./DataPatternsWidget"], doLoad);
+            require(["src/DataPatternsWidget"], doLoad);
             break;
         case "DynamicESDLDefinitionDetailsWidget":
             require(["hpcc/DynamicESDLDefinitionDetailsWidget"], doLoad);
@@ -657,7 +657,7 @@ export function resolve(hpccWidget, callback) {
             require(["hpcc/ECLPlaygroundWidget"], doLoad);
             break;
         case "ECLArchiveWidget":
-            require(["./ECLArchiveWidget"], doLoad);
+            require(["src/ECLArchiveWidget"], doLoad);
             break;
         case "ECLSourceWidget":
             require(["hpcc/ECLSourceWidget"], doLoad);
@@ -712,13 +712,13 @@ export function resolve(hpccWidget, callback) {
             require(["hpcc/GraphsLFWidget"], doLoad);
             break;
         case "GraphTreeWidget":
-            require(["./GraphTreeWidget"], doLoad);
+            require(["src/GraphTreeWidget"], doLoad);
             break;
         case "GraphTree7Widget":
-            require(["./GraphTree7Widget"], doLoad);
+            require(["src/GraphTree7Widget"], doLoad);
             break;
         case "Graph7Widget":
-            require(["./Graph7Widget"], doLoad);
+            require(["src/Graph7Widget"], doLoad);
             break;
         case "GridDetailsWidget":
             require(["hpcc/GridDetailsWidget"], doLoad);

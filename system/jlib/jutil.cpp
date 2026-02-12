@@ -2321,6 +2321,17 @@ StringBuffer & fillConfigurationDirectoryEntry(const char *dir,const char *name,
     return dirout;
 }
 
+static Owned<IPropertyTree> cachedEnvironment;
+static CriticalSection envCrit;
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    return true;
+}
+MODULE_EXIT()
+{
+    cachedEnvironment.clear(); // Must be destroyed before jptree module destructors are called
+}
+
 IPropertyTree *getHPCCEnvironment()
 {
 #ifdef _CONTAINERIZED
@@ -2330,6 +2341,10 @@ IPropertyTree *getHPCCEnvironment()
     IERRLOG("getHPCCEnvironment() called from container system");
 #endif
 #endif
+
+    CriticalBlock b(envCrit);
+    if (cachedEnvironment)
+        return LINK(cachedEnvironment);
 
     StringBuffer envfile;
     if (queryEnvironmentConf().getProp("environment",envfile) && envfile.length())
@@ -2343,10 +2358,10 @@ IPropertyTree *getHPCCEnvironment()
         {
             Owned<IFileIO> fileio = file->open(IFOread);
             if (fileio)
-                return createPTree(*fileio, ipt_lowmem);
+                cachedEnvironment.setown(createPTree(*fileio, ipt_lowmem));
         }
     }
-    return NULL;
+    return LINK(cachedEnvironment);
 }
 
 static Owned<IProperties> envConfFile;
@@ -2606,12 +2621,21 @@ bool getConfigurationDirectory(const IPropertyTree *useTree, const char *categor
 #ifdef _CONTAINERIZED
     if (streq(category, "data"))
     {
-        Owned<const IPropertyTree> storagePlane = getStoragePlaneConfig(instance, false);
+        Owned<const IStoragePlane> storagePlane = getStoragePlaneByName(instance, false);
         if (!storagePlane)
             throw makeStringExceptionV(-1, "no default directory available for plane '%s'", instance);
-        return storagePlane->getProp("@prefix", dirout);
+        dirout.append(storagePlane->queryPrefix());
+        return true;
     }
-    if (streq(category, "data2") || streq(category, "data3") || streq(category, "data4") || streq(category, "mirror"))
+    if (streq(category, "data2") || streq(category, "mirror"))
+    {
+        Owned<const IStoragePlane> storagePlane = getStoragePlaneByName(instance, false);
+        if (!storagePlane)
+            throw makeStringExceptionV(-1, "no default directory available for plane '%s'", instance);
+        dirout.append(storagePlane->queryMirrorPrefix());
+        return true;
+    }
+    if (streq(category, "data3") || streq(category, "data4"))
         return false;
     if (streq(category, "spill"))
     {

@@ -493,10 +493,16 @@ public:
     }
 
 protected:
-    // No attributes to be skipped at this time. Retain for possible future use.
     bool skipAttribute(unsigned id) const
     {
-       return false;
+        switch (id)
+        {
+        case EvAttrProcessDescriptor:
+            // Only appears in RecordingSource, which is never visited.
+            return true;
+        default:
+            return false;
+        }
     }
 
     virtual void recordAttribute(EventAttr id, const char*, const char* value, bool) override

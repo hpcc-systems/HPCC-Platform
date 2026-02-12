@@ -782,7 +782,7 @@ public:
         if (ps)
             pm = ps->queryActiveMap(target);
     }
-    void copy(StringBuffer &publisherWuid, IConstWorkUnit *cw, unsigned updateFlags)
+    void copy(StringBuffer &publisherWuid, IConstWorkUnit *cw, unsigned updateFlags, const char *dfuTargetPlane)
     {
         StringBuffer queryid;
         if (queryname && *queryname)
@@ -793,9 +793,21 @@ public:
 #ifdef _CONTAINERIZED
         StringBuffer targetPlane;
         getRoxieDirectAccessPlanes(locations, targetPlane, target, true);
-        const char * targetPlaneOrGroup = targetPlane;
+        const char * targetPlaneOrGroup = targetPlane.str();
+        if (!isEmptyString(dfuTargetPlane))
+        {
+            if (!locations.contains(dfuTargetPlane, false))
+                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "DFU Target Plane %s is not a valid Roxie direct access plane for target %s", dfuTargetPlane, target.str());
+            targetPlaneOrGroup = dfuTargetPlane;
+        }
 #else
-        const char * targetPlaneOrGroup = process;
+        const char * targetPlaneOrGroup = !isEmptyString(dfuTargetPlane) ? dfuTargetPlane : process.str();
+        if (!isEmptyString(dfuTargetPlane))
+        {
+            Owned<const IStoragePlane> plane = getStoragePlaneByName(dfuTargetPlane, false);
+            if (!plane)
+                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "DFU Target Plane %s is not a valid storage plane", dfuTargetPlane);
+        }
         locations.append(targetPlaneOrGroup);
 #endif
         files->resolveFiles(locations, remoteLocation, remotePrefix, srcCluster, !(updateFlags & (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM | DALI_UPDATEF_SUPERFILES)), true, false, true, (updateFlags & DFU_UPDATEF_REMOTESTORAGE));
@@ -1027,7 +1039,7 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
         cpr.queryname.set(queryName);
         cpr.dfu_queue.set(req.getDfuQueue());
         cpr.setKeyCompression(req.getKeyCompression());
-        cpr.copy(publisherWuid, cw, updateFlags);
+        cpr.copy(publisherWuid, cw, updateFlags, req.getDfuTargetPlane());
 
         if (req.getIncludeFileErrors())
             cpr.gatherFileErrors(resp.getFileErrors());
@@ -2199,7 +2211,7 @@ bool CWsWorkunitsEx::onWURecreateQuery(IEspContext &context, IEspWURecreateQuery
                 cpr.queryname.set(srcQueryName);
                 cpr.dfu_queue.set(req.getDfuQueue());
                 cpr.setKeyCompression(req.getKeyCompression());
-                cpr.copy(publisherWuid, cw, updateFlags);
+                cpr.copy(publisherWuid, cw, updateFlags, req.getDfuTargetPlane());
 
                 if (req.getIncludeFileErrors())
                     cpr.gatherFileErrors(resp.getFileErrors());
@@ -3517,7 +3529,7 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
         cpr.dfu_queue.set(req.getDfuQueue());
         cpr.setKeyCompression(req.getKeyCompression());
 
-        cpr.copy(publisherWuid, cw, updateFlags);
+        cpr.copy(publisherWuid, cw, updateFlags, req.getDfuTargetPlane());
 
         if (req.getIncludeFileErrors())
             cpr.gatherFileErrors(resp.getFileErrors());
