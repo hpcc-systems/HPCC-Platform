@@ -36,13 +36,13 @@
 #include "dllserver.hpp"
 #include "rmtfile.hpp"
 
-#include "saserver.hpp"
 #include "saarch.hpp"
 #include "saverify.hpp"
 #include "saxref.hpp"
 #include "sadbghk.hpp"
 #include "saqmon.hpp"
 #include "sacoalescer.hpp"
+#include "sautil.hpp"
 #include "sacmd.hpp"
 
 extern void LDStest();
@@ -51,17 +51,42 @@ extern void LDStest();
 
 #define DEFAULT_PERF_REPORT_DELAY (60*5)
 
-Owned<IPropertyTree> serverConfig;
 static IArrayOf<ISashaServer> servers;
 static std::atomic<unsigned> StopSuspendCount{0};
 static bool stopped{false};
 static Semaphore stopSem;
 static bool isDaliClient{false};
 
-const char *sashaProgramName;
+static void requestStop(IException *e); // forward declaration
 
-CSuspendAutoStop::CSuspendAutoStop() { StopSuspendCount++; }
-CSuspendAutoStop::~CSuspendAutoStop() { StopSuspendCount--; }
+class CSashaServerContext : public CInterfaceOf<ISashaServerContext>
+{
+    StringAttr progName;
+
+    class CSuspendAutoStop : public CInterfaceOf<IInterface>
+    {
+    public:
+        CSuspendAutoStop() { StopSuspendCount++; }
+        ~CSuspendAutoStop() { StopSuspendCount--; }
+    };
+
+public:
+    CSashaServerContext(const char *_progName) : progName(_progName)
+    {
+    }
+    virtual void requestStop(IException *e) override
+    {
+        ::requestStop(e);
+    }
+    virtual const char * getSashaProgramName() const override
+    {
+        return progName;
+    }
+    virtual IInterface * createAutoStopSuspender() override
+    {
+        return new CSuspendAutoStop();
+    }
+};
 
 #ifdef _CONTAINERIZED
 const char *service = nullptr;
@@ -117,7 +142,7 @@ static bool actionOnAbort()
     return true;
 }
 
-void requestStop(IException *e)
+static void requestStop(IException *e)
 {
     if (e)
         LOG(MCoperatorError, e, "SASERVER: Unexpected exception, saserver terminating");
@@ -249,7 +274,7 @@ void SashaMain()
 
     IInterCommunicator & comm=queryWorldCommunicator();
     unsigned start = msTick();
-    unsigned timeout = serverConfig->getPropInt("@autoRestartInterval")*1000*60*60;
+    unsigned timeout = getComponentConfigSP()->getPropInt("@autoRestartInterval")*1000*60*60;
     class cCmdPoolFactory : public CInterface, implements IThreadFactory
     {
     public:
@@ -319,8 +344,6 @@ int main(int argc, const char* argv[])
     InitModuleObjects();
     EnableSEHtoExceptionMapping();
 
-    sashaProgramName = argv[0];
-
 #ifndef __64BIT__
     // Restrict stack sizes on 32-bit systems
     Thread::setDefaultStackSize(0x20000);
@@ -335,9 +358,11 @@ int main(int argc, const char* argv[])
 
     bool enableSNMP = false;
 
+    CSashaServerContext sashaServerContext(argv[0]);
+    setServerContext(sashaServerContext);
     try
     {
-        serverConfig.setown(loadConfiguration(defaultYaml, argv, "sasha", "SASHA", "sashaconf.xml", nullptr));
+        Owned<IPropertyTree> serverConfig = loadConfiguration(defaultYaml, argv, "sasha", "SASHA", "sashaconf.xml", nullptr);
         isDaliClient = isContainerized() ? serverConfig->hasProp("[access='dali']") : true;
 
         Owned<IFile> sentinelFile;
@@ -536,7 +561,6 @@ int main(int argc, const char* argv[])
     }
     else if (stop)
         Sleep(2000);    // give time to stop
-    serverConfig.clear();
     try
     {
         closeEnvironment();

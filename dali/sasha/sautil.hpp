@@ -1,7 +1,22 @@
 #ifndef SAUTIL_HPP
 #define SAUTIL_HPP
 
+#ifdef SASHALIB_EXPORTS
+#define sashalib_decl DECL_EXPORT
+#else
+#define sashalib_decl DECL_IMPORT
+#endif
+
+#include "jlog.hpp"
+#include "jptree.hpp"
 #include "jtime.hpp"
+
+interface ISashaServer: extends IInterface  // for all coven based servers
+{
+    virtual void start() = 0;
+    virtual void ready() = 0; // called after all servers started
+    virtual void stop() = 0;
+};
 
 class CSashaSchedule
 {
@@ -105,10 +120,18 @@ public:
     }
 };
 
-extern void operationStarted(const char *msg);
-extern void operationFinished(const char *msg);
-
 extern unsigned clustersToGroups(IPropertyTree *envroot,const StringArray &cmplst,StringArray &cnames,StringArray &groups,bool *done);
 extern unsigned clustersToGroups(IPropertyTree *envroot,const StringArray &cmplst,StringArray &groups,bool *done);
+
+interface IException;
+interface ISashaServerContext : extends IInterface
+{
+    virtual void requestStop(IException *e) = 0;
+    virtual const char * getSashaProgramName() const = 0;
+    virtual IInterface * createAutoStopSuspender() = 0;  // returns object whose lifetime suspends auto-stop
+};
+
+extern sashalib_decl void setServerContext(ISashaServerContext &ctx);
+extern sashalib_decl ISashaServerContext &queryServerContext();
 
 #endif

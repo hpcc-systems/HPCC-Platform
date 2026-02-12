@@ -1,6 +1,8 @@
 #ifndef SACMD_HPP
 #define SACMD_HPP
 
+#include "sautil.hpp"
+
 enum SashaCommandAction
 {
     SCA_null,
@@ -97,6 +99,6 @@ interface ISashaCommand: extends IInterface
 
 #define WUS_STATUS_OK           ((byte)0)
 
-extern ISashaCommand *createSashaCommand();
+extern sashalib_decl ISashaCommand *createSashaCommand();
 
 #endif

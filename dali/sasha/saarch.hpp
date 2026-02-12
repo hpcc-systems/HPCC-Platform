@@ -1,18 +1,18 @@
 #ifndef SAARCH_HPP
 #define SAARCH_HPP
 
-interface ISashaServer;
-interface ISashaCommand;
+#include "sautil.hpp"
 
 #ifndef _CONTAINERIZED
-extern ISashaServer *createSashaArchiverServer();
+extern sashalib_decl ISashaServer *createSashaArchiverServer();
 #else
-extern ISashaServer *createSashaWUArchiverServer(); 
-extern ISashaServer *createSashaDFUWUArchiverServer(); 
-extern ISashaServer *createSashaCachedWURemoverServer(); 
-extern ISashaServer *createSashaDFURecoveryArchiverServer(); 
+extern sashalib_decl ISashaServer *createSashaWUArchiverServer();
+extern sashalib_decl ISashaServer *createSashaDFUWUArchiverServer();
+extern sashalib_decl ISashaServer *createSashaCachedWURemoverServer();
+extern sashalib_decl ISashaServer *createSashaDFURecoveryArchiverServer();
 #endif
 
-bool processArchiverCommand(ISashaCommand *cmd);
+interface ISashaCommand;
+extern sashalib_decl bool processArchiverCommand(ISashaCommand *cmd);
 
 #endif

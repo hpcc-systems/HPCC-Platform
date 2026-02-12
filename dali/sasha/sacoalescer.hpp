@@ -1,9 +1,11 @@
 #ifndef SACOALESCER_HPP
 #define SACOALESCER_HPP
 
-interface ISashaServer;
-extern ISashaServer *createSashaSDSCoalescingServer(); 
-extern void suspendCoalescingServer();
-extern void resumeCoalescingServer();
+#include "sautil.hpp"
+
+extern sashalib_decl ISashaServer *createSashaSDSCoalescingServer();
+extern sashalib_decl void suspendCoalescingServer();
+extern sashalib_decl void resumeCoalescingServer();
+extern sashalib_decl void coalesceDatastore(IPropertyTree *config, bool force);
 
 #endif

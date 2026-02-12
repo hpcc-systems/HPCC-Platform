@@ -1,6 +1,8 @@
 #ifndef SAQMONIF_HPP
 #define SAQMONIF_HPP
 
-extern ISashaServer *createSashaQMonitorServer();
+#include "sautil.hpp"
+
+extern sashalib_decl ISashaServer *createSashaQMonitorServer();
 
 #endif

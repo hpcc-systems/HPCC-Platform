@@ -10,7 +10,6 @@
 #include "mpbase.hpp"
 #include "mpcomm.hpp"
 #include "dasds.hpp"
-#include "saserver.hpp"
 #include "salds.hpp"
 #include "sacmd.hpp"
 #include "workunit.hpp"
@@ -1473,7 +1472,7 @@ public:
                 EXCLOG(e,"SASHA ARCHIVE SERVER");
                 if (!stopped)
                 {
-                    requestStop(e);
+                    queryServerContext().requestStop(e);
                     stopped = true;
                 }
                 e->Release();
@@ -1486,10 +1485,10 @@ public:
 
 static CSashaCombinedArchiverServer *sashaArchiverServer = nullptr;
 
-ISashaServer *createSashaArchiverServer()
+ISashaServer *createSashaArchiverServer() // NB: combined archiver - bare-metal only
 {
     assertex(!sashaArchiverServer); // initialization problem
-    Owned<IPropertyTree> config = serverConfig->getPropTree("Archiver");
+    Owned<IPropertyTree> config = getComponentConfigSP()->getPropTree("Archiver");
     if (!config)
         config.setown(createPTree("Archiver"));
     sashaArchiverServer = new CSashaCombinedArchiverServer(config);
@@ -1528,7 +1527,7 @@ public:
                 EXCLOG(e,"SASHA ARCHIVE SERVER");
                 if (!stopped)
                 {
-                    requestStop(e);
+                    queryServerContext().requestStop(e);
                     stopped = true;
                 }
                 e->Release();
@@ -1581,34 +1580,34 @@ public:
 
 
 static CSashaWUArchiverServer *sashaWUArchiverServer = nullptr;
-ISashaServer *createSashaWUArchiverServer()
+ISashaServer *createSashaWUArchiverServer() // for containerized only (BM uses combined archiver)
 {
     assertex(!sashaWUArchiverServer); // initialization problem
-    sashaWUArchiverServer = new CSashaWUArchiverServer(serverConfig);
+    sashaWUArchiverServer = new CSashaWUArchiverServer(getComponentConfigSP());
     return sashaWUArchiverServer;
 }
 
 static CSashaDFUWUArchiverServer *sashaDFUWUArchiverServer = nullptr;
-ISashaServer *createSashaDFUWUArchiverServer()
+ISashaServer *createSashaDFUWUArchiverServer() // for containerized only (BM uses combined archiver)
 {
-    assertex(!sashaDFUWUArchiverServer); // initialization problem
-    sashaDFUWUArchiverServer = new CSashaDFUWUArchiverServer(serverConfig);
+    assertex(!sashaDFUWUArchiverServer); // initialization problem;
+    sashaDFUWUArchiverServer = new CSashaDFUWUArchiverServer(getComponentConfigSP());
     return sashaDFUWUArchiverServer;
 }
 
 static CSashaDFURecoveryArchiverServer *sashaDFURecoveryArchiverServer = nullptr;
-ISashaServer *createSashaDFURecoveryArchiverServer()
+ISashaServer *createSashaDFURecoveryArchiverServer() // for containerized only (BM uses combined archiver)
 {
     assertex(!sashaDFURecoveryArchiverServer); // initialization problem
-    sashaDFURecoveryArchiverServer = new CSashaDFURecoveryArchiverServer(serverConfig);
+    sashaDFURecoveryArchiverServer = new CSashaDFURecoveryArchiverServer(getComponentConfigSP());
     return sashaDFURecoveryArchiverServer;
 }
 
 static CSashaCachedWURemoverServer *sashaCacheWURemoverServer = nullptr;
-ISashaServer *createSashaCachedWURemoverServer()
+ISashaServer *createSashaCachedWURemoverServer() // for containerized only (BM uses combined archiver)
 {
     assertex(!sashaCacheWURemoverServer); // initialization problem
-    sashaCacheWURemoverServer = new CSashaCachedWURemoverServer(serverConfig);
+    sashaCacheWURemoverServer = new CSashaCachedWURemoverServer(getComponentConfigSP());
     return sashaCacheWURemoverServer;
 }
 
