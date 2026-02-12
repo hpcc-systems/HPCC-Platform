@@ -773,15 +773,21 @@ export class MetricGraphWidget extends SVGZoomWidget {
                         context.toggleSelection(decodeID(this.id), true);
                     })
                     ;
-                this._renderElement.selectAll(".node.warning,node.error")
+                this._renderElement.selectAll(".node.warning,.node.error")
                     .each(function (this: SVGGElement) {
-                        const pos = this.getBBox();
-                        d3Select(this).append("text")
-                            .classed("warning", true)
-                            .attr("x", pos.x + pos.width - 32)
-                            .attr("y", pos.y + 24)
-                            .text("⚠")
-                            ;
+                        const thisElement = d3Select(this);
+                        if (thisElement.select("text.warning").empty()) {
+                            const pos = this.getBBox();
+                            thisElement.append("text")
+                                .classed("warning", true)
+                                .attr("x", pos.x + pos.width - 12)
+                                .attr("y", pos.y + 12)
+                                .attr("font-size", "24px")
+                                .style("fill", "var(--colorStatusWarningForeground1)")
+                                .style("stroke", "none")
+                                .text("⚠")
+                                ;
+                        }
                     })
                     ;
                 resolve();
