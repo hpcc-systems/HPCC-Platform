@@ -2621,12 +2621,21 @@ bool getConfigurationDirectory(const IPropertyTree *useTree, const char *categor
 #ifdef _CONTAINERIZED
     if (streq(category, "data"))
     {
-        Owned<const IPropertyTree> storagePlane = getStoragePlaneConfig(instance, false);
+        Owned<const IStoragePlane> storagePlane = getStoragePlaneByName(instance, false);
         if (!storagePlane)
             throw makeStringExceptionV(-1, "no default directory available for plane '%s'", instance);
-        return storagePlane->getProp("@prefix", dirout);
+        dirout.append(storagePlane->queryPrefix());
+        return true;
     }
-    if (streq(category, "data2") || streq(category, "data3") || streq(category, "data4") || streq(category, "mirror"))
+    if (streq(category, "data2") || streq(category, "mirror"))
+    {
+        Owned<const IStoragePlane> storagePlane = getStoragePlaneByName(instance, false);
+        if (!storagePlane)
+            throw makeStringExceptionV(-1, "no default directory available for plane '%s'", instance);
+        dirout.append(storagePlane->queryMirrorPrefix());
+        return true;
+    }
+    if (streq(category, "data3") || streq(category, "data4"))
         return false;
     if (streq(category, "spill"))
     {

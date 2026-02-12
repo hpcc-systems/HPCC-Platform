@@ -103,6 +103,7 @@ interface IStorageApiInfo;
 interface IStoragePlane: extends IInterface
 {
     virtual const char * queryPrefix() const = 0;
+    virtual const char * queryMirrorPrefix() const = 0;
     virtual unsigned numDevices() const = 0;
     virtual const std::vector<std::string> &queryHosts() const = 0;
     virtual unsigned numDefaultSprayParts() const = 0 ;
