@@ -144,7 +144,7 @@ private:
     bool        nonBlocking;
     bool        m_verify;
     bool        m_address_match;
-    CStringSet* m_peers;
+    Linked<CStringSet> m_peers;
     int         m_loglevel;
     bool        m_isSecure;
     StringBuffer m_fqdn;
@@ -507,7 +507,7 @@ CSecureSocket::CSecureSocket(ISocket* sock, ISecureSocketContextCallback * callb
 
     m_verify = verify;
     m_address_match = address_match;
-    m_peers = peers;;
+    m_peers.set(peers);
     m_loglevel = loglevel;
     m_isSecure = false;
 
