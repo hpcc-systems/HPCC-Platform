@@ -3780,6 +3780,175 @@ public:
 CPPUNIT_TEST_SUITE_REGISTRATION(PTreeSerializationDeserializationTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeSerializationDeserializationTest, "PTreeSerializationDeserializationTest");
 
+#include "jbuff.hpp"
+#include "jutil.hpp"
+#include "jzstd.hpp"
+
+/* Test suite for PTree Binary timing tests
+ *
+ * Custom specific unittest parameters:
+ * --PTreeBinaryTimingStressTest.path=/x/y/z/file.bin  Provide the Dali binary test data path. Can be .bin or .bin.zst (Zstd compressed)\n"
+ * --PTreeBinaryTimingStressTest.iterations=999        Override default PTree timing iterations\n"
+*/
+class PTreeBinaryTimingStressTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(PTreeBinaryTimingStressTest);
+    CPPUNIT_TEST(testBinaryTimingWithNormalVsLowMem);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    PTreeBinaryTimingStressTest()
+    {
+        getComponentConfigSP()->getProp("PTreeBinaryTimingStressTest/@path", binaryPath);
+        if (binaryPath.isEmpty())
+        {
+            binaryPath.set(hpccBuildInfo.installDir);
+            constexpr const char *relativeBinPath = "/testing/data/dalisds100mb.bin.zst";
+            binaryPath.append(relativeBinPath);
+        }
+
+        constexpr unsigned defaultPtreeIterations = 5;
+        iterations = getComponentConfigSP()->getPropInt("PTreeBinaryTimingStressTest/@iterations", defaultPtreeIterations);
+        if (iterations == 0)
+            CPPUNIT_FAIL("PTree binary timing test iterations must be greater than zero");
+    }
+
+    void testBinaryTimingWithNormalVsLowMem()
+    {
+        // Load Binary data
+        MemoryBuffer binaryData;
+        try
+        {
+            // Read raw file (with automatic decompression)
+            readBinaryFile(binaryPath.str(), binaryData);
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+
+        unsigned binaryDataLen = (unsigned)binaryData.length();
+        CPPUNIT_ASSERT_MESSAGE("Binary timing test data is empty", binaryDataLen > 0);
+
+        // Run Binary timing tests
+        TimingResults binaryNormalResults = performBinaryTimingTestWithResults("Binary Normal", binaryData, iterations, ipt_none);
+        TimingResults binaryLowMemResults = performBinaryTimingTestWithResults("Binary Low Memory", binaryData, iterations, ipt_lowmem);
+
+        // Calculate differences
+        double lowMemDeserializeDiff = 0.0;
+        if (binaryNormalResults.avgDeserializeCycles)
+            lowMemDeserializeDiff = ((double)binaryLowMemResults.avgDeserializeCycles - (double)binaryNormalResults.avgDeserializeCycles) / (double)binaryNormalResults.avgDeserializeCycles * 100.0;
+
+        // Display results
+        DBGLOG("=== BINARY TIMING COMPARISON TEST ===");
+        DBGLOG("Binary data size: %u bytes", binaryDataLen);
+        DBGLOG("Iterations: %u", iterations);
+        DBGLOG("┌──────────────────────┬─────────────────┐");
+        DBGLOG("│ Mode                 │ Avg Deserialize │");
+        DBGLOG("│                      │ (cycles)        │");
+        DBGLOG("├──────────────────────┼─────────────────┤");
+        DBGLOG("│ Binary Normal        │ %15llu │",
+               (unsigned long long)binaryNormalResults.avgDeserializeCycles);
+        DBGLOG("│ Binary Low Memory    │ %15llu │",
+               (unsigned long long)binaryLowMemResults.avgDeserializeCycles);
+        DBGLOG("│ Binary LowMem Diff   │ %+14.2f%% │",
+               lowMemDeserializeDiff);
+        DBGLOG("└──────────────────────┴─────────────────┘");
+    }
+
+protected:
+    struct TimingResults
+    {
+        cycle_t avgDeserializeCycles{0};
+        cycle_t totalDeserializeCycles{0};
+        const char *testName{nullptr};
+        byte flags{ipt_none};
+    };
+
+    void decompressZstdBuffer(const void *compressedData, size_t compressedSize, const char *actualPath, MemoryBuffer &output)
+    {
+        assertex(compressedData && compressedSize);
+
+        try
+        {
+            Owned<IExpander> expander = createZStdExpander();
+            size32_t targetSize = expander->init(compressedData);
+            if (targetSize == 0 || targetSize > MEMBUFFER_MAXLEN)
+                throw makeStringExceptionV(-1, "Zstd decompressed size %u out of bounds for \"%s\"", targetSize, actualPath);
+
+            output.clear();
+            void *dest = output.reserveTruncate(targetSize);
+            size32_t decompressedSize = expander->expandDirect(targetSize, dest, compressedSize, compressedData);
+            output.setLength(decompressedSize);
+        }
+        catch (IException *e)
+        {
+            StringBuffer err;
+            e->errorMessage(err);
+            int errCode = e->errorCode();
+            e->Release();
+            throw makeStringExceptionV(errCode ? errCode : -1, "Zstd decompression error for \"%s\": %s", actualPath, err.str());
+        }
+    }
+
+    void readBinaryFile(const char *filePath, MemoryBuffer &output)
+    {
+        Owned<IFile> binaryFile = createIFile(filePath);
+        if (!binaryFile->exists())
+            throw makeStringExceptionV(-1, "Binary file \"%s\" does not exist", filePath);
+
+        Owned<IFileIO> fileIO = binaryFile->open(IFOread);
+        output.clear();
+        ::read(fileIO, 0, (size32_t)-1, output);
+
+        const char *ext = pathExtension(filePath);
+        if (strsame(ext, ".zst"))
+        {
+            MemoryBuffer compressed;
+            output.swapWith(compressed);
+            decompressZstdBuffer(compressed.toByteArray(), compressed.length(), filePath, output);
+        }
+    }
+
+    TimingResults performBinaryTimingTestWithResults(const char *testName, MemoryBuffer &binaryDataBuffer, unsigned iterations, byte flags)
+    {
+        assertex(testName);
+        unsigned binaryDataLen = binaryDataBuffer.length();
+        assertex(binaryDataLen > 0);
+        assertex(iterations > 0);
+
+        CCycleTimer timer;
+        cycle_t totalDeserializeCycles = 0;
+
+        MemoryBuffer streamBufferIn;
+        for (unsigned i = 0; i < iterations; i++)
+        {
+            binaryDataBuffer.reset();
+            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(binaryDataBuffer);
+            timer.reset();
+            Owned<IPropertyTree> deserializedTree = createPTreeFromBinary(*in, flags);
+            totalDeserializeCycles += timer.elapsedCycles();
+        }
+
+        TimingResults results;
+        results.totalDeserializeCycles = totalDeserializeCycles;
+        results.avgDeserializeCycles = totalDeserializeCycles / iterations;
+        results.testName = testName;
+        results.flags = flags;
+
+        return results;
+    }
+
+    StringBuffer binaryPath;
+    unsigned iterations{0};
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(PTreeBinaryTimingStressTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeBinaryTimingStressTest, "PTreeBinaryTimingStressTest");
+
 #include "jdebug.hpp"
 #include "jmutex.hpp"
 #include <shared_mutex>
