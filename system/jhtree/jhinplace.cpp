@@ -2676,7 +2676,7 @@ InplaceIndexCompressor::InplaceIndexCompressor(size32_t keyedSize, const CKeyHdr
     const char * colon= strchr(compressionName, ':');
     bool useDefaultCompression = true;
 
-    ctx.compressionOptions.clear().append("hclevel=3"); // If using the lz4hc use the minimum compression level
+    ctx.compressionOptions.clear().append("hclevel=3,blob(zstd6)"); // If using the lz4hc use the minimum compression level
     if (colon)
     {
         auto processOption = [this,&useDefaultCompression](const char * option, const char * value)
@@ -2734,7 +2734,7 @@ InplaceIndexCompressor::InplaceIndexCompressor(size32_t keyedSize, const CKeyHdr
         const CompressionMethod defaultMethod = COMPRESS_METHOD_LZ4SHC;
 
         Owned<IPropertyTree> globalOptions = getGlobalConfig();
-        const char * inplaceCompression = globalOptions->queryProp("expert/@defaultInplaceCompression");
+        const char * inplaceCompression = globalOptions->queryProp("expert/@defaultInplaceCompression", "zstds6");
         CompressionMethod compressionMethod = translateToCompMethod(inplaceCompression, defaultMethod);
 
         ctx.compressionHandler = queryCompressHandler(compressionMethod);
