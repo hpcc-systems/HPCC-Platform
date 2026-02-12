@@ -236,6 +236,14 @@ unsigned RoxiePacketHeader::thisChannelRetries(unsigned subChannel)
 
 //============================================================================================
 
+unsigned getMySubChannel(unsigned channel)
+{
+    if (!channel)
+        return 0;
+    Owned<const ITopologyServer> topology = getTopology();
+    return topology->queryChannelInfo(channel).subChannel();
+}
+
 unsigned getReplicationLevel(unsigned channel)
 {
     if (!channel)

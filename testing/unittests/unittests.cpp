@@ -50,14 +50,15 @@ void usage()
     "    unittests <options> <testnames>\n"
     "\n"
     "Options:\n"
-    "    -a  --all        Include all tests, including timing and stress tests\n"
-    "    -d  --load path  Dynamically load a library/all libraries in a directory.\n"
-    "                     By default, the HPCCSystems lib directory is loaded.\n"
-    "    -e  --exact      Match subsequent test names exactly\n"
-    "    -h  --help       Display this help text\n"
-    "    -l  --list       List matching tests but do not execute them\n"
-    "    -u  --unload     Unload dynamically-loaded dlls before termination (may crash on some systems)\n"
-    "    -x  --exclude    Exclude subsequent test names\n"
+    "    -a  --all                            Include all tests, including timing and stress tests\n"
+    "    -d  --load /x/y/z/                   Dynamically load a library/all libraries in a directory.\n"
+    "                                         By default, the HPCCSystems lib directory is loaded.\n"
+    "    -e  --exact                          Match subsequent test names exactly\n"
+    "    -h  --help                           Display this help text\n"
+    "    -l  --list                           List matching tests but do not execute them\n"
+    "    -u  --unload                         Unload dynamically-loaded dlls before termination (may crash on some systems)\n"
+    "    -x  --exclude                        Exclude subsequent test names\n"
+    "    --<unittestname>.<option>[=<value>]  A custom setting for a specific unittest\n"
     "\n");
 }
 
@@ -118,7 +119,9 @@ void loadDlls(IArray &objects, const char * libDirectory, bool optUnloadDlls)
 static constexpr const char * defaultYaml = R"!!(
 version: "1.0"
 unittests:
-  name: unittests
+- PTreeBinaryTimingStressTest:
+    path: ""
+    iterations: 5
 global:
   storage:
     planes:
@@ -177,10 +180,22 @@ int main(int argc, const char *argv[])
                 if (argNo<argc)
                    loadLocations.append(argv[argNo]);
             }
+            else if (startsWith(arg, "--")) // let test style arguments through
+            {
+                // is it a test option of the form --<test>.<option> (or --<test>.<option>=<value>)
+                const char *dot = strchr(arg + 2, '.');
+                const char *equals = strchr(arg + 2, '='); // in case value contains a dot
+                bool testArg = dot && (dot > arg+2) && isalpha(dot[1]) && (!equals || (equals > dot));
+                if (!testArg)
+                {
+                    usage();
+                    exit(streq(arg, "--help")?0:4);
+                }
+            }
             else
             {
                 usage();
-                exit(streq(arg, "-h") || streq(arg, "--help")?0:4);
+                exit(streq(arg, "-h")?0:4);
             }
         }
         else
@@ -971,7 +986,7 @@ class RelaxedAtomicTimingTest : public CppUnit::TestFixture
 
         for (int a = 0; a < 201; a++)
             ra[a] = 0;
-        
+
         class T : public CThreaded
         {
         public:
@@ -1037,7 +1052,7 @@ class RelaxedAtomicTimingTest : public CppUnit::TestFixture
             CriticalSection &lock;
         } t1a(count, ra[0], lock[0], mode), t2a(count, ra[0], lock[0], mode), t3a(count, ra[0], lock[0], mode),
           t1b(count, ra[0], lock[0], mode), t2b(count, ra[1], lock[1], mode), t3b(count, ra[2], lock[2], mode),
-          t1c(count, ra[0], lock[0], mode), t2c(count, ra[100], lock[100], mode), t3c(count, ra[200], lock[200], mode);;  
+          t1c(count, ra[0], lock[0], mode), t2c(count, ra[100], lock[100], mode), t3c(count, ra[200], lock[200], mode);;
         DBGLOG("Testing RelaxedAtomics (test mode %u)", mode);
         t1a.start(false);
         t2a.start(false);
@@ -1080,7 +1095,7 @@ class compressToBufferTest : public CppUnit::TestFixture
 
     bool testOne(unsigned len, CompressionMethod method, bool prevResult, const char *options=nullptr)
     {
-        constexpr const char *in = 
+        constexpr const char *in =
           "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
           "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
           "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
@@ -1119,7 +1134,7 @@ class compressToBufferTest : public CppUnit::TestFixture
                DBGLOG("compressToBuffer %x size %u did not compress", (byte) method, len);
             ret = false;
         }
-        else 
+        else
         {
             if (!prevResult)
                 DBGLOG("compressToBuffer %x size %u compressed to %u in %lluns", (byte) method, len, compressed.length(), start.elapsedNs());

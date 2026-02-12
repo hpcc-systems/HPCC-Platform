@@ -447,7 +447,7 @@ static IPropertyTree * extractLegacyOptions(IPropertyTree * legacyOptions)
 
 bool startEspEventRecording(const char * options, const char * filename)
 {
-    return startComponentRecording("esp", options, filename, false);
+    return startComponentRecording("esp", options, filename, 0, 0, false);
 }
 
 bool stopEspEventRecording(EventRecordingSummary * optSummary)

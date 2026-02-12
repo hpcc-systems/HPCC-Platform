@@ -725,6 +725,11 @@
               "type": "integer",
               "default": 0
             },
+            "protectGroup": {
+              "description": "If true, plane group changes will not automatically overwrite existing Dali group definitions",
+              "type": "boolean",
+              "default": false
+            },
             "components": {},
             "prefix": {},
             "subPath": {},
@@ -3037,12 +3042,12 @@
         "limit": {
           "type": "integer",
           "description": "threshold before removal starts (0 disables)",
-          "default": "20"
+          "default": 20
         },
         "cutoff": {
           "type": "integer",
           "description": "minimum age (days)",
-          "default": "4"
+          "default": 4
         }
       }
     },
@@ -3087,12 +3092,12 @@
             "backup": {
               "type": "integer",
               "description": "minimum workunit age to backup (days, 0 disables)",
-              "default": "0"
+              "default": 0
             },
             "duration": {
               "type": "integer",
               "description": "Maximum duration to run WorkUnit archiving session (hours, 0 unlimited)",
-              "default": "0"
+              "default": 0
             },
             "keepResultFiles": {
               "type": "boolean",
@@ -3102,7 +3107,7 @@
             "retryinterval": {
               "type": "integer",
               "description": "minimal time before retrying archive of failed WorkUnits (days)",
-              "default": "7"
+              "default": 7
             },
             "disabled": {},
             "interval": {},
@@ -3190,12 +3195,12 @@
         "persistExpiryDefault": {
           "type": "integer",
           "description": "Default number of days to delete unused persist files",
-          "default": "7"
+          "default": 7
         },
         "expiryDefault": {
           "type": "integer",
           "description": "Default number of days to delete unused standard files that are flagged with EXPIRY",
-          "default": "14"
+          "default": 14
         },
         "maxFileLimit": {
           "type": "integer",
@@ -3232,7 +3237,7 @@
         "switchMinTime": {
           "type": "integer",
           "description": "Minimum time (in seconds) to wait before switching to a different queue",
-          "default": "0"
+          "default": 0
         },
         "disabled": {},
         "hold": {},
@@ -3254,7 +3259,7 @@
         "expiryDays": {
           "type": "integer",
           "description": "Default number of days passed that debug plane files or directories are deleted.",
-          "default": "14"
+          "default": 14
         },
         "disabled": {},
         "interval": {},
@@ -3287,7 +3292,7 @@
           "cutoff": {
             "type": "integer",
             "description": "cutoff (in days) to ignore recent files.",
-            "default": "1"
+            "default": 1
           },
           "planes": {
             "type": "string",
@@ -3297,7 +3302,7 @@
           "numThreads": {
             "type": "integer",
             "description": "maximum thread count for scanning directories",
-            "default": "500"
+            "default": 500
           }
         },
         "additionalProperties": false
@@ -3362,7 +3367,7 @@
         },
         "parallelRequestLimit": {
           "type": "integer",
-          "default": "20"
+          "default": 20
         },
         "replicas": {
           "type": "integer"
