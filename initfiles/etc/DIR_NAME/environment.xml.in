@@ -898,7 +898,7 @@
                     buildSet="dafilesrv"
                     description="DaFileSrv process"
                     name="mydafilesrv"
-                    parallelRequestLimit="20"
+                    parallelRequestLimit="80"
                     throttleCPULimit="75"
                     throttleDelayMs="5000"
                     version="1">
@@ -906,7 +906,7 @@
              directory="${RUNTIME_PATH}/mydafilesrv"
              name="s1"
              netAddress="."
-             parallelRequestLimit="20"
+             parallelRequestLimit="80"
              throttleCPULimit="75"
              throttleDelayMs="5000"/>
   </DafilesrvProcess>

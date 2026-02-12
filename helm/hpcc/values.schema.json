@@ -3362,7 +3362,7 @@
         },
         "parallelRequestLimit": {
           "type": "integer",
-          "default": "20"
+          "default": 80
         },
         "replicas": {
           "type": "integer"

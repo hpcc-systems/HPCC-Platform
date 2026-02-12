@@ -60,24 +60,24 @@
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>
-                        <xs:attribute name="parallelRequestLimit" type="xs:nonNegativeInteger" use="optional" default="20">
+                        <xs:attribute name="parallelRequestLimit" type="xs:nonNegativeInteger" use="optional" default="80">
                             <xs:annotation>
                                 <xs:appinfo>
-                                    <tooltip>Defines the maximum number of concurrent dafilesrv requests allowed. Requests that exceed the limit will be delayed. A value of 0 disables throttling. Overrides global settting.</tooltip>
+                                    <tooltip>Defines the maximum number of concurrent dafilesrv requests allowed. Requests that exceed the limit will be delayed. A value of 0 disables throttling. Overrides global setting.</tooltip>
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>
                         <xs:attribute name="throttleDelayMs" type="xs:nonNegativeInteger" use="optional" default="5000">
                             <xs:annotation>
                                 <xs:appinfo>
-                                    <tooltip>Defines how many milliseconds delayed requests will be delayed by. Overrides global settting.</tooltip>
+                                    <tooltip>Defines how many milliseconds delayed requests will be delayed by. Overrides global setting.</tooltip>
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>
                         <xs:attribute name="throttleCPULimit" type="nonNegativeInteger" use="optional" default="75">
                             <xs:annotation>
                                 <xs:appinfo>
-                                    <tooltip>If after the initial delay, the CPU % falls below this setting, the transaction will be allowed to continue, i.e. the limit can be exceeded this way. Overrides global settting.</tooltip>
+                                    <tooltip>If after the initial delay, the CPU % falls below this setting, the transaction will be allowed to continue, i.e. the limit can be exceeded this way. Overrides global setting.</tooltip>
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>
@@ -120,10 +120,10 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="parallelRequestLimit" type="xs:nonNegativeInteger" use="optional" default="20">
+            <xs:attribute name="parallelRequestLimit" type="xs:nonNegativeInteger" use="optional" default="80">
                 <xs:annotation>
                     <xs:appinfo>
-                        <tooltip>Defines the maximum number of concurrent dafilesrv requests allowed. Requests that exceed the limit will be delayed. A value of 0 disables throttling. This a global setting.</tooltip>
+                        <tooltip>Defines the maximum number of concurrent dafilesrv requests allowed. Requests that exceed the limit will be delayed. A value of 0 disables throttling. This is a global setting.</tooltip>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
