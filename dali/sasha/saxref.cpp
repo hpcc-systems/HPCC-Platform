@@ -3057,7 +3057,7 @@ public:
                     cname.append(name);
                     // Get filterScopes for this cluster
                     const char *scopes = cluster.queryProp("@filterScopes");
-                    if (scopes && *scopes)
+                    if (!isEmptyString(scopes))
                         filterScopes.set(scopes).toLowerCase();
                 }
             }
