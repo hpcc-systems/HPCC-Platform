@@ -46,6 +46,33 @@ module.exports = function (env) {
     const isProduction = !isDev;
     console.log(isProduction ? "Production bundle" : "Debug bundle");
 
+    // Build fallback paths, only including paths that actually exist
+    const fallback = {};
+
+    const wasmDuckdbPath = path.resolve(__dirname, "../../../hpcc-js-wasm/packages/duckdb");
+    const wasmGraphvizPath = path.resolve(__dirname, "../../../hpcc-js-wasm/packages/graphviz");
+    const hpccjsPath = path.resolve(__dirname, "../../../hpcc-js/packages");
+    const visualizationPath = path.resolve(__dirname, "../../../Visualization/packages");
+
+    if (fs.existsSync(wasmDuckdbPath)) {
+        fallback["@hpcc-js/wasm-duckdb"] = [wasmDuckdbPath];
+    }
+
+    if (fs.existsSync(wasmGraphvizPath)) {
+        fallback["@hpcc-js/wasm-graphviz"] = [wasmGraphvizPath];
+    }
+
+    const hpccjsFallbackPaths = [];
+    if (fs.existsSync(hpccjsPath)) {
+        hpccjsFallbackPaths.push(hpccjsPath);
+    }
+    if (fs.existsSync(visualizationPath)) {
+        hpccjsFallbackPaths.push(visualizationPath);
+    }
+    if (hpccjsFallbackPaths.length > 0) {
+        fallback["@hpcc-js"] = hpccjsFallbackPaths;
+    }
+
     return {
         context: path.resolve(__dirname),
         entry: {
@@ -103,18 +130,10 @@ module.exports = function (env) {
                 }]
         },
         resolve: {
-            fallback: {
-                "@hpcc-js/wasm-duckdb": [
-                    path.resolve(__dirname, "../../../hpcc-js-wasm/packages/duckdb")
-                ],
-                "@hpcc-js/wasm-graphviz": [
-                    path.resolve(__dirname, "../../../hpcc-js-wasm/packages/graphviz")
-                ],
-                "@hpcc-js": [
-                    path.resolve(__dirname, "../../../hpcc-js/packages"),
-                    path.resolve(__dirname, "../../../Visualization/packages")
-                ]
-            }
+            alias: {
+                [path.resolve(__dirname, "_firebug/firebug")]: path.resolve(__dirname, "node_modules/dojo/_firebug/firebug.js")
+            },
+            fallback: fallback
         },
         plugins: plugins,
         resolveLoader: {
