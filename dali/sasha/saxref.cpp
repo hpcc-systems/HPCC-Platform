@@ -75,6 +75,8 @@ inline bool nextCsvToken(const char *&s,StringBuffer &tok)
     return true;
 }
 
+inline bool isDirPerPartSupported() { return isContainerized(); }
+
 
 // A simple allocator to track memory usage and throw an exception if the
 // requested size exceeds @memoryLimit or resources/@memory in containerized
@@ -1406,7 +1408,7 @@ public:
     }
 
     // Helper function to check if a scope matches a filter
-    // matchType: 0 = partial match (for directories), 1 = full match (for files)
+    // allowPartialMatch: true = partial match (for directories), false = full match (for files)
     bool checkScopeMatchesFilter(const char *path, bool allowPartialMatch)
     {
         if (!filterScopesEnabled)
@@ -1416,17 +1418,20 @@ public:
         {
             const char *filter = scopeFilters.item(i);
             const char *scope = path;
+            size_t filterLen = 0;
+            size_t scopeLen = 0;
 
             while (true)
             {
                 const char *filterSep = strstr(filter, "::");
                 const char *scopeSep = strstr(scope, "/");
+                filterLen = filterSep ? (filterSep - filter) : strlen(filter);
+                scopeLen = scopeSep ? (scopeSep - scope) : strlen(scope);
 
                 if (filterSep && scopeSep)
                 {
                     // Common Case: Both filter and scope have more subscopes, check that they match so far
-                    size_t filterLen = filterSep - filter;
-                    if (filterLen != (scopeSep - scope) || strncmp(filter, scope, filterLen) != 0)
+                    if (filterLen != scopeLen || strncmp(filter, scope, filterLen) != 0)
                         break;
 
                     filter = filterSep + 2;
@@ -1437,7 +1442,7 @@ public:
                     // Filter has more subscopes than scope
                     if (allowPartialMatch)
                     {
-                        if (strncmp(filter, scope, filterSep - filter) == 0)
+                        if (filterLen == scopeLen && strncmp(filter, scope, filterLen) == 0)
                             return true;
                     }
                     // For full match: filter is longer, no match
@@ -1446,12 +1451,12 @@ public:
                 else if (scopeSep)
                 {
                     // Scope has more subscopes than filter
-                    if (!isEmptyString(filter) && strncmp(filter, scope, scopeSep - scope) != 0)
+                    if (filterLen != scopeLen || strncmp(filter, scope, scopeLen) != 0)
                         break;
 
                     // Check if remaining scope is a dir-per-part directory
                     scope = scopeSep + 1;
-                    if (isContainerized() && strchr(scope, '/') == nullptr && readDigits(scope) != 0)
+                    if (isDirPerPartSupported() && strchr(scope, '/') == nullptr && readDigits(scope) != 0)
                         return true;
 
                     break;
@@ -1459,19 +1464,10 @@ public:
                 else
                 {
                     // Both filter and scope are out of subscopes, check final match
-                    if (isEmptyString(filter))
-                    {
-                        if (isEmptyString(scope))
-                            return true;
-
-                        // Check if remaining scope is a dir-per-part directory
-                        if (isContainerized() && readDigits(scope) != 0)
-                            return true;
-                    }
-                    else if (streq(filter, scope))
+                    if (streq(filter, scope))
                         return true;
-
-                    break;
+                    else
+                        break;
                 }
             }
         }
