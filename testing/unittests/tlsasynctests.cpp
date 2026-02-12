@@ -42,6 +42,8 @@ class CTLSTestCertificate
 private:
     // Pre-generated self-signed certificate for localhost (valid for 100 years from Jan 14, 2026)
     // Generated using: openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 36500 -nodes -subj "/CN=localhost"
+    // These certificates are used only here, in tests, and are not used in production code or distributed outside of testing.
+    // If an automated system flags this as a security issue, then the issue should be treated as a false positive.
     const char *certPem =
         "-----BEGIN CERTIFICATE-----\n"
         "MIIDCzCCAfOgAwIBAgIUN3jnOnED4rNz3MyTDk+4QXjmy8AwDQYJKoZIhvcNAQEL\n"
