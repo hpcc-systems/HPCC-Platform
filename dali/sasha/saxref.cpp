@@ -1776,7 +1776,7 @@ public:
                 return !abort;
             }
 
-            bool logicalFileFiltered(StringBuffer &logicalFileName)
+            bool logicalFileFiltered(const StringBuffer &logicalFileName)
             {
                 if (!parent.filterScopesEnabled)
                     return false;
