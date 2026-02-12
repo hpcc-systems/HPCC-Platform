@@ -3161,12 +3161,12 @@ ISashaServer *createSashaXrefServer()
 
 void processXRefRequest(ISashaCommand *cmd)
 {
-    if (sashaXRefServer) {
-        StringBuffer clusterlist(cmd->queryCluster());
-        StringBuffer filterScopes(cmd->queryFilterScopes());
+    if (sashaXRefServer)
+    {
+        const char *clusterlist = cmd->queryCluster();
         // only support single cluster for the moment
-        if (clusterlist.length())
-            sashaXRefServer->xrefRequest(clusterlist, filterScopes);
+        if (!isEmptyString(clusterlist))
+            sashaXRefServer->xrefRequest(clusterlist, cmd->queryFilterScopes());
     }
 }
 
