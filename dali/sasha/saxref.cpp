@@ -226,6 +226,7 @@ public:
         {
             // numParts==NotFound is used for files without a part mask. Treat them as single files
             mapLen = 1;
+            numParts = 1;
         }
         else if (numParts<=0xfff)
             mapLen = (numParts*4+7)/8;
@@ -273,7 +274,7 @@ public:
     unsigned getSize() const
     {
         size32_t nameLen = name[0];
-        size32_t mapLen = N==(unsigned short)NotFound ? 1 : (N*4+7)/8; // N==(unsigned short)NotFound is used for files without a part mask. Treat them as single files
+        size32_t mapLen = (N*4+7)/8;
         return sizeof(cFileDesc)+nameLen+mapLen;
     }
     inline byte *map() const
@@ -767,6 +768,14 @@ static void mergeDirPerPartDirs(cDirDesc *parent, cDirDesc *dir, const char *cur
     for (auto fileItr = dir->files.begin(); fileItr != dir->files.end();)
     {
         cFileDesc *file = fileItr->second.get();
+
+        // Skip non-HPCC files (external files without part masks) as they are treated as single files
+        if (!file->isHPCCFile())
+        {
+            fileItr++;
+            continue;
+        }
+
         // If this is a dir-per-part directory, the dirPerPartNum cannot be larger than the number of file parts,
         // and there should be enough subdirectories under the parent directory for each file part
         if (dirPerPartNum > file->N)
