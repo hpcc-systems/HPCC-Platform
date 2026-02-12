@@ -173,6 +173,7 @@ public:
     virtual void onAsyncComplete(int result) override;
 
 private:
+    friend class CAsyncTLSAcceptCallback;
     void startSingleshotAccept();
     void handleAcceptedConnection(int socketfd);
 
