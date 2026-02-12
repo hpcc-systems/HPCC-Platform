@@ -705,6 +705,20 @@ public:
                 ASSERT(callback.result >= 0);
                 ISocket::completeAsyncConnect(socket, callback.result);
                 
+                // Send data to ensure server has accepted the connection
+                char data = 'Y';
+                socket->write(&data, 1);
+                
+                // Wait (with timeout) for server thread to register the second connection
+                const unsigned maxWaitMs = 5000;
+                const unsigned pollIntervalMs = 50;
+                unsigned waitedMs = 0;
+                while (server.getConnectCount() < 2 && waitedMs < maxWaitMs)
+                {
+                    MilliSleep(pollIntervalMs);
+                    waitedMs += pollIntervalMs;
+                }
+                
                 // Verify we reconnected
                 ASSERT(server.getConnectCount() >= 2);
             }
@@ -835,6 +849,16 @@ public:
                 
                 // Brief pause between reconnects
                 MilliSleep(100);
+            }
+            
+            // Wait (with timeout) for server thread to register all connections
+            const unsigned maxWaitMs = 5000;
+            const unsigned pollIntervalMs = 50;
+            unsigned waitedMs = 0;
+            while (server.getConnectCount() < numReconnects && waitedMs < maxWaitMs)
+            {
+                MilliSleep(pollIntervalMs);
+                waitedMs += pollIntervalMs;
             }
             
             // Verify we had the expected number of connections
