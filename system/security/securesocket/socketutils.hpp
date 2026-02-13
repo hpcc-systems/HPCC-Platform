@@ -58,7 +58,7 @@ interface ISocketMessageProcessor
 // This class is used to process reads that are notified from a select/epoll handler
 // There is a minimum and maximum message size, and the option to only process a single
 // message, or continue processing multiple messages.
-class SECURESOCKET_API CReadSocketHandler : public CInterfaceOf<ISocketSelectNotify>, implements IAsyncCallback
+class SECURESOCKET_API CReadSocketHandler : public CInterfaceOf<ISocketSelectNotify>, public IAsyncCallback
 {
 public:
     CReadSocketHandler(ISocketMessageProcessor & _processor, IAsyncProcessor * _asyncReader, ISocket *_sock, size32_t _minSize, size32_t _maxSize);
@@ -77,7 +77,7 @@ public:
     virtual bool notifySelected(ISocket *sock, unsigned selected) override;
 
 // interface IAsyncCallback
-    virtual void onAsyncComplete(int result) override;
+    virtual bool onAsyncComplete(int result) override;
 
 protected:
     void processPendingMessages();
@@ -170,7 +170,7 @@ public:
     virtual int run() override;
 
 // interface IAsyncCallback
-    virtual void onAsyncComplete(int result) override;
+    virtual bool onAsyncComplete(int result) override;
 
 private:
     friend class CAsyncTLSAcceptCallback;
@@ -241,7 +241,7 @@ protected:
     void waitForRequestSpace(CLeavableCriticalBlock & block);
 
 // interface IAsyncCallback
-    virtual void onAsyncComplete(int result) override;
+    virtual bool onAsyncComplete(int result) override;
 
 
 protected:

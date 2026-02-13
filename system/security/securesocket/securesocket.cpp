@@ -179,7 +179,7 @@ class CSecureSocket;
 // Derived classes must implement:
 // - tryOperation() - Attempt the specific SSL operation
 // - Specific state machine logic
-class CAsyncTLSHandlerBase : implements IAsyncCallback, public CInterface
+class CAsyncTLSHandlerBase : public CSimpleInterfaceOf<IAsyncCallback>
 {
 protected:
     SSL * ssl;
@@ -190,8 +190,6 @@ protected:
     BIO * network_bio = nullptr;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CAsyncTLSHandlerBase(SSL * _ssl, IAsyncProcessor * _processor, ISocket * _socket, IAsyncCallback & _finalCallback)
         : ssl(_ssl), processor(_processor), socket(_socket), finalCallback(_finalCallback)
     {
@@ -206,11 +204,13 @@ protected:
     // Common start pattern: self-ownership and initial try
     void startWithInitialTry()
     {
-        // Self-ownership: Link() ourselves so handler survives until explicit Release() after tryOperation() returns true.
-        // Created with refcount=0, this brings it to 1. Handler now owns itself.
+        // Self-ownership: Link() ourselves so handler survives until completion.
+        // Created with refcount=0, this brings it to 1.
+        // If tryOperation() completes synchronously (returns true), we Release() immediately.
+        // If tryOperation() goes async (returns false), processor will Release() when onAsyncComplete() returns true.
         Link();
         if (tryOperation())
-            Release();
+            Release();  // Synchronous completion - release ourselves now
     }
 
     // Derived classes implement the specific operation (accept, connect, read, write)
@@ -220,7 +220,7 @@ protected:
     // Common error handling pattern
     virtual bool handleError(int error)
     {
-        finalCallback.onAsyncComplete(-1);
+        finalCallback.onAsyncComplete(error);
         return true;  // Always complete on error
     }
 };
@@ -229,7 +229,7 @@ protected:
 // 
 // Lifecycle: Uses self-ownership pattern. Created with refcount=0, then calls Link()
 // on itself in start() to take ownership. Survives until completion (success or error)
-// when start()/onAsyncComplete() calls Release() after try methods return true.
+// when processor calls Release() after onAsyncComplete()/try methods return true.
 // The try methods return bool: true if complete (success/error), false if async op pending.
 class CAsyncTLSAcceptHandler : public CAsyncTLSHandlerBase
 {
@@ -245,7 +245,7 @@ public:
                            ISocket * _socket, IAsyncCallback & _finalCallback, int _logLevel);
     
     void start();
-    virtual void onAsyncComplete(int result) override;
+    virtual bool onAsyncComplete(int result) override;
     
 protected:
     virtual bool tryOperation() override { return tryAccept(); }
@@ -299,7 +299,8 @@ public:
     
     void start()
     {
-        // Take ownership of ourselves - we'll Release() on completion
+        // Self-ownership: Link() ourselves so handler survives until completion.
+        // Created with refcount=0, this brings it to 1. Processor will Release() on async completion.
         Link();
         
         state = TLSWriteState::Writing;
@@ -307,14 +308,12 @@ public:
             Release();
     }
 
-    virtual void onAsyncComplete(int result) override
+    virtual bool onAsyncComplete(int result) override
     {
         
         if (result < 0)
         {
-            if (handleError(result))
-                Release();
-            return;
+            return handleError(result);
         }
         
         bool complete = false;
@@ -337,8 +336,7 @@ public:
             complete = handleError(-1);
         }
         
-        if (complete)
-            Release();
+        return complete;
     }
 
 protected:
@@ -485,7 +483,7 @@ public:
                             ISocket * _socket, IAsyncCallback & _finalCallback, int _logLevel);
     
     void start();
-    virtual void onAsyncComplete(int result) override;
+    virtual bool onAsyncComplete(int result) override;
 
 protected:
     virtual bool tryOperation() override { return tryConnect(); }
@@ -518,7 +516,7 @@ public:
                          IAsyncCallback & _finalCallback);
     
     void start();
-    virtual void onAsyncComplete(int result) override;
+    virtual bool onAsyncComplete(int result) override;
 
 protected:
     virtual bool tryOperation() override { return tryRead(); }
@@ -1336,22 +1334,18 @@ void CSecureSocket::startAsyncConnect(IAsyncProcessor * processor, IAsyncCallbac
 // CAsyncTLSAcceptHandler implementation
 void CAsyncTLSAcceptHandler::start()
 {
-    // Self-ownership: Link() ourselves so handler survives until explicit Release() after tryAccept() returns true.
-    // Created with refcount=0, this brings it to 1. Handler now owns itself.
+    // Self-ownership: Link() ourselves so handler survives until completion.
+    // Created with refcount=0, this brings it to 1. Processor will Release() us when operation completes.
     Link();
     state = TLSAcceptState::Accepting;
     if (tryAccept())
         Release();
 }
 
-void CAsyncTLSAcceptHandler::onAsyncComplete(int result)
+bool CAsyncTLSAcceptHandler::onAsyncComplete(int result)
 {
     if (result < 0)
-    {
-        if (handleError(result))
-            Release();
-        return;
-    }
+        return handleError(result);
     
     // Handle completion of underlying I/O based on current TLS accept state
     if (state == TLSAcceptState::WantRead && result > 0)
@@ -1369,10 +1363,9 @@ void CAsyncTLSAcceptHandler::onAsyncComplete(int result)
     
     // Retry SSL_accept now that I/O completed, but only if we're in an accepting state
     if (state == TLSAcceptState::Accepting)
-    {
-        if (tryAccept())
-            Release();
-    }
+        return tryAccept();
+    
+    return false;
 }
 
 bool CAsyncTLSAcceptHandler::tryAccept()
@@ -1446,22 +1439,18 @@ bool CAsyncTLSAcceptHandler::handleError(int error)
 // CAsyncTLSConnectHandler implementation
 void CAsyncTLSConnectHandler::start()
 {
-    // Self-ownership: Link() ourselves so handler survives until explicit Release() in completion.
-    // Created with refcount=0, this brings it to 1. Handler now owns itself.
+    // Self-ownership: Link() ourselves so handler survives until completion.
+    // Created with refcount=0, this brings it to 1. Processor will Release() us when operation completes.
     Link();
     state = TLSAcceptState::Accepting;
     if (tryConnect())
         Release();
 }
 
-void CAsyncTLSConnectHandler::onAsyncComplete(int result)
+bool CAsyncTLSConnectHandler::onAsyncComplete(int result)
 {
     if (result < 0)
-    {
-        if (handleError(result))
-            Release();
-        return;
-    }
+        return handleError(result);
     
     // Handle completion of underlying I/O based on current TLS connect state
     if (state == TLSAcceptState::WantRead && result > 0)
@@ -1479,10 +1468,9 @@ void CAsyncTLSConnectHandler::onAsyncComplete(int result)
     
     // Retry SSL_connect now that I/O completed, but only if we're in an accepting state
     if (state == TLSAcceptState::Accepting)
-    {
-        if (tryConnect())
-            Release();
-    }
+        return tryConnect();
+    
+    return false;
 }
 
 bool CAsyncTLSConnectHandler::tryConnect()
@@ -1556,22 +1544,18 @@ bool CAsyncTLSConnectHandler::handleError(int error)
 // CAsyncTLSReadHandler implementation
 void CAsyncTLSReadHandler::start()
 {
-    // Self-ownership: Link() ourselves so handler survives until explicit Release() in completion.
-    // Created with refcount=0, this brings it to 1. Handler now owns itself.
+    // Self-ownership: Link() ourselves so handler survives until completion.
+    // Created with refcount=0, this brings it to 1. Processor will Release() us when operation completes.
     Link();
     state = TLSReadState::Reading;
     if (tryRead())
         Release();
 }
 
-void CAsyncTLSReadHandler::onAsyncComplete(int result)
+bool CAsyncTLSReadHandler::onAsyncComplete(int result)
 {
     if (result < 0)
-    {
-        if (handleError(result))
-            Release();
-        return;
-    }
+        return handleError(result);
     
     // If we read 0 bytes from socket, the connection was closed
     if (result == 0)
@@ -1581,14 +1565,12 @@ void CAsyncTLSReadHandler::onAsyncComplete(int result)
         {
             state = TLSReadState::Error;
             finalCallback.onAsyncComplete(-1);
-            Release();
-            return;
+            return true;
         }
         // Otherwise complete with whatever we've read
         state = TLSReadState::Completed;
         finalCallback.onAsyncComplete(totalRead);
-        Release();
-        return;
+        return true;
     }
     
     // Handle completion of underlying I/O based on current TLS read state
@@ -1607,10 +1589,9 @@ void CAsyncTLSReadHandler::onAsyncComplete(int result)
     
     // Retry SSL_read now that I/O completed, but only if we're in a reading state
     if (state == TLSReadState::Reading)
-    {
-        if (tryRead())
-            Release();
-    }
+        return tryRead();
+    
+    return false;
 }
 
 bool CAsyncTLSReadHandler::tryRead()

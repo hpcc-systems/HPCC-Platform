@@ -466,16 +466,17 @@ public:
             return;
         }
         
-        class ConnectCallback : public IAsyncCallback
+        class ConnectCallback : public CSimpleInterfaceOf<IAsyncCallback>
         {
         public:
             Semaphore completed;
             int result = -999;
             
-            virtual void onAsyncComplete(int _result) override
+            virtual bool onAsyncComplete(int _result) override
             {
                 result = _result;
                 completed.signal();
+                return true;
             }
         };
         
@@ -543,16 +544,17 @@ public:
         
         constexpr unsigned numConnections = 5;
         
-        class MultiConnectCallback : public IAsyncCallback
+        class MultiConnectCallback : public CSimpleInterfaceOf<IAsyncCallback>
         {
         public:
             Semaphore completed;
             int result = -999;
             
-            virtual void onAsyncComplete(int _result) override
+            virtual bool onAsyncComplete(int _result) override
             {
                 result = _result;
                 completed.signal();
+                return true;
             }
         };
         
@@ -560,9 +562,11 @@ public:
         {
             std::vector<Owned<ISocket>> sockets;
             std::vector<SockAddrHolder> addrHolders(numConnections);
-            std::vector<MultiConnectCallback> callbacks;
+            std::vector<std::unique_ptr<MultiConnectCallback>> callbacks;
             
-            callbacks.resize(numConnections);
+            // Create callbacks
+            for (unsigned i = 0; i < numConnections; i++)
+                callbacks.push_back(std::make_unique<MultiConnectCallback>());
             
             // Create and queue multiple connections
             for (unsigned i = 0; i < numConnections; i++)
@@ -570,7 +574,7 @@ public:
                 size32_t addrlen = 0;
                 
                 Owned<ISocket> socket = ISocket::createForAsyncConnect(ep, addrHolders[i].getRef(), addrlen);
-                uring->enqueueSocketConnect(socket, addrHolders[i].get(), addrlen, callbacks[i]);
+                uring->enqueueSocketConnect(socket, addrHolders[i].get(), addrlen, *callbacks[i]);
                 
                 sockets.push_back(std::move(socket));
             }
@@ -578,11 +582,11 @@ public:
             // Wait for all to complete
             for (unsigned i = 0; i < numConnections; i++)
             {
-                bool signaled = callbacks[i].completed.wait(5000);
+                bool signaled = callbacks[i]->completed.wait(5000);
                 ASSERT(signaled);
-                ASSERT(callbacks[i].result >= 0);
+                ASSERT(callbacks[i]->result >= 0);
                 
-                ISocket::completeAsyncConnect(sockets[i], callbacks[i].result);
+                ISocket::completeAsyncConnect(sockets[i], callbacks[i]->result);
             }
             
             // Clean up sockets
@@ -654,16 +658,18 @@ public:
             return;
         }
         
-        class ReconnectCallback : public IAsyncCallback
+        class ReconnectCallback : public CSimpleInterfaceOf<IAsyncCallback>
         {
         public:
+            
             Semaphore completed;
             int result = -999;
             
-            virtual void onAsyncComplete(int _result) override
+            virtual bool onAsyncComplete(int _result) override
             {
                 result = _result;
                 completed.signal();
+                return true;
             }
         };
 
@@ -750,16 +756,18 @@ public:
             return;
         }
         
-        class TimeoutCallback : public IAsyncCallback
+        class TimeoutCallback : public CSimpleInterfaceOf<IAsyncCallback>
         {
         public:
+            
             Semaphore completed;
             int result = -999;
             
-            virtual void onAsyncComplete(int _result) override
+            virtual bool onAsyncComplete(int _result) override
             {
                 result = _result;
                 completed.signal();
+                return true;
             }
         };
         
@@ -810,16 +818,18 @@ public:
             return;
         }
         
-        class ReconnectCallback : public IAsyncCallback
+        class ReconnectCallback : public CSimpleInterfaceOf<IAsyncCallback>
         {
         public:
+            
             Semaphore completed;
             int result = -999;
             
-            virtual void onAsyncComplete(int _result) override
+            virtual bool onAsyncComplete(int _result) override
             {
                 result = _result;
                 completed.signal();
+                return true;
             }
         };
         
@@ -967,16 +977,18 @@ public:
             return;
         }
         
-        class RapidCallback : public IAsyncCallback
+        class RapidCallback : public CSimpleInterfaceOf<IAsyncCallback>
         {
         public:
+            
             Semaphore completed;
             int result = -999;
             
-            virtual void onAsyncComplete(int _result) override
+            virtual bool onAsyncComplete(int _result) override
             {
                 result = _result;
                 completed.signal();
+                return true;
             }
         };
         
@@ -1033,16 +1045,18 @@ public:
             return;
         }
         
-        class CancelCallback : public IAsyncCallback
+        class CancelCallback : public CSimpleInterfaceOf<IAsyncCallback>
         {
         public:
+            
             Semaphore completed;
             int result = -999;
             
-            virtual void onAsyncComplete(int _result) override
+            virtual bool onAsyncComplete(int _result) override
             {
                 result = _result;
                 completed.signal();
+                return true;
             }
         };
         
