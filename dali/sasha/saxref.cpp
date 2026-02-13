@@ -3540,18 +3540,16 @@ public:
     void testCreation()
     {
         XRefAllocator allocator(1); // 1MB limit
-        cMisplacedRec *rec = cMisplacedRec::create(&allocator);
+        std::unique_ptr<cMisplacedRec> rec(cMisplacedRec::create(&allocator));
 
         CPPUNIT_ASSERT(rec != nullptr);
         CPPUNIT_ASSERT(rec->allocator == &allocator);
-
-        delete rec;
     }
 
     void testInitialization()
     {
         XRefAllocator allocator(1);
-        cMisplacedRec *rec = cMisplacedRec::create(&allocator);
+        std::unique_ptr<cMisplacedRec> rec(cMisplacedRec::create(&allocator));
 
         rec->init(0, 5, 2, 4); // drv=0, part=5, node=2, totalNodes=4
 
@@ -3559,35 +3557,29 @@ public:
         CPPUNIT_ASSERT_EQUAL((unsigned short)2, rec->nn);
         CPPUNIT_ASSERT_EQUAL(false, rec->marked);
         CPPUNIT_ASSERT(rec->next == nullptr);
-
-        delete rec;
     }
 
     void testEquality()
     {
         XRefAllocator allocator(1);
-        cMisplacedRec *rec = cMisplacedRec::create(&allocator);
+        std::unique_ptr<cMisplacedRec> rec(cMisplacedRec::create(&allocator));
 
         rec->init(0, 5, 2, 4);
 
         CPPUNIT_ASSERT(rec->eq(0, 5, 2, 4));
         CPPUNIT_ASSERT(!rec->eq(0, 6, 2, 4)); // different part
         CPPUNIT_ASSERT(!rec->eq(0, 5, 3, 4)); // different node
-
-        delete rec;
     }
 
     void testGetters()
     {
         XRefAllocator allocator(1);
-        cMisplacedRec *rec = cMisplacedRec::create(&allocator);
+        std::unique_ptr<cMisplacedRec> rec(cMisplacedRec::create(&allocator));
 
         rec->init(1, 5, 2, 4); // drv=1, part=5, node=2, totalNodes=4
 
         CPPUNIT_ASSERT_EQUAL(1U, rec->getDrv(4));
         CPPUNIT_ASSERT_EQUAL(2U, rec->getNode(4));
-
-        delete rec;
     }
 };
 
@@ -3608,7 +3600,7 @@ public:
     {
         XRefAllocator allocator(1);
         const char *testName = "testfile.$N$_of_$P$";
-        cFileDesc *file = cFileDesc::create(testName, 400, true, 8, &allocator);
+        std::unique_ptr<cFileDesc> file(cFileDesc::create(testName, 400, true, 8, &allocator));
 
         CPPUNIT_ASSERT(file != nullptr);
         CPPUNIT_ASSERT(file->eq(testName));
@@ -3617,14 +3609,12 @@ public:
         CPPUNIT_ASSERT_EQUAL((byte)8, file->filenameLen);
         CPPUNIT_ASSERT(file->eq(testName));
         CPPUNIT_ASSERT(!file->eq("differentfile.$N$_of_$P$"));
-
-        delete file;
     }
 
     void testPresentBits()
     {
         XRefAllocator allocator(1);
-        cFileDesc *file = cFileDesc::create("testfile.$N$_of_$P$", 400, true, 8, &allocator);
+        std::unique_ptr<cFileDesc> file(cFileDesc::create("testfile.$N$_of_$P$", 400, true, 8, &allocator));
 
         // Test setting and getting present bits
         CPPUNIT_ASSERT_EQUAL(false, file->setpresent(0, 1));    // should return false (not previously set)
@@ -3633,14 +3623,12 @@ public:
         CPPUNIT_ASSERT_EQUAL(false, file->testpresent(0, 400)); // should be false (not set)
         CPPUNIT_ASSERT_EQUAL(false, file->setpresent(0, 400));  // should return false (not previously set)
         CPPUNIT_ASSERT_EQUAL(true, file->testpresent(0, 400));  // should now be set
-
-        delete file;
     }
 
     void testMarkedBits()
     {
         XRefAllocator allocator(1);
-        cFileDesc *file = cFileDesc::create("testfile.$N$_of_$P$", 400, true, 8, &allocator);
+        std::unique_ptr<cFileDesc> file(cFileDesc::create("testfile.$N$_of_$P$", 400, true, 8, &allocator));
 
         // Test setting and getting marked bits
         CPPUNIT_ASSERT_EQUAL(false, file->setmarked(0, 1));    // should return false (not previously set)
@@ -3649,23 +3637,18 @@ public:
         CPPUNIT_ASSERT_EQUAL(false, file->testmarked(0, 400)); // should be false (not set)
         CPPUNIT_ASSERT_EQUAL(false, file->setmarked(0, 400));  // should return false (not previously set)
         CPPUNIT_ASSERT_EQUAL(true, file->testmarked(0, 400));  // should now be set
-
-        delete file;
     }
 
     void testHPCCFile()
     {
         XRefAllocator allocator(1);
 
-        cFileDesc *hpccFile = cFileDesc::create("testfile.$N$_of_$P$", 4, false, 8, &allocator);
+        std::unique_ptr<cFileDesc> hpccFile(cFileDesc::create("testfile.$N$_of_$P$", 4, false, 8, &allocator));
         CPPUNIT_ASSERT(hpccFile->isHPCCFile());
 
         // For non-HPCC files, filenameLen will be 0 because deduceMask fails to find a partmask
-        cFileDesc *nonHpccFile = cFileDesc::create("testfile.dat", 4, false, 0, &allocator);
+        std::unique_ptr<cFileDesc> nonHpccFile(cFileDesc::create("testfile.dat", 4, false, 0, &allocator));
         CPPUNIT_ASSERT(!nonHpccFile->isHPCCFile());
-
-        delete hpccFile;
-        delete nonHpccFile;
     }
 
     void testGetNameAndMask()
@@ -3673,7 +3656,7 @@ public:
         XRefAllocator allocator(1);
 
         // Test HPCC file with filename length
-        cFileDesc *hpccFile = cFileDesc::create("testfile.$N$_of_$P$", 4, false, 8, &allocator);
+        std::unique_ptr<cFileDesc> hpccFile(cFileDesc::create("testfile.$N$_of_$P$", 4, false, 8, &allocator));
 
         StringBuffer nameBuf;
         CPPUNIT_ASSERT(hpccFile->getName(nameBuf));
@@ -3682,22 +3665,17 @@ public:
         StringBuffer maskBuf;
         hpccFile->getNameMask(maskBuf);
         CPPUNIT_ASSERT_EQUAL(std::string("testfile.$N$_of_$P$"), std::string(maskBuf.str()));
-
-        delete hpccFile;
-
         // Test non-HPCC file (no filename length)
-        cFileDesc *nonHpccFile = cFileDesc::create("regularfile.dat", 1, false, 0, &allocator);
+        std::unique_ptr<cFileDesc> nonHpccFile(cFileDesc::create("regularfile.dat", 1, false, 0, &allocator));
 
         StringBuffer nameBuf2;
         CPPUNIT_ASSERT(!nonHpccFile->getName(nameBuf2)); // Should return false
-
-        delete nonHpccFile;
     }
 
     void testGetPartName()
     {
         XRefAllocator allocator(1);
-        cFileDesc *file = cFileDesc::create("testfile.$N$_of_$P$", 4, false, 8, &allocator);
+        std::unique_ptr<cFileDesc> file(cFileDesc::create("testfile.$N$_of_$P$", 4, false, 8, &allocator));
 
         StringBuffer partName;
         file->getPartName(partName, 1);
@@ -3706,8 +3684,6 @@ public:
         // Note: The exact expansion depends on expandMask implementation
         CPPUNIT_ASSERT(partName.length() > 0);
         CPPUNIT_ASSERT(strstr(partName.str(), "testfile") != nullptr);
-
-        delete file;
     }
 };
 
@@ -3732,19 +3708,17 @@ public:
         XRefAllocator allocator(1);
         const char *testName = "directory";
 
-        cDirDesc *dir = cDirDesc::create(testName, &allocator);
+        std::unique_ptr<cDirDesc> dir(cDirDesc::create(testName, &allocator));
 
         CPPUNIT_ASSERT(dir != nullptr);
         CPPUNIT_ASSERT(dir->eq(testName));
         CPPUNIT_ASSERT(!dir->eq("directory2"));
-
-        delete dir;
     }
 
     void testEmpty()
     {
         XRefAllocator allocator(1);
-        cDirDesc *dir = cDirDesc::create("directory", &allocator);
+        std::unique_ptr<cDirDesc> dir(cDirDesc::create("directory", &allocator));
 
         // Initially, directory should be empty
         CPPUNIT_ASSERT(dir->empty(0));
@@ -3752,18 +3726,16 @@ public:
 
         // Add a file to the directory
         const char *testName = "testfile.$N$_of_$P$";
-        cFileDesc *file = cFileDesc::create(testName, 400, true, 8, &allocator);
-        dir->files.emplace(testName, file);
+        std::unique_ptr<cFileDesc> file(cFileDesc::create(testName, 400, true, 8, &allocator));
+        dir->files.emplace(testName, file.release());
         CPPUNIT_ASSERT(!dir->empty(0));
         CPPUNIT_ASSERT(!dir->empty(1));
-
-        delete dir;
     }
 
     void testAddFile()
     {
         XRefAllocator allocator(1);
-        cDirDesc *dir = cDirDesc::create("directory", &allocator);
+        std::unique_ptr<cDirDesc> dir(cDirDesc::create("directory", &allocator));
 
         // Simulate scanDirectory logic for adding a file
         unsigned numNodes = 20;
@@ -3788,14 +3760,12 @@ public:
 
         // Check present bit
         CPPUNIT_ASSERT(found->testpresent(drv, partNum));
-
-        delete dir;
     }
 
     void testSetMisplacedAndPresent()
     {
         XRefAllocator allocator(1);
-        cDirDesc *dir = cDirDesc::create("directory", &allocator);
+        std::unique_ptr<cDirDesc> dir(cDirDesc::create("directory", &allocator));
 
         unsigned numNodes = 20;
         unsigned nodeNum = 0;
@@ -3816,14 +3786,12 @@ public:
         // Mark as present (not misplaced)
         dir->setMisplacedAndPresent(file, false, partNum, drv, "/home/test/misplacedfile._6_of_10", nodeNum, numNodes);
         CPPUNIT_ASSERT(file->testpresent(drv, partNum));
-
-        delete dir;
     }
 
     void testEnsureFile()
     {
         XRefAllocator allocator(1);
-        cDirDesc *dir = cDirDesc::create("directory", &allocator);
+        std::unique_ptr<cDirDesc> dir(cDirDesc::create("directory", &allocator));
 
         unsigned numParts = 5;
         unsigned filenameLen = 8;
@@ -3843,14 +3811,12 @@ public:
         cFileDesc *file2 = dir->ensureFile(fn, numParts, false, filenameLen, &allocator);
         CPPUNIT_ASSERT(file2 == file);
         CPPUNIT_ASSERT(dir->files.size() == 1);
-
-        delete dir;
     }
 
     void testIsMisplaced()
     {
         XRefAllocator allocator(1);
-        cDirDesc *dir = cDirDesc::create("directory", &allocator);
+        std::unique_ptr<cDirDesc> dir(cDirDesc::create("directory", &allocator));
 
         // Test external files (numParts == NotFound) - should always return true
         SocketEndpointArray emptyEpa;
@@ -3916,14 +3882,12 @@ public:
             CPPUNIT_ASSERT(!dir->isMisplaced(0, 4, epa.item(0), *grp, "/test/file._1_of_4", 5, 1, 1)); // correct placement
             CPPUNIT_ASSERT(!dir->isMisplaced(1, 4, epa.item(1), *grp, "/test/file._2_of_4", 5, 1, 1)); // correct placement
         }
-
-        delete dir;
     }
 
     void testSetMisplacedAndPresentMultipleMisplaced()
     {
         XRefAllocator allocator(1);
-        cDirDesc *dir = cDirDesc::create("directory", &allocator);
+        std::unique_ptr<cDirDesc> dir(cDirDesc::create("directory", &allocator));
         const char *fn = "multi._$P$_of_10";
         cFileDesc *file = dir->ensureFile(fn, 10, false, 8, &allocator);
         dir->setMisplacedAndPresent(file, true, 1, 0, "/home/test/multi._2_of_10", 0, 20);
@@ -3931,28 +3895,25 @@ public:
         CPPUNIT_ASSERT(file->misplaced != nullptr);
         CPPUNIT_ASSERT(file->misplaced->next != nullptr);
         CPPUNIT_ASSERT(file->misplaced->pn == 2 && file->misplaced->next->pn == 1);
-        delete dir;
     }
 
     void testGetFileNotExist()
     {
         XRefAllocator allocator(1);
-        cDirDesc *dir = cDirDesc::create("directory", &allocator);
+        std::unique_ptr<cDirDesc> dir(cDirDesc::create("directory", &allocator));
         CPPUNIT_ASSERT(dir->getFile("doesnotexist._$P$_of_1") == nullptr);
-        delete dir;
     }
 
     void testEnsureFileExternalFile()
     {
         XRefAllocator allocator(1);
-        cDirDesc *dir = cDirDesc::create("directory", &allocator);
+        std::unique_ptr<cDirDesc> dir(cDirDesc::create("directory", &allocator));
         const char *fn = "externalfile.dat";
         cFileDesc *file = dir->ensureFile(fn, NotFound, false, 0, &allocator);
         CPPUNIT_ASSERT(file != nullptr);
         CPPUNIT_ASSERT(file->N == 1);
         dir->setMisplacedAndPresent(file, true, 0, 0, "/home/test/externalfile.dat", 0, 1);
         CPPUNIT_ASSERT(file->misplaced != nullptr);
-        delete dir;
     }
 };
 
