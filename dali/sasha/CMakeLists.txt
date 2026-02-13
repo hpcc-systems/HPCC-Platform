@@ -107,6 +107,12 @@ target_link_libraries ( saserver
          sashalib
     )
 
+if (USE_CPPUNIT)
+    install ( TARGETS saserver LIBRARY DESTINATION ${LIB_DIR} )
+    target_link_libraries ( saserver cppunit )
+    include_directories( ${HPCC_SOURCE_DIR}/testing/unittests)
+endif()
+
 set (    SRCS 
          sacmd.cpp 
          sasha.cpp 
