@@ -210,21 +210,21 @@ void CReadSocketHandler::startAsyncRead()
     asyncReader->enqueueSocketRead(socket, target+readSoFar, maxToRead, *this);
 }
 
-void CReadSocketHandler::onAsyncComplete(int result)
+bool CReadSocketHandler::onAsyncComplete(int result)
 {
     //This is called on the completion of an async read
     if (result < 0)
     {
         Owned<IJSOCK_Exception> exception = createJSocketException(result, "Read error", __FILE__, __LINE__);
         processor.closeConnection(*this, exception);
-        return;
+        return false; // Handler is persistent, processor manages its lifecycle
     }
 
     if (result == 0)
     {
         Owned<IJSOCK_Exception> exception = createJSocketException(JSOCKERR_graceful_close, "Connection closed", __FILE__, __LINE__);
         processor.closeConnection(*this, exception);
-        return;
+        return false; // Handler is persistent, processor manages its lifecycle
     }
 
     readSoFar += result;
@@ -238,6 +238,7 @@ void CReadSocketHandler::onAsyncComplete(int result)
     }
 
     startAsyncRead();
+    return false; // Handler is persistent, continues reading
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -655,29 +656,26 @@ void CSocketConnectionListener::startSingleshotAccept()
         asyncReader->enqueueSocketAccept(listenSocket, *this);
 }
 
-class CAsyncTLSAcceptCallback : public CInterface, implements IAsyncCallback
+class CAsyncTLSAcceptCallback : public CSimpleInterfaceOf<IAsyncCallback>
 {
 private:
     Linked<CSocketConnectionListener> listener;
     Owned<ISecureSocket> secureSocket;
     
 public:
-    IMPLEMENT_IINTERFACE;
-    
     CAsyncTLSAcceptCallback(CSocketConnectionListener * _listener, ISecureSocket * _secureSocket)
         : listener(LINK(_listener)), secureSocket(_secureSocket)
     {
     }
     
-    virtual void onAsyncComplete(int result) override
+    virtual bool onAsyncComplete(int result) override
     {
         if (result < 0)
         {
             secureSocket->close();
             if (result != PORT_CHECK_SSL_ACCEPT_ERROR)
                 PROGLOG("MP Connect Thread: failed to async accept secure connection (result=%d)", result);
-            Release(); // Release self-ownership
-            return;
+            return true; // Callback complete, processor will Release()
         }
         
         // Success - add the socket to the handler
@@ -698,7 +696,7 @@ public:
             e->Release();
             secureSocket->close();
         }
-        Release(); // Release self-ownership
+        return true; // Callback complete, processor will Release()
     }
 };
 
@@ -775,7 +773,7 @@ void CSocketConnectionListener::handleAcceptedConnection(int socketfd)
     }
 }
 
-void CSocketConnectionListener::onAsyncComplete(int result)
+bool CSocketConnectionListener::onAsyncComplete(int result)
 {
     // Check if we're shutting down first to avoid accessing members during destruction
     if (aborting.load())
@@ -787,7 +785,7 @@ void CSocketConnectionListener::onAsyncComplete(int result)
             if (pendingAcceptCallbacks.compare_exchange_strong(expected, 0))
                 shutdownSem.signal();
         }
-        return;
+        return false; // Multishot accept callback is persistent
     }
     
     // This is called when a new connection is accepted via multishot accept
@@ -800,7 +798,7 @@ void CSocketConnectionListener::onAsyncComplete(int result)
         {
             // Cancellation - should have been handled at function entry if aborting
             WARNLOG("Multishot accept cancelled unexpectedly (not aborting)");
-            return;
+            return false;
         }
         
         if (!aborting)
@@ -858,20 +856,22 @@ void CSocketConnectionListener::onAsyncComplete(int result)
                     shutdownSem.signal();
             }
         }
-        return;
+        return false;
     }
 
     // result contains the file descriptor of the accepted socket
     // With multishot accept, the operation continues to accept connections automatically
     // until it's cancelled or encounters an error
     if (aborting.load())
-        return;
+        return false;
     
     handleAcceptedConnection(result);
     
     // If using single-shot accept (not multishot), we need to re-queue another accept
     if (acceptMethod.load() == AcceptMethod::SingleshotAccept)
         startSingleshotAccept();
+    
+    return false; // Multishot accept callback is persistent
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -1085,7 +1085,7 @@ void CSocketTarget::startAsyncConnect()
     }
 }
 
-void CSocketTarget::onAsyncComplete(int result)
+bool CSocketTarget::onAsyncComplete(int result)
 {
     unsigned newSpaceToSignal = 0;
 
@@ -1203,6 +1203,7 @@ void CSocketTarget::onAsyncComplete(int result)
     }
     if (newSpaceToSignal)
         waitSem.signal(newSpaceToSignal);
+    return false; // Target callback is persistent, managed externally
 }
 
 

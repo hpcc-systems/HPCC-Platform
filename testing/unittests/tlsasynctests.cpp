@@ -265,14 +265,13 @@ private:
     CTLSTestCertificate cert;
     std::atomic<unsigned> acceptCount{0};
 
-    class AsyncAcceptHandler : public CInterface, implements IAsyncCallback
+    class AsyncAcceptHandler : public CSimpleInterfaceOf<IAsyncCallback>
     {
     private:
         AsyncTLSEchoServer *owner;
         Owned<ISecureSocket> secureSocket;
 
     public:
-        IMPLEMENT_IINTERFACE;
 
         AsyncAcceptHandler(AsyncTLSEchoServer *_owner, ISecureSocket *_socket)
             : owner(_owner), secureSocket(_socket)
@@ -286,7 +285,7 @@ private:
             Link();
         }
 
-        virtual void onAsyncComplete(int result) override
+        virtual bool onAsyncComplete(int result) override
         {
             if (result == 0 && owner->running)
             {
@@ -295,6 +294,7 @@ private:
             }
             // Relinquish self-ownership, destroys handler (refcount 1->0)
             Release();
+            return true;
         }
     };
 
@@ -1407,18 +1407,19 @@ public:
             Owned<ISecureSocket> secureSocket = clientContext->createSecureSocket(socket.getClear());
 
             // Perform async client-side TLS handshake
-            class ConnectCallback : public CInterface, implements IAsyncCallback
+            class ConnectCallback : public CSimpleInterfaceOf<IAsyncCallback>
             {
             public:
+                
                 Semaphore completed;
                 int result = -999;
 
-                virtual void onAsyncComplete(int _result) override
+                virtual bool onAsyncComplete(int _result) override
                 {
                     result = _result;
                     completed.signal();
+                    return true;
                 }
-                IMPLEMENT_IINTERFACE;
             };
 
             ConnectCallback callback;
@@ -1459,18 +1460,19 @@ public:
             Owned<ISecureSocketContext> clientContext = createSecureSocketContextEx2(tlsConfig, ClientSocket);
             Owned<ISecureSocket> secureSocket = clientContext->createSecureSocket(socket.getClear());
 
-            class ConnectCallback : public CInterface, implements IAsyncCallback
+            class ConnectCallback : public CSimpleInterfaceOf<IAsyncCallback>
             {
             public:
+                
                 Semaphore completed;
                 int result = -999;
 
-                virtual void onAsyncComplete(int _result) override
+                virtual bool onAsyncComplete(int _result) override
                 {
                     result = _result;
                     completed.signal();
+                    return true;
                 }
-                IMPLEMENT_IINTERFACE;
             };
 
             ConnectCallback callback;
@@ -1525,18 +1527,19 @@ public:
                 Owned<ISecureSocketContext> clientContext = createSecureSocketContextEx2(tlsConfig, ClientSocket);
                 Owned<ISecureSocket> secureSocket = clientContext->createSecureSocket(socket.getClear());
 
-                class ConnectCallback : public CInterface, implements IAsyncCallback
+                class ConnectCallback : public CSimpleInterfaceOf<IAsyncCallback>
                 {
                 public:
+                    
                     Semaphore completed;
                     int result = -999;
 
-                    virtual void onAsyncComplete(int _result) override
+                    virtual bool onAsyncComplete(int _result) override
                     {
                         result = _result;
                         completed.signal();
+                        return true;
                     }
-                    IMPLEMENT_IINTERFACE;
                 };
 
                 ConnectCallback callback;
@@ -1596,18 +1599,19 @@ public:
             secureSocket->write(msg, strlen(msg));
 
             // Read the echo using async read
-            class ReadCallback : public CInterface, implements IAsyncCallback
+            class ReadCallback : public CSimpleInterfaceOf<IAsyncCallback>
             {
             public:
+                
                 Semaphore completed;
                 int result = -999;
 
-                virtual void onAsyncComplete(int _result) override
+                virtual bool onAsyncComplete(int _result) override
                 {
                     result = _result;
                     completed.signal();
+                    return true;
                 }
-                IMPLEMENT_IINTERFACE;
             };
 
             ReadCallback callback;
@@ -1660,18 +1664,19 @@ public:
             secureSocket->write(msg, strlen(msg));
 
             // Read using async read with null processor (should fallback to sync)
-            class ReadCallback : public CInterface, implements IAsyncCallback
+            class ReadCallback : public CSimpleInterfaceOf<IAsyncCallback>
             {
             public:
+                
                 Semaphore completed;
                 int result = -999;
 
-                virtual void onAsyncComplete(int _result) override
+                virtual bool onAsyncComplete(int _result) override
                 {
                     result = _result;
                     completed.signal();
+                    return true;
                 }
-                IMPLEMENT_IINTERFACE;
             };
 
             ReadCallback callback;
@@ -1746,16 +1751,18 @@ public:
                 // Delay to let server receive and echo
                 MilliSleep(100);
 
-                class ReadCallback : public IAsyncCallback
+                class ReadCallback : public CSimpleInterfaceOf<IAsyncCallback>
                 {
                 public:
+                    
                     Semaphore completed;
                     int result = -999;
 
-                    virtual void onAsyncComplete(int _result) override
+                    virtual bool onAsyncComplete(int _result) override
                     {
                         result = _result;
                         completed.signal();
+                        return true;
                     }
                 };
 
@@ -1827,18 +1834,19 @@ public:
             secureSocket->write(sendBuffer.bytes(), dataSize);
 
             // Read using async read
-            class ReadCallback : public CInterface, implements IAsyncCallback
+            class ReadCallback : public CSimpleInterfaceOf<IAsyncCallback>
             {
             public:
+                
                 Semaphore completed;
                 int result = -999;
 
-                virtual void onAsyncComplete(int _result) override
+                virtual bool onAsyncComplete(int _result) override
                 {
                     result = _result;
                     completed.signal();
+                    return true;
                 }
-                IMPLEMENT_IINTERFACE;
             };
 
             ReadCallback callback;
@@ -1902,18 +1910,19 @@ public:
             const char *msg = "Hello async write!";
             const size32_t msgLen = strlen(msg);
 
-            class WriteCallback : public CInterface, implements IAsyncCallback
+            class WriteCallback : public CSimpleInterfaceOf<IAsyncCallback>
             {
             public:
+                
                 Semaphore completed;
                 int result = -999;
 
-                virtual void onAsyncComplete(int _result) override
+                virtual bool onAsyncComplete(int _result) override
                 {
                     result = _result;
                     completed.signal();
+                    return true;
                 }
-                IMPLEMENT_IINTERFACE;
             };
 
             WriteCallback writeCallback;
@@ -1967,18 +1976,19 @@ public:
             const char *msg = "Fallback test";
             const size32_t msgLen = strlen(msg);
 
-            class WriteCallback : public CInterface, implements IAsyncCallback
+            class WriteCallback : public CSimpleInterfaceOf<IAsyncCallback>
             {
             public:
+                
                 Semaphore completed;
                 int result = -999;
 
-                virtual void onAsyncComplete(int _result) override
+                virtual bool onAsyncComplete(int _result) override
                 {
                     result = _result;
                     completed.signal();
+                    return true;
                 }
-                IMPLEMENT_IINTERFACE;
             };
 
             WriteCallback writeCallback;
@@ -2044,18 +2054,19 @@ public:
                 StringBuffer msg;
                 msg.appendf("Write%u", i);
 
-                class WriteCallback : public CInterface, implements IAsyncCallback
+                class WriteCallback : public CSimpleInterfaceOf<IAsyncCallback>
                 {
                 public:
+                    
                     Semaphore completed;
                     int result = -999;
 
-                    virtual void onAsyncComplete(int _result) override
+                    virtual bool onAsyncComplete(int _result) override
                     {
                         result = _result;
                         completed.signal();
+                        return true;
                     }
-                    IMPLEMENT_IINTERFACE;
                 };
 
                 WriteCallback writeCallback;
@@ -2124,18 +2135,19 @@ public:
             for (size32_t i = 0; i < dataSize; i++)
                 sendBuf[i] = (byte)(i % 256);
 
-            class WriteCallback : public CInterface, implements IAsyncCallback
+            class WriteCallback : public CSimpleInterfaceOf<IAsyncCallback>
             {
             public:
+                
                 Semaphore completed;
                 int result = -999;
 
-                virtual void onAsyncComplete(int _result) override
+                virtual bool onAsyncComplete(int _result) override
                 {
                     result = _result;
                     completed.signal();
+                    return true;
                 }
-                IMPLEMENT_IINTERFACE;
             };
 
             WriteCallback writeCallback;
@@ -2187,17 +2199,18 @@ public:
             Owned<ISecureSocket> secureSocket = clientContext->createSecureSocket(socket.getClear());
 
             // Perform async connect with nullptr processor - should fall back to sync
-            class ConnectCallback : public CInterface, implements IAsyncCallback
+            class ConnectCallback : public CSimpleInterfaceOf<IAsyncCallback>
             {
             public:
+                
                 Semaphore completed;
                 int result = -999;
-                virtual void onAsyncComplete(int _result) override
+                virtual bool onAsyncComplete(int _result) override
                 {
                     result = _result;
                     completed.signal();
+                    return true;
                 }
-                IMPLEMENT_IINTERFACE;
             };
 
             ConnectCallback callback;
@@ -2266,17 +2279,18 @@ public:
                 Owned<ISecureSocket> secureSocket = clientContext->createSecureSocket(socket.getClear());
 
                 // Perform async connect - should fall back to sync due to config
-                class ConnectCallback : public CInterface, implements IAsyncCallback
+                class ConnectCallback : public CSimpleInterfaceOf<IAsyncCallback>
                 {
                 public:
+                    
                     Semaphore completed;
                     int result = -999;
-                    virtual void onAsyncComplete(int _result) override
+                    virtual bool onAsyncComplete(int _result) override
                     {
                         result = _result;
                         completed.signal();
+                        return true;
                     }
-                    IMPLEMENT_IINTERFACE;
                 };
 
                 ConnectCallback callback;
@@ -2358,17 +2372,18 @@ public:
                 Owned<ISecureSocket> secureSocket = clientContext->createSecureSocket(socket.getClear());
 
                 // Perform async connect - should fall back to sync due to @useTLSIOUring=false
-                class ConnectCallback : public CInterface, implements IAsyncCallback
+                class ConnectCallback : public CSimpleInterfaceOf<IAsyncCallback>
                 {
                 public:
+                    
                     Semaphore completed;
                     int result = -999;
-                    virtual void onAsyncComplete(int _result) override
+                    virtual bool onAsyncComplete(int _result) override
                     {
                         result = _result;
                         completed.signal();
+                        return true;
                     }
-                    IMPLEMENT_IINTERFACE;
                 };
 
                 ConnectCallback callback;
@@ -2446,18 +2461,19 @@ public:
             Owned<ISecureSocketContext> clientContext = createSecureSocketContextEx2(tlsConfig, ClientSocket);
             Owned<ISecureSocket> secureSocket = clientContext->createSecureSocket(socket.getClear());
 
-            class ConnectCallback : public CInterface, implements IAsyncCallback
+            class ConnectCallback : public CSimpleInterfaceOf<IAsyncCallback>
             {
             public:
+                
                 Semaphore completed;
                 int result = -999;
 
-                virtual void onAsyncComplete(int _result) override
+                virtual bool onAsyncComplete(int _result) override
                 {
                     result = _result;
                     completed.signal();
+                    return true;
                 }
-                IMPLEMENT_IINTERFACE;
             };
 
             ConnectCallback callback;
