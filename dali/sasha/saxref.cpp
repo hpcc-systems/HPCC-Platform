@@ -3721,6 +3721,11 @@ class XRefcDirDescTest : public CppUnit::TestFixture
         CPPUNIT_TEST(testEmpty);
         CPPUNIT_TEST(testAddFile);
         CPPUNIT_TEST(testIsMisplaced);
+        CPPUNIT_TEST(testSetMisplacedAndPresent);
+        CPPUNIT_TEST(testEnsureFile);
+        CPPUNIT_TEST(testSetMisplacedAndPresentMultipleMisplaced);
+        CPPUNIT_TEST(testGetFileNotExist);
+        CPPUNIT_TEST(testEnsureFileExternalFile);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -3762,27 +3767,84 @@ public:
         XRefAllocator allocator(1);
         cDirDesc *dir = cDirDesc::create("directory", &allocator);
 
-        // Add a file to the directory
-        unsigned numNodes = isContainerized() ? 1 : 456;
-        SocketEndpointArray epa;
-        // Populate the endpoint array with the required number of endpoints
-        for (unsigned i = 0; i < numNodes; i++)
-        {
-            SocketEndpoint ep;
-            ep.set("127.0.0.1", 7070 + i); // Use localhost with different ports
-            epa.append(ep);
-        }
-        Owned<IGroup> grp = createIGroup(epa);
-        unsigned stripeNum = calcStripeNumber(122, "testfile", 20);
-        unsigned nodeNum = isContainerized() ? 0 : 122;
-        dir->addFile(0, "testfile._123_of_456", "/home/test/", 11, 0, epa.item(nodeNum), *grp, 1, stripeNum, 20, &allocator);
+        // Simulate scanDirectory logic for adding a file
+        unsigned numNodes = 20;
+        unsigned nodeNum = 0;
+        unsigned drv = 0;
+        unsigned partNum = 122; // 0-based
+        unsigned numParts = 456; // logical part count
+        unsigned filenameLen = 8; // length of "testfile"
+        const char *fn = "testfile._$P$_of_456";
+        cFileDesc *file = dir->ensureFile(fn, numParts, false, filenameLen, &allocator);
+        dir->setMisplacedAndPresent(file, false, partNum, drv, "/home/test/testfile._123_of_456", nodeNum, numNodes);
         CPPUNIT_ASSERT(!dir->empty(0));
         CPPUNIT_ASSERT(!dir->empty(1));
 
         // Check file was created properly
-        cFileDesc *file = dir->files["testfile._$P$_of_456"].get();
+        cFileDesc *found = dir->getFile(fn);
+        CPPUNIT_ASSERT(found != nullptr);
+        CPPUNIT_ASSERT(found->misplaced == nullptr);
+        CPPUNIT_ASSERT(found->N == numParts);
+        CPPUNIT_ASSERT(found->filenameLen == filenameLen);
+        CPPUNIT_ASSERT(found->eq(fn));
+
+        // Check present bit
+        CPPUNIT_ASSERT(found->testpresent(drv, partNum));
+
+        delete dir;
+    }
+
+    void testSetMisplacedAndPresent()
+    {
+        XRefAllocator allocator(1);
+        cDirDesc *dir = cDirDesc::create("directory", &allocator);
+
+        unsigned numNodes = 20;
+        unsigned nodeNum = 0;
+        unsigned drv = 0;
+        unsigned partNum = 5;
+        unsigned numParts = 10;
+        unsigned filenameLen = 8;
+        const char *fn = "misplacedfile._$P$_of_10";
+        cFileDesc *file = dir->ensureFile(fn, numParts, false, filenameLen, &allocator);
+
+        // Mark as misplaced
+        dir->setMisplacedAndPresent(file, true, partNum, drv, "/home/test/misplacedfile._6_of_10", nodeNum, numNodes);
+        CPPUNIT_ASSERT(file->misplaced != nullptr);
+        CPPUNIT_ASSERT(file->misplaced->pn == partNum);
+        CPPUNIT_ASSERT(file->misplaced->nn == nodeNum);
+        CPPUNIT_ASSERT(file->misplaced->marked == false);
+
+        // Mark as present (not misplaced)
+        dir->setMisplacedAndPresent(file, false, partNum, drv, "/home/test/misplacedfile._6_of_10", nodeNum, numNodes);
+        CPPUNIT_ASSERT(file->testpresent(drv, partNum));
+
+        delete dir;
+    }
+
+    void testEnsureFile()
+    {
+        XRefAllocator allocator(1);
+        cDirDesc *dir = cDirDesc::create("directory", &allocator);
+
+        unsigned numParts = 5;
+        unsigned filenameLen = 8;
+        const char *fn = "ensurefile._$P$_of_5";
+
+        // Ensure file creation
+        cFileDesc *file = dir->ensureFile(fn, numParts, false, filenameLen, &allocator);
         CPPUNIT_ASSERT(file != nullptr);
-        CPPUNIT_ASSERT(file->misplaced == nullptr);
+        CPPUNIT_ASSERT(file->N == numParts);
+        CPPUNIT_ASSERT(file->filenameLen == filenameLen);
+
+        // Ensure file lookup returns same pointer
+        cFileDesc *found = dir->getFile(fn);
+        CPPUNIT_ASSERT(found == file);
+
+        // EnsureFile should not create duplicate
+        cFileDesc *file2 = dir->ensureFile(fn, numParts, false, filenameLen, &allocator);
+        CPPUNIT_ASSERT(file2 == file);
+        CPPUNIT_ASSERT(dir->files.size() == 1);
 
         delete dir;
     }
@@ -3857,6 +3919,41 @@ public:
             CPPUNIT_ASSERT(!dir->isMisplaced(1, 4, epa.item(1), *grp, "/test/file._2_of_4", 5, 1, 1)); // correct placement
         }
 
+        delete dir;
+    }
+
+    void testSetMisplacedAndPresentMultipleMisplaced()
+    {
+        XRefAllocator allocator(1);
+        cDirDesc *dir = cDirDesc::create("directory", &allocator);
+        const char *fn = "multi._$P$_of_10";
+        cFileDesc *file = dir->ensureFile(fn, 10, false, 8, &allocator);
+        dir->setMisplacedAndPresent(file, true, 1, 0, "/home/test/multi._2_of_10", 0, 20);
+        dir->setMisplacedAndPresent(file, true, 2, 0, "/home/test/multi._3_of_10", 0, 20);
+        CPPUNIT_ASSERT(file->misplaced != nullptr);
+        CPPUNIT_ASSERT(file->misplaced->next != nullptr);
+        CPPUNIT_ASSERT(file->misplaced->pn == 2 && file->misplaced->next->pn == 1);
+        delete dir;
+    }
+
+    void testGetFileNotExist()
+    {
+        XRefAllocator allocator(1);
+        cDirDesc *dir = cDirDesc::create("directory", &allocator);
+        CPPUNIT_ASSERT(dir->getFile("doesnotexist._$P$_of_1") == nullptr);
+        delete dir;
+    }
+
+    void testEnsureFileExternalFile()
+    {
+        XRefAllocator allocator(1);
+        cDirDesc *dir = cDirDesc::create("directory", &allocator);
+        const char *fn = "externalfile.dat";
+        cFileDesc *file = dir->ensureFile(fn, NotFound, false, 0, &allocator);
+        CPPUNIT_ASSERT(file != nullptr);
+        CPPUNIT_ASSERT(file->N == 1);
+        dir->setMisplacedAndPresent(file, true, 0, 0, "/home/test/externalfile.dat", 0, 1);
+        CPPUNIT_ASSERT(file->misplaced != nullptr);
         delete dir;
     }
 };
