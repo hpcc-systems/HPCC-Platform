@@ -149,7 +149,7 @@ public:
         numEntries = largestPrime((totSize / pageSize) / numSets);
         if (numEntries < 1)
             numEntries = 1;
-        setSize = numEntries * pageSize;
+        setSize = (offset_t)numEntries * (offset_t)pageSize;
         totSize = setSize * numSets;
 
         int rc = 0;
@@ -376,6 +376,9 @@ public:
         offset_t alignedPos = offset & pageOffsetMask;
         offset_t alignedPosShift = alignedPos >> pageSizeExp;
 
+        // strip off topmost bit (cache tracking code might set this) or should we just use lower fileIdBits ?
+        fileId &= ~(1U << 31);
+
         if ( (fileId >= (1U << fileIdBits)) || (alignedPosShift >= (1ULL << offsetBits)) )
             throw makeStringExceptionV(0, "disk page cache read: invalid fileId %u / offset %llu", fileId, alignedPos);
 
@@ -426,6 +429,9 @@ public:
     {
 #ifdef __linux__
         offset_t alignedPosShift = alignedPos >> pageSizeExp;
+
+        // strip off topmost bit (cache tracking code might set this) or should we just use lower fileIdBits ?
+        fileId &= ~(1U << 31);
 
         if ( (fileId >= (1U << fileIdBits)) || (alignedPosShift >= (1ULL << offsetBits)) )
             throw makeStringExceptionV(0, "disk page cache write: invalid fileId %u / offset %llu", fileId, alignedPos);
