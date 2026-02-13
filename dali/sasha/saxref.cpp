@@ -3480,19 +3480,17 @@ public:
         // Verify all allocations succeeded
         CPPUNIT_ASSERT(allAllocationsSucceeded);
 
-        // Verify all pointers are non-null and unique
-        for (int i = numThreads-1; i >= 0; i--)
+        // Verify all pointers are non-null and unique using a set
+        std::set<void*> uniquePtrs;
+        for (void* ptr : allocatedPtrs)
         {
-            CPPUNIT_ASSERT(allocatedPtrs[i] != nullptr);
-
-            // Check that this pointer is unique among all allocated pointers
-            for (int j = i - 1; j >= 0; j--)
-                CPPUNIT_ASSERT(allocatedPtrs[i] != allocatedPtrs[j]);
-
-            // Deallocate memory
-            allocator.dealloc(allocatedPtrs[i], allocSize);
-            allocatedPtrs.pop_back();
+            CPPUNIT_ASSERT(ptr != nullptr);
+            auto result = uniquePtrs.insert(ptr);
+            CPPUNIT_ASSERT(result.second); // insertion should succeed, i.e., ptr is unique
         }
+        // Deallocate memory
+        for (void* ptr : allocatedPtrs)
+            allocator.dealloc(ptr, allocSize);
     }
 
     void testDeallocation()
