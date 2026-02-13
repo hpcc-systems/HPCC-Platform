@@ -719,7 +719,8 @@ void CSocketConnectionListener::handleAcceptedConnection(int socketfd)
                 if (asyncReader)
                 {
                     Owned<CAsyncTLSAcceptCallback> callback = new CAsyncTLSAcceptCallback(this, ssock);
-                    ssock->startAsyncAccept(asyncReader, *callback.getLink(), tlsTraceLevel);
+                    // Transfer ownership to async operation - processor will Release() when callback returns true
+                    ssock->startAsyncAccept(asyncReader, *callback.getClear(), tlsTraceLevel);
                     // The callback will handle completion - don't add socket here
                     return;
                 }
@@ -836,7 +837,7 @@ bool CSocketConnectionListener::onAsyncComplete(int result)
                     acceptMethod.store(AcceptMethod::SingleshotAccept);
                     PROGLOG("Multishot accept not supported (EINVAL), falling back to single-shot accept");
                     startSingleshotAccept();
-                    return;
+                    return false;
                 }
                 // If we get EINVAL on single-shot, that's a fatal error - io_uring accept is not working
                 // Decrement callback counter and signal shutdown

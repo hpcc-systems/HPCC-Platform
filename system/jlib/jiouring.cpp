@@ -380,11 +380,9 @@ void URingProcessor::terminate()
 //------------------------------------------------------------------------------
 
 // URingThreadedProcessor is a URingProcessor with a thread for processing completion events
-class TerminateCompletionThreadAction final : public CInterface, implements IAsyncCallback
+class TerminateCompletionThreadAction final : public CSimpleInterfaceOf<IAsyncCallback>
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     TerminateCompletionThreadAction(std::atomic<bool> & _aborting) : aborting(_aborting) {}
     virtual bool onAsyncComplete(int result) override
     {

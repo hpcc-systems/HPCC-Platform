@@ -23,6 +23,7 @@
 //jlib
 #include "jliball.hpp"
 #include "string.h"
+#include <mutex>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -104,22 +105,30 @@ namespace securesocket
 {
 
 // Helper function to check if TLS io_uring is enabled via configuration
+// Cached on first call for performance (config is read-only after startup)
 static bool isTLSIOUringEnabled()
 {
-    try
+    static std::once_flag initFlag;
+    static bool cached = false;
+    
+    std::call_once(initFlag, []()
     {
-        Owned<IPropertyTree> config = getComponentConfigSP();
-        if (config)
+        try
         {
-            // Check expert/@useTLSIOUring setting (defaults to false if not specified)
-            return config->getPropBool("expert/@useTLSIOUring", false);
+            Owned<IPropertyTree> config = getComponentConfigSP();
+            if (config)
+            {
+                // Check expert/@useTLSIOUring setting (defaults to false if not specified)
+                cached = config->getPropBool("expert/@useTLSIOUring", false);
+            }
         }
-    }
-    catch (...)
-    {
-        // If config is not available, default to disabled
-    }
-    return false;
+        catch (...)
+        {
+            // If config is not available, default to disabled
+        }
+    });
+    
+    return cached;
 }
 
 class CStringSet : public CInterface
@@ -343,6 +352,27 @@ protected:
     virtual bool tryOperation() override { return tryWrite(); }
 
 private:
+    // Helper to flush any pending encrypted data from BIO to socket
+    // Returns true if data was queued for async write, false if nothing to flush
+    bool flushEncryptedDataToSocket()
+    {
+        int pending = BIO_pending(network_bio);
+        if (pending > 0)
+        {
+            if (pending > (int)encryptedBuffer.length())
+                encryptedBuffer.allocate(pending);
+                
+            int bytesRead = BIO_read(network_bio, encryptedBuffer.bytes(), pending);
+            if (bytesRead > 0)
+            {
+                state = TLSWriteState::Flushing;
+                processor->enqueueSocketWrite(socket, encryptedBuffer.bytes(), bytesRead, *this);
+                return true;
+            }
+        }
+        return false;
+    }
+
     bool tryWrite()
     {
         
@@ -350,23 +380,8 @@ private:
         if (totalWritten >= plainSize)
         {
             // Check if there's any pending encrypted data to flush
-            int pending = BIO_pending(network_bio);
-            
-            if (pending > 0)
-            {
-                // Still have encrypted data to send
-                if (pending > (int)encryptedBuffer.length())
-                    encryptedBuffer.allocate(pending);
-                    
-                int bytesRead = BIO_read(network_bio, encryptedBuffer.bytes(), pending);
-                
-                if (bytesRead > 0)
-                {
-                    state = TLSWriteState::Flushing;
-                    processor->enqueueSocketWrite(socket, encryptedBuffer.bytes(), bytesRead, *this);
-                    return false;
-                }
-            }
+            if (flushEncryptedDataToSocket())
+                return false;
             
             // All done
             state = TLSWriteState::Completed;
@@ -386,23 +401,8 @@ private:
             totalWritten += ret;
             
             // Get encrypted data from BIO and send to socket
-            int pending = BIO_pending(network_bio);
-            
-            if (pending > 0)
-            {
-                if (pending > (int)encryptedBuffer.length())
-                    encryptedBuffer.allocate(pending);
-                    
-                int bytesRead = BIO_read(network_bio, encryptedBuffer.bytes(), pending);
-                
-                if (bytesRead > 0)
-                {
-                    // Write encrypted data to socket
-                    state = TLSWriteState::Flushing;
-                    processor->enqueueSocketWrite(socket, encryptedBuffer.bytes(), bytesRead, *this);
-                    return false;
-                }
-            }
+            if (flushEncryptedDataToSocket())
+                return false;
             
             // No encrypted data yet, retry SSL_write
             return tryWrite();
@@ -422,21 +422,8 @@ private:
         case SSL_ERROR_WANT_WRITE:
         {
             // Need to flush data, read from BIO and send
-            int pending = BIO_pending(network_bio);
-            if (pending > 0)
-            {
-                if (pending > (int)encryptedBuffer.length())
-                    encryptedBuffer.allocate(pending);
-                    
-                int bytesRead = BIO_read(network_bio, encryptedBuffer.bytes(), pending);
-                
-                if (bytesRead > 0)
-                {
-                    state = TLSWriteState::Flushing;
-                    processor->enqueueSocketWrite(socket, encryptedBuffer.bytes(), bytesRead, *this);
-                    return false;
-                }
-            }
+            if (flushEncryptedDataToSocket())
+                return false;
             // If no data to flush, this is an error
             return handleError(-1);
         }
@@ -1287,8 +1274,9 @@ void CSecureSocket::startAsyncAccept(IAsyncProcessor * processor, IAsyncCallback
             int result = secure_accept(logLevel);
             callback.onAsyncComplete(result);
         }
-        catch (...)
+        catch (IException *e)
         {
+            e->Release();
             callback.onAsyncComplete(-1);
         }
         return;
@@ -1315,8 +1303,9 @@ void CSecureSocket::startAsyncConnect(IAsyncProcessor * processor, IAsyncCallbac
             int result = secure_connect(logLevel);
             callback.onAsyncComplete(result);
         }
-        catch (...)
+        catch (IException *e)
         {
+            e->Release();
             callback.onAsyncComplete(-1);
         }
         return;
@@ -1697,8 +1686,9 @@ void CSecureSocket::startAsyncRead(IAsyncProcessor * processor, void * buf, size
             readtms(buf, minSize, maxSize, sizeRead, WAIT_FOREVER);
             callback.onAsyncComplete(sizeRead);
         }
-        catch (...)
+        catch (IException *e)
         {
+            e->Release();
             callback.onAsyncComplete(-1);
         }
         return;
@@ -1722,11 +1712,12 @@ void CSecureSocket::startAsyncWrite(IAsyncProcessor * processor, const void * bu
         // Fallback to synchronous write
         try
         {
-            write(buf, size);
-            callback.onAsyncComplete(size);
+            size32_t written = write(buf, size);
+            callback.onAsyncComplete(written);
         }
-        catch (...)
+        catch (IException *e)
         {
+            e->Release();
             callback.onAsyncComplete(-1);
         }
         return;
