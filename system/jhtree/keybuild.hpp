@@ -144,6 +144,9 @@ class jhtree_decl BlobCreatorWrapper : implements IBlobCreator
     offset_t totalSize = 0;
 public:
     BlobCreatorWrapper(IKeyBuilder *_builder) : builder(_builder) {}
+
+    void setBuilder(IKeyBuilder *_builder) { builder = _builder; }
+
     virtual unsigned __int64 createBlob(size32_t size, const void * ptr)
     {
         totalSize += size;
