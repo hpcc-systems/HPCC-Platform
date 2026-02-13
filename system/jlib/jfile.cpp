@@ -7758,27 +7758,30 @@ bool getConcurrentWriteSupported(const char *planeName)
     return 0 != getPlaneAttributeValue(planeName, ConcurrentWriteSupport, defaultConcurrentWriteSupport ? 1 : 0);
 }
 
+static size32_t getBlockedSizeFromFile(const char *filePath, PlaneAttributeType type, size32_t defaultSize)
+{
+    if (filePath)
+    {
+        Owned<const IStoragePlane> plane = getStoragePlaneFromPath(filePath, false);
+        if (plane)
+            return plane->getAttribute(type, defaultSize);
+    }
+    return defaultSize;
+}
+
 static size32_t getBlockedSizeFromFile(IFile *file, PlaneAttributeType type, size32_t defaultSize)
 {
     if (file)
     {
         const char * filename = file->queryFilename();
-        if (filename)
-        {
-            Owned<const IStoragePlane> plane = getStoragePlaneFromPath(filename, false);
-            if (plane)
-                return plane->getAttribute(type, defaultSize);
-            else
-                return defaultSize;
-        }
+        return getBlockedSizeFromFile(filename, type, defaultSize);
     }
-    return (size32_t)-1; // let caller decide
+    return defaultSize;
 }
 
 size32_t getBlockedSequentialIO(const char *filePath)
 {
-    Owned<IFile> seqFile = createIFile(filePath);
-    return getBlockedSequentialIO(seqFile);
+    return getBlockedSizeFromFile(filePath, BlockedSequentialIO, (size32_t)-1); // let caller decide
 }
 
 size32_t getBlockedSequentialIO(IFile *file)
@@ -7794,8 +7797,7 @@ size32_t getBlockedSequentialIO(IFileIO * fileio)
 
 size32_t getBlockedRandomIO(const char *filePath)
 {
-    Owned<IFile> file = createIFile(filePath);
-    return getBlockedRandomIO(file);
+    return getBlockedSizeFromFile(filePath, BlockedRandomIO, (size32_t)-1); // let caller decide
 }
 
 size32_t getBlockedRandomIO(IFile *file)
