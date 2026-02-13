@@ -56,6 +56,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  actions: write
+
 jobs:
   precheck-branch-changes:
     runs-on: ubuntu-latest
