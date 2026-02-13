@@ -108,7 +108,6 @@ target_link_libraries ( saserver
     )
 
 if (USE_CPPUNIT)
-    install ( TARGETS saserver LIBRARY DESTINATION ${LIB_DIR} )
     target_link_libraries ( saserver cppunit )
     include_directories( ${HPCC_SOURCE_DIR}/testing/unittests)
 endif()
