@@ -76,6 +76,8 @@ using roxiemem::IRowManager;
 
 class CTcpReceiveManager : implements IReceiveManager, public CInterface
 {
+    static constexpr unsigned maxReceiveBuffers = 8;
+
     queue_t              *input_queue;
     const int             data_port;
 
@@ -254,7 +256,30 @@ public:
         unsigned packetLength = header->length;
         dbgassertex(packetLength <= roxiemem::DATA_ALIGNMENT_SIZE);
 
-        DataBuffer * buffer = udpBufferManager->allocate();
+        // Per-thread buffer pool - no synchronization needed
+        thread_local DataBuffer *bulkBuffers[maxReceiveBuffers];
+        thread_local unsigned bulkBufferCount = 0;
+        thread_local unsigned bulkBufferIndex = 0;
+
+        DataBuffer * buffer = nullptr;
+        
+        // Try to get a buffer from the thread-local pool
+        if (bulkBufferIndex < bulkBufferCount)
+        {
+            buffer = bulkBuffers[bulkBufferIndex++];
+        }
+        else
+        {
+            // Allocate a new pool - allocateBlock always returns at least 1
+            bulkBufferCount = udpBufferManager->allocateBlock(maxReceiveBuffers, bulkBuffers);
+            bulkBufferIndex = 0;
+            buffer = bulkBuffers[bulkBufferIndex++];
+        }
+        
+        // Fall back to single allocation if bulk failed
+        if (!buffer)
+            buffer = udpBufferManager->allocate();
+            
         memcpy(buffer->data, header, packetLength);
         if (collateDirectly)
             collatePacket(buffer);

@@ -3109,6 +3109,8 @@ public:
 
 class LocalBlockedMessagePacker : public CInterfaceOf<IMessagePacker>
 {
+    static constexpr unsigned maxBulkBuffers = 8;
+
 protected:
     unsigned lastput = 0;
     MemoryBuffer meta;
@@ -3125,6 +3127,26 @@ protected:
     DataBuffer *currentBuffer = nullptr;
     ArrayOf<roxiemem::OwnedDataBuffer> buffers;
     unsigned totalDataLen = 0;
+    DataBuffer *bulkBuffers[maxBulkBuffers];  // Cache for bulk-allocated buffers
+    unsigned bulkBufferCount = 0;
+    unsigned bulkBufferIndex = 0;
+
+    DataBuffer *allocateNextBuffer()
+    {
+        // Try to use a bulk-allocated buffer first
+        if (bulkBufferIndex < bulkBufferCount)
+        {
+            return bulkBuffers[bulkBufferIndex++];
+        }
+        else
+        {
+            // Allocate a new bulk pool - allocateBlock always returns at least 1
+            bulkBufferCount = bufferManager->allocateBlock(maxBulkBuffers, bulkBuffers);
+            bulkBufferIndex = 0;
+            return bulkBuffers[bulkBufferIndex++];
+        }
+    }
+
 public:
     LocalBlockedMessagePacker(RoxiePacketHeader &_header, bool _outOfBand, ILocalReceiveManager *_rm) : rm(_rm), outOfBand(_outOfBand)
     {
@@ -3134,6 +3156,11 @@ public:
     ~LocalBlockedMessagePacker()
     {
         free(tempBuffer);
+        // Release any remaining bulk-allocated buffers
+        while (bulkBufferIndex < bulkBufferCount)
+        {
+            bulkBuffers[bulkBufferIndex++]->Release();
+        }
     }
 
     void * getBuffer(unsigned len, bool variable) override
@@ -3169,7 +3196,7 @@ public:
             }
             if (!currentBuffer)
             {
-                currentBuffer = bufferManager->allocate();
+                currentBuffer = allocateNextBuffer();
                 dataPos = sizeof (unsigned short);
                 bufferRemaining = dataBufferSize;
             }
@@ -3205,7 +3232,7 @@ public:
             {
                 if (!currentBuffer)
                 {
-                    currentBuffer = bufferManager->allocate();
+                    currentBuffer = allocateNextBuffer();
                     dataPos = sizeof (unsigned short);
                     bufferRemaining = dataBufferSize;
                 }
