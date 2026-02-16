@@ -1445,6 +1445,12 @@ const void *CHThorIndexCountActivity::nextRow()
         unsigned __int64 keyedProcessed = 0;
         unsigned __int64 rowsProcessed = 0;
         bool limitSkipped = false;
+        const bool wantsAggregateExists = (helper.getFlags() & TIRaggregateexists);
+        auto hasAggregateExistsHit = [&]() -> bool
+        {
+            return wantsAggregateExists && totalCount;
+        };
+        bool aggregateExistsHit = false;
         for (;;)
         {
             if (helper.hasFilter())
@@ -1473,16 +1479,20 @@ const void *CHThorIndexCountActivity::nextRow()
                             helper.onLimitExceeded();
                     }
 
-                    if (totalCount && (helper.getFlags() & TIRaggregateexists)) // EXISTS only needs to count one row
+                    aggregateExistsHit = hasAggregateExistsHit();
+                    if (aggregateExistsHit) // EXISTS only needs to count one row
                         break;
                     if ((totalCount > choosenLimit))
                         break;
                 }
             }
             else
+            {
                 totalCount += klManager->getCount();
+                aggregateExistsHit = hasAggregateExistsHit();
+            }
 
-            if (limitSkipped || (totalCount > choosenLimit) || !nextPart())
+            if (limitSkipped || aggregateExistsHit || (totalCount > choosenLimit) || !nextPart())
                 break;
         }
     }
