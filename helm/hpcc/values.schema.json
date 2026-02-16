@@ -2661,6 +2661,16 @@
           "type": "boolean",
           "description": "Preemptively update secrets that are active and about to expire in the background"
         },
+        "roxieMode": {
+          "type": "string",
+          "description": "Optimize the roxie cluster for batch or interactive workloads",
+          "enum": ["batch", "interactive"]
+        },
+        "transportProtocol": {
+          "type": "string",
+          "description": "Transport protocol to use for communication between roxie server and agents",
+          "enum": ["udp", "tcp" ]
+        },
         "expert": {
           "$ref": "#/definitions/expert"
         },
