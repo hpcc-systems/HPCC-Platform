@@ -1,4 +1,4 @@
-import { Workunit } from "@hpcc-js/comms";
+import { DFUWorkunit, Workunit } from "@hpcc-js/comms";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -8,6 +8,7 @@ export function setBaseURL(baseUrl: string) {
 }
 
 const WU_DATA_FILE = path.join(__dirname, "test-wus.json");
+const DFU_WU_DATA_FILE = path.join(__dirname, "test-dfu-wus.json");
 
 interface StoredWU {
     Wuid: string;
@@ -18,7 +19,17 @@ interface StoredData {
     wus: { [browser: string]: StoredWU[] };
 }
 
+interface StoredDFUWU {
+    Wuid: string;
+}
+
+interface StoredDFUData {
+    baseURL: string;
+    dfuWus: { [browser: string]: StoredDFUWU[] };
+}
+
 export const state: StoredData = { baseURL, wus: {} };
+export const dfuState: StoredDFUData = { baseURL, dfuWus: {} };
 
 export function loadWUs() {
     try {
@@ -49,6 +60,35 @@ export function saveWUs() {
     }
 }
 
+export function loadDFUWUs() {
+    try {
+        if (fs.existsSync(DFU_WU_DATA_FILE)) {
+            const data = fs.readFileSync(DFU_WU_DATA_FILE, "utf8");
+            const stored: StoredDFUData = JSON.parse(data);
+            if (stored.baseURL) {
+                baseURL = stored.baseURL;
+            }
+            if (stored.dfuWus) {
+                dfuState.dfuWus = stored.dfuWus;
+            }
+        }
+    } catch (err) {
+        console.warn("Failed to load DFU WU data:", err);
+    }
+}
+
+export function saveDFUWUs() {
+    try {
+        const dataToSave: StoredDFUData = {
+            baseURL,
+            dfuWus: dfuState.dfuWus
+        };
+        fs.writeFileSync(DFU_WU_DATA_FILE, JSON.stringify(dataToSave, null, 2));
+    } catch (err) {
+        console.warn("Failed to save DFU WU data:", err);
+    }
+}
+
 export function setWU(wu: Workunit) {
     if (!state.wus[wu.Owner]) {
         state.wus[wu.Owner] = [];
@@ -60,15 +100,55 @@ export function setWU(wu: Workunit) {
     console.log(`   ${wu.Owner} ${wu.Wuid}`);
 }
 
+type DFUWUIdentifier = {
+    Wuid?: string;
+    ID?: string;
+    wuid?: string;
+    id?: string;
+};
+
+function getDFUWuId(wu: DFUWorkunit): string {
+    const candidate = (wu as DFUWUIdentifier).Wuid ?? (wu as DFUWUIdentifier).ID ?? (wu as DFUWUIdentifier).wuid ?? (wu as DFUWUIdentifier).id;
+    if (!candidate) {
+        throw new Error("DFU workunit identifier is missing");
+    }
+    return candidate;
+}
+
+export function setDFUWU(wu: DFUWorkunit) {
+    if (!dfuState.dfuWus[wu.User]) {
+        dfuState.dfuWus[wu.User] = [];
+    }
+    const storedWU: StoredDFUWU = {
+        Wuid: getDFUWuId(wu)
+    };
+    dfuState.dfuWus[wu.User].push(storedWU);
+    console.log(`   ${wu.User} ${storedWU.Wuid}`);
+}
+
 export function getWULength(browser: string) {
     loadWUs();
     return state.wus[browser]?.length ?? 0;
+}
+
+export function getDFUWULength(browser: string) {
+    loadDFUWUs();
+    return dfuState.dfuWus[browser]?.length ?? 0;
 }
 
 export function getWuid(browser: string, idx: number): string {
     const wuEntries = state.wus[browser];
     if (!wuEntries || idx >= wuEntries.length) {
         throw new Error(`No workunit found for browser "${browser}" at index ${idx}`);
+    }
+    const wuEntry = wuEntries[idx];
+    return wuEntry.Wuid;
+}
+
+export function getDFUWuid(browser: string, idx: number): string {
+    const wuEntries = dfuState.dfuWus[browser];
+    if (!wuEntries || idx >= wuEntries.length) {
+        throw new Error(`No DFU workunit found for browser "${browser}" at index ${idx}`);
     }
     const wuEntry = wuEntries[idx];
     return wuEntry.Wuid;

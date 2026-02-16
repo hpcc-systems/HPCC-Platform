@@ -116,13 +116,13 @@ export function espTime2SecondsTests() {
     }, this);
 }
 
-export function convertedSize(intsize: number): string {
+export function convertedSize(intsize: number, postfix: string = ""): string {
     const unitConversion = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
     if (isNaN(intsize) || intsize < 1) {
         return "";
     } else {
         const x = intsize > 0 ? Math.floor(Math.log(intsize) / Math.log(1024)) : 0;
-        return (intsize / Math.pow(1024, x)).toFixed(2) + " " + unitConversion[x];
+        return (intsize / Math.pow(1024, x)).toFixed(2) + " " + unitConversion[x] + postfix;
     }
 }
 
