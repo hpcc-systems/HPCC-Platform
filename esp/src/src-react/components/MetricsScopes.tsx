@@ -93,39 +93,68 @@ export class ScopesTable extends Table {
         return Object.keys(row).some(field => matchField(field, normalizedFilter));
     }
 
-    _rawDataMap: { [id: number]: string } = {};
+    _rawDataMap: { [id: number]: { property: string, subvalue?: string } } = {};
     metrics(metrics: IScope[], scopeTypes: string[], properties: string[], scopeFilter: string, matchCase: boolean, matchWholeWord: boolean): this {
         let hasStdDevs = false;
-        const data = metrics
-            .filter(m => this.scopeFilterFunc(m, scopeFilter, matchCase, matchWholeWord))
+        const expandedProps = new Map<string, boolean>();
+        const filteredMetrics = metrics.filter(m => this.scopeFilterFunc(m, scopeFilter, matchCase, matchWholeWord))
             .filter(row => {
                 return scopeTypes.indexOf(row.type) >= 0;
-            }).map((row, idx) => {
-                if (row.__StdDevs !== 0) {
-                    hasStdDevs = true;
+            });
+        filteredMetrics.forEach(row => {
+            if (row.__StdDevs !== 0) {
+                hasStdDevs = true;
+            }
+            properties.forEach(p => {
+                if (!expandedProps.has(p) && (row.__groupedProps[p]?.Max !== undefined || row.__groupedProps[p]?.Avg !== undefined || row.__groupedProps[p]?.Min !== undefined)) {
+                    expandedProps.set(p, true);
                 }
-                if (idx === 0) {
-                    this._rawDataMap = {
-                        0: "##", 1: "type", 2: "__StdDevs", 3: "name"
-                    };
-                    properties.forEach((p, idx2) => {
-                        this._rawDataMap[4 + idx2] = p;
-                    });
-                }
-                row.__hpcc_id = row.name;
-                return [idx, row.type, row.__StdDevs === 0 ? undefined : row.__StdDevs, row.name, ...properties.map(p => {
-                    return row.__groupedProps[p]?.Value ??
+            });
+        });
+        this._rawDataMap = {
+            0: { property: "##" }, 1: { property: "type" }, 2: { property: "__StdDevs" }, 3: { property: "name" }
+        };
+        let idxOffset = 4;
+        properties.forEach((p) => {
+            if (expandedProps.has(p)) {
+                this._rawDataMap[idxOffset++] = { property: p, subvalue: "Max" };
+                this._rawDataMap[idxOffset++] = { property: p, subvalue: "Avg" };
+                this._rawDataMap[idxOffset++] = { property: p, subvalue: "Min" };
+            } else {
+                this._rawDataMap[idxOffset++] = { property: p };
+            }
+        });
+        const data = filteredMetrics.map((row, idx) => {
+            row.__hpcc_id = row.name;
+            return [idx, row.type, row.__StdDevs === 0 ? undefined : row.__StdDevs, row.name, ...properties.reduce((acc, p) => {
+                if (expandedProps.has(p)) {
+                    acc.push(row.__groupedProps[p]?.Max);
+                    acc.push(row.__groupedProps[p]?.Avg);
+                    acc.push(row.__groupedProps[p]?.Min);
+                } else {
+                    acc.push(row.__groupedProps[p]?.Value ??
                         row.__groupedProps[p]?.Max ??
                         row.__groupedProps[p]?.Avg ??
                         row.__formattedProps[p] ??
                         row[p] ??
-                        "";
-                }), row.__StdDevs === 0 ? "" : row.__StdDevsSource, row];
-            });
+                        "");
+                }
+                return acc;
+            }, []), row.__StdDevs === 0 ? "" : row.__StdDevsSource, row];
+        });
 
         this
             .columns(["##"])    //  Reset hash to force recalculation of default widths
-            .columns(["##", nlsHPCC.Type, "StdDevs", nlsHPCC.Scope, ...properties, "__StdDevs"])
+            .columns(["##", nlsHPCC.Type, "StdDevs", nlsHPCC.Scope, ...properties.reduce((acc, p) => {
+                if (expandedProps.has(p)) {
+                    acc.push(`${p}.Max`);
+                    acc.push(`${p}.Avg`);
+                    acc.push(`${p}.Min`);
+                } else {
+                    acc.push(p);
+                }
+                return acc;
+            }, []), "__StdDevs"])
             .columnFormats([
                 new ColumnFormatEx()
                     .column("StdDevs")
@@ -145,8 +174,8 @@ export class ScopesTable extends Table {
         const optsEx = opts.map(opt => {
             return {
                 idx: opt.property,
-                metricLabel: this._rawDataMap[opt.property],
-                splitMetricLabel: splitMetric(this._rawDataMap[opt.property]),
+                splitMetricLabel: splitMetric(this._rawDataMap[opt.property].property),
+                subValue: this._rawDataMap[opt.property].subvalue ?? "",
                 descending: opt.descending
             };
         });
@@ -155,9 +184,10 @@ export class ScopesTable extends Table {
         this._db.data().sort((l, r) => {
             const llparam = l[lparamIdx];
             const rlparam = r[lparamIdx];
-            for (const { idx, metricLabel, splitMetricLabel, descending } of optsEx) {
-                const lval = llparam[metricLabel] ?? llparam[`${splitMetricLabel.measure}Max${splitMetricLabel.label}`] ?? llparam[`${splitMetricLabel.measure}Avg${splitMetricLabel.label}`] ?? l[idx];
-                const rval = rlparam[metricLabel] ?? rlparam[`${splitMetricLabel.measure}Max${splitMetricLabel.label}`] ?? rlparam[`${splitMetricLabel.measure}Avg${splitMetricLabel.label}`] ?? r[idx];
+            for (const { idx, splitMetricLabel, subValue, descending } of optsEx) {
+                const prop = `${splitMetricLabel.measure}${subValue}${splitMetricLabel.label}`;
+                const lval = llparam[prop] ?? l[idx];
+                const rval = rlparam[prop] ?? r[idx];
                 if ((lval === undefined && rval !== undefined) || lval < rval) return descending ? 1 : -1;
                 if ((lval !== undefined && rval === undefined) || lval > rval) return descending ? -1 : 1;
             }
