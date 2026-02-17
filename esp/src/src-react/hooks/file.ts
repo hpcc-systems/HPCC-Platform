@@ -2,7 +2,6 @@ import * as React from "react";
 import { LogicalFile, WsDfu } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import * as Utility from "src/Utility";
-import * as Utility from "src/Utility";
 import { singletonDebounce } from "../util/throttle";
 import { useCounter } from "./util";
 
@@ -24,6 +23,7 @@ function formatRatio(isCompressed: boolean, compressedSize: number, totalSize: n
 }
 
 function formatCompressionEx(file?: LogicalFileEx): string {
+    if (!file) return "";
     return formatRatio(file.IsCompressed, file.CompressedFileSize, file.IntSize);
 }
 

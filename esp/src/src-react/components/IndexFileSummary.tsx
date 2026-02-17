@@ -269,7 +269,7 @@ export const IndexFileSummary: React.FunctionComponent<IndexFileSummaryProps> = 
                         label: nlsHPCC.File,
                         originalSize: Utility.convertedSize(file?.FileSizeInt64),
                         diskSize: Utility.convertedSize(file?.CompressedFileSize || file?.FileSizeInt64),
-                        percentCompressed: ((file?.CompressedFileSize && file?.FileSizeInt64) ? Utility.formatDecimal(100 * file?.CompressedFileSize / file?.FileSizeInt64, "", "%") : Utility.formatDecimal(0, "", "%")),
+                        percentCompressed: ((file?.CompressedFileSize && file?.FileSizeInt64) ? Utility.formatDecimal(100 * file?.CompressedFileSize / file?.FileSizeInt64, "", "%") : ""),
                         memorySize: (file?.ExtendedIndexInfo?.SizeMemoryBranches && file?.ExtendedIndexInfo?.SizeMemoryLeaves) ? Utility.convertedSize(file?.ExtendedIndexInfo?.SizeMemoryBranches + file?.ExtendedIndexInfo?.SizeMemoryLeaves) : ""
                     },
                     {
