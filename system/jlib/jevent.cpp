@@ -112,6 +112,7 @@ struct EventInformation
 #define QUERYSTART_ATTRS      COMMON_ATTRS, EvAttrServiceName
 #define QUERYSTOP_ATTRS       COMMON_ATTRS
 #define RECORDINGSOURCE_ATTRS COMMON_ATTRS, EvAttrProcessDescriptor
+#define INDEXOPEN_ATTRS       COMMON_ATTRS, EvAttrFileId, EvAttrOpenTime
 
 static constexpr EventInformation eventInformation[] {
     DEFINE_EVENT(None, EventCtxMax, { EvAttrNone } ),
@@ -134,6 +135,7 @@ static constexpr EventInformation eventInformation[] {
     DEFINE_EVENT(QueryStart, EventCtxIndex, { QUERYSTART_ATTRS } ),
     DEFINE_EVENT(QueryStop, EventCtxIndex, { QUERYSTOP_ATTRS } ),
     DEFINE_EVENT(RecordingSource, EventCtxOther, { RECORDINGSOURCE_ATTRS } ),
+    DEFINE_EVENT(IndexOpen, EventCtxIndex, { INDEXOPEN_ATTRS } ),
 };
 static_assert(_elements_in(eventInformation) == EventMax);
 
@@ -188,6 +190,7 @@ static constexpr EventAttrInformation attrInformation[] = {
     DEFINE_ATTR(ReplicaId, u1),
     DEFINE_ATTR(InstanceId, u8),
     DEFINE_ATTR(ProcessDescriptor, string),
+    DEFINE_ATTR(OpenTime, u8),
 };
 
 static_assert(_elements_in(attrInformation) == EvAttrMax);
@@ -653,6 +656,23 @@ void EventRecorder::recordRecordingActive(bool enabled)
     offset_type pos = writeOffset;
     writeEventHeader(EventRecordingActive, pos);
     write(pos, EvAttrEnabled, enabled);
+    writeEventFooter(pos, requiredSize, writeOffset);
+}
+
+void EventRecorder::recordIndexOpen(unsigned fileid, __uint64 openTime)
+{
+    if (!isRecording())
+        return;
+
+    if (unlikely(outputToLog))
+        TRACEEVENT("{ \"name\": \"IndexOpen\", \"FileId\": %u, \"OpenTime\": %llu }", fileid, openTime);
+
+    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, openTime);
+    offset_type writeOffset = reserveEvent(requiredSize);
+    offset_type pos = writeOffset;
+    writeEventHeader(EventIndexOpen, pos);
+    write(pos, EvAttrFileId, fileid);
+    write(pos, EvAttrOpenTime, openTime);
     writeEventFooter(pos, requiredSize, writeOffset);
 }
 
