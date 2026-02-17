@@ -106,11 +106,26 @@ namespace securesocket
 
 // Helper function to check if TLS io_uring is enabled via configuration
 // Cached on first call for performance (config is read-only after startup)
+// Note: Caching is disabled during unit tests to allow dynamic config changes
 static bool isTLSIOUringEnabled()
 {
+#ifdef _USE_CPPUNIT
+    // During unit tests, always read fresh from config to allow tests to modify settings
+    try
+    {
+        Owned<IPropertyTree> config = getComponentConfigSP();
+        if (config)
+            return config->getPropBool("expert/@useTLSIOUring", false);
+    }
+    catch (...)
+    {
+    }
+    return false;
+#else
+    // In production, cache the result for performance
     static std::once_flag initFlag;
     static bool cached = false;
-    
+
     std::call_once(initFlag, []()
     {
         try
@@ -127,8 +142,9 @@ static bool isTLSIOUringEnabled()
             // If config is not available, default to disabled
         }
     });
-    
+
     return cached;
+#endif
 }
 
 class CStringSet : public CInterface
