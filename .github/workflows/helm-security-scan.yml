@@ -59,7 +59,7 @@ jobs:
           # Find all Chart.yaml and requirements.yaml files
           CHART_FILES=$(find helm -name "Chart.yaml" \
             -o -name "requirements.yaml" | \
-            sort -u | sed 's|/[^/]*$||' | sort -u)
+            sed 's|/[^/]*$||' | sort -u)
 
           echo "Charts found:"
           echo "$CHART_FILES"
@@ -89,15 +89,23 @@ jobs:
         if: steps.find-charts.outputs.charts_with_deps != ''
         run: |
           CHARTS="${{ steps.find-charts.outputs.charts_with_deps }}"
+          FAILED_CHARTS=""
 
           for chart_dir in $CHARTS; do
             if [ -d "$chart_dir" ]; then
               echo "Updating dependencies for $chart_dir"
-              helm dependency update "$chart_dir" || {
-                echo "Warning: Failed to update dependencies for $chart_dir"
-              }
+              if ! helm dependency update "$chart_dir"; then
+                echo "Error: Failed to update dependencies for $chart_dir"
+                FAILED_CHARTS="$FAILED_CHARTS $chart_dir"
+              fi
             fi
           done
+
+          if [ -n "$FAILED_CHARTS" ]; then
+            echo "Failed to update dependencies for:$FAILED_CHARTS"
+            echo "::warning::Failed to update Helm dependencies for:" \
+              "$FAILED_CHARTS. Scans may use cached or outdated dependencies."
+          fi
 
       - name: Run Trivy vulnerability scanner on Helm charts
         uses: aquasecurity/trivy-action@0.28.0
@@ -133,8 +141,6 @@ jobs:
           echo "Scanning Helm chart dependencies for CVEs..."
           CHARTS="${{ steps.find-charts.outputs.charts_with_deps }}"
 
-          EXIT_CODE=0
-
           for chart_dir in $CHARTS; do
             if [ -d "$chart_dir" ]; then
               echo ""
@@ -160,8 +166,6 @@ jobs:
               echo ""
             fi
           done
-
-          exit $EXIT_CODE
 
       - name: Generate security summary
         if: always()
