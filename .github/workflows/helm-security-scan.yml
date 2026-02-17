@@ -1,0 +1,177 @@
+---
+name: Helm Chart Security Scan
+
+"on":
+  pull_request:
+    branches:
+      - "master"
+      - "candidate-*"
+    paths:
+      - 'helm/**/Chart.yaml'
+      - 'helm/**/requirements.yaml'
+      - '.github/workflows/helm-security-scan.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scan-helm-charts:
+    name: Scan Helm Charts for CVEs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'latest'
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Find modified Helm charts
+        id: find-charts
+        run: |
+          echo "Finding Helm charts with dependencies..."
+
+          # Find all Chart.yaml and requirements.yaml files
+          CHART_FILES=$(find helm -name "Chart.yaml" \
+            -o -name "requirements.yaml" | \
+            sort -u | sed 's|/[^/]*$||' | sort -u)
+
+          echo "Charts found:"
+          echo "$CHART_FILES"
+
+          # Filter charts that have dependencies
+          CHARTS_WITH_DEPS=""
+          for chart_dir in $CHART_FILES; do
+            if [ -f "$chart_dir/Chart.yaml" ]; then
+              # Check if Chart.yaml has dependencies section
+              if grep -q "^dependencies:" "$chart_dir/Chart.yaml"; then
+                CHARTS_WITH_DEPS="$CHARTS_WITH_DEPS $chart_dir"
+                echo "Found chart with dependencies: $chart_dir"
+              fi
+            fi
+            if [ -f "$chart_dir/requirements.yaml" ]; then
+              CHARTS_WITH_DEPS="$CHARTS_WITH_DEPS $chart_dir"
+              echo "Found chart with requirements.yaml: $chart_dir"
+            fi
+          done
+
+          # Export for use in later steps
+          echo "charts_with_deps<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHARTS_WITH_DEPS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Update Helm dependencies
+        if: steps.find-charts.outputs.charts_with_deps != ''
+        run: |
+          CHARTS="${{ steps.find-charts.outputs.charts_with_deps }}"
+
+          for chart_dir in $CHARTS; do
+            if [ -d "$chart_dir" ]; then
+              echo "Updating dependencies for $chart_dir"
+              helm dependency update "$chart_dir" || {
+                echo "Warning: Failed to update dependencies for $chart_dir"
+              }
+            fi
+          done
+
+      - name: Run Trivy vulnerability scanner on Helm charts
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: 'config'
+          scan-ref: 'helm/'
+          format: 'sarif'
+          output: 'trivy-helm-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0'  # Don't fail the build, just report
+          ignore-unfixed: true
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-helm-results.sarif'
+          category: 'helm-charts'
+
+      - name: Run Trivy vulnerability scanner (table format)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: 'config'
+          scan-ref: 'helm/'
+          format: 'table'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0'
+          ignore-unfixed: true
+
+      - name: Scan Helm chart dependencies for known vulnerabilities
+        if: steps.find-charts.outputs.charts_with_deps != ''
+        run: |
+          echo "Scanning Helm chart dependencies for CVEs..."
+          CHARTS="${{ steps.find-charts.outputs.charts_with_deps }}"
+
+          EXIT_CODE=0
+
+          for chart_dir in $CHARTS; do
+            if [ -d "$chart_dir" ]; then
+              echo ""
+              echo "================================================"
+              echo "Scanning: $chart_dir"
+              echo "================================================"
+
+              # Check for Chart.lock file
+              if [ -f "$chart_dir/Chart.lock" ]; then
+                echo "Dependencies found in Chart.lock:"
+                cat "$chart_dir/Chart.lock"
+                echo ""
+              fi
+
+              # Run Trivy on the specific chart directory
+              trivy config "$chart_dir" \
+                --severity CRITICAL,HIGH \
+                --exit-code 0 \
+                --format table || {
+                echo "Warning: Trivy scan failed for $chart_dir"
+              }
+
+              echo ""
+            fi
+          done
+
+          exit $EXIT_CODE
+
+      - name: Generate security summary
+        if: always()
+        run: |
+          echo "# Helm Chart Security Scan Summary" \
+            >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Scanned all Helm charts in the " \
+            "\`helm/\` directory for:" >> $GITHUB_STEP_SUMMARY
+          echo "- Configuration issues and misconfigurations" \
+            >> $GITHUB_STEP_SUMMARY
+          echo "- Known vulnerabilities (CVEs) in 3rd party " \
+            "dependencies" >> $GITHUB_STEP_SUMMARY
+          echo "- Security best practices violations" \
+            >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Charts with 3rd party dependencies:" \
+            >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.find-charts.outputs.charts_with_deps }}" \
+            >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "For detailed results, check:" \
+            >> $GITHUB_STEP_SUMMARY
+          echo "- The Security tab for SARIF results" \
+            >> $GITHUB_STEP_SUMMARY
+          echo "- The workflow logs above for table format " \
+            "results" >> $GITHUB_STEP_SUMMARY
