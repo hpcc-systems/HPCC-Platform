@@ -1,4 +1,20 @@
 ---
+# Helm Chart Security Scan Workflow
+#
+# This workflow scans Helm charts for security vulnerabilities and
+# misconfigurations when Chart.yaml or requirements.yaml files are modified.
+#
+# Features:
+# - Scans all Helm charts in the helm/ directory
+# - Identifies charts with 3rd party dependencies
+# - Uses Trivy to scan for:
+#   * CVEs in container images
+#   * Kubernetes misconfigurations
+#   * Security best practices violations
+# - Uploads results to GitHub Security tab (SARIF format)
+# - Displays results in workflow logs (table format)
+#
+# Related to: HPCC-35847
 name: Helm Chart Security Scan
 
 "on":
