@@ -76,12 +76,13 @@ class CSashaGlobalMessageServer : public ISashaServer, public Thread
     {
         CDateTime cutoff;
         cutoff.setNow();
-        cutoff.adjustTime(-cutoffDays * 24 * 60);
+        __int64 minutesOffset = - (static_cast<__int64>(cutoffDays) * 24 * 60);
+        cutoff.adjustTime(minutesOffset);
         cutoff.getDate(year, month, day);
     }
 
 private:
-    void loadConfiguration()
+    bool loadConfiguration()
     {
         Owned<IPropertyTree> compConfig = getComponentConfig();
         if (!compConfig)
@@ -93,36 +94,43 @@ private:
         if (!intervalHours || (!enableArchiving && !enableAutoDelete))
         {
             PROGLOG("Sasha Global Message Server disabled (%s)", !intervalHours ? "interval is 0" : "both archiving and auto-delete are disabled");
-            return;
+            return false;
         }
-
         StringBuffer archivePlane;
-        if (isContainerized())
+        if (enableArchiving)
         {
-            if (!compConfig->getProp("@archivePlane", archivePlane))
-                throw makeStringException(-1, "No archive plane configured (@archivePlane)");
-            Owned<const IPropertyTree> plane = getStoragePlaneConfig(archivePlane.str(), true);
-            verifyex(plane->getProp("@prefix", archivePath));
-            addPathSepChar(archivePath).append("globalmessages");
-        }
-        else
-        {
-            if (!compConfig->getProp("@archivePath", archivePath))
-                throw makeStringException(-1, "No archive path configured (@archivePath)");
-            getLdsPath("globalmessages", archivePath);
+            if (isContainerized())
+            {
+                const char *planeName = compConfig->queryProp("@archivePlane");
+                if (isEmptyString(planeName))
+                    planeName = "sasha";
+                archivePlane.set(planeName);
+                Owned<const IPropertyTree> plane = getStoragePlaneConfig(archivePlane.str(), true);
+                verifyex(plane->getProp("@prefix", archivePath));
+                addPathSepChar(archivePath).append("globalmessages");
+            }
+            else
+            {
+                if (!compConfig->getProp("@archivePath", archivePath))
+                    throw makeStringException(-1, "No archive path configured (@archivePath)");
+                getLdsPath("globalmessages", archivePath);
+            }
         }
 
         retentionPeriodDays = compConfig->getPropInt("@retentionDays", defaultGlobalMsgRetentionDays);
         archiveAfterDays = compConfig->getPropInt("@archiveAfterDays", defaultGlobalMsgArchiveAfterDays);
 
         PROGLOG("Sasha Global Message Server Configuration:");
-        if (isContainerized())
-            PROGLOG("  Archive Plane: %s", archivePlane.str());
-        PROGLOG("  Archive Path: %s", archivePath.str());
         PROGLOG("  Interval: %u hours", intervalHours);
         PROGLOG("  Archiving: %s", enableArchiving ? "enabled" : "disabled");
         if (enableArchiving)
+        {
+            if (isContainerized())
+                PROGLOG("  Archive Plane: %s", archivePlane.str());
+            PROGLOG("  Archive Path: %s", archivePath.str());
             PROGLOG("  Archive after: %u days", archiveAfterDays);
+        }
+            
         PROGLOG("  Auto Delete: %s", enableAutoDelete ? "enabled" : "disabled");
         if (enableAutoDelete)
             PROGLOG("  Retention Period: %u days (message deletion threshold)", retentionPeriodDays);
@@ -132,6 +140,7 @@ private:
             OWARNLOG("retentionPeriodDays (%u) should be greater than archiveAfterDays (%u). Adjusting retentionPeriodDays to %u days", retentionPeriodDays, archiveAfterDays, archiveAfterDays + 1);
             retentionPeriodDays = archiveAfterDays + 1;
         }
+        return true;
     }
 
     void runGlobalMessageMaintenance()
@@ -343,9 +352,11 @@ public:
 
     virtual void start() override
     {
-        loadConfiguration();
-        if (intervalHours == 0)
-            return; // Service disabled
+        if (!loadConfiguration())
+        {
+            PROGLOG("Sasha Global Message Server disabled");
+            return;
+        }
 
         stopped = false;
         Thread::start(false);
