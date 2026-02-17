@@ -95,23 +95,23 @@ its own cache.  Threads/channels within a process share that process's cache.
 If set to true, components will use jemalloc memory allocator via LD_PRELOAD.
 jemalloc can provide better memory allocation performance and lower fragmentation compared to the default glibc allocator.
 This setting can be applied globally or on a per-component basis via the component's expert section.
-Default: false
+Default: true
 
 Note: jemalloc is automatically disabled when valgrind is enabled for a component, as valgrind requires its own memory management.
 
-Example of enabling jemalloc globally:
+Example of disabling jemalloc globally:
 ```
 global:
   expert:
-    useJemalloc: true
+    useJemalloc: false
 ```
 
-Example of enabling jemalloc for a specific Thor component:
+Example of disabling jemalloc for a specific Thor component:
 ```
 thor:
 - name: mythor
   expert:
-    useJemalloc: true
+    useJemalloc: false
 ```
 
 Note: This requires that libjemalloc is installed in the container image at /usr/lib/x86_64-linux-gnu/libjemalloc.so.2
