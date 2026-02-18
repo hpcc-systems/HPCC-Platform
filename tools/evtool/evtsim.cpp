@@ -58,7 +58,7 @@ public:
         CEvent event;
         while (eventsIt->nextEvent(event))
             recorder.recordEvent(event);
-        if (!recorder.stopRecording(nullptr))
+        if (!recorder.stopRecording(nullptr, true))
             throw makeStringException(-1, "failed to stop event recording");
         return true;
     }

@@ -58,11 +58,11 @@ bool CEventSavingOp::doOp()
     try
     {
         traverseEvents(*terminalVisitor);
-        recorder.stopRecording(&summary);
+        recorder.stopRecording(&summary, false);
     }
     catch (...)
     {
-        recorder.stopRecording(&summary);
+        recorder.stopRecording(&summary, false);
         throw;
     }
 
