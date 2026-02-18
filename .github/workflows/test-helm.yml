@@ -56,10 +56,10 @@ jobs:
           else
             echo "prev_failed=false" >> $GITHUB_OUTPUT
           fi
-      - name: Compare Tree Hashes between Branches
+      - name: Check for code changes between commits
         id: branch_changed
         run: |
-          echo "Comparing tree hashes between base and head branches..."
+          echo "Checking for code changes between commits..."
           if [[ "${{ github.event_name }}" != "pull_request" ]]; then
             echo "Not a pull request event. Treating as changed."
             echo "branch_changed=true" >> $GITHUB_OUTPUT
@@ -67,10 +67,10 @@ jobs:
             echo "This is a new pull request with no previous commit. Treating as changed."
             echo "branch_changed=true" >> $GITHUB_OUTPUT
           elif [[ "$EVENT_ACTION" == "synchronize" ]]; then
-            OLD_SHA=${{ github.event.before }}
-            NEW_SHA=${{ github.event.after }}
+            OLD_SHA="${{ github.event.before }}"
+            NEW_SHA="${{ github.event.after }}"
             PREV_FAILED=${{ steps.check_previous_run.outputs.prev_failed }}
-            if git diff --quiet $OLD_SHA $NEW_SHA; then
+            if git diff --quiet "$OLD_SHA" "$NEW_SHA"; then
               if [[ "$PREV_FAILED" == "true" ]]; then
                 echo "No code changes detected, but previous run failed. Re-Running."
                 echo "branch_changed=true" >> $GITHUB_OUTPUT
