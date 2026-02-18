@@ -1720,7 +1720,7 @@ Return access permissions for a given service
 */}}
 {{- define "hpcc.getSashaServiceAccess" }}
 {{- if (eq "coalescer" .name) -}}
-dalidata
+dali dalidata
 {{- else if (eq "wu-archiver" .name) -}}
 dali data dll
 {{- else if (eq "dfuwu-archiver" .name) -}}
