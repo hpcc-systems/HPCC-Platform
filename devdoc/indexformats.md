@@ -285,3 +285,69 @@ compress-options:  Passed directly to the compression algorithm
 Examples:
 
 `compress('hybrid:zstds(level=9),blob(lz4hc)')`
+
+## Default index options
+
+Version 9.14.x of the platform onwards provide 3 options for configuring the default compression the system uses when building an index:
+
+* **defaultIndexCompression**\
+  The compression format used if there is no COMPRESS attribute on the INDEX or BUILD statement.
+* **defaultInplaceCompression**\
+  Which form of compression is used by the inplace compression for compressing the payload portion.
+* **overrideIndexCompression**\
+  Ignore any COMPRESS settings specified on a BUILD and use this compression format instead.  Primarily for testing.
+
+The options can be configured in bare-metal and containerized builds.  The examples below illustrate using the option to match the new system defaults which will be adopted in 10.4.0.
+
+### Containerized
+
+The following will work in all versions:
+
+```
+global:
+  expert:
+    defaultIndexCompression: "hybrid:zstds(level=6)"
+    defaultInplaceCompression: "zstds(level=6),blob(zstd)"
+```
+
+NOTE: The different use of zstds and zstd is deliberate.  zstds is a streaming version of zstd that is used for index pages.
+
+The following simpler options will work in 10.0.x and later:
+
+```
+global:
+  expert:
+    defaultIndexCompression: "hybrid"
+    defaultInplaceCompression: "zstds6,blob(zstd)"
+```
+
+The compression of blobs and unused file positions is slightly better in 10.0.x than 9.14.x, but the differences are relatively minor.
+
+### Bare-metal
+
+```
+<Environment>
+ <Software>
+  <Globals
+    defaultIndexCompression="hybrid:zstds(level=6)"
+    defaultInplaceCompression="zstds(level=6),blob(zstd)"
+  />
+ </Software>
+<Environment>
+```
+
+### Debug option
+
+The default compression for a workunit can also be specified using a #option:
+
+```
+#option ('defaultIndexCompression', 'hybrid:zstds(level=6)');
+```
+
+The priority order is:
+
+* overrideIndexCompression global option
+* COMPRESS option in the ECL
+* defaultIndexCompression workunit option
+* overrideIndexCompression global option
+* system default
