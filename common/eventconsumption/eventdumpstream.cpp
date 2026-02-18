@@ -500,6 +500,10 @@ protected:
         case EvAttrProcessDescriptor:
             // Only appears in RecordingSource, which is never visited.
             return true;
+        case EvAttrEventStackTrace:
+            // Never recorded, even when option is set.
+            // MORE: revisit if option is implemented
+            return true;
         default:
             return false;
         }
