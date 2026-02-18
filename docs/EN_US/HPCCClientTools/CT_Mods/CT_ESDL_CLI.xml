@@ -17,6 +17,7 @@
 
     <pubdate>Jan. 2015</pubdate>
   </bookinfo>
+  <para>The <command>esdl</command> utility tool aids with creating and managing ESDL-based and Dynamic ESDL services on an HPCC cluster. It consists of several different commands, each documented in detail in the sections below.</para>
 
   <chapter id="ESDL_CLI">
     <title>ESDL Command Line Interface</title>
@@ -1598,6 +1599,7 @@
               <term><command>monitor-template</command></term>
 
               <listitem>
+        <!-- Removed redundant esdl_utility section. Summary moved to introduction. -->
                 <para>Generate a template for use with 'monitor'
                 command.</para>
               </listitem>
