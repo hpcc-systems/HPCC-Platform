@@ -8,7 +8,7 @@
 
        http://www.apache.org/licenses/LICENSE-2.0
 
-    Unless isRequired by applicable law or agreed to in writing, software
+    Unless required by applicable law or agreed to in writing, software
     distributed under the License is distributed on an "AS IS" BASIS,
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
     See the License for the specific language governing permissions and
@@ -247,7 +247,7 @@ bool Cws_sysinfologEx::onGetMessages(IEspContext &context, IEspGetMessagesReques
         FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
     }
     resp.setMessages(messages);
-    return messages.length() > 0 ? true:false;
+    return messages.length() > 0;
 }
 
 bool Cws_sysinfologEx::onGetMessageByID(IEspContext &context, IEspGetMessageByIDRequest &req, IEspGetMessageByIDResponse &resp)

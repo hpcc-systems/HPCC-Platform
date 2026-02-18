@@ -19,5 +19,4 @@ application:
    - WSDali
    - WSSasha
    - ws_logaccess
-   - ws_sysinfolog
    - WsCloud
