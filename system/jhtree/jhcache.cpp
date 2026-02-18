@@ -396,7 +396,7 @@ public:
         if (setIndex == numSets)
             return onCacheMiss(fileId, offset, size);
 
-        offset_t cacheFileOffset = (setIndex * setSize) + (cacheKey * pageSize);
+        offset_t cacheFileOffset = (setIndex * setSize) + ((offset_t)cacheKey * pageSize);
 
         if (readSize < pageSize)
         {
@@ -447,7 +447,7 @@ public:
 
         uint8_t setIndex = curCacheSet.getLeastRecentlyUsedIndex();
 
-        offset_t cacheFileOffset = (setIndex * setSize) + (cacheKey * pageSize);
+        offset_t cacheFileOffset = (setIndex * setSize) + ((offset_t)cacheKey * pageSize);
 
         bool ret = writeCacheFile(cacheFileOffset, critIndex, data);
         if (ret)
