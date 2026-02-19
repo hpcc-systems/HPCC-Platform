@@ -206,7 +206,7 @@ export const routes: RoutesEx = [
         children: [
             {
                 path: "", action: (ctx) => import("./components/DFUWorkunits").then(_ => {
-                    return <_.DFUWorkunits filter={parseSearch(ctx.search) as any} />;
+                    return <_.DFUWorkunits filter={parseSearch(ctx.search)} sort={parseSort(ctx.search)} page={parsePage(ctx.search)} />;
                 })
             },
             {
