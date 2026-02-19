@@ -8593,7 +8593,8 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool a
     p->setProp("@hash", fromP->queryProp("@hash"));
     p->setProp("@costExecute", fromP->queryProp("@costExecute"));
     p->setProp("@costFileAccess", fromP->queryProp("@costFileAccess"));
-    p->setPropInt64("@costSavingPotential", fromP->getPropInt64("@costSavingPotential"));
+    if (fromP->hasProp("@costSavingPotential"))
+        p->setPropInt64("@costSavingPotential", fromP->getPropInt64("@costSavingPotential"));
     p->setPropBool("@cloneable", true);
     p->setPropBool("@isClone", true);
     resetWorkflow();  // the source Workflow section may have had some parts already executed...
