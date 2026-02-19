@@ -2,13 +2,15 @@ name: Upmerge Test
 
 on:
   pull_request:
-    types: [opened, reopened]
+    types: [opened, reopened, synchronize]
     branches:
       - "candidate-*"
 
 jobs:
   upmerge-test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: "Debug Vars"
         env:
@@ -102,8 +104,7 @@ jobs:
                     print('Unable to extract version from git tag: ' + latestGitTag + ' expected string format: <prefix>major.minor.point(-patch)?<postfix>')
                     sys.exit(2)
 
-            def buildBranchString(version):
-                major, minor, point = map(int, version)
+            def buildBranchString(major, minor):
                 return f"candidate-{major}.{minor}.x"
 
             def createReleaseTagPattern(projectConfig, major = None, minor = None, point = None):
@@ -166,8 +167,8 @@ jobs:
                         latestMinor = latestVersionInMajor[1]
 
                         while curMinor <= latestMinor:
-                            latestPointInMinor = getLatestSemVer(projectConfig, curMajor, curMinor)
-                            versions.append(buildBranchString([latestPointInMinor[0], latestPointInMinor[1], latestPointInMinor[2] + 2]))
+                            latestVersionInMinor = getLatestSemVer(projectConfig, curMajor, curMinor)
+                            versions.append(buildBranchString(latestVersionInMinor[0], latestVersionInMinor[1]))
                             curMinor += 2
                         curMajor += 1
 
@@ -186,27 +187,56 @@ jobs:
                 else:
                     return ""
 
-            def getTargetInBranchVersion(targetBranch):
-                # Use git show to get the version from the top-level pom.xml
-                cmd = ["git", "show", f"upstream/{targetBranch}:pom.xml"]
-                result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-                pom_content = result.stdout
+            def getTargetVersionCmake(targetBranch):
+                """Read version.cmake from upstream branch and return parsed version fields."""
+                result = subprocess.run(
+                    ["git", "show", f"upstream/{targetBranch}:version.cmake"],
+                    capture_output=True, text=True
+                )
+                if result.returncode != 0:
+                    print(f"Warning: Could not read version.cmake from upstream/{targetBranch}: {result.stderr}")
+                    return None
 
-                version_pattern = re.compile(r'<version>(\s*[0-9]+\.[0-9]+\.[0-9]+(-[0-9]+)?(-SNAPSHOT)?\s*)</version>')
-                match = version_pattern.search(pom_content)
-                if match:
-                    return match.group(1).strip()
-                else:
-                    print(f"Error: Unable to find version in pom.xml for branch {targetBranch}")
-                    sys.exit(1)
+                def extract_cmake_var(content, var_name):
+                    pattern = re.compile(rf'set\s*\(\s*{var_name}\s+"?([^"\s)]+)"?\s*\)')
+                    match = pattern.search(content)
+                    return match.group(1) if match else None
+
+                cmake_content = result.stdout
+                return {
+                    "major":    extract_cmake_var(cmake_content, 'HPCC_MAJOR'),
+                    "minor":    extract_cmake_var(cmake_content, 'HPCC_MINOR'),
+                    "point":    extract_cmake_var(cmake_content, 'HPCC_POINT'),
+                    "maturity": extract_cmake_var(cmake_content, 'HPCC_MATURITY'),
+                    "sequence": extract_cmake_var(cmake_content, 'HPCC_SEQUENCE'),
+                }
+
+            def updateVersionCmake(version_info):
+                """Overwrite version.cmake fields to match the target branch."""
+                with open("version.cmake", "r") as f:
+                    content = f.read()
+
+                def replace_cmake_var(text, var_name, value):
+                    if value is None:
+                        return text
+                    pattern = re.compile(rf'(set\s*\(\s*{var_name}\s+)"?[^"\s)]+"?(\s*\))')
+                    return pattern.sub(rf'\g<1>{value}\2', text)
+
+                content = replace_cmake_var(content, 'HPCC_MAJOR',    version_info.get('major'))
+                content = replace_cmake_var(content, 'HPCC_MINOR',    version_info.get('minor'))
+                content = replace_cmake_var(content, 'HPCC_POINT',    version_info.get('point'))
+                content = replace_cmake_var(content, 'HPCC_SEQUENCE', version_info.get('sequence'))
+                if version_info.get('maturity'):
+                    content = replace_cmake_var(content, 'HPCC_MATURITY', f'"{ version_info["maturity"] }"')
+
+                with open("version.cmake", "w") as f:
+                    f.write(content)
 
             pr = os.environ['PULL_REQUEST_NUMBER']
             title = os.environ['PULL_REQUEST_TITLE']
             user = os.environ['PULL_REQUEST_AUTHOR_NAME']
             pull_url = os.environ['PULL_URL']
-            github_token = os.environ['GITHUB_TOKEN']
             branch_name = os.environ['BRANCH_NAME']
-            comments_url = os.environ['COMMENTS_URL']
 
             # Get project config from environment variable or use default
             projectConfigJson = os.environ.get('PROJECT_CONFIG')
@@ -266,46 +296,25 @@ jobs:
                 }
 
                 try:
-                    # Change pom versions
-                    inBranchVersion = getTargetInBranchVersion(targetBranch)
-                    branch_result["version"] = inBranchVersion
-                    
-                    cmd = [
-                        "mvn", "versions:set",
-                        f"-DnewVersion={inBranchVersion}",
-                        "-DgenerateBackupPoms=false"
-                    ]
-                    mvn_result = subprocess.run(cmd, capture_output=True, text=True)
-                    if mvn_result.returncode != 0:
-                        error_msg = f"Maven version update failed: {mvn_result.stderr}"
-                        print(f"Error changing pom version to {inBranchVersion} for {targetBranch}: {mvn_result.stderr}")
-                        sys.exit(1)
+                    # Sync version.cmake with the target branch to suppress false-positive version conflicts
+                    version_info = getTargetVersionCmake(targetBranch)
+                    if version_info and version_info.get("major"):
+                        branch_result["version"] = f"{version_info['major']}.{version_info['minor']}.{version_info['point']}"
+                        print(f"Syncing version.cmake to {branch_result['version']} to match {targetBranch}")
+                        updateVersionCmake(version_info)
 
-                    # Add pom changes to git
-                    print(f"Committing version changes for {targetBranch}")
-                    
-                    # Add all pom.xml files that were modified
-                    add_result = subprocess.run(["git", "add", "-A", "*.xml", "**/pom.xml"], capture_output=True, text=True)
-                    if add_result.returncode != 0:
-                        print(f"Warning: git add failed: {add_result.stderr}")
-                    
-                    # Commit the changes
-                    commit_result = subprocess.run(
-                        ["git", "commit", "-m", "Test version changes"], 
-                        capture_output=True, text=True
-                    )
-                    if commit_result.returncode != 0:
-                        print(f"Warning: git commit failed (may be no changes): {commit_result.stderr}")
+                        add_result = subprocess.run(["git", "add", "version.cmake"], capture_output=True, text=True)
+                        if add_result.returncode != 0:
+                            print(f"Warning: git add failed: {add_result.stderr}")
 
-                    # Print out git diff between HEAD pom and target pom
-                    diff_result = subprocess.run(
-                        ["git", "diff", "HEAD", f"upstream/{targetBranch}", "--", "pom.xml", "**/pom.xml"], 
-                        capture_output=True, text=True
-                    )
-                    if diff_result.returncode != 0:
-                        print(f"Warning: git diff failed: {diff_result.stderr}")
+                        commit_result = subprocess.run(
+                            ["git", "commit", "-m", "Test: sync version.cmake with target branch"],
+                            capture_output=True, text=True
+                        )
+                        if commit_result.returncode != 0:
+                            print(f"Info: git commit skipped (no changes): {commit_result.stderr}")
                     else:
-                        print(f"Git diff between HEAD and upstream/{targetBranch}:\n{diff_result.stdout}")
+                        print(f"Skipping version.cmake sync for {targetBranch} (file not found or unreadable)")
 
                     # Check if there is a merge conflict
                     merge_conflict = get_merge_conflict("HEAD", f"upstream/{targetBranch}")
@@ -340,11 +349,13 @@ jobs:
             test_results["successful_merges"] = successful_merges
             
             if conflicts:
-                test_results["summary"] = f"Conflicts detected in {len(conflicts)} branches: {', '.join(conflicts)}"
+                test_results["summary"] = f"Conflicts detected in {len(conflicts)} branch(es): {', '.join(conflicts)}"
+            else:
+                test_results["summary"] = "No conflicts detected. All upmerge targets can be merged cleanly."
 
             with open('upmerge-test-results.json', 'w') as f:
                 json.dump(test_results, f, indent=2)
-            
+
             with open('upmerge-test-summary.txt', 'w') as f:
                 f.write(f"Upmerge Test Results for PR #{pr}\n")
                 f.write(f"Title: {title}\n")
@@ -352,7 +363,7 @@ jobs:
                 f.write(f"Base Branch: {branch_name}\n")
                 f.write(f"Test Time: {test_results['test_timestamp']}\n\n")
                 f.write(f"SUMMARY: {test_results['summary']}\n\n")
-                
+
                 f.write("DETAILED RESULTS:\n")
                 for branch_result in test_results["branches_tested"]:
                     f.write(f"\n- Branch: {branch_result['branch']}\n")
