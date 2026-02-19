@@ -108,6 +108,7 @@ public:
         CPPUNIT_TEST(testEventCompleteness);
         CPPUNIT_TEST(testPullEvents);
         CPPUNIT_TEST(testFailCreate);
+        CPPUNIT_TEST(testAllRecordFunctions);
         CPPUNIT_TEST(testCleanup);
     CPPUNIT_TEST_SUITE_END();
 
@@ -1204,6 +1205,60 @@ attribute: DataSize = 73
         }
         ss << ']';
         return ss.str();
+    }
+
+    void testAllRecordFunctions()
+    {
+        START_TEST
+
+        EventRecorder &recorder = queryRecorder();
+        EventRecordingSummary summary;
+
+        // Record a variety of events to a test file
+        CPPUNIT_ASSERT(recorder.startRecording("all", "pullevents.evt", "testprocess", 1, 2, 3, false));
+        CPPUNIT_ASSERT(recorder.isRecording());
+
+        // Add a demo call to each of the record() functions
+        // Index-related events
+        recorder.recordIndexCacheHit(1, 8192, NodeBranch, 1024, 100);
+        recorder.recordIndexCacheMiss(2, 16384, NodeLeaf);
+        recorder.recordIndexLoad(3, 24576, NodeBranch, 2048, 150, 200);
+        recorder.recordIndexEviction(4, 32768, NodeLeaf, 4096);
+        recorder.recordIndexPayload(5, 40960, true, 250);
+
+        // Dali-related events
+        recorder.recordDaliChangeMode(1001, 100, 256);
+        recorder.recordDaliCommit(1002, 200, 512);
+        recorder.recordDaliConnect("/Workunits/Workunit/test.wu", 1003, 300, 1024);
+        recorder.recordDaliEnsureLocal(1004, 150, 128);
+        recorder.recordDaliGet(1005, 250, 256);
+        recorder.recordDaliGetChildren(1006, 175, 512);
+        recorder.recordDaliGetChildrenFor(1007, 225, 768);
+        recorder.recordDaliGetElements("/Test/Path/Elements", 1008, 275, 1536);
+        recorder.recordDaliSubscribe("/Test/Subscribe/Path", 1009, 125);
+
+        // File information
+        recorder.recordFileInformation(100, "testfile.idx");
+
+        // Query events
+        recorder.recordQueryStart("TestQuery");
+        recorder.recordQueryStop();
+
+        // Recording source (additional call to test multiple sources)
+        recorder.recordRecordingSource("anotherprocess", 10, 20, 30);
+
+        // Generic event using recordEvent
+        CEvent event;
+        event.reset(EventIndexCacheMiss);
+        event.setValue(EvAttrFileId, 99U);
+        event.setValue(EvAttrFileOffset, 49152ULL);
+        event.setValue(EvAttrNodeKind, (unsigned)NodeLeaf);
+        recorder.recordEvent(event);
+
+        CPPUNIT_ASSERT(recorder.stopRecording(&summary));
+        CPPUNIT_ASSERT(!recorder.isRecording());
+
+        END_TEST
     }
 };
 
