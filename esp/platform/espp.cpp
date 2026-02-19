@@ -452,7 +452,7 @@ bool startEspEventRecording(const char * options, const char * filename)
 
 bool stopEspEventRecording(EventRecordingSummary * optSummary)
 {
-    return queryRecorder().stopRecording(optSummary);
+    return queryRecorder().stopRecording(optSummary, false);
 }
 
 int init_main(int argc, const char* argv[])

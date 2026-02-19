@@ -133,6 +133,7 @@ struct jlib_decl EventRecordingSummary
     offset_t rawSize{0};
     bool valid{true};
     StringBuffer filename;
+    StringBuffer message;
 };
 
 // Encapsulation of a single attribute value for an event. Values may be stored as either text,
@@ -410,7 +411,7 @@ public:
     bool isRecording() const { return recordingEvents.load(std::memory_order_acquire); }    // Are events being recorded? false if recording is paused
 
     bool startRecording(const char * optionsText, const char * filename, const char * processName, unsigned channelId, unsigned replicaId, __uint64 instanceId, bool pause);
-    bool stopRecording(EventRecordingSummary * optSummary);
+    bool stopRecording(EventRecordingSummary * optSummary, bool throwOnFailure);
     bool pauseRecording(bool pause, bool recordChange);
 
 //Functions for each of the events that can be recorded..
@@ -529,6 +530,7 @@ protected:
     Owned<IFile> outputFile;
     Owned<IFileIO> output;
     Owned<ISerialOutputStream> outputStream;
+    AtomicShared<IException> writeException;
 };
 
 // The implementation exposes a global object so that the test for whether events are being recorded
