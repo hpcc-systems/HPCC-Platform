@@ -128,7 +128,7 @@ public:
     virtual size32_t getFixedSize() const                   { return sizeof(T); }
     virtual void toXML(const byte * self, IXmlWriter & out) { }
     virtual unsigned getVersion() const                     { return OUTPUTMETADATA_VERSION; }
-    virtual unsigned getMetaFlags()                         { return std::is_pod<T>() ? 0 : MDFneeddestruct; }
+    virtual unsigned getMetaFlags()                         { return (std::is_standard_layout<T>::value && std::is_trivial<T>::value) ? 0 : MDFneeddestruct; }
     virtual const RtlTypeInfo * queryTypeInfo() const       { return nullptr; }
     virtual void destruct(byte * self)                      { reinterpret_cast<T *>(self)->~T(); }
     virtual IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }

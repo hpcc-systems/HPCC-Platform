@@ -344,13 +344,13 @@ protected:
     }
 
 public:
-    SimpleInterThreadQueueOf<BASE, ALLOWNULLS>() 
+    SimpleInterThreadQueueOf() 
     {
         limit = 0; // no limit
         reset();
     }
 
-    ~SimpleInterThreadQueueOf<BASE, ALLOWNULLS>() 
+    ~SimpleInterThreadQueueOf() 
     {
         stop();
     }
@@ -598,11 +598,11 @@ protected:
     std::atomic<bool> stopped{false};
 
 public:
-    ReallySimpleInterThreadQueueOf<BASE, ALLOWNULLS>()
+    ReallySimpleInterThreadQueueOf()
     {
     }
 
-    ~ReallySimpleInterThreadQueueOf<BASE, ALLOWNULLS>()
+    ~ReallySimpleInterThreadQueueOf()
     {
     }
 
