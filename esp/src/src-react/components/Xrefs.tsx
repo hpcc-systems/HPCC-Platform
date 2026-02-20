@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link, TextField } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import { HolyGrail } from "../layouts/HolyGrail";
 import nlsHPCC from "src/nlsHPCC";
@@ -100,6 +100,13 @@ export const Xrefs: React.FunctionComponent<XrefsProps> = ({
         }, [])
     });
 
+    const [filterScopes, setFilterScopes] = React.useState(() => localStorage.getItem("xref.filterScopes") || "");
+
+    const handleFilterScopesChange = React.useCallback((newValue: string) => {
+        setFilterScopes(newValue);
+        localStorage.setItem("xref.filterScopes", newValue);
+    }, []);
+
     const [GenerateConfirm, setShowGenerateConfirm] = useConfirm({
         title: nlsHPCC.Generate,
         message: nlsHPCC.RunningServerStrain,
@@ -109,7 +116,8 @@ export const Xrefs: React.FunctionComponent<XrefsProps> = ({
                 requests.push(
                     WsDFUXref.DFUXRefBuild({
                         request: {
-                            Cluster: selection[i].name
+                            Cluster: selection[i].name,
+                            FilterScopes: filterScopes
                         }
                     })
                 );
@@ -120,7 +128,7 @@ export const Xrefs: React.FunctionComponent<XrefsProps> = ({
                 })
                 .catch(err => logger.error(err))
                 ;
-        }, [refreshData, selection])
+        }, [filterScopes, refreshData, selection])
     });
 
     //  Command Bar  ---
@@ -151,8 +159,20 @@ export const Xrefs: React.FunctionComponent<XrefsProps> = ({
         {
             key: "generate", text: nlsHPCC.Generate, disabled: !selection.length,
             onClick: () => setShowGenerateConfirm(true)
+        },
+        { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        {
+            key: "filterScopes",
+            onRender: () => (
+                <TextField
+                    styles={{ root: { width: 250, marginLeft: 8, marginRight: 8, marginTop: 6 } }}
+                    placeholder={nlsHPCC.ExampleScopePlaceholder}
+                    value={filterScopes}
+                    onChange={(_, newValue) => handleFilterScopesChange(newValue || "")}
+                />
+            )
         }
-    ], [refreshData, selection, setShowCancelConfirm, setShowGenerateConfirm, uiState]);
+    ], [filterScopes, handleFilterScopesChange, refreshData, selection, setShowCancelConfirm, setShowGenerateConfirm, uiState]);
 
     const copyButtons = useCopyButtons(columns, selection, "xrefs");
 
