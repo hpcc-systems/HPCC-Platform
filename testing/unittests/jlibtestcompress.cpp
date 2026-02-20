@@ -56,6 +56,8 @@ protected:
         CompressToBuffer,               // Compress to a buffer using the compressToBuffer function
         FixedBlockCompress,             // Compress a row at a time to fixed size 32KB blocks, allow rows to be split over blocks (like a file)
         FixedIndexCompress,             // Compress a row at a time to fixed size 32KB blocks, prevent rows being split between blocks (index payload)
+        FixedIndex8Compress,            // Compress a row at a time to fixed size 8KB blocks, prevent rows being split between blocks (index payload)
+        FixedIndex4Compress,            // Compress a row at a time to fixed size 4KB blocks, prevent rows being split between blocks (index payload)
         LargeBlockCompress,             // Compress all remaining rows in each write to a 32K fixed size block
         MBBlockCompress                 // Compress all remaining rows in each write to a 1MB fixed size block
     };
@@ -150,8 +152,10 @@ public:
             }
             case FixedBlockCompress:
             case FixedIndexCompress:
+            case FixedIndex8Compress:
+            case FixedIndex4Compress:
             {
-                static constexpr size32_t blocksize = 32768;
+                const size32_t blocksize = (opt == FixedIndex4Compress) ? 4096 : (opt == FixedIndex8Compress) ? 8192 : 32768;
                 bool allowPartialWrites = (opt == FixedBlockCompress);
                 MemoryAttr buffer(blocksize);
 
@@ -163,7 +167,7 @@ public:
                     if (written != rowSz)
                     {
                         compressor->close();
-                        if (opt == FixedIndexCompress)
+                        if (opt != FixedBlockCompress)
                             CPPUNIT_ASSERT(written == 0);
                         size32_t size = compressor->buflen();
                         sizes.append(size);
@@ -209,28 +213,37 @@ public:
         {
             Owned<IExpander> expander = handler.getExpander(options);
             timer.reset();
-            if (opt==CompressToBuffer)
+            switch (opt)
             {
+            case CompressToBuffer:
                 decompressToBuffer(tgt, compressed, options);
-            }
-            else if ((opt == FixedBlockCompress) || (opt == LargeBlockCompress) || (opt == FixedIndexCompress) || (opt == MBBlockCompress))
-            {
-                const byte * cur = compressed.bytes();
-                ForEachItemIn(i, sizes)
+                break;
+            case FixedBlockCompress:
+            case LargeBlockCompress:
+            case MBBlockCompress:
+            case FixedIndexCompress:
+            case FixedIndex8Compress:
+            case FixedIndex4Compress:
                 {
-                    size32_t size = sizes.item(i);
-                    size32_t required = expander->init(cur);
-                    void * target = tgt.reserve(required);
-                    expander->expand(target);
-                    cur += size;
+                    const byte * cur = compressed.bytes();
+                    ForEachItemIn(i, sizes)
+                    {
+                        size32_t size = sizes.item(i);
+                        size32_t required = expander->init(cur);
+                        void * target = tgt.reserve(required);
+                        expander->expand(target);
+                        cur += size;
+                    }
+                    break;
                 }
-            }
-            else
-            {
-                size32_t required = expander->init(compressed.bytes());
-                tgt.reserveTruncate(required);
-                expander->expand(tgt.bufferBase());
-                tgt.setWritePos(required);
+            default:
+                {
+                    size32_t required = expander->init(compressed.bytes());
+                    tgt.reserveTruncate(required);
+                    expander->expand(tgt.bufferBase());
+                    tgt.setWritePos(required);
+                    break;
+                }
             }
         }
         else
@@ -271,6 +284,10 @@ public:
             name.append("-fb");
         else if (opt == FixedIndexCompress)
             name.append("-fi");
+        else if (opt == FixedIndex8Compress)
+            name.append("-fi8");
+        else if (opt == FixedIndex4Compress)
+            name.append("-fi4");
         else if (opt == LargeBlockCompress)
             name.append("-lb");
         else if (opt == MBBlockCompress)
@@ -402,23 +419,8 @@ public:
 
         CPPUNIT_ASSERT(compressed.length() > 0);
     }
-};
 
-
-class JlibCompressionStandardTest : public JlibCompressionTestBase
-{
-    CPPUNIT_TEST_SUITE(JlibCompressionStandardTest);
-        CPPUNIT_TEST(disableBacktraceOnAssert);
-        CPPUNIT_TEST(testCompressionRegistration);
-        CPPUNIT_TEST(testSingle);
-        CPPUNIT_TEST(testKeyRollback);
-        CPPUNIT_TEST(testTinyCompression);
-        CPPUNIT_TEST(test);
-        CPPUNIT_TEST(testOverflowBug);
-    CPPUNIT_TEST_SUITE_END();
-
-public:
-    void test()
+    void testStandardCompression()
     {
         try
         {
@@ -480,41 +482,21 @@ public:
             CPPUNIT_FAIL(msg.str());
         }
     }
+};
 
-    void testKeyRollback()
-    {
-        // Test whether writing data to a fixed length buffer fails consistently when too much data is written
-        // This affects whether inplace: compression can be used - because that can lead to the payload size increasing,
-        // but if attempting and failing to extend the payload changes the compressed data size it can
-        // prevent the key insertion being rolled back.
-        try
-        {
-            MemoryBuffer src;
-            size32_t rowSz = 0;
-            initCompressionBuffer(src, rowSz);
 
-            Owned<ICompressHandlerIterator> iter = getCompressHandlerIterator();
-            ForEach(*iter)
-            {
-                ICompressHandler &handler = iter->query();
-                if (streq("AES", handler.queryType()))
-                    continue;
+class JlibCompressionStandardTest : public JlibCompressionTestBase
+{
+    CPPUNIT_TEST_SUITE(JlibCompressionStandardTest);
+        CPPUNIT_TEST(disableBacktraceOnAssert);
+        CPPUNIT_TEST(testCompressionRegistration);
+        CPPUNIT_TEST(testSingle);
+        CPPUNIT_TEST(testTinyCompression);
+        CPPUNIT_TEST(testStandardCompression);
+        CPPUNIT_TEST(testOverflowBug);
+    CPPUNIT_TEST_SUITE_END();
 
-                testRollbackKeyCompression(1, handler, rowSz, src.bytes());
-                testRollbackKeyCompression(32768/rowSz, handler, rowSz, src.bytes());
-                testRollbackKeyCompression(0x40000/rowSz, handler, rowSz, src.bytes());
-           }
-        }
-        catch (IException *e)
-        {
-            StringBuffer msg;
-            e->errorMessage(msg);
-            EXCLOG(e, nullptr);
-            ::Release(e);
-            CPPUNIT_FAIL(msg.str());
-        }
-    }
-
+public:
     void testTinyCompression()
     {
         // Test compression of a very small incompressible block of data
@@ -618,6 +600,90 @@ public:
 
 CPPUNIT_TEST_SUITE_REGISTRATION( JlibCompressionStandardTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibCompressionStandardTest, "JlibCompressionStandardTest" );
+
+
+class JlibCompressionTimingTest : public JlibCompressionTestBase
+{
+    CPPUNIT_TEST_SUITE(JlibCompressionTimingTest);
+        CPPUNIT_TEST(disableBacktraceOnAssert);
+        CPPUNIT_TEST(testStandardCompression);
+        CPPUNIT_TEST(testIndexBlock);
+        CPPUNIT_TEST(testKeyRollback);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void testIndexBlock()
+    {
+        START_TEST
+
+        MemoryBuffer src;
+        size32_t rowSz = 0;
+        initCompressionBuffer(src, rowSz);
+
+
+        DBGLOG("Algorithm(options)  || Comp(ms) || Deco(ms) || 200MB/s (w,r)   || 1GB/s (w,r)     || 5GB/s (w,r)     || Ratio [cLen]");
+        DBGLOG("                    ||          ||          || 2Gb/s           || 10Gb/s          || 50Gb/s          ||");
+
+        Owned<ICompressHandlerIterator> iter = getCompressHandlerIterator();
+        ForEach(*iter)
+        {
+            ICompressHandler &handler = iter->query();
+            const char * type = handler.queryType();
+            if (streq("AES", type))
+                continue;
+            if (startsWithIgnoreCase(type, "lz4s") || startsWithIgnoreCase(type, "zstds"))
+            {
+                testCompressor(handler, nullptr, rowSz, src.length(), src.bytes(), FixedIndexCompress);
+                for (const char * options : { "", "maxRecompress(0)", "maxRecompress(1)", "maxRecompress(2)", "minSizeToCompress(40)", "minSizeToCompress(80)" })
+                {
+                    testCompressor(handler, options, rowSz, src.length(), src.bytes(), FixedIndex8Compress);
+                }
+                testCompressor(handler, nullptr, rowSz, src.length(), src.bytes(), FixedIndex4Compress);
+            }
+            else
+                testCompressor(handler, nullptr, rowSz, src.length(), src.bytes(), FixedIndexCompress);
+        }
+
+        END_TEST
+    }
+
+    void testKeyRollback()
+    {
+        // Test whether writing data to a fixed length buffer fails consistently when too much data is written
+        // This affects whether inplace: compression can be used - because that can lead to the payload size increasing,
+        // but if attempting and failing to extend the payload changes the compressed data size it can
+        // prevent the key insertion being rolled back.
+        try
+        {
+            MemoryBuffer src;
+            size32_t rowSz = 0;
+            initCompressionBuffer(src, rowSz);
+
+            Owned<ICompressHandlerIterator> iter = getCompressHandlerIterator();
+            ForEach(*iter)
+            {
+                ICompressHandler &handler = iter->query();
+                if (streq("AES", handler.queryType()))
+                    continue;
+
+                testRollbackKeyCompression(1, handler, rowSz, src.bytes());
+                testRollbackKeyCompression(32768/rowSz, handler, rowSz, src.bytes());
+                testRollbackKeyCompression(0x40000/rowSz, handler, rowSz, src.bytes());
+           }
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            EXCLOG(e, nullptr);
+            ::Release(e);
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( JlibCompressionTimingTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibCompressionTimingTest, "JlibCompressionTimingTest" );
 
 
 class JlibCompressionTestsStress : public JlibCompressionTestBase
