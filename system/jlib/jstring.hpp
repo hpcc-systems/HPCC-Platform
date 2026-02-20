@@ -588,6 +588,7 @@ inline StringBuffer& operator << (StringBuffer& s, const TValue& value)
 }
 
 extern jlib_decl void toLower(std::string & value);
+extern jlib_decl void trim(std::string & value);
 
 extern jlib_decl bool checkUnicodeLiteral(char const * str, unsigned length, unsigned & ep, StringBuffer & msg);
 extern jlib_decl void decodeCppEscapeSequence(StringBuffer & out, const char * in, bool errorIfInvalid);
