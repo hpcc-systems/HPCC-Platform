@@ -358,7 +358,7 @@ data:
 {{- $_ := set $commonCtx "eclAgentUseChildProcesses" (hasKey . "eclAgentUseChildProcesses" | ternary .eclAgentUseChildProcesses true) }}
 {{- $_ := set $commonCtx "eclAgentReplicas" (.eclAgentReplicas | default 1) }}
 {{- $_ := set $commonCtx "thorAgentReplicas" (.thorAgentReplicas | default 1) }}
-{{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.thorConfigMap" "component" "thor" "excludeKeys" "global")) }}
+{{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.thorConfigMap" "component" "thor" "excludeKeys" "global,hthor::queues")) }}
 {{- include "hpcc.checkDefaultStoragePlane" $commonCtx }}
 {{- $_ := set $commonCtx "lifeCycleCtx" (dict "containers" list) }}
 apiVersion: apps/v1
