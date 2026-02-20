@@ -64,7 +64,7 @@ public:
         if (pipeOpen)
         {
             unregisterSelfDestructChildProcess(pipe->getProcessHandle());
-            pipe->abort();
+            pipe->abort(false);
         }
         ProcessSlaveActivity::abort();
     }

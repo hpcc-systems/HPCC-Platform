@@ -164,7 +164,7 @@ protected:
     void abortPipe()
     {
         unregisterSelfDestructChildProcess(pipe->getProcessHandle());
-        pipe->abort();
+        pipe->abort(false);
     }
 
 public:
