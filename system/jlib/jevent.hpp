@@ -51,6 +51,7 @@ enum EventType : byte
     EventQueryStart,
     EventQueryStop,
     EventRecordingSource,         // information about the source of the recording
+    EventIndexOpen,               // open an index ready for reading
     EventMax
 };
 
@@ -92,6 +93,7 @@ enum EventAttr : byte
     EvAttrReplicaId,
     EvAttrInstanceId,
     EvAttrProcessDescriptor,
+    EvAttrOpenTime,
     EvAttrMax
 };
 
@@ -415,6 +417,7 @@ public:
     bool pauseRecording(bool pause, bool recordChange);
 
 //Functions for each of the events that can be recorded..
+    void recordIndexOpen(unsigned fileid, __uint64 loadTime);
     void recordIndexCacheHit(unsigned fileid, offset_t offset, byte nodeKind, size32_t size, __uint64 expandTime);
     void recordIndexCacheMiss(unsigned fileid, offset_t offset, byte nodeKind);
     void recordIndexLoad(unsigned fileid, offset_t offset, byte nodeKind, size32_t size, __uint64 expandTime, __uint64 readTime);

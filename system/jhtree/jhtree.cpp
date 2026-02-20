@@ -1166,8 +1166,13 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
         }
     }
     assertex(NULL != keyIndex);
+
+    bool recording = recordingEvents();
+    CCycleTimer loadTimer(recording);
     //Check the index has been loaded - thread safe, only one thread will load if multiple threads get here at the same time.
     keyIndex->ensureReady();
+    if (recording)
+        queryRecorder().recordIndexOpen(keyIndex->queryId(), loadTimer.elapsedNs());
     return keyIndex;
 }
 
