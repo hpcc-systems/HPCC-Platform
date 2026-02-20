@@ -12,5 +12,6 @@ tmp/
 .vscode/*
 !.vscode/tasks.json
 tests/test-wus.json
+tests/test-dfu-wus.json
 lws.target.txt
 tmp.*

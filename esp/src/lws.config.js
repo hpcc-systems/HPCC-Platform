@@ -1,23 +1,43 @@
 const fs = require("fs");
 
-let ip = "https://play.hpccsystems.com:18010";
-if (fs.existsSync("./lws.target.txt")) {
-    ip = fs.readFileSync("./lws.target.txt").toString().replace("\r\n", "\n").split("\n")[0];
+const getTargetFromArgs = () => {
+    const args = process.argv.slice(2);
+    for (let i = 0; i < args.length; i++) {
+        if (args[i] === "--target" && args[i + 1]) {
+            return args[i + 1];
+        }
+        if (args[i].startsWith("--target=")) {
+            return args[i].substring("--target=".length);
+        }
+    }
+    return "";
+};
+
+let target = "http://localhost:8010";
+const argTarget = getTargetFromArgs();
+if (argTarget) {
+    target = argTarget;
+} else if (process.env.LWS_TARGET) {
+    target = process.env.LWS_TARGET;
+} else if (fs.existsSync("./lws.target.txt")) {
+    target = fs.readFileSync("./lws.target.txt").toString().replace("\r\n", "\n").split("\n")[0];
 }
 
 let protocol = "http";
-let tartgetParts = ip.split("://");
-if (tartgetParts.length > 1) {
-    protocol = tartgetParts[0];
-    ip = tartgetParts[1];
+let targetParts = target.split("://");
+if (targetParts.length > 1) {
+    protocol = targetParts[0];
+    target = targetParts.slice(1).join("://");
 }
 
 let port = 8010;
-tartgetParts = ip.split(":");
-if (tartgetParts.length > 1) {
-    ip = tartgetParts[0];
-    port = tartgetParts[1];
+targetParts = target.split(":");
+if (targetParts.length > 1) {
+    target = targetParts[0];
+    port = targetParts[1];
 }
+
+let ip = target.trim().replace(/\/+$/, "");
 console.log("Protocol:  " + protocol);
 console.log("IP:  " + ip);
 console.log("Port:  " + port);

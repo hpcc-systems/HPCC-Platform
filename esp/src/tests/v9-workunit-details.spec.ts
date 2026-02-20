@@ -231,7 +231,7 @@ test.describe("V9 Workunit Details", () => {
         await clickTab(page, "ECL");
         await page.waitForLoadState("networkidle");
 
-        // Check for ECL source content or editor  
+        // Check for ECL source content or editor
         await expect(page.locator(".monaco-editor, .ecl-source, pre, code")).toBeVisible().catch(() => {
             // Fallback check for any code-like content - look for text content
             expect(page.locator("[role='tabpanel']")).toContainText(/\w/).catch(() => {
