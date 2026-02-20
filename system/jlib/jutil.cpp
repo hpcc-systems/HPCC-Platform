@@ -3234,7 +3234,13 @@ extern jlib_decl double getResourcedCpus(const char *resourceName)
 {
     Owned<IPropertyTree> resourceTree = getComponentConfigSP()->getPropTree(resourceName);
     if (nullptr == resourceTree)
+    {
+        // Non-containerized: if CPU resources are not configured, use affinity.
+        // Containerized: if CPU config is missing, return 0.0 since affinity may not return expected value for the container.
+        if (!isContainerized())
+            return (double) getAffinityCpus();
         return 0.0;
+    }
     return friendlyCPUToDecimal(resourceTree->queryProp("@cpu"));
 }
 

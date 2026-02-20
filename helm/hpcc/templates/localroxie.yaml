@@ -38,7 +38,7 @@ data:
 {{-  include "hpcc.generateTracingConfig" . | indent 6 }}
 {{   include "hpcc.generateVaultConfig" . | indent 6 }}
     global:
-{{   include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
+{{   include "hpcc.generateGlobalConfigMap" (dict "root" .root) | indent 6 }}
 {{- end -}}{{/* define "hpcc.localroxieConfigMap */}}
 
 {{  range $roxie := $.Values.roxie -}}

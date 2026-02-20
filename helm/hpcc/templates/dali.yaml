@@ -190,7 +190,7 @@ data:
 {{ include "hpcc.generateVaultConfig" (dict "root" $ "secretsCategories" $daliSecretsCategories ) | indent 6 }}
       foreignAccess: {{ include "hpcc.isForeignAccessConfigured" (dict "root" $ "me" .) | default "false" }}
     global:
-{{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
+{{ include "hpcc.generateGlobalConfigMap" (dict "root" $) | indent 6 }}
 ---
 {{- range $sashaName, $_sasha := $daliSashaServicesCtx.services -}}
 {{- $sasha := deepCopy ($_sasha | default dict) -}}
