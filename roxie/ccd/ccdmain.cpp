@@ -944,12 +944,12 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         }
         directoryTree.clear();
 
-        // Tracing feature flags
         TraceFlags traceLevelFlag = traceLevel ? TraceFlags::Standard : TraceFlags::None;
-        updateTraceFlags(loadTraceFlags(topology, roxieTraceOptions, traceLevelFlag | traceRoxieActiveQueries), true);
-
         //Logging stuff
 #ifndef _CONTAINERIZED
+        // Tracing feature flags
+        updateTraceFlags(loadTraceFlags(topology, roxieTraceOptions, traceLevelFlag | traceRoxieActiveQueries), true);
+
         if (topology->getPropBool("@stdlog", traceLevel != 0) || topology->getPropBool("@forceStdLog", false))
         {
             if (topology->getPropBool("@minlog", false))
@@ -982,7 +982,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                 UseSysLogForOperatorMessages();
         }
 #else
-        setupContainerizedLogMsgHandler();
+        updateTraceFlags(traceLevelFlag | traceRoxieActiveQueries, true);
+        setupContainerizedLogMsgHandler(roxieTraceOptions);
 #endif
 
         roxieMetrics.setown(createRoxieMetricsManager());

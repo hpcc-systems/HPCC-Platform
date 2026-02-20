@@ -317,7 +317,10 @@ void openEspLogFile(IPropertyTree* envpt, IPropertyTree* procpt)
         lf->beginLogging();
     }
 #else
-    setupContainerizedLogMsgHandler();
+#ifdef _DEBUG
+    updateTraceFlags(TraceFlags::Max, true); // to mirror non-containerized debug behaviour (see initializeTraceFlags))
+#endif
+    setupContainerizedLogMsgHandler(mapTraceOptions(getComponentConfigSP()));
 #endif
 
     if (procpt->getPropBool("@enableSysLog", false))
@@ -636,7 +639,8 @@ int init_main(int argc, const char* argv[])
             config->bindServer(*server.get(), *server.get());
             config->checkESPCache(*server.get());
 
-            initializeTraceFlags(config);
+            if (!isContainerized()) // trace flags handled by setupContainerizedLogMsgHandler in containerized mode
+                initializeTraceFlags(config);
             initializeMetrics(config);        
             initializeStoragePlanes(daliClientActive(), true);
             srv->initializeDataMaskingEngine(configMaskerConfig);

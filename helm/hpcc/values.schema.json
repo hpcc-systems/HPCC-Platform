@@ -1276,7 +1276,15 @@
         "enableGlobalSysLog": {
             "type": "boolean",
                 "description" : "Enable centralized reporting of important user/operator logging messages"
-        }
+        },
+        "traceFlags": {
+          "type": "array",
+          "description": "List of trace flags to include in logging output.",
+          "items":
+          {
+            "type": "object",
+            "additionalProperties": { "type": "boolean" }
+          }
       },
       "additionalProperties": { "type": ["integer", "string", "boolean"] }
     },
