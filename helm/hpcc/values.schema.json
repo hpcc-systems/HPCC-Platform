@@ -1036,6 +1036,19 @@
           "type": "string",
           "enum": ["kv-v2", "kv-v1"]
         },
+        "type": {
+          "description": "The vault provider type (e.g. 'akeyless' or kv backend)",
+          "type": "string",
+          "enum": ["kv-v2", "kv-v1", "akeyless"]
+        },
+        "accessId": {
+          "description": "Access ID used by Akeyless-style vaults",
+          "type": "string"
+        },
+        "accessKey": {
+          "description": "Access Key used by Akeyless-style vaults",
+          "type": "string"
+        },
         "client-secret": {
           "description": "optional name of kubernetes secret that will provide the vault client token",
           "type": "string"

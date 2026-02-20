@@ -74,12 +74,11 @@ CVaultKind getSecretType(const char *s)
 
 static VaultType getVaultType(const char *s)
 {
-    if (isEmptyString(s) || strieq(s, "hashicorp") || strieq(s, "hashi") || strieq(s, "vault"))
-        return VaultType::hashicorp;
-    if (strieq(s, "akeyless"))
+    if (strisame(s, "akeyless"))
         return VaultType::akeyless;
     return VaultType::hashicorp;
 }
+
 interface IVaultManager : extends IInterface
 {
     virtual bool requestSecretFromVault(const char *category, const char *vaultId, CVaultKind &kind, StringBuffer &content, const char *secret, const char *version) = 0;
@@ -140,8 +139,8 @@ static void validateCategoryName(const char *category)
 
 static void validateSecretNameNotEmpty(const char *name)
 {
-        if (isEmptyString(name))
-            throw makeStringExceptionV(-1, "Invalid secret name %s", name);
+    if (isEmptyString(name))
+        throw makeStringExceptionV(-1, "Invalid secret name %s", name);
 }
 
 static void validateKeyName(const char *key)
@@ -715,8 +714,8 @@ private:
     bool clientTokenRenewable = false;
 
 public:
-    CHashicorpVault(IPropertyTree *vault)
-    : CVault(vault, CVaultKind::kv_v2)
+    CHashicorpVault(IPropertyTree *vault) 
+        :CVault(vault, CVaultKind::kv_v2)
     {
         StringBuffer clientTlsPath;
         buildSecretPath(clientTlsPath, "certificates", "vaultclient");
@@ -1123,7 +1122,7 @@ private:
         if (!res)
             akeylessAuthErrorV("login communication error %d", res.error());
         if (res.error()!=0)
-            OERRLOG("JSECRETS akeyless login calling HTTPLIB POST returned error %d", res.error());
+            akeylessAuthErrorV("login calling HTTPLIB POST returned error %d", res.error());
         if (res->status != 200)
             akeylessAuthErrorV("[%d](%d) - response: %s", res->status, res.error(), res->body.c_str());
         const char *json = res->body.c_str();

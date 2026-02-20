@@ -803,6 +803,9 @@ vaults:
     {{- if index $vault "accessId" }}
       accessId: {{ index $vault "accessId" }}
     {{- end -}}
+    {{- if index $vault "accessKey" }}
+      accessKey: {{ index $vault "accessKey" }}
+    {{- end }}
     {{- if index $vault "accessType" }}
       accessType: {{ index $vault "accessType" }}
     {{- end -}}
