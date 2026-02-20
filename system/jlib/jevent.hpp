@@ -51,6 +51,7 @@ enum EventType : byte
     EventQueryStart,
     EventQueryStop,
     EventRecordingSource,         // information about the source of the recording
+    EventIndexOpen,               // open an index ready for reading
     EventMax
 };
 
@@ -92,6 +93,7 @@ enum EventAttr : byte
     EvAttrReplicaId,
     EvAttrInstanceId,
     EvAttrProcessDescriptor,
+    EvAttrOpenTime,
     EvAttrMax
 };
 
@@ -133,6 +135,7 @@ struct jlib_decl EventRecordingSummary
     offset_t rawSize{0};
     bool valid{true};
     StringBuffer filename;
+    StringBuffer message;
 };
 
 // Encapsulation of a single attribute value for an event. Values may be stored as either text,
@@ -364,6 +367,7 @@ public:
     {
         return setValue(attr, __uint64(value));
     }
+    void fixup(const struct EventFileProperties& fileProps);
 
 public:
     CEvent();
@@ -408,11 +412,12 @@ public:
 
     bool isRecording() const { return recordingEvents.load(std::memory_order_acquire); }    // Are events being recorded? false if recording is paused
 
-    bool startRecording(const char * optionsText, const char * filename, bool pause);
-    bool stopRecording(EventRecordingSummary * optSummary);
+    bool startRecording(const char * optionsText, const char * filename, const char * processName, unsigned channelId, unsigned replicaId, __uint64 instanceId, bool pause);
+    bool stopRecording(EventRecordingSummary * optSummary, bool throwOnFailure);
     bool pauseRecording(bool pause, bool recordChange);
 
 //Functions for each of the events that can be recorded..
+    void recordIndexOpen(unsigned fileid, __uint64 loadTime);
     void recordIndexCacheHit(unsigned fileid, offset_t offset, byte nodeKind, size32_t size, __uint64 expandTime);
     void recordIndexCacheMiss(unsigned fileid, offset_t offset, byte nodeKind);
     void recordIndexLoad(unsigned fileid, offset_t offset, byte nodeKind, size32_t size, __uint64 expandTime, __uint64 readTime);
@@ -528,6 +533,7 @@ protected:
     Owned<IFile> outputFile;
     Owned<IFileIO> output;
     Owned<ISerialOutputStream> outputStream;
+    AtomicShared<IException> writeException;
 };
 
 // The implementation exposes a global object so that the test for whether events are being recorded
@@ -541,6 +547,22 @@ extern jlib_decl EventRecorder eventRecorder;
 
 inline EventRecorder & queryRecorder() { return EventRecorderInternal::eventRecorder; }
 inline bool recordingEvents() { return EventRecorderInternal::eventRecorder.isRecording(); }
+
+// Tri-state values for EventFileProperties::options fields
+// File properties for a single file could use a Boolean flag. Potential iteration of events from
+// multiple files introduces a third possibility when not all files are configured identically.
+enum class EventFileOption : byte
+{
+    Disabled,              // No files have this option enabled
+    Enabled,               // All files have this option enabled
+    Ambiguous = UINT8_MAX  // Some but not all files have this option enabled
+};
+
+// Values indicating ambiguous/conflicting properties when multiplexing multiple sources
+constexpr uint32_t AmbiguousVersion = UINT32_MAX;
+constexpr byte AmbiguousChannelId = UINT8_MAX;
+constexpr byte AmbiguousReplicaId = UINT8_MAX;
+constexpr __uint64 AmbiguousInstanceId = UINT64_MAX;
 
 // Abstract interface for visiting the events in a previously recorded event data file.
 // An implementation will receive a sequence of calls:
@@ -571,16 +593,16 @@ interface IEventVisitor : extends IInterface
 struct jlib_decl EventFileProperties
 {
     StringAttr path;              // location of the event data file
-    uint32_t version{0};          // event file version number
+    uint32_t version{0};          // event file version number (AmbiguousVersion if sources conflict)
     struct {
-        bool includeTraceIds{false};
-        bool includeThreadIds{false};
-        bool includeStackTraces{false};
+        EventFileOption includeTraceIds{EventFileOption::Disabled};
+        EventFileOption includeThreadIds{EventFileOption::Disabled};
+        EventFileOption includeStackTraces{EventFileOption::Disabled};
     } options;
     StringAttr processDescriptor;
-    byte channelId{0};
-    byte replicaId{0};
-    __uint64 instanceId{0};
+    byte channelId{0};            // AmbiguousChannelId if sources conflict
+    byte replicaId{0};            // AmbiguousReplicaId if sources conflict
+    __uint64 instanceId{0};       // AmbiguousInstanceId if sources conflict
     uint32_t eventsRead{0};
     uint32_t bytesRead{0};
 };
@@ -643,6 +665,6 @@ extern jlib_decl IEventIterator* createEventFileIterator(const char* path);
 // returned if all data was parsed successfully.
 extern jlib_decl bool readEvents(const char* filename, IEventVisitor & visitor);
 
-extern jlib_decl bool startComponentRecording(const char * component, const char * optionsText, const char * filename, bool pause);
+extern jlib_decl bool startComponentRecording(const char * component, const char * optionsText, const char * filename, unsigned channelId, unsigned replicaId, bool pause);
 
 #endif

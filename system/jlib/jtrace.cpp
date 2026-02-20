@@ -64,6 +64,12 @@
 //This seems to be defined in some window builds - avoid conflicts with the functions below
 #undef max
 
+static constexpr const char * NullTraceId   = "00000000000000000000000000000000";
+static constexpr const char * NullSpanId    = "0000000000000000";
+static constexpr const char * NullGlobalId  = "11111111111111111111111";
+static constexpr const char * NullCallerId  = "";
+static constexpr const char * NullLocalId   = "11111111111111111111111";
+
 namespace context     = opentelemetry::context;
 namespace nostd       = opentelemetry::nostd;
 namespace opentel_trace = opentelemetry::trace;
@@ -1048,12 +1054,12 @@ public:
 
     virtual const char * queryTraceId() const override
     {
-        return traceID.get(); 
+        return traceID ? traceID.get() : NullTraceId;
     }
 
     virtual const char * querySpanId() const override
     {
-        return spanID.get();
+        return spanID ? spanID.get() : NullSpanId;
     }
 
 protected:
@@ -1144,11 +1150,6 @@ protected:
 
 };
 
-static constexpr const char * NullTraceId   = "00000000000000000000000000000000";
-static constexpr const char * NullSpanId    = "0000000000000000";
-static constexpr const char * NullGlobalId  = "11111111111111111111111";
-static constexpr const char * NullCallerId  = "";
-static constexpr const char * NullLocalId   = "11111111111111111111111";
 class CPseudoSpan final : public CInterfaceOf<ISpan>
 {
 public:

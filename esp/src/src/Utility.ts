@@ -116,13 +116,13 @@ export function espTime2SecondsTests() {
     }, this);
 }
 
-export function convertedSize(intsize: number): string {
+export function convertedSize(intsize: number, postfix: string = ""): string {
     const unitConversion = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
     if (isNaN(intsize) || intsize < 1) {
         return "";
     } else {
         const x = intsize > 0 ? Math.floor(Math.log(intsize) / Math.log(1024)) : 0;
-        return (intsize / Math.pow(1024, x)).toFixed(2) + " " + unitConversion[x];
+        return (intsize / Math.pow(1024, x)).toFixed(2) + " " + unitConversion[x] + postfix;
     }
 }
 
@@ -633,7 +633,7 @@ export function resolve(hpccWidget, callback) {
             require(["hpcc/viz/DojoD3NDChart"], doLoad);
             break;
         case "DataPatternsWidget":
-            require(["./DataPatternsWidget"], doLoad);
+            require(["src/DataPatternsWidget"], doLoad);
             break;
         case "DynamicESDLDefinitionDetailsWidget":
             require(["hpcc/DynamicESDLDefinitionDetailsWidget"], doLoad);
@@ -657,7 +657,7 @@ export function resolve(hpccWidget, callback) {
             require(["hpcc/ECLPlaygroundWidget"], doLoad);
             break;
         case "ECLArchiveWidget":
-            require(["./ECLArchiveWidget"], doLoad);
+            require(["src/ECLArchiveWidget"], doLoad);
             break;
         case "ECLSourceWidget":
             require(["hpcc/ECLSourceWidget"], doLoad);
@@ -712,13 +712,13 @@ export function resolve(hpccWidget, callback) {
             require(["hpcc/GraphsLFWidget"], doLoad);
             break;
         case "GraphTreeWidget":
-            require(["./GraphTreeWidget"], doLoad);
+            require(["src/GraphTreeWidget"], doLoad);
             break;
         case "GraphTree7Widget":
-            require(["./GraphTree7Widget"], doLoad);
+            require(["src/GraphTree7Widget"], doLoad);
             break;
         case "Graph7Widget":
-            require(["./Graph7Widget"], doLoad);
+            require(["src/Graph7Widget"], doLoad);
             break;
         case "GridDetailsWidget":
             require(["hpcc/GridDetailsWidget"], doLoad);

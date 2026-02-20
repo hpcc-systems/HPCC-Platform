@@ -334,6 +334,7 @@ extern da_decl DFUQResultFieldType getDFUQResultFieldType(DFUQResultField field)
 extern da_decl DFUQResultField getDFUQResultField(const char *fieldName);
 extern da_decl DFUQResultField getDFUQResultFieldAndType(const char *fieldName);
 extern da_decl const char* getDFUQResultFieldTypeName(DFUQResultField field);
+extern da_decl bool getFileAttributePath(const char *fieldName, StringBuffer &attributePath, DFUQResultField &field, DFUQResultFieldType &type);
 
 
 /**
@@ -663,7 +664,7 @@ interface IDistributedFileDirectory: extends IInterface
     // NB: getDFAttributesIterator is just a wrapper onto of getDFAttributesFilteredIterator
     virtual IPropertyTreeIterator *getDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive=true, bool includesuper=false, INode *foreigndali=nullptr, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
     virtual IPropertyTreeIterator *getDFAttributesFilteredIterator(const char *filters, const char *localFilters, const DFUQResultField *fields,
-        IUserDescriptor *user, bool recursive, bool& allMatchingFilesReceived, INode *foreigndali=nullptr, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
+        IUserDescriptor *user, bool recursive, bool& allMatchingFilesReceived, unsigned *total, INode *foreigndali=nullptr, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
 
     virtual IDFScopeIterator *getScopeIterator(IUserDescriptor *user, const char *subscope=NULL,bool recursive=true,bool includeempty=false)=0;
 
@@ -877,8 +878,7 @@ interface IDaliServer;
 extern da_decl IDaliServer *createDaliDFSServer(); // called for coven members
 
 // to initialize clustergroups after clusters change in the environment
-extern da_decl void initClusterGroups(bool force, StringBuffer &response, IPropertyTree *oldEnvironment, unsigned timems=INFINITE);
-extern da_decl void initClusterAndStoragePlaneGroups(bool force, IPropertyTree *oldEnvironment, unsigned timems=INFINITE);
+extern da_decl void initClusterAndStoragePlaneGroups(StringBuffer &response, bool force, IPropertyTree *oldEnvironment, unsigned timems=INFINITE);
 extern da_decl bool resetClusterGroup(const char *clusterName, const char *type, bool spares, StringBuffer &response, unsigned timems=INFINITE);
 extern da_decl bool addClusterSpares(const char *clusterName, const char *type, const std::vector<std::string> &hosts, StringBuffer &response, unsigned timems=INFINITE);
 extern da_decl bool removeClusterSpares(const char *clusterName, const char *type, const std::vector<std::string> &hosts, StringBuffer &response, unsigned timems=INFINITE);

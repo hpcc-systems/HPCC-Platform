@@ -422,9 +422,21 @@ offset_t CGeneralTransformer::tell()
 
 class CIndexTransformer : public CTransformerBase
 {
+    // Block size threshold - process approximately this much expanded row data per getBlock() call
+    static constexpr size32_t ExpandedRowBatchSize = 10 * 1024 * 1024; // 10MB
+
 public:
     CIndexTransformer(const char * _targetCompression) : targetCompression(_targetCompression)
     {
+    }
+
+    ~CIndexTransformer()
+    {
+        if (outRecType)
+            outRecType->doDelete();
+
+        ForEachItemIn(idx, deleteFields)
+            delete deleteFields.item(idx);
     }
 
     virtual bool setPartition(RemoteFilename & remoteInputName, offset_t _startOffset, offset_t _length, bool compressedInput, const char *decryptKey) override
@@ -439,6 +451,8 @@ public:
     }
 
     virtual size32_t getBlock(IFileIOStream * out) override;
+    virtual void beginTransform(IFileIOStream * out) override;
+    virtual void endTransform(IFileIOStream * out) override;
 
     virtual offset_t tell() override
     {
@@ -453,12 +467,30 @@ public:
     }
 
 protected:
-    void rebuildIndex(IFileIOStream * out, const char * outputCompression);
+    void initializeTransform(IFileIOStream * out);
+    size32_t processRecordBatch();
 
 protected:
     StringAttr targetCompression;
     Owned<IFileIO> inputIO;
+    Owned<IKeyIndex> index;
+    Owned<IKeyManager> manager;
+    Owned<IPropertyTree> metadata;
+    Owned<IOutputMetaData> diskmeta;
+    ArrayOf<const RtlFieldInfo *> deleteFields;
+    ArrayOf<const RtlFieldInfo *> fields;  // Note - the lifetime of the array needs to extend beyond the lifetime of outmeta. The fields themselves are shared with diskmeta, and do not need to be released.
+    Owned<IOutputMetaData> outmeta;
+    Owned<const IDynamicTransform> translator;
+    const RtlRecordTypeInfo *outRecType = nullptr;
+    Owned<IKeyBuilder> keyBuilder;
+    Owned<IFileIOStream> outFileStream;
+    BlobCreatorWrapper blobCreator{nullptr};
+    size32_t maxSizeSeen = 0;
+    size32_t fileposSize = 0;
     offset_t sizeRead = 0;
+    bool isTLK = false;
+    bool initialized = false;
+    bool finished = false;
 };
 
 class TrivialVirtualFieldCallback : public CInterfaceOf<IVirtualFieldCallback>
@@ -491,30 +523,23 @@ private:
 
 //This code is copied from equivalent code inside dumpkey.cpp, and then simplied/adapted
 //A few bugs in the original implementation have been fixed, both here and in dumpkey.cpp
-//Later the code should be refactored to that blocks of nodes can be processsed to allow
-//progress reporting - by moving some of the logic into beginTransform/endTransform
-void CIndexTransformer::rebuildIndex(IFileIOStream * out, const char * outputCompression)
+void CIndexTransformer::initializeTransform(IFileIOStream * out)
 {
+    if (initialized)
+        return;
+    initialized = true;
+
     const char * fieldSelection = nullptr; // could allow projection...
     const char * keyName = inputFile->queryFilename();
 
     //read with a buffer size of 4MB - for optimal speed, and minimize azure read costs
-    Owned <IKeyIndex> index(createKeyIndex(keyName, 0, *inputIO, -1, false, 0x400000));
+    index.setown(createKeyIndex(keyName, 0, *inputIO, -1, false, 0x400000));
     size32_t key_size = index->keySize();  // NOTE - in variable size case, this may be 32767 + sizeof(offset_t)
     size32_t keyedSize = index->keyedSize();
     unsigned nodeSize = index->getNodeSize();
-    bool isTLK = index->isTopLevelKey();
+    isTLK = index->isTopLevelKey();
 
-    Owned<IKeyManager> manager;
-    Owned<IPropertyTree> metadata = index->getMetadata();
-    Owned<IOutputMetaData> diskmeta;
-    Owned<IOutputMetaData> translatedmeta;
-    ArrayOf<const RtlFieldInfo *> deleteFields;
-    ArrayOf<const RtlFieldInfo *> fields;  // Note - the lifetime of the array needs to extend beyond the lifetime of outmeta. The fields themselves are shared with diskmeta, and do not need to be released.
-    Owned<IOutputMetaData> outmeta;
-    Owned<const IDynamicTransform> translator;
-    RowFilter rowFilter;
-    const RtlRecordTypeInfo *outRecType = nullptr;
+    metadata.setown(index->getMetadata());
     if (metadata && metadata->hasProp("_rtlType"))
     {
         MemoryBuffer layoutBin;
@@ -601,6 +626,7 @@ void CIndexTransformer::rebuildIndex(IFileIOStream * out, const char * outputCom
 
 #if 0
     //Could also filter records
+    RowFilter rowFilter;
     if (filters.ordinality())
     {
         ForEachItemIn(idx, filters)
@@ -618,7 +644,7 @@ void CIndexTransformer::rebuildIndex(IFileIOStream * out, const char * outputCom
     manager->finishSegmentMonitors();
     manager->reset();
 
-    Owned<IFileIOStream> outFileStream(createNoSeekIOStream(out));
+    outFileStream.setown(createNoSeekIOStream(out));
 
     unsigned flags = COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY | USE_TRAILING_HEADER | TRAILING_HEADER_ONLY;
     if (!outmeta->isFixedSize())
@@ -629,7 +655,7 @@ void CIndexTransformer::rebuildIndex(IFileIOStream * out, const char * outputCom
     //    flags |= HTREE_QUICK_COMPRESSED_KEY;
     // MORE - other global options
     bool isVariable = outmeta->isVariableSize();
-    size32_t fileposSize = hasTrailingFileposition(outmeta->queryTypeInfo()) ? sizeof(offset_t) : 0;
+    fileposSize = hasTrailingFileposition(outmeta->queryTypeInfo()) ? sizeof(offset_t) : 0;
     size32_t maxDiskRecordSize;
     if (isTLK)
         maxDiskRecordSize = keyedSize;
@@ -642,19 +668,32 @@ void CIndexTransformer::rebuildIndex(IFileIOStream * out, const char * outputCom
 
     //MORE: Need to rebuild/copy bloom filters
     KeyBuilderOptions options(flags, maxDiskRecordSize, nodeSize, keyedSize, nullptr);
-    options.setCompression(outputCompression);
+    options.setCompression(targetCompression);
     options.enforceOrder = false;
     options.isTLK = isTLK;
-    Owned<IKeyBuilder> keyBuilder = createKeyBuilder(outFileStream, options);
-    BlobCreatorWrapper blobCreator(keyBuilder);
+    keyBuilder.setown(createKeyBuilder(outFileStream, options));
+    blobCreator.setBuilder(keyBuilder);
 
     if (createTranslator)
         translator.setown(createRecordBlobTranslator(outmeta->queryRecordAccessor(true), inrec, &blobCreator));
 
+}
+
+//Process a batch of records and return the approximate input size processed
+size32_t CIndexTransformer::processRecordBatch()
+{
+    const size32_t keyedSize = index->keyedSize();
     TrivialVirtualFieldCallback callback(manager);
-    size32_t maxSizeSeen = 0;
-    while (manager->lookup(true))
+
+    size32_t inputSizeProcessed = 0;  // Approximate input size for current block
+    while (inputSizeProcessed < ExpandedRowBatchSize)
     {
+        if (!manager->lookup(true))
+        {
+            finished = true;
+            break;
+        }
+
         byte const * buffer = manager->queryKeyBuffer();
         size32_t size = isTLK ? keyedSize : manager->queryRowSize();
         unsigned __int64 seq = manager->querySequence();
@@ -685,10 +724,38 @@ void CIndexTransformer::rebuildIndex(IFileIOStream * out, const char * outputCom
             if (size > maxSizeSeen)
                 maxSizeSeen = size;
         }
+
+        inputSizeProcessed += size;
         manager->releaseBlobs();
     }
 
-    //Clone any bloom filters from the input dataset - they should be rebuild if the index was ever filtered.
+    // This function is expected to return the number of bytes processed from the input dataset.  That isn't readily available for indexes
+    // so look at the number of bytes read from the file - not completely accurate because of the header etc, but a close approximation.
+
+    offset_t finalSizeProcessed = inputIO->getStatistic(StSizeDiskRead);
+    // If it has increased use that, otherwise add 1 (since returning 0 means end of file)
+    if (finalSizeProcessed <= sizeRead)
+        finalSizeProcessed = sizeRead+1;
+    offset_t processed = finalSizeProcessed - sizeRead;
+
+    // This should never happen, but protect against overflow just in case - ok as long as it never returns 0
+    if (processed != (size32_t)processed)
+        processed = (size32_t) -1;
+    sizeRead += processed;
+    return (size32_t)processed;
+}
+
+void CIndexTransformer::beginTransform(IFileIOStream * out)
+{
+    initializeTransform(out);
+}
+
+void CIndexTransformer::endTransform(IFileIOStream * out)
+{
+    if (!initialized || !keyBuilder)
+        return;
+
+    //Clone any bloom filters from the input dataset - they should be rebuilt if the index was ever filtered.
     BloomFilterArray clonedBlooms;
     for (unsigned i = 0; ; i++)
     {
@@ -705,26 +772,24 @@ void CIndexTransformer::rebuildIndex(IFileIOStream * out, const char * outputCom
     printf("New key size: %" I64F "u bytes (%" I64F "u bytes written in %" I64F "u writes)\n", outFileStream->size(), outFileStream->getStatistic(StSizeDiskWrite), outFileStream->getStatistic(StNumDiskWrites));
     keyBuilder.clear();
 
-    if (outRecType)
-        outRecType->doDelete();
-
-    ForEachItemIn(idx, deleteFields)
-    {
-        delete deleteFields.item(idx);
-    }
-
     sizeRead = inputIO->size();
 
     //Ensure the file is removed from the key store - in case the input is overwritten and the process repeated
+    const char * keyName = inputFile->queryFilename();
     index.clear();
     clearKeyStoreCacheEntry(keyName);
 }
 
-//The index transform reads an entire index, and outputs the final index as a single block - no recovery etc.
+//The index transform processes records incrementally, yielding progress after each block
 size32_t CIndexTransformer::getBlock(IFileIOStream * out)
 {
-    rebuildIndex(out, targetCompression);
-    return 0;
+    if (!initialized)
+        initializeTransform(out);
+
+    if (finished)
+        return 0;
+
+    return processRecordBatch();
 }
 
 
@@ -851,16 +916,23 @@ void TransferServer::appendTransformed(unsigned chunkIndex, ITransformer * input
     const offset_t startOutputOffset = curPartition.outputOffset;
     stat_type prevNumWrites =  out->getStatistic(StNumDiskWrites);
     stat_type prevNumReads = input->getStatistic(StNumDiskReads);
+
+    // If compressing, only flush when the job is completed - to prevent compressed output creating
+    // extra blocks.  Also disable when containerized, to prevent too many blob parts ...
+    bool flushOutputPeriodically = !compressOutput && !isContainerized();
     for (;;)
     {
         unsigned gotLength = input->getBlock(out);
+        bool eof = (gotLength == 0);
         totalLengthRead  += gotLength;
 
-        if (gpfFrequency || !gotLength || ((unsigned)(msTick() - lastTick)) > updateFrequency)
+        if (gpfFrequency || eof || ((unsigned)(msTick() - lastTick)) > updateFrequency)
         {
-            // If compressing, only flush when the job is completed - to prevent compressed output creating
-            // extra blocks.
-            if (!gotLength || !compressOutput)
+            //Ensure any trailing data is written before flushing and sending the final positions
+            if (eof)
+                input->endTransform(out);
+
+            if (eof || flushOutputPeriodically)
                 out->flush();
 
             lastTick = msTick();
@@ -870,7 +942,7 @@ void TransferServer::appendTransformed(unsigned chunkIndex, ITransformer * input
             if (totalLengthToRead && doTrace(traceSprayDetails))
                 LOG(MCdebugProgress, "Progress: %d%% done. [%" I64F "u]", (unsigned)(totalLengthRead*100/totalLengthToRead), (unsigned __int64)totalLengthRead);
 
-            curProgress.status = (gotLength == 0) ? OutputProgress::StatusCopied : OutputProgress::StatusActive;
+            curProgress.status = eof ? OutputProgress::StatusCopied : OutputProgress::StatusActive;
             curProgress.inputLength = input->tell()-startInputOffset;
             curProgress.outputLength = out->tell()-startOutputOffset;
             stat_type curNumWrites = out->getStatistic(StNumDiskWrites);
@@ -886,8 +958,8 @@ void TransferServer::appendTransformed(unsigned chunkIndex, ITransformer * input
             sendProgress(curProgress);
         }
 
-        if (!gotLength)
-            break;
+        if (eof)
+            return;
 
         if (blockDelay)
             MilliSleep(blockDelay);
@@ -905,8 +977,6 @@ void TransferServer::appendTransformed(unsigned chunkIndex, ITransformer * input
         }
 #endif
     }
-
-    input->endTransform(out);
 }
 
 

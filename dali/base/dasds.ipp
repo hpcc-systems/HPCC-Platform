@@ -390,7 +390,7 @@ public:
             case SDSExcpt_AmbiguousXpath:
                 return out.append("Invalid ambiguous xpath detected ");
             case SDSExcpt_OpenStoreFailed:
-                return out.append("Failed to open sds xml store file ");
+                return out.append("Failed to open sds store ");
             case SDSExcpt_OrphanedNode:
                 return out.append("Transaction to orphaned server node ");
             case SDSExcpt_ServerStoppedLockAborted:

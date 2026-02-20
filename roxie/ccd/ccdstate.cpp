@@ -246,7 +246,8 @@ void stopDelayedReleaser()
 
 bool startRoxieEventRecording(const char * options, const char * filename)
 {
-    if (!startComponentRecording("roxie", options, filename, true))
+    unsigned mySubChannel = getMySubChannel(myChannel);
+    if (!startComponentRecording("roxie", options, filename, myChannel+1, mySubChannel+1, true))
         return false;
 
     //Generate information about all files that are already registered - others will be added as they are opened
@@ -258,7 +259,7 @@ bool startRoxieEventRecording(const char * options, const char * filename)
 
 bool stopRoxieEventRecording(EventRecordingSummary * optSummary)
 {
-    return queryRecorder().stopRecording(optSummary);
+    return queryRecorder().stopRecording(optSummary, false);
 }
 
 //-------------------------------------------------------------------------
@@ -3142,7 +3143,11 @@ private:
                     reply.appendf("<EventRecording success='true' numEvents='%u' filename='%s' size='%llu'/>", summary.numEvents, summary.filename.str(), summary.totalSize);
                 }
                 else
-                    reply.appendf("<EventRecording success='false'/>");
+                {
+                    StringBuffer encoded;
+                    encodeXML(summary.message.str(), encoded);
+                    reply.appendf("<EventRecording success='false' error='%s'/>", encoded.str());
+                }
             }
             else if (stricmp(queryName, "control:state")==0)
             {

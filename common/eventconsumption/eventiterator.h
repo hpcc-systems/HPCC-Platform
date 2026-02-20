@@ -18,8 +18,16 @@
 #pragma once
 
 #include "eventconsumption.h"
+#include "eventmetaparser.hpp"
 #include "jevent.hpp"
 #include "jptree.hpp"
+
+enum PropertyTreeEventFlags : unsigned
+{
+    PTEFnone = 0x00,           // Emulate an event file iterator as closely as possible
+    PTEFlenientParsing = 0x01, // Don't throw on or unknown events/attributes or incomplete events
+    PTEFliteralParsing = 0x02  // Literal parsing: what comes in is what comes out (e.g., don't consume RecordingSource)
+};
 
 // Implementation of IEventIterator that extracts event data from a property tree whose contents
 // conform to this format (shown here as YAML):
@@ -42,20 +50,25 @@
 //   a number of nanoseconds.
 // - filename, version, and bytesRead are optional values that will be used to satisfy the query*
 //   methods. Default values of nullptr, 0, and 0 are used when omitted.
-class event_decl CPropertyTreeEvents : public CInterfaceOf<IEventIterator>
+extern event_decl IEventIterator* createPropertyTreeEvents(const IPropertyTree& events, unsigned flags);
+inline IEventIterator* createPropertyTreeEvents(const IPropertyTree& events) { return createPropertyTreeEvents(events, PTEFnone); }
+
+// Extension of IEventIterator intended to act on events originating from multiple source
+// iterators. Implementations choose how to interleave events from the various sources.
+interface IEventMultiplexer : extends IEventIterator
 {
-public:
-    virtual bool nextEvent(CEvent& event) override;
-    virtual const EventFileProperties& queryFileProperties() const override;
-public:
-    CPropertyTreeEvents(const IPropertyTree& events);
-    CPropertyTreeEvents(const IPropertyTree& events, bool strictParsing);
-protected:
-    Linked<const IPropertyTree> events;
-    Owned<IPropertyTreeIterator> eventsIt;
-    EventFileProperties properties;
-    bool strictParsing{true};
+    virtual void addSource(IEventIterator& source) = 0;
 };
+
+// Creates an IEventMultiplexer that interleaves events based on EventTimestamp values, in
+// ascending order. The iterator is fully responsible for managing the provided meta state.
+// The iterator should not be given another multiplexer as a source, and use of a separate
+// meta state collector in the visitation chain should be avoided.
+//
+// All sources must be added before any event consumption. The meta state depends on the
+// the total number of sources from which it will receive events. Processing an event
+// before all sources are known can yield incorrect results.
+extern event_decl IEventMultiplexer* createEventMultiplexer(CMetaInfoState& metaState);
 
 // Dispatch the contents of an event iterator to an event visitor.
 extern event_decl void visitIterableEvents(IEventIterator& iter, IEventVisitor& visitor);

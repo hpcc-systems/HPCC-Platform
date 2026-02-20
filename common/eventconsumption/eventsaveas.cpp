@@ -52,17 +52,17 @@ bool CEventSavingOp::ready() const
 bool CEventSavingOp::doOp()
 {
     EventRecorder& recorder = queryRecorder();
-    if (!recorder.startRecording(options, outputPath, false))
+    if (!recorder.startRecording(options, outputPath, nullptr, 0, 0, 0, false))
         return false;
     Owned<IEventVisitor> terminalVisitor = new CEventSavingVisitor(*this);
     try
     {
-        traverseEvents(inputPath, *terminalVisitor);
-        recorder.stopRecording(&summary);
+        traverseEvents(*terminalVisitor);
+        recorder.stopRecording(&summary, false);
     }
     catch (...)
     {
-        recorder.stopRecording(&summary);
+        recorder.stopRecording(&summary, false);
         throw;
     }
 

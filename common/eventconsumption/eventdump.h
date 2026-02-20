@@ -34,7 +34,8 @@ extern event_decl IEventVisitor* createDumpXMLEventVisitor(IBufferedSerialOutput
 extern event_decl IEventVisitor* createDumpYAMLEventVisitor(IBufferedSerialOutputStream& out);
 
 // Get a visitor that streams visited event data in CSV format.
-extern event_decl IEventVisitor* createDumpCSVEventVisitor(IBufferedSerialOutputStream& out);
+// The properties parameter is used to determine which optional columns to include.
+extern event_decl IEventVisitor* createDumpCSVEventVisitor(IBufferedSerialOutputStream& out, const EventFileProperties& properties);
 
 // Encapsulation of a visitor that stores visited event data in a property tree and
 // access to the tree.

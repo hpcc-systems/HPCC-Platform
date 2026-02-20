@@ -126,11 +126,11 @@ public:
             CPPUNIT_ASSERT(!recorder.isRecording());
 
             // Start recording
-            CPPUNIT_ASSERT(recorder.startRecording("traceid", "eventtrace.evt", false));
+            CPPUNIT_ASSERT(recorder.startRecording("traceid", "eventtrace.evt", nullptr, 0, 0, 0, false));
             CPPUNIT_ASSERT(recorder.isRecording());
 
             //Check that overlapping starts fail
-            CPPUNIT_ASSERT(!recorder.startRecording("traceid", "eventtrace.evtxxx", false));
+            CPPUNIT_ASSERT(!recorder.startRecording("traceid", "eventtrace.evtxxx", nullptr, 0, 0, 0, false));
 
             // Record some events
             recorder.recordIndexCacheHit(1, branchOffset, NodeBranch, 9876, 400);
@@ -139,15 +139,15 @@ public:
             recorder.recordIndexEviction(1, branchOffset, NodeBranch, nodeSize);
 
             // Stop recording
-            CPPUNIT_ASSERT(recorder.stopRecording(&summary));
+            CPPUNIT_ASSERT(recorder.stopRecording(&summary, false));
             CPPUNIT_ASSERT(!recorder.isRecording());
             CPPUNIT_ASSERT_EQUAL(4U, summary.numEvents);
 
             // Check that stopping again fails
-            CPPUNIT_ASSERT(!recorder.stopRecording(nullptr));
+            CPPUNIT_ASSERT(!recorder.stopRecording(nullptr, false));
 
             // Restart recording with a different filename
-            CPPUNIT_ASSERT(recorder.startRecording("threadid", "testfile.bin", true));
+            CPPUNIT_ASSERT(recorder.startRecording("threadid", "testfile.bin", nullptr, 0, 0, 0, true));
             CPPUNIT_ASSERT(!recorder.isRecording());
             recorder.pauseRecording(true, false);
             CPPUNIT_ASSERT(!recorder.isRecording());
@@ -172,7 +172,7 @@ public:
             recorder.recordDaliConnect("/Workunits/Workunit/abc.wu", 987, 100, 67);
 
             // Stop recording again
-            CPPUNIT_ASSERT(recorder.stopRecording(&summary));
+            CPPUNIT_ASSERT(recorder.stopRecording(&summary, false));
             CPPUNIT_ASSERT(!recorder.isRecording());
             CPPUNIT_ASSERT_EQUAL(10U, summary.numEvents);        // One pause + 8 index, 2 dali, not the two logged when paused.
             CPPUNIT_ASSERT_EQUAL_STR("testfile.bin", summary.filename);        // One pause + 8 index, 2 dali, not the two logged when paused.
@@ -237,7 +237,7 @@ public:
             CPPUNIT_ASSERT(!recorder.isRecording());
 
             // Start recording
-            CPPUNIT_ASSERT(recorder.startRecording("threadid", "eventtrace.evt", false));
+            CPPUNIT_ASSERT(recorder.startRecording("threadid", "eventtrace.evt", nullptr, 0, 0, 0, false));
             CPPUNIT_ASSERT(recorder.isRecording());
 
             // Record some events
@@ -249,7 +249,7 @@ public:
 
             // Stop recording
             EventRecordingSummary summary;
-            CPPUNIT_ASSERT(recorder.stopRecording(&summary));
+            CPPUNIT_ASSERT(recorder.stopRecording(&summary, false));
             CPPUNIT_ASSERT(!recorder.isRecording());
             CPPUNIT_ASSERT(summary.valid);
             CPPUNIT_ASSERT_EQUAL(200'000U, summary.numEvents);
@@ -300,7 +300,7 @@ public:
             CPPUNIT_ASSERT(!recorder.isRecording());
 
             // Start recording
-            CPPUNIT_ASSERT(recorder.startRecording("threadid", "eventtrace.evt", false));
+            CPPUNIT_ASSERT(recorder.startRecording("threadid", "eventtrace.evt", nullptr, 0, 0, 0, false));
             CPPUNIT_ASSERT(recorder.isRecording());
 
             CIArrayOf<Thread> threads;
@@ -314,14 +314,14 @@ public:
             if (delay)
             {
                 MilliSleep(delay);
-                CPPUNIT_ASSERT(recorder.stopRecording(&summary));
+                CPPUNIT_ASSERT(recorder.stopRecording(&summary, false));
             }
 
             ForEachItemIn(t2, threads)
                 threads.item(t2).join();
 
             if (!delay)
-                CPPUNIT_ASSERT(recorder.stopRecording(&summary));
+                CPPUNIT_ASSERT(recorder.stopRecording(&summary, false));
 
             CPPUNIT_ASSERT(!recorder.isRecording());
             CPPUNIT_ASSERT(summary.valid);
@@ -363,13 +363,13 @@ public:
         CPPUNIT_ASSERT(!recorder.isRecording());
 
         // Try start recording to an invalid filename
-        CPPUNIT_ASSERT_THROWS_IEXCEPTION(recorder.startRecording("threadid", "/home/nonexistantuser/eventtrace.evt", false), "Expected startRecording() to throw an exception");
+        CPPUNIT_ASSERT_THROWS_IEXCEPTION(recorder.startRecording("threadid", "/home/nonexistantuser/eventtrace.evt", nullptr, 0, 0, 0, false), "Expected startRecording() to throw an exception");
 
         //Check that the recorder has been left in a good state, and a subsequent recording works
         CPPUNIT_ASSERT(!recorder.isRecording());
-        CPPUNIT_ASSERT(recorder.startRecording("threadid", "eventtrace.evt", false));
+        CPPUNIT_ASSERT(recorder.startRecording("threadid", "eventtrace.evt", nullptr, 0, 0, 0, false));
         CPPUNIT_ASSERT(recorder.isRecording());
-        CPPUNIT_ASSERT(recorder.stopRecording(nullptr));
+        CPPUNIT_ASSERT(recorder.stopRecording(nullptr, false));
     }
 
     void testCleanup()
@@ -395,9 +395,9 @@ public:
         {
             static const char* expect="";
             EventRecorder& recorder = queryRecorder();
-            CPPUNIT_ASSERT(recorder.startRecording("all=true,compress(0)", "eventtrace.evt", false));
+            CPPUNIT_ASSERT(recorder.startRecording("all=true,compress(0)", "eventtrace.evt", nullptr, 0, 0, 0, false));
             CPPUNIT_ASSERT(recorder.isRecording());
-            CPPUNIT_ASSERT(recorder.stopRecording(&summary));
+            CPPUNIT_ASSERT(recorder.stopRecording(&summary, false));
             StringBuffer out;
             Owned<IEventVisitor> visitor = createVisitor(out);
             CPPUNIT_ASSERT(visitor.get());
@@ -418,16 +418,19 @@ public:
 attribute: EventTimestamp = '2025-05-08T00:00:00.000001010'
 attribute: EventTraceId = '00000000000000000000000000000000'
 attribute: EventThreadId = 100
+attribute: ChannelId = 1
+attribute: ReplicaId = 23
+attribute: InstanceId = 57
 attribute: FileId = 12345
 attribute: FileOffset = 67890
 attribute: NodeKind = 0
 attribute: InMemorySize = 4567
 )!!!";
             EventRecorder& recorder = queryRecorder();
-            CPPUNIT_ASSERT(recorder.startRecording("all=true", "eventtrace.evt", false));
+            CPPUNIT_ASSERT(recorder.startRecording("all=true", "eventtrace.evt", "test", 1, 23, 57, false));
             CPPUNIT_ASSERT(recorder.isRecording());
             recorder.recordIndexEviction(12345, 67890, NodeBranch, 4567);
-            CPPUNIT_ASSERT(recorder.stopRecording(&summary));
+            CPPUNIT_ASSERT(recorder.stopRecording(&summary, false));
             StringBuffer out;
             Owned<IEventVisitor> visitor = createVisitor(out);
             CPPUNIT_ASSERT(visitor.get());
@@ -462,11 +465,11 @@ attribute: ElapsedTime = 100
 attribute: DataSize = 73
 )!!!";
             EventRecorder& recorder = queryRecorder();
-            CPPUNIT_ASSERT(recorder.startRecording("all,compress(lz4hc)", "eventtrace.evt", false));
+            CPPUNIT_ASSERT(recorder.startRecording("all,compress(lz4hc)", "eventtrace.evt", nullptr, 0, 0, 0, false));
             CPPUNIT_ASSERT(recorder.isRecording());
             recorder.recordIndexEviction(12345, 67890, NodeBranch, 4567);
             recorder.recordDaliConnect("/Workunits/Workunit/abc.wu", 98765, 100, 73);
-            CPPUNIT_ASSERT(recorder.stopRecording(&summary));
+            CPPUNIT_ASSERT(recorder.stopRecording(&summary, false));
             StringBuffer out;
             Owned<IEventVisitor> visitor = createVisitor(out);
             CPPUNIT_ASSERT(visitor.get());
@@ -594,11 +597,8 @@ attribute: DataSize = 73
             EventRecordingSummary summary;
 
             // Start recording
-            CPPUNIT_ASSERT(recorder.startRecording("traceid", "recordingsource.evt", false));
+            CPPUNIT_ASSERT(recorder.startRecording("traceid", "recordingsource.evt", "test", 1, 2, 3, false));
             CPPUNIT_ASSERT(recorder.isRecording());
-
-            // Record RecordingSource event
-            recorder.recordRecordingSource("test", 1, 2, 3);
 
             // Record IndexCacheMiss with default recordIndexCacheMiss function (no ChannelId, ReplicaId, InstanceId)
             recorder.recordIndexCacheMiss(100, 200, NodeLeaf);
@@ -615,7 +615,7 @@ attribute: DataSize = 73
             recorder.recordEvent(event);
 
             // Stop recording
-            CPPUNIT_ASSERT(recorder.stopRecording(&summary));
+            CPPUNIT_ASSERT(recorder.stopRecording(&summary, false));
             CPPUNIT_ASSERT(!recorder.isRecording());
             CPPUNIT_ASSERT_EQUAL(3U, summary.numEvents);
 
@@ -634,7 +634,8 @@ attribute: DataSize = 73
 
                     if (eventCount == 1)
                     {
-                        // First event should be IndexCacheMiss without ChannelId, ReplicaId, InstanceId assigned
+                        // First event should be IndexCacheMiss with ChannelId, ReplicaId, InstanceId
+                        // assigned from RecordingSource (even though not originally recorded with them)
                         CPPUNIT_ASSERT_EQUAL((int)EventIndexCacheMiss, (int)event.queryType());
                         CPPUNIT_ASSERT(event.hasAttribute(EvAttrFileId));
                         CPPUNIT_ASSERT_EQUAL(100ULL, event.queryNumericValue(EvAttrFileId));
@@ -642,13 +643,14 @@ attribute: DataSize = 73
                         CPPUNIT_ASSERT_EQUAL(200ULL, event.queryNumericValue(EvAttrFileOffset));
                         CPPUNIT_ASSERT(event.hasAttribute(EvAttrNodeKind));
                         CPPUNIT_ASSERT_EQUAL((int)NodeLeaf, (int)event.queryNumericValue(EvAttrNodeKind));
-                        // Verify ChannelId, ReplicaId, InstanceId are defined but not assigned
-                        CPPUNIT_ASSERT(event.isAttribute(EvAttrChannelId));
-                        CPPUNIT_ASSERT(!event.hasAttribute(EvAttrChannelId));
-                        CPPUNIT_ASSERT(event.isAttribute(EvAttrReplicaId));
-                        CPPUNIT_ASSERT(!event.hasAttribute(EvAttrReplicaId));
-                        CPPUNIT_ASSERT(event.isAttribute(EvAttrInstanceId));
-                        CPPUNIT_ASSERT(!event.hasAttribute(EvAttrInstanceId));
+                        // Verify ChannelId, ReplicaId, InstanceId are assigned with correct values
+                        // from RecordingSource by the iterator
+                        CPPUNIT_ASSERT(event.hasAttribute(EvAttrChannelId));
+                        CPPUNIT_ASSERT_EQUAL(1ULL, event.queryNumericValue(EvAttrChannelId));
+                        CPPUNIT_ASSERT(event.hasAttribute(EvAttrReplicaId));
+                        CPPUNIT_ASSERT_EQUAL(2ULL, event.queryNumericValue(EvAttrReplicaId));
+                        CPPUNIT_ASSERT(event.hasAttribute(EvAttrInstanceId));
+                        CPPUNIT_ASSERT_EQUAL(3ULL, event.queryNumericValue(EvAttrInstanceId));
                     }
                     else if (eventCount == 2)
                     {
@@ -711,13 +713,13 @@ attribute: DataSize = 73
             EventRecorder &recorder = queryRecorder();
             EventRecordingSummary summary;
 
-            CPPUNIT_ASSERT_MESSAGE("Should be able to start recording without RecordingSource event", recorder.startRecording("traceid", "recordingsource_optional.evt", false));
+            CPPUNIT_ASSERT_MESSAGE("Should be able to start recording without RecordingSource event", recorder.startRecording("traceid", "recordingsource_optional.evt", nullptr, 0, 0, 0, false));
             CPPUNIT_ASSERT_MESSAGE("Recording should be active", recorder.isRecording());
 
             recorder.recordIndexCacheMiss(100, 200, NodeLeaf);
             recorder.recordIndexCacheHit(100, 300, NodeBranch, 1024, 500);
 
-            CPPUNIT_ASSERT_MESSAGE("Should be able to stop recording", recorder.stopRecording(&summary));
+            CPPUNIT_ASSERT_MESSAGE("Should be able to stop recording", recorder.stopRecording(&summary, false));
             CPPUNIT_ASSERT_MESSAGE("Recording should be inactive after stop", !recorder.isRecording());
             CPPUNIT_ASSERT_EQUAL_MESSAGE("Should have recorded 2 events", 2U, summary.numEvents);
 
@@ -761,14 +763,14 @@ attribute: DataSize = 73
         EventRecorder &recorder = queryRecorder();
         EventRecordingSummary summary;
 
-        CPPUNIT_ASSERT_MESSAGE("Should be able to start recording", recorder.startRecording("traceid", "recordingsource_notfirst.evt", false));
+        CPPUNIT_ASSERT_MESSAGE("Should be able to start recording", recorder.startRecording("traceid", "recordingsource_notfirst.evt", nullptr, 0, 0, 0, false));
         CPPUNIT_ASSERT_MESSAGE("Recording should be active", recorder.isRecording());
 
         recorder.recordIndexCacheMiss(100, 200, NodeLeaf);
         recorder.recordRecordingSource("test", 1, 2, 3);
         recorder.recordIndexCacheHit(100, 300, NodeBranch, 1024, 500);
 
-        CPPUNIT_ASSERT_MESSAGE("Should be able to stop recording", recorder.stopRecording(&summary));
+        CPPUNIT_ASSERT_MESSAGE("Should be able to stop recording", recorder.stopRecording(&summary, false));
         CPPUNIT_ASSERT_MESSAGE("Recording should be inactive after stop", !recorder.isRecording());
 
         class DummyVisitor : public CInterfaceOf<IEventVisitor>
@@ -788,7 +790,7 @@ attribute: DataSize = 73
         EventRecorder &recorder = queryRecorder();
         EventRecordingSummary summary;
 
-        CPPUNIT_ASSERT_MESSAGE("Should be able to start recording", recorder.startRecording("traceid", "recordingsource_multiple.evt", false));
+        CPPUNIT_ASSERT_MESSAGE("Should be able to start recording", recorder.startRecording("traceid", "recordingsource_multiple.evt", nullptr, 0, 0, 0, false));
         CPPUNIT_ASSERT_MESSAGE("Recording should be active", recorder.isRecording());
 
         recorder.recordRecordingSource("test1", 1, 2, 3);
@@ -796,7 +798,7 @@ attribute: DataSize = 73
         recorder.recordRecordingSource("test2", 4, 5, 6);
         recorder.recordIndexCacheHit(100, 300, NodeBranch, 1024, 500);
 
-        CPPUNIT_ASSERT_MESSAGE("Should be able to stop recording", recorder.stopRecording(&summary));
+        CPPUNIT_ASSERT_MESSAGE("Should be able to stop recording", recorder.stopRecording(&summary, false));
         CPPUNIT_ASSERT_MESSAGE("Recording should be inactive after stop", !recorder.isRecording());
 
         class DummyVisitor : public CInterfaceOf<IEventVisitor>
@@ -816,7 +818,7 @@ attribute: DataSize = 73
         EventRecorder &recorder = queryRecorder();
         EventRecordingSummary summary;
 
-        CPPUNIT_ASSERT_MESSAGE("Should be able to start recording", recorder.startRecording("traceid", "recordingsource_recursion.evt", false));
+        CPPUNIT_ASSERT_MESSAGE("Should be able to start recording", recorder.startRecording("traceid", "recordingsource_recursion.evt", "test1", 1, 2, 3, false));
         CPPUNIT_ASSERT_MESSAGE("Recording should be active", recorder.isRecording());
 
         recorder.recordRecordingSource("test1", 1, 2, 3);
@@ -824,7 +826,7 @@ attribute: DataSize = 73
         recorder.recordRecordingSource("test3", 7, 8, 9);
         recorder.recordIndexCacheMiss(100, 200, NodeLeaf);
 
-        CPPUNIT_ASSERT_MESSAGE("Should be able to stop recording", recorder.stopRecording(&summary));
+        CPPUNIT_ASSERT_MESSAGE("Should be able to stop recording", recorder.stopRecording(&summary, false));
         CPPUNIT_ASSERT_MESSAGE("Recording should be inactive after stop", !recorder.isRecording());
 
         Owned<IEventIterator> ei = createEventFileIterator("recordingsource_recursion.evt");
@@ -1022,17 +1024,16 @@ attribute: DataSize = 73
             EventRecordingSummary summary;
 
             // Record a variety of events to a test file
-            CPPUNIT_ASSERT(recorder.startRecording("traceid", "pullevents.evt", false));
+            CPPUNIT_ASSERT(recorder.startRecording("traceid", "pullevents.evt", "testprocess", 1, 2, 3, false));
             CPPUNIT_ASSERT(recorder.isRecording());
 
             // Record different event types with various attributes
-            recorder.recordRecordingSource("testprocess", 1, 2, 3);
             recorder.recordIndexCacheMiss(100, 200, NodeLeaf);
             recorder.recordIndexCacheHit(100, 300, NodeBranch, 1024, 500);
             recorder.recordIndexLoad(200, 400, NodeLeaf, 2048, 600, 400);
             recorder.recordDaliConnect("/Test/Path", 12345, 100, 50);
 
-            CPPUNIT_ASSERT(recorder.stopRecording(&summary));
+            CPPUNIT_ASSERT(recorder.stopRecording(&summary, false));
             CPPUNIT_ASSERT(!recorder.isRecording());
             CPPUNIT_ASSERT_EQUAL(5U, summary.numEvents);
 

@@ -401,11 +401,16 @@ public:
 
 private:
     arrow::Status openReadFile();
+    arrow::Status openPartitionedFile();
+    arrow::Status openRegularFile();
+    arrow::Status processPartitionedReadFile();
+    arrow::Status processRegularReadFile();
     __int64 readColumns(__int64 currTable);
     void splitTable(std::shared_ptr<arrow::Table> &table);
     std::shared_ptr<parquet::arrow::RowGroupReader> queryCurrentTable(__int64 currTable);
     arrow::Result<std::shared_ptr<arrow::Table>> queryRows();
     arrow::Status constructParquetFileReader(const char *fullPath);
+    void constructFileIfAvailable(std::map<unsigned, std::string> &availablePartFiles, unsigned workerId, unsigned totalParts);
 
 private:
     // Count of processed rows and tables for both partitioned and regular files.
@@ -422,6 +427,7 @@ private:
     __int64 tableCount = 0;                                            // The number of RowGroups to be read by the worker from the file that was opened for reading.
     __int64 startRowGroup = 0;                                         // The beginning RowGroup that is read by a worker.
 
+    int numFields = 0;                                                 // Number of fields in expected record layout. Only used when called from ParquetDiskRowReader
     bool restoredCursor = false;                                       // True if reading from a restored file location. Skips check rowsProcessed == rowsCount to open the table at the current row location.
     size_t maxRowCountInTable = 0;                                     // Max table size set by user.
     std::string partOption;                                            // Begins with either read or write and ends with the partitioning type if there is one i.e. 'readhivepartition'.
@@ -559,9 +565,14 @@ class ParquetRecordBinder : public CInterfaceOf<IFieldProcessor>
 {
 public:
     ParquetRecordBinder(const IContextLogger &_logctx, const RtlTypeInfo *_typeInfo, int _firstParam, std::shared_ptr<ParquetWriter> _parquetWriter)
-        : typeInfo(_typeInfo), logctx(_logctx), firstParam(_firstParam), dummyField("<row>", NULL, typeInfo), thisParam(_firstParam), parquetWriter(std::move(_parquetWriter)) {}
+        : typeInfo(_typeInfo), logctx(_logctx), firstParam(_firstParam), dummyField("<row>", NULL, typeInfo), thisParam(_firstParam), parquetWriter(std::move(_parquetWriter))
+    {
+        fieldCountInRecord = getNumFields(typeInfo);
+        if (fieldCountInRecord == 0)
+            rtlFail(0, "parquet: Missing record structure for input dataset. Record structure is required.");
+    }
     virtual ~ParquetRecordBinder() = default;
-    int numFields();
+    unsigned queryFieldCount() const { return fieldCountInRecord; };
     void processRow(const byte *row);
     virtual void processString(unsigned len, const char *value, const RtlFieldInfo *field);
     virtual void processBool(bool value, const RtlFieldInfo *field);
@@ -610,6 +621,7 @@ protected:
     RtlFieldStrInfo dummyField;
     int thisParam;
     std::shared_ptr<ParquetWriter> parquetWriter;
+    int fieldCountInRecord = 0;
 };
 
 /**

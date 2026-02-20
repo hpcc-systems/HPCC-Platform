@@ -52,13 +52,13 @@ public:
             throw makeStringException(-1, "missing binary output file name");
         const char* options = input->queryProp("@options");
         EventRecorder& recorder = queryRecorder();
-        if (!recorder.startRecording(options, name, false))
+        if (!recorder.startRecording(options, name, nullptr, 0, 0, 0, false))
             throw makeStringException(-1, "failed to start event recording");
-        CPropertyTreeEvents eventsIt(*input);
+        Owned<IEventIterator> eventsIt = createPropertyTreeEvents(*input, PTEFliteralParsing);
         CEvent event;
-        while (eventsIt.nextEvent(event))
+        while (eventsIt->nextEvent(event))
             recorder.recordEvent(event);
-        if (!recorder.stopRecording(nullptr))
+        if (!recorder.stopRecording(nullptr, true))
             throw makeStringException(-1, "failed to stop event recording");
         return true;
     }

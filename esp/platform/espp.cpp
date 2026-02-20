@@ -448,12 +448,12 @@ static IPropertyTree * extractLegacyOptions(IPropertyTree * legacyOptions)
 
 bool startEspEventRecording(const char * options, const char * filename)
 {
-    return startComponentRecording("esp", options, filename, false);
+    return startComponentRecording("esp", options, filename, 0, 0, false);
 }
 
 bool stopEspEventRecording(EventRecordingSummary * optSummary)
 {
-    return queryRecorder().stopRecording(optSummary);
+    return queryRecorder().stopRecording(optSummary, false);
 }
 
 int init_main(int argc, const char* argv[])

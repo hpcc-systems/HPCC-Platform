@@ -640,9 +640,9 @@ o15 := OUTPUT(COUNT(i2)-COUNT(ds));
 i3 := DATASET('~regress::' + WORKUNIT + '::' + '{BB,dd ddd}',rec,flat);
 o16 := OUTPUT(COUNT(JOIN(i3,sample(sds,5,2)+sample(sds,5,4),left.song=right.song,FULL ONLY)));
 
-lfl1 := FileServices.LogicalFileList(str.ToLowerCase(thorlib.getExpandLogicalName('nhtest_'+WORKUNIT+'::*')));
+lfl1 := FileServices.LogicalFileListFiltered(str.ToLowerCase(thorlib.getExpandLogicalName('nhtest_'+WORKUNIT+'::*')));
 
-a1 := NOTHOR(APPLY(lfl1,FileServices.DeleteLogicalFile('~'+name)));
+a1 := NOTHOR(APPLY(lfl1.files,FileServices.DeleteLogicalFile('~'+name)));
 
 SEQUENTIAL(o1,o2,o3,o4,o5,o6,o7,o8,o9,o10,o11,o12,o13,o14,o15,o16,a1);
 

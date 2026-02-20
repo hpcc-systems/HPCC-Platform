@@ -145,7 +145,7 @@ jobs:
           generateReleaseNotes: false
           prerelease: ${{ contains(github.ref, '-rc') }}
           makeLatest: ${{ inputs.make-latest }}
-          artifacts: "${{ steps.build_clienttools.outputs.packages }}"
+          artifacts: "./build/hpccsystems-clienttools-community*.exe"
 
       - name: Release Internal Clienttools to JFrog Repository
         if: ${{ inputs.ln-ref != '' && github.repository_owner == 'hpcc-systems' }}

@@ -5456,7 +5456,12 @@ class CStoreHelper : implements IStoreHelper, public CInterface
             OwnedIFile iFileStore = createIFile(storeFilename);
             OwnedIFileIO iFileIOStore = iFileStore->open(IFOread);
             if (!iFileIOStore)
-                throw MakeSDSException(SDSExcpt_OpenStoreFailed, "%s", storeFilename.str());
+            {
+                if (isBinary)
+                    return nullptr;
+                else
+                    throw MakeSDSException((SDSExcpt_OpenStoreFailed), "xml file: %s", storeFilename.str());
+            }
 
             offset_t fSize = iFileIOStore->size();
             PROGLOG("Loading %s store %u (size=%.2f MB, storedCrc=%x)", isBinary ? "Binary" : "XML", queryCurrentEdition(), ((double)fSize) / 0x100000, storedCrc);
@@ -6179,13 +6184,15 @@ static CConfigUpdateHook configUpdateHook;
 static void initializeStorageGroups(IPropertyTree *oldEnvironment) // oldEnvironment always null in containerized
 {
     bool forceGroupUpdate = getComponentConfigSP()->getPropBool("dfs/@forceGroupUpdate");
-    initClusterAndStoragePlaneGroups(forceGroupUpdate, oldEnvironment);
+    StringBuffer response;
+    initClusterAndStoragePlaneGroups(response, forceGroupUpdate, oldEnvironment);
     if (isContainerized())
     {
         auto updateFunc = [](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
         {
             bool forceGroupUpdate = getComponentConfigSP()->getPropBool("dfs/@forceGroupUpdate");
-            initClusterAndStoragePlaneGroups(forceGroupUpdate, nullptr);
+            StringBuffer response;
+            initClusterAndStoragePlaneGroups(response, forceGroupUpdate, nullptr);
         };
         configUpdateHook.installOnce(updateFunc, false);
     }
@@ -7127,8 +7134,8 @@ IPropertyTree *CCovenSDSManager::lockStoreRead() const
 
 void CCovenSDSManager::unlockStoreRead() const
 {
-    PROGLOG("unlockStoreRead() called");
     dataRWLock.unlockRead();
+    PROGLOG("unlockStoreRead() called");
 }
 
 bool CCovenSDSManager::setSDSDebug(StringArray &params, StringBuffer &reply)
@@ -8462,6 +8469,7 @@ void CCovenSDSManager::blockingSave(unsigned *writeTransactions)
 
 bool CCovenSDSManager::updateEnvironment(IPropertyTree *newEnv, bool forceGroupUpdate, StringBuffer &response)
 {
+    // for BM only
     Owned<IRemoteConnection> conn = querySDS().connect("/",myProcessSession(),0, INFINITE);
     if (conn)
     {
@@ -8477,7 +8485,7 @@ bool CCovenSDSManager::updateEnvironment(IPropertyTree *newEnv, bool forceGroupU
         conn->commit();
         conn->close();
         StringBuffer messages;
-        initClusterGroups(forceGroupUpdate, messages, oldEnvironment);
+        initClusterAndStoragePlaneGroups(messages, forceGroupUpdate, oldEnvironment);
         response.append(messages);
         PROGLOG("Environment and node groups updated");
     }

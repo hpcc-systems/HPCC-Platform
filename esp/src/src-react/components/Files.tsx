@@ -228,7 +228,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 label: nlsHPCC.Parts, width: 40,
             },
             MinSkew: {
-                label: nlsHPCC.MinSkew, width: 60, formatter: (value, row) => value ? `${Utility.formatDecimal(value / 100)}%` : ""
+                label: nlsHPCC.MinSkew, width: 60, formatter: (value, row) => value ? `-${Utility.formatDecimal(value / 100)}%` : ""
             },
             MaxSkew: {
                 label: nlsHPCC.MaxSkew, width: 60, formatter: (value, row) => value ? `${Utility.formatDecimal(value / 100)}%` : ""
@@ -410,6 +410,5 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             setPageSize={setPageSize}
             total={total}
         ></FluentPagedFooter>}
-        footerStyles={{}}
     />;
 };

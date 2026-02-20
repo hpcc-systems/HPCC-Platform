@@ -472,6 +472,9 @@
                 <xsl:attribute name="ldapAdminSecretKey">
                     <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServer]/@ldapAdminSecretKey"/>
                 </xsl:attribute>
+                <xsl:attribute name="hpccAdminSecretKey">
+                    <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServer]/@hpccAdminSecretKey"/>
+                </xsl:attribute>
             </xsl:element>
         </xsl:for-each>
     </xsl:template>

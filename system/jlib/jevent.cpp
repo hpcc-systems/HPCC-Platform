@@ -112,6 +112,7 @@ struct EventInformation
 #define QUERYSTART_ATTRS      COMMON_ATTRS, EvAttrServiceName
 #define QUERYSTOP_ATTRS       COMMON_ATTRS
 #define RECORDINGSOURCE_ATTRS COMMON_ATTRS, EvAttrProcessDescriptor
+#define INDEXOPEN_ATTRS       COMMON_ATTRS, EvAttrFileId, EvAttrOpenTime
 
 static constexpr EventInformation eventInformation[] {
     DEFINE_EVENT(None, EventCtxMax, { EvAttrNone } ),
@@ -134,6 +135,7 @@ static constexpr EventInformation eventInformation[] {
     DEFINE_EVENT(QueryStart, EventCtxIndex, { QUERYSTART_ATTRS } ),
     DEFINE_EVENT(QueryStop, EventCtxIndex, { QUERYSTOP_ATTRS } ),
     DEFINE_EVENT(RecordingSource, EventCtxOther, { RECORDINGSOURCE_ATTRS } ),
+    DEFINE_EVENT(IndexOpen, EventCtxIndex, { INDEXOPEN_ATTRS } ),
 };
 static_assert(_elements_in(eventInformation) == EventMax);
 
@@ -188,6 +190,7 @@ static constexpr EventAttrInformation attrInformation[] = {
     DEFINE_ATTR(ReplicaId, u1),
     DEFINE_ATTR(InstanceId, u8),
     DEFINE_ATTR(ProcessDescriptor, string),
+    DEFINE_ATTR(OpenTime, u8),
 };
 
 static_assert(_elements_in(attrInformation) == EvAttrMax);
@@ -368,9 +371,10 @@ void EventRecorder::checkAttrValue(EventAttr attr, size_t size)
     assertex(expectedSize == 0 || expectedSize == size);
 }
 
-bool EventRecorder::startRecording(const char * optionsText, const char * filename, bool pause)
+bool EventRecorder::startRecording(const char * optionsText, const char * filename, const char * processName, unsigned channelId, unsigned replicaId, __uint64 instanceId, bool pause)
 {
     assertex(filename);
+    assertex((channelId < 256) && (replicaId < 256));
     CriticalBlock block(cs);
     if (!isStopped)
         return false;
@@ -458,7 +462,8 @@ bool EventRecorder::startRecording(const char * optionsText, const char * filena
     else
         outputStream.set(bufferedDiskStream);
 
-    startTimestamp.store(getTimeStampNowValue()*1000, std::memory_order_release);
+    __uint64 timestamp = getTimeStampNowValue()*1000;
+    startTimestamp.store(timestamp, std::memory_order_release);
     numEvents = 0;
     startCycles.store(get_cycles_now(), std::memory_order_release);
 
@@ -471,16 +476,21 @@ bool EventRecorder::startRecording(const char * optionsText, const char * filena
     for (unsigned i=0; i < numBlocks; i++)
         pendingEventCounts[i] = 0;
 
+    recordRecordingSource(processName, (byte)channelId, (byte)replicaId, instanceId);
     recordingEvents.store(!pause, std::memory_order_release);
     return true;
 }
 
-bool EventRecorder::stopRecording(EventRecordingSummary * optSummary)
+bool EventRecorder::stopRecording(EventRecordingSummary * optSummary, bool throwOnFailure)
 {
     {
         CriticalBlock block(cs);
         if (!isStarted)
+        {
+            if (optSummary)
+                optSummary->message.set("Recording was not started");
             return false;
+        }
         isStarted = false;
         assertex(!isStopped);
     }
@@ -500,6 +510,7 @@ bool EventRecorder::stopRecording(EventRecordingSummary * optSummary)
         MilliSleep(10);
     }
 
+    bool ok = true;
     {
         //MORE: Could avoid re-entering by using a leaveable critical block above
         CriticalBlock block(cs);
@@ -508,34 +519,68 @@ bool EventRecorder::stopRecording(EventRecordingSummary * optSummary)
 
         writeBlock(nextOffset, nextOffset & blockMask);
 
-        outputStream->flush();
+        try
+        {
+            outputStream->flush();
+        }
+        catch (IException * e)
+        {
+            writeException.setownIfNull(e);
+            corruptOutput = true;
+        }
         outputStream.clear();
 
+        offset_t sizeWritten = output->getStatistic(StSizeDiskWrite);
+        try
+        {
+            output->close();
+        }
+        catch (IException * e)
+        {
+            writeException.setownIfNull(e);
+            corruptOutput = true;
+        }
+        output.clear();
+
+        if (corruptOutput)
+        {
+            outputFile->remove();
+            ok = false;
+        }
+
+        isStopped = true;
+
         //Flush the data, after waiting for a little while (or until committed == offset)?
+        if (writeException.isSet())
+        {
+            OERRLOG(writeException.query(), "stopRecording: ");
+            if (throwOnFailure)
+                throw writeException.getClear();
+        }
+
         if (optSummary)
         {
             if (corruptOutput)
             {
-                optSummary->filename.set("Output deleted because it was corrupt");
+                StringBuffer & errorMessage = optSummary->message;
+                errorMessage.set("Output deleted because it was corrupt");
+                if (writeException.isSet())
+                {
+                    errorMessage.append(". Write failed with error: ");
+                    writeException.query()->errorMessage(errorMessage);
+                }
                 optSummary->valid = false;
             }
             else
                 optSummary->filename.set(outputFilename);
             optSummary->numEvents = numEvents;
-            optSummary->totalSize = output->getStatistic(StSizeDiskWrite);
+            optSummary->totalSize = sizeWritten;
             optSummary->rawSize = nextOffset;
         }
-
-        output->close();
-        output.clear();
-
-        if (corruptOutput)
-            outputFile->remove();
-
-        isStopped = true;
+        writeException.clear();
     }
 
-    return true;
+    return ok;
 }
 
 bool EventRecorder::pauseRecording(bool pause, bool recordChange)
@@ -650,6 +695,23 @@ void EventRecorder::recordRecordingActive(bool enabled)
     offset_type pos = writeOffset;
     writeEventHeader(EventRecordingActive, pos);
     write(pos, EvAttrEnabled, enabled);
+    writeEventFooter(pos, requiredSize, writeOffset);
+}
+
+void EventRecorder::recordIndexOpen(unsigned fileid, __uint64 openTime)
+{
+    if (!isRecording())
+        return;
+
+    if (unlikely(outputToLog))
+        TRACEEVENT("{ \"name\": \"IndexOpen\", \"FileId\": %u, \"OpenTime\": %llu }", fileid, openTime);
+
+    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, openTime);
+    offset_type writeOffset = reserveEvent(requiredSize);
+    offset_type pos = writeOffset;
+    writeEventHeader(EventIndexOpen, pos);
+    write(pos, EvAttrFileId, fileid);
+    write(pos, EvAttrOpenTime, openTime);
     writeEventFooter(pos, requiredSize, writeOffset);
 }
 
@@ -872,6 +934,9 @@ void EventRecorder::recordQueryStop()
 void EventRecorder::recordRecordingSource(const char *processDescriptor, byte channelId, byte replicaId, __uint64 instanceId)
 {
     if (!isStarted || isStopped)
+        return;
+
+    if (!processDescriptor)
         return;
 
     if (unlikely(outputToLog))
@@ -1146,11 +1211,20 @@ void EventRecorder::writeByte(offset_type & offset, byte value)
 
 void EventRecorder::writeBlock(offset_type startOffset, size32_t size)
 {
-    if (!corruptOutput)
+    try
     {
-        size32_t blockOffset = nextWriteOffset & bufferMask;
-        outputStream->put(size, (const byte *)buffer.get() + blockOffset);
+        if (!corruptOutput)
+        {
+            size32_t blockOffset = nextWriteOffset & bufferMask;
+            outputStream->put(size, (const byte *)buffer.get() + blockOffset);
+        }
     }
+    catch (IException * e)
+    {
+        writeException.setownIfNull(e);
+        corruptOutput = true;
+    }
+
     nextWriteOffset += size;
 
     unsigned numToSignal;
@@ -1167,7 +1241,7 @@ void EventRecorder::writeBlock(offset_type startOffset, size32_t size)
 
 //---------------------------------------------------------------------------------------------------------------------
 
-bool startComponentRecording(const char * component, const char * optionsText, const char * filename, bool pause)
+bool startComponentRecording(const char * component, const char * optionsText, const char * filename, unsigned channelId, unsigned replicaId, bool pause)
 {
     StringBuffer defaultOptions;
     if (isEmptyString(optionsText))
@@ -1178,29 +1252,28 @@ bool startComponentRecording(const char * component, const char * optionsText, c
         optionsText = defaultOptions.str();
     }
 
+    // Generate a random instance id, to distinguish between different runs of the same process.
+    // This is not guaranteed to be unique, but should be good enough for our purposes.
+    __uint64 timestamp = getTimeStampNowValue()*1000;
+    __uint64 instanceId = get_cycles_now() ^ timestamp;
+
     StringBuffer outputFilename;
-    const char * path = filename;
     if (!isAbsolutePath(filename))
     {
         getTempFilePath(outputFilename, "eventrecorder", nullptr);
         outputFilename.append(PATHSEPCHAR);
-        if (!isEmptyString(filename))
-        {
-            outputFilename.append(filename);
-        }
-        else
-        {
-            //MORE: Revisit this at a later date
-            unsigned seq = (unsigned)(get_cycles_now() % 100000);
-            outputFilename.append(component).append("events.").append((unsigned)GetCurrentProcessId()).append(".").append(seq).append(".evt");
-        }
-
-        path = outputFilename.str();
-        //MORE: The caller will need to know the full pathname
     }
+    if (!isEmptyString(filename))
+        outputFilename.append(filename);
+    else
+        outputFilename.append(component).append("events_").append(instanceId % 100000000ULL); // Add 8 digits of the instance id.
 
-    recursiveCreateDirectoryForFile(path);
-    if (!queryRecorder().startRecording(optionsText, path, pause))
+    //If no extension is supplied, append channelid and replicaid so that multiple nodes do not overwrite each other when used shared storage.
+    if (!pathExtension(outputFilename.str()))
+        outputFilename.append("_").append(channelId).append("_").append(replicaId).append(".evt");
+
+    recursiveCreateDirectoryForFile(outputFilename.str());
+    if (!queryRecorder().startRecording(optionsText, outputFilename.str(), component, channelId, replicaId, instanceId, pause))
         return false;
 
     return true;
@@ -1512,6 +1585,23 @@ const std::initializer_list<EventAttr>& CEvent::queryOrderedAttributeIds() const
     return eventInformation[type].attributes;
 }
 
+void CEvent::fixup(const EventFileProperties& properties)
+{
+    // RecordingSource events are the origin of ChannelId, ReplicaId, InstanceId, and
+    // processDescriptor properties. RecordingSource events never require fixed, and other
+    // events only require fixing when a prior RecordingSource event provided a descriptor.
+    bool shouldApplyRecordingSourceIds = (queryType() != EventRecordingSource) && !properties.processDescriptor.isEmpty();
+    if (shouldApplyRecordingSourceIds)
+    {
+        if (!hasAttribute(EvAttrChannelId))
+            setValue(EvAttrChannelId, __uint64(properties.channelId));
+        if (!hasAttribute(EvAttrReplicaId))
+            setValue(EvAttrReplicaId, __uint64(properties.replicaId));
+        if (!hasAttribute(EvAttrInstanceId))
+            setValue(EvAttrInstanceId, properties.instanceId);
+    }
+}
+
 class CEventFileConsumer : public CInterface
 {
 public:
@@ -1530,11 +1620,11 @@ public:
         uint32_t options = 0;
         readToken(options);
         if (options & ERFtraceid)
-            properties.options.includeTraceIds = true;
+            properties.options.includeTraceIds = EventFileOption::Enabled;
         if (options & ERFthreadid)
-            properties.options.includeThreadIds = true;
+            properties.options.includeThreadIds = EventFileOption::Enabled;
         if (options & ERFstacktrace)
-            properties.options.includeStackTraces = true;
+            properties.options.includeStackTraces = EventFileOption::Enabled;
         readToken(baseTimestamp);
     }
 
@@ -1590,6 +1680,7 @@ public:
         }
         if (!readAttributes(event))
             return false;
+        event.fixup(properties);
         properties.eventsRead++;
         return true;
     }
@@ -1598,9 +1689,9 @@ public:
     {
         if (!finishAttribute<__uint64>(event, EvAttrEventTimestamp))
             return false;
-        if (properties.options.includeTraceIds && !finishDataAttribute(event, EvAttrEventTraceId, 16))
+        if (properties.options.includeTraceIds != EventFileOption::Disabled && !finishDataAttribute(event, EvAttrEventTraceId, 16))
             return false;
-        if (properties.options.includeThreadIds && !finishAttribute<__uint64>(event, EvAttrEventThreadId))
+        if (properties.options.includeThreadIds != EventFileOption::Disabled && !finishAttribute<__uint64>(event, EvAttrEventThreadId))
             return false;
         bool good = true;
         while (good)
@@ -1854,7 +1945,6 @@ IEventIterator* createEventFileIterator(const char* path)
     }
     return nullptr;
 }
-
 
 // GH->TK
 // Next steps:

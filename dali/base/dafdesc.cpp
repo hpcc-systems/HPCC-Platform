@@ -2812,33 +2812,29 @@ static void loadDefaultBases()
     ldbDone = true;
 
     SessionId mysessid = myProcessSession();
-    Owned<IPropertyTree> dirs;
-    // If connected to dali, then use the configuration from there, otherwise fall back to using the local config file)
     if (mysessid)
     {
         Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software/Directories", mysessid, RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
-        if (conn)
-            dirs.set(conn->queryRoot());
-    }
-
-    for (unsigned groupType = 0; groupType < __grp_size; groupType++)
-    {
-        const char *component = componentNames[groupType];
-        for (unsigned replicationLevel = 0; replicationLevel < MAX_REPLICATION_LEVELS; replicationLevel++)
-        {
-            StringBuffer dirout;
-            const char *dirType = dirTypeNames[replicationLevel];
-            if (replicationLevel==1 && groupType!=grp_roxie)
-                dirType = "mirror";
-            if (getConfigurationDirectory(dirs, dirType, component,
-                "dummy",   // NB this is dummy value (but actually hopefully not used anyway)
-                dirout))
-                unixBaseDirectories[groupType][replicationLevel].set(dirout.str());
+        if (conn) {
+            IPropertyTree* dirs = conn->queryRoot();
+            for (unsigned groupType = 0; groupType < __grp_size; groupType++)
+            {
+                const char *component = componentNames[groupType];
+                for (unsigned replicationLevel = 0; replicationLevel < MAX_REPLICATION_LEVELS; replicationLevel++)
+                {
+                    StringBuffer dirout;
+                    const char *dirType = dirTypeNames[replicationLevel];
+                    if (replicationLevel==1 && groupType!=grp_roxie)
+                        dirType = "mirror";
+                    if (getConfigurationDirectory(dirs, dirType, component,
+                        "dummy",   // NB this is dummy value (but actually hopefully not used anyway)
+                        dirout))
+                       unixBaseDirectories[groupType][replicationLevel].set(dirout.str());
+                }
+            }
         }
     }
-
     for (unsigned groupType = 0; groupType < __grp_size; groupType++)
-    {
         for (unsigned replicationLevel = 0; replicationLevel < MAX_REPLICATION_LEVELS; replicationLevel++)
         {
             if (unixBaseDirectories[groupType][replicationLevel].isEmpty())
@@ -2846,7 +2842,6 @@ static void loadDefaultBases()
             if (windowsBaseDirectories[groupType][replicationLevel].isEmpty())
                 windowsBaseDirectories[groupType][replicationLevel].set(defaultWindowsBaseDirectories[groupType][replicationLevel]);
         }
-    }
 }
 
 
@@ -3582,7 +3577,7 @@ public:
     unsigned ordinality() const { return hosts.ordinality(); }
 
     bool checkIsSubset(const GroupInformation & other); // save information if it is a subset of other
-    void createStoragePlane(IPropertyTree * storage, unsigned copy, unsigned defaultCopies) const;
+    void createStoragePlane(IPropertyTree * storage, unsigned defaultCopies) const;
 
 public:
     StringBuffer name;
@@ -3629,12 +3624,10 @@ bool GroupInformation::checkIsSubset(const GroupInformation & other)
     return false;
 }
 
-void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned copy, unsigned defaultCopies) const
+void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned defaultCopies) const
 {
     StringBuffer mirrorname;
     const char * planeName = name;
-    if (copy != 0)
-        planeName = mirrorname.append(name).append("_mirror");
 
     // Check that storage plane does not already have a definition
     VStringBuffer xpath("planes[@name='%s']", planeName);
@@ -3645,11 +3638,6 @@ void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned copy
         plane->setProp("@name", planeName);
         plane->setPropBool("@fromGroup", true);
     }
-
-    // Set copy to true to be able to avoid running XRef on mirror planes
-    // that are generated from groups and aren't needed in containerized
-    if (copy != 0)
-        plane->setPropBool("@copy", true);
 
     // Revisit: Ignore hthor planes when running XRef in bare metal
     if (groupType == grp_hthor)
@@ -3663,8 +3651,6 @@ void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned copy
             if (container)
             {
                 const char * containerName = container->name;
-                if (copy != 0)
-                    containerName = mirrorname.clear().append(containerName).append("_mirror");
                 //hosts will be expanded by normalizeHostGroups
                 plane->setProp("@hostGroup", containerName);
             }
@@ -3697,7 +3683,13 @@ void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned copy
         else if (dir.length())
             plane->setProp("@prefix", dir);
         else
-            plane->setProp("@prefix", queryBaseDirectory(groupType, copy));
+            plane->setProp("@prefix", queryBaseDirectory(groupType, 0));
+    }
+
+    if (!plane->hasProp("@mirrorPrefix") && (defaultCopies == 2))
+    {
+        if ((groupType == grp_thor) || (groupType == grp_roxie))
+            plane->setProp("@mirrorPrefix", queryBaseDirectory(groupType, 1));
     }
 
     if (!plane->hasProp("@category"))
@@ -3903,9 +3895,7 @@ static void doInitializeStorageGroups(bool createPlanesFromGroups, IPropertyTree
         {
             const GroupInformation & cur = allGroups.item(i);
             unsigned defaultCopies = !isContainerized() ? 2 : 1;
-            cur.createStoragePlane(storage, 0, defaultCopies);
-            if (cur.groupType == grp_thor)
-                cur.createStoragePlane(storage, 1, defaultCopies);
+            cur.createStoragePlane(storage, defaultCopies);
         }
 
         //Uncomment the following to trace the values that been generated

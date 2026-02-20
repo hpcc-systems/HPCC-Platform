@@ -17,6 +17,7 @@
 #include "arrow/io/api.h"
 #include "arrow/compute/initialize.h"
 #include <cmath>
+#include <map>
 
 #include "rtlembed.hpp"
 #include "rtlds_imp.hpp"
@@ -287,6 +288,9 @@ extern "C++" PARQUETEMBED_PLUGIN_API void getParquetRecordStructure(size32_t &__
         std::unique_ptr<ParquetReader> reader = std::make_unique<ParquetReader>(readType, filePath, 0, nullptr, nullptr);
         std::shared_ptr<arrow::Schema> schema = reader->getSchema();
 
+        if (schema->num_fields() == 0)
+            failx("This file has no columns. Cannot build a record structure.");
+
         StringBuffer ecl("parquetRecord := RECORD\n");
         buildEclRecord(*(schema.get()), ecl);
         ecl.append("END;\n");
@@ -425,6 +429,8 @@ ParquetReader::ParquetReader(const char *option, const char *_location, int _max
         while (std::getline(ss, field, ';'))
             partitionFields.push_back(field);
     }
+    if (expectedRecord)
+        numFields = getNumFields(expectedRecord);
 }
 
 ParquetReader::~ParquetReader()
@@ -452,107 +458,214 @@ arrow::Status ParquetReader::constructParquetFileReader(const char *fullPath)
 }
 
 /**
+ * @brief Opens a partitioned dataset using Arrow's scanner API.
+ *
+ * @return Status object arrow::Status::OK if successful.
+ */
+arrow::Status ParquetReader::openPartitionedFile()
+{
+    // Create a filesystem
+    std::shared_ptr<arrow::fs::FileSystem> fs;
+    ARROW_ASSIGN_OR_RAISE(fs, arrow::fs::FileSystemFromUriOrPath(location));
+
+    // FileSelector allows traversal of multi-file dataset
+    arrow::fs::FileSelector selector;
+    selector.base_dir = location; // The base directory to be searched is provided by the user in the location option.
+    selector.recursive = true;    // Selector will search the base path recursively for partitioned files.
+
+    // Create a file format
+    std::shared_ptr<arrow::dataset::ParquetFileFormat> format = std::make_shared<arrow::dataset::ParquetFileFormat>();
+
+    arrow::dataset::FileSystemFactoryOptions options;
+    if (endsWithIgnoreCase(partOption.c_str(), "hivepartition"))
+    {
+        options.partitioning = arrow::dataset::HivePartitioning::MakeFactory();
+    }
+    else if (endsWithIgnoreCase(partOption.c_str(), "directorypartition"))
+    {
+        options.partitioning = arrow::dataset::DirectoryPartitioning::MakeFactory(partitionFields);
+    }
+    else
+    {
+        failx("Incorrect partitioning type %s.", partOption.c_str());
+    }
+    // Create the dataset factory
+    PARQUET_ASSIGN_OR_THROW(auto datasetFactory, arrow::dataset::FileSystemDatasetFactory::Make(std::move(fs), std::move(selector), format, std::move(options)));
+
+    // Get scanner
+    PARQUET_ASSIGN_OR_THROW(auto dataset, datasetFactory->Finish());
+    ARROW_ASSIGN_OR_RAISE(auto scanBuilder, dataset->NewScan());
+    reportIfFailure(scanBuilder->Pool(pool));
+    ARROW_ASSIGN_OR_RAISE(scanner, scanBuilder->Finish());
+
+    return arrow::Status::OK();
+}
+
+void ParquetReader::constructFileIfAvailable(std::map<unsigned, std::string> &availablePartFiles, unsigned workerId, unsigned totalParts)
+{
+    auto it = availablePartFiles.find(workerId);
+    if (it != availablePartFiles.end())
+    {
+        reportIfFailure(constructParquetFileReader(it->second.c_str()));
+    }
+    else
+    {
+        // Expected file is missing - this is a user error (file on wrong node)
+        failx("Parquet file part %u of %u not found at %s. This file may be located on a different node.", workerId + 1, totalParts, location.c_str());
+    }
+}
+
+/**
+ * @brief Opens regular (non-partitioned) Parquet files. Each worker opens specific files based on
+ * its worker ID and the total number of workers. Files are distributed in contiguous ranges.
+ *
+ * @return Status object arrow::Status::OK if successful.
+ */
+arrow::Status ParquetReader::openRegularFile()
+{
+    unsigned numWorkers = 1;
+    unsigned workerId = 0;
+    bool getRecord = activityCtx == nullptr; // If no activity context, assume getParquetRecord call (single thread)
+    if (!getRecord)
+    {
+        numWorkers = activityCtx->numSlaves();
+        workerId = activityCtx->querySlave();
+    }
+    // Check if file has only a single part (exact match)
+    bool foundExactFile = false;
+    Owned<IFile> exactFile = createIFile(location.c_str());
+    if (exactFile->exists())
+    {
+        if (exactFile->isFile() == fileBool::foundYes)
+        {
+            foundExactFile = true;
+            // Only thread 0 reads the whole file
+            if (workerId == 0)
+                reportIfFailure(constructParquetFileReader(location.c_str()));
+            // Other threads will have empty file list and read 0 rows
+        }
+        else if (exactFile->isFile() == fileBool::foundNo)
+            failx("Target location %s is a directory, but no partitioning option was specified.", location.c_str());
+        else
+            assertex(false); // should not be possible
+    }
+
+    // Look for files with part mask pattern
+    StringBuffer filename;
+    StringBuffer path;
+    splitFilename(location.c_str(), nullptr, &path, &filename, nullptr, false);
+    Owned<IDirectoryIterator> itr = createDirectoryIterator(path.str(), filename.append("._*_of_*.parquet"));
+
+    unsigned totalParts = 0;
+    std::map<unsigned, std::string> availablePartFiles; // Map part number (0-based) to filename
+
+    ForEach (*itr)
+    {
+        IFile &file = itr->query();
+        unsigned totalPartsFromMask;
+        unsigned partNumFromMask;
+        StringAttr mask;
+        unsigned filenameLen;
+
+        // Get full mask info including part number
+        if (deduceMask(file.queryFilename(), false, mask, partNumFromMask, totalPartsFromMask, filenameLen))
+        {
+            // Throw error if single file and files with partmasks are found
+            if (foundExactFile)
+                failx("Inconsistent part counts detected (1, %u) in Parquet file at %s", totalPartsFromMask, location.c_str());
+
+            // Check that a dataset of a different part count is not being mixed in
+            if (totalParts == 0)
+                totalParts = totalPartsFromMask;
+            else if (totalParts != totalPartsFromMask)
+                failx("Inconsistent part counts detected (%u, %u) in Parquet file at %s", totalParts, totalPartsFromMask, location.c_str());
+
+            // Store the available part files (partNumFromMask is 0-based)
+            availablePartFiles[partNumFromMask] = file.queryFilename();
+        }
+    }
+
+    if (!foundExactFile && totalParts == 0)
+        failx("Parquet file %s not found", location.c_str());
+
+    // Handle multi-part files: each worker opens specific files based on its worker ID
+    // No row group partitioning is performed - each worker reads all row groups from its assigned files
+    if (totalParts > 0)
+    {
+        if (totalParts < numWorkers)
+        {
+            // Fewer files than workers: workers whose index matches a part read the entire part
+            if (workerId < totalParts)
+                constructFileIfAvailable(availablePartFiles, workerId, totalParts);
+            // Workers with workerId >= totalParts read 0 rows
+        }
+        else if (totalParts == numWorkers)
+        {
+            // Same number of files as workers: each thread opens its own file
+            constructFileIfAvailable(availablePartFiles, workerId, totalParts);
+        }
+        else // totalParts > numWorkers
+        {
+            // More files than workers: divide files evenly in contiguous ranges
+            // First 'remainder' workers get (baseFiles + 1), remaining workers get baseFiles
+            // This ensures maximum balance with at most 1 file difference between workers
+            unsigned baseFilesPerWorker = totalParts / numWorkers;
+            unsigned remainder = totalParts % numWorkers;
+
+            unsigned startFile, endFile;
+            if (workerId < remainder)
+            {
+                // First 'remainder' workers get one extra file
+                unsigned filesForThisWorker = baseFilesPerWorker + 1;
+                startFile = workerId * filesForThisWorker;
+                endFile = startFile + filesForThisWorker;
+            }
+            else
+            {
+                // Remaining workers get base amount
+                startFile = remainder * (baseFilesPerWorker + 1) + (workerId - remainder) * baseFilesPerWorker;
+                endFile = startFile + baseFilesPerWorker;
+            }
+
+            for (unsigned part = startFile; part < endFile; part++)
+            {
+                constructFileIfAvailable(availablePartFiles, part, totalParts);
+                if (getRecord)
+                    break; // Only need first file for getParquetRecordStructure
+            }
+        }
+
+        // Sort file readers by filename for consistent ordering
+        auto sortFileReaders = [](const NamedFileReader &a, const NamedFileReader &b) -> bool
+        {
+            return strcmp(std::get<0>(a).c_str(), std::get<0>(b).c_str()) < 0;
+        };
+        std::sort(parquetFileReaders.begin(), parquetFileReaders.end(), sortFileReaders);
+    }
+
+    // parquetFileReaders will be empty when:
+    // - Single file case and workerId != 0
+    // - Multi-part case with files < workers and workerId >= totalParts
+    // - Multi-part case and file is on another node
+
+    return arrow::Status::OK();
+}
+
+/**
  * @brief Opens a read stream at the target location set in the constructor.
+ * Delegates to either openPartitionedFile or openRegularFile based on the partitioning option.
  *
  * @return Status object arrow::Status::OK if successful.
  */
 arrow::Status ParquetReader::openReadFile()
 {
     if (location.empty())
-    {
         failx("Invalid option: The destination was not supplied.");
-    }
+
     if (endsWithIgnoreCase(partOption.c_str(), "partition"))
-    {
-        // Create a filesystem
-        std::shared_ptr<arrow::fs::FileSystem> fs;
-        ARROW_ASSIGN_OR_RAISE(fs, arrow::fs::FileSystemFromUriOrPath(location));
-
-        // FileSelector allows traversal of multi-file dataset
-        arrow::fs::FileSelector selector;
-        selector.base_dir = location; // The base directory to be searched is provided by the user in the location option.
-        selector.recursive = true;    // Selector will search the base path recursively for partitioned files.
-
-        // Create a file format
-        std::shared_ptr<arrow::dataset::ParquetFileFormat> format = std::make_shared<arrow::dataset::ParquetFileFormat>();
-
-        arrow::dataset::FileSystemFactoryOptions options;
-        if (endsWithIgnoreCase(partOption.c_str(), "hivepartition"))
-        {
-            options.partitioning = arrow::dataset::HivePartitioning::MakeFactory();
-        }
-        else if (endsWithIgnoreCase(partOption.c_str(), "directorypartition"))
-        {
-            options.partitioning = arrow::dataset::DirectoryPartitioning::MakeFactory(partitionFields);
-        }
-        else
-        {
-            failx("Incorrect partitioning type %s.", partOption.c_str());
-        }
-        // Create the dataset factory
-        PARQUET_ASSIGN_OR_THROW(auto datasetFactory, arrow::dataset::FileSystemDatasetFactory::Make(std::move(fs), std::move(selector), format, std::move(options)));
-
-        // Get scanner
-        PARQUET_ASSIGN_OR_THROW(auto dataset, datasetFactory->Finish());
-        ARROW_ASSIGN_OR_RAISE(auto scanBuilder, dataset->NewScan());
-        reportIfFailure(scanBuilder->Pool(pool));
-        ARROW_ASSIGN_OR_RAISE(scanner, scanBuilder->Finish());
-    }
+        return openPartitionedFile();
     else
-    {
-        // Check if file has only a single part before looking for files with a partmask
-        bool foundExactFile = false;
-        Owned<IFile> exactFile = createIFile(location.c_str());
-        if (exactFile->exists())
-        {
-            if (exactFile->isFile() == fileBool::foundYes)
-            {
-                reportIfFailure(constructParquetFileReader(location.c_str()));
-                foundExactFile = true;
-            }
-            else if (exactFile->isFile() == fileBool::foundNo)
-                failx("Target location %s is a directory, but no partitioning option was specified.", location.c_str());
-            else
-                assertex(false); // should not be possible
-        }
-
-        StringBuffer filename;
-        StringBuffer path;
-        splitFilename(location.c_str(), nullptr, &path, &filename, nullptr, false);
-        Owned<IDirectoryIterator> itr = createDirectoryIterator(path.str(), filename.append("._*_of_*.parquet"));
-
-        unsigned totalParts = 0;
-        ForEach (*itr)
-        {
-            IFile &file = itr->query();
-            unsigned totalPartsFromMask;
-            if (deduceMask(file.queryFilename(), totalPartsFromMask)) // only process files that match partmask
-            {
-                // Throw error if single file and files with partmasks are found
-                if (foundExactFile)
-                    failx("Inconsistent part counts detected (1, %d) in Parquet file at %s", totalPartsFromMask, location.c_str());
-
-                // Check that a dataset of a different part count is not being mixed in
-                if (totalParts == 0)
-                    totalParts = totalPartsFromMask;
-                else if (totalParts != totalPartsFromMask)
-                    failx("Inconsistent part counts detected (%d, %d) in Parquet file at %s", totalParts, totalPartsFromMask, location.c_str());
-
-                reportIfFailure(constructParquetFileReader(file.queryFilename()));
-            }
-        }
-
-        auto sortFileReaders = [](NamedFileReader &a, NamedFileReader &b) -> bool
-        {
-            return strcmp(std::get<0>(a).c_str(), std::get<0>(b).c_str()) < 0;
-        };
-
-        std::sort(parquetFileReaders.begin(), parquetFileReaders.end(), sortFileReaders);
-
-        if (parquetFileReaders.empty())
-            failx("Parquet file %s not found", location.c_str());
-    }
-    return arrow::Status::OK();
+        return openRegularFile();
 }
 
 /**
@@ -630,8 +743,8 @@ void divide_row_groups(const IThorActivityContext *activityCtx, __int64 totalRow
  */
 __int64 ParquetReader::readColumns(__int64 currTable)
 {
+    assertex(numFields > 0);
     auto rowGroupReader = queryCurrentTable(currTable); // Sets currentTableMetadata
-    int numFields = getNumFields(expectedRecord);
     for (int i = 0; i < numFields; i++)
     {
         StringBuffer fieldName;
@@ -689,40 +802,71 @@ std::shared_ptr<parquet::arrow::RowGroupReader> ParquetReader::queryCurrentTable
 }
 
 /**
+ * @brief Processes a partitioned dataset for reading. Divides row groups among workers.
+ *
+ * @return arrow::Status Returns ok if successful.
+ */
+arrow::Status ParquetReader::processPartitionedReadFile()
+{
+    PARQUET_ASSIGN_OR_THROW(rbatchReader, scanner->ToRecordBatchReader());
+    rbatchItr = arrow::RecordBatchReader::RecordBatchReaderIterator(rbatchReader.get());
+    PARQUET_ASSIGN_OR_THROW(auto datasetRows, scanner->CountRows());
+    // Divide the work among any number of workers
+    divide_row_groups(activityCtx, datasetRows, totalRowCount, startRow);
+
+    return arrow::Status::OK();
+}
+
+/**
+ * @brief Processes regular (non-partitioned) Parquet files for reading. Each worker reads all row groups
+ * from its assigned files without further division. File assignment was already done in openRegularFile().
+ *
+ * @return arrow::Status Returns ok if successful.
+ */
+arrow::Status ParquetReader::processRegularReadFile()
+{
+    __int64 totalTables = 0;
+    fileTableCounts.reserve(parquetFileReaders.size());
+
+    // Count row groups in each file assigned to this worker
+    for (size_t i = 0; i < parquetFileReaders.size(); i++)
+    {
+        __int64 tables = std::get<1>(parquetFileReaders[i])->num_row_groups();
+        fileTableCounts.push_back(tables);
+        totalTables += tables;
+    }
+
+    // Each worker reads all row groups from its assigned files
+    // No row group partitioning is performed because files were already distributed among workers
+    tableCount = totalTables;
+    startRowGroup = 0;
+
+    return arrow::Status::OK();
+}
+
+/**
  * @brief Open the file reader for the target file and read the metadata for the row counts.
+ * Delegates to either processPartitionedReadFile or processRegularReadFile based on the partitioning option.
  *
  * @return arrow::Status Returns ok if opening a file and reading the metadata succeeds.
  */
 arrow::Status ParquetReader::processReadFile()
 {
     reportIfFailure(openReadFile()); // Open the file with the target location before processing.
-    if (endsWithIgnoreCase(partOption.c_str(), "partition"))
-    {
-        PARQUET_ASSIGN_OR_THROW(rbatchReader, scanner->ToRecordBatchReader());
-        rbatchItr = arrow::RecordBatchReader::RecordBatchReaderIterator(rbatchReader.get());
-        PARQUET_ASSIGN_OR_THROW(auto datasetRows, scanner->CountRows());
-        // Divide the work among any number of workers
-        divide_row_groups(activityCtx, datasetRows, totalRowCount, startRow);
-    }
-    else
-    {
-        __int64 totalTables = 0;
-        fileTableCounts.reserve(parquetFileReaders.size());
 
-        for (int i = 0; i < parquetFileReaders.size(); i++)
-        {
-            __int64 tables = std::get<1>(parquetFileReaders[i])->num_row_groups();
-            fileTableCounts.push_back(tables);
-            totalTables += tables;
-        }
-
-        divide_row_groups(activityCtx, totalTables, tableCount, startRowGroup);
-    }
     tablesProcessed = 0;
     totalRowsProcessed = 0;
     rowsProcessed = 0;
     rowsCount = 0;
-    return arrow::Status::OK();
+
+    if (endsWithIgnoreCase(partOption.c_str(), "partition"))
+    {
+        return processPartitionedReadFile();
+    }
+    else
+    {
+        return processRegularReadFile();
+    }
 }
 
 /**
@@ -795,6 +939,8 @@ __int64 ParquetReader::next(TableColumns *&nextTable)
             {
                 reportIfFailure(queryCurrentTable(tablesProcessed + startRowGroup)->ReadTable(&table));
                 rowsCount = table->num_rows();
+                if (rowsCount == 0)
+                    failx("Parquet file contains table with 0 rows");
                 splitTable(table);
             }
         }
@@ -1013,6 +1159,7 @@ void ParquetWriter::writeRecordBatch()
 {
     PARQUET_ASSIGN_OR_THROW(auto recordBatch, recordBatchBuilder->Flush());
     reportIfFailure(recordBatch->ValidateFull());
+    assertex(recordBatch->num_rows() > 0);
 
     PARQUET_ASSIGN_OR_THROW(auto table, arrow::Table::FromRecordBatches(schema, {recordBatch}));
     if (endsWithIgnoreCase(partOption.c_str(), "partition"))
@@ -2099,21 +2246,6 @@ unsigned ParquetRecordBinder::checkNextParam(const RtlFieldInfo *field)
 }
 
 /**
- * @brief Counts the fields in the row.
- *
- * @return int The number of fields.
- */
-int ParquetRecordBinder::numFields()
-{
-    int count = 0;
-    const RtlFieldInfo *const *fields = typeInfo->queryFields();
-    assertex(fields);
-    while (*fields++)
-        count++;
-    return count;
-}
-
-/**
  * @brief Writes the value to the Parquet file using the StreamWriter from the ParquetWriter class.
  *
  * @param len Number of chars in value.
@@ -2594,7 +2726,7 @@ void ParquetEmbedFunctionContext::bindRowParam(const char *name, IOutputMetaData
 {
     ParquetRecordBinder binder(logctx, metaVal.queryTypeInfo(), nextParam, parquetWriter);
     binder.processRow(val);
-    nextParam += binder.numFields();
+    nextParam += binder.queryFieldCount();
 }
 
 /**
@@ -2611,7 +2743,7 @@ void ParquetEmbedFunctionContext::bindDatasetParam(const char *name, IOutputMeta
         fail("At most one dataset parameter supported");
     }
     oInputStream.setown(new ParquetDatasetBinder(logctx, LINK(val), metaVal.queryTypeInfo(), parquetWriter, nextParam));
-    nextParam += oInputStream->numFields();
+    nextParam += oInputStream->queryFieldCount();
 }
 
 void ParquetEmbedFunctionContext::bindBooleanParam(const char *name, bool val)

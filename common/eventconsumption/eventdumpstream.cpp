@@ -493,10 +493,26 @@ public:
     }
 
 protected:
-    // No attributes to be skipped at this time. Retain for possible future use.
     bool skipAttribute(unsigned id) const
     {
-       return false;
+        switch (id)
+        {
+        case EvAttrProcessDescriptor:
+            // Only appears in RecordingSource, which is never visited.
+            return true;
+        case EvAttrEventStackTrace:
+            // Never recorded, even when option is set.
+            // MORE: revisit if option is implemented
+            return true;
+        case EvAttrEventThreadId:
+            // Skip if not enabled in any input file
+            return properties.options.includeThreadIds == EventFileOption::Disabled;
+        case EvAttrEventTraceId:
+            // Skip if not enabled in any input file
+            return properties.options.includeTraceIds == EventFileOption::Disabled;
+        default:
+            return false;
+        }
     }
 
     virtual void recordAttribute(EventAttr id, const char*, const char* value, bool) override
@@ -506,10 +522,16 @@ protected:
     }
 
 public:
-    using CDumpStreamEventVisitor::CDumpStreamEventVisitor;
+    CDumpCSVEventVisitor(IBufferedSerialOutputStream& out, const EventFileProperties& _properties)
+        : CDumpStreamEventVisitor(out), properties(_properties)
+    {
+    }
+
+private:
+    EventFileProperties properties;  // Copied to avoid lifetime issues
 };
 
-IEventVisitor* createDumpCSVEventVisitor(IBufferedSerialOutputStream& out)
+IEventVisitor* createDumpCSVEventVisitor(IBufferedSerialOutputStream& out, const EventFileProperties& properties)
 {
-    return new CDumpCSVEventVisitor(out);
+    return new CDumpCSVEventVisitor(out, properties);
 }
