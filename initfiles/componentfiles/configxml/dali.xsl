@@ -361,7 +361,11 @@
         </xsl:if>
       </xsl:element>
       <xsl:call-template name="addMetricsConfig"/>
+<<<<<<< HPCC-35831
+      <xsl:copy-of select="/Environment/Software/vaults"/>
+=======
       <xsl:call-template name="addVaultsConfig"/>
+>>>>>>> candidate-10.2.x
     </DALI>
   </xsl:template>
 

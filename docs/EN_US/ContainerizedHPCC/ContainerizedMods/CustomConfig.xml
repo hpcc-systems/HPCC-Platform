@@ -1478,6 +1478,30 @@ thor: []
         credentials.</para>
       </sect3>
 
+      <sect3 id="Deploying_AkeylessVault">
+        <title>Deploy the Akeyless Vaultless Platform</title>
+
+        <para>To use Akeyless, set the vault type to <emphasis>akeyless</emphasis>
+        and the kind to <emphasis>akeyless</emphasis>. The URL should point to
+        the Akeyless API endpoint or your gateway. Provide an access ID and
+        access key, typically from environment variables or a secure secret.
+        A token can also be supplied via the client-secret if desired.</para>
+
+        <programlisting lang="YAML">  vaults:
+  authn:
+    - name: my-authn-akeyless
+      type: akeyless
+      kind: akeyless
+      url: https://api.akeyless.io
+      accessId: ${env.AKEYLESS_ACCESS_ID}
+      accessKey: ${env.AKEYLESS_ACCESS_KEY}
+</programlisting>
+
+        <para>The secret name referenced by HPCC (for example, in LDAP settings)
+        is passed to Akeyless as the secret name in the get-secret-value API.
+        If a version is provided, it will be used when retrieving the secret.</para>
+      </sect3>
+
       <sect3 id="REF_HASHICORPVault_LDAP">
         <title>Referencing Vault Stored Authentication</title>
 
