@@ -686,16 +686,7 @@
 
               <para>Confirm the change when prompted.</para>
 
-              <para>The <emphasis role="bold">filesDefaultUser</emphasis> is
-              an LDAP account used to access files when no user credentials
-              are supplied. This is similar to a guest account, so it should
-              be an account with <emphasis role="bold">very</emphasis> limited
-              access, if used at all. To disable access without credentials,
-              leave <emphasis role="bold">filesDefaultUser</emphasis>
-              blank.</para>
-
-              <para>The <emphasis role="bold">filesDefaultPassword</emphasis>
-              is the password for that account.</para>
+              <!-- Removed deprecated filesDefaultUser and filesDefaultPassword fallback credentials. All file access must be explicitly authorized. -->
             </listitem>
 
             <listitem>
