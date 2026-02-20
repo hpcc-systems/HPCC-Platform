@@ -14203,11 +14203,15 @@ static IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsi
 
             if (options.includeField(DFUQResultField::size))
             {
-                // JCSMORE - I am not sure what the point of this is, with or without it, a blank @size does not affect sort order
-                // and EclWatch seems to use the @size (DFUQResultField::origsize) for size column anyway
-                // See special handling in SerializeFileAttrOptions::readFields() to include origsize if size is requested
+                // Size field is notionally the size on disk
                 const char *propName = getDFUQResultFieldName(DFUQResultField::size);
-                attr->setPropInt64(propName, attr->getPropInt64(getDFUQResultFieldName(DFUQResultField::origsize), -1));//Sort the files with empty size to front
+                attr->setPropInt64(propName, isCompressed(*attr) ? attr->getPropInt64(getDFUQResultFieldName(DFUQResultField::compressedsize), -1) : attr->getPropInt64(getDFUQResultFieldName(DFUQResultField::origsize), -1));
+            }
+
+            if (options.includeField(DFUQResultField::origsize))
+            {
+                const char *propName = getDFUQResultFieldName(DFUQResultField::origsize);
+                attr->setPropInt64(propName, attr->getPropInt64(getDFUQResultFieldName(DFUQResultField::origsize), -1));
             }
 
             if (options.includeField(DFUQResultField::recordcount))
