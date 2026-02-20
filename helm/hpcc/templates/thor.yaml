@@ -47,7 +47,7 @@ Pass in dict with root and me
 {{- $_ := include "setThorComponentCost" (dict "root" .root "me" .me "subComponent" "eclagent" "cost" $eclAgentCostConfig) -}}
 {{- $eclAgentSpecifications := pick .me "eclagent" | default (dict "eclagent" (dict "cost" $eclAgentCostConfig.cost)) -}}
 {{- $eclAgentScope := dict "name" .eclAgentName "type" $eclAgentType "useChildProcesses" .eclAgentUseChildProcesses "replicas" .eclAgentReplicas "maxActive" .me.maxJobs | merge (pick .me "auxQueues" "expert" "keepJobs" "logging" "tracing" "schedulingTimeoutSecs") ((hasKey .me "holdAgent") | ternary (dict "hold" .me.holdAgent) dict) $eclAgentSpecifications.eclagent }}
-{{- $thorAgentScope := dict "name" .thorAgentName "targetName" .me.name "replicas" .thorAgentReplicas "maxActive" .me.maxGraphs | merge (pick .me "expert" "keepJobs" "logging" "tracing" "schedulingTimeoutSecs") ((hasKey .me "holdThorAgent") | ternary (dict "hold" .me.holdThorAgent) dict) $eclAgentSpecifications.eclagent }}
+{{- $thorAgentScope := dict "name" .thorAgentName "targetName" .me.name "replicas" .thorAgentReplicas "maxActive" .me.maxGraphs | merge (pick .me "expert" "keepJobs" "logging" "tracing" "schedulingTimeoutSecs") ((hasKey .me "holdThorAgent") | ternary (dict "hold" .me.holdThorAgent) dict) (dict "cost" $eclAgentCostConfig.cost) }}
 {{- $eclAgentResources := .me.eclAgentResources | default dict -}}
 {{- $hthorScope := dict "name" $hthorName "jobMemorySectionName" "eclAgentMemory" "cost" $eclAgentCostConfig.cost | merge (pick .me "expert" "logging" "maxGraphStartupTime" "tracing" "schedulingTimeoutSecs") | merge (dict "resources" (deepCopy $eclAgentResources))  ((hasKey .me "holdWorkflow") | ternary (dict "hold" .me.holdWorkflow) dict )}}
 {{- $managerCostConfig := dict -}}

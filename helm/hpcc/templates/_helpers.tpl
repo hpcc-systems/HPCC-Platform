@@ -281,8 +281,8 @@ logAccess:
 expert:
 {{ toYaml $root.Values.global.expert | indent 2 }}
 {{- end }}
-{{- if .Values.global.schedulingTimeoutSecs }}
-schedulingTimeoutSecs: {{ .Values.global.schedulingTimeoutSecs }}
+{{- if $root.Values.global.schedulingTimeoutSecs }}
+schedulingTimeoutSecs: {{ $root.Values.global.schedulingTimeoutSecs }}
 {{- end }}
 {{- end -}}
 
