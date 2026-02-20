@@ -35,6 +35,9 @@ globals() {
     DOCKER_USERNAME="${DOCKER_USERNAME:-hpccbuilds}"
 
     CMAKE_OPTIONS="-G Ninja -DCPACK_THREADS=$(docker info --format '{{.NCPU}}') -DUSE_OPTIONAL=OFF -DCONTAINERIZED=ON -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON"
+    if [ "$USE_CPPUNIT" -eq 1 ]; then
+        CMAKE_OPTIONS="$CMAKE_OPTIONS -DUSE_CPPUNIT=ON"
+    fi
 
     if [ "$TAG_BUILD" -eq 1 ]; then
         HPCC_BUILD="hpcc_build_$MODE-$IMAGE_BRANCH_TAG"
@@ -410,6 +413,7 @@ status() {
     echo "HPCC_BUILD: $HPCC_BUILD"
     echo "ARCH: $ARCH"
     echo "NAME_TAG: $NAME_TAG"
+    echo "USE_CPPUNIT: $USE_CPPUNIT"
 }
 
 # Print usage information
@@ -428,6 +432,7 @@ usage() {
     echo "  -r, --reconfigure       reconfigure CMake before building"
     echo "  -a, --architecture      override default architecture (x64 or arm64)"
     echo "  -n, --name-tag          create an additional tag with the specified name for the final image"
+    echo "  -c, --cppunit           enable CppUnit tests (adds -DUSE_CPPUNIT=ON to CMake options)"
 }
 
 # Set default values
@@ -440,6 +445,7 @@ RELEASE_BASE_IMAGE="ubuntu:22.04" # Matches vcpkg base image (does not need to b
 TAG_BUILD=0
 ARCH=""
 NAME_TAG=""
+USE_CPPUNIT=0
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]
@@ -491,6 +497,10 @@ case $key in
         NAME_TAG="$2"
         shift # past argument
         shift # past value
+        ;;
+    -c|--cppunit)
+        USE_CPPUNIT=1
+        shift # past argument
         ;;
     -h|--help)
         usage
