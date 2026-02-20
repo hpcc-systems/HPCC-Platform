@@ -56,14 +56,7 @@
           has access to the given file scope.</para>
         </listitem>
 
-        <listitem>
-          <para>FilesDefaultUser credentials are injected if none provided.
-          The <emphasis>filesDefaultUser</emphasis> is an LDAP account used to
-          access files when no user credentials are supplied. This is similar
-          to a guest account, so it should be an account with very limited
-          access, if used at all. To disable access without credentials, leave
-          filesDefaultUser attribute blank.</para>
-        </listitem>
+        <!-- Removed deprecated filesDefaultUser fallback credentials. All file access must be explicitly authorized. -->
 
         <listitem>
           <para>Since the CheckScopeScans setting is disabled, users can see

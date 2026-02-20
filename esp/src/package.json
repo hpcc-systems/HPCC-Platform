@@ -32,6 +32,7 @@
     "rm-hpcc": "rimraf ./node_modules/@hpcc-js",
     "start": "ws",
     "test": "npx playwright test",
+    "test-dfuworkunits": "npx playwright test tests/v9-dfuworkunits.spec.ts",
     "test-ci": "cross-env CI=1 npx playwright test",
     "test-ci-local": "cross-env CIL=1 npx playwright test",
     "test-full": "cross-env FULL=1 npx playwright test",

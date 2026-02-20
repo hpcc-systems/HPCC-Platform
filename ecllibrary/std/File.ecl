@@ -112,7 +112,7 @@ EXPORT FsLandingZoneRecord := lib_fileservices.FsLandingZoneRecord;
  * @return              Boolean value of 'noCommon' property.
  */
 
-EXPORT boolean GetNoCommonDefault() := 
+EXPORT boolean GetNoCommonDefault() :=
     lib_fileservices.FileServices.GetNoCommonDefault();
 
 /**
@@ -225,7 +225,92 @@ EXPORT dataset(FsFilenameRecord) RemoteDirectory(varstring machineIP, varstring 
  *                      locally.  Defaults to blank.
  */
 EXPORT dataset(FsLogicalFileInfoRecord) LogicalFileList(varstring namepattern='*', boolean includenormal=TRUE, boolean includesuper=FALSE, boolean unknownszero=FALSE, varstring foreigndali='') :=
-    lib_fileservices.FileServices.LogicalFileList(namepattern, includenormal, includesuper, unknownszero, foreigndali);
+    lib_fileservices.FileServices.LogicalFileList(namepattern, includenormal, includesuper, unknownszero, foreigndali)
+    : DEPRECATED('Use Std.File.LogicalFileListFiltered for enhanced filtering and count information');
+
+/**
+ * Returns information about logical files known to the system, including count and limit breach status.
+ * This function supports file limits, filtering, and field projection for efficient data retrieval.
+ *
+ * @param namepattern   The mask of the files to list. Defaults to '*' (all files).
+ * @param filters       Filter string using search-like syntax for complex queries. Defaults to blank.
+ *                      Multiple filters separated by commas. Supports:
+ *
+ *                      Field matching:
+ *                        field:value          - Exact wildcard match (owner:jsmith, name:*test*)
+ *                        !field:value         - Negation (not matching)
+ *
+ *                      Numeric comparisons:
+ *                        field>value          - Greater than (size>1000000, recordcount>0)
+ *                        field<value          - Less than (size<1000)
+ *                        field>=value         - Greater than or equal
+ *                        field<=value         - Less than or equal
+ *                        field=value          - Exact match (recordcount=0)
+ *
+ *                      String comparisons:
+ *                        modified>2024-01-01  - Date/string greater than
+ *                        modified<2024-12-31  - Date/string less than
+ *
+ *                      Property checks:
+ *                        has:propertyname     - Property exists
+ *                        !has:propertyname    - Property does not exist
+ *
+ *                      File type:
+ *                        is:superfile         - Superfiles only
+ *                        is:normal            - Normal files only
+ *                        is:any               - All file types (default)
+ *
+ *                      Common fields: owner, cluster, name, size, recordcount, modified, recordsize, numparts
+ *
+ *                      Examples:
+ *                        'owner:jsmith'                         - Files owned by jsmith
+ *                        'owner:*doe'                           - Owner ends with 'doe'
+ *                        'size>100000000'                       - Files larger than 100MB
+ *                        'recordcount>0'                        - Files with records
+ *                        'is:superfile'                         - Superfiles only
+ *                        'is:normal !has:description'           - Normal files without description
+ *                        'owner:jsmith size>1000000'            - Multiple filters (AND logic)
+ *                        'modified>2024-01-01 is:normal'        - Recent normal files
+ * @param fields        Comma-separated list of field names to include in the result. Defaults to blank (all default fields).
+ *                      When blank or empty, returns default fields: name, modified, size, rowcount, cluster, superfile, owner.
+ *                      Available fields: name, modified, size, rowcount, cluster, superfile, owner, recordsize, numparts.
+ *                      Note: 'name' field is always included regardless of specification.
+ *                      Examples:
+ *                        ''                   - Default fields (backward compatible)
+ *                        'name,size'          - Only name and size
+ *                        'name,superfile,owner' - Name, superfile flag, and owner
+ * @param unknownszero  Whether to set file sizes that are unknown to zero(0) instead of minus-one (-1). Defaults to FALSE.
+ * @param remoteDfs     The name of the remote DFS service to perform the lookup on. If blank then the list is
+ *                      resolved locally. Defaults to blank. (Not yet supported; specifying this will raise an error.)
+ * @param maxFileLimit  Maximum number of files to return. Set to -1 to use server default limit (100,000).
+ *                      Maximum client-side limit is 1,000,000. Defaults to -1.
+ * @return              A record containing:
+ *                      - count: Number of files returned
+ *                      - limitBreached: TRUE if more files match than the limit allows
+ *                      - files: Dataset of file information records
+ *
+ * Example usage:
+ *   IMPORT Std;
+ *
+ *   // List all files
+ *   result1 := Std.File.LogicalFileListFiltered();
+ *   OUTPUT(result1.count);
+ *   OUTPUT(result1.files);
+ *
+ *   // List with limit
+ *   result2 := Std.File.LogicalFileListFiltered(maxFileLimit := 100);
+ *
+ *   // List files > 100MB
+ *   result3 := Std.File.LogicalFileListFiltered(filters := 'size>100000000');
+ *
+ *   // List superfiles owned by jsmith
+ *   result4 := Std.File.LogicalFileListFiltered(filters := 'owner:jsmith,is:superfile');
+ *
+ *   // List normal files without description, modified recently
+ *   result5 := Std.File.LogicalFileListFiltered(filters := 'is:normal,!has:description,modified>2024-01-01');
+ */
+EXPORT lib_fileservices.FsLogicalFileListResult LogicalFileListFiltered(varstring namepattern='*', varstring filters='', varstring fields='', boolean unknownszero=FALSE, varstring remoteDfs='', integer8 maxFileLimit=-1) :=
+    lib_fileservices.FileServices.LogicalFileListFiltered(namepattern, filters, fields, unknownszero, remoteDfs, maxFileLimit);
 
 /**
  * Compares two files, and returns a result indicating how well they match.
@@ -485,8 +570,8 @@ EXPORT SprayVariable(varstring sourceIP='', varstring sourcePath, integer4 sourc
  * @param recordStructurePresent If TRUE derives the record structure from the header of the file.
  * @param quotedTerminator Can the terminator character be included in a quoted field.  Defaults to TRUE.
  *                      If FALSE it allows quicker partitioning of the file (avoiding a complete file scan).
- * @param encoding      A null-terminated string containing the encoding. 
- *                      Can be set to one of the following: 
+ * @param encoding      A null-terminated string containing the encoding.
+ *                      Can be set to one of the following:
  *                      ascii, utf8, utf8n, utf16, utf16le, utf16be, utf32, utf32le,utf32be. If omitted, the default is ascii.
  * @param expireDays    Number of days to auto-remove file. Default is -1, not expire.
  * @param dfuServerQueue Name of target DFU Server queue. Default is '' (empty) for the first DFU queue in the environment.
@@ -1108,19 +1193,19 @@ EXPORT dataset(FsLandingZoneRecord) GetLandingZones() :=
  *
  */
 
-EXPORT integer4 GetExpireDays(varstring lfn) := 
+EXPORT integer4 GetExpireDays(varstring lfn) :=
 	lib_fileservices.Fileservices.GetExpireDays(lfn);
-	
+
 
 /**
  * Set the expire days property of the specified logical filename.
  *
  * @param lfn           The name of the logical file.
  * @param expireDays    Number of days before file expired. 0 means using system expire value.
- *                      
+ *
  */
 
-EXPORT SetExpireDays(varstring lfn, integer4 expireDays) := 
+EXPORT SetExpireDays(varstring lfn, integer4 expireDays) :=
 	lib_fileservices.Fileservices.SetExpireDays(lfn, expireDays);
 
 /**
@@ -1130,7 +1215,7 @@ EXPORT SetExpireDays(varstring lfn, integer4 expireDays) :=
  *
  */
 
-EXPORT ClearExpireDays(varstring lfn) := 
+EXPORT ClearExpireDays(varstring lfn) :=
 	lib_fileservices.Fileservices.ClearExpireDays(lfn);
 
 END;

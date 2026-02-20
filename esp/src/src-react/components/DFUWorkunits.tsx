@@ -111,7 +111,7 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
                 }
             },
             ID: {
-                label: nlsHPCC.ID,
+                label: nlsHPCC.WUID,
                 width: 130,
                 formatter: (ID, idx) => {
                     const wu = ESPDFUWorkunit.Get(ID);
@@ -122,35 +122,54 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
                     </>;
                 }
             },
-            Command: {
+            Type: {
                 label: nlsHPCC.Type,
                 width: 110,
-                formatter: (command) => {
-                    if (command in FileSpray.CommandMessages) {
-                        return FileSpray.CommandMessages[command];
+                formatter: (_type, row) => {
+                    if (row.Command in FileSpray.CommandMessages) {
+                        return FileSpray.CommandMessages[row.Command];
                     }
                     return "Unknown";
                 }
             },
-            User: { label: nlsHPCC.Owner, width: 90 },
-            JobName: { label: nlsHPCC.JobName, width: 220 },
-            ClusterName: { label: nlsHPCC.Cluster, width: 70 },
-            StateMessage: { label: nlsHPCC.State, width: 70 },
-            PercentDone: {
-                label: nlsHPCC.PctComplete, width: 80, sortable: true,
+            Owner: {
+                label: nlsHPCC.Owner, width: 90,
+                formatter: (_owner, row) => {
+                    return row.User;
+                }
             },
-            TimeStarted: { label: nlsHPCC.TimeStarted, width: 100, sortable: true },
-            TimeStopped: { label: nlsHPCC.TimeStopped, width: 100, sortable: true },
+            JobName: { label: nlsHPCC.JobName, width: 220 },
+            Cluster: {
+                label: nlsHPCC.Cluster, width: 70,
+                formatter: (_cluster, row) => {
+                    return row.ClusterName;
+                },
+            },
+            State: {
+                label: nlsHPCC.State, width: 70,
+                formatter: (_state, row) => {
+                    return row.StateMessage;
+                }
+            },
+            PCTDone: {
+                label: nlsHPCC.PctComplete, width: 80,
+                formatter: (_pctdone, row) => {
+                    if (row.PercentDone === undefined) return "";
+                    return `${row.PercentDone}%`;
+                }
+            },
+            TimeStarted: { label: nlsHPCC.TimeStarted, width: 100, sortable: false },
+            TimeStopped: { label: nlsHPCC.TimeStopped, width: 100, sortable: false },
             KbPerSec: {
-                label: nlsHPCC.TransferRate, width: 90,
-                formatter: (value, row) => {
-                    return Utility.convertedSize(row.KbPerSec * 1024) + " / sec";
+                label: nlsHPCC.TransferRate, width: 90, sortable: false,
+                formatter: (_kbPerSec, row) => {
+                    return Utility.convertedSize(row.KbPerSec * 1024, " / sec");
                 }
             },
             KbPerSecAve: { // KbPerSecAve seems to never be different than KbPerSec, see HPCC-29894
-                label: nlsHPCC.TransferRateAvg, width: 90,
-                formatter: (value, row) => {
-                    return Utility.convertedSize(row.KbPerSecAve * 1024) + " / sec";
+                label: nlsHPCC.TransferRateAvg, width: 90, sortable: false,
+                formatter: (_kbPerSecAve, row) => {
+                    return Utility.convertedSize(row.KbPerSecAve * 1024, " / sec");
                 }
             }
         };

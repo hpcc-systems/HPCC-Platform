@@ -442,6 +442,7 @@ static IPropertyTree * extractLegacyOptions(IPropertyTree * legacyOptions)
     IPropertyTree * legacyProcessConfig = legacyOptions->queryPropTree("Software/EspProcess[1]");
     Owned<IPropertyTree> extractedOptions = createPTree();
     copyTree(extractedOptions, legacyProcessConfig, "tracing");
+    copyTree(extractedOptions, legacyProcessConfig, "vaults");
     return extractedOptions.getClear();
 }
 
@@ -452,7 +453,7 @@ bool startEspEventRecording(const char * options, const char * filename)
 
 bool stopEspEventRecording(EventRecordingSummary * optSummary)
 {
-    return queryRecorder().stopRecording(optSummary);
+    return queryRecorder().stopRecording(optSummary, false);
 }
 
 int init_main(int argc, const char* argv[])

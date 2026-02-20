@@ -22,6 +22,7 @@ import { TitlebarConfig } from "./forms/TitlebarConfig";
 import { switchTechPreview } from "./controls/ComingSoon";
 import { About } from "./About";
 import { MyAccount } from "./MyAccount";
+import { LogViewerDialog } from "./LogViewerDialog";
 import { debounce } from "../util/throttle";
 
 const logger = scopedLogger("src-react/components/Title.tsx");
@@ -67,6 +68,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     const [showAbout, setShowAbout] = React.useState(false);
     const [searchValue, setSearchValue] = React.useState("");
     const [showMyAccount, setShowMyAccount] = React.useState(false);
+    const [showLogViewer, setShowLogViewer] = React.useState(false);
     const { currentUser, isAdmin } = useMyAccount();
 
     const [showTitlebarConfig, setShowTitlebarConfig] = React.useState(false);
@@ -341,7 +343,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                         </StackItemShim>
                     }
                     <StackItemShim align="center">
-                        <DefaultButton href="#/log" title={nlsHPCC.ErrorWarnings} iconProps={{ iconName: logCount > 0 ? "RingerSolid" : "Ringer" }} className={btnStyles.errorsWarnings}>
+                        <DefaultButton onClick={() => setShowLogViewer(true)} title={nlsHPCC.ErrorWarnings} iconProps={{ iconName: logCount > 0 ? "RingerSolid" : "Ringer" }} className={btnStyles.errorsWarnings}>
                             <CounterBadge appearance="filled" size="small" color={logIconColor} count={logCount} />
                         </DefaultButton>
                     </StackItemShim>
@@ -354,6 +356,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
         </StackShim>
         <About eclwatchVersion="9" show={showAbout} onClose={() => setShowAbout(false)} ></About>
         <MyAccount currentUser={currentUser} show={showMyAccount} onClose={() => setShowMyAccount(false)}></MyAccount>
+        <LogViewerDialog show={showLogViewer} onClose={() => setShowLogViewer(false)} />
         <TitlebarConfig showForm={showTitlebarConfig} setShowForm={setShowTitlebarConfig} />
         <BannerConfig />
         <PasswordExpiredConfirm />

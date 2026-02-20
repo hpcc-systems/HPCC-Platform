@@ -20,6 +20,7 @@
 #include "workunit.hpp"
 #include "anarule.hpp"
 #include "commonext.hpp"
+#include "thorcommon.hpp"
 
 
 static constexpr cost_type calcIssueCost(const stat_type clusterCostPerHour, stat_type timeWasted)
@@ -303,6 +304,60 @@ public:
     }
 };
 
+class SoapCallInefficientRule : public CActivityRule
+{
+public:
+    virtual bool isCandidate(IWuActivity & activity) const override
+    {
+        ThorActivityKind kind = activity.queryThorActivityKind();
+        return (kind == TAKsoap_rowdataset ||
+                kind == TAKsoap_rowaction ||
+                kind == TAKsoap_datasetdataset ||
+                kind == TAKsoap_datasetaction);
+    }
+
+    virtual bool check(PerformanceIssue & result, IWuActivity & activity, const IAnalyserOptions & options) override
+    {
+        // Only report if cluster size exceeds the configured threshold
+        stat_type clusterSize = options.queryOption(watOptClusterSize);
+        if (clusterSize <= options.queryOption(watOptSoapCallWarnClusterSize))
+            return false;
+
+        stat_type timeSoapCall = activity.getStatRaw(StTimeSoapcall, StAvgX);
+        IWuEdge * inputEdge = activity.queryInput(0);
+        if (!inputEdge)
+            return false;
+        stat_type rowscnt = inputEdge->getStatRaw(StNumRowsProcessed);
+        if (rowscnt == 0)
+            return false;
+        stat_type soapCallPerRow = timeSoapCall / rowscnt;
+        // Skip if average time per row is below the minimum threshold
+        if (soapCallPerRow < options.queryOption(watOptSoapCallRowAvgThreshold))
+            return false;
+
+        // Skip if time taken for all the soap calls is below the minimum threshold
+        if (timeSoapCall < options.queryOption(watOptSoapCallTimeAggregateThreshold))
+            return false;
+
+        // Calculate wasted cost: cost spent on nodes that could be avoided
+        // Assumption: SOAPCALL could run on a 1-way, so (nodes-1)/nodes of the cost is wasted
+        cost_type totalCost = calcIssueCost(options.queryOption(watClusterCostPerHour), timeSoapCall);
+        cost_type moneyWasted = (totalCost * (clusterSize - 1)) / clusterSize;
+        // Calculate time equivalent of wasted cost for threshold checking
+        stat_type timeWasted = (timeSoapCall * (clusterSize - 1)) / clusterSize;
+
+        if (isWorthReporting(options, timeWasted, moneyWasted))
+        {
+            result.set(ANA_SOAPCALL_INEFFICIENT_ID, timeWasted, moneyWasted,
+                      "SOAPCALL activity on %u-way cluster wastes resources - consider using 1-way cluster",
+                      (unsigned) clusterSize);
+            updateInformation(result, activity);
+            return true;
+        }
+        return false;
+    }
+};
+
 void gatherRules(CIArrayOf<CActivityRule> & rules)
 {
     rules.append(*new DistributeSkewRule);
@@ -311,6 +366,7 @@ void gatherRules(CIArrayOf<CActivityRule> & rules)
     rules.append(*new IoSkewRule(StTimeSpillElapsed, "spill"));
     rules.append(*new KeyedJoinExcessRejectedRowsRule);
     rules.append(*new LocalExecuteSkewRule);
+    rules.append(*new SoapCallInefficientRule);
 }
 
 void gatherRules(CIArrayOf<CSubgraphRule> & rules)

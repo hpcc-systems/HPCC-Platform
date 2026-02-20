@@ -70,13 +70,13 @@ SELECT type, name, CostExecute, TimeElapsed, id
     },
     Activities: {
         scopeTypes: ["activity"],
-        properties: ["TimeMaxLocalExecute", "TimeMaxTotalExecute"],
+        properties: ["TimeLocalExecute", "SizeDiskRead", "NumDiskRead"],
         ignoreGlobalStoreOutEdges: true,
         subgraphTpl: "%id% - %TimeElapsed%",
         activityTpl: "%Label%",
         edgeTpl: "%Label%\n%NumRowsProcessed%\n%SkewMinRowsProcessed% / %SkewMaxRowsProcessed%",
         sql: `\
-SELECT type, name, TimeLocalExecute, TimeTotalExecute, id
+SELECT type, name, TimeLocalExecute, SizeDiskRead, NumDiskRead, id
     FROM metrics
     WHERE type = 'activity'`,
         layout: undefined,
