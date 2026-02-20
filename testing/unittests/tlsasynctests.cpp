@@ -484,6 +484,9 @@ public:
                 config->removeProp("expert/@useIOUring");
                 config->removeProp("expert/@useTLSIOUring");
             }
+            
+            // Reset cache to ensure next test gets correct config value
+            securesocket::resetTLSIOUringEnabledCache();
         }
     }
 
@@ -2255,6 +2258,8 @@ public:
             if (!config->queryPropTree("expert"))
                 config->addPropTree("expert", createPTree("expert"));
             config->setPropBool("expert/@useIOUring", false);
+            // Reset cache to force re-read of the new config value
+            securesocket::resetTLSIOUringEnabledCache();
         }
 
         try
@@ -2347,6 +2352,8 @@ public:
             // Keep useIOUring enabled (already set by setUp), explicitly disable useTLSIOUring
             config->setPropBool("expert/@useIOUring", true);
             config->setPropBool("expert/@useTLSIOUring", false);
+            // Reset cache to force re-read of the new config value
+            securesocket::resetTLSIOUringEnabledCache();
         }
 
         try

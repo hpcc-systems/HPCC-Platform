@@ -104,47 +104,42 @@ interface ISecureSocketContextCallback : implements IInterface
 namespace securesocket
 {
 
+
 // Helper function to check if TLS io_uring is enabled via configuration
 // Cached on first call for performance (config is read-only after startup)
-// Note: Caching is disabled during unit tests to allow dynamic config changes
-static bool isTLSIOUringEnabled()
-{
-#ifdef _USE_CPPUNIT
-    // During unit tests, always read fresh from config to allow tests to modify settings
-    try
-    {
-        Owned<IPropertyTree> config = getComponentConfigSP();
-        if (config)
-            return config->getPropBool("expert/@useTLSIOUring", false);
-    }
-    catch (...)
-    {
-    }
-    return false;
-#else
-    // In production, cache the result for performance
-    static std::once_flag initFlag;
-    static bool cached = false;
+// Unit tests can reset cache to force re-read
+static bool tlsIOUringCached = false;
+static bool tlsIOUringCacheSet = false;
 
-    std::call_once(initFlag, []()
+bool isTLSIOUringEnabled()
+{
+    if (!tlsIOUringCacheSet)
     {
         try
         {
             Owned<IPropertyTree> config = getComponentConfigSP();
             if (config)
             {
-                // Check expert/@useTLSIOUring setting (defaults to false if not specified)
-                cached = config->getPropBool("expert/@useTLSIOUring", false);
+                tlsIOUringCached = config->getPropBool("expert/@useTLSIOUring", false);
+            }
+            else
+            {
+                tlsIOUringCached = false;
             }
         }
         catch (...)
         {
-            // If config is not available, default to disabled
+            tlsIOUringCached = false;
         }
-    });
+        tlsIOUringCacheSet = true;
+    }
+    return tlsIOUringCached;
+}
 
-    return cached;
-#endif
+// Function to reset the cache for unit testing
+void resetTLSIOUringEnabledCache()
+{
+    tlsIOUringCacheSet = false;
 }
 
 class CStringSet : public CInterface

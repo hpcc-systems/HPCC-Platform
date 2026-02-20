@@ -119,5 +119,12 @@ SECURESOCKET_API ISmartSocketFactory *createSecureSmartSocketFactory(IPropertyTr
 
 SECURESOCKET_API IConversation *createSingletonSecureSocketConnection(unsigned short port,SocketEndpoint *_ep=nullptr);
 
+namespace securesocket
+{
+    // Function to reset TLS io_uring cache for unit testing
+    // Call this after modifying expert/@useTLSIOUring config to force re-read
+    SECURESOCKET_API void resetTLSIOUringEnabledCache();
+}
+
 #endif
 
