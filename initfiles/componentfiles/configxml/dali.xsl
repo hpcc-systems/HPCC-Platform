@@ -361,6 +361,7 @@
         </xsl:if>
       </xsl:element>
       <xsl:call-template name="addMetricsConfig"/>
+      <xsl:call-template name="addVaultsConfig"/>
     </DALI>
   </xsl:template>
 
@@ -399,6 +400,10 @@
 
   <xsl:template name="addMetricsConfig">
     <xsl:copy-of select="/Environment/Software/metrics"/>
+  </xsl:template>
+
+  <xsl:template name="addVaultsConfig">
+    <xsl:copy-of select="/Environment/Software/vaults"/>
   </xsl:template>
 
 </xsl:stylesheet>
