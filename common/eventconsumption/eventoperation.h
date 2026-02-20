@@ -46,6 +46,12 @@ public:
 protected:
     IEventFilter* ensureFilter();
     bool traverseEvents(IEventVisitor& visitor);
+
+    // Query the EventFileProperties from the iterator that will be used for traversal.
+    // This method is only valid during doOp() execution, after input paths are set.
+    // For multiplexed sources, properties reflect aggregated/ambiguous values.
+    const EventFileProperties& queryIteratorProperties();
+
 protected:
     Owned<CMetaInfoState> metaState;
     std::set<std::string> inputPaths;
@@ -53,4 +59,5 @@ protected:
 private:
     Owned<IEventFilter> filter;
     Owned<IEventModel> model;
+    Owned<IEventIterator> cachedSource;  // Cached iterator created on first queryIteratorProperties() call
 };

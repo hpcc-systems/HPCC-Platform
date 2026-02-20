@@ -81,6 +81,10 @@ constexpr struct WuOption wuOptionsDefaults[watOptMax]
     /* Note watClusterCostPerHour cannot be used as debug option or config option (this is calculated) */
     {watClusterCostPerHour, "costRatePerHour", 0, wutOptValueTypeCost},
     {watOptMaxExecuteTime, "maxExecuteTime", msecs2StatUnits(5000), wutOptValueTypeMSec},
+    {watOptSoapCallTimeAggregateThreshold, "soapCallAggregateTimeThreshold", seconds2StatUnits(300), wutOptValueTypeMSec}, // 5 minutes
+    {watOptSoapCallRowAvgThreshold, "soapCallRowAvgThreshold", msecs2StatUnits(500), wutOptValueTypeMSec}, // 0.5 seconds
+    {watOptSoapCallWarnClusterSize, "soapCallWarnClusterSize", 5, wutOptValueTypeCount},
+    {watOptClusterSize, "clusterSize", 1, wutOptValueTypeCount}, // Thor cluster size
 };
 
 constexpr bool checkWuOptionsDefaults(int i = watOptMax)
@@ -196,6 +200,7 @@ public:
     void applyRules();
     void check(IWuActivity & activity);
     void check(IWuSubGraph & subgraph);
+    void extractClusterSize(WuScope & graphScope);
     void print();
     void update(IWorkUnit *wu);
     bool hasIssues() const { return !issues.empty(); }
@@ -396,6 +401,7 @@ void WuScope::applyRules(WorkunitRuleAnalyser & analyser)
             analyser.check(static_cast<IWuActivity &>(cur));
             break;
         case SSTsubgraph:
+            analyser.extractClusterSize(cur);
             analyser.check(static_cast<IWuSubGraph &>(cur)) ;
             break;
         }
@@ -1459,7 +1465,15 @@ void WorkunitRuleAnalyser::applyConfig(IPropertyTree *cfg, IConstWorkUnit * wu, 
     /* watClusterCostPerHour is calculated by caller and its value is set in options*/
     /* (So, watClusterCostPerHour cannot be used as debug option or config option)*/
     options.setOptionValue(watClusterCostPerHour, money2cost_type(costRate));
+
     maxExecuteCycles = millisec_to_cycle(statUnits2msecs(options.queryOption(watOptMaxExecuteTime)));
+}
+
+void WorkunitRuleAnalyser::extractClusterSize(WuScope & sgScope)
+{
+    stat_type numSlaves = sgScope.getStatRaw(StNumSlaves);
+    if (numSlaves > 0)
+        options.setOptionValue(watOptClusterSize, (unsigned)numSlaves);
 }
 
 void WorkunitRuleAnalyser::check(IWuActivity & wuScope)

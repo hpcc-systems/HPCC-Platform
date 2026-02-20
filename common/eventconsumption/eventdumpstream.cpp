@@ -504,6 +504,12 @@ protected:
             // Never recorded, even when option is set.
             // MORE: revisit if option is implemented
             return true;
+        case EvAttrEventThreadId:
+            // Skip if not enabled in any input file
+            return properties.options.includeThreadIds == EventFileOption::Disabled;
+        case EvAttrEventTraceId:
+            // Skip if not enabled in any input file
+            return properties.options.includeTraceIds == EventFileOption::Disabled;
         default:
             return false;
         }
@@ -516,10 +522,16 @@ protected:
     }
 
 public:
-    using CDumpStreamEventVisitor::CDumpStreamEventVisitor;
+    CDumpCSVEventVisitor(IBufferedSerialOutputStream& out, const EventFileProperties& _properties)
+        : CDumpStreamEventVisitor(out), properties(_properties)
+    {
+    }
+
+private:
+    EventFileProperties properties;  // Copied to avoid lifetime issues
 };
 
-IEventVisitor* createDumpCSVEventVisitor(IBufferedSerialOutputStream& out)
+IEventVisitor* createDumpCSVEventVisitor(IBufferedSerialOutputStream& out, const EventFileProperties& properties)
 {
-    return new CDumpCSVEventVisitor(out);
+    return new CDumpCSVEventVisitor(out, properties);
 }

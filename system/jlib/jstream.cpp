@@ -398,7 +398,7 @@ public:
             input->skip(sizeHeader);
             next = static_cast<const byte *>(input->peek(compressedSize, available));
             if (available < compressedSize)
-                throw makeStringExceptionV(-1, "End of input stream for read of %u bytes at offset %llu (%llu)", len, tell(), input->tell());
+                throw makeStringExceptionV(-1, "End of input stream for read of %u bytes at offset %llu (%llu)", len, tell(), input->tell()+available);
             sizeNextHeader = 0;
         }
 

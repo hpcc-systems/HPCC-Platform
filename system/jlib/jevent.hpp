@@ -51,6 +51,7 @@ enum EventType : byte
     EventQueryStart,
     EventQueryStop,
     EventRecordingSource,         // information about the source of the recording
+    EventIndexOpen,               // open an index ready for reading
     EventMax
 };
 
@@ -92,6 +93,7 @@ enum EventAttr : byte
     EvAttrReplicaId,
     EvAttrInstanceId,
     EvAttrProcessDescriptor,
+    EvAttrOpenTime,
     EvAttrMax
 };
 
@@ -133,6 +135,7 @@ struct jlib_decl EventRecordingSummary
     offset_t rawSize{0};
     bool valid{true};
     StringBuffer filename;
+    StringBuffer message;
 };
 
 // Encapsulation of a single attribute value for an event. Values may be stored as either text,
@@ -410,10 +413,11 @@ public:
     bool isRecording() const { return recordingEvents.load(std::memory_order_acquire); }    // Are events being recorded? false if recording is paused
 
     bool startRecording(const char * optionsText, const char * filename, const char * processName, unsigned channelId, unsigned replicaId, __uint64 instanceId, bool pause);
-    bool stopRecording(EventRecordingSummary * optSummary);
+    bool stopRecording(EventRecordingSummary * optSummary, bool throwOnFailure);
     bool pauseRecording(bool pause, bool recordChange);
 
 //Functions for each of the events that can be recorded..
+    void recordIndexOpen(unsigned fileid, __uint64 loadTime);
     void recordIndexCacheHit(unsigned fileid, offset_t offset, byte nodeKind, size32_t size, __uint64 expandTime);
     void recordIndexCacheMiss(unsigned fileid, offset_t offset, byte nodeKind);
     void recordIndexLoad(unsigned fileid, offset_t offset, byte nodeKind, size32_t size, __uint64 expandTime, __uint64 readTime);
@@ -529,6 +533,7 @@ protected:
     Owned<IFile> outputFile;
     Owned<IFileIO> output;
     Owned<ISerialOutputStream> outputStream;
+    AtomicShared<IException> writeException;
 };
 
 // The implementation exposes a global object so that the test for whether events are being recorded

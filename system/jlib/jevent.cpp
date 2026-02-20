@@ -112,6 +112,7 @@ struct EventInformation
 #define QUERYSTART_ATTRS      COMMON_ATTRS, EvAttrServiceName
 #define QUERYSTOP_ATTRS       COMMON_ATTRS
 #define RECORDINGSOURCE_ATTRS COMMON_ATTRS, EvAttrProcessDescriptor
+#define INDEXOPEN_ATTRS       COMMON_ATTRS, EvAttrFileId, EvAttrOpenTime
 
 static constexpr EventInformation eventInformation[] {
     DEFINE_EVENT(None, EventCtxMax, { EvAttrNone } ),
@@ -134,6 +135,7 @@ static constexpr EventInformation eventInformation[] {
     DEFINE_EVENT(QueryStart, EventCtxIndex, { QUERYSTART_ATTRS } ),
     DEFINE_EVENT(QueryStop, EventCtxIndex, { QUERYSTOP_ATTRS } ),
     DEFINE_EVENT(RecordingSource, EventCtxOther, { RECORDINGSOURCE_ATTRS } ),
+    DEFINE_EVENT(IndexOpen, EventCtxIndex, { INDEXOPEN_ATTRS } ),
 };
 static_assert(_elements_in(eventInformation) == EventMax);
 
@@ -188,6 +190,7 @@ static constexpr EventAttrInformation attrInformation[] = {
     DEFINE_ATTR(ReplicaId, u1),
     DEFINE_ATTR(InstanceId, u8),
     DEFINE_ATTR(ProcessDescriptor, string),
+    DEFINE_ATTR(OpenTime, u8),
 };
 
 static_assert(_elements_in(attrInformation) == EvAttrMax);
@@ -478,12 +481,16 @@ bool EventRecorder::startRecording(const char * optionsText, const char * filena
     return true;
 }
 
-bool EventRecorder::stopRecording(EventRecordingSummary * optSummary)
+bool EventRecorder::stopRecording(EventRecordingSummary * optSummary, bool throwOnFailure)
 {
     {
         CriticalBlock block(cs);
         if (!isStarted)
+        {
+            if (optSummary)
+                optSummary->message.set("Recording was not started");
             return false;
+        }
         isStarted = false;
         assertex(!isStopped);
     }
@@ -503,6 +510,7 @@ bool EventRecorder::stopRecording(EventRecordingSummary * optSummary)
         MilliSleep(10);
     }
 
+    bool ok = true;
     {
         //MORE: Could avoid re-entering by using a leaveable critical block above
         CriticalBlock block(cs);
@@ -511,34 +519,68 @@ bool EventRecorder::stopRecording(EventRecordingSummary * optSummary)
 
         writeBlock(nextOffset, nextOffset & blockMask);
 
-        outputStream->flush();
+        try
+        {
+            outputStream->flush();
+        }
+        catch (IException * e)
+        {
+            writeException.setownIfNull(e);
+            corruptOutput = true;
+        }
         outputStream.clear();
 
+        offset_t sizeWritten = output->getStatistic(StSizeDiskWrite);
+        try
+        {
+            output->close();
+        }
+        catch (IException * e)
+        {
+            writeException.setownIfNull(e);
+            corruptOutput = true;
+        }
+        output.clear();
+
+        if (corruptOutput)
+        {
+            outputFile->remove();
+            ok = false;
+        }
+
+        isStopped = true;
+
         //Flush the data, after waiting for a little while (or until committed == offset)?
+        if (writeException.isSet())
+        {
+            OERRLOG(writeException.query(), "stopRecording: ");
+            if (throwOnFailure)
+                throw writeException.getClear();
+        }
+
         if (optSummary)
         {
             if (corruptOutput)
             {
-                optSummary->filename.set("Output deleted because it was corrupt");
+                StringBuffer & errorMessage = optSummary->message;
+                errorMessage.set("Output deleted because it was corrupt");
+                if (writeException.isSet())
+                {
+                    errorMessage.append(". Write failed with error: ");
+                    writeException.query()->errorMessage(errorMessage);
+                }
                 optSummary->valid = false;
             }
             else
                 optSummary->filename.set(outputFilename);
             optSummary->numEvents = numEvents;
-            optSummary->totalSize = output->getStatistic(StSizeDiskWrite);
+            optSummary->totalSize = sizeWritten;
             optSummary->rawSize = nextOffset;
         }
-
-        output->close();
-        output.clear();
-
-        if (corruptOutput)
-            outputFile->remove();
-
-        isStopped = true;
+        writeException.clear();
     }
 
-    return true;
+    return ok;
 }
 
 bool EventRecorder::pauseRecording(bool pause, bool recordChange)
@@ -653,6 +695,23 @@ void EventRecorder::recordRecordingActive(bool enabled)
     offset_type pos = writeOffset;
     writeEventHeader(EventRecordingActive, pos);
     write(pos, EvAttrEnabled, enabled);
+    writeEventFooter(pos, requiredSize, writeOffset);
+}
+
+void EventRecorder::recordIndexOpen(unsigned fileid, __uint64 openTime)
+{
+    if (!isRecording())
+        return;
+
+    if (unlikely(outputToLog))
+        TRACEEVENT("{ \"name\": \"IndexOpen\", \"FileId\": %u, \"OpenTime\": %llu }", fileid, openTime);
+
+    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, openTime);
+    offset_type writeOffset = reserveEvent(requiredSize);
+    offset_type pos = writeOffset;
+    writeEventHeader(EventIndexOpen, pos);
+    write(pos, EvAttrFileId, fileid);
+    write(pos, EvAttrOpenTime, openTime);
     writeEventFooter(pos, requiredSize, writeOffset);
 }
 
@@ -1152,11 +1211,20 @@ void EventRecorder::writeByte(offset_type & offset, byte value)
 
 void EventRecorder::writeBlock(offset_type startOffset, size32_t size)
 {
-    if (!corruptOutput)
+    try
     {
-        size32_t blockOffset = nextWriteOffset & bufferMask;
-        outputStream->put(size, (const byte *)buffer.get() + blockOffset);
+        if (!corruptOutput)
+        {
+            size32_t blockOffset = nextWriteOffset & bufferMask;
+            outputStream->put(size, (const byte *)buffer.get() + blockOffset);
+        }
     }
+    catch (IException * e)
+    {
+        writeException.setownIfNull(e);
+        corruptOutput = true;
+    }
+
     nextWriteOffset += size;
 
     unsigned numToSignal;

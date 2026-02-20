@@ -17,7 +17,7 @@
 
 SHARED ParquetService := SERVICE : plugin('parquetembed')
   BOOLEAN getEmbedContext():cpp, pure, namespace='parquetembed', entrypoint='getEmbedContext', prototype='IEmbedContext* getEmbedContext()';
-  STRING getParquetRecordStructure(VARSTRING readType, VARSTRING filePath):cpp, pure, fold, namespace='parquetembed', entrypoint='getParquetRecordStructure';
+  STRING getParquetRecordStructure(VARSTRING readType, VARSTRING filePath):cpp, once, fold, namespace='parquetembed', entrypoint='getParquetRecordStructure';
 END;
 
 EXPORT ParquetIO := MODULE
