@@ -42,18 +42,48 @@ export const TableForm: React.FunctionComponent<TableFormProps> = ({
     }, [doSubmit, localFields, onSubmit]);
 
     React.useEffect(() => {
+        setLocalFields({ ...fields });
+    }, [fields]);
+
+    React.useEffect(() => {
         if (doReset === false) return;
+
+        const clearedFields: Fields = {};
         for (const key in localFields) {
             const field = localFields[key];
+            if (field.type === "links") {
+                clearedFields[key] = { ...field };
+                continue;
+            }
+
+            const cleared = { ...field };
             switch (field.type) {
-                case "links":
+                case "dropdown":
+                case "dropdown-multi":
+                case "target-cluster":
+                case "target-dropzone":
+                case "target-server":
+                case "target-group":
+                case "user-groups":
+                case "group-members":
+                case "permission-type":
+                case "esdl-esp-processes":
+                case "esdl-definitions":
+                case "cloud-containername":
+                case "cloud-podname":
+                    cleared.value = "";
+                    break;
+                case "checkbox":
+                    cleared.value = false;
                     break;
                 default:
-                    delete field.value;
+                    cleared.value = undefined;
             }
+            clearedFields[key] = cleared;
         }
-        setLocalFields(localFields);
-        onReset(fieldsToRequest(localFields));
+
+        setLocalFields(clearedFields);
+        onReset(fieldsToRequest(clearedFields));
     }, [doReset, localFields, onReset]);
 
     const onChange = React.useCallback((id, value) => {
