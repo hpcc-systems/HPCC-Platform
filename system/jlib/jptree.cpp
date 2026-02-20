@@ -3047,7 +3047,7 @@ void PTree::serializeToStream(IBufferedSerialOutputStream &tgt) const
 
 void PTree::deserializeFromStream(IBufferedSerialInputStream &src, PTreeDeserializeContext &ctx)
 {
-    deserializeSelf(src);
+    deserializeSelf(src, ctx);
 
     for (;;)
     {
@@ -3070,39 +3070,36 @@ void PTree::deserializeFromStream(IBufferedSerialInputStream &src, PTreeDeserial
     }
 }
 
-void PTree::deserializeSelf(IBufferedSerialInputStream &src)
+void PTree::deserializeSelf(IBufferedSerialInputStream &src, PTreeDeserializeContext &ctx)
 {
-    size32_t len{0};
-    const char *name = queryZeroTerminatedString(src, len);
-    if (len == 0)
+    size32_t skipLen{0};
+    const char *name = queryZeroTerminatedString(src, skipLen);
+    if (skipLen == 0)
         throwUnexpectedX("PTree deserialization error: end of stream, expected name");
     setName(name);
-    src.skip(len + 1); // Skip over name and null terminator
+    src.skip(skipLen + 1); // Skip over name and null terminator
 
     read(src, flags);
 
     // Read attributes until we encounter a zero byte (attribute list terminator)
-    for (;;)
+    ctx.matchOffsets.clear();
+    constexpr unsigned pairedNameAndValueStringGrouping = 2;
+    const char * base = peekStringList(ctx.matchOffsets, src, skipLen, pairedNameAndValueStringGrouping);
+    if (unlikely(!base))
+        throwUnexpectedX("PTree deserialization error: end of stream, expected attribute name");
+
+    size_t numStringOffsets = ctx.matchOffsets.size();
+    if (numStringOffsets % 2 != 0)
+        throwUnexpectedX("PTree deserialization error: end of stream, expected attribute value");
+    constexpr bool attributeNameNotEncoded = false; // Deserialized attribute name is in its original unencoded form
+    for (size_t i = 0; i < numStringOffsets; i += 2)
     {
-        NextByteStatus status = isNextByteZero(src);
-        if (status == NextByteStatus::nextByteIsZero)
-        {
-            src.skip(1); // Skip over null terminator.
-            break;
-        }
-        if (status == NextByteStatus::endOfStream)
-            throwUnexpectedX("PTree deserialization error: end of stream, expected attribute name");
-
-        // NextByteStatus::nextByteIsNonZero - read the attribute key-value pair
-        std::pair<const char *, const char *> attrPair = peekKeyValuePair(src, len);
-        if (attrPair.second == nullptr)
-            throwUnexpectedX("PTree deserialization error: end of stream, expected attribute value");
-
-        constexpr bool attributeNameNotEncoded = false; // Deserialized attribute name is in its original unencoded form
-        setAttribute(attrPair.first, attrPair.second, attributeNameNotEncoded);
-
-        src.skip(len + 1); // +1 to skip over second null terminator.
+        const char *attrName = base + ctx.matchOffsets[i];
+        const char *attrValue = base + ctx.matchOffsets[i + 1];
+        setAttribute(attrName, attrValue, attributeNameNotEncoded);
     }
+
+    src.skip(skipLen); // Skip over all attributes and the terminator
 
     if (value)
         delete value;
@@ -4527,8 +4524,8 @@ IPropertyTree *createPTree(MemoryBuffer &src, byte flags)
 
 IPropertyTree *createPTreeFromBinary(IBufferedSerialInputStream &src, byte flags)
 {
-    PTreeDeserializeContext ctx;
     IPropertyTree *tree = createPTree(nullptr, flags);
+    PTreeDeserializeContext ctx;
     tree->deserializeFromStream(src, ctx);
     return tree;
 }
@@ -4538,8 +4535,8 @@ IPropertyTree *createPTreeFromBinary(IBufferedSerialInputStream &src, IPTreeNode
     if (!nodeCreator)
         return createPTreeFromBinary(src, ipt_none);
 
-    PTreeDeserializeContext ctx;
     IPropertyTree *tree = nodeCreator->create(nullptr); // The nullptr is a dummy name value, it will be overwritten by deserializeFromStream
+    PTreeDeserializeContext ctx;
     tree->deserializeFromStream(src, ctx);
     return tree;
 }
