@@ -814,6 +814,8 @@ void EventRecorder::recordDaliEvent(EventType event, const char * path, __int64 
     if (!isRecording())
         return;
 
+    assertex(path);
+
     if (unlikely(outputToLog))
         TRACEEVENT("{ \"name\": \"%s\", \"Path\": \"%s\", \"ConnectId\": %llu, \"ElapsedTime\": %llu, \"DataSize\": %u }", queryEventName(event), path, id, elapsedNs, dataSize);
 
