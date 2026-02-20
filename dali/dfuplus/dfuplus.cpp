@@ -1220,38 +1220,93 @@ int CDfuPlusHelper::remove()
 
 int CDfuPlusHelper::rename()
 {
-    const char* srcname = globals->queryProp("srcname");
-    if(srcname == nullptr)
-        throw MakeStringException(-1, "srcname not specified");
-    const char* dstname = globals->queryProp("dstname");
-    if(dstname == nullptr)
-        throw MakeStringException(-1, "dstname not specified");
+    IArrayOf<IEspDFUFileRenameItem> renameItems;
 
-    bool nowait = globals->getPropBool("nowait", false);
+    // Check for srcnames/dstnames (CSV lists)
+    const char *srcnames = globals->queryProp("srcnames");
+    const char *dstnames = globals->queryProp("dstnames");
 
-    info("\nRenaming from %s to %s\n", srcname, dstname);
+    if (!isEmptyString(srcnames) || !isEmptyString(dstnames)) // if either present, both must be present and valid
+    {
+        // Parse comma-separated source and destination names
+        StringArray srcArray;
+        srcArray.appendList(srcnames, ",", true);
 
-    Owned<IClientRename> req = sprayclient->createRenameRequest();
-    setMtlsSecret(req->rpc());
-    req->setSrcname(srcname);
-    req->setDstname(dstname);
+        StringArray dstArray;
+        dstArray.appendList(dstnames, ",", true);
 
-    Owned<IClientRenameResponse> result = sprayclient->Rename(req);
-    const char* wuid = result->getWuid();
-    if(wuid == nullptr || *wuid == '\0')
-        exc(result->getExceptions(),"copying");
+        // Validate that counts match
+        if (srcArray.ordinality() != dstArray.ordinality())
+            throw makeStringExceptionV(-1, "srcnames and dstnames must have the same number of items (%d vs %d)", srcArray.ordinality(), dstArray.ordinality());
+        if (srcArray.ordinality() == 0)
+            throw makeStringException(-1, "No valid names found in srcnames/dstnames");
+
+        // Create rename items from parsed arrays
+        ForEachItemIn(i, srcArray)
+        {
+            Owned<IEspDFUFileRenameItem> item = createDFUFileRenameItem();
+            item->setOldName(srcArray.item(i));
+            item->setNewName(dstArray.item(i));
+            renameItems.append(*item.getClear());
+        }
+    }
     else
     {
-        const char* jobname = globals->queryProp("jobname");
-        if(jobname && *jobname)
-            updatejobname(wuid, jobname);
+        // Check for single srcname/dstname pair (backward compatible)
+        const char *srcname = globals->queryProp("srcname");
+        const char *dstname = globals->queryProp("dstname");
 
-        info("Submitted WUID %s\n", wuid);
-        if(!nowait)
-            waitToFinish(wuid);
+        if (!isEmptyString(srcname) && !isEmptyString(dstname))
+        {
+            Owned<IEspDFUFileRenameItem> item = createDFUFileRenameItem();
+            item->setOldName(srcname);
+            item->setNewName(dstname);
+            renameItems.append(*item.getClear());
+        }
+        else
+        {
+            throw makeStringException(-1,
+                "Invalid rename usage. Use:\n"
+                "  srcname=<old> dstname=<new>  (single file), or\n"
+                "  srcnames=<old1,old2,...> dstnames=<new1,new2,...>  (multiple files)");
+        }
     }
 
-    return 0;
+    info("\nRenaming %d file(s)\n", renameItems.ordinality());
+
+    Owned<IClientDFUFileRenameRequest> req = dfuclient->createDFUFileRenameRequest();
+    setMtlsSecret(req->rpc());
+    req->setFileRenames(renameItems);
+
+    Owned<IClientDFUFileRenameResponse> result = dfuclient->DFUFileRename(req);
+
+    // Check for general exceptions
+    if (outputServiceCallExceptions(result.get()))
+        return -1;
+
+    // Display results for each rename
+    IArrayOf<IConstDFUFileRenameResult>& results = result->getResults();
+    int successCount = 0;
+    int failCount = 0;
+
+    ForEachItemIn(i, results)
+    {
+        IConstDFUFileRenameResult& res = results.item(i);
+        if (res.getSuccess())
+        {
+            info("Successfully renamed: %s -> %s\n", res.getOldName(), res.getNewName());
+            successCount++;
+        }
+        else
+        {
+            error("Failed to rename: %s -> %s: %s\n", res.getOldName(), res.getNewName(), res.getMessage());
+            failCount++;
+        }
+    }
+
+    info("\nRename Summary: %d succeeded, %d failed\n", successCount, failCount);
+
+    return (failCount > 0) ? -1 : 0;
 }
 
 

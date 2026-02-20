@@ -132,6 +132,10 @@ void handleSyntax()
     out.append("    rename options:\n");
     out.append("        srcname=<source-logical-name>\n");
     out.append("        dstname=<destination-logical-name>\n");
+    out.append("            -- Single file rename (backward compatible)\n");
+    out.append("        srcnames=<source-logical-names-separated-by-comma>\n");
+    out.append("        dstnames=<destination-logical-names-separated-by-comma>\n");
+    out.append("            -- Multiple file renames (srcnames and dstnames must have same number of items)\n");
     out.append("    list options:\n");
     out.append("        name=<logical-name-mask>\n");
     out.append("        saveto=<path and file name to save the result>\n");

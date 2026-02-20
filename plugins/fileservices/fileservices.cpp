@@ -511,7 +511,7 @@ FILESERVICES_API void FILESERVICES_CALL implementRenameLogicalFile(ICodeContext 
         StringBuffer s("RenameLogicalFile ('");
         s.append(oldLfn).append(", '").append(newLfn).append("') done");
         WUmessage(ctx, SeverityInformation, NULL, s.str());
-        AuditMessage(ctx, "RenameLogicalFile", oldLfn.str(), newLfn.str());
+        AuditMessage(ctx, "RENAMED", oldLfn.str(), newLfn.str());
     }
     catch (IException *e)
     {

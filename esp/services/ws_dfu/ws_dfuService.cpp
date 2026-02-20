@@ -4176,6 +4176,76 @@ bool CWsDfuEx::onAddRemote(IEspContext &context, IEspAddRemoteRequest &req, IEsp
     return true;
 }
 
+bool CWsDfuEx::onDFUFileRename(IEspContext &context, IEspDFUFileRenameRequest &req, IEspDFUFileRenameResponse &resp)
+{
+    try
+    {
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Write, ECLWATCH_DFU_ACCESS_DENIED, "WsDfu::DFUFileRename: Permission denied.");
+
+        StringBuffer username;
+        context.getUserID(username);
+        Owned<IUserDescriptor> userdesc;
+        if (username.length() > 0)
+        {
+            userdesc.setown(createUserDescriptor());
+            userdesc->set(username.str(), context.queryPassword(), context.querySignature());
+        }
+
+        IArrayOf<IConstDFUFileRenameItem> &items = req.getFileRenames();
+        if (items.ordinality() == 0)
+            throw makeStringException(ECLWATCH_MISSING_PARAMS, "No files specified for rename.");
+
+        IArrayOf<IEspDFUFileRenameResult> results;
+        IDistributedFileDirectory &fdir = queryDistributedFileDirectory();
+
+        ForEachItemIn(i, items)
+        {
+            IConstDFUFileRenameItem &item = items.item(i);
+            const char *oldname = item.getOldName();
+            const char *newname = item.getNewName();
+
+            Owned<IEspDFUFileRenameResult> result = createDFUFileRenameResult();
+            result->setOldName(oldname);
+            result->setNewName(newname);
+
+            try
+            {
+                if (isEmptyString(oldname))
+                    throw makeStringException(ECLWATCH_INVALID_INPUT, "DFUFileRename: Old file name cannot be empty.");
+                if (isEmptyString(newname))
+                    throw makeStringException(ECLWATCH_INVALID_INPUT, "DFUFileRename: New file name cannot be empty.");
+
+                PROGLOG("DFUFileRename: Renaming %s to %s", oldname, newname);
+
+                // Use renamePhysical to rename both logical entry and physical files
+                fdir.renamePhysical(oldname, newname, userdesc.get(), nullptr);
+                LOG(MCauditInfo,",FileAccess,WsDfu,RENAME,,%s,%s,%s", username.str(), oldname, newname); // NB: auditing needs to move to DFS (see HPCC-35853)
+
+                result->setSuccess(true);
+                result->setMessage("Successfully renamed.");
+            }
+            catch(IException* e)
+            {
+                StringBuffer msg;
+                e->errorMessage(msg);
+                ERRLOG("DFUFileRename failed for %s to %s: %s", oldname, newname, msg.str());
+                result->setSuccess(false);
+                result->setMessage(msg.str());
+                e->Release();
+            }
+
+            results.append(*result.getClear());
+        }
+
+        resp.setResults(results);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
 const int INTEGELSIZE = 20;
 const int REALSIZE = 32;
 const int STRINGSIZE = 128;

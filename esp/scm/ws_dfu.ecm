@@ -1009,12 +1009,36 @@ ESPresponse [exceptions_inline, nil_remove] DFUMetaInquiryResponse
     ESParray<ESPstruct DFUMetaFieldInfo> Fields;
 };
 
+ESPStruct [version("1.68")] DFUFileRenameItem
+{
+    string OldName;
+    string NewName;
+};
+
+ESPrequest [version("1.68")] DFUFileRenameRequest
+{
+    ESParray<ESPstruct DFUFileRenameItem> FileRenames;
+};
+
+ESPStruct [version("1.68")] DFUFileRenameResult
+{
+    string OldName;
+    string NewName;
+    bool Success;
+    string Message;
+};
+
+ESPresponse [version("1.68"), exceptions_inline, nil_remove] DFUFileRenameResponse
+{
+    [min_ver("1.68")] ESParray<ESPstruct DFUFileRenameResult> Results;
+};
+
 
 //  ===========================================================================
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.67"),
-    default_client_version("1.67"),
+    version("1.68"),
+    default_client_version("1.68"),
     noforms,
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {
@@ -1039,6 +1063,8 @@ ESPservice [
     ESPmethod [auth_feature("DfuAccess:READ")] Savexml(SavexmlRequest, SavexmlResponse);
     ESPmethod [auth_feature("DfuAccess:WRITE")] Add(AddRequest, AddResponse);
     ESPmethod [auth_feature("DfuAccess:WRITE")] AddRemote(AddRemoteRequest, AddRemoteResponse);
+
+    ESPmethod [auth_feature("DfuAccess:WRITE"), min_ver("1.68")] DFUFileRename(DFUFileRenameRequest, DFUFileRenameResponse);
 
     ESPmethod ListHistory(ListHistoryRequest, ListHistoryResponse);
     ESPmethod EraseHistory(EraseHistoryRequest, EraseHistoryResponse);
