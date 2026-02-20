@@ -1,70 +1,78 @@
+# Azure Tips and Tricks
 
-# Azure Portal FAQs
+The following section provides useful suggestions, searches, actions, hints, and prompts to help with navigating and working with Azure, the Azure CLI, and portal.azure.com. This is a living document that will continue to be updated as we expand our cloud journey.
 
-1. **How do I see who created a resource group?**
+## Table of Contents
+- [View Resource Groups](#view-resource-groups)
+- [View Event Details](#view-event-details)
+- [Create a Dashboard in Azure](#create-a-dashboard-in-azure)
 
-**Answer**:
-```
-1. go to the resource group service page (https://portal.azure.com/#view/HubsExtension/BrowseResourceGroups)
-2. "Add filter"
-3. Filter on "Admin"
-4. Set the Value to "ALL" or select the names you are interested in (the names in the list are the only ones that have the Admin tag set)  This works for all other fields that you can filter on
-```
+---
 
+## View Resource Groups
 
-2. **How do I create a dashboard in Azure?**
+To see resource groups in the Azure portal:
 
-**Answer**:
-```
-Login to the Azure portal.
+1. Go to the resource group service page: https://portal.azure.com/#view/HubsExtension/BrowseResourceGroups
+2. Click `Add filter`
+3. Filter on `Admin`
+4. Set the Value to `ALL` or select any names you are interested in
 
-Click on the `hamburger icon`, located at the top left corner of the page.
+**Note**: The names in the list are the only ones that have the Admin tag set. You can also specify to filter on other fields from there.
 
-Click on `Dashboard` to go to your dashboards.
+---
 
-Click on `Create`, located at the top left corner.
+## View Event Details
 
-Click on the `Custom` tile.
+To find who initiated an event or view activity logs:
 
-Edit the input box to name your dashboard.
+1. On the left-hand panel when viewing a resource group, select `Activity Log`
+2. Select `Add filter` → `Event Initiated by`
+3. Adjust the timespan filter as necessary to view the event
 
-Click on `Resource groups` in the tile gallery.
+**Tip**: You can optionally add an `Event category = Administrative` filter for more specific results.
 
-Click `Add`.
+---
 
-Click and drag the `lower right corner` of the tile to resize it to your likings.
+## Create a Dashboard in Azure
 
-Click `Save` to save your settings.
+To create a custom dashboard in Azure:
+
+1. Login to the Azure portal
+2. Click on the `hamburger icon` (located at the top left corner of the page)
+3. Select `Dashboard` to go to your dashboards
+4. Click `Create` (top left corner)
+5. Click on the `Custom` tile
+6. Edit the input box and provide a name for your dashboard
+7. Click on `Resource groups` in the tile gallery
+8. Click `Add`
+9. Click and drag the `lower right corner` of the tile to resize it to your liking
+10. Click `Save` to save your settings
 
 You should now be taken to your new dashboard.
 
-Click on your new dashboard tile.
+### Configure Dashboard Filters
 
-Click on `Add filter`, located at the top center of the page.
+To filter your dashboard by admin/owner:
 
-Click on the `Filter` input box to reveal the tags.
+1. Click on your new dashboard tile
+2. Click on `Add filter` (located at the top center of the page)
+3. Click on the `Filter` input box to reveal the tags
+4. Select the `Admin` tag
+5. Click on the `Value` input box
+6. Click on `Select all` to unselect all
+7. Select your name
+8. Click on `Apply`
 
-Select the `Admin` tag.
+### Save Dashboard View
 
-Click on the `Value` input box.
+To save your customized dashboard view:
 
-Click on `Select all` to unselect all.
+1. Click on `Manage view` (located at the top left of the page)
+2. Select `Save view`
+3. Enter a name for the view in the input box
+4. Click `Save`
 
-Select your name.
+---
 
-Click on `Apply`.
-
-Next, click on `Manage view`, located at the top left of the page.
-
-Select `Save view`.
-
-Enter a name for the view in the input box.
-
-Click `Save`
-
- 
-
- 
-
-Click on `Manage View`, located at the top left of the page
-```
+*This document will be updated regularly with additional tips and tricks as we continue our Azure journey.*
