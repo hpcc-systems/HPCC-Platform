@@ -14227,7 +14227,7 @@ static double getCostCpuHour(const char * subComponentName)
         costCpuHour = getComponentConfigSP()->getPropReal(subComponentSection.str(), -1.0);
         if (costCpuHour >= 0.0)
             return costCpuHour;
-        // Fall though to use global cost values if not found at sub-component level.
+        // Fall though to use global/component cost values if not found at sub-component level.
         // Only non-containerized systems need this, but allowing it for both is harmless and simplifies the code.
     }
     if (getComponentConfigSP()->hasProp("cost/@perCpu"))
