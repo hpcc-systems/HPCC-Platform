@@ -14220,15 +14220,16 @@ extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, unsigned wfid, const char 
 
 static double getCostCpuHour(const char * subComponentName)
 {
+    double costCpuHour = 0.0;
     if (!isEmptyString(subComponentName))
     {
         VStringBuffer subComponentSection("%s/cost/@perCpu", subComponentName);
-        double costCpuHour = getComponentConfigSP()->getPropReal(subComponentSection.str(), -1.0);
-        if (costCpuHour < 0.0)
-            return 0.0;
-        return costCpuHour;
+        costCpuHour = getComponentConfigSP()->getPropReal(subComponentSection.str(), -1.0);
+        if (costCpuHour >= 0.0)
+            return costCpuHour;
+        // Fall though to use global cost values if not found at sub-component level.
+        // Only non-containerized systems need this, but allowing it for both is harmless and simplifies the code.
     }
-    double costCpuHour = 0.0;
     if (getComponentConfigSP()->hasProp("cost/@perCpu"))
         costCpuHour = getComponentConfigSP()->getPropReal("cost/@perCpu");
     else
