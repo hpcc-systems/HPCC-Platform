@@ -586,6 +586,15 @@ sasha:
     #at: "* 2 * * *"
     #clusterlist: "*"
 
+  global-message-housekeeping: {} # NB: no properties defined, use defaults
+    #disabled: true
+    #interval: 24
+    #retentionDays: 30
+    #archiveAfterDays: 14
+    #archivePlane: "sasha"  # Storage plane name (subdirectory 'globalmessages' will be created within the plane)
+    #enableArchiving: false
+    #enableAutoDelete: false
+
 
 dfuserver:
 - name: dfuserver
