@@ -739,6 +739,8 @@ public:
                 continue;
             if (iter.matchFlag(optCloneActiveState, ECLOPT_CLONE_ACTIVE_STATE))
                 continue;
+            if (iter.matchFlag(optDeletePrevious, ECLOPT_DELETE_PREVIOUS)||iter.matchFlag(optDeletePrevious, ECLOPT_DELETE_PREVIOUS_S))
+                continue;
             if (iter.matchFlag(optDontCopyFiles, ECLOPT_DONT_COPY_FILES))
                 continue;
             if (iter.matchFlag(optAllQueries, ECLOPT_ALL))
@@ -796,6 +798,8 @@ public:
         req->setDfsServer(optDaliIP.get());
         req->setSourceProcess(optSourceProcess);
         req->setCloneActiveState(optCloneActiveState);
+        if (optDeletePrevious)
+            req->setActivate(CWUQueryActivationMode_ActivateDeletePrevious);
         req->setOverwriteDfs(optOverwrite);
         req->setUpdateSuperFiles(optUpdateSuperfiles);
         req->setUpdateCloneFrom(optUpdateCloneFrom);
@@ -862,6 +866,7 @@ public:
             "   --daliip=<ip>          Remote Dali DFS to use for copying file information\n"
             "   --source-process       Process cluster to copy files from\n"
             "   --clone-active-state   Make copied queries active if active on source\n"
+            "   -dp, --delete-prev     Delete previously active query\n"
             "   -O, --overwrite        Completely replace existing DFS file information (dangerous)\n"
             "   --update-super-files   Update local DFS super-files if remote DALI has changed\n"
             "   --update-clone-from    Update local clone from location if remote DALI has changed\n"
@@ -887,6 +892,7 @@ private:
     bool optDontCopyFiles;
     bool optAllowForeign;
     bool optAllQueries;
+    bool optDeletePrevious = false;
     bool optSourceSSL = false; //user explicitly turning on SSL for accessing the remote source location (ssl defaults to use SSL if we are hitting ESP via SSL)
     bool optSourceNoSSL = false; //user explicitly turning OFF SSL for accessing the remote source location (ssl defaults to not use SSL if we are not hitting ESP via SSL)
 };
