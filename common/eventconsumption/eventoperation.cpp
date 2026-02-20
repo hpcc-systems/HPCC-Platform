@@ -66,8 +66,44 @@ IEventFilter* CEventConsumingOp::ensureFilter()
     return filter;
 }
 
+const EventFileProperties& CEventConsumingOp::queryIteratorProperties()
+{
+    if (!cachedSource)
+    {
+        // Lazy initialization - create the iterator on first access
+        switch (inputPaths.size())
+        {
+        case 0:
+            throw makeStringExceptionV(0, "No input files specified");
+        case 1:
+            cachedSource.setown(createEventFileIterator(inputPaths.begin()->c_str()));
+            if (!cachedSource)
+                throw makeStringExceptionV(0, "Failed to open event file: %s", inputPaths.begin()->c_str());
+            break;
+        default:
+            {
+                Owned<IEventMultiplexer> multiplexer = createEventMultiplexer(*metaState);
+                cachedSource.set(multiplexer.get());
+                for (const std::string& path : inputPaths)
+                {
+                    Owned<IEventIterator> input = createEventFileIterator(path.c_str());
+                    if (!input)
+                        throw makeStringExceptionV(0, "Failed to open event file: %s", path.c_str());
+                    multiplexer->addSource(*input);
+                }
+            }
+            break;
+        }
+    }
+    return cachedSource->queryFileProperties();
+}
+
 bool CEventConsumingOp::traverseEvents(IEventVisitor& visitor)
 {
+    // Ensure iterator is created and cached
+    (void)queryIteratorProperties();
+
+    // Build visitation chain
     IEventVisitor* visitationHead = &visitor;
     if (filter)
     {
@@ -80,30 +116,15 @@ bool CEventConsumingOp::traverseEvents(IEventVisitor& visitor)
         visitationHead = model;
     }
 
-    Owned<IEventIterator> source;
+    // Add meta collector for single-source case
     Owned<IEventVisitationLink> metaCollector;
-    if (inputPaths.size() > 1)
+    if (inputPaths.size() == 1)
     {
-        Owned<IEventMultiplexer> multiplexer = createEventMultiplexer(*metaState);
-        source.set(multiplexer.get());
-        for (const std::string& path : inputPaths)
-        {
-            Owned<IEventIterator> input = createEventFileIterator(path.c_str());
-            if (!input)
-                throw makeStringExceptionV(0, "Failed to open event file: %s", path.c_str());
-            multiplexer->addSource(*input);
-        }
-    }
-    else
-    {
-        source.setown(createEventFileIterator(inputPaths.begin()->c_str()));
-        if (!source)
-            throw makeStringExceptionV(0, "Failed to open event file: %s", inputPaths.begin()->c_str());
         metaCollector.setown(metaState->getCollector());
         metaCollector->setNextLink(*visitationHead);
         visitationHead = metaCollector;
     }
 
-    visitIterableEvents(*source, *visitationHead);
+    visitIterableEvents(*cachedSource, *visitationHead);
     return true;
 }
