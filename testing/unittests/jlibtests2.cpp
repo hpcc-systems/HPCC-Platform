@@ -1657,12 +1657,13 @@ class IOURingTest : public CppUnit::TestFixture
         CPPUNIT_TEST(testcallbacks);
     CPPUNIT_TEST_SUITE_END();
 
-    class SemCallback final : public IAsyncCallback
+    class SemCallback final : public CSimpleInterfaceOf<IAsyncCallback>
     {
     public:
-        virtual void onAsyncComplete(int result) override
+        virtual bool onAsyncComplete(int result) override
         {
             sem.signal();
+            return true;  // Callback complete, processor will call Release()
         };
 
     public:
