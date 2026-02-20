@@ -1,0 +1,406 @@
+name: Upmerge Test
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - "candidate-*"
+
+jobs:
+  upmerge-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: "Debug Vars"
+        env:
+          PULL_REQUEST_NUMBER : ${{ github.event.pull_request.number }}
+          PULL_REQUEST_TITLE : ${{ github.event.pull_request.title }}
+          PULL_REQUEST_AUTHOR_NAME : ${{ github.event.pull_request.user.login }}
+          PULL_URL: ${{ github.event.pull_request.html_url }}
+          COMMENTS_URL: ${{ github.event.pull_request.comments_url }}
+          BRANCH_NAME: ${{ github.event.pull_request.base.ref }}
+        run: |
+          echo "Pull Request Number: $PULL_REQUEST_NUMBER"
+          echo "Pull Request Title: $PULL_REQUEST_TITLE"
+          echo "Pull Request Author Name: $PULL_REQUEST_AUTHOR_NAME"
+          echo "Pull Request URL: $PULL_URL"
+          echo "Comments URL: $COMMENTS_URL"
+          echo "Branch Name: $BRANCH_NAME"
+      - uses: "actions/setup-python@v5"
+        with:
+          python-version: "3.8"
+      - name: "Install dependencies"
+        run: |
+          set -xe
+          python -VV
+          python -m site
+          python -m pip install --upgrade pip setuptools wheel
+      - name: "Checkout"
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          fetch-tags: true
+      - name: "Configure Git User"
+        run: |
+          git config user.name "HPCC Bot"
+          git config user.email "support@hpccsystems.com"
+      - name: "Add upstream remote"
+        run: |
+          git remote add upstream https://github.com/hpcc-systems/HPCC-Platform.git
+          git fetch upstream --tags
+      - name: "List remotes"
+        run: |
+          echo "Configured git remotes:"
+          git remote -v
+      - name: "Run"
+        env:
+          PULL_REQUEST_NUMBER : ${{ github.event.pull_request.number }}
+          PULL_REQUEST_TITLE : ${{ github.event.pull_request.title }}
+          PULL_REQUEST_AUTHOR_NAME : ${{ github.event.pull_request.user.login }}
+          PULL_URL: ${{ github.event.pull_request.html_url }}
+          COMMENTS_URL: ${{ github.event.pull_request.comments_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH_NAME: ${{ github.event.pull_request.base.ref }}
+        shell: python
+        run: |
+            import os
+            import re
+            import subprocess
+            import time
+            import sys
+            import json
+
+            def extractVersion(versionStr):
+                parts = versionStr.split('.')
+                if len(parts) != 3:
+                    print('Invalid version: ' + versionStr)
+                    sys.exit(1)
+                if parts[2].lower() == 'x':
+                    parts[2] = '0'
+
+                major, minor, point = map(int, parts)
+                return [major, minor, point]
+
+            def getTagVersionForCmd(cmd):
+                versionPattern = re.compile(r".*[^0-9]+([0-9]+\.[0-9]+\.[0-9]+).*")
+
+                # Get latest release version
+                gitTagProcess = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+                (output, err) = gitTagProcess.communicate()
+                gitTagProcessStatus = gitTagProcess.wait()
+
+                if gitTagProcessStatus != 0:
+                    print('Unable to retrieve latest git tag.')
+                    sys.exit(1)
+
+                latestGitTag = str(output)
+
+                versionMatch = versionPattern.match(latestGitTag)
+                if versionMatch:
+                    return extractVersion(versionMatch.group(1))
+                else:
+                    print('Unable to extract version from git tag: ' + latestGitTag + ' expected string format: <prefix>major.minor.point(-patch)?<postfix>')
+                    sys.exit(2)
+
+            def buildBranchString(major, minor):
+                return f"candidate-{major}.{minor}.x"
+
+            def createReleaseTagPattern(projectConfig, major = None, minor = None, point = None):
+                releaseTagPrefix = projectConfig.get('tagPrefix')
+                releaseTagPostfix = projectConfig.get('tagPostfix')
+
+                if releaseTagPrefix is None or releaseTagPostfix is None:
+                    print('Error: PROJECT_CONFIG is missing required fields: tagPrefix and/or tagPostfix')
+                    sys.exit(1)
+
+                releaseTagPattern = releaseTagPrefix
+                if major is not None:
+                    releaseTagPattern += str(major) + '\\.'
+                else:
+                    releaseTagPattern += '[0-9]+\\.'
+
+                if minor is not None:
+                    releaseTagPattern += str(minor) + '\\.'
+                else:
+                    releaseTagPattern += '[0-9]+\\.'
+
+                if point is not None:
+                    releaseTagPattern += str(point) + '(-[0-9]+)?'
+                else:
+                    releaseTagPattern += '[0-9]+(-[0-9]+)?'
+
+                releaseTagPattern += releaseTagPostfix + '$'
+
+                return releaseTagPattern
+
+            def getLatestSemVer(projectConfig, major = None, minor = None, point = None):
+                cmd = "git tag --list --sort=-v:refname | grep -E '" + createReleaseTagPattern(projectConfig, major, minor, point) + "' | head -n 1"
+                return getTagVersionForCmd(cmd)
+
+            def generateUpMergeBranchList(projectConfig, branchName):
+                latestVersion = getLatestSemVer(projectConfig)
+
+                versions = []
+                if branchName == "master":
+                    return versions
+                else:
+                    # Extract candidate branch major / minor version
+                    candidateBranchPattern = re.compile(r"candidate-([0-9]+\.[0-9]+\.([0-9]+|x)).*")
+                    branchVersionMatch = candidateBranchPattern.match(branchName)
+                    branchVersion = extractVersion(branchVersionMatch.group(1))
+
+                    # Get latest release in branch
+                    latestBranchVer = getLatestSemVer(projectConfig, branchVersion[0], branchVersion[1])
+
+                    curMajor = branchVersion[0]
+                    latestMajor = latestVersion[0]
+                    while curMajor <= latestMajor:
+                        latestVersionInMajor = getLatestSemVer(projectConfig, curMajor)
+
+                        curMinor = 0
+                        if curMajor == branchVersion[0]:
+                            # Start upmerge test from the next minor version if we're still in the same major as the branch
+                            curMinor = branchVersion[1] + 2
+
+                        latestMinor = latestVersionInMajor[1]
+
+                        while curMinor <= latestMinor:
+                            latestVersionInMinor = getLatestSemVer(projectConfig, curMajor, curMinor)
+                            versions.append(buildBranchString(latestVersionInMinor[0], latestVersionInMinor[1]))
+                            curMinor += 2
+                        curMajor += 1
+
+                return versions
+
+            def get_merge_conflict(head, target):
+                cmd = [
+                    "git", "merge-tree", "--name-only", head, target
+                ]
+                result = subprocess.run(cmd, capture_output=True, text=True)
+                output = result.stdout
+
+                # Check exit code of the merge-tree command
+                if result.returncode != 0:
+                    return result.stdout
+                else:
+                    return ""
+
+            def getTargetVersionCmake(targetBranch):
+                """Read version.cmake from upstream branch and return parsed version fields."""
+                result = subprocess.run(
+                    ["git", "show", f"upstream/{targetBranch}:version.cmake"],
+                    capture_output=True, text=True
+                )
+                if result.returncode != 0:
+                    print(f"Warning: Could not read version.cmake from upstream/{targetBranch}: {result.stderr}")
+                    return None
+
+                def extract_cmake_var(content, var_name):
+                    pattern = re.compile(rf'set\s*\(\s*{var_name}\s+"?([^"\s)]+)"?\s*\)')
+                    match = pattern.search(content)
+                    return match.group(1) if match else None
+
+                cmake_content = result.stdout
+                return {
+                    "major":    extract_cmake_var(cmake_content, 'HPCC_MAJOR'),
+                    "minor":    extract_cmake_var(cmake_content, 'HPCC_MINOR'),
+                    "point":    extract_cmake_var(cmake_content, 'HPCC_POINT'),
+                    "maturity": extract_cmake_var(cmake_content, 'HPCC_MATURITY'),
+                    "sequence": extract_cmake_var(cmake_content, 'HPCC_SEQUENCE'),
+                }
+
+            def updateVersionCmake(version_info):
+                """Overwrite version.cmake fields to match the target branch."""
+                with open("version.cmake", "r") as f:
+                    content = f.read()
+
+                def replace_cmake_var(text, var_name, value):
+                    if value is None:
+                        return text
+                    pattern = re.compile(rf'(set\s*\(\s*{var_name}\s+)"?[^"\s)]+"?(\s*\))')
+                    return pattern.sub(rf'\g<1>{value}\2', text)
+
+                content = replace_cmake_var(content, 'HPCC_MAJOR',    version_info.get('major'))
+                content = replace_cmake_var(content, 'HPCC_MINOR',    version_info.get('minor'))
+                content = replace_cmake_var(content, 'HPCC_POINT',    version_info.get('point'))
+                content = replace_cmake_var(content, 'HPCC_SEQUENCE', version_info.get('sequence'))
+                if version_info.get('maturity'):
+                    content = replace_cmake_var(content, 'HPCC_MATURITY', f'"{ version_info["maturity"] }"')
+
+                with open("version.cmake", "w") as f:
+                    f.write(content)
+
+            pr = os.environ['PULL_REQUEST_NUMBER']
+            title = os.environ['PULL_REQUEST_TITLE']
+            user = os.environ['PULL_REQUEST_AUTHOR_NAME']
+            pull_url = os.environ['PULL_URL']
+            branch_name = os.environ['BRANCH_NAME']
+
+            # Get project config from environment variable or use default
+            projectConfigJson = os.environ.get('PROJECT_CONFIG')
+            if projectConfigJson:
+                projectConfig = json.loads(projectConfigJson)
+            else:
+                # Fallback to hardcoded config if environment variable is not set
+                print("Warning: PROJECT_CONFIG environment variable not set, using default configuration")
+                projectConfig = {
+                    "projectName": "HPCC",
+                    "projectPrefixes": ["IDE","EPE","HH","HPCC","HD","HSIC","HPCC4J","JDBC","ML","ODBC","TEST","TS","WSSQL"],
+                    "tagPrefix": "community_",
+                    "tagPostfix": ""
+                }
+
+            if not isinstance(projectConfig, dict):
+                print('Error: PROJECT_CONFIG is not a valid JSON object, aborting.')
+                sys.exit(1)
+
+            if 'tagPrefix' not in projectConfig or 'tagPostfix' not in projectConfig:
+                print('Error: PROJECT_CONFIG is missing required fields: tagPrefix and/or tagPostfix')
+                sys.exit(1)
+
+            upmergeBranches = generateUpMergeBranchList(projectConfig, branch_name)
+            upmergeBranches.append("master")
+
+            test_results = {
+                "pr_number": pr,
+                "pr_title": title,
+                "pr_author": user,
+                "pr_url": pull_url,
+                "base_branch": branch_name,
+                "test_timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
+                "branches_tested": [],
+                "conflicts": [],
+                "successful_merges": [],
+                "summary": ""
+            }
+
+            conflicts = []
+            successful_merges = []
+
+            # Remember current head to restore later
+            cmd = ["git", "rev-parse", "HEAD"]
+            current_head = subprocess.run(cmd, capture_output=True, text=True).stdout.strip()
+            print(f"Current HEAD: {current_head}")
+
+            # Loop over upmerge versions and check if an upmerge would cause a conflict
+            for targetBranch in upmergeBranches:
+                print(f"Testing upmerge to {targetBranch}")
+                
+                branch_result = {
+                    "branch": targetBranch,
+                    "version": None,
+                    "status": "unknown",
+                    "conflict_details": None
+                }
+
+                try:
+                    # Sync version.cmake with the target branch to suppress false-positive version conflicts
+                    version_info = getTargetVersionCmake(targetBranch)
+                    if version_info and version_info.get("major"):
+                        branch_result["version"] = f"{version_info['major']}.{version_info['minor']}.{version_info['point']}"
+                        print(f"Syncing version.cmake to {branch_result['version']} to match {targetBranch}")
+                        updateVersionCmake(version_info)
+
+                        add_result = subprocess.run(["git", "add", "version.cmake"], capture_output=True, text=True)
+                        if add_result.returncode != 0:
+                            print(f"Warning: git add failed: {add_result.stderr}")
+
+                        commit_result = subprocess.run(
+                            ["git", "commit", "-m", "Test: sync version.cmake with target branch"],
+                            capture_output=True, text=True
+                        )
+                        if commit_result.returncode != 0:
+                            print(f"Info: git commit skipped (no changes): {commit_result.stderr}")
+                    else:
+                        print(f"Skipping version.cmake sync for {targetBranch} (file not found or unreadable)")
+
+                    # Check if there is a merge conflict
+                    merge_conflict = get_merge_conflict("HEAD", f"upstream/{targetBranch}")
+
+                    if merge_conflict != "":
+                        print(f"Upmerge to {targetBranch} would cause a conflict.")
+                        branch_result["status"] = "conflict"
+                        branch_result["conflict_details"] = merge_conflict
+                        conflicts.append(targetBranch)
+                    else:
+                        print(f"Upmerge to {targetBranch} should succeed.")
+                        branch_result["status"] = "success"
+                        successful_merges.append(targetBranch)
+                        
+                    # Restore head to original state after testing
+                    print(f"Restoring HEAD to {current_head}")
+                    reset_result = subprocess.run(
+                        ["git", "reset", "--hard", current_head], 
+                        capture_output=True, text=True
+                    )
+                    if reset_result.returncode != 0:
+                        print(f"Warning: git reset failed: {reset_result.stderr}")
+                        
+                except Exception as e:
+                    error_msg = f"Error during test: {str(e)}"
+                    print(f"Error testing {targetBranch}: {error_msg}")
+                    sys.exit(1)
+
+                test_results["branches_tested"].append(branch_result)
+
+            test_results["conflicts"] = conflicts
+            test_results["successful_merges"] = successful_merges
+            
+            if conflicts:
+                test_results["summary"] = f"Conflicts detected in {len(conflicts)} branch(es): {', '.join(conflicts)}"
+            else:
+                test_results["summary"] = "No conflicts detected. All upmerge targets can be merged cleanly."
+
+            with open('upmerge-test-results.json', 'w') as f:
+                json.dump(test_results, f, indent=2)
+
+            with open('upmerge-test-summary.txt', 'w') as f:
+                f.write(f"Upmerge Test Results for PR #{pr}\n")
+                f.write(f"Title: {title}\n")
+                f.write(f"Author: {user}\n")
+                f.write(f"Base Branch: {branch_name}\n")
+                f.write(f"Test Time: {test_results['test_timestamp']}\n\n")
+                f.write(f"SUMMARY: {test_results['summary']}\n\n")
+
+                f.write("DETAILED RESULTS:\n")
+                for branch_result in test_results["branches_tested"]:
+                    f.write(f"\n- Branch: {branch_result['branch']}\n")
+                    f.write(f"  Version: {branch_result['version']}\n")
+                    f.write(f"  Status: {branch_result['status']}\n")
+                    if branch_result.get('conflict_details'):
+                        f.write(f"  Conflict Details:\n{branch_result['conflict_details']}\n")
+
+      - name: "Upload Upmerge Test Results"
+        uses: actions/upload-artifact@v4
+        with:
+          name: upmerge-test-results-pr-${{ github.event.pull_request.number }}
+          path: |
+            upmerge-test-results.json
+            upmerge-test-summary.txt
+          retention-days: 30
+
+      - name: "Process Results"
+        shell: python
+        run: |
+            import json
+            import sys
+            import os
+
+            results_file = 'upmerge-test-results.json'
+
+            if not os.path.exists(results_file):
+                print(f"Results file {results_file} not found.")
+                sys.exit(1)
+            with open(results_file, 'r') as f:
+                test_results = json.load(f)
+
+            conflicts = test_results.get('conflicts', [])
+            if not isinstance(conflicts, list):
+                print("Error: 'conflicts' in results file is not a list.")
+                sys.exit(1)
+
+            print(test_results["summary"])
+            if len(conflicts) > 0:
+                sys.exit(1)

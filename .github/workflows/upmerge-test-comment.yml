@@ -1,0 +1,242 @@
+name: Post Upmerge Test Results
+
+on:
+  workflow_run:
+    workflows: ["Upmerge Test"]
+    types: [completed]
+
+jobs:
+  post-comment:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'failure' }}
+    steps:
+      - name: "Download Artifacts"
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+          pattern: "upmerge-test-results-pr-*"
+          merge-multiple: true
+          path: artifacts/
+
+      - name: "Setup Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.8"
+
+      - name: "Install Dependencies"
+        run: pip install jsonschema
+
+      - name: "Process Results and Post Comment"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
+          WORKFLOW_RUN_PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+        shell: python
+        run: |
+          import os
+          import json
+          import sys
+          import subprocess
+          from pathlib import Path
+          from jsonschema import validate, ValidationError
+          
+          # Define the JSON schema for validation
+          UPMERGE_TEST_SCHEMA = {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "title": "Upmerge Test Results",
+              "type": "object",
+              "required": [
+                  "pr_number",
+                  "pr_title", 
+                  "pr_author",
+                  "pr_url",
+                  "base_branch",
+                  "test_timestamp",
+                  "branches_tested",
+                  "conflicts",
+                  "successful_merges",
+                  "summary"
+              ],
+              "properties": {
+                  "pr_number": {
+                      "type": ["string"]
+                  },
+                  "pr_title": {
+                      "type": "string"
+                  },
+                  "pr_author": {
+                      "type": "string"
+                  },
+                  "pr_url": {
+                      "type": "string"
+                  },
+                  "base_branch": {
+                      "type": "string"
+                  },
+                  "test_timestamp": {
+                      "type": "string"
+                  },
+                  "branches_tested": {
+                      "type": "array",
+                      "items": {
+                          "type": "object",
+                          "required": ["branch", "version", "status", "conflict_details"],
+                          "properties": {
+                              "branch": {"type": "string"},
+                              "version": {"type": "string"},
+                              "status": {"type": "string"},
+                              "conflict_details": {"type": ["string", "null"]}
+                          }
+                      }
+                  },
+                  "conflicts": {
+                      "type": "array",
+                      "items": {"type": "string"}
+                  },
+                  "successful_merges": {
+                      "type": "array", 
+                      "items": {"type": "string"}
+                  },
+                  "summary": {
+                      "type": "string"
+                  }
+              },
+              "additionalProperties": False
+          }
+          def find_results_files():
+              artifacts_path = Path('artifacts')
+              
+              if not artifacts_path.exists():
+                  print('Artifacts directory not found')
+                  return None, None
+              
+              files = list(artifacts_path.iterdir())
+              print(f'Available files: {[f.name for f in files]}')
+              
+              results_file = None
+              summary_file = None
+              
+              for file in files:
+                  if file.name.endswith('upmerge-test-results.json'):
+                      results_file = file
+                  elif file.name.endswith('upmerge-test-summary.txt'):
+                      summary_file = file
+              
+              return results_file, summary_file
+          def load_test_results(results_file):
+              try:
+                  with open(results_file, 'r') as f:
+                      data = json.load(f)
+                  
+                  # Validate the data against the schema
+                  validate(instance=data, schema=UPMERGE_TEST_SCHEMA)
+                
+                  # Ensure pr_number is a string of digits only
+                  data['pr_number'] = ''.join(filter(str.isdigit, str(data.get('pr_number', ''))))
+
+                  print('Schema validation passed for test results')
+                  return data
+                  
+              except json.JSONDecodeError as e:
+                  print(f'Error: Invalid JSON in results file: {e}')
+                  sys.exit(1)
+              except ValidationError as e:
+                  print(f'Error: Schema validation failed: {e.message}')
+                  print(f'Failed at path: {" -> ".join(str(p) for p in e.absolute_path)}')
+                  print('Test results do not match expected schema. Please check the upmerge test workflow.')
+                  sys.exit(1)
+              except Exception as e:
+                  print(f'Error loading results file: {e}')
+                  sys.exit(1)
+          def build_comment_body(test_results):
+              pr_number = test_results.get('pr_number', 'unknown')
+
+              conflicts = test_results.get('conflicts', [])
+              successful_merges = test_results.get('successful_merges', [])
+              # if conflicts is empty, we assume all branches merged successfully
+              if not conflicts and successful_merges:
+                  comment_body = "## 🔄 Upmerge Test Results\n\n"
+                  comment_body += "**Status**: ✅ All branches merged successfully\n"
+                  comment_body += f"**PR**: #{pr_number} - {test_results.get('pr_title', 'Unknown')}\n"
+                  comment_body += f"**Base Branch**: `{test_results.get('base_branch', 'unknown')}`\n"
+                  comment_body += f"**Test Time**: {test_results.get('test_timestamp', 'unknown')}\n\n"
+                  comment_body += f"### ✅ Successful Branches ({len(successful_merges)})\n\n"
+                  for branch in successful_merges:
+                      comment_body += f"- `{branch}`\n"
+                  comment_body += "*This comment was automatically generated by the upmerge test workflow.*"
+              elif conflicts:
+                  comment_body = "## 🔄 Upmerge Test Results\n\n"
+                  comment_body += "**Status**: ❌ Conflicts detected\n"
+                  comment_body += f"**PR**: #{pr_number} - {test_results.get('pr_title', 'Unknown')}\n"
+                  comment_body += f"**Base Branch**: `{test_results.get('base_branch', 'unknown')}`\n"
+                  comment_body += f"**Test Time**: {test_results.get('test_timestamp', 'unknown')}\n\n"
+                  comment_body += "**How To Resolve**❗: Create a PR against conflicting branches and resolve the conflict manually, "
+                  comment_body += "after the conflicts have been resolved rerun the Upmerge test.\n\n"
+                  comment_body += f"### ❌ Conflicting Branches ({len(conflicts)})\n\n"
+                  for conflict in conflicts:
+                      comment_body += f"- `{conflict}`\n"
+                  comment_body += "*This comment was automatically generated by the upmerge test workflow.*"
+              else:
+                  comment_body = "## 🔄 Upmerge Test Results\n\n"
+                  comment_body += "**Status**: ❌ Upmerge test failed\n"
+                  comment_body += "No branches conflicted or merged successfully.\n"
+                  comment_body += "*This comment was automatically generated by the upmerge test workflow.*"
+              return comment_body
+          def post_github_comment(pr_number, comment_body):
+              comments_url = f'https://api.github.com/repos/{os.environ["GITHUB_REPOSITORY"]}/issues/{pr_number}/comments'
+              result = json.dumps(comment_body)
+              # Run the curl command and return true if successful
+              result = subprocess.run(['curl', '-X', 'POST', comments_url, '-H', 'Content-Type: application/json', '-H', f'Authorization: token {os.environ["GITHUB_TOKEN"]}', '--data', f'{{ "body": {result} }}'], check=True)
+              return result.returncode == 0
+          def post_fallback_comment(pr_number, error):
+              fallback_comment = (
+                  "## 🔄 Upmerge Test Results\n\n"
+                  "**Status**: ❌ Test failed\n"
+                  "**How To Resolve**❗: Check the upmerge test workflow logs and artifacts for more information. "
+                  f"**Error**: {error}\n\n"
+                  "*This comment was automatically generated by the upmerge test workflow.*"
+              )
+              
+              return post_github_comment(pr_number, fallback_comment)
+          try:
+              results_file, summary_file = find_results_files()
+              
+              if not results_file:
+                  print('No upmerge test results found - workflow may have failed before generating results.')
+                  # Try to get PR number from environment and post fallback
+                  pr_number = os.environ.get('WORKFLOW_RUN_PR_NUMBER')
+                  if pr_number:
+                      error = "Could not process upmerge test results\n\n"
+                      error += "The upmerge test workflow failed, but detailed results could not be parsed. "
+                      error += "Please check the workflow logs and artifacts for more information.\n\n"
+                      post_fallback_comment(pr_number, error)
+                  sys.exit(0)
+              
+              print(f'Found results file: {results_file.name}')
+              
+              test_results = load_test_results(results_file)
+              
+              print(f'Test results loaded: {json.dumps(test_results, indent=2)}')
+              
+              pr_number = test_results.get('pr_number') or os.environ.get('WORKFLOW_RUN_PR_NUMBER')
+              if not pr_number:
+                  print('Could not determine PR number, cannot post comment.')
+                  sys.exit(1)
+              
+              comment_body = build_comment_body(test_results)
+              success = post_github_comment(pr_number, comment_body)
+              
+              if not success:
+                  print('Failed to post comment to PR, exiting.')
+                  sys.exit(1)
+          except Exception as e:
+              print(f'Error processing results: {e}')
+              
+              pr_number = os.environ.get('WORKFLOW_RUN_PR_NUMBER')
+              if pr_number:
+                  error = f"Could not process upmerge test results, with error {e}\n\n"
+                  post_fallback_comment(pr_number, error)
+              
+              sys.exit(1)
