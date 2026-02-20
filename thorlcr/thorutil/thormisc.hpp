@@ -626,6 +626,7 @@ extern graph_decl void reportExceptionToWorkunit(IConstWorkUnit &workunit, IExce
 extern graph_decl void reportExceptionToWorkunitCheckIgnore(IConstWorkUnit &workunit, IException *e, ErrorSeverity severity = SeverityWarning);
 
 extern graph_decl Owned<IPropertyTree> globals;
+extern graph_decl Owned<IPropertyTree> globalsLive;
 extern graph_decl mptag_t managerWorkerMpTag;
 extern graph_decl mptag_t kjServiceMpTag;
 enum SlaveMsgTypes : unsigned
