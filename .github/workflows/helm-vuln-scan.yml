@@ -1,0 +1,304 @@
+name: Helm Charts Vulnerability Scan (CVE only)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ master, 'candidate-*' ]
+    paths: [ 'helm/**', '.github/workflows/helm-vuln-scan.yml' ]
+
+permissions:
+  contents: read
+
+jobs:
+  trivy-cve-scan:
+    name: Vulnerability-only scan of images referenced by changed Helm charts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          # Needed to diff the PR against the base
+          fetch-depth: 0
+
+      - name: Set up Helm
+        uses: azure/setup-helm@2833f271e96f6732549873fe4c1d6b54d876d4be # v4
+
+      # Install Trivy CLI once; we'll call it in a loop.
+      # (Recommended in the Trivy Action README under "Trivy Setup".)
+      - name: Set up Trivy (CLI)
+        uses: aquasecurity/setup-trivy@4f34b62fa5e0e9b3e0a147bb756a2979270d134f # v0.2.0
+        with:
+          cache: true
+          # version: v0.69.1  # optional pin
+
+      - name: Ensure jq is available
+        run: |
+          if ! command -v jq >/dev/null 2>&1; then
+            sudo apt-get update -y
+            sudo apt-get install -y jq
+          fi
+
+      - name: Identify changed/added Helm charts in PR
+        id: changed_charts
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          if [[ "${GITHUB_EVENT_NAME}" != "pull_request" ]]; then
+            echo "Not a PR event; defaulting to all charts under helm/."
+            mapfile -t CHART_DIRS < <(find helm -type f -name Chart.yaml -printf '%h\n' | sort -u)
+          else
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            BASE_REF="${{ github.base_ref }}"
+
+            # Ensure we have the base ref (handle both branch ref and explicit SHA)
+            git fetch --no-tags --prune --depth=2 origin "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}" || true
+            git fetch --no-tags --prune --depth=1 origin "${BASE_SHA}:${BASE_SHA}" || true
+
+            # List files Added/Modified under helm/** between base and HEAD
+            mapfile -t CHANGED < <(git diff --diff-filter=AM --name-only "${BASE_SHA}...HEAD" -- 'helm/**' || true)
+
+            if [[ ${#CHANGED[@]} -eq 0 ]]; then
+              echo "No changed/added files under helm/**."
+              echo "charts=" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            # Walk up from each changed file to the nearest directory containing Chart.yaml
+            declare -A CHART_SET=()
+            for f in "${CHANGED[@]}"; do
+              dir="$(dirname "$f")"
+              while [[ "$dir" != "." && "$dir" != "/" ]]; do
+                if [[ -f "$dir/Chart.yaml" ]]; then
+                  CHART_SET["$dir"]=1
+                  break
+                fi
+                dir="$(dirname "$dir")"
+              done
+            done
+
+            if [[ ${#CHART_SET[@]} -eq 0 ]]; then
+              echo "No owning charts found for changed files."
+              echo "charts=" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            mapfile -t CHART_DIRS < <(printf "%s\n" "${!CHART_SET[@]}" | sort -u)
+          fi
+
+          printf "Changed/added charts to scan:\n"
+          printf " - %s\n" "${CHART_DIRS[@]}"
+
+          # Output as space-separated list
+          echo "charts=$(printf '%s ' "${CHART_DIRS[@]}")" >> "$GITHUB_OUTPUT"
+
+      - name: Render charts and collect images + mapping
+        id: collect
+        if: steps.changed_charts.outputs.charts != ''
+        shell: bash
+        env:
+          CHARTS: ${{ steps.changed_charts.outputs.charts }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          TMP_IMAGES="$(mktemp)"
+          MAP_FILE="image_chart_map.csv"   # CSV: image,chart_dir
+          : > "${MAP_FILE}"
+
+          # Helper to parse chart 'name:' from Chart.yaml (best-effort)
+          chart_name() {
+            awk 'tolower($1)=="name:" {print $2; exit}' "$1" 2>/dev/null || true
+          }
+
+          for chart in ${CHARTS}; do
+            echo "::group::Template chart: ${chart}"
+            helm dependency build "${chart}" || true
+
+            # Decide the Helm release name for templating:
+            # - If this is the eck chart (path or chart name match), force 'eck-apm'
+            # - Otherwise, use the chart directory name (stable default)
+            rel_name="$(basename "${chart}")"
+            c_name="$(chart_name "${chart}/Chart.yaml")"
+
+            if [[ "${chart}" == *"/managed/observability/eck" ]] || [[ "${c_name}" == "eck4hpccobservability" ]]; then
+              rel_name="eck-apm"
+            fi
+
+            # Render manifests with the chosen release name and extract image refs
+            while IFS= read -r img; do
+              # Strip quotes if any
+              img="${img%\"}"; img="${img#\"}"
+              img="${img%\'}"; img="${img#\'}"
+              [[ -z "$img" ]] && continue
+              echo "$img" >> "${TMP_IMAGES}"
+              printf "%s,%s\n" "$img" "$chart" >> "${MAP_FILE}"
+            done < <(
+              # Set .Release.Name via the first positional arg to 'helm template'
+              helm template "${rel_name}" "${chart}" \
+                | grep -hoE 'image:\s*[^[:space:]]+' \
+                | awk '{print $2}'
+            )
+            echo "::endgroup::"
+          done
+
+          if [[ ! -s "${TMP_IMAGES}" ]]; then
+            echo "No container images referenced by the changed charts."
+            echo "images=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # De-duplicate image list
+          sort -u "${TMP_IMAGES}" -o "${TMP_IMAGES}"
+          echo "Images to scan:"
+          cat "${TMP_IMAGES}"
+
+          # Expose outputs for next step
+          echo "images=$(tr '\n' ' ' < "${TMP_IMAGES}")" >> "$GITHUB_OUTPUT"
+          echo "map_file=${MAP_FILE}" >> "$GITHUB_OUTPUT"
+
+      - name: Scan images for CVEs (CRITICAL-gated; HIGH informational)
+        if: steps.collect.outputs.images != ''
+        shell: bash
+        env:
+          IMAGES: ${{ steps.collect.outputs.images }}
+          MAP_FILE: ${{ steps.collect.outputs.map_file }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          # Build a rich Markdown summary and emit compact error annotations.
+          # Gate on CRITICAL only; HIGH is informational.
+          #
+          # Trivy flags used (per docs): --scanners vuln, --pkg-types os,library, --format json, --quiet.
+          # These limit results to CVEs and make parsing reliable.
+          set -euo pipefail
+
+          SUMMARY="${GITHUB_STEP_SUMMARY}"
+          : > trivy-summary.md  # also uploaded as artifact
+
+          CRIT_TMP="$(mktemp)"
+          HIGH_TMP="$(mktemp)"
+          EXIT=0
+
+          for image in ${IMAGES}; do
+            echo "::group::Trivy vulnerability scan: ${image}"
+
+            # Skip templated/placeholder refs if any slipped through
+            if [[ "${image}" == *"{{"* ]]; then
+              echo "Skipping templated image ref: ${image}"
+              echo "::endgroup::"
+              continue
+            fi
+            if [[ "${image}" == "<"* ]] && [[ "${image}" == *">" ]]; then
+              echo "Skipping placeholder image ref: ${image}"
+              echo "::endgroup::"
+              continue
+            fi
+
+            REPORT="$(mktemp --suffix=.json)"
+            if ! trivy image \
+              --scanners vuln \
+              --pkg-types os,library \
+              --format json \
+              --quiet \
+              "${image}" > "${REPORT}"; then
+              echo "WARNING: Trivy returned non-zero for ${image}, continuing."
+              echo '{"Results":[]}' > "${REPORT}"
+            fi
+
+            # Find source chart(s) and a primary chart file for annotation
+            CHARTS=$(awk -F',' -v img="$image" '$1==img {print $2}' "${MAP_FILE}" | sort -u | tr '\n' ', ' | sed 's/, $//')
+            [[ -z "${CHARTS}" ]] && CHARTS="(unknown chart)"
+            PRIMARY_CHART=$(awk -F',' -v img="$image" '$1==img {print $2}' "${MAP_FILE}" | sort -u | head -n 1)
+            ANN_FILE="${PRIMARY_CHART}/Chart.yaml"
+            [[ -f "${ANN_FILE}" ]] || ANN_FILE="${PRIMARY_CHART}"
+
+            # Collect CRITICAL rows (gated)
+            CRIT_COUNT=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length' "${REPORT}" 2>/dev/null || echo "0")
+            if [[ "${CRIT_COUNT}" -gt 0 ]]; then
+              EXIT=1
+              {
+                echo "### Image: \`${image}\`"
+                echo "- **Source chart(s):** ${CHARTS}"
+                echo ""
+                echo "| CVE | Package | Installed | Fixed | Title |"
+                echo "|---|---|---|---|---|"
+                jq -r '
+                  .Results[]?.Vulnerabilities[]?
+                  | select(.Severity=="CRITICAL")
+                  | "| \(.VulnerabilityID) | \(.PkgName) | \(.InstalledVersion) | \((.FixedVersion // "n/a")) | \((.Title // "")) |"
+                ' "${REPORT}" 2>/dev/null || echo "| Error parsing vulnerabilities | - | - | - | - |"
+                echo ""
+              } >> "${CRIT_TMP}"
+
+              TOP_CVE=$(jq -r '
+                .Results[]?.Vulnerabilities[]?
+                | select(.Severity=="CRITICAL")
+                | .VulnerabilityID
+              ' "${REPORT}" 2>/dev/null | head -n 1 || echo "UNKNOWN")
+
+              # Compact error annotation with chart + run link
+              echo "::error file=${ANN_FILE}::CRITICAL CVEs (${CRIT_COUNT}) in ${image} from chart(s): ${CHARTS}. Example: ${TOP_CVE}. Details: ${RUN_URL}"
+            fi
+
+            # Collect HIGH rows (informational)
+            HIGH_COUNT=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="HIGH")] | length' "${REPORT}" 2>/dev/null || echo "0")
+            if [[ "${HIGH_COUNT}" -gt 0 ]]; then
+              {
+                echo "### Image: \`${image}\`"
+                echo "- **Source chart(s):** ${CHARTS}"
+                echo ""
+                echo "| CVE | Package | Installed | Fixed | Title |"
+                echo "|---|---|---|---|---|"
+                jq -r '
+                  .Results[]?.Vulnerabilities[]?
+                  | select(.Severity=="HIGH")
+                  | "| \(.VulnerabilityID) | \(.PkgName) | \(.InstalledVersion) | \((.FixedVersion // "n/a")) | \((.Title // "")) |"
+                ' "${REPORT}" 2>/dev/null || echo "| Error parsing vulnerabilities | - | - | - | - |"
+                echo ""
+              } >> "${HIGH_TMP}"
+            fi
+
+            echo "::endgroup::"
+          done
+
+          # Compose the Step Summary with two sections
+          {
+            echo "# Helm Chart Vulnerability Summary"
+            echo ""
+            echo "- **Scope:** Only charts changed/added in this PR"
+            echo "- **Gating policy:** Fail on **CRITICAL** only; **HIGH** is informational"
+            echo "- **Run URL:** ${RUN_URL}"
+            echo ""
+            echo "## CRITICAL Findings (cause failure)"
+            echo ""
+            if [[ -s "${CRIT_TMP}" ]]; then
+              cat "${CRIT_TMP}"
+            else
+              echo "_No CRITICAL findings._"
+              echo ""
+            fi
+            echo "## HIGH Findings (informational)"
+            echo ""
+            if [[ -s "${HIGH_TMP}" ]]; then
+              cat "${HIGH_TMP}"
+            else
+              echo "_No HIGH findings._"
+              echo ""
+            fi
+          } | tee "${SUMMARY}" trivy-summary.md >/dev/null
+
+          # Fail at the end only if CRITICAL findings exist
+          if [[ "${EXIT}" -ne 0 ]]; then
+            echo "::error::CRITICAL vulnerabilities detected. See Step Summary above or ${RUN_URL}"
+            exit 1
+          fi
+
+      - name: Upload Trivy summary (artifact)
+        if: always()
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c6f6e2b83a2c99 # v4.4.1
+        with:
+          name: trivy-summary
+          path: trivy-summary.md
+          retention-days: 7
