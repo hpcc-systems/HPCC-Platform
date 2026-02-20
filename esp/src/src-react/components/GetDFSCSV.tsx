@@ -49,7 +49,7 @@ export const GetDFSCSV: React.FunctionComponent<GetDFSCSVProps> = ({
             "LogicalNameMask": { label: nlsHPCC.LogicalNameMask, type: "string", value: logicalNameMask },
         }} onChange={(id, value) => {
             setLogicalNameMask(value);
-        }} /><DefaultButton onClick={onSubmit} text={nlsHPCC.Submit} /></span>}
+        }} onSubmit={onSubmit} /><DefaultButton onClick={onSubmit} text={nlsHPCC.Submit} /></span>}
         main={<SizeMe>{({ size }) => {
             const height = `${size.height}px`;
             return <div style={{ position: "relative", width: "100%", height: "100%" }}>
