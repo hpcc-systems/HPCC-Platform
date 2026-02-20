@@ -14,8 +14,8 @@ p3 := ds(line[1]='!') : persist(prefix + 'persist_gh3',multiple(10));
 
 p4 := ds(line[1] = ' ') : persist(prefix + 'persist_gh4');
 
-lfl1 := File.LogicalFileList(prefix + 'persist_gh*');
-delall := NOTHOR(APPLY(lfl1,File.DeleteLogicalFile(name, true)));
+lfl1 := File.LogicalFileListFiltered(prefix + 'persist_gh*');
+delall := NOTHOR(APPLY(lfl1.files, File.DeleteLogicalFile(name, true)));
 
 sequential(
     delall,

@@ -21,6 +21,23 @@ export FsFilenameRecord := record string name{maxlength(1023)}; integer8 size; s
 export FsLogicalFileName := string{maxlength(255)};
 export FsLogicalFileNameRecord := record FsLogicalFileName name; end;
 export FsLogicalFileInfoRecord := record(FsLogicalFileNameRecord) boolean superfile; integer8 size; integer8 rowcount; string19 modified; string owner{maxlength(255)}; string cluster{maxlength(255)}; end;
+export FsLogicalFileInfoRecordEx := record(FsLogicalFileInfoRecord)
+    varstring description;
+    varstring workunit;
+    varstring job;
+    varstring directory;
+    boolean compressed;
+    integer4 recordsize;
+    varstring kind;
+    integer8 compressedsize;
+    boolean persistent;
+    varstring protect;
+    string19 accessed;
+    integer4 expiredays;
+    real8 readcost;
+    real8 writecost;
+end;
+export FsLogicalFileListResult := record unsigned4 count; boolean limitBreached; dataset(FsLogicalFileInfoRecordEx) files; end;
 export FsLogicalSuperSubRecord := record string supername{maxlength(255)}; string subname{maxlength(255)}; end;
 export FsFileRelationshipRecord := record  string primaryfile   {maxlength(1023)}; string secondaryfile {maxlength(1023)}; string primaryflds   {maxlength(1023)}; string secondaryflds {maxlength(1023)}; string kind {maxlength(16)}; string cardinality   {maxlength(16)}; boolean payload; string description   {maxlength(1023)}; end;
 export integer4 RECFMV_RECSIZE := -2; // special value for SprayFixed record size
@@ -79,6 +96,7 @@ export FileServices := SERVICE : plugin('fileservices'), time
   SetFileDescription(const varstring lfn,const varstring val) : c,action,context,entrypoint='fsSetFileDescription';
   dataset(FsFilenameRecord) RemoteDirectory(const varstring machineIP,const varstring dir,const varstring mask='*',boolean sub=false,const varstring planeName='') : c,context,entrypoint='fsRemoteDirectory_v2';
   dataset(FsLogicalFileInfoRecord) LogicalFileList(const varstring namepattern='*',boolean includenormal=true,boolean includesuper=false,boolean unknownszero=false,const varstring foreigndali='') : c,context,entrypoint='fsLogicalFileList';
+  _linkcounted_ ROW(FsLogicalFileListResult) LogicalFileListFiltered(const varstring namepattern='*',const varstring filters='',const varstring fields='',boolean unknownszero=false,const varstring remoteDfs='',integer8 maxFileLimit=-1) : c,context,entrypoint='fsLogicalFileListFiltered';
   dataset(FsLogicalFileNameRecord) SuperFileContents(const varstring lsuperfn,boolean recurse=false) : c,context,entrypoint='fsSuperFileContents';
   dataset(FsLogicalFileNameRecord) LogicalFileSuperOwners(const varstring lfn) : c,context,entrypoint='fsLogicalFileSuperOwners';
   varstring ExternalLogicalFileName(const varstring location, const varstring path,boolean abspath=true) : c,entrypoint='fsExternalLogicalFileName';
