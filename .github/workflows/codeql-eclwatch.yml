@@ -26,6 +26,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
 jobs:
   pre_job:
     runs-on: ubuntu-latest
@@ -38,6 +43,76 @@ jobs:
         with:
           github_token: ${{ github.token }}
 
+  precheck-branch-changes:
+    runs-on: ubuntu-latest
+    env:
+      EVENT_ACTION: ${{ github.event.action }}
+      GH_TOKEN: ${{ github.token }}
+    outputs:
+      branch_changed: ${{ steps.branch_changed.outputs.branch_changed }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fetch previous commit tip (for force-push / amend detection)
+        if: ${{ github.event.action == 'synchronize' }}
+        run: |
+          echo "Fetching old tip commit: ${{ github.event.before }}"
+          git fetch origin ${{ github.event.before }} --depth=1 || true
+      - name: Check if previous run failed
+        id: check_previous_run
+        if: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' }}
+        run: |
+          WORKFLOW_FILE="codeql-eclwatch.yml"
+          PREV_RUN=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "/repos/${{ github.repository }}/actions/workflows/${WORKFLOW_FILE}/runs?per_page=100&branch=${{ github.head_ref }}" \
+            --jq ".workflow_runs[] | select(.head_sha == \"${{ github.event.before }}\" and .event == \"pull_request\") | .conclusion" \
+            | head -n 1)
+          echo "Previous run conclusion: ${PREV_RUN:-none}"
+          if [[ "$PREV_RUN" == "failure" || "$PREV_RUN" == "cancelled" || "$PREV_RUN" == "timed_out" ]]; then
+            echo "Previous run failed or was cancelled. Will not skip."
+            echo "prev_failed=true" >> $GITHUB_OUTPUT
+          else
+            echo "prev_failed=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Check for Code Changes between Commits
+        id: branch_changed
+        run: |
+          echo "Checking for code changes between base and head commits..."
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            echo "Not a pull request event. Treating as changed."
+            echo "branch_changed=true" >> $GITHUB_OUTPUT
+          elif [[ "$EVENT_ACTION" == "opened" ]]; then
+            echo "This is a new pull request with no previous commit. Treating as changed."
+            echo "branch_changed=true" >> $GITHUB_OUTPUT
+          elif [[ "$EVENT_ACTION" == "synchronize" ]]; then
+            OLD_SHA="${{ github.event.before }}"
+            NEW_SHA="${{ github.event.after }}"
+            # PREV_FAILED is only meaningful for synchronize events; the
+            # "Check if previous run failed" step is also conditioned on
+            # github.event.action == 'synchronize', so its output is only
+            # expected to be set in this branch.
+            PREV_FAILED=${{ steps.check_previous_run.outputs.prev_failed }}
+            if git diff --quiet "$OLD_SHA" "$NEW_SHA"; then
+              if [[ "$PREV_FAILED" == "true" ]]; then
+                echo "No code changes detected, but previous run failed. Re-Running."
+                echo "branch_changed=true" >> $GITHUB_OUTPUT
+              else
+                echo "branch_changed=false" >> $GITHUB_OUTPUT
+                echo "No code changes detected (metadata only). Skipping build and tests."
+              fi
+            else
+              echo "branch_changed=true" >> $GITHUB_OUTPUT
+              echo "Branches have changes."
+            fi
+          else
+            echo "Unhandled event action: $EVENT_ACTION. Defaulting to changed."
+            echo "branch_changed=true" >> $GITHUB_OUTPUT
+          fi
+  
   analyze:
     name: Analyze
 
@@ -49,8 +124,8 @@ jobs:
         # Learn more:
         # https://docs.github.com/en/free-pro-team@latest/github/finding-security-vulnerabilities-and-errors-in-your-code/configuring-code-scanning#changing-the-languages-that-are-analyzed
 
-    needs: pre_job
-    if: ${{ needs.pre_job.outputs.eclwatch && github.repository == 'hpcc-systems/HPCC-Platform' }}
+    needs: [precheck-branch-changes, pre_job]
+    if: ${{ needs.pre_job.outputs.eclwatch && needs.precheck-branch-changes.outputs.branch_changed == 'true' && github.repository == 'hpcc-systems/HPCC-Platform' }}
     runs-on: ubuntu-latest
 
     steps:
