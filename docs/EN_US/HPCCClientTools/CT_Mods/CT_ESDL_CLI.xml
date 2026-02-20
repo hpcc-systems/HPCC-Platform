@@ -24,13 +24,21 @@
     <sect1 id="The_ESDL_Command_Syntax" role="nobrk">
       <title>The ESDL Command Syntax</title>
 
+      <para>The <command>esdl</command> utility tool aids with creating and
+      managing ESDL-based and Dynamic ESDL services on an HPCC cluster. It
+      provides commands for generating artifacts (such as XML, ECL, XSD, WSDL,
+      Java, C++), managing and publishing ESDL definitions and bindings, and
+      advanced configuration using manifest files and log transforms. Each
+      command is documented in detail in the sections below.</para>
+
       <sect2 id="esdl_command_syntax">
         <title><emphasis role="bold">esdl [</emphasis>--version<emphasis
         role="bold">]</emphasis> &lt;command&gt; <emphasis
         role="bold">[</emphasis>&lt;options&gt;<emphasis
         role="bold">]</emphasis></title>
 
-        <para/>
+        <para><emphasis role="bold">Output Generating ESDL
+        Definitions</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
@@ -39,18 +47,6 @@
             <colspec/>
 
             <tbody>
-              <row>
-                <entry><emphasis>--version</emphasis></entry>
-
-                <entry>displays version info.</entry>
-              </row>
-
-              <row>
-                <entry><emphasis>help &lt;commmand&gt;</emphasis></entry>
-
-                <entry>displays help for the specified command.</entry>
-              </row>
-
               <row>
                 <entry>xml</entry>
 
@@ -74,7 +70,20 @@
 
                 <entry>Generate WSDL from ESDL definition.</entry>
               </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
 
+        <para><emphasis role="bold">ESDL and DESDL Service
+        Managing</emphasis></para>
+
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec align="left" colwidth="125.55pt"/>
+
+            <colspec/>
+
+            <tbody>
               <row>
                 <entry>publish</entry>
 
@@ -1522,8 +1531,424 @@
         <para><emphasis role="bold">Example:</emphasis></para>
 
         <programlisting>esdl get-binding  myesp.8003.MathService -s nnn.nnn.nnn.nnn -p 8010</programlisting>
+      </sect2>
 
-        <para/>
+      <sect2 id="esdl_manifest_command">
+        <title>esdl manifest</title>
+
+        <para><emphasis role="bold">esdl manifest &lt;manifest-file&gt;
+        [options]</emphasis></para>
+
+        <table frame="all">
+          <title>Command Line Options</title>
+
+          <tgroup cols="2">
+            <colspec colname="opt"/>
+
+            <colspec colname="desc"/>
+
+            <thead>
+              <row>
+                <entry>Option</entry>
+
+                <entry>Description</entry>
+              </row>
+            </thead>
+
+            <tbody>
+              <row>
+                <entry>-I | --include-path &lt;path&gt;</entry>
+
+                <entry>Search path for external files included in the
+                manifest. Use once for each path.</entry>
+              </row>
+
+              <row>
+                <entry>--outfile &lt;filename&gt;</entry>
+
+                <entry>Path and name of the output file.</entry>
+              </row>
+
+              <row>
+                <entry>--output-type &lt;type&gt;</entry>
+
+                <entry>Overrides the value supplied in the manifest attribute
+                Manifest/@outputType. Allowed values are 'binding' or
+                'bundle'. Default is 'bundle'.</entry>
+              </row>
+
+              <row>
+                <entry>--help</entry>
+
+                <entry>Display usage information for the given
+                command.</entry>
+              </row>
+
+              <row>
+                <entry>-v, --verbose</entry>
+
+                <entry>Output additional tracing information.</entry>
+              </row>
+
+              <row>
+                <entry>-tcat, --trace-category &lt;flags&gt;</entry>
+
+                <entry>Control which debug messages are output; a
+                case-insensitive, comma-delimited combination of: dev, admin,
+                user, err, warn, prog, info. Errors and warnings are enabled
+                by default if not verbose, and all are enabled when verbose.
+                Use an empty &lt;flags&gt; value to disable all.</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </table>
+
+        <para>The <command>manifest</command> command creates an XML
+        configuration file for an ESDL ESP from an input XML manifest file.
+        The type of configuration output depends on the manifest file input
+        and on command-line options.</para>
+
+        <sect3 id="esdl_manifest_file">
+          <title>The Manifest File</title>
+
+          <para>A manifest file is an XML-formatted template combining
+          elements in and outside of the manifest's
+          <literal>urn:hpcc:esdl:manifest</literal> namespace. Recognized
+          elements of this namespace control the tool while all other markup
+          is copied to the output. The goal of using a manifest file with the
+          tool is to make configuring and deploying services easier:</para>
+
+          <itemizedlist>
+            <listitem>
+              <para>The manifest file format abstracts some of the complexity
+              of the actual configuration.</para>
+            </listitem>
+
+            <listitem>
+              <para>By allowing you to include external files like ESDL
+              Scripts and XSLTs into the output, you can store and maintain
+              them separately in your repo.</para>
+            </listitem>
+          </itemizedlist>
+
+          <para>The result of running the manifest tool on a manifest file is
+          an XML artifact suitable for use with the ESDL ESP. Supported output
+          includes:</para>
+
+          <itemizedlist>
+            <listitem>
+              <para><emphasis>binding</emphasis>: The output is an ESDL
+              binding that may be published to dali.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis>bundle</emphasis>: The output is an ESDL bundle
+              file that may be used to launch an ESP in application
+              mode.</para>
+            </listitem>
+          </itemizedlist>
+
+          <example>
+            <title>Example Manifest File</title>
+
+            <programlisting language="xml">
+&lt;em:Manifest xmlns:em="urn:hpcc:esdl:manifest"&gt;
+  &lt;em:ServiceBinding esdlservice="WsFoobar" id="WsFoobar_desdl_binding" auth_feature="DEFERRED"&gt;
+    &lt;Methods&gt;
+      &lt;em:Scripts&gt;
+        &lt;em:Include file="WsFoobar-request-prep.xml"/&gt;
+        &lt;em:Include file="WsFoobar-logging-prep.xml"/&gt;
+      &lt;/em:Scripts&gt;
+      &lt;Method name="FoobarSearch" url="127.0.0.1:8888"&gt;
+        &lt;em:Scripts&gt;
+          &lt;em:Include file="FoobarSearch-scripts.xml"/&gt;
+        &lt;/em:Scripts&gt;
+      &lt;/Method&gt;
+    &lt;/Methods&gt;
+    &lt;LoggingManager&gt;
+      &lt;LogAgent transformSource="local" name="main-logging"&gt;
+        &lt;LogDataXPath&gt;
+          &lt;LogInfo name="PreparedData" xsl="log-prep"/&gt;
+        &lt;/LogDataXPath&gt;
+        &lt;XSL&gt;
+          &lt;em:Transform name="log-prep"&gt;
+            &lt;em:Include file="log-prep.xslt"/&gt;
+          &lt;/em:Transform&gt;
+        &lt;/XSL&gt;
+      &lt;/LogAgent&gt;
+    &lt;/LoggingManager&gt;
+  &lt;/em:ServiceBinding&gt;
+  &lt;em:EsdlDefinition&gt;
+    &lt;em:Include file="WsFoobar.ecm"/&gt;
+  &lt;/em:EsdlDefinition&gt;
+&lt;/em:Manifest&gt;
+        </programlisting>
+          </example>
+
+          <para>The tool is permissive and flexible, copying through most
+          markup to the output. Recognized elements in the manifest namespace
+          may be treated differently. They are only required in order to take
+          advantage of the automated processing and simplified format of the
+          manifest file. This example highlights the recommended usage of
+          manifest elements to use the tool's capabilities. Although you could
+          replace some of the elements below with verbatim bundle or binding
+          output elements we won't cover that usage here.</para>
+        </sect3>
+
+        <sect3 id="esdl_manifest_elements">
+          <title>Manifest Elements and Attributes</title>
+
+          <variablelist>
+            <varlistentry>
+              <term>em:Manifest</term>
+
+              <listitem>
+                <para>Required root element. By default the tool outputs a
+                bundle, though you may explicitly override that on the command
+                line or by providing an
+                <literal>@outputType='binding'</literal> attribute.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>em:ServiceBinding</term>
+
+              <listitem>
+                <para>Valid for both bundle and binding output. Enables
+                recognition of em:Scripts and em:Transform elements.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>em:EsdlDefinition</term>
+
+              <listitem>
+                <para>Relevant only for bundle output. Enables element order
+                preservation and recognition of em:Include as a descendant
+                element.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>em:Include</term>
+
+              <listitem>
+                <para>Causes external file contents to be inserted in place of
+                the element. Processing is context dependent; the parent
+                dictates how the file is handled. Facilitates code reuse in a
+                configuration as code development environment.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>em:Scripts / em:Transform</term>
+
+              <listitem>
+                <para>Trigger preservation of element order for all descendent
+                elements and enable em:Include recognition.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+        </sect3>
+
+        <sect3 id="esdl_manifest_attributes">
+          <title>Manifest Attributes (Tabular)</title>
+
+          <table frame="all">
+            <title>Manifest Root Attributes</title>
+
+            <tgroup cols="4">
+              <colspec colname="attr"/>
+
+              <colspec colname="req"/>
+
+              <colspec colname="val"/>
+
+              <colspec colname="desc"/>
+
+              <thead>
+                <row>
+                  <entry>Attribute</entry>
+
+                  <entry>Required?</entry>
+
+                  <entry>Value</entry>
+
+                  <entry>Description</entry>
+                </row>
+              </thead>
+
+              <tbody>
+                <row>
+                  <entry>@outputType</entry>
+
+                  <entry>No</entry>
+
+                  <entry>string</entry>
+
+                  <entry>A hint informing the tool which type of output to
+                  generate. The command line option --output-type may
+                  supersede this value to produce a different output.</entry>
+                </row>
+
+                <row>
+                  <entry>@xmlns[:prefix]</entry>
+
+                  <entry>Yes</entry>
+
+                  <entry>string</entry>
+
+                  <entry>The manifest namespace urn:hpcc:esdl:manifest must be
+                  declared. The default namespace prefix should not be used
+                  unless all other markup is fully qualified.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </table>
+
+          <table frame="all">
+            <title>ServiceBinding Attributes</title>
+
+            <tgroup cols="4">
+              <colspec colname="attr"/>
+
+              <colspec colname="req"/>
+
+              <colspec colname="val"/>
+
+              <colspec colname="desc"/>
+
+              <thead>
+                <row>
+                  <entry>Attribute</entry>
+
+                  <entry>Required?</entry>
+
+                  <entry>Value</entry>
+
+                  <entry>Usage</entry>
+                </row>
+              </thead>
+
+              <tbody>
+                <row>
+                  <entry>@esdlservice</entry>
+
+                  <entry>Yes</entry>
+
+                  <entry>string</entry>
+
+                  <entry>Name of the ESDL service to which the binding is
+                  bound. Output on the Binding/Definition element. Also used
+                  to generate a value for Definition/@id for bundle type
+                  output.</entry>
+                </row>
+
+                <row>
+                  <entry>@auth_feature</entry>
+
+                  <entry>No</entry>
+
+                  <entry>string</entry>
+
+                  <entry>Used to declare authorization settings if not present
+                  in the ESDL Definition, or override them if they
+                  are.</entry>
+                </row>
+
+                <row>
+                  <entry>@returnSchemaLocationOnOK</entry>
+
+                  <entry>No</entry>
+
+                  <entry>Boolean</entry>
+
+                  <entry>When true, a successful SOAP response (non
+                  SOAP-Fault) will include the schema location property. False
+                  by default.</entry>
+                </row>
+
+                <row>
+                  <entry>@namespace</entry>
+
+                  <entry>No</entry>
+
+                  <entry>string</entry>
+
+                  <entry>String specifying the namespace for all methods in
+                  the binding. May contain variables replaced by the ESP at
+                  runtime.</entry>
+                </row>
+
+                <row>
+                  <entry>@created</entry>
+
+                  <entry>No</entry>
+
+                  <entry>string</entry>
+
+                  <entry>Timestamp of binding creation.</entry>
+                </row>
+
+                <row>
+                  <entry>@espbinding</entry>
+
+                  <entry>No</entry>
+
+                  <entry>string</entry>
+
+                  <entry>Set to match the id. Otherwise the value is unset and
+                  unused.</entry>
+                </row>
+
+                <row>
+                  <entry>@espprocess</entry>
+
+                  <entry>No</entry>
+
+                  <entry>string</entry>
+
+                  <entry>Name of the ESP process this binding is running
+                  on.</entry>
+                </row>
+
+                <row>
+                  <entry>@id</entry>
+
+                  <entry>No</entry>
+
+                  <entry>string</entry>
+
+                  <entry>Runtime name of the binding. When publishing to dali
+                  the value is [ESP Process].[port].[ESDL Service]. When not
+                  present in the manifest a default value is generated of the
+                  form [@esdlservice]_desdl_binding.</entry>
+                </row>
+
+                <row>
+                  <entry>@port</entry>
+
+                  <entry>No</entry>
+
+                  <entry>string</entry>
+
+                  <entry>Port on the ESP Process listening for connections to
+                  the binding.</entry>
+                </row>
+
+                <row>
+                  <entry>@publishedBy</entry>
+
+                  <entry>No</entry>
+
+                  <entry>string</entry>
+
+                  <entry>Userid of the person publishing the binding.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </table>
+        </sect3>
       </sect2>
     </sect1>
   </chapter>
