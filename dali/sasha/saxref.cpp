@@ -3429,7 +3429,7 @@ void runExpiryCLI()
 
 #ifdef _USE_CPPUNIT
 
-#include "unittests.hpp"
+#include <cppunit/extensions/HelperMacros.h>
 #include <thread>
 #include <vector>
 

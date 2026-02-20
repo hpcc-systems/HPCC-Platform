@@ -109,7 +109,6 @@ target_link_libraries ( saserver
 
 if (USE_CPPUNIT)
     target_link_libraries ( saserver cppunit )
-    include_directories( ${HPCC_SOURCE_DIR}/testing/unittests)
 endif()
 
 set (    SRCS 
