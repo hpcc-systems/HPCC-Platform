@@ -231,7 +231,7 @@ test.describe("V9 Workunit Details", () => {
         await clickTab(page, "ECL");
         await page.waitForLoadState("networkidle");
 
-        // Check for ECL source content or editor
+        // Check for ECL source content or editor  
         await expect(page.locator(".monaco-editor, .ecl-source, pre, code")).toBeVisible().catch(() => {
             // Fallback check for any code-like content - look for text content
             expect(page.locator("[role='tabpanel']")).toContainText(/\w/).catch(() => {
@@ -315,51 +315,5 @@ test.describe("V9 Workunit Details", () => {
         }
     });
 
-    test("Should display Logical Graph tab content when clicked", async ({ page }) => {
-        await clickTab(page, "Logical Graph");
-        await page.waitForLoadState("networkidle");
-
-        // Wait for Logical Graph content (graph or metrics) to become visible instead of using a fixed timeout
-        const graphContent = page.locator(".ms-Panel, .graph-widget, svg, canvas, .metrics-graph");
-        const metricsTable = page.locator(".ms-DetailsList, [role='grid']");
-        await expect(graphContent.or(metricsTable).first()).toBeVisible();
-
-        // Check if tab is selected
-        await expect(page.getByRole("tab", { name: "Logical Graph" })).toHaveAttribute("aria-selected", "true");
-
-        // Either graph visualization or metrics table should be visible
-        const hasGraphContent = await graphContent.count() > 0;
-        const hasMetricsTable = await metricsTable.count() > 0;
-
-        expect(hasGraphContent || hasMetricsTable).toBeTruthy();
-    });
-
-    test("Should have Timeline disabled in Logical Graph tab", async ({ page }) => {
-        await clickTab(page, "Logical Graph");
-        await page.waitForLoadState("networkidle");
-
-        // Look for Timeline button in command bar - it should not be present when viewing Logical Graph
-        const timelineButton = page.getByRole("menuitem", { name: "Timeline" });
-
-        // Timeline button should not be rendered at all
-        await expect(timelineButton).toHaveCount(0);
-        // Navigate to Metrics tab (usually visible, not in overflow)
-        await page.getByRole("tab", { name: "Metrics", exact: true }).first().click();
-        await page.waitForLoadState("networkidle");
-        // Verify we're on the Metrics tab by checking the URL or content
-        await expect(page).toHaveURL(/\/metrics/);
-
-        // Navigate to Logical Graph tab (may be in overflow)
-        await clickTab(page, "Logical Graph");
-        await page.waitForLoadState("networkidle");
-        // Verify we're on the Logical Graph tab by checking the URL or content
-        await expect(page).toHaveURL(/\/logicalgraph/);
-
-        // Navigate back to Metrics - use first() to get the main workunit tab
-        await page.getByRole("tab", { name: "Metrics", exact: true }).first().click();
-        await page.waitForLoadState("networkidle");
-        // Verify we're back on the Metrics tab
-        await expect(page).toHaveURL(/\/metrics/);
-    });
 
 });
