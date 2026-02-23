@@ -98,6 +98,8 @@ jobs:
               - "deployment/**"
               - "ecl/**"
               - "esp/**"
+              - "!esp/src/**"
+              - "!esp/eclwatch/**"
               - "fs/**"
               - "lib2/**"
               - "package/**"
@@ -124,6 +126,7 @@ jobs:
               - "esp/src/**"
             docs:
               - "docs/**"
+              - ".github/workflows/test-documentation.yml"
             testing:
               - "testing/**"
             initfiles:
@@ -140,7 +143,6 @@ jobs:
               - "misc/**"
           list-files: json
       - name: Print changed paths
-        if: always()
         run: |
           echo "=== Path Filter Report ==="
           echo "Filters with changes: ${{ steps.skip_check.outputs.changes }}"
