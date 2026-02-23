@@ -37,10 +37,7 @@ export const Processes: React.FunctionComponent<WorkflowsProps> = ({
             ...(
                 isContainer ?
                     {
-                        PodName: { label: nlsHPCC.PodName, width: 240 },
-                        ContainerName: { label: nlsHPCC.ContainerName, width: 240 },
-                        Graphs: { label: nlsHPCC.Graphs },
-                        Sequence: { label: nlsHPCC.Sequence },
+                        PodName: { label: nlsHPCC.PodName, width: 240 }
                     } :
                     {
                         Log: { label: nlsHPCC.Log, width: 400 },
@@ -53,12 +50,10 @@ export const Processes: React.FunctionComponent<WorkflowsProps> = ({
     }, [isContainer]);
 
     React.useEffect(() => {
-        setData(processes.map(({ Graphs, ...row }, idx) => {
-            const graphs = Graphs?.Graph.join(", ") ?? "";
+        setData(processes.map(row => {
             return {
                 ...row,
-                Graphs: graphs,
-                __hpcc_id: `row_${idx}`
+                __hpcc_id: row.PID
             };
         }));
     }, [processes]);
