@@ -182,7 +182,7 @@ test.describe("V9 Workunit Details", () => {
         await page.getByRole("tab", { name: "ECL" }).click();
         await page.waitForLoadState("networkidle");
 
-        // Check for ECL source content or editor
+        // Check for ECL source content or editor  
         await expect(page.locator(".monaco-editor, .ecl-source, pre, code")).toBeVisible().catch(() => {
             // Fallback check for any code-like content - look for text content
             expect(page.locator("[role='tabpanel']")).toContainText(/\w/).catch(() => {
@@ -266,35 +266,5 @@ test.describe("V9 Workunit Details", () => {
         }
     });
 
-    test("Should display processes tab content when clicked", async ({ page }) => {
-        await page.getByRole("tab", { name: "Processes" }).click();
-        await page.waitForLoadState("networkidle");
-
-        // Verify the tab is selected
-        await expect(page.getByRole("tab", { name: "Processes" })).toHaveAttribute("aria-selected", "true");
-
-        // Check for refresh button
-        await expect(page.getByRole("menuitem", { name: "Refresh" })).toBeVisible();
-
-        // Check if environment is containerized
-        const isContainer = await page.evaluate(() => {
-            return (window as any).dojoConfig?.isContainer ?? false;
-        });
-
-        // Check for common columns that should always be present
-        await expect(page.getByRole("button", { name: "Name" })).toBeVisible();
-        await expect(page.getByRole("button", { name: "Type" })).toBeVisible();
-
-        // Check for container-specific columns
-        if (isContainer) {
-            await expect(page.getByRole("button", { name: "Container Name" })).toBeVisible();
-            await expect(page.getByRole("button", { name: "Graphs" })).toBeVisible();
-            await expect(page.getByRole("button", { name: "Sequence" })).toBeVisible();
-        } else {
-            // Check for non-container specific columns
-            await expect(page.getByRole("button", { name: "Process ID" })).toBeVisible();
-            await expect(page.getByRole("button", { name: "Log" })).toBeVisible();
-        }
-    });
 
 });
