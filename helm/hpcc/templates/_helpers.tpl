@@ -1599,7 +1599,7 @@ Pass in dict with .root, .visibility defined
 {{- end -}}
 
 {{- define "hpcc.generateHelmVersion" -}}
-helmVersion: 9.14.64-rc1
+helmVersion: 9.14.64-rc2
 {{- end -}}
 
 {{/*
