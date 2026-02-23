@@ -33,10 +33,12 @@ bool abortEarly = false;
 bool forceHTTP = false;
 bool useSSL = false;
 bool abortAfterFirst = false;
+bool dryRun = false;
 bool echoResults = false;
 bool saveResults = true;
 bool showTiming = false;
 bool showStatus = true;
+bool summaryStats = false;
 bool sendToSocket = false;
 bool parallelBlocked = false;
 bool justResults = false;
@@ -554,45 +556,49 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
             }
         }
         starttime= get_cycles_now();
-        if (persistConnections)
+
+        if (!dryRun)
         {
-            if (!persistSocket)
+            if (persistConnections)
+            {
+                if (!persistSocket)
+                {
+                    SocketEndpoint ep(ip,port);
+                    persistSocket.setown(ISocket::connect_timeout(ep, 1000));
+                    if (useSSL)
+                    {
+#ifdef _USE_OPENSSL
+                        if (!persistSecureContext)
+                            persistSecureContext.setown(createSecureSocketContext(ClientSocket));
+                        persistSSock.setown(persistSecureContext->createSecureSocket(persistSocket.getClear(), SSLogNormal, ip));
+                        int res = persistSSock->secure_connect();
+                        if (res < 0)
+                            throw MakeStringException(-1, "doSendQuery : Failed to establish secure connection");
+                        persistSocket.setown(persistSSock.getClear());
+#else
+                        throw MakeStringException(-1, "OpenSSL disabled in build");
+#endif
+                    }
+                }
+                socket = persistSocket;
+            }
+            else
             {
                 SocketEndpoint ep(ip,port);
-                persistSocket.setown(ISocket::connect_timeout(ep, 1000));
+                socket.setown(ISocket::connect_timeout(ep, 100000));
                 if (useSSL)
                 {
 #ifdef _USE_OPENSSL
-                    if (!persistSecureContext)
-                        persistSecureContext.setown(createSecureSocketContext(ClientSocket));
-                    persistSSock.setown(persistSecureContext->createSecureSocket(persistSocket.getClear(), SSLogNormal, ip));
-                    int res = persistSSock->secure_connect();
+                    secureContext.setown(createSecureSocketContext(ClientSocket));
+                    Owned<ISecureSocket> ssock = secureContext->createSecureSocket(socket.getClear(), SSLogNormal, ip);
+                    int res = ssock->secure_connect();
                     if (res < 0)
                         throw MakeStringException(-1, "doSendQuery : Failed to establish secure connection");
-                    persistSocket.setown(persistSSock.getClear());
+                    socket.setown(ssock.getClear());
 #else
-                    throw MakeStringException(-1, "OpenSSL disabled in build");
+                    throw MakeStringException(1, "OpenSSL disabled in build");
 #endif
                 }
-            }
-            socket = persistSocket;
-        }
-        else
-        {
-            SocketEndpoint ep(ip,port);
-            socket.setown(ISocket::connect_timeout(ep, 100000));
-            if (useSSL)
-            {
-#ifdef _USE_OPENSSL
-                secureContext.setown(createSecureSocketContext(ClientSocket));
-                Owned<ISecureSocket> ssock = secureContext->createSecureSocket(socket.getClear(), SSLogNormal, ip);
-                int res = ssock->secure_connect();
-                if (res < 0)
-                    throw MakeStringException(-1, "doSendQuery : Failed to establish secure connection");
-                socket.setown(ssock.getClear());
-#else
-                throw MakeStringException(1, "OpenSSL disabled in build");
-#endif
             }
         }
     }
@@ -657,13 +663,54 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
             StringBuffer lockResult;
             readResults(socket, false, false, lockResult, nullptr, 0);
         }
+
+        bool patchQueryXml = false;
         if (queryNameOverride.length())
+            patchQueryXml = true;
+
+        Owned<IProperties> retrievedClientHeaders = createProperties();
+        if (generateClientSpans && clientSpan->isValid())
+        {
+            clientSpan->getClientHeaders(retrievedClientHeaders.get());
+            if (retrievedClientHeaders->hasProp("traceparent"))
+                patchQueryXml = true;
+        }
+
+        if (summaryStats)
+            patchQueryXml = true;
+
+        if (remoteStreamQuery)
+        {
+            //base is in json format - do not support any xml modification options.
+            fullQuery.append(queryRemoteStreamCmd()).append(base);
+        }
+        else if (patchQueryXml)
         {
             try
             {
-                Owned<IPTree> p = createPTreeFromXMLString(base, ipt_none, ptr_none);
-                p->renameProp("/", queryNameOverride);
-                toXML(p, fullQuery.clear());
+                Owned<IPTree> fullQueryTree = createPTreeFromXMLString(base, ipt_none, ptr_none);
+
+                if (queryNameOverride.length())
+                    fullQueryTree->renameProp("/", queryNameOverride);
+
+                if (retrievedClientHeaders->hasProp("traceparent"))
+                {
+                    IPropertyTree * traceHeaderTree = fullQueryTree->queryPropTree("_trace");
+                    if (traceHeaderTree) //query included _trace header, just overwrite the traceparent entry
+                    {
+                        traceHeaderTree->setProp("traceparent", retrievedClientHeaders->queryProp("traceparent"));
+                    }
+                    else // no _trace header in the original query, ensure _trace branch and set traceparent
+                    {
+                        fullQueryTree->setPropTree("_trace");
+                        fullQueryTree->setProp("_trace/traceparent", retrievedClientHeaders->queryProp("traceparent"));
+                    }
+                }
+
+                if (summaryStats)
+                    fullQueryTree->setProp("@summaryStats", "true");
+
+                toXML(fullQueryTree, fullQuery, 0, XML_SingleQuoteAttributeValues);
             }
             catch (IException *E)
             {
@@ -674,129 +721,108 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
             }
         }
         else
-        {
-            if (remoteStreamQuery)
-                fullQuery.append(queryRemoteStreamCmd());
             fullQuery.append(base);
-        }
-
-        if (generateClientSpans && clientSpan->isValid())
-        {
-            Owned<IProperties> retrievedClientHeaders = createProperties();
-            clientSpan->getClientHeaders(retrievedClientHeaders.get());
-
-            if (retrievedClientHeaders->hasProp("traceparent"))
-            {
-                Owned<IPTree> fullQueryTree = createPTreeFromXMLString(fullQuery.str(), ipt_none, ptr_none);
-
-                IPropertyTree * traceHeaderTree = fullQueryTree->queryPropTree("_trace");
-                if (traceHeaderTree) //query included _trace header, just overwrite the traceparent entry
-                {
-                    traceHeaderTree->setProp("traceparent", retrievedClientHeaders->queryProp("traceparent"));
-                }
-                else // no _trace header in the original query, ensure _trace branch and set traceparent
-                {
-                    fullQueryTree->setPropTree("_trace");
-                    fullQueryTree->setProp("_trace/traceparent", retrievedClientHeaders->queryProp("traceparent"));
-                }
-
-                toXML(fullQueryTree, fullQuery.clear(), 0, XML_SingleQuoteAttributeValues); //rebuild the xml with _trace
-            }
-        }
     }
 
     const char * query = fullQuery.str();
-
-    size32_t queryLen=(size32_t)strlen(query);
-    size32_t len = queryLen;
-    size32_t sendlen = len;
-    if (persistConnections)
-        sendlen |= 0x80000000;
-    _WINREV(sendlen);
-
-    try
+    if (!dryRun)
     {
-        if (!rawSend && !useHTTP)
-            socket->write(&sendlen, sizeof(sendlen));
+        size32_t queryLen=(size32_t)strlen(query);
+        size32_t len = queryLen;
+        size32_t sendlen = len;
+        if (persistConnections)
+            sendlen |= 0x80000000;
+        _WINREV(sendlen);
 
-        if (verboseDbgLevel > 0)
+        try
         {
-            fprintf(stdout, "about to write %u <%s>\n", len, query);
-            fflush(stdout);
-        }
+            if (!rawSend && !useHTTP)
+                socket->write(&sendlen, sizeof(sendlen));
 
-        socket->write(query, len);
-
-        if (sendFileAfterQuery)
-        {
-            FILE *in = fopen(sendFileName.str(), "rb");
-            if (in)
+            if (verboseDbgLevel > 0)
             {
-                char buffer[1024];
-                for (;;)
+                fprintf(stdout, "about to write %u <%s>\n", len, query);
+                fflush(stdout);
+            }
+
+            socket->write(query, len);
+
+            if (sendFileAfterQuery)
+            {
+                FILE *in = fopen(sendFileName.str(), "rb");
+                if (in)
                 {
-                    len = fread(buffer, 1, sizeof(buffer), in);
-                    sendlen = len;
-                    _WINREV(sendlen);                    
-                    socket->write(&sendlen, sizeof(sendlen));
-                    if (!len)
-                        break;
-                    socket->write(buffer, len);
+                    char buffer[1024];
+                    for (;;)
+                    {
+                        len = fread(buffer, 1, sizeof(buffer), in);
+                        sendlen = len;
+                        _WINREV(sendlen);
+                        socket->write(&sendlen, sizeof(sendlen));
+                        if (!len)
+                            break;
+                        socket->write(buffer, len);
+                    }
+                    fclose(in);
                 }
-                fclose(in);
+                else
+                    printf("File %s could not be opened\n", sendFileName.str());
             }
-            else
-                printf("File %s could not be opened\n", sendFileName.str());
         }
-    }
-    catch(IException * e)
-    {
-        pexception("failed to write data", e);
-        return 1;
-    }
-
-    if (abortEarly)
-        return 0;
-            
-    // back-end does some processing.....
-
-    StringBuffer result;
-    int ret = readResults(socket, false, useHTTP, result, query, queryLen);
-
-    if ((ret == 0) && !justResults)
-    {
-        endtime = get_cycles_now();
-        CriticalBlock b(traceCrit);
-
-        if (trace != NULL)
+        catch(IException * e)
         {
-            if (rawOnly == false)
-            {
-                fprintf(trace, "query: %s\n", query);
+            pexception("failed to write data", e);
+            return 1;
+        }
 
-                if (saveResults)
-                    fprintf(trace, "result: %s\n", result.str());
-            }
-            else
-            {
-                fprintf(trace, "%s", result.str());
-            }
+        if (abortEarly)
+            return 0;
 
-            double queryTimeMS = (double)(cycle_to_nanosec(endtime - starttime))/1000000;
-            totalQueryMS += queryTimeMS;
-            totalQueryCnt++;
-            if (showTiming && rawOnly == false)
+        // back-end does some processing.....
+
+        StringBuffer result;
+        int ret = readResults(socket, false, useHTTP, result, query, queryLen);
+
+        if ((ret == 0) && !justResults)
+        {
+            endtime = get_cycles_now();
+            CriticalBlock b(traceCrit);
+
+            if (trace != NULL)
             {
-                fprintf(trace, "Time taken = %.3f msecs\n", queryTimeMS);
-                fputs("----------------------------------------------------------------------------\n", trace);
+                if (rawOnly == false)
+                {
+                    fprintf(trace, "query: %s\n", query);
+
+                    if (saveResults)
+                        fprintf(trace, "result: %s\n", result.str());
+                }
+                else
+                {
+                    fprintf(trace, "%s", result.str());
+                }
+
+                double queryTimeMS = (double)(cycle_to_nanosec(endtime - starttime))/1000000;
+                totalQueryMS += queryTimeMS;
+                totalQueryCnt++;
+                if (showTiming && rawOnly == false)
+                {
+                    fprintf(trace, "Time taken = %.3f msecs\n", queryTimeMS);
+                    fputs("----------------------------------------------------------------------------\n", trace);
+                }
             }
         }
+
+        if (!persistConnections)
+        {
+            socket->close();
+        }
+    }
+    else
+    {
+        fprintf(stdout, "%s\n", query);
     }
 
-    if (!persistConnections)
-    {
-        socket->close();
-    }
 
     if (queryDelayMS)
     {
@@ -858,6 +884,7 @@ void usage(int exitCode)
     printf("  -c        test sending response to a socket\n");
     printf("  -cb       test sending response to a block mode socket\n");
     printf("  -d        force delay after each packet\n");
+    printf("  -dry      dry run - only echo the queries that will be sent\n");
     printf("  -f        take query from file\n");
     printf("  -ff       take multiple queries from file, one per line\n");
     printf("  -tff      take multiple queries from file, one per line, preceded by the time at which it should be submitted (relative to time on first line)\n");
@@ -882,6 +909,7 @@ void usage(int exitCode)
     printf("  -ssl      use ssl\n");
     printf("  -td       add debug timing statistics to trace\n");
     printf("  -tf       add full timing statistics to trace\n");
+    printf("  -ts       return summary statistics in the reply\n");
     printf("  -time     add timing to trace\n");
     printf("  -u<max>   run queries on separate threads\n");
     printf("  -v        debug output\n");
@@ -943,6 +971,11 @@ int main(int argc, char **argv)
         else if (stricmp(argv[arg], "-d") == 0)
         {
             delay  = 300;
+            ++arg;
+        }
+        else if (stricmp(argv[arg], "-dry") == 0)
+        {
+            dryRun = true;
             ++arg;
         }
         else if (stricmp(argv[arg], "-http") == 0)
@@ -1060,6 +1093,11 @@ int main(int argc, char **argv)
         else if (stricmp(argv[arg], "-ss") == 0)
         {
             showStatus = false;
+            ++arg;
+        }
+        else if (stricmp(argv[arg], "-ts") == 0)
+        {
+            summaryStats = true;
             ++arg;
         }
         else if (stricmp(argv[arg], "-v") == 0)
