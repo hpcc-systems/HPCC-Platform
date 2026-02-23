@@ -187,7 +187,7 @@ public:
     CIArrayOf<self> bases;
     baseResolutionState baseResolution;
 
-    CResolvedPackage<TYPE>(IPropertyTree *p) : TYPE(p), baseResolution(basesUnresolved) {}
+    CResolvedPackage(IPropertyTree *p) : TYPE(p), baseResolution(basesUnresolved) {}
 
     virtual aindex_t getBaseCount() const {return bases.length();}
     const self *getResolvedBase(aindex_t pos) const

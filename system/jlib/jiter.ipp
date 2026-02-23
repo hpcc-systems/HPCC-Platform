@@ -25,12 +25,12 @@
 template<class ELEMENT, class ITER> class CArrayIteratorOf : public CInterfaceOf<ITER>
 {
 public:
-    CArrayIteratorOf<ELEMENT,ITER>(const IArray & _values, aindex_t _start = 0, IInterface * _owner=NULL)
+    CArrayIteratorOf(const IArray & _values, aindex_t _start = 0, IInterface * _owner=NULL)
     : owner(LINK(_owner)), values(_values), start(_start)
     {
         current = start;
     }
-    ~CArrayIteratorOf<ELEMENT,ITER>()
+    ~CArrayIteratorOf()
     {
         ::Release(owner);
     }

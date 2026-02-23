@@ -706,13 +706,13 @@ public:
             else if (mlFmt==MarkupFmt_XML)
             {
                 assertex(transformer);
-                CommonXmlWriter writer(xmlReadFlags|XWFnoindent, 0, r);
+                CommonXmlWriter writer((unsigned)xmlReadFlags|XWFnoindent, 0, r);
                 transformer->toXML(isAll, len, (byte *)data, writer);
             }
             else if (mlFmt==MarkupFmt_JSON)
             {
                 assertex(transformer);
-                CommonJsonWriter writer(xmlReadFlags|XWFnoindent, 0, r);
+                CommonJsonWriter writer((unsigned)xmlReadFlags|XWFnoindent, 0, r);
                 transformer->toXML(isAll, len, (byte *)data, writer);
             }
             else

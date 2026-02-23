@@ -12,7 +12,8 @@
 			"-DUSE_CPPUNIT=ON",
 			"-DINCLUDE_PLUGINS=ON",
 			"-DSUPPRESS_V8EMBED=ON",
-			"-DSUPPRESS_REMBED=ON"
+			"-DSUPPRESS_REMBED=ON",
+			"-DVCPKG_AUTO_UPDATE_SUBMODULE=OFF"
 		],
 		"editor.formatOnSave": false
 	},

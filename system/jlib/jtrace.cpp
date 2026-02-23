@@ -36,8 +36,6 @@
 #ifdef USE_OPENTEL_GRPC
 #include "opentelemetry/exporters/otlp/otlp_grpc_exporter.h"
 #include "opentelemetry/exporters/otlp/otlp_grpc_exporter_factory.h"
-#else
-#include <random>
 #endif
 
 #include "opentelemetry/exporters/otlp/otlp_http_exporter_factory.h"
@@ -60,6 +58,7 @@
 #include "jtrace.hpp"
 #include "lnuid.h"
 #include <variant>
+#include <random>
 
 //This seems to be defined in some window builds - avoid conflicts with the functions below
 #undef max

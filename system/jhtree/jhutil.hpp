@@ -62,7 +62,7 @@ protected:
 public:
     typedef SuperHashIteratorOf<MAPPING> CMRUIterator;
 
-    CMRUCacheOf<KEY, ENTRY, MAPPING, TABLE>() : table(*this) { }
+    CMRUCacheOf() : table(*this) { }
     void replace(KEY key, ENTRY &entry)
     {
         if (full())
