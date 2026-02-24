@@ -2484,6 +2484,21 @@ bool EclCompileInstance::allowAccess(const char * category, bool isSigned)
 
 IHqlExpression * EclCompileInstance::lookupDFSlayout(const char *filename, IErrorReceiver &errs, const ECLlocation &location, bool isOpt) const
 {
+    // This logic is only to allow debugging issues where dfs lookups are causing parse errors.  Not intended for production.
+    if (srcArchive && srcArchive->getPropBool("@resolveFilesFromArchive"))
+    {
+        StringBuffer xpath;
+        xpath.append("Dfs/File[@name=\"").append(filename).append("\"]/@ecl");
+        const char * recordECL = srcArchive->queryProp(xpath);
+        if (recordECL)
+        {
+            MultiErrorReceiver errs;
+            OwnedHqlExpr diskRecord(parseQuery(recordECL, &errs));
+            if (!errs.errCount())
+                return LINK(diskRecord->queryBody());
+        }
+    }
+
     return eclcc.lookupDFSlayout(filename, errs, location, isOpt);
 }
 
