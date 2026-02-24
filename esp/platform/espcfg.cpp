@@ -89,34 +89,6 @@ builtin *CEspConfig::getBuiltIn(std::string name)
 #endif
 }
 
-
-StringBuffer &CVSBuildToEspVersion(char const * tag, StringBuffer & out)
-{
-    unsigned build = 0;
-    unsigned subbuild = 0;
-    while(!isdigit(*tag))
-    {
-        if(!*tag) break;
-        tag++;
-    }
-    while(isdigit(*tag))
-    {
-        if(!*tag) break;
-        build = 10*build + (*tag-'0');
-        tag++;
-    }
-    if(isalpha(*tag))
-    {
-        if(islower(*tag))
-            subbuild = *tag-'a'+1;
-        else
-            subbuild = *tag-'A'+1;
-    }
-        
-    out.append(build/10).append('.').append(build%10).append(subbuild);
-    return out;
-}
-
 int CSessionCleaner::run()
 {
     try
