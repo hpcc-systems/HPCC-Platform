@@ -3,6 +3,7 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Image, 
 import { SizeMe } from "../layouts/SizeMe";
 import * as ESPDFUWorkunit from "src/ESPDFUWorkunit";
 import * as FileSpray from "src/FileSpray";
+import { formatCost } from "src/Session";
 import * as Utility from "src/Utility";
 import { QuerySortItem } from "src/store/Store";
 import nlsHPCC from "src/nlsHPCC";
@@ -171,6 +172,11 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
                 formatter: (_kbPerSecAve, row) => {
                     return Utility.convertedSize(row.KbPerSecAve * 1024, " / sec");
                 }
+            },
+            FileAccessCost: {
+                label: nlsHPCC.FileAccessCost, width: 100, sortable: false,
+                justify: "right",
+                formatter: (fileAccessCost) => formatCost(fileAccessCost ?? 0),
             }
         };
     }, []);
