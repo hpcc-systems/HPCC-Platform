@@ -2021,7 +2021,7 @@ void CFileSprayEx::readAndCheckSpraySourceReq(IEspContext& context, MemoryBuffer
                     {
                         //The sourceIPReq should must have been supplied here. This has been verified if
                         //the sourcePlaneReq is empty. When the sourcePlaneReq is not empty, the dropZone
-                        //should not be null. Otherwise, an exception should already be thrown. 
+                        //should not be null. Otherwise, an exception should already be thrown.
                         dropZone.setown(getAndValidateDropZone(nullptr, sourceIPReq));
                         if (dropZone)
                             sourcePlaneReq.append(dropZone->queryProp("@name"));
@@ -2874,6 +2874,8 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
             mspec.setDefaultBaseDir(defaultFolder.str());
             mspec.setDefaultReplicateDir(defaultReplicateFolder.str());
             wuFSpecDest->setClusterPartDiskMapSpec(destNodeGroup.str(), mspec);
+            if (!req.getDestNumParts_isNull() && req.getDestNumParts() > 0)
+                wuFSpecDest->setNumPartsOverride(req.getDestNumParts());
         }
 
         resp.setResult(wu->queryId());
@@ -3559,7 +3561,7 @@ bool CFileSprayEx::onDeleteDropZoneFiles(IEspContext &context, IEspDeleteDropZon
         {
             const char* file = files.item(idx);
             if (containsRelPaths(file))
-                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid file %s", file);   
+                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid file %s", file);
         }
 
         StringBuffer path(directory);
