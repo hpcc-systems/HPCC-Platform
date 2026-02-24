@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Checkbox, DefaultButton, IDropdownOption, mergeStyleSets, PrimaryButton, Spinner, TextField, } from "@fluentui/react";
 import { StackShim } from "@fluentui/react-migration-v8-v9";
+import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
 import * as FileSpray from "src/FileSpray";
@@ -9,11 +10,14 @@ import { pushUrl } from "../../util/history";
 import { TargetGroupTextField } from "./Fields";
 import * as FormStyles from "./landing-zone/styles";
 
+const logger = scopedLogger("src-react/components/forms/CopyFile.tsx");
+
 interface CopyFileFormValues {
     destGroup: string;
     destLogicalName: string;
     targetCopyName?: {
-        name: string
+        name: string,
+        numParts: string
     }[];
     overwrite: boolean;
     replicate: boolean;
@@ -69,32 +73,42 @@ export const CopyFile: React.FunctionComponent<CopyFileProps> = ({
             (data, evt) => {
                 setSubmitDisabled(true);
                 setSpinnerHidden(false);
-                if (logicalFiles.length > 0) {
-                    if (logicalFiles.length === 1) {
-                        const request = { ...data, sourceLogicalName: logicalFiles[0] };
-                        FileSpray.Copy({ request: request }).then(response => {
-                            setSubmitDisabled(false);
-                            setSpinnerHidden(true);
-                            closeForm();
-                            pushUrl(`/dfuworkunits/${response.CopyResponse.result}`);
-                        });
-                    } else {
-                        logicalFiles.forEach((logicalFile, idx) => {
-                            const request = { ...data, sourceLogicalName: logicalFile, destLogicalName: data.targetCopyName[idx].name };
-                            const requests = [];
-                            requests.push(FileSpray.Copy({ request: request }));
-                            Promise.all(requests).then(_ => {
-                                setSubmitDisabled(false);
-                                setSpinnerHidden(true);
-                                closeForm();
-                                if (refreshGrid) refreshGrid();
-                            });
-                        });
+                const requests = [];
+                logicalFiles.forEach((logicalFile, idx) => {
+                    const destLogicalName = data.targetCopyName[idx].name ? data.targetCopyName[idx].name : "";
+                    const destNumParts = data.targetCopyName[idx].numParts ? data.targetCopyName[idx].numParts : "0";
+                    const request = { ...data, sourceLogicalName: logicalFile, destLogicalName, DestNumParts: destNumParts };
+                    requests.push(FileSpray.Copy({ request: request }));
+                });
+                Promise.all(requests).then(responses => {
+                    const urls: string[] = [];
+                    const errors: string[] = [];
+                    responses.forEach(response => {
+                        if (response?.Exceptions) {
+                            const err = response.Exceptions.Exception[0].Message;
+                            errors.push(err);
+                            logger.error(err);
+                        } else if (response.CopyResponse?.result) {
+                            urls.push(`#/dfuworkunits/${response.CopyResponse.result}`);
+                        }
+                    });
+                    setSubmitDisabled(false);
+                    setSpinnerHidden(true);
+                    if (errors.length === 0) {
+                        closeForm();
                     }
-                }
+                    if (urls.length === 1) {
+                        pushUrl(urls[0]);
+                    } else {
+                        if (refreshGrid) {
+                            window.setTimeout(() => refreshGrid(), 200);
+                        }
+                        urls.forEach(url => window.open(url));
+                    }
+                });
             },
             err => {
-                console.log(err);
+                logger.error(err);
             }
         )();
     }, [closeForm, handleSubmit, logicalFiles, refreshGrid]);
@@ -109,17 +123,12 @@ export const CopyFile: React.FunctionComponent<CopyFileProps> = ({
     );
 
     React.useEffect(() => {
-        if (logicalFiles?.length === 1) {
-            const newValues = { ...defaultValues, destLogicalName: logicalFiles[0] };
-            reset(newValues);
-        } else if (logicalFiles?.length > 1) {
-            const _files = [];
-            logicalFiles.forEach(file => {
-                _files.push({ name: file });
-            });
-            const newValues = { ...defaultValues, targetCopyName: _files };
-            reset(newValues);
-        }
+        const _files = [];
+        logicalFiles.forEach(file => {
+            _files.push({ name: file, numParts: "" });
+        });
+        const newValues = { ...defaultValues, targetCopyName: _files };
+        reset(newValues);
     }, [logicalFiles, reset]);
 
     return <MessageBox title={nlsHPCC.Copy} show={showForm} setShow={closeForm}
@@ -149,60 +158,60 @@ export const CopyFile: React.FunctionComponent<CopyFileProps> = ({
                     required: `${nlsHPCC.SelectA} ${nlsHPCC.Group}`
                 }}
             />
-            {logicalFiles.length === 1 &&
-                <Controller
-                    control={control} name="destLogicalName"
-                    render={({
-                        field: { onChange, name: fieldName, value },
-                        fieldState: { error }
-                    }) => <TextField
-                            name={fieldName}
-                            onChange={onChange}
-                            required={true}
-                            label={nlsHPCC.TargetName}
-                            value={value}
-                            errorMessage={error && error.message}
-                        />}
-                    rules={{
-                        required: nlsHPCC.ValidationErrorRequired
-                    }}
-                />
-            }
         </StackShim>
-        {logicalFiles.length > 1 &&
-            <StackShim>
-                <table className={`${componentStyles.twoColumnTable} ${componentStyles.selectionTable}`}>
-                    <thead>
-                        <tr>
-                            <th>{nlsHPCC.TargetName}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {logicalFiles.map((file, idx) => {
-                            return <tr key={`File-${idx}`}>
-                                <td>
-                                    <Controller
-                                        control={control} name={`targetCopyName.${idx}.name` as const}
-                                        render={({
-                                            field: { onChange, name: fieldName, value: file },
-                                            fieldState: { error }
-                                        }) => <TextField
-                                                name={fieldName}
-                                                onChange={onChange}
-                                                value={file}
-                                                errorMessage={error && error?.message}
-                                            />}
-                                        rules={{
-                                            required: nlsHPCC.ValidationErrorTargetNameRequired
-                                        }}
-                                    />
-                                </td>
-                            </tr>;
-                        })}
-                    </tbody>
-                </table>
-            </StackShim>
-        }
+        <StackShim>
+            <table className={`${componentStyles.twoColumnTable} ${componentStyles.selectionTable}`}>
+                <thead>
+                    <tr>
+                        <th>{nlsHPCC.TargetName}</th>
+                        <th>{nlsHPCC.NumberofParts}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {logicalFiles.map((file, idx) => {
+                        return <tr key={`File-${idx}`}>
+                            <td>
+                                <Controller
+                                    control={control} name={`targetCopyName.${idx}.name` as const}
+                                    render={({
+                                        field: { onChange, name: fieldName, value: file },
+                                        fieldState: { error }
+                                    }) => <TextField
+                                            name={fieldName}
+                                            onChange={onChange}
+                                            value={file}
+                                            errorMessage={error && error?.message}
+                                        />}
+                                    rules={{
+                                        required: nlsHPCC.ValidationErrorTargetNameRequired
+                                    }}
+                                />
+                            </td>
+                            <td>
+                                <Controller
+                                    control={control} name={`targetCopyName.${idx}.numParts` as const}
+                                    render={({
+                                        field: { onChange, name: fieldName, value },
+                                        fieldState: { error }
+                                    }) => <TextField
+                                            name={fieldName}
+                                            onChange={onChange}
+                                            value={value}
+                                            errorMessage={error && error?.message}
+                                        />}
+                                    rules={{
+                                        pattern: {
+                                            value: /^[0-9]+$/i,
+                                            message: nlsHPCC.ValidationErrorEnterNumber
+                                        }
+                                    }}
+                                />
+                            </td>
+                        </tr>;
+                    })}
+                </tbody>
+            </table>
+        </StackShim>
         <StackShim>
             <table className={componentStyles.twoColumnTable}>
                 <tbody>
