@@ -17,7 +17,7 @@
 
 BINDIR=`dirname $0`
 export LD_LIBRARY_PATH=$BINDIR
-ulimit -n 8192
+ulimit -n 1048576
 ulimit -c unlimited
 nohup $BINDIR/ftslave $* 1>/dev/null 2>/dev/null &
 
