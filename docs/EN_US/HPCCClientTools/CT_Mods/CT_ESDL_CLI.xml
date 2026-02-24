@@ -1533,27 +1533,17 @@
         <programlisting>esdl get-binding  myesp.8003.MathService -s nnn.nnn.nnn.nnn -p 8010</programlisting>
       </sect2>
 
-      <sect2 id="esdl_manifest_command">
+      <sect2 id="esdl_manifest_command" role="brk">
         <title>esdl manifest</title>
 
         <para><emphasis role="bold">esdl manifest &lt;manifest-file&gt;
         [options]</emphasis></para>
 
-        <table frame="all">
-          <title>Command Line Options</title>
-
+        <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec colname="opt"/>
+            <colspec align="left" colwidth="140.55pt"/>
 
-            <colspec colname="desc"/>
-
-            <thead>
-              <row>
-                <entry>Option</entry>
-
-                <entry>Description</entry>
-              </row>
-            </thead>
+            <colspec/>
 
             <tbody>
               <row>
@@ -1601,7 +1591,7 @@
               </row>
             </tbody>
           </tgroup>
-        </table>
+        </informaltable>
 
         <para>The <command>manifest</command> command creates an XML
         configuration file for an ESDL ESP from an input XML manifest file.
@@ -1648,11 +1638,9 @@
             </listitem>
           </itemizedlist>
 
-          <example>
-            <title>Example Manifest File</title>
+          <para>Example Manifest File:</para>
 
-            <programlisting language="xml">
-&lt;em:Manifest xmlns:em="urn:hpcc:esdl:manifest"&gt;
+          <programlisting language="xml">&lt;em:Manifest xmlns:em="urn:hpcc:esdl:manifest"&gt;
   &lt;em:ServiceBinding esdlservice="WsFoobar" id="WsFoobar_desdl_binding" auth_feature="DEFERRED"&gt;
     &lt;Methods&gt;
       &lt;em:Scripts&gt;
@@ -1681,9 +1669,7 @@
   &lt;em:EsdlDefinition&gt;
     &lt;em:Include file="WsFoobar.ecm"/&gt;
   &lt;/em:EsdlDefinition&gt;
-&lt;/em:Manifest&gt;
-        </programlisting>
-          </example>
+&lt;/em:Manifest&gt;    </programlisting>
 
           <para>The tool is permissive and flexible, copying through most
           markup to the output. Recognized elements in the manifest namespace
@@ -1752,11 +1738,11 @@
         </sect3>
 
         <sect3 id="esdl_manifest_attributes">
-          <title>Manifest Attributes (Tabular)</title>
+          <title>Manifest Attributes</title>
 
-          <table frame="all">
-            <title>Manifest Root Attributes</title>
+          <para>Manifest Root Attributes</para>
 
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="4">
               <colspec colname="attr"/>
 
@@ -1804,11 +1790,11 @@
                 </row>
               </tbody>
             </tgroup>
-          </table>
+          </informaltable>
 
-          <table frame="all">
-            <title>ServiceBinding Attributes</title>
+          <para>ServiceBinding Attributes</para>
 
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="4">
               <colspec colname="attr"/>
 
@@ -1947,7 +1933,7 @@
                 </row>
               </tbody>
             </tgroup>
-          </table>
+          </informaltable>
         </sect3>
       </sect2>
     </sect1>
