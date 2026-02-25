@@ -8,6 +8,7 @@ import { TargetDropzoneTextField, TargetFolderTextField, TargetServerTextField }
 import { joinPath } from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { useUserTheme } from "../../../hooks/theme";
+import { useFileUpload } from "../../../hooks/useFileUpload";
 import { MessageBox } from "../../../layouts/MessageBox";
 import { debounce } from "../../../util/throttle";
 import * as FormStyles from "./styles";
@@ -61,86 +62,36 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
     const [pathSep, setPathSep] = React.useState<string>("/");
     const [os, setOs] = React.useState<number>();
 
-    const [submitDisabled, setSubmitDisabled] = React.useState(false);
-    const [uploadPct, setUploadPct] = React.useState<number>(0);
-
-    const uploadXHRRef = React.useRef<XMLHttpRequest | null>(null);
-
     const { handleSubmit, control, reset } = useForm<FileListFormValues>({ defaultValues });
     const { theme } = useUserTheme();
-
-    const beforeUnloadHandler = React.useCallback((evt: BeforeUnloadEvent) => {
-        evt.preventDefault();
-        return nlsHPCC.Uploading;
-    }, []);
-
-    const addBeforeUnload = React.useCallback(() => {
-        window.addEventListener("beforeunload", beforeUnloadHandler);
-    }, [beforeUnloadHandler]);
-
-    const removeBeforeUnload = React.useCallback(() => {
-        window.removeEventListener("beforeunload", beforeUnloadHandler);
-    }, [beforeUnloadHandler]);
+    const { uploadPct, isUploading, upload, cancelUpload: cancelXHR } = useFileUpload();
 
     const closeForm = React.useCallback(() => {
         setShowForm(false);
-        removeBeforeUnload();
-        setUploadPct(0);
         const uploaderBtn = document.querySelector("#uploaderBtn");
         if (uploaderBtn) {
             uploaderBtn["value"] = null;
         }
-    }, [removeBeforeUnload, setShowForm]);
+    }, [setShowForm]);
 
     const cancelUpload = React.useCallback(() => {
-        if (uploadXHRRef.current) {
-            try {
-                uploadXHRRef.current.abort();
-                logger.warning(nlsHPCC.UploadCancelled);
-            } catch (err) {
-                logger.error(nlsHPCC.ErrorAbortingUpload + ": " + err);
-            } finally {
-                uploadXHRRef.current = null;
-            }
-        }
-        removeBeforeUnload();
-        setSubmitDisabled(false);
-        setUploadPct(0);
+        cancelXHR();
         closeForm();
-    }, [closeForm, removeBeforeUnload]);
+    }, [cancelXHR, closeForm]);
 
     const doSubmit = React.useCallback((data) => {
         const uploadFiles = (folderPath, selection) => {
             const formData = new FormData();
+            const fileNames = [];
             selection.forEach(file => {
                 formData.append("uploadedfiles[]", file);
+                fileNames.push(file.name);
             });
             const uploadUrl = `/FileSpray/UploadFile.json?upload_&rawxml_=1&NetAddress=${machine}&OS=${os}&Path=${folderPath}&DropZoneName=${data.dropzone}`;
 
-            setSubmitDisabled(true);
-            setUploadPct(0);
-
-            // have to use XMLHttpRequest over native fetch to capture upload progress
-            const xhr = new XMLHttpRequest();
-            xhr.open("POST", uploadUrl, true);
-            uploadXHRRef.current = xhr;
-
-            xhr.upload.onprogress = (evt) => {
-                if (evt.lengthComputable) {
-                    const pct = Math.round((evt.loaded / evt.total) * 100);
-                    setUploadPct(pct);
-                    if (pct < 100) {
-                        addBeforeUnload();
-                    }
-                }
-            };
-
-            xhr.onload = () => {
-                removeBeforeUnload();
-                setSubmitDisabled(false);
-                uploadXHRRef.current = null;
+            upload(uploadUrl, formData, fileNames, (responseText) => {
                 try {
-                    const response = JSON.parse(xhr.responseText || "{}");
+                    const response = JSON.parse(responseText || "{}");
                     const exceptions = response?.Exceptions?.Exception ?? [];
                     if (exceptions.length > 0) {
                         logger.error(exceptions[0]?.Message ?? nlsHPCC.ErrorUploadingFile);
@@ -158,27 +109,8 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                     }
                 } catch (err) {
                     logger.error(nlsHPCC.ErrorUploadingFile + ": " + err);
-                } finally {
-                    setUploadPct(0);
                 }
-            };
-
-            xhr.onerror = () => {
-                removeBeforeUnload();
-                setSubmitDisabled(false);
-                uploadXHRRef.current = null;
-                logger.error(nlsHPCC.ErrorUploadingFile);
-                setUploadPct(0);
-            };
-
-            xhr.onabort = () => {
-                removeBeforeUnload();
-                setSubmitDisabled(false);
-                uploadXHRRef.current = null;
-                setUploadPct(0);
-            };
-
-            xhr.send(formData);
+            });
         };
 
         handleSubmit(
@@ -212,7 +144,7 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                 console.log(err);
             }
         )();
-    }, [addBeforeUnload, closeForm, handleSubmit, machine, onSubmit, os, pathSep, removeBeforeUnload, reset, selection]);
+    }, [closeForm, handleSubmit, machine, onSubmit, os, pathSep, reset, selection, upload]);
 
     const componentStyles = mergeStyleSets(
         FormStyles.componentStyles,
@@ -242,9 +174,9 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
         }
     );
 
-    return <MessageBox title={nlsHPCC.FileUploader} show={showForm} setShow={closeForm} disableClose={submitDisabled}
+    return <MessageBox title={nlsHPCC.FileUploader} show={showForm} setShow={closeForm} disableClose={isUploading}
         footer={<>
-            {submitDisabled &&
+            {isUploading &&
                 // TODO: need to figure out why there's some theme clashing issue here
                 // preventing just using a ProgressBar wrapped with a FluentProvider...
                 <div className={componentStyles.progressMessage} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={uploadPct}>
@@ -254,8 +186,8 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                     </div>
                 </div>
             }
-            <PrimaryButton text={nlsHPCC.Upload} onClick={handleSubmit(doSubmit)} disabled={submitDisabled} />
-            {submitDisabled &&
+            <PrimaryButton text={nlsHPCC.Upload} onClick={handleSubmit(doSubmit)} disabled={isUploading} />
+            {isUploading &&
                 <DefaultButton text={nlsHPCC.Cancel} onClick={() => {
                     if (window.confirm(nlsHPCC.CancelUploadConfirm)) {
                         cancelUpload();
