@@ -9,22 +9,27 @@
         <primary>EVALUATE</primary>
       </indexterm> action</title>
 
-    <para><emphasis>[</emphasis><emphasis>attrname</emphasis> :=<emphasis
-    role="bold"> ] EVALUATE<indexterm>
+    <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
+    :=<emphasis role="bold"> ] EVALUATE<indexterm>
         <primary>EVALUATE action</primary>
       </indexterm>(</emphasis><emphasis>expression</emphasis><emphasis
     role="bold">) ;</emphasis></para>
 
-    <para><emphasis>[</emphasis><emphasis>attrname</emphasis> :=<emphasis
-    role="bold"> ] EVALUATE(</emphasis><emphasis>module </emphasis><emphasis
-    role="bold">[</emphasis><emphasis>, defname </emphasis><emphasis
-    role="bold"> ] ) ;</emphasis></para>
+    <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
+    :=<emphasis role="bold"> ] EVALUATE(</emphasis><emphasis>module
+    </emphasis><emphasis role="bold">[</emphasis><emphasis>, defname
+    </emphasis><emphasis role="bold"> ] ) ;</emphasis></para>
+
+    <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
+    :=<emphasis role="bold"> ] EVALUATE(</emphasis><emphasis>engine
+    </emphasis><emphasis>, expression </emphasis><emphasis role="bold">)
+    ;</emphasis></para>
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
-          <colspec colwidth="80.60pt" />
+          <colspec colwidth="80.60pt"/>
 
-          <colspec />
+          <colspec/>
 
           <tbody>
             <row>
@@ -38,13 +43,23 @@
             <row>
               <entry><emphasis>expression</emphasis></entry>
 
-              <entry>The function to call in an action context.</entry>
+              <entry>The function to call in an action context or an
+              expression that resolves to data (either a dataset or a scalar
+              value).</entry>
             </row>
 
             <row>
               <entry><emphasis>module</emphasis></entry>
 
               <entry>The module to evaluate.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>engine</emphasis></entry>
+
+              <entry>The engine on which to evaluate. Valid options are
+              <emphasis role="bold">ECLAGENT</emphasis> (for hThor) or the
+              name of a Thor queue.</entry>
             </row>
 
             <row>
@@ -71,7 +86,13 @@
     <emphasis>defname</emphasis> is specified, then only that definition is
     evaluated.</para>
 
-    <para>Example:</para>
+    <para>The third form of the <emphasis role="bold">EVALUATE</emphasis>
+    action evaluates the expression on the specified engine. This option is
+    disabled by default, to enable it, use:</para>
+
+    <programlisting>#OPTION('enableClusterHopping', TRUE);</programlisting>
+
+    <para>Examples:</para>
 
     <para>Form 1 example:</para>
 
@@ -104,6 +125,40 @@ EVALUATE(M2);
 //  Result_2: Hello
 //  Result_3: Richard</programlisting>
 
+    <para>Form 3 example:</para>
+
+    <programlisting>#OPTION('enableClusterHopping', TRUE);
+
+MyLayout := RECORD
+    UNSIGNED4   id;
+    STRING20    n;
+END;
+
+ds1 := DATASET([{100,'Fred'},
+                 {101,'Wilms'},
+                 {102,'Barney'},
+                 {103,'Betty'},
+                 {104,'Dino'}], MyLayout);
+
+ds2 := DATASET([{100,'Miami'},
+                 {101,'Hollywood'},
+                 {102,'Miami'},
+                 {103,'Fort Lauderdale'},
+                 {104,'Hialeah'}], MyLayout);       
+
+JoinData(DATASET(MyLayout) d1, DATASET(MyLayout) d2) := JOIN
+        (d1,d2,LEFT.id = RIGHT.id,TRANSFORM
+        ({UNSIGNED4 id,
+          STRING20  n1,
+          STRING20  n2},
+         SELF.id := LEFT.id,
+         SELF.n1 := LEFT.n,
+         SELF.n2 := RIGHT.n));
+
+OUTPUT(EVALUATE('mythor1', JoinData(ds1, ds2)), NAMED('mythor1'));
+OUTPUT(EVALUATE('mythor2', JoinData(ds1, ds2)), NAMED('mythor2'));
+OUTPUT(EVALUATE('ECLAGENT', JoinData(ds1, ds2)), NAMED('ecl_agent'));</programlisting>
+
     <para>See Also: <link linkend="APPLY">APPLY</link>, <link
     linkend="SERVICE_Structure">SERVICE Structure</link>,</para>
   </sect2>
@@ -118,9 +173,9 @@ EVALUATE(M2);
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
-          <colspec colwidth="79.15pt" />
+          <colspec colwidth="79.15pt"/>
 
-          <colspec colwidth="309.65pt" />
+          <colspec colwidth="309.65pt"/>
 
           <tbody>
             <row>
