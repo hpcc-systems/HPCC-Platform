@@ -58,12 +58,12 @@ extern jlib_decl bool getRenameSupportedFromPath(const char *filePath);
 
 enum class AccessMode : unsigned
 {
-
     none            = 0x00000000,
     read            = 0x00000001,
     write           = 0x00000002,
     sequential      = 0x00000004,
     random          = 0x00000008,           // corresponds to "random" reason in alias reasons
+    meta            = 0x00000010,
     noMount         = 0x01000000,           // corresponds to "api" reason in alias reasons
 
     readRandom      = read | random,
@@ -71,8 +71,8 @@ enum class AccessMode : unsigned
     readNoMount     = read | noMount,
     writeSequential = write | sequential,
 
-    readMeta        = read,                  // read access - may not actually read the contents
-    writeMeta       = write,                 // write access - may also be used for delete
+    readMeta        = read | meta,                  // read access - may not actually read the contents
+    writeMeta       = write | meta,                 // write access - may also be used for delete
 
 //The following are used for mechanical replacement of writeattr to update the function prototypes but not change
 //the behaviour but allow all the calls to be revisited later to ensure the correct parameter is used.

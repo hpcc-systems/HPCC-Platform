@@ -35,6 +35,8 @@
 #include "daclient.hpp"
 #include "rmtclient.hpp"
 
+#include <memory>
+#include <string_view>
 #include <vector>
 
 #ifdef _DEBUG
@@ -3930,4 +3932,211 @@ StringBuffer & mangleTemporaryFileName(StringBuffer & out, const char * lfn, con
         out.append(lfn).append("__").appendLower(wuid);
     }
     return out;
+}
+
+static void appendLogfmtPair(StringBuffer &out, const char *key, const char *value, bool &first)
+{
+    if (!value)
+        value = "";
+
+    if (!first)
+        out.append(' ');
+    first = false;
+
+    bool needsQuote = strpbrk(value, " ,\"=\t\n\r") != nullptr;
+    out.append(key).append("=");
+    if (needsQuote)
+    {
+        out.append('"');
+        for (const char *p = value; *p; p++)
+        {
+            if (*p == '\\')
+                out.append("\\\\");
+            else if (*p == '"')
+                out.append("\\\"");
+            else
+                out.append(*p);
+        }
+        out.append('"');
+    }
+    else
+        out.append(value);
+}
+
+void buildClientInfoLogfmt(LogfmtKVList &items)
+{
+    // Build cached static fields on first call
+    static LogfmtKVList cacheItems = []()
+    {
+        LogfmtKVList ret;
+        std::unique_ptr<char, decltype(&free)> deploymentName(getHPCCEnvVal("HPCC_DEPLOYMENT", "deployment-name-not-configured"), &free);
+        if (!isEmptyString(deploymentName.get()))
+            ret.emplace_back("deployment", deploymentName.get());
+
+        StringBuffer componentName;
+        getComponentConfigSP()->getName(componentName);
+        if (!componentName.isEmpty())
+            ret.emplace_back("component", componentName.str());
+        return ret;
+    }();
+
+    items = cacheItems;
+
+    const char *job = queryLogMsgManager()->queryJobId(queryThreadedJobId());
+    if (!isEmptyString(job))
+        setLogfmtValue(items, "job", job);
+}
+
+void parseLogfmtToKVList(const char *logfmt, LogfmtKVList &output)
+{
+    output.clear();
+    if (isEmptyString(logfmt))
+        return;
+
+    const char *p = logfmt;
+    while (*p)
+    {
+        while (*p == ' ')
+            p++;
+        if (!*p)
+            break;
+
+        const char *keyStart = p;
+        while (*p && *p != '=')
+            p++;
+        if (!*p)
+            break; // could error, but silently ignoring key with no value.
+
+        std::string_view keyView(keyStart, static_cast<size_t>(p - keyStart));
+        p++;
+
+        std::string_view valueView;
+        bool hasEscape = false;
+        if (*p == '"')
+        {
+            p++;
+            const char *valueStart = p;
+            while (*p && *p != '"')
+            {
+                if (*p == '\\' && (*(p + 1) == '"' || *(p + 1) == '\\'))
+                {
+                    hasEscape = true;
+                    p += 2;
+                }
+                else
+                    p++;
+            }
+            valueView = std::string_view(valueStart, static_cast<size_t>(p - valueStart));
+
+            if (*p == '"')
+                p++;
+        }
+        else
+        {
+            const char *valueStart = p;
+            while (*p && *p != ' ')
+                p++;
+            valueView = std::string_view(valueStart, static_cast<size_t>(p - valueStart));
+        }
+
+        std::string value;
+        if (hasEscape)
+        {
+            value.reserve(valueView.size());
+            const char *start = valueView.data();
+            const char *end = start + valueView.size();
+            for (const char *cur = start; cur < end; ++cur)
+            {
+                if (*cur == '\\' && (cur + 1) < end)
+                {
+                    char next = *(cur + 1);
+                    if (next == '"' || next == '\\')
+                    {
+                        value.push_back(next);
+                        ++cur;
+                    }
+                    else
+                        value.push_back(*cur);
+                }
+                else
+                    value.push_back(*cur);
+            }
+        }
+        else
+            value.assign(valueView.data(), valueView.size());
+
+        output.emplace_back(std::string(keyView), std::move(value));
+    }
+}
+
+const char *queryLogfmtValue(const LogfmtKVList &items, const char *key, const char *defaultValue)
+{
+    if (isEmptyString(key))
+        return defaultValue;
+
+    // linear search is fine, we're not expecting many
+    for (const auto &item : items)
+    {
+        if (item.first == key)
+            return item.second.c_str();
+    }
+    return defaultValue;
+}
+
+void setLogfmtValue(LogfmtKVList &items, const char *key, const char *value)
+{
+    if (isEmptyString(key))
+        return;
+
+    // linear search is fine, we're not expecting many
+    for (auto &item : items)
+    {
+        if (item.first == key)
+        {
+            item.second = value ? value : "";
+            return;
+        }
+    }
+
+    items.emplace_back(key, value ? value : "");
+}
+
+void logfmtKVListToString(const LogfmtKVList &items, StringBuffer &output, const char *exclusions)
+{
+    std::vector<std::string_view> exclusionList;
+    if (!isEmptyString(exclusions))
+    {
+        const char *p = exclusions;
+        while (true)
+        {
+            const char *start = p;
+            while (*p && *p != ',')
+                p++;
+            if (p > start)
+                exclusionList.emplace_back(start, static_cast<size_t>(p - start));
+            if (*p == '\0')
+                break;
+            p++;
+        }
+    }
+
+    auto isExcluded = [&exclusionList](const char *key) -> bool
+    {
+        std::string_view keyView(key, strlen(key));
+        for (const auto &item : exclusionList)
+        {
+            if (item == keyView)
+                return true;
+        }
+        return false;
+    };
+
+    bool first = true;
+    for (const auto &item : items)
+    {
+        if (!exclusionList.empty() && isExcluded(item.first.c_str()))
+            continue;
+
+        appendLogfmtPair(output, item.first.c_str(), item.second.c_str(), first);
+    }
 }

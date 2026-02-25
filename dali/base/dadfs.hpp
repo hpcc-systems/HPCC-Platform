@@ -677,7 +677,7 @@ interface IDistributedFileDirectory: extends IInterface
     virtual bool exists(const char *logicalname,IUserDescriptor *user,bool notsuper=false,bool superonly=false) = 0;                           // logical name exists
     virtual bool existsPhysical(const char *logicalname,IUserDescriptor *user) = 0;                                                    // physical parts exists
 
-    virtual IPropertyTree *getFileTree(const char *lname, IUserDescriptor *user, const INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT, GetFileTreeOpts opts = GetFileTreeOpts::expandNodes|GetFileTreeOpts::appendForeign) =0;
+    virtual IPropertyTree *getFileTree(const char *lname, IUserDescriptor *user, AccessMode accessMode, const INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT, GetFileTreeOpts opts = GetFileTreeOpts::expandNodes|GetFileTreeOpts::appendForeign) =0;
     virtual IFileDescriptor *getFileDescriptor(const char *lname, AccessMode accessMode, IUserDescriptor *user, const INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) =0;
 
     virtual IDistributedSuperFile *createSuperFile(const char *logicalname,IUserDescriptor *user,bool interleaved,bool ifdoesnotexist=false,IDistributedFileTransaction *transaction=NULL) = 0;
@@ -754,9 +754,6 @@ interface IDistributedFileDirectory: extends IInterface
                                    StringArray *files,
                                    bool includeemptyscopes=false
                                 ) = 0; // if scope returns subfiles and subdirs
-
-    virtual bool publishMetaFileXML(const CDfsLogicalFileName &logicalname,
-                                    IUserDescriptor *user) = 0;
 
     virtual bool isProtectedFile( // needs no lock on file
                                       const CDfsLogicalFileName &logicalname,

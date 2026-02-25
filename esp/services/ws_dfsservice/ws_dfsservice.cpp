@@ -59,7 +59,7 @@ static void populateLFNMeta(IUserDescriptor *userDesc, const char *logicalName, 
 
     assertex(!lfn.isMulti()); // not supported, don't think needs to be/will be.
 
-    Owned<IPropertyTree> tree = queryDistributedFileDirectory().getFileTree(logicalName, userDesc);
+    Owned<IPropertyTree> tree = queryDistributedFileDirectory().getFileTree(logicalName, userDesc, AccessMode::readMeta);
     if (!tree)
         return;
     if (hasMask(opts, LfnMOptRemap))
@@ -193,6 +193,8 @@ bool CWsDfsEx::onDFSFileLookup(IEspContext &context, IEspDFSFileLookupRequest &r
 
         unsigned timeoutSecs = req.getRequestTimeout();
         unsigned __int64 leaseId = req.getLeaseId();
+        AccessMode accessMode = (AccessMode)req.getAccessMode();
+        const char *clientInfo = req.getClientInfo();
 
         // populate file meta data and lock id's
         LfnMetaOpts opts = LfnMOptNone;
@@ -227,7 +229,23 @@ bool CWsDfsEx::onDFSFileLookup(IEspContext &context, IEspDFSFileLookupRequest &r
             dt.setNow();
             queryDistributedFileDirectory().setFileAccessed(userDesc, logicalName, dt);
 
-            LOG(MCauditInfo,",FileAccess,EspProcess,READ,%s,%u,%s", logicalName, timeoutSecs, userID.str());
+            // Log audit info only if not readMeta access
+            if (AccessMode::none == (accessMode & AccessMode::meta))
+            {
+                // Parse logfmt client info, add user field, and convert back to logfmt
+                LogfmtKVList context;
+                parseLogfmtToKVList(clientInfo, context);
+                setLogfmtValue(context, "user", userID.str());
+
+                const char *component = queryLogfmtValue(context, "component", "EspProcess");
+
+                StringBuffer logfmtInfo;
+                logfmtKVListToString(context, logfmtInfo, "component");
+
+                StringBuffer logEntry;
+                logEntry.appendf(",FileAccess,%s,READ,%s,%s", component, logicalName, logfmtInfo.str());
+                LOG(MCauditInfo, "%s", logEntry.str());
+            }
         }
     }
     catch (IException *e)
