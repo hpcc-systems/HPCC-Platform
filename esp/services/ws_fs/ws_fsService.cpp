@@ -795,6 +795,9 @@ bool CFileSprayEx::GetArchivedDFUWorkunits(IEspContext &context, IEspGetDFUWorku
         cmd->setJobName(req.getJobname());
     if(req.getStateReq() && *req.getStateReq())
         cmd->setState(req.getStateReq());
+    CDFUCommand command = req.getCommand();
+    // Note: dfucmdname is not serialized in the Sasha wire protocol, so command filtering
+    // must be applied client-side after results are received.
     cmd->setOutputFormat("owner,jobname,cluster,state,command");//date range/owner/jobname/state*/
 
     if (!cmd->send(sashaserver))
@@ -810,8 +813,11 @@ bool CFileSprayEx::GetArchivedDFUWorkunits(IEspContext &context, IEspGetDFUWorku
     for (unsigned i = 0; i < actualCount; i++)
     {
         Owned<IEspDFUWorkunit> dfuWU = createDFUWUFromSashaListResult(cmd->queryId(i));
-        if (dfuWU)
-            results.append(*dfuWU.getLink());
+        if (!dfuWU)
+            continue;
+        if (command != DFUCommand_Undefined && dfuWU->getCommand() != (int)decodeDFUcommand(CXDFUCommand::stringOf(command)))
+            continue;
+        results.append(*dfuWU.getLink());
     }
 
     resp.setPageStartFrom(begin+1);
@@ -858,7 +864,19 @@ bool CFileSprayEx::GetArchivedDFUWorkunits(IEspContext &context, IEspGetDFUWorku
         resp.setOwner(req.getOwner());
         addToQueryString(basicQuery, "Owner", req.getOwner());
     }
-    if (req.getType() && *req.getType())
+    double version = context.getClientVersion();
+    if (version >= 1.29)
+    {
+        resp.setArchived(true);
+        addToQueryString(basicQuery, "Archived", "true");
+        CDFUCommand command = req.getCommand();
+        if (command != DFUCommand_Undefined)
+        {
+            resp.setCommand(command);
+            addToQueryString(basicQuery, "Command", CXDFUCommand::stringOf(command));
+        }
+    }
+    else if (req.getType() && *req.getType())
     {
         resp.setType(req.getType());
         addToQueryString(basicQuery, "Type", req.getType());
@@ -932,14 +950,15 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
             return getOneDFUWorkunit(context, wuidPattern, resp);
 
         double version = context.getClientVersion();
-        if (version > 1.02)
+        bool archived = (version >= 1.29) ? req.getArchived() : false;
+        if (!archived && version > 1.02)
         {
             const char *type = req.getType();
             if (type && *type && !stricmp(type, "archived workunits"))
-            {
-                return GetArchivedDFUWorkunits(context, req, resp);
-            }
+                archived = true;
         }
+        if (archived)
+            return GetArchivedDFUWorkunits(context, req, resp);
 
         StringBuffer clusterReq;
         const char *clusterName = req.getCluster();
@@ -1083,6 +1102,26 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
             filters[filterCount] = DFUsortfield (DFUsf_job | DFUsf_nocase);
             filterCount++;
             filterbuf.append(req.getJobname());
+        }
+
+        const char *commandReq = nullptr;
+        if (version >= 1.29)
+        {
+            CDFUCommand command = req.getCommand();
+            if (command != DFUCommand_Undefined)
+                commandReq = CXDFUCommand::stringOf(command);
+        }
+        else
+        {
+            const char *typeReq = req.getType();
+            if (!isEmptyString(typeReq) && stricmp(typeReq, "archived workunits") != 0)
+                commandReq = typeReq;
+        }
+        if (!isEmptyString(commandReq))
+        {
+            filters[filterCount] = DFUsf_command;
+            filterCount++;
+            filterbuf.append(commandReq);
         }
 
         filters[filterCount] = DFUsf_term;
@@ -1240,6 +1279,19 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
         {
             resp.setOwner(req.getOwner());
             addToQueryString(basicQuery, "Owner", req.getOwner());
+        }
+        if (!isEmptyString(commandReq))
+        {
+            if (version >= 1.29)
+            {
+                resp.setCommand(req.getCommand());
+                addToQueryString(basicQuery, "Command", commandReq);
+            }
+            else
+            {
+                resp.setType(commandReq);
+                addToQueryString(basicQuery, "Type", commandReq);
+            }
         }
         resp.setFilters(basicQuery.str());
 

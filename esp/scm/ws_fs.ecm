@@ -25,6 +25,21 @@ ESPenum DFUWUActions : string
     Archive("Archive"),
 };
 
+ESPenum DFUCommand : string
+{
+    Copy("copy"),
+    Remove("remove"),
+    Move("move"),
+    Rename("rename"),
+    Replicate("replicate"),
+    Import("import"),
+    Export("export"),
+    Monitor("monitor"),
+    CopyMerge("copymerge"),
+    SuperCopy("supercopy"),
+    Publish("publish"),
+};
+
 ESPStruct [nil_remove] DFUWorkunit
 {
     string ID;
@@ -144,7 +159,9 @@ ESPrequest GetDFUWorkunits
     string Owner;
     string Cluster;
     string StateReq;
-    [min_ver("1.03")] string Type;
+    [min_ver("1.03"), max_ver("1.28")] string Type;
+    [min_ver("1.29")] ESPenum DFUCommand Command;
+    [min_ver("1.29")] bool Archived(false);
     [min_ver("1.03")] string Jobname;
 
     int64 PageSize;
@@ -165,7 +182,9 @@ GetDFUWorkunitsResponse
 {
     ESParray<ESPstruct DFUWorkunit> results;
 
-    [min_ver("1.03")] string Type;
+    [min_ver("1.03"), max_ver("1.28")] string Type;
+    [min_ver("1.29")] ESPenum DFUCommand Command;
+    [min_ver("1.29")] bool Archived;
     string Owner;
     string Cluster;
     string StateReq;
@@ -731,7 +750,7 @@ ESPresponse [exceptions_inline, nil_remove] GetRemoteTargetsResponse
 
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.28"),
+    version("1.29"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
 {
     ESPmethod EchoDateTime(EchoDateTime, EchoDateTimeResponse);
