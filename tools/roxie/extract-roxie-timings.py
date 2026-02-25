@@ -294,6 +294,11 @@ if __name__ == "__main__":
             rowText = row[numCols-1]
 
             completeMatch = completePattern.search(rowText)
+            if not completeMatch and row[0].startswith("COMPLETE:"):
+                # Check for the case where the entire line is the complete line - no other logging fields
+                rowText = ' '.join(row)
+                completeMatch = completePattern.search(rowText)
+
             if completeMatch:
                 curRow = dict();
                 mapping = rowText.split();

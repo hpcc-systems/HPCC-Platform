@@ -1,0 +1,19 @@
+@example.developer.config
+
+[config]
+TESTFILE=example.testcases
+
+[options]
+eventTrace=0
+
+[environment]
+#Settings to override in the environment
+nodeCacheMem=100
+leafCacheMem=50
+
+[prepare]
+
+[tests]
+# Different ways of running the test files.
+basic: -u0
+extreme: -u0 -d0
