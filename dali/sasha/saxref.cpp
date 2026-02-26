@@ -75,6 +75,7 @@ inline bool nextCsvToken(const char *&s,StringBuffer &tok)
     return true;
 }
 
+inline bool isDirPerPartSupported() { return isContainerized(); }
 
 // A simple allocator to track memory usage and throw an exception if the
 // requested size exceeds @memoryLimit or resources/@memory in containerized
@@ -768,6 +769,17 @@ public:
         return true;
     }
 
+    bool empty()
+    {
+        // Containerized doesn't have the same replication as bare metal, only check first drive
+        int drvs = isContainerized() ? 1 : 2;
+        for (int drv = 0; drv < drvs; drv++)
+        {
+            if (!empty(drv))
+                return false;
+        }
+        return true;
+    }
 };
 
 
@@ -1367,7 +1379,7 @@ public:
         if (stricmp(name,rootdir)==0)
             return root.get();
         if (!*name)
-            return NULL;
+            return nullptr;
         StringBuffer pdir;
         const char *tail = splitDirTail(name,pdir);
         size32_t dl = pdir.length();
@@ -1375,12 +1387,25 @@ public:
             pdir.setLength(--dl);
         cDirDesc *p = findDirectory(pdir.str());
         if (!p)
-            return NULL;
+            return nullptr;
         // When the cDirDesc hierarchy is built, stripe directories are excluded from the path (see scanDirectories' casyncfor::Do),
         // so prevent incorrect traversal into striped directory structures and return root instead
         if (isPlaneStriped&&p==root.get()&&tail[0]=='d'&&readDigits(tail+1)!=0)
             return p;
-        return p->lookupDirNonThreadSafe(tail, nullptr);
+
+        cDirDesc *dir = p->lookupDirNonThreadSafe(tail, nullptr);
+        if (dir)
+        {
+            // If dir is a dir-per-part candidate, likely all part files are combined in the parent
+            if (isDirPerPartSupported()&&dir->isDirPerPartCandidate()&&dir->empty())
+                return p;
+            else
+                return dir;
+        }
+        else if (isDirPerPartSupported()&&readDigits(tail)!=0)
+            return p; // Likely dir-per-part cDirDesc was removed because it was empty
+        else
+            return nullptr;
     }
 
     bool dirFiltered(const char *filename)
