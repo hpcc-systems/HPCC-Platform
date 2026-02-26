@@ -22,20 +22,20 @@
 #include "eventoperation.h"
 
 // Get a visitor that streams visited event data in JSON format.
-extern event_decl IEventVisitor* createDumpJSONEventVisitor(IBufferedSerialOutputStream& out);
+extern event_decl IEventVisitor* createDumpJSONEventVisitor(IBufferedSerialOutputStream& out, CMetaInfoState& metaState, bool fullPathOutput);
 
 // Get a visitor that streams visited event data in a flat text format.
-extern event_decl IEventVisitor* createDumpTextEventVisitor(IBufferedSerialOutputStream& out);
+extern event_decl IEventVisitor* createDumpTextEventVisitor(IBufferedSerialOutputStream& out, CMetaInfoState& metaState, bool fullPathOutput);
 
 // Get a visitor that streams visited event data in XML format.
-extern event_decl IEventVisitor* createDumpXMLEventVisitor(IBufferedSerialOutputStream& out);
+extern event_decl IEventVisitor* createDumpXMLEventVisitor(IBufferedSerialOutputStream& out, CMetaInfoState& metaState, bool fullPathOutput);
 
 // Get a visitor that streams visited event data in YAML format.
-extern event_decl IEventVisitor* createDumpYAMLEventVisitor(IBufferedSerialOutputStream& out);
+extern event_decl IEventVisitor* createDumpYAMLEventVisitor(IBufferedSerialOutputStream& out, CMetaInfoState& metaState, bool fullPathOutput);
 
 // Get a visitor that streams visited event data in CSV format.
 // The properties parameter is used to determine which optional columns to include.
-extern event_decl IEventVisitor* createDumpCSVEventVisitor(IBufferedSerialOutputStream& out, const EventFileProperties& properties);
+extern event_decl IEventVisitor* createDumpCSVEventVisitor(IBufferedSerialOutputStream& out, const EventFileProperties& properties, CMetaInfoState& metaState, bool fullPathOutput);
 
 // Encapsulation of a visitor that stores visited event data in a property tree and
 // access to the tree.
@@ -46,7 +46,7 @@ interface IEventPTreeCreator : extends IInterface
 };
 
 // Get an event property tree creator.
-extern event_decl IEventPTreeCreator* createEventPTreeCreator();
+extern event_decl IEventPTreeCreator* createEventPTreeCreator(CMetaInfoState& metaState, bool fullPathOutput);
 
 // Supported dump output formats.
 enum class OutputFormat : byte
