@@ -6726,8 +6726,6 @@ public:
                     }
                 }
                 allocatedFromFreeChain = allocated;
-                if (allocated > 0)
-                    dataBuffersActive.fetch_add(allocated);
 
                 // Then try from current block's contiguous space
                 while (allocated < numBuffers && nextOffset < HEAP_ALIGNMENT_SIZE)
@@ -6736,8 +6734,6 @@ public:
                     buffers[allocated++] = (DataBuffer*)(nextBase + nextOffset);
                     nextOffset += DATA_ALIGNMENT_SIZE;
                 }
-                if (allocated > allocatedFromFreeChain)
-                    dataBuffersActive.fetch_add(allocated - allocatedFromFreeChain);
             }
 
             // If didn't allocate from current block - try other blocks or allocate new page
@@ -6783,9 +6779,10 @@ public:
                                     }
                                 }
                                 allocatedFromFreeChain = allocated;
-                                dataBuffersActive.fetch_add(allocated);
-                                assertex(allocated > 0); // Must have allocated at least one
-                                break;
+                                // Note: allocated could be 0 if another thread drained the free chain
+                                // between our initial check and attempting allocation - this is OK
+                                if (allocated > 0)
+                                    break;
                             }
                         }
                         finger = finger->nextBottom;
@@ -6815,11 +6812,14 @@ public:
                         buffers[allocated++] = (DataBuffer*)(nextBase + nextOffset);
                         nextOffset += DATA_ALIGNMENT_SIZE;
                     }
-                    dataBuffersActive.fetch_add(allocated);
                     assertex(allocated > 0);
                 }
             }
         }
+
+        // Update active count outside the critical section
+        if (allocated > 0)
+            dataBuffersActive.fetch_add(allocated);
 
         // Initialize buffers outside the lock
         // Buffers [0..allocatedFromFreeChain) are from free chain - already constructed, just reset state

@@ -600,6 +600,7 @@ public:
     explicit DataBufferAllocator(IDataBufferManager *_manager)
         : manager(_manager)
     {
+        count = manager->allocateBlock(MAX_BUFFERS, buffers);
     }
 
     ~DataBufferAllocator()
@@ -615,21 +616,10 @@ public:
     DataBuffer *allocate()
     {
         if (index < count)
-        {
             return buffers[index++];
-        }
-        else if (count == 0)
-        {
-            // First allocation - do bulk allocation
-            count = manager->allocateBlock(MAX_BUFFERS, buffers);
-            index = 0;
-            return buffers[index++];
-        }
-        else
-        {
-            // Pool exhausted, fall back to single allocation
-            return manager->allocate();
-        }
+
+        // Pool exhausted, fall back to single allocation
+        return manager->allocate();
     }
 
     // Reset the allocator (releases all buffers and clears state)

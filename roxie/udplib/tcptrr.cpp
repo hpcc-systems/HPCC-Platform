@@ -91,6 +91,9 @@ class CTcpReceiveManager : implements IReceiveManager, public CInterface
     CriticalSection collatorsLock; // protects access to collators map
     roxiemem::IDataBufferManager * udpBufferManager;
 
+    class PacketListener;
+    friend class PacketListener;
+
     class CTcpPacketCollator : public Thread
     {
         CTcpReceiveManager &parent;
@@ -107,6 +110,94 @@ class CTcpReceiveManager : implements IReceiveManager, public CInterface
 
     class PacketListener : public CSocketConnectionListener
     {
+        // Per-socket-handler message processor that owns a buffer pool
+        class PerHandlerProcessor : public CInterfaceOf<ISocketMessageProcessor>
+        {
+            static constexpr unsigned poolSize = 8;
+
+            CTcpReceiveManager & receiver;
+            PacketListener & listener;
+            roxiemem::IDataBufferManager * bufferManager;
+            DataBuffer * bufferPool[poolSize];
+            unsigned poolCount = 0;
+            unsigned poolIndex = 0;
+
+        public:
+            PerHandlerProcessor(CTcpReceiveManager & _receiver, PacketListener & _listener, roxiemem::IDataBufferManager * _bufferManager)
+                : receiver(_receiver), listener(_listener), bufferManager(_bufferManager)
+            {
+                // Pre-fill the pool once
+                poolCount = bufferManager->allocateBlock(poolSize, bufferPool);
+            }
+
+            ~PerHandlerProcessor()
+            {
+                // Release any unused buffers from pool
+                while (poolIndex < poolCount)
+                    bufferPool[poolIndex++]->Release();
+            }
+
+            DataBuffer * getBuffer()
+            {
+                if (poolIndex >= poolCount)
+                {
+                    // Pool empty, refill
+                    poolIndex = 0;
+                    poolCount = bufferManager->allocateBlock(poolSize, bufferPool);
+                }
+                return bufferPool[poolIndex++];
+            }
+
+            virtual bool onlyProcessFirstRead() const override
+            {
+                return listener.onlyProcessFirstRead();
+            }
+
+            virtual unsigned getMessageSize(const void * header) const override
+            {
+                return listener.getMessageSize(header);
+            }
+
+            virtual void processMessage(const void * data, size32_t len) override
+            {
+                const UdpPacketHeader * header = (const UdpPacketHeader *)data;
+                unsigned packetLength = header->length;
+                dbgassertex(packetLength <= roxiemem::DATA_ALIGNMENT_SIZE);
+
+                DataBuffer * buffer = getBuffer();
+                memcpy(buffer->data, header, packetLength);
+                
+                if (receiver.collateDirectly)
+                    receiver.collatePacket(buffer);
+                else
+                    receiver.input_queue->pushOwn(buffer);
+            }
+
+            virtual void stopProcessing(CReadSocketHandler & socket) override
+            {
+                listener.stopProcessing(socket);
+            }
+
+            virtual void closeConnection(CReadSocketHandler & socket, IJSOCK_Exception * exception) override
+            {
+                listener.closeConnection(socket, exception);
+            }
+        };
+
+        // Custom socket handler that links the processor
+        class TcpReadSocketHandler : public CReadSocketHandler
+        {
+            Linked<PerHandlerProcessor> processor;
+
+        public:
+            TcpReadSocketHandler(CTcpReceiveManager & receiver, PacketListener & listener, IAsyncProcessor * asyncReader, 
+                               ISocket *sock, size32_t minSize, size32_t maxSize, roxiemem::IDataBufferManager * bufferManager)
+                : CReadSocketHandler(*new PerHandlerProcessor(receiver, listener, bufferManager), asyncReader, sock, minSize, maxSize)
+            {
+                processor.set(&dynamic_cast<PerHandlerProcessor&>(CReadSocketHandler::processor));
+            }
+        };
+
     public:
         PacketListener(CTcpReceiveManager & _receiver)
         : CSocketConnectionListener(0, false, 0, 0), receiver(_receiver)
@@ -127,12 +218,14 @@ class CTcpReceiveManager : implements IReceiveManager, public CInterface
 
         virtual CReadSocketHandler *createSocketHandler(ISocket *sock) override
         {
-            return new CReadSocketHandler(*this, asyncReader, sock, sizeof(UdpPacketHeader), maxInitialReadSize);
+            return new TcpReadSocketHandler(receiver, *this, asyncReader, sock, 
+                                          sizeof(UdpPacketHeader), maxInitialReadSize, receiver.udpBufferManager);
         }
 
         virtual void processMessage(const void * data, size32_t len) override
         {
-            receiver.processMessage(data, len);
+            // This is never called - processing happens in PerHandlerProcessor
+            throwUnexpected();
         }
 
     protected:
@@ -250,44 +343,6 @@ public:
         msgColl->Link();
         return msgColl;
     }
-
-    void processMessage(const void * data, size32_t len)
-    {
-        const UdpPacketHeader * header = (const UdpPacketHeader *)data;
-        unsigned packetLength = header->length;
-        dbgassertex(packetLength <= roxiemem::DATA_ALIGNMENT_SIZE);
-
-        // Per-thread buffer pool - no synchronization needed
-        thread_local DataBuffer *bulkBuffers[maxReceiveBuffers];
-        thread_local unsigned bulkBufferCount = 0;
-        thread_local unsigned bulkBufferIndex = 0;
-
-        DataBuffer * buffer = nullptr;
-        
-        // Try to get a buffer from the thread-local pool
-        if (bulkBufferIndex < bulkBufferCount)
-        {
-            buffer = bulkBuffers[bulkBufferIndex++];
-        }
-        else
-        {
-            // Allocate a new pool - allocateBlock always returns at least 1
-            bulkBufferCount = udpBufferManager->allocateBlock(maxReceiveBuffers, bulkBuffers);
-            bulkBufferIndex = 0;
-            buffer = bulkBuffers[bulkBufferIndex++];
-        }
-        
-        // Fall back to single allocation if bulk failed
-        if (!buffer)
-            buffer = udpBufferManager->allocate();
-            
-        memcpy(buffer->data, header, packetLength);
-        if (collateDirectly)
-            collatePacket(buffer);
-        else
-            input_queue->pushOwn(buffer);
-    }
-
 };
 
 IReceiveManager *createTcpReceiveManager(int server_flow_port, int data_port, int client_flow_port,
