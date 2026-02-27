@@ -93,7 +93,7 @@ protected:
         if (includeCount)
             appendCSVColumn(line, bucket.count);
         if (bucket.count)
-            appendCSVColumns(line, bucket.total, bucket.min, bucket.max, bucket.total / bucket.count);
+            appendCSVColumns(line, bucket.total, bucket.total / bucket.count, bucket.min, bucket.max);
         else
             appendCSVColumns(line, "", "", "", "");
     }
@@ -108,11 +108,11 @@ protected:
         header.setLength(prefixLength);
         appendCSVColumn(line, header.append("Total"));
         header.setLength(prefixLength);
+        appendCSVColumn(line, header.append("Average"));
+        header.setLength(prefixLength);
         appendCSVColumn(line, header.append("Min"));
         header.setLength(prefixLength);
         appendCSVColumn(line, header.append("Max"));
-        header.setLength(prefixLength);
-        appendCSVColumn(line, header.append("Average"));
     }
 
     template<typename events_type_t>
@@ -336,7 +336,7 @@ protected:
         appendCSVColumns(line, "File Id", "File Path");
         if (haveNodeKindEntries[BranchNode])
         {
-            appendCSVColumn(line, "Branch In Memory Size");
+            appendCSVBucketHeaders(line, "Branch In Memory Size", false);
             appendCSVEventsHeaders(line, "Branch");
             appendCSVBucketHeaders(line, "Branch Page Cache Read", true);
             appendCSVBucketHeaders(line, "Branch Local Read", true);
@@ -346,7 +346,7 @@ protected:
         }
         if (haveNodeKindEntries[LeafNode])
         {
-            appendCSVColumn(line, "Leaf In Memory Size");
+            appendCSVBucketHeaders(line, "Leaf In Memory Size", false);
             appendCSVEventsHeaders(line, "Leaf");
             appendCSVBucketHeaders(line, "Leaf Page Cache Read", true);
             appendCSVBucketHeaders(line, "Leaf Local Read", true);
@@ -356,7 +356,7 @@ protected:
         }
         if (haveNodeKindEntries[BlobNode])
         {
-            appendCSVColumn(line, "Blob In Memory Size");
+            appendCSVBucketHeaders(line, "Blob In Memory Size", false);
             appendCSVEventsHeaders(line, "Blob");
             appendCSVBucketHeaders(line, "Blob Page Cache Read", true);
             appendCSVBucketHeaders(line, "Blob Local Read", true);
