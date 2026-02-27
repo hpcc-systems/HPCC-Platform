@@ -146,6 +146,14 @@ public:
     void kill() { clear(-1, nullptr); }
     void promote(MAPPING *mapping)
     {
+        MAPPING * head = mruList.head();
+        if (likely(head == mapping))
+            return;
+        // Avoid write contention if the element is already near the head of the MRU list
+        if (head && head->next == mapping)
+            return;
+        if (head && head->next && head->next->next == mapping)
+            return;
         mruList.moveToHead(mapping);
     }
     CMRUIterator *getIterator()
