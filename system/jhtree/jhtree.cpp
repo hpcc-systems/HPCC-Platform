@@ -639,24 +639,24 @@ private:
 public:
     ~CNodeCacheEntry()
     {
-        ::Release(node.load());
+        ::Release(node.load(std::memory_order_acquire));
     }
     inline bool isReady() const
     {
-        return node != nullptr;
+        return node.load(std::memory_order_acquire) != nullptr;
     }
     inline const CJHTreeNode *queryNode() const
     {
-        return node;
+        return node.load(std::memory_order_acquire);
     }
     inline const CJHTreeNode *getNode() const
     {
         assert(isReady());
-        return ::LINK(node.load());
+        return ::LINK(node.load(std::memory_order_acquire));
     }
     inline void noteReady(const CJHTreeNode *_node)
     {
-        node = _node;
+        node.store(_node, std::memory_order_release);
     }
 };
 
