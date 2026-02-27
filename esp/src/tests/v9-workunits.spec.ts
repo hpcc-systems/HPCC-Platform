@@ -27,11 +27,8 @@ test.describe("V9 Workunits", () => {
         ];
 
         for (const column of expectedColumns) {
-            if (column === "Cluster") {
-                await expect(page.getByText(column, { exact: true })).toBeVisible();
-            } else {
-                await expect(page.getByText(column)).toBeVisible();
-            }
+            // Use column header selector with exact match to avoid ambiguity
+            await expect(page.getByRole("columnheader", { name: column, exact: true })).toBeVisible();
         }
 
         for (const column of costColumns) {
@@ -54,21 +51,25 @@ test.describe("V9 Workunits", () => {
         await page.getByRole("menuitem", { name: "Filter" }).click();
         await page.getByRole("textbox", { name: "Job Name" }).fill("global.setup.ts");
         await page.getByRole("button", { name: "Apply" }).click();
-        expect(await page.locator(".ms-DetailsRow")).not.toHaveCount(0);
+
+        // Wait for filter to apply and results to load
+        await page.waitForTimeout(1000);
+        await expect(page.locator(".ms-DetailsRow")).not.toHaveCount(0, { timeout: 10000 });
+
         await page.getByRole("menuitem", { name: "Filter" }).click();
     });
 
     test("Should allow protecting and unprotecting a workunit and reflect lock status", async ({ page, browserName }) => {
-        expect(await page.locator(".ms-DetailsRow")).not.toHaveCount(0);
+        await expect(page.locator(".ms-DetailsRow")).not.toHaveCount(0);
         await page.locator(".ms-DetailsRow").first().locator(".ms-DetailsRow-check").click();
-        expect(await page.locator(".ms-DetailsRow.is-selected")).toHaveCount(1);
+        await expect(page.locator(".ms-DetailsRow.is-selected")).toHaveCount(1);
         if (browserName === "chromium") {
             await page.getByRole("menuitem", { name: "Protect", exact: true }).click();
-            expect(await page.locator(".ms-DetailsRow").first().locator("[data-icon-name=\"LockSolid\"]")).toBeVisible();
+            await expect(page.locator(".ms-DetailsRow").first().locator("[data-icon-name=\"LockSolid\"]")).toBeVisible();
             await page.locator(".ms-DetailsRow").first().locator(".ms-DetailsRow-check").click();
-            expect(await page.locator(".ms-DetailsRow.is-selected")).toHaveCount(1);
+            await expect(page.locator(".ms-DetailsRow.is-selected")).toHaveCount(1);
             await page.getByRole("menuitem", { name: "Unprotect" }).click();
-            expect(await page.locator(".ms-DetailsRow").first().locator("[data-icon-name=\"LockSolid\"]")).toHaveCount(0);
+            await expect(page.locator(".ms-DetailsRow").first().locator("[data-icon-name=\"LockSolid\"]")).toHaveCount(0);
         }
     });
 
@@ -78,7 +79,10 @@ test.describe("V9 Workunits", () => {
         expect(await page.locator(".ms-DetailsRow.is-selected")).toHaveCount(1);
         if (browserName === "chromium") {
             await page.getByRole("menuitem", { name: "Set To Failed", exact: true }).click();
-            expect(await page.locator(".ms-DetailsRow").first()).toContainText("failed");
+
+            // Wait for the action to complete and UI to update
+            await page.waitForTimeout(1000);
+            await expect(page.locator(".ms-DetailsRow").first()).toContainText("failed", { timeout: 10000 });
         }
     });
 

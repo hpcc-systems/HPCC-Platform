@@ -1119,7 +1119,7 @@ public:
 
 static constexpr unsigned defaultSaveThresholdSecs = 0; // disabled
 static constexpr unsigned defaultDeltaSaveTransactionThreshold = 0; // disabled
-static constexpr unsigned defaultDeltaMemMaxMB = 10;
+static constexpr unsigned defaultDeltaMemMaxMB = 64; // 64MB a reasonably large default, to cope with large blobs being committed
 static constexpr unsigned defaultDeltaTransactionQueueLimit = 10000;
 class CDeltaWriter : implements IThreaded
 {
@@ -1127,7 +1127,7 @@ class CDeltaWriter : implements IThreaded
     StringBuffer dataPath;
     StringBuffer backupPath;
     unsigned transactionQueueLimit = defaultDeltaTransactionQueueLimit; // absolute limit, will block if this far behind
-    memsize_t transactionMaxMem = defaultDeltaMemMaxMB * 0x100000; // 10MB
+    memsize_t transactionMaxMem = defaultDeltaMemMaxMB * 0x100000;
     unsigned totalQueueLimitHits = 0;
     unsigned saveThresholdSecs = 0;
     cycle_t lastSaveTime = 0;
@@ -1414,40 +1414,34 @@ public:
                 // keep going whilst there's things pending
                 while (true)
                 {
-                    CLeavableCriticalBlock b(pendingCrit);
-                    std::queue<Owned<CTransactionItem>> todo = std::move(pending);
-                    if (0 == todo.size())
-                    {
-                        if (writeRequested)
-                        {
-                            // NB: if here, implies someone signalled via requestAsyncWrite()
-
-                            // if reason we're here is because sem timedout, consume the signal that was sent
-                            if (semTimedout)
-                                pendingTransactionsSem.wait();
-
-                            writeRequested = false;
-                            if (signalWhenAllWritten) // can only be true if writeRequested was true
-                            {
-                                signalWhenAllWritten = false;
-                                allWrittenSem.signal();
-                            }
-                        }
-                        break;
-                    }
-                    pendingSz = 0;
-
-                    b.leave(); // NB: addToQueue could add to pending between here and regaining lock below
                     // NB: ensure consistent lock ordering of blockedSaveCrit and pendingCrit
                     CHECKEDCRITICALBLOCK(blockedSaveCrit, fakeCritTimeout); // because if Dali is saving state (::blockingSave), it will clear pending
-                    b.enter();
-                    // check if new items added in window above
-                    while (pending.size())
+                    std::queue<Owned<CTransactionItem>> todo;
                     {
-                        todo.push(std::move(pending.front()));
-                        pending.pop();
+                        CriticalBlock b(pendingCrit);
+                        todo = std::move(pending);
+                        if (0 == todo.size())
+                        {
+                            if (writeRequested)
+                            {
+                                // NB: if here, implies someone signalled via requestAsyncWrite()
+
+                                // if reason we're here is because sem timedout, consume the signal that was sent
+                                if (semTimedout)
+                                    pendingTransactionsSem.wait();
+
+                                writeRequested = false;
+                                if (signalWhenAllWritten) // can only be true if writeRequested was true
+                                {
+                                    signalWhenAllWritten = false;
+                                    allWrittenSem.signal();
+                                }
+                            }
+                            break;
+                        }
+                        pendingSz = 0;
                     }
-                    b.leave();
+
                     // Because blockedSaveCrit is held, it will also block 'synchronous save' (see addToQueue)
                     // i.e. if stuck here, the transactions will start building up, and trigger a 'Forced synchronous save',
                     // which will in turn block. This must complete!
@@ -2266,6 +2260,7 @@ void CBinaryFileExternal::write(const char *name, IPropertyTree &tree)
 void CDeltaWriter::addToQueue(CTransactionItem *item)
 {
     bool needsSyncSave = false;
+    size_t items;
     {
         CriticalBlock b(pendingCrit);
         pending.push(item);
@@ -2273,7 +2268,7 @@ void CDeltaWriter::addToQueue(CTransactionItem *item)
         // it will act. as a rough guide to appoaching size threshold. It is not worth
         // synchronously preparing and serializing here (which will be done asynchronously later)
         pendingSz += (CTransactionItem::f_addext == item->type) ? item->ext.dataLength : 100;
-        size_t items = pending.size();
+        items = pending.size();
         if ((pendingSz < transactionMaxMem) && (items < transactionQueueLimit))
         {
             if (lastSaveTime && ((get_cycles_now() - lastSaveTime) < thresholdDuration))
@@ -2293,12 +2288,12 @@ void CDeltaWriter::addToQueue(CTransactionItem *item)
         ++totalQueueLimitHits;
         // force a synchronous save
         CCycleTimer timer;
-        PROGLOG("Forcing synchronous save of %u transactions (pendingSz=%zu)", (unsigned)pending.size(), pendingSz);
+        PROGLOG("Forcing synchronous save of %u transactions (pendingSz=%zu)", (unsigned)items, pendingSz);
 
         // NB: ensure consistent lock ordering of blockedSaveCrit and pendingCrit
         CHECKEDCRITICALBLOCK(blockedSaveCrit, fakeCritTimeout); // because if Dali is saving state (::blockingSave), it will clear pending
         CriticalBlock b(pendingCrit);
-        size_t items = pending.size();
+        items = pending.size();
         // NB: items could be 0. It's possible that the delta writer has caught up and flushed pending already
         if (items && save(pending)) // if temporarily blocked, continue, meaning queue limit will overrun a bit (blocking window is short)
         {
