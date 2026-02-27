@@ -9941,9 +9941,10 @@ IHqlExpression * HqlGram::lookupDFSlayout(const attribute &err, IHqlExpression *
         {
             StringBuffer lookupName;
             nameExpr->queryValue()->getStringValue(lookupName);
-            OwnedHqlExpr rec = lookupCtx.queryParseContext().codegenCtx->lookupDFSlayout(lookupName, *errorHandler, err.pos, isOpt);
+            OwnedHqlExpr rec = lookupCtx.queryParseContext().lookupDFSlayout(lookupName, *errorHandler, err.pos, isOpt);
             if (rec)
             {
+
                 if (!checkDFSfields(rec, defaultRecord, err))
                     reportError(HQLERR_DFSlookupIncompatible, err, "Default record does not match resolved record for file %s", lookupName.str());
                 return rec.getClear();
