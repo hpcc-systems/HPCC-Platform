@@ -1157,6 +1157,8 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
                 encodeDFUstate(state, prgmsg);
                 resultWU->setStateMessage(prgmsg.str());
                 resultWU->setPercentDone(prog->getPercentDone());
+                if (version >= 1.23)
+                    resultWU->setFileAccessCost(cost_type2money(prog->getFileAccessCost()));
                 if (req.getIncludeProgressMessages())
                 {
                     prog->formatProgressMessage(prgmsg.clear());
