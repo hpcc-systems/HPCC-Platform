@@ -107,6 +107,10 @@ target_link_libraries ( saserver
          sashalib
     )
 
+if (USE_CPPUNIT)
+    target_link_libraries ( saserver ${CppUnit_LIBRARIES} )
+endif()
+
 set (    SRCS 
          sacmd.cpp 
          sasha.cpp 
