@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, Dropdown, PrimaryButton, Spinner, TextField, } from "@fluentui/react";
+import { Button, Checkbox, Dropdown, Field, Input, Option, Spinner } from "@fluentui/react-components";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
@@ -92,23 +92,27 @@ export const PublishQueryForm: React.FunctionComponent<PublishFormProps> = ({
 
     return <MessageBox show={showForm} setShow={closeForm} title={nlsHPCC.Publish}
         footer={<>
-            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
-            <PrimaryButton text={nlsHPCC.Publish} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
-            <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="after" style={{ display: spinnerHidden ? "none" : "flex" }} />
+            <Button appearance="primary" disabled={submitDisabled} onClick={handleSubmit(onSubmit)}>{nlsHPCC.Publish}</Button>
+            <Button onClick={() => closeForm()}>{nlsHPCC.Cancel}</Button>
         </>}>
         <Controller
             control={control} name="jobName"
             render={({
                 field: { onChange, name: fieldName, value },
                 fieldState: { error }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    required={true}
-                    label={nlsHPCC.JobName}
-                    value={value}
-                    errorMessage={error && error?.message}
-                />}
+            }) => <Field
+                label={nlsHPCC.JobName}
+                required
+                validationMessage={error?.message}
+                validationState={error ? "error" : undefined}
+            >
+                    <Input
+                        name={fieldName}
+                        onChange={(_, data) => onChange(data.value)}
+                        value={value}
+                    />
+                </Field>}
             rules={{
                 required: nlsHPCC.ValidationErrorRequired
             }}
@@ -118,86 +122,95 @@ export const PublishQueryForm: React.FunctionComponent<PublishFormProps> = ({
             render={({
                 field: { onChange, name: fieldName, value },
                 fieldState: { error }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    label={nlsHPCC.RemoteDali}
-                    value={value}
-                    errorMessage={error && error?.message}
-                />}
+            }) => <Field
+                label={nlsHPCC.RemoteDali}
+                validationMessage={error?.message}
+                validationState={error ? "error" : undefined}
+            >
+                    <Input
+                        name={fieldName}
+                        onChange={(_, data) => onChange(data.value)}
+                        value={value}
+                    />
+                </Field>}
         />
         <Controller
             control={control} name="remoteStorage"
             render={({
                 field: { onChange, name: fieldName, value },
                 fieldState: { error }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    label={nlsHPCC.RemoteStorage}
-                    value={value}
-                    errorMessage={error && error?.message}
-                />}
+            }) => <Field
+                label={nlsHPCC.RemoteStorage}
+                validationMessage={error?.message}
+                validationState={error ? "error" : undefined}
+            >
+                    <Input
+                        name={fieldName}
+                        onChange={(_, data) => onChange(data.value)}
+                        value={value}
+                    />
+                </Field>}
         />
         <Controller
             control={control} name="sourceProcess"
             render={({
                 field: { onChange, name: fieldName, value },
                 fieldState: { error }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    label={nlsHPCC.SourceProcess}
-                    value={value}
-                    errorMessage={error && error?.message}
-                />}
+            }) => <Field
+                label={nlsHPCC.SourceProcess}
+                validationMessage={error?.message}
+                validationState={error ? "error" : undefined}
+            >
+                    <Input
+                        name={fieldName}
+                        onChange={(_, data) => onChange(data.value)}
+                        value={value}
+                    />
+                </Field>}
         />
         <Controller
             control={control} name="comment"
             render={({
-                field: { onChange, name: fieldName, value },
-                fieldState: { error }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    label={nlsHPCC.Comment}
-                    value={value}
-                />}
+                field: { onChange, name: fieldName, value }
+            }) => <Field label={nlsHPCC.Comment}>
+                    <Input
+                        name={fieldName}
+                        onChange={(_, data) => onChange(data.value)}
+                        value={value}
+                    />
+                </Field>}
         />
         <Controller
             control={control} name="priority"
             render={({
-                field: { onChange, name: fieldName, value },
-                fieldState: { error }
-            }) => <Dropdown
-                    key={fieldName}
-                    label={nlsHPCC.Priority}
-                    options={[
-                        { key: "", text: nlsHPCC.None },
-                        { key: "SLA", text: nlsHPCC.SLA },
-                        { key: "Low", text: nlsHPCC.Low },
-                        { key: "High", text: nlsHPCC.High },
-                    ]}
-                    selectedKey={value}
-                    onChange={(evt, option) => {
-                        onChange(option.key);
-                    }}
-                />}
+                field: { onChange, name: fieldName, value }
+            }) => <Field label={nlsHPCC.Priority}>
+                    <Dropdown
+                        name={fieldName}
+                        value={value === "" ? nlsHPCC.None : value === "SLA" ? nlsHPCC.SLA : value === "Low" ? nlsHPCC.Low : nlsHPCC.High}
+                        selectedOptions={[value]}
+                        onOptionSelect={(_, data) => onChange(data.optionValue)}
+                    >
+                        <Option value="">{nlsHPCC.None}</Option>
+                        <Option value="SLA">{nlsHPCC.SLA}</Option>
+                        <Option value="Low">{nlsHPCC.Low}</Option>
+                        <Option value="High">{nlsHPCC.High}</Option>
+                    </Dropdown>
+                </Field>}
         />
         <div style={{ paddingTop: "15px" }}>
             <Controller
                 control={control} name="allowForeignFiles"
                 render={({
                     field: { onChange, name: fieldName, value }
-                }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.AllowForeignFiles} />}
+                }) => <Checkbox name={fieldName} checked={value} onChange={(_, data) => onChange(data.checked)} label={nlsHPCC.AllowForeignFiles} />}
             />
-        </div>
-        <div style={{ paddingTop: "10px" }}>
+            <br />
             <Controller
                 control={control} name="updateSuperFiles"
                 render={({
                     field: { onChange, name: fieldName, value }
-                }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.UpdateSuperFiles} />}
+                }) => <Checkbox name={fieldName} checked={value} onChange={(_, data) => onChange(data.checked)} label={nlsHPCC.UpdateSuperFiles} />}
             />
         </div>
     </MessageBox>;

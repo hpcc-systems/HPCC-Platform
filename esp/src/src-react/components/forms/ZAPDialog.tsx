@@ -1,6 +1,6 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, Dropdown, Icon, IDropdownProps, IOnRenderComboBoxLabelProps, IStackTokens, ITextFieldProps, Label, mergeStyleSets, PrimaryButton, Spinner, TextField, TooltipHost } from "@fluentui/react";
-import { StackShim } from "@fluentui/react-migration-v8-v9";
+import { Button, Checkbox, Dropdown, Field, Input, Label, makeStyles, Option, Spinner, Textarea, Tooltip } from "@fluentui/react-components";
+import { Info16Regular } from "@fluentui/react-icons";
 import { useForm, Controller } from "react-hook-form";
 import { LogType } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
@@ -9,7 +9,6 @@ import { useBuildInfo, useLogAccessInfo } from "../../hooks/platform";
 import { MessageBox } from "../../layouts/MessageBox";
 import { CloudContainerNameField } from "../forms/Fields";
 import nlsHPCC from "src/nlsHPCC";
-import { useUserTheme } from "../../hooks/theme";
 
 const logger = scopedLogger("../components/forms/ZAPDialog.tsx");
 
@@ -26,22 +25,37 @@ enum LogFormat {
     XML = "xml"
 }
 
-const stackTokens: IStackTokens = {
-    childrenGap: 4,
-    maxWidth: 300,
-};
-
-type CustomLabelProps = ITextFieldProps & IDropdownProps & IOnRenderComboBoxLabelProps & {
+type CustomLabelProps = {
+    label: string;
+    name?: string;
+    disabled?: boolean;
+    id?: string;
     tooltip: string;
 }
 
+const useCustomLabelStyles = makeStyles({
+    root: {
+        display: "flex",
+        alignItems: "center",
+        gap: "4px",
+        maxWidth: "300px"
+    },
+    label: {
+        padding: "5px 0"
+    },
+    icon: {
+        cursor: "default"
+    }
+});
+
 const CustomLabel = (props: CustomLabelProps): React.JSX.Element => {
-    return <StackShim horizontal verticalAlign="center" tokens={stackTokens}>
-        <Label htmlFor={props.name} disabled={props.disabled} id={props.id} style={{ fontWeight: 600, display: "block", padding: "5px 0" }}>{props.label}</Label>
-        <TooltipHost content={props.tooltip}>
-            <Icon iconName="Info" style={{ cursor: "default" }} />
-        </TooltipHost>
-    </StackShim>;
+    const styles = useCustomLabelStyles();
+    return <div className={styles.root}>
+        <Label htmlFor={props.name} disabled={props.disabled} id={props.id} weight="semibold" className={styles.label}>{props.label}</Label>
+        <Tooltip content={props.tooltip} relationship="label">
+            <Info16Regular className={styles.icon} />
+        </Tooltip>
+    </div>;
 };
 
 interface ZAPDialogValues {
@@ -127,50 +141,66 @@ interface ZAPDialogProps {
     setShowForm: (_: boolean) => void;
 }
 
+const useFormStyles = makeStyles({
+    input: {
+        fontSize: "14px",
+        fontWeight: "400",
+        height: "32px",
+        margin: 0,
+        padding: "0px 8px",
+        boxSizing: "border-box",
+        borderRadius: "2px",
+        border: "1px solid var(--colorNeutralStroke1)",
+        backgroundColor: "transparent",
+        color: "var(--colorNeutralForeground1)",
+        width: "100%",
+        outline: 0
+    },
+    disabled: {
+        backgroundColor: "var(--colorNeutralBackgroundDisabled)",
+        border: "1px solid var(--colorNeutralStrokeDisabled)"
+    }
+});
+
+const useDialogStyles = makeStyles({
+    spinner: {
+        display: "flex"
+    },
+    spinnerHidden: {
+        display: "none"
+    },
+    checkboxContainer: {
+        padding: "15px 0 7px 0"
+    },
+    checkboxItem: {
+        marginBottom: "4px"
+    },
+    emailCheckbox: {
+        paddingTop: "10px"
+    },
+    fieldset: {
+        marginTop: "8px"
+    },
+    fieldsetIcon: {
+        cursor: "default",
+        margin: "0 1px 0 4px"
+    },
+    customColumnsContainer: {
+        display: "block"
+    },
+    customColumnsContainerHidden: {
+        display: "none"
+    }
+});
+
 export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
     wuid,
     showForm,
     setShowForm
 }) => {
 
-    const { theme } = useUserTheme();
-
-    const formClasses = React.useMemo(() => mergeStyleSets({
-        label: {
-            fontSize: 14,
-            fontWeight: 600,
-            color: theme.palette.neutralTertiary,
-            boxSizing: "border-box",
-            margin: 0,
-            display: "block",
-            padding: "5px 0px"
-        },
-        input: {
-            fontSize: 14,
-            fontWeight: 400,
-            height: 32,
-            margin: 0,
-            padding: "0px 8px",
-            boxSizing: "border-box",
-            borderRadius: 2,
-            border: `1px solid ${theme.palette.neutralSecondary}`,
-            background: "none transparent",
-            color: theme.palette.neutralPrimary,
-            width: "100%",
-            textOverflow: "ellipsis",
-            outline: 0
-        },
-        disabled: {
-            background: theme.semanticColors.disabledBackground,
-            border: `1px solid ${theme.semanticColors.disabledBackground}`
-        },
-        "errorMessage": {
-            fontSize: 12,
-            margin: 0,
-            paddingTop: 5,
-            color: theme.semanticColors.errorText
-        }
-    }), [theme]);
+    const formClasses = useFormStyles();
+    const dialogStyles = useDialogStyles();
 
     const [emailDisabled, setEmailDisabled] = React.useState(true);
     const [submitDisabled, setSubmitDisabled] = React.useState(false);
@@ -297,22 +327,26 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
 
     return <MessageBox title={nlsHPCC.ZippedAnalysisPackage} minWidth={440} show={showForm} setShow={closeForm}
         footer={<>
-            <Spinner label={nlsHPCC.LoadingData} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
-            <PrimaryButton text={nlsHPCC.Submit} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
-            <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
+            <Spinner label={nlsHPCC.LoadingData} labelPosition="after" className={spinnerHidden ? dialogStyles.spinnerHidden : dialogStyles.spinner} />
+            <Button appearance="primary" disabled={submitDisabled} onClick={handleSubmit(onSubmit)}>{nlsHPCC.Submit}</Button>
+            <Button onClick={() => closeForm()}>{nlsHPCC.Cancel}</Button>
         </>}>
         <Controller
             control={control} name="ZAPFileName"
             render={({
                 field: { onChange, name: fieldName, value },
                 fieldState: { error }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    label={nlsHPCC.FileName}
-                    value={value}
-                    errorMessage={error && error?.message}
-                />}
+            }) => <Field
+                label={nlsHPCC.FileName}
+                validationMessage={error?.message}
+                validationState={error ? "error" : undefined}
+            >
+                    <Input
+                        name={fieldName}
+                        onChange={(_, data) => onChange(data.value)}
+                        value={value}
+                    />
+                </Field>}
             rules={{
                 pattern: {
                     value: /^[-a-z0-9_\.]+$/i,
@@ -324,116 +358,117 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
             control={control} name="Wuid"
             render={({
                 field: { onChange, name: fieldName, value }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    label={nlsHPCC.WUID}
-                    value={value}
-                />}
+            }) => <Field label={nlsHPCC.WUID}>
+                    <Input
+                        name={fieldName}
+                        onChange={(_, data) => onChange(data.value)}
+                        value={value}
+                    />
+                </Field>}
         />
         <Controller
             control={control} name="BuildVersion"
             render={({
                 field: { onChange, name: fieldName, value }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    label={nlsHPCC.ESPBuildVersion}
-                    value={value}
-                />}
+            }) => <Field label={nlsHPCC.ESPBuildVersion}>
+                    <Input
+                        name={fieldName}
+                        onChange={(_, data) => onChange(data.value)}
+                        value={value}
+                    />
+                </Field>}
         />
         <Controller
             control={control} name={isContainer ? "ESPApplication" : "ESPIPAddress"}
             render={({
-                field: { onChange, name: fieldName, value },
-                fieldState: { error }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    label={isContainer ? nlsHPCC.ESPProcessName : nlsHPCC.ESPNetworkAddress}
-                    value={value}
-                />}
+                field: { onChange, name: fieldName, value }
+            }) => <Field label={isContainer ? nlsHPCC.ESPProcessName : nlsHPCC.ESPNetworkAddress}>
+                    <Input
+                        name={fieldName}
+                        onChange={(_, data) => onChange(data.value)}
+                        value={value}
+                    />
+                </Field>}
         />
         <Controller
             control={control} name={isContainer ? "ThorProcesses" : "ThorIPAddress"}
             render={({
-                field: { onChange, name: fieldName, value },
-                fieldState: { error }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    label={isContainer ? nlsHPCC.ThorProcess : nlsHPCC.ThorNetworkAddress}
-                    value={value}
-                />}
+                field: { onChange, name: fieldName, value }
+            }) => <Field label={isContainer ? nlsHPCC.ThorProcess : nlsHPCC.ThorNetworkAddress}>
+                    <Input
+                        name={fieldName}
+                        onChange={(_, data) => onChange(data.value)}
+                        value={value}
+                    />
+                </Field>}
         />
         <Controller
             control={control} name="ProblemDescription"
             render={({
                 field: { onChange, name: fieldName, value }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    label={nlsHPCC.Description}
-                    multiline={true}
-                    value={value}
-                />}
+            }) => <Field label={nlsHPCC.Description}>
+                    <Textarea
+                        name={fieldName}
+                        onChange={(_, data) => onChange(data.value)}
+                        value={value}
+                    />
+                </Field>}
         />
         <Controller
             control={control} name="WhatChanged"
             render={({
                 field: { onChange, name: fieldName, value }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    label={nlsHPCC.History}
-                    multiline={true}
-                    value={value}
-                />}
+            }) => <Field label={nlsHPCC.History}>
+                    <Textarea
+                        name={fieldName}
+                        onChange={(_, data) => onChange(data.value)}
+                        value={value}
+                    />
+                </Field>}
         />
         <Controller
             control={control} name="WhereSlow"
             render={({
                 field: { onChange, name: fieldName, value }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    label={nlsHPCC.Timings}
-                    multiline={true}
-                    value={value}
-                />}
+            }) => <Field label={nlsHPCC.Timings}>
+                    <Textarea
+                        name={fieldName}
+                        onChange={(_, data) => onChange(data.value)}
+                        value={value}
+                    />
+                </Field>}
         />
         <Controller
             control={control} name="Password"
             render={({
                 field: { onChange, name: fieldName, value }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    label={nlsHPCC.PasswordOpenZAP}
-                    value={value}
-                    type="password"
-                    autoComplete="off"
-                    canRevealPassword={true}
-                    revealPasswordAriaLabel={nlsHPCC.ShowPassword}
-                />}
+            }) => <Field label={nlsHPCC.PasswordOpenZAP}>
+                    <Input
+                        name={fieldName}
+                        onChange={(_, data) => onChange(data.value)}
+                        value={value}
+                        type="password"
+                        autoComplete="off"
+                    />
+                </Field>}
         />
-        <div style={{ padding: "15px 0 7px 0" }}>
+        <div className={dialogStyles.checkboxContainer}>
             {!isContainer
                 ? <div>
                     <Controller
                         control={control} name="IncludeThorSlaveLog"
                         render={({
                             field: { onChange, name: fieldName, value }
-                        }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.IncludeSlaveLogs} />}
+                        }) => <Checkbox name={fieldName} checked={value} onChange={(_, data) => onChange(data.checked)} label={nlsHPCC.IncludeSlaveLogs} />}
                     />
                 </div>
                 : <div>
-                    <div style={{ marginBottom: 4 }}>
+                    <div className={dialogStyles.checkboxItem}>
                         <Controller
                             control={control} name="IncludeRelatedLogs"
                             render={({
                                 field: { onChange, name: fieldName, value }
-                            }) => <Checkbox name={fieldName} checked={value} disabled={!logsEnabled} onChange={onChange} label={nlsHPCC.IncludeRelatedLogs} />}
+                            }) => <Checkbox name={fieldName} checked={value} disabled={!logsEnabled} onChange={(_, data) => onChange(data.checked)} label={nlsHPCC.IncludeRelatedLogs} />}
                         />
                     </div>
                     <div>
@@ -441,12 +476,12 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                             control={control} name="IncludePerComponentLogs"
                             render={({
                                 field: { onChange, name: fieldName, value }
-                            }) => <Checkbox name={fieldName} checked={value} disabled={!logsEnabled} onChange={onChange} label={nlsHPCC.IncludePerComponentLogs} />}
+                            }) => <Checkbox name={fieldName} checked={value} disabled={!logsEnabled} onChange={(_, data) => onChange(data.checked)} label={nlsHPCC.IncludePerComponentLogs} />}
                         />
                     </div>
                 </div>
             }
-            <div style={{ paddingTop: "10px" }}>
+            <div className={dialogStyles.emailCheckbox}>
                 <Controller
                     control={control} name="SendEmail"
                     render={({
@@ -454,7 +489,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                     }) => <Checkbox
                             name={fieldName}
                             checked={value}
-                            onChange={onChange}
+                            onChange={(_, data) => onChange(data.checked)}
                             label={nlsHPCC.SendEmail}
                             disabled={emailDisabled}
                         />}
@@ -466,47 +501,50 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
             control={control} name="EmailTo"
             render={({
                 field: { onChange, name: fieldName, value }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    label={nlsHPCC.EmailTo}
-                    value={value}
-                    placeholder={nlsHPCC.SeeConfigurationManager}
-                    disabled={emailDisabled}
-                />}
+            }) => <Field label={nlsHPCC.EmailTo}>
+                    <Input
+                        name={fieldName}
+                        onChange={(_, data) => onChange(data.value)}
+                        value={value}
+                        placeholder={nlsHPCC.SeeConfigurationManager}
+                        disabled={emailDisabled}
+                    />
+                </Field>}
         />
         <Controller
             control={control} name="EmailFrom"
             render={({
                 field: { onChange, name: fieldName, value }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    label={nlsHPCC.EmailFrom}
-                    value={value}
-                    placeholder={nlsHPCC.SeeConfigurationManager}
-                    disabled={emailDisabled}
-                />}
+            }) => <Field label={nlsHPCC.EmailFrom}>
+                    <Input
+                        name={fieldName}
+                        onChange={(_, data) => onChange(data.value)}
+                        value={value}
+                        placeholder={nlsHPCC.SeeConfigurationManager}
+                        disabled={emailDisabled}
+                    />
+                </Field>}
         />
         <Controller
             control={control} name="EmailSubject"
             render={({
                 field: { onChange, name: fieldName, value }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    label={nlsHPCC.EmailSubject}
-                    value={value}
-                    disabled={emailDisabled}
-                />}
+            }) => <Field label={nlsHPCC.EmailSubject}>
+                    <Input
+                        name={fieldName}
+                        onChange={(_, data) => onChange(data.value)}
+                        value={value}
+                        disabled={emailDisabled}
+                    />
+                </Field>}
         />
-        <fieldset style={{ marginTop: 8 }}>
+        <fieldset className={dialogStyles.fieldset}>
             <legend>
                 <span>{nlsHPCC.LogFilters}</span>
                 {logFiltersUnavailable &&
-                    <TooltipHost content={logFiltersUnavailable ? `${nlsHPCC.LogFiltersUnavailable}: ${logFiltersUnavailableMessage}` : ""}>
-                        <Icon iconName="Info" style={{ cursor: "default", margin: "0 1px 0 4px" }} />
-                    </TooltipHost>
+                    <Tooltip content={logFiltersUnavailable ? `${nlsHPCC.LogFiltersUnavailable}: ${logFiltersUnavailableMessage}` : ""} relationship="label">
+                        <Info16Regular className={dialogStyles.fieldsetIcon} />
+                    </Tooltip>
                 }
             </legend>
             <Controller
@@ -514,14 +552,17 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                 render={({
                     field: { onChange, name: fieldName, value },
                     fieldState: { error }
-                }) => <div>
-                        <StackShim horizontal verticalAlign="center" tokens={stackTokens}>
-                            <Label htmlFor={fieldName} disabled={logFiltersUnavailable} className={formClasses.label}>{nlsHPCC.FromDate}</Label>
-                            <TooltipHost content={nlsHPCC.LogFilterStartDateTooltip}>
-                                <Icon iconName="Info" style={{ cursor: "default" }} />
-                            </TooltipHost>
-                        </StackShim>
-                        <TooltipHost content={nlsHPCC.LogFilterStartDateTooltip}>
+                }) => <Field
+                    label={<CustomLabel
+                        label={nlsHPCC.FromDate}
+                        id={`${fieldName}_Label`}
+                        disabled={logFiltersUnavailable}
+                        tooltip={nlsHPCC.LogFilterStartDateTooltip}
+                    />}
+                    validationMessage={error?.message}
+                    validationState={error ? "error" : undefined}
+                >
+                        <Tooltip content={nlsHPCC.LogFilterStartDateTooltip} relationship="description">
                             <input
                                 key={fieldName}
                                 type="datetime-local"
@@ -531,9 +572,8 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                                 defaultValue={value}
                                 onChange={onChange}
                             />
-                            <p className={formClasses.errorMessage}>{error && error?.message}</p>
-                        </TooltipHost>
-                    </div>
+                        </Tooltip>
+                    </Field>
                 }
                 rules={{
                     validate: {
@@ -549,15 +589,15 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
             <Controller
                 control={control} name="LogFilter.AbsoluteTimeRange.EndDate"
                 render={({
-                    field: { onChange, name: fieldName, value },
-                    fieldState: { error }
-                }) => <div>
-                        <StackShim horizontal verticalAlign="center" tokens={stackTokens}>
-                            <Label htmlFor={fieldName} disabled={logFiltersUnavailable} className={formClasses.label}>{nlsHPCC.ToDate}</Label>
-                            <TooltipHost content={nlsHPCC.LogFilterEndDateTooltip}>
-                                <Icon iconName="Info" style={{ cursor: "default" }} />
-                            </TooltipHost>
-                        </StackShim>
+                    field: { onChange, name: fieldName, value }
+                }) => <Field
+                    label={<CustomLabel
+                        label={nlsHPCC.ToDate}
+                        id={`${fieldName}_Label`}
+                        disabled={logFiltersUnavailable}
+                        tooltip={nlsHPCC.LogFilterEndDateTooltip}
+                    />}
+                >
                         <input
                             key={fieldName}
                             type="datetime-local"
@@ -567,7 +607,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                             defaultValue={value}
                             onChange={onChange}
                         />
-                    </div>
+                    </Field>
                 }
             />
             <Controller
@@ -575,20 +615,23 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                 render={({
                     field: { onChange, name: fieldName, value },
                     fieldState: { error }
-                }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
+                }) => <Field
+                    label={<CustomLabel
                         label={nlsHPCC.RelativeTimeRange}
+                        id={`${fieldName}_Label`}
                         disabled={logFiltersUnavailable}
-                        onRenderLabel={(props: CustomLabelProps) => <CustomLabel
-                            id={`${fieldName}_Label`}
+                        tooltip={nlsHPCC.LogFilterRelativeTimeRangeTooltip}
+                    />}
+                    validationMessage={error?.message}
+                    validationState={error ? "error" : undefined}
+                >
+                        <Input
+                            name={fieldName}
+                            onChange={(_, data) => onChange(data.value)}
                             disabled={logFiltersUnavailable}
-                            tooltip={nlsHPCC.LogFilterRelativeTimeRangeTooltip}
-                            {...props}
-                        />}
-                        value={value}
-                        errorMessage={error && error?.message}
-                    />
+                            value={value}
+                        />
+                    </Field>
                 }
                 rules={{
                     validate: {
@@ -606,87 +649,95 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                 control={control} name="LogFilter.LineLimit"
                 render={({
                     field: { onChange, name: fieldName, value }
-                }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
+                }) => <Field
+                    label={<CustomLabel
                         label={nlsHPCC.LogLineLimit}
+                        id={`${fieldName}_Label`}
                         disabled={logFiltersUnavailable}
-                        onRenderLabel={(props: CustomLabelProps) => <CustomLabel
-                            id={`${fieldName}_Label`}
+                        tooltip={nlsHPCC.LogFilterLineLimitTooltip}
+                    />}
+                >
+                        <Input
+                            name={fieldName}
+                            onChange={(_, data) => onChange(data.value)}
                             disabled={logFiltersUnavailable}
-                            tooltip={nlsHPCC.LogFilterLineLimitTooltip}
-                            {...props}
-                        />}
-                        value={value}
-                    />
+                            value={value}
+                        />
+                    </Field>
                 }
             />
             <Controller
                 control={control} name="LogFilter.LineStartFrom"
                 render={({
                     field: { onChange, name: fieldName, value }
-                }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
+                }) => <Field
+                    label={<CustomLabel
                         label={nlsHPCC.LogLineStartFrom}
+                        id={`${fieldName}_Label`}
                         disabled={logFiltersUnavailable}
-                        onRenderLabel={(props: CustomLabelProps) => <CustomLabel
-                            id={`${fieldName}_Label`}
+                        tooltip={nlsHPCC.LogFilterLineStartFromTooltip}
+                    />}
+                >
+                        <Input
+                            name={fieldName}
+                            onChange={(_, data) => onChange(data.value)}
                             disabled={logFiltersUnavailable}
-                            tooltip={nlsHPCC.LogFilterLineStartFromTooltip}
-                            {...props}
-                        />}
-                        value={value}
-                    />
+                            value={value}
+                        />
+                    </Field>
                 }
             />
             <Controller
                 control={control} name="LogFilter.SelectColumnMode"
                 render={({
                     field: { onChange, name: fieldName, value }
-                }) => <Dropdown
-                        key={fieldName}
+                }) => <Field
+                    label={<CustomLabel
                         label={nlsHPCC.ColumnMode}
+                        id={`${fieldName}_Label`}
                         disabled={logFiltersUnavailable}
-                        options={[
-                            { key: ColumnMode.MIN, text: "MIN" },
-                            { key: ColumnMode.DEFAULT, text: "DEFAULT" },
-                            { key: ColumnMode.ALL, text: "ALL" },
-                            { key: ColumnMode.CUSTOM, text: "CUSTOM" }
-                        ]}
-                        selectedKey={value}
-                        onRenderLabel={(props: CustomLabelProps) => <CustomLabel
-                            id={`${fieldName}_Label`}
+                        tooltip={nlsHPCC.LogFilterSelectColumnModeTooltip}
+                    />}
+                >
+                        <Dropdown
+                            key={fieldName}
                             disabled={logFiltersUnavailable}
-                            tooltip={nlsHPCC.LogFilterSelectColumnModeTooltip}
-                            {...props}
-                        />}
-                        onChange={(evt, option) => {
-                            setShowCustomColumns(option.key === ColumnMode.CUSTOM ? true : false);
-                            onChange(option.key);
-                        }}
-                    />
+                            value={[ColumnMode.MIN, ColumnMode.DEFAULT, ColumnMode.ALL, ColumnMode.CUSTOM].indexOf(value) > -1 ? ["MIN", "DEFAULT", "ALL", "CUSTOM"][[ColumnMode.MIN, ColumnMode.DEFAULT, ColumnMode.ALL, ColumnMode.CUSTOM].indexOf(value)] : "DEFAULT"}
+                            selectedOptions={[value?.toString()]}
+                            onOptionSelect={(_, data) => {
+                                const selectedValue = [ColumnMode.MIN, ColumnMode.DEFAULT, ColumnMode.ALL, ColumnMode.CUSTOM][["MIN", "DEFAULT", "ALL", "CUSTOM"].indexOf(data.optionValue)];
+                                setShowCustomColumns(selectedValue === ColumnMode.CUSTOM);
+                                onChange(selectedValue);
+                            }}
+                        >
+                            <Option value="MIN">MIN</Option>
+                            <Option value="DEFAULT">DEFAULT</Option>
+                            <Option value="ALL">ALL</Option>
+                            <Option value="CUSTOM">CUSTOM</Option>
+                        </Dropdown>
+                    </Field>
                 }
             />
-            <div style={{ display: showCustomColumns ? "block" : "none" }}>
+            <div className={showCustomColumns ? dialogStyles.customColumnsContainer : dialogStyles.customColumnsContainerHidden}>
                 <Controller
                     control={control} name="LogFilter.CustomColumns"
                     render={({
                         field: { onChange, name: fieldName, value }
-                    }) => <TextField
-                            name={fieldName}
-                            onChange={onChange}
+                    }) => <Field
+                        label={<CustomLabel
                             label={nlsHPCC.CustomLogColumns}
+                            id={`${fieldName}_Label`}
                             disabled={logFiltersUnavailable}
-                            onRenderLabel={(props: CustomLabelProps) => <CustomLabel
-                                id={`${fieldName}_Label`}
+                            tooltip={nlsHPCC.LogFilterCustomColumnsTooltip}
+                        />}
+                    >
+                            <Textarea
+                                name={fieldName}
+                                onChange={(_, data) => onChange(data.value)}
                                 disabled={logFiltersUnavailable}
-                                tooltip={nlsHPCC.LogFilterCustomColumnsTooltip}
-                                {...props}
-                            />}
-                            multiline={true}
-                            value={value}
-                        />
+                                value={value}
+                            />
+                        </Field>
                     }
                 />
             </div>
@@ -694,132 +745,129 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                 control={control} name="LogFilter.ComponentsFilter"
                 render={({
                     field: { onChange, name: fieldName, value }
-                }) => <CloudContainerNameField
-                        name={fieldName}
-                        selectedKey={value}
+                }) => <Field
+                    label={<CustomLabel
+                        id={`${fieldName}_Label`}
+                        label={nlsHPCC.ContainerName}
                         disabled={logFiltersUnavailable}
-                        onChange={(_evt, option, _idx, _value) => {
-                            const selectedKeys = value ? [...value] : [];
-                            const selected = option?.key ?? _value;
-                            const index = selectedKeys.indexOf(selected.toString());
-
-                            if (index === -1) {
-                                selectedKeys.push(selected.toString());
-                            } else {
-                                selectedKeys.splice(index, 1);
-                            }
-
-                            onChange(selectedKeys);
-                        }}
-                        onRenderLabel={(props: CustomLabelProps) => <CustomLabel
-                            id={`${fieldName}_Label`}
-                            label={nlsHPCC.ContainerName}
+                        tooltip={nlsHPCC.LogFilterComponentsFilterTooltip}
+                    />}
+                >
+                        <CloudContainerNameField
+                            name={fieldName}
+                            selectedKey={value}
                             disabled={logFiltersUnavailable}
-                            tooltip={nlsHPCC.LogFilterComponentsFilterTooltip}
-                            {...props}
-                        />}
-                    />
+                            onChange={onChange}
+                        />
+                    </Field>
                 }
             />
             <Controller
                 control={control} name="LogFilter.Format"
                 render={({
                     field: { onChange, name: fieldName, value }
-                }) => <Dropdown
-                        key={fieldName}
+                }) => <Field
+                    label={<CustomLabel
                         label={nlsHPCC.LogFormat}
+                        id={`${fieldName}_Label`}
                         disabled={logFiltersUnavailable}
-                        options={[
-                            { key: LogFormat.CSV, text: "CSV" },
-                            { key: LogFormat.JSON, text: "JSON" },
-                            { key: LogFormat.XML, text: "XML" }
-                        ]}
-                        selectedKey={value}
-                        onRenderLabel={(props: CustomLabelProps) => <CustomLabel
-                            id={`${fieldName}_Label`}
+                        tooltip={nlsHPCC.LogFilterFormatTooltip}
+                    />}
+                >
+                        <Dropdown
+                            key={fieldName}
                             disabled={logFiltersUnavailable}
-                            tooltip={nlsHPCC.LogFilterFormatTooltip}
-                            {...props}
-                        />}
-                        onChange={(evt, option) => {
-                            onChange(option.key);
-                        }}
-                    />
+                            value={value === LogFormat.CSV ? "CSV" : value === LogFormat.JSON ? "JSON" : "XML"}
+                            selectedOptions={[value]}
+                            onOptionSelect={(_, data) => {
+                                onChange(data.optionValue as LogFormat);
+                            }}
+                        >
+                            <Option value={LogFormat.CSV}>CSV</Option>
+                            <Option value={LogFormat.JSON}>JSON</Option>
+                            <Option value={LogFormat.XML}>XML</Option>
+                        </Dropdown>
+                    </Field>
                 }
             />
             <Controller
                 control={control} name="LogFilter.WildcardFilter"
                 render={({
                     field: { onChange, name: fieldName, value }
-                }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
+                }) => <Field
+                    label={<CustomLabel
                         label={nlsHPCC.WildcardFilter}
+                        id={`${fieldName}_Label`}
                         disabled={logFiltersUnavailable}
-                        onRenderLabel={(props: CustomLabelProps) => <CustomLabel
-                            id={`${fieldName}_Label`}
+                        tooltip={nlsHPCC.LogFilterWildcardFilterTooltip}
+                    />}
+                >
+                        <Input
+                            name={fieldName}
+                            onChange={(_, data) => onChange(data.value)}
                             disabled={logFiltersUnavailable}
-                            tooltip={nlsHPCC.LogFilterWildcardFilterTooltip}
-                            {...props}
-                        />}
-                        value={value}
-                    />
+                            value={value}
+                        />
+                    </Field>
                 }
             />
             <Controller
                 control={control} name="LogFilter.sortByTimeDirection"
                 render={({
                     field: { onChange, name: fieldName, value }
-                }) => <Dropdown
-                        key={fieldName}
+                }) => <Field
+                    label={<CustomLabel
                         label={`${nlsHPCC.Sort} (${nlsHPCC.TimeStamp})`}
+                        id={`${fieldName}_Label`}
                         disabled={logFiltersUnavailable}
-                        options={[
-                            { key: "0", text: "ASC" },
-                            { key: "1", text: "DESC" },
-                        ]}
-                        defaultSelectedKey={"1"}
-                        selectedKey={value}
-                        onRenderLabel={(props: CustomLabelProps) => <CustomLabel
-                            id={`${fieldName}_Label`}
+                        tooltip={nlsHPCC.LogFilterSortByTooltip}
+                    />}
+                >
+                        <Dropdown
+                            key={fieldName}
                             disabled={logFiltersUnavailable}
-                            tooltip={nlsHPCC.LogFilterSortByTooltip}
-                            {...props}
-                        />}
-                        onChange={(evt, option) => {
-                            onChange(option.key);
-                        }}
-                    />
+                            value={value === "0" ? "ASC" : "DESC"}
+                            selectedOptions={[value]}
+                            onOptionSelect={(_, data) => {
+                                onChange(data.optionValue);
+                            }}
+                        >
+                            <Option value="0">ASC</Option>
+                            <Option value="1">DESC</Option>
+                        </Dropdown>
+                    </Field>
                 }
             />
             <Controller
                 control={control} name="LogFilter.LogEventType"
                 render={({
                     field: { onChange, name: fieldName, value }
-                }) => <Dropdown
-                        key={fieldName}
+                }) => <Field
+                    label={<CustomLabel
                         label={nlsHPCC.LogEventType}
+                        id={`${fieldName}_Label`}
                         disabled={logFiltersUnavailable}
-                        options={[
-                            { key: "ALL", text: "All" },
-                            { key: LogType.Disaster, text: "Disaster" },
-                            { key: LogType.Error, text: "Error" },
-                            { key: LogType.Warning, text: "Warning" },
-                            { key: LogType.Information, text: "Information" },
-                            { key: LogType.Progress, text: "Progress" },
-                            { key: LogType.Metric, text: "Metric" },
-                        ]}
-                        selectedKey={value}
-                        onRenderLabel={(props: CustomLabelProps) => <CustomLabel
-                            id={`${fieldName}_Label`}
+                        tooltip={nlsHPCC.LogFilterEventTypeTooltip}
+                    />}
+                >
+                        <Dropdown
+                            key={fieldName}
                             disabled={logFiltersUnavailable}
-                            tooltip={nlsHPCC.LogFilterEventTypeTooltip}
-                            {...props}
-                        />}
-                        onChange={(evt, option) => {
-                            onChange(option.key);
-                        }}
-                    />
+                            value={value === "ALL" ? "All" : value === LogType.Disaster ? "Disaster" : value === LogType.Error ? "Error" : value === LogType.Warning ? "Warning" : value === LogType.Information ? "Information" : value === LogType.Progress ? "Progress" : "Metric"}
+                            selectedOptions={[value]}
+                            onOptionSelect={(_, data) => {
+                                onChange(data.optionValue);
+                            }}
+                        >
+                            <Option value="ALL">All</Option>
+                            <Option value={LogType.Disaster}>Disaster</Option>
+                            <Option value={LogType.Error}>Error</Option>
+                            <Option value={LogType.Warning}>Warning</Option>
+                            <Option value={LogType.Information}>Information</Option>
+                            <Option value={LogType.Progress}>Progress</Option>
+                            <Option value={LogType.Metric}>Metric</Option>
+                        </Dropdown>
+                    </Field>
                 }
             />
         </fieldset>

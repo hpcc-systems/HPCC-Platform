@@ -66,7 +66,7 @@ test.describe("V9 Landing Zone", () => {
         // Wait for the dialog to appear - wait for the heading instead of the dialog role
         // because the modal has pointerEvents: "none" on root which makes Playwright think it's hidden
         const filterDialog = page.getByRole("dialog").first();
-        await expect(filterDialog.getByRole("heading", { name: "Filter" })).toBeVisible();
+        await expect(filterDialog.locator(".fui-DialogTitle")).toBeVisible();
 
         // Check for filter form fields using more specific selectors
         await expect(filterDialog.locator("label[for='DropZoneName']")).toBeVisible();
@@ -75,7 +75,7 @@ test.describe("V9 Landing Zone", () => {
 
         // Check for filter dialog buttons (Apply and Clear)
         await expect(filterDialog.getByRole("button", { name: "Apply" })).toBeVisible();
-        await expect(filterDialog.locator("button.ms-Button", { hasText: "Clear" })).toBeVisible();
+        await expect(filterDialog.getByRole("button", { name: "Clear" })).toBeVisible();
     });
 
     test("Should open upload file dialog when upload button is clicked", async ({ page }) => {
@@ -93,7 +93,8 @@ test.describe("V9 Landing Zone", () => {
         await page.getByRole("menuitem", { name: "Add File" }).click();
 
         // Check that the Add File form dialog opens
-        await expect(page.getByRole("heading", { name: "Add File" })).toBeVisible();
+        const filterDialog = page.getByRole("dialog").first();
+        await expect(filterDialog.locator(".fui-DialogTitle")).toBeVisible();
 
         // Wait for the form to load properly
         await page.waitForTimeout(1000);
