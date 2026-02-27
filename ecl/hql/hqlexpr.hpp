@@ -895,6 +895,7 @@ public:
     IPropertyTree * queryEnsureArchiveModule(const char * package, const char * name, IHqlScope * scope);
 
     void noteExternalLookup(const char * package, IHqlScope * parentScope, IIdAtom * name, IHqlExpression * expr);
+    IHqlExpression *lookupDFSlayout(const char *filename, IErrorReceiver &errs, const ECLlocation &location, bool isOpt);
 
     void setGatherMeta(const MetaOptions & options);
 
@@ -984,6 +985,7 @@ public:
     void noteBeginModule(IHqlScope * scope, IFileContents * contents);
     void noteBeginQuery(IHqlScope * scope, IFileContents * contents);
     void noteBeginMacro(IHqlScope * scope, IIdAtom * name) { parseCtx.noteBeginMacro(scope, name); }
+
     inline void noteEndAttribute(bool success) { parseCtx.noteEndAttribute(success); }
     inline void noteEndModule(bool success) { parseCtx.noteEndModule(success); }
     inline void noteEndQuery(bool success) { parseCtx.noteEndQuery(success); }

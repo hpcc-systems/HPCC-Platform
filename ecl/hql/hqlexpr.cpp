@@ -904,6 +904,28 @@ void HqlParseContext::addForwardReference(IHqlScope * owner, IHasUnlinkedOwnerRe
     forwardLinks.append(*new ForwardScopeItem(owner, child));
 }
 
+IHqlExpression * HqlParseContext::lookupDFSlayout(const char *filename, IErrorReceiver &errs, const ECLlocation &location, bool isOpt)
+{
+    Owned<IHqlExpression> resolved = codegenCtx->lookupDFSlayout(filename, errs, location, isOpt);
+    if (archive && resolved)
+    {
+        IPropertyTree * dfs = ensurePTree(archive, "Dfs");
+        StringBuffer xpath;
+        xpath.append("File[@name='").append(filename).append("']");
+        IPropertyTree * file = dfs->queryPropTree(xpath.str());
+        if (!file)
+        {
+            file = dfs->addPropTree("File");
+            file->setProp("@name", filename);
+
+            StringBuffer ecl;
+            toECL(resolved, ecl);
+            file->setProp("@ecl", ecl.str());
+        }
+    }
+    return resolved.getClear();
+}
+
 IPropertyTree * HqlParseContext::queryEnsureArchiveModule(const char * package, const char * name, IHqlScope * scope)
 {
     return ::queryEnsureArchiveModule(archive, package, name, scope);
