@@ -3362,38 +3362,15 @@
         "allOf": [{ "$ref": "#/definitions/sashacommon" }],
         "properties": {
           "disabled": {},
-          "interval": {},
-          "at": {},
-          "image": {},
-          "resources": {},
-          "annotations": {},
-          "labels": {},
-          "expert": {},
-          "terminationGracePeriodSeconds": {},
+          "interval": {
+            "type": "integer",
+            "description": "Interval (in hours) to run global message housekeeping",
+            "default": 24
+          },
           "retentionDays": {
             "type": "integer",
             "description": "Number of days to keep messages before deletion",
-            "default": 30
-          },
-          "archiveAfterDays": {
-            "type": "integer",
-            "description": "Number of days after which messages are archived",
-            "default": 14
-          },
-          "archivePlane": {
-            "type": "string",
-            "description": "Storage plane name for archived messages (subdirectory will be created within the plane)",
-            "default": "sasha"
-          },
-          "enableArchiving": {
-            "type": "boolean",
-            "description": "Whether to archive old messages to files",
-            "default": false
-          },
-          "enableAutoDelete": {
-            "type": "boolean",
-            "description": "Whether to automatically delete old messages",
-            "default": false
+            "default": 2
           }
         },
         "additionalProperties": false
