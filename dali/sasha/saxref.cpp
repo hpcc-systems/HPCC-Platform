@@ -1695,6 +1695,7 @@ public:
             {
                 if (abort)
                     return;
+                parent.checkHeartbeat("Logical file scan");
                 parent.log(false,"Process file %s",name.str());
                 parent.fnum++;
 
@@ -1771,6 +1772,7 @@ public:
                 else {
                     parent.error(name.str(),"cannot create file descriptor");
                 }
+                parent.processedFiles++;
             }
         public:
 
@@ -1795,9 +1797,9 @@ public:
 
         } filescan(*this,abort);
 
+        startHeartbeat("Logical file scan");
         filescan.scan();
-        log(true,"File scan complete");
-
+        finishHeartbeat("Logical file scan");
     }
 
     bool checkOrphanPhysicalFile(RemoteFilename &rfn,offset_t &sz,CDateTime &dt)
@@ -2213,9 +2215,10 @@ public:
 
     void listLost(bool &abort,bool ignorelazylost,unsigned int recentCutoffDays)
     {
-        log(true,"Scanning for lost files");
+        startHeartbeat("Lost file scan");
         StringBuffer tmp;
         ForEachItemIn(i0,lostfiles) {
+            checkHeartbeat("Lost file scan");
             if (abort)
                 return;
             CDfsLogicalFileName lfn;
@@ -2352,8 +2355,9 @@ public:
                 ft->addPropInt("Replicatedlost",rc);
                 lostbranch->addPropTree("File",ft.getClear());
             }
+            processedFiles++;
         }
-        log(true,"Lost scan complete");
+        finishHeartbeat("Lost file scan");
     }
 
 
