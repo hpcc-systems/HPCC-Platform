@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CommandBarButton, Callout, DirectionalHint, Text, DefaultButton, PrimaryButton, Separator, IStackStyles, IButtonStyles, FontWeights, useTheme, IconButton } from "@fluentui/react";
+import { CommandBarButton, Callout, DirectionalHint, Text, DefaultButton, PrimaryButton, Separator, IButtonStyles, FontWeights, useTheme, Icon } from "@fluentui/react";
 import { StackShim } from "@fluentui/react-migration-v8-v9";
 import nlsHPCC from "src/nlsHPCC";
 import { DateTimeInput } from "./Fields";
@@ -172,18 +172,6 @@ export const SuperDatePicker: React.FunctionComponent<SuperDatePickerProps> = ({
         return nlsHPCC.SelectDateRange;
     }, [startDate, endDate]);
 
-    const stackStyles: IStackStyles = {
-        root: {
-            padding: "4px 8px",
-            border: `1px solid ${theme.palette.neutralTertiary}`,
-            borderRadius: "2px",
-            backgroundColor: theme.palette.white,
-            cursor: disabled ? "not-allowed" : "pointer",
-            opacity: disabled ? 0.6 : 1,
-            minWidth: "200px"
-        }
-    };
-
     const buttonStyles: IButtonStyles = {
         root: {
             height: "32px",
@@ -194,12 +182,23 @@ export const SuperDatePicker: React.FunctionComponent<SuperDatePickerProps> = ({
 
     return <StackShim horizontal verticalAlign="center" tokens={{ childrenGap: 8 }}>
         <div ref={datePickerButtonRef}>
-            <StackShim
-                horizontal
-                verticalAlign="center"
-                horizontalAlign="space-between"
-                styles={stackStyles}
-                onClick={disabled ? undefined : handleShowCallout}
+            <button
+                disabled={disabled}
+                type="button"
+                style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "4px 8px",
+                    border: `1px solid ${theme.palette.neutralTertiary}`,
+                    borderRadius: "2px",
+                    backgroundColor: theme.palette.white,
+                    cursor: disabled ? "not-allowed" : "pointer",
+                    opacity: disabled ? 0.6 : 1,
+                    minWidth: "200px"
+                }}
+                onClick={handleShowCallout}
             >
                 <Text
                     styles={{
@@ -217,18 +216,16 @@ export const SuperDatePicker: React.FunctionComponent<SuperDatePickerProps> = ({
                 >
                     {currentDisplayText}
                 </Text>
-                <IconButton
-                    iconProps={{ iconName: "ChevronDown" }}
+                <Icon
+                    iconName="ChevronDown"
                     styles={{
                         root: {
-                            width: "16px",
-                            height: "16px",
+                            fontSize: "12px",
                             color: disabled ? theme.palette.neutralTertiary : theme.palette.neutralSecondary
                         }
                     }}
-                    disabled={disabled}
                 />
-            </StackShim>
+            </button>
         </div>
 
         {showRefreshButton && (
