@@ -499,7 +499,7 @@ IPropertyTree *ReferencedFile::getForeignFileTree(IUserDescriptor *user, INode *
     StringBuffer remoteLFN;
     if (remotePrefix && *remotePrefix)
         remoteLFN.append(remotePrefix).append("::").append(logicalName);
-    return queryDistributedFileDirectory().getFileTree(remoteLFN.length() ? remoteLFN.str() : logicalName.str(), user, daliNode, WF_LOOKUP_TIMEOUT, GetFileTreeOpts::none);
+    return queryDistributedFileDirectory().getFileTree(remoteLFN.length() ? remoteLFN.str() : logicalName.str(), user, AccessMode::read, daliNode, WF_LOOKUP_TIMEOUT, GetFileTreeOpts::none);
 }
 
 IPropertyTree *ReferencedFile::getFileOrProvidedForeignFileTree(IUserDescriptor *user, INode *providedDaliNode, const char *remotePrefix)

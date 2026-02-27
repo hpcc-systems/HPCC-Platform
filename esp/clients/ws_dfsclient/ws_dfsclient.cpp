@@ -787,13 +787,19 @@ IDFSFile *lookupDFSFile(const char *logicalName, AccessMode accessMode, unsigned
 
     unsigned __int64 clientLeaseId = ensureClientLease(dfsClient, serviceUrl, serviceSecret, userDesc);
 
+    LogfmtKVList clientInfoItems;
+    buildClientInfoLogfmt(clientInfoItems);
+    setLogfmtValue(clientInfoItems, "mode", "wsdfs");
+    StringBuffer clientInfo;
+    logfmtKVListToString(clientInfoItems, clientInfo);
+
     Owned<IClientDFSFileLookupResponse> dfsResp;
     Owned<IClientDFSFileLookupRequest> dfsReq = dfsClient->createDFSFileLookupRequest();
     if (useSSL && serviceSecret.length())
         configureClientSSL(dfsReq->rpc(), serviceSecret.str());
     dfsReq->setAccessViaDafilesrv(useDafilesrv);
-    // JCSMORE may want to pass accessMode to server, for it to decide and pre-filter the aliases/
-    // For now, set into IDFSFile created locally (see below)
+    dfsReq->setAccessMode(static_cast<unsigned>(accessMode));
+    dfsReq->setClientInfo(clientInfo.str());
     dfsReq->setName(logicalName);
     dfsReq->setLeaseId(clientLeaseId);
     CTimeMon tm(timeoutSecs*1000); // NB: this timeout loop is to cater for *a* esp disappearing (e.g. if behind load balancer)
@@ -897,7 +903,7 @@ bool exists(CDfsLogicalFileName &lfn, IUserDescriptor *user, bool notSuper, bool
     if (!lfn.isRemote())
         return queryDistributedFileDirectory().exists(lfn.get(), user, notSuper, superOnly);
 
-    Owned<IDistributedFile> file = lookup(lfn, user, AccessMode::read, false, false, nullptr, false, timeout);
+    Owned<IDistributedFile> file = lookup(lfn, user, AccessMode::readMeta, false, false, nullptr, false, timeout);
     if (!file)
         return false;
     bool isSuper = nullptr != file->querySuperFile();
