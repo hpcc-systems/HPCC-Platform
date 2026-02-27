@@ -27,6 +27,10 @@
 #include "mpbase.hpp"
 #include "dasess.hpp"
 
+#include <string>
+#include <utility>
+#include <vector>
+
 #ifdef DALI_EXPORTS
 #define da_decl DECL_EXPORT
 #else
@@ -649,5 +653,62 @@ extern da_decl IFileReadPropertiesUpdater * createFileReadPropertiesUpdater(IUse
  * @param   user    The current user's username, or NULL
  */
 extern da_decl StringBuffer & mangleTemporaryFileName(StringBuffer & out, const char * lfn, const char * wuid, const char * user, bool isPaused = false, bool jobUsesCheckpoints = false);
+
+/**
+ * Logfmt key/value pair representation
+ */
+using LogfmtKV = std::pair<std::string, std::string>;
+
+/**
+ * Logfmt key/value list representation
+ */
+using LogfmtKVList = std::vector<LogfmtKV>;
+
+/**
+ * Build client info key/value list
+ * Combines cached static fields (deployment, component) with dynamic fields (job)
+ * Static fields are cached on first call for efficiency; job is extracted from current thread context
+ * Callers should add mode and any additional fields, then convert to logfmt string
+ *
+ * @param items  Destination key/value list to populate
+ */
+extern da_decl void buildClientInfoLogfmt(LogfmtKVList &items);
+
+/**
+ * Parse a Heroku logfmt string into a vector of key/value pairs
+ *
+ * @param logfmt  Logfmt formatted string (e.g., "key1=value1 key2=\"quoted value\"")
+ * @param output  Destination vector to populate
+ */
+extern da_decl void parseLogfmtToKVList(const char *logfmt, LogfmtKVList &output);
+
+/**
+ * Query a value by key from a logfmt key/value list
+ *
+ * @param items        Parsed key/value list
+ * @param key          Key to find
+ * @param defaultValue Value to return if key not found
+ * @return             Value associated with key or defaultValue
+ */
+extern da_decl const char *queryLogfmtValue(const LogfmtKVList &items, const char *key, const char *defaultValue);
+
+/**
+ * Set a key/value pair in a logfmt list (adds if missing, replaces if present)
+ *
+ * @param items  Parsed key/value list to update
+ * @param key    Key to add/update
+ * @param value  Value to set (null treated as empty string)
+ */
+extern da_decl void setLogfmtValue(LogfmtKVList &items, const char *key, const char *value);
+
+/**
+ * Convert a key/value list to Heroku logfmt string format
+ * Each element becomes a key=value pair, with quoting applied as needed
+ *
+ * @param items      Key/value list to convert
+ * @param output     StringBuffer to append logfmt output to
+ * @param exclusions Optional CSV list of keys to exclude
+ */
+extern da_decl void logfmtKVListToString(const LogfmtKVList &items, StringBuffer &output, const char *exclusions = nullptr);
 
 #endif

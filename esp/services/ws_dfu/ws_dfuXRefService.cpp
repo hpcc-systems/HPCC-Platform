@@ -495,6 +495,8 @@ bool CWsDfuXRefEx::onDFUXRefBuild(IEspContext &context, IEspDFUXRefBuildRequest 
         if (isEmptyString(cluster))
             throw MakeStringExceptionDirect(ECLWATCH_INVALID_INPUT, "Cluster not defined.");
 
+        const char *filterScopes = req.getFilterScopes();
+
         StringBuffer returnStr;
         ESPSerializationFormat fmt = context.getResponseFormat();
         if (m_XRefbuilder->isQueued(cluster))
@@ -510,6 +512,9 @@ bool CWsDfuXRefEx::onDFUXRefBuild(IEspContext &context, IEspDFUXRefBuildRequest 
                 xRefNode.setown(XRefNodeManager->CreateXRefNode(cluster));
             if (!xRefNode)
                 throw MakeStringException(ECLWATCH_CANNOT_FIND_IXREFFILESNODE, "XRefNode not created for %s.", cluster);
+
+            if (!isEmptyString(filterScopes))
+                xRefNode->setFilterScopes(filterScopes);
 
             if (!m_XRefbuilder->isRunning())
                 appendReplyMessage(fmt == ESPSerializationJSON, returnStr, "/WsDFUXRef/DFUXRefList",

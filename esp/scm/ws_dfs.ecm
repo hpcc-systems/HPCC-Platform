@@ -28,10 +28,12 @@ ESPresponse [exceptions_inline] LeaseResponse
 
 ESPrequest DFSFileLookupRequest
 {
-    string Name;                        // the logical file name
-    int64 LeaseId;                      // lease to associate any locks to
-    int RequestTimeout(300);            // Max seconds to block waiting (default = 5 mins)
-    bool AccessViaDafilesrv(false);     // DFS service will return file meta pointing to a dafilesrv service
+    string Name;                           // the logical file name
+    int64 LeaseId;                         // lease to associate any locks to
+    int RequestTimeout(300);               // Max seconds to block waiting (default = 5 mins)
+    bool AccessViaDafilesrv(false);        // DFS service will return file meta pointing to a dafilesrv service
+    [min_ver("1.02")] unsigned AccessMode; // opaque access mode that server can use for filtering/decisions
+    [min_ver("1.02")] string ClientInfo;   // logfmt metadata about the client (e.g., deployment name, component)
 };
 
 ESPresponse [exceptions_inline] DFSFileLookupResponse
@@ -51,8 +53,8 @@ ESPresponse [exceptions_inline] KeepAliveResponse
 //  ===========================================================================
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.01"),
-    default_client_version("1.01"),
+    version("1.02"),
+    default_client_version("1.02"),
     noforms,
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfs
 {

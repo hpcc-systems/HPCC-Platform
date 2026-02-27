@@ -684,7 +684,8 @@ public:
             slfn.clearForeign();
             srcdali.setown(createINode(ep));
         }
-        Owned<IPropertyTree> ftree = fdir->getFileTree(slfn.get(),foreignuserdesc,srcdali, FOREIGN_DALI_TIMEOUT, GetFileTreeOpts::appendForeign);
+        AccessMode mode = copyphysical ? AccessMode::read : AccessMode::readMeta;
+        Owned<IPropertyTree> ftree = fdir->getFileTree(slfn.get(), foreignuserdesc, mode, srcdali, FOREIGN_DALI_TIMEOUT, GetFileTreeOpts::appendForeign);
         if (!ftree.get()) {
             StringBuffer s;
             throw MakeStringException(-1,"Source file %s could not be found in Dali %s",slfn.get(),srcdali?srcdali->endpoint().getEndpointHostText(s).str():"(local)");
@@ -776,7 +777,8 @@ public:
             slfn.clearForeign();
             srcdali.setown(createINode(ep));
         }
-        Owned<IPropertyTree> ftree = fdir->getFileTree(slfn.get(), foreignuserdesc, srcdali, FOREIGN_DALI_TIMEOUT, GetFileTreeOpts::appendForeign);
+        AccessMode mode = copyphysical ? AccessMode::read : AccessMode::readMeta;
+        Owned<IPropertyTree> ftree = fdir->getFileTree(slfn.get(), foreignuserdesc, mode, srcdali, FOREIGN_DALI_TIMEOUT, GetFileTreeOpts::appendForeign);
         if (!ftree.get()) {
             StringBuffer s;
             throw MakeStringException(-1,"Source file %s could not be found in Dali %s",slfn.get(),srcdali?srcdali->endpoint().getEndpointHostText(s).str():"(local)");
@@ -951,7 +953,8 @@ public:
         }
         else
         {
-            ftree.setown(fdir->getFileTree(srcLFN.get(), foreignuserdesc, srcdali, FOREIGN_DALI_TIMEOUT, GetFileTreeOpts::appendForeign));
+            AccessMode mode = copyphysical ? AccessMode::read : AccessMode::readMeta;
+            ftree.setown(fdir->getFileTree(srcLFN.get(), foreignuserdesc, mode, srcdali, FOREIGN_DALI_TIMEOUT, GetFileTreeOpts::appendForeign));
             if (!ftree.get())
                 throw MakeStringException(-1,"Source file %s could not be found in Dali %s",srcLFN.get(), getDaliEndPointStr(srcdali, s));
             attsrc = ftree->queryPropTree("Attr");
@@ -1132,7 +1135,7 @@ public:
         }
         else
         {
-            Owned<IPropertyTree> t = queryDistributedFileDirectory().getFileTree(lfn, user);
+            Owned<IPropertyTree> t = queryDistributedFileDirectory().getFileTree(lfn, user, AccessMode::readMeta);
             toXML(t, out, true);
         }
         return out;
@@ -1240,7 +1243,7 @@ public:
                 return;
             }
         }
-        Owned<IPropertyTree> ftree = queryDistributedFileDirectory().getFileTree(srclfn,srcuser,srcnode, FOREIGN_DALI_TIMEOUT, GetFileTreeOpts::appendForeign);
+        Owned<IPropertyTree> ftree = queryDistributedFileDirectory().getFileTree(srclfn,srcuser,AccessMode::read,srcnode, FOREIGN_DALI_TIMEOUT, GetFileTreeOpts::appendForeign);
         if (!ftree.get())
         {
             StringBuffer s;

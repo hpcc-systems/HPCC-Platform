@@ -1267,7 +1267,7 @@ public:
     IDFScopeIterator *getScopeIterator(IUserDescriptor *user, const char *subscope,bool recursive,bool includeempty);
     bool loadScopeContents(const char *scopelfn,StringArray *scopes,    StringArray *supers,StringArray *files, bool includeemptyscopes);
 
-    IPropertyTree *getFileTree(const char *lname,IUserDescriptor *user,const INode *foreigndali,unsigned foreigndalitimeout,GetFileTreeOpts opts = GetFileTreeOpts::expandNodes|GetFileTreeOpts::appendForeign);
+    IPropertyTree *getFileTree(const char *lname,IUserDescriptor *user,AccessMode accessMode,const INode *foreigndali,unsigned foreigndalitimeout,GetFileTreeOpts opts = GetFileTreeOpts::expandNodes|GetFileTreeOpts::appendForeign);
     void setFileAccessed(CDfsLogicalFileName &dlfn, IUserDescriptor *user,const CDateTime &dt,const INode *foreigndali=NULL,unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
     IFileDescriptor *getFileDescriptor(const char *lname, AccessMode accessMode, IUserDescriptor *user, const INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
     IDistributedFile *getFile(const char *lname, AccessMode accessMode, IUserDescriptor *user, const INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
@@ -1319,7 +1319,6 @@ public:
 
     void renameFileRelationships(const char *oldname,const char *newname,IFileRelationshipIterator *reliter, IUserDescriptor *user);
 
-    bool publishMetaFileXML(const CDfsLogicalFileName &logicalname,IUserDescriptor *user);
     IFileDescriptor *createDescriptorFromMetaFile(const CDfsLogicalFileName &logicalname,IUserDescriptor *user);
 
     bool isProtectedFile(const CDfsLogicalFileName &logicalname, unsigned timeout) ;
@@ -9065,7 +9064,7 @@ bool CDistributedFileDirectory::isSuperFile(    const char *logicalname,
                                                 INode *foreigndali,
                                                 unsigned timeout)
 {
-    Owned<IPropertyTree> tree = getFileTree(logicalname, user, foreigndali,timeout, GetFileTreeOpts::appendForeign);
+    Owned<IPropertyTree> tree = getFileTree(logicalname, user, AccessMode::readMeta, foreigndali,timeout, GetFileTreeOpts::appendForeign);
     return tree.get()&&(strcmp(tree->queryName(),queryDfsXmlBranchName(DXB_SuperFile))==0);
 }
 
@@ -12041,6 +12040,35 @@ public:
                 udesc.setown(createUserDescriptor());
                 udesc->deserialize(mb);
             }
+            if (version >= 3)
+            {
+                // Audit foreign read with client context info
+                AccessMode accessMode;
+                mb.read((unsigned &)accessMode);
+                if (AccessMode::none == (accessMode & AccessMode::meta)) // only audit non meta access file lookups
+                {
+                    size32_t clientInfoLength;
+                    mb.read(clientInfoLength);
+                    const char *clientInfo = nullptr;
+                    if (clientInfoLength > 0)
+                        clientInfo = (const char *)mb.readDirect(clientInfoLength);
+
+                    LogfmtKVList context;
+                    parseLogfmtToKVList(clientInfo, context);
+                    if (hasUser)
+                    {
+                        StringBuffer userName;
+                        setLogfmtValue(context, "user", udesc->getUserName(userName).str());
+                    }
+
+                    StringBuffer logEntry;
+                    const char *component = queryLogfmtValue(context, "component", "Foreign");
+                    logEntry.appendf(",FileAccess,%s,READ,%s,", component, lname.str());
+                    logfmtKVListToString(context, logEntry, "component");
+
+                    LOG(MCauditInfo, "%s", logEntry.str());
+                }
+            }
         }
         else // pre gft versioning/tidyup
         {
@@ -12537,9 +12565,9 @@ void CDistributedFileDirectory::setFileProtect(CDfsLogicalFileName &dlfn,IUserDe
     checkDfsReplyException(mb);
 }
 
-IPropertyTree *CDistributedFileDirectory::getFileTree(const char *lname, IUserDescriptor *user, const INode *foreigndali,unsigned foreigndalitimeout, GetFileTreeOpts opts)
+IPropertyTree *CDistributedFileDirectory::getFileTree(const char *lname, IUserDescriptor *user, AccessMode accessMode, const INode *foreigndali,unsigned foreigndalitimeout, GetFileTreeOpts opts)
 {
-    constexpr unsigned gftVersion = 2; // for future use (0 and 1 are reserved for legacy versions)
+    constexpr unsigned gftVersion = 3; // for future use (0 and 1 are reserved for legacy versions)
     bool expandnodes = hasMask(opts, GetFileTreeOpts::expandNodes);
     bool appendForeign = hasMask(opts, GetFileTreeOpts::appendForeign);
 
@@ -12559,14 +12587,19 @@ IPropertyTree *CDistributedFileDirectory::getFileTree(const char *lname, IUserDe
     if (isLocalDali(foreigndali))
         foreigndali = NULL;
 
+    bool clientInfoAndAccessModeSupport;
     bool getFileTree2Support;
     if (!foreigndali)
+    {
         getFileTree2Support = queryDaliServerVersion().compare("3.17") >= 0;
+        clientInfoAndAccessModeSupport = queryDaliServerVersion().compare("3.21") >= 0;
+    }
     else
     {
         CDaliVersion serverVersion, minClientVersion;
         checkForeignDaliVersionInfo(foreigndali, serverVersion, minClientVersion);
         getFileTree2Support = serverVersion.compare("3.17") >= 0;
+        clientInfoAndAccessModeSupport = serverVersion.compare("3.21") >= 0;
     }
 
     CMessageBuffer mb;
@@ -12591,6 +12624,24 @@ IPropertyTree *CDistributedFileDirectory::getFileTree(const char *lname, IUserDe
         else
         {
             mb.append(false);
+        }
+        if (clientInfoAndAccessModeSupport)
+        {
+            mb.append((unsigned)accessMode);
+            if (foreigndali && (AccessMode::none == (accessMode & AccessMode::meta))) // suppress building/sending client info if meta lookup (server ignores at the moment anyway [doesn't audit])
+            {
+                LogfmtKVList clientInfoItems;
+                buildClientInfoLogfmt(clientInfoItems);
+                setLogfmtValue(clientInfoItems, "mode", "foreign");
+                StringBuffer clientInfo;
+                logfmtKVListToString(clientInfoItems, clientInfo);
+                size32_t len = clientInfo.length();
+                mb.append(len);
+                if (len)
+                    mb.append(len, clientInfo.str());
+            }
+            else
+                mb.append((size32_t)0); // no client info
         }
     }
     else
@@ -12684,7 +12735,7 @@ IPropertyTree *CDistributedFileDirectory::getFileTree(const char *lname, IUserDe
 
 IFileDescriptor *CDistributedFileDirectory::getFileDescriptor(const char *lname, AccessMode accessMode, IUserDescriptor *user, const INode *foreigndali, unsigned foreigndalitimeout)
 {
-    Owned<IPropertyTree> tree = getFileTree(lname, user, foreigndali, foreigndalitimeout, GetFileTreeOpts::appendForeign);
+    Owned<IPropertyTree> tree = getFileTree(lname, user, accessMode, foreigndali, foreigndalitimeout, GetFileTreeOpts::appendForeign);
     if (!tree)
         return NULL;
     if (strcmp(tree->queryName(),queryDfsXmlBranchName(DXB_SuperFile))==0) {
@@ -12705,7 +12756,7 @@ IFileDescriptor *CDistributedFileDirectory::getFileDescriptor(const char *lname,
 
 IDistributedFile *CDistributedFileDirectory::getFile(const char *lname, AccessMode accessMode, IUserDescriptor *user, const INode *foreigndali, unsigned foreigndalitimeout)
 {
-    Owned<IPropertyTree> tree = getFileTree(lname, user, foreigndali, foreigndalitimeout, GetFileTreeOpts::appendForeign);
+    Owned<IPropertyTree> tree = getFileTree(lname, user, accessMode, foreigndali, foreigndalitimeout, GetFileTreeOpts::appendForeign);
     if (!tree)
         return NULL;
     if (strcmp(tree->queryName(),queryDfsXmlBranchName(DXB_SuperFile))==0) {
@@ -14055,102 +14106,6 @@ void CDistributedFileDirectory::renameFileRelationships(const char *oldname,cons
     }
 }
 
-
-// JCSMORE what was this for, not called by anything afaics
-bool CDistributedFileDirectory::publishMetaFileXML(const CDfsLogicalFileName &logicalname,IUserDescriptor *user)
-{
-    if (logicalname.isExternal()||logicalname.isForeign()||logicalname.isQuery())
-        return false;
-    Owned<IPropertyTree> file = getFileTree(logicalname.get(), user, NULL, FOREIGN_DALI_TIMEOUT, GetFileTreeOpts::expandNodes|GetFileTreeOpts::appendForeign);
-    if (!file.get())
-        return false;
-    if (strcmp(file->queryName(),queryDfsXmlBranchName(DXB_SuperFile))==0)
-        return false;
-
-    unsigned max = file->getPropInt("@numparts");
-    SocketEndpointArray ips;
-    StringBuffer xpath;
-    StringBuffer ipstr;
-    for (unsigned i=0;i<max;i++) {  // probably could be done better
-        xpath.clear().append("Part[@num=\"").append(i+1).append("\"]");
-        Owned<IPropertyTree> child = file->getPropTree(xpath.str());
-        SocketEndpoint ep;
-        if (child.get()&&child->getProp("@node",ipstr.clear()))
-            ep.ipset(ipstr.str());
-        ips.append(ep);
-    }
-
-
-    Owned<IException> exc;
-    CriticalSection errcrit;
-    class casyncfor: public CAsyncFor
-    {
-        IPropertyTree* file;
-        CriticalSection &errcrit;
-        Owned<IException> &exc;
-        SocketEndpointArray &ips;
-    public:
-        casyncfor(IPropertyTree* _file,SocketEndpointArray &_ips,Owned<IException> &_exc,CriticalSection &_errcrit)
-            : errcrit(_errcrit), exc(_exc), ips(_ips)
-        {
-            file = _file;
-        }
-        void Do(unsigned i)
-        {
-            UnsignedArray parts;
-            const SocketEndpoint &ep = ips.item(i);
-            if (ep.isNull())
-                return;
-            ForEachItemIn(j,ips) {
-                if (j==i)
-                    parts.append(i);
-                else if (ep.ipequals(ips.item(j))) {
-                    if (j<i)
-                        return; // already done
-                    parts.append(j);
-                }
-            }
-            try {
-                StringBuffer path;
-                StringBuffer mask;
-                if (file->getProp("@directory",path)&&file->getProp("@partmask",mask)) {
-                    addPathSepChar(path).append(mask);
-                    StringBuffer outpath;
-                    StringBuffer tail("META__");
-                    splitFilename(path.str(), &outpath, &outpath, &tail, NULL);
-                    outpath.append(tail).append(".xml");
-                    Owned<IPropertyTree> pt = createPTreeFromIPT(file);
-                    filterParts(pt,parts);
-                    StringBuffer str;
-                    toXML(pt, str);
-                    RemoteFilename rfn;
-                    rfn.setPath(ep,outpath.str());
-                    Owned<IFile> out = createIFile(rfn);
-                    Owned<IFileIO> outio = out->open(IFOcreate);
-                    if (outio)
-                        outio->write(0,str.length(),str.str());
-
-                }
-            }
-            catch(IException *e)
-            {
-                CriticalBlock block(errcrit);
-                EXCLOG(e,"publishMetaFileXML");
-                if (!exc.get())
-                    exc.setown(e);
-                else
-                    e->Release();
-            }
-
-        }
-    } afor(file,ips,exc,errcrit);
-    afor.For(max,20);
-    if (exc)
-        throw exc.getClear();
-    return true;
-
-
-}
 
 IFileDescriptor *CDistributedFileDirectory::createDescriptorFromMetaFile(const CDfsLogicalFileName &logicalname,IUserDescriptor *user)
 {

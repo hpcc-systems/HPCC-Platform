@@ -327,6 +327,7 @@ export = {
         ESPBuildVersion: "ESP Build Version",
         ESPProcessName: "ESP Process Name",
         ESPNetworkAddress: "ESP Network Address",
+        ExampleScopePlaceholder: "Filter by scope e.g. scope1::scope2",
         EventName: "Event Name",
         EventNamePH: "Event Name",
         EventScheduler: "Event Scheduler",
