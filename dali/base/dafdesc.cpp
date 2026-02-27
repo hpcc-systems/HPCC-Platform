@@ -223,7 +223,7 @@ void ClusterPartDiskMapSpec::fromProp(IPropertyTree *tree)
     // if directory is specified then must match default base to be default replicated
     StringBuffer dir;
     if (tree&&tree->getProp("@directory",dir)) {
-        const char * base = queryBaseDirectory(grp_unknown, 0, SepCharBaseOs(getPathSepChar(dir.str())));
+        const char * base = queryUnknownBaseDirectory(0, SepCharBaseOs(getPathSepChar(dir.str())));
         size32_t l = strlen(base);
         if ((memcmp(base,dir.str(),l)!=0)||((l!=dir.length())&&!isPathSepChar(dir.charAt(l))))
             defrep = 0;
@@ -411,7 +411,9 @@ struct CClusterInfo: implements IClusterInfo, public CInterface
                     }
                     if (mspec.defaultCopies>1 && mspec.defaultReplicateDir.isEmpty())
                     {
-                        mspec.setDefaultReplicateDir(queryBaseDirectory(groupType, 1));  // MORE - not sure this is strictly correct
+                        Owned<const IStoragePlane> plane = getStoragePlaneByName(name, false);
+                        if (plane)
+                            mspec.setDefaultReplicateDir(plane->queryMirrorPrefix());
                     }
                     return; // ok
                 }
@@ -489,7 +491,11 @@ public:
                     mspec.setDefaultBaseDir(defaultDir);   // MORE - should possibly set up the rest of the mspec info from the group info here
 
                 if (mspec.defaultCopies>1 && (mspec.defaultReplicateDir.isEmpty() || baseDirChanged))
-                    mspec.setDefaultReplicateDir(queryBaseDirectory(groupType, 1));  // MORE - not sure this is strictly correct
+                {
+                    Owned<const IStoragePlane> plane = getStoragePlaneByName(name, false);
+                    if (plane)
+                        mspec.setDefaultReplicateDir(plane->queryMirrorPrefix());
+                }
             }
             else
                 checkClusterName(resolver);
@@ -593,7 +599,7 @@ public:
     void getBaseDir(StringBuffer &basedir,DFD_OS os)
     {
         if (mspec.defaultBaseDir.isEmpty())  // assume current platform's default
-            basedir.append(queryBaseDirectory(grp_unknown, 0, os));
+            basedir.append(queryUnknownBaseDirectory(0, os));
         else
             basedir.append(mspec.defaultBaseDir);
     }
@@ -601,7 +607,7 @@ public:
     void getReplicateDir(StringBuffer &basedir,DFD_OS os)
     {
         if (mspec.defaultReplicateDir.isEmpty())  // assume current platform's default
-            basedir.append(queryBaseDirectory(grp_unknown, 1, os));
+            basedir.append(queryUnknownBaseDirectory(1, os));
         else
             basedir.append(mspec.defaultReplicateDir);
     }
@@ -1893,7 +1899,7 @@ public:
             if (!sc)
                 sc = getPathSepChar(dirname);
             StringBuffer tmp;
-            tmp.append(queryBaseDirectory(grp_unknown, 0, SepCharBaseOs(sc)));
+            tmp.append(queryUnknownBaseDirectory(0, SepCharBaseOs(sc)));
             if (sc != tmp.charAt(tmp.length()-1))
                 tmp.append(sc);
             tmp.append(s);
@@ -2759,30 +2765,16 @@ IFileDescriptor *deserializeFileDescriptorTree(IPropertyTree *tree, INamedGroupS
     return new CFileDescriptor(tree, resolver, flags);
 }
 
-static const char * defaultWindowsBaseDirectories[__grp_size][MAX_REPLICATION_LEVELS] =
+static const char * defaultWindowsBaseDirectories[MAX_REPLICATION_LEVELS] =
     {
-            { "c:\\thordata", "d:\\thordata" },
-            { "c:\\thordata", "d:\\thordata" },
-            { "c:\\roxiedata", "d:\\roxiedata" },
-            { "c:\\hthordata", "d:\\hthordata" },
-            { "c:\\hthordata", "d:\\hthordata" },
+            "c:\\thordata", "d:\\thordata"
     };
-static const char * defaultUnixBaseDirectories[__grp_size][MAX_REPLICATION_LEVELS] =
+static const char * defaultUnixBaseDirectories[MAX_REPLICATION_LEVELS] =
     {
 #ifdef _CONTAINERIZED
-        { "/var/lib/HPCCSystems/hpcc-data", "/var/lib/HPCCSystems/hpcc-mirror" },
-        { "/var/lib/HPCCSystems/hpcc-data", "/var/lib/HPCCSystems/hpcc-mirror" },
-        { "/var/lib/HPCCSystems/hpcc-data", "/var/lib/HPCCSystems/hpcc-data2", "/var/lib/HPCCSystems/hpcc-data3", "/var/lib/HPCCSystems/hpcc-data4" },
-        { "/var/lib/HPCCSystems/hpcc-data", "/var/lib/HPCCSystems/hpcc-mirror" },
-        { "/var/lib/HPCCSystems/mydropzone", "/var/lib/HPCCSystems/mydropzone-mirror" }, // NB: this is not expected to be used
-        { "/var/lib/HPCCSystems/hpcc-data", "/var/lib/HPCCSystems/hpcc-mirror" },
+        "/var/lib/HPCCSystems/hpcc-data", "/var/lib/HPCCSystems/hpcc-mirror"
 #else
-        { "/var/lib/HPCCSystems/hpcc-data/thor", "/var/lib/HPCCSystems/hpcc-mirror/thor" },
-        { "/var/lib/HPCCSystems/hpcc-data/thor", "/var/lib/HPCCSystems/hpcc-mirror/thor" },
-        { "/var/lib/HPCCSystems/hpcc-data/roxie", "/var/lib/HPCCSystems/hpcc-data2/roxie", "/var/lib/HPCCSystems/hpcc-data3/roxie", "/var/lib/HPCCSystems/hpcc-data4/roxie" },
-        { "/var/lib/HPCCSystems/hpcc-data/eclagent", "/var/lib/HPCCSystems/hpcc-mirror/eclagent" },
-        { "/var/lib/HPCCSystems/mydropzone", "/var/lib/HPCCSystems/mydropzone-mirror" }, // NB: this is not expected to be used
-        { "/var/lib/HPCCSystems/hpcc-data/unknown", "/var/lib/HPCCSystems/hpcc-mirror/unknown" },
+        "/var/lib/HPCCSystems/hpcc-data/unknown", "/var/lib/HPCCSystems/hpcc-mirror/unknown"
 #endif
     };
 static const char *componentNames[__grp_size] =
@@ -2794,8 +2786,8 @@ static const char *dirTypeNames[MAX_REPLICATION_LEVELS] =
         "data", "data2", "data3", "data4"
     };
 
-static StringAttr windowsBaseDirectories[__grp_size][MAX_REPLICATION_LEVELS];
-static StringAttr unixBaseDirectories[__grp_size][MAX_REPLICATION_LEVELS];
+static StringAttr windowsBaseDirectories[MAX_REPLICATION_LEVELS];
+static StringAttr unixBaseDirectories[MAX_REPLICATION_LEVELS];
 
 static StringAttr defaultpartmask("$L$._$P$_of_$N$");
 
@@ -2811,41 +2803,55 @@ static void loadDefaultBases()
         return;
     ldbDone = true;
 
-    SessionId mysessid = myProcessSession();
-    if (mysessid)
+    // If this code is override the default directories is used on a containerized build it will fail - because
+    // it will try and resolve a storage plane called "dummy", which will not exist.
+    // The concept of a directory for a storage plane of unknown type should be removed - for future refactoring HPCC-35813
+    if (!isContainerized())
     {
-        Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software/Directories", mysessid, RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
-        if (conn) {
-            IPropertyTree* dirs = conn->queryRoot();
-            for (unsigned groupType = 0; groupType < __grp_size; groupType++)
-            {
-                const char *component = componentNames[groupType];
-                for (unsigned replicationLevel = 0; replicationLevel < MAX_REPLICATION_LEVELS; replicationLevel++)
-                {
-                    StringBuffer dirout;
-                    const char *dirType = dirTypeNames[replicationLevel];
-                    if (replicationLevel==1 && groupType!=grp_roxie)
-                        dirType = "mirror";
-                    if (getConfigurationDirectory(dirs, dirType, component,
-                        "dummy",   // NB this is dummy value (but actually hopefully not used anyway)
-                        dirout))
-                       unixBaseDirectories[groupType][replicationLevel].set(dirout.str());
-                }
-            }
+        SessionId mysessid = myProcessSession();
+        Owned<IPropertyTree> dirs;
+        // If connected to dali, then use the configuration from there, otherwise fall back to using the local config file)
+        if (mysessid)
+        {
+            Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software/Directories", mysessid, RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
+            if (conn)
+                dirs.set(conn->queryRoot());
+        }
+
+        const char *component = "unknown";
+        for (unsigned replicateLevel = 0; replicateLevel < MAX_REPLICATION_LEVELS; replicateLevel++)
+        {
+            StringBuffer dirout;
+            const char *dirType = dirTypeNames[replicateLevel];
+            if (replicateLevel == 1)
+                dirType = "mirror";
+            if (getConfigurationDirectory(dirs, dirType, component,
+                "dummy",   // NB this is dummy value (but actually hopefully not used anyway)
+                dirout))
+                unixBaseDirectories[replicateLevel].set(dirout.str());
         }
     }
-    for (unsigned groupType = 0; groupType < __grp_size; groupType++)
-        for (unsigned replicationLevel = 0; replicationLevel < MAX_REPLICATION_LEVELS; replicationLevel++)
-        {
-            if (unixBaseDirectories[groupType][replicationLevel].isEmpty())
-                unixBaseDirectories[groupType][replicationLevel].set(defaultUnixBaseDirectories[groupType][replicationLevel]);
-            if (windowsBaseDirectories[groupType][replicationLevel].isEmpty())
-                windowsBaseDirectories[groupType][replicationLevel].set(defaultWindowsBaseDirectories[groupType][replicationLevel]);
-        }
+
+    for (unsigned replicateLevel = 0; replicateLevel < MAX_REPLICATION_LEVELS; replicateLevel++)
+    {
+        if (unixBaseDirectories[replicateLevel].isEmpty())
+            unixBaseDirectories[replicateLevel].set(defaultUnixBaseDirectories[replicateLevel]);
+        if (windowsBaseDirectories[replicateLevel].isEmpty())
+            windowsBaseDirectories[replicateLevel].set(defaultWindowsBaseDirectories[replicateLevel]);
+    }
 }
 
 
-const char *queryBaseDirectory(GroupType groupType, unsigned replicateLevel, DFD_OS os)
+bool getConfigurationDirectory(StringBuffer & result, GroupType groupType, unsigned replicateLevel, const char *instance)
+{
+    const char *dirType = dirTypeNames[replicateLevel];
+    if ((replicateLevel == 1) && groupType!=grp_roxie)
+        dirType = "mirror";
+
+    return getConfigurationDirectory(nullptr, dirType, componentNames[groupType], instance, result);
+}
+
+const char *queryUnknownBaseDirectory(unsigned replicateLevel, DFD_OS os)
 {
     if (os==DFD_OSdefault)
 #ifdef _WIN32
@@ -2858,9 +2864,9 @@ const char *queryBaseDirectory(GroupType groupType, unsigned replicateLevel, DFD
     switch (os)
     {
     case DFD_OSwindows:
-        return windowsBaseDirectories[groupType][replicateLevel];
+        return windowsBaseDirectories[replicateLevel];
     case DFD_OSunix:
-        return unixBaseDirectories[groupType][replicateLevel];
+        return unixBaseDirectories[replicateLevel];
     }
     return NULL;
 }
@@ -2886,10 +2892,10 @@ void setBaseDirectory(const char * dir, unsigned replicateLevel, DFD_OS os)
         l--;
     switch (os) {
     case DFD_OSwindows:
-        windowsBaseDirectories[grp_unknown][replicateLevel].set(dir,l);
+        windowsBaseDirectories[replicateLevel].set(dir,l);
         break;
     case DFD_OSunix:
-        unixBaseDirectories[grp_unknown][replicateLevel].set(dir,l);
+        unixBaseDirectories[replicateLevel].set(dir,l);
         break;
     }
 }
@@ -3021,7 +3027,7 @@ StringBuffer &makePhysicalPartName(const char *lname, unsigned partno, unsigned 
         result.append(diroverride);
     }
     else
-        result.append(queryBaseDirectory(grp_unknown, replicateLevel, os));
+        result.append(queryUnknownBaseDirectory(replicateLevel, os));
 
     size32_t l = result.length();
     if ((l>3)&&(result.charAt(l-1)!=OsSepChar(os))) {
@@ -3094,7 +3100,7 @@ StringBuffer &getLFNDirectoryUsingBaseDir(StringBuffer &result, const char *lnam
 {
     assertex(lname);
     if (isEmptyString(baseDir))
-        baseDir = queryBaseDirectory(grp_unknown, 0, DFD_OSdefault);
+        baseDir = queryUnknownBaseDirectory(0, DFD_OSdefault);
 
     result.append(baseDir);
     char pathSep = getPathSepChar(baseDir);
@@ -3112,7 +3118,7 @@ StringBuffer &getLFNDirectoryUsingBaseDir(StringBuffer &result, const char *lnam
 
 StringBuffer &getLFNDirectoryUsingDefaultBaseDir(StringBuffer &result, const char *lname, DFD_OS os)
 {
-    const char *baseDir = queryBaseDirectory(grp_unknown, 0, os);
+    const char *baseDir = queryUnknownBaseDirectory(0, os);
     return getLFNDirectoryUsingBaseDir(result, lname, baseDir);
 }
 
@@ -3125,7 +3131,7 @@ bool setReplicateDir(const char *dir,StringBuffer &out,bool isrep,const char *ba
     if (!sep)
         return false;
     DFD_OS os = SepCharBaseOs(*sep);
-    const char *d = baseDir?baseDir:queryBaseDirectory(grp_unknown, isrep ? 0 : 1,os);
+    const char *d = baseDir?baseDir:queryUnknownBaseDirectory(isrep ? 0 : 1,os);
     if (!d)
         return false;
     unsigned match = 0;
@@ -3139,7 +3145,7 @@ bool setReplicateDir(const char *dir,StringBuffer &out,bool isrep,const char *ba
             count++;
         }
     }
-    const char *r = repDir?repDir:queryBaseDirectory(grp_unknown, isrep ? 1 : 0,os);
+    const char *r = repDir?repDir:queryUnknownBaseDirectory(isrep ? 1 : 0,os);
     if (d[i]==0)
     {
         if (dir[i]==0)
@@ -3672,10 +3678,10 @@ void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned defa
         }
     }
 
+    const char * storageApiType = plane->queryProp("storageapi/@type");
     if (!plane->hasProp("@prefix"))
     {
         // If a storage plane does not have a prefix, but a storage api type is defined, then generate a prefix
-        const char * storageApiType = plane->queryProp("storageapi/@type");
         if (storageApiType)
         {
             // @prefix is set later in applyPlaneTransformations
@@ -3683,13 +3689,19 @@ void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned defa
         else if (dir.length())
             plane->setProp("@prefix", dir);
         else
-            plane->setProp("@prefix", queryBaseDirectory(groupType, 0));
+        {
+            //Creating a storage plane from a group - do not use getStoragePlaneByName()
+            StringBuffer dir;
+            getConfigurationDirectory(dir, groupType, 0, planeName);
+            plane->setProp("@prefix", dir);
+        }
     }
-
-    if (!plane->hasProp("@mirrorPrefix") && (defaultCopies == 2))
+    if (!storageApiType && !plane->hasProp("@mirrorPrefix") && (defaultCopies == 2))
     {
-        if ((groupType == grp_thor) || (groupType == grp_roxie))
-            plane->setProp("@mirrorPrefix", queryBaseDirectory(groupType, 1));
+        // Creating a storage plane from a group - do not use getStoragePlaneByName()
+        StringBuffer dir;
+        getConfigurationDirectory(dir, groupType, 1, planeName);
+        plane->setProp("@mirrorPrefix", dir);
     }
 
     if (!plane->hasProp("@category"))
