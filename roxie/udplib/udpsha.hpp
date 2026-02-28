@@ -171,7 +171,8 @@ public:
         {
             CriticalBlock block(c_region);
             element = elements[first];
-            first = (first + 1) % element_count;
+            if (unlikely(++first >= element_count))
+                first = 0;
             active_buffers--;
         }
 
@@ -221,14 +222,15 @@ protected:
         {
             if (walkFunc(elements[cur]))
                 return true;
-            cur = (cur + 1) % element_count;
+            if (unlikely(++cur >= element_count))
+                cur = 0;
         }
         return false;
     }
 
     void doPush(const _et &element)
     {
-        int next = (last + 1) % element_count;
+        unsigned next = (last + 1) % element_count;
         elements[last] = element;
         last = next;
         active_buffers++;

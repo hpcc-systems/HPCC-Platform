@@ -990,7 +990,7 @@ public:
     }
     virtual const void *nextRow() override
     {
-        if (eof)
+        if (unlikely(eof))
             return NULL;
         if (rowSource.eos() && !reload())
             return NULL;
