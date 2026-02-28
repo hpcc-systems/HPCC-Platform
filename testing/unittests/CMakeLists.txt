@@ -61,6 +61,7 @@ set (    SRCS
          ${HPCC_SOURCE_DIR}/tools/esp-api/espservice.cpp
          commonJsonWriterTests.cpp
          rtlxmltests.cpp
+         fileviewtests.cpp
     )
 
 if (NOT CONTAINERIZED)
@@ -112,6 +113,8 @@ include_directories (
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
          ${HPCC_SOURCE_DIR}/esp/bindings/http/client
+         ${HPCC_SOURCE_DIR}/common/fileview2
+         ${HPCC_SOURCE_DIR}/system/jhtree
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )
@@ -131,6 +134,7 @@ target_link_libraries ( unittests
          logginglib
          workunit
          eventconsumption
+         fileview2
          ${CppUnit_LIBRARIES}
     )
 

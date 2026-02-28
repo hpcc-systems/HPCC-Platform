@@ -970,24 +970,3 @@ void parseFileColumnMapping(FieldTransformInfoArray & results, const char * text
     MappingParser parser(fieldMeta, false);
     parser.parseColumnMappingList(results, strlen(text), text);
 }
-
-
-static void test()
-{
-    HqlExprArray args;
-    MemoryAttr source;
-    source.set(26,"Gavin H\303\243lliday !!\316\261\316\221\307\272!!");
-
-    {
-        Owned<ViewFieldTransformer> transform = theTransformerRegistry->resolve("stringlib","StringToUpperCase",args);
-        MemoryAttr target;
-        transform->transform(target, source);
-    }
-
-    {
-        Owned<ViewFieldTransformer> transform = theTransformerRegistry->resolve("unicodelib","UnicodeToUpperCase",args);
-        MemoryAttr target;
-        transform->transform(target, source);
-    }
-    source.get();
-}
