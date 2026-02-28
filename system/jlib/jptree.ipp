@@ -31,8 +31,8 @@
 #include "jlog.hpp"
 #include "jstreamhelpers.hpp"
 
-#define ANE_APPEND -1
-#define ANE_SET -2
+static constexpr int aneAppend = -1;
+static constexpr int aneSet = -2;
 
 // PTree deserialization context class
 class jlib_decl PTreeDeserializeContext
