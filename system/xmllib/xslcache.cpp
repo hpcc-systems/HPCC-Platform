@@ -181,7 +181,7 @@ public:
     }
 };
 
-#define XSLTCACHESIZE 256
+static constexpr int xsltCacheSize = 256;
 
 class CXslCache : public CInterface, implements IXslCache
 {
@@ -225,7 +225,7 @@ public:
         newEntry->compile();
         if (cacheId && *cacheId)
         {
-            if (xslMap.count()>=XSLTCACHESIZE)
+            if (xslMap.count()>=xsltCacheSize)
                 freeOneCacheEntry();
             xslMap.setValue(cacheId, newEntry.get());
         }

@@ -498,7 +498,6 @@ public:
         xmlXPathObjectPtr obj = nullptr;
         if (primaryContext)
         {
-            //could always return from here, but may find a use for secondary variables, they currently can't be defined from esdl script, so can't hurt there
             obj = primaryContext->findVariable(name, ns_uri, scope);
             if (obj)
                 return obj;
@@ -506,7 +505,10 @@ public:
         const char *fullname = name;
         StringBuffer s;
         if (!isEmptyString(ns_uri))
-            fullname = s.append(ns_uri).append(':').append(name).str();
+        {
+            s.append(ns_uri).append(':').append(name);
+            fullname = s.str();
+        }
 
         ReadLockBlock wblock(m_rwlock);
         if (scope)
@@ -1221,18 +1223,7 @@ public:
         if (!obj || obj->type!=XPATH_NODESET || !obj->nodesetval || !obj->nodesetval->nodeTab || obj->nodesetval->nodeNr!=1)
             return xml;
         xmlNodePtr node = obj->nodesetval->nodeTab[0];
-        if (!node)
-            return xml;
-
-        xmlOutputBufferPtr xmlOut = xmlAllocOutputBuffer(nullptr);
-        xmlNodeDumpOutput(xmlOut, node->doc, node, 0, 1, nullptr);
-        if (xmlOutputBufferFlush(xmlOut) >= 0)
-        {
-            xmlBufPtr buf = (xmlOut->conv != nullptr) ? xmlOut->conv : xmlOut->buffer;
-            if (xmlBufUse(buf))
-                xml.append(xmlBufUse(buf), (const char *)xmlBufContent(buf));
-        }
-        xmlOutputBufferClose(xmlOut);
+        toXML(node, xml);
         xmlXPathFreeObject(obj);
         return xml;
     }
@@ -1406,8 +1397,9 @@ private:
             }
             default:
             {
+                int objType = evaluatedXpathObj->type;
                 xmlXPathFreeObject(evaluatedXpathObj);
-                throw MakeStringException(XPATHERR_UnexpectedInput,"XpathProcessor:evaluateAsString: Error: Could not evaluate XPATH '%s' as string; unexpected type %d", xpath, evaluatedXpathObj->type);
+                throw MakeStringException(XPATHERR_UnexpectedInput,"XpathProcessor:evaluateAsString: Error: Could not evaluate XPATH '%s' as string; unexpected type %d", xpath, objType);
                 break;
             }
         }
@@ -2038,6 +2030,12 @@ class LibXml2XPathProcessorTests : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( LibXml2XPathProcessorTests );
         CPPUNIT_TEST(testWriteUTF8);
+        CPPUNIT_TEST(testEvaluateAsString);
+        CPPUNIT_TEST(testEvaluateAsBoolean);
+        CPPUNIT_TEST(testEvaluateAsNumber);
+        CPPUNIT_TEST(testVariables);
+        CPPUNIT_TEST(testScopedVariables);
+        CPPUNIT_TEST(testCompiledXpath);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -2049,6 +2047,102 @@ public:
         if (!checkXmlWriterUtf8("testWriteUTF8", "@an_attribute", R"!!!(contains "quoted" text)!!!"))
             failed = true;
         CPPUNIT_ASSERT(!failed);
+    }
+
+    void testEvaluateAsString()
+    {
+        const char *xml = "<root><name>hello</name><value>42</value></root>";
+        Owned<IXpathContext> ctx(getXpathContext(xml, true, false));
+
+        StringBuffer result;
+        ctx->evaluateAsString("name", result);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("simple element", std::string("hello"), std::string(result.str()));
+
+        result.clear();
+        ctx->evaluateAsString("value", result);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("numeric element as string", std::string("42"), std::string(result.str()));
+
+        result.clear();
+        ctx->evaluateAsString("missing", result);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("missing element returns empty", std::string(""), std::string(result.str()));
+    }
+
+    void testEvaluateAsBoolean()
+    {
+        const char *xml = "<root><flag>true</flag><empty/></root>";
+        Owned<IXpathContext> ctx(getXpathContext(xml, true, false));
+
+        CPPUNIT_ASSERT_MESSAGE("existing element is truthy", ctx->evaluateAsBoolean("boolean(flag)"));
+        CPPUNIT_ASSERT_MESSAGE("missing element is falsy", !ctx->evaluateAsBoolean("boolean(nonexistent)"));
+        CPPUNIT_ASSERT_MESSAGE("true() literal", ctx->evaluateAsBoolean("boolean(true())"));
+    }
+
+    void testEvaluateAsNumber()
+    {
+        const char *xml = "<root><value>3.14</value><count>7</count></root>";
+        Owned<IXpathContext> ctx(getXpathContext(xml, true, false));
+
+        Owned<ICompiledXpath> compiledValue(compileXpath("number(value)"));
+        double val = ctx->evaluateAsNumber(compiledValue);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL_MESSAGE("decimal number", 3.14, val, 0.001);
+
+        Owned<ICompiledXpath> compiledCount(compileXpath("number(count)"));
+        double cnt = ctx->evaluateAsNumber(compiledCount);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL_MESSAGE("integer number", 7.0, cnt, 0.001);
+    }
+
+    void testVariables()
+    {
+        const char *xml = "<root><item>test</item></root>";
+        Owned<IXpathContext> ctx(getXpathContext(xml, true, false));
+
+        ctx->addVariable("myvar", "hello_world");
+        StringBuffer result;
+        ctx->getVariable("myvar", result);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("variable value", std::string("hello_world"), std::string(result.str()));
+
+        ctx->addVariable("myvar", "updated");
+        result.clear();
+        ctx->getVariable("myvar", result);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("updated variable", std::string("updated"), std::string(result.str()));
+    }
+
+    void testScopedVariables()
+    {
+        const char *xml = "<root><item>test</item></root>";
+        Owned<IXpathContext> ctx(getXpathContext(xml, true, false));
+
+        ctx->addVariable("outer", "outer_val");
+        ctx->beginScope("inner", XpathVariableScopeType::simple);
+        ctx->addVariable("inner", "inner_val");
+
+        StringBuffer result;
+        ctx->getVariable("inner", result);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("inner scope var", std::string("inner_val"), std::string(result.str()));
+
+        result.clear();
+        ctx->getVariable("outer", result);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("outer var from inner scope", std::string("outer_val"), std::string(result.str()));
+
+        ctx->endScope();
+    }
+
+    void testCompiledXpath()
+    {
+        const char *xml = "<root><items><item>a</item><item>b</item><item>c</item></items></root>";
+        Owned<IXpathContext> ctx(getXpathContext(xml, true, false));
+
+        Owned<ICompiledXpath> compiled(compileXpath("count(items/item)"));
+        double count = ctx->evaluateAsNumber(compiled);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL_MESSAGE("count items", 3.0, count, 0.001);
+
+        Owned<ICompiledXpath> strExpr(compileXpath("concat(items/item[1], '-', items/item[2])"));
+        StringBuffer result;
+        ctx->evaluateAsString(strExpr, result);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("concat xpath", std::string("a-b"), std::string(result.str()));
+
+        // Verify getXpath() returns original expression
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("getXpath", std::string("count(items/item)"), std::string(compiled->getXpath()));
     }
 
 private:
