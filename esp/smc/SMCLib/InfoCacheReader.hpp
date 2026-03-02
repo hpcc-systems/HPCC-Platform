@@ -50,7 +50,7 @@ class TPWRAPPER_API CInfoCacheReaderThread : public CSimpleInterfaceOf<IThreaded
 {
     StringAttr name;
     bool stopping = false;
-    bool active = true;
+    std::atomic<bool> active{true};
     bool first = true;
     bool firstBlocked = false;
     bool enableAutoRebuild = true;
@@ -62,7 +62,7 @@ class TPWRAPPER_API CInfoCacheReaderThread : public CSimpleInterfaceOf<IThreaded
     Semaphore firstSem;
     CriticalSection crit;
     CThreaded threaded;
-    std::atomic<bool> waiting = {false};
+    std::atomic<bool> waiting{false};
 
 public:
     CInfoCacheReaderThread(CInfoCacheReader* _reader, const char* _name, unsigned _autoRebuildSeconds, unsigned _forceRebuildSeconds, bool _enableAutoRebuild)
