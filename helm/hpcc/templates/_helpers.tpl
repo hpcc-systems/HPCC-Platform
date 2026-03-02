@@ -718,6 +718,9 @@ vaults:
   {{- range $vault := . }}
     - name: {{ $vault.name }}
       kind: {{ $vault.kind }}
+    {{- if $vault.type }}
+      type: {{ $vault.type }}
+    {{- end }}
     {{- if $vault.namespace }}
       namespace: {{ $vault.namespace }}
     {{- end }}
@@ -733,6 +736,15 @@ vaults:
     {{- end -}}
     {{- if index $vault "appRoleSecret" }}
       appRoleSecret: {{ index $vault "appRoleSecret" }}
+    {{- end -}}
+    {{- if index $vault "accessId" }}
+      accessId: {{ index $vault "accessId" }}
+    {{- end -}}
+    {{- if index $vault "accessKey" }}
+      accessKey: {{ index $vault "accessKey" }}
+    {{- end }}
+    {{- if index $vault "accessType" }}
+      accessType: {{ index $vault "accessType" }}
     {{- end -}}
     {{- if $vaultClientIssuerEnabled }}
      {{- if not (index $vault "client-secret") }}
