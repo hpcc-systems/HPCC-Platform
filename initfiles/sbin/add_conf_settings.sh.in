@@ -98,16 +98,19 @@ Defaults:${USER_NAME} !requiretty
 %EOF
 fi
 
-alter_file /etc/security/limits.conf "^${USER_NAME}" << %EOF
-${USER_NAME} soft nofile 8192
-${USER_NAME} hard nofile 32768
+filelimit=$(ulimit -n 2>/dev/null)
+if [ -z "$filelimit" ] || { [ "$filelimit" != "unlimited" ] && [ "$filelimit" -lt 1048576 ]; }
+then
+  alter_file /etc/security/limits.conf "^${USER_NAME}" << %EOF
+${USER_NAME} soft nofile 1048576
+${USER_NAME} hard nofile 1048576
 ${USER_NAME} soft core unlimited
 ${USER_NAME} hard core unlimited
-${USER_NAME} soft nproc 4096
-${USER_NAME} hard nproc 8192
+${USER_NAME} soft nproc 262144
+${USER_NAME} hard nproc 262144
 ${USER_NAME} soft rtprio 0
 ${USER_NAME} hard rtprio 4
 ${USER_NAME} soft memlock unlimited
 ${USER_NAME} hard memlock unlimited
 %EOF
-
+fi
