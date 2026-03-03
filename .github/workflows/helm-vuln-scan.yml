@@ -29,6 +29,7 @@ jobs:
     # Default is "false" which will surface a WARNING instead (visible in the run log/annotations).
     env:
       FAIL_ON_FORK_SKIP: "false"
+      FAIL_ON_NON_ALLOWLISTED_REPO: "false"
       # Allowlist: approve only these Helm repo hostnames (tighten per org policy as needed)
       ALLOWLIST_DOMAINS_REGEX: '(hpcc-systems\.github\.io|helm\.elastic\.co|open-telemetry\.github\.io|grafana\.github\.io|prometheus-community\.github\.io|kubernetes\.github\.io)'
 
@@ -37,7 +38,7 @@ jobs:
       # CHECKOUT — using stable semantic version for maintainability
       # -----------------------------------------------------------------------
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           # fetch-depth 0 enables diffing and commit lookups across PR base/head
           fetch-depth: 0
@@ -46,15 +47,16 @@ jobs:
       # HELM — using stable semantic version for maintainability
       # -----------------------------------------------------------------------
       - name: Set up Helm
-        uses: Azure/setup-helm@v4
+        uses: Azure/setup-helm@v4.3.1
 
       # -----------------------------------------------------------------------
       # TRIVY — using stable semantic version for maintainability
       # -----------------------------------------------------------------------
       - name: Set up Trivy (CLI)
-        uses: aquasecurity/setup-trivy@v0.2.5
+        uses: aquasecurity/setup-trivy@e07451d2e059ed86c2870430ea286b3a9e0bf241
         with:
           cache: true
+          version: 'v0.69.2'
 
       # Utility: jq for JSON summarization
       - name: Ensure jq is available
@@ -160,9 +162,16 @@ jobs:
               # FIRST-PARTY PRs:
               # Only fetch deps if all repos in Chart.yaml/Chart.lock are allowlisted
               if grep -Eqi '(^|\s)repository:\s*https?://[^ ]+' "${chart}/Chart.yaml" "${chart}/Chart.lock" 2>/dev/null; then
-                if grep -Eio 'https?://[^ ]+' "${chart}/Chart.yaml" "${chart}/Chart.lock" \
-                  | grep -Eiv "${ALLOWLIST_DOMAINS_REGEX}" >/dev/null; then
-                  echo "Skipping 'helm dependency build' due to non-allowlisted repo in ${chart}"
+                ALL_REPOS=$(grep -Eio 'https?://[^ ]+' "${chart}/Chart.yaml" "${chart}/Chart.lock" | sort -u || true)
+                NON_ALLOWLISTED=$(printf "%s\n" "${ALL_REPOS}" | grep -Eiv "${ALLOWLIST_DOMAINS_REGEX}" || true)
+
+                if [[ -n "${NON_ALLOWLISTED}" ]]; then
+                  if [[ "${FAIL_ON_NON_ALLOWLISTED_REPO}" == "true" ]]; then
+                    echo "::error file=${chart}/Chart.yaml::Non-allowlisted Helm repository detected in ${chart}: ${NON_ALLOWLISTED//$'\n'/, }"
+                    exit 1
+                  else
+                    echo "Skipping 'helm dependency build' due to non-allowlisted repo in ${chart}: ${NON_ALLOWLISTED//$'\n'/, }"
+                  fi
                 else
                   helm dependency build "${chart}" || true
                 fi
@@ -276,7 +285,6 @@ jobs:
                 echo ""
               } >> "${CRIT_TMP}"
 
-              # Short Top-3 for the annotation
               TOP3_CVES=$(
                 jq -r '
                   .Results[]?.Vulnerabilities[]?
@@ -339,7 +347,7 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Upload Trivy summary (artifact)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: trivy-summary
           path: trivy-summary.md
