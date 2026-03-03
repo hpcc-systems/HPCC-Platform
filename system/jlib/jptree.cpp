@@ -3991,115 +3991,143 @@ bool PTree::checkPattern(const char *&xxpath) const
     const char *tProp = splitXPathX(lhs);
     MAKE_LSTRING(head, lhs, tProp-lhs);
 
-    // Future optimisation (Stage 4): replace iterator usage here with nested visit() calls.
-    //
-    // The two iterator patterns below can be replaced as follows:
-    //
-    // 1. Existence check (t_none): "found.hasProp(tProp)" after iterating head
-    //    Replace with a nested visit() using a short-circuit boolean visitor:
-    //      struct ExistsVisitor : IPropertyTreeVisitor {
-    //          bool found = false;
-    //          VisitResult visit(const IPropertyTree &node, const char *attr) override {
-    //              found = true; return VisitResult::Stop;
-    //          }
-    //      };
-    //      ExistsVisitor ev;
-    //      found.visit(tProp, ev);   // stops on first match
-    //      ret = ev.found;
-    //
-    // 2. Value comparison: "found.getElements(tProp)" for child element value matching
-    //    Replace with a nested visit() whose callback performs the match() comparison
-    //    and returns Stop on first successful match, setting ret = true.
-    //
-    // Both replacements eliminate all iterator heap allocation from checkPattern().
-
-    Owned<IPropertyTreeIterator> iter = getElements(head);
-    ForEach (*iter)
+    if (t_none == tType)
     {
-        IPropertyTree &found = iter->query();
-        if (t_none == tType)
+        // Existence check: visit all nodes matching 'head', stop as soon as one has 'tProp'.
+        struct ExistsVisitor : IPropertyTreeVisitor
         {
-            if (found.hasProp(tProp))
+            const char *prop;
+            bool found = false;
+            ExistsVisitor(const char *_prop) : prop(_prop) {}
+            VisitResult visit(const IPropertyTree &node, const char *) override
             {
-                ret = true;
-                break;
+                if (node.hasProp(prop))
+                {
+                    found = true;
+                    return VisitResult::Stop;
+                }
+                return VisitResult::Continue;
             }
-        }
-        else
+        } ev(tProp);
+        visit(head, ev);
+        ret = ev.found;
+    }
+    else
+    {
+        // Value comparison: visit all nodes matching 'head', then for each check 'tProp'.
+        // Capture all comparison state by reference into the visitor lambda-style struct.
+        struct MatchVisitor : IPropertyTreeVisitor
         {
-            Owned<IPropertyTreeIterator> _iter2;
-            IPropertyTreeIterator *iter2;
-            IPropertyTree *matchElem;
-            if (isAttribute(tProp))
+            const char *tProp;
+            exprType tType;
+            bool wild, numeric, nocase;
+            const char *quoteBegin, *quoteEnd, *rhsBegin, *rhsEnd;
+            const char *xxpath;
+#ifdef WARNLEGACYCOMPARE
+            bool legacynumeric;
+#endif
+            bool found = false;
+
+            VisitResult visit(const IPropertyTree &found, const char *) override
             {
-                matchElem = &found;
-                iter2 = NULL;
-            }
-            else
-            {
-                _iter2.setown(found.getElements(tProp));
-                iter2 = _iter2;
-                if (iter2->first())
-                    matchElem = &iter2->query();
+                // Determine the actual element and property to compare against.
+                // If tProp is an attribute, compare against 'found' directly.
+                // If tProp names a child element, visit each matching child.
+                if (isAttribute(tProp))
+                {
+                    if (compareValue(found, tProp))
+                    {
+                        this->found = true;
+                        return VisitResult::Stop;
+                    }
+                }
                 else
-                    continue;
-                tProp = NULL;
+                {
+                    // Visit child elements matching tProp; stop on first match.
+                    struct InnerVisitor : IPropertyTreeVisitor
+                    {
+                        MatchVisitor &outer;
+                        InnerVisitor(MatchVisitor &o) : outer(o) {}
+                        VisitResult visit(const IPropertyTree &elem, const char *) override
+                        {
+                            if (outer.compareValue(elem, nullptr))
+                            {
+                                outer.found = true;
+                                return VisitResult::Stop;
+                            }
+                            return VisitResult::Continue;
+                        }
+                    } inner(*this);
+                    found.visit(tProp, inner);
+                    if (this->found)
+                        return VisitResult::Stop;
+                }
+                return VisitResult::Continue;
             }
-            for (;;)
+
+            bool compareValue(const IPropertyTree &elem, const char *prop) const
             {
-                if (matchElem->isBinary(tProp))
+                if (elem.isBinary(prop))
                     UNIMPLEMENTED_IPT;
                 const char *rhs;
                 unsigned rhslength;
+                bool localNumeric = numeric;
                 if (quoteEnd)
                 {
                     rhs = quoteBegin;
-                    rhslength = quoteEnd-quoteBegin;
+                    rhslength = quoteEnd - quoteBegin;
 #ifdef WARNLEGACYCOMPARE
-                    if (legacynumeric)
-                    {
-                        if (isdigit(*rhs))
-                            IWARNLOG("Possible deprecated use of quoted numeric comparison operation: %s", xxpath);
-                    }
+                    if (legacynumeric && isdigit(*rhs))
+                        IWARNLOG("Possible deprecated use of quoted numeric comparison operation: %s", xxpath);
 #endif
                 }
                 else if (rhsEnd)
                 {
                     rhs = rhsBegin;
-                    rhslength = rhsEnd-rhsBegin;
-                    numeric = true;
+                    rhslength = rhsEnd - rhsBegin;
+                    localNumeric = true;
                 }
                 else
                 {
-                    rhs = NULL;
+                    rhs = nullptr;
                     rhslength = 0;
                 }
-                if (matchElem->isCompressed(tProp))
+                if (elem.isCompressed(prop))
                 {
                     StringBuffer s;
-                    matchElem->getProp(tProp, s);
-                    ret = match(wild, numeric, xxpath, tType, s.str(), s.length(), rhs, rhslength, nocase);
+                    elem.getProp(prop, s);
+                    return match(wild, localNumeric, xxpath, tType, s.str(), s.length(), rhs, rhslength, nocase);
                 }
                 else
                 {
-                    const char *value = matchElem->queryProp(tProp);
+                    const char *value = elem.queryProp(prop);
                     if (value)
-                        ret = match(wild, numeric, xxpath, tType, value, value?(size32_t)strlen(value):0, rhs, rhslength, nocase);
+                        return match(wild, localNumeric, xxpath, tType, value, (size32_t)strlen(value), rhs, rhslength, nocase);
                     else if (tType == t_equality)
-                        ret = (NULL == rhs || '\0' == *rhs);
+                        return (nullptr == rhs || '\0' == *rhs);
                     else if (tType == t_inequality)
-                        ret = (NULL != rhs && '\0' != *rhs);
+                        return (nullptr != rhs && '\0' != *rhs);
+                    return false;
                 }
-                if (ret)
-                    break;
-                if (!iter2 || !iter2->next())
-                    break;
-                matchElem = &iter2->query();
             }
-            if (ret)
-                break;
-        }
+        } mv;
+        mv.tProp = tProp;
+        mv.tType = tType;
+        mv.wild = wild;
+        mv.numeric = numeric;
+        mv.nocase = nocase;
+        mv.quoteBegin = quoteBegin;
+        mv.quoteEnd = quoteEnd;
+        mv.rhsBegin = rhsBegin;
+        mv.rhsEnd = rhsEnd;
+        mv.xxpath = xxpath;
+#ifdef WARNLEGACYCOMPARE
+        mv.legacynumeric = legacynumeric;
+#endif
+        const_cast<PTree *>(this)->visit(head, mv);
+        ret = mv.found;
     }
+
     xxpath = xpath;
     return ret;
 }
