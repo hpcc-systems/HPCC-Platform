@@ -41,6 +41,17 @@ const useStyles = makeStyles({
             }
         }
     },
+    listHeader: {
+        display: "grid",
+        gridTemplateColumns: "20px minmax(200px, 3fr) minmax(120px, 1.5fr) minmax(150px, 2fr) minmax(100px, 1fr) auto",
+        columnGap: tokens.spacingHorizontalS,
+        alignItems: "center",
+        padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalS}`,
+        borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
+        marginBottom: tokens.spacingVerticalXS,
+        fontWeight: tokens.fontWeightSemibold,
+        fontSize: tokens.fontSizeBase200
+    },
     gridCell: {
         width: "100%"
     },
@@ -50,6 +61,20 @@ const useStyles = makeStyles({
         columnGap: tokens.spacingHorizontalS,
         minWidth: 0,
         width: "100%"
+    },
+    jobRowGrid: {
+        display: "grid",
+        gridTemplateColumns: "20px minmax(200px, 3fr) minmax(120px, 1.5fr) minmax(150px, 2fr) minmax(100px, 1fr) auto",
+        columnGap: tokens.spacingHorizontalS,
+        alignItems: "center",
+        minWidth: 0,
+        width: "100%"
+    },
+    columnCell: {
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+        minWidth: 0
     },
     jobIcon: {
         width: "14px",
@@ -86,7 +111,26 @@ const useStyles = makeStyles({
     muted: {
         color: tokens.colorNeutralForeground3
     },
-
+    jobDetail: {
+        color: tokens.colorNeutralForeground3,
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        minWidth: 0,
+        flex: "0 1 auto"
+    },
+    separator: {
+        color: tokens.colorNeutralForeground4,
+        flexShrink: 0
+    },
+    jobGraph: {
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+        minWidth: 0,
+        flex: "0 1 auto",
+        color: tokens.colorBrandForeground1
+    },
 });
 
 export type UIWorkunit = {
@@ -159,6 +203,7 @@ interface ActiveWorkunitProps {
     wu: UIWorkunit;
     idx: number;
     listLength: number;
+    listMode?: boolean;
     setPriority: (wu: UIWorkunit, priority: "high" | "normal" | "low") => void;
     moveTop: (wu: UIWorkunit) => void;
     moveUp: (wu: UIWorkunit) => void;
@@ -168,7 +213,7 @@ interface ActiveWorkunitProps {
     wuResume: (wu: UIWorkunit) => void;
 };
 
-const ActiveWorkunit: React.FunctionComponent<ActiveWorkunitProps> = ({ wu, idx, listLength, setPriority, moveTop, moveUp, moveDown, moveBottom, wuPause, wuResume }) => {
+const ActiveWorkunit: React.FunctionComponent<ActiveWorkunitProps> = ({ wu, idx, listLength, listMode, setPriority, moveTop, moveUp, moveDown, moveBottom, wuPause, wuResume }) => {
     const styles = useStyles();
     const wuid = wu.Wuid;
     const wimg = wu.isDFU ? getDFUStateImage(wu.StateID) : getStateImage(wu.StateID, false, false);
@@ -220,49 +265,119 @@ const ActiveWorkunit: React.FunctionComponent<ActiveWorkunitProps> = ({ wu, idx,
     return <ListItem key={wuid}>
         <div role="gridcell" className={styles.gridCell}>
             <Tooltip content={tooltipContent} relationship="label">
-                <div className={styles.jobRow}>
+                <div className={listMode ? styles.jobRowGrid : styles.jobRow}>
+                    {/* Icon column */}
                     {wimg && <img className={styles.jobIcon} alt="state" src={wimg} />}
-                    <div className={styles.jobTexts}>
-                        <Link className={styles.jobWuid} href={wu.isDFU ? `#/dfuworkunits/${wuid}` : `#/workunits/${wuid}`} aria-label={jobName ? `${jobName} workunit ${wuid}` : wuid}>{jobName ? `${jobName} (${wuid})` : wuid}</Link>
-                    </div>
-                    <div className={styles.jobRight}>
-                        <Link className={styles.jobName} href={`#/workunits/${wuid}/metrics/${graphName}`}>
-                            {gid ? `${graphName}-${gid}` : graphName}
-                        </Link>
-                        {priorityIcon && <img className={styles.jobIcon} alt="priority" src={priorityIcon} />}
-                        <Button
-                            appearance="transparent"
-                            size="small"
-                            aria-label={nlsHPCC.Resume}
-                            title={`${nlsHPCC.Resume} (Ctrl+Click = ${nlsHPCC.PauseNow || "Pause Now"})`}
-                            icon={wu.isPaused ? <Play16Regular className={styles.jobIcon} /> : <Pause16Regular className={styles.jobIcon} />}
-                            onClick={(e) => {
-                                if (wu.isPaused) {
-                                    wuResume(wu);
-                                } else {
-                                    wuPause(wu, (e as React.MouseEvent).ctrlKey);
-                                }
-                            }}
-                        />
-                        <ActiveWorkunitMenu
-                            wu={wu}
-                            canUp={canUp}
-                            canDown={canDown}
-                            setPriority={setPriority}
-                            moveTop={moveTop}
-                            moveUp={moveUp}
-                            moveDown={moveDown}
-                            moveBottom={moveBottom}
-                        />
-                    </div>
+
+                    {listMode ? (
+                        <>
+                            {/* Jobname (WUID) column */}
+                            <div className={styles.columnCell}>
+                                <Link href={wu.isDFU ? `#/dfuworkunits/${wuid}` : `#/workunits/${wuid}`} aria-label={jobName ? `${jobName} workunit ${wuid}` : wuid}>
+                                    {jobName ? `${jobName} (${wuid})` : wuid}
+                                </Link>
+                            </div>
+
+                            {/* Graph column */}
+                            <div className={styles.columnCell}>
+                                {graphName ? (
+                                    <Link href={`#/workunits/${wuid}/metrics/${graphName}`}>
+                                        {gid ? `${graphName}-${gid}` : graphName}
+                                    </Link>
+                                ) : (
+                                    <Text>-</Text>
+                                )}
+                            </div>
+
+                            {/* State column */}
+                            <div className={styles.columnCell}>
+                                <Text>{stateText || "-"}</Text>
+                            </div>
+
+                            {/* Owner column */}
+                            <div className={styles.columnCell}>
+                                <Text>{owner || "-"}</Text>
+                            </div>
+
+                            {/* Actions column */}
+                            <div style={{ display: "flex", alignItems: "center", columnGap: "2px" }}>
+                                {priorityIcon && <img className={styles.jobIcon} alt="priority" src={priorityIcon} />}
+                                <Button
+                                    appearance="transparent"
+                                    size="small"
+                                    aria-label={nlsHPCC.Resume}
+                                    title={`${nlsHPCC.Resume} (Ctrl+Click = ${nlsHPCC.PauseNow || "Pause Now"})`}
+                                    icon={wu.isPaused ? <Play16Regular className={styles.jobIcon} /> : <Pause16Regular className={styles.jobIcon} />}
+                                    onClick={(e) => {
+                                        if (wu.isPaused) {
+                                            wuResume(wu);
+                                        } else {
+                                            wuPause(wu, (e as React.MouseEvent).ctrlKey);
+                                        }
+                                    }}
+                                />
+                                <ActiveWorkunitMenu
+                                    wu={wu}
+                                    canUp={canUp}
+                                    canDown={canDown}
+                                    setPriority={setPriority}
+                                    moveTop={moveTop}
+                                    moveUp={moveUp}
+                                    moveDown={moveDown}
+                                    moveBottom={moveBottom}
+                                />
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <div className={styles.jobTexts}>
+                                <Link className={styles.jobWuid} href={wu.isDFU ? `#/dfuworkunits/${wuid}` : `#/workunits/${wuid}`} aria-label={jobName ? `${jobName} workunit ${wuid}` : wuid}>
+                                    {jobName ? `${jobName} (${wuid})` : wuid}
+                                </Link>
+                            </div>
+                            <div className={styles.jobRight}>
+                                {graphName && (
+                                    <Link className={styles.jobName} href={`#/workunits/${wuid}/metrics/${graphName}`}>
+                                        {gid ? `${graphName}-${gid}` : graphName}
+                                    </Link>
+                                )}
+                                {priorityIcon && <img className={styles.jobIcon} alt="priority" src={priorityIcon} />}
+                                <Button
+                                    appearance="transparent"
+                                    size="small"
+                                    aria-label={nlsHPCC.Resume}
+                                    title={`${nlsHPCC.Resume} (Ctrl+Click = ${nlsHPCC.PauseNow || "Pause Now"})`}
+                                    icon={wu.isPaused ? <Play16Regular className={styles.jobIcon} /> : <Pause16Regular className={styles.jobIcon} />}
+                                    onClick={(e) => {
+                                        if (wu.isPaused) {
+                                            wuResume(wu);
+                                        } else {
+                                            wuPause(wu, (e as React.MouseEvent).ctrlKey);
+                                        }
+                                    }}
+                                />
+                                <ActiveWorkunitMenu
+                                    wu={wu}
+                                    canUp={canUp}
+                                    canDown={canDown}
+                                    setPriority={setPriority}
+                                    moveTop={moveTop}
+                                    moveUp={moveUp}
+                                    moveDown={moveDown}
+                                    moveBottom={moveBottom}
+                                />
+                            </div>
+                        </>
+                    )}
                 </div>
             </Tooltip>
-        </div>
-    </ListItem>;
+        </div >
+    </ListItem >;
 };
 
 interface ActiveWorkunitListProps {
     list: UIWorkunit[];
+    listMode?: boolean;
     setPriority: (wu: UIWorkunit, priority: "high" | "normal" | "low") => void;
     moveTop: (wu: UIWorkunit) => void;
     moveUp: (wu: UIWorkunit) => void;
@@ -274,6 +389,7 @@ interface ActiveWorkunitListProps {
 
 const ActiveWorkunitList: React.FunctionComponent<ActiveWorkunitListProps> = ({
     list,
+    listMode,
     setPriority,
     moveTop,
     moveUp,
@@ -283,24 +399,37 @@ const ActiveWorkunitList: React.FunctionComponent<ActiveWorkunitListProps> = ({
     wuResume
 }) => {
     const styles = useStyles();
-    return <List className={styles.jobsList} navigationMode="composite">
-        {list.length === 0 && <Text className={styles.muted}>{nlsHPCC.Empty || ""}</Text>}
-        {list.map((wu, idx) => (
-            <ActiveWorkunit
-                key={wu.Wuid}
-                wu={wu}
-                idx={idx}
-                listLength={list.length}
-                setPriority={setPriority}
-                moveTop={moveTop}
-                moveUp={moveUp}
-                moveDown={moveDown}
-                moveBottom={moveBottom}
-                wuPause={wuPause}
-                wuResume={wuResume}
-            />
-        ))}
-    </List>;
+    return <>
+        {listMode && list.length > 0 && (
+            <div className={styles.listHeader}>
+                <div></div>{/* Icon column */}
+                <div>{nlsHPCC.JobName}</div>
+                <div>{nlsHPCC.Graph}</div>
+                <div>{nlsHPCC.State}</div>
+                <div>{nlsHPCC.Owner}</div>
+                <div></div>{/* Actions column */}
+            </div>
+        )}
+        <List className={styles.jobsList} navigationMode="composite">
+            {list.length === 0 && <Text className={styles.muted}>{nlsHPCC.Empty || ""}</Text>}
+            {list.map((wu, idx) => (
+                <ActiveWorkunit
+                    key={wu.Wuid}
+                    wu={wu}
+                    idx={idx}
+                    listLength={list.length}
+                    listMode={listMode}
+                    setPriority={setPriority}
+                    moveTop={moveTop}
+                    moveUp={moveUp}
+                    moveDown={moveDown}
+                    moveBottom={moveBottom}
+                    wuPause={wuPause}
+                    wuResume={wuResume}
+                />
+            ))}
+        </List>
+    </>;
 };
 
 interface StatusDetailsProps {
@@ -347,6 +476,7 @@ const StatusDetails: React.FunctionComponent<StatusDetailsProps> = ({ details })
 
 export interface QueueCardProps {
     serverJobQueue: ServerJobQueue;
+    listMode?: boolean;
     onOpen: (q: ServerJobQueue) => void;
     pause: (q: ServerJobQueue) => void;
     resume: (q: ServerJobQueue) => void;
@@ -362,6 +492,7 @@ export interface QueueCardProps {
 
 export const QueueCard: React.FunctionComponent<QueueCardProps> = ({
     serverJobQueue,
+    listMode,
     onOpen,
     pause,
     resume,
@@ -415,7 +546,7 @@ export const QueueCard: React.FunctionComponent<QueueCardProps> = ({
                 </Tooltip>
             }
             headerActions={actions} footerText={serverJobQueue.paused ? nlsHPCC.Stopped : undefined} footerExtraInfo={serverJobQueue.paused ? <InfoLabel size="medium" info={<StatusDetails details={serverJobQueue.statusDetails} />}></InfoLabel> : undefined}>
-            <ActiveWorkunitList list={serverJobQueue.workunits as UIWorkunit[]} setPriority={setPriority} moveTop={moveTop} moveUp={moveUp} moveDown={moveDown} moveBottom={moveBottom} wuPause={wuPause} wuResume={wuResume} />
+            <ActiveWorkunitList list={serverJobQueue.workunits as UIWorkunit[]} listMode={listMode} setPriority={setPriority} moveTop={moveTop} moveUp={moveUp} moveDown={moveDown} moveBottom={moveBottom} wuPause={wuPause} wuResume={wuResume} />
         </GenericCard>
         <MessageBox show={clearDialogOpen} setShow={setClearDialogOpen} title={nlsHPCC.Clear} footer={<>
             <Button appearance="primary" onClick={() => { clear(serverJobQueue); setClearDialogOpen(false); }}>{nlsHPCC.OK}</Button>
@@ -428,10 +559,12 @@ export const QueueCard: React.FunctionComponent<QueueCardProps> = ({
 
 export interface QueueCardsProps {
     refreshToken?: number;
+    listMode?: boolean;
 }
 
 export const QueueCards: React.FunctionComponent<QueueCardsProps> = ({
-    refreshToken
+    refreshToken,
+    listMode = false
 }) => {
     const { queues, refresh, pause, resume, clear, setPriority, moveTop, moveUp, moveDown, moveBottom, wuPause, wuResume } = useServerJobQueues();
 
@@ -451,7 +584,7 @@ export const QueueCards: React.FunctionComponent<QueueCardsProps> = ({
         window.location.href = url;
     }, []);
 
-    return <CardGroup>
+    return <CardGroup minColumnWidth={listMode ? "100%" : 280} autoRows={listMode ? "auto" : 320}>
         {queues.length === 0 ? (
             <Text>{nlsHPCC.FetchingData}</Text>
         ) : (
@@ -459,6 +592,7 @@ export const QueueCards: React.FunctionComponent<QueueCardsProps> = ({
                 <QueueCard
                     key={`${q.kind}:${q.targetCluster?.ClusterName || q.serverJobQueue?.ServerName || q.serverJobQueue?.QueueName}`}
                     serverJobQueue={q}
+                    listMode={listMode}
                     onOpen={onOpen}
                     pause={pause}
                     resume={resume}
