@@ -3843,9 +3843,9 @@ public:
     //    tag="value"       - child tag must equal value
     //    @attr="value"     - attribute must equal value
     //    (plus !=, <, <=, >, >=, ~ wildcard, ? case-insensitive)
-    bool matches(const char *&xxpath, const IPropertyTree &node)
+    bool matches(const char *&path, const IPropertyTree &node)
     {
-        const char *xpath = xxpath;
+        const char *xpath = path;
         while (*xpath == ' ' || *xpath == '\t') xpath++;
         const char *start = xpath;
         wild = false;
@@ -3853,8 +3853,8 @@ public:
         if (*xpath == '@')
             xpath++;
         char quote = 0;
-        const char *lhsEnd, *quoteBegin, *quoteEnd, *rhsBegin, *rhsEnd;
-        lhsEnd = quoteBegin = quoteEnd = rhsBegin = rhsEnd = nullptr;
+        const char *lhsEnd = nullptr;
+        quoteBegin = quoteEnd = rhsBegin = rhsEnd = nullptr;
         tType = t_none;
         numeric = false;
 #ifdef WARNLEGACYCOMPARE
@@ -4015,11 +4015,7 @@ public:
         MAKE_LSTRING(lhs, start, lhsEnd-start);
         tProp = splitXPathX(lhs);
         MAKE_LSTRING(head, lhs, tProp-lhs);
-        this->xxpath = xxpath;
-        this->quoteBegin = quoteBegin;
-        this->quoteEnd = quoteEnd;
-        this->rhsBegin = rhsBegin;
-        this->rhsEnd = rhsEnd;
+        xxpath = start; // for error reporting in compareValue
         found = false;
 
         if (t_none == tType)
@@ -4045,7 +4041,7 @@ public:
                 visit(node, nullptr);
         }
 
-        xxpath = xpath;
+        path = xpath;
         return found;
     }
 
