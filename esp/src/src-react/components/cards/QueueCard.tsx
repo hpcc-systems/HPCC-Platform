@@ -86,7 +86,14 @@ const useStyles = makeStyles({
     muted: {
         color: tokens.colorNeutralForeground3
     },
-
+    jobDetail: {
+        color: tokens.colorNeutralForeground3,
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        minWidth: 0,
+        flex: "0 1 auto"
+    },
 });
 
 export type UIWorkunit = {
@@ -159,6 +166,7 @@ interface ActiveWorkunitProps {
     wu: UIWorkunit;
     idx: number;
     listLength: number;
+    listMode?: boolean;
     setPriority: (wu: UIWorkunit, priority: "high" | "normal" | "low") => void;
     moveTop: (wu: UIWorkunit) => void;
     moveUp: (wu: UIWorkunit) => void;
@@ -168,7 +176,7 @@ interface ActiveWorkunitProps {
     wuResume: (wu: UIWorkunit) => void;
 };
 
-const ActiveWorkunit: React.FunctionComponent<ActiveWorkunitProps> = ({ wu, idx, listLength, setPriority, moveTop, moveUp, moveDown, moveBottom, wuPause, wuResume }) => {
+const ActiveWorkunit: React.FunctionComponent<ActiveWorkunitProps> = ({ wu, idx, listLength, listMode, setPriority, moveTop, moveUp, moveDown, moveBottom, wuPause, wuResume }) => {
     const styles = useStyles();
     const wuid = wu.Wuid;
     const wimg = wu.isDFU ? getDFUStateImage(wu.StateID) : getStateImage(wu.StateID, false, false);
@@ -221,11 +229,13 @@ const ActiveWorkunit: React.FunctionComponent<ActiveWorkunitProps> = ({ wu, idx,
         <div role="gridcell" className={styles.gridCell}>
             <Tooltip content={tooltipContent} relationship="label">
                 <div className={styles.jobRow}>
-                    {wimg && <img className={styles.jobIcon} alt="state" src={wimg} />}
+                    {wimg && <div role="columnheader" aria-label="Status"><img className={styles.jobIcon} alt="state" src={wimg} /></div>}
                     <div className={styles.jobTexts}>
                         <Link className={styles.jobWuid} href={wu.isDFU ? `#/dfuworkunits/${wuid}` : `#/workunits/${wuid}`} aria-label={jobName ? `${jobName} workunit ${wuid}` : wuid}>{jobName ? `${jobName} (${wuid})` : wuid}</Link>
+                        {listMode && owner && <Text className={styles.jobDetail}>{owner}</Text>}
+                        {listMode && stateText && <Text className={styles.jobDetail}>{stateText}</Text>}
                     </div>
-                    <div className={styles.jobRight}>
+                    <div className={styles.jobRight} role="columnheader" aria-label="Actions">
                         <Link className={styles.jobName} href={`#/workunits/${wuid}/metrics/${graphName}`}>
                             {gid ? `${graphName}-${gid}` : graphName}
                         </Link>
@@ -263,6 +273,7 @@ const ActiveWorkunit: React.FunctionComponent<ActiveWorkunitProps> = ({ wu, idx,
 
 interface ActiveWorkunitListProps {
     list: UIWorkunit[];
+    listMode?: boolean;
     setPriority: (wu: UIWorkunit, priority: "high" | "normal" | "low") => void;
     moveTop: (wu: UIWorkunit) => void;
     moveUp: (wu: UIWorkunit) => void;
@@ -274,6 +285,7 @@ interface ActiveWorkunitListProps {
 
 const ActiveWorkunitList: React.FunctionComponent<ActiveWorkunitListProps> = ({
     list,
+    listMode,
     setPriority,
     moveTop,
     moveUp,
@@ -291,6 +303,7 @@ const ActiveWorkunitList: React.FunctionComponent<ActiveWorkunitListProps> = ({
                 wu={wu}
                 idx={idx}
                 listLength={list.length}
+                listMode={listMode}
                 setPriority={setPriority}
                 moveTop={moveTop}
                 moveUp={moveUp}
@@ -347,6 +360,7 @@ const StatusDetails: React.FunctionComponent<StatusDetailsProps> = ({ details })
 
 export interface QueueCardProps {
     serverJobQueue: ServerJobQueue;
+    listMode?: boolean;
     onOpen: (q: ServerJobQueue) => void;
     pause: (q: ServerJobQueue) => void;
     resume: (q: ServerJobQueue) => void;
@@ -362,6 +376,7 @@ export interface QueueCardProps {
 
 export const QueueCard: React.FunctionComponent<QueueCardProps> = ({
     serverJobQueue,
+    listMode,
     onOpen,
     pause,
     resume,
@@ -415,7 +430,7 @@ export const QueueCard: React.FunctionComponent<QueueCardProps> = ({
                 </Tooltip>
             }
             headerActions={actions} footerText={serverJobQueue.paused ? nlsHPCC.Stopped : undefined} footerExtraInfo={serverJobQueue.paused ? <InfoLabel size="medium" info={<StatusDetails details={serverJobQueue.statusDetails} />}></InfoLabel> : undefined}>
-            <ActiveWorkunitList list={serverJobQueue.workunits as UIWorkunit[]} setPriority={setPriority} moveTop={moveTop} moveUp={moveUp} moveDown={moveDown} moveBottom={moveBottom} wuPause={wuPause} wuResume={wuResume} />
+            <ActiveWorkunitList list={serverJobQueue.workunits as UIWorkunit[]} listMode={listMode} setPriority={setPriority} moveTop={moveTop} moveUp={moveUp} moveDown={moveDown} moveBottom={moveBottom} wuPause={wuPause} wuResume={wuResume} />
         </GenericCard>
         <MessageBox show={clearDialogOpen} setShow={setClearDialogOpen} title={nlsHPCC.Clear} footer={<>
             <Button appearance="primary" onClick={() => { clear(serverJobQueue); setClearDialogOpen(false); }}>{nlsHPCC.OK}</Button>
@@ -428,10 +443,12 @@ export const QueueCard: React.FunctionComponent<QueueCardProps> = ({
 
 export interface QueueCardsProps {
     refreshToken?: number;
+    listMode?: boolean;
 }
 
 export const QueueCards: React.FunctionComponent<QueueCardsProps> = ({
-    refreshToken
+    refreshToken,
+    listMode = false
 }) => {
     const { queues, refresh, pause, resume, clear, setPriority, moveTop, moveUp, moveDown, moveBottom, wuPause, wuResume } = useServerJobQueues();
 
@@ -451,7 +468,7 @@ export const QueueCards: React.FunctionComponent<QueueCardsProps> = ({
         window.location.href = url;
     }, []);
 
-    return <CardGroup>
+    return <CardGroup minColumnWidth={listMode ? "100%" : 280} autoRows={listMode ? "auto" : 320}>
         {queues.length === 0 ? (
             <Text>{nlsHPCC.FetchingData}</Text>
         ) : (
@@ -459,6 +476,7 @@ export const QueueCards: React.FunctionComponent<QueueCardsProps> = ({
                 <QueueCard
                     key={`${q.kind}:${q.targetCluster?.ClusterName || q.serverJobQueue?.ServerName || q.serverJobQueue?.QueueName}`}
                     serverJobQueue={q}
+                    listMode={listMode}
                     onOpen={onOpen}
                     pause={pause}
                     resume={resume}
