@@ -4049,29 +4049,15 @@ public:
     VisitResult visit(const IPropertyTree &node, const char *) override
     {
         if (isAttribute(tProp))
-        {
-            if (compareValue(node, tProp))
-            {
-                found = true;
-                return VisitResult::Stop;
-            }
-        }
+            found = compareValue(node, tProp);
         else if (t_none == tType)
-        {
-            if (node.hasProp(tProp))
-            {
-                found = true;
-                return VisitResult::Stop;
-            }
-        }
+            found = node.hasProp(tProp);
         else
         {
             InnerVisitor inner(*this);
             node.visit(tProp, inner);
-            if (found)
-                return VisitResult::Stop;
         }
-        return VisitResult::Continue;
+        return found ? VisitResult::Stop : VisitResult::Continue;
     }
 
     bool compareValue(const IPropertyTree &elem, const char *prop) const
