@@ -2842,9 +2842,9 @@ restart:
 // CPTArray of sibling nodes, or be a single element).  Propagates Stop immediately.
 // xpath is the remaining path to pass to each element's visit().
 // NB: this is a static member of PTree to allow access to protected ChildMap/PTree internals.
-/*static*/ VisitResult PTree::visitChildContainer(PTree &container, const char *xpath, IPropertyTreeVisitor &visitor)
+VisitResult PTree::visitChildContainer(const char *xpath, IPropertyTreeVisitor &visitor) const
 {
-    IPTArrayValue *val = container.queryValue();
+    IPTArrayValue *val = queryValue();
     if (val && val->isArray())
     {
         // Multiple siblings stored in a CPTArray — visit each element
@@ -2863,21 +2863,21 @@ restart:
     }
     else
     {
-        // Single element — the container *is* the element
-        VisitResult r = container.visit(xpath, visitor);
-        // SkipChildren is consumed here: it applied to container's children, not to the caller
+        // Single element — this *is* the element
+        VisitResult r = visit(xpath, visitor);
+        // SkipChildren is consumed here: it applied to this node's children, not to the caller
         if (r == VisitResult::Stop)
             return VisitResult::Stop;
         return VisitResult::Continue;
     }
 }
 
-// Helper: visit all direct children of 'node' (all tag names) with the given xpath,
+// Helper: visit all direct children of this node (all tag names) with the given xpath,
 // used by the '//' recursive-descent implementation.
-// NB: static member of PTree to allow access to protected ChildMap internals.
-/*static*/ VisitResult PTree::visitAllChildren(const PTree &node, const char *xpath, IPropertyTreeVisitor &visitor)
+// NB: member of PTree to allow access to protected ChildMap internals.
+VisitResult PTree::visitAllChildren(const char *xpath, IPropertyTreeVisitor &visitor) const
 {
-    ChildMap *cm = node.checkChildren();
+    ChildMap *cm = checkChildren();
     if (!cm)
         return VisitResult::Continue;
     // Iterate every unique-name bucket in the child map via the public iterator
@@ -2885,7 +2885,7 @@ restart:
     ForEach(*it)
     {
         PTree &bucket = static_cast<PTree &>(it->query());
-        VisitResult r = visitChildContainer(bucket, xpath, visitor);
+        VisitResult r = bucket.visitChildContainer(xpath, visitor);
         if (r == VisitResult::Stop)
             return VisitResult::Stop;
         // SkipChildren is already consumed inside visitChildContainer
@@ -3033,7 +3033,7 @@ restart:
 
                 // Then descend into every child, passing the full "//subpath" to each
                 const char *recursePath = xpath - 1; // points at "//"
-                r = visitAllChildren(*this, recursePath, visitor);
+                r = visitAllChildren(recursePath, visitor);
                 return r;
             }
             else if (root)
