@@ -178,6 +178,17 @@ public:
         return (nn == (unsigned short)(xn+tn*drv));
     }
 
+    bool eq(unsigned drv,
+              unsigned pf,      // part
+              unsigned xn,      // node located on
+              unsigned tn,      // total nodes
+              unsigned sn)      // stripe number
+    {
+        if (stripeNum != (unsigned short)sn)
+            return false;
+        return eq(drv, pf, xn, tn);
+    }
+
     unsigned getDrv(unsigned tn)
     {
         return nn/tn;
@@ -688,7 +699,7 @@ public:
         if (misplaced) {
             cMisplacedRec *mp = file->misplaced;
             while (mp) {
-                if (mp->eq(drv,partNum,node,numnodes)) {
+                if (mp->eq(drv,partNum,node,numnodes,stripeNum)) {
                     OERRLOG(LOGPFX "Duplicate file with mismatched tail (%d,%d) %s",partNum,node,filePath);
                     return;
                 }
