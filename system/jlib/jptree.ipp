@@ -753,6 +753,7 @@ public:
     virtual StringBuffer &getName(StringBuffer &ret) const override;
     virtual IAttributeIterator *getAttributes(bool sorted=false) const override;
     virtual IPropertyTreeIterator *getElements(const char *xpath, IPTIteratorCodes flags = iptiter_null) const override;
+    virtual VisitResult visit(const char *xpath, IPropertyTreeVisitor &visitor) const override;
     virtual void localizeElements(const char *xpath, bool allTail=false) override;
     virtual bool hasChildren() const override { return children && children->count()?true:false; }
     virtual unsigned numUniq() const override { return checkChildren()?children->count():0; }

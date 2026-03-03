@@ -71,6 +71,26 @@ typedef unsigned IPTIteratorCodes;
 #define iptiter_remoteget 0x06
 #define iptiter_remotegetbranch 0x0e
 
+//---------------------------------------------------------------------------------------------------
+// Visitor support for IPropertyTree::visit()
+//
+// VisitResult controls how a visit() walk proceeds after each callback invocation:
+//   Continue     - continue visiting further matching nodes
+//   Stop         - halt the entire walk immediately
+//   SkipChildren - do not recurse into the matched node's children; continue with siblings
+//
+enum class VisitResult { Continue, Stop, SkipChildren };
+
+// IPropertyTreeVisitor is the callback interface passed to IPropertyTree::visit().
+// visit() is called once per node (or attribute) that satisfies the xpath filter.
+//   node     - the matching IPropertyTree node
+//   attrName - nullptr for element matches; the attribute name (e.g. "@foo") when the
+//              xpath tail resolves to an attribute
+interface jlib_decl IPropertyTreeVisitor
+{
+    virtual VisitResult visit(const IPropertyTree &node, const char *attrName) = 0;
+};
+
 //typedef unsigned IPTIteratorCodes;
 //#define ipt_ext_null 0x00
 //#define ipt_ext_arrayitem 0x01
@@ -134,6 +154,11 @@ interface jlib_decl IPropertyTree : extends serializable
 
     virtual IPropertyTreeIterator *getElements(const char *xpath, IPTIteratorCodes flags = iptiter_null) const = 0;
     virtual IAttributeIterator *getAttributes(bool sorted=false) const = 0;
+
+    // visit() walks all nodes matching xpath and invokes visitor.visit() for each.
+    // Returns VisitResult::Stop if the visitor requested an early stop, otherwise VisitResult::Continue.
+    // attrName is non-null when the xpath tail is an attribute (e.g. "foo/@bar").
+    virtual VisitResult visit(const char *xpath, IPropertyTreeVisitor &visitor) const = 0;
 
     virtual IPropertyTree *getBranch(const char *xpath) const = 0;
     virtual IPropertyTree *queryBranch(const char *xpath) const = 0;
