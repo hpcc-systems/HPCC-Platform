@@ -2857,13 +2857,18 @@ restart:
             VisitResult r = elem->visit(xpath, visitor);
             if (r == VisitResult::Stop)
                 return VisitResult::Stop;
+            // SkipChildren is consumed here: it applied to elem's children, not to siblings
         }
         return VisitResult::Continue;
     }
     else
     {
         // Single element — the container *is* the element
-        return container.visit(xpath, visitor);
+        VisitResult r = container.visit(xpath, visitor);
+        // SkipChildren is consumed here: it applied to container's children, not to the caller
+        if (r == VisitResult::Stop)
+            return VisitResult::Stop;
+        return VisitResult::Continue;
     }
 }
 
@@ -2883,9 +2888,41 @@ restart:
         VisitResult r = visitChildContainer(bucket, xpath, visitor);
         if (r == VisitResult::Stop)
             return VisitResult::Stop;
+        // SkipChildren is already consumed inside visitChildContainer
     }
     return VisitResult::Continue;
 }
+
+// Future optimisation (Stage 5): pre-parsed XPathSegments
+// =========================================================
+// Currently PTree::visit() re-parses the xpath string at every level of recursion.
+// For deep trees with long xpath expressions this means O(depth * xpathLen) parsing work.
+//
+// To eliminate this, define:
+//
+//   struct XPathSegment
+//   {
+//       enum class Type { Tag, Self, RecursiveDescent, NumericIndex, Qualifier, Attribute };
+//       Type        type;
+//       StringAttr  tag;            // tag name or wildcard pattern (Type::Tag)
+//       bool        wild = false;   // true if tag contains '*'
+//       unsigned    numericIndex;   // 1-based index (Type::NumericIndex)
+//       StringAttr  qualifierExpr;  // raw expression content between '[' and ']' (Type::Qualifier)
+//   };
+//   using XPathSegments = std::vector<XPathSegment>;
+//
+//   XPathSegments parseXPath(const char *xpath);  // parse once, return segment array
+//
+// Then add an overload:
+//   VisitResult visit(const XPathSegments &segs, unsigned idx, IPropertyTreeVisitor &) const;
+//
+// The public visit(const char *xpath, ...) becomes a thin wrapper:
+//   - For a single plain-name or @attr segment: handle inline with no allocation.
+//   - Otherwise: call parseXPath() then the segment-index overload.
+//
+// The segment-index overload receives idx pointing at the current segment and increments it
+// on each recursive call, so the full segment array is shared across the entire descent.
+// This eliminates all repeated string scanning for child nodes.
 
 VisitResult PTree::visit(const char *xpath, IPropertyTreeVisitor &visitor) const
 {
@@ -2959,6 +2996,7 @@ restart:
                             VisitResult r = static_cast<PTree *>(element)->visit(xpath, visitor);
                             if (r == VisitResult::Stop)
                                 return VisitResult::Stop;
+                            // SkipChildren consumed: it applied to element's children
                         }
                     }
                     else if (i == 1)
@@ -2966,6 +3004,7 @@ restart:
                         VisitResult r = visit(xpath, visitor);
                         if (r == VisitResult::Stop)
                             return VisitResult::Stop;
+                        // SkipChildren consumed: it applied to this node's children
                     }
                 }
             }
@@ -3084,6 +3123,7 @@ restart:
                             r = elem->visit(remainder, visitor);
                         if (r == VisitResult::Stop)
                             return VisitResult::Stop;
+                        // SkipChildren is consumed here: it applied to elem's children, not siblings
                     }
                     return VisitResult::Continue;
                 }
@@ -3105,8 +3145,19 @@ restart:
                             return VisitResult::Continue;
                     }
                     if ('\0' == *remainder)
-                        return visitor.visit(container, nullptr);
-                    return container.visit(remainder, visitor);
+                    {
+                        // SkipChildren returned here means: visited this node, don't recurse into it.
+                        // Since we have no further recursion to do, it is equivalent to Continue.
+                        VisitResult r = visitor.visit(container, nullptr);
+                        if (r == VisitResult::Stop)
+                            return VisitResult::Stop;
+                        return VisitResult::Continue;
+                    }
+                    VisitResult r = container.visit(remainder, visitor);
+                    // SkipChildren consumed: it applied to container's children, not our caller
+                    if (r == VisitResult::Stop)
+                        return VisitResult::Stop;
+                    return VisitResult::Continue;
                 }
             };
 
@@ -3123,6 +3174,7 @@ restart:
                         VisitResult r = visitContainer(bucket);
                         if (r == VisitResult::Stop)
                             return VisitResult::Stop;
+                        // SkipChildren consumed inside visitContainer
                     }
                 }
             }
@@ -3135,6 +3187,7 @@ restart:
                     VisitResult r = visitContainer(static_cast<PTree &>(*child));
                     if (r == VisitResult::Stop)
                         return VisitResult::Stop;
+                    // SkipChildren consumed inside visitContainer
                 }
             }
             return VisitResult::Continue;
@@ -3925,6 +3978,29 @@ bool PTree::checkPattern(const char *&xxpath) const
 
     const char *tProp = splitXPathX(lhs);
     MAKE_LSTRING(head, lhs, tProp-lhs);
+
+    // Future optimisation (Stage 4): replace iterator usage here with nested visit() calls.
+    //
+    // The two iterator patterns below can be replaced as follows:
+    //
+    // 1. Existence check (t_none): "found.hasProp(tProp)" after iterating head
+    //    Replace with a nested visit() using a short-circuit boolean visitor:
+    //      struct ExistsVisitor : IPropertyTreeVisitor {
+    //          bool found = false;
+    //          VisitResult visit(const IPropertyTree &node, const char *attr) override {
+    //              found = true; return VisitResult::Stop;
+    //          }
+    //      };
+    //      ExistsVisitor ev;
+    //      found.visit(tProp, ev);   // stops on first match
+    //      ret = ev.found;
+    //
+    // 2. Value comparison: "found.getElements(tProp)" for child element value matching
+    //    Replace with a nested visit() whose callback performs the match() comparison
+    //    and returns Stop on first successful match, setting ret = true.
+    //
+    // Both replacements eliminate all iterator heap allocation from checkPattern().
+
     Owned<IPropertyTreeIterator> iter = getElements(head);
     ForEach (*iter)
     {
