@@ -810,6 +810,8 @@ private:
     VisitResult visitChildContainer(const char *xpath, IPropertyTreeVisitor &visitor) const;
     VisitResult visitAllChildren(const char *xpath, IPropertyTreeVisitor &visitor) const;
     VisitResult visitMatchedNode(const char *qualifier, const char *remainder, IPropertyTreeVisitor &visitor) const;
+    VisitResult visitWithQualifier(const char *&xpath, const char *_xpath, IPropertyTreeVisitor &visitor) const;
+    VisitResult visitWithTag(const char *xpath, const char *_xpath, IPropertyTreeVisitor &visitor) const;
 
 protected: // data
     /* NB: the order of the members here is important to reduce the size of the objects, because very large numbers of these are created.
