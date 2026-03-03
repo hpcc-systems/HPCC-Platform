@@ -1919,8 +1919,9 @@ public:
         if (drv==drvs)
             return; // no orphans
         StringBuffer mask;
-        StringBuffer scopeBuf(currentScope);
-        scopeBuf.append("::");
+        StringBuffer scopeBuf;
+        if (!isEmptyString(currentScope))
+            scopeBuf.append(currentScope).append("::");
         f->getNameMask(mask);
         assertex(f->getName(scopeBuf)); // Should always return true for HPCC files
         // orphans are only orphans if there doesn't exist a valid file

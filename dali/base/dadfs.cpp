@@ -305,7 +305,8 @@ RemoteFilename &constructPartFilename(IGroup *grp,unsigned partNo,unsigned copy,
 {
     partNo--;
     StringBuffer partName;
-    if (!lname||!*lname)
+    const char *tailExt = nullptr;
+    if (isEmptyString(lname))
     {
         if (!pmask)
         {
@@ -314,12 +315,22 @@ RemoteFilename &constructPartFilename(IGroup *grp,unsigned partNo,unsigned copy,
         }
         lname = expandMask(partName, pmask, partNo, max);
     }
+    else if (!isEmptyString(pmask))
+    {
+        // pmask may contain trailing extensions that aren't in lname
+        const char *ext = strchr(pmask, '.');
+        assertex(ext); // pmask should have at least one extension for the part mask
+        tailExt = strchr(ext+1, '.');
+    }
 
     // NB: calcStripeNumber expects a 0-based part number. 'partNo' is already decremented earlier to make it 0-based.
     unsigned stripeNum = calcStripeNumber(partNo, lfnHash, numDevices);
 
     StringBuffer fullname;
     makePhysicalPartName(lname, partNo+1, max, fullname, 0, DFD_OSdefault, prefix, dirPerPart, stripeNum);
+
+    if (!isEmptyString(tailExt))
+        fullname.append(tailExt);
 
     // revisit: constructPartFilename should be refactored not to deal with replicate directories, by pre-determining the alternate prefix if copy>0
     // If copy>0 it could do calcPartLocation, find the replicate plane, get it's prefix, and pass to makePhysicalPartName
