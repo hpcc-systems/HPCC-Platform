@@ -140,7 +140,7 @@ public:
     }
     inline StringBuffer& operator=(const StringBuffer& value)
     {
-        return clear().append(value.str());
+        return clear().append(value);
     }
     StringBuffer& operator=(StringBuffer&& value);
     explicit operator bool() const { return (length() != 0); }

@@ -987,6 +987,9 @@ public:
     CPPUNIT_TEST_SUITE(JlibStringTest);
         CPPUNIT_TEST(testEncodeCSVColumn);
         CPPUNIT_TEST(testReplaceString);
+        CPPUNIT_TEST(testStringBufferAppendAndNewline);
+        CPPUNIT_TEST(testStringBufferAppendHex);
+        CPPUNIT_TEST(testStringBufferAssignment);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -1129,6 +1132,96 @@ void testEncodeCSVColumn()
         source.set("ou=roxieuser,ou=hpccinternal,ou=files,ou=dataland_ecl");
         source.replaceString("ou=files,ou=dataland_ecl", nullptr);
         CPPUNIT_ASSERT_EQUAL_STR("ou=roxieuser,ou=hpccinternal,", source.str());
+    }
+
+    void testStringBufferAppendAndNewline()
+    {
+        // Test newline appends a single '\n'
+        StringBuffer s;
+        s.newline();
+        CPPUNIT_ASSERT_EQUAL(1u, s.length());
+        CPPUNIT_ASSERT_EQUAL('\n', s.charAt(0));
+
+        // Test newline after content
+        s.clear().append("hello").newline().append("world");
+        CPPUNIT_ASSERT_EQUAL_STR("hello\nworld", s.str());
+
+        // Test append(const StringBuffer &)
+        StringBuffer a("hello");
+        StringBuffer b;
+        b.append(a);
+        CPPUNIT_ASSERT_EQUAL_STR("hello", b.str());
+        CPPUNIT_ASSERT_EQUAL(5u, b.length());
+
+        // Test append empty StringBuffer
+        StringBuffer empty;
+        b.clear();
+        b.append(empty);
+        CPPUNIT_ASSERT_EQUAL(0u, b.length());
+    }
+
+    void testStringBufferAppendHex()
+    {
+        // Test appendhex with upper case
+        StringBuffer s;
+        s.appendhex(0xAB, false);
+        CPPUNIT_ASSERT_EQUAL_STR("AB", s.str());
+        CPPUNIT_ASSERT_EQUAL(2u, s.length());
+
+        // Test appendhex with lower case
+        s.clear();
+        s.appendhex(0xAB, true);
+        CPPUNIT_ASSERT_EQUAL_STR("ab", s.str());
+
+        // Test appendhex zero
+        s.clear();
+        s.appendhex(0x00, false);
+        CPPUNIT_ASSERT_EQUAL_STR("00", s.str());
+
+        // Test appendhex max
+        s.clear();
+        s.appendhex(0xFF, true);
+        CPPUNIT_ASSERT_EQUAL_STR("ff", s.str());
+
+        // Test multiple appendhex calls
+        s.clear();
+        s.appendhex(0xDE, false).appendhex(0xAD, false);
+        CPPUNIT_ASSERT_EQUAL_STR("DEAD", s.str());
+        CPPUNIT_ASSERT_EQUAL(4u, s.length());
+    }
+
+    void testStringBufferAssignment()
+    {
+        // Test operator= from StringBuffer
+        StringBuffer a("hello");
+        StringBuffer b;
+        b = a;
+        CPPUNIT_ASSERT_EQUAL_STR("hello", b.str());
+        CPPUNIT_ASSERT_EQUAL(5u, b.length());
+
+        // Test operator= from StringBuffer clears existing content
+        StringBuffer c("existing content");
+        c = a;
+        CPPUNIT_ASSERT_EQUAL_STR("hello", c.str());
+
+        // Test operator= from const char*
+        StringBuffer d;
+        d = "world";
+        CPPUNIT_ASSERT_EQUAL_STR("world", d.str());
+
+        // Test set() method
+        StringBuffer e;
+        e.set("test");
+        CPPUNIT_ASSERT_EQUAL_STR("test", e.str());
+        e.set("replaced");
+        CPPUNIT_ASSERT_EQUAL_STR("replaced", e.str());
+
+        // Test move assignment
+        StringBuffer src("move me");
+        StringBuffer dst;
+        dst = std::move(src);
+        CPPUNIT_ASSERT_EQUAL_STR("move me", dst.str());
+
     }
 };
 
