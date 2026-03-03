@@ -3811,35 +3811,14 @@ inline bool match(bool wild, bool numeric, const char *xpath, exprType t, const 
     throw MakeXPathException(xpath, PTreeExcpt_XPath_ParseError, 0, "Invalid xpath qualifier expression in xpath: %s", xpath);
 }
 
-// Visitor used by checkPattern() for existence-check qualifiers (t_none).
-// Walks nodes matching the head xpath; stops as soon as any node has the named property.
-class ExistsVisitor : implements IPropertyTreeVisitor
-{
-public:
-    ExistsVisitor(const char *_prop) : prop(_prop) {}
-    VisitResult visit(const IPropertyTree &node, const char *) override
-    {
-        if (node.hasProp(prop))
-        {
-            found = true;
-            return VisitResult::Stop;
-        }
-        return VisitResult::Continue;
-    }
-
-    //MORE: This should become private.
-public:
-    const char *prop;
-    bool found = false;
-};
-
-// Visitor used by checkPattern() for value-comparison qualifiers.
-// Walks nodes matching the head xpath; for each, compares the named property/attribute
-// value against the RHS using the given operator.  Stops on the first successful match.
+// MatchVisitor encapsulates the parsing and evaluation of a single qualifier expression
+// of the form used inside [...] in an xpath.  Call matches() once; it parses the expression
+// from xxpath, evaluates it against the supplied node, advances xxpath past the closing ']',
+// and returns true if the node satisfies the qualifier.
 class MatchVisitor : implements IPropertyTreeVisitor
 {
 public:
-    // Inner visitor used when tProp is a child element name: visits matching children
+    // Inner visitor used when tProp names a child element: visits each matching child
     // and delegates the value comparison back to the outer MatchVisitor.
     struct InnerVisitor : IPropertyTreeVisitor
     {
@@ -3856,11 +3835,234 @@ public:
         }
     };
 
+    // Parse the qualifier expression starting at xxpath and evaluate it against 'node'.
+    // xxpath is advanced past the closing ']' on return.
+    // supported conditions are:
+    //    tag               - node must have a child called tag
+    //    @attr             - node must have an attribute called attr
+    //    tag="value"       - child tag must equal value
+    //    @attr="value"     - attribute must equal value
+    //    (plus !=, <, <=, >, >=, ~ wildcard, ? case-insensitive)
+    bool matches(const char *&xxpath, const IPropertyTree &node)
+    {
+        const char *xpath = xxpath;
+        while (*xpath == ' ' || *xpath == '\t') xpath++;
+        const char *start = xpath;
+        wild = false;
+        nocase = node.isCaseInsensitive();
+        if (*xpath == '@')
+            xpath++;
+        char quote = 0;
+        const char *lhsEnd, *quoteBegin, *quoteEnd, *rhsBegin, *rhsEnd;
+        lhsEnd = quoteBegin = quoteEnd = rhsBegin = rhsEnd = nullptr;
+        tType = t_none;
+        numeric = false;
+#ifdef WARNLEGACYCOMPARE
+        legacynumeric = false;
+#endif
+        for (;;)
+        {
+            switch (*xpath)
+            {
+            case '"':
+            case '\'':
+                if (quote)
+                {
+                    if (*xpath == quote)
+                    {
+                        quote = 0;
+                        quoteEnd = xpath;
+                    }
+                }
+                else
+                {
+                    if (quoteBegin)
+                        throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Quoted left hand side already seen");
+                    quote = *xpath;
+                    quoteBegin = xpath + 1;
+                }
+                break;
+            case '[':
+                if (!quote)
+                    throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Unclosed qualifier detected");
+                break;
+            case ']':
+                if (!quote)
+                {
+                    if (!lhsEnd)
+                        lhsEnd = xpath;
+                    rhsEnd = xpath;
+                }
+                break;
+            case ' ':
+            case '\t':
+                if (!lhsEnd)
+                    lhsEnd = xpath;
+                break;
+            case '!':
+                if (!quote)
+                {
+                    if (tType)
+                        throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Unexpected expression operator xpath");
+                    if ('=' != *(xpath+1))
+                        throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Invalid xpath qualifier expression in xpath");
+                    if (!lhsEnd)
+                        lhsEnd = xpath;
+                    ++xpath;
+                    tType = t_inequality;
+                    wild = true;
+                }
+                break;
+            case '=':
+                if (!quote)
+                {
+                    if (wild)
+                        throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Wildcard match '~' makes no sense in this context");
+                    if (tType)
+                        throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Unexpected expression operator xpath");
+                    tType = t_equality;
+                    wild = true;
+                    if (!lhsEnd)
+                        lhsEnd = xpath;
+                }
+                break;
+            case '>':
+                if (!quote)
+                {
+                    if (wild)
+                        throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Wildcard match '~' makes no sense in this context");
+                    if (tType)
+                        throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Unexpected expression operator in xpath");
+                    if (!lhsEnd)
+                        lhsEnd = xpath;
+#ifdef WARNLEGACYCOMPARE
+                    legacynumeric = true;
+#endif
+                    if ('=' == *(xpath+1))
+                    {
+                        ++xpath;
+                        tType = t_gteq;
+                    }
+                    else
+                        tType = t_gt;
+                }
+                break;
+            case '<':
+                if (!quote)
+                {
+                    if (tType)
+                        throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Unexpected expression operator in xpath");
+                    if (!lhsEnd)
+                        lhsEnd = xpath;
+#ifdef WARNLEGACYCOMPARE
+                    legacynumeric = true;
+#endif
+                    if ('=' == *(xpath+1))
+                    {
+                        ++xpath;
+                        tType = t_lteq;
+                    }
+                    else
+                        tType = t_lt;
+                }
+                break;
+            case '~':
+                if (!quote)
+                {
+                    if (!tType)
+                        throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Unexpected wild operator in xpath");
+                    wild = true;
+                }
+                break;
+            case '?':
+                if (!quote)
+                {
+                    if (!tType)
+                        throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Unexpected case-insensitive operator in xpath");
+                    nocase = true;
+                }
+                break;
+            case '\0':
+                rhsEnd = xpath;
+                break;
+            }
+            if (rhsEnd)
+                break;
+            xpath++;
+            if (!rhsBegin && tType && !isspace(*xpath))
+                rhsBegin = xpath;
+        }
+        if (quote)
+            throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Parse error, unclosed quoted content");
+        if (tType)
+        {
+            if (quoteBegin && !quoteEnd)
+                throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Parse error, RHS missing closing quote");
+            if (rhsBegin && !rhsEnd)
+                throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Parse error, RHS missing closing quote");
+            if (!quoteBegin && rhsEnd)
+            {
+                const char *c = rhsBegin;
+                for (;;)
+                {
+                    if (!isdigit(*c++))
+                        throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Parse error, RHS is an unquoted string");
+                    if (c == rhsEnd) break;
+                }
+            }
+        }
+
+        MAKE_LSTRING(lhs, start, lhsEnd-start);
+        tProp = splitXPathX(lhs);
+        MAKE_LSTRING(head, lhs, tProp-lhs);
+        this->xxpath = xxpath;
+        this->quoteBegin = quoteBegin;
+        this->quoteEnd = quoteEnd;
+        this->rhsBegin = rhsBegin;
+        this->rhsEnd = rhsEnd;
+        found = false;
+
+        if (t_none == tType)
+        {
+            // Existence check: does this node (or a 'head' child) have 'tProp'?
+            if (*head)
+            {
+                // head names an intermediate child — visit it, check tProp on each match
+                node.visit(head, *this);
+            }
+            else
+            {
+                // no head: check tProp directly on 'node'
+                found = node.hasProp(tProp);
+            }
+        }
+        else
+        {
+            // Value comparison
+            if (*head)
+                node.visit(head, *this);
+            else
+                visit(node, nullptr);
+        }
+
+        xxpath = xpath;
+        return found;
+    }
+
+    // IPropertyTreeVisitor — called for each node matching 'head'
     VisitResult visit(const IPropertyTree &node, const char *) override
     {
         if (isAttribute(tProp))
         {
             if (compareValue(node, tProp))
+            {
+                found = true;
+                return VisitResult::Stop;
+            }
+        }
+        else if (t_none == tType)
+        {
+            if (node.hasProp(tProp))
             {
                 found = true;
                 return VisitResult::Stop;
@@ -3922,228 +4124,23 @@ public:
         }
     }
 
-public:
-    const char *tProp;
-    exprType tType;
-    bool wild, numeric, nocase;
-    const char *quoteBegin, *quoteEnd, *rhsBegin, *rhsEnd;
-    const char *xxpath;
+private:
+    const char *tProp = nullptr;
+    exprType tType = t_none;
+    bool wild = false, numeric = false, nocase = false;
+    const char *quoteBegin = nullptr, *quoteEnd = nullptr;
+    const char *rhsBegin = nullptr, *rhsEnd = nullptr;
+    const char *xxpath = nullptr;
 #ifdef WARNLEGACYCOMPARE
-    bool legacynumeric;
+    bool legacynumeric = false;
 #endif
     bool found = false;
 };
 
 bool PTree::checkPattern(const char *&xxpath) const
 {
-    // Pattern is an additional filter at the current node level
-    // It can be [condition], or it can be empty (we don't support anything else)
-    // supported conditions are:
-    //    tag - must have child called tag
-    //    @attr - must have attribute called attr
-    //    tag="value" - must have child called tag with given value
-    //    @attr="value" - must have attribute called attr with given value
-    const char *xpath = xxpath;
-    while (*xpath == ' ' || *xpath == '\t') xpath++;
-    const char *start = xpath;
-    bool wild = false, nocase = isnocase();
-    if (*xpath=='@')
-        xpath++;
-    char quote = 0;
-    const char *lhsEnd, *quoteBegin, *quoteEnd, *rhsBegin, *rhsEnd;
-    lhsEnd = quoteBegin = quoteEnd = rhsBegin = rhsEnd = NULL;
-    exprType tType = t_none;
-    bool numeric=false;
-#ifdef WARNLEGACYCOMPARE
-    bool legacynumeric=false;
-#endif
-    for (;;)
-    {
-        switch (*xpath) {
-        case '"':
-        case '\'':
-            if (quote)
-            {
-                if (*xpath == quote)
-                {
-                    quote = 0;
-                    quoteEnd = xpath;
-                }
-            }
-            else
-            {
-                if (quoteBegin)
-                    throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Quoted left hand side already seen");
-                quote = *xpath;
-                quoteBegin = xpath+1;
-            }
-            break;
-        case '[':
-            if (!quote)
-                throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Unclosed qualifier detected");
-            break;
-        case ']':
-            if (!quote)
-            {
-                if (!lhsEnd)
-                    lhsEnd = xpath;
-                rhsEnd = xpath;
-            }
-            break;
-        case ' ':
-        case '\t':
-            if (!lhsEnd)
-                lhsEnd = xpath;
-            break;
-        case '!':
-            if (!quote)
-            {
-                if (tType)
-                    throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Unexpected expression operator xpath");
-                if ('=' != *(xpath+1))
-                    throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Invalid xpath qualifier expression in xpath");
-                if (!lhsEnd)
-                    lhsEnd = xpath;
-                ++xpath;
-                tType = t_inequality;
-                wild = true; // true by default now, introduced  ~ syntax, to denote wild string
-            }
-            break;
-        case '=':
-            if (!quote)
-            {
-                if (wild)
-                    throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Wildcard match '~' makes no sense in this context");
-                if (tType)
-                    throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Unexpected expression operator xpath");
-                tType = t_equality;
-                wild = true; // true by default now, introduced  ~ syntax, to denote wild string
-                if (!lhsEnd)
-                    lhsEnd = xpath;
-            }
-            break;
-        case '>':
-            if (!quote)
-            {
-                if (wild)
-                    throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Wildcard match '~' makes no sense in this context");
-                if (tType)
-                    throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Unexpected expression operator in xpath");
-                if (!lhsEnd)
-                    lhsEnd = xpath;
-#ifdef WARNLEGACYCOMPARE
-                legacynumeric = true;
-#endif
-                if ('=' == *(xpath+1))
-                {
-                    ++xpath;
-                    tType = t_gteq;
-                }
-                else
-                    tType = t_gt;
-            }
-            break;
-        case '<':
-            if (!quote)
-            {
-                if (tType)
-                    throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Unexpected expression operator in xpath");
-                if (!lhsEnd)
-                    lhsEnd = xpath;
-#ifdef WARNLEGACYCOMPARE
-                legacynumeric = true;
-#endif
-                if ('=' == *(xpath+1))
-                {
-                    ++xpath;
-                    tType = t_lteq;
-                }
-                else
-                    tType = t_lt;
-            }
-            break;
-        case '~':
-            if (!quote)
-            {
-                if (!tType)
-                    throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Unexpected wild operator in xpath");
-                wild = true;
-            }
-            break;
-        case '?':
-            if (!quote)
-            {
-                if (!tType)
-                    throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Unexpected case-insensitive operator in xpath");
-                nocase = true;
-            }
-            break;
-        case '\0':
-            rhsEnd = xpath;
-            break;
-        }
-        if (rhsEnd)
-            break;
-        xpath++;
-        if (!rhsBegin && tType && !isspace(*xpath))
-            rhsBegin = xpath;
-    }
-    if (quote)
-        throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Parse error, unclosed quoted content");
-    if (tType)
-    {
-        if (quoteBegin && !quoteEnd)
-            throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Parse error, RHS missing closing quote");
-        if (rhsBegin && !rhsEnd)
-            throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Parse error, RHS missing closing quote");
-        if (!quoteBegin && rhsEnd) // validate it's a numeric
-        {
-            const char *c = rhsBegin;
-            for (;;)
-            {
-                if (!isdigit(*c++))
-                    throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Parse error, RHS is an unquoted string");
-                if (c==rhsEnd) break;
-            }
-        }
-    }
-
-    MAKE_LSTRING(lhs, start, lhsEnd-start);
-    bool ret = false;
-
-    const char *tProp = splitXPathX(lhs);
-    MAKE_LSTRING(head, lhs, tProp-lhs);
-
-    if (t_none == tType)
-    {
-        // Existence check: visit all nodes matching 'head', stop as soon as one has 'tProp'.
-        ExistsVisitor ev(tProp);
-        visit(head, ev);
-        ret = ev.found;
-    }
-    else
-    {
-        // Value comparison: visit all nodes matching 'head', then for each check 'tProp'.
-        MatchVisitor mv;
-        mv.tProp = tProp;
-        mv.tType = tType;
-        mv.wild = wild;
-        mv.numeric = numeric;
-        mv.nocase = nocase;
-        mv.quoteBegin = quoteBegin;
-        mv.quoteEnd = quoteEnd;
-        mv.rhsBegin = rhsBegin;
-        mv.rhsEnd = rhsEnd;
-        mv.xxpath = xxpath;
-#ifdef WARNLEGACYCOMPARE
-        mv.legacynumeric = legacynumeric;
-#endif
-        visit(head, mv);
-        ret = mv.found;
-    }
-
-    xxpath = xpath;
-    return ret;
+    MatchVisitor matcher;
+    return matcher.matches(xxpath, *this);
 }
 
 AttrValue *PTree::findAttribute(const char *key) const
