@@ -797,6 +797,10 @@ private:
     IPropertyTree *addPropTree(const char *xpath, IPropertyTree *val, bool alwaysUseArray);
     void addPTreeArrayItem(IPropertyTree *peer, const char *xpath, PTree *val, aindex_t pos = (aindex_t) -1);
 
+    // Helpers for visit() — need PTree/ChildMap private access
+    static VisitResult visitChildContainer(PTree &container, const char *xpath, IPropertyTreeVisitor &visitor);
+    static VisitResult visitAllChildren(const PTree &node, const char *xpath, IPropertyTreeVisitor &visitor);
+
 protected: // data
     /* NB: the order of the members here is important to reduce the size of the objects, because very large numbers of these are created.
      * The base CInterfaceOf contains it's VMT + a unsigned link count.
