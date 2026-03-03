@@ -2893,6 +2893,79 @@ restart:
     return VisitResult::Continue;
 }
 
+// Apply optional qualifier and recurse on remainder for this node (which may hold a CPTArray
+// of siblings, or be a single element).  'this' is the ChildMap container node looked up by
+// tag name; qualifier points at '[' (or is nullptr); remainder is the xpath tail after the
+// qualifier (may be empty, an attribute, or further path segments).
+// SkipChildren is consumed at the point of recursion and does not propagate to the caller.
+VisitResult PTree::visitMatchedNode(const char *qualifier, const char *remainder, IPropertyTreeVisitor &visitor) const
+{
+    IPTArrayValue *val = queryValue();
+    if (val && val->isArray())
+    {
+        // Multiple siblings in a CPTArray: check qualifier per-element, then recurse
+        unsigned n = val->elements();
+        for (unsigned i = 0; i < n; i++)
+        {
+            PTree *elem = static_cast<PTree *>(val->queryElement(i));
+            if (!elem)
+                continue;
+            if (qualifier)
+            {
+                const char *q = qualifier + 1; // skip '['
+                if (isdigit(*q))
+                {
+                    // Numeric [N] on an array is handled in the outer [N] case of visit();
+                    // reaching here means no numeric qualifier applies per-element.
+                    break;
+                }
+                if (!elem->checkPattern(q))
+                    continue;
+            }
+            VisitResult r;
+            if ('\0' == *remainder)
+                r = visitor.visit(*elem, nullptr);
+            else
+                r = elem->visit(remainder, visitor);
+            if (r == VisitResult::Stop)
+                return VisitResult::Stop;
+            // SkipChildren consumed: it applied to elem's children, not its siblings
+        }
+        return VisitResult::Continue;
+    }
+    else
+    {
+        // Single element: apply qualifier, then recurse or invoke visitor
+        if (qualifier)
+        {
+            const char *q = qualifier + 1; // skip '['
+            if (isdigit(*q))
+            {
+                // [N] on a non-array: only N==1 matches
+                StringAttr idxstr;
+                readIndex(q, idxstr);
+                if (atoi(idxstr.get()) != 1)
+                    return VisitResult::Continue;
+            }
+            else if (!checkPattern(q))
+                return VisitResult::Continue;
+        }
+        VisitResult r;
+        if ('\0' == *remainder)
+        {
+            // SkipChildren here means the visitor doesn't want this node's children visited;
+            // since we are not about to recurse, it is equivalent to Continue.
+            r = visitor.visit(*this, nullptr);
+        }
+        else
+            r = visit(remainder, visitor);
+        // SkipChildren consumed: it applied to this node's children, not the caller's siblings
+        if (r == VisitResult::Stop)
+            return VisitResult::Stop;
+        return VisitResult::Continue;
+    }
+}
+
 // Future optimisation (Stage 5): pre-parsed XPathSegments
 // =========================================================
 // Currently PTree::visit() re-parses the xpath string at every level of recursion.
@@ -3089,78 +3162,6 @@ restart:
             if (!checkChildren())
                 return VisitResult::Continue;
 
-            // Helper lambda to apply qualifier + recurse on one container node
-            // (container may hold a CPTArray of siblings, or be the sole element)
-            auto visitContainer = [&](PTree &container) -> VisitResult
-            {
-                IPTArrayValue *val = container.queryValue();
-                if (val && val->isArray())
-                {
-                    unsigned n = val->elements();
-                    for (unsigned i = 0; i < n; i++)
-                    {
-                        PTree *elem = static_cast<PTree *>(val->queryElement(i));
-                        if (!elem)
-                            continue;
-                        // Apply qualifier if present
-                        if (qualifier)
-                        {
-                            const char *q = qualifier + 1; // skip '['
-                            if (isdigit(*q))
-                            {
-                                // Numeric index into the array — handled at the outer level,
-                                // not per-element; skip here (handled separately below)
-                                break;
-                            }
-                            if (!elem->checkPattern(q))
-                                continue;
-                        }
-                        // Now recurse on the remaining path
-                        VisitResult r;
-                        if ('\0' == *remainder)
-                            r = visitor.visit(*elem, nullptr);
-                        else
-                            r = elem->visit(remainder, visitor);
-                        if (r == VisitResult::Stop)
-                            return VisitResult::Stop;
-                        // SkipChildren is consumed here: it applied to elem's children, not siblings
-                    }
-                    return VisitResult::Continue;
-                }
-                else
-                {
-                    // Apply qualifier
-                    if (qualifier)
-                    {
-                        const char *q = qualifier + 1; // skip '['
-                        if (isdigit(*q))
-                        {
-                            // [N] numeric index — only match if N==1 for a non-array
-                            StringAttr idxstr;
-                            readIndex(q, idxstr);
-                            if (atoi(idxstr.get()) != 1)
-                                return VisitResult::Continue;
-                        }
-                        else if (!container.checkPattern(q))
-                            return VisitResult::Continue;
-                    }
-                    if ('\0' == *remainder)
-                    {
-                        // SkipChildren returned here means: visited this node, don't recurse into it.
-                        // Since we have no further recursion to do, it is equivalent to Continue.
-                        VisitResult r = visitor.visit(container, nullptr);
-                        if (r == VisitResult::Stop)
-                            return VisitResult::Stop;
-                        return VisitResult::Continue;
-                    }
-                    VisitResult r = container.visit(remainder, visitor);
-                    // SkipChildren consumed: it applied to container's children, not our caller
-                    if (r == VisitResult::Stop)
-                        return VisitResult::Stop;
-                    return VisitResult::Continue;
-                }
-            };
-
             if (wild)
             {
                 // Wildcard — iterate every child in the ChildMap via the public iterator
@@ -3171,10 +3172,9 @@ restart:
                     const char *key = bucket.queryName();
                     if (0 != WildMatch(key, id, isnocase()))
                     {
-                        VisitResult r = visitContainer(bucket);
+                        VisitResult r = bucket.visitMatchedNode(qualifier, remainder, visitor);
                         if (r == VisitResult::Stop)
                             return VisitResult::Stop;
-                        // SkipChildren consumed inside visitContainer
                     }
                 }
             }
@@ -3184,10 +3184,9 @@ restart:
                 IPropertyTree *child = children->query(id);
                 if (child)
                 {
-                    VisitResult r = visitContainer(static_cast<PTree &>(*child));
+                    VisitResult r = static_cast<PTree *>(child)->visitMatchedNode(qualifier, remainder, visitor);
                     if (r == VisitResult::Stop)
                         return VisitResult::Stop;
-                    // SkipChildren consumed inside visitContainer
                 }
             }
             return VisitResult::Continue;

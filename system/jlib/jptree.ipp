@@ -800,6 +800,7 @@ private:
     // Helpers for visit() — need PTree/ChildMap private access
     static VisitResult visitChildContainer(PTree &container, const char *xpath, IPropertyTreeVisitor &visitor);
     static VisitResult visitAllChildren(const PTree &node, const char *xpath, IPropertyTreeVisitor &visitor);
+    VisitResult visitMatchedNode(const char *qualifier, const char *remainder, IPropertyTreeVisitor &visitor) const;
 
 protected: // data
     /* NB: the order of the members here is important to reduce the size of the objects, because very large numbers of these are created.
