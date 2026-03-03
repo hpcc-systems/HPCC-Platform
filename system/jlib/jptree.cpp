@@ -265,16 +265,13 @@ unsigned ChildMap::numChildren() const
     return count;
 }
 
-VisitResult ChildMap::visit(const char *id, bool wild, bool nocase, const char *qualifier, const char *remainder, IPropertyTreeVisitor &visitor) const
+VisitResult ChildMap::visitWild(const char *id, bool nocase, const char *qualifier, const char *remainder, IPropertyTreeVisitor &visitor) const
 {
     for (auto &entry : *this)
     {
         PTree &bucket = static_cast<PTree &>(entry);
-        if (wild)
-        {
-            if (0 == WildMatch(bucket.queryName(), id, nocase))
-                continue;
-        }
+        if (0 == WildMatch(bucket.queryName(), id, nocase))
+            continue;
         VisitResult r = bucket.visitMatchedNode(qualifier, remainder, visitor);
         if (r == VisitResult::Stop)
             return VisitResult::Stop;
@@ -3183,7 +3180,7 @@ restart:
             if (wild)
             {
                 // Wildcard — walk every bucket in the ChildMap directly (no iterator allocation)
-                VisitResult r = children->visit(id, wild, isnocase(), qualifier, remainder, visitor);
+                VisitResult r = children->visitWild(id, isnocase(), qualifier, remainder, visitor);
                 if (r == VisitResult::Stop)
                     return VisitResult::Stop;
             }

@@ -110,10 +110,10 @@ public:
         return SuperHashTableOf<IPropertyTree, constcharptr>::removeExact(child);
     }
 
-    // Visit every bucket whose name matches id (wildcard or exact), applying qualifier and
+    // Visit every bucket whose name matches the wildcard pattern id, applying qualifier and
     // remainder via visitMatchedNode() on each matching bucket.  No IPropertyTreeIterator
     // allocation is performed.
-    VisitResult visit(const char *id, bool wild, bool nocase, const char *qualifier, const char *remainder, IPropertyTreeVisitor &visitor) const;
+    VisitResult visitWild(const char *id, bool nocase, const char *qualifier, const char *remainder, IPropertyTreeVisitor &visitor) const;
 
     // Visit every bucket unconditionally, forwarding xpath to visitChildContainer() on each.
     // Used by the '//' recursive-descent path.  No IPropertyTreeIterator allocation is performed.
