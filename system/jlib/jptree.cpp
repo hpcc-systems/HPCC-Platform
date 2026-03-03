@@ -3002,6 +3002,8 @@ VisitResult PTree::visit(const char *xpath, IPropertyTreeVisitor &visitor) const
     // NULL or empty xpath — visit this node directly (no further navigation)
     if (nullptr == xpath || '\0' == *xpath)
         return visitor.visit(*this, nullptr);
+    if ('@' == *xpath)
+        return visitor.visit(*this, xpath);
 
     const char *_xpath = xpath; // saved for error messages
     bool root = true;
@@ -3041,10 +3043,6 @@ restart:
             else if ('\0' == *xpath)
                 return visitor.visit(*this, nullptr);
             goto restart;
-
-        case '@':
-            // Attribute specifier at this level — call visitor unconditionally with the attr name
-            return visitor.visit(*this, xpath);
 
         case '[':
         {
