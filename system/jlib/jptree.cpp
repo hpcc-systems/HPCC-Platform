@@ -265,6 +265,36 @@ unsigned ChildMap::numChildren() const
     return count;
 }
 
+VisitResult ChildMap::visit(const char *id, bool wild, bool nocase, const char *qualifier, const char *remainder, IPropertyTreeVisitor &visitor) const
+{
+    for (auto &entry : *this)
+    {
+        PTree &bucket = static_cast<PTree &>(entry);
+        if (wild)
+        {
+            if (0 == WildMatch(bucket.queryName(), id, nocase))
+                continue;
+        }
+        VisitResult r = bucket.visitMatchedNode(qualifier, remainder, visitor);
+        if (r == VisitResult::Stop)
+            return VisitResult::Stop;
+    }
+    return VisitResult::Continue;
+}
+
+VisitResult ChildMap::visitAll(const char *xpath, IPropertyTreeVisitor &visitor) const
+{
+    for (auto &entry : *this)
+    {
+        PTree &bucket = static_cast<PTree &>(entry);
+        VisitResult r = bucket.visitChildContainer(xpath, visitor);
+        if (r == VisitResult::Stop)
+            return VisitResult::Stop;
+        // SkipChildren is already consumed inside visitChildContainer
+    }
+    return VisitResult::Continue;
+}
+
 IPropertyTreeIterator *ChildMap::getIterator(bool sort)
 {
     class CPTHashIterator : implements IPropertyTreeIterator, public CInterface
@@ -2880,17 +2910,7 @@ VisitResult PTree::visitAllChildren(const char *xpath, IPropertyTreeVisitor &vis
     ChildMap *cm = checkChildren();
     if (!cm)
         return VisitResult::Continue;
-    // Iterate every unique-name bucket in the child map via the public iterator
-    Owned<IPropertyTreeIterator> it(cm->getIterator(false));
-    ForEach(*it)
-    {
-        PTree &bucket = static_cast<PTree &>(it->query());
-        VisitResult r = bucket.visitChildContainer(xpath, visitor);
-        if (r == VisitResult::Stop)
-            return VisitResult::Stop;
-        // SkipChildren is already consumed inside visitChildContainer
-    }
-    return VisitResult::Continue;
+    return cm->visitAll(xpath, visitor);
 }
 
 // Apply optional qualifier and recurse on remainder for this node (which may hold a CPTArray
@@ -3162,19 +3182,10 @@ restart:
 
             if (wild)
             {
-                // Wildcard — iterate every child in the ChildMap via the public iterator
-                Owned<IPropertyTreeIterator> it(children->getIterator(false));
-                ForEach(*it)
-                {
-                    PTree &bucket = static_cast<PTree &>(it->query());
-                    const char *key = bucket.queryName();
-                    if (0 != WildMatch(key, id, isnocase()))
-                    {
-                        VisitResult r = bucket.visitMatchedNode(qualifier, remainder, visitor);
-                        if (r == VisitResult::Stop)
-                            return VisitResult::Stop;
-                    }
-                }
+                // Wildcard — walk every bucket in the ChildMap directly (no iterator allocation)
+                VisitResult r = children->visit(id, wild, isnocase(), qualifier, remainder, visitor);
+                if (r == VisitResult::Stop)
+                    return VisitResult::Stop;
             }
             else
             {
