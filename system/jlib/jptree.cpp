@@ -2838,20 +2838,6 @@ restart:
         return new PTStackIterator(iter.getClear(), xpath);
 }
 
-// Helper: invoke visitor on a single resolved node or attribute, honouring the VisitResult.
-// 'attrName' is non-null only when the xpath tail resolved to an attribute specifier (e.g. "@foo").
-static VisitResult visitNode(const PTree &node, const char *attrName, IPropertyTreeVisitor &visitor)
-{
-    if (attrName)
-    {
-        // xpath ended with an attribute specifier — only call visitor if the attribute exists
-        if (!node.hasProp(attrName))
-            return VisitResult::Continue;
-        return visitor.visit(node, attrName);
-    }
-    return visitor.visit(node, nullptr);
-}
-
 // Helper: call visit() recursively on every element in a child container (which may hold a
 // CPTArray of sibling nodes, or be a single element).  Propagates Stop immediately.
 // xpath is the remaining path to pass to each element's visit().
@@ -2905,7 +2891,7 @@ VisitResult PTree::visit(const char *xpath, IPropertyTreeVisitor &visitor) const
 {
     // NULL or empty xpath — visit this node directly (no further navigation)
     if (nullptr == xpath || '\0' == *xpath)
-        return visitNode(*this, nullptr, visitor);
+        return visitor.visit(*this, nullptr);
 
     const char *_xpath = xpath; // saved for error messages
     bool root = true;
@@ -2918,7 +2904,7 @@ restart:
             root = false;
             ++xpath;
             if ('\0' == *xpath)
-                return visitNode(*this, nullptr, visitor);
+                return visitor.visit(*this, nullptr);
             else if ('/' != *xpath)
                 throw MakeXPathException(xpath-1, PTreeExcpt_XPath_Unsupported, 0, "\"/\" expected");
             goto restart;
@@ -2943,8 +2929,12 @@ restart:
             else if (root)
                 throw MakeXPathException(xpath, PTreeExcpt_XPath_Unsupported, 0, "Root specifier \"/\" is not supported");
             else if ('\0' == *xpath)
-                return visitNode(*this, nullptr, visitor);
+                return visitor.visit(*this, nullptr);
             goto restart;
+
+        case '@':
+            // Attribute specifier at this level — call visitor unconditionally with the attr name
+            return visitor.visit(*this, xpath);
 
         case '[':
         {
@@ -2986,6 +2976,7 @@ restart:
                     if (']' != *xpath)
                         throw MakeXPathException(_xpath, PTreeExcpt_XPath_ParseError, xpath-_xpath, "Qualifier brace unclosed");
                     ++xpath;
+                    // Recurse with remainder; if empty this calls visitor.visit() directly
                     VisitResult r = visit(xpath, visitor);
                     if (r == VisitResult::Stop)
                         return VisitResult::Stop;
@@ -3088,7 +3079,7 @@ restart:
                         // Now recurse on the remaining path
                         VisitResult r;
                         if ('\0' == *remainder)
-                            r = visitNode(*elem, nullptr, visitor);
+                            r = visitor.visit(*elem, nullptr);
                         else
                             r = elem->visit(remainder, visitor);
                         if (r == VisitResult::Stop)
@@ -3114,7 +3105,7 @@ restart:
                             return VisitResult::Continue;
                     }
                     if ('\0' == *remainder)
-                        return visitNode(container, nullptr, visitor);
+                        return visitor.visit(container, nullptr);
                     return container.visit(remainder, visitor);
                 }
             };
