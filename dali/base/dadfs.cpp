@@ -14211,7 +14211,8 @@ static IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsi
             if (options.includeField(DFUQResultField::origsize))
             {
                 const char *propName = getDFUQResultFieldName(DFUQResultField::origsize);
-                attr->setPropInt64(propName, attr->getPropInt64(getDFUQResultFieldName(DFUQResultField::origsize), -1));
+                if (!attr->hasProp(propName))  
+                    attr->setPropInt64(propName, -1); 
             }
 
             if (options.includeField(DFUQResultField::recordcount))
