@@ -3813,10 +3813,9 @@ inline bool match(bool wild, bool numeric, const char *xpath, exprType t, const 
 
 // Visitor used by checkPattern() for existence-check qualifiers (t_none).
 // Walks nodes matching the head xpath; stops as soon as any node has the named property.
-struct ExistsVisitor : IPropertyTreeVisitor
+class ExistsVisitor : implements IPropertyTreeVisitor
 {
-    const char *prop;
-    bool found = false;
+public:
     ExistsVisitor(const char *_prop) : prop(_prop) {}
     VisitResult visit(const IPropertyTree &node, const char *) override
     {
@@ -3827,23 +3826,19 @@ struct ExistsVisitor : IPropertyTreeVisitor
         }
         return VisitResult::Continue;
     }
+
+    //MORE: This should become private.
+public:
+    const char *prop;
+    bool found = false;
 };
 
 // Visitor used by checkPattern() for value-comparison qualifiers.
 // Walks nodes matching the head xpath; for each, compares the named property/attribute
 // value against the RHS using the given operator.  Stops on the first successful match.
-struct MatchVisitor : IPropertyTreeVisitor
+class MatchVisitor : implements IPropertyTreeVisitor
 {
-    const char *tProp;
-    exprType tType;
-    bool wild, numeric, nocase;
-    const char *quoteBegin, *quoteEnd, *rhsBegin, *rhsEnd;
-    const char *xxpath;
-#ifdef WARNLEGACYCOMPARE
-    bool legacynumeric;
-#endif
-    bool found = false;
-
+public:
     // Inner visitor used when tProp is a child element name: visits matching children
     // and delegates the value comparison back to the outer MatchVisitor.
     struct InnerVisitor : IPropertyTreeVisitor
@@ -3926,6 +3921,17 @@ struct MatchVisitor : IPropertyTreeVisitor
             return false;
         }
     }
+
+public:
+    const char *tProp;
+    exprType tType;
+    bool wild, numeric, nocase;
+    const char *quoteBegin, *quoteEnd, *rhsBegin, *rhsEnd;
+    const char *xxpath;
+#ifdef WARNLEGACYCOMPARE
+    bool legacynumeric;
+#endif
+    bool found = false;
 };
 
 bool PTree::checkPattern(const char *&xxpath) const
