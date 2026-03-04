@@ -693,6 +693,7 @@ public:
             IptFlagClr(flags, ipt_binary);
     }
     bool checkPattern(const char *&xxpath) const;
+    bool newCheckPattern(const char *&xxpath) const;
     IPropertyTree *detach()
     {
         IPropertyTree *tree = create(queryName(), value, children, true);
