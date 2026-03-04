@@ -267,11 +267,11 @@ storage:
 {{- end }}
 {{- if $root.Values.global.cost }}
 cost:
-{{- if $excludePerCpuCost }}
-{{ toYaml (omit $root.Values.global.cost "perCpu") | indent 2 }}
-{{- else }}
-{{ toYaml $root.Values.global.cost | indent 2 }}
-{{- end }}
+ {{- if $excludePerCpuCost }}
+  {{- toYaml (omit $root.Values.global.cost "perCpu") | nindent 2 }}
+ {{- else }}
+  {{- toYaml $root.Values.global.cost | nindent 2 }}
+ {{- end }}
 {{- end }}
 {{- if $root.Values.global.logAccess }}
 logAccess:
