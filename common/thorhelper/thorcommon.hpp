@@ -58,7 +58,7 @@ class THORHELPER_API CMemoryRowSerializer: implements IRowSerializerTarget
     MemoryBuffer & buffer;
     unsigned nesting;
 public:
-    inline CMemoryRowSerializer(MemoryBuffer & _buffer) 
+    inline CMemoryRowSerializer(MemoryBuffer & _buffer)
         : buffer(_buffer)
     {
         nesting = 0;
@@ -72,9 +72,9 @@ public:
 // useful package
 interface IRowInterfaces: extends IInterface
 {
-    virtual IEngineRowAllocator * queryRowAllocator()=0;  
-    virtual IOutputRowSerializer * queryRowSerializer()=0; 
-    virtual IOutputRowDeserializer * queryRowDeserializer()=0; 
+    virtual IEngineRowAllocator * queryRowAllocator()=0;
+    virtual IOutputRowSerializer * queryRowSerializer()=0;
+    virtual IOutputRowDeserializer * queryRowDeserializer()=0;
     virtual IOutputMetaData *queryRowMetaData()=0;
     virtual unsigned queryActivityId() const=0;
     virtual ICodeContext *queryCodeContext()=0;
@@ -227,8 +227,21 @@ interface THORHELPER_API IDiskMerger : extends IInterface
     virtual IRowWriter *createWriteBlock() = 0;
 };
 
-extern THORHELPER_API IDiskMerger *createDiskMerger(IRowInterfaces *rowInterfaces, IRowLinkCounter *linker, const char *tempnamebase);
+struct TempFileTracker
+{
+    using NoteTempFileFunc = void (*)(void *context, const char *filename);
+    NoteTempFileFunc noteTempFile{nullptr};
+    void *context{nullptr};
 
+    inline void note(const char *filename) const
+    {
+        if (noteTempFile)
+            noteTempFile(context, filename);
+    }
+};
+
+extern THORHELPER_API IDiskMerger *createDiskMerger(IRowInterfaces *rowInterfaces, IRowLinkCounter *linker, const char *tempnamebase, const TempFileTracker *tempFileTracker);
+extern THORHELPER_API IDiskMerger *createDiskMerger(IRowInterfaces *rowInterfaces, IRowLinkCounter *linker, const char *tempnamebase);
 
 #ifdef HAS_GOOD_CYCLE_COUNTER
  #define TIME_ACTIVITIES
