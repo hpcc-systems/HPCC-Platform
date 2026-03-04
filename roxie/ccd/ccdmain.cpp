@@ -1195,22 +1195,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         else
             multicastTTL = ttlTmp;
 
-        bool recordStartupEvents = topology->getPropBool("expert/@recordStartupEvents", false);
-        if (topology->getPropBool("expert/@recordAllEvents", false) || recordStartupEvents)
-        {
-            const char * recordEventOptions = topology->queryProp("expert/@recordEventOptions");
-            const char * optRecordEventFilename = topology->queryProp("expert/@recordEventFilename");
-            try
-            {
-                startRoxieEventRecording(recordEventOptions, optRecordEventFilename);
-            }
-            catch (IException *E)
-            {
-                OERRLOG(E);
-                E->Release();
-            }
-        }
-
         workunitGraphCacheEnabled = topology->getPropBool("expert/@workunitGraphCacheEnabled", workunitGraphCacheEnabled);
 
         indexReadChunkSize = topology->getPropInt("@indexReadChunkSize", 60000);
@@ -1486,6 +1470,9 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         }
 #else
         readStaticTopology();
+        // Which channel that this node is using is determined by locating this instance in the list of nodes in the topology.
+        Owned<const ITopologyServer> topologyConfig = getTopology();
+        myChannel = topologyConfig->queryChannels()[0];
 #endif
         // Now we know all the channels, we can open and subscribe the multicast channels
         if (!localAgent)
@@ -1504,6 +1491,24 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         writeSentinelFile(sentinelFile);
 #endif
         configurePreferredPlanes();
+
+        // Configuration should now be complete.  Start recording before queryies are loaded and indexes are opened.
+        bool recordStartupEvents = topology->getPropBool("expert/@recordStartupEvents", false);
+        if (topology->getPropBool("expert/@recordAllEvents", false) || recordStartupEvents)
+        {
+            const char * recordEventOptions = topology->queryProp("expert/@recordEventOptions");
+            const char * optRecordEventFilename = topology->queryProp("expert/@recordEventFilename");
+            try
+            {
+                startRoxieEventRecording(recordEventOptions, optRecordEventFilename);
+            }
+            catch (IException * _e)
+            {
+                Owned<IException> e = _e;
+                OERRLOG(e);
+            }
+        }
+
         createDelayedReleaser();
         CCycleTimer loadPackageTimer;
         globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());
