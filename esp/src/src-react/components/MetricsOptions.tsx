@@ -144,7 +144,7 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
     logicalGraph
 }) => {
     const [globalScopeTypes, globalProperties] = useMetricMeta();
-    const { viewIds, viewId, setViewId, view, addView, updateView } = useMetricsViews(logicalGraph);
+    const { viewIds, viewId, setViewId, view, addView, updateView, save } = useMetricsViews(logicalGraph);
     const [dirtyView, setDirtyView] = React.useState<MetricsView>(clone(view));
     const [showAdd, setShowAdd] = React.useState(false);
     const [selectedTab, setSelectedTab] = React.useState("metrics");
@@ -165,7 +165,8 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
     const onDropdownChange = React.useCallback((event: React.FormEvent<HTMLDivElement>, item?: IDropdownOption) => {
         updateView({ ...view, ...dirtyView });
         setViewId(item.key as string, true);
-    }, [dirtyView, setViewId, updateView, view]);
+        save();
+    }, [dirtyView, save, setViewId, updateView, view]);
 
     const onAddLabel = React.useCallback((label: string) => {
         if (label) {
@@ -186,6 +187,7 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
                     text={nlsHPCC.OK}
                     onClick={() => {
                         updateView(dirtyView);
+                        save();
                         closeOptions();
                     }}
                 />
