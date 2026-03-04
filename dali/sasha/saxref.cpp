@@ -1871,7 +1871,7 @@ public:
 
         // Check physical file location
         unsigned node = 0;
-        node = file->misplaced->nn;
+        node = file->misplaced->getNode(grp->ordinality());
         SocketEndpoint ep = grp->queryNode(node).endpoint();
         RemoteFilename rfn;
         rfn.setPath(ep, filePath.str());
