@@ -2922,6 +2922,7 @@ VisitResult PTree::visitMatchedNode(const char *qualifier, const char *remainder
     {
         // Multiple siblings in a CPTArray: check qualifier per-element, then recurse
         unsigned n = val->elements();
+        unsigned indexCounts[8] = {0}; // Support up to 8 chained numeric qualifiers
         for (unsigned i = 0; i < n; i++)
         {
             PTree *elem = static_cast<PTree *>(val->queryElement(i));
@@ -2932,14 +2933,25 @@ VisitResult PTree::visitMatchedNode(const char *qualifier, const char *remainder
                 // Evaluate all chained qualifiers [e1][e2]... — all must match
                 const char *q = qualifier;
                 bool matched = true;
+                unsigned numQualIndex = 0;
                 while ('[' == *q && matched)
                 {
                     q++; // skip '['
                     if (isdigit(*q))
                     {
-                        // Numeric [N] on an array is handled in the outer [N] case of visit();
-                        // reaching here means no numeric qualifier applies per-element.
-                        matched = false;
+                        StringAttr idxstr;
+                        q = readIndex(q, idxstr);
+                        unsigned requiredIdx = atoi(idxstr.get());
+                        if (numQualIndex < 8)
+                        {
+                            if (++indexCounts[numQualIndex] != requiredIdx)
+                                matched = false;
+                            numQualIndex++;
+                        }
+                        else
+                            matched = false;
+                            
+                        if (']' == *q) q++; // skip ']'
                     }
                     else
                         matched = elem->newCheckPattern(q); // advances q past ']'
