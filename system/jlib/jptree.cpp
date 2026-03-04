@@ -2929,14 +2929,22 @@ VisitResult PTree::visitMatchedNode(const char *qualifier, const char *remainder
                 continue;
             if (qualifier)
             {
-                const char *q = qualifier + 1; // skip '['
-                if (isdigit(*q))
+                // Evaluate all chained qualifiers [e1][e2]... — all must match
+                const char *q = qualifier;
+                bool matched = true;
+                while ('[' == *q && matched)
                 {
-                    // Numeric [N] on an array is handled in the outer [N] case of visit();
-                    // reaching here means no numeric qualifier applies per-element.
-                    break;
+                    q++; // skip '['
+                    if (isdigit(*q))
+                    {
+                        // Numeric [N] on an array is handled in the outer [N] case of visit();
+                        // reaching here means no numeric qualifier applies per-element.
+                        matched = false;
+                    }
+                    else
+                        matched = elem->checkPattern(q); // advances q past ']'
                 }
-                if (!elem->checkPattern(q))
+                if (!matched)
                     continue;
             }
             VisitResult r;
@@ -2955,17 +2963,23 @@ VisitResult PTree::visitMatchedNode(const char *qualifier, const char *remainder
         // Single element: apply qualifier, then recurse or invoke visitor
         if (qualifier)
         {
-            const char *q = qualifier + 1; // skip '['
-            if (isdigit(*q))
+            // Evaluate all chained qualifiers [e1][e2]... — all must match
+            const char *q = qualifier;
+            while ('[' == *q)
             {
-                // [N] on a non-array: only N==1 matches
-                StringAttr idxstr;
-                readIndex(q, idxstr);
-                if (atoi(idxstr.get()) != 1)
+                q++; // skip '['
+                if (isdigit(*q))
+                {
+                    // [N] on a non-array: only N==1 matches
+                    StringAttr idxstr;
+                    q = readIndex(q, idxstr);  // q now points at ']'
+                    if (atoi(idxstr.get()) != 1)
+                        return VisitResult::Continue;
+                    if (']' == *q) q++; // skip ']'
+                }
+                else if (!checkPattern(q)) // advances q past ']'
                     return VisitResult::Continue;
             }
-            else if (!checkPattern(q))
-                return VisitResult::Continue;
         }
         VisitResult r;
         if ('\0' == *remainder)
@@ -3015,7 +3029,7 @@ VisitResult PTree::visitMatchedNode(const char *qualifier, const char *remainder
 // This eliminates all repeated string scanning for child nodes.
 
 // Handles the '[' case in visit(): a qualifier applied directly to this node.
-// xpath points just past the opening '['.  _xpath is the original path for error reporting.
+// xpath points at the opening '['.  _xpath is the original path for error reporting.
 // On return xpath is advanced past the closing ']' and any remainder.
 VisitResult PTree::visitWithQualifier(const char *&xpath, const char *_xpath, IPropertyTreeVisitor &visitor) const
 {
