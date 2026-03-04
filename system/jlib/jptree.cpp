@@ -265,6 +265,33 @@ unsigned ChildMap::numChildren() const
     return count;
 }
 
+VisitResult ChildMap::visitWild(const char *id, bool nocase, const char *qualifier, const char *remainder, IPropertyTreeVisitor &visitor) const
+{
+    for (auto &entry : *this)
+    {
+        PTree &bucket = static_cast<PTree &>(entry);
+        if (0 == WildMatch(bucket.queryName(), id, nocase))
+            continue;
+        VisitResult r = bucket.visitMatchedNode(qualifier, remainder, visitor);
+        if (r == VisitResult::Stop)
+            return VisitResult::Stop;
+    }
+    return VisitResult::Continue;
+}
+
+VisitResult ChildMap::visitAll(const char *xpath, IPropertyTreeVisitor &visitor) const
+{
+    for (auto &entry : *this)
+    {
+        PTree &bucket = static_cast<PTree &>(entry);
+        VisitResult r = bucket.visitChildContainer(xpath, visitor);
+        if (r == VisitResult::Stop)
+            return VisitResult::Stop;
+        // SkipChildren is already consumed inside visitChildContainer
+    }
+    return VisitResult::Continue;
+}
+
 IPropertyTreeIterator *ChildMap::getIterator(bool sort)
 {
     class CPTHashIterator : implements IPropertyTreeIterator, public CInterface
@@ -2838,6 +2865,374 @@ restart:
         return new PTStackIterator(iter.getClear(), xpath);
 }
 
+// Helper: call visit() recursively on every element in a child container (which may hold a
+// CPTArray of sibling nodes, or be a single element).  Propagates Stop immediately.
+// xpath is the remaining path to pass to each element's visit().
+// NB: this is a static member of PTree to allow access to protected ChildMap/PTree internals.
+VisitResult PTree::visitChildContainer(const char *xpath, IPropertyTreeVisitor &visitor) const
+{
+    IPTArrayValue *val = queryValue();
+    if (val && val->isArray())
+    {
+        // Multiple siblings stored in a CPTArray — visit each element
+        unsigned n = val->elements();
+        for (unsigned i = 0; i < n; i++)
+        {
+            PTree *elem = static_cast<PTree *>(val->queryElement(i));
+            if (!elem)
+                continue;
+            VisitResult r = elem->visit(xpath, visitor);
+            if (r == VisitResult::Stop)
+                return VisitResult::Stop;
+            // SkipChildren is consumed here: it applied to elem's children, not to siblings
+        }
+        return VisitResult::Continue;
+    }
+    else
+    {
+        // Single element — this *is* the element
+        VisitResult r = visit(xpath, visitor);
+        // SkipChildren is consumed here: it applied to this node's children, not to the caller
+        if (r == VisitResult::Stop)
+            return VisitResult::Stop;
+        return VisitResult::Continue;
+    }
+}
+
+// Helper: visit all direct children of this node (all tag names) with the given xpath,
+// used by the '//' recursive-descent implementation.
+// NB: member of PTree to allow access to protected ChildMap internals.
+VisitResult PTree::visitAllChildren(const char *xpath, IPropertyTreeVisitor &visitor) const
+{
+    ChildMap *cm = checkChildren();
+    if (!cm)
+        return VisitResult::Continue;
+    return cm->visitAll(xpath, visitor);
+}
+
+// Apply optional qualifier and recurse on remainder for this node (which may hold a CPTArray
+// of siblings, or be a single element).  'this' is the ChildMap container node looked up by
+// tag name; qualifier points at '[' (or is nullptr); remainder is the xpath tail after the
+// qualifier (may be empty, an attribute, or further path segments).
+// SkipChildren is consumed at the point of recursion and does not propagate to the caller.
+VisitResult PTree::visitMatchedNode(const char *qualifier, const char *remainder, IPropertyTreeVisitor &visitor) const
+{
+    IPTArrayValue *val = queryValue();
+    if (val && val->isArray())
+    {
+        // Multiple siblings in a CPTArray: check qualifier per-element, then recurse
+        unsigned n = val->elements();
+        unsigned indexCounts[8] = {0}; // Support up to 8 chained numeric qualifiers
+        for (unsigned i = 0; i < n; i++)
+        {
+            PTree *elem = static_cast<PTree *>(val->queryElement(i));
+            if (!elem)
+                continue;
+            if (qualifier)
+            {
+                // Evaluate all chained qualifiers [e1][e2]... — all must match
+                const char *q = qualifier;
+                bool matched = true;
+                unsigned numQualIndex = 0;
+                while ('[' == *q && matched)
+                {
+                    q++; // skip '['
+                    if (isdigit(*q))
+                    {
+                        StringAttr idxstr;
+                        q = readIndex(q, idxstr);
+                        unsigned requiredIdx = atoi(idxstr.get());
+                        if (numQualIndex < 8)
+                        {
+                            if (++indexCounts[numQualIndex] != requiredIdx)
+                                matched = false;
+                            numQualIndex++;
+                        }
+                        else
+                            matched = false;
+                            
+                        if (']' == *q) q++; // skip ']'
+                    }
+                    else
+                        matched = elem->newCheckPattern(q); // advances q past ']'
+                }
+                if (!matched)
+                    continue;
+            }
+            VisitResult r;
+            if ('\0' == *remainder)
+                r = visitor.visit(*elem, nullptr);
+            else
+                r = elem->visit(remainder, visitor);
+            if (r == VisitResult::Stop)
+                return VisitResult::Stop;
+            // SkipChildren consumed: it applied to elem's children, not its siblings
+        }
+        return VisitResult::Continue;
+    }
+    else
+    {
+        // Single element: apply qualifier, then recurse or invoke visitor
+        if (qualifier)
+        {
+            // Evaluate all chained qualifiers [e1][e2]... — all must match
+            const char *q = qualifier;
+            while ('[' == *q)
+            {
+                q++; // skip '['
+                if (isdigit(*q))
+                {
+                    // [N] on a non-array: only N==1 matches
+                    StringAttr idxstr;
+                    q = readIndex(q, idxstr);  // q now points at ']'
+                    if (atoi(idxstr.get()) != 1)
+                        return VisitResult::Continue;
+                    if (']' == *q) q++; // skip ']'
+                }
+                else if (!newCheckPattern(q)) // advances q past ']'
+                    return VisitResult::Continue;
+            }
+        }
+        VisitResult r;
+        if ('\0' == *remainder)
+        {
+            // SkipChildren here means the visitor doesn't want this node's children visited;
+            // since we are not about to recurse, it is equivalent to Continue.
+            r = visitor.visit(*this, nullptr);
+        }
+        else
+            r = visit(remainder, visitor);
+        // SkipChildren consumed: it applied to this node's children, not the caller's siblings
+        if (r == VisitResult::Stop)
+            return VisitResult::Stop;
+        return VisitResult::Continue;
+    }
+}
+
+// Future optimisation (Stage 5): pre-parsed XPathSegments
+// =========================================================
+// Currently PTree::visit() re-parses the xpath string at every level of recursion.
+// For deep trees with long xpath expressions this means O(depth * xpathLen) parsing work.
+//
+// To eliminate this, define:
+//
+//   struct XPathSegment
+//   {
+//       enum class Type { Tag, Self, RecursiveDescent, NumericIndex, Qualifier, Attribute };
+//       Type        type;
+//       StringAttr  tag;            // tag name or wildcard pattern (Type::Tag)
+//       bool        wild = false;   // true if tag contains '*'
+//       unsigned    numericIndex;   // 1-based index (Type::NumericIndex)
+//       StringAttr  qualifierExpr;  // raw expression content between '[' and ']' (Type::Qualifier)
+//   };
+//   using XPathSegments = std::vector<XPathSegment>;
+//
+//   XPathSegments parseXPath(const char *xpath);  // parse once, return segment array
+//
+// Then add an overload:
+//   VisitResult visit(const XPathSegments &segs, unsigned idx, IPropertyTreeVisitor &) const;
+//
+// The public visit(const char *xpath, ...) becomes a thin wrapper:
+//   - For a single plain-name or @attr segment: handle inline with no allocation.
+//   - Otherwise: call parseXPath() then the segment-index overload.
+//
+// The segment-index overload receives idx pointing at the current segment and increments it
+// on each recursive call, so the full segment array is shared across the entire descent.
+// This eliminates all repeated string scanning for child nodes.
+
+// Handles the '[' case in visit(): a qualifier applied directly to this node.
+// xpath points at the opening '['.  _xpath is the original path for error reporting.
+// On return xpath is advanced past the closing ']' and any remainder.
+VisitResult PTree::visitWithQualifier(const char *&xpath, const char *_xpath, IPropertyTreeVisitor &visitor) const
+{
+    xpath++; // skip '['
+    if (isdigit(*xpath))
+    {
+        StringAttr index;
+        xpath = readIndex(xpath, index);
+        unsigned i = atoi(index.get());
+        if (']' != *xpath)
+            throw MakeXPathException(_xpath, PTreeExcpt_XPath_ParseError, xpath-_xpath, "Qualifier brace unclosed");
+        ++xpath;
+        if (i)
+        {
+            if (value && value->isArray())
+            {
+                IPropertyTree *element = value->queryElement(i - 1);
+                if (element)
+                {
+                    VisitResult r = static_cast<PTree *>(element)->visit(xpath, visitor);
+                    if (r == VisitResult::Stop)
+                        return VisitResult::Stop;
+                    // SkipChildren consumed: it applied to element's children
+                }
+            }
+            else if (i == 1)
+            {
+                VisitResult r = visit(xpath, visitor);
+                if (r == VisitResult::Stop)
+                    return VisitResult::Stop;
+                // SkipChildren consumed: it applied to this node's children
+            }
+        }
+    }
+    else
+    {
+        if (newCheckPattern(xpath))
+        {
+            if (']' != *xpath)
+                throw MakeXPathException(_xpath, PTreeExcpt_XPath_ParseError, xpath-_xpath, "Qualifier brace unclosed");
+            ++xpath;
+            // Recurse with remainder; if empty this calls visitor.visit() directly
+            VisitResult r = visit(xpath, visitor);
+            if (r == VisitResult::Stop)
+                return VisitResult::Stop;
+        }
+        else
+        {
+            if (']' != *xpath)
+                throw MakeXPathException(_xpath, PTreeExcpt_XPath_ParseError, xpath-_xpath, "Qualifier brace unclosed");
+            ++xpath;
+        }
+    }
+    return VisitResult::Continue;
+}
+
+// Handles the default (tag name) case in visit().
+// xpath points at the start of the tag name segment.  _xpath is the original path for error reporting.
+VisitResult PTree::visitWithTag(const char *xpath, const char *_xpath, IPropertyTreeVisitor &visitor) const
+{
+    bool wild;
+    const char *start = xpath;
+    readWildId(xpath, wild);
+    size32_t s = xpath - start;
+    if (!s)
+        return VisitResult::Continue; // nothing to match
+
+    MAKE_LSTRING(id, start, s);
+
+    // Determine the remaining xpath after this segment
+    const char *remainder = xpath;
+
+    // Check for a qualifier '[...]' attached to this segment
+    const char *qualifier = nullptr;
+    if ('[' == *remainder)
+    {
+        qualifier = remainder; // points at '['
+        // Scan past all chained qualifiers to find where the real remainder starts
+        const char *scan = remainder + 1;
+        for (;;)
+        {
+            char quote = 0;
+            while (']' != *scan || quote)
+            {
+                switch (*scan)
+                {
+                case '\"':
+                case '\'':
+                    if (quote)
+                    {
+                        if (*scan == quote) quote = 0;
+                    }
+                    else
+                        quote = *scan;
+                    break;
+                case '\0':
+                    throw MakeXPathException(_xpath, PTreeExcpt_XPath_ParseError, scan-_xpath, "Qualifier brace unclosed");
+                }
+                ++scan;
+            }
+            ++scan; // skip ']'
+            if ('[' != *scan)
+                break;
+            ++scan; // skip '[' of next qualifier
+        }
+        remainder = scan;
+    }
+
+    // If the remainder is just '/' with nothing after, treat as empty
+    if ('/' == *remainder && '\0' == *(remainder+1))
+        remainder = remainder + 1;
+
+    if (!checkChildren())
+        return VisitResult::Continue;
+
+    if (wild)
+    {
+        // Wildcard — walk every bucket in the ChildMap directly (no iterator allocation)
+        VisitResult r = children->visitWild(id, isnocase(), qualifier, remainder, visitor);
+        if (r == VisitResult::Stop)
+            return VisitResult::Stop;
+    }
+    else
+    {
+        // Exact name lookup
+        IPropertyTree *child = children->query(id);
+        if (child)
+        {
+            VisitResult r = static_cast<PTree *>(child)->visitMatchedNode(qualifier, remainder, visitor);
+            if (r == VisitResult::Stop)
+                return VisitResult::Stop;
+        }
+    }
+    return VisitResult::Continue;
+}
+
+VisitResult PTree::visit(const char *xpath, IPropertyTreeVisitor &visitor) const
+{
+    // NULL or empty xpath — visit this node directly (no further navigation)
+    if (nullptr == xpath || '\0' == *xpath)
+        return visitor.visit(*this, nullptr);
+    if ('@' == *xpath)
+        return visitor.visit(*this, xpath);
+
+    const char *_xpath = xpath; // saved for error messages
+    bool root = true;
+
+restart:
+    switch (*xpath)
+    {
+        case '.':
+            // '.' refers to this node; skip and continue
+            root = false;
+            ++xpath;
+            if ('\0' == *xpath)
+                return visitor.visit(*this, nullptr);
+            else if ('/' != *xpath)
+                throw MakeXPathException(xpath-1, PTreeExcpt_XPath_Unsupported, 0, "\"/\" expected");
+            goto restart;
+
+        case '/':
+            ++xpath;
+            if ('/' == *xpath)
+            {
+                // '//' recursive descent: match at this level AND recurse into all children
+                const char *subpath = xpath + 1; // xpath after "//"
+
+                // Match at this level first
+                VisitResult r = visit(subpath, visitor);
+                if (r == VisitResult::Stop)
+                    return VisitResult::Stop;
+
+                // Then descend into every child, passing the full "//subpath" to each
+                const char *recursePath = xpath - 1; // points at "//"
+                r = visitAllChildren(recursePath, visitor);
+                return r;
+            }
+            else if (root)
+                throw MakeXPathException(xpath, PTreeExcpt_XPath_Unsupported, 0, "Root specifier \"/\" is not supported");
+            else if ('\0' == *xpath)
+                return visitor.visit(*this, nullptr);
+            goto restart;
+
+        case '[':
+            return visitWithQualifier(xpath, _xpath, visitor);
+
+        default:
+            return visitWithTag(xpath, _xpath, visitor);
+    }
+}
+
 void PTree::localizeElements(const char *xpath, bool allTail)
 {
     // null action for local ptree
@@ -3440,6 +3835,320 @@ inline bool match(bool wild, bool numeric, const char *xpath, exprType t, const 
             return m>0;
     }
     throw MakeXPathException(xpath, PTreeExcpt_XPath_ParseError, 0, "Invalid xpath qualifier expression in xpath: %s", xpath);
+}
+
+// MatchVisitor encapsulates the parsing and evaluation of a single qualifier expression
+// of the form used inside [...] in an xpath.  Call matches() once; it parses the expression
+// from xxpath, evaluates it against the supplied node, advances xxpath past the closing ']',
+// and returns true if the node satisfies the qualifier.
+class MatchVisitor : implements IPropertyTreeVisitor
+{
+public:
+    // Inner visitor used when tProp names a child element: visits each matching child
+    // and delegates the value comparison back to the outer MatchVisitor.
+    struct InnerVisitor : IPropertyTreeVisitor
+    {
+        MatchVisitor &outer;
+        InnerVisitor(MatchVisitor &o) : outer(o) {}
+        VisitResult visit(const IPropertyTree &elem, const char *) override
+        {
+            if (outer.compareValue(elem, nullptr))
+            {
+                outer.found = true;
+                return VisitResult::Stop;
+            }
+            return VisitResult::Continue;
+        }
+    };
+
+    // Parse the qualifier expression starting at xxpath and evaluate it against 'node'.
+    // xxpath is advanced past the closing ']' on return.
+    // supported conditions are:
+    //    tag               - node must have a child called tag
+    //    @attr             - node must have an attribute called attr
+    //    tag="value"       - child tag must equal value
+    //    @attr="value"     - attribute must equal value
+    //    (plus !=, <, <=, >, >=, ~ wildcard, ? case-insensitive)
+    bool matches(const char *&path, const IPropertyTree &node)
+    {
+        const char *xpath = path;
+        while (*xpath == ' ' || *xpath == '\t') xpath++;
+        const char *start = xpath;
+        wild = false;
+        nocase = node.isCaseInsensitive();
+        if (*xpath == '@')
+            xpath++;
+        char quote = 0;
+        const char *lhsEnd = nullptr;
+        quoteBegin = quoteEnd = rhsBegin = rhsEnd = nullptr;
+        tType = t_none;
+        numeric = false;
+#ifdef WARNLEGACYCOMPARE
+        legacynumeric = false;
+#endif
+        for (;;)
+        {
+            switch (*xpath)
+            {
+            case '"':
+            case '\'':
+                if (quote)
+                {
+                    if (*xpath == quote)
+                    {
+                        quote = 0;
+                        quoteEnd = xpath;
+                    }
+                }
+                else
+                {
+                    if (quoteBegin)
+                        throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Quoted left hand side already seen");
+                    quote = *xpath;
+                    quoteBegin = xpath + 1;
+                }
+                break;
+            case '[':
+                if (!quote)
+                    throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Unclosed qualifier detected");
+                break;
+            case ']':
+                if (!quote)
+                {
+                    if (!lhsEnd)
+                        lhsEnd = xpath;
+                    rhsEnd = xpath;
+                }
+                break;
+            case ' ':
+            case '\t':
+                if (!lhsEnd)
+                    lhsEnd = xpath;
+                break;
+            case '!':
+                if (!quote)
+                {
+                    if (tType)
+                        throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Unexpected expression operator xpath");
+                    if ('=' != *(xpath+1))
+                        throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Invalid xpath qualifier expression in xpath");
+                    if (!lhsEnd)
+                        lhsEnd = xpath;
+                    ++xpath;
+                    tType = t_inequality;
+                    wild = true;
+                }
+                break;
+            case '=':
+                if (!quote)
+                {
+                    if (wild)
+                        throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Wildcard match '~' makes no sense in this context");
+                    if (tType)
+                        throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Unexpected expression operator xpath");
+                    tType = t_equality;
+                    wild = true;
+                    if (!lhsEnd)
+                        lhsEnd = xpath;
+                }
+                break;
+            case '>':
+                if (!quote)
+                {
+                    if (wild)
+                        throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Wildcard match '~' makes no sense in this context");
+                    if (tType)
+                        throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Unexpected expression operator in xpath");
+                    if (!lhsEnd)
+                        lhsEnd = xpath;
+#ifdef WARNLEGACYCOMPARE
+                    legacynumeric = true;
+#endif
+                    if ('=' == *(xpath+1))
+                    {
+                        ++xpath;
+                        tType = t_gteq;
+                    }
+                    else
+                        tType = t_gt;
+                }
+                break;
+            case '<':
+                if (!quote)
+                {
+                    if (tType)
+                        throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Unexpected expression operator in xpath");
+                    if (!lhsEnd)
+                        lhsEnd = xpath;
+#ifdef WARNLEGACYCOMPARE
+                    legacynumeric = true;
+#endif
+                    if ('=' == *(xpath+1))
+                    {
+                        ++xpath;
+                        tType = t_lteq;
+                    }
+                    else
+                        tType = t_lt;
+                }
+                break;
+            case '~':
+                if (!quote)
+                {
+                    if (!tType)
+                        throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Unexpected wild operator in xpath");
+                    wild = true;
+                }
+                break;
+            case '?':
+                if (!quote)
+                {
+                    if (!tType)
+                        throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Unexpected case-insensitive operator in xpath");
+                    nocase = true;
+                }
+                break;
+            case '\0':
+                rhsEnd = xpath;
+                break;
+            }
+            if (rhsEnd)
+                break;
+            xpath++;
+            if (!rhsBegin && tType && !isspace(*xpath))
+                rhsBegin = xpath;
+        }
+        if (quote)
+            throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Parse error, unclosed quoted content");
+        if (tType)
+        {
+            if (quoteBegin && !quoteEnd)
+                throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Parse error, RHS missing closing quote");
+            if (rhsBegin && !rhsEnd)
+                throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Parse error, RHS missing closing quote");
+            if (!quoteBegin && rhsEnd)
+            {
+                const char *c = rhsBegin;
+                for (;;)
+                {
+                    if (!isdigit(*c++))
+                        throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Parse error, RHS is an unquoted string");
+                    if (c == rhsEnd) break;
+                }
+            }
+        }
+
+        MAKE_LSTRING(lhs, start, lhsEnd-start);
+        tProp = splitXPathX(lhs);
+        MAKE_LSTRING(head, lhs, tProp-lhs);
+        xxpath = start; // for error reporting in compareValue
+        found = false;
+
+        if (t_none == tType)
+        {
+            // Existence check: does this node (or a 'head' child) have 'tProp'?
+            if (*head)
+            {
+                // head names an intermediate child — visit it, check tProp on each match
+                node.visit(head, *this);
+            }
+            else
+            {
+                // no head: check tProp directly on 'node'
+                found = node.hasProp(tProp);
+            }
+        }
+        else
+        {
+            // Value comparison
+            if (*head)
+                node.visit(head, *this);
+            else
+                visit(node, nullptr);
+        }
+
+        path = xpath;
+        return found;
+    }
+
+    // IPropertyTreeVisitor — called for each node matching 'head'
+    VisitResult visit(const IPropertyTree &node, const char *) override
+    {
+        if (isAttribute(tProp))
+            found = compareValue(node, tProp);
+        else if (t_none == tType)
+            found = node.hasProp(tProp);
+        else
+        {
+            InnerVisitor inner(*this);
+            node.visit(tProp, inner);
+        }
+        return found ? VisitResult::Stop : VisitResult::Continue;
+    }
+
+    bool compareValue(const IPropertyTree &elem, const char *prop) const
+    {
+        if (elem.isBinary(prop))
+            UNIMPLEMENTED_IPT;
+        const char *rhs;
+        unsigned rhslength;
+        bool localNumeric = numeric;
+        if (quoteEnd)
+        {
+            rhs = quoteBegin;
+            rhslength = quoteEnd - quoteBegin;
+#ifdef WARNLEGACYCOMPARE
+            if (legacynumeric && isdigit(*rhs))
+                IWARNLOG("Possible deprecated use of quoted numeric comparison operation: %s", xxpath);
+#endif
+        }
+        else if (rhsEnd)
+        {
+            rhs = rhsBegin;
+            rhslength = rhsEnd - rhsBegin;
+            localNumeric = true;
+        }
+        else
+        {
+            rhs = nullptr;
+            rhslength = 0;
+        }
+        if (elem.isCompressed(prop))
+        {
+            StringBuffer s;
+            elem.getProp(prop, s);
+            return match(wild, localNumeric, xxpath, tType, s.str(), s.length(), rhs, rhslength, nocase);
+        }
+        else
+        {
+            const char *value = elem.queryProp(prop);
+            if (value)
+                return match(wild, localNumeric, xxpath, tType, value, (size32_t)strlen(value), rhs, rhslength, nocase);
+            else if (tType == t_equality)
+                return (nullptr == rhs || '\0' == *rhs);
+            else if (tType == t_inequality)
+                return (nullptr != rhs && '\0' != *rhs);
+            return false;
+        }
+    }
+
+private:
+    const char *tProp = nullptr;
+    exprType tType = t_none;
+    bool wild = false, numeric = false, nocase = false;
+    const char *quoteBegin = nullptr, *quoteEnd = nullptr;
+    const char *rhsBegin = nullptr, *rhsEnd = nullptr;
+    const char *xxpath = nullptr;
+#ifdef WARNLEGACYCOMPARE
+    bool legacynumeric = false;
+#endif
+    bool found = false;
+};
+
+bool PTree::newCheckPattern(const char *&xxpath) const
+{
+    MatchVisitor matcher;
+    return matcher.matches(xxpath, *this);
 }
 
 bool PTree::checkPattern(const char *&xxpath) const

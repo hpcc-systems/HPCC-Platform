@@ -109,6 +109,15 @@ public:
     {
         return SuperHashTableOf<IPropertyTree, constcharptr>::removeExact(child);
     }
+
+    // Visit every bucket whose name matches the wildcard pattern id, applying qualifier and
+    // remainder via visitMatchedNode() on each matching bucket.  No IPropertyTreeIterator
+    // allocation is performed.
+    VisitResult visitWild(const char *id, bool nocase, const char *qualifier, const char *remainder, IPropertyTreeVisitor &visitor) const;
+
+    // Visit every bucket unconditionally, forwarding xpath to visitChildContainer() on each.
+    // Used by the '//' recursive-descent path.  No IPropertyTreeIterator allocation is performed.
+    VisitResult visitAll(const char *xpath, IPropertyTreeVisitor &visitor) const;
 };
 
 // case insensitive childmap
@@ -684,6 +693,7 @@ public:
             IptFlagClr(flags, ipt_binary);
     }
     bool checkPattern(const char *&xxpath) const;
+    bool newCheckPattern(const char *&xxpath) const;
     IPropertyTree *detach()
     {
         IPropertyTree *tree = create(queryName(), value, children, true);
@@ -753,6 +763,7 @@ public:
     virtual StringBuffer &getName(StringBuffer &ret) const override;
     virtual IAttributeIterator *getAttributes(bool sorted=false) const override;
     virtual IPropertyTreeIterator *getElements(const char *xpath, IPTIteratorCodes flags = iptiter_null) const override;
+    virtual VisitResult visit(const char *xpath, IPropertyTreeVisitor &visitor) const override;
     virtual void localizeElements(const char *xpath, bool allTail=false) override;
     virtual bool hasChildren() const override { return children && children->count()?true:false; }
     virtual unsigned numUniq() const override { return checkChildren()?children->count():0; }
@@ -795,6 +806,13 @@ private:
     void replaceSelf(IPropertyTree *val);
     IPropertyTree *addPropTree(const char *xpath, IPropertyTree *val, bool alwaysUseArray);
     void addPTreeArrayItem(IPropertyTree *peer, const char *xpath, PTree *val, aindex_t pos = (aindex_t) -1);
+
+    // Helpers for visit() — need PTree/ChildMap private access
+    VisitResult visitChildContainer(const char *xpath, IPropertyTreeVisitor &visitor) const;
+    VisitResult visitAllChildren(const char *xpath, IPropertyTreeVisitor &visitor) const;
+    VisitResult visitMatchedNode(const char *qualifier, const char *remainder, IPropertyTreeVisitor &visitor) const;
+    VisitResult visitWithQualifier(const char *&xpath, const char *_xpath, IPropertyTreeVisitor &visitor) const;
+    VisitResult visitWithTag(const char *xpath, const char *_xpath, IPropertyTreeVisitor &visitor) const;
 
 protected: // data
     /* NB: the order of the members here is important to reduce the size of the objects, because very large numbers of these are created.
