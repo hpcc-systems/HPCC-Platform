@@ -24,6 +24,11 @@ const isEclWu = (workunitId: string): boolean => ECL_WORKUNIT_REGEX.test(workuni
 class TableEx extends Table {
     constructor() {
         super();
+        this
+            .columnWidthAutoFontName("monospace")
+            .columnWidthAutoFontSize(13)
+            .columnWidthAutoSampleSize(9999)
+            ;
     }
 
     enter(domNode, element) {
