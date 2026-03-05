@@ -169,8 +169,9 @@ spec:
  {{- end -}}
 {{- end -}}
 {{- include "hpcc.addVolumes" (dict "root" $ "me" $dali "includeNames" $tmpDaliScope.aggregateSashaNamedPlanes "includeCategories" $tmpDaliScope.aggregatePlaneCategories) | indent 6 }}
-{{- include "hpcc.addSecretVolumes" (dict "root" $ "secretsCategories" $tmpDaliScope.aggregateSashaSecretsCategories) | indent 6 }}
-{{ include "hpcc.addVaultClientCertificateVolumes" (dict "root" $ "secretsCategories" $tmpDaliScope.aggregateSashaSecretsCategories) | indent 6 }}
+{{- $allDaliSecretsCategories := concat $daliSecretsCategories $tmpDaliScope.aggregateSashaSecretsCategories | uniq }}
+{{- include "hpcc.addSecretVolumes" (dict "root" $ "secretsCategories" $allDaliSecretsCategories) | indent 6 }}
+{{ include "hpcc.addVaultClientCertificateVolumes" (dict "root" $ "secretsCategories" $allDaliSecretsCategories) | indent 6 }}
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "name" .name "component" "dali" "external" false) | indent 6 }}
 ---
 {{- $daliStoragePlane := $dali.daliPlane | default (include "hpcc.getFirstPlaneForCategory" (dict "root" $ "category" "dali")) }}
