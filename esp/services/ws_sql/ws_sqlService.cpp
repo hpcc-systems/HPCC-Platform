@@ -1545,7 +1545,8 @@ bool CwssqlEx::onPrepareSQL(IEspContext &context, IEspPrepareSQLRequest &req, IE
                 wu.clear();
 
                 WsWuHelpers::submitWsWorkunit(context, wuid.str(), cluster, nullptr, 0, 0, true, false, false, xmlparams.str(), nullptr, nullptr, nullptr);
-                success = waitForWorkUnitToCompile(wuid.str(), req.getWait());
+                WUState state = waitForWorkUnitToCompile(wuid.str(), req.getWait());
+                success = isCompiled(state);
             }
 
            if (success)
