@@ -21,6 +21,7 @@
 #include "ws_workunits.hpp"
 #include "ws_fs.hpp"
 #include "eclcc.hpp"
+#include "workunit.hpp"
 
 //=========================================================================================
 
@@ -311,6 +312,7 @@ public:
         setRpcRequestTimeouts(rpc, waitMS, optWaitConnectMs, optWaitReadSec);
         setRpcSSLOptions(rpc, optSSL, optClientCert, optClientPrivateKey, optCACert, optAcceptSelfSigned);
     }
+    void checkFeatures(IClientWsWorkunits *client, bool &useCompression, int &major, int &minor, int &point, unsigned waitMs, unsigned waitConnectMs, unsigned waitReadSec);
 
     virtual void usage()
     {
@@ -359,7 +361,7 @@ public:
 class EclCmdWithEclTarget : public EclCmdCommon
 {
 public:
-    EclCmdWithEclTarget() : optResultLimit((unsigned)-1), paramCount(0), optNoArchive(false), optLegacy(false), optDebug(false), optCheckDirty(false)
+    EclCmdWithEclTarget() : optResultLimit((unsigned)-1), paramCount(0), optWaitTime((unsigned)-1), optNoArchive(false), optLegacy(false), optDebug(false), optCheckDirty(false), optPoll(false)
     {
     }
     virtual eclCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter, bool finalAttempt=false);
@@ -367,6 +369,7 @@ public:
     bool getFullAttributePath(StringBuffer & result);
     bool setTarget(const char *target);
     bool setParam(const char *in, bool final);
+    bool doDeploy(IClientWsWorkunits *client, unsigned waitMs, const char *cluster, const char *name, StringBuffer *wuid, StringBuffer *wucluster, bool noarchive, bool displayWuid, bool compress, bool protect);
 
     virtual void usage()
     {
@@ -380,6 +383,8 @@ public:
             "   -f-<option>[=value]    Set an eclcc command line option (single '-')\n"
             "   -f--<option>[=value]   Set an eclcc command line option (double '-')\n"
             "   -Dname=value           Override the definition of a global attribute 'name'\n"
+            "   --wait=<ms>            Max time to wait in milliseconds\n"
+            "   --poll                 Poll for results, rather than remain connected\n"
             " eclcc options (everything following):\n"
         );
         for (unsigned line=0; line < _elements_in(helpText); line++)
@@ -407,6 +412,19 @@ public:
         }
         EclCmdCommon::usage();
     }
+
+protected:
+    int checkComplete(IClientWsWorkunits* client, IClientWUWaitRequest* req);
+    WUState checkCompiled(IClientWsWorkunits* client, IClientWUWaitRequest* req);
+    WUState pollForCompile(IClientWsWorkunits* client, const char *wuid, unsigned startTimeMs);
+
+    int getInitialRunWait()
+    {
+        if (!optPoll)
+            return optWaitTime;
+        return (optWaitTime < 10000) ? optWaitTime : 10000; //stay connected for the first 10 seconds even if polling
+    }
+
 public:
     StringAttr param;
     StringAttr optTargetCluster;
@@ -424,12 +442,14 @@ public:
     IArrayOf<IEspNamedValue> definitions;
     unsigned optResultLimit;
     unsigned paramCount;
+    unsigned optWaitTime;
     bool optNoArchive;
     bool optLegacy;
     bool optDebug;
     bool optCheckDirty;
     bool optFastSyntax = false;
     bool optNoStdInc = false;
+    bool optPoll;
     StringArray extraOptions;
 };
 
