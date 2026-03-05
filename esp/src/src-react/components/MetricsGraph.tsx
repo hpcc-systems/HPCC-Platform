@@ -27,43 +27,42 @@ export interface MetricGraphData {
 }
 
 export function useMetricsGraphData(metrics: IScope[], view: MetricsView, lineageSelection?: string, selection?: string[]): MetricGraphData {
-    const [selectedMetrics, setSelectedMetrics] = React.useState<IScope[]>([]);
     const [dot, setDot] = React.useState<string>("");
     const { svg, layoutStatus } = useMetricsGraphLayout(dot);
     const [lineage, setLineage] = React.useState<IScope[]>([]);
 
     const metricGraph = useConst(() => new MetricGraph());
 
-    const updateSelectedMetrics = React.useCallback(() => {
-        if (!selection?.length) {
-            setSelectedMetrics([]);
-            return;
-        }
-
+    const selectedMetrics = React.useMemo<IScope[]>(() => {
+        if (!selection?.length) return [];
         const selectionSet = new Set(selection);
-        setSelectedMetrics(metrics.filter(item => selectionSet.has(item.id)));
+        return metrics.filter(item => selectionSet.has(item.id));
     }, [metrics, selection]);
 
-    const updateSvg = React.useCallback((lineageSelection?: string) => {
-        const dot = metricGraph.graphTpl(lineageSelection ? [lineageSelection] : [], view);
-        setDot(dot);
-    }, [metricGraph, view]);
+    React.useEffect(() => {
+        if (metrics?.length > 0) {
+            metricGraph.load(metrics);
+            setDot(metricGraph.graphTpl(lineageSelection ? [lineageSelection] : [], view));
+        } else {
+            metricGraph.clear();
+            setDot("");
+        }
+    }, [metricGraph, metrics, lineageSelection, view]);
 
-    const updateLineage = React.useCallback((selection?: IScope[]) => {
-        const newLineage: IScope[] = [];
-
-        if (!selection?.length) {
-            setLineage(newLineage);
+    React.useEffect(() => {
+        if (!selectedMetrics.length) {
+            setLineage([]);
             return;
         }
 
         let minLen = Number.MAX_SAFE_INTEGER;
-        const lineages = selection.map(item => {
+        const lineages = selectedMetrics.map(item => {
             const retVal = metricGraph.lineage(item);
             minLen = Math.min(minLen, retVal.length);
             return retVal;
         });
 
+        const newLineage: IScope[] = [];
         if (lineages.length && minLen > 0) {
             for (let i = 0; i < minLen; ++i) {
                 const item = lineages[0][i];
@@ -76,29 +75,8 @@ export function useMetricsGraphData(metrics: IScope[], view: MetricsView, lineag
                 }
             }
         }
-
         setLineage(newLineage);
-    }, [metricGraph]);
-
-    React.useEffect(() => {
-        metricGraph.load(metrics);
-    }, [metricGraph, metrics]);
-
-    React.useEffect(() => {
-        updateSelectedMetrics();
-    }, [updateSelectedMetrics]);
-
-    React.useEffect(() => {
-        updateLineage(selectedMetrics);
-    }, [selectedMetrics, updateLineage]);
-
-    React.useEffect(() => {
-        if (metrics?.length > 0) {
-            updateSvg(lineageSelection);
-        } else {
-            setDot("");
-        }
-    }, [updateSvg, metrics, lineageSelection]);
+    }, [selectedMetrics, metricGraph]);
 
     return { metricGraph, selectedMetrics, lineage, dot, svg, layoutStatus };
 }
