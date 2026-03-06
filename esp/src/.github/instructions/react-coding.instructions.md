@@ -3,7 +3,7 @@ applyTo: '**/*.tsx'
 ---
 # Project coding standards for TypeScript and React
 
-Apply the [general coding guidelines](./general-coding.instructions.md) to all code.
+Apply the [general coding guidelines](./general.instructions.md) to all code.
 
 ## TypeScript Guidelines
 - Use TypeScript for all new code and avoid `any` types; leverage strict typing and generics.

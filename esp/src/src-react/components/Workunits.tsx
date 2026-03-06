@@ -19,6 +19,7 @@ import { CreateWUQueryStore } from "../comms/workunit";
 import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
+import { ZAPImport } from "./forms/ZAPImport";
 import { ShortVerticalDivider } from "./Common";
 import { SashaService, WsSasha } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
@@ -79,6 +80,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
 
     const [showFilter, setShowFilter] = React.useState(false);
+    const [showZapImport, setShowZapImport] = React.useState(false);
     const { currentUser } = useMyAccount();
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [showTimeline, setShowTimeline] = useUserStore<boolean>(WORKUNITS_SHOWTIMELINE, true);
@@ -274,6 +276,10 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                 refreshTable.call();
             }
         },
+        {
+            key: "zapImport", text: nlsHPCC.Import, disabled: !!store,
+            onClick: () => { setShowZapImport(true); }
+        },
     ], [currentUser.username, filter, hasFilter, refreshTable, selection, setShowAbortConfirm, setShowDeleteConfirm, setShowTimeline, showTimeline, store, total, uiState.hasNotCompleted, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
 
     //  Selection  ---
@@ -358,6 +364,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                     </div>
                 }</SizeMe>
                 <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
+                <ZAPImport showForm={showZapImport} setShowForm={setShowZapImport} refreshGrid={() => refreshTable.call()} />
                 <DeleteConfirm />
                 <AbortConfirm />
             </>
