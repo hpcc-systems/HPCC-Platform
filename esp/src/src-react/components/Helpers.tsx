@@ -1,6 +1,7 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
 import { TreeItemValue } from "@fluentui/react-components";
+import { scopedLogger } from "@hpcc-js/util";
 import { convertedSize } from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { HelperRow, useWorkunitHelpersTree } from "../hooks/workunit";
@@ -11,6 +12,8 @@ import { pushUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
 import { FlatTreeItem, FlatTreeEx } from "./controls/FlatTreeEx";
 import { FetchEditor } from "./SourceEditor";
+
+const logger = scopedLogger("src-react/components/Helpers.tsx");
 
 function getURL(wuid: string, item: HelperRow, option?: number) {
     let params = "";
@@ -142,6 +145,70 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
         return treeItems.filter(item => item.url !== "");
     }, [treeItems]);
 
+    const downloadHelpers = React.useCallback((type: "zip" | "gz") => {
+        const params = new URLSearchParams();
+        params.append("Wuid", wuid);
+        params.append("DownloadOption", type === "zip" ? "2" : "3");
+
+        checkedRows.forEach((item, i) => {
+            const prefix = `WUFileOptions.WUFileOption.${i}`;
+            switch (item.Type) {
+                case "Archive Query":
+                    params.append(`${prefix}.FileType`, "ArchiveQuery");
+                    break;
+                case "ECL":
+                    params.append(`${prefix}.FileType`, "WUECL");
+                    break;
+                case "Workunit XML":
+                    params.append(`${prefix}.FileType`, "XML");
+                    break;
+                default:
+                    params.append(`${prefix}.FileType`, item.Type);
+            }
+            if (item.Orig?.Name) params.append(`${prefix}.Name`, item.Orig?.Name);
+            if (item.Orig?.IPAddress) params.append(`${prefix}.IPAddress`, item.Orig?.IPAddress);
+            if (item.Description) params.append(`${prefix}.Description`, item.Description);
+            if (item.Orig?.PID) params.set(`${prefix}.Process`, item.Orig?.PID);
+            if (item.Orig?.SlaveNumber) params.append(`${prefix}.SlaveNumber`, item.Orig?.SlaveNumber);
+            if (item.Orig?.LogDate) params.append(`${prefix}.LogDate`, item.Orig?.LogDate);
+            if (item.Orig?.ProcessName) {
+                params.set(`${prefix}.Process`, item.Orig?.ProcessName);
+                params.append(`${prefix}.ClusterGroup`, item.Orig?.ProcessName);
+            }
+        });
+        params.append("WUFileOptions.WUFileOption.itemcount", checkedRows.length.toString());
+
+        fetch("/WsWorkunits/WUHelperFileArchive", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: params
+        }).then(async response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error: ${response.status} ${response.statusText}`);
+            }
+            const blob = await response.blob();
+            const disposition = response.headers.get("Content-Disposition");
+
+            let filename = `WUHelpers_${wuid}.${type}`;
+            const match = /filename="?([^";\n]+)"?/.exec(disposition ?? "");
+            if (match) {
+                filename = match[1].trim();
+            }
+
+            const link = document.createElement("a");
+            const urlBlob = window.URL.createObjectURL(blob);
+
+            link.href = urlBlob;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(urlBlob);
+        }).catch(err => {
+            logger.error(err)
+        });
+    }, [checkedRows, wuid]);
+
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
@@ -162,30 +229,14 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
             }
         },
         {
-            key: "file", text: nlsHPCC.File, disabled: checkedRows.filter(item => item.url !== "").length === 0, iconProps: { iconName: "Download" },
-            onClick: () => {
-                checkedRows.forEach(item => {
-                    window.open(getURL(wuid, item, 1));
-                });
-            }
+            key: "zip", text: nlsHPCC.Zip, disabled: checkedRows.length === 0, iconProps: { iconName: "Download" },
+            onClick: () => downloadHelpers("zip")
         },
         {
-            key: "zip", text: nlsHPCC.Zip, disabled: checkedRows.filter(item => item.url !== "").length === 0, iconProps: { iconName: "Download" },
-            onClick: () => {
-                checkedRows.forEach(item => {
-                    window.open(getURL(wuid, item, 2));
-                });
-            }
-        },
-        {
-            key: "gzip", text: nlsHPCC.GZip, disabled: checkedRows.filter(item => item.url !== "").length === 0, iconProps: { iconName: "Download" },
-            onClick: () => {
-                checkedRows.forEach(item => {
-                    window.open(getURL(wuid, item, 3));
-                });
-            }
+            key: "gzip", text: nlsHPCC.GZip, disabled: checkedRows.length === 0, iconProps: { iconName: "Download" },
+            onClick: () => downloadHelpers("gz")
         }
-    ], [checkedItems.length, checkedRows, refreshData, treeItemLeafNodes, wuid]);
+    ], [checkedItems.length, checkedRows, downloadHelpers, refreshData, treeItemLeafNodes]);
 
     const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
         {
