@@ -427,7 +427,7 @@ public:
     int errorCode() const { return errCode; }
     StringBuffer &errorMessage(StringBuffer &out) const
     {
-        return translateCode(out).append("\n").append(errMsg.str());
+        return translateCode(out).append(errMsg.str());
     }
     MessageAudience errorAudience() const { return MSGAUD_user; }
 
