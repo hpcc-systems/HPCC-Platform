@@ -1309,6 +1309,8 @@ class CUdpReceiveManager : implements IReceiveManager, public CInterface
 
     class receive_data : public Thread 
     {
+        static constexpr unsigned maxReceiveBuffers = 8;  // Maximum buffers to pre-allocate for receiving
+
         CUdpReceiveManager &parent;
         ISocket *receive_socket = nullptr;
         ISocket *selfFlowSocket = nullptr;
@@ -1382,7 +1384,11 @@ class CUdpReceiveManager : implements IReceiveManager, public CInterface
             unsigned lastUnwantedDiscarded = 0;
             unsigned timeout = 5000;
             roxiemem::IDataBufferManager * udpBufferManager = bufferManager;
-            DataBuffer *b = udpBufferManager->allocate();
+            
+            // Pre-allocate a pool of buffers for better performance
+            roxiemem::DataBufferAllocator<maxReceiveBuffers> allocator(udpBufferManager);
+            
+            DataBuffer *b = allocator.allocate();
             while (running) 
             {
                 try 
@@ -1448,7 +1454,9 @@ class CUdpReceiveManager : implements IReceiveManager, public CInterface
                         d.switchState(UdpRdTracker::pushing);
                         parent.input_queue->pushOwn(b);
                         d.switchState(UdpRdTracker::allocating);
-                        b = udpBufferManager->allocate();
+                        
+                        // Get next buffer from pool
+                        b = allocator.allocate();
                     }
                     if (udpStatsReportInterval)
                     {
@@ -1500,6 +1508,7 @@ class CUdpReceiveManager : implements IReceiveManager, public CInterface
                     MilliSleep(1000);
                 }
             }
+            // allocator destructor automatically releases remaining buffers
             ::Release(b);
             return 0;
         }

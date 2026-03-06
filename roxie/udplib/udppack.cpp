@@ -40,6 +40,8 @@ using roxiemem::DataBuffer;
 
 class CMessagePacker : implements IMessagePacker, public CInterface
 {
+    static constexpr unsigned maxPackerBuffers = 8;  // Maximum buffers to pre-allocate in pool
+
     ISendManager   &parent;
     IUdpReceiverEntry &receiver;
     UdpPacketHeader package_header;
@@ -53,12 +55,14 @@ class CMessagePacker : implements IMessagePacker, public CInterface
     MemoryBuffer    metaInfo;
     bool            last_message_done;
     int             queue_number;
+    roxiemem::DataBufferAllocator<maxPackerBuffers> allocator;  // Bulk buffer allocator
 
 public:
     IMPLEMENT_IINTERFACE;
 
     CMessagePacker(ruid_t ruid, unsigned msgId, const void *messageHeader, unsigned headerSize, ISendManager &_parent, IUdpReceiverEntry &_receiver, const IpAddress & _sourceNode, unsigned _msgSeq, unsigned _queue, bool _encrypted)
-        : parent(_parent), receiver(_receiver), data_buffer_size(DATA_PAYLOAD - sizeof(UdpPacketHeader) - (_encrypted ? 16 : 0))
+        : parent(_parent), receiver(_receiver), data_buffer_size(DATA_PAYLOAD - sizeof(UdpPacketHeader) - (_encrypted ? 16 : 0)),
+          allocator(bufferManager)
 
     {
         queue_number = _queue;
@@ -72,7 +76,10 @@ public:
         package_header.msgSeq = _msgSeq;
 
         packed_request = false;
+        
+        // Allocate first buffer individually - defer bulk allocation until we know we need more
         part_buffer = bufferManager->allocate();
+        
         assertex(data_buffer_size >= headerSize + sizeof(unsigned short));
         *(unsigned short *) (&part_buffer->data[sizeof(UdpPacketHeader)]) = headerSize;
         memcpy(&part_buffer->data[sizeof(UdpPacketHeader)+sizeof(unsigned short)], messageHeader, headerSize);
@@ -87,6 +94,7 @@ public:
     {
         if (part_buffer)
             part_buffer->Release();
+        // allocator destructor automatically releases remaining buffers
         if (mem_buffer) free (mem_buffer);
     }
 
@@ -115,7 +123,7 @@ public:
 
         if (!part_buffer)
         {
-            part_buffer = bufferManager->allocate();
+            part_buffer = allocator.allocate();
         }
         packed_request = true;
         if (variable)
@@ -150,7 +158,7 @@ public:
             {
                 if (!part_buffer)
                 {
-                    part_buffer = bufferManager->allocate();
+                    part_buffer = allocator.allocate();
                     data_used = 0;
                 }
                 unsigned chunkLen = data_buffer_size - data_used;
@@ -184,7 +192,9 @@ private:
         {
             last_message_done = true;
             if (!part_buffer)
-                part_buffer = bufferManager->allocate();
+            {
+                part_buffer = allocator.allocate();
+            }
             const char *metaData = metaInfo.toByteArray();
             unsigned metaLength = metaInfo.length();
             unsigned maxMetaLength = data_buffer_size - data_used;
@@ -196,7 +206,7 @@ private:
                 metaData += maxMetaLength;
                 data_used = 0;
                 maxMetaLength = data_buffer_size;
-                part_buffer = bufferManager->allocate();
+                part_buffer = allocator.allocate();
             }
             if (metaLength)
                 memcpy(&part_buffer->data[sizeof(UdpPacketHeader)+data_used], metaData, metaLength);
