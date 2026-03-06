@@ -1219,7 +1219,8 @@ void CKeyStore::recordEventIndexInformation()
         CKeyIndexMapping &mapping = iter->query();
         IKeyIndex &index = mapping.query();
         unsigned id = index.queryId();
-        const char *name = mapping.queryFindString();
+        const char *name = index.queryFileName();
+        assertex(name);
         recorder.recordFileInformation(id, name);
     }
 }
