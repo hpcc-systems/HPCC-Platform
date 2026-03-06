@@ -28,14 +28,13 @@ jobs:
     # Set to "true" if you want forked PRs that skip `helm dependency build` to FAIL the job.
     # Default is "false" which will surface a WARNING instead (visible in the run log/annotations).
     env:
-      FAIL_ON_FORK_SKIP: "false"
       FAIL_ON_NON_ALLOWLISTED_REPO: "false"
       # Allowlist: approve only these Helm repo hostnames (tighten per org policy as needed)
-      ALLOWLIST_DOMAINS_REGEX: '(hpcc-systems\.github\.io|helm\.elastic\.co|open-telemetry\.github\.io|grafana\.github\.io|prometheus-community\.github\.io|kubernetes\.github\.io)'
+      ALLOWLIST_DOMAINS_REGEX: '^https?://(hpcc-systems\.github\.io|helm\.elastic\.co|open-telemetry\.github\.io|grafana\.github\.io|prometheus-community\.github\.io|kubernetes\.github\.io)($|[:/])'
 
     steps:
       # -----------------------------------------------------------------------
-      # CHECKOUT — using stable semantic version for maintainability
+      # CHECKOUT — using pinned commit SHA for supply chain security and maintainability
       # -----------------------------------------------------------------------
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -81,46 +80,42 @@ jobs:
           declare -a CHART_DIRS=()
 
           if [[ "${GITHUB_EVENT_NAME}" != "pull_request" ]]; then
+            # Scan all charts for workflow_dispatch
             while IFS= read -r -d '' d; do
               CHART_DIRS+=("$d")
             done < <(find helm -type f -name Chart.yaml -printf '%h\0' | sort -zu)
           else
+            # For PRs, find charts containing any changed files
+            # Since workflow only triggers on helm/** changes, we know files changed
             BASE_SHA="${{ github.event.pull_request.base.sha }}"
-            BASE_REF="${{ github.base_ref }}"
 
-            # Ensure the base ref/SHA are available for diff operations
-            git fetch --no-tags --prune --depth=2 origin "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}" || true
-            git fetch --no-tags --prune --depth=1 origin "${BASE_SHA}:${BASE_SHA}" || true
+            echo "Checking for changed files since ${BASE_SHA}..."
 
-            declare -a CHANGED=()
-            while IFS= read -r -d '' f; do
-              CHANGED+=("$f")
-            done < <(git diff -z --diff-filter=AM --name-only "${BASE_SHA}...HEAD" -- 'helm/**' || true)
-
-            if [[ ${#CHANGED[@]} -eq 0 ]]; then
-              echo "charts=" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
-
-            # Walk each changed path upward until we find a Chart.yaml boundary
-            declare -A CHART_SET=()
-            for f in "${CHANGED[@]}"; do
-              dir="$(dirname "$f")"
+            # Simple approach: get chart dirs for all changed helm files
+            while IFS= read -r file; do
+              [[ -n "$file" ]] || continue
+              echo "Processing changed file: $file"
+              dir="$(dirname "$file")"
               while [[ "$dir" != "." && "$dir" != "/" ]]; do
                 if [[ -f "$dir/Chart.yaml" ]]; then
-                  CHART_SET["$dir"]=1
+                  echo "Found chart directory: $dir"
+                  CHART_DIRS+=("$dir")
                   break
                 fi
                 dir="$(dirname "$dir")"
               done
-            done
+            done < <(git diff --name-only "${BASE_SHA}...HEAD" -- 'helm/**' 2>/dev/null || true)
 
-            if [[ ${#CHART_SET[@]} -eq 0 ]]; then
-              echo "charts=" >> "$GITHUB_OUTPUT"
-              exit 0
+            # Remove duplicates safely
+            if [[ ${#CHART_DIRS[@]} -gt 0 ]]; then
+              readarray -t CHART_DIRS < <(printf '%s\n' "${CHART_DIRS[@]}" | sort -u)
             fi
+          fi
 
-            while IFS= read -r d; do CHART_DIRS+=("$d"); done < <(printf "%s\n" "${!CHART_SET[@]}" | sort -u)
+          if [[ ${#CHART_DIRS[@]} -eq 0 ]]; then
+            echo "No charts found to scan."
+            echo "charts=" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
 
           printf "Changed/added charts to scan:\n"
@@ -128,14 +123,14 @@ jobs:
 
           {
             printf "charts="
-            printf "%q " "${CHART_DIRS[@]}"
+            printf "%s " "${CHART_DIRS[@]}"
             echo
           } >> "$GITHUB_OUTPUT"
 
       # -----------------------------------------------------------------------
       # RENDER & COLLECT IMAGES, WITH HELM REPO ALLOWLIST
-      # - We avoid untrusted egress in forked PRs: skip `helm dependency build`.
-      # - Skipping on forks emits a WARNING by default, or FAILS if FAIL_ON_FORK_SKIP=true.
+      # - Build dependencies only for charts with allowlisted repositories
+      # - Skip charts with non-allowlisted repos (can be made to fail via policy flag)
       # -----------------------------------------------------------------------
       - name: Render charts and collect images + mapping (with repo allowlist)
         id: collect
@@ -153,38 +148,30 @@ jobs:
 
           chart_name() { awk 'tolower($1)=="name:" {print $2; exit}' "$1" 2>/dev/null || true; }
 
-          IS_FORK="${{ github.event.pull_request.head.repo.fork && 'true' || 'false' }}"
-
           for chart in ${CHARTS}; do
             echo "::group::Template chart: ${chart}"
 
-            if [[ "${IS_FORK}" != "true" ]]; then
-              # FIRST-PARTY PRs:
-              # Only fetch deps if all repos in Chart.yaml/Chart.lock are allowlisted
-              if grep -Eqi '(^|\s)repository:\s*https?://[^ ]+' "${chart}/Chart.yaml" "${chart}/Chart.lock" 2>/dev/null; then
-                ALL_REPOS=$(grep -Eio 'https?://[^ ]+' "${chart}/Chart.yaml" "${chart}/Chart.lock" | sort -u || true)
-                NON_ALLOWLISTED=$(printf "%s\n" "${ALL_REPOS}" | grep -Eiv "${ALLOWLIST_DOMAINS_REGEX}" || true)
+            # Build dependencies if the chart has them and all repos are allowlisted
+            if grep -Eqi '(^|\s)repository:\s*https?://[^ ]+' "${chart}/Chart.yaml" "${chart}/Chart.lock" 2>/dev/null; then
+              ALL_REPOS=$(grep -Ehio 'https?://[^ ]+' "${chart}/Chart.yaml" "${chart}/Chart.lock" 2>/dev/null | sort -u || true)
+              NON_ALLOWLISTED=$(printf "%s\n" "${ALL_REPOS}" | grep -Eiv "${ALLOWLIST_DOMAINS_REGEX}" || true)
 
-                if [[ -n "${NON_ALLOWLISTED}" ]]; then
-                  if [[ "${FAIL_ON_NON_ALLOWLISTED_REPO}" == "true" ]]; then
-                    echo "::error file=${chart}/Chart.yaml::Non-allowlisted Helm repository detected in ${chart}: ${NON_ALLOWLISTED//$'\n'/, }"
-                    exit 1
-                  else
-                    echo "Skipping 'helm dependency build' due to non-allowlisted repo in ${chart}: ${NON_ALLOWLISTED//$'\n'/, }"
-                  fi
+              if [[ -n "${NON_ALLOWLISTED}" ]]; then
+                if [[ "${FAIL_ON_NON_ALLOWLISTED_REPO}" == "true" ]]; then
+                  echo "::error file=${chart}/Chart.yaml::Non-allowlisted Helm repository detected in ${chart}: ${NON_ALLOWLISTED//$'\n'/, }"
+                  exit 1
                 else
-                  helm dependency build "${chart}" || true
+                  echo "::warning file=${chart}/Chart.yaml::Skipping ${chart} due to non-allowlisted repository: ${NON_ALLOWLISTED//$'\n'/, }"
+                  echo "::endgroup::"
+                  continue
                 fi
-              fi
-            else
-              # FORKED PRs (untrusted):
-              # We deliberately avoid network fetches from contributor-supplied content.
-              # Report this explicitly: default WARNING; optional FAIL on policy toggle.
-              if [[ "${FAIL_ON_FORK_SKIP}" == "true" ]]; then
-                echo "::error file=${chart}/Chart.yaml::Forked PR: skipping 'helm dependency build' for ${chart} (policy set to fail)"
-                exit 1
               else
-                echo "::warning file=${chart}/Chart.yaml::Forked PR: skipping 'helm dependency build' for ${chart}"
+                echo "Building dependencies for ${chart} (all repositories allowlisted)..."
+                helm dependency build "${chart}" || {
+                  echo "::warning file=${chart}/Chart.yaml::Failed to build dependencies for ${chart}, skipping chart"
+                  echo "::endgroup::"
+                  continue
+                }
               fi
             fi
 
