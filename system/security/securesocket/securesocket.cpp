@@ -23,6 +23,7 @@
 //jlib
 #include "jliball.hpp"
 #include "string.h"
+#include <mutex>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -64,6 +65,7 @@
 #include "jsmartsock.ipp"
 #include "cryptocommon.hpp"
 #include "securesocket.hpp"
+#include "jiouring.hpp"
 
 using namespace cryptohelper;
 
@@ -102,6 +104,44 @@ interface ISecureSocketContextCallback : implements IInterface
 namespace securesocket
 {
 
+
+// Helper function to check if TLS io_uring is enabled via configuration
+// Cached on first call for performance (config is read-only after startup)
+// Unit tests can reset cache to force re-read
+static bool tlsIOUringCached = false;
+static bool tlsIOUringCacheSet = false;
+
+bool isTLSIOUringEnabled()
+{
+    if (!tlsIOUringCacheSet)
+    {
+        try
+        {
+            Owned<IPropertyTree> config = getComponentConfigSP();
+            if (config)
+            {
+                tlsIOUringCached = config->getPropBool("expert/@useTLSIOUring", false);
+            }
+            else
+            {
+                tlsIOUringCached = false;
+            }
+        }
+        catch (...)
+        {
+            tlsIOUringCached = false;
+        }
+        tlsIOUringCacheSet = true;
+    }
+    return tlsIOUringCached;
+}
+
+// Function to reset the cache for unit testing
+void resetTLSIOUringEnabledCache()
+{
+    tlsIOUringCacheSet = false;
+}
+
 class CStringSet : public CInterface
 {
     class StringHolder : public CInterface
@@ -134,10 +174,361 @@ public:
     }
 };
 
+// TLS handshake state machine states
+enum class TLSAcceptState
+{
+    Initial,        // Not started
+    Accepting,      // SSL_accept() in progress
+    WantRead,       // Need to read more data
+    WantWrite,      // Need to write data
+    FinalFlush,     // Sending final handshake data before completing
+    Completed,      // Handshake complete
+    Error           // Handshake failed
+};
+
+// Forward declaration
+class CSecureSocket;
+
+// Base class for async TLS handlers - captures common lifecycle and structure
+//
+// All TLS async handlers (accept, connect, read, write) share:
+// - Self-ownership lifecycle pattern (Link/Release in start/complete)
+// - Common members (ssl, processor, socket, finalCallback, BIOs)
+// - Similar async completion handling
+//
+// Derived classes must implement:
+// - tryOperation() - Attempt the specific SSL operation
+// - Specific state machine logic
+class CAsyncTLSHandlerBase : public CSimpleInterfaceOf<IAsyncCallback>
+{
+protected:
+    SSL * ssl;
+    Linked<IAsyncProcessor> processor;
+    Linked<ISocket> socket;
+    IAsyncCallback & finalCallback;
+    BIO * internal_bio = nullptr;
+    BIO * network_bio = nullptr;
+
+public:
+    CAsyncTLSHandlerBase(SSL * _ssl, IAsyncProcessor * _processor, ISocket * _socket, IAsyncCallback & _finalCallback)
+        : ssl(_ssl), processor(_processor), socket(_socket), finalCallback(_finalCallback)
+    {
+    }
+
+    virtual ~CAsyncTLSHandlerBase()
+    {
+        // Do NOT free BIOs - they're owned by SSL context and needed for subsequent I/O
+    }
+
+protected:
+    // Common start pattern: self-ownership and initial try
+    void startWithInitialTry()
+    {
+        // Self-ownership: Link() ourselves so handler survives until completion.
+        // Created with refcount=0, this brings it to 1.
+        // If tryOperation() completes synchronously (returns true), we Release() immediately.
+        // If tryOperation() goes async (returns false), processor will Release() when onAsyncComplete() returns true.
+        Link();
+        if (tryOperation())
+            Release();  // Synchronous completion - release ourselves now
+    }
+
+    // Derived classes implement the specific operation (accept, connect, read, write)
+    // Returns true if complete (success or error), false if async operation pending
+    virtual bool tryOperation() = 0;
+
+    // Common error handling pattern
+    virtual bool handleError(int error)
+    {
+        finalCallback.onAsyncComplete(error);
+        return true;  // Always complete on error
+    }
+};
+
+// Async TLS Accept Handler - manages the async TLS accept state machine
+// 
+// Lifecycle: Uses self-ownership pattern. Created with refcount=0, then calls Link()
+// on itself in start() to take ownership. Survives until completion (success or error)
+// when processor calls Release() after onAsyncComplete()/try methods return true.
+// The try methods return bool: true if complete (success/error), false if async op pending.
+class CAsyncTLSAcceptHandler : public CAsyncTLSHandlerBase
+{
+private:
+    Linked<CSecureSocket> secureSocket;
+    TLSAcceptState state = TLSAcceptState::Initial;
+    MemoryAttr readBuffer;
+    MemoryAttr writeBuffer;
+    int logLevel;
+    
+public:
+    CAsyncTLSAcceptHandler(CSecureSocket * _secureSocket, SSL * _ssl, IAsyncProcessor * _processor, 
+                           ISocket * _socket, IAsyncCallback & _finalCallback, int _logLevel);
+    
+    void start();
+    virtual bool onAsyncComplete(int result) override;
+    
+protected:
+    virtual bool tryOperation() override { return tryAccept(); }
+    
+private:
+    bool tryAccept();  // Returns true if complete (success or error), false if async operation pending
+    virtual bool handleError(int error) override;  // Returns true (always complete)
+};
+
+// TLS read state machine states
+enum class TLSReadState
+{
+    Initial,        // Not started
+    Reading,        // SSL_read() in progress
+    WantRead,       // Need more encrypted data from socket
+    WantWrite,      // Need to send data (renegotiation)
+    Completed,      // Decrypted data available
+    Error           // Read failed
+};
+
+// TLS write state machine states
+enum class TLSWriteState
+{
+    Initial,        // Not started
+    Writing,        // SSL_write() in progress
+    WantRead,       // Need to read (renegotiation)
+    WantWrite,      // Need to flush encrypted data
+    Flushing,       // Writing encrypted data to socket
+    Completed,      // Write complete
+    Error           // Write failed
+};
+
+// Async TLS Write Handler - manages the async TLS write state machine
+//
+// Lifecycle: Uses self-ownership pattern. Created with refcount=0, then calls Link()
+// on itself in start() to take ownership. Survives until completion (success or error)
+// when start()/onAsyncComplete() calls Release() after try methods return true.
+// The try methods return bool: true if complete (success/error), false if async op pending.
+//
+// IMPORTANT: This handler does NOT create its own BIO pair. It uses the existing BIOs
+// that are already configured on the SSL context. Creating a new BIO pair would break
+// the SSL connection for reading.
+//
+// Write Flow: SSL_write() uses memory BIOs already set up in the SSL context.
+// We use BIO_pending() to check for encrypted data and BIO_read() to extract it.
+class CAsyncTLSWriteHandler : public CAsyncTLSHandlerBase
+{
+public:
+    CAsyncTLSWriteHandler(CSecureSocket * _secureSocket, SSL * _ssl, IAsyncProcessor * _processor, ISocket * _socket,
+                         const void * _buf, size32_t _size, IAsyncCallback & _finalCallback);
+    
+    void start()
+    {
+        // Self-ownership: Link() ourselves so handler survives until completion.
+        // Created with refcount=0, this brings it to 1. Processor will Release() on async completion.
+        Link();
+        
+        state = TLSWriteState::Writing;
+        if (tryWrite())
+            Release();
+    }
+
+    virtual bool onAsyncComplete(int result) override
+    {
+        
+        if (result < 0)
+        {
+            return handleError(result);
+        }
+        
+        bool complete = false;
+        switch (state)
+        {
+        case TLSWriteState::WantRead:
+            // Renegotiation data arrived, feed to BIO and retry write
+            BIO_write(network_bio, encryptedBuffer.bytes(), result);
+            complete = tryWrite();
+            break;
+            
+        case TLSWriteState::Flushing:
+            // Encrypted data sent, but SSL_write might need to be retried
+            // (for example, after renegotiation or if SSL has more records to send)
+            state = TLSWriteState::Writing;
+            complete = tryWrite();
+            break;
+            
+        default:
+            complete = handleError(-1);
+        }
+        
+        return complete;
+    }
+
+protected:
+    virtual bool tryOperation() override { return tryWrite(); }
+
+private:
+    // Helper to flush any pending encrypted data from BIO to socket
+    // Returns true if data was queued for async write, false if nothing to flush
+    bool flushEncryptedDataToSocket()
+    {
+        int pending = BIO_pending(network_bio);
+        if (pending > 0)
+        {
+            if (pending > (int)encryptedBuffer.length())
+                encryptedBuffer.allocate(pending);
+                
+            int bytesRead = BIO_read(network_bio, encryptedBuffer.bytes(), pending);
+            if (bytesRead > 0)
+            {
+                state = TLSWriteState::Flushing;
+                processor->enqueueSocketWrite(socket, encryptedBuffer.bytes(), bytesRead, *this);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool tryWrite()
+    {
+        
+        // Check if we've already written all plaintext data
+        if (totalWritten >= plainSize)
+        {
+            // Check if there's any pending encrypted data to flush
+            if (flushEncryptedDataToSocket())
+                return false;
+            
+            // All done
+            state = TLSWriteState::Completed;
+            finalCallback.onAsyncComplete(plainSize);
+            return true;
+        }
+        
+        // Try to write remaining plaintext data through SSL
+        // Limit each write to 16KB to avoid exceeding BIO buffer capacity
+        size32_t remaining = plainSize - totalWritten;
+        size32_t chunkSize = std::min(remaining, (size32_t)16384);
+        int ret = SSL_write(ssl, plainBuf + totalWritten, chunkSize);
+        
+        if (ret > 0)
+        {
+            // SSL_write succeeded
+            totalWritten += ret;
+            
+            // Get encrypted data from BIO and send to socket
+            if (flushEncryptedDataToSocket())
+                return false;
+            
+            // No encrypted data yet, retry SSL_write
+            return tryWrite();
+        }
+        
+        // SSL_write didn't complete, check what it needs
+        int ssl_error = SSL_get_error(ssl, ret);
+        
+        switch (ssl_error)
+        {
+        case SSL_ERROR_WANT_READ:
+            // Renegotiation - need to read from socket
+            state = TLSWriteState::WantRead;
+            processor->enqueueSocketRead(socket, encryptedBuffer.bytes(), encryptedBuffer.length(), *this);
+            return false;
+            
+        case SSL_ERROR_WANT_WRITE:
+        {
+            // Need to flush data, read from BIO and send
+            if (flushEncryptedDataToSocket())
+                return false;
+            // If no data to flush, this is an error
+            return handleError(-1);
+        }
+            
+        case SSL_ERROR_ZERO_RETURN:
+            return handleError(-1);
+            
+        default:
+            return handleError(ssl_error);
+        }
+    }
+    
+    virtual bool handleError(int error) override
+    {
+        state = TLSWriteState::Error;
+        finalCallback.onAsyncComplete(-1);
+        return true;
+    }
+
+    TLSWriteState state = TLSWriteState::Initial;
+    const byte * plainBuf;
+    size32_t plainSize;
+    size32_t totalWritten;
+    MemoryAttr encryptedBuffer;
+};
+
+// Async TLS Connect Handler - manages the async TLS client connect state machine
+//
+// Lifecycle: Uses self-ownership pattern. Created with refcount=0, then calls Link()
+// on itself in start() to take ownership. Survives until completion (success or error)
+// when start()/onAsyncComplete() calls Release() after try methods return true.
+// The try methods return bool: true if complete (success/error), false if async op pending.
+class CAsyncTLSConnectHandler : public CAsyncTLSHandlerBase
+{
+private:
+    Linked<CSecureSocket> secureSocket;
+    TLSAcceptState state = TLSAcceptState::Initial; // Reuse same enum for connect
+    MemoryAttr readBuffer;
+    MemoryAttr writeBuffer;
+    int logLevel;
+    
+public:
+    CAsyncTLSConnectHandler(CSecureSocket * _secureSocket, SSL * _ssl, IAsyncProcessor * _processor,
+                            ISocket * _socket, IAsyncCallback & _finalCallback, int _logLevel);
+    
+    void start();
+    virtual bool onAsyncComplete(int result) override;
+
+protected:
+    virtual bool tryOperation() override { return tryConnect(); }
+    
+private:
+    bool tryConnect();  // Returns true if complete (success or error), false if async operation pending
+    virtual bool handleError(int error) override;  // Returns true (always complete)
+};
+
+// Async TLS Read Handler - manages async TLS read with decryption
+//
+// Lifecycle: Uses self-ownership pattern. Created with refcount=0, then calls Link()
+// on itself in start() to take ownership. Survives until completion (success or error)
+// when start()/onAsyncComplete() calls Release() after try methods return true.
+// The try methods return bool: true if complete (success/error), false if async op pending.
+class CAsyncTLSReadHandler : public CAsyncTLSHandlerBase
+{
+private:
+    TLSReadState state = TLSReadState::Initial;
+    MemoryAttr encryptedBuffer;  // Holds encrypted data read from socket
+    MemoryAttr writeBuffer;      // Buffer for data that needs to be written (e.g., renegotiation)
+    void * appBuffer;            // Application buffer to fill with decrypted data
+    size32_t minSize;
+    size32_t maxSize;
+    size32_t totalRead = 0;      // Total decrypted bytes read so far
+    
+public:
+    CAsyncTLSReadHandler(CSecureSocket * _secureSocket, SSL * _ssl, IAsyncProcessor * _processor,
+                         ISocket * _socket, void * _buf, size32_t _minSize, size32_t _maxSize,
+                         IAsyncCallback & _finalCallback);
+    
+    void start();
+    virtual bool onAsyncComplete(int result) override;
+
+protected:
+    virtual bool tryOperation() override { return tryRead(); }
+    
+private:
+    bool tryRead();  // Returns true if complete (success or error), false if async operation pending
+    virtual bool handleError(int error) override;  // Returns true (always complete)
+};
+
 class CSecureSocket : implements ISecureSocket, public CInterface
 {
 private:
     SSL*        m_ssl;
+    BIO*        network_bio = nullptr;  // Network BIO for async I/O (other end of BIO pair)
     StringBuffer epStr;
     Linked<ISecureSocketContextCallback> contextCallback;
     Owned<ISocket> m_socket;
@@ -159,8 +550,14 @@ private:
     SocketStats     stats;
 private:
     StringBuffer& get_cn(X509* cert, StringBuffer& cn);
-    bool verify_cert(X509* cert);
     void handleError(int ssl_err, bool writing, bool wait, unsigned timeoutMs, const char *opStr);
+    
+    // Make verify_cert and network_bio accessible to async handlers
+    friend class CAsyncTLSAcceptHandler;
+    friend class CAsyncTLSConnectHandler;
+    friend class CAsyncTLSReadHandler;
+    friend class CAsyncTLSWriteHandler;
+    bool verify_cert(X509* cert);
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -170,6 +567,10 @@ public:
 
     virtual int secure_accept(int logLevel);
     virtual int secure_connect(int logLevel);
+    virtual void startAsyncAccept(IAsyncProcessor * processor, IAsyncCallback & callback, int logLevel);
+    virtual void startAsyncConnect(IAsyncProcessor * processor, IAsyncCallback & callback, int logLevel);
+    virtual void startAsyncRead(IAsyncProcessor * processor, void * buf, size32_t minSize, size32_t maxSize, IAsyncCallback & callback);
+    virtual void startAsyncWrite(IAsyncProcessor * processor, const void * buf, size32_t size, IAsyncCallback & callback);
 
     virtual int logPollError(unsigned revents, const char *rwstr);
     virtual int wait_read(unsigned timeoutms);
@@ -492,6 +893,104 @@ public:
     }
 };
 
+// CAsyncTLSAcceptHandler constructor implementation
+CAsyncTLSAcceptHandler::CAsyncTLSAcceptHandler(CSecureSocket * _secureSocket, SSL * _ssl, IAsyncProcessor * _processor,
+                                               ISocket * _socket, IAsyncCallback & _finalCallback, int _logLevel)
+    : CAsyncTLSHandlerBase(_ssl, _processor, _socket, _finalCallback),
+      secureSocket(_secureSocket), logLevel(_logLevel)
+{
+    // Create memory BIO pair for async I/O with io_uring if not already set up
+    // This allows us to manually control socket I/O via io_uring while SSL handles TLS protocol
+    if (!secureSocket->network_bio)
+    {
+        BIO_new_bio_pair(&internal_bio, 0, &network_bio, 0);
+        SSL_set_bio(ssl, internal_bio, internal_bio);
+        secureSocket->network_bio = network_bio;  // Store for later use
+    }
+    else
+    {
+        network_bio = secureSocket->network_bio;
+        internal_bio = SSL_get_rbio(ssl);
+    }
+    
+    // Set socket to non-blocking mode for async I/O operations.
+    // This is a permanent one-way transition - the socket will remain in non-blocking mode
+    // for its lifetime. All subsequent I/O on this socket must use async operations.
+    // Note: Sync fallback (when !processor || !isTLSIOUringEnabled() || !network_bio) 
+    // occurs before this handler is created, so sync operations never execute on a 
+    // non-blocking socket.
+    socket->set_nonblock(true);
+}
+
+// CAsyncTLSConnectHandler constructor implementation
+CAsyncTLSConnectHandler::CAsyncTLSConnectHandler(CSecureSocket * _secureSocket, SSL * _ssl, IAsyncProcessor * _processor,
+                                                 ISocket * _socket, IAsyncCallback & _finalCallback, int _logLevel)
+    : CAsyncTLSHandlerBase(_ssl, _processor, _socket, _finalCallback),
+      secureSocket(_secureSocket), logLevel(_logLevel)
+{
+    // Create memory BIO pair for async I/O with io_uring if not already set up
+    // This allows us to manually control socket I/O via io_uring while SSL handles TLS protocol
+    if (!secureSocket->network_bio)
+    {
+        BIO_new_bio_pair(&internal_bio, 0, &network_bio, 0);
+        SSL_set_bio(ssl, internal_bio, internal_bio);
+        secureSocket->network_bio = network_bio;  // Store for later use
+    }
+    else
+    {
+        network_bio = secureSocket->network_bio;
+        internal_bio = SSL_get_rbio(ssl);
+    }
+    
+    // Set socket to non-blocking mode for async I/O operations.
+    // This is a permanent one-way transition - the socket will remain in non-blocking mode
+    // for its lifetime. All subsequent I/O on this socket must use async operations.
+    // Note: Sync fallback (when !processor || !isTLSIOUringEnabled() || !network_bio) 
+    // occurs before this handler is created, so sync operations never execute on a 
+    // non-blocking socket.
+    socket->set_nonblock(true);
+}
+
+// CAsyncTLSReadHandler constructor implementation
+CAsyncTLSReadHandler::CAsyncTLSReadHandler(CSecureSocket * _secureSocket, SSL * _ssl, IAsyncProcessor * _processor,
+                                           ISocket * _socket, void * _buf, size32_t _minSize, size32_t _maxSize,
+                                           IAsyncCallback & _finalCallback)
+    : CAsyncTLSHandlerBase(_ssl, _processor, _socket, _finalCallback),
+      appBuffer(_buf), minSize(_minSize), maxSize(_maxSize)
+{
+    // Use existing BIOs from SSL context (must be set up during async handshake).
+    // PRECONDITION: network_bio must be non-null - verified by startAsyncRead() before
+    // creating this handler. If network_bio is null, code falls back to sync read.
+    internal_bio = SSL_get_rbio(ssl);
+    network_bio = _secureSocket->network_bio;
+    assertex(network_bio != nullptr);  // Should never be null - checked before handler creation
+    
+    // Set socket to non-blocking mode for async I/O operations.
+    // This is a permanent one-way transition - the socket will remain in non-blocking mode
+    // for its lifetime. All subsequent I/O on this socket must use async operations.
+    // Note: Sync fallback (when !processor || !isTLSIOUringEnabled() || !network_bio) 
+    // occurs before this handler is created, so sync operations never execute on a 
+    // non-blocking socket.
+    socket->set_nonblock(true);
+    encryptedBuffer.ensure(16384);  // Pre-allocate buffer for encrypted data
+}
+
+// CAsyncTLSWriteHandler constructor implementation
+CAsyncTLSWriteHandler::CAsyncTLSWriteHandler(CSecureSocket * _secureSocket, SSL * _ssl, IAsyncProcessor * _processor,
+                                             ISocket * _socket, const void * _buf, size32_t _size, IAsyncCallback & _finalCallback)
+    : CAsyncTLSHandlerBase(_ssl, _processor, _socket, _finalCallback),
+      plainBuf((const byte *)_buf), plainSize(_size), totalWritten(0)
+{
+    // Use existing network BIO from CSecureSocket (must be set up during async handshake).
+    // PRECONDITION: network_bio must be non-null - verified by startAsyncWrite() before
+    // creating this handler. If network_bio is null, code falls back to sync write.
+    network_bio = _secureSocket->network_bio;
+    assertex(network_bio != nullptr);  // Should never be null - checked before handler creation
+    
+    // Allocate buffer for encrypted data (max TLS record is 16KB + overhead)
+    encryptedBuffer.allocate(17000);
+}
+
 #ifdef USERECVSEM
 Semaphore CSecureSocket::receiveblocksem(2);
 #endif
@@ -554,6 +1053,8 @@ CSecureSocket::CSecureSocket(ISocket* sock, ISecureSocketContextCallback * callb
 
 CSecureSocket::~CSecureSocket()
 {
+    if (network_bio)
+        BIO_free(network_bio);
     SSL_free(m_ssl);
 }
 
@@ -770,6 +1271,476 @@ int CSecureSocket::secure_accept(int logLevel)
             }
         }
     }
+}
+
+// Async TLS accept implementation
+void CSecureSocket::startAsyncAccept(IAsyncProcessor * processor, IAsyncCallback & callback, int logLevel)
+{
+    // Check if TLS io_uring is enabled via configuration
+    if (!processor || !isTLSIOUringEnabled())
+    {
+        // Fallback to synchronous accept
+        try
+        {
+            int result = secure_accept(logLevel);
+            callback.onAsyncComplete(result);
+        }
+        catch (IException *e)
+        {
+            e->Release();
+            callback.onAsyncComplete(-1);
+        }
+        return;
+    }
+    
+    checkForUpdatedContext();
+    
+    // Create and start the async accept handler
+    // Note: Handler uses self-ownership pattern - created with refcount=0, then Link()s itself
+    // in start(). Calls Release() on itself after tryAccept() returns true. No Owned<> needed.
+    CAsyncTLSAcceptHandler *handler = new CAsyncTLSAcceptHandler(this, m_ssl, processor, m_socket, callback, logLevel);
+    handler->start();
+}
+
+// Async TLS connect implementation
+void CSecureSocket::startAsyncConnect(IAsyncProcessor * processor, IAsyncCallback & callback, int logLevel)
+{
+    // Check if TLS io_uring is enabled via configuration
+    if (!processor || !isTLSIOUringEnabled())
+    {
+        // Fallback to synchronous connect
+        try
+        {
+            int result = secure_connect(logLevel);
+            callback.onAsyncComplete(result);
+        }
+        catch (IException *e)
+        {
+            e->Release();
+            callback.onAsyncComplete(-1);
+        }
+        return;
+    }
+    
+    checkForUpdatedContext();
+    
+    // Create and start the async connect handler
+    // Note: Handler uses self-ownership pattern - created with refcount=0, then Link()s itself
+    // in start(). Calls Release() on itself after tryConnect() returns true. No Owned<> needed.
+    CAsyncTLSConnectHandler *handler = new CAsyncTLSConnectHandler(this, m_ssl, processor, m_socket, callback, logLevel);
+    handler->start();
+}
+
+// CAsyncTLSAcceptHandler implementation
+void CAsyncTLSAcceptHandler::start()
+{
+    // Self-ownership: Link() ourselves so handler survives until completion.
+    // Created with refcount=0, this brings it to 1. Processor will Release() us when operation completes.
+    Link();
+    state = TLSAcceptState::Accepting;
+    if (tryAccept())
+        Release();
+}
+
+bool CAsyncTLSAcceptHandler::onAsyncComplete(int result)
+{
+    if (result < 0)
+        return handleError(result);
+    
+    // Handle completion of underlying I/O based on current TLS accept state
+    if (state == TLSAcceptState::WantRead && result > 0)
+    {
+        // Feed received bytes to SSL's network BIO
+        BIO_write(network_bio, readBuffer.bytes(), result);
+        state = TLSAcceptState::Accepting;
+    }
+    else if (state == TLSAcceptState::WantWrite)
+    {
+        // Pending write of encrypted data to socket has completed.
+        // We can now resume attempting to accept.
+        state = TLSAcceptState::Accepting;
+    }
+    
+    // Retry SSL_accept now that I/O completed, but only if we're in an accepting state
+    if (state == TLSAcceptState::Accepting)
+        return tryAccept();
+    
+    return false;
+}
+
+bool CAsyncTLSAcceptHandler::tryAccept()
+{
+    int ret = SSL_accept(ssl);
+    
+    if (ret == 1)
+    {
+        // Handshake complete - verify certificate if needed
+        if (secureSocket->m_verify)
+        {
+            bool verified = false;
+            X509* client_cert = SSL_get_peer_certificate(ssl);
+            if (client_cert != NULL)
+            {
+                verified = secureSocket->verify_cert(client_cert);
+                X509_free(client_cert);
+            }
+            
+            if (!verified)
+            {
+                if (logLevel > SSLogNormal)
+                    DBGLOG("Async TLS accept: certificate verification failed");
+                return handleError(-1);
+            }
+        }
+        
+        secureSocket->m_isSecure = true;
+        
+        if (logLevel > SSLogNormal)
+            DBGLOG("Async SSL accept ok, using %s", SSL_get_cipher(ssl));
+        
+        state = TLSAcceptState::Completed;
+        finalCallback.onAsyncComplete(0);
+        return true;
+    }
+    
+    // Check if SSL generated output to send
+    int pending = BIO_pending(network_bio);
+    if (pending > 0)
+    {
+        state = TLSAcceptState::WantWrite;
+        writeBuffer.ensure(pending);
+        BIO_read(network_bio, writeBuffer.bytes(), pending);
+        processor->enqueueSocketWrite(socket, writeBuffer.bytes(), pending, *this);
+        return false;
+    }
+    
+    // Check what SSL needs
+    int ssl_error = SSL_get_error(ssl, ret);
+    if (ssl_error == SSL_ERROR_WANT_READ)
+    {
+        state = TLSAcceptState::WantRead;
+        readBuffer.ensure(16384);
+        processor->enqueueSocketRead(socket, readBuffer.bytes(), 16384, *this);
+        return false;
+    }
+    else
+    {
+        return handleError(-1);
+    }
+}
+
+bool CAsyncTLSAcceptHandler::handleError(int error)
+{
+    state = TLSAcceptState::Error;
+    finalCallback.onAsyncComplete(error);
+    return true;
+}
+
+// CAsyncTLSConnectHandler implementation
+void CAsyncTLSConnectHandler::start()
+{
+    // Self-ownership: Link() ourselves so handler survives until completion.
+    // Created with refcount=0, this brings it to 1. Processor will Release() us when operation completes.
+    Link();
+    state = TLSAcceptState::Accepting;
+    if (tryConnect())
+        Release();
+}
+
+bool CAsyncTLSConnectHandler::onAsyncComplete(int result)
+{
+    if (result < 0)
+        return handleError(result);
+    
+    // Handle completion of underlying I/O based on current TLS connect state
+    if (state == TLSAcceptState::WantRead && result > 0)
+    {
+        // Feed received bytes to SSL's network BIO
+        BIO_write(network_bio, readBuffer.bytes(), result);
+        state = TLSAcceptState::Accepting;
+    }
+    else if (state == TLSAcceptState::WantWrite)
+    {
+        // Pending write of encrypted data to socket has completed.
+        // We can now resume attempting to connect.
+        state = TLSAcceptState::Accepting;
+    }
+    
+    // Retry SSL_connect now that I/O completed, but only if we're in an accepting state
+    if (state == TLSAcceptState::Accepting)
+        return tryConnect();
+    
+    return false;
+}
+
+bool CAsyncTLSConnectHandler::tryConnect()
+{
+    int ret = SSL_connect(ssl);
+    
+    if (ret == 1)
+    {
+        // Handshake complete - verify certificate if needed
+        if (secureSocket->m_verify)
+        {
+            bool verified = false;
+            X509* server_cert = SSL_get_peer_certificate(ssl);
+            if (server_cert != NULL)
+            {
+                verified = secureSocket->verify_cert(server_cert);
+                X509_free(server_cert);
+            }
+            
+            if (!verified)
+            {
+                if (logLevel > SSLogNormal)
+                    DBGLOG("Async TLS connect: certificate verification failed");
+                return handleError(-1);
+            }
+        }
+        
+        secureSocket->m_isSecure = true;
+        
+        if (logLevel > SSLogNormal)
+            DBGLOG("Async SSL connect ok, using %s", SSL_get_cipher(ssl));
+        
+        state = TLSAcceptState::Completed;
+        finalCallback.onAsyncComplete(0);
+        return true;
+    }
+    
+    // Check if SSL generated output to send
+    int pending = BIO_pending(network_bio);
+    if (pending > 0)
+    {
+        state = TLSAcceptState::WantWrite;
+        writeBuffer.ensure(pending);
+        BIO_read(network_bio, writeBuffer.bytes(), pending);
+        processor->enqueueSocketWrite(socket, writeBuffer.bytes(), pending, *this);
+        return false;
+    }
+    
+    // Check what SSL needs
+    int ssl_error = SSL_get_error(ssl, ret);
+    if (ssl_error == SSL_ERROR_WANT_READ)
+    {
+        state = TLSAcceptState::WantRead;
+        readBuffer.ensure(16384);
+        processor->enqueueSocketRead(socket, readBuffer.bytes(), 16384, *this);
+        return false;
+    }
+    else
+    {
+        return handleError(-1);
+    }
+}
+
+bool CAsyncTLSConnectHandler::handleError(int error)
+{
+    state = TLSAcceptState::Error;
+    finalCallback.onAsyncComplete(error);
+    return true;
+}
+
+// CAsyncTLSReadHandler implementation
+void CAsyncTLSReadHandler::start()
+{
+    // Self-ownership: Link() ourselves so handler survives until completion.
+    // Created with refcount=0, this brings it to 1. Processor will Release() us when operation completes.
+    Link();
+    state = TLSReadState::Reading;
+    if (tryRead())
+        Release();
+}
+
+bool CAsyncTLSReadHandler::onAsyncComplete(int result)
+{
+    if (result < 0)
+        return handleError(result);
+    
+    // If we read 0 bytes from socket, the connection was closed
+    if (result == 0)
+    {
+        // If we haven't satisfied minSize yet, this is an error (premature close)
+        if (totalRead < minSize)
+        {
+            state = TLSReadState::Error;
+            finalCallback.onAsyncComplete(-1);
+            return true;
+        }
+        // Otherwise complete with whatever we've read
+        state = TLSReadState::Completed;
+        finalCallback.onAsyncComplete(totalRead);
+        return true;
+    }
+    
+    // Handle completion of underlying I/O based on current TLS read state
+    if (state == TLSReadState::WantRead && result > 0)
+    {
+        // Feed received encrypted bytes to SSL's network BIO
+        BIO_write(network_bio, encryptedBuffer.bytes(), result);
+        state = TLSReadState::Reading;
+    }
+    else if (state == TLSReadState::WantWrite)
+    {
+        // Pending write of encrypted data to socket has completed.
+        // We can now resume attempting to read decrypted data.
+        state = TLSReadState::Reading;
+    }
+    
+    // Retry SSL_read now that I/O completed, but only if we're in a reading state
+    if (state == TLSReadState::Reading)
+        return tryRead();
+    
+    return false;
+}
+
+bool CAsyncTLSReadHandler::tryRead()
+{
+    // Keep reading until we have at least minSize bytes
+    while (totalRead < minSize && totalRead < maxSize)
+    {
+        size32_t bytesToRead = maxSize - totalRead;
+        
+        int ret = SSL_read(ssl, (char*)appBuffer + totalRead, bytesToRead);
+        
+        if (ret > 0)
+        {
+            // Successfully read some decrypted data
+            totalRead += ret;
+            
+            // If we've satisfied minSize, we're done
+            if (totalRead >= minSize)
+            {
+                state = TLSReadState::Completed;
+                finalCallback.onAsyncComplete(totalRead);
+                return true;
+            }
+            // Otherwise continue reading to satisfy minSize
+            continue;
+        }
+        
+        // SSL_read didn't return data - check what it needs
+        int ssl_error = SSL_get_error(ssl, ret);
+        
+        if (ssl_error == SSL_ERROR_WANT_READ)
+        {
+            // Need more encrypted data from socket
+            // First check if SSL has generated any data to send (e.g., renegotiation)
+            int pending = BIO_pending(network_bio);
+            if (pending > 0)
+            {
+                // Send data SSL generated before reading more
+                state = TLSReadState::WantWrite;
+                writeBuffer.ensure(pending);
+                BIO_read(network_bio, writeBuffer.bytes(), pending);
+                processor->enqueueSocketWrite(socket, writeBuffer.bytes(), pending, *this);
+                return false;
+            }
+            
+            // Read encrypted data from socket
+            state = TLSReadState::WantRead;
+            encryptedBuffer.ensure(16384);
+            processor->enqueueSocketRead(socket, encryptedBuffer.bytes(), 16384, *this);
+            return false;
+        }
+        else if (ssl_error == SSL_ERROR_WANT_WRITE)
+        {
+            // Need to send data (renegotiation)
+            int pending = BIO_pending(network_bio);
+            if (pending > 0)
+            {
+                state = TLSReadState::WantWrite;
+                writeBuffer.ensure(pending);
+                BIO_read(network_bio, writeBuffer.bytes(), pending);
+                processor->enqueueSocketWrite(socket, writeBuffer.bytes(), pending, *this);
+                return false;
+            }
+            // No data to write, this is an error
+            return handleError(-1);
+        }
+        else if (ssl_error == SSL_ERROR_ZERO_RETURN)
+        {
+            // Clean TLS shutdown
+            state = TLSReadState::Completed;
+            finalCallback.onAsyncComplete(totalRead);
+            return true;
+        }
+        else
+        {
+            return handleError(-1);
+        }
+    }
+    
+    // Should not reach here, but if we do, we've read enough
+    state = TLSReadState::Completed;
+    finalCallback.onAsyncComplete(totalRead);
+    return true;
+}
+
+bool CAsyncTLSReadHandler::handleError(int error)
+{
+    state = TLSReadState::Error;
+    finalCallback.onAsyncComplete(error);
+    return true;
+}
+
+// CSecureSocket async read implementation
+void CSecureSocket::startAsyncRead(IAsyncProcessor * processor, void * buf, size32_t minSize, size32_t maxSize, IAsyncCallback & callback)
+{
+    // Fall back to sync if io_uring is disabled, processor is null, or BIOs aren't set up for async
+    if (!processor || !isTLSIOUringEnabled() || !network_bio)
+    {
+        // Fallback to synchronous read
+        try
+        {
+            size32_t sizeRead;
+            readtms(buf, minSize, maxSize, sizeRead, WAIT_FOREVER);
+            callback.onAsyncComplete(sizeRead);
+        }
+        catch (IException *e)
+        {
+            e->Release();
+            callback.onAsyncComplete(-1);
+        }
+        return;
+    }
+    
+    checkForUpdatedContext();
+    
+    // Create and start the async read handler
+    // Note: Handler uses self-ownership pattern - created with refcount=0, then Link()s itself
+    // in start(). Calls Release() on itself after tryRead() returns true. No Owned<> needed.
+    CAsyncTLSReadHandler *handler = new CAsyncTLSReadHandler(this, m_ssl, processor, m_socket, buf, minSize, maxSize, callback);
+    handler->start();
+}
+
+// CSecureSocket async write implementation
+void CSecureSocket::startAsyncWrite(IAsyncProcessor * processor, const void * buf, size32_t size, IAsyncCallback & callback)
+{
+    // Fall back to sync if io_uring is disabled, processor is null, or BIOs aren't set up for async
+    if (!processor || !isTLSIOUringEnabled() || !network_bio)
+    {
+        // Fallback to synchronous write
+        try
+        {
+            size32_t written = write(buf, size);
+            callback.onAsyncComplete(written);
+        }
+        catch (IException *e)
+        {
+            e->Release();
+            callback.onAsyncComplete(-1);
+        }
+        return;
+    }
+    
+    checkForUpdatedContext();
+    
+    // Create and start the async write handler
+    // Note: Handler uses self-ownership pattern - created with refcount=0, then Link()s itself
+    // in start(). Calls Release() on itself after tryWrite() returns true. No Owned<> needed.
+    CAsyncTLSWriteHandler *handler = new CAsyncTLSWriteHandler(this, m_ssl, processor, m_socket, buf, size, callback);
+    handler->start();
 }
 
 void CSecureSocket::handleError(int ssl_err, bool writing, bool wait, unsigned timeoutMs, const char *opStr)

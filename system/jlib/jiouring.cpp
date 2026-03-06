@@ -354,7 +354,15 @@ void URingProcessor::processCompletions()
     {
         CompletionResponse response;
         if (dequeueCompletion(response))
-            response.callback->onAsyncComplete(response.result);
+        {
+            if (response.callback->onAsyncComplete(response.result))
+            {
+                // Cast to IInterface to call Release() - all async callbacks should implement IInterface
+                IInterface * iface = dynamic_cast<IInterface *>(response.callback);
+                if (iface)
+                    iface->Release();
+            }
+        }
     }
 }
 
@@ -372,13 +380,14 @@ void URingProcessor::terminate()
 //------------------------------------------------------------------------------
 
 // URingThreadedProcessor is a URingProcessor with a thread for processing completion events
-class TerminateCompletionThreadAction final : public IAsyncCallback
+class TerminateCompletionThreadAction final : public CSimpleInterfaceOf<IAsyncCallback>
 {
 public:
     TerminateCompletionThreadAction(std::atomic<bool> & _aborting) : aborting(_aborting) {}
-    virtual void onAsyncComplete(int result) override
+    virtual bool onAsyncComplete(int result) override
     {
         aborting = true;
+        return false;  // Don't free this object
     };
 private:
     std::atomic<bool> & aborting;
@@ -398,7 +407,15 @@ public:
         {
             CompletionResponse response;
             if (processor.dequeueCompletion(response))
-                response.callback->onAsyncComplete(response.result);
+            {
+                if (response.callback->onAsyncComplete(response.result))
+                {
+                    // Cast to IInterface to call Release() - all async callbacks should implement IInterface
+                    IInterface * iface = dynamic_cast<IInterface *>(response.callback);
+                    if (iface)
+                        iface->Release();
+                }
+            }
         }
         return 0;
     }

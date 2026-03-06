@@ -47,12 +47,21 @@ enum SecureSocketType
 
 #define PORT_CHECK_SSL_ACCEPT_ERROR -9995
 
+interface IAsyncProcessor;
+interface IAsyncCallback;
+
 // One instance per connection
 interface ISecureSocket : implements ISocket
 {
     virtual int secure_accept(int logLevel=1) = 0;
     virtual int secure_connect(int logLevel=1) = 0;
     virtual StringBuffer& get_ssl_version(StringBuffer& ver) = 0;
+    
+    // Async TLS operations - use io_uring when available
+    virtual void startAsyncAccept(IAsyncProcessor * processor, IAsyncCallback & callback, int logLevel=1) = 0;
+    virtual void startAsyncConnect(IAsyncProcessor * processor, IAsyncCallback & callback, int logLevel=1) = 0;
+    virtual void startAsyncRead(IAsyncProcessor * processor, void * buf, size32_t minSize, size32_t maxSize, IAsyncCallback & callback) = 0;
+    virtual void startAsyncWrite(IAsyncProcessor * processor, const void * buf, size32_t size, IAsyncCallback & callback) = 0;
 };
 
 // One instance per program running
@@ -109,6 +118,13 @@ SECURESOCKET_API ISmartSocketFactory *createSecureSmartSocketFactory(const char 
 SECURESOCKET_API ISmartSocketFactory *createSecureSmartSocketFactory(IPropertyTree &service, bool _retry = false, unsigned _retryInterval = 60, unsigned _dnsInterval = (unsigned) -1);
 
 SECURESOCKET_API IConversation *createSingletonSecureSocketConnection(unsigned short port,SocketEndpoint *_ep=nullptr);
+
+namespace securesocket
+{
+    // Function to reset TLS io_uring cache for unit testing
+    // Call this after modifying expert/@useTLSIOUring config to force re-read
+    SECURESOCKET_API void resetTLSIOUringEnabledCache();
+}
 
 #endif
 

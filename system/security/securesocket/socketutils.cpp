@@ -210,21 +210,21 @@ void CReadSocketHandler::startAsyncRead()
     asyncReader->enqueueSocketRead(socket, target+readSoFar, maxToRead, *this);
 }
 
-void CReadSocketHandler::onAsyncComplete(int result)
+bool CReadSocketHandler::onAsyncComplete(int result)
 {
     //This is called on the completion of an async read
     if (result < 0)
     {
         Owned<IJSOCK_Exception> exception = createJSocketException(result, "Read error", __FILE__, __LINE__);
         processor.closeConnection(*this, exception);
-        return;
+        return false; // Handler is persistent, processor manages its lifecycle
     }
 
     if (result == 0)
     {
         Owned<IJSOCK_Exception> exception = createJSocketException(JSOCKERR_graceful_close, "Connection closed", __FILE__, __LINE__);
         processor.closeConnection(*this, exception);
-        return;
+        return false; // Handler is persistent, processor manages its lifecycle
     }
 
     readSoFar += result;
@@ -238,6 +238,7 @@ void CReadSocketHandler::onAsyncComplete(int result)
     }
 
     startAsyncRead();
+    return false; // Handler is persistent, continues reading
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -655,6 +656,50 @@ void CSocketConnectionListener::startSingleshotAccept()
         asyncReader->enqueueSocketAccept(listenSocket, *this);
 }
 
+class CAsyncTLSAcceptCallback : public CSimpleInterfaceOf<IAsyncCallback>
+{
+private:
+    Linked<CSocketConnectionListener> listener;
+    Owned<ISecureSocket> secureSocket;
+    
+public:
+    CAsyncTLSAcceptCallback(CSocketConnectionListener * _listener, ISecureSocket * _secureSocket)
+        : listener(LINK(_listener)), secureSocket(_secureSocket)
+    {
+    }
+    
+    virtual bool onAsyncComplete(int result) override
+    {
+        if (result < 0)
+        {
+            secureSocket->close();
+            if (result != PORT_CHECK_SSL_ACCEPT_ERROR)
+                PROGLOG("MP Connect Thread: failed to async accept secure connection (result=%d)", result);
+            return true; // Callback complete, processor will Release()
+        }
+        
+        // Success - add the socket to the handler
+        try
+        {
+#ifdef _FULLTRACE
+            StringBuffer s;
+            SocketEndpoint ep1;
+            secureSocket->getPeerEndpoint(ep1);
+            PROGLOG("MP: Connect Thread: async TLS socket accepted from %s", ep1.getEndpointHostText(s).str());
+#endif
+            secureSocket->set_keep_alive(true);
+            listener->add(secureSocket.getClear());
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e, "Error adding async accepted connection");
+            e->Release();
+            secureSocket->close();
+        }
+        return true; // Callback complete, processor will Release()
+    }
+};
+
 void CSocketConnectionListener::handleAcceptedConnection(int socketfd)
 {
     Owned<ISocket> sock;
@@ -669,14 +714,28 @@ void CSocketConnectionListener::handleAcceptedConnection(int socketfd)
             {
                 Owned<ISecureSocket> ssock = secureContextServer->createSecureSocket(sock.getClear());
                 int tlsTraceLevel = SSLogMin;
-                int status = ssock->secure_accept(tlsTraceLevel);
-                if (status < 0)
+                
+                // Use async TLS accept if io_uring is available
+                if (asyncReader)
                 {
-                    ssock->close();
-                    PROGLOG("MP Connect Thread: failed to accept secure connection");
+                    Owned<CAsyncTLSAcceptCallback> callback = new CAsyncTLSAcceptCallback(this, ssock);
+                    // Transfer ownership to async operation - processor will Release() when callback returns true
+                    ssock->startAsyncAccept(asyncReader, *callback.getClear(), tlsTraceLevel);
+                    // The callback will handle completion - don't add socket here
                     return;
                 }
-                sock.setown(ssock.getClear());
+                else
+                {
+                    // Fallback to synchronous TLS accept
+                    int status = ssock->secure_accept(tlsTraceLevel);
+                    if (status < 0)
+                    {
+                        ssock->close();
+                        PROGLOG("MP Connect Thread: failed to accept secure connection");
+                        return;
+                    }
+                    sock.setown(ssock.getClear());
+                }
             }
 #endif // OPENSSL
 
@@ -715,7 +774,7 @@ void CSocketConnectionListener::handleAcceptedConnection(int socketfd)
     }
 }
 
-void CSocketConnectionListener::onAsyncComplete(int result)
+bool CSocketConnectionListener::onAsyncComplete(int result)
 {
     // Check if we're shutting down first to avoid accessing members during destruction
     if (aborting.load())
@@ -727,7 +786,7 @@ void CSocketConnectionListener::onAsyncComplete(int result)
             if (pendingAcceptCallbacks.compare_exchange_strong(expected, 0))
                 shutdownSem.signal();
         }
-        return;
+        return false; // Multishot accept callback is persistent
     }
     
     // This is called when a new connection is accepted via multishot accept
@@ -740,7 +799,7 @@ void CSocketConnectionListener::onAsyncComplete(int result)
         {
             // Cancellation - should have been handled at function entry if aborting
             WARNLOG("Multishot accept cancelled unexpectedly (not aborting)");
-            return;
+            return false;
         }
         
         if (!aborting)
@@ -778,7 +837,7 @@ void CSocketConnectionListener::onAsyncComplete(int result)
                     acceptMethod.store(AcceptMethod::SingleshotAccept);
                     PROGLOG("Multishot accept not supported (EINVAL), falling back to single-shot accept");
                     startSingleshotAccept();
-                    return;
+                    return false;
                 }
                 // If we get EINVAL on single-shot, that's a fatal error - io_uring accept is not working
                 // Decrement callback counter and signal shutdown
@@ -798,20 +857,22 @@ void CSocketConnectionListener::onAsyncComplete(int result)
                     shutdownSem.signal();
             }
         }
-        return;
+        return false;
     }
 
     // result contains the file descriptor of the accepted socket
     // With multishot accept, the operation continues to accept connections automatically
     // until it's cancelled or encounters an error
     if (aborting.load())
-        return;
+        return false;
     
     handleAcceptedConnection(result);
     
     // If using single-shot accept (not multishot), we need to re-queue another accept
     if (acceptMethod.load() == AcceptMethod::SingleshotAccept)
         startSingleshotAccept();
+    
+    return false; // Multishot accept callback is persistent
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -1025,7 +1086,7 @@ void CSocketTarget::startAsyncConnect()
     }
 }
 
-void CSocketTarget::onAsyncComplete(int result)
+bool CSocketTarget::onAsyncComplete(int result)
 {
     unsigned newSpaceToSignal = 0;
 
@@ -1143,6 +1204,7 @@ void CSocketTarget::onAsyncComplete(int result)
     }
     if (newSpaceToSignal)
         waitSem.signal(newSpaceToSignal);
+    return false; // Target callback is persistent, managed externally
 }
 
 

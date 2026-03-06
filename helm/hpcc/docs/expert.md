@@ -157,6 +157,46 @@ Note: Roxie also has a separate `@workerSendUseIOUring` topology setting that sp
 send operations (see Roxie documentation for details). The global `expert/@useIOUring` setting takes precedence—if set to false, 
 it will disable all io_uring regardless of component-specific topology settings, including `@workerSendUseIOUring`.
 
+## useTLSIOUring (boolean)
+
+Controls whether TLS (SSL/TLS encrypted) socket operations use io_uring for asynchronous I/O. This setting provides 
+granular control over io_uring usage specifically for TLS communications, separate from general io_uring usage.
+
+Default: false (disabled for backward compatibility)
+
+When set to true, TLS async operations (accept, connect, read, write) will use io_uring when available.
+When set to false, TLS operations fall back to synchronous I/O even if io_uring is enabled and available.
+
+This setting only has effect when `expert/@useIOUring` is also enabled. The hierarchy is:
+1. If `expert/@useIOUring` is false, all io_uring is disabled (including TLS)
+2. If `expert/@useIOUring` is true and `expert/@useTLSIOUring` is false, TLS uses sync I/O but other operations can use io_uring
+3. If both are true, TLS operations use io_uring for async I/O
+
+Use cases for disabling TLS io_uring while keeping general io_uring enabled:
+- Debugging TLS-specific issues without affecting other async I/O
+- Working around potential TLS/io_uring interaction issues
+- Testing performance differences between sync and async TLS
+- Compatibility with specific TLS configurations or certificate setups
+
+Example of enabling TLS io_uring globally:
+```
+global:
+  expert:
+    useIOUring: true
+    useTLSIOUring: true
+```
+
+This setting can be applied globally or on a per-component basis via the component's expert section.
+
+Example of enabling TLS io_uring for a specific component:
+```
+esp:
+- name: eclwatch
+  expert:
+    useIOUring: true
+    useTLSIOUring: true
+```
+
 ## fileSizeCheckMode (unsigned)
 
 Controls how Thor write activities verify expected disk file sizes against actual filesystem sizes.
