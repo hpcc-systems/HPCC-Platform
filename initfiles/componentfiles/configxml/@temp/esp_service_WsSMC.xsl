@@ -617,6 +617,9 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
                 <xsl:for-each select="../EspProcess[Authentication/@ldapServer=$ldapservername]/EspBinding">
                     <Binding name="{@name}" service="{@service}" port="{@port}" basedn="{@resourcesBasedn}" workunitsBasedn="{@workunitsBasedn}"/>
                 </xsl:for-each>
+                <xsl:for-each select="../EspProcess[Authentication/@ldapServer=$ldapservername]/EspControlBinding">
+                    <Binding name="{@name}" service="{@service}" port="{@port}" basedn="{@resourcesBasedn}" workunitsBasedn="{@workunitsBasedn}"/>
+                </xsl:for-each>
             </Resources>
         </EspService>
         

@@ -4,6 +4,7 @@
 
 #include "jiface.hpp"
 #include "jfile.hpp"
+#include "jexcept.hpp"
 #include "eclrtl.hpp"
 #include "eclhelper.hpp"
 
@@ -134,7 +135,8 @@ private:
         if (required > maxAvailable())
         {
             peekBytesDirect(required);
-            assertex(required <= maxAvailable());
+            if (unlikely(required > maxAvailable()))
+                throw makeStringExceptionV(0, "Required %u bytes, but only %u available (row offset %u file offset %llu)", required, (unsigned)maxAvailable(), readOffset, tell() + readOffset);
         }
     }
 

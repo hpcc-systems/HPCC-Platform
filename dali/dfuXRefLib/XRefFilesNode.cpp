@@ -187,7 +187,7 @@ IPropertyTree& CXRefFilesNode::queryDataTree()
     if (m_DataTree.get() == 0)
     {
         MemoryBuffer &data = queryData();
-        m_DataTree.setown(createPTreeFromXMLString(data.length(), data.toByteArray()));
+        m_DataTree.setown(createPTreeFromXMLString(data.toByteArray()));
     }
     return *m_DataTree.get();
 }
