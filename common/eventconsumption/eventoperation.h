@@ -43,6 +43,11 @@ public:
     bool acceptEvents(const char* eventNames);
     bool acceptAttribute(EventAttr attr, const char* values);
     bool acceptModel(const IPropertyTree& config);
+    // Option: output full file path instead of logical file
+    void setFullPathOutput(bool value) { fullPathOutput = value; }
+    bool isFullPathOutput() const { return fullPathOutput; }
+    // Utility: select logical file or full path based on option
+    StringBuffer& selectFilePath(StringBuffer& buf, __uint64 fileId) const;
 protected:
     IEventFilter* ensureFilter();
     bool traverseEvents(IEventVisitor& visitor);
@@ -56,6 +61,7 @@ protected:
     Owned<CMetaInfoState> metaState;
     std::set<std::string> inputPaths;
     Linked<IBufferedSerialOutputStream> out;
+    bool fullPathOutput = false;
 private:
     Owned<IEventFilter> filter;
     Owned<IEventModel> model;

@@ -148,6 +148,20 @@ protected:
                 return false;
             return op.acceptModel(*config);
         }
+        if (streq(key, "path-style"))
+        {
+            if (streq(value, "full"))
+            {
+                op.setFullPathOutput(true);
+                return true;
+            }
+            else if (streq(value, "logical"))
+            {
+                op.setFullPathOutput(false);
+                return true;
+            }
+            return false;
+        }
         return CEvToolCommand::acceptKVOption(key, value);
     }
 
@@ -172,7 +186,10 @@ Parameters:
     virtual void usageOptions(IBufferedSerialOutputStream& out) override
     {
         constexpr const char* usageStr =
-R"!!!(    --model=<filename>        Apply a model to the data using the specified
+R"!!!(    --path-style=<style>      Select path output style: "full" for complete file
+                              paths, "logical" for shortened logical names.
+                              Default is "logical".
+    --model=<filename>        Apply a model to the data using the specified
                               YAML/XML/JSON configuration file.
 )!!!";
         size32_t usageStrLength = size32_t(strlen(usageStr));

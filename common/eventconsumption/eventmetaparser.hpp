@@ -57,6 +57,8 @@ public:
     IEventVisitationLink* getCollector();
     // Accessor functions for file ID to path mappings
     const char* queryFilePath(__uint64 fileId) const;
+    StringBuffer& getLogicalFile(StringBuffer& file, __uint64 fileId) const;
+    StringBuffer& selectFilePath(StringBuffer& buf, __uint64 fileId, bool fullPath) const;
     bool hasFileMapping(__uint64 fileId) const;
     void clearFileMappings();
 

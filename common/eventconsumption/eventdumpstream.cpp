@@ -26,8 +26,8 @@ protected: // new abstract method(s)
     virtual void recordAttribute(EventAttr id, const char* name, const char* value, bool quoted) = 0;
 
 public:
-    CDumpStreamEventVisitor(IBufferedSerialOutputStream& _out)
-        : out(&_out)
+    CDumpStreamEventVisitor(IBufferedSerialOutputStream& _out, CMetaInfoState& _metaState, bool _fullPathOutput)
+        : CDumpEventVisitor(_metaState, _fullPathOutput), out(&_out)
     {
     }
 
@@ -123,9 +123,9 @@ protected:
     }
 };
 
-IEventVisitor* createDumpTextEventVisitor(IBufferedSerialOutputStream& out)
+IEventVisitor* createDumpTextEventVisitor(IBufferedSerialOutputStream& out, CMetaInfoState& metaState, bool fullPathOutput)
 {
-    return new CDumpTextEventVisitor(out);
+    return new CDumpTextEventVisitor(out, metaState, fullPathOutput);
 }
 
 // Extension of CDumpStreamEventVisitor that outputs XML-formatted text. Header and Footer elements
@@ -205,9 +205,9 @@ private:
     unsigned indentLevel{0};
 };
 
-IEventVisitor* createDumpXMLEventVisitor(IBufferedSerialOutputStream& out)
+IEventVisitor* createDumpXMLEventVisitor(IBufferedSerialOutputStream& out, CMetaInfoState& metaState, bool fullPathOutput)
 {
-    return new CDumpXMLEventVisitor(out);
+    return new CDumpXMLEventVisitor(out, metaState, fullPathOutput);
 }
 
 // Extension of CDumpStreamEventVisitor that outputs JSON-formatted text. Header and Footer objects
@@ -337,9 +337,9 @@ private:
     bool firstEvent{true};
 };
 
-IEventVisitor* createDumpJSONEventVisitor(IBufferedSerialOutputStream& out)
+IEventVisitor* createDumpJSONEventVisitor(IBufferedSerialOutputStream& out, CMetaInfoState& metaState, bool fullPathOutput)
 {
-    return new CDumpJSONEventVisitor(out);
+    return new CDumpJSONEventVisitor(out, metaState, fullPathOutput);
 }
 
 // Extension of CDumpStreamEventVisitor that outputs YAML-formatted text. Header and Footer objects
@@ -431,9 +431,9 @@ protected:
     uint8_t indentLevel{0};
 };
 
-IEventVisitor* createDumpYAMLEventVisitor(IBufferedSerialOutputStream& out)
+IEventVisitor* createDumpYAMLEventVisitor(IBufferedSerialOutputStream& out, CMetaInfoState& metaState, bool fullPathOutput)
 {
-    return new CDumpYAMLEventVisitor(out);
+    return new CDumpYAMLEventVisitor(out, metaState, fullPathOutput);
 }
 
 class CDumpCSVEventVisitor : public CDumpStreamEventVisitor
@@ -460,29 +460,14 @@ public:
         if (inHeader())
             state = State::Events;
         encodeCSVColumn(markup, queryEventName(event.queryType()));
+
         for (const CEventAttribute& attr : event.allAttributes)
         {
             if (skipAttribute(attr.queryId()))
                 continue;
             markup.append(",");
             if (attr.isAssigned())
-            {
-                switch (attr.queryTypeClass())
-                {
-                case EATCtext:
-                case EATCtimestamp:
-                    doVisitAttribute(attr.queryId(), attr.queryTextValue());
-                    break;
-                case EATCnumeric:
-                    doVisitAttribute(attr.queryId(), attr.queryNumericValue());
-                    break;
-                case EATCboolean:
-                    doVisitAttribute(attr.queryId(), attr.queryBooleanValue());
-                    break;
-                default:
-                    throw makeStringExceptionV(-1, "unsupported attribute type class %u", attr.queryTypeClass());
-                }
-            }
+                doVisitAttribute(event, attr);
         }
         dump(true);
         return true;
@@ -522,8 +507,8 @@ protected:
     }
 
 public:
-    CDumpCSVEventVisitor(IBufferedSerialOutputStream& out, const EventFileProperties& _properties)
-        : CDumpStreamEventVisitor(out), properties(_properties)
+    CDumpCSVEventVisitor(IBufferedSerialOutputStream& out, const EventFileProperties& _properties, CMetaInfoState& _metaState, bool _fullPathOutput)
+        : CDumpStreamEventVisitor(out, _metaState, _fullPathOutput), properties(_properties)
     {
     }
 
@@ -531,7 +516,7 @@ private:
     EventFileProperties properties;  // Copied to avoid lifetime issues
 };
 
-IEventVisitor* createDumpCSVEventVisitor(IBufferedSerialOutputStream& out, const EventFileProperties& properties)
+IEventVisitor* createDumpCSVEventVisitor(IBufferedSerialOutputStream& out, const EventFileProperties& properties, CMetaInfoState& metaState, bool fullPathOutput)
 {
-    return new CDumpCSVEventVisitor(out, properties);
+    return new CDumpCSVEventVisitor(out, properties, metaState, fullPathOutput);
 }

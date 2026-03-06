@@ -34,6 +34,7 @@
 #include "jfile.hpp"
 #include "jevent.hpp"
 #include "eventdump.h"
+#include "eventmetaparser.hpp"
 #include "jthread.hpp"
 #include "unittests.hpp"
 
@@ -1184,7 +1185,8 @@ attribute: DataSize = 73
     IEventVisitor* createVisitor(StringBuffer& out)
     {
         Owned<IBufferedSerialOutputStream> stream = createBufferedSerialOutputStream(out);
-        Owned<IEventVisitor> visitor = createDumpTextEventVisitor(*stream);
+        Owned<CMetaInfoState> metaState = new CMetaInfoState();
+        Owned<IEventVisitor> visitor = createDumpTextEventVisitor(*stream, *metaState, false);
         return new MockEventVisitor(*visitor);
     }
 

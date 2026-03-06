@@ -28,23 +28,23 @@ bool CDumpEventsOp::doOp()
     switch (format)
     {
     case OutputFormat::json:
-        visitor.setown(createDumpJSONEventVisitor(*out));
+        visitor.setown(createDumpJSONEventVisitor(*out, queryMetaInfoState(), isFullPathOutput()));
         break;
     case OutputFormat::text:
-        visitor.setown(createDumpTextEventVisitor(*out));
+        visitor.setown(createDumpTextEventVisitor(*out, queryMetaInfoState(), isFullPathOutput()));
         break;
     case OutputFormat::xml:
-        visitor.setown(createDumpXMLEventVisitor(*out));
+        visitor.setown(createDumpXMLEventVisitor(*out, queryMetaInfoState(), isFullPathOutput()));
         break;
     case OutputFormat::yaml:
-        visitor.setown(createDumpYAMLEventVisitor(*out));
+        visitor.setown(createDumpYAMLEventVisitor(*out, queryMetaInfoState(), isFullPathOutput()));
         break;
     case OutputFormat::csv:
-        visitor.setown(createDumpCSVEventVisitor(*out, queryIteratorProperties()));
+        visitor.setown(createDumpCSVEventVisitor(*out, queryIteratorProperties(), queryMetaInfoState(), isFullPathOutput()));
         break;
     case OutputFormat::tree:
         {
-            Owned<IEventPTreeCreator> creator = createEventPTreeCreator();
+            Owned<IEventPTreeCreator> creator = createEventPTreeCreator(queryMetaInfoState(), isFullPathOutput());
             if (traverseEvents(creator->queryVisitor()))
             {
                 StringBuffer yaml;

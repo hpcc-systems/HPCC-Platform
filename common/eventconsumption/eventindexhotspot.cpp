@@ -91,9 +91,10 @@ class CHotspotEventVisitor : public CInterfaceOf<IEventVisitor>
             }
         };
     public:
-        CActivity(CMetaInfoState& _metaInfoState, __uint64 _id)
+        CActivity(CMetaInfoState& _metaInfoState, __uint64 _id, bool _fullPath)
             : metaInfoState(_metaInfoState)
             , id(_id)
+            , fullPath(_fullPath)
         {
         }
 
@@ -106,8 +107,9 @@ class CHotspotEventVisitor : public CInterfaceOf<IEventVisitor>
         {
             if (!hasActivity()) // suppress inactive files
                 return;
-            const char* path = metaInfoState.queryFilePath(id);
-            visitor.arrive(id, path);
+            StringBuffer filePath;
+            metaInfoState.selectFilePath(filePath, id, fullPath);
+            visitor.arrive(id, filePath.str());
             for (unsigned kind = 0; kind < NumNodeKinds; kind++)
                 activity[kind].forEachBucket(visitor, NodeKind(kind));
             visitor.depart();
@@ -127,6 +129,7 @@ class CHotspotEventVisitor : public CInterfaceOf<IEventVisitor>
     private:
         CMetaInfoState& metaInfoState;
         __uint64 id{0};
+        bool fullPath{false};
         Activity activity[NumNodeKinds];
     };
 
@@ -145,7 +148,7 @@ public: // IEventVisitor
             return true;
         __uint64 fileId = event.queryNumericValue(EvAttrFileId);
         NodeKind nodeKind = queryIndexNodeKind(event);
-        auto [it, inserted] = activity.try_emplace(fileId, operation.queryMetaInfoState(), fileId);
+        auto [it, inserted] = activity.try_emplace(fileId, operation.queryMetaInfoState(), fileId, operation.isFullPathOutput());
         it->second.recordEvent(event.queryNumericValue(EvAttrFileOffset), nodeKind, granularityBits);
         return true;
     }
