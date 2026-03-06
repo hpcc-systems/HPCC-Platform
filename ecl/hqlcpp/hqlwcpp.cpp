@@ -506,6 +506,7 @@ void HqlCppWriter::generateType(ITypeInfo * type, const char * name)
         case type_filepos:
         case type_blob:
             prefix = intTypeName(8-1, compiler, false);
+            next = nullptr; // Do not follow the base type of a type_filepos
             break;
         case type_keyedint:
             break;
