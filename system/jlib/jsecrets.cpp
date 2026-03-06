@@ -628,20 +628,23 @@ public:
     VaultType getVaultType() const { return vaultType; }
 
     // Static helper to extract and prepare namespace from config
-    static StringAttr prepareNamespace(const IPropertyTree *vault)
+    static StringAttr prepareNamespace(const IPropertyTree *vault, bool stripLeadingSlash=false)
     {
         StringBuffer ns;
         ns.set(vault->queryProp("@namespace"));
-        if (ns.length())
+        if (stripLeadingSlash)
         {
-            addPathSepChar(ns, '/');
-            PROGLOG("vault: namespace %s", ns.str());
+            while (ns.length() && ns.charAt(0) == '/')
+                ns.remove(0, 1);
         }
+        if (ns.length())
+            addPathSepChar(ns, '/');
+
         return StringAttr(ns.str());
     }
 
 protected:
-    CVault(const IPropertyTree *vault, StringAttr namespace_prepared = StringAttr())
+    CVault(const IPropertyTree *vault, VaultType _vaultType, CVaultKind vaultKind, const char *namespace_prepared = nullptr)
     {
         category.appendLower(vault->queryName());
 
@@ -655,23 +658,14 @@ protected:
             WARNLOG("vault: unexpected use of basic auth in url, user=%s", username.str());
 
         name.set(vault->queryProp("@name"));
-        
-        // Parse vault type and kind from config
-        vaultType = ::getVaultType(vault->queryProp("@type"));
-        const char *kindProp = vault->queryProp("@kind");
-        if (isEmptyString(kindProp))
-        {
-            // Default based on vault type
-            kind = (vaultType == VaultType::akeyless) ? CVaultKind::akeyless_v2 : CVaultKind::kv_v2;
-        }
-        else
-        {
-            kind = getSecretType(kindProp);
-        }
+
+        // Vault type and kind are fixed by derived class.
+        vaultType = _vaultType;
+        kind = vaultKind;
 
         // namespace is prepared and passed in by derived class
-        if (namespace_prepared.length())
-            vaultNamespace.set(namespace_prepared.str());
+        if (!isEmptyString(namespace_prepared))
+            vaultNamespace.set(namespace_prepared);
         verify_server = vault->getPropBool("@verify_server", true);
         retries = (unsigned) vault->getPropInt("@retries", retries);
         retryWait = (unsigned) vault->getPropInt("@retryWait", retryWait);
@@ -743,8 +737,8 @@ private:
     bool clientTokenRenewable = false;
 
 public:
-    CHashicorpVault(const IPropertyTree *vault)
-        : CVault(vault, CVault::prepareNamespace(vault))
+    CHashicorpVault(const IPropertyTree *vault, CVaultKind vaultKind)
+        : CVault(vault, VaultType::hashicorp, vaultKind, CVault::prepareNamespace(vault))
     {
         StringBuffer clientTlsPath;
         buildSecretPath(clientTlsPath, "certificates", "vaultclient");
@@ -1141,17 +1135,14 @@ private:
     // Build the full secret name by prefixing with namespace if present
     void buildFullSecretName(StringBuffer &fullName, const char *secretName)
     {
+        // Remove leading '/' from secret name to match local secret naming conventions
         const char *normalizedSecretName = secretName;
         while (*normalizedSecretName == '/')
             normalizedSecretName++;
 
         if (vaultNamespace.length())
         {
-            StringBuffer normalizedNamespace(vaultNamespace);
-            while (normalizedNamespace.length() && normalizedNamespace.charAt(0) == '/')
-                normalizedNamespace.remove(0, 1);
-            addPathSepChar(normalizedNamespace, '/');
-            fullName.append(normalizedNamespace.str());
+            fullName.append(vaultNamespace.str());
             fullName.append(normalizedSecretName);
         }
         else
@@ -1161,8 +1152,8 @@ private:
     }
 
 public:
-    CAkeylessVault(const IPropertyTree *vault)
-        : CVault(vault, CVault::prepareNamespace(vault))
+    CAkeylessVault(const IPropertyTree *vault, CVaultKind vaultKind)
+        : CVault(vault, VaultType::akeyless, vaultKind, CVault::prepareNamespace(vault, true))
     {
         const char *accessIdProp = vault->queryProp("@accessId");
         if (!isEmptyString(accessIdProp))
@@ -1211,7 +1202,6 @@ public:
         buildFullSecretName(fullSecretName, secretName);
         PROGLOG("requesting akeyless secret %s", fullSecretName.str());
 
-        bool backoff = false;
         try
         {
             // Ensure we have a valid access token
@@ -1227,10 +1217,10 @@ public:
                 return parseSecretResponse(response.str(), fullSecretName);
 
             // On authentication failure, try once more with a fresh token
-            if (clientToken.length())
             {
                 CriticalBlock block(vaultCS);
-                clientToken.clear();
+                if (clientToken.length())
+                    clientToken.clear();
             }
             accessToken.clear();
             getAccessToken(accessToken);
@@ -1244,14 +1234,13 @@ public:
         }
         catch (IException * e)
         {
-            backoff = true;
+            // Authentication failed (or another serious error), then record when that failure occurred
+            if (backoffTimeoutUs)
+                backoffFailureTs = getTimeStampNowValue();
+
             OERRLOG(e);
             e->Release();
         }
-
-        //If authentication failed (or another serious error), then record when that failure occurred
-        if (backoff && backoffTimeoutUs)
-            backoffFailureTs = getTimeStampNowValue();
 
         return nullptr;
     }
@@ -1416,11 +1405,12 @@ private:
         StringBuffer endpoint;
         buildEndpoint(endpoint, "auth");
         httplib::Result res = cli.Post(endpoint.str(), headers, json.str(), "application/json");
-        while (!res && numRetries--)
+        while (!res && numRetries > 0)
         {
             OERRLOG("Retrying vault %s akeyless auth, communication error %d", name.str(), res.error());
             if (retryWait)
                 Sleep(retryWait);
+            numRetries--;
             res = cli.Post(endpoint.str(), headers, json.str(), "application/json");
         }
 
@@ -1499,14 +1489,30 @@ private:
 
 static std::unique_ptr<CVault> createVault(const IPropertyTree *vault)
 {
-    VaultType vaultType = getVaultType(vault->queryProp("@type"));
+    const char *typeProp = vault->queryProp("@type");
+    const char *kindProp = vault->queryProp("@kind");
+
+    VaultType vaultType;
+    CVaultKind vaultKind;
+
+    if (!isEmptyString(typeProp))
+    {
+        vaultType = getVaultType(typeProp);
+        vaultKind = getSecretType(typeProp);
+    }
+    else
+    {
+        vaultKind = getSecretType(kindProp);
+        vaultType = (vaultKind == CVaultKind::akeyless_v2) ? VaultType::akeyless : VaultType::hashicorp;
+    }
+
     switch (vaultType)
     {
         case VaultType::akeyless:
-            return std::unique_ptr<CVault>(new CAkeylessVault(vault));
+            return std::unique_ptr<CVault>(new CAkeylessVault(vault, vaultKind));
         case VaultType::hashicorp:
         default:
-            return std::unique_ptr<CVault>(new CHashicorpVault(vault));
+            return std::unique_ptr<CVault>(new CHashicorpVault(vault, vaultKind));
     }
 }
 

@@ -1060,7 +1060,7 @@
           "enum": ["access_key"]
         },
         "client-secret": {
-          "description": "Name of kubernetes secret: for Hashicorp provides vault client token; for Akeyless provides access-key (mutually exclusive with accessKey)",
+          "description": "Name of kubernetes secret: for Hashicorp provides vault client token; for Akeyless provides accessKey (mutually exclusive with accessKey)",
           "type": "string"
         },
         "appRoleId": {
