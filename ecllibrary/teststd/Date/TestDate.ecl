@@ -146,6 +146,67 @@ EXPORT TestDate := MODULE
 
     ASSERT(EXISTS(Date.TimeZone.TZ_Data), CONST);
 
+    ASSERT(Date.IsUSDaylightSavingsInEffect(20250301) = FALSE, CONST);   // Saturday before 2nd Sun Mar 2025 (Mar 9)
+    ASSERT(Date.IsUSDaylightSavingsInEffect(20250309) = TRUE,  CONST);   // Start day inclusive
+    ASSERT(Date.IsUSDaylightSavingsInEffect(20250308) = FALSE, CONST);   // Day before start
+    ASSERT(Date.IsUSDaylightSavingsInEffect(20251102) = FALSE, CONST);   // End day exclusive (first Sun Nov)
+    ASSERT(Date.IsUSDaylightSavingsInEffect(20251031) = TRUE,  CONST);   // Day before end
+    ASSERT(Date.IsUSDaylightSavingsInEffect(20250715) = TRUE,  CONST);   // Mid-summer
+    ASSERT(Date.IsUSDaylightSavingsInEffect(20250115) = FALSE, CONST);   // Winter
+
+    // 1987–2006 rules (first Sunday April → last Sunday October)
+    ASSERT(Date.IsUSDaylightSavingsInEffect(20060401) = FALSE, CONST);   // Before first Sun Apr (Apr 2)
+    ASSERT(Date.IsUSDaylightSavingsInEffect(20060402) = TRUE,  CONST);
+    ASSERT(Date.IsUSDaylightSavingsInEffect(20061029) = FALSE, CONST);   // Last Sun Oct exclusive
+    ASSERT(Date.IsUSDaylightSavingsInEffect(20061030) = FALSE, CONST);   // Monday after last Sun
+
+    // 1976–1986 rules (last Sunday April → last Sunday October)
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19860426) = FALSE, CONST);   // Before last Sun Apr (Apr 27)
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19860427) = TRUE,  CONST);   // last Sunday April = start inclusive
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19861025) = TRUE,  CONST);
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19861026) = FALSE, CONST);
+
+    // 1975 special (last Sun Feb → last Sun Oct)
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19750223) = TRUE,  CONST);   // SundayBefore(Feb 28) — Feb 23 was a Sunday in '75
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19750222) = FALSE, CONST);
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19751025) = TRUE,  CONST);
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19751026) = FALSE, CONST);
+
+    // 1974 special (Jan 6 start → last Sun Oct) — code approximates with SundayAfter(Jan 1, 1)
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19740105) = FALSE, CONST);
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19740106) = TRUE,  CONST);   // SundayAfter(Jan 1) was Jan 6 in 1974
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19741026) = TRUE,  CONST);
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19741027) = FALSE, CONST);
+
+    // 1967–1973 rules (last Sunday April → last Sunday October)
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19670430) = TRUE,  CONST);   // last Sun Apr 1967
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19670429) = FALSE, CONST);
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19671028) = TRUE,  CONST);
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19671029) = FALSE, CONST);
+
+    // Pre-1967: 1946–1966 → FALSE
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19500704) = FALSE, CONST);
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19661231) = FALSE, CONST);
+
+    // WWII era
+    // 1945: continuous until SundayBefore(Sep 30) exclusive → Sep 29 true, Sep 30 false
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19450929) = TRUE,  CONST);
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19450930) = FALSE, CONST);
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19450101) = TRUE,  CONST);   // full year-ish
+
+    // 1943–1944: full TRUE (war time continuous)
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19430704) = TRUE,  CONST);
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19431225) = TRUE,  CONST);
+
+    // 1942: starts SundayAfter(Feb 1, 2) = second Sunday Feb (Feb 8, 1942)
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19420207) = FALSE, CONST);
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19420208) = TRUE,  CONST);
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19421231) = TRUE,  CONST);
+
+    // Pre-1942: 1920–1941 → FALSE (and earlier)
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19300615) = FALSE, CONST);
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19180704) = TRUE, CONST);
+
     ASSERT(TRUE, CONST)
   ];
 
