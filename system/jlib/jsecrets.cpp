@@ -86,8 +86,8 @@ static VaultType getVaultType(const char *s)
 
 interface IVaultManager : extends IInterface
 {
-    virtual bool requestSecretFromVault(const char *category, const char *vaultId, CVaultKind &kind, StringBuffer &content, const char *secret, const char *version) = 0;
-    virtual bool requestSecretByCategory(const char *category, CVaultKind &kind, StringBuffer &content, const char *secret, const char *version) = 0;
+    virtual IPropertyTree *requestSecretFromVault(const char *category, const char *vaultId, const char *secret, const char *version) = 0;
+    virtual IPropertyTree *requestSecretByCategory(const char *category, const char *secret, const char *version) = 0;
 };
 
 static Owned<IVaultManager> vaultManager;
@@ -622,13 +622,29 @@ class CVault
 {
 public:
     virtual ~CVault() = default;
-    virtual bool requestSecret(CVaultKind &rkind, StringBuffer &content, const char *secret, const char *version) = 0;
+    virtual IPropertyTree *requestSecret(const char *secret, const char *version) = 0;
 
     CVaultKind getVaultKind() const { return kind; }
     VaultType getVaultType() const { return vaultType; }
 
+    // Static helper to extract and prepare namespace from config
+    static StringAttr prepareNamespace(const IPropertyTree *vault, bool stripLeadingSlash=false)
+    {
+        StringBuffer ns;
+        ns.set(vault->queryProp("@namespace"));
+        if (stripLeadingSlash)
+        {
+            while (ns.length() && ns.charAt(0) == '/')
+                ns.remove(0, 1);
+        }
+        if (ns.length())
+            addPathSepChar(ns, '/');
+
+        return StringAttr(ns.str());
+    }
+
 protected:
-    CVault(const IPropertyTree *vault, CVaultKind defaultKind)
+    CVault(const IPropertyTree *vault, VaultType _vaultType, CVaultKind vaultKind, const char *namespace_prepared = nullptr)
     {
         category.appendLower(vault->queryName());
 
@@ -642,21 +658,14 @@ protected:
             WARNLOG("vault: unexpected use of basic auth in url, user=%s", username.str());
 
         name.set(vault->queryProp("@name"));
-        const char *kindProp = vault->queryProp("@kind");
-        if (isEmptyString(kindProp))
-            kind = defaultKind;
-        else
-            kind = getSecretType(kindProp);
 
-        // store vault provider type (hashicorp / akeyless)
-        vaultType = ::getVaultType(vault->queryProp("@type"));
+        // Vault type and kind are fixed by derived class.
+        vaultType = _vaultType;
+        kind = vaultKind;
 
-        vaultNamespace.set(vault->queryProp("@namespace"));
-        if (vaultNamespace.length())
-        {
-            addPathSepChar(vaultNamespace, '/');
-            PROGLOG("vault: namespace %s", vaultNamespace.str());
-        }
+        // namespace is prepared and passed in by derived class
+        if (!isEmptyString(namespace_prepared))
+            vaultNamespace.set(namespace_prepared);
         verify_server = vault->getPropBool("@verify_server", true);
         retries = (unsigned) vault->getPropInt("@retries", retries);
         retryWait = (unsigned) vault->getPropInt("@retryWait", retryWait);
@@ -683,8 +692,12 @@ protected:
             cli.set_write_timeout(writeTimeout.tv_sec, writeTimeout.tv_usec);
         if (username.length() && password.length())
             cli.set_basic_auth(username, password);
-        if (vaultNamespace.length())
-            headers.emplace("X-Vault-Namespace", vaultNamespace.str());
+        addVaultClientHeaders(headers);
+    }
+
+    virtual void addVaultClientHeaders(httplib::Headers &headers)
+    {
+        // Base implementation: empty. Subclasses override to add vault-specific headers.
     }
 
 protected:
@@ -724,8 +737,8 @@ private:
     bool clientTokenRenewable = false;
 
 public:
-    CHashicorpVault(const IPropertyTree *vault) 
-        : CVault(vault, CVaultKind::kv_v2)
+    CHashicorpVault(const IPropertyTree *vault, CVaultKind vaultKind)
+        : CVault(vault, VaultType::hashicorp, vaultKind, CVault::prepareNamespace(vault))
     {
         StringBuffer clientTlsPath;
         buildSecretPath(clientTlsPath, "certificates", "vaultclient");
@@ -786,22 +799,54 @@ public:
         }
     }
 
-    virtual bool requestSecret(CVaultKind &rkind, StringBuffer &content, const char *secret, const char *version) override
+    virtual IPropertyTree *requestSecret(const char *secret, const char *version) override
     {
         if (isEmptyString(secret))
-            return false;
+            return nullptr;
 
         StringBuffer location(path);
         location.replaceString("${secret}", secret);
         location.replaceString("${version}", version ? version : "1");
 
-        bool res = requestSecretAtLocation(rkind, content, location, secret, version, false);
-        if (res)
-            rkind = kind;
-        return res;
+        StringBuffer content;
+        if (!requestSecretAtLocation(content, location, secret, version, false))
+            return nullptr;
+
+        return parseHashicorpSecretResponse(content.str());
     }
 
 private:
+    IPropertyTree *parseHashicorpSecretResponse(const char *content)
+    {
+        if (isEmptyString(content))
+            return nullptr;
+
+        Owned<IPropertyTree> tree;
+        try
+        {
+            tree.setown(createPTreeFromJSONString(content));
+        }
+        catch (IException * e)
+        {
+            EXCLOG(e, "Failed to parse vault secret JSON response");
+            e->Release();
+            return nullptr;
+        }
+
+        // Extract data based on Hashicorp KV version
+        if (kind == CVaultKind::kv_v1)
+        {
+            return tree->getPropTree("data");
+        }
+        else if (kind == CVaultKind::kv_v2)
+        {
+            return tree->getPropTree("data/data");
+        }
+        else
+        {
+            return nullptr;
+        }
+    }
     inline const char *queryAuthType()
     {
         switch (authType)
@@ -817,32 +862,39 @@ private:
         }
         return "unknown";
     }
-    void vaultAuthError(const char *msg)
+    void throwVaultAuthError(const char *msg)
     {
         Owned<IException> e = makeStringExceptionV(0, "Vault [%s] %s auth error %s", name.str(), queryAuthType(), msg);
         OERRLOG(e);
         throw e.getClear();
     }
-    void vaultAuthErrorV(const char* format, ...) __attribute__((format(printf, 2, 3)))
+    void throwVaultAuthErrorV(const char* format, ...) __attribute__((format(printf, 2, 3)))
     {
         va_list args;
         va_start(args, format);
         StringBuffer msg;
         msg.valist_appendf(format, args);
         va_end(args);
-        vaultAuthError(msg);
+        throwVaultAuthError(msg);
     }
+
+    virtual void addVaultClientHeaders(httplib::Headers &headers) override
+    {
+        if (vaultNamespace.length())
+            headers.emplace("X-Vault-Namespace", vaultNamespace.str());
+    }
+
     void processClientTokenResponse(httplib::Result &res)
     {
         if (!res)
-            vaultAuthErrorV("login communication error %d", res.error());
+            throwVaultAuthErrorV("login communication error %d", res.error());
         if (res.error()!=0)
-            vaultAuthErrorV("JSECRETS login calling HTTPLIB POST returned error %d", res.error());
+            throwVaultAuthErrorV("JSECRETS login calling HTTPLIB POST returned error %d", res.error());
         if (res->status != 200)
-            vaultAuthErrorV("[%d](%d) - response: %s", res->status, res.error(), res->body.c_str());
+            throwVaultAuthErrorV("[%d](%d) - response: %s", res->status, res.error(), res->body.c_str());
         const char *json = res->body.c_str();
         if (isEmptyString(json))
-            vaultAuthError("empty login response");
+            throwVaultAuthError("empty login response");
 
         Owned<IPropertyTree> respTree;
         try
@@ -854,11 +906,11 @@ private:
             StringBuffer msg("parsing JSON response: ");
             e->errorMessage(msg);
             e->Release();
-            vaultAuthError(msg.str());
+            throwVaultAuthError(msg.str());
         }
         const char *token = respTree->queryProp("auth/client_token");
         if (isEmptyString(token))
-            vaultAuthError("response missing client_token");
+            throwVaultAuthError("response missing client_token");
 
         clientToken.set(token);
         clientTokenRenewable = respTree->getPropBool("auth/renewable");
@@ -895,7 +947,7 @@ private:
         StringBuffer login_token;
         login_token.loadFile("/var/run/secrets/kubernetes.io/serviceaccount/token");
         if (login_token.isEmpty())
-            vaultAuthError("missing k8s auth token");
+            throwVaultAuthError("missing k8s auth token");
 
         std::string json;
         json.append("{\"jwt\": \"").append(login_token.str()).append("\", \"role\": \"").append(authRole.str()).append("\"}");
@@ -954,11 +1006,11 @@ private:
         StringBuffer appRoleSecretId;
         Owned<const IPropertyTree> appRoleSecret = getLocalSecret("system", appRoleSecretName);
         if (!appRoleSecret)
-            vaultAuthErrorV("appRole secret %s not found", appRoleSecretName.str());
+            throwVaultAuthErrorV("appRole secret %s not found", appRoleSecretName.str());
         else if (!getSecretKeyValue(appRoleSecretId, appRoleSecret, "secret-id"))
-            vaultAuthErrorV("appRole secret id not found at '%s/secret-id'", appRoleSecretName.str());
+            throwVaultAuthErrorV("appRole secret id not found at '%s/secret-id'", appRoleSecretName.str());
         if (appRoleSecretId.isEmpty())
-            vaultAuthError("missing app-role-secret-id");
+            throwVaultAuthError("missing app-role-secret-id");
 
         std::string json;
         json.append("{\"role_id\": \"").append(appRoleId).append("\", \"secret_id\": \"").append(appRoleSecretId).append("\"}");
@@ -988,11 +1040,11 @@ private:
         else if (authType == VaultAuthType::clientcert)
             clientCertLogin(permissionDenied);
         else if (permissionDenied && authType == VaultAuthType::token)
-            vaultAuthError("token permission denied"); //don't permanently invalidate token. Try again next time because it could be permissions for a particular secret rather than invalid token
+            throwVaultAuthError("token permission denied"); //don't permanently invalidate token. Try again next time because it could be permissions for a particular secret rather than invalid token
         if (clientToken.isEmpty())
-            vaultAuthError("no vault access token");
+            throwVaultAuthError("no vault access token");
     }
-    bool requestSecretAtLocation(CVaultKind &rkind, StringBuffer &content, const char *location, const char *secretCacheKey, const char *version, bool permissionDenied)
+    bool requestSecretAtLocation(StringBuffer &content, const char *location, const char *secretCacheKey, const char *version, bool permissionDenied)
     {
         //If a previous request failed, then do not retry until backoffTimeoutUs has passed.
         if (backoffFailureTs)
@@ -1034,7 +1086,6 @@ private:
             {
                 if (res->status == 200)
                 {
-                    rkind = kind;
                     content.append(res->body.c_str());
                     return true;
                 }
@@ -1042,7 +1093,7 @@ private:
                 {
                     //try again forcing relogin, but only once.  Just in case the token was invalidated but hasn't passed expiration time (for example max usage count exceeded).
                     if (permissionDenied==false)
-                        return requestSecretAtLocation(rkind, content, location, secretCacheKey, version, true);
+                        return requestSecretAtLocation(content, location, secretCacheKey, version, true);
                     OERRLOG("Vault %s permission denied accessing secret (check namespace=%s?) %s.%s location %s [%d](%d) - response: %s", name.str(), vaultNamespace.str(), secretCacheKey, version ? version : "", location, res->status, res.error(), res->body.c_str());
                 }
                 else if (res->status == 404)
@@ -1079,26 +1130,40 @@ private:
     StringBuffer accessKey;
     StringBuffer accessType;
     StringBuffer clientToken;
+    StringAttr accessKeySecretName;  // Name of K8s secret containing access-key (for rotation support)
+
+    // Build the full secret name by prefixing with namespace if present
+    void buildFullSecretName(StringBuffer &fullName, const char *secretName)
+    {
+        // Remove leading '/' from secret name to match local secret naming conventions
+        const char *normalizedSecretName = secretName;
+        while (*normalizedSecretName == '/')
+            normalizedSecretName++;
+
+        if (vaultNamespace.length())
+        {
+            fullName.append(vaultNamespace.str());
+            fullName.append(normalizedSecretName);
+        }
+        else
+        {
+            fullName.append(normalizedSecretName);
+        }
+    }
 
 public:
-    CAkeylessVault(const IPropertyTree *vault)
-    : CVault(vault, CVaultKind::akeyless_v2)
+    CAkeylessVault(const IPropertyTree *vault, CVaultKind vaultKind)
+        : CVault(vault, VaultType::akeyless, vaultKind, CVault::prepareNamespace(vault, true))
     {
         const char *accessIdProp = vault->queryProp("@accessId");
-        if (isEmptyString(accessIdProp))
-            accessIdProp = vault->queryProp("@access-id");
         if (!isEmptyString(accessIdProp))
             replaceEnvVariables(accessId, accessIdProp, false);
 
         const char *accessKeyProp = vault->queryProp("@accessKey");
-        if (isEmptyString(accessKeyProp))
-            accessKeyProp = vault->queryProp("@access-key");
         if (!isEmptyString(accessKeyProp))
             replaceEnvVariables(accessKey, accessKeyProp, false);
 
         const char *accessTypeProp = vault->queryProp("@accessType");
-        if (isEmptyString(accessTypeProp))
-            accessTypeProp = vault->queryProp("@access-type");
         if (!isEmptyString(accessTypeProp))
             replaceEnvVariables(accessType, accessTypeProp, false);
         if (accessType.isEmpty())
@@ -1106,50 +1171,151 @@ public:
 
         if (vault->hasProp("@client-secret"))
         {
-            Owned<const IPropertyTree> clientSecret = getLocalSecret("system", vault->queryProp("@client-secret"));
-            if (clientSecret)
-            {
-                // NOTE: Token is loaded once at construction from filesystem (via getLocalSecret() which reads Kubernetes-mounted secrets).
-                // The secret is NOT re-read on every request; instead it is cached in clientToken.
-                // If using Kubernetes secrets: kubelet automatically updates the mounted filesystem when the secret is rotated,
-                // but this code must detect the update via error responses. If using an externalized vault backend for client-secret,
-                // that backend would need to ensure the filesystem is updated when tokens rotate.
-                // Token rotation is detected via: akeylessLogin() checks if a 401/403 error indicates an expired token,
-                // which triggers requestSecretWithRelogin(true), clearing clientToken and forcing a re-read of the filesystem
-                // on the next login attempt, picking up the new token.
-                if (getSecretKeyValue(clientToken, clientSecret, "token"))
-                    PROGLOG("using a client token for akeyless auth");
-            }
+            // Store the secret name so we can re-read it when authentication is needed (to pick up rotations)
+            accessKeySecretName.set(vault->queryProp("@client-secret"));
+            PROGLOG("will read access key from client-secret '%s' for akeyless auth", accessKeySecretName.str());
         }
+
+        if (accessId.isEmpty())
+            throwAuthError("missing accessId for akeyless auth");
+        if (accessKey.isEmpty() && accessKeySecretName.isEmpty())
+            throwAuthError("missing accessKey or client-secret for akeyless auth");
     }
 
-    bool requestSecret(CVaultKind &rkind, StringBuffer &content, const char *secret, const char *version) override
+    IPropertyTree *requestSecret(const char *secretName, const char *version) override
     {
-        bool res = requestSecretWithRelogin(rkind, content, secret, version, false);
-        if (res)
-            rkind = kind;
-        return res;
+        if (isEmptyString(secretName))
+            return nullptr;
+
+        //If a previous request failed, then do not retry until backoffTimeoutUs has passed.
+        if (backoffFailureTs)
+        {
+            if (getTimeStampNowValue() - backoffFailureTs < backoffTimeoutUs)
+                return nullptr;
+
+            //Clear the last failure - to avoid the check on the timestamp.
+            backoffFailureTs = 0;
+        }
+
+        // Construct the full secret name, prefixing with namespace if present
+        StringBuffer fullSecretName;
+        buildFullSecretName(fullSecretName, secretName);
+        PROGLOG("requesting akeyless secret %s", fullSecretName.str());
+
+        try
+        {
+            // Ensure we have a valid access token
+            StringBuffer accessToken;
+            getAccessToken(accessToken);
+            if (accessToken.isEmpty())
+                return nullptr;
+
+            // Make the initial request
+            StringBuffer response;
+            bool succeeded = getSecretFromVault(response, fullSecretName.str(), version, accessToken.str());
+            if (succeeded)
+                return parseSecretResponse(response.str(), fullSecretName);
+
+            // On authentication failure, try once more with a fresh token
+            {
+                CriticalBlock block(vaultCS);
+                if (clientToken.length())
+                    clientToken.clear();
+            }
+            accessToken.clear();
+            getAccessToken(accessToken);
+            if (accessToken.isEmpty())
+                return nullptr;
+
+            response.clear();
+            if (getSecretFromVault(response, fullSecretName.str(), version, accessToken.str()))
+                return parseSecretResponse(response.str(), fullSecretName);
+            return nullptr;
+        }
+        catch (IException * e)
+        {
+            // Authentication failed (or another serious error), then record when that failure occurred
+            if (backoffTimeoutUs)
+                backoffFailureTs = getTimeStampNowValue();
+
+            OERRLOG(e);
+            e->Release();
+        }
+
+        return nullptr;
     }
 
 private:
-    void akeylessAuthError(const char *msg)
+    IPropertyTree *parseSecretResponse(const char *content, const char *secretName)
+    {
+        if (isEmptyString(secretName) || isEmptyString(content))
+            return nullptr;
+
+        Owned<IPropertyTree> tree;
+        try
+        {
+            tree.setown(createPTreeFromJSONString(content));
+        }
+        catch (IException * e)
+        {
+            EXCLOG(e, "Failed to parse secret JSON response");
+            e->Release();
+            return nullptr;
+        }
+
+        // Skip leading '/' to match local secret naming conventions
+        const char *nameToEncode = secretName;
+        if (*nameToEncode == '/')
+            nameToEncode++;
+
+        // Akeyless secret names commonly contain '/', which the property tree encodes as '_f'.
+        StringBuffer normalizedName;
+        encodePTreeName(normalizedName, nameToEncode);
+
+        // Check if the value is a JSON string; if so, parse it into a property tree
+        const char *secretValue = tree->queryProp(normalizedName.str());
+        if (secretValue)
+        {
+            Owned<IPropertyTree> parsed;
+            try
+            {
+                parsed.setown(createPTreeFromJSONString(secretValue));
+            }
+            catch (IException *e)
+            {
+                EXCLOG(e, "Failed to parse akeyless secret JSON string value");
+                e->Release();
+                return nullptr;
+            }
+            return parsed.getClear();
+        }
+
+        // If the value is an object, try to retrieve as a subtree.
+        IPropertyTree *childTree = tree->queryPropTree(normalizedName.str());
+        if (childTree)
+            return LINK(childTree);
+
+        return nullptr;
+    }
+
+    void throwAuthError(const char *msg)
     {
         Owned<IException> e = makeStringExceptionV(0, "Vault [%s] akeyless auth error %s", name.str(), msg);
         OERRLOG(e);
         throw e.getClear();
     }
 
-    void akeylessAuthErrorV(const char* format, ...) __attribute__((format(printf, 2, 3)))
+    void throwAuthErrorV(const char* format, ...) __attribute__((format(printf, 2, 3)))
     {
         va_list args;
         va_start(args, format);
         StringBuffer msg;
         msg.valist_appendf(format, args);
         va_end(args);
-        akeylessAuthError(msg);
+        throwAuthError(msg);
     }
 
-    StringBuffer &buildAkeylessEndpoint(StringBuffer &endpoint, const char *suffix) const
+    StringBuffer &buildEndpoint(StringBuffer &endpoint, const char *suffix) const
     {
         endpoint.set(path);
         while (endpoint.length() && endpoint.charAt(endpoint.length() - 1) == '/')
@@ -1158,18 +1324,18 @@ private:
         return endpoint;
     }
 
-    void processAkeylessTokenResponse(httplib::Result &res)
+    void processTokenResponse(httplib::Result &res)
     {
         // Note, called inside a critical section, so updates are protected
         if (!res)
-            akeylessAuthErrorV("login communication error %d", res.error());
+            throwAuthErrorV("login communication error %d", res.error());
         if (res.error()!=0)
-            akeylessAuthErrorV("login calling HTTPLIB POST returned error %d", res.error());
+            throwAuthErrorV("login calling HTTPLIB POST returned error %d", res.error());
         if (res->status != 200)
-            akeylessAuthErrorV("[%d](%d) - response: %s", res->status, res.error(), res->body.c_str());
+            throwAuthErrorV("[%d](%d) - response: %s", res->status, res.error(), res->body.c_str());
         const char *json = res->body.c_str();
         if (isEmptyString(json))
-            akeylessAuthError("empty login response");
+            throwAuthError("empty login response");
 
         Owned<IPropertyTree> respTree;
         try
@@ -1181,7 +1347,7 @@ private:
             StringBuffer msg("parsing JSON response: ");
             e->errorMessage(msg);
             e->Release();
-            akeylessAuthError(msg.str());
+            throwAuthError(msg.str());
         }
         
         const char *token = respTree->queryProp("token");
@@ -1194,18 +1360,34 @@ private:
         if (isEmptyString(token))
             token = respTree->queryProp("data/access_token");
         if (isEmptyString(token))
-            akeylessAuthError("response missing token");
+            throwAuthError("response missing token");
 
-        clientToken.set(token);
+        clientToken.set(token);  // Already in critical section, so no need for additional locking
     }
 
-    void akeylessLogin()
+    void getAccessToken(StringBuffer &token)
     {
         CriticalBlock block(vaultCS);
         if (clientToken.length())
+        {
+            token.set(clientToken);
             return;
-        if (accessId.isEmpty() || accessKey.isEmpty())
-            akeylessAuthError("missing accessId/accessKey for akeyless auth");
+        }
+
+        // Re-read access key from client-secret to pick up rotated credentials
+        if (accessKeySecretName.length())
+        {
+            Owned<const IPropertyTree> clientSecret = getLocalSecret("system", accessKeySecretName.str());
+            if (clientSecret)
+            {
+                StringBuffer accessKeyValue;
+                if (getSecretKeyValue(accessKeyValue, clientSecret, "access-key"))
+                    accessKey.set(accessKeyValue);
+            }
+        }
+
+        if (accessKey.isEmpty())
+            throwAuthError("missing accessKey for akeyless auth");
 
         StringBuffer json;
         json.append('{');
@@ -1221,131 +1403,116 @@ private:
         unsigned numRetries = 0;
         initClient(cli, headers, numRetries);
         StringBuffer endpoint;
-        buildAkeylessEndpoint(endpoint, "auth");
+        buildEndpoint(endpoint, "auth");
+        httplib::Result res = cli.Post(endpoint.str(), headers, json.str(), "application/json");
+        while (!res && numRetries > 0)
+        {
+            OERRLOG("Retrying vault %s akeyless auth, communication error %d", name.str(), res.error());
+            if (retryWait)
+                Sleep(retryWait);
+            numRetries--;
+            res = cli.Post(endpoint.str(), headers, json.str(), "application/json");
+        }
+
+        processTokenResponse(res);
+        token.set(clientToken);
+    }
+
+    bool getSecretFromVault(StringBuffer &content, const char *secretName, const char *version, const char *accessToken)
+    {
+        httplib::Client cli(schemeHostPort.str());
+        httplib::Headers headers;
+
+        unsigned numRetries = 0;
+        initClient(cli, headers, numRetries);
+
+        StringBuffer json;
+        json.append('{');
+        appendJSONName(json, "names");
+        json.append('[').append('"');
+        encodeJSON(json, secretName);
+        json.append('"').append(']');
+
+        if (!isEmptyString(version))
+        {
+            if (isUnsignedInteger(version))
+                appendJSONValue(json, "version", (int)atoi(version));
+            else
+                OERRLOG("Vault %s invalid akeyless version %s for secret %s", name.str(), version, secretName);
+        }
+
+        appendJSONValue(json, "token", accessToken);
+        appendJSONValue(json, "json", true);
+        json.append('}');
+
+        StringBuffer endpoint;
+        buildEndpoint(endpoint, "get-secret-value");
         httplib::Result res = cli.Post(endpoint.str(), headers, json.str(), "application/json");
         while (!res && numRetries--)
         {
-            OERRLOG("Retrying vault %s akeyless auth, communication error %d", name.str(), res.error());
+            OERRLOG("Retrying vault %s get secret, communication error %d", name.str(), res.error());
             if (retryWait)
                 Sleep(retryWait);
             res = cli.Post(endpoint.str(), headers, json.str(), "application/json");
         }
 
-        processAkeylessTokenResponse(res);
-    }
-
-    bool requestSecretWithRelogin(CVaultKind &rkind, StringBuffer &content, const char *secret, const char *version, bool relogin)
-    {
-        if (isEmptyString(secret))
-            return false;
-
-        //If a previous request failed, then do not retry until backoffTimeoutUs has passed.
-        if (backoffFailureTs)
+        if (res)
         {
-            if (getTimeStampNowValue() - backoffFailureTs < backoffTimeoutUs)
-                return false;
-
-            //Clear the last failure - to avoid the check on the timestamp.
-            backoffFailureTs = 0;
-        }
-
-        bool backoff = false;
-        try
-        {
-            if (relogin)
-                clientToken.clear();
-            if (clientToken.isEmpty())
-                akeylessLogin();
-            if (clientToken.isEmpty())
-                return false;
-
-            httplib::Client cli(schemeHostPort.str());
-            httplib::Headers headers;
-
-            unsigned numRetries = 0;
-            initClient(cli, headers, numRetries);
-
-            StringBuffer json;
-            json.append('{');
-            appendJSONName(json, "names");
-            json.append('[').append('"');
-            encodeJSON(json, (unsigned)strlen(secret), secret);
-            json.append('"').append(']');
-
-            if (!isEmptyString(version))
+            if (res->status == 200)
             {
-                if (isUnsignedInteger(version))
-                    appendJSONValue(json, "version", (int)atoi(version));
-                else
-                    OERRLOG("Vault %s invalid akeyless version %s for secret %s", name.str(), version, secret);
+                content.append(res->body.c_str());
+                return true;
             }
-
-            appendJSONValue(json, "token", clientToken.str());
-            appendJSONValue(json, "json", true);
-            json.append('}');
-
-            StringBuffer endpoint;
-            buildAkeylessEndpoint(endpoint, "get-secret-value");
-            httplib::Result res = cli.Post(endpoint.str(), headers, json.str(), "application/json");
-            while (!res && numRetries--)
+            else if (res->status == 401 || res->status == 403)
             {
-                OERRLOG("Retrying vault %s get secret, communication error %d", name.str(), res.error());
-                if (retryWait)
-                    Sleep(retryWait);
-                res = cli.Post(endpoint.str(), headers, json.str(), "application/json");
+                OERRLOG("Vault %s permission denied accessing secret %s.%s [%d](%d) - response: %s", name.str(), secretName, version ? version : "", res->status, res.error(), res->body.c_str());
+                return false;
             }
-
-            if (res)
+            else if (res->status == 404)
             {
-                if (res->status == 200)
-                {
-                    rkind = kind;
-                    content.append(res->body.c_str());
-                    return true;
-                }
-                else if (res->status == 401 || res->status == 403)
-                {
-                    if (!relogin)
-                        return requestSecretWithRelogin(rkind, content, secret, version, true);
-                    OERRLOG("Vault %s permission denied accessing secret %s.%s [%d](%d) - response: %s", name.str(), secret, version ? version : "", res->status, res.error(), res->body.c_str());
-                }
-                else if (res->status == 404)
-                {
-                    OERRLOG("Vault %s secret not found %s.%s", name.str(), secret, version ? version : "");
-                }
-                else
-                {
-                    OERRLOG("Vault %s error accessing secret %s.%s [%d](%d) - response: %s", name.str(), secret, version ? version : "", res->status, res.error(), res->body.c_str());
-                }
+                OERRLOG("Vault %s secret not found %s.%s", name.str(), secretName, version ? version : "");
+                return false;
             }
             else
-                OERRLOG("Error: Vault %s http error (%d) accessing secret %s.%s", name.str(), res.error(), secret, version ? version : "");
+            {
+                OERRLOG("Vault %s error accessing secret %s.%s [%d](%d) - response: %s", name.str(), secretName, version ? version : "", res->status, res.error(), res->body.c_str());
+                return false;
+            }
         }
-        catch (IException * e)
+        else
         {
-            backoff = true;
-            OERRLOG(e);
-            e->Release();
+            OERRLOG("Error: Vault %s http error (%d) accessing secret %s.%s", name.str(), res.error(), secretName, version ? version : "");
+            return false;
         }
-
-        //If authentication failed (or another serious error), then record when that failure occurred
-        if (backoff && backoffTimeoutUs)
-            backoffFailureTs = getTimeStampNowValue();
-
-        return false;
     }
 };
 
 static std::unique_ptr<CVault> createVault(const IPropertyTree *vault)
 {
-    VaultType vaultType = getVaultType(vault->queryProp("@type"));
+    const char *typeProp = vault->queryProp("@type");
+    const char *kindProp = vault->queryProp("@kind");
+
+    VaultType vaultType;
+    CVaultKind vaultKind;
+
+    if (!isEmptyString(typeProp))
+    {
+        vaultType = getVaultType(typeProp);
+        vaultKind = getSecretType(typeProp);
+    }
+    else
+    {
+        vaultKind = getSecretType(kindProp);
+        vaultType = (vaultKind == CVaultKind::akeyless_v2) ? VaultType::akeyless : VaultType::hashicorp;
+    }
+
     switch (vaultType)
     {
         case VaultType::akeyless:
-            return std::unique_ptr<CVault>(new CAkeylessVault(vault));
+            return std::unique_ptr<CVault>(new CAkeylessVault(vault, vaultKind));
         case VaultType::hashicorp:
         default:
-            return std::unique_ptr<CVault>(new CHashicorpVault(vault));
+            return std::unique_ptr<CVault>(new CHashicorpVault(vault, vaultKind));
     }
 }
 
@@ -1363,24 +1530,25 @@ public:
         if (!isEmptyString(name))
             vaults.emplace(name, createVault(vault));
     }
-    bool requestSecret(CVaultKind &kind, StringBuffer &content, const char *secret, const char *version)
+    IPropertyTree *requestSecret(const char *secret, const char *version)
     {
         auto it = vaults.begin();
         for (; it != vaults.end(); it++)
         {
-            if (it->second->requestSecret(kind, content, secret, version))
-                return true;
+            IPropertyTree *secretTree = it->second->requestSecret(secret, version);
+            if (secretTree)
+                return secretTree;
         }
-        return false;
+        return nullptr;
     }
-    bool requestSecretFromVault(const char *vaultId, CVaultKind &kind, StringBuffer &content, const char *secret, const char *version)
+    IPropertyTree *requestSecretFromVault(const char *vaultId, const char *secret, const char *version)
     {
         if (isEmptyString(vaultId))
-            return false;
+            return nullptr;
         auto it = vaults.find(vaultId);
         if (it == vaults.end())
-            return false;
-        return it->second->requestSecret(kind, content, secret, version);
+            return nullptr;
+        return it->second->requestSecret(secret, version);
     }
 };
 
@@ -1419,23 +1587,23 @@ public:
                 it->second->addVault(&vault);
         }
     }
-    bool requestSecretFromVault(const char *category, const char *vaultId, CVaultKind &kind, StringBuffer &content, const char *secret, const char *version) override
+    IPropertyTree *requestSecretFromVault(const char *category, const char *vaultId, const char *secret, const char *version) override
     {
         if (isEmptyString(category))
-            return false;
+            return nullptr;
         auto it = categories.find(category);
         if (it == categories.end())
-            return false;
-        return it->second->requestSecretFromVault(vaultId, kind, content, secret, version);
+            return nullptr;
+        return it->second->requestSecretFromVault(vaultId, secret, version);
     }
-    bool requestSecretByCategory(const char *category, CVaultKind &kind, StringBuffer &content, const char *secret, const char *version) override
+    IPropertyTree *requestSecretByCategory(const char *category, const char *secret, const char *version) override
     {
         if (isEmptyString(category))
-            return false;
+            return nullptr;
         auto it = categories.find(category);
         if (it == categories.end())
-            return false;
-        return it->second->requestSecret(kind, content, secret, version);
+            return nullptr;
+        return it->second->requestSecret(secret, version);
     }
 };
 
@@ -1521,93 +1689,17 @@ static IPropertyTree * resolveLocalSecret(const char *category, const char * nam
     return tree.getClear();
 }
 
-static IPropertyTree *createPTreeFromVaultSecret(const char *content, CVaultKind kind, const char *secretName)
-{
-    if (isEmptyString(content))
-        return nullptr;
-
-    Owned<IPropertyTree> tree;
-    try
-    {
-        tree.setown(createPTreeFromJSONString(content));
-    }
-    catch (IException *e)
-    {
-        EXCLOG(e, "Failed to parse vault secret response");
-        e->Release();
-        return nullptr;
-    }
-
-    switch (kind)
-    {
-        case CVaultKind::akeyless_v2:
-        {
-            // akeyless returns the secret value as a JSON string in a property with the same name as the secret, so make sure it was returned
-            if (isEmptyString(secretName))
-                return nullptr;
-
-            // Skip leading '/' to match local secret naming conventions
-            const char *nameToEncode = secretName;
-            if (*nameToEncode == '/')
-                nameToEncode++;  
-
-            // Akeyless secret names commonly contain '/', which the property tree encodes as '_f'.
-            StringBuffer normalizedName;
-            encodePTreeName(normalizedName, nameToEncode);
-
-            // Check if the value is a JSON string; if so, parse it into a property tree
-            const char *secretValue = tree->queryProp(normalizedName.str());
-            if (secretValue)
-            {
-                Owned<IPropertyTree> parsed;
-                try
-                {
-                    parsed.setown(createPTreeFromJSONString(secretValue));
-                }
-                catch (IException *e)
-                {
-                    EXCLOG(e, "Failed to parse vault secret JSON string value");
-                    e->Release();
-                    return nullptr;
-                }
-                return parsed.getClear();
-            }
-
-            // If the value is an object, try to retrieve as a subtree.
-            IPropertyTree *childTree = tree->queryPropTree(normalizedName.str());
-            if (childTree)
-                return LINK(childTree);
-
-            return nullptr;
-        }
-
-        case CVaultKind::kv_v1:
-            return tree->getPropTree("data");
-
-        case CVaultKind::kv_v2:
-            return tree->getPropTree("data/data");
-
-        default:
-            return nullptr;
-    }
-}
-
 static IPropertyTree *resolveVaultSecret(const char *category, const char * name, const char *vaultId, const char *version)
 {
-    CVaultKind kind;
-    StringBuffer json;
     Owned<IVaultManager> vaultmgr = getVaultManager();
     if (isEmptyString(vaultId))
     {
-        if (!vaultmgr->requestSecretByCategory(category, kind, json, name, version))
-            return nullptr;
+        return vaultmgr->requestSecretByCategory(category, name, version);
     }
     else
     {
-        if (!vaultmgr->requestSecretFromVault(category, vaultId, kind, json, name, version))
-            return nullptr;
+        return vaultmgr->requestSecretFromVault(category, vaultId, name, version);
     }
-    return createPTreeFromVaultSecret(json.str(), kind, name);
 }
 
 static IPropertyTree * resolveSecret(const char *category, const char * name, const char * optVaultId, const char * optVersion)
