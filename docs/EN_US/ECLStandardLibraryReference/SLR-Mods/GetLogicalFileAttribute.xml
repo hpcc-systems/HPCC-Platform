@@ -15,9 +15,9 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec colwidth="80.50pt" />
+      <colspec colwidth="80.50pt"/>
 
-      <colspec />
+      <colspec/>
 
       <tbody>
         <row>
@@ -53,6 +53,10 @@
   <para>The <emphasis role="bold">GetLogicalFileAttribute </emphasis>function
   returns the value of the <emphasis>attrname</emphasis> for the specified
   <emphasis>logicalfilename</emphasis>.</para>
+
+  <para><emphasis role="bold">Note:</emphasis> If the
+  <emphasis>logicalfilename</emphasis> argument references a file that does
+  not exist, the workunit will fail with a runtime error.</para>
 
   <para>Example:</para>
 
