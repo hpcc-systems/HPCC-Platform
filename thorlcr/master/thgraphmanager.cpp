@@ -1171,6 +1171,20 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     {
         exception.setown(ThorWrapException(e, "CJobManager::executeGraph"));
         e->Release();
+        try
+        {
+            Owned<IWorkUnit> wu = &workunit.lock();
+            unsigned __int64 graphTimeNs = cycle_to_nanosec(get_cycles_now()-startCycles);
+            StringBuffer graphTimeStr;
+            formatGraphTimerLabel(graphTimeStr, graphName);
+            updateWorkunitStat(wu, SSTgraph, graphName, StTimeElapsed, graphTimeStr, graphTimeNs, wfid);
+            addTimeStamp(wu, SSTgraph, graphName, StWhenFinished, wfid);
+        }
+        catch (IException *e2)
+        {
+            EXCLOG(e2, "Failed to record graph end time");
+            e2->Release();
+        }
     }
     job->endJob();
     removeJob(*job);
