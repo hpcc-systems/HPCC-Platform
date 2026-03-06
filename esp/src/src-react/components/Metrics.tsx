@@ -22,7 +22,7 @@ import { MetricsOptions } from "./MetricsOptions";
 import { MetricsPropertiesTables } from "./MetricsPropertiesTables";
 import { MetricsSQL } from "./MetricsSQL";
 import { ScopesTable } from "./MetricsScopes";
-import { useMetricsGraphData, MetricsGraph } from "./MetricsGraph";
+import { useMetricsGraphData, MetricsGraph, calcLineage, idsToScopes } from "./MetricsGraph";
 import { useUserTheme } from "../hooks/theme";
 
 const logger = scopedLogger("src-react/components/Metrics.tsx");
@@ -69,7 +69,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const { metrics, columns, status, refresh } = useWUQueryMetrics(wuid, querySet, queryId, logicalGraph ? scopeFilterLogicalGraph : scopeFilterMetrics);
     const { viewIds, viewId, setViewId, view, updateView } = useMetricsViews(logicalGraph);
     const metricGraphData = useMetricsGraphData(metrics, view, lineageSelection, selection);
-    const { metricGraph, selectedMetrics, dot } = metricGraphData;
+    const { metricGraph, selectedMetrics, lineageSelectionScope, dot } = metricGraphData;
     const [showMetricOptions, setShowMetricOptions] = React.useState(false);
     const [dockpanel, setDockpanel] = React.useState<ResetableDockPanel>();
     const [hotspots, setHotspots] = React.useState<string>("");
@@ -102,41 +102,46 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         }
     }, [targetsRoxie, wuid]);
 
-    const pushSelectionUrl = React.useCallback((parentUrl: string, lineageSelection?: string, selection?: string[], replace: boolean = false) => {
-        const lineageSelectionStr = lineageSelection?.length ? `/${lineageSelection}` : "";
-        const selectionStr = selection?.length ? `/${selection.join(",")}` : "";
+    const pushSelectionUrl = React.useCallback((parentUrl: string, lsName?: string, selection?: string[], replace: boolean = false) => {
+        const selectedMetrics = idsToScopes(metrics, selection);
+        const lineage = calcLineage(metricGraph, selectedMetrics, lsName);
+        const lineageSelectionStr = lineage.lineageSelectionScope?.name?.length ? `/${lineage.lineageSelectionScope.name}` : "";
+        const selectionStr = selectedMetrics?.length ? `/${selectedMetrics.map(item => item.id).join(",")}` : "";
         if (replace) {
             replaceUrl(`${parentUrl}${lineageSelectionStr}${selectionStr}`);
         } else {
             pushUrl(`${parentUrl}${lineageSelectionStr}${selectionStr}`);
         }
-    }, []);
+    }, [metricGraph, metrics]);
 
-    const pushSelectedMetricsUrl = React.useCallback((parentUrl: string, lineageSelection: string, selectedMetrics: IScope[]) => {
-        if (!lineageSelection && selectedMetrics.length) {
+    const pushSelectedMetricsUrl = React.useCallback((parentUrl: string, lsName: string, selectedMetrics: IScope[]) => {
+        if (!lsName && selectedMetrics.length) {
             switch (selectedMetrics[0].type) {
                 case "workflow":
                 case "graph":
                 case "subgraph":
-                    lineageSelection = selectedMetrics[0].name;
+                    lsName = selectedMetrics[0].name;
                     break;
                 default:
-                    lineageSelection = selectedMetrics[0].__lparam.__parentName;
+                    lsName = selectedMetrics[0].__lparam.__parentName;
             }
         }
         let selection: string[];
-        if (lineageSelection && !selectedMetrics.length) {
-            selection = [lineageSelection];
+        if (lsName && !selectedMetrics.length) {
+            const parts = lsName.split(":");
+            if (parts.length) {
+                selection = [parts[parts.length - 1]];
+            }
         } else {
             selection = selectedMetrics.map(row => row.__lparam?.id ?? row.id);
         }
-        pushSelectionUrl(parentUrl, lineageSelection, selection);
+        pushSelectionUrl(parentUrl, lsName, selection);
     }, [pushSelectionUrl]);
 
     const onHotspot = React.useCallback(() => {
         setSelectedMetricsSource("hotspot");
-        pushSelectionUrl(parentUrl, lineageSelection, selection);
-    }, [lineageSelection, parentUrl, pushSelectionUrl, selection]);
+        pushSelectionUrl(parentUrl, lineageSelectionScope?.name, selection);
+    }, [lineageSelectionScope?.name, parentUrl, pushSelectionUrl, selection]);
 
     //  Timeline ---
     const timeline = useConst(() => new WUTimelineNoFetch()
@@ -154,11 +159,11 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                     setSelectedMetricsSource("scopesTable");
                     setScopeFilter(`name:${row[7].__hpcc_id}`);
                     setScopeFilterVersion(prev => prev + 1);
-                    pushSelectedMetricsUrl(parentUrl, lineageSelection, [row[7]]);
+                    pushSelectedMetricsUrl(parentUrl, lineageSelectionScope?.name, [row[7]]);
                 }
             }, true)
             ;
-    }, [timeline, lineageSelection, parentUrl, pushSelectedMetricsUrl]);
+    }, [timeline, lineageSelectionScope?.name, parentUrl, pushSelectedMetricsUrl]);
 
     React.useEffect(() => {
         if (!logicalGraph && view.showTimeline) {
@@ -175,9 +180,9 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         setScopeFilter(data?.value ?? "");
     }, []);
 
-    const scopesSelectionChanged = React.useCallback((source: SelectedMetricsSource, lineageSelection?: string, selection: IScope[] = []) => {
+    const scopesSelectionChanged = React.useCallback((source: SelectedMetricsSource, lsName?: string, selection: IScope[] = []) => {
         setSelectedMetricsSource(source);
-        pushSelectedMetricsUrl(parentUrl, lineageSelection, selection);
+        pushSelectedMetricsUrl(parentUrl, lsName, selection);
     }, [parentUrl, pushSelectedMetricsUrl]);
 
     const scopesTable = useConst(() => new ScopesTable()
@@ -190,11 +195,11 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         scopesTable
             .on("click", debounce((row, col, sel) => {
                 if (sel) {
-                    scopesSelectionChanged("scopesTable", lineageSelection, scopesTable.selection());
+                    scopesSelectionChanged("scopesTable", lineageSelectionScope?.name, scopesTable.selection());
                 }
             }), true)
             ;
-    }, [scopesSelectionChanged, lineageSelection, scopesTable]);
+    }, [scopesSelectionChanged, lineageSelectionScope?.name, scopesTable]);
 
     React.useEffect(() => {
         const scopesTableMetrics = includePendingItems ? metrics : metrics.filter(row => {
@@ -367,14 +372,14 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         setShowMetricOptions(show);
     }, []);
 
-    const onLineageSelectionChange = React.useCallback((lineageSelection?: string, replace?: boolean) => {
-        pushSelectionUrl(parentUrl, lineageSelection, selection, replace);
+    const onLineageSelectionChange = React.useCallback((lsName?: string, replace?: boolean) => {
+        pushSelectionUrl(parentUrl, lsName, selection, replace);
     }, [parentUrl, pushSelectionUrl, selection]);
 
     const onSelectionChange = React.useCallback((selection: string[]) => {
         setSelectedMetricsSource("metricGraphWidget");
-        pushSelectionUrl(parentUrl, lineageSelection, selection);
-    }, [lineageSelection, parentUrl, pushSelectionUrl]);
+        pushSelectionUrl(parentUrl, lineageSelectionScope?.name, selection);
+    }, [lineageSelectionScope?.name, parentUrl, pushSelectionUrl]);
 
     return <HolyGrail
         header={<>
@@ -400,12 +405,11 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                         />
                     </DockPanelItem>
                     <DockPanelItem key="metricsSql" title={nlsHPCC.MetricsSQL} location="tab-after" relativeTo="scopesTable">
-                        <MetricsSQL wuid={wuid} defaultSql={view.sql} scopes={metrics} onSelectionChanged={selection => scopesSelectionChanged("scopesSqlTable", lineageSelection, selection)}></MetricsSQL>
+                        <MetricsSQL wuid={wuid} defaultSql={view.sql} scopes={metrics} onSelectionChanged={selection => scopesSelectionChanged("scopesSqlTable", lineageSelectionScope?.name, selection)}></MetricsSQL>
                     </DockPanelItem>
                     <DockPanelItem key="metricGraph" title={nlsHPCC.Graph} location="split-right" relativeTo="scopesTable" >
                         <MetricsGraph
                             metricGraphData={metricGraphData}
-                            lineageSelection={lineageSelection}
                             selection={selection}
                             selectedMetricsSource={selectedMetricsSource}
                             status={status}
