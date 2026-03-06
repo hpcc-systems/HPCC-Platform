@@ -219,7 +219,7 @@ RoxieRowBlock::~RoxieRowBlock()
 
 bool RoxieRowBlock::empty() const
 {
-    return (readPos >= writePos) && !exception;
+    return (readPos >= writePos) && !exception && !endOfChunk;
 }
 
 bool RoxieRowBlock::readFromStream(IRowStream * stream)
@@ -727,8 +727,9 @@ class OrderedManyToOneJunction : public CStrandJunction, implements IEngineRowSt
 public:
     IMPLEMENT_IINTERFACE_USING(CStrandJunction)
 
+    //NOTE: Pass blockSize+1 to the allocator, so that the endOfChunk can fit in the same block as the rows.
     OrderedManyToOneJunction(roxiemem::IRowManager & _rowManager, unsigned _numStrands, unsigned blockSize)
-    : CStrandJunction(_numStrands, _numStrands), allocator(_rowManager, blockSize)
+    : CStrandJunction(_numStrands, _numStrands), allocator(_rowManager, blockSize+1)
     {
         producers = new OrderedReadAheadThread * [numStrands];
         for (unsigned i=0; i < numStrands; i++)
