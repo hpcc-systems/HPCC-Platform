@@ -707,4 +707,7 @@
 
   <xi:include href="ECLStandardLibraryReference/SLR-Mods/Math.xml"
               xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+  <xi:include href="ECLStandardLibraryReference/SLR-Mods/Store.xml"
+              xmlns:xi="http://www.w3.org/2001/XInclude"/>
 </book>
