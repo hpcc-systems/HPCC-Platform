@@ -25,7 +25,7 @@ EspInclude(ws_workunits_queryset_req_resp);
 
 ESPservice [
     auth_feature("DEFERRED"), //This declares that the method logic handles feature level authorization
-    version("2.05"), default_client_version("2.05"), cache_group("ESPWsWUs"),
+    version("2.06"), default_client_version("2.06"), cache_group("ESPWsWUs"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
@@ -116,6 +116,7 @@ ESPservice [
     ESPmethod [cache_seconds(60), min_ver("1.74")] WUGetThorJobList(WUGetThorJobListRequest, WUGetThorJobListResponse);
     ESPmethod [cache_seconds(60), min_ver("1.79")] WUGetPlugins(WUGetPluginsRequest, WUGetPluginsResponse);
     ESPmethod [min_ver("1.94")] WUAnalyseHotspot(WUAnalyseHotspotRequest, WUAnalyseHotspotResponse);
+    ESPmethod [min_ver("2.06")] WUHelperFileArchive(WUHelperFileArchiveRequest, WUHelperFileArchiveResponse);
 };
 
 

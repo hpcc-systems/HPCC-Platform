@@ -1145,3 +1145,18 @@ ESPresponse [exceptions_inline] WUAnalyseHotspotResponse
 };
 
 // ----------------------------------------------------------------------------------
+
+ESPrequest [nil_remove] WUHelperFileArchiveRequest
+{
+    string Wuid;
+    ESPenum WUFileDownloadOption DownloadOption(2); // defaults to ZIP
+    int64 SizeLimit(10000000);              // defaults to 10MB; 0 = no limit
+    ESParray<ESPstruct WUFileOption> WUFileOptions;
+};
+
+ESPresponse [exceptions_inline] WUHelperFileArchiveResponse
+{
+    [http_content("application/octet-stream")] binary thefile;
+};
+
+// ----------------------------------------------------------------------------------

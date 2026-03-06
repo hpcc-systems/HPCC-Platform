@@ -242,7 +242,7 @@ void streamFilteredLogsToFile(const char* outFile, LogAccessConditions & logFetc
     StringBuffer logcontent;
     unsigned totalRecsRead = 0;
     unsigned recsRead = 0;
-    
+
     if (logFormat == LOGACCESS_LOGFORMAT_json)
         writeStringToStream(*outIOS, "{\"lines\": [");
     else if (logFormat == LOGACCESS_LOGFORMAT_xml)
@@ -273,19 +273,19 @@ void streamFilteredLogsToFile(const char* outFile, LogAccessConditions & logFetc
         if (logFormat == LOGACCESS_LOGFORMAT_json)
         {
             VStringBuffer jsonMessage("], \"Message\": \"%s\"}", truncationWarnmessage.str()); //close lines array, append Message object
-            writeStringToStream(*outIOS, jsonMessage.str()); 
+            writeStringToStream(*outIOS, jsonMessage.str());
         }
         else if (logFormat == LOGACCESS_LOGFORMAT_xml)
         {
             VStringBuffer xmlMessage("</lines>\n<!-- %s -->", truncationWarnmessage.str()); //close lines element, append comment message
-            writeStringToStream(*outIOS, xmlMessage.str()); 
+            writeStringToStream(*outIOS, xmlMessage.str());
         }
         else if (logFormat == LOGACCESS_LOGFORMAT_csv)
         {
-            writeStringToStream(*outIOS, truncationWarnmessage); 
+            writeStringToStream(*outIOS, truncationWarnmessage);
         }
     }
-    else //close the lines container 
+    else //close the lines container
     {
         if (logFormat == LOGACCESS_LOGFORMAT_json)
             writeStringToStream(*outIOS, "]}");
@@ -2546,7 +2546,7 @@ void WsWuInfo::readWorkunitThorLog(const char* processName, const char* log, con
         {
             StringBuffer thorMasterLog, ext;
             splitFilename(logSpec, nullptr, nullptr, &thorMasterLog, &ext);
-    
+
             StringBuffer logSpecStr(log);
             addPathSepChar(logSpecStr);
             //Append the file name of the slave log to logSpecStr.
@@ -2569,7 +2569,7 @@ void WsWuInfo::readWorkunitThorLog(const char* processName, const char* log, con
             if (!rFile)
                 throw MakeStringException(ECLWATCH_CANNOT_OPEN_FILE, "Cannot open file %s.", logSpec);
         }
-    
+
         readWorkunitThorLogOneDay(rFile, processID, buf, outIOS);
     }
 }
@@ -2603,7 +2603,7 @@ void WsWuInfo::readWorkunitThorLogOneDay(IFile* sourceFile, unsigned& processID,
     bool outputThisLine = false;
     if (processID > 0) //after the 1st page of the log
         outputThisLine = true;
-    bool foundEndWUID = false; 
+    bool foundEndWUID = false;
     while (!eof)
     {
         if (outputThisLine)
@@ -2666,7 +2666,7 @@ void WsWuInfo::getWUProcessLogSpecs(const char* processName, const char* logSpec
             //Parse the process name from the logSpec or logDir.
             if (isEmptyString(logSpec) && isEmptyString(logDir))
                 throw makeStringException(ECLWATCH_ECLAGENT_LOG_NOT_FOUND, "Process name and log file not specified");
-    
+
             StringBuffer path, process;
             if (!isEmptyString(logDir))
                 path.set(logDir);
@@ -5141,6 +5141,50 @@ void CWsWuFileHelper::readLocalFileToBuffer(const char* file, offset_t sizeLimit
 
     if (read(sourceIO, 0, len, mb) != len)
         throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Cannot read %s.", file);
+}
+
+void CWsWuFileHelper::createHelperFileArchive(IEspContext& context, const char* wuid,
+    IArrayOf<IConstWUFileOption>& wuFileOptions, bool useGZip, const char* tempDirName,
+    StringBuffer& archiveFileName, StringBuffer& archiveFileNameWithPath)
+{
+    StringBuffer workingFolder;
+    workingFolder.set(tempDirName).append(PATHSEPCHAR).append("files");
+    Owned<IFile> workingDir = createIFile(workingFolder.str());
+    workingDir->createDirectory();
+
+    WsWuInfo winfo(context, wuid);
+    unsigned filesAdded = 0;
+    ForEachItemIn(i, wuFileOptions)
+    {
+        StringBuffer fileName, fileMimeType;
+        try
+        {
+            readWUFile(wuid, workingFolder.str(), winfo, wuFileOptions.item(i), fileName, fileMimeType);
+            filesAdded++;
+        }
+        catch (IException* e)
+        {
+            StringBuffer msg;
+            WARNLOG("Failed to read helper file for workunit %s: %s", wuid, e->errorMessage(msg).str());
+            e->Release();
+        }
+    }
+
+    if (filesAdded == 0)
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "No helper files could be retrieved for workunit %s.", wuid);
+
+    StringBuffer userName;
+    if (context.queryUser())
+        userName.append(context.queryUser()->getName());
+    archiveFileName.set("WUHelpers_").append(wuid).append('_').append(userName.str());
+    archiveFileName.append(useGZip ? ".gz" : ".zip");
+    archiveFileNameWithPath.set(tempDirName).append(PATHSEPCHAR).append(archiveFileName.str());
+
+    int zipRet = zipAFolder(workingFolder.str(), useGZip, archiveFileNameWithPath.str());
+    cleanFolder(workingDir, true);
+
+    if (zipRet != 0)
+        throw makeStringExceptionV(ECLWATCH_CANNOT_COMPRESS_DATA, "Failed to create helper file archive for workunit %s.", wuid);
 }
 
 void CWsWuEmailHelper::send(const char* body, const void* attachment, size32_t lenAttachment, StringArray& warnings)
