@@ -3624,6 +3624,14 @@ IPropertyTree *createBinaryDataCompressionTestPTree(const char *testXml)
  *
  * Tests PTree serialization/deserialization format consistency between MemoryBuffer and IBufferedSerialInputStream
  * and measures performance of both operations
+ *
+ * testRoundTripForRootOnlyPTree                              - Tests round-trip serialization/deserialization for a PTree with only a root node
+ * testRoundTripForCompatibilityConfigPropertyTree            - Tests round-trip serialization/deserialization for a complex compatibility config PTree
+ * testRoundTripForBinaryDataCompressionTestPTree             - Tests round-trip serialization/deserialization for a PTree with various binary data sizes
+ * testMalformedStreamMissingAttributeListTerminators         - Tests deserialization error handling for missing attribute list terminators
+ * testMalformedStreamMissingAttributeValue                   - Tests deserialization error handling for missing attribute values
+ * testMalformedStreamTruncatedName                           - Tests deserialization error handling for truncated names
+ * testMultiThreadedSerializationAndDeserializationOfAtomTree - Tests thread safety of Atom Tree serialization/deserialization with multiple threads
  */
 
 class PTreeSerializationDeserializationTest : public CppUnit::TestFixture
@@ -3633,6 +3641,10 @@ class PTreeSerializationDeserializationTest : public CppUnit::TestFixture
     CPPUNIT_TEST(testRoundTripForRootOnlyPTree);
     CPPUNIT_TEST(testRoundTripForCompatibilityConfigPropertyTree);
     CPPUNIT_TEST(testRoundTripForBinaryDataCompressionTestPTree);
+    CPPUNIT_TEST(testMalformedStreamMissingAttributeListTerminators);
+    CPPUNIT_TEST(testMalformedStreamMissingAttributeValue);
+    CPPUNIT_TEST(testMalformedStreamTruncatedName);
+    CPPUNIT_TEST(testMultiThreadedSerializationAndDeserializationOfAtomTree);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -3652,6 +3664,8 @@ protected:
         "    </Policies>"
         "  </Cache>"
         "</Configuration>"};
+    static constexpr const char *treeRootName{"Root"};
+    static constexpr unsigned int treeRootNameLength{4};
 
     // Complete round-trip test method that performs serialization, deserialization, and validation
     void performRoundTripTest(const char *testName, IPropertyTree *tree)
@@ -3694,7 +3708,7 @@ protected:
             deserializeElapsedNs = timer.elapsedNs();
             CPPUNIT_ASSERT(areMatchingPTrees(originalTree, memoryBufferDeserialized));
         }
-        
+
         // Time deserializeFromStream() method
         __uint64 deserializeFromStreamElapsedNs = 0;
         {
@@ -3757,6 +3771,51 @@ protected:
         DBGLOG("=== ROUND-TRIP TEST COMPLETED SUCCESSFULLY");
     }
 
+    void expectTruncatedStreamFailure(IPropertyTree &tree, size32_t truncationOffset, const char *expectedSubstring, const char *contextDescription)
+    {
+        MemoryBuffer fullySerialized;
+        Owned<IBufferedSerialOutputStream> out{createBufferedSerialOutputStream(fullySerialized)};
+        tree.serializeToStream(*out);
+        out->flush();
+
+        {
+            size32_t totalLength{fullySerialized.length()};
+            VStringBuffer assertMsg("Serialized stream shorter than truncation offset for %s", contextDescription);
+            CPPUNIT_ASSERT_MESSAGE(assertMsg.str(), truncationOffset < totalLength);
+        }
+
+        MemoryBuffer truncated;
+        truncated.append(truncationOffset, fullySerialized.toByteArray());
+        Owned<IBufferedSerialInputStream> in{createBufferedSerialInputStream(truncated)};
+        bool hitExpectedException{false};
+        try
+        {
+            createPTreeFromBinary(*in, ipt_none);
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            const char *mChars{msg.str()};
+            if (mChars && strstr(mChars, expectedSubstring))
+            {
+                hitExpectedException = true;
+            }
+            else
+            {
+                VStringBuffer detail("Caught unexpected exception during %s: %s", contextDescription, mChars ? mChars : "<null>");
+                CPPUNIT_FAIL(detail.str());
+            }
+        }
+
+        if (!hitExpectedException)
+        {
+            VStringBuffer detail("Did not hit expected exception substring '%s' during %s", expectedSubstring, contextDescription);
+            CPPUNIT_FAIL(detail.str());
+        }
+    }
+
 public:
     // Complete round-trip test methods - perform serialization and deserialization in one test
     void testRoundTripForRootOnlyPTree()
@@ -3772,6 +3831,319 @@ public:
     void testRoundTripForBinaryDataCompressionTestPTree()
     {
         performRoundTripTest(__func__, createBinaryDataCompressionTestPTree(testXml));
+    }
+
+    class AtomTreeSerializationTestThread : public Thread
+    {
+    public:
+        AtomTreeSerializationTestThread(unsigned _index,
+                                        Semaphore &_startSem,
+                                        CriticalSection &_errorCs,
+                                        StringBuffer &_errorMessages,
+                                        IPropertyTree &_originalTree)
+            : Thread("AtomTreeSerializationTestThread"),
+              threadIndex(_index),
+              startSem(_startSem),
+              errorCs(_errorCs),
+              errorMessages(_errorMessages),
+              originalTree(_originalTree)
+        {
+        }
+
+        // Clone the shared template originalTree, apply per-thread mutations, then serialize/deserialize and verify equality
+        virtual int run() override
+        {
+            // Wait for the coordinated start gate so all threads begin together
+            startSem.wait();
+            try
+            {
+                // Duplicate the shared template using low-memory mode so that isolate per-thread mutations can be applied
+                Owned<IPropertyTree> expected{createPTreeFromIPT(&originalTree, ipt_lowmem)};
+
+                VStringBuffer threadTag("worker_%u", threadIndex);
+                expected->setProp("@threadId", threadTag.str());
+                IPropertyTree *settings{expected->queryPropTree("settings")};
+                if (settings)
+                {
+                    // Stamp per-thread identifiers and thresholds onto the settings subtree
+                    settings->setProp("@worker", threadTag.str());
+                    settings->setProp("threshold", VStringBuffer("%u", 42 + threadIndex).str());
+
+                    IPropertyTree *alpha{settings->queryPropTree("option[@name=\"alpha\"]")};
+                    if (alpha)
+                        alpha->setProp("value", VStringBuffer("alpha_value_%u", threadIndex).str());
+                    IPropertyTree *beta{settings->queryPropTree("option[@name=\"beta\"]")};
+                    if (beta)
+                        beta->setProp("value", VStringBuffer("beta_value_%u", threadIndex).str());
+                }
+                // Build a binary payload to exercise binary serialization
+                MemoryBuffer payload;
+                for (unsigned idx{0}; idx < 2048; ++idx)
+                    payload.append((byte)((idx + threadIndex) % 256));
+                expected->setPropBin("binaryPayload", payload.length(), payload.toByteArray());
+                IPropertyTree *clusters{expected->queryPropTree("clusters")};
+                if (clusters)
+                {
+                    unsigned clusterIndex{0};
+                    Owned<IPropertyTreeIterator> iter{clusters->getElements("cluster")};
+                    ForEach(*iter)
+                    {
+                        // Stamp per-cluster descriptions and attach binary payload variants
+                        IPropertyTree &cluster{iter->query()};
+                        cluster.setProp("description", VStringBuffer("Example cluster entry thread %u index %u", threadIndex, clusterIndex).str());
+                        cluster.setPropInt("@threadId", threadIndex);
+
+                        MemoryBuffer clusterPayload;
+                        clusterPayload.append(sizeof(threadIndex), &threadIndex);
+                        clusterPayload.append(sizeof(clusterIndex), &clusterIndex);
+                        cluster.setPropBin("payload", clusterPayload.length(), clusterPayload.toByteArray());
+                        ++clusterIndex;
+                    }
+                }
+                IPropertyTree *metrics{expected->queryPropTree("metrics")};
+                if (metrics)
+                {
+                    // Flip metrics attributes based on the thread id to vary content
+                    metrics->setProp("@enabled", (threadIndex % 2 == 0) ? "true" : "false");
+                    metrics->setProp("@thread", threadTag.str());
+                    metrics->setProp("sampleInterval", VStringBuffer("%u.%02u", threadIndex + 1, threadIndex).str());
+                }
+
+                MemoryBuffer serialized;
+                {
+                    Owned<IBufferedSerialOutputStream> out{createBufferedSerialOutputStream(serialized)};
+                    expected->serializeToStream(*out);
+                    out->flush();
+                }
+
+                {
+                    size32_t serializedLength{serialized.length()};
+                    if (!serializedLength)
+                    {
+                        CriticalBlock block(errorCs);
+                        errorMessages.appendf("Thread %u: serialization produced empty buffer\n", threadIndex);
+                        return 0;
+                    }
+                }
+
+                // Deserialize and verify the resulting tree matches the expected structure
+                Owned<IBufferedSerialInputStream> in{createBufferedSerialInputStream(serialized)};
+                Owned<IPropertyTree> deserialized{createPTreeFromBinary(*in, ipt_lowmem)};
+                if (!areMatchingPTrees(expected, deserialized))
+                {
+                    CriticalBlock block(errorCs);
+                    errorMessages.appendf("Thread %u: deserialized tree mismatch for root %s\n", threadIndex, expected->queryName());
+                }
+            }
+            catch (IException *e)
+            {
+                StringBuffer msg;
+                e->errorMessage(msg);
+                e->Release();
+                CriticalBlock block(errorCs);
+                errorMessages.appendf("Thread %u: %s\n", threadIndex, msg.str());
+            }
+            catch (...)
+            {
+                CriticalBlock block(errorCs);
+                errorMessages.appendf("Thread %u: unknown exception\n", threadIndex);
+            }
+
+            return 0;
+        }
+
+    private:
+        unsigned threadIndex{0};
+        Semaphore &startSem;
+        CriticalSection &errorCs;
+        StringBuffer &errorMessages;
+        IPropertyTree &originalTree;
+    };
+
+    // Multi-threaded serialization/deserialization tests to ensure thread safety with unique Atom trees per thread
+    void testMultiThreadedSerializationAndDeserializationOfAtomTree()
+    {
+        try
+        {
+            constexpr unsigned numThreads{50};
+            constexpr unsigned fiveSeconds{5000};
+            constexpr unsigned joinTimeoutMs{fiveSeconds};
+            constexpr unsigned tenSeconds{10000};
+            constexpr unsigned cleanupTimeoutMs{tenSeconds};
+            IArrayOf<AtomTreeSerializationTestThread> workers;
+
+            CriticalSection errorCs;
+            StringBuffer errorMessages;
+            Semaphore startSem; // zero-initialized; used as a start gate
+
+            Owned<IPropertyTree> originalTree{createPTree("MultiThreadRoot", ipt_lowmem)};
+            CPPUNIT_ASSERT(originalTree != nullptr);
+
+            // Seed shared tree with structures to be exercised in per-thread mutations
+            IPropertyTree *settings{originalTree->addPropTree("settings")};
+            settings->setProp("@profile", "default");
+            settings->setProp("@worker", "seed");
+            settings->setProp("threshold", "42");
+            IPropertyTree *alpha{settings->addPropTree("option")};
+            alpha->setProp("@name", "alpha");
+            alpha->setProp("value", "alpha_value_seed");
+            IPropertyTree *beta{settings->addPropTree("option")};
+            beta->setProp("@name", "beta");
+            beta->setProp("value", "beta_value_seed");
+            IPropertyTree *clusters{originalTree->addPropTree("clusters")};
+            for (unsigned i{0}; i < 3; ++i)
+            {
+                IPropertyTree *cluster{clusters->addPropTree("cluster")};
+                cluster->setProp("@id", VStringBuffer("cluster_%u", i).str());
+                cluster->setProp("description", "initial cluster entry");
+            }
+            IPropertyTree *metrics{originalTree->addPropTree("metrics")};
+            metrics->setProp("@enabled", "true");
+            metrics->setProp("@thread", "seed");
+            metrics->setProp("sampleInterval", "1.00");
+
+            // Join all worker threads but enforce a single overall timeout budget
+            auto joinAllWithTimeout{[](IArrayOf<AtomTreeSerializationTestThread> &workers, unsigned totalTimeoutMs, StringBuffer &timeoutMessages) -> unsigned
+            {
+                using Clock = std::chrono::steady_clock;
+                Clock::time_point deadline{Clock::now() + std::chrono::milliseconds(totalTimeoutMs)};
+                unsigned timedOut{0};
+                for (unsigned i{0}; i < workers.ordinality(); ++i)
+                {
+                    Clock::time_point now{Clock::now()};
+                    if (now >= deadline)
+                    {
+                        ++timedOut;
+                        timeoutMessages.appendf("Thread %u did not finish before total timeout of %u ms\n", i, totalTimeoutMs);
+                        continue;
+                    }
+
+                    auto remainingMs64{std::chrono::duration_cast<std::chrono::milliseconds>(deadline - now).count()};
+                    unsigned remainingMs{remainingMs64 > 0 ? static_cast<unsigned>(remainingMs64) : 0U};
+
+                    if (!workers.item(i).join(remainingMs))
+                    {
+                        ++timedOut;
+                        timeoutMessages.appendf("Thread %u did not finish within total timeout (remaining %u ms of %u ms)\n", i, remainingMs, totalTimeoutMs);
+                    }
+                }
+                return timedOut;
+            }};
+
+            // Ensure worker threads cannot outlive stack locals even when the test fails
+            struct WorkerCompletionGuard
+            {
+                IArrayOf<AtomTreeSerializationTestThread> &workers;
+                unsigned cleanupTimeoutMs;
+                decltype(joinAllWithTimeout) &joinAll;
+
+                WorkerCompletionGuard(IArrayOf<AtomTreeSerializationTestThread> &_workers, unsigned _cleanupTimeoutMs, decltype(joinAllWithTimeout) &_joinAll)
+                    : workers(_workers), cleanupTimeoutMs(_cleanupTimeoutMs), joinAll(_joinAll)
+                {
+                }
+
+                ~WorkerCompletionGuard()
+                {
+                    StringBuffer cleanupTimeoutMessages;
+                    unsigned timedOut{joinAll(workers, cleanupTimeoutMs, cleanupTimeoutMessages)};
+                    if (timedOut)
+                        DBGLOG("Cleanup wait detected %u stalled threads; waiting indefinitely for teardown\n%s", timedOut, cleanupTimeoutMessages.str());
+                    for (unsigned i{0}; i < workers.ordinality(); ++i)
+                        workers.item(i).join(INFINITE);
+                }
+            } workerCompletionGuard{workers, cleanupTimeoutMs, joinAllWithTimeout};
+
+            try
+            {
+                for (unsigned i{0}; i < numThreads; ++i)
+                {
+                    // All threads share the same originalTree, but each creates its own modified copy
+                    // After deserialization, each thread compares its own expected vs actual trees
+                    AtomTreeSerializationTestThread *worker{new AtomTreeSerializationTestThread(i, startSem, errorCs, errorMessages, *originalTree)};
+                    workers.append(*worker);
+                    worker->start(false);
+                }
+                startSem.signal(numThreads);
+            }
+            catch (const std::exception &e)
+            {
+                startSem.signal(numThreads);
+                StringBuffer joinTimeoutMessages;
+                joinAllWithTimeout(workers, joinTimeoutMs, joinTimeoutMessages); // We have a specific exception so ignore any join timeouts here
+                CPPUNIT_FAIL(VStringBuffer("Exception while creating worker threads: %s", e.what()).str());
+            }
+            catch (...)
+            {
+                startSem.signal(numThreads);
+                StringBuffer joinTimeoutMessages;
+                unsigned timedOut{joinAllWithTimeout(workers, joinTimeoutMs, joinTimeoutMessages)}; // no specific exception so report any join timeouts
+                if (timedOut)
+                    DBGLOG("joinAllWithTimeout detected %u stalled threads during worker creation failure\n%s", timedOut, joinTimeoutMessages.str());
+                CPPUNIT_FAIL("Unknown exception while creating worker threads");
+            }
+
+            StringBuffer joinTimeoutMessages;
+            unsigned timedOut{joinAllWithTimeout(workers, joinTimeoutMs, joinTimeoutMessages)};
+            if (timedOut)
+            {
+                DBGLOG("joinAllWithTimeout detected %u stalled threads after normal completion\n%s", timedOut, joinTimeoutMessages.str());
+                VStringBuffer timeoutMsg("Timed out waiting for %u worker threads\n%s", timedOut, joinTimeoutMessages.str());
+                CPPUNIT_FAIL(timeoutMsg.str());
+            }
+
+            CPPUNIT_ASSERT_MESSAGE(errorMessages.length() ? errorMessages.str() : "Multi-threaded AtomTree ipt_lowmem deserialization failed", (errorMessages.length() == 0));
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(VStringBuffer("Unexpected IException in testMultiThreadedSerializationAndDeserializationOfAtomTree: %s", msg.str()).str());
+        }
+        catch (const std::exception &e)
+        {
+            CPPUNIT_FAIL(VStringBuffer("Unexpected std::exception in testMultiThreadedSerializationAndDeserializationOfAtomTree: %s", e.what()).str());
+        }
+        catch (...)
+        {
+            CPPUNIT_FAIL("Unexpected unknown exception in testMultiThreadedSerializationAndDeserializationOfAtomTree");
+        }
+    }
+
+    // Malformed buffered-serial stream with missing attribute list terminators: ensure exception thrown from PTree::deserializeSelf(IBufferedSerialInputStream)
+    void testMalformedStreamMissingAttributeListTerminators()
+    {
+        Owned<IPropertyTree> original{createPTree(treeRootName)};
+        original->setProp("child", "value");
+        constexpr unsigned int nullTerminatorSize{1};
+        constexpr unsigned int flagsSize{1};
+        size32_t flagsEnd{treeRootNameLength + nullTerminatorSize + flagsSize};
+
+        expectTruncatedStreamFailure(*original, flagsEnd, "PTree deserialization error: end of stream, expected attribute name", "attribute name test");
+    }
+
+    // Malformed buffered-serial stream with missing Value attribute: ensure exception thrown from PTree::deserializeSelf(IBufferedSerialInputStream)
+    void testMalformedStreamMissingAttributeValue()
+    {
+        constexpr const char *attrName{"@incomplete"};
+        constexpr unsigned int attrNameLength{11};
+        constexpr const char *attrValue{"value"};
+        Owned<IPropertyTree> original{createPTree(treeRootName)};
+        original->setProp(attrName, attrValue);
+        constexpr size32_t nullTerminatorSize{1};
+        constexpr size32_t flagsSize{1};
+        constexpr size32_t attributeSectionOffset{treeRootNameLength + nullTerminatorSize + flagsSize};
+        constexpr size32_t truncationPoint{attributeSectionOffset + attrNameLength + nullTerminatorSize};
+
+        expectTruncatedStreamFailure(*original, truncationPoint, "PTree deserialization error: end of stream, expected attribute value", "attribute value test");
+    }
+
+    // Malformed buffered-serial stream with missing tree Name: ensure exception thrown from PTree::deserializeSelf(IBufferedSerialInputStream)
+    void testMalformedStreamTruncatedName()
+    {
+        Owned<IPropertyTree> original{createPTree(treeRootName)};
+
+        expectTruncatedStreamFailure(*original, 0, "PTree deserialization error: end of stream, expected name", "name read test");
     }
 };
 
