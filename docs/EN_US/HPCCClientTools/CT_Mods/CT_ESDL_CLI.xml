@@ -1593,6 +1593,9 @@
           </tgroup>
         </informaltable>
 
+<para>For a detailed explanation of the variables and options used in the manifest command, see the <ulink url="https://github.com/hpcc-systems/HPCC-Platform/blob/master/tools/esdlcmd/README.md">esdlcmd README</ulink>.</para>
+<para>For additional manifest file examples, refer to the repository at <ulink url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/initfiles/examples/EsdlExample/Manifest">initfiles/examples/EsdlExample/Manifest</ulink>.</para>
+
         <para>The <command>manifest</command> command creates an XML
         configuration file for an ESDL ESP from an input XML manifest file.
         The type of configuration output depends on the manifest file input
