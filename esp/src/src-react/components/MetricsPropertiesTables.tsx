@@ -164,6 +164,16 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
                     default:
                         rowValue = row.Value;
                 }
+                if ((rowValue === undefined || rowValue === null || rowValue === "") && (row.Min !== undefined || row.Avg !== undefined || row.Max !== undefined || row.StdDev !== undefined || row.SkewMin !== undefined || row.SkewMax !== undefined)) {
+                    const parts = [];
+                    if (row.Min !== undefined) parts.push(`↓${row.Min}`);
+                    if (row.Avg !== undefined) parts.push(`${row.Avg}`);
+                    if (row.Max !== undefined) parts.push(`↑${row.Max}`);
+                    if (row.StdDev !== undefined) parts.push(`${row.StdDev}(${formatDecimal(row.StdDevs)}σ)`);
+                    if (row.SkewMin !== undefined) parts.push(`⤓${row.SkewMin}`);
+                    if (row.SkewMax !== undefined) parts.push(`⤒${row.SkewMax}`);
+                    rowValue = parts.join(" ");
+                }
                 scopeProps.push([row.Key, rowValue, row.Avg, row.Min, row.Max, row.Delta, row.StdDev === undefined ? "" : `${row.StdDev} (${formatDecimal(row.StdDevs)}σ)`, row.SkewMin, row.SkewMax, row.NodeMin, row.NodeMax, row.StdDevs]);
             }
             scopeProps.sort((l, r) => {
