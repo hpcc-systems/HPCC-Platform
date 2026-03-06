@@ -32,6 +32,11 @@ export class ScopesTable extends Table {
     constructor() {
         super();
         this._store = new DBStoreEx(this, this._db);
+        this
+            .columnWidthAutoFontName("monospace")
+            .columnWidthAutoFontSize(13)
+            .columnWidthAutoSampleSize(9999)
+            ;
     }
 
     clearRegexCache(): void {
