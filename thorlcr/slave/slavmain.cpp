@@ -1752,7 +1752,7 @@ public:
                 verifyThreads.append(*new CVerifyThread(*this, c));
         }
 
-        if (getExpertOptBool("dllsToSlaves", true))
+        if (getExpertOptBool("dllsToSlaves", true, globals))
         {
             StringBuffer soPath;
             globals->getProp("@query_so_dir", soPath);
@@ -1813,7 +1813,7 @@ public:
                         msg.read(graphName);
 
                         Owned<ILoadedDllEntry> querySo;
-                        if (!getExpertOptBool("saveQueryDlls"))
+                        if (!getExpertOptBool("saveQueryDlls", false, globals))
                         {
                             StringAttr soName;
                             msg.read(soName);
@@ -1827,7 +1827,6 @@ public:
                             msg.read(remoteSoPath);
                             bool sendSo;
                             msg.read(sendSo);
-
                             RemoteFilename rfn;
                             SocketEndpoint masterEp = queryMyNode()->endpoint();
                             masterEp.port = 0;
@@ -1856,7 +1855,7 @@ public:
                                     e->Release();
                                     throw e2;
                                 }
-                                assertex(getExpertOptBool("dllsToSlaves", true));
+                                assertex(getExpertOptBool("dllsToSlaves", true, globals));
                                 querySoCache.add(soPath.str());
                             }
                             else
@@ -1867,7 +1866,7 @@ public:
                                     rfn.getRemotePath(_remoteSoPath);
                                     remoteSoPath.set(_remoteSoPath);
                                 }
-                                if (getExpertOptBool("dllsToSlaves", true))
+                                if (getExpertOptBool("dllsToSlaves", true, globals))
                                 {
                                     globals->getProp("@query_so_dir", soPath);
                                     if (soPath.length())
@@ -1882,7 +1881,9 @@ public:
                                     querySoCache.add(soPath.str());
                                 }
                                 else
+                                {
                                     soPath.append(remoteSoPath);
+                                }
                             }
     #ifdef __linux__
                         // only relevant if dllsToSlaves=false and query_so_dir was fully qualified remote path (e.g. //<ip>/path/file
@@ -1918,7 +1919,7 @@ public:
                         DBGLOG("Using query: %s", soPath.str());
 
                         // slaveDaliClient option deprecated, but maintained for compatibility
-                        if (!getExpertOptBool("allowDaliAccess") && !getExpertOptBool("slaveDaliClient") &&
+                        if (!getExpertOptBool("allowDaliAccess", false, globals) && !getExpertOptBool("slaveDaliClient", false, globals) &&
                             (workUnitInfo->getPropBool("Debug/allowdaliaccess", false) || workUnitInfo->getPropBool("Debug/slavedaliclient", false)))
                         {
                             PROGLOG("Workunit option 'allowDaliAccess' enabled");
@@ -1954,7 +1955,7 @@ public:
                         PROGLOG("Finished wuid=%s, graph=%s", wuid.get(), graphName.get());
 
                         // slaveDaliClient option deprecated, but maintained for compatibility
-                        if (!getExpertOptBool("allowDaliAccess") && !getExpertOptBool("slaveDaliClient") &&
+                        if (!getExpertOptBool("allowDaliAccess", false, globals) && !getExpertOptBool("slaveDaliClient", false, globals) &&
                             (job->getWorkUnitValueBool("Debug/allowdaliaccess", false) || job->getWorkUnitValueBool("Debug/slavedaliclient", false)))
                             disableThorSlaveAsDaliClient();
 
@@ -2349,7 +2350,7 @@ public:
         }
         write();
     }
-    
+
 // IFileInProgressHandler
     virtual void add(const char *fip)
     {
@@ -2424,7 +2425,7 @@ void slaveMain(bool &jobListenerStopped, ILogMsgHandler *logHandler)
     setIThorResource(slaveResource);
 
 #ifdef __linux__
-    bool useMirrorMount = getExpertOptBool("useMirrorMount", false);
+    bool useMirrorMount = getExpertOptBool("useMirrorMount", false, globals);
 
     if (useMirrorMount && queryNodeGroup().ordinality() > 2)
     {

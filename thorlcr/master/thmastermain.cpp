@@ -290,7 +290,7 @@ public:
 
         // Will wait for all workers to register within timelimit (default = 15 mins bare-metal, 60 mins containerized)
         constexpr unsigned defaultMaxRegistrationMins = isContainerized() ? 60 : 15;
-        unsigned maxRegistrationMins = (unsigned)getExpertOptInt64("maxWorkerRegistrationMins", defaultMaxRegistrationMins);
+        unsigned maxRegistrationMins = (unsigned)getExpertOptInt64("maxWorkerRegistrationMins", defaultMaxRegistrationMins, globals);
         constexpr unsigned oneMinMs = 60000;
 
         constexpr unsigned defaultPendingTimeSecs = 600;
@@ -404,9 +404,6 @@ public:
             addTimeStamp(workunit, wfid, graphName, StWhenK8sReady);
             publishPodNames(workunit, graphName, &connectedWorkers);
         }
-
-        //Check that nothing has caused the global configuration to be refreshed - otherwise inconsistent values may be used by the slave
-        assertex(globals == getComponentConfigSP());
 
         PROGLOG("Workers connected, initializing..");
         msg.clear();
@@ -656,9 +653,13 @@ int main( int argc, const char *argv[]  )
     InitModuleObjects();
     NoQuickEditSection xxx;
     {
-        bool monitorConfig = false; // Do not allow updates to the config file, otherwise the slave may not be in sync.
-        //MORE: What about updates to storage planes - they will not be passed through to the slaves
-        globals.setown(loadConfiguration(thorDefaultConfigYaml, argv, "thor", "THOR", "thor.xml", nullptr, nullptr, monitorConfig));
+        bool monitorConfig{true};
+        // Allow updates to the globalsLive from  the config file:
+        // - master will be updated via the config update hook where it will restart the pod upon config change;
+        // - slaves will not be updated via the config update hook.
+        globalsLive.setown(loadConfiguration(thorDefaultConfigYaml, argv, "thor", "THOR", "thor.xml", nullptr, nullptr, monitorConfig));
+        // globals is a copy of the loaded globals separate from the component config to prevent updates being applied.
+        globals.setown(createPTreeFromIPT(globalsLive));
     }
     updateTraceFlags(loadTraceFlags(globals, thorTraceOptions, queryTraceFlags()), true);
 #ifdef _DEBUG
@@ -675,7 +676,7 @@ int main( int argc, const char *argv[]  )
 
     globals->setProp("@masterBuildTag", hpccBuildInfo.buildTag);
 
-    setIORetryCount((unsigned)getExpertOptInt64("ioRetries")); // default == 0 == off
+    setIORetryCount((unsigned)getExpertOptInt64("ioRetries", 0, globals)); // default == 0 == off
     StringBuffer daliServer;
     if (!globals->getProp("@daliServers", daliServer))
     {
@@ -923,12 +924,12 @@ int main( int argc, const char *argv[]  )
                 setBaseDirectory(overrideReplicateDirectory, true);
         }
         bool saveQueryDlls = true;
-        if (hasExpertOpt("saveQueryDlls"))
-            saveQueryDlls = getExpertOptBool("saveQueryDlls");
+        if (hasExpertOpt("saveQueryDlls", globals))
+            saveQueryDlls = getExpertOptBool("saveQueryDlls", false, globals);
         else
         {
             // propagate default setting (so seen by workers)
-            setExpertOpt("saveQueryDlls", boolToStr(saveQueryDlls));
+            setExpertOpt("saveQueryDlls", boolToStr(saveQueryDlls), globals);
         }
         if (saveQueryDlls)
         {
