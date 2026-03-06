@@ -70,6 +70,9 @@
 #include "rmtfile.hpp"
 #include "rmtclient_impl.hpp"
 #include "dafsserver.hpp"
+#include "keybuild.hpp"
+#include "eclhelper_base.hpp"
+#include "thorfile.hpp"
 
 #include "ftslavelib.hpp"
 #include "filecopy.hpp"
@@ -2575,8 +2578,6 @@ public:
         return this;
     }
 };
-
-
 class CRemoteDiskWriteActivity : public CRemoteWriteBaseActivity
 {
     typedef CRemoteWriteBaseActivity PARENT;
@@ -2655,6 +2656,257 @@ public:
     }
 };
 
+
+class CRemoteIndexWriteHelper : public CThorIndexWriteArg
+{
+    UnexpectedVirtualFieldCallback fieldCallback;
+    Owned<const IDynamicTransform> translator;
+    std::vector<std::pair<std::string, std::string>> indexMetaData;
+public:
+    CRemoteIndexWriteHelper(const char * _filename, const char* _compression, IOutputMetaData * _inMeta, IOutputMetaData * _outMeta, unsigned _flags)
+     : filename(_filename), compression(_compression), inMeta(_inMeta), outMeta(_outMeta), flags(_flags)
+    {
+        const RtlRecord &inRecord = inMeta->queryRecordAccessor(true);
+        const RtlRecord &outRecord = outMeta->queryRecordAccessor(true);
+        translator.setown(createRecordTranslator(outRecord, inRecord));
+    }
+
+    void setIndexMeta(const std::string& name, const std::string& value)
+    {
+        indexMetaData.emplace_back(name, value);
+    }
+
+    virtual const char * getFileName() override { return filename.c_str(); }
+    virtual int getSequence() override { return 0; }
+    virtual IOutputMetaData * queryDiskRecordSize() override { return outMeta; }
+    virtual const char * queryRecordECL() override { return nullptr; }
+    virtual unsigned getFlags() override { return flags; }
+    virtual unsigned getKeyedSize() override
+    {
+        if (outMeta == nullptr)
+            return 0;
+
+        const RtlRecord& recAccessor = outMeta->queryRecordAccessor(true);
+        return recAccessor.getFixedOffset(recAccessor.getNumKeyedFields());
+    }
+    virtual unsigned getMaxKeySize() override { return 0; }
+    virtual unsigned getFormatCrc() override { return 0; }
+    virtual unsigned getWidth() override { return indexMetaData.size(); }
+    virtual const char * queryCompression() override { return compression.c_str(); }
+    virtual bool getIndexMeta(size32_t & lenName, char * & name, size32_t & lenValue, char * & value, unsigned idx) override
+    {
+        if (idx >= indexMetaData.size())
+            return false;
+
+        const auto &entry = indexMetaData[idx];
+
+        lenName = entry.first.length();
+        name = (char*) rtlMalloc(lenName);
+        memcpy(name, entry.first.c_str(), lenName);
+
+        lenValue = entry.second.length();
+        value = (char*) rtlMalloc(lenValue);
+        memcpy(value, entry.second.c_str(), lenValue);
+
+        return true;
+    }
+    virtual size32_t transform(ARowBuilder & rowBuilder, const void * row, IBlobCreator * blobs, unsigned __int64 & filepos) override
+    {
+        // Seems like an UnexpectedVirtualFieldCallback could be used but what about blobs?
+        return translator->translate(rowBuilder, fieldCallback, (const byte *)row);
+    }
+
+public:
+    std::string filename;
+    std::string compression;
+    IOutputMetaData * inMeta = nullptr;
+    IOutputMetaData * outMeta = nullptr;
+    unsigned flags = 0;
+};
+
+class CRemoteIndexWriteActivity : public CRemoteWriteBaseActivity, implements IBlobCreator
+{
+    Owned<IFileIOStream> iFileIOStream;
+    Owned<IKeyBuilder> builder;
+    Owned<CRemoteIndexWriteHelper> helper;
+    Linked<IOutputMetaData> inMeta, outMeta;
+    UnexpectedVirtualFieldCallback fieldCallback;
+    OwnedMalloc<char> prevRowBuffer;
+    OwnedMalloc<char> rowBuffer;
+
+    uint64_t uncompressedSize = 0;
+    uint64_t processed = 0;
+    size32_t maxDiskRecordSize = 0;
+    size32_t keyedSize = 0;
+    size32_t maxRecordSizeSeen = 0; // used to store the maximum record size seen, for metadata
+    bool isTlk = false;
+    bool opened = false;
+
+    inline void processRow(const void *row, uint64_t rowSize)
+    {
+        unsigned __int64 fpos = 0;
+        RtlStaticRowBuilder rowBuilder(rowBuffer, maxDiskRecordSize);
+        size32_t indexRowSize = helper->transform(rowBuilder, row, this, fpos);
+
+        // Key builder checks for duplicate records so we can just check for sortedness
+        if (memcmp(prevRowBuffer.get(), rowBuffer.get(), keyedSize) > 0)
+        {
+            throw createDafsExceptionV(DAFSERR_cmdstream_generalwritefailure, "CRemoteIndexWriteActivity: Incoming rows are not sorted.");
+        }
+
+        builder->processKeyData(rowBuffer, fpos, indexRowSize);
+        uncompressedSize += indexRowSize;
+
+        if (indexRowSize > maxRecordSizeSeen)
+            maxRecordSizeSeen = indexRowSize;
+
+        processed++;
+        memcpy(prevRowBuffer.get(), rowBuffer.get(), maxDiskRecordSize);
+    }
+
+    void openFileStream()
+    {
+        if (!recursiveCreateDirectoryForFile(fileName))
+            throw createDafsExceptionV(DAFSERR_cmdstream_openfailure, "Failed to create dirtory for file: '%s'", fileName.get());
+        OwnedIFile iFile = createIFile(fileName);
+    
+        iFileIO.setown(iFile->open(IFOcreate));
+        if (!iFileIO)
+            throw createDafsExceptionV(DAFSERR_cmdstream_openfailure, "Failed to open: '%s' for write", fileName.get());
+
+        iFileIOStream.setown(createBufferedIOStream(iFileIO));
+        opened = true;
+    }
+
+    virtual unsigned __int64 createBlob(size32_t size, const void * ptr) override
+    {
+        return builder->createBlob(size, (const char *) ptr);
+    }
+public:
+    CRemoteIndexWriteActivity(IPropertyTree &config, IFileDescriptor *fileDesc) : CRemoteWriteBaseActivity(config, fileDesc)
+    {
+        inMeta.setown(getTypeInfoOutputMetaData(config, "input", false));
+        if (!inMeta)
+            throw createDafsException(DAFSERR_cmdstream_protocol_failure, "CRemoteIndexWriteActivity: input metadata missing");
+
+        outMeta.setown(getTypeInfoOutputMetaData(config, "output", false));
+        if (!outMeta)
+            throw createDafsException(DAFSERR_cmdstream_protocol_failure, "CRemoteIndexWriteActivity: output metadata missing");
+        
+        std::string compression = config.queryProp("compressed", "default");
+        toLower(compression);
+
+        unsigned flags = COL_PREFIX | HTREE_FULLSORT_KEY | USE_TRAILING_HEADER | HTREE_COMPRESSED_KEY | HTREE_QUICK_COMPRESSED_KEY;
+
+        if (compression == "default" || compression == "lzw")
+        {
+            compression = "";
+        }
+        else if (compression.substr(0,7) == "inplace")
+        {
+            // pass through the compression string as-is
+        }
+
+        bool isVariable = outMeta->isVariableSize();
+        if (isVariable)
+            flags |= HTREE_VARSIZE;
+
+        helper.setown(new CRemoteIndexWriteHelper(fileName.get(), compression.c_str(), inMeta, outMeta, flags));
+
+        unsigned nodeSize = NODESIZE;
+        if (config.hasProp("nodeSize"))
+        {
+            nodeSize = config.getPropInt("nodeSize");
+            helper->setIndexMeta("_nodeSize", std::to_string(nodeSize));
+        }
+
+        bool noSeek = config.getPropBool("noSeek", true);
+        helper->setIndexMeta("_noSeek", boolToStr(noSeek));
+        if (noSeek)
+            flags |= TRAILING_HEADER_ONLY;
+        
+        bool useTrailingHeader = config.getPropBool("useTrailingHeader", true);
+        helper->setIndexMeta("_useTrailingHeader", boolToStr(useTrailingHeader));
+        if (useTrailingHeader)
+            flags |= USE_TRAILING_HEADER;
+        else
+            flags &= ~USE_TRAILING_HEADER;
+
+        if (hasTrailingFileposition(helper->queryDiskRecordSize()->queryTypeInfo()))
+            throw createDafsException(DAFSERR_cmdstream_protocol_failure, "CRemoteIndexWriteActivity: trailing fileposition not supported, use FILEPOSITION(FALSE)");
+
+        if (isVariable)
+        {
+            if (helper->getFlags() & TIWmaxlength)
+                maxDiskRecordSize = helper->getMaxKeySize();
+            else
+                maxDiskRecordSize = KEYBUILD_MAXLENGTH; // Current default behaviour, could be improved in the future
+        }
+        else
+            maxDiskRecordSize = helper->queryDiskRecordSize()->getFixedSize();
+
+        if (maxDiskRecordSize > KEYBUILD_MAXLENGTH)
+            throw MakeStringException(99, "Index maximum record length (%d) exceeds 32k internal limit", maxDiskRecordSize);
+
+        keyedSize = helper->getKeyedSize();
+
+        rowBuffer.allocateN(maxDiskRecordSize, true);
+        prevRowBuffer.allocateN(maxDiskRecordSize, true);
+
+        openFileStream();
+        builder.setown(createKeyBuilder(iFileIOStream.get(), flags, maxDiskRecordSize, nodeSize, keyedSize, 0, helper.get(), compression.c_str(), true, false));
+    }
+
+    ~CRemoteIndexWriteActivity()
+    {
+        try
+        {
+            if (builder != nullptr && helper != nullptr)
+            {
+                Owned<IPropertyTree> metadata = createPTree("metadata");
+                buildUserMetadata(metadata, *helper);
+
+                metadata->setProp("_record_ECL", helper->queryRecordECL());
+                setRtlFormat(*metadata, helper->queryDiskRecordSize());
+
+                unsigned int fileCrc;
+                builder->finish(metadata, &fileCrc, maxRecordSizeSeen, nullptr);
+            }
+
+            close();
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e, "~CRemoteIndexWriteActivity");
+            e->Release();
+        }
+        catch (...)
+        {
+            IERRLOG("~CRemoteIndexWriteActivity: unknown exception");
+        }
+    }
+
+    virtual void write(size32_t sz, const void *rowData) override
+    {
+        const RtlRecord& inputRecordAccessor = inMeta->queryRecordAccessor(true);
+        size32_t rowOffset = 0;
+        while(rowOffset < sz)
+        {
+            size32_t rowSize = inputRecordAccessor.getRecordSize((const byte *)rowData + rowOffset);
+            processRow((const byte *)rowData + rowOffset, rowSize);
+            rowOffset += rowSize;
+        }
+        if (rowOffset > sz)
+            throw createDafsExceptionV(DAFSERR_cmdstream_generalwritefailure, "CRemoteIndexWriteActivity: partial record detected (offset=%u, size=%u)", rowOffset, sz);
+    }
+
+    virtual void serializeCursor(MemoryBuffer &tgt) const override {}
+    virtual void restoreCursor(MemoryBuffer &src) override {}
+    virtual StringBuffer &getInfoStr(StringBuffer &out) const override
+    {
+        return out.appendf("indexwrite[%s]", fileName.get());
+    }
+};
 
 // create a { unsigned8 } output meta for the count
 static const RtlIntTypeInfo indexCountFieldType(type_unsigned|type_int, 8);
@@ -2922,6 +3174,11 @@ IRemoteActivity *createRemoteActivity(IPropertyTree &actNode, bool authorizedOnl
         case TAKdiskwrite:
         {
             activity.setown(new CRemoteDiskWriteActivity(actNode, fileDesc));
+            break;
+        }
+        case TAKindexwrite:
+        {
+            activity.setown(new CRemoteIndexWriteActivity(actNode, fileDesc));
             break;
         }
         default: // in absense of type, read is assumed and file format is auto-detected.
@@ -4938,13 +5195,20 @@ public:
          * {
          *  "format" : "binary",
          *  "command": "newstream"
-         *  "replyLimit" : "64",
+         *  "replylimit" : "64",
+         *  "compressed" : "LZW", // Default, LZW, ROW, INPLACE:*
+         *  "nodeSize" : 32768,
+         *  "noSeek" : false, // if true don't add the header that allows seeking
          *  "node" : {
          *   "kind" : "indexwrite",
-         *   "fileName": "examplefilename",
+         *   "filename": "examplefilename",
          *   "input" : {
+         *    "f1" : "string",
+         *    "f2" : "string"
+         *   },
+         *   "output" : {
          *    "f1" : "string5",
-         *    "f2" : "string5"
+         *    "f2" : "string5",
          *   }
          *  }
          * }

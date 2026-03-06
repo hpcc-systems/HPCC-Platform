@@ -19,6 +19,7 @@
 #include "eclhelper.hpp"
 #include "bloom.hpp"
 #include "jmisc.hpp"
+#include "jstring.hpp"
 #include "jhinplace.hpp"
 #include "jhblockcompressed.hpp"
 
@@ -291,7 +292,7 @@ public:
             }
         }
 
-        if (!isEmptyString(compression))
+        if (!isEmptyString(compression) && !strsame(compression, "lzw") && !strsame(compression, "default"))
         {
             hdr->version = 2;    // Old builds will give a reasonable error message
             if (strieq(compression, "POC") || startsWithIgnoreCase(compression, "POC:"))
