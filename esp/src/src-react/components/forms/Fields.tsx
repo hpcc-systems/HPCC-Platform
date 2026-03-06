@@ -226,7 +226,7 @@ const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
     const handleChange = React.useCallback((_, data) => {
         if (multiSelect) {
             const selectedOpts = data.selectedOptions.map(optValue => {
-                return selOptions.find(opt => opt.key === optValue)
+                return selOptions.find(opt => opt.key === optValue);
             }).filter(Boolean);
             setSelectedItems(selectedOpts);
             if (onChange) {
