@@ -52,6 +52,11 @@ protected:
     // For multiplexed sources, properties reflect aggregated/ambiguous values.
     const EventFileProperties& queryIteratorProperties();
 
+    // Resets the operation state following an event traversal. To be invoked by subclasses
+    // that intend to traverse events multiple times, when those subclasses are finished with
+    // the current state.
+    virtual void postTraversalReset();
+
 protected:
     Owned<CMetaInfoState> metaState;
     std::set<std::string> inputPaths;

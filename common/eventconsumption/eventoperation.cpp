@@ -98,6 +98,12 @@ const EventFileProperties& CEventConsumingOp::queryIteratorProperties()
     return cachedSource->queryFileProperties();
 }
 
+void CEventConsumingOp::postTraversalReset()
+{
+    metaState->clearAll();
+    cachedSource.clear();
+}
+
 bool CEventConsumingOp::traverseEvents(IEventVisitor& visitor)
 {
     // Ensure iterator is created and cached
