@@ -3461,6 +3461,9 @@ bool Cws_accessEx::onUserPosix(IEspContext &context, IEspUserPosixRequest &req, 
 
         bool enable = req.getPosixenabled();
         Owned<CLdapSecUser> user = dynamic_cast<CLdapSecUser*>(secmgr->createUser(username, context.querySecureContext()));
+        if (!user)
+            throw makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "onUserPosix: failed to create user %s", username);
+
         if(enable)
         {
             const char* gidnumber = req.getGidnumber();
@@ -3531,6 +3534,9 @@ bool Cws_accessEx::onUserPosixInput(IEspContext &context, IEspUserPosixInputRequ
         }
 
         Owned<CLdapSecUser> user = dynamic_cast<CLdapSecUser*>(secmgr->createUser(username, context.querySecureContext()));
+        if (!user)
+            throw makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "onUserPosixInput: failed to create user %s", username);
+
         secmgr->getUserInfo(*user.get());
 
         resp.setUsername(username);
@@ -3577,6 +3583,8 @@ bool Cws_accessEx::onUserInfoEdit(IEspContext &context, IEspUserInfoEditRequest 
         }
 
         Owned<CLdapSecUser> user = dynamic_cast<CLdapSecUser*>(secmgr->createUser(username, context.querySecureContext()));
+        if (!user)
+            throw makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "onUserInfoEdit: failed to create user %s", username);
 
         user->setFirstName(firstname);
         user->setLastName(lastname);
@@ -3627,6 +3635,9 @@ bool Cws_accessEx::onUserInfoEditInput(IEspContext &context, IEspUserInfoEditInp
         }
 
         Owned<CLdapSecUser> user = dynamic_cast<CLdapSecUser*>(secmgr->createUser(username, context.querySecureContext()));
+        if (!user)
+            throw makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "onUserInfoEditInput: failed to create user %s", username);
+
         secmgr->getUserInfo(*user.get());
 
         resp.setUsername(username);
@@ -4695,6 +4706,11 @@ bool Cws_accessEx::onUserAccountExport(IEspContext &context, IEspUserAccountExpo
                     continue;
 
                 Owned<CLdapSecUser> user = dynamic_cast<CLdapSecUser*>(secmgr->createUser(username, context.querySecureContext()));
+                if (!user)
+                {
+                    OERRLOG("Failed to create user %s when exporting user account info.", username);
+                    continue;
+                }
                 secmgr->getUserInfo(*user.get());
                 const char* firstname = user->getFirstName();
                 const char* lastname = user->getLastName();
@@ -4761,6 +4777,11 @@ bool Cws_accessEx::onUserAccountExport(IEspContext &context, IEspUserAccountExpo
                         continue;
 
                     Owned<CLdapSecUser> user = dynamic_cast<CLdapSecUser*>(secmgr->createUser(usrname, context.querySecureContext()));
+                    if (!user)
+                    {
+                        OERRLOG("Failed to create user %s when exporting user account info.", usrname);
+                        continue;
+                    }
                     secmgr->getUserInfo(*user.get());
                     const char* firstname = user->getFirstName();
                     const char* lastname = user->getLastName();
