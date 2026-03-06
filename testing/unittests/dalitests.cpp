@@ -2683,6 +2683,9 @@ public:
             attr.setProp("@job", attrValue);
             attr.setProp("@owner", attrValue);
             attr.setProp("@workunit", attrValue);
+            attr.setPropBool("@rowCompressed", true);
+            attr.setPropInt64("@compressedSize", 9);
+            attr.setPropInt64("@size", 17);
         }
     }
 
@@ -2857,6 +2860,9 @@ public:
             CPPUNIT_ASSERT_MESSAGE("testGetLogicalFilesSorted: Missing cost attributes", costAttrsPresent);
             bool dirAttrsPresent = attrs.hasProp("@directory");
             CPPUNIT_ASSERT_MESSAGE("testGetLogicalFilesSorted: directory attribute should NOT be present", !dirAttrsPresent);
+            CPPUNIT_ASSERT_MESSAGE("testGetLogicalFilesSorted: size field missing", attrs.hasProp("@DFUSFsize"));
+            CPPUNIT_ASSERT_MESSAGE("testGetLogicalFilesSorted: compressed size field missing", attrs.hasProp("@compressedSize"));
+            CPPUNIT_ASSERT_MESSAGE("testGetLogicalFilesSorted: size should use compressed size", attrs.getPropInt64("@DFUSFsize", -1) == attrs.getPropInt64("@compressedSize", -1));
         }
     }
 };
