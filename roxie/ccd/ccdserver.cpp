@@ -5741,7 +5741,7 @@ public:
     virtual const void *nextRow()
     {
         const void * next = inputStream->nextRow();
-        if (next)
+        if (likely(next))
             processed++;
         return next;
     }
@@ -5755,7 +5755,7 @@ public:
     {
         ActivityTimer t(activityStats, timeActivities);
         const void * next = inputStream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
-        if (next)
+        if (likely(next))
             processed++;
         return next;
     }
@@ -5831,7 +5831,7 @@ public:
     virtual const void *nextRow()
     {
         ActivityTimer t(activityStats, timeActivities);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
 
         bool ok;
@@ -5902,7 +5902,7 @@ public:
     virtual const void *nextRow()
     {
         ActivityTimer t(activityStats, timeActivities);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
 
         bool ok;
@@ -5978,7 +5978,7 @@ public:
     virtual const void *nextRow()
     {
         ActivityTimer t(activityStats, timeActivities);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
 
         eof = true;
@@ -6048,7 +6048,7 @@ public:
     virtual const void *nextRow()
     {
         ActivityTimer t(activityStats, timeActivities);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
 
         if (first)
@@ -6058,7 +6058,7 @@ public:
         }
 
         Owned<AggregateRowBuilder> next = aggregated.nextResult();
-        if (next)
+        if (likely(next))
         {
             processed++;
             return next->finalizeRowClear();
@@ -7108,7 +7108,7 @@ public:
             useIter.set(iter);
         }
         const void * next = useIter->nextRow();
-        if (next)
+        if (likely(next))
         {
             processed++;
         }
@@ -7170,7 +7170,7 @@ public:
     {
         ActivityTimer t(activityStats, timeActivities);
         const void * next = inputStream->nextRow();
-        if (next)
+        if (likely(next))
         {
             processed++;
         }
@@ -7446,7 +7446,7 @@ public:
             useStream.set(iterStream);
         }
         const void * next = useStream->nextRow();
-        if (next)
+        if (likely(next))
         {
             processed++;
         }
@@ -7592,7 +7592,7 @@ public:
     virtual const void *nextRow()
     {
         const void * next = inputStream->nextRow();
-        if (next)
+        if (likely(next))
             processed++;
         return next;
     }
@@ -7606,7 +7606,7 @@ public:
     {
         ActivityTimer t(activityStats, timeActivities);
         const void * next = inputStream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
-        if (next)
+        if (likely(next))
             processed++;
         return next;
     }
@@ -7725,7 +7725,7 @@ public:
 
         ReleaseRoxieRow(prev);
         prev = next;
-        if (next)
+        if (likely(next))
         {
             LinkRoxieRow(next);
             processed++;
@@ -7778,7 +7778,7 @@ public:
 
         ReleaseRoxieRow(prev);
         prev = next;
-        if (next)
+        if (likely(next))
         {
             LinkRoxieRow(next);
             processed++;
@@ -8247,7 +8247,7 @@ public:
         ActivityTimer t(activityStats, timeActivities);
         if (keepBest)
         {
-            if (eof)
+            if (unlikely(eof))
                 return NULL;
             // Populate hash table with best rows
             if (!hashTableFilled)
@@ -9009,7 +9009,7 @@ public:
     virtual const void * nextRow()
     {
         ActivityTimer t(activityStats, timeActivities);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
 
         const void * ret = NULL;
@@ -9370,7 +9370,7 @@ public:
         virtual const void * nextRow()
         {
             SimpleActivityTimer t(totalCycles, parent->timeActivities);
-            if (eof)
+            if (unlikely(eof))
                 return NULL;
             const void *ret = parent->readBuffered(idx, oid);
 #ifdef TRACE_SPLIT
@@ -10411,7 +10411,7 @@ public:
         ActivityTimer t(activityStats, timeActivities);
         assertex(rows != NULL);
         const void * next = rows->nextRow();
-        if (next)
+        if (likely(next))
             processed++;
         return next;
     }
@@ -10472,7 +10472,7 @@ public:
     virtual const void * nextRow()
     {
         ActivityTimer t(activityStats, timeActivities);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
         for (;;)
         {
@@ -10507,7 +10507,7 @@ public:
         //Could assert that this isn't grouped
         // MORE - will need rethinking once we rethink the nextRowGE interface for global smart-stepping.
         ActivityTimer t(activityStats, timeActivities);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
 
         for (;;)
@@ -10639,7 +10639,7 @@ public:
         ActivityTimer t(activityStats, timeActivities);
         for (;;)
         {
-            if (eof)
+            if (unlikely(eof))
                 return NULL;
 
             if (gathered.ordinality())
@@ -10676,7 +10676,7 @@ public:
     virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         ActivityTimer t(activityStats, timeActivities);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
 
         if (gathered.ordinality())
@@ -10944,7 +10944,7 @@ public:
     virtual const void * nextRow()
     {
         ActivityTimer t(activityStats, timeActivities);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
         for (;;)
         {
@@ -11347,7 +11347,7 @@ public:
     virtual const void * nextRow()
     {
         ActivityTimer t(activityStats, timeActivities);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
         const void * ret;
         for (;;)
@@ -11415,7 +11415,7 @@ public:
     virtual const void * nextRow()
     {
         ActivityTimer t(activityStats, timeActivities);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
 
         const void * next = inputStream->nextRow();
@@ -11779,7 +11779,7 @@ public:
     virtual const void * nextRow()
     {
         ActivityTimer t(activityStats, timeActivities);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
 
         if (!gathered)
@@ -11809,7 +11809,7 @@ public:
         }
 
         Owned<AggregateRowBuilder> next = aggregated.nextResult();
-        if (next)
+        if (likely(next))
         {
             processed++;
             return next->finalizeRowClear();
@@ -11868,7 +11868,7 @@ public:
     virtual const void * nextRow()
     {
         ActivityTimer t(activityStats, timeActivities);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
         const void * ret = inputStream->ungroupedNextRow();
         if (ret)
@@ -11881,7 +11881,7 @@ public:
     virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         ActivityTimer t(activityStats, timeActivities);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
         const void * ret = inputStream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (ret)
@@ -11968,7 +11968,7 @@ public:
     virtual const void * nextRow()
     {
         ActivityTimer t(activityStats, timeActivities);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
         if (processed==choosenLimit)
         {
@@ -14064,7 +14064,7 @@ public:
     virtual const void * nextRow()
     {
         ActivityTimer t(activityStats, timeActivities);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
         for (;;)
         {
@@ -14300,7 +14300,7 @@ public:
         if (!selectedStream)
             return NULL;
         const void * next = selectedStream->nextRow();
-        if (next)
+        if (likely(next))
             processed++;
         return next;
     }
@@ -14399,7 +14399,7 @@ public:
         ActivityTimer t(activityStats, timeActivities);
         assertex(rows);
         const void * next = rows->nextRow();
-        if (next)
+        if (likely(next))
             processed++;
         return next;
     }
@@ -14659,7 +14659,7 @@ public:
         {
             const void *next = pending[mergeheap[0]];
             readNext();
-            if (next)
+            if (likely(next))
                 processed++;
             return next;
         }
@@ -14740,7 +14740,7 @@ public:
     virtual const void * nextRow()
     {
         ActivityTimer t(activityStats, timeActivities);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
 
         const void * ret = nextFromInputs();
@@ -15052,7 +15052,7 @@ public:
     virtual const void * nextRow()
     {
         ActivityTimer t(activityStats, timeActivities);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
 
         for (;;)
@@ -15146,7 +15146,7 @@ public:
     virtual const void * nextRow()
     {
         ActivityTimer t(activityStats, timeActivities);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
         for (;;)
         {
@@ -15493,7 +15493,7 @@ public:
     virtual const void * nextRow()
     {
         ActivityTimer t(activityStats, timeActivities);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
         for (;;)
         {
@@ -15753,7 +15753,7 @@ public:
     virtual const void * nextRow()
     {
         ActivityTimer t(activityStats, timeActivities);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
         unsigned emptyIterations = 0;
         for (;;)
@@ -15897,7 +15897,7 @@ public:
 
     virtual const void * nextRow()
     {
-        if (eof)
+        if (unlikely(eof))
             return NULL;
         const void * ret = input.dequeue();
         if (!ret)
@@ -16086,7 +16086,7 @@ public:
         ActivityTimer t(activityStats, timeActivities);
         for (;;)
         {
-            if (eof)
+            if (unlikely(eof))
                 return NULL;
 
             recordsReady.wait();
@@ -17783,7 +17783,7 @@ public:
     {
         ActivityTimer t(activityStats, timeActivities);
         const void * next = merger.nextRow();
-        if (next)
+        if (likely(next))
             processed++;
         return next;
     }
@@ -17792,7 +17792,7 @@ public:
     {
         ActivityTimer t(activityStats, timeActivities);
         const void * next = merger.nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
-        if (next)
+        if (likely(next))
             processed++;
         return next;
     }
@@ -17896,7 +17896,7 @@ public:
     {
         ActivityTimer t(activityStats, timeActivities);
         const void * next = processor.nextRow();
-        if (next)
+        if (likely(next))
             processed++;
         return next;
     }
@@ -17905,7 +17905,7 @@ public:
     {
         ActivityTimer t(activityStats, timeActivities);
         const void * next = processor.nextGE(seek, numFields, wasCompleteMatch, stepExtra);
-        if (next)
+        if (likely(next))
             processed++;
         return next;
     }
@@ -18594,7 +18594,7 @@ public:
     const void * nextRow()
     {
         ActivityTimer t(activityStats, timeActivities);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
         const void *ret;
         for (;;)
@@ -20463,7 +20463,7 @@ public:
     virtual const void * nextRow()
     {
         ActivityTimer t(activityStats, timeActivities);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
         if (curIndex >= sortedCount)
         {
@@ -20955,7 +20955,7 @@ public:
         if (buff.isItem(index))
         {
             const void * next = buff.item(index++);
-            if (next)
+            if (likely(next))
                 processed++;
             return next;
         }
@@ -22778,7 +22778,7 @@ public:
     virtual const void *nextRow()
     {
         ActivityTimer t(activityStats, timeActivities);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
         else if (useRemote())
             return remote->nextRow();
@@ -22970,7 +22970,7 @@ public:
     virtual const void *nextRow()
     {
         ActivityTimer t(activityStats, timeActivities);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
         else if (useRemote())
             return remote->nextRow();
@@ -23084,7 +23084,7 @@ public:
     virtual const void *nextRow()
     {
         ActivityTimer t(activityStats, timeActivities);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
         else if (useRemote())
             return remote->nextRow();
@@ -23173,7 +23173,7 @@ public:
     virtual const void *nextRow()
     {
         ActivityTimer t(activityStats, timeActivities);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
         else if (useRemote())
             return remote->nextRow();
@@ -23477,7 +23477,7 @@ public:
             gatherMerged();
 
         Owned<AggregateRowBuilder> next = resultAggregator.nextResult();
-        if (next)
+        if (likely(next))
         {
             processed++;
             return next->finalizeRowClear();
@@ -24543,7 +24543,7 @@ public:
     virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         ActivityTimer t(activityStats, timeActivities);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
         if (firstRead)
         {
@@ -25339,14 +25339,14 @@ public:
     virtual const void *nextRow()
     {
         ActivityTimer t(activityStats, timeActivities);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
 
         if (!gathered)
             gatherMerged();
 
         Owned<AggregateRowBuilder> next = resultAggregator.nextResult();
-        if (next)
+        if (likely(next))
         {
             processed++;
             return next->finalizeRowClear();
@@ -29139,7 +29139,7 @@ public:
         ActivityTimer t(activityStats, ctx->queryOptions().timeActivities);
         ASSERT(state == STATEstarted);
         ASSERT(allRead || !eof);
-        if (eof)
+        if (unlikely(eof))
             return NULL;
     again:
         const char *nextSource = input[count++];

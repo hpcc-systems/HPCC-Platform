@@ -89,7 +89,7 @@ void setMemTraceSizeLimit(memsize_t value)
 }
 
 unsigned DATA_ALIGNMENT_SIZE=0x400;
-const static unsigned UNLIMITED_PAGES = (unsigned)-1;
+constexpr static unsigned UNLIMITED_PAGES = (unsigned)-1;
 
 /*------------
 Some thoughts on improving this memory manager:
@@ -1412,8 +1412,8 @@ static void setParallelSyncReleaseGranularity(size_t granularity, unsigned scali
     parallelSyncReleaseThreshold = granularity * scaling;
 }
 #elif defined(PARALLEL_SYNC_RELEASE)
-const static size_t parallelSyncReleaseGranularity = DEFAULT_PARALLEL_SYNC_RELEASE_GRANULARITY;
-const static size_t parallelSyncReleaseThreshold = DEFAULT_PARALLEL_SYNC_RELEASE_THRESHOLD;
+constexpr static size_t parallelSyncReleaseGranularity = DEFAULT_PARALLEL_SYNC_RELEASE_GRANULARITY;
+constexpr static size_t parallelSyncReleaseThreshold = DEFAULT_PARALLEL_SYNC_RELEASE_THRESHOLD;
 #endif
 
 
