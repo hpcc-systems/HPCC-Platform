@@ -211,7 +211,7 @@ const subMenuItems: SubMenuItems = {
     ],
     "operations": [
         { headerText: nlsHPCC.Topology + " (L)", itemKey: "/operations" },
-        { headerText: nlsHPCC.DiskUsage + " (L)", itemKey: "/operations/diskusage" },
+        { headerText: nlsHPCC.DiskUsage, itemKey: "/operations/diskusage" },
         { headerText: nlsHPCC.TargetClusters + " (L)", itemKey: "/operations/clusters" },
         { headerText: nlsHPCC.ClusterProcesses + " (L)", itemKey: "/operations/processes" },
         { headerText: nlsHPCC.SystemServers + " (L)", itemKey: "/operations/servers" },

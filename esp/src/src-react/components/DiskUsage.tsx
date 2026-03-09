@@ -1,17 +1,171 @@
 import * as React from "react";
-import { Link } from "@fluentui/react";
-import { Divider, Toolbar, ToolbarButton } from "@fluentui/react-components";
-import { ArrowClockwise20Regular } from "@fluentui/react-icons";
+import { Divider, Link, Toolbar, ToolbarButton } from "@fluentui/react-components";
+import { ArrowClockwise20Regular, Filter20Regular, FilterFilled } from "@fluentui/react-icons";
+import { DFUService, WsDfu } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
 import { ComponentDetails as ComponentDetailsWidget, Summary as SummaryWidget } from "src/DiskUsage";
 import nlsHPCC from "src/nlsHPCC";
 import * as Utility from "src/Utility";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { SizeMe } from "../layouts/SizeMe";
-import { pushUrl } from "../util/history";
-import { FluentGrid, useFluentStoreState } from "./controls/Grid";
+import { pushParams, pushUrl } from "../util/history";
+import { FluentColumns, FluentGrid, useFluentStoreState } from "./controls/Grid";
 import { FolderUsageCards } from "./cards/DiskUsageCard";
+import { Fields } from "./forms/Fields";
+import { Filter } from "./forms/Filter";
 import { useTargetClusterUsageEx } from "../hooks/diskUsage";
+
+const logger = scopedLogger("src-react/components/DiskUsage.tsx");
+
+type DiskUsageRow = WsDfu.DFUSpaceItem & { __hpcc_id: string };
+
+const DiskUsageFilterFields: Fields = {
+    "CountBy": {
+        type: "dropdown",
+        label: nlsHPCC.GroupBy,
+        value: "Owner",
+        options: [
+            { key: "Owner", text: nlsHPCC.Owner },
+            { key: "Scope", text: nlsHPCC.Scope },
+            { key: "Year", text: nlsHPCC.Year },
+            { key: "Quarter", text: nlsHPCC.Quarter },
+            { key: "Month", text: nlsHPCC.Month },
+            { key: "Day", text: nlsHPCC.Day },
+        ]
+    },
+    "ScopeUnder": { type: "string", label: nlsHPCC.Scope },
+    "OwnerUnder": { type: "string", label: nlsHPCC.Owner },
+    "StartDate": { type: "datetime", label: nlsHPCC.FromDate },
+    "EndDate": { type: "datetime", label: nlsHPCC.ToDate },
+};
+
+function formatDiskUsageQuery(_filter: { [id: string]: any }): { [id: string]: any } {
+    const filter = { ..._filter };
+    switch (filter.CountBy) {
+        case "Year":
+        case "Quarter":
+        case "Month":
+        case "Day":
+            filter.Interval = filter.CountBy;
+            filter.CountBy = "Date";
+            break;
+    }
+    if (filter.StartDate) {
+        filter.StartDate = new Date(filter.StartDate).toISOString();
+    }
+    if (filter.EndDate) {
+        filter.EndDate = new Date(filter.EndDate).toISOString();
+    }
+    return filter;
+}
+
+interface DiskUsageProps {
+    filter?: { [id: string]: any };
+}
+
+const emptyDiskUsageFilter = {};
+
+export const DiskUsage: React.FunctionComponent<DiskUsageProps> = ({
+    filter = emptyDiskUsageFilter
+}) => {
+
+    const dfuService = React.useMemo(() => new DFUService({ baseUrl: "" }), []);
+    const hasFilter = React.useMemo(() => {
+        return Object.entries(filter).some(([key, value]) => {
+            if (value === undefined || value === "") return false;
+            if (key === "CountBy" && value === "Owner") return false;
+            return true;
+        });
+    }, [filter]);
+    const [showFilter, setShowFilter] = React.useState(false);
+    const [data, setData] = React.useState<DiskUsageRow[]>([]);
+    const { refreshTable } = useFluentStoreState({});
+    const abortController = React.useRef<AbortController | null>(null);
+
+    const refresh = React.useCallback(() => {
+        if (abortController.current) abortController.current.abort();
+        abortController.current = new AbortController();
+        const query = { CountBy: "Owner", ...filter };
+        const request = formatDiskUsageQuery(query);
+        request.abortSignal_ = abortController.current.signal;
+        dfuService.DFUSpace(request)
+            .then((response: WsDfu.DFUSpaceResponse) => {
+                const items: WsDfu.DFUSpaceItem[] = response?.DFUSpaceItems?.DFUSpaceItem ?? [];
+                setData(items.map(item => ({
+                    ...item,
+                    __hpcc_id: item.Name
+                })));
+            })
+            .catch(err => {
+                if (err.name === "AbortError") return;
+                setData([]);
+                logger.error(err);
+            });
+    }, [dfuService, filter]);
+
+    React.useEffect(() => {
+        refresh();
+        return () => {
+            if (abortController.current) {
+                abortController.current.abort();
+                abortController.current = null;
+            }
+        };
+    }, [refresh]);
+
+    const columns = React.useMemo((): FluentColumns => ({
+        Name: { label: nlsHPCC.Grouping, width: 90 },
+        NumOfFiles: { label: nlsHPCC.FileCounts, width: 90, justify: "right" },
+        TotalSize: { label: nlsHPCC.TotalSize, width: 125, justify: "right" },
+        LargestFile: { label: nlsHPCC.LargestFile },
+        LargestSize: { label: nlsHPCC.LargestSize, width: 125, justify: "right" },
+        SmallestFile: { label: nlsHPCC.SmallestFile },
+        SmallestSize: { label: nlsHPCC.SmallestSize, width: 125, justify: "right" },
+        NumOfFilesUnknown: { label: nlsHPCC.FilesWithUnknownSize, width: 160, justify: "right" },
+    }), []);
+
+    const filterFields: Fields = React.useMemo(() => {
+        const fields: Fields = {};
+        for (const field in DiskUsageFilterFields) {
+            fields[field] = { ...DiskUsageFilterFields[field], value: filter[field] ?? (DiskUsageFilterFields[field] as { value?: string }).value };
+        }
+        return fields;
+    }, [filter]);
+
+    return <HolyGrail
+        header={
+            <Toolbar>
+                <ToolbarButton appearance="subtle" icon={<ArrowClockwise20Regular />} aria-label={nlsHPCC.Refresh} onClick={() => refresh()}>
+                    {nlsHPCC.Refresh}
+                </ToolbarButton>
+                <ToolbarButton appearance="subtle" icon={hasFilter ? <FilterFilled /> : <Filter20Regular />} aria-label={nlsHPCC.Filter} onClick={() => setShowFilter(true)}>
+                    {nlsHPCC.Filter}
+                </ToolbarButton>
+            </Toolbar>
+        }
+        main={
+            <>
+                <SizeMe>{({ size }) =>
+                    <div style={{ width: "100%", height: "100%" }}>
+                        <div style={{ position: "absolute", width: "100%", height: `${size.height}px` }}>
+                            <FluentGrid
+                                data={data}
+                                primaryID="__hpcc_id"
+                                sort={{ attribute: "Name", descending: false }}
+                                columns={columns}
+                                setSelection={() => null}
+                                setTotal={() => null}
+                                refresh={refreshTable}
+                            />
+                        </div>
+                    </div>
+                }</SizeMe>
+                <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
+            </>
+        }
+    />;
+};
 
 interface SummaryProps {
     cluster?: string;
