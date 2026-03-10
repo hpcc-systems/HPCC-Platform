@@ -1905,14 +1905,9 @@ public:
         //    (i.e. rows, row arrays) the the acquire is not required.  If this assumption is broken the destructor must
         //    contain an acquire barrier.
 
-        //It is coded this way to avoid re-evaluating ROWCOUNT() == 0. You could code it using a goto, but it generates worse code.
-        if ((ROWCOUNT(rowCount) == 0) ?
-                //If the count is zero then use comma expression to set the count for the record to zero as a
-                //side-effect of this condition.  Could be avoided if leak checking and checkHeap worked differently.
-                (header->count.store(rowCount, std::memory_order_relaxed), true) :
-                //otherwise atomically decrement the count, and check if this thread was the last one to release
-                //Note: the assignment to rowCount allows the compiler to reuse a register, improving the code slightly
-                ROWCOUNT(rowCount = header->count.fetch_sub(1, std::memory_order_release)) == 1)
+        //No need to reassign to rowCount if dec and read is required - since only top bit is used, and that must be the same
+        //No need to ensure header->count is 0 because the free list overlaps the count so it is never checked.
+        if (ROWCOUNT(rowCount) == 0 || ROWCOUNT(header->count.fetch_sub(1, std::memory_order_release)) == 1)
         {
             //See note above detailing the missing acquire barrier
             if (rowCount & ROWCOUNT_DESTRUCTOR_FLAG)
@@ -1952,14 +1947,9 @@ public:
         //    (i.e. rows, row arrays) the the acquire is not required.  If this assumption is broken the destructor must
         //    contain an acquire barrier.
 
-        //It is coded this way to avoid re-evaluating ROWCOUNT() == 0. You could code it using a goto, but it generates worse code.
-        if ((ROWCOUNT(rowCount) == 0) ?
-                //If the count is zero then use comma expression to set the count for the record to zero as a
-                //side-effect of this condition.  Could be avoided if leak checking and checkHeap worked differently.
-                (header->count.store(rowCount, std::memory_order_relaxed), true) :
-                //otherwise atomically decrement the count, and check if this thread was the last one to release
-                //Note: the assignment to rowCount allows the compiler to reuse a register, improving the code slightly
-                ROWCOUNT(rowCount = header->count.fetch_sub(1, std::memory_order_release)) == 1)
+        //No need to reassign to rowCount if dec and read is required - since only top bit is used, and that must be the same
+        //No need to ensure header->count is 0 because the free list overlaps the count so it is never checked.
+        if (ROWCOUNT(rowCount) == 0 || ROWCOUNT(header->count.fetch_sub(1, std::memory_order_release)) == 1)
         {
             //See note above detailing the missing acquire barrier
             ReleaseRoxieRowArray(numRows, (const void * *)rowset);
@@ -3750,7 +3740,7 @@ char * ChunkedHeaplet::allocateSingle(unsigned allocated, bool incCounter, unsig
 
     if (heapFlags & RHFscanning)
     {
-        unsigned numAllocs = count.load(std::memory_order_acquire)+allocated-1;
+        unsigned numAllocs = count.load(std::memory_order_relaxed)+allocated-1;
         unsigned curFreeBase = freeBase.load(std::memory_order_relaxed);
 
         //If more than half full allocate an entry from the expanding free area
@@ -3821,12 +3811,12 @@ char * ChunkedHeaplet::allocateSingle(unsigned allocated, bool incCounter, unsig
     else
     {
 #ifdef HAS_EFFICIENT_CAS
-        unsigned old_blocks = r_blocks.load(std::memory_order_acquire); // acquire ensures that *(unsigned *)ret is up to date
+        unsigned old_blocks = r_blocks.load(std::memory_order_relaxed); // relaxed because the cas will fail if not up to date
 #endif
         for (;;)
         {
 #ifndef HAS_EFFICIENT_CAS
-            unsigned old_blocks = r_blocks.load(std::memory_order_acquire); // acquire ensures that *(unsigned *)ret is up to date
+            unsigned old_blocks = r_blocks.load(std::memory_order_relaxed); // relaxed because the cas will fail if not up to date
 #endif
 
             unsigned r_ret = (old_blocks & RBLOCKS_OFFSET_MASK);
@@ -3842,7 +3832,7 @@ char * ChunkedHeaplet::allocateSingle(unsigned allocated, bool incCounter, unsig
                 //To avoid that a tag is stored in the top bits of r_blocks which is modified whenever an item is added
                 //onto the free list.  The offsets in the freelist do not need tags.
                 unsigned new_blocks = (old_blocks & RBLOCKS_CAS_TAG_MASK) | next;
-                if (compare_exchange_efficient(r_blocks, old_blocks, new_blocks, std::memory_order_acquire, std::memory_order_acquire))
+                if (compare_exchange_efficient(r_blocks, old_blocks, new_blocks, std::memory_order_relaxed, std::memory_order_relaxed))
                     break;
 
                 //NOTE: Currently I think a lock is always held before allocating from a chunk, so I'm not sure there is an ABA problem!
