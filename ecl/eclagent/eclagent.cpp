@@ -2102,6 +2102,11 @@ void EclAgent::doProcess()
         e->Release();
     }
     DBGLOG("Workunit written complete");
+
+    if (getClusterType(clusterType)==ThorLCRCluster)
+    {
+        runWorkunitAnalyser(*wuRead, getComponentConfigSP(), nullptr, true, calculateThorCostPerHour(getNodes()), nullptr);
+    }
 }
 
 void EclAgent::runProcess(IEclProcess *process)
@@ -2158,15 +2163,18 @@ void EclAgent::runProcess(IEclProcess *process)
         result.append(value.str());
         return true;
     };
-    std::unordered_map<std::string, __uint64> memorySpecifications;
-    getMemorySpecifications(memorySpecifications, agentTopology, jobMemorySectionName, memLimitMB, getWorkUnitValueFunc);
+    auto getWorkUnitValueBoolFunc = [this](const char *prop, bool defValue)
+    {
+        return queryWorkUnit()->getDebugValueBool(prop, defValue);
+    };
+    Owned<IPropertyTree> memorySpecification = getMemorySpecifications(agentTopology, jobMemorySectionName, memLimitMB, getWorkUnitValueFunc, getWorkUnitValueBoolFunc);
 
-    unsigned queryMemoryMB = (unsigned)(memorySpecifications["query"] / 0x100000);
+    unsigned queryMemoryMB = (unsigned)(memorySpecification->getPropInt64("@query") / 0x100000);
 
     if (0 == queryMemoryMB)
     {
-        unsigned totalRequirementsMB = (unsigned)(memorySpecifications["total"] / 0x100000);
-        unsigned recommendedMaxMB = (unsigned)(memorySpecifications["recommendedMaxMemory"] / 0x100000);
+        unsigned totalRequirementsMB = (unsigned)(memorySpecification->getPropInt64("@total") / 0x100000);
+        unsigned recommendedMaxMB = (unsigned)(memorySpecification->getPropInt64("@recommendedMaxMemory") / 0x100000);
         unsigned remainingMemoryMB = recommendedMaxMB - totalRequirementsMB;
         if (agentTopology->getPropBool("@useChildProcesses"))
         {
@@ -2183,21 +2191,10 @@ void EclAgent::runProcess(IEclProcess *process)
             queryMemoryMB = remainingMemoryMB;
     }
 
-    // a simple helper used below, to fetch bool from workunit, or 'jobMemory/' or legacy location
-    auto getBoolSetting = [&](const char *setting, bool defaultValue)
-    {
-        VStringBuffer attrSetting("@%s", setting);
-        return queryWorkUnit()->getDebugValueBool(setting,
-            agentTopology->getPropBool(VStringBuffer("jobMemory/%s", attrSetting.str()),
-            agentTopology->getPropBool(attrSetting,
-            defaultValue
-                                 )));
-    };
-
-    bool allowHugePages = getBoolSetting("heapUseHugePages", false);
-    bool allowTransparentHugePages = getBoolSetting("heapUseTransparentHugePages", true);
-    bool retainMemory = getBoolSetting("heapRetainMemory", false);
-    bool lockMemory = getBoolSetting("heapLockMemory", false);
+    const bool allowHugePages = memorySpecification->getPropBool("@heapUseHugePages", false);
+    const bool allowTransparentHugePages = memorySpecification->getPropBool("@heapUseTransparentHugePages", true);
+    const bool retainMemory = memorySpecification->getPropBool("@heapRetainMemory", false);
+    const bool lockMemory = memorySpecification->getPropBool("@heapLockMemory", false);
 
     memsize_t memLimitBytes = (memsize_t)queryMemoryMB * 1024 * 1024;
     roxiemem::setTotalMemoryLimit(allowHugePages, allowTransparentHugePages, retainMemory, lockMemory, memLimitBytes, 0, NULL, NULL);
@@ -2206,7 +2203,7 @@ void EclAgent::runProcess(IEclProcess *process)
 
     rowManager.setown(roxiemem::createRowManager(0, NULL, queryDummyContextLogger(), allocatorMetaCache, false));
     setHThorRowManager(rowManager.get());
-    rowManager->setActivityTracking(getBoolSetting("traceRoxiePeakMemory", false));
+    rowManager->setActivityTracking(memorySpecification->getPropBool("@traceRoxiePeakMemory", false));
 
     if (debugContext)
         debugContext->checkBreakpoint(DebugStateReady, NULL, NULL);
