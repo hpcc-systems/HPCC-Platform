@@ -87,7 +87,7 @@ bool CIndexPlotOp::visitEvent(CEvent& event)
         break;
     case EventIndexCacheMiss:
         if (valueSelector == ValueSelector::CacheMisses)
-            cellValue = 1;
+            cellValue++;
         break;
     default:
         break;
@@ -418,6 +418,7 @@ bool CIndexPlotOp::doXAxis(LinkChanges& linkChanges, size_t yAxisIdx)
         // prepare for next iteration
         cellIdx++;
         linkChanges.pop_back();
+        postTraversalReset();
     }
     outputEOLN();
 
