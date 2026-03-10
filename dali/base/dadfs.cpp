@@ -920,7 +920,7 @@ static void foreignDaliSendRecv(const INode *foreigndali,CMessageBuffer &mb, uns
     comm->sendRecv(mb,0,MPTAG_DFS_REQUEST);
 }
 
-static bool isLocalDali(const INode *foreigndali)
+bool isLocalDali(const INode *foreigndali)
 {
     if (!foreigndali)
         return true;
