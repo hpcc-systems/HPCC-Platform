@@ -97,6 +97,9 @@ global:
     storageAtRest: 0.0208000000001 # Blob storage pricing (East US/Flag NS/LRS redundancy/Hot)
     storageReads: 0.00400000000001 # Blob storage pricing (East US/Flag NS/LRS redundancy/Hot)
     storageWrites: 0.0500000000001 # Blob storage pricing (East US/Flag NS/LRS redundancy/Hot)
+    #warnlimit: 500.0 # $ - log a warning if the cost exceeds this limit
+    #limit:     1000.0 # $ - abort the job if the cost exceeds this limit
+    #hardlimit: 2000.0 # $ - maximum allowed cost for a job. This value is used if other limits are higher.
 
   # postJobCommand will execute at the end of a dynamically launched K8s job,
   # when the main entrypoint process finishes, or if the readiness probes trigger a preStop event.
