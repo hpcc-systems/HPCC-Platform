@@ -54,28 +54,18 @@ constexpr static const char* DUMP_STRUCTURE_FILE_BYTES_READ = "bytesRead";
 //  `virtual void recordAttribute(EventAttr id, const char* name, const char* value, bool quoted) = 0;`
 class CDumpEventVisitor : public CInterfaceOf<IEventVisitor>
 {
+public:
+    CDumpEventVisitor(CMetaInfoState& _metaState, bool _fullPathOutput)
+        : metaState(_metaState), fullPathOutput(_fullPathOutput)
+    {
+    }
+
 public: // IEventVisitor
     virtual bool visitEvent(CEvent& event) override
     {
         visitEvent(event.queryType());
-        for (CEventAttribute& attr : event.assignedAttributes)
-        {
-            switch (attr.queryTypeClass())
-            {
-            case EATCtext:
-            case EATCtimestamp:
-                doVisitAttribute(attr.queryId(), attr.queryTextValue());
-                break;
-            case EATCnumeric:
-                doVisitAttribute(attr.queryId(), attr.queryNumericValue());
-                break;
-            case EATCboolean:
-                doVisitAttribute(attr.queryId(), attr.queryBooleanValue());
-                break;
-            default:
-                throw makeStringExceptionV(-1, "unsupported attribute type class %u", attr.queryTypeClass());
-            }
-        }
+        for (const CEventAttribute& attr : event.assignedAttributes)
+            doVisitAttribute(event, attr);
         departEvent();
         return true;
     }
@@ -84,6 +74,39 @@ protected:
     virtual void visitEvent(EventType id) {};
 
     virtual void departEvent() {};
+
+    void doVisitAttribute(CEvent& event, const CEventAttribute& attr)
+    {
+        EventAttr attrId = attr.queryId();
+        switch (attr.queryTypeClass())
+        {
+        case EATCtext:
+            // Special handling for Path: resolve through FileId if present
+            if (EvAttrPath == attrId && event.hasAttribute(EvAttrFileId))
+            {
+                StringBuffer path;
+                metaState.selectFilePath(path, event.queryNumericValue(EvAttrFileId), fullPathOutput);
+                if (!path.isEmpty())
+                {
+                    doVisitAttribute(attrId, path);
+                    break;
+                }
+            }
+            doVisitAttribute(attrId, attr.queryTextValue());
+            break;
+        case EATCtimestamp:
+            doVisitAttribute(attrId, attr.queryTextValue());
+            break;
+        case EATCnumeric:
+            doVisitAttribute(attrId, attr.queryNumericValue());
+            break;
+        case EATCboolean:
+            doVisitAttribute(attrId, attr.queryBooleanValue());
+            break;
+        default:
+            throw makeStringExceptionV(-1, "unsupported attribute type class %u for attribute %s", attr.queryTypeClass(), queryEventAttributeName(attrId));
+        }
+    }
 
 protected:
     void doVisitHeader(const char* filename, uint32_t version)
@@ -133,4 +156,8 @@ protected:
     }
 
     virtual void recordAttribute(EventAttr id, const char* name, const char* value, bool quoted) = 0;
+
+protected:
+    CMetaInfoState& metaState;
+    bool fullPathOutput;
 };

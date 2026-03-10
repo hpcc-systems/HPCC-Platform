@@ -22,6 +22,8 @@
 class CPTreeEventVisitor : public CDumpEventVisitor
 {
 public:
+    using CDumpEventVisitor::CDumpEventVisitor;
+
     virtual bool visitFile(const char* filename, uint32_t version) override
     {
         tree.setown(createPTree(DUMP_STRUCTURE_ROOT));
@@ -64,7 +66,7 @@ protected:
     IPropertyTree* active = nullptr;
 };
 
-IEventPTreeCreator* createEventPTreeCreator()
+IEventPTreeCreator* createEventPTreeCreator(CMetaInfoState& metaState, bool fullPathOutput)
 {
     class Creator : public CInterfaceOf<IEventPTreeCreator>
     {
@@ -79,13 +81,13 @@ IEventPTreeCreator* createEventPTreeCreator()
             return visitor->queryTree();
         }
 
-        Creator()
+        Creator(CMetaInfoState& _metaState, bool _fullPathOutput)
         {
-            visitor.setown(new CPTreeEventVisitor);
+            visitor.setown(new CPTreeEventVisitor(_metaState, _fullPathOutput));
         }
 
     private:
         Owned<CPTreeEventVisitor> visitor;
     };
-    return new Creator;
+    return new Creator(metaState, fullPathOutput);
 }

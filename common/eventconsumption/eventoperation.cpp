@@ -41,6 +41,11 @@ void CEventConsumingOp::setOutput(IBufferedSerialOutputStream& _out)
     out.set(&_out);
 }
 
+StringBuffer& CEventConsumingOp::selectFilePath(StringBuffer& buf, __uint64 fileId) const
+{
+    return metaState->selectFilePath(buf, fileId, fullPathOutput);
+}
+
 bool CEventConsumingOp::acceptEvents(const char* eventNames)
 {
     return ensureFilter()->acceptEvents(eventNames);
