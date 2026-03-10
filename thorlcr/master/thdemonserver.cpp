@@ -144,32 +144,35 @@ private:
     }
     void checkCostLimit(CGraphBase &graph)
     {
-        const cost_type totalCost = previousExecutionCost + graph.getTotalCost();
-        if (costLimit && (totalCost > costLimit))
+        if (costLimit || warnCostLimit)
         {
-            WARNLOG("ABORT job cost exceeds limit");
-            graph.fireException(MakeThorException(TE_CostExceeded, "Job cost exceeds limit"));
-        }
-        else if (warnCostLimit && (totalCost > warnCostLimit))
-        {
-            const CJobBase &job = graph.queryJob();
-            Owned<IWorkUnit> wu = &(job.queryWorkUnit().lock());
-
-            // Ensure that the cost warning message hasn't already been logged
-            Owned<IConstWUExceptionIterator> exceptions = &wu->getExceptions();
-            ForEach(*exceptions)
+            const cost_type totalCost = previousExecutionCost + graph.getTotalCost();
+            if (costLimit && (totalCost > costLimit))
             {
-                IConstWUException &ex = exceptions->query();
-                if (ex.getExceptionCode() == ENGINEERR_WARN_COST_EXCEEDED)
-                {
-                    warnCostLimit = 0; // disable warnCostLimit checking for this graph
-                    return;
-                }
+                WARNLOG("ABORT job cost exceeds limit");
+                graph.fireException(MakeThorException(TE_CostExceeded, "Job cost exceeds limit"));
             }
-            VStringBuffer msg("High job cost - current cost %0.2f", cost_type2money(totalCost));
-            addExceptionToWorkunit(wu, SeverityWarning, queryComponentName(), ENGINEERR_WARN_COST_EXCEEDED, msg.str(), nullptr, 0, 0, 0);
-            OWARNLOG("%s (Job %s)", msg.str(), wu->queryWuid());
-            warnCostLimit = 0; // disable warnCostLimit checking for this graph
+            if (warnCostLimit && (totalCost > warnCostLimit))
+            {
+                const CJobBase &job = graph.queryJob();
+                Owned<IWorkUnit> wu = &(job.queryWorkUnit().lock());
+
+                // Ensure that the cost warning message hasn't already been logged
+                Owned<IConstWUExceptionIterator> exceptions = &wu->getExceptions();
+                ForEach(*exceptions)
+                {
+                    IConstWUException &ex = exceptions->query();
+                    if (ex.getExceptionCode() == ENGINEERR_WARN_COST_EXCEEDED)
+                    {
+                        warnCostLimit = 0; // disable warnCostLimit checking for this graph execution
+                        return;
+                    }
+                }
+                VStringBuffer msg("High job cost - current cost %0.2f exceeds warning threshold %0.2f", cost_type2money(totalCost), cost_type2money(warnCostLimit));
+                addExceptionToWorkunit(wu, SeverityWarning, queryComponentName(), ENGINEERR_WARN_COST_EXCEEDED, msg.str(), nullptr, 0, 0, 0);
+                OWARNLOG("%s (Job %s)", msg.str(), wu->queryWuid());
+                warnCostLimit = 0; // disable warnCostLimit checking for this graph execution
+            }
         }
     }
     void updateGraphStats(IConstWorkUnit &wu, const char *graphName, unsigned wfid, CGraphBase & graph)

@@ -57,6 +57,7 @@
 
 #include "ws_dfsclient.hpp"
 #include "wfcontext.hpp"
+#include "engineerr.hpp"
 
 using roxiemem::OwnedRoxieString;
 
@@ -3310,11 +3311,6 @@ void EclAgent::addTimings(IWorkUnit *w)
     updateWorkunitTimings(w, queryActiveTimer());
 }
 
-static unsigned calcNextWaitTime(unsigned currentWaitTime, unsigned otherWaitTime)
-{
-    return (currentWaitTime < otherWaitTime) ? currentWaitTime : otherWaitTime;
-}
-
 // eclagent abort monitoring
 void EclAgent::abortMonitor()
 {
@@ -3335,7 +3331,7 @@ void EclAgent::abortMonitor()
                 waittime = guillotineleft;
         }
         if (abortmonitor->guillotineCost || abortmonitor->warnCostLimit)
-            waittime = calcNextWaitTime(waittime, checkCostInterval);
+            waittime = std::min(waittime, checkCostInterval);
 
         if (abortmonitor->sem.wait(waittime*1000) && abortmonitor->stopping)
             return;
@@ -3383,7 +3379,7 @@ void EclAgent::abortMonitor()
                 if (abortmonitor->warnCostLimit && (totalCost > abortmonitor->warnCostLimit))
                 {
                     VStringBuffer msg("High job cost - current cost %0.2f", cost_type2money(totalCost));
-                    addExceptionEx(SeverityWarning, MSGAUD_programmer, "eclagent", 1000, msg.str(), NULL, 0, 0, false, false);
+                    addExceptionEx(SeverityWarning, MSGAUD_programmer, "eclagent", ENGINEERR_WARN_COST_EXCEEDED, msg.str(), NULL, 0, 0, false, false);
                     OWARNLOG("%s (Job %s)", msg.str(), wuid.str());
                     abortmonitor->setWarnCostLimit(0); // only warn once
                 }
