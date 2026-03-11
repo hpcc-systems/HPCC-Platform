@@ -6,7 +6,8 @@ import { useConst } from "@fluentui/react-hooks";
 import { bundleIcon, Folder20Filled, Folder20Regular, FolderOpen20Filled, FolderOpen20Regular } from "@fluentui/react-icons";
 import { IScope } from "@hpcc-js/comms";
 import nlsHPCC from "src/nlsHPCC";
-import { FetchStatus, MetricsView, useMetricsGraphLayout } from "../hooks/metrics";
+import { FetchStatus, METRICS_GRAPH_TRACK_SELECTION, MetricsView, useMetricsGraphLayout } from "../hooks/metrics";
+import { useUserStore } from "../hooks/store";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeComponent, AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 import { isLayoutComplete, LayoutStatus, MetricGraph, MetricGraphWidget } from "../util/metricGraph";
@@ -104,6 +105,7 @@ export function useMetricsGraphData(metrics: IScope[], view: MetricsView, lineag
 }
 
 export interface MetricsGraphProps {
+    metrics: IScope[],
     metricGraphData: MetricGraphData;
     lineageSelection?: string;
     selection?: string[];
@@ -114,6 +116,7 @@ export interface MetricsGraphProps {
 }
 
 export const MetricsGraph: React.FunctionComponent<MetricsGraphProps> = ({
+    metrics,
     metricGraphData: { metricGraph, selectedMetrics, lineage, svg, layoutStatus },
     lineageSelection,
     selection,
@@ -123,7 +126,7 @@ export const MetricsGraph: React.FunctionComponent<MetricsGraphProps> = ({
     onSelectionChange
 }) => {
     const [selectedMetricsPtr, setSelectedMetricsPtr] = React.useState<number>(-1);
-    const [trackSelection, setTrackSelection] = React.useState<boolean>(true);
+    const [trackSelection, setTrackSelection] = useUserStore(METRICS_GRAPH_TRACK_SELECTION, true);
     const [isRenderComplete, setIsRenderComplete] = React.useState<boolean>(false);
     const [metricGraphWidgetReady, setMetricGraphWidgetReady] = React.useState<boolean>(false);
 
@@ -154,8 +157,8 @@ export const MetricsGraph: React.FunctionComponent<MetricsGraphProps> = ({
             const currentSVG = metricGraphWidget.svg();
             const sameSVG = currentSVG === svg;
             const currentSelection = metricGraphWidget.selection().sort();
-            const newSelection = selectedMetrics.filter(m => selection?.indexOf(m.id) >= 0).map(m => m.name).filter(sel => !!sel).sort();
-            const sameSelection = currentSelection.join() === newSelection.join();
+            const newSelection = metrics.filter(m => selection?.indexOf(m.id) >= 0).map(m => m.name).filter(sel => !!sel).sort();
+            const sameSelection = !sameSVG ? false : currentSelection.join() === newSelection.join();
             if (sameSVG && sameSelection) {
                 setIsRenderComplete(sameSVG);
                 return;
@@ -192,7 +195,7 @@ export const MetricsGraph: React.FunctionComponent<MetricsGraphProps> = ({
         return () => {
             cancelled = true;
         };
-    }, [layoutStatus, metricGraphWidget, metricGraphWidgetReady, selectedMetrics, selectedMetricsSource, selection, svg, trackSelection]);
+    }, [layoutStatus, metricGraphWidget, metricGraphWidgetReady, metrics, selectedMetrics, selectedMetricsSource, selection, svg, trackSelection]);
 
     const onReady = React.useCallback(() => {
         setMetricGraphWidgetReady(true);

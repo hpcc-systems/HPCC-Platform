@@ -13178,25 +13178,16 @@ extern WORKUNIT_API WUState secWaitForWorkUnitToComplete(const char * wuid, ISec
     return WUStateUnknown;
 }
 
-extern bool waitForWorkUnitToCompile(const char * wuid, int timeout)
+extern WUState waitForWorkUnitToCompile(const char * wuid, int timeout)
 {
-    switch(globalFactory->waitForWorkUnit(wuid, (unsigned) timeout, true, { WUStateWait }))
-    {
-    case WUStateCompiled:
-    case WUStateCompleted:
-    case WUStateWait:
-    case WUStateUploadingFiles:
-        return true;
-    default:
-        return false;
-    }
+    return globalFactory->waitForWorkUnit(wuid, (unsigned) timeout, true, { WUStateWait });
 }
 
-extern WORKUNIT_API bool secWaitForWorkUnitToCompile(const char *wuid, ISecManager *secmgr, ISecUser *secuser, int timeout)
+extern WORKUNIT_API WUState secWaitForWorkUnitToCompile(const char *wuid, ISecManager *secmgr, ISecUser *secuser, int timeout)
 {
     if (checkWuSecAccess(wuid, secmgr, secuser, SecAccess_Read, "Wait for Compile", false, true))
         return waitForWorkUnitToCompile(wuid, timeout);
-    return false;
+    return WUStateUnknown;
 }
 
 extern WORKUNIT_API bool secDebugWorkunit(const char *wuid, ISecManager *secmgr, ISecUser *secuser, const char *command, StringBuffer &response)
