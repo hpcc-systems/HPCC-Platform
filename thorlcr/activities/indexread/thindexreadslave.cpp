@@ -37,15 +37,9 @@
 
 #include "thdiskbaseslave.ipp"
 #include "thindexreadslave.ipp"
+#include "thindexreadcommon.hpp"
 
 enum AdditionStats { AS_Seeks, AS_Scans };
-// Messages sent over mpTag for keyed-limit coordination.
-enum class KeyedLimitMsg : byte
-{
-    Progress = 1,
-    Done = 2,
-    Abort = 3
-};
 
 // Throttle progress reporting and abort checks to avoid per-record overhead.
 static constexpr rowcount_t keyedLimitProgressInterval = 4096;
@@ -175,7 +169,7 @@ protected:
     }
     void sendKeyedLimitProgress(rowcount_t count, KeyedLimitMsg msgType)
     {
-        if (!keyedLimitAbortEnabled || !keyedLimitCheckComplete)
+        if (!keyedLimitCheckComplete)
             return;
         CMessageBuffer msg;
         msg.append((byte)msgType).append(count);
@@ -186,7 +180,9 @@ protected:
     }
     void maybeReportKeyedLimitProgress()
     {
-        if (!keyedLimitAbortEnabled || !keyedLimitCheckComplete)
+        // Do not send progress on mpTag until keyed-limit pre-check/count has completed,
+        // otherwise the master may still be in count-aggregation mode on this same tag.
+        if (!keyedLimitCheckComplete)
             return;
         // Report in coarse intervals to keep the hot path cheap.
         if (keyedProcessed < keyedLimitReportAt)
@@ -1147,7 +1143,7 @@ public:
 // IRowStream
     virtual void stop() override
     {
-        if (enableKeyedLimitAbort())
+        if (keyedLimitAbortEnabled)
             sendKeyedLimitProgress(keyedProcessed, KeyedLimitMsg::Done);
         else if (RCMAX != keyedLimit) // NB: will not be true if nextRow() has handled
         {
@@ -1165,25 +1161,11 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(slaveTimerStats, timeActivities);
-        if (RCMAX != keyedLimitCount)
+        if (RCMAX != keyedLimitCount || enableKeyedLimitAbort())
         {
-            bool limitHit;
-            bool exception;
+            bool limitHit{false};
+            bool exception{false};
             OwnedConstThorRow limitRow = handleKeyedLimit(limitHit, exception);
-            if (exception)
-                helper->onKeyedLimitExceeded(); // should throw exception
-            else if (limitHit)
-            {
-                if (limitRow)
-                    dataLinkIncrement();
-                return limitRow.getClear();
-            }
-        }
-        if (enableKeyedLimitAbort())
-        {
-            bool limitHit;
-            bool exception;
-            OwnedConstThorRow limitRow = handleLimitAbort(limitHit, exception);
             if (exception)
                 helper->onKeyedLimitExceeded(); // should throw exception
             else if (limitHit)
@@ -1218,25 +1200,11 @@ public:
     }
     const void *nextRowGENoCatch(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
-        if (RCMAX != keyedLimitCount)
+        if (RCMAX != keyedLimitCount || enableKeyedLimitAbort())
         {
-            bool limitHit;
-            bool exception;
+            bool limitHit{false};
+            bool exception{false};
             OwnedConstThorRow limitRow = handleKeyedLimit(limitHit, exception);
-            if (exception)
-                helper->onKeyedLimitExceeded(); // should throw exception
-            else if (limitHit)
-            {
-                if (limitRow)
-                    dataLinkIncrement();
-                return limitRow.getClear();
-            }
-        }
-        if (enableKeyedLimitAbort())
-        {
-            bool limitHit;
-            bool exception;
-            OwnedConstThorRow limitRow = handleLimitAbort(limitHit, exception);
             if (exception)
                 helper->onKeyedLimitExceeded(); // should throw exception
             else if (limitHit)
@@ -1658,7 +1626,7 @@ public:
 // IRowStream
     virtual void stop() override
     {
-        if (enableKeyedLimitAbort())
+        if (keyedLimitAbortEnabled)
             sendKeyedLimitProgress(keyedProcessed, KeyedLimitMsg::Done);
         else if (RCMAX != keyedLimit) // NB: will not be true if nextRow() has handled
         {
@@ -1671,25 +1639,11 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(slaveTimerStats, timeActivities);
-        if (RCMAX != keyedLimitCount)
+        if (RCMAX != keyedLimitCount || enableKeyedLimitAbort())
         {
             bool limitHit;
             bool exception;
             OwnedConstThorRow limitRow = handleKeyedLimit(limitHit, exception);
-            if (exception)
-                helper->onKeyedLimitExceeded(); // should throw exception
-            else if (limitHit)
-            {
-                if (limitRow)
-                    dataLinkIncrement();
-                return limitRow.getClear();
-            }
-        }
-        if (enableKeyedLimitAbort())
-        {
-            bool limitHit;
-            bool exception;
-            OwnedConstThorRow limitRow = handleLimitAbort(limitHit, exception);
             if (exception)
                 helper->onKeyedLimitExceeded(); // should throw exception
             else if (limitHit)
