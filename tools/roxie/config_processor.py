@@ -1004,17 +1004,14 @@ def main():
 
                 # Deploy if requested
                 if args.deploy:
-                    if replacements:
-                        remoteroot = config_vars.get('REMOTEROOT', '').rstrip('/')
-                        initd_path = f"{remoteroot}/etc/init.d" if remoteroot else '/etc/init.d'
-                        env_path = f"{remoteroot}/etc/HPCCSystems/environment.xml" if remoteroot else '/etc/HPCCSystems/environment.xml'
-                        use_sudo = options.get('sudo', '0') == '1'
-                        cluster = config_vars.get('CLUSTER', '')
-                        deployment = DeploymentManager(dry_run=args.dry_run, initd_path=initd_path, env_path=env_path, sudo=use_sudo, cluster=cluster)
-                        if not deployment.deploy(args.output_xml, roxie_ips_list, commands):
-                            sys.exit(1)
-                    else:
-                        print("\n  Skipping deployment: No environment replacements defined")
+                    remoteroot = config_vars.get('REMOTEROOT', '').rstrip('/')
+                    initd_path = f"{remoteroot}/etc/init.d" if remoteroot else '/etc/init.d'
+                    env_path = f"{remoteroot}/etc/HPCCSystems/environment.xml" if remoteroot else '/etc/HPCCSystems/environment.xml'
+                    use_sudo = options.get('sudo', '0') == '1'
+                    cluster = config_vars.get('CLUSTER', '')
+                    deployment = DeploymentManager(dry_run=args.dry_run, initd_path=initd_path, env_path=env_path, sudo=use_sudo, cluster=cluster)
+                    if not deployment.deploy(args.output_xml, roxie_ips_list, commands):
+                        sys.exit(1)
 
                 # Run tests if tests are defined
                 if tests:
