@@ -929,6 +929,8 @@ extern da_decl void ensureFileScope(const CDfsLogicalFileName &dlfn, unsigned ti
 
 extern da_decl bool checkLogicalName(const char *lfn,IUserDescriptor *user,bool readreq,bool createreq,bool allowquery,const char *specialnotallowedmsg);
 
+extern da_decl bool isLocalDali(const INode *foreigndali);
+
 extern da_decl cost_type calcFileAtRestCost(const char * cluster, double sizeGB, double fileAgeDays);
 extern da_decl cost_type calcFileAccessCost(const char * cluster, __int64 numDiskWrites, __int64 numDiskReads);
 extern da_decl cost_type calcFileAccessCost(IDistributedFile *f, __int64 numDiskWrites, __int64 numDiskReads);
