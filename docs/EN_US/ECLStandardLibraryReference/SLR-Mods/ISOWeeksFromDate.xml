@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ISOWeeksFromDate">
+  <title>ISOWeeksFromDate</title>
+
+  <para><emphasis role="bold">STD.Date.ISOWeeksFromDate<indexterm>
+      <primary>STD.Date.ISOWeeksFromDate</primary>
+    </indexterm><indexterm>
+      <primary>ISOWeeksFromDate</primary>
+    </indexterm>(</emphasis> <emphasis>date</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>date</emphasis></entry>
+
+          <entry>A date value in the Date_t format.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>An INTEGER value in the range 52-53: 52 for short years and
+          53 for long years.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">ISOWeeksFromDate</emphasis> function returns
+  the number of ISO-8601 weeks in the ISO week-numbering year associated with
+  the given date (52 or 53).</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific" lang="ECL_Runnable">IMPORT STD;
+D := 20201231;
+Weeks := STD.Date.ISOWeeksFromDate(D);
+      // Weeks is 53 for 2020-12-31
+OUTPUT(Weeks);</programlisting>
+
+  <para/>
+</sect1>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ISORawWeekNumForDate">
+  <title>ISORawWeekNumForDate</title>
+
+  <para><emphasis role="bold">STD.Date.ISORawWeekNumForDate<indexterm>
+      <primary>STD.Date.ISORawWeekNumForDate</primary>
+    </indexterm><indexterm>
+      <primary>ISORawWeekNumForDate</primary>
+    </indexterm>(</emphasis> <emphasis>date</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>date</emphasis></entry>
+
+          <entry>A date value in the Date_t format.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>ISORawWeekNumForDate returns an INTEGER value from 1 to 53
+          representing the raw ISO week number for the date.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">ISORawWeekNumForDate</emphasis> function
+  returns the raw ISO-8601 week number (1–53) for the given date.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific" lang="ECL_Runnable">IMPORT STD;
+D := 20200615;
+RawWeek := STD.Date.ISORawWeekNumForDate(D);
+      // RawWeek is the ISO week number for June 15, 2020 which is 25
+OUTPUT(RawWeek);</programlisting>
+
+  <para/>
+</sect1>
