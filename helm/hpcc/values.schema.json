@@ -1032,11 +1032,16 @@
           "type": "string"
         },
         "accessKey": {
-          "description": "Access Key used by Akeyless-style vaults",
+          "description": "Access Key used by Akeyless-style vaults (mutually exclusive with client-secret for Akeyless)",
           "type": "string"
         },
+        "accessType": {
+          "description": "Access type used by Akeyless-style vaults (only access_key supported)",
+          "type": "string",
+          "enum": ["access_key"]
+        },
         "client-secret": {
-          "description": "optional name of kubernetes secret that will provide the vault client token",
+          "description": "Name of kubernetes secret: for Hashicorp provides vault client token; for Akeyless provides accessKey (mutually exclusive with accessKey)",
           "type": "string"
         },
         "appRoleId": {
@@ -1081,7 +1086,29 @@
         }
       },
       "required": [ "name", "url" ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": { "const": "akeyless" }
+            },
+            "required": ["type"]
+          },
+          "then": {
+            "oneOf": [
+              {
+                "required": ["accessKey"],
+                "not": { "required": ["client-secret"] }
+              },
+              {
+                "required": ["client-secret"],
+                "not": { "required": ["accessKey"] }
+              }
+            ]
+          }
+        }
+      ]
     },
     "hostGroups": {
       "oneOf": [
