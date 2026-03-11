@@ -1071,30 +1071,26 @@ public:
         return (state==DFUstate_finished);
     }
 
-    void doSuperForeignCopy(sSuperCopyContext &ctx,const char *dstlfn,INode *foreigndalinode,const char *srclfn, CDfsLogicalFileName &dlfn)
+    void doSuperForeignCopy(sSuperCopyContext &ctx, const char *dstlfn, const char *srclfn, CDfsLogicalFileName &dlfn)
     {
         ctx.level++;
-        Linked<INode> srcdali = foreigndalinode;
         CDfsLogicalFileName slfn;
         slfn.set(srclfn);
-        if (slfn.isForeign()) // trying to confuse me
-        {
-            SocketEndpoint ep;
-            slfn.getEp(ep);
-            slfn.clearForeign();
-            srcdali.setown(createINode(ep));
-        }
-        Owned<IDistributedFile> file = wsdfs::lookup(srclfn, ctx.user, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser, INFINITE);
+
+        SocketEndpoint foreignEp;
+        bool isForeign = slfn.isForeign(&foreignEp); // caller has normalized, to ensure this is truly foreign and not referring to a local env file with a foreign prefix
+
+        Owned<IDistributedFile> file = wsdfs::lookup(slfn.get(), ctx.user, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser, INFINITE);
 
         if (!file.get())
         {
             StringBuffer s;
-            throw MakeStringException(-1,"Source file %s could not be found in Dali %s",slfn.get(),srcdali?srcdali->endpoint().getEndpointHostText(s).str():"(local)");
+            throw makeStringExceptionV(-1, "Source file %s could not be found in Dali %s", slfn.get(true), isForeign?foreignEp.getEndpointHostText(s).str():"(local)");
         }
         // now we can create name
         StringBuffer newroxieprefix;
         constructDestinationName(dstlfn,file->queryAttributes().queryProp("@roxiePrefix"),ctx.superdestination,dlfn,newroxieprefix);
-        if (!srcdali.get()||queryCoven().inCoven(srcdali))
+        if (!isForeign)
         {
             // if dali is local and filenames same
             if (strcmp(slfn.get(),dlfn.get())==0)
@@ -1118,7 +1114,7 @@ public:
                     ((unsigned)file->queryAttributes().getPropInt64("@fileCrc")==(unsigned)dfile->queryAttributes().getPropInt64("@fileCrc"))&&
                     (file->queryAttributes().getPropInt64("@size")==dfile->getFileSize(false,false))))
                 {
-                    PROGLOG("File copy of %s not done as file unchanged",srclfn);
+                    PROGLOG("File copy of %s not done as file unchanged",slfn.get(true));
                     return;
                 }
             }
@@ -1132,10 +1128,12 @@ public:
             StringAttr wuid;
             const char *kind = fileAttrs.queryProp("@kind");
             bool iskey = kind&&(strcmp(kind,"key")==0);
+            Owned<INode> srcdali;
+            if (isForeign)
+                srcdali.setown(createINode(foreignEp));
             // note  dstlfn doesn't have roxie prefix
-            if (!doSubFileCopy(ctx,dstlfn,srcdali,srclfn,wuid,iskey,newroxieprefix.str()))
+            if (!doSubFileCopy(ctx,dstlfn,srcdali,slfn.get(true),wuid,iskey,newroxieprefix.str()))
                 throw MakeStringException(-1,"File %s could not be copied - see %s",dstlfn,wuid.isEmpty()?"unknown":wuid.get());
-
         }
         else
         {
@@ -1150,7 +1148,7 @@ public:
                 CDfsLogicalFileName dlfnsub;
                 dlfnsub.set(name);
                 CDfsLogicalFileName dlfnres;
-                doSuperForeignCopy(ctx, dlfnsub.get(true), foreigndalinode, name, dlfnres);
+                doSuperForeignCopy(ctx, dlfnsub.get(true), name, dlfnres);
                 numdone++;
                 subfiles.append(dlfnres.get());
                 if ((ctx.level==1)&&ctx.feedback)
@@ -1193,6 +1191,23 @@ public:
         source->getLogicalName(srcname);
         if (!srcname.length())
             throw MakeStringException(-1,"Source file not specified");
+        // Normalize srclfn: ensure it carries foreign prefix if it's truly foreign
+        CDfsLogicalFileName srclfn;
+        srclfn.set(srcname);
+        SocketEndpoint foreignEp;
+        if (srclfn.isForeign(&foreignEp))
+        {
+            // srclfn already has foreign - it takes precedence over foreigndalinode
+            foreigndalinode.setown(createINode(foreignEp));
+            if (isLocalDali(foreigndalinode))
+            {
+                srclfn.clearForeign();
+                foreigndalinode.clear();
+            }
+        }
+        else if (foreigndalinode && !isLocalDali(foreigndalinode))
+            srclfn.setForeign(foreigndalinode->endpoint(), false);
+
         StringBuffer dstname;
         destination->getLogicalName(dstname);
         if (!dstname.length())
@@ -1210,8 +1225,7 @@ public:
         ctx.superprogress->setSubInProgress("");
         ctx.superprogress->setSubDone("");
         CDfsLogicalFileName dlfn;
-        doSuperForeignCopy(ctx,dstname.str(),foreigndalinode,srcname, dlfn);
-
+        doSuperForeignCopy(ctx, dstname.str(), srclfn.get(), dlfn);
     }
 
     DFUstate runWU(const char *dfuwuid)
