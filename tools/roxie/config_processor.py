@@ -286,9 +286,23 @@ class DeploymentManager:
             return all(future.result() for future in as_completed(futures))
 
     def _copy_environment_to_host(self, source_file: str, ip: str) -> bool:
-        """Copy environment.xml to a single remote machine."""
-        cmd = ['sudo', 'scp', source_file, f'{ip}:{self.env_path}'] if self.sudo else ['scp', source_file, f'{ip}:{self.env_path}']
-        return self._execute_command(cmd, f"Copying environment.xml to {ip}:{self.env_path}")
+        """Copy environment.xml to a single remote machine.
+
+        Step 1: scp the file to the remote home directory (no sudo).
+        Step 2: ssh cp (with optional sudo) to move it to the final location.
+        """
+        remote_filename = Path(source_file).name
+        remote_tmp = f'~/{remote_filename}'
+
+        # Step 1: copy to remote home directory without sudo
+        scp_cmd = ['scp', source_file, f'{ip}:{remote_tmp}']
+        if not self._execute_command(scp_cmd, f"Copying environment.xml to {ip}:{remote_tmp}"):
+            return False
+
+        # Step 2: move from remote home to final destination (with optional sudo)
+        mv_cmd = f'cp {remote_tmp} {self.env_path}'
+        remote_cmd = f'sudo {mv_cmd}' if self.sudo else mv_cmd
+        return self._execute_command(['ssh', ip, remote_cmd], f"Installing environment.xml to {ip}:{self.env_path}")
 
     def copy_environment(self, source_file: str, ip_addresses: List[str]) -> bool:
         """
