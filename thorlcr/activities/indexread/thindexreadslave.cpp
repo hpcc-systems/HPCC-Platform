@@ -19,6 +19,7 @@
 #include "jfile.hpp"
 #include "jtime.hpp"
 #include "jsort.hpp"
+#include "jlog.hpp"
 
 #include "rtlkey.hpp"
 #include "jhtree.hpp"
@@ -84,6 +85,7 @@ protected:
     rowcount_t keyedLimitCheckAt = 0;
     bool keyedLimitCheckComplete = false;
     bool keyedLimitAbortEnabled = false;
+    bool keyedLimitExceededLogged = false;
     bool limitAbort = false;
     rowcount_t rowLimit = RCMAX;
     bool useRemoteStreaming = false;
@@ -171,6 +173,8 @@ protected:
             return;
         CMessageBuffer msg;
         msg.append((byte)msgType).append(count);
+        if (msgType == KeyedLimitMsg::Done && keyedLimitTarget == 1)
+            DISLOG("INDEXLIMIT: slave %u done (keyedProcessed=%" I64F "u)", queryJobChannel().queryMyRank(), (unsigned __int64)count);
         if (!queryJobChannel().queryJobComm().send(msg, 0, mpTag, 5000))
             throw MakeThorException(0, "Failed to send keyed-limit progress to master");
     }
@@ -209,6 +213,7 @@ protected:
         if (msgType == (byte)KeyedLimitMsg::Abort)
         {
             limitAbort = true;
+            DISLOG("INDEXLIMIT: slave %u received abort (keyedProcessed=%" I64F "u)", queryJobChannel().queryMyRank(), (unsigned __int64)keyedProcessed);
             return true;
         }
         return false;
@@ -558,6 +563,12 @@ public:
     {
         limitHit = false;
         exception = false;
+        if (limitAbort)
+        {
+            // Abort path uses keyed-limit create/throw semantics.
+            DISLOG("INDEXLIMIT: Keyed-limit abort handled via keyed-limit create/throw semantics.");
+            return handleLimitAbort(limitHit, exception);
+        }
         if (checkKeyedLimit())
         {
             limitHit = true;
@@ -647,6 +658,11 @@ public:
                 count += indexInput->checkCount(keyedLimit-count); // part max, is total limit [keyedLimit] minus total so far [count]
             else
                 count += indexInput->getCount();
+            if ((count > keyedLimit) && (keyedLimit == 1 && !keyedLimitExceededLogged))
+            {
+                keyedLimitExceededLogged = true;
+                DISLOG("INDEXLIMIT: slave %u local pre-count exceeded keyed limit (%" I64F "u)", queryJobChannel().queryMyRank(), (unsigned __int64)keyedLimit);
+            }
             if (keyManager)
                 resetManager(keyManager);
             if (count > keyedLimit)
@@ -1082,6 +1098,12 @@ public:
     {
         if (!PARENT::incKeyedExceedsLimit())
             return false;
+        if (limitAbort)
+        {
+            // Abort signaled; let handleKeyedLimit apply create/throw semantics.
+            DISLOG("INDEXLIMIT: Keyed-limit abort signaled; deferring to keyed-limit handling.");
+            return true;
+        }
         helper->onKeyedLimitExceeded(); // should throw exception
         return true;
     }
