@@ -12,6 +12,7 @@ import argparse
 import re
 import subprocess
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Tuple
@@ -253,6 +254,21 @@ class DeploymentManager:
                 print(f"    Error: {e.stderr.strip()}", file=sys.stderr)
                 return False
 
+    def _stop_services_on_host(self, ip: str) -> bool:
+        """Stop HPCC and Dafilesrv services on a single remote machine."""
+        cluster_arg = f'-c {self.cluster} ' if self.cluster else ''
+        hpcc_init = f'{self.initd_path}/hpcc-init {cluster_arg}stop'
+        remote_cmd = f'sudo {hpcc_init}' if self.sudo else hpcc_init
+        if not self._execute_command(['ssh', ip, remote_cmd], f"Stopping hpcc-init on {ip}"):
+            return False
+
+        dafilesrv_cmd = f'{self.initd_path}/dafilesrv stop'
+        remote_cmd = f'sudo {dafilesrv_cmd}' if self.sudo else dafilesrv_cmd
+        if not self._execute_command(['ssh', ip, remote_cmd], f"Stopping dafilesrv on {ip}"):
+            return False
+
+        return True
+
     def stop_services(self, ip_addresses: List[str]) -> bool:
         """
         Stop HPCC and Dafilesrv services on remote machines.
@@ -265,22 +281,14 @@ class DeploymentManager:
         """
         print("\nStopping services on remote machines...")
 
-        for ip in ip_addresses:
-            # Stop hpcc-init
-            cluster_arg = f'-c {self.cluster} ' if self.cluster else ''
-            hpcc_init = f'{self.initd_path}/hpcc-init {cluster_arg}stop'
-            remote_cmd = f'sudo {hpcc_init}' if self.sudo else hpcc_init
-            cmd = ['ssh', ip, remote_cmd]
-            if not self._execute_command(cmd, f"Stopping hpcc-init on {ip}"):
-                return False
+        with ThreadPoolExecutor() as executor:
+            futures = {executor.submit(self._stop_services_on_host, ip): ip for ip in ip_addresses}
+            return all(future.result() for future in as_completed(futures))
 
-            # Stop dafilesrv
-            remote_cmd = f'sudo {self.initd_path}/dafilesrv stop' if self.sudo else f'{self.initd_path}/dafilesrv stop'
-            cmd = ['ssh', ip, remote_cmd]
-            if not self._execute_command(cmd, f"Stopping dafilesrv on {ip}"):
-                return False
-
-        return True
+    def _copy_environment_to_host(self, source_file: str, ip: str) -> bool:
+        """Copy environment.xml to a single remote machine."""
+        cmd = ['sudo', 'scp', source_file, f'{ip}:{self.env_path}'] if self.sudo else ['scp', source_file, f'{ip}:{self.env_path}']
+        return self._execute_command(cmd, f"Copying environment.xml to {ip}:{self.env_path}")
 
     def copy_environment(self, source_file: str, ip_addresses: List[str]) -> bool:
         """
@@ -295,11 +303,16 @@ class DeploymentManager:
         """
         print(f"\nCopying {source_file} to remote machines...")
 
-        for ip in ip_addresses:
-            cmd = ['sudo', 'scp', source_file, f'{ip}:{self.env_path}'] if self.sudo else ['scp', source_file, f'{ip}:{self.env_path}']
-            if not self._execute_command(cmd, f"Copying environment.xml to {ip}:{self.env_path}"):
-                return False
+        with ThreadPoolExecutor() as executor:
+            futures = {executor.submit(self._copy_environment_to_host, source_file, ip): ip for ip in ip_addresses}
+            return all(future.result() for future in as_completed(futures))
 
+    def _execute_commands_on_host(self, commands: List[str], ip: str) -> bool:
+        """Execute a list of commands sequentially on a single remote machine."""
+        for command in commands:
+            remote_cmd = f'sudo {command}' if self.sudo else command
+            if not self._execute_command(['ssh', ip, remote_cmd], f"Executing '{command}' on {ip}"):
+                return False
         return True
 
     def execute_commands(self, commands: List[str], ip_addresses: List[str]) -> bool:
@@ -318,14 +331,16 @@ class DeploymentManager:
 
         print(f"\nExecuting {len(commands)} custom command(s) on remote machines...")
 
-        for ip in ip_addresses:
-            for command in commands:
-                remote_cmd = f'sudo {command}' if self.sudo else command
-                cmd = ['ssh', ip, remote_cmd]
-                if not self._execute_command(cmd, f"Executing '{command}' on {ip}"):
-                    return False
+        with ThreadPoolExecutor() as executor:
+            futures = {executor.submit(self._execute_commands_on_host, commands, ip): ip for ip in ip_addresses}
+            return all(future.result() for future in as_completed(futures))
 
-        return True
+    def _start_services_on_host(self, ip: str) -> bool:
+        """Start HPCC services on a single remote machine."""
+        cluster_arg = f'-c {self.cluster} ' if self.cluster else ''
+        hpcc_init = f'{self.initd_path}/hpcc-init {cluster_arg}start'
+        remote_cmd = f'sudo {hpcc_init}' if self.sudo else hpcc_init
+        return self._execute_command(['ssh', ip, remote_cmd], f"Starting hpcc-init on {ip}")
 
     def start_services(self, ip_addresses: List[str]) -> bool:
         """
@@ -339,15 +354,9 @@ class DeploymentManager:
         """
         print("\nStarting services on remote machines...")
 
-        for ip in ip_addresses:
-            cluster_arg = f'-c {self.cluster} ' if self.cluster else ''
-            hpcc_init = f'{self.initd_path}/hpcc-init {cluster_arg}start'
-            remote_cmd = f'sudo {hpcc_init}' if self.sudo else hpcc_init
-            cmd = ['ssh', ip, remote_cmd]
-            if not self._execute_command(cmd, f"Starting hpcc-init on {ip}"):
-                return False
-
-        return True
+        with ThreadPoolExecutor() as executor:
+            futures = {executor.submit(self._start_services_on_host, ip): ip for ip in ip_addresses}
+            return all(future.result() for future in as_completed(futures))
 
     def deploy(self, environment_file: str, ip_addresses: List[str], commands: List[str] = None) -> bool:
         """
