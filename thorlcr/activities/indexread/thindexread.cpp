@@ -27,14 +27,7 @@
 #include "thmem.hpp"
 #include "thdiskbase.ipp"
 #include "thindexread.ipp"
-
-// Messages sent over mpTag for keyed-limit coordination.
-enum class KeyedLimitMsg : byte
-{
-    Progress = 1,
-    Done = 2,
-    Abort = 3
-};
+#include "thindexreadcommon.hpp"
 
 static void appendWithThousands(StringBuffer &out, unsigned __int64 value)
 {
