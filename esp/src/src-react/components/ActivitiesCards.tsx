@@ -27,7 +27,7 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
         main={
             <SizeMe>{({ size }) => {
                 return <div style={{ position: "relative", width: "100%", height: "100%" }}>
-                    <div style={{ position: "absolute", width: "100%", height: `${size.height}px`, overflowY: "auto" }}>
+                    <div style={{ position: "absolute", width: "100%", height: `${size.height}px`, overflowY: "auto", display: "flex", flexDirection: "column", alignItems: "center" }}>
                         {
                             !isContainer ?
                                 <>
