@@ -216,10 +216,11 @@ class DeploymentManager:
     """Manages deployment of environment configuration to remote machines."""
 
     def __init__(self, dry_run: bool = False, initd_path: str = '/etc/init.d',
-                 env_path: str = '/etc/HPCCSystems/environment.xml'):
+                 env_path: str = '/etc/HPCCSystems/environment.xml', sudo: bool = False):
         self.dry_run = dry_run
         self.initd_path = initd_path
         self.env_path = env_path
+        self.sudo = sudo
 
     def _execute_command(self, command: List[str], description: str) -> bool:
         """
@@ -264,12 +265,14 @@ class DeploymentManager:
 
         for ip in ip_addresses:
             # Stop hpcc-init
-            cmd = ['ssh', ip, f'{self.initd_path}/hpcc-init stop']
+            remote_cmd = f'sudo {self.initd_path}/hpcc-init stop' if self.sudo else f'{self.initd_path}/hpcc-init stop'
+            cmd = ['ssh', ip, remote_cmd]
             if not self._execute_command(cmd, f"Stopping hpcc-init on {ip}"):
                 return False
 
             # Stop dafilesrv
-            cmd = ['ssh', ip, f'{self.initd_path}/dafilesrv stop']
+            remote_cmd = f'sudo {self.initd_path}/dafilesrv stop' if self.sudo else f'{self.initd_path}/dafilesrv stop'
+            cmd = ['ssh', ip, remote_cmd]
             if not self._execute_command(cmd, f"Stopping dafilesrv on {ip}"):
                 return False
 
@@ -289,7 +292,7 @@ class DeploymentManager:
         print(f"\nCopying {source_file} to remote machines...")
 
         for ip in ip_addresses:
-            cmd = ['scp', source_file, f'{ip}:{self.env_path}']
+            cmd = ['sudo', 'scp', source_file, f'{ip}:{self.env_path}'] if self.sudo else ['scp', source_file, f'{ip}:{self.env_path}']
             if not self._execute_command(cmd, f"Copying environment.xml to {ip}:{self.env_path}"):
                 return False
 
@@ -313,7 +316,8 @@ class DeploymentManager:
 
         for ip in ip_addresses:
             for command in commands:
-                cmd = ['ssh', ip, command]
+                remote_cmd = f'sudo {command}' if self.sudo else command
+                cmd = ['ssh', ip, remote_cmd]
                 if not self._execute_command(cmd, f"Executing '{command}' on {ip}"):
                     return False
 
@@ -332,7 +336,8 @@ class DeploymentManager:
         print("\nStarting services on remote machines...")
 
         for ip in ip_addresses:
-            cmd = ['ssh', ip, f'{self.initd_path}/hpcc-init start']
+            remote_cmd = f'sudo {self.initd_path}/hpcc-init start' if self.sudo else f'{self.initd_path}/hpcc-init start'
+            cmd = ['ssh', ip, remote_cmd]
             if not self._execute_command(cmd, f"Starting hpcc-init on {ip}"):
                 return False
 
@@ -651,12 +656,33 @@ class TestRunner:
                                 print(f"  Summary statistics written to: {summary_csv}")
                             except subprocess.CalledProcessError as e:
                                 print(f"  Warning: Failed to extract timing summary: {e.stderr.strip()}", file=sys.stderr)
+
+                            full_summary_csv = test_dir / "stats-full-summary.csv"
+                            try:
+                                with open(full_summary_csv, 'w') as csv_out:
+                                    result = subprocess.run(
+                                        ['python3', str(extract_script), str(stats_file), '--summaryonly'],
+                                        stdout=csv_out,
+                                        stderr=subprocess.PIPE,
+                                        text=True,
+                                        check=True
+                                    )
+                                print(f"  Full summary statistics written to: {full_summary_csv}")
+                            except subprocess.CalledProcessError as e:
+                                print(f"  Warning: Failed to extract full timing summary: {e.stderr.strip()}", file=sys.stderr)
                         else:
                             print(f"  Warning: extract-roxie-timings.py not found at {extract_script}", file=sys.stderr)
 
 
                 except Exception as e:
                     print(f"  Warning: Failed to extract statistics: {e}", file=sys.stderr)
+
+                # Delete results file after processing
+                try:
+                    results_file.unlink()
+                    print(f"  Deleted results file: {results_file}")
+                except Exception as e:
+                    print(f"  Warning: Failed to delete results file: {e}", file=sys.stderr)
 
             # c) Stop event recording if enabled
             if event_trace and roxie_ips_list:
@@ -806,6 +832,12 @@ def parse_arguments():
         help='Number of threads for testsocket execution (adds -u<threads> to test arguments, defaults to 0)'
     )
 
+    parser.add_argument(
+        '--sudo',
+        action='store_true',
+        help='Prefix remote commands and scp with sudo'
+    )
+
     return parser.parse_args()
 
 
@@ -916,6 +948,8 @@ def main():
                 options['delay'] = args.delay
             if args.threads is not None:
                 options['threads'] = args.threads
+            if args.sudo:
+                options['sudo'] = '1'
 
             if options:
                 print(f"\n  Found {len(options)} option(s):")
@@ -945,7 +979,8 @@ def main():
                         remoteroot = config_vars.get('REMOTEROOT', '').rstrip('/')
                         initd_path = f"{remoteroot}/etc/init.d" if remoteroot else '/etc/init.d'
                         env_path = f"{remoteroot}/etc/HPCCSystems/environment.xml" if remoteroot else '/etc/HPCCSystems/environment.xml'
-                        deployment = DeploymentManager(dry_run=args.dry_run, initd_path=initd_path, env_path=env_path)
+                        use_sudo = options.get('sudo', '0') == '1'
+                        deployment = DeploymentManager(dry_run=args.dry_run, initd_path=initd_path, env_path=env_path, sudo=use_sudo)
                         if not deployment.deploy(args.output_xml, roxie_ips_list, commands):
                             sys.exit(1)
                     else:
