@@ -29,28 +29,6 @@
 #include "thindexread.ipp"
 #include "thindexreadcommon.hpp"
 
-static void appendWithThousands(StringBuffer &out, unsigned __int64 value)
-{
-    StringBuffer digits;
-    digits.append(value);
-    const char *text = digits.str();
-    unsigned len = digits.length();
-    if (len <= 3)
-    {
-        out.append(text);
-        return;
-    }
-    unsigned first = len % 3;
-    if (first == 0)
-        first = 3;
-    for (unsigned i = 0; i < len; ++i)
-    {
-        if (i >= first && ((i - first) % 3 == 0))
-            out.append(',');
-        out.append(text[i]);
-    }
-}
-
 class CIndexReadBase : public CMasterActivity
 {
 protected:
@@ -104,7 +82,6 @@ protected:
             return;
         ICommunicator &comm = queryJobChannel().queryJobComm();
         const unsigned slaves = container.queryJob().querySlaves();
-        DISLOG("INDEXLIMIT: monitoring keyed limit (%" I64F "u) across %u slaves", (unsigned __int64)keyedLimit, slaves);
         std::vector<rowcount_t> lastCounts(slaves, 0); // Track per-slave deltas to avoid double-counting.
         rowcount_t total = 0;
         unsigned done = 0;
@@ -137,7 +114,6 @@ protected:
             if (!abortSent && total > keyedLimit)
             {
                 abortSent = true;
-                DISLOG("INDEXLIMIT: master aborting keyed limit (reported keyed rows processed=%" I64F "u, limit=%" I64F "u)", (unsigned __int64)total, (unsigned __int64)keyedLimit);
                 // Broadcast a stop signal once the global keyed limit is exceeded.
                 for (rank_t r=1; r<=slaves; ++r)
                 {
@@ -147,35 +123,6 @@ protected:
                 }
             }
         }
-        unsigned __int64 savedCounts = 0;
-        unsigned __int64 fullScanPerSlave = (unsigned __int64)container.queryJob().getWorkUnitValueInt("indexlimitRowsPerSlave", 0);
-        if (!fullScanPerSlave)
-            fullScanPerSlave = (unsigned __int64)container.queryJob().queryWorkUnit().getApplicationValueInt("indexlimit", "rowsPerSlave", 0);
-        if (fullScanPerSlave)
-        {
-            unsigned __int64 fullScanTotal = fullScanPerSlave * slaves;
-            unsigned __int64 totalCount = (unsigned __int64)total;
-            if (fullScanTotal > totalCount)
-                savedCounts = fullScanTotal - totalCount;
-        }
-        else
-        {
-            rowcount_t maxCount = 0;
-            for (rowcount_t count : lastCounts)
-            {
-                if (count > maxCount)
-                    maxCount = count;
-            }
-            unsigned __int64 maxTotal = (unsigned __int64)maxCount * slaves;
-            unsigned __int64 totalCount = (unsigned __int64)total;
-            if (maxTotal > totalCount)
-                savedCounts = maxTotal - totalCount;
-        }
-        StringBuffer savedCountsText;
-        appendWithThousands(savedCountsText, savedCounts);
-        StringBuffer fullScanPerSlaveText;
-        appendWithThousands(fullScanPerSlaveText, fullScanPerSlave);
-        DISLOG("INDEXLIMIT: monitor finished (savedCounts=%s, fullScanPerSlave=%s, reported keyed rows processed=%" I64F "u, done=%u/%u, abortSent=%s)", savedCountsText.str(), fullScanPerSlaveText.str(), (unsigned __int64)total, done, slaves, abortSent ? "true" : "false");
     }
     void prepareKey(IDistributedFile *index)
     {
