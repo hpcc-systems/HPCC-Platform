@@ -11,6 +11,22 @@ import { DiskUsageCards } from "./cards/DiskUsageCard";
 interface ActivitiesProps {
 }
 
+const containerStyles: React.CSSProperties = {
+    position: "relative",
+    width: "100%",
+    height: "100%"
+};
+
+const scrollableContentStyles = (height: number): React.CSSProperties => ({
+    position: "absolute",
+    width: "100%",
+    height: `${height}px`,
+    overflowY: "auto",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center"
+});
+
 export const Activities: React.FunctionComponent<ActivitiesProps> = ({
 }) => {
     const [, { isContainer }] = useBuildInfo();
@@ -26,8 +42,8 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
         }
         main={
             <SizeMe>{({ size }) => {
-                return <div style={{ position: "relative", width: "100%", height: "100%" }}>
-                    <div style={{ position: "absolute", width: "100%", height: `${size.height}px`, overflowY: "auto" }}>
+                return <div style={containerStyles}>
+                    <div style={scrollableContentStyles(size.height)}>
                         {
                             !isContainer ?
                                 <>
