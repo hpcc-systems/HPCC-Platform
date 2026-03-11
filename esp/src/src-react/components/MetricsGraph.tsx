@@ -254,7 +254,7 @@ export const MetricsGraph: React.FunctionComponent<MetricsGraphProps> = ({
             key: "minus", title: nlsHPCC.ZoomMinus, iconProps: { iconName: "ZoomOut" },
             onClick: () => metricGraphWidget.zoomMinus()
         },
-    ], [metricGraphWidget, selection, trackSelection]);
+    ], [metricGraphWidget, selection, setTrackSelection, trackSelection]);
 
     const spinnerLabel: string = React.useMemo((): string => {
         if (status === FetchStatus.STARTED) {

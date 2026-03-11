@@ -11,6 +11,8 @@ interface QueryMetricsProps {
     querySet: string;
     queryId: string;
     tab?: string;
+    selectedView?: string;
+    lineageSelection?: string;
     selection?: string;
 }
 
@@ -19,6 +21,8 @@ export const QueryMetrics: React.FunctionComponent<QueryMetricsProps> = ({
     querySet,
     queryId,
     tab = "statistics",
+    selectedView,
+    lineageSelection,
     selection
 }) => {
 
@@ -46,12 +50,12 @@ export const QueryMetrics: React.FunctionComponent<QueryMetricsProps> = ({
         <div style={{ height: "100%" }}>
             <OverflowTabList tabs={tabs} selected={tab} onTabSelect={onTabSelect} size="medium" />
             <DelayLoadedPanel visible={tab === "statistics"} size={size}>
-                <Metrics wuid={wuid} querySet={querySet} queryId={queryId} parentUrl={`/queries/${querySet}/${queryId}/metrics/statistics`} selection={selection?.split(",")} />
+                <Metrics wuid={wuid} querySet={querySet} queryId={queryId} parentUrl={`/queries/${querySet}/${queryId}/metrics/statistics`} viewSelection={selectedView} lineageSelection={lineageSelection} selection={selection?.split(",")} />
             </DelayLoadedPanel>
             {
                 snapshots?.filter(snapshot => snapshot.Wuid !== wuid).map(snapshot => {
                     return <DelayLoadedPanel visible={tab === snapshot.Wuid} size={size}>
-                        <Metrics wuid={snapshot.Wuid} parentUrl={`/queries/${querySet}/${queryId}/metrics/${snapshot.Wuid}`} selection={selection?.split(",")} />
+                        <Metrics wuid={snapshot.Wuid} parentUrl={`/queries/${querySet}/${queryId}/metrics/${snapshot.Wuid}`} viewSelection={selectedView} lineageSelection={lineageSelection} selection={selection?.split(",")} />
                     </DelayLoadedPanel>;
                 })
             }
