@@ -401,6 +401,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                     </DockPanelItem>
                     <DockPanelItem key="metricGraph" title={nlsHPCC.Graph} location="split-right" relativeTo="scopesTable" >
                         <MetricsGraph
+                            metrics={metrics}
                             metricGraphData={metricGraphData}
                             lineageSelection={lineageSelection}
                             selection={selection}
