@@ -678,7 +678,8 @@ bool TranslatedDiskDataSource::init()
 bool TranslatedDiskDataSource::compileHelperWU()
 {
     submitWorkUnit(helperWuid, username, password);
-    return waitForWorkUnitToCompile(helperWuid);
+    WUState state = waitForWorkUnitToCompile(helperWuid);
+    return isCompiled(state);
 }
 
 //---------------------------------------------------------------------------

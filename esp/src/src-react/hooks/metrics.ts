@@ -16,10 +16,11 @@ const logger = scopedLogger("src-react/hooks/metrics.ts");
 
 const METRIC_OPTIONS_2 = "MetricOptions-2";
 const METRIC_OPTIONS_3 = "MetricOptions-3";
+export const METRICS_GRAPH_TRACK_SELECTION = "metrics_graph_trackSelection";
 
 export function resetMetricsViews() {
     const store = userKeyValStore();
-    return Promise.all([store?.delete(METRIC_OPTIONS_2), store?.delete(METRIC_OPTIONS_3)]);
+    return Promise.all([store?.delete(METRIC_OPTIONS_2), store?.delete(METRIC_OPTIONS_3), store?.delete(METRICS_GRAPH_TRACK_SELECTION)]);
 }
 
 export interface MetricsView {
