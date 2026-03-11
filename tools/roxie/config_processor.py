@@ -216,11 +216,13 @@ class DeploymentManager:
     """Manages deployment of environment configuration to remote machines."""
 
     def __init__(self, dry_run: bool = False, initd_path: str = '/etc/init.d',
-                 env_path: str = '/etc/HPCCSystems/environment.xml', sudo: bool = False):
+                 env_path: str = '/etc/HPCCSystems/environment.xml', sudo: bool = False,
+                 cluster: str = ''):
         self.dry_run = dry_run
         self.initd_path = initd_path
         self.env_path = env_path
         self.sudo = sudo
+        self.cluster = cluster
 
     def _execute_command(self, command: List[str], description: str) -> bool:
         """
@@ -265,7 +267,9 @@ class DeploymentManager:
 
         for ip in ip_addresses:
             # Stop hpcc-init
-            remote_cmd = f'sudo {self.initd_path}/hpcc-init stop' if self.sudo else f'{self.initd_path}/hpcc-init stop'
+            cluster_arg = f'-c {self.cluster} ' if self.cluster else ''
+            hpcc_init = f'{self.initd_path}/hpcc-init {cluster_arg}stop'
+            remote_cmd = f'sudo {hpcc_init}' if self.sudo else hpcc_init
             cmd = ['ssh', ip, remote_cmd]
             if not self._execute_command(cmd, f"Stopping hpcc-init on {ip}"):
                 return False
@@ -336,7 +340,9 @@ class DeploymentManager:
         print("\nStarting services on remote machines...")
 
         for ip in ip_addresses:
-            remote_cmd = f'sudo {self.initd_path}/hpcc-init start' if self.sudo else f'{self.initd_path}/hpcc-init start'
+            cluster_arg = f'-c {self.cluster} ' if self.cluster else ''
+            hpcc_init = f'{self.initd_path}/hpcc-init {cluster_arg}start'
+            remote_cmd = f'sudo {hpcc_init}' if self.sudo else hpcc_init
             cmd = ['ssh', ip, remote_cmd]
             if not self._execute_command(cmd, f"Starting hpcc-init on {ip}"):
                 return False
@@ -980,7 +986,8 @@ def main():
                         initd_path = f"{remoteroot}/etc/init.d" if remoteroot else '/etc/init.d'
                         env_path = f"{remoteroot}/etc/HPCCSystems/environment.xml" if remoteroot else '/etc/HPCCSystems/environment.xml'
                         use_sudo = options.get('sudo', '0') == '1'
-                        deployment = DeploymentManager(dry_run=args.dry_run, initd_path=initd_path, env_path=env_path, sudo=use_sudo)
+                        cluster = config_vars.get('CLUSTER', '')
+                        deployment = DeploymentManager(dry_run=args.dry_run, initd_path=initd_path, env_path=env_path, sudo=use_sudo, cluster=cluster)
                         if not deployment.deploy(args.output_xml, roxie_ips_list, commands):
                             sys.exit(1)
                     else:
