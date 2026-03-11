@@ -61,6 +61,11 @@ set (    SRCS
          ${HPCC_SOURCE_DIR}/tools/esp-api/espservice.cpp
          commonJsonWriterTests.cpp
          rtlxmltests.cpp
+         json2ecltests.cpp
+         xml2ecltests.cpp
+         ${HPCC_SOURCE_DIR}/ecl/schemasniffer/common.cpp
+         ${HPCC_SOURCE_DIR}/ecl/schemasniffer/json2ecl.cpp
+         ${HPCC_SOURCE_DIR}/ecl/schemasniffer/xml2ecl.cpp
     )
 
 if (NOT CONTAINERIZED)
@@ -97,6 +102,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/eventconsumption
          ${HPCC_SOURCE_DIR}/common/workunit
          ${HPCC_SOURCE_DIR}/ecl/hql
+         ${HPCC_SOURCE_DIR}/ecl/schemasniffer
          ${HPCC_SOURCE_DIR}/esp/bindings
          ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp
          ${HPCC_SOURCE_DIR}/esp/esdllib
