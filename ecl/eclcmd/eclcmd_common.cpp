@@ -753,6 +753,10 @@ eclCmdOptionMatchIndicator EclCmdWithEclTarget::matchCommandLineOption(ArgvItera
         return EclCmdOptionMatch;
     if (iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED)||iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED_S))
         return EclCmdOptionMatch;
+    if (iter.matchOption(optWaitTime, ECLOPT_WAIT))
+        return EclCmdOptionMatch;
+    if (iter.matchFlag(optPoll, ECLOPT_POLL))
+        return EclCmdOptionMatch;
     //Process options which should be passed straight through to eclcc
     StringBuffer temp;
     if (iter.matchOptionText(temp, ECLOPT_FETCH_REPOS, true, false) || iter.matchOptionText(temp, ECLOPT_UPDATE_REPOS, true, false) ||

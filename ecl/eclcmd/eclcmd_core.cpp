@@ -67,12 +67,41 @@ void expandDefintionsAsDebugValues(const IArrayOf<IEspNamedValue> & definitions,
 
 }
 
-void checkFeatures(EclCmdCommon &cmd, IClientWsWorkunits *client, bool &useCompression, int &major, int &minor, int &point, unsigned waitMs, unsigned waitConnectMs, unsigned waitReadSec)
+static bool isSoapRpcException(IException *E)
+{
+    StringBuffer msg;
+    const char *finger = E->errorMessage(msg).str();
+    if (strncmp(finger, "SOAP ", 5))
+        return false;
+    finger+=5;
+    if (!strncmp(finger, "rpc error", 9))
+        return true;
+    if (!strncmp(finger, "Connection error", 16))
+        return true;
+    return false;
+}
+
+static unsigned nextWait(unsigned wait, unsigned waited)
+{
+    if (waited < 5000)
+        return 1000;
+    if (waited < 30000)
+        return 5000;
+    if (waited < 60000)
+        return 10000;
+    if (waited < 120000)
+        return 30000;
+    return 60000;
+}
+
+//-------------------------------------------------------------------------------
+
+void EclCmdCommon::checkFeatures(IClientWsWorkunits *client, bool &useCompression, int &major, int &minor, int &point, unsigned waitMs, unsigned waitConnectMs, unsigned waitReadSec)
 {
     try
     {
         Owned<IClientWUCheckFeaturesRequest> req = client->createWUCheckFeaturesRequest();
-        cmd.setRpcOptions(req->rpc(), waitMs);
+        setRpcOptions(req->rpc(), waitMs);
         Owned<IClientWUCheckFeaturesResponse> resp = client->WUCheckFeatures(req);
         useCompression = resp->getDeployment().getUseCompression();
         major = resp->getBuildVersionMajor();
@@ -88,32 +117,162 @@ void checkFeatures(EclCmdCommon &cmd, IClientWsWorkunits *client, bool &useCompr
     }
 }
 
-bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, unsigned waitMs, const char *cluster, const char *name, StringBuffer *wuid, StringBuffer *wucluster, bool noarchive, bool displayWuid, bool compress, bool protect)
+static bool isFinalRunState(WUState state)
+{
+    switch (state)
+    {
+    case WUStateUnknown:
+    case WUStateArchived:
+    case WUStateAborting:
+    case WUStateCompleted:
+    case WUStateFailed:
+    case WUStateAborted:
+        return true;
+    }
+    return false;
+}
+
+static bool isFinalCompileState(WUState state)
+{
+    if (state == WUStateCompiled)
+        return true;
+    return isFinalRunState(state);
+}
+
+int EclCmdWithEclTarget::checkComplete(IClientWsWorkunits* client, IClientWUWaitRequest* req)
+{
+    try
+    {
+        Owned<IClientWUWaitResponse> resp = client->WUWaitComplete(req);
+        if (resp->getExceptions().ordinality())
+            throw LINK(&resp->getExceptions());
+        return resp->getStateID();
+    }
+    catch (IJSOCK_Exception *E)
+    {
+        outputExceptionEx(*E);
+        E->Release();
+    }
+    catch (IException *E)
+    {
+        if (!isSoapRpcException(E))
+            throw E;
+        outputExceptionEx(*E);
+        E->Release();
+    }
+
+    fputs("Still polling...\n", stderr);
+    return WUStateUnknown; //socket issue, keep polling
+}
+
+
+WUState EclCmdWithEclTarget::checkCompiled(IClientWsWorkunits* client, IClientWUWaitRequest* req)
+{
+    try
+    {
+        Owned<IClientWUWaitResponse> resp = client->WUWaitCompiled(req);
+        if (resp->getExceptions().ordinality())
+            throw LINK(&resp->getExceptions());
+        return (WUState)resp->getStateID();
+    }
+    catch (IJSOCK_Exception *E)
+    {
+        outputExceptionEx(*E);
+        E->Release();
+    }
+    catch (IException *E)
+    {
+        if (!isSoapRpcException(E))
+            throw E;
+        outputExceptionEx(*E);
+        E->Release();
+    }
+
+    fputs("Still polling...\n", stderr);
+    return WUStateUnknown; //socket issue, keep polling
+}
+
+
+WUState EclCmdWithEclTarget::pollForCompile(IClientWsWorkunits* client, const char *wuid, unsigned startTimeMs)
+{
+    try
+    {
+        Owned<IClientWUWaitRequest> req = client->createWUWaitCompiledRequest();
+        req->setWuid(wuid);
+        req->setWait(0);
+        req->setReturnOnWait(false);
+
+        if (optVerbose)
+            fputs("Polling for compile...\n", stdout);
+        WUState state = WUStateUnknown;
+        for(;;)
+        {
+            state = checkCompiled(client, req);
+            //Older versions of the platform would return if the state was WuStateCompiling, so include that.
+            if ((state != WUStateUnknown) && (state != WUStateCompiling))
+                break;
+            unsigned waited = msTick() - startTimeMs;
+            if (optWaitTime!=(unsigned)-1 && waited>=optWaitTime)
+                return WUStateUnknown;
+            Sleep(nextWait(optWaitTime, waited));
+        }
+
+        switch (state)
+        {
+        case WUStateCompiled:
+        case WUStateCompleted:
+            return state;
+        case WUStateFailed:
+        case WUStateAborted:
+            fprintf(stderr, "%s %s.\n", wuid, getWorkunitStateStr(state));
+            break;
+        default:
+            fprintf(stderr, "%s in unrecognized state.\n", wuid);
+            break;
+        }
+        return state;
+    }
+    catch (IMultiException *ME)
+    {
+        outputMultiExceptionsEx(*ME);
+        ME->Release();
+    }
+    catch (IException *E)
+    {
+        StringBuffer msg;
+        fprintf(stderr, "Exception polling for compile: %d: %s\n", E->errorCode(), E->errorMessage(msg).str());
+        E->Release();
+    }
+    return WUStateUnknown;
+}
+
+
+bool EclCmdWithEclTarget::doDeploy(IClientWsWorkunits *client, unsigned waitMs, const char *cluster, const char *name, StringBuffer *wuid, StringBuffer *wucluster, bool noarchive, bool displayWuid, bool compress, bool protect)
 {
     int major = 0;
     int minor = 0;
     int point = 0;
     bool useCompression = false;
-    checkFeatures(cmd, client, useCompression, major, minor, point, 0, cmd.optWaitConnectMs, cmd.optWaitReadSec);
+    checkFeatures(client, useCompression, major, minor, point, 0, optWaitConnectMs, optWaitReadSec);
 
     bool compressed = false;
     if (useCompression)
     {
         MemoryBuffer mb;
-        fastLZCompressToBuffer(mb, cmd.optObj.mb.length(), cmd.optObj.mb.bufferBase());
-        cmd.optObj.mb.swapWith(mb);
+        fastLZCompressToBuffer(mb, optObj.mb.length(), optObj.mb.bufferBase());
+        optObj.mb.swapWith(mb);
         compressed=true;
     }
 
     StringBuffer s;
-    if (cmd.optVerbose)
-        fprintf(stdout, "\nDeploying %s\n", cmd.optObj.getDescription(s).str());
+    if (optVerbose)
+        fprintf(stdout, "\nDeploying %s\n", optObj.getDescription(s).str());
 
     StringBuffer objType(compressed ? "compressed_" : ""); //change compressed type string so old ESPs will fail gracefully
     Owned<IClientWUDeployWorkunitRequest> req = client->createWUDeployWorkunitRequest();
-    cmd.setRpcOptions(req->rpc(), waitMs);
+    setRpcOptions(req->rpc(), waitMs);
 
-    switch (cmd.optObj.type)
+    switch (optObj.type)
     {
         case eclObjArchive:
             req->setObjType(objType.append("archive"));
@@ -133,7 +292,7 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, unsigned wai
             break;
         }
         default:
-            fprintf(stderr, "Cannot deploy %s\n", cmd.optObj.queryTypeName());
+            fprintf(stderr, "Cannot deploy %s\n", optObj.queryTypeName());
             return false;
     }
 
@@ -141,30 +300,33 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, unsigned wai
         req->setName(name);
     if (cluster && *cluster)
         req->setCluster(cluster);
-    req->setObject(cmd.optObj.mb);
-    req->setFileName(cmd.optObj.value.str());
-    if ((int)cmd.optResultLimit > 0)
-        req->setResultLimit(cmd.optResultLimit);
-    if (cmd.getFullAttributePath(s.clear()))
+    req->setObject(optObj.mb);
+    req->setFileName(optObj.value.str());
+    if ((int)optResultLimit > 0)
+        req->setResultLimit(optResultLimit);
+    if (getFullAttributePath(s.clear()))
         req->setQueryMainDefinition(s);
-    if (!cmd.optDefaultRepo.isEmpty())
-        addNamedValue("eclcc--defaultrepo", cmd.optDefaultRepo, cmd.debugValues);
-    if (!cmd.optDefaultRepoVersion.isEmpty())
-        addNamedValue("eclcc--defaultrepoversion", cmd.optDefaultRepoVersion, cmd.debugValues);
+    if (!optDefaultRepo.isEmpty())
+        addNamedValue("eclcc--defaultrepo", optDefaultRepo, debugValues);
+    if (!optDefaultRepoVersion.isEmpty())
+        addNamedValue("eclcc--defaultrepoversion", optDefaultRepoVersion, debugValues);
 
-    if (cmd.optLegacy)
-        addNamedValue("eclcc-legacy", "true", cmd.debugValues);
-    if (cmd.optSnapshot.length())
-        req->setSnapshot(cmd.optSnapshot);
-    expandDefintionsAsDebugValues(cmd.definitions, cmd.debugValues);
-    if (cmd.debugValues.length())
+    if (optLegacy)
+        addNamedValue("eclcc-legacy", "true", debugValues);
+    if (optSnapshot.length())
+        req->setSnapshot(optSnapshot);
+    expandDefintionsAsDebugValues(definitions, debugValues);
+    if (debugValues.length())
     {
-        req->setDebugValues(cmd.debugValues);
-        cmd.debugValues.kill();
+        req->setDebugValues(debugValues);
+        debugValues.kill();
     }
     if (protect)
         req->setProtect(true);
 
+    req->setWait(getInitialRunWait());
+
+    unsigned startTimeMs = msTick();
     Owned<IClientWUDeployWorkunitResponse> resp;
     try
     {
@@ -176,7 +338,7 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, unsigned wai
         E->errorMessage(msg);
         int code = E->errorCode();
 
-        if (cmd.optVerbose)
+        if (optVerbose)
             fprintf(stdout, "Deploy workunit failed with exception %u:%s\n", code, msg.str());
 
         //ESP doesn't want to process requests that are too large, and so disconnects before reading
@@ -185,11 +347,11 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, unsigned wai
             throw;
         if (useCompression) //newer build, not a maxRequestEntityLength issue
             throw;
-        size32_t maxEntity = getMaxRequestEntityLength(cmd); //only do the work to grab max buffersize if we've failed
+        size32_t maxEntity = getMaxRequestEntityLength(*this); //only do the work to grab max buffersize if we've failed
         if (maxEntity > 1000)
         {
             size32_t maxBufferSize = ((maxEntity - 999) / 4) * 3; //account for soap, other parameters, and base64 encoding (n / 4 * 3)
-            if (maxBufferSize && cmd.optObj.mb.length() > maxBufferSize)
+            if (maxBufferSize && optObj.mb.length() > maxBufferSize)
             {
                 fprintf(stderr, "\nError: %s is larger than maxRequestEntityLength configured for ESP allows.\n", objType.str());
                 E->Release();
@@ -205,21 +367,26 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, unsigned wai
     {
         if (wuid)
             wuid->clear().append(w);
+
+        IConstECLWorkunit & workunit = resp->getWorkunit();
+        WUState state = getWorkUnitState(workunit.getState());
+        if (optPoll && !isFinalCompileState(state))
+            state = pollForCompile(client, w, startTimeMs);
+
         if (wucluster)
-            wucluster->clear().append(resp->getWorkunit().getCluster());
+            wucluster->clear().append(workunit.getCluster());
         fprintf(stdout, "\n");
-        if (cmd.optVerbose)
+        if (optVerbose)
             fprintf(stdout, "Deployed\n   wuid: ");
-        const char *state = resp->getWorkunit().getState();
-        bool isCompiled = (strieq(state, "compiled")||strieq(state, "completed"));
-        if (displayWuid || cmd.optVerbose || !isCompiled)
+        bool isCompiled = ::isCompiled(state);
+        if (displayWuid || optVerbose || !isCompiled)
             fprintf(stdout, "%s\n", w);
-        if (cmd.optVerbose || !isCompiled)
-            fprintf(stdout, "   state: %s\n\n", state);
+        if (optVerbose || !isCompiled)
+            fprintf(stdout, "   state: %s\n\n", getWorkunitStateStr(state));
 
         unsigned errorCount=0;
         unsigned warningCount=0;
-        IArrayOf<IConstECLException> &exceptions = resp->getWorkunit().getExceptions();
+        IArrayOf<IConstECLException> &exceptions = workunit.getExceptions();
         ForEachItemIn(i, exceptions)
         {
             IConstECLException &e = exceptions.item(i);
@@ -242,7 +409,7 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, unsigned wai
         return isCompiled;
     }
 
-    if (cmd.optVerbose)
+    if (optVerbose)
         fprintf(stdout, "Deploy failed\n");
     return false;
 }
@@ -289,7 +456,7 @@ public:
     virtual int processCMD()
     {
         Owned<IClientWsWorkunits> client = createCmdClientExt(WsWorkunits, *this, "?upload_"); //upload_ disables maxRequestEntityLength
-        return doDeploy(*this, client, 0, optTargetCluster.get(), optName.get(), NULL, NULL, optNoArchive, true, true, optProtect) ? 0 : 1;
+        return doDeploy(client, 0, optTargetCluster.get(), optName.get(), NULL, NULL, optNoArchive, true, true, optProtect) ? 0 : 1;
     }
     virtual void usage()
     {
@@ -447,7 +614,7 @@ public:
         StringBuffer wuid;
         if (optObj.type==eclObjWuid)
             wuid.set(optObj.value.get());
-        else if (!doDeploy(*this, client, optMsToWait, optTargetCluster.get(), optJobName.length() ? optJobName.get() : optQueryName.get(), &wuid, NULL, optNoArchive, true, true, optProtect))
+        else if (!doDeploy(client, optMsToWait, optTargetCluster.get(), optJobName.length() ? optJobName.get() : optQueryName.get(), &wuid, NULL, optNoArchive, true, true, optProtect))
             return 1;
 
         unsigned remaining = 0;
@@ -602,23 +769,10 @@ private:
     bool optDontAppendCluster; //Undesirable but here temporarily because DALI may have locking issues
 };
 
-inline unsigned nextWait(unsigned wait, unsigned waited)
-{
-    if (waited < 5000)
-        return 1000;
-    if (waited < 30000)
-        return 5000;
-    if (waited < 60000)
-        return 10000;
-    if (waited < 120000)
-        return 30000;
-    return 60000;
-}
-
 class EclCmdRun : public EclCmdWithEclTarget
 {
 public:
-    EclCmdRun() : optExceptionSeverity("info"), optWaitTime((unsigned)-1), optNoRoot(false)
+    EclCmdRun() : optExceptionSeverity("info"), optNoRoot(false)
     {
         optObj.accept = eclObjWuid | eclObjArchive | eclObjSharedObject | eclObjWuid | eclObjQuery;
     }
@@ -638,11 +792,7 @@ public:
                 continue;
             if (iter.matchOption(optInput, ECLOPT_INPUT)||iter.matchOption(optInput, ECLOPT_INPUT_S))
                 continue;
-            if (iter.matchOption(optWaitTime, ECLOPT_WAIT))
-                continue;
             if (iter.matchFlag(optNoRoot, ECLOPT_NOROOT))
-                continue;
-            if (iter.matchFlag(optPoll, ECLOPT_POLL))
                 continue;
             if (iter.matchFlag(optPre64, "--pre64")) //only for troubleshooting, do not document
                 continue;
@@ -674,45 +824,7 @@ public:
         return true;
     }
 
-    inline bool isSoapRpcException(IException *E)
-    {
-        StringBuffer msg;
-        const char *finger = E->errorMessage(msg).str();
-        if (strncmp(finger, "SOAP ", 5))
-            return false;
-        finger+=5;
-        if (!strncmp(finger, "rpc error", 9))
-            return true;
-        if (!strncmp(finger, "Connection error", 16))
-            return true;
-        return false;
-    }
-    int checkComplete(IClientWsWorkunits* client, IClientWUWaitRequest* req)
-    {
-        try
-        {
-            Owned<IClientWUWaitResponse> resp = client->WUWaitComplete(req);
-            if (resp->getExceptions().ordinality())
-                throw LINK(&resp->getExceptions());
-            return resp->getStateID();
-        }
-        catch (IJSOCK_Exception *E)
-        {
-            outputExceptionEx(*E);
-            E->Release();
-        }
-        catch (IException *E)
-        {
-            if (!isSoapRpcException(E))
-                throw E;
-            outputExceptionEx(*E);
-            E->Release();
-        }
-
-        fputs("Still polling...\n", stderr);
-        return WUStateUnknown; //socket issue, keep polling
-    }
-
+    using EclCmdWithEclTarget::checkComplete;
     int checkComplete(IClientWsWorkunits* client, IClientWUInfoRequest* req)
     {
         try
@@ -890,7 +1002,7 @@ public:
         int minor = 0;
         int point = 0;
         bool useCompression = false;
-        checkFeatures(*this, client, useCompression, major, minor, point, optWaitTime, optWaitConnectMs, optWaitReadSec);
+        checkFeatures(client, useCompression, major, minor, point, optWaitTime, optWaitConnectMs, optWaitReadSec);
         bool optimized = !optPre64 && ((major>=7) || (major==6 && minor>=3));
 
         try
@@ -926,27 +1038,6 @@ public:
         }
         return 1;
     }
-    int getInitialRunWait()
-    {
-        if (!optPoll)
-            return optWaitTime;
-        return (optWaitTime < 10000) ? optWaitTime : 10000; //stay connected for the first 10 seconds even if polling
-    }
-    bool isFinalState(WUState state)
-    {
-        switch (state)
-        {
-        case WUStateUnknown:
-        case WUStateArchived:
-        case WUStateAborting:
-        case WUStateCompleted:
-        case WUStateFailed:
-        case WUStateAborted:
-            return true;
-        }
-        return false;
-    }
-
     virtual int processCMD()
     {
         Owned<IClientWsWorkunits> client = createCmdClientExt(WsWorkunits, *this, "?upload_"); //upload_ disables maxRequestEntityLength
@@ -983,7 +1074,7 @@ public:
         else
         {
             req->setCloneWorkunit(false);
-            if (!doDeploy(*this, client, optWaitTime, optTargetCluster.get(), optName.get(), &wuid, &wuCluster, optNoArchive, optVerbose, true, optProtect))
+            if (!doDeploy(client, optWaitTime, optTargetCluster.get(), optName.get(), &wuid, &wuCluster, optNoArchive, optVerbose, true, optProtect))
                 return 1;
             req->setWuid(wuid.str());
             if (optVerbose)
@@ -1040,7 +1131,7 @@ public:
         if (optVerbose && respwuid.length() && !streq(wuid.str(), respwuid.str()))
             fprintf(stdout, "As %s\n", respwuid.str());
         WUState state = getWorkUnitState(resp->getState());
-        if (optPoll && !isFinalState(state))
+        if (optPoll && !isFinalRunState(state))
             return pollForResults(client, respwuid);
 
         switch (state)
@@ -1102,8 +1193,6 @@ public:
             "   --job-name=<val>          job name\n"
             "   -in,--input=<file|xml>    file or xml content to use as query input\n"
             "   -X<name>=<value>          sets the stored input value (stored('name'))\n"
-            "   --wait=<ms>               time to wait for completion\n"
-            "   --poll                    poll for results, rather than remain connected\n"
             "   --exception-level=<level> minimum severity level for exceptions\n"
             "                             values: 'info', 'warning', 'error'\n"
             "   --protect                 protect workunit from deletion\n",
@@ -1115,10 +1204,8 @@ private:
     StringAttr optInput;
     StringAttr optExceptionSeverity;
     IArrayOf<IEspNamedValue> variables;
-    unsigned optWaitTime = 0;
     unsigned startTimeMs = 0;
     bool optNoRoot = false;
-    bool optPoll = false;
     bool optPre64 = false;  //only for troubleshooting, do not document
     bool optProtect = false;
 };
@@ -1252,7 +1339,7 @@ public:
         int minor = 0;
         int point = 0;
         bool useCompression = false;
-        checkFeatures(*this, client, useCompression, major, minor, point, 0, optWaitConnectMs, optWaitReadSec);
+        checkFeatures(client, useCompression, major, minor, point, 0, optWaitConnectMs, optWaitReadSec);
 
         if (!optPre64 && (major>=6 && minor>=3))
             return getAndOutputResults(client, optWuid);
