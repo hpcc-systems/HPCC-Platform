@@ -19,6 +19,9 @@ on:
       - "!candidate-7.2.*"
       - "!candidate-7.0.*"
       - "!candidate-6.*"
+    paths:
+      - "esp/eclwatch/**"
+      - "esp/src/**"
   schedule:
     - cron: "0 7 * * 1"
 
