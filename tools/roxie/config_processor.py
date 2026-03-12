@@ -218,12 +218,14 @@ class DeploymentManager:
 
     def __init__(self, dry_run: bool = False, initd_path: str = '/etc/init.d',
                  env_path: str = '/etc/HPCCSystems/environment.xml', sudo: bool = False,
-                 cluster: str = ''):
+                 cluster: str = '', no_stop: bool = False, verbose: bool = False):
         self.dry_run = dry_run
         self.initd_path = initd_path
         self.env_path = env_path
         self.sudo = sudo
         self.cluster = cluster
+        self.no_stop = no_stop
+        self.verbose = verbose
 
     def _execute_command(self, command: List[str], description: str) -> bool:
         """
@@ -243,11 +245,12 @@ class DeploymentManager:
             print(f"    Command: {cmd_str}")
             return True
         else:
-            print(f"  {description}")
-            print(f"    Executing: {cmd_str}")
+            if self.verbose:
+                print(f"  {description}")
+                print(f"    Executing: {cmd_str}")
             try:
                 result = subprocess.run(command, check=True, capture_output=True, text=True)
-                if result.stdout:
+                if self.verbose and result.stdout:
                     print(f"    Output: {result.stdout.strip()}")
                 return True
             except subprocess.CalledProcessError as e:
@@ -396,7 +399,9 @@ class DeploymentManager:
         print(f"{'='*60}")
 
         # Stop services
-        if not self.stop_services(ip_addresses):
+        if self.no_stop:
+            print("\nSkipping stop services (--no-stop specified)")
+        elif not self.stop_services(ip_addresses):
             print("\nDeployment failed: Could not stop services", file=sys.stderr)
             return False
 
@@ -424,8 +429,9 @@ class DeploymentManager:
 class TestRunner:
     """Manages test execution with testsocket."""
 
-    def __init__(self, dry_run: bool = False):
+    def __init__(self, dry_run: bool = False, verbose: bool = False):
         self.dry_run = dry_run
+        self.verbose = verbose
 
     def _run_testsocket(self, testsocket_path: str, args: List[str],
                        commandargs: List[str], output_file: str = None) -> str:
@@ -454,7 +460,8 @@ class TestRunner:
             print(f"  [DRY-RUN] Would execute: {cmd_str}")
             return ""
 
-        print(f"  Executing: {cmd_str}")
+        if self.verbose:
+            print(f"  Executing: {cmd_str}")
 
         try:
             if output_file:
@@ -542,12 +549,12 @@ class TestRunner:
         print(f"{'='*60}")
 
         for test_name, test_options in tests:
-            full_test_name = f"{test_file_basename}_{test_name}"
-            print(f"\nTest: {full_test_name}")
-
             # Capture start timestamp
             start_time = time.time()
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+
+            full_test_name = f"{test_file_basename}_{test_name}"
+            print(f"\nTest: {full_test_name} / {timestamp}")
 
             # Create test-specific directory structure: results/full_test_name/timestamp/
             test_dir = results_path / full_test_name / timestamp
@@ -555,7 +562,8 @@ class TestRunner:
 
             if not self.dry_run:
                 test_dir.mkdir(parents=True, exist_ok=True)
-                print(f"  Results directory: {test_dir}")
+                if self.verbose:
+                    print(f"  Results directory: {test_dir}")
 
                 # Write configuration settings to summary.txt
                 with open(summary_txt, 'w') as f:
@@ -593,7 +601,8 @@ class TestRunner:
                     if event_trace:
                         f.write("\n[event_files]\n")
 
-                print(f"  Configuration written to: {summary_txt}")
+                if self.verbose:
+                    print(f"  Configuration written to: {summary_txt}")
             else:
                 print(f"  [DRY-RUN] Would write configuration to: {summary_txt}")
 
@@ -608,7 +617,8 @@ class TestRunner:
                     self._run_testsocket(testsocket, event_args, command_args)
 
             # b) Run the actual test
-            print("  Running test...")
+            if self.verbose:
+                print("  Running test...")
             test_args = [f"{submit_ip}:{roxie_port}"]
             command_args = []
 
@@ -644,7 +654,8 @@ class TestRunner:
 
             # Calculate elapsed time
             elapsed_time = time.time() - start_time
-            print(f"  Results written to: {results_file}")
+            if self.verbose:
+                print(f"  Results written to: {results_file}")
             print(f"  Elapsed time: {elapsed_time:.2f} seconds")
 
             # Extract summary statistics from results file
@@ -665,7 +676,8 @@ class TestRunner:
                                     f.write("\n")
                                 f.write(stats.strip())
                                 f.write("\n")
-                        print(f"  Statistics written to: {stats_file}")
+                        if self.verbose:
+                            print(f"  Statistics written to: {stats_file}")
 
                         # Run extract-roxie-timings.py to process statistics
                         script_dir = Path(__file__).parent
@@ -682,7 +694,8 @@ class TestRunner:
                                         text=True,
                                         check=True
                                     )
-                                print(f"  Summary statistics written to: {summary_csv}")
+                                if self.verbose:
+                                    print(f"  Summary statistics written to: {summary_csv}")
                             except subprocess.CalledProcessError as e:
                                 print(f"  Warning: Failed to extract timing summary: {e.stderr.strip()}", file=sys.stderr)
 
@@ -696,7 +709,8 @@ class TestRunner:
                                         text=True,
                                         check=True
                                     )
-                                print(f"  Full summary statistics written to: {full_summary_csv}")
+                                if self.verbose:
+                                    print(f"  Full summary statistics written to: {full_summary_csv}")
                             except subprocess.CalledProcessError as e:
                                 print(f"  Warning: Failed to extract full timing summary: {e.stderr.strip()}", file=sys.stderr)
                         else:
@@ -709,7 +723,8 @@ class TestRunner:
                 # Delete results file after processing
                 try:
                     results_file.unlink()
-                    print(f"  Deleted results file: {results_file}")
+                    if self.verbose:
+                        print(f"  Deleted results file: {results_file}")
                 except Exception as e:
                     print(f"  Warning: Failed to delete results file: {e}", file=sys.stderr)
 
@@ -741,7 +756,8 @@ class TestRunner:
                                 try:
                                     cmd = ['scp', f'{ip}:{filename}', str(local_path)]
                                     result = subprocess.run(cmd, check=True, capture_output=True, text=True)
-                                    print(f"    Copied to: {local_path}")
+                                    if self.verbose:
+                                        print(f"    Copied to: {local_path}")
                                 except subprocess.CalledProcessError as e:
                                     print(f"    Warning: Failed to copy event trace file: {e.stderr.strip()}", file=sys.stderr)
 
@@ -784,7 +800,8 @@ class TestRunner:
                         data += "," + stats_data
                     f.write(data + "\n")
 
-                print(f"  Summary appended to: {summary_file}")
+                if self.verbose:
+                    print(f"  Summary appended to: {summary_file}")
 
                 with open(all_summary_file, 'a') as f:
                     # Write header if file is new
@@ -799,7 +816,8 @@ class TestRunner:
                         data += "," + stats_data
                     f.write(data + "\n")
 
-                print(f"  Summary appended to: {all_summary_file}")
+                if self.verbose:
+                    print(f"  Summary appended to: {all_summary_file}")
 
         print(f"\n{'='*60}")
         print("Test execution completed")
@@ -883,6 +901,18 @@ def parse_arguments():
         '--sudo',
         action='store_true',
         help='Prefix remote commands and scp with sudo'
+    )
+
+    parser.add_argument(
+        '--no-stop',
+        action='store_true',
+        help='Skip stopping the remote cluster before deployment (useful when the environment file is invalid)'
+    )
+
+    parser.add_argument(
+        '-v', '--verbose',
+        action='store_true',
+        help='Enable verbose output (show detailed progress when not in dry-run mode)'
     )
 
     return parser.parse_args()
@@ -1027,13 +1057,13 @@ def main():
                     env_path = f"{remoteroot}/etc/HPCCSystems/environment.xml" if remoteroot else '/etc/HPCCSystems/environment.xml'
                     use_sudo = options.get('sudo', '0') == '1'
                     cluster = config_vars.get('CLUSTER', '')
-                    deployment = DeploymentManager(dry_run=args.dry_run, initd_path=initd_path, env_path=env_path, sudo=use_sudo, cluster=cluster)
+                    deployment = DeploymentManager(dry_run=args.dry_run, initd_path=initd_path, env_path=env_path, sudo=use_sudo, cluster=cluster, no_stop=args.no_stop, verbose=args.verbose)
                     if not deployment.deploy(args.output_xml, roxie_ips_list, commands):
                         sys.exit(1)
 
                 # Run tests if tests are defined
                 if tests:
-                    test_runner = TestRunner(dry_run=args.dry_run)
+                    test_runner = TestRunner(dry_run=args.dry_run, verbose=args.verbose)
                     if not test_runner.run_tests(tests, config_vars, options, config.basename,
                                                 args.copy_events, replacements, commands):
                         sys.exit(1)
