@@ -16,11 +16,13 @@ const logger = scopedLogger("src-react/hooks/metrics.ts");
 
 const METRIC_OPTIONS_2 = "MetricOptions-2";
 const METRIC_OPTIONS_3 = "MetricOptions-3";
+const METRIC_OPTIONS_4 = "MetricOptions-4";
+
 export const METRICS_GRAPH_TRACK_SELECTION = "metrics_graph_trackSelection";
 
 export function resetMetricsViews() {
     const store = userKeyValStore();
-    return Promise.all([store?.delete(METRIC_OPTIONS_2), store?.delete(METRIC_OPTIONS_3), store?.delete(METRICS_GRAPH_TRACK_SELECTION)]);
+    return Promise.all([store?.delete(METRIC_OPTIONS_2), store?.delete(METRIC_OPTIONS_3), store?.delete(METRIC_OPTIONS_4), store?.delete(METRICS_GRAPH_TRACK_SELECTION)]);
 }
 
 export interface MetricsView {
@@ -41,9 +43,10 @@ interface UserMetricsView {
     views: StringMetricsViewMap;
 }
 
+// When changing the default view - update the store ID (METRIC_OPTIONS_4) to a new version...
 const DefaultMetricsViews: StringMetricsViewMap = {
     Default: {
-        scopeTypes: ["workflow", "graph", "subgraph", "activity", "operation"],
+        scopeTypes: ["workflow", "graph", "subgraph", "activity"],
         properties: ["CostExecute", "TimeElapsed"],
         ignoreGlobalStoreOutEdges: true,
         subgraphTpl: "%id% - %TimeElapsed%",
@@ -83,6 +86,20 @@ SELECT type, name, TimeLocalExecute, SizeDiskRead, NumDiskRead, id
         layout: undefined,
         showTimeline: true
     },
+    Operations: {
+        scopeTypes: ["operation"],
+        properties: ["TimeElapsed"],
+        ignoreGlobalStoreOutEdges: true,
+        subgraphTpl: "%id%",
+        activityTpl: "%Label%",
+        edgeTpl: "%Label%",
+        sql: `\
+SELECT type, name, TimeElapsed, id
+    FROM metrics
+    WHERE type = 'operation'`,
+        layout: undefined,
+        showTimeline: true
+    },
     Peaks: {
         scopeTypes: ["subgraph"],
         properties: ["NodeMaxPeakMemory", "NodeMaxPeakRowMemory", "NodeMinPeakMemory", "NodeMinPeakRowMemory", "SizeAvgPeakMemory", "SizeAvgPeakRowMemory", "SizeDeltaPeakMemory", "SizeDeltaPeakRowMemory", "SizeMaxPeakMemory", "SizeMaxPeakRowMemory", "SizeMinPeakMemory", "SizeMinPeakRowMemory", "SizePeakMemory", "SizeStdDevPeakMemory", "SizeStdDevPeakRowMemory", "SkewMaxPeakMemory", "SkewMaxPeakRowMemory", "SkewMinPeakMemory", "SkewMinPeakRowMemory"],
@@ -113,11 +130,15 @@ export function clone<T>(_: T): T {
 // }
 
 export interface useMetricsViewsResult {
+    loaded: boolean;
     viewIds: string[];
     viewId: string;
     setViewId: (id: string, forceRefresh?: boolean) => void;
     view: MetricsView;
     addView: (label: string, view: Partial<MetricsView>) => void;
+    deleteView: (id: string) => void;
+    renameView: (oldId: string, newId: string) => void;
+    isDefaultView: (id: string) => boolean;
     updateView: (view: Partial<MetricsView>, forceRefresh?: boolean) => void;
     resetView: (forceRefresh?: boolean) => void;
     save: () => void;
@@ -140,11 +161,15 @@ SELECT type, name, id, Kind, Label, EclNameList, EclText
 };
 
 const logicalGraphResult: useMetricsViewsResult = {
+    loaded: true,
     viewIds: ["LogicalGraph"],
     viewId: "LogicalGraph",
     setViewId: () => { },
     view: logicalGraphView,
     addView: () => { },
+    deleteView: () => { },
+    renameView: () => { },
+    isDefaultView: () => true,
     updateView: () => { },
     resetView: () => { },
     save: () => { }
@@ -171,7 +196,7 @@ export function useMetricsViews(logicalGraph: boolean): useMetricsViewsResult {
         _viewId.set(id);
     }, []);
 
-    const [metricViewStr, setMetricViewStr, _resetMetricsViewStr] = useUserStore<string>(METRIC_OPTIONS_3, defaultUserMetricViews);
+    const [metricViewStr, setMetricViewStr, _resetMetricsViewStr] = useUserStore<string>(METRIC_OPTIONS_4, defaultUserMetricViews);
     React.useEffect(() => {
         if (metricViewStr && !loaded) {
             try {
@@ -188,6 +213,7 @@ export function useMetricsViews(logicalGraph: boolean): useMetricsViewsResult {
                 _views.set(def);
                 _viewIds.set(keys);
                 setViewId(keys[0]);
+                _loaded.set(true);
             }
         }
     }, [loaded, metricViewStr, setViewId]);
@@ -197,13 +223,46 @@ export function useMetricsViews(logicalGraph: boolean): useMetricsViewsResult {
     }, [viewId, views]);
 
     const addView = React.useCallback((label: string, _: Partial<MetricsView>) => {
-        origViews[label] = clone(view);
+        if (label in views) return;
+        const newView = clone(view);
         for (const key in _) {
-            origViews[label] = _[key];
+            newView[key] = _[key];
         }
+        views[label] = newView;
+        origViews[label] = clone(newView);
+        _viewIds.set(Object.keys(views));
         setViewId(label);
+        setMetricViewStr(JSON.stringify({ viewId: label, views }));
         refresh();
-    }, [origViews, refresh, setViewId, view]);
+    }, [origViews, refresh, setMetricViewStr, setViewId, view, views]);
+
+    const deleteView = React.useCallback((id: string) => {
+        if (id in DefaultMetricsViews) return;
+        delete views[id];
+        delete origViews[id];
+        _viewIds.set(Object.keys(views));
+        setViewId("Default");
+        setMetricViewStr(JSON.stringify({ viewId: "Default", views }));
+        refresh();
+    }, [origViews, refresh, setMetricViewStr, setViewId, views]);
+
+    const renameView = React.useCallback((oldId: string, newId: string) => {
+        if (oldId in DefaultMetricsViews) return;
+        if (oldId === newId || !newId) return;
+        if (newId in views) return;
+        views[newId] = views[oldId];
+        origViews[newId] = origViews[oldId];
+        delete views[oldId];
+        delete origViews[oldId];
+        _viewIds.set(Object.keys(views));
+        setViewId(newId);
+        setMetricViewStr(JSON.stringify({ viewId: newId, views }));
+        refresh();
+    }, [origViews, refresh, setMetricViewStr, setViewId, views]);
+
+    const isDefaultView = React.useCallback((id: string) => {
+        return id in DefaultMetricsViews;
+    }, []);
 
     const updateView = React.useCallback((_: Partial<MetricsView>, forceRefresh = false) => {
         for (const key in _) {
@@ -233,11 +292,15 @@ export function useMetricsViews(logicalGraph: boolean): useMetricsViewsResult {
     }
 
     return {
+        loaded,
         viewIds,
         viewId,
         setViewId,
         view,
         addView,
+        deleteView,
+        renameView,
+        isDefaultView,
         updateView,
         resetView,
         save

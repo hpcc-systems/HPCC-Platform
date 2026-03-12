@@ -41,7 +41,7 @@ interface WorkunitDetailsProps {
     parentUrl?: string;
     tab?: string;
     fullscreen?: boolean;
-    state?: { outputs?: string, metrics?: { lineageSelection?: string, selection?: string[] }, resources?: string, helpers?: string, eclsummary?: any, logicalgraph?: { lineageSelection?: string, selection?: string[] } };
+    state?: { outputs?: string, metrics?: { view?: string, lineageSelection?: string, selection?: string[] }, resources?: string, helpers?: string, eclsummary?: any, logicalgraph?: { lineageSelection?: string, selection?: string[] } };
     queryParams?: { summary?: StringStringMap, outputs?: StringStringMap, inputs?: StringStringMap, metrics?: StringStringMap, resources?: StringStringMap, helpers?: StringStringMap, logs?: StringStringMap, logicalgraph?: StringStringMap };
 }
 
@@ -232,7 +232,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                             <Shimmer />
                         </>
                     }>
-                        <Metrics wuid={wuid} targetsRoxie={targetsRoxie} parentUrl={`${parentUrl}/${wuid}/metrics`} lineageSelection={state?.metrics?.lineageSelection} selection={state?.metrics?.selection} />
+                        <Metrics wuid={wuid} targetsRoxie={targetsRoxie} parentUrl={`${parentUrl}/${wuid}/metrics`} viewSelection={state?.metrics?.view} lineageSelection={state?.metrics?.lineageSelection} selection={state?.metrics?.selection} />
                     </React.Suspense>
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "workflows"} size={size}>
