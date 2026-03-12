@@ -219,7 +219,6 @@ export = {
     DefinitionDeleted: "Definición eliminada",
     DefinitionID: "ID de definición",
     Definitions: "Definiciones",
-    DelayedReplication: "Replicación retrasada",
     Delete: "Eliminar",
     DeleteBinding: "Eliminar conexión",
     Deleted: "Borrado",

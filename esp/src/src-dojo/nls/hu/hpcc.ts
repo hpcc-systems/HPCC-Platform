@@ -219,7 +219,6 @@ export = {
     DefinitionDeleted: "Definíció törölve",
     DefinitionID: "Definíció azonosító",
     Definitions: "Definíciók",
-    DelayedReplication: "Késleltetett másolás",
     Delete: "Törlés",
     DeleteBinding: "Kötések törlése",
     Deleted: "Törölt",
