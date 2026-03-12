@@ -658,14 +658,15 @@ public:
                 count += indexInput->checkCount(keyedLimit-count); // part max, is total limit [keyedLimit] minus total so far [count]
             else
                 count += indexInput->getCount();
-            if ((count > keyedLimit) && (keyedLimit == 1 && !keyedLimitExceededLogged))
+            bool limitHit = count > keyedLimit;
+            if (limitHit && (keyedLimit == 1 && !keyedLimitExceededLogged))
             {
                 keyedLimitExceededLogged = true;
-                DISLOG("INDEXLIMIT: slave %u local pre-count exceeded keyed limit (%" I64F "u)", queryJobChannel().queryMyRank(), (unsigned __int64)keyedLimit);
+                DISLOG("INDEXLIMIT: slave %u local hard (%s) pre-count (%" I64F "u) exceeded keyed limit (%" I64F "u)", queryJobChannel().queryMyRank(), hard ? "true" : "false", (unsigned __int64)count, (unsigned __int64)keyedLimit);
             }
             if (keyManager)
                 resetManager(keyManager);
-            if (count > keyedLimit)
+            if (limitHit)
                 break;
         }
         if (_currentManager)

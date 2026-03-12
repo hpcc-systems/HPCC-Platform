@@ -132,6 +132,7 @@ protected:
             if (!abortSent && total > keyedLimit)
             {
                 abortSent = true;
+                DISLOG("INDEXLIMIT: master aborting keyed limit (reported keyed rows processed=%" I64F "u, limit=%" I64F "u)", (unsigned __int64)total, (unsigned __int64)keyedLimit);
                 // Broadcast a stop signal once the global keyed limit is exceeded.
                 for (rank_t r=1; r<=slaves; ++r)
                 {
