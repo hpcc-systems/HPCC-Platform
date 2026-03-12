@@ -551,11 +551,7 @@ public:
             return;
         keyedLimit = (rowcount_t)helper->getKeyedLimit();
         if (keyedLimit != RCMAX)
-        {
-            if (0 != (helper->getFlags() & (TIRkeyedlimitskips|TIRcountkeyedlimit)))
-                processKeyedLimit();
-            monitorKeyedLimit();
-        }
+            processKeyedLimit();
     }
 };
 

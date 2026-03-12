@@ -1621,10 +1621,6 @@ public:
         limitTransformExtra = helper;
         appendOutputLinked(this);
     }
-    virtual bool enableKeyedLimitAbort() const override
-    {
-        return !container.queryLocalOrGrouped();
-    }
 
 // IThorDataLink
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
@@ -1651,9 +1647,7 @@ public:
 // IRowStream
     virtual void stop() override
     {
-        if (keyedLimitAbortEnabled)
-            sendKeyedLimitProgress(keyedProcessed, KeyedLimitMsg::Done);
-        else if (RCMAX != keyedLimit) // NB: will not be true if nextRow() has handled
+        if (RCMAX != keyedLimit) // NB: will not be true if nextRow() has handled
         {
             keyedLimitCount = sendGetCount(keyedProcessed);
             if (keyedLimitCount > keyedLimit)
@@ -1664,7 +1658,7 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(slaveTimerStats, timeActivities);
-        if (RCMAX != keyedLimitCount || enableKeyedLimitAbort())
+        if (RCMAX != keyedLimitCount)
         {
             bool limitHit;
             bool exception;
