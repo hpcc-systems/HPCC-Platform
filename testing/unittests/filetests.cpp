@@ -471,4 +471,130 @@ CPPUNIT_TEST_SUITE_REGISTRATION( JlibStreamTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibStreamTest, "JlibStreamTest" );
 
 
+
+class JlibFileStressTest : public CppUnit::TestFixture
+{
+public:
+    CPPUNIT_TEST_SUITE(JlibFileStressTest);
+        CPPUNIT_TEST(testUncompressedSeeks);
+        CPPUNIT_TEST(testCompressedSeeks);
+        CPPUNIT_TEST(cleanup);
+    CPPUNIT_TEST_SUITE_END();
+
+    static constexpr const char * testFilename = "unittests_seekfile";
+
+    void createSemiRandomFile(IFileIO * io, offset_t size)
+    {
+        // Create semi-random data where byte value is a function of offset
+        // Using simple algorithm: byte = (offset * 31 + offset / 256) to appear random but still compress
+        constexpr size32_t bufferSize = 0x10000; // 64KB chunks
+        byte buffer[bufferSize];
+
+        offset_t offset = 0;
+        while (offset < size)
+        {
+            size32_t thisSize = (size32_t)std::min((offset_t)bufferSize, size - offset);
+
+            // Fill buffer with semi-random data based on offset
+            for (size32_t i = 0; i < thisSize; i++)
+            {
+                offset_t pos = offset + i;
+                // Simple algorithm: multiply by prime, add high byte to create pseudo-randomness
+                buffer[i] = (byte)((pos * 31 + pos / 256) & 0xFF);
+            }
+
+            io->write(offset, thisSize, buffer);
+            offset += thisSize;
+        }
+    }
+
+    // Verify semi-random data at any offset - used to check random reads
+    bool verifySemiRandomData(const byte * data, offset_t offset, size32_t size)
+    {
+        for (size32_t i = 0; i < size; i++)
+        {
+            offset_t pos = offset + i;
+            byte expected = (byte)((pos * 31 + pos / 256) & 0xFF);
+            if (data[i] != expected)
+                return false;
+        }
+        return true;
+    }
+    void createSemiRandomFile(CompressionMethod compression, offset_t size)
+    {
+        Owned<IFile> file(createIFile(testFilename));
+        Owned<IFileIO> io;
+        if (compression != COMPRESS_METHOD_NONE)
+            io.setown(createCompressedFileWriter(file, false, false, nullptr, compression, 0, -1, IFEnone));
+        else
+            io.setown(file->open(IFOcreate));
+        createSemiRandomFile(io, size);
+    }
+
+    void verifyRandomReads(CompressionMethod compression, offset_t size, size32_t verifySize, unsigned numReads)
+    {
+        Owned<IFile> file(createIFile(testFilename));
+        Owned<IFileIO> io;
+        if (compression != COMPRESS_METHOD_NONE)
+            io.setown(createCompressedFileReader(file, nullptr, useDefaultIoBufferSize, false, IFEnone));
+        else
+            io.setown(file->open(IFOread));
+
+        // Perform random reads and verify data
+        std::mt19937 randomGenerator; // Use the default seeds so that the results are reproducible
+        MemoryAttr buffer(verifySize);
+
+        for (unsigned i = 0; i < numReads; i++)
+        {
+            offset_t offset = randomGenerator() % (size - verifySize);
+
+            size32_t sizeRead = io->read(offset, verifySize, buffer.mem());
+            CPPUNIT_ASSERT_EQUAL(verifySize, sizeRead);
+            CPPUNIT_ASSERT(verifySemiRandomData(buffer.bytes(), offset, verifySize));
+        }
+    }
+    void testSeeks(CompressionMethod compression, unsigned verifySize, unsigned numReads)
+    {
+        offset_t size = 0x40000000; // 1GB
+        CCycleTimer timer;
+        createSemiRandomFile(compression, size);
+        unsigned msToCreate = timer.elapsedMs();
+
+        timer.reset();
+        verifyRandomReads(compression, size, verifySize, numReads);
+
+        Owned<IFile> file(createIFile(testFilename));
+        offset_t compressedSize = file->size();
+
+        DBGLOG("Verified %u random reads of %u bytes in %s file of size %llu(%llu) in %ums (creation %ums)", numReads, verifySize, translateFromCompMethod(compression), size, compressedSize, timer.elapsedMs(), msToCreate);
+    }
+    void testSeeks(CompressionMethod compression)
+    {
+        unsigned verifySize = 0x1000; // 4KB
+        unsigned numReads = 2000;
+        testSeeks(compression, verifySize, numReads);
+    }
+    void testUncompressedSeeks()
+    {
+        testSeeks(COMPRESS_METHOD_NONE);
+        testSeeks(COMPRESS_METHOD_NONE, 0x400, 1000000);
+    }
+    void testCompressedSeeks()
+    {
+        testSeeks(COMPRESS_METHOD_LZ4);
+        testSeeks(COMPRESS_METHOD_LZ4HC3);
+        testSeeks(COMPRESS_METHOD_ZSTD);
+        testSeeks(COMPRESS_METHOD_LZW);
+        testSeeks(COMPRESS_METHOD_LZ4, 0x400, 100000); // Test smaller reads and more of them to increase chance of hitting edge cases in the compressed seek logic
+    }
+    void cleanup()
+    {
+        Owned<IFile> file(createIFile(testFilename));
+        file->remove();
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( JlibFileStressTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibFileStressTest, "JlibFileStressTest" );
+
 #endif
