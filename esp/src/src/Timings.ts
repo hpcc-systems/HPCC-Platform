@@ -83,14 +83,19 @@ export class WUTimelineNoFetch extends WUTimelinePatched {
                 scope.__hpcc_id = scope.name;
             }
             return scope.id &&
-                scope.WhenStarted && (scope.WhenFinished || scope.TimeElapsed) &&
+                scope.WhenStarted &&
                 scope.type !== "activity";
         }).map((scope: IScope) => {
             let whenFinished = scope.WhenFinished;
             if (!whenFinished) {
-                const d = new Date(scope.WhenStarted);
-                d.setMilliseconds(d.getMilliseconds() + scope.TimeElapsed * 1000);
-                whenFinished = d.toISOString();
+                if (scope.TimeElapsed) {
+                    const d = new Date(scope.WhenStarted);
+                    d.setMilliseconds(d.getMilliseconds() + scope.TimeElapsed * 1000);
+                    whenFinished = d.toISOString();
+                } else {
+                    // Graph still running — use current time as a placeholder end  
+                    whenFinished = new Date().toISOString();
+                }
             }
             return [
                 scope.id,
