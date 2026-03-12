@@ -750,6 +750,9 @@ class TestRunner:
                 summary_file = results_path / f"summary_{full_test_name}.csv"
                 file_exists = summary_file.exists()
 
+                all_summary_file = results_path / "summary_all.csv"
+                all_file_exists = all_summary_file.exists()
+
                 # Check if stats-summary.csv was generated and read it
                 summary_csv = test_dir / "stats-summary.csv"
                 stats_header = ""
@@ -782,6 +785,21 @@ class TestRunner:
                     f.write(data + "\n")
 
                 print(f"  Summary appended to: {summary_file}")
+
+                with open(all_summary_file, 'a') as f:
+                    # Write header if file is new
+                    if not all_file_exists:
+                        header = "test,timestamp,elapsed_time"
+                        if stats_header:
+                            header += "," + stats_header
+                        f.write(header + "\n")
+                    # Write data row with leading test name column
+                    data = f"{full_test_name},{timestamp},{elapsed_time:.2f}"
+                    if stats_data:
+                        data += "," + stats_data
+                    f.write(data + "\n")
+
+                print(f"  Summary appended to: {all_summary_file}")
 
         print(f"\n{'='*60}")
         print("Test execution completed")
