@@ -108,6 +108,8 @@ public:
         CPPUNIT_TEST(testEventCompleteness);
         CPPUNIT_TEST(testPullEvents);
         CPPUNIT_TEST(testFailCreate);
+        CPPUNIT_TEST(testAllRecordFunctions);
+        CPPUNIT_TEST(testAllReadFunction);
         CPPUNIT_TEST(testCleanup);
     CPPUNIT_TEST_SUITE_END();
 
@@ -1205,6 +1207,113 @@ attribute: DataSize = 73
         ss << ']';
         return ss.str();
     }
+
+    void testAllRecordFunctions()
+    {
+        START_TEST
+
+        EventRecorder &recorder = queryRecorder();
+        EventRecordingSummary summary;
+
+        // Record a variety of events to a test file
+        CPPUNIT_ASSERT(recorder.startRecording("all", "pullevents.evt", "testprocess", 1, 2, 3, false));
+        CPPUNIT_ASSERT(recorder.isRecording());
+
+        // Add a demo call to each of the record() functions
+        // Index-related events
+        recorder.recordIndexCacheHit(1, 8192, NodeBranch, 1024, 100);
+        recorder.recordIndexCacheMiss(2, 16384, NodeLeaf);
+        recorder.recordIndexLoad(3, 24576, NodeBranch, 2048, 150, 200);
+        recorder.recordIndexEviction(4, 32768, NodeLeaf, 4096);
+        recorder.recordIndexPayload(5, 40960, true, 250);
+
+        // Add a EventRecordingActive event
+        recorder.pauseRecording(true, true);
+        recorder.pauseRecording(false, true);
+
+        // Dali-related events
+        recorder.recordDaliChangeMode(1001, 100, 256);
+        recorder.recordDaliCommit(1002, 200, 512);
+        recorder.recordDaliConnect("/Workunits/Workunit/test.wu", 1003, 300, 1024);
+        recorder.recordDaliEnsureLocal(1004, 150, 128);
+        recorder.recordDaliGet(1005, 250, 256);
+        recorder.recordDaliGetChildren(1006, 175, 512);
+        recorder.recordDaliGetChildrenFor(1007, 225, 768);
+        recorder.recordDaliGetElements("/Test/Path/Elements", 1008, 275, 1536);
+        recorder.recordDaliSubscribe("/Test/Subscribe/Path", 1009, 125);
+
+        // File information
+        recorder.recordFileInformation(100, "testfile.idx");
+
+        // Query events
+        recorder.recordQueryStart("TestQuery");
+        recorder.recordQueryStop();
+
+        // Do not call Recording source (additional call to test multiple sources)
+        // because this is done implicitly when recording is started and it is invalid to have two
+        // of these events in a recording.
+        // recorder.recordRecordingSource("anotherprocess", 10, 20, 30);
+
+        // Generic event using recordEvent
+        CEvent event;
+        event.reset(EventIndexCacheMiss);
+        event.setValue(EvAttrFileId, 99U);
+        event.setValue(EvAttrFileOffset, 49152ULL);
+        event.setValue(EvAttrNodeKind, (unsigned)NodeLeaf);
+        recorder.recordEvent(event);
+
+        CPPUNIT_ASSERT(recorder.stopRecording(&summary));
+        CPPUNIT_ASSERT(!recorder.isRecording());
+
+        END_TEST
+    }
+
+    void testAllReadFunction()
+    {
+        START_TEST
+
+        // Create an array to track which event types have been seen
+        bool eventTypeSeen[EventMax] = { false };
+
+        // Open the event file created by testAllRecordFunctions
+        Owned<IEventIterator> ei = createEventFileIterator("pullevents.evt");
+        CPPUNIT_ASSERT_MESSAGE("Should be able to create event iterator", ei.get());
+
+        // Iterate through all events and mark them as seen
+        CEvent event;
+        while (ei->nextEvent(event))
+        {
+            EventType type = event.queryType();
+            CPPUNIT_ASSERT_MESSAGE("Event type should be valid", type >= EventNone && type < EventMax);
+            eventTypeSeen[type] = true;
+        }
+
+        // Report all event types that were not seen (except EventRecordingSource)
+        StringBuffer missingEvents;
+        bool first = true;
+        for (int i = 0; i < EventMax; i++)
+        {
+            EventType type = (EventType)i;
+            // Skip EventRecordingSource as requested
+            if ((type == EventRecordingSource) || (type == EventNone))
+                continue;
+
+            if (!eventTypeSeen[i])
+            {
+                if (!first)
+                    missingEvents.append(", ");
+                missingEvents.append(queryEventName(type));
+                first = false;
+            }
+        }
+
+        // Log the result for informational purposes
+        if (missingEvents.length() > 0)
+            CPPUNIT_FAIL(VStringBuffer("Event types not seen in pullevents.evt: %s\n", missingEvents.str()).str());
+
+        END_TEST
+    }
+
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION( JlibEventTest );

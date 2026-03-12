@@ -28540,9 +28540,15 @@ public:
         {
             doExecute(parentExtractSize, parentExtract);
         }
+        catch (IException * e)
+        {
+            DBGLOG(e, "Exception thrown in child query - cleaning up");
+            reset();
+            throw;
+        }
         catch (...)
         {
-            DBGLOG("Exception thrown in child query - cleaning up");
+            DBGLOG("Unknown exception thrown in child query - cleaning up");
             reset();
             throw;
         }
