@@ -18,74 +18,80 @@ const LineageIcon = bundleIcon(Folder20Filled, Folder20Regular);
 const SelectedLineageIcon = bundleIcon(FolderOpen20Filled, FolderOpen20Regular);
 const TRANSITION_DURATION = 0;
 
+export function idsToScopes(metrics: IScope[], ids?: string[]): IScope[] {
+    if (!ids?.length) {
+        return [];
+    }
+
+    const selectionSet = new Set(ids);
+    return metrics.filter(item => selectionSet.has(item.id));
+}
+
+export function calcLineage(metricGraph: MetricGraph, selection?: IScope[], lsName?: string): { lineage: IScope[], lineageSelectionScope: IScope | undefined } {
+    const lineage: IScope[] = [];
+
+    if (selection?.length) {
+        const lineages = selection.map(item => metricGraph.lineage(item));
+        const minLen = lineages.reduce((min, l) => Math.min(min, l.length), Number.MAX_SAFE_INTEGER);
+
+        for (let i = 0; i < minLen; ++i) {
+            const item = lineages[0][i];
+            if (!lineages.every(l => l[i] === item)) break;
+            if (item.id && item.type !== "child" && metricGraph.isSubgraph(item) && !metricGraph.isVertex(item)) {
+                lineage.push(item);
+            }
+        }
+    }
+
+    const lineageSelectionScope = (lsName && lineage.find(item => item.name === lsName)) || lineage[lineage.length - 1];
+
+    return { lineage, lineageSelectionScope };
+}
+
 export interface MetricGraphData {
     metricGraph: MetricGraph;
     selectedMetrics: IScope[];
     lineage: IScope[];
+    lineageSelectionScope: IScope | undefined;
     dot: string;
     svg: string;
     layoutStatus: LayoutStatus;
 }
 
-export function useMetricsGraphData(metrics: IScope[], view: MetricsView, lineageSelection?: string, selection?: string[]): MetricGraphData {
+export function useMetricsGraphData(metrics: IScope[], view: MetricsView, lineageSelectionName?: string, selection?: string[]): MetricGraphData {
     const [dot, setDot] = React.useState<string>("");
     const { svg, layoutStatus } = useMetricsGraphLayout(dot);
     const [lineage, setLineage] = React.useState<IScope[]>([]);
+    const [lineageSelectionScope, setLineageSelectionScope] = React.useState<IScope | undefined>(undefined);
 
     const metricGraph = useConst(() => new MetricGraph());
 
     const selectedMetrics = React.useMemo<IScope[]>(() => {
-        if (!selection?.length) return [];
-        const selectionSet = new Set(selection);
-        return metrics.filter(item => selectionSet.has(item.id));
+        return idsToScopes(metrics, selection);
     }, [metrics, selection]);
 
     React.useEffect(() => {
-        if (metrics?.length > 0) {
+        if (metrics.length > 0) {
             metricGraph.load(metrics);
-            setDot(metricGraph.graphTpl(lineageSelection ? [lineageSelection] : [], view));
+            setDot(metricGraph.graphTpl(lineageSelectionScope?.name ? [lineageSelectionScope.name] : [], view));
         } else {
             metricGraph.clear();
             setDot("");
         }
-    }, [metricGraph, metrics, lineageSelection, view]);
+    }, [metricGraph, metrics, lineageSelectionScope, view]);
 
     React.useEffect(() => {
-        if (!selectedMetrics.length) {
-            setLineage([]);
-            return;
-        }
+        const { lineage, lineageSelectionScope } = calcLineage(metricGraph, selectedMetrics, lineageSelectionName);
+        setLineage(lineage);
+        setLineageSelectionScope(lineageSelectionScope);
+    }, [metricGraph, selectedMetrics, lineageSelectionName]);
 
-        let minLen = Number.MAX_SAFE_INTEGER;
-        const lineages = selectedMetrics.map(item => {
-            const retVal = metricGraph.lineage(item);
-            minLen = Math.min(minLen, retVal.length);
-            return retVal;
-        });
-
-        const newLineage: IScope[] = [];
-        if (lineages.length && minLen > 0) {
-            for (let i = 0; i < minLen; ++i) {
-                const item = lineages[0][i];
-                if (lineages.every(lineage => lineage[i] === item)) {
-                    if (item.id && item.type !== "child" && metricGraph.isSubgraph(item) && !metricGraph.isVertex(item)) {
-                        newLineage.push(item);
-                    }
-                } else {
-                    break;
-                }
-            }
-        }
-        setLineage(newLineage);
-    }, [selectedMetrics, metricGraph]);
-
-    return { metricGraph, selectedMetrics, lineage, dot, svg, layoutStatus };
+    return { metricGraph, selectedMetrics, lineage, lineageSelectionScope, dot, svg, layoutStatus };
 }
 
 export interface MetricsGraphProps {
     metrics: IScope[],
     metricGraphData: MetricGraphData;
-    lineageSelection?: string;
     selection?: string[];
     selectedMetricsSource: string;
     status: FetchStatus;
@@ -95,8 +101,7 @@ export interface MetricsGraphProps {
 
 export const MetricsGraph: React.FunctionComponent<MetricsGraphProps> = ({
     metrics,
-    metricGraphData: { metricGraph, selectedMetrics, lineage, svg, layoutStatus },
-    lineageSelection,
+    metricGraphData: { metricGraph, selectedMetrics, lineage, lineageSelectionScope, svg, layoutStatus },
     selection,
     selectedMetricsSource,
     status,
@@ -110,10 +115,10 @@ export const MetricsGraph: React.FunctionComponent<MetricsGraphProps> = ({
 
     // Data ---
     React.useEffect(() => {
-        if (isLayoutComplete(layoutStatus) && lineage.length && lineageSelection && lineage.find(item => item.name === lineageSelection) === undefined) {
+        if (isLayoutComplete(layoutStatus) && lineage.length && lineageSelectionScope && lineage.find(item => item.name === lineageSelectionScope.name) === undefined) {
             onLineageSelectionChange(lineage[lineage.length - 1]?.name, true);
         }
-    }, [layoutStatus, lineage, lineageSelection, onLineageSelectionChange]);
+    }, [layoutStatus, lineage, lineageSelectionScope, onLineageSelectionChange]);
 
     // Widget  ---
     const metricGraphWidget = useConst(() => new MetricGraphWidget()
@@ -262,16 +267,16 @@ export const MetricsGraph: React.FunctionComponent<MetricsGraphProps> = ({
                 id: item.name,
                 label: `${item.id} (${metricGraph.childCount(item.name)})`,
                 props: {
-                    icon: lineageSelection === item.name ? <SelectedLineageIcon /> : <LineageIcon />
+                    icon: lineageSelectionScope?.name === item.name ? <SelectedLineageIcon /> : <LineageIcon />
                 }
             };
         });
-    }, [lineage, lineageSelection, metricGraph]);
+    }, [lineage, lineageSelectionScope, metricGraph]);
 
     return <HolyGrail
         header={<>
             <CommandBar items={graphButtons} farItems={graphRightButtons} />
-            <OverflowBreadcrumb breadcrumbs={breadcrumbs} selected={lineageSelection} onSelect={(item => onLineageSelectionChange(item.id, false))} />
+            <OverflowBreadcrumb breadcrumbs={breadcrumbs} selected={lineageSelectionScope?.name} onSelect={(item => onLineageSelectionChange(item.id, false))} />
         </>}
         main={<>
             <AutosizeComponent hidden={!spinnerLabel}>
