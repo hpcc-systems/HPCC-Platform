@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, Dropdown, IDropdownOption, mergeStyleSets, PrimaryButton, Spinner, TextField } from "@fluentui/react";
+import { Checkbox, DefaultButton, Dropdown, IDropdownOption, mergeStyleSets, PrimaryButton, Spinner, TextField, TooltipHost } from "@fluentui/react";
 import { StackShim } from "@fluentui/react-migration-v8-v9";
 import { makeStyles } from "@fluentui/react-components";
 import { scopedLogger } from "@hpcc-js/util";
@@ -39,7 +39,6 @@ interface JsonImportFormValues {
     noCommon: boolean;
     compress: boolean;
     failIfNoSourceFile: boolean;
-    delayedReplication: boolean;
     expireDays: string;
 }
 
@@ -55,7 +54,6 @@ const defaultValues: JsonImportFormValues = {
     noCommon: true,
     compress: false,
     failIfNoSourceFile: false,
-    delayedReplication: true,
     expireDays: ""
 };
 
@@ -377,7 +375,9 @@ export const JsonImportForm: React.FunctionComponent<JsonImportFormProps> = ({
                         control={control} name="replicate"
                         render={({
                             field: { onChange, name: fieldName, value }
-                        }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.Replicate} />}
+                        }) => <TooltipHost content={nlsHPCC.ReplicateTooltip}>
+                                <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.Replicate} />
+                            </TooltipHost>}
                     /></td>
                 </tr>
                     <tr>
@@ -428,12 +428,7 @@ export const JsonImportForm: React.FunctionComponent<JsonImportFormProps> = ({
                                 }
                             }}
                         /></td>
-                        <td><Controller
-                            control={control} name="delayedReplication"
-                            render={({
-                                field: { onChange, name: fieldName, value }
-                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.DelayedReplication} disabled={true} />}
-                        /></td>
+                        <td></td>
                     </tr></tbody>
             </table>
         </StackShim>
