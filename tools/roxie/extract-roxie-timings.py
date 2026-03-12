@@ -432,6 +432,8 @@ if __name__ == "__main__":
                     elif '}' == cur[0]:
                         prefix = nesting.pop()
 
+                if curRow["TimeLocalExecute"]:
+                    curRow["NumBusyRejects"] = 1
                 if combineServices:
                     serviceName = 'all'
                 if not serviceName in allServices:
@@ -443,6 +445,7 @@ if __name__ == "__main__":
     # The dictionary initializer fixes any columns that should be at the start
     # First general important stats, network related stats, index stats, the rest
     allStats = dict(time=1, elapsed=1,
+                    NumBusyRejects=1,
                     TimeSoapcall=1, TimeLocalExecute=1,
                     Net=1,
                     duplicatePackets=1,
