@@ -541,14 +541,15 @@ public:
             io.setown(file->open(IFOread));
 
         // Perform random reads and verify data
-        std::mt19937 randomGenerator; // Use the default seed, do not re-initialize
+        std::mt19937 randomGenerator; // Use the default seeds so that the results are reproducible
         MemoryAttr buffer(verifySize);
 
         for (unsigned i = 0; i < numReads; i++)
         {
             offset_t offset = randomGenerator() % (size - verifySize);
 
-            io->read(offset, verifySize, buffer.mem());
+            size32_t sizeRead = io->read(offset, verifySize, buffer.mem());
+            CPPUNIT_ASSERT_EQUAL(verifySize, sizeRead);
             CPPUNIT_ASSERT(verifySemiRandomData(buffer.bytes(), offset, verifySize));
         }
     }
@@ -589,7 +590,7 @@ public:
     void cleanup()
     {
         Owned<IFile> file(createIFile(testFilename));
-//        file->remove();
+        file->remove();
     }
 };
 
