@@ -1156,7 +1156,20 @@ public:
     virtual void stop() override
     {
         if (keyedLimitAbortEnabled)
+        {
+            // Complete the keyed-limit pre-check before sending Done so the master doesn't wait forever.
+            if (!keyedLimitCheckComplete && (RCMAX != keyedLimitCount))
+            {
+                // Ensure pre-check aggregation completes even if no rows were pulled.
+                keyedLimitCount = sendGetCount(keyedLimitCount);
+                keyedLimitCheckComplete = true;
+                if (keyedLimitCount > keyedLimit && !keyedLimitSkips && (container.queryLocalOrGrouped() || firstNode()))
+                    helper->onKeyedLimitExceeded(); // should throw exception
+                keyedLimit = RCMAX;
+                keyedLimitCount = RCMAX;
+            }
             sendKeyedLimitProgress(keyedProcessed, KeyedLimitMsg::Done);
+        }
         else if (RCMAX != keyedLimit) // NB: will not be true if nextRow() has handled
         {
             keyedLimitCount = sendGetCount(keyedProcessed);
