@@ -432,7 +432,7 @@ if __name__ == "__main__":
                     elif '}' == cur[0]:
                         prefix = nesting.pop()
 
-                if curRow["TimeLocalExecute"]:
+                if "TimeLocalExecute" not in curRow or curRow["TimeLocalExecute"] == 0:
                     curRow["NumBusyRejects"] = 1
                 if combineServices:
                     serviceName = 'all'
