@@ -153,16 +153,19 @@ public:
     unsigned short nn = 0;  // node on (+N*drv)
     unsigned short pn = 0;  // part number
     bool marked = false;
+    unsigned short stripeNum = 0;      // stripe number
 
     void init(unsigned drv,
               unsigned pf,      // part
               unsigned xn,      // node located on
-              unsigned tn)      // total nodes
+              unsigned tn,      // total nodes
+              unsigned sn)      // stripe number
     {
         nn = (unsigned short)(xn+tn*drv);
         pn = (unsigned short)pf;
         marked = false;
         next = nullptr;
+        stripeNum = (unsigned short)sn;
     }
 
     bool eq(unsigned drv,
@@ -173,6 +176,17 @@ public:
         if (pn != (unsigned short)pf)
             return false;
         return (nn == (unsigned short)(xn+tn*drv));
+    }
+
+    bool eq(unsigned drv,
+              unsigned pf,      // part
+              unsigned xn,      // node located on
+              unsigned tn,      // total nodes
+              unsigned sn)      // stripe number
+    {
+        if (stripeNum != (unsigned short)sn)
+            return false;
+        return eq(drv, pf, xn, tn);
     }
 
     unsigned getDrv(unsigned tn)
@@ -678,21 +692,21 @@ public:
             return numParts!=grp.ordinality() || partNum>=grp.ordinality() || !grp.queryNode(partNum).endpoint().equals(ep);
     }
 
-    void setMisplacedAndPresent(cFileDesc *file, bool misplaced, unsigned partNum, unsigned drv, const char *filePath, unsigned node, unsigned numnodes)
+    void setMisplacedAndPresent(cFileDesc *file, bool misplaced, unsigned partNum, unsigned drv, const char *filePath, unsigned node, unsigned numnodes, unsigned stripeNum)
     {
         CriticalBlock block(filesCrit);
 
         if (misplaced) {
             cMisplacedRec *mp = file->misplaced;
             while (mp) {
-                if (mp->eq(drv,partNum,node,numnodes)) {
+                if (mp->eq(drv,partNum,node,numnodes,stripeNum)) {
                     OERRLOG(LOGPFX "Duplicate file with mismatched tail (%d,%d) %s",partNum,node,filePath);
                     return;
                 }
                 mp = mp->next;
             }
             mp = cMisplacedRec::create(allocator);
-            mp->init(drv,partNum,node,numnodes);
+            mp->init(drv,partNum,node,numnodes,stripeNum);
             mp->next = file->misplaced;
             file->misplaced = mp;
             // NB: still perform setpresent() below, so that later 'orphan' and 'found' scanning can spot the part as orphaned or part of a found file.
@@ -1527,7 +1541,7 @@ public:
                         }
 
                         cDirDesc *currentOrParent = addToParent ? parent : pdir;
-                        currentOrParent->setMisplacedAndPresent(file, misplaced, partNum, drv, path, node, numnodes);
+                        currentOrParent->setMisplacedAndPresent(file, misplaced, partNum, drv, path, node, numnodes, stripeNum);
 
                         processedFiles++;
                     }
@@ -1844,16 +1858,22 @@ public:
 
     void addExternalFoundFile(cFileDesc *file, const char *currentPath, unsigned int recentCutoffDays)
     {
-        // Treat external files as a single file because without a partmask there is no way
-        // to determine the number of parts or the part number
-        StringBuffer filePath(currentPath);
+        // Files that are non-conforming will be marked as misplaced in the directory scan
+        assertex(file->misplaced);
+
+        // Get stripe where file was found from misplaced info
+        StringBuffer filePath(rootdir);
+        unsigned stripeNum = file->misplaced->stripeNum;
+        if (stripeNum>0)
+            addPathSepChar(filePath).append("d").append(stripeNum);
+        filePath.append(currentPath+rootdir.length());
+        // If the file was found in a dir-per-part directory, the dir-per-part cDirDesc would have
+        // stayed in the hierarchy i.e. the dir-per-part num is already in the path.
         file->getNameMask(addPathSepChar(filePath));
 
-        // Files that are non-conforming will be marked as misplaced in the directory scan
+        // Check physical file location
         unsigned node = 0;
-        assertex(file->misplaced);
-        node = file->misplaced->nn;
-
+        node = file->misplaced->getNode(grp->ordinality());
         SocketEndpoint ep = grp->queryNode(node).endpoint();
         RemoteFilename rfn;
         rfn.setPath(ep, filePath.str());
@@ -1886,6 +1906,13 @@ public:
             branch->setPropInt("Numparts",1);
             branch->setPropInt("Partsfound",1);
             foundbranch->addPropTree("File",branch.getClear());
+        }
+        else
+        {
+            StringBuffer pathStr;
+            rfn.getRemotePath(pathStr);
+            pathStr.append(" no longer exists");
+            warn(pathStr.str(),"Orphan file no longer exists");
         }
     }
 
