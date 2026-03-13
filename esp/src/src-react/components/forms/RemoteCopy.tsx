@@ -1,22 +1,24 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, IDropdownOption, mergeStyleSets, MessageBar, MessageBarType, PrimaryButton, Spinner, TextField } from "@fluentui/react";
-import { StackShim } from "@fluentui/react-migration-v8-v9";
-import { Controller, useForm } from "react-hook-form";
+import { Button, Checkbox, Dropdown, Field, Input, makeStyles, MessageBar, MessageBarActions, MessageBarBody, Option, Spinner } from "@fluentui/react-components";
+import { DismissRegular } from "@fluentui/react-icons";
+import { Controller, useForm, useWatch } from "react-hook-form";
+import { FileSprayService, TopologyService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
-import * as FileSpray from "src/FileSpray";
-import * as WsTopology from "src/WsTopology";
-import * as FormStyles from "./landing-zone/styles";
 import { TargetGroupTextField } from "./Fields";
 import { MessageBox } from "../../layouts/MessageBox";
 
 const logger = scopedLogger("src-react/components/forms/RemoteCopy.tsx");
+
+const fileSprayService = new FileSprayService({ baseUrl: "" });
+const topologyService = new TopologyService({ baseUrl: "" });
 
 interface RemoteCopyFormValues {
     sourceDali: string;
     srcusername: string;
     srcpassword: string;
     sourceLogicalName: string;
+    remoteStorage: string;
     destGroup: string;
     destLogicalName: string;
     overwrite: boolean;
@@ -32,6 +34,7 @@ const defaultValues: RemoteCopyFormValues = {
     srcusername: "",
     srcpassword: "",
     sourceLogicalName: "",
+    remoteStorage: "",
     destGroup: "",
     destLogicalName: "",
     overwrite: false,
@@ -41,6 +44,24 @@ const defaultValues: RemoteCopyFormValues = {
     Wrap: false,
     superCopy: false
 };
+
+const useStyles = makeStyles({
+    flex: {
+        display: "flex",
+        flexDirection: "column",
+        flexWrap: "nowrap"
+    },
+    twoColumnTable: {
+        marginTop: "14px",
+        marginBottom: "6px",
+        "& .fui-Checkbox__indicator": {
+            margin: "2px 0 0 0"
+        },
+        "& .fui-Label": {
+            padding: "0 0 0 10px"
+        }
+    }
+});
 
 interface RemoteCopyProps {
     showForm: boolean;
@@ -55,6 +76,8 @@ export const RemoteCopy: React.FunctionComponent<RemoteCopyProps> = ({
     refreshGrid
 }) => {
 
+    const styles = useStyles();
+
     const { handleSubmit, control, reset } = useForm<RemoteCopyFormValues>({ defaultValues });
 
     const [showError, setShowError] = React.useState(false);
@@ -63,6 +86,16 @@ export const RemoteCopy: React.FunctionComponent<RemoteCopyProps> = ({
     const [spinnerHidden, setSpinnerHidden] = React.useState(true);
     const [selectedDestGroup, setSelectedDestGroup] = React.useState("");
     const [replicateDisabled, setReplicateDisabled] = React.useState(true);
+    const [remoteTargets, setRemoteTargets] = React.useState<{ key: string; text: string; }[]>([]);
+
+    const selectedRemoteStorage = useWatch({ control, name: "remoteStorage" });
+    const daliDisabled = !!selectedRemoteStorage;
+
+    React.useEffect(() => {
+        fileSprayService.GetRemoteTargets({}).then(response => {
+            setRemoteTargets(response?.TargetNames?.Item?.map(item => ({ key: item, text: item })) ?? []);
+        }).catch(err => logger.error(err));
+    }, []);
 
     const onSubmit = React.useCallback(() => {
         handleSubmit(
@@ -70,21 +103,28 @@ export const RemoteCopy: React.FunctionComponent<RemoteCopyProps> = ({
                 setSubmitDisabled(true);
                 setSpinnerHidden(false);
 
-                FileSpray.Copy({
-                    request: data
-                }).then(({ CopyResponse, Exceptions }) => {
-                    if (Exceptions?.Exception) {
-                        setSubmitDisabled(false);
-                        setSpinnerHidden(true);
-                        setShowError(true);
-                        setErrorMessage(Exceptions?.Exception[0]?.Message);
-                    } else {
-                        setSubmitDisabled(false);
-                        setSpinnerHidden(true);
-                        setShowForm(false);
-                        reset(defaultValues);
-                        if (refreshGrid) refreshGrid(true);
-                    }
+                const { remoteStorage, sourceLogicalName, srcusername, srcpassword, sourceDali, ...rest } = data;
+                const qualifiedName = (remoteStorage && !sourceLogicalName.startsWith("~remote::"))
+                    ? `~remote::${remoteStorage}::${sourceLogicalName}`
+                    : sourceLogicalName;
+                const request = {
+                    ...rest,
+                    sourceLogicalName: qualifiedName,
+                    ...(remoteStorage ? {} : { sourceDali, srcusername, srcpassword }),
+                };
+
+                fileSprayService.Copy(request).then((_response) => {
+                    setSubmitDisabled(false);
+                    setSpinnerHidden(true);
+                    setShowForm(false);
+                    reset(defaultValues);
+                    if (refreshGrid) refreshGrid(true);
+                }).catch(err => {
+                    setSubmitDisabled(false);
+                    setSpinnerHidden(true);
+                    setShowError(true);
+                    setErrorMessage(err.message);
+                    logger.error(err);
                 });
             },
             err => {
@@ -93,20 +133,9 @@ export const RemoteCopy: React.FunctionComponent<RemoteCopyProps> = ({
         )();
     }, [handleSubmit, refreshGrid, reset, setShowForm]);
 
-    const componentStyles = mergeStyleSets(
-        FormStyles.componentStyles,
-        {
-            container: {
-                minWidth: 440,
-            }
-        }
-    );
-
     React.useEffect(() => {
-        WsTopology.TpGroupQuery({
-            request: {}
-        }).then(response => {
-            const groups = response.TpGroupQueryResponse?.TpGroups?.TpGroup ?? [];
+        topologyService.TpGroupQuery({}).then(response => {
+            const groups = response?.TpGroups?.TpGroup ?? [];
             for (const index in groups) {
                 if (groups[index].Name === selectedDestGroup) {
                     if (groups[index].ReplicateOutputs === true) {
@@ -122,73 +151,108 @@ export const RemoteCopy: React.FunctionComponent<RemoteCopyProps> = ({
 
     return <MessageBox title={nlsHPCC.RemoteCopy} show={showForm} setShow={setShowForm}
         footer={<>
-            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
-            <PrimaryButton text={nlsHPCC.Copy} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
-            <DefaultButton text={nlsHPCC.Cancel} onClick={() => setShowForm(false)} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="after" size="tiny" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <Button appearance="primary" disabled={submitDisabled} onClick={onSubmit}>{nlsHPCC.Copy}</Button>
+            <Button onClick={() => { reset(defaultValues); setShowError(false); setShowForm(false); }}>{nlsHPCC.Cancel}</Button>
         </>}>
         {showError &&
-            <MessageBar messageBarType={MessageBarType.error} isMultiline={true} onDismiss={() => setShowError(false)} dismissButtonAriaLabel="Close">
-                {errorMessage}
+            <MessageBar intent="error">
+                <MessageBarBody>{errorMessage}</MessageBarBody>
+                <MessageBarActions>
+                    <Button onClick={() => setShowError(false)} aria-label="dismiss" appearance="transparent" icon={<DismissRegular />} />
+                </MessageBarActions>
             </MessageBar>
         }
-        <StackShim>
+        <div className={styles.flex}>
+            <Controller
+                control={control} name="remoteStorage"
+                render={({
+                    field: { onChange, name: fieldName, value },
+                }) => <Field label={nlsHPCC.RemoteStorage}>
+                        <Dropdown
+                            key={fieldName}
+                            selectedOptions={value ? [value] : []}
+                            title={remoteTargets.length === 0 ? nlsHPCC.NoRemoteStorageFound : ""}
+                            disabled={remoteTargets.length === 0}
+                            onOptionSelect={(evt, data) => {
+                                onChange(data.optionValue);
+                            }}
+                        >
+                            {remoteTargets.map((target, idx) => (
+                                <Option key={target.text} text={target.text} value={target.key}>{target.text}</Option>
+                            ))}
+                        </Dropdown>
+                    </Field>
+                }
+            />
             <Controller
                 control={control} name="sourceDali"
                 render={({
-                    field: { onChange, name: fieldName, value },
-                    fieldState: { error }
-                }) => <TextField
-                        key={fieldName}
-                        label={nlsHPCC.Dali}
-                        value={value}
-                        onChange={onChange}
-                    />}
+                    field: { onChange, name: fieldName, value }
+                }) => <Field label={nlsHPCC.RemoteDali}>
+                        <Input
+                            key={fieldName}
+                            value={value}
+                            onChange={onChange}
+                            disabled={daliDisabled}
+                        />
+                    </Field>
+                }
             />
             <Controller
                 control={control} name="srcusername"
                 render={({
-                    field: { onChange, name: fieldName, value },
-                    fieldState: { error }
-                }) => <TextField
-                        key={fieldName}
-                        label={nlsHPCC.UserID}
-                        value={value}
-                        onChange={onChange}
-                    />}
+                    field: { onChange, name: fieldName, value }
+                }) => <Field label={nlsHPCC.UserID}>
+                        <Input
+                            key={fieldName}
+                            value={value}
+                            onChange={onChange}
+                            disabled={daliDisabled}
+                        />
+                    </Field>
+                }
             />
             <Controller
                 control={control} name="srcpassword"
                 render={({
-                    field: { onChange, name: fieldName, value },
-                    fieldState: { error }
-                }) => <TextField
-                        type="password"
-                        autoComplete="off"
-                        key={fieldName}
-                        label={nlsHPCC.Password}
-                        value={value}
-                        onChange={onChange}
-                    />}
+                    field: { onChange, name: fieldName, value }
+                }) => <Field label={nlsHPCC.Password}>
+                        <Input
+                            type="password"
+                            autoComplete="off"
+                            key={fieldName}
+                            value={value}
+                            onChange={onChange}
+                            disabled={daliDisabled}
+                        />
+                    </Field>
+                }
             />
             <Controller
                 control={control} name="sourceLogicalName"
                 render={({
                     field: { onChange, name: fieldName, value },
                     fieldState: { error }
-                }) => <TextField
-                        key={fieldName}
-                        label={`${nlsHPCC.Source} ${nlsHPCC.LogicalName}`}
-                        required={true}
-                        value={value}
-                        onChange={onChange}
-                        errorMessage={error && error.message}
-                    />}
+                }) => <Field
+                    label={`${nlsHPCC.Source} ${nlsHPCC.LogicalName}`}
+                    validationState={error ? "error" : "none"}
+                    validationMessage={error && error.message}
+                >
+                        <Input
+                            key={fieldName}
+                            required={true}
+                            value={value}
+                            onChange={onChange}
+                        />
+                    </Field>
+                }
                 rules={{
                     required: nlsHPCC.ValidationErrorRequired
                 }}
             />
-        </StackShim>
-        <StackShim>
+        </div>
+        <div className={styles.flex}>
             <Controller
                 control={control} name="destGroup"
                 render={({
@@ -198,7 +262,7 @@ export const RemoteCopy: React.FunctionComponent<RemoteCopyProps> = ({
                         key={fieldName}
                         label={nlsHPCC.Group}
                         required={true}
-                        onChange={(evt, option: IDropdownOption) => {
+                        onChange={(evt, option: { key: string; text: string; }) => {
                             setSelectedDestGroup(option.key.toString());
                             onChange(option.key);
                         }}
@@ -213,21 +277,25 @@ export const RemoteCopy: React.FunctionComponent<RemoteCopyProps> = ({
                 render={({
                     field: { onChange, name: fieldName, value },
                     fieldState: { error }
-                }) => <TextField
-                        key={fieldName}
-                        label={`${nlsHPCC.Target} ${nlsHPCC.LogicalName}`}
-                        required={true}
-                        value={value}
-                        onChange={onChange}
-                        errorMessage={error && error.message}
-                    />}
+                }) => <Field
+                    label={`${nlsHPCC.Target} ${nlsHPCC.LogicalName}`}
+                    validationState={error ? "error" : "none"}
+                    validationMessage={error && error.message}
+                >
+                        <Input
+                            key={fieldName}
+                            required={true}
+                            value={value}
+                            onChange={onChange}
+                        />
+                    </Field>}
                 rules={{
                     required: nlsHPCC.ValidationErrorRequired
                 }}
             />
-        </StackShim>
-        <StackShim>
-            <table className={componentStyles.twoColumnTable}>
+        </div>
+        <div className={styles.flex}>
+            <table className={styles.twoColumnTable}>
                 <tbody>
                     <tr>
                         <td><Controller
@@ -273,7 +341,7 @@ export const RemoteCopy: React.FunctionComponent<RemoteCopyProps> = ({
                     </tr>
                 </tbody>
             </table>
-        </StackShim>
+        </div>
     </MessageBox>;
 
 };

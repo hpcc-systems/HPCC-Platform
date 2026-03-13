@@ -661,6 +661,7 @@ export = {
         NoFilterCriteriaSpecified: "No filter criteria specified.",
         NoPublishedSize: "No published size",
         NoRecentFiltersFound: "No recent filters found.",
+        NoRemoteStorageFound: "No remote storage found.",
         NoScheduledEvents: "No Scheduled Events.",
         NoSplit: "No Split",
         NotActive: "Not active",
