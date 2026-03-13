@@ -911,11 +911,11 @@
           "type": "string"
         },
         "secret": {
-          "description": "The name of the secret containing the certificates to connect to the service",
+          "description": "The name of the secret containing the certificates to connect to the service (if absent auto-generated secret name is used. See: ecl url-secret-name)",
           "type": "string"
         },
         "planes": {
-          "description": "Mapping of remote planes to local planes",
+          "description": "Mapping of remote planes to local planes (not required if useDafilesrv is true, or if remote plane is directly accessible, e.g. because azure api based)",
           "type": "array",
           "items": {
             "type": "object",
@@ -937,8 +937,7 @@
         {
           "required": [
             "name",
-            "service",
-            "planes"
+            "service"
           ]
         },
         {
