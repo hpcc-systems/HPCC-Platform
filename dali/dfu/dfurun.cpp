@@ -1306,6 +1306,13 @@ public:
         IRemoteConnection *recoveryconn;
         Owned<IRemoteConnection> runningconn;
         wu->queryRecoveryStore(recoveryconn,recovery,runningpath.clear());
+        if (recovery)
+        {
+            // Record the owning process session so stalled recovery can be detected later.
+            recovery->setPropInt64("@session", myProcessSession());
+            if (recoveryconn)
+                recoveryconn->commit();
+        }
         DFUstate s = progress->getState();
         switch (s) {
         case DFUstate_aborting:
@@ -2002,9 +2009,13 @@ public:
                         }
                         wu->removeRecoveryStore();
                         wu->queryRecoveryStore(recoveryconn,recovery,runningpath.clear());
-                        if (recoveryconn&&recovery) {
-                            recovery->setPropBool("@replicating",true);
-                            recoveryconn->commit();
+                        if (recovery)
+                        {
+                            recovery->setPropBool("@replicating", true);
+                            // wu->removeRecoveryStore() recreates the Recovery tree, we need to prevent @session from being dropped.
+                            recovery->setPropInt64("@session", myProcessSession());
+                            if (recoveryconn)
+                                recoveryconn->commit();
                         }
                         fsys.replicate(fdesc.get(), mode, recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid);
                         if (!abortnotify.abortRequested()) {
