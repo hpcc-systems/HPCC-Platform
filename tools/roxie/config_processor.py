@@ -352,6 +352,23 @@ class DeploymentManager:
             futures = {executor.submit(self._execute_commands_on_host, commands, ip): ip for ip in ip_addresses}
             return all(future.result() for future in as_completed(futures))
 
+    def _flush_cache_on_host(self, ip: str) -> bool:
+        """Flush the page cache on a single remote machine via SSH."""
+        flush_cmd = "bash -c 'echo 3 > /proc/sys/vm/drop_caches'"
+        remote_cmd = f'sudo {flush_cmd}' if self.sudo else flush_cmd
+        return self._execute_command(['ssh', ip, remote_cmd], f"Flushing page cache on {ip}")
+
+    def flush_page_cache(self, pagecache_ips: List[str]) -> bool:
+        """Flush the page cache on remote machines in parallel."""
+        if not pagecache_ips:
+            return True
+
+        print("\nFlushing page cache on remote machines...")
+
+        with ThreadPoolExecutor() as executor:
+            futures = {executor.submit(self._flush_cache_on_host, ip): ip for ip in pagecache_ips}
+            return all(future.result() for future in as_completed(futures))
+
     def _start_services_on_host(self, ip: str) -> bool:
         """Start HPCC services on a single remote machine."""
         cluster_arg = f'-c {self.cluster} ' if self.cluster else ''
@@ -375,7 +392,8 @@ class DeploymentManager:
             futures = {executor.submit(self._start_services_on_host, ip): ip for ip in ip_addresses}
             return all(future.result() for future in as_completed(futures))
 
-    def deploy(self, environment_file: str, ip_addresses: List[str], commands: List[str] = None) -> bool:
+    def deploy(self, environment_file: str, ip_addresses: List[str], commands: List[str] = None,
+               flush_cache: bool = False, pagecache_ips: List[str] = None) -> bool:
         """
         Deploy environment configuration to remote machines.
 
@@ -383,6 +401,8 @@ class DeploymentManager:
             environment_file: Path to environment.xml file
             ip_addresses: List of IP addresses to deploy to
             commands: Optional list of commands to execute before starting services
+            flush_cache: If True, flush the page cache on pagecache_ips before starting services
+            pagecache_ips: List of IP addresses on which to flush the page cache
 
         Returns:
             True if deployment succeeds, False otherwise
@@ -393,6 +413,8 @@ class DeploymentManager:
 
         if commands is None:
             commands = []
+        if pagecache_ips is None:
+            pagecache_ips = []
 
         print(f"\n{'='*60}")
         print(f"Deploying environment to {len(ip_addresses)} machine(s)")
@@ -414,6 +436,12 @@ class DeploymentManager:
         if not self.execute_commands(commands, ip_addresses):
             print("\nDeployment failed: Could not execute custom commands", file=sys.stderr)
             return False
+
+        # Flush page cache if requested
+        if flush_cache and pagecache_ips:
+            if not self.flush_page_cache(pagecache_ips):
+                print("\nDeployment failed: Could not flush page cache", file=sys.stderr)
+                return False
 
         # Start services
         if not self.start_services(ip_addresses):
@@ -819,6 +847,23 @@ class TestRunner:
                 if self.verbose:
                     print(f"  Summary appended to: {all_summary_file}")
 
+                test_summary_file = results_path / f"summary_{test_file_basename}.csv"
+                test_summary_file_exists = test_summary_file.exists()
+
+                with open(test_summary_file, 'a') as f:
+                    if not test_summary_file_exists:
+                        header = "test,timestamp,elapsed_time"
+                        if stats_header:
+                            header += "," + stats_header
+                        f.write(header + "\n")
+                    data = f"{test_name},{timestamp},{elapsed_time:.2f}"
+                    if stats_data:
+                        data += "," + stats_data
+                    f.write(data + "\n")
+
+                if self.verbose:
+                    print(f"  Summary appended to: {test_summary_file}")
+
         print(f"\n{'='*60}")
         print("Test execution completed")
         print(f"{'='*60}")
@@ -1050,15 +1095,24 @@ def main():
                 )
                 print(f"  Output written to: {args.output_xml}")
 
+                # Build shared deployment state
+                remoteroot = config_vars.get('REMOTEROOT', '').rstrip('/')
+                initd_path = f"{remoteroot}/etc/init.d" if remoteroot else '/etc/init.d'
+                env_path = f"{remoteroot}/etc/HPCCSystems/environment.xml" if remoteroot else '/etc/HPCCSystems/environment.xml'
+                use_sudo = options.get('sudo', '0') == '1'
+                flush_cache = options.get('flushCache', '0') == '1'
+                pagecache_ips_str = config_vars.get('PAGECACHE_IPS', '')
+                pagecache_ips = [ip.strip() for ip in pagecache_ips_str.split(',') if ip.strip()]
+                cluster = config_vars.get('CLUSTER', '')
+                deployment = DeploymentManager(dry_run=args.dry_run, initd_path=initd_path, env_path=env_path, sudo=use_sudo, cluster=cluster, no_stop=args.no_stop, verbose=args.verbose)
+
                 # Deploy if requested
                 if args.deploy:
-                    remoteroot = config_vars.get('REMOTEROOT', '').rstrip('/')
-                    initd_path = f"{remoteroot}/etc/init.d" if remoteroot else '/etc/init.d'
-                    env_path = f"{remoteroot}/etc/HPCCSystems/environment.xml" if remoteroot else '/etc/HPCCSystems/environment.xml'
-                    use_sudo = options.get('sudo', '0') == '1'
-                    cluster = config_vars.get('CLUSTER', '')
-                    deployment = DeploymentManager(dry_run=args.dry_run, initd_path=initd_path, env_path=env_path, sudo=use_sudo, cluster=cluster, no_stop=args.no_stop, verbose=args.verbose)
-                    if not deployment.deploy(args.output_xml, roxie_ips_list, commands):
+                    if not deployment.deploy(args.output_xml, roxie_ips_list, commands,
+                                             flush_cache=flush_cache, pagecache_ips=pagecache_ips):
+                        sys.exit(1)
+                elif flush_cache and pagecache_ips:
+                    if not deployment.flush_page_cache(pagecache_ips):
                         sys.exit(1)
 
                 # Run tests if tests are defined
