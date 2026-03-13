@@ -9,14 +9,14 @@
   built-in function GETENV().</para>
 
   <sect2>
-    <title>HPCC_DEPLOYMENT</title>
+    <title>HPCC_DEPLOYMENTNAME</title>
 
     <para>In a Kubernetes deployment, this variable is auto-populated with the
     name of the Helm chart. For example, if deployed using:</para>
 
     <para><programlisting>helm install myenv1 hpcc/hpcc</programlisting></para>
 
-    <para>then the HPCC_DEPLOYMENT variable will contain the value:
+    <para>then the HPCC_DEPLOYMENTNAME variable will contain the value:
     myenv1.</para>
 
     <para>For a bare-metal environment, this value can be set in
@@ -24,9 +24,18 @@
 
     <para><programlisting>deploymentName=myenv1</programlisting></para>
 
+    <para>In a Kubernetes deployment, HPCC_DEPLOYMENTNAME can also be explicitly set via the <literal>global.env</literal> section of the Helm chart values. This will override the auto-populated chart instance name. For example:</para>
+
+    <para><programlisting>global:
+  env:
+  - name: HPCC_DEPLOYMENTNAME
+    value: myenv1</programlisting></para>
+
+    <para>Similarly, for a bare-metal environment, explicitly setting HPCC_DEPLOYMENTNAME as a system environment variable will override any value set via <filename>environment.conf</filename>.</para>
+
     <para>You can retrieve this value using:</para>
 
-    <para><programlisting>OUTPUT(GETENV('HPCC_DEPLOYMENT', 'unknown'));</programlisting></para>
+    <para><programlisting>OUTPUT(GETENV('HPCC_DEPLOYMENTNAME', 'unknown'));</programlisting></para>
 
     <para>See Also: <link linkend="GETENV">GETENV</link></para>
   </sect2>

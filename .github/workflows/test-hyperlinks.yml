@@ -56,8 +56,29 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  actions: write
+
 jobs:
+  precheck-branch-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      branch_changed: ${{ steps.branch_changed.outputs.branch_changed }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check for code changes between commits
+        id: branch_changed
+        uses: ./.github/actions/branch-changes
+        with:
+          workflow_file: test-hyperlinks.yml
+
   main:
+    needs: precheck-branch-changes
+    if: ${{ needs.precheck-branch-changes.outputs.branch_changed == 'true' }}
     runs-on: ubuntu-22.04
     steps: 
       - name: Checkout repository

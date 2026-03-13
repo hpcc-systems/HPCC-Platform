@@ -1008,26 +1008,43 @@ jlib_decl char **getSystemEnv()
 }
 
 
-// checks if 'name' is an internal environment variable (prefixed with 'HPCC_')
-// if !matches : returns null
-// if matches  : returns allocated copy of configured value or defaultValue if not set.
-// NB: Only HPCC_DEPLOYMENT currently supported, but could be extended.
+// 1st checks if 'name' is a standard environment variable.
+// then checks if 'name' is an internal environment variable (prefixed with 'HPCC_')
+// returns a copy of the configured value or the defaultValue if not set.
+// NB: Only HPCC_DEPLOYMENTNAME currently supported, but could be extended.
 char *getHPCCEnvVal(const char *name, const char *defaultValue)
 {
-    constexpr const char *builtinPrefix = "HPCC_";
-    if (!startsWith(name, builtinPrefix))
-        return nullptr;
-    const char *hpccEnvVar = name+strlen(builtinPrefix);
     StringBuffer val;
     bool valSet = false;
-    if (streq(hpccEnvVar, "DEPLOYMENT"))
+
+    if (!isEmptyString(name))
     {
-        if (isContainerized())
-            valSet = getGlobalConfigSP()->getProp("@deploymentName", val);
+        // 1st check environment variable
+        const char *envRes = getenv(name);
+        if (envRes)
+        {
+            val.append(envRes);
+            valSet = true;
+        }
         else
-            valSet = queryEnvironmentConf().getProp("deploymentName", val);
+        {
+            constexpr const char *builtinPrefix = "HPCC_";
+            if (startsWith(name, builtinPrefix))
+            {
+                const char *hpccEnvVar = name+strlen(builtinPrefix);
+
+                // Match HPCC_DEPLOYMENTNAME (or HPCC_DEPLOYMENT for backward compatibility)
+                if (streq(hpccEnvVar, "DEPLOYMENTNAME") || streq(hpccEnvVar, "DEPLOYMENT"))
+                {
+                    if (isContainerized())
+                        valSet = getGlobalConfigSP()->getProp("@deploymentName", val);
+                    else
+                        valSet = queryEnvironmentConf().getProp("deploymentName", val);
+                }
+                // else other HPCC_ variables could be added here as needed
+            }
+        }
     }
-    // else - just "DEPLOYMENT" for now.
 
     if (valSet)
         return val.detach();
