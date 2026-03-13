@@ -586,6 +586,10 @@ sasha:
     #at: "* 2 * * *"
     #clusterlist: "*"
 
+  global-message-housekeeping: {} # NB: no properties defined, use defaults
+    #disabled: true
+    #interval: 24
+    #retentionDays: 30
 
 dfuserver:
 - name: dfuserver

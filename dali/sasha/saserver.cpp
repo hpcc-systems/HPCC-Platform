@@ -43,6 +43,7 @@
 #include "sadbghk.hpp"
 #include "saqmon.hpp"
 #include "sacoalescer.hpp"
+#include "saglobalmsg.hpp"
 #include "sacmd.hpp"
 
 extern void LDStest();
@@ -67,6 +68,7 @@ CSuspendAutoStop::~CSuspendAutoStop() { StopSuspendCount--; }
 const char *service = nullptr;
 #else
 
+// In non-containerized mode, add all servers
 static void AddServers()
 {
     // order significant
@@ -77,6 +79,7 @@ static void AddServers()
     servers.append(*createSashaDaFSMonitorServer());
     servers.append(*createSashaQMonitorServer());
     servers.append(*createSashaFileExpiryServer()); 
+    servers.append(*createSashaGlobalMessageServer());
     // add new servers here
 }
 #endif
@@ -459,6 +462,8 @@ int main(int argc, const char* argv[])
                     servers.append(*createSashaDebugPlaneHousekeepingServer());
                 else if (strieq(service, "xref"))
                    servers.append(*createSashaXrefServer());
+                else if (strieq(service, "global-message-housekeeping"))
+                   servers.append(*createSashaGlobalMessageServer());
                 else
                     throw makeStringExceptionV(0, "Unrecognised 'service': %s", service);
 #else

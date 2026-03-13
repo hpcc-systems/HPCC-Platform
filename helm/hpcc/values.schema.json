@@ -3356,6 +3356,24 @@
         },
         "additionalProperties": false
     },
+    "sasha-global-message-housekeeping": {
+        "type": "object",
+        "allOf": [{ "$ref": "#/definitions/sashacommon" }],
+        "properties": {
+          "disabled": {},
+          "interval": {
+            "type": "integer",
+            "description": "Interval (in hours) to run global message housekeeping",
+            "default": 24
+          },
+          "retentionDays": {
+            "type": "integer",
+            "description": "Number of days to keep messages before deletion",
+            "default": 2
+          }
+        },
+        "additionalProperties": false
+    },
     "sashaservice": {
       "oneOf": [
         {
@@ -3385,6 +3403,9 @@
             },
             "xref": {
               "$ref": "#/definitions/sasha-xref"
+            },
+            "global-message-housekeeping": {
+              "$ref": "#/definitions/sasha-global-message-housekeeping"
             },
             "disabled": {
               "type": "boolean"
