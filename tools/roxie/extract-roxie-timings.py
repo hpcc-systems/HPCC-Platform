@@ -294,6 +294,11 @@ if __name__ == "__main__":
             rowText = row[numCols-1]
 
             completeMatch = completePattern.search(rowText)
+            if not completeMatch and row[0].startswith("COMPLETE:"):
+                # Check for the case where the entire line is the complete line - no other logging fields
+                rowText = ' '.join(row)
+                completeMatch = completePattern.search(rowText)
+
             if completeMatch:
                 curRow = dict();
                 mapping = rowText.split();
@@ -427,6 +432,8 @@ if __name__ == "__main__":
                     elif '}' == cur[0]:
                         prefix = nesting.pop()
 
+                if "TimeLocalExecute" not in curRow or curRow["TimeLocalExecute"] == 0:
+                    curRow["NumBusyRejects"] = 1
                 if combineServices:
                     serviceName = 'all'
                 if not serviceName in allServices:
@@ -438,6 +445,7 @@ if __name__ == "__main__":
     # The dictionary initializer fixes any columns that should be at the start
     # First general important stats, network related stats, index stats, the rest
     allStats = dict(time=1, elapsed=1,
+                    NumBusyRejects=1,
                     TimeSoapcall=1, TimeLocalExecute=1,
                     Net=1,
                     duplicatePackets=1,
