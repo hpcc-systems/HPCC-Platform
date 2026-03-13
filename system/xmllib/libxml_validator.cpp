@@ -222,10 +222,13 @@ void CLibXmlValidator::validate()
     int ret = xmlSchemaValidateStream(validator, input, XML_CHAR_ENCODING_NONE, emptySAXHandler, (void *)this);
     if (ret != 0)
     {
+        xmlSchemaFreeValidCtxt(validator);
+        xmlSchemaFree(schema);
         ensureExceptions()->append(*MakeStringException(XMLERR_XsdValidationFailed, "XML validation failed"));
         throw exceptions.getClear();
     }
     xmlSchemaFreeValidCtxt(validator);
+    xmlSchemaFree(schema);
 }
 
 class CLibXmlParser : public CInterface, public IXmlDomParser

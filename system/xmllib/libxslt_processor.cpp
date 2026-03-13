@@ -148,12 +148,6 @@ void CLibXsltSource::compile()
         if ((srcType == IO_TYPE_FILE && filename.isEmpty()) || (srcType == IO_TYPE_BUFFER && text.isEmpty()))
             throw MakeStringException(XSLERR_MissingSource, "xslt source not set");
 
-        if (compiledXslt != NULL)
-        {
-            xsltFreeStylesheet(compiledXslt);
-            compiledXslt = NULL;
-        }
-
         try
         {
             if (srcType == IO_TYPE_FILE)
@@ -223,12 +217,6 @@ xmlDocPtr CLibXmlSource::getParsedXml()
         if ((srcType == IO_TYPE_FILE && filename.isEmpty()) ||
             (srcType == IO_TYPE_BUFFER && text.isEmpty()))
             throw MakeStringException(XSLERR_MissingXml, "xml source not set");
-
-        if (parsedXml)
-        {
-            xmlFreeDoc(parsedXml);
-            parsedXml = NULL;
-        }
 
         try
         {
