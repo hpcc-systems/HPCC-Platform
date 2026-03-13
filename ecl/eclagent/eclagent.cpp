@@ -57,6 +57,7 @@
 
 #include "ws_dfsclient.hpp"
 #include "wfcontext.hpp"
+#include "engineerr.hpp"
 
 using roxiemem::OwnedRoxieString;
 
@@ -563,6 +564,7 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
         updateSuppliedXmlParams(w);
     }
     abortmonitor->setGuillotineCost(getGuillotineCost(wu));
+    abortmonitor->setWarnCostLimit(getWarnCost(wu));
     configurePreferredPlanes();
     agentMachineCost = getMachineCostRate();
 }
@@ -3319,26 +3321,27 @@ void EclAgent::abortMonitor()
             if (guillotineleft<waittime)
                 waittime = guillotineleft;
         }
-        if ((abortmonitor->guillotineCost > 0) && (checkCostInterval < waittime))
-            waittime = checkCostInterval;
+        if (abortmonitor->guillotineCost || abortmonitor->warnCostLimit)
+            waittime = std::min(waittime, checkCostInterval);
+
         if (abortmonitor->sem.wait(waittime*1000) && abortmonitor->stopping)
-        {
             return;
-        }
+
         if (guillotineleft)
         {
             if (abortmonitor->guillotinetimeout)
             {
-                guillotineleft-=waittime;
-                if (guillotineleft==0) {
+                if (guillotineleft<waittime) {
                     DBGLOG("Guillotine triggered");
                     errorText.appendf("Workunit time limit (%d seconds) exceeded", abortmonitor->guillotinetimeout);
                     break;
                 }
+                guillotineleft-=waittime;
             }
             else
                 guillotineleft = 0; // reset
         }
+
         {
             CriticalBlock block(wusect);
             if (queryWorkUnit()) // could be exiting
@@ -3353,15 +3356,23 @@ void EclAgent::abortMonitor()
             IERRLOG("EclAgent failed to abort within %ds - killing process",ABORT_DEADMAN_INTERVAL);
             break;
         }
-        if (abortmonitor->guillotineCost)
+        if (abortmonitor->guillotineCost || abortmonitor->warnCostLimit)
         {
             if (checkCostInterval<=waittime)
             {
                 cost_type totalCost = aggregateCost(queryWorkUnit(), nullptr, StCostExecute, 3);
-                if (totalCost > abortmonitor->guillotineCost)
+                if (abortmonitor->guillotineCost && (totalCost > abortmonitor->guillotineCost))
                 {
                     errorText.appendf("Workunit cost limit exceeded");
+                    isAborting=true;
                     break;
+                }
+                if (abortmonitor->warnCostLimit && (totalCost > abortmonitor->warnCostLimit))
+                {
+                    VStringBuffer msg("High job cost - current cost %0.2f", cost_type2money(totalCost));
+                    addExceptionEx(SeverityWarning, MSGAUD_programmer, "eclagent", ENGINEERR_WARN_COST_EXCEEDED, msg.str(), NULL, 0, 0, false, false);
+                    OWARNLOG("%s (Job %s)", msg.str(), wuid.str());
+                    abortmonitor->setWarnCostLimit(0); // only warn once
                 }
                 checkCostInterval=CHECK_COST_INTERVAL;
             }

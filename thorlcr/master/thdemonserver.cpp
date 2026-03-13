@@ -28,6 +28,7 @@
 #include "thgraphmaster.ipp"
 #include "thgraphmanager.hpp"
 #include "thwatchdog.hpp"
+#include "engineerr.hpp"
 
 
 /**
@@ -102,7 +103,7 @@ private:
     unsigned lastReportedMsTick;
     unsigned reportRateMSecs;
     CIArrayOf<CGraphBase> activeGraphs;
-    cost_type costLimit = 0;
+    cost_type costLimit = 0, warnCostLimit = 0;
     cost_type previousExecutionCost = 0;
     StatisticsAggregator statsAggregator;
 
@@ -143,13 +144,34 @@ private:
     }
     void checkCostLimit(CGraphBase &graph)
     {
-        if (costLimit)
+        if (costLimit || warnCostLimit)
         {
             const cost_type totalCost = previousExecutionCost + graph.getTotalCost();
-            if (totalCost > costLimit)
+            if (costLimit && (totalCost > costLimit))
             {
                 WARNLOG("ABORT job cost exceeds limit");
                 graph.fireException(MakeThorException(TE_CostExceeded, "Job cost exceeds limit"));
+            }
+            if (warnCostLimit && (totalCost > warnCostLimit))
+            {
+                const CJobBase &job = graph.queryJob();
+                Owned<IWorkUnit> wu = &(job.queryWorkUnit().lock());
+
+                // Ensure that the cost warning message hasn't already been logged
+                Owned<IConstWUExceptionIterator> exceptions = &wu->getExceptions();
+                ForEach(*exceptions)
+                {
+                    IConstWUException &ex = exceptions->query();
+                    if (ex.getExceptionCode() == ENGINEERR_WARN_COST_EXCEEDED)
+                    {
+                        warnCostLimit = 0; // disable warnCostLimit checking for this graph execution
+                        return;
+                    }
+                }
+                VStringBuffer msg("High job cost - current cost %0.2f exceeds warning threshold %0.2f", cost_type2money(totalCost), cost_type2money(warnCostLimit));
+                addExceptionToWorkunit(wu, SeverityWarning, queryComponentName(), ENGINEERR_WARN_COST_EXCEEDED, msg.str(), nullptr, 0, 0, 0);
+                OWARNLOG("%s (Job %s)", msg.str(), wu->queryWuid());
+                warnCostLimit = 0; // disable warnCostLimit checking for this graph execution
             }
         }
     }
@@ -282,6 +304,7 @@ public:
         previousExecutionCost = aggregateCost(&wu, nullptr, StCostExecute, 3);
 
         costLimit = getGuillotineCost(&wu);
+        warnCostLimit = getWarnCost(&wu);
         activeGraphs.append(*LINK(graph));
     }
     virtual void endGraph(CGraphBase *graph, bool success) override

@@ -446,11 +446,13 @@ private:
         bool stopping;
         unsigned guillotinetimeout = 0;
         cost_type guillotineCost = 0;
+        cost_type warnCostLimit = 0;
         cAbortMonitor(EclAgent &_parent) : Thread("EclAgent Abort Monitor"), parent(_parent) { guillotinetimeout=0; guillotineCost=0; stopping=false; }
         int  run()  { parent.abortMonitor(); return 0; }
         void stop() { stopping = true; sem.signal(); join(1000*10); }
         void setGuillotineTimeout(unsigned secs) { guillotinetimeout = secs; sem.signal(); }
         void setGuillotineCost(cost_type cost) { guillotineCost = cost; }
+        void setWarnCostLimit(cost_type cost) { warnCostLimit = cost; }
         bool fireException(IException *e)
         {
             StringBuffer text;

@@ -1879,4 +1879,10 @@ inline cost_type getGuillotineCost(IConstWorkUnit *wu)
     return guillotineCost;
 }
 
+inline cost_type getWarnCost(IConstWorkUnit *wu)
+{
+    double wuWarnCostReal = wu->getDebugValueReal("warnCost", getConfigReal("cost/@warnlimit"));
+    return money2cost_type(wuWarnCostReal);
+}
+
 #endif

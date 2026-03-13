@@ -376,6 +376,10 @@
             "hardlimit": {
               "description": "Maximum allowed cost for a job. This value is used if other limits are higher.",
               "type": "number"
+            },
+            "warnlimit": {
+              "description": "Cost threshold for logging warnings about expensive jobs. This value can be overridden by the job's own cost settings.",
+              "type": "number"
             }
           }
         },
