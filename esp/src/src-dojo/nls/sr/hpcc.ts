@@ -220,7 +220,6 @@ export = {
     DefinitionDeleted: "Дефиниција је избрисана",
     DefinitionID: "ИД",
     Definitions: "Дефиниције",
-    DelayedReplication: "Одложена репликација",
     Delete: "Обришите",
     DeleteBinding: "Избришите Везивање",
     Deleted: "Избрисан",

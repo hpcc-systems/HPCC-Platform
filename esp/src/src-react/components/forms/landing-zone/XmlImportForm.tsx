@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, Dropdown, IDropdownOption, mergeStyleSets, PrimaryButton, Spinner, TextField } from "@fluentui/react";
+import { Checkbox, DefaultButton, Dropdown, IDropdownOption, mergeStyleSets, PrimaryButton, Spinner, TextField, TooltipHost } from "@fluentui/react";
 import { StackShim } from "@fluentui/react-migration-v8-v9";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
@@ -33,7 +33,6 @@ interface XmlImportFormValues {
     noCommon: boolean;
     compress: boolean;
     failIfNoSourceFile: boolean;
-    delayedReplication: boolean;
     expireDays: string;
 }
 
@@ -49,7 +48,6 @@ const defaultValues: XmlImportFormValues = {
     noCommon: true,
     compress: false,
     failIfNoSourceFile: false,
-    delayedReplication: true,
     expireDays: ""
 };
 
@@ -367,65 +365,63 @@ export const XmlImportForm: React.FunctionComponent<XmlImportFormProps> = ({
                         control={control} name="replicate"
                         render={({
                             field: { onChange, name: fieldName, value }
-                        }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.Replicate} />}
+                        }) => <TooltipHost content={nlsHPCC.ReplicateTooltip}>
+                                <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.Replicate} />
+                            </TooltipHost>}
+                    /></td>
                     /></td>
                 </tr>
-                    <tr>
-                        <td><Controller
-                            control={control} name="nosplit"
-                            render={({
-                                field: { onChange, name: fieldName, value }
-                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.NoSplit} />}
-                        /></td>
-                        <td><Controller
-                            control={control} name="noCommon"
-                            render={({
-                                field: { onChange, name: fieldName, value }
-                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.NoCommon} />}
-                        /></td>
-                    </tr>
-                    <tr>
-                        <td><Controller
-                            control={control} name="compress"
-                            render={({
-                                field: { onChange, name: fieldName, value }
-                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.Compress} />}
-                        /></td>
-                        <td><Controller
-                            control={control} name="failIfNoSourceFile"
-                            render={({
-                                field: { onChange, name: fieldName, value }
-                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.FailIfNoSourceFile} />}
-                        /></td>
-                    </tr>
-                    <tr>
-                        <td><Controller
-                            control={control} name="expireDays"
-                            render={({
-                                field: { onChange, name: fieldName, value },
-                                fieldState: { error }
-                            }) => <TextField
-                                    name={fieldName}
-                                    onChange={onChange}
-                                    label={nlsHPCC.ExpireDays}
-                                    value={value}
-                                    errorMessage={error && error?.message}
-                                />}
-                            rules={{
-                                min: {
-                                    value: 1,
-                                    message: nlsHPCC.ValidationErrorExpireDaysMinimum
-                                }
-                            }}
-                        /></td>
-                        <td><Controller
-                            control={control} name="delayedReplication"
-                            render={({
-                                field: { onChange, name: fieldName, value }
-                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.DelayedReplication} disabled={true} />}
-                        /></td>
-                    </tr></tbody>
-            </table>
-        </StackShim>
-    </MessageBox>;
+                <tr>
+                    <td><Controller
+                        control={control} name="nosplit"
+                        render={({
+                            field: { onChange, name: fieldName, value }
+                        }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.NoSplit} />}
+                    /></td>
+                    <td><Controller
+                        control={control} name="noCommon"
+                        render={({
+                            field: { onChange, name: fieldName, value }
+                        }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.NoCommon} />}
+                    /></td>
+                </tr>
+                <tr>
+                    <td><Controller
+                        control={control} name="compress"
+                        render={({
+                            field: { onChange, name: fieldName, value }
+                        }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.Compress} />}
+                    /></td>
+                    <td><Controller
+                        control={control} name="failIfNoSourceFile"
+                        render={({
+                            field: { onChange, name: fieldName, value }
+                        }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.FailIfNoSourceFile} />}
+                    /></td>
+                </tr>
+                <tr>
+                    <td><Controller
+                        control={control} name="expireDays"
+                        render={({
+                            field: { onChange, name: fieldName, value },
+                            fieldState: { error }
+                        }) => <TextField
+                                name={fieldName}
+                                onChange={onChange}
+                                label={nlsHPCC.ExpireDays}
+                                value={value}
+                                errorMessage={error && error?.message}
+                            />}
+                        rules={{
+                            min: {
+                                value: 1,
+                                message: nlsHPCC.ValidationErrorExpireDaysMinimum
+                            }
+                        }}
+                    /></td>
+                    <td></td>
+                </tr></tbody>
+        </table>
+    </StackShim>
+    </MessageBox >;
 };
