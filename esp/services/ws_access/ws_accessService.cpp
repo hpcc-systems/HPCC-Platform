@@ -53,6 +53,15 @@ SecResourceType str2RType(const char* str)
         return RT_DEFAULT;
 }
 
+CLdapSecUser* createLdapUser(IEspContext& context, ILdapSecManager* secmgr, const char* username, bool throwException, const char* caller)
+{
+    Owned<ISecUser> user = secmgr->createUser(username, context.querySecureContext());
+    CLdapSecUser* ldapUser = dynamic_cast<CLdapSecUser*>(user.get());
+    if (!ldapUser && throwException)
+        throw makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "%s: failed to create user %s", isEmptyString(caller) ? "ws_access" : caller, username);
+    return LINK(ldapUser);
+}
+
 void Cws_accessEx::checkUser(IEspContext& context, ILdapSecManager* secmgr, const char* rtype, const char* rtitle, unsigned int SecAccessFlags)
 {
     if (secmgr == nullptr)
@@ -3460,9 +3469,7 @@ bool Cws_accessEx::onUserPosix(IEspContext &context, IEspUserPosixRequest &req, 
         }
 
         bool enable = req.getPosixenabled();
-        Owned<CLdapSecUser> user = dynamic_cast<CLdapSecUser*>(secmgr->createUser(username, context.querySecureContext()));
-        if (!user)
-            throw makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "onUserPosix: failed to create user %s", username);
+        Owned<CLdapSecUser> user = createLdapUser(context, secmgr, username, true, "onUserPosix");
 
         if(enable)
         {
@@ -3533,9 +3540,7 @@ bool Cws_accessEx::onUserPosixInput(IEspContext &context, IEspUserPosixInputRequ
             throw MakeStringException(ECLWATCH_INVALID_ACCOUNT_NAME, "Please specify a username.");
         }
 
-        Owned<CLdapSecUser> user = dynamic_cast<CLdapSecUser*>(secmgr->createUser(username, context.querySecureContext()));
-        if (!user)
-            throw makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "onUserPosixInput: failed to create user %s", username);
+        Owned<CLdapSecUser> user = createLdapUser(context, secmgr, username, true, "onUserPosixInput");
 
         secmgr->getUserInfo(*user.get());
 
@@ -3582,9 +3587,7 @@ bool Cws_accessEx::onUserInfoEdit(IEspContext &context, IEspUserInfoEditRequest 
             return false;
         }
 
-        Owned<CLdapSecUser> user = dynamic_cast<CLdapSecUser*>(secmgr->createUser(username, context.querySecureContext()));
-        if (!user)
-            throw makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "onUserInfoEdit: failed to create user %s", username);
+        Owned<CLdapSecUser> user = createLdapUser(context, secmgr, username, true, "onUserInfoEdit");
 
         user->setFirstName(firstname);
         user->setLastName(lastname);
@@ -3634,9 +3637,7 @@ bool Cws_accessEx::onUserInfoEditInput(IEspContext &context, IEspUserInfoEditInp
             throw MakeStringException(ECLWATCH_INVALID_ACCOUNT_NAME, "Please specify a username.");
         }
 
-        Owned<CLdapSecUser> user = dynamic_cast<CLdapSecUser*>(secmgr->createUser(username, context.querySecureContext()));
-        if (!user)
-            throw makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "onUserInfoEditInput: failed to create user %s", username);
+        Owned<CLdapSecUser> user = createLdapUser(context, secmgr, username, true, "onUserInfoEditInput");
 
         secmgr->getUserInfo(*user.get());
 
@@ -4705,7 +4706,7 @@ bool Cws_accessEx::onUserAccountExport(IEspContext &context, IEspUserAccountExpo
                 if (!username || !*username)
                     continue;
 
-                Owned<CLdapSecUser> user = dynamic_cast<CLdapSecUser*>(secmgr->createUser(username, context.querySecureContext()));
+                Owned<CLdapSecUser> user = createLdapUser(context, secmgr, username, false, nullptr);
                 if (!user)
                 {
                     OERRLOG("Failed to create user %s when exporting user account info.", username);
