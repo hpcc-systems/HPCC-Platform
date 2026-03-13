@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ISODayOfWeekFromDate">
+  <title>ISODayOfWeekFromDate</title>
+
+  <para><emphasis role="bold">STD.Date.ISODayOfWeekFromDate<indexterm>
+      <primary>STD.Date.ISODayOfWeekFromDate</primary>
+    </indexterm><indexterm>
+      <primary>ISODayOfWeekFromDate</primary>
+    </indexterm>(</emphasis><emphasis>date</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>date</emphasis></entry>
+
+          <entry>A date value in the Date_t format.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>ISODayOfWeekFromDate returns an INTEGER value representing
+          the ISO day of the week in the range 1–7, where 1 = Monday.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">ISODayOfWeekFromDate</emphasis> function
+  returns a number representing the ISO-8601 day of the week for the given
+  date. The date must be in the Gregorian calendar after the year 1600.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific" lang="ECL_Runnable">IMPORT STD;
+DOW1 := STD.Date.ISODayOfWeekFromDate(STD.Date.Today());
+      // DOW1 contains the ISO day of the week for today's date (where Monday = 1)
+OUTPUT(DOW1);</programlisting>
+
+  <para/>
+</sect1>

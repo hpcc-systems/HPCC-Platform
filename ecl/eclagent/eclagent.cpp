@@ -1560,19 +1560,10 @@ char *EclAgent::getPlatform()
 char *EclAgent::getEnv(const char *name, const char *defaultValue) const
 {
     const char *val = cmdLineArgs->queryProp(name);
-    if (!val)
-    {
-        char *hpccEnvVal = getHPCCEnvVal(name, defaultValue);
-        if (hpccEnvVal)
-            return hpccEnvVal;
-        val = getenv(name);
-    }
     if (val)
         return strdup(val);
-    else if (defaultValue)
-        return strdup(defaultValue);
     else
-        return strdup("");
+        return getHPCCEnvVal(name, defaultValue);
 }
 
 void EclAgent::selectCluster(const char *newCluster)

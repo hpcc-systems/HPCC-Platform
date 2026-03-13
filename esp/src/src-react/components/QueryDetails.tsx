@@ -21,7 +21,7 @@ interface QueryDetailsProps {
     tab?: string;
     fullscreen?: boolean;
     state?: { metricsTab?: string, metricsState?: string, testTab?: string };
-    queryParams?: { lineageSelection?: string, metricsSelection?: string };
+    queryParams?: { view?: string, lineageSelection?: string, metricsSelection?: string };
 }
 
 export const QueryDetails: React.FunctionComponent<QueryDetailsProps> = ({
@@ -129,7 +129,7 @@ export const QueryDetails: React.FunctionComponent<QueryDetailsProps> = ({
                     <QuerySummaryStats queryId={queryId} querySet={querySet} />
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "metrics"} size={size}>
-                    <QueryMetrics wuid={query?.Wuid} queryId={queryId} querySet={querySet} tab={state.metricsTab} selection={queryParams.metricsSelection} />
+                    <QueryMetrics wuid={query?.Wuid} queryId={queryId} querySet={querySet} tab={state.metricsTab} selectedView={queryParams.view} lineageSelection={queryParams.lineageSelection} selection={queryParams.metricsSelection} />
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "resources"} size={size}>
                     <Resources wuid={wuid} />

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ISOIsLongYear">
+  <title>ISOIsLongYear</title>
+
+  <para><emphasis role="bold">STD.Date.ISOIsLongYear<indexterm>
+      <primary>STD.Date.ISOIsLongYear</primary>
+    </indexterm><indexterm>
+      <primary>ISOIsLongYear</primary>
+    </indexterm>(</emphasis> <emphasis>year</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>year</emphasis></entry>
+
+          <entry>An INTEGER2 year value.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>ISOIsLongYear returns TRUE if the year has 53 ISO weeks,
+          FALSE otherwise.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">ISOIsLongYear</emphasis> function returns
+  TRUE if the specified year is a long year (i.e., has 53 ISO weeks), or FALSE
+  if it has 52 weeks.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific" lang="ECL_Runnable">IMPORT STD;
+Y := 2020;
+IsLong := STD.Date.ISOIsLongYear(Y);
+         // IsLong is TRUE for 2020 (it is a long year)
+OUTPUT(IsLong);</programlisting>
+
+  <para/>
+</sect1>

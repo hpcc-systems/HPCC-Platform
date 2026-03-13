@@ -20,7 +20,7 @@ import { InfoGrid } from "./InfoGrid";
 import { WorkunitPersona } from "./controls/StateIcon";
 import { localKeyValStore } from "src/KeyValStore";
 
-const logger = scopedLogger("../components/WorkunitDetails.tsx");
+const logger = scopedLogger("../components/WorkunitSummary.tsx");
 
 const WU_SUMMARY_SPLITTER = "workunit_summary_splitter";
 

@@ -1704,15 +1704,10 @@ static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxieP
         }
         else
             result = package.queryEnv(name);
-        if (!result && name)
-        {
-            char *hpccEnvVal = getHPCCEnvVal(name, defaultValue);
-            if (hpccEnvVal)
-                return hpccEnvVal;
-            else
-                result = getenv(name);
-        }
-        return strdup(result ? result : defaultValue);
+        if (result)
+            return strdup(result);
+        else
+            return getHPCCEnvVal(name, defaultValue);
     }
 
     virtual IRoxieAgentContext *createAgentContext(const AgentContextLogger &logctx, IRoxieQueryPacket *packet, bool hasChildren) const override

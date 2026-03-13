@@ -55,6 +55,11 @@ const workunitsChildren: Route[] = [
             return <_.WorkunitDetails wuid={params.Wuid as string} parentUrl={params.parentUrl as string} fullscreen={parseFullscreen(ctx.search)} tab={params.Tab as string} state={{ [params.Tab as string]: { lineageSelection: params.State, selection: (params.State2 as string).split(",") } }} queryParams={{ [params.Tab as string]: parseSearch(ctx.search) as any }} />;
         })
     },
+    {
+        path: "/:Wuid/:Tab/:State/:State2/:State3", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => {
+            return <_.WorkunitDetails wuid={params.Wuid as string} parentUrl={params.parentUrl as string} fullscreen={parseFullscreen(ctx.search)} tab={params.Tab as string} state={{ [params.Tab as string]: { view: params.State, lineageSelection: params.State2, selection: (params.State3 as string).split(",") } }} queryParams={{ [params.Tab as string]: parseSearch(ctx.search) as any }} />;
+        })
+    },
 ];
 
 export const routes: RoutesEx = [
@@ -265,13 +270,18 @@ export const routes: RoutesEx = [
                 })
             },
             {
-                path: "/:QuerySetId/:Id/metrics/:MetricsTab/:Selection", action: (ctx, params) => import("./components/QueryDetails").then(_ => {
-                    return <_.QueryDetails querySet={params.QuerySetId as string} queryId={params.Id as string} tab="metrics" state={{ metricsTab: params.MetricsTab as string }} queryParams={{ metricsSelection: params.Selection as string }} fullscreen={parseFullscreen(ctx.search)} />;
+                path: "/:QuerySetId/:Id/metrics/:MetricsTab/:View", action: (ctx, params) => import("./components/QueryDetails").then(_ => {
+                    return <_.QueryDetails querySet={params.QuerySetId as string} queryId={params.Id as string} tab="metrics" state={{ metricsTab: params.MetricsTab as string }} queryParams={{ view: params.View as string }} fullscreen={parseFullscreen(ctx.search)} />;
                 })
             },
             {
-                path: "/:QuerySetId/:Id/metrics/:MetricsTab/:Lineage/:Selection", action: (ctx, params) => import("./components/QueryDetails").then(_ => {
-                    return <_.QueryDetails querySet={params.QuerySetId as string} queryId={params.Id as string} tab="metrics" state={{ metricsTab: params.MetricsTab as string }} queryParams={{ lineageSelection: params.Lineage as string, metricsSelection: params.Selection as string }} fullscreen={parseFullscreen(ctx.search)} />;
+                path: "/:QuerySetId/:Id/metrics/:MetricsTab/:View/:Selection", action: (ctx, params) => import("./components/QueryDetails").then(_ => {
+                    return <_.QueryDetails querySet={params.QuerySetId as string} queryId={params.Id as string} tab="metrics" state={{ metricsTab: params.MetricsTab as string }} queryParams={{ view: params.View as string, metricsSelection: params.Selection as string }} fullscreen={parseFullscreen(ctx.search)} />;
+                })
+            },
+            {
+                path: "/:QuerySetId/:Id/metrics/:MetricsTab/:View/:Lineage/:Selection", action: (ctx, params) => import("./components/QueryDetails").then(_ => {
+                    return <_.QueryDetails querySet={params.QuerySetId as string} queryId={params.Id as string} tab="metrics" state={{ metricsTab: params.MetricsTab as string }} queryParams={{ view: params.View as string, lineageSelection: params.Lineage as string, metricsSelection: params.Selection as string }} fullscreen={parseFullscreen(ctx.search)} />;
                 })
             },
             {
