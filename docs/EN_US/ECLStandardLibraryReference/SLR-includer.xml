@@ -526,6 +526,24 @@
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/AppendTZAdjustedTime.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/ISODayOfWeekFromDate.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/ISOIsLongYear.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/ISOWeeksFromDate.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/ISORawWeekNumForDate.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/ISOWeekNumWeekDayAndYearFromDate.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/ISOWeekDate.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
   </chapter>
 
   <chapter id="Cluster_Handling">
