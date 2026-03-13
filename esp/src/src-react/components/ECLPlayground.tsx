@@ -1,18 +1,17 @@
 import * as React from "react";
-import { ReflexContainer, ReflexElement, ReflexSplitter } from "../layouts/react-reflex";
-import { IconButton, IIconProps, Link, Dropdown, IDropdownOption, Spinner, SpinnerSize, TextField, useTheme } from "@fluentui/react";
-import { Button } from "@fluentui/react-components";
-import { CheckmarkCircleRegular, DismissCircleRegular, QuestionCircleRegular } from "@fluentui/react-icons";
-import { scopedLogger } from "@hpcc-js/util";
+import { Button, Dropdown, Field, Input, Label, Link, makeStyles, mergeClasses, Option, Spinner } from "@fluentui/react-components";
 import { useOnEvent } from "@fluentui/react-hooks";
-import { mergeStyleSets } from "@fluentui/style-utilities";
-import { ECLEditor, IPosition } from "@hpcc-js/codemirror";
+import { CheckmarkCircleRegular, DataBarVerticalFilled, DismissCircleRegular, QuestionCircleRegular, TableRegular, WarningRegular } from "@fluentui/react-icons";
 import { Workunit, WUUpdate, WorkunitsService, WUStateID } from "@hpcc-js/comms";
-import { HolyGrail } from "../layouts/HolyGrail";
+import { ECLEditor, IPosition } from "@hpcc-js/codemirror";
+import { scopedLogger } from "@hpcc-js/util";
+import { useUserTheme } from "../hooks/theme";
+import { DockPanel, DockPanelItem, ResetableDockPanel } from "../layouts/DockPanel";
 import { DojoAdapter } from "../layouts/DojoAdapter";
+import { HolyGrail } from "../layouts/HolyGrail";
+import { AutosizeComponent } from "../layouts/HpccJSAdapter";
 import { pushUrl } from "../util/history";
 import { debounce } from "../util/throttle";
-import { darkTheme } from "../themes";
 import { InfoGrid } from "./InfoGrid";
 import { TabbedResults } from "./Results";
 import { ECLSourceEditor } from "./SourceEditor";
@@ -35,61 +34,21 @@ const enum OutputMode {
 
 const borderStyle = "1px solid darkgrey";
 
-const playgroundStyles = mergeStyleSets({
+const useStyles = makeStyles({
     root: {
         height: "100%",
         border: borderStyle,
-        selectors: {
-            ".reflex-container > .reflex-splitter": {
-                backgroundColor: "transparent",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-evenly",
-                ":hover": {
-                    backgroundColor: "transparent",
-                }
-            },
-            ".reflex-container.horizontal > .reflex-splitter": {
-                height: "2px",
-                padding: "1px",
-                borderTop: borderStyle,
-                borderBottom: borderStyle,
-                "::after": {
-                    content: "' '",
-                    borderBottom: "2px solid #9e9e9e",
-                    width: "19px",
-                    marginLeft: "-19px"
-                },
-                ":hover": {
-                    borderTop: borderStyle,
-                    borderBottom: borderStyle
-                }
-            },
-            ".reflex-container.vertical > .reflex-splitter": {
-                width: "2px",
-                padding: "1px",
-                borderLeft: borderStyle,
-                borderRight: borderStyle,
-                "::after": {
-                    content: "' '",
-                    borderLeft: "2px solid #9e9e9e",
-                    height: "19px",
-                },
-                ":hover": {
-                    borderLeft: borderStyle,
-                    borderRight: borderStyle
-                }
-            },
-            ".fui-Button": {
-                height: "min-content"
-            },
-            ".ms-Label": {
-                marginRight: "12px"
-            },
-            ".ms-Label::after": {
-                paddingRight: 0
-            }
+        "& .fui-Button": {
+            height: "min-content"
         },
+        "& .fui-Label::after": {
+            paddingRight: "0"
+        },
+        "& .fui-Label": {
+            lineHeight: "32px",
+            margin: "0 10px",
+            padding: "0"
+        }
     },
     titleBar: {
         padding: "4px 8px",
@@ -104,7 +63,7 @@ const playgroundStyles = mergeStyleSets({
         lineHeight: "24px",
         fontWeight: "bold",
         display: "inline-block",
-        margin: 0,
+        margin: "0",
     },
     toolBar: {
         display: "flex",
@@ -115,32 +74,34 @@ const playgroundStyles = mergeStyleSets({
         display: "flex",
         flexGrow: 1
     },
+    targetCluster: {
+        display: "flex",
+    },
     inlineDropdown: {
         display: "flex",
-        marginLeft: "18px",
-        "label": {
-            marginRight: "8px"
-        },
-        ".ms-Dropdown": {
-            minWidth: "100px"
-        }
+        maxHeight: "32px",
+        minWidth: "100px",
+    },
+    samplesWrapper: {
+        display: "flex"
     },
     samplesDropdown: {
-        ".ms-Dropdown": {
+        "& .ms-Dropdown": {
             width: "240px"
         }
     },
     publishWrapper: {
         display: "flex",
-        ".ms-TextField-wrapper": {
+        "& .ms-TextField-wrapper": {
             display: "flex",
             marginLeft: "18px"
         },
-        ".ms-TextField-errorMessage": {
+        "& .ms-TextField-errorMessage": {
             display: "none"
         }
     },
     outputButtons: {
+        display: "flex",
         marginLeft: "18px"
     },
     statusMessage: {
@@ -148,18 +109,14 @@ const playgroundStyles = mergeStyleSets({
         minWidth: "100px"
     },
     fullscreen: {
-        position: "absolute" as const,
-        top: 0,
-        left: 0,
+        position: "absolute",
+        top: "0",
+        left: "0",
         width: "100%",
         height: "100%",
         backgroundColor: "#fff"
     },
 });
-
-const warningIcon: IIconProps = { title: nlsHPCC.ErrorWarnings, ariaLabel: nlsHPCC.ErrorWarnings, iconName: "Warning" };
-const resultsIcon: IIconProps = { title: nlsHPCC.Outputs, ariaLabel: nlsHPCC.Outputs, iconName: "Table" };
-const graphIcon: IIconProps = { title: nlsHPCC.Visualizations, ariaLabel: nlsHPCC.Visualizations, iconName: "BarChartVerticalFill" };
 
 const displayErrors = async (wu = null, editor, errors = []) => {
     if (!editor) return;
@@ -226,10 +183,11 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
     setSyntaxStatusIcon
 }) => {
 
+    const styles = useStyles();
     const [cluster, setCluster] = React.useState("");
     const [wuState, setWuState] = React.useState("");
     const [queryName, setQueryName] = React.useState("");
-    const queryNameRef = React.useRef(null);
+    const queryNameRef = React.useRef<HTMLInputElement | null>(null);
     const [queryNameErrorMsg, setQueryNameErrorMsg] = React.useState("");
     const [showSubmitBtn, setShowSubmitBtn] = React.useState(true);
 
@@ -321,8 +279,8 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
         }
     }, [workunit]);
 
-    return <div className={playgroundStyles.toolBar}>
-        <div className={playgroundStyles.controlsWrapper}>
+    return <div className={styles.toolBar}>
+        <div className={styles.controlsWrapper}>
             {showSubmitBtn ? (
                 <Button appearance="primary" onClick={submitWU}>{nlsHPCC.Submit}</Button>
             ) : (
@@ -332,7 +290,7 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
                 icon={
                     syntaxStatusIcon === SyntaxCheckResult.Passed ? <CheckmarkCircleRegular style={{ color: "green" }} /> :
                         syntaxStatusIcon === SyntaxCheckResult.Failed ? <DismissCircleRegular style={{ color: "red" }} /> :
-                            <QuestionCircleRegular style={{ color: "initial" }} />
+                            <QuestionCircleRegular style={{ color: "inherit" }} />
                 }
             >
                 {nlsHPCC.Syntax}
@@ -343,7 +301,8 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
                 excludeRoxie={false}
                 required={true}
                 selectedKey={cluster}
-                className={playgroundStyles.inlineDropdown}
+                className={styles.inlineDropdown}
+                fieldClass={styles.targetCluster}
                 onChange={React.useCallback((evt, option: TargetClusterOption) => {
                     const selectedCluster = option.key.toString();
                     if (option?.queriesOnly) {
@@ -354,37 +313,41 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
                     setCluster(selectedCluster);
                 }, [setCluster])}
             />
-            <div className={playgroundStyles.publishWrapper}>
-                <TextField
-                    label={nlsHPCC.Name}
-                    name="jobName"
-                    componentRef={queryNameRef}
-                    required={!showSubmitBtn}
-                    errorMessage={queryNameErrorMsg}
-                    onChange={(evt, value) => setQueryName(value)}
-                />
+            <div className={styles.publishWrapper}>
+                <Label>{nlsHPCC.Name}</Label>
+                <Field validationMessage={queryNameErrorMsg} validationState={queryNameErrorMsg ? "error" : "none"}>
+                    <Input
+                        name="jobName"
+                        ref={queryNameRef}
+                        required={!showSubmitBtn}
+                        onChange={(evt, data) => setQueryName(data.value)}
+                    />
+                </Field>
             </div>
-            <div className={playgroundStyles.outputButtons}>
-                <IconButton
-                    iconProps={warningIcon}
+            <div className={styles.outputButtons}>
+                <Button
+                    icon={<WarningRegular />}
+                    aria-label={nlsHPCC.ErrorWarnings}
                     onClick={React.useCallback(() => setOutputMode(OutputMode.ERRORS), [setOutputMode])}
-                    checked={outputMode === OutputMode.ERRORS ? true : false}
+                    appearance={outputMode === OutputMode.ERRORS ? undefined : "subtle"}
                 />
-                <IconButton
-                    iconProps={resultsIcon}
+                <Button
+                    icon={<TableRegular />}
+                    aria-label={nlsHPCC.Results}
                     onClick={React.useCallback(() => setOutputMode(OutputMode.RESULTS), [setOutputMode])}
-                    checked={outputMode === OutputMode.RESULTS ? true : false}
+                    appearance={outputMode === OutputMode.RESULTS ? undefined : "subtle"}
                     disabled={workunit?.Wuid ? false : true}
                 />
-                <IconButton
-                    iconProps={graphIcon}
+                <Button
+                    icon={<DataBarVerticalFilled />}
+                    aria-label={nlsHPCC.Visualizations}
                     onClick={React.useCallback(() => setOutputMode(OutputMode.VIS), [setOutputMode])}
-                    checked={outputMode === OutputMode.VIS ? true : false}
+                    appearance={outputMode === OutputMode.VIS ? undefined : "subtle"}
                     disabled={workunit?.Wuid ? false : true}
                 />
             </div>
         </div>
-        <div className={playgroundStyles.statusMessage}>
+        <div className={styles.statusMessage}>
             <Link href={(workunit?.Wuid) ? `#/workunits/${workunit.Wuid}` : ""}>{wuState}</Link>
         </div>
     </div>;
@@ -393,9 +356,11 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
 export const ECLPlayground: React.FunctionComponent<ECLPlaygroundProps> = (props) => {
 
     const { wuid, ecl, filter = {} } = props;
-    const theme = useTheme();
+    const { isDark } = useUserTheme();
+    const styles = useStyles();
 
     const [outputMode, setOutputMode] = React.useState<OutputMode>(OutputMode.ERRORS);
+    const [dockpanel, setDockpanel] = React.useState<ResetableDockPanel>();
     const [workunit, setWorkunit] = React.useState<Workunit>();
     const [editor, setEditor] = React.useState<ECLEditor>();
     const [query, setQuery] = React.useState("");
@@ -403,7 +368,7 @@ export const ECLPlayground: React.FunctionComponent<ECLPlaygroundProps> = (props
     const [eclContent, setEclContent] = React.useState("");
     const [syntaxErrors, setSyntaxErrors] = React.useState<any[]>([]);
     const [syntaxStatusIcon, setSyntaxStatusIcon] = React.useState(SyntaxCheckResult.Unknown);
-    const [eclSamples, setEclSamples] = React.useState<IDropdownOption[]>([]);
+    const [eclSamples, setEclSamples] = React.useState<{ key: string, text: string }[]>([]);
 
     React.useEffect(() => {
         if (wuid) {
@@ -411,6 +376,7 @@ export const ECLPlayground: React.FunctionComponent<ECLPlaygroundProps> = (props
             wu.fetchQuery().then(result => {
                 setWorkunit(wu);
                 setQuery(result.Text);
+                setEclContent(result.Text);
                 if (wu.isFailed()) {
                     displayErrors(wu, editor);
                     setOutputMode(OutputMode.ERRORS);
@@ -434,13 +400,9 @@ export const ECLPlayground: React.FunctionComponent<ECLPlaygroundProps> = (props
             ));
 
         if (editor) {
-            if (theme.semanticColors.link === darkTheme.palette.themePrimary) {
-                editor.option("theme", "darcula");
-            } else {
-                editor.option("theme", "default");
-            }
+            editor.option("theme", isDark ? "darcula" : "default");
         }
-    }, [wuid, editor, theme, ecl]);
+    }, [wuid, editor, ecl, isDark]);
 
     React.useEffect(() => {
         fetch(`/esp/files/eclwatch/ecl/${selectedEclSample}`)
@@ -454,6 +416,17 @@ export const ECLPlayground: React.FunctionComponent<ECLPlaygroundProps> = (props
                 }
             });
     }, [selectedEclSample]);
+
+    React.useEffect(() => {
+        if (dockpanel) {
+            //  Should only happen once on startup  ---
+            const layout: any = dockpanel.layout();
+            if (Array.isArray(layout?.main?.sizes) && layout.main.sizes.length === 2) {
+                layout.main.sizes = [0.7, 0.3];
+                dockpanel.layout(layout).lazyRender();
+            }
+        }
+    }, [dockpanel]);
 
     React.useEffect(() => {
         if (!editor) return;
@@ -484,22 +457,29 @@ export const ECLPlayground: React.FunctionComponent<ECLPlaygroundProps> = (props
     }, 300), [editor]);
     useOnEvent(window, "keyup", handleEclChange);
 
-    return <div className={playgroundStyles.root}>
-        <div className={playgroundStyles.titleBar}>
-            <h1 className={playgroundStyles.title}>{nlsHPCC.title_ECLPlayground}</h1>
-            <Dropdown
-                label="Sample"
-                className={`${playgroundStyles.inlineDropdown} ${playgroundStyles.samplesDropdown}`}
-                options={eclSamples}
-                selectedKey={selectedEclSample}
-                placeholder="Select sample ECL..."
-                onChange={(evt, item) => { setSelectedEclSample(item.key.toString()); }}
-            />
-        </div>
-        <ReflexContainer orientation="horizontal">
-            <ReflexElement>
-                <ReflexContainer orientation="vertical">
-                    <ReflexElement>
+    return <div className={styles.root}>
+        <HolyGrail
+            header={
+                <div className={styles.titleBar}>
+                    <h1 className={styles.title}>{nlsHPCC.title_ECLPlayground}</h1>
+                    <Field className={styles.samplesWrapper} label={nlsHPCC.Sample}>
+                        <Dropdown
+                            id="eclSamples"
+                            className={mergeClasses(styles.inlineDropdown, styles.samplesDropdown)}
+                            selectedOptions={[selectedEclSample]}
+                            placeholder="Select sample ECL..."
+                            onOptionSelect={(evt, data) => { setSelectedEclSample(data.optionValue.toString()); }}
+                        >
+                            {eclSamples.map((sample, idx) => (
+                                <Option key={`eclSample_${idx}`} text={sample.text} value={sample.key.toString()}>{sample.text}</Option>
+                            ))}
+                        </Dropdown>
+                    </Field>
+                </div>
+            }
+            main={
+                <DockPanel hideSingleTabs onCreate={setDockpanel}>
+                    <DockPanelItem key="eclEditor" title={nlsHPCC.ECL}>
                         <HolyGrail
                             main={<ECLSourceEditor text={query} setEditor={setEditor} />}
                             footer={
@@ -511,37 +491,33 @@ export const ECLPlayground: React.FunctionComponent<ECLPlaygroundProps> = (props
                                 />
                             }
                         />
-                    </ReflexElement>
-                    <ReflexSplitter />
-                    <ReflexElement minSize={100} flex={0.25} style={{ overflow: "hidden" }}>
+                    </DockPanelItem>
+                    <DockPanelItem key="graph" title={nlsHPCC.Graphs} location="split-right" relativeTo="eclEditor">
                         {submissionComplete ?
-                            <DojoAdapter widgetClassID="Graph7Widget" params={{ Wuid: workunit?.Wuid }} />
+                            <AutosizeComponent>
+                                <DojoAdapter widgetClassID="Graph7Widget" params={{ Wuid: workunit?.Wuid }} />
+                            </AutosizeComponent>
                             : <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
-                                <Spinner size={SpinnerSize.large} />
+                                <Spinner size="large" />
                             </div>
                         }
-                    </ReflexElement>
-                </ReflexContainer>
-            </ReflexElement>
-            <ReflexSplitter />
-            <ReflexElement propagateDimensions={true} minSize={100} style={{ overflow: "hidden" }}>
-                {submissionComplete ?
-                    <div style={{ height: "calc(100% - 44px)" }}>
-                        {outputMode === OutputMode.ERRORS ? (
-                            <InfoGrid wuid={workunit?.Wuid} syntaxErrors={syntaxErrors} />
-
-                        ) : outputMode === OutputMode.RESULTS ? (
-                            <TabbedResults wuid={workunit?.Wuid} filter={filter} />
-
-                        ) : outputMode === OutputMode.VIS ? (
-                            <DojoAdapter widgetClassID="VizWidget" params={{ Wuid: workunit?.Wuid, Sequence: 0 }} />
-                        ) : null}
-                    </div>
-                    : <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
-                        <Spinner size={SpinnerSize.large} />
-                    </div>
-                }
-            </ReflexElement>
-        </ReflexContainer>
+                    </DockPanelItem>
+                    <DockPanelItem key="output" title={nlsHPCC.Outputs} location="split-bottom" relativeTo="eclEditor">
+                        {submissionComplete ?
+                            (outputMode === OutputMode.ERRORS ? (
+                                <InfoGrid wuid={workunit?.Wuid} syntaxErrors={syntaxErrors} />
+                            ) : outputMode === OutputMode.RESULTS ? (
+                                <TabbedResults wuid={workunit?.Wuid} filter={filter} />
+                            ) : outputMode === OutputMode.VIS ? (
+                                <DojoAdapter widgetClassID="VizWidget" params={{ Wuid: workunit?.Wuid, Sequence: 0 }} />
+                            ) : null)
+                            : <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
+                                <Spinner size="large" />
+                            </div>
+                        }
+                    </DockPanelItem>
+                </DockPanel>
+            }
+        />
     </div>;
 };

@@ -127,6 +127,7 @@ interface AsyncDropdownProps {
     onChange?: (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption | IDropdownOption[], index?: number) => void;
     placeholder?: string;
     className?: string;
+    fieldClass?: string;
 }
 
 const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
@@ -140,7 +141,8 @@ const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
     errorMessage,
     onChange,
     placeholder,
-    className
+    className,
+    fieldClass
 }) => {
 
     const selOptions = React.useMemo<IDropdownOption[]>(() => {
@@ -226,7 +228,7 @@ const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
     const handleChange = React.useCallback((_, data) => {
         if (multiSelect) {
             const selectedOpts = data.selectedOptions.map(optValue => {
-                return selOptions.find(opt => opt.key === optValue)
+                return selOptions.find(opt => opt.key === optValue);
             }).filter(Boolean);
             setSelectedItems(selectedOpts);
             if (onChange) {
@@ -257,8 +259,7 @@ const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
             <Skeleton><SkeletonItem /></Skeleton>
         </Field>;
     }
-
-    return <Field label={label} validationMessage={errorMessage} required={required}>
+    return <Field label={label} validationMessage={errorMessage} required={required} className={fieldClass}>
         <DropdownBase
             multiselect={multiSelect || undefined}
             value={dropdownValue}
