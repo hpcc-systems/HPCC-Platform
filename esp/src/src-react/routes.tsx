@@ -470,8 +470,8 @@ export const routes: RoutesEx = [
                 })
             },
             {
-                path: "/diskusage", action: () => import("./layouts/DojoAdapter").then(_ => {
-                    return <_.DojoAdapter widgetClassID="DiskUsageWidget" />;
+                path: "/diskusage", action: (ctx) => import("./components/DiskUsage").then(_ => {
+                    return <_.DiskUsage filter={parseSearch(ctx.search) as any} />;
                 })
             },
             {
