@@ -1,48 +1,232 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
-"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<sect1 id="ESDL_Attributes_auth_feature">
-  <title>auth_feature</title>
-
-  <para><indexterm>
+  "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ESDL_AuthFeature">
+  <title>ESDL auth_feature: Semantics and Syntax</title>
+  <para>
+    <indexterm>
       <primary>auth_feature</primary>
-    </indexterm>The auth_feature attribute (valid only for an ESPService or
-  ESPMethod) allows you to specify a means to verify a user's permission to
-  execute a method.</para>
+    </indexterm>
+    The <emphasis>auth_feature</emphasis> attribute configures feature-level security in ESDL by associating features and access levels to <code>ESPservice</code> and <code>ESPmethod</code> elements. This provides fine-grained, declarative access control for ESDL services and methods.
+  </para>
 
-  <para>In order to enable this feature, your system must be configured to use
-  a form of security that supports feature level authentication, such as LDAP
-  security included in the Community edition of the platform. Once LDAP is
-  configured, you would add the tag name provided as the value for the
-  <emphasis role="bold">authFeature</emphasis> attribute to the feature level
-  authentication list in the Security section of ECL Watch. Then you would set
-  permissions for users and/or groups.</para>
+  <sect2 id="ESDL_AuthFeature_Overview">
+    <title>Overview and Precedence</title>
+    <para>
+      An <emphasis>auth_feature</emphasis> string is a comma-delimited list of tokens, interpreted in order from service (lowest precedence) to method (highest precedence), and processed in reverse order.
+    </para>
+    <para>
+      <code>ESPservice</code> values take effect at the <code>EsdlService</code> scope, while <code>ESPmethod</code> values are in the <code>EsdlMethod</code> scope and override service scope requirements. If <emphasis>auth_feature</emphasis> is set on both service and method, the resulting security requirement is the union, with method-level tokens taking precedence where conflicts arise.
+    </para>
+    <para>
+      See formal BNF specification and parsing details below for precise semantics.
+    </para>
+  </sect2>
 
-  <para>If you are using a third-party Security Manager plugin, consult their
-  documentation for details on adding the tag name to their security
-  configuration.</para>
+  <sect2 id="ESDL_AuthFeature_Tokens">
+    <title>Token Semantics and Categories</title>
+    <para>
+      Each <emphasis>auth_feature</emphasis> may include universal tokens and feature-specific tokens, each with well-defined semantics and support.
+    </para>
+    <sect3 id="ESDL_AuthFeature_FeatureIndependentTokens">
+      <title>Feature-Independent Tokens</title>
+      <para>The following tokens are universally supported and do not reference any specific feature:</para>
+      <informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="120pt"></colspec>
+          <tbody>
+            <row>
+              <entry><literal>None</literal></entry>
+              <entry>No feature access required. Standalone: disables access checks; combined: ignored. Supported by <literal>esdllib</literal> and <literal>hidl</literal>.</entry>
+            </row>
+            <row>
+              <entry><literal>Deferred</literal></entry>
+              <entry>Equivalent to <literal>None</literal>; security may be enforced dynamically by the method handler. Supported by <literal>esdllib</literal> and <literal>hidl</literal>.</entry>
+            </row>
+            <row>
+              <entry><literal>!X</literal> (where X is any value)</entry>
+              <entry>Reserved for future semantics; constraints on X to be defined. New syntax.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>
+    </sect3>
+    <sect3 id="ESDL_AuthFeature_PermittedTokens">
+      <title>Permitted Feature-Specific Tokens</title>
+      <para>For a feature named <literal>MyFeature</literal>, permitted tokens include:</para>
+      <informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="3">
+          <colspec colwidth="130pt"></colspec>
+          <colspec colwidth="170pt"></colspec>
+          <tbody>
+            <row>
+              <entry><literal>Token</literal></entry>
+              <entry><literal>SecAccess Required</literal></entry>
+              <entry><literal>Supported By</literal></entry>
+            </row>
+            <row>
+              <entry><literal>MyFeature</literal></entry>
+              <entry>SecAccess_Read</entry>
+              <entry>esdllib</entry>
+            </row>
+            <row>
+              <entry><literal>MyFeature:Access</literal></entry>
+              <entry>SecAccess_Access</entry>
+              <entry>esdllib, hidl</entry>
+            </row>
+            <row>
+              <entry><literal>MyFeature:Read</literal></entry>
+              <entry>SecAccess_Read</entry>
+              <entry>esdllib, hidl</entry>
+            </row>
+            <row>
+              <entry><literal>MyFeature:Write</literal></entry>
+              <entry>SecAccess_Write</entry>
+              <entry>esdllib, hidl</entry>
+            </row>
+            <row>
+              <entry><literal>MyFeature:Full</literal></entry>
+              <entry>SecAccess_Full</entry>
+              <entry>esdllib, hidl</entry>
+            </row>
+            <row>
+              <entry><literal>MyFeature:None</literal></entry>
+              <entry>No access required (overrides service attribute)</entry>
+              <entry>esdllib, hidl</entry>
+            </row>
+            <row>
+              <entry><literal>MyFeature:Deferred</literal></entry>
+              <entry>Equivalent to None</entry>
+              <entry>esdllib, hidl</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>
+    </sect3>
+    <sect3 id="ESDL_AuthFeature_ForbiddenTokens">
+      <title>Forbidden Tokens</title>
+      <para>The following tokens are not permitted for feature <literal>MyFeature</literal>:</para>
+      <informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="120pt"></colspec>
+          <tbody>
+            <row>
+              <entry><literal>MyFeature:</literal></entry>
+              <entry>Not permitted; shortcut not needed; accepted by hidl as equivalent to <literal>MyFeature:Read</literal>.</entry>
+            </row>
+            <row>
+              <entry><literal>MyFeature:X</literal> (where X is not listed above)</entry>
+              <entry>Invalid token; error; accepted by hidl as equivalent to <literal>MyFeature:Full</literal>.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>
+    </sect3>
+  </sect2>
 
-  <para>The auth_feature attribute is required for every method, but can be
-  specified at the ESPService level to apply to all methods within a service.
-  You can override for an individual method by setting the attribute at a
-  method level.</para>
+  <sect2 id="ESDL_AuthFeature_Examples">
+    <title>Examples</title>
+    <para>
+      <emphasis role="bold">Example 1: Service-level authentication</emphasis>
+    </para>
+    <programlisting>
+ESPservice [auth_feature("DataAccess:Read")] DataService
+{
+  ESPmethod GetData(GetDataRequest, GetDataResponse);
+  ESPmethod ListData(ListDataRequest, ListDataResponse);
+};
+    </programlisting>
+    <para>
+      Both <literal>GetData</literal> and <literal>ListData</literal> require <literal>SecAccess_Read</literal> access for <literal>DataAccess</literal>.
+    </para>
+    <para>
+      <emphasis role="bold">Example 2: Combined service and method authentication</emphasis>
+    </para>
+    <programlisting>
+ESPservice [auth_feature("DataAccess:Read")] DataService
+{
+  ESPmethod GetData(GetDataRequest, GetDataResponse);
+  ESPmethod [auth_feature("DataAccess:Write")] UpdateData(UpdateDataRequest, UpdateDataResponse);
+};
+    </programlisting>
+    <para>
+      <literal>GetData</literal> requires <literal>SecAccess_Read</literal>; <literal>UpdateData</literal> requires both <literal>SecAccess_Read</literal> and <literal>SecAccess_Write</literal> for <literal>DataAccess</literal>.
+    </para>
+    <para>
+      <emphasis role="bold">Example 3: Method bypassing service authentication</emphasis>
+    </para>
+    <programlisting>
+ESPservice [auth_feature("DataAccess:Full")] DataService
+{
+  ESPmethod GetData(GetDataRequest, GetDataResponse);
+  ESPmethod [auth_feature("DataAccess:None")] GetPublicData(GetPublicDataRequest, GetPublicDataResponse);
+};
+    </programlisting>
+    <para>
+      <literal>GetData</literal> requires <literal>SecAccess_Full</literal> access; <literal>GetPublicData</literal> requires no access for <literal>DataAccess</literal>.
+    </para>
+  </sect2>
 
-  <para>Setting auth_feature("NONE") means no authentication is needed.
-  Setting auth_feature("DEFERRED") defers the authentication to the business
-  logic in the ESP developer's method implementation logic.</para>
-
-  <para><emphasis role="bold">Example:</emphasis></para>
-
-  <programlisting> ESPservice MyService [auth_feature("NONE")]
- {
-   ESPmethod MyMethod1(MyMethod1Request, MyMethod1Response);
-   ESPmethod 
-    [
-     description("MyMethod Two"),
-     auth_feature("AllowMyMethod2"),
-     help("This method does everything MyMethod1 does plus a few extra features"),
-     min_ver("1.2")
-    ]
-   MyMethod2(MyMethod2Request, MyMethod2Response);
- };</programlisting>
+  <sect2 id="ESDL_AuthFeature_BNF">
+    <title>Formal Syntax (Pseudo-BNF)</title>
+    <para>
+      <emphasis>auth_feature</emphasis> tokens follow the grammar and precedence below:
+    </para>
+    <programlisting>
+token ::= ( exclusion | suppression | deferral | assignment )
+exclusion ::= ( exclude-all | exclude-scope | exclude-feature | exclude-feature-in-scope )
+    ; no form of exclusion satisfies a requirement to affirmatively specify security
+exclude-all ::= '!' [ '::' ]
+    ; all lower precedence tokens are ignored
+    ; any lower precedence affirmation of security is ignored
+exclude-scope ::= '!' scope-name [ '::' ]
+    ; all lower precedence tokens specified by the named scope are ignored
+    ; any lower precedence affirmation of security resulting from the named scope is ignored
+exclude-feature ::= '!' [ '' ] '::' feature-name
+    ; any lower precedence token specifying the named feature is ignored
+    ; any lower precedence affirmation of security resulting from the named feature is ignored
+exclude-feature-in-scope ::= '!' scope-name '::' feature-name
+    ; any lower precedence token specifying the named feature and specified in the named scope is ignored
+    ; any lower precedence affirmation of security resulting from the named scope and feature is ignored
+suppression ::= ( suppress-all | suppress-feature )
+suppress-all ::= 'NONE'
+    ; all lower precedence tokens are ignored
+    ; the absence of security is affirmed
+suppress-feature ::= feature-name ':NONE'
+    ; any lower precedence token specifying the named feature is ignored
+    ; any lower precedence affirmation of security resulting from the named feature is ignored
+deferral ::= ( defer-all | defer-feature )
+defer-all ::= 'DEFERRED'
+    ; the current security state, which may or may not be empty, is affirmed
+defer-feature ::= feature-name ':DEFERRED'
+    ; any lower precedence token specifying the named feature is ignored
+    ; a new map entry is created that requires no security
+    ; the security state is affirmed
+assignment ::= ( assign-default-level | assign-default-feature | assign-feature-and-level )
+assign-default-level ::= feature-name
+    ; any lower precedence token specifying the named feature is ignored
+    ; a new map entry is created that requires full access-level
+    ; the security state is affirmed
+assign-default-feature ::= ':' access-level
+    ; any lower precedence token specifying the feature-name equivalent to '${service}Access' is ignored
+    ; a new map entry is created specifying the feature-name equivalent to '${service}Access' and the given access level
+    ; the security state is affirmed
+assign-feature-and-level ::= feature-name ':' access-level
+    ; any lower priority token specifying the named feature is made obsolete
+    ; a new map entry is created specifying the named feature and the given access level
+    ; the security state is affirmed
+scope-name ::= ( 'DEFAULT' | 'ESDLSERVICE' | 'ESDLMETHOD' | ... )
+    ; additional names are anticipated resulting from binding integration
+access-level ::= ( 'ACCESS' | 'READ' | 'WRITE' | 'FULL' )
+reserved-word ::= scope-name | access-level
+feature-name ::= ( feature-name-char* '${' variable-name '}' feature-name-char* | feature-name-char+ )
+    ; feature-name-char is any char except whitespace, ',', '"', '!', or ':'
+    ; feature-name has the added restrictions of not being a reserved-word
+variable-name ::= ( 'SERVICE' | 'METHOD' )
+    </programlisting>
+    <para>
+      <emphasis role="bold">Note:</emphasis>
+      The method scope overtakes the service scope: a method may override any or all requirements set at the service level by its own <emphasis>auth_feature</emphasis> string.
+    </para>
+  </sect2>
 </sect1>
