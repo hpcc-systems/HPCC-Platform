@@ -13,5 +13,6 @@ export * from "./queue";
 export * from "./resources";
 export * from "./store";
 export * from "./theme";
+export * from "./useFileUpload";
 export * from "./user";
 export * from "./workunit";

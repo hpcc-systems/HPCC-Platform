@@ -120,6 +120,9 @@ This project is in the process of migrating from Dojo to React. When working on 
 # Language localisation
 - Any english language strings should be extracted to nlsHPCC for localization.
 - Localization files are located in the src/nls directory.
+- The `nlsHPCC` module is imported using the path alias `"src/nlsHPCC"`.
+- The actual source file resolves to `esp/src/src/nlsHPCC.ts`.
+- The NLS key definitions and string values are located in `esp/src/src/nls/hpcc.ts`.
 - Use `nlsHPCC` to localize strings in the code.
 - Localization structures are sorted alphabetically by key.
 - New localization keys should be added alphabetically by key.

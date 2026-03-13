@@ -667,7 +667,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
         main={
             <>
                 <input
-                    id="uploaderBtn" type="file" accept="*.txt, *.csv, *.json, *.xml"
+                    id="uploaderBtn" type="file" accept=".txt,.csv,.json,.xml"
                     className={dropStyles.displayNone} onChange={handleFileSelect} multiple={true}
                 />
                 <div className={dropStyles.dzWrapper} onDragOver={handleFileDragOver} onDrop={handleFileDrop}>
