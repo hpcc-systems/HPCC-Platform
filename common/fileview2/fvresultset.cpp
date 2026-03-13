@@ -1136,7 +1136,7 @@ IStringVal & CResultSetCursor::getDisplayText(IStringVal &ret, int columnIndex)
     case type_data:
         {
             len = getLength(type, cur);
-            StringBuffer temp;
+            StringBuffer temp(len * 2);
             while (len--)
                 temp.appendhex(*cur++, true);
             ret.setLen(temp.str(), temp.length());
@@ -1365,7 +1365,6 @@ void CResultSetCursor::endWriteXmlRows(IXmlWriter & writer)
 
 void CResultSetCursor::writeXmlRow(IXmlWriter &writer)
 {
-    StringBuffer temp;
     const char *rowtag = meta.meta->queryXmlTag();
     if (rowtag && *rowtag)
     {

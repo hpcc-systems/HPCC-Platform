@@ -797,11 +797,24 @@ const void * VariableRowBlock::fetchRow(__int64 offset, size32_t & len)
         return NULL;
 
     size32_t rowOffset = (size32_t)(offset - startOffset);
-    unsigned pos = rowIndex.find(rowOffset);
-    if (pos == NotFound)
-        return NULL;
-    len = rowIndex.item(pos+1)-rowOffset;
-    return buffer.toByteArray() + rowOffset;
+    // rowIndex is sorted (offsets built incrementally), so use binary search (O(log n)) instead of linear find (O(n))
+    unsigned lo = 0;
+    unsigned hi = numRows;
+    while (lo < hi)
+    {
+        unsigned mid = lo + (hi - lo) / 2;
+        unsigned midOffset = rowIndex.item(mid);
+        if (midOffset < rowOffset)
+            lo = mid + 1;
+        else if (midOffset > rowOffset)
+            hi = mid;
+        else
+        {
+            len = rowIndex.item(mid + 1) - rowOffset;
+            return buffer.toByteArray() + rowOffset;
+        }
+    }
+    return NULL;
 }
 
 const void * VariableRowBlock::getRow(__int64 row, size32_t & len, unsigned __int64 & rowOffset)
@@ -940,8 +953,9 @@ void RowCache::makeRoom()
 #endif
 
     unsigned numToFree = allRows.ordinality() - MinBlocksCached;
-    RowBlock * * oldestRow = new RowBlock * [numToFree];
-    __int64 * oldestAge = new __int64[numToFree];
+    // Stack-allocate: numToFree = MaxBlocksCached - MinBlocksCached = 10, always small
+    unsigned oldestIndex[MaxBlocksCached - MinBlocksCached];
+    __int64 oldestAge[MaxBlocksCached - MinBlocksCached];
     unsigned numGot = 0;
 
     ForEachItemIn(idx, ages)
@@ -963,35 +977,28 @@ void RowCache::makeRoom()
             if (copySize)
             {
                 memmove(oldestAge + compare + 1, oldestAge + compare, copySize * sizeof(*oldestAge));
-                memmove(oldestRow + compare + 1, oldestRow + compare, copySize * sizeof(*oldestRow));
+                memmove(oldestIndex + compare + 1, oldestIndex + compare, copySize * sizeof(*oldestIndex));
             }
             oldestAge[compare] = curAge;
-            oldestRow[compare] = &allRows.item(idx);
+            oldestIndex[compare] = idx;
             if (numGot != numToFree)
                 numGot++;
         }
     }
 
-    unsigned max = allRows.ordinality();
-    unsigned i;
-    for (i = 0; i < max; )
-    {
-        for (unsigned j = 0; j < numGot; j++)
-        {
-            if (oldestRow[j] == &allRows.item(i))
-            {
-                allRows.remove(i);
-                ages.remove(i);
-                max--;
-                goto testNext;
-            }
-        }
-        i++;
-testNext: ;
-    }
+    // Mark indices to remove, then remove in reverse order to maintain index validity
+    bool toRemove[MaxBlocksCached] = { false };
+    for (unsigned j = 0; j < numGot; j++)
+        toRemove[oldestIndex[j]] = true;
 
-    delete [] oldestRow;
-    delete [] oldestAge;
+    for (int i = allRows.ordinality() - 1; i >= 0; i--)
+    {
+        if (toRemove[i])
+        {
+            allRows.remove(i);
+            ages.remove(i);
+        }
+    }
 }
 
 
