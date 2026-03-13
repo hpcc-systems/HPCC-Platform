@@ -52,7 +52,7 @@
   <programlisting lang="ECL_Runnable">g1 := GETENV('namesTable');
 g2 := GETENV('myPort','25');
 
-OUTPUT(GETENV('HPCC_DEPLOYMENT', 'unknown'));
+OUTPUT(GETENV('HPCC_DEPLOYMENTNAME', 'unknown'));
 OUTPUT(g1);
 OUTPUT(g2);
 </programlisting>
