@@ -300,6 +300,41 @@ public:
         LOG(MCauditInfo,"%s",outs.str());
     }
 
+    void noteFileReadClose(CJobBase &job, IDistributedFile *file, offset_t bytesRead, bool extended)
+    {
+        StringArray clusters;
+        file->getClusterNames(clusters);
+        StringBuffer outs;
+        outs.appendf(",FileAccess,Thor,%s,%s,%s,%s,%s,%s,%" I64F "d,%" I64F "d,%" I64F "d,%d",
+                        extended?"EXTENDCLOSE":"READCLOSE",
+                        globals->queryProp("@nodeGroup"),
+                        job.queryUser(),
+                        file->queryLogicalName(),
+                        job.queryWuid(),
+                        job.queryGraphName(),
+                        file->getFileSize(false, false),
+                        file->getDiskSize(false, false),
+                        bytesRead,
+                        clusters.ordinality());
+        ForEachItemIn(i,clusters) {
+            outs.append(',').append(clusters.item(i));
+        }
+        LOG(MCauditInfo,"%s",outs.str());
+    }
+
+    void noteFileCreateOpen(CJobBase &job, const char *logicalName, bool extended)
+    {
+        StringBuffer outs;
+        outs.appendf(",FileAccess,Thor,%s,%s,%s,%s,%s,%s",
+                        extended?"EXTENDOPEN":"CREATEOPEN",
+                        globals->queryProp("@nodeGroup"),
+                        job.queryUser(),
+                        logicalName,
+                        job.queryWuid(),
+                        job.queryGraphName());
+        LOG(MCauditInfo,"%s",outs.str());
+    }
+
     IDistributedFile *timedLookup(CJobBase &job, CDfsLogicalFileName &lfn, AccessMode accessMode, bool privilegedUser=false, unsigned timeout=INFINITE)
     {
         auto func = [&job, &lfn, accessMode, privilegedUser](unsigned timeout)
