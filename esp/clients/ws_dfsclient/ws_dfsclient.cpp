@@ -391,26 +391,33 @@ public:
             }
             else
             {
-                // Path translation is necessary, because the local plane will not necessarily have the same
-                // prefix. In particular, both a local and remote plane may want to use the same prefix/mount.
-                // So, the local plane will be defined with a unique prefix locally.
-                // Files backed by URL's or hostGroups will be access directly, are not mounted, and do not require
-                // this translation.
+                StringBuffer filePlanePrefix;
+                filePlane->getProp("@prefix", filePlanePrefix);
 
-                const char *filePlanePrefix = filePlane->queryProp("@prefix");
-                if (isAbsolutePath(filePlanePrefix) && !filePlane->hasProp("hosts")) // otherwise assume url
+                VStringBuffer remotePlaneXPath("planes[@remote='%s']/@local", remotePlaneName);
+                const char *localMappedPlaneName = remoteStorage->queryProp(remotePlaneXPath);
+                bool isMapping = !isEmptyString(localMappedPlaneName);
+
+                bool remap = false;
+                // We don't need an alternate 'local' plane if the remote file plane is backed by hosts, or if it's a non absolute path (e.g. a URL or API prefix like "azureblob:planeX")
+                // We only need a "local" plane to map to if the remote file plane is backed by a mounted path, in which case "local" must define a plane which provides the alternate
+                // way to access the data, which may be another plane based on a PVC mounted prefix, or e.g. a API prefix based plane instead.
+                if (isAbsolutePath(filePlanePrefix) && !filePlane->hasProp("hosts"))
                 {
-#ifndef _CONTAINERIZED
-                    throw makeStringException(0, "Bare metal does not support remote file access to planes without hosts");
-#endif
-                    // A external plane within another environment backed by a PVC, will need a pre-existing
-                    // corresponding plane and PVC in the local environment.
-                    // The local plane will be associated with the remote environment, via a storage/remote mapping.
+                    if (!isMapping)
+                        throw makeStringExceptionV(0, "Remote storage '%s' for lfn '%s' with prefix '%s' has no local plane mapping for remote plane '%s'", remoteName, logicalName.str(), filePlanePrefix.str(), remotePlaneName);
+                    remap = true;
+                }
+                else if (isMapping) // if there's a mapping use it, but it's optional in this case
+                    remap = true;
 
-                    VStringBuffer remotePlaneXPath("planes[@remote='%s']/@local", remotePlaneName);
-                    const char *localMappedPlaneName = remoteStorage->queryProp(remotePlaneXPath);
-                    if (isEmptyString(localMappedPlaneName))
-                        throw makeStringExceptionV(0, "Remote plane '%s' not found in remote storage definition '%s'", remotePlaneName, remoteName);
+                if (remap)
+                {
+                    // There is a remote->local plane mapping, so we need to translate the file plane prefix from the remote definition to the local plane definition.
+                    // NB: This might be because the local plane accesses the physical data via a different route, e.g. using a Azure API instead of PVC mounts,
+                    // but it is also necessary if both sides want to access via PVC mounts, because the client environment needs its own PVC and an alternative
+                    // (non-clashing) prefix to mount to, e.g.remote side for 'data' uses /var/lib/HPCCSystems/hpcc-data, the client side is already using that prefix
+                    // path, and needs an alternative for the remote mounted storage, e.g. /var/lib/HPCCSystems/hpcc-remote-data.
 
                     Owned<const IStoragePlane> localPlane = getRemoteStoragePlane(localMappedPlaneName, false);
                     if (!localPlane)
@@ -418,8 +425,6 @@ public:
 
                     DBGLOG("Remote logical file '%s' using remote storage '%s', mapping remote plane '%s' to local plane '%s'", logicalName.str(), remoteName, remotePlaneName, localMappedPlaneName);
 
-                    StringBuffer filePlanePrefix;
-                    filePlane->getProp("@prefix", filePlanePrefix);
                     if (filePlane->hasProp("@subPath"))
                         filePlanePrefix.append('/').append(filePlane->queryProp("@subPath"));
 

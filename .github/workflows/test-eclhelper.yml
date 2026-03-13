@@ -10,10 +10,31 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  actions: read
+
 jobs:
+  precheck-branch-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      branch_changed: ${{ steps.branch_changed.outputs.branch_changed }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check for code changes between commits
+        id: branch_changed
+        uses: ./.github/actions/branch-changes
+        with:
+          workflow_file: test-eclhelper.yml
+  
   build:
     name: "Check eclhelper interface"
     runs-on: ubuntu-latest
+    needs: precheck-branch-changes
+    if: ${{ needs.precheck-branch-changes.outputs.branch_changed == 'true' }}
     steps:
       - name: Checkout pr
         uses: actions/checkout@v4

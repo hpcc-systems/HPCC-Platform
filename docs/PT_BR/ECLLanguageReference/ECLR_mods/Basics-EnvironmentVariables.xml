@@ -9,7 +9,7 @@
   função integrada GETENV().</para>
 
   <sect2>
-    <title>HPCC_DEPLOYMENT</title>
+    <title>HPCC_DEPLOYMENTNAME</title>
 
     <para>Em uma implantação do Kubernetes, essa variável é preenchida
     automaticamente com o nome do gráfico Helm. Por exemplo, se implantado
@@ -17,16 +17,25 @@
 
     <para><programlisting>helm install myenv1 hpcc/hpcc</programlisting></para>
 
-    <para>então a variável HPCC_DEPLOYMENT conterá o valor: meuenv1.</para>
+    <para>então a variável HPCC_DEPLOYMENTNAME conterá o valor: meuenv1.</para>
 
     <para>Para um ambiente bare-metal, esse valor pode ser definido em
     Environment.conf, adicionando:</para>
 
     <para><programlisting>deploymentName=myenv1</programlisting></para>
 
+    <para>Em uma implantação do Kubernetes, HPCC_DEPLOYMENTNAME também pode ser definida explicitamente por meio da seção <literal>global.env</literal> dos valores do gráfico Helm. Isso substituirá o nome da instância do gráfico preenchido automaticamente. Por exemplo:</para>
+
+    <para><programlisting>global:
+  env:
+  - name: HPCC_DEPLOYMENTNAME
+    value: myenv1</programlisting></para>
+
+    <para>Da mesma forma, em um ambiente bare-metal, definir HPCC_DEPLOYMENTNAME explicitamente como uma variável de ambiente do sistema substituirá qualquer valor definido em <filename>environment.conf</filename>.</para>
+
     <para>Você pode recuperar esse valor usando:</para>
 
-    <para><programlisting>OUTPUT(GETENV('HPCC_DEPLOYMENT', 'unknown'));</programlisting></para>
+    <para><programlisting>OUTPUT(GETENV('HPCC_DEPLOYMENTNAME', 'unknown'));</programlisting></para>
 
     <para>Veja também: <link linkend="GETENV">GETENV</link></para>
   </sect2>
