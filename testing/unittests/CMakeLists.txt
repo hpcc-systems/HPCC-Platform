@@ -62,7 +62,6 @@ set (    SRCS
          ${HPCC_SOURCE_DIR}/tools/esp-api/espservice.cpp
          commonJsonWriterTests.cpp
          rtlxmltests.cpp
-         ${HPCC_SOURCE_DIR}/esp/smc/SMCLib/InfoCacheReader.cpp
     )
 
 if (NOT CONTAINERIZED)
@@ -136,6 +135,7 @@ target_link_libraries ( unittests
          logginglib
          workunit
          eventconsumption
+         smclib
          ${CppUnit_LIBRARIES}
     )
 
