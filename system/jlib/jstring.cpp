@@ -758,7 +758,7 @@ StringBuffer & StringBuffer::insert(size_t offset, const IStringVal * value)
 
 StringBuffer & StringBuffer::newline()
 {
-    return append("\n"); 
+    return append('\n');
 }
 
 StringBuffer & StringBuffer::pad(size_t count)
@@ -1018,9 +1018,20 @@ StringBuffer &replaceVariables(StringBuffer & result, const char *source, bool e
                     throw MakeStringException(-1, "string substitution variable %s not set", name.str());
             }
         }
-        result.append(*source);
-        source++;
-        left--;
+        // Scan ahead for the next potential delimiter match to batch-append
+        const char *next = (const char *)memchr(source + 1, delim[0], left - 1);
+        if (next && (size_t)(next - source) < left)
+        {
+            size_t skip = next - source;
+            result.append(skip, source);
+            source += skip;
+            left -= skip;
+        }
+        else
+        {
+            // No more potential delimiters; append remaining as a batch below
+            break;
+        }
     }
 
     // there are no more possible replacements, make sure we keep the end of the original buffer
@@ -1599,8 +1610,10 @@ inline char hex(char c, bool lower)
 
 StringBuffer &  StringBuffer::appendhex(unsigned char c, bool lower)
 {
-    append(hex(c>>4, lower));
-    append(hex(c&0xF, lower));
+    ensureCapacity(2);
+    buffer[curLen] = hex(c>>4, lower);
+    buffer[curLen+1] = hex(c&0xF, lower);
+    curLen += 2;
     return *this;
 }
 
@@ -2041,38 +2054,28 @@ static void writeUtf8(unsigned c, StringBuffer &out)
         out.append((char)c);
     else if (c < 0x800)
     {
-        out.append((char)(0xC0 | (c>>6)));
-        out.append((char)(0x80 | (c & 0x3F)));
+        char buf[2] = { (char)(0xC0 | (c>>6)), (char)(0x80 | (c & 0x3F)) };
+        out.append(2, buf);
     }
     else if (c < 0x10000)
     {
-        out.append((char) (0xE0 | (c>>12)));
-        out.append((char) (0x80 | (c>>6 & 0x3F)));
-        out.append((char) (0x80 | (c & 0x3F)));
+        char buf[3] = { (char)(0xE0 | (c>>12)), (char)(0x80 | (c>>6 & 0x3F)), (char)(0x80 | (c & 0x3F)) };
+        out.append(3, buf);
     }
     else if (c < 0x200000)
     {
-        out.append((char) (0xF0 | (c>>18)));
-        out.append((char) (0x80 | (c>>12 & 0x3F)));
-        out.append((char) (0x80 | (c>>6 & 0x3F)));
-        out.append((char) (0x80 | (c & 0x3F)));
+        char buf[4] = { (char)(0xF0 | (c>>18)), (char)(0x80 | (c>>12 & 0x3F)), (char)(0x80 | (c>>6 & 0x3F)), (char)(0x80 | (c & 0x3F)) };
+        out.append(4, buf);
     }
     else if (c < 0x4000000)
     {
-        out.append((char) (0xF8 | (c>>24)));
-        out.append((char) (0x80 | (c>>18 & 0x3F)));
-        out.append((char) (0x80 | (c>>12 & 0x3F)));
-        out.append((char) (0x80 | (c>>6 & 0x3F)));
-        out.append((char) (0x80 | (c & 0x3F)));
+        char buf[5] = { (char)(0xF8 | (c>>24)), (char)(0x80 | (c>>18 & 0x3F)), (char)(0x80 | (c>>12 & 0x3F)), (char)(0x80 | (c>>6 & 0x3F)), (char)(0x80 | (c & 0x3F)) };
+        out.append(5, buf);
     }
     else if (c < 0x80000000)
     {
-        out.append((char) (0xFC | (c>>30)));
-        out.append((char) (0x80 | (c>>24 & 0x3F)));
-        out.append((char) (0x80 | (c>>18 & 0x3F)));
-        out.append((char) (0x80 | (c>>12 & 0x3F)));
-        out.append((char) (0x80 | (c>>6 & 0x3F)));
-        out.append((char) (0x80 | (c & 0x3F)));
+        char buf[6] = { (char)(0xFC | (c>>30)), (char)(0x80 | (c>>24 & 0x3F)), (char)(0x80 | (c>>18 & 0x3F)), (char)(0x80 | (c>>12 & 0x3F)), (char)(0x80 | (c>>6 & 0x3F)), (char)(0x80 | (c & 0x3F)) };
+        out.append(6, buf);
     }
     else
         assertex(false);
