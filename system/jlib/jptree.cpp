@@ -9307,6 +9307,7 @@ static std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfigura
     absConfigFilename.append(config);
 
     Owned<IPropertyTree> configGlobal;
+    Owned<IPropertyTree> configAuthnVaults;
     Owned<IPropertyTree> delta;
     if (optConfig)
     {
@@ -9318,6 +9319,7 @@ static std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfigura
         {
             delta.setown(loadConfiguration(absConfigFilename, componentTag, true, altNameAttribute));
             configGlobal.setown(loadConfiguration(absConfigFilename, "global", false, altNameAttribute));
+            configAuthnVaults.setown(loadConfiguration(absConfigFilename, "vaults/authn", false, altNameAttribute));
         }
     }
     else
@@ -9330,6 +9332,21 @@ static std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfigura
 
         if (delta && mapper)
             delta.setown(mapper(delta));
+    }
+
+    // Merge authn vaults into global config so they are accessible to all components
+    if (configAuthnVaults)
+    {
+        if (!newGlobalConfig)
+            newGlobalConfig.setown(createPTree("global"));
+        IPropertyTree *existingVaults = newGlobalConfig->queryPropTree("vaults");
+        if (!existingVaults)
+            existingVaults = newGlobalConfig->addPropTree("vaults", createPTree("vaults"));
+        IPropertyTree *existingAuthn = existingVaults->queryPropTree("authn");
+        if (existingAuthn)
+            mergeConfiguration(*existingAuthn, *configAuthnVaults);
+        else
+            existingVaults->addPropTree("authn", LINK(configAuthnVaults));
     }
 
     if (configGlobal)
