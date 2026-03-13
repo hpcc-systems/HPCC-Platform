@@ -59,10 +59,16 @@ public:
     std::atomic<int> readDurationMs{100};
     std::atomic<int> nextBuildId{1};
     std::atomic<bool> debug{false};
+    std::atomic<bool> signalReadStart{false};
+    std::atomic<bool> holdReadAtStart{false};
+    Semaphore readStartedSem;
+    Semaphore releaseReadSem;
     StringAttr nextData;
     
     CTestInfoCacheReader(const char* name, unsigned autoRebuild, unsigned forceRebuild, bool enableAuto, bool debug = false)
         : CInfoCacheReader(name, autoRebuild, forceRebuild, enableAuto)
+        , readStartedSem(0)
+        , releaseReadSem(0)
         , nextData("test-data")
     {
         this->debug = debug;
@@ -71,6 +77,13 @@ public:
     virtual CInfoCache* read() override
     {
         int id = readCallCount.fetch_add(1);
+
+        if (signalReadStart)
+        {
+            readStartedSem.signal();
+            if (holdReadAtStart)
+                releaseReadSem.wait();
+        }
         
         if (readDurationMs > 0)
             MilliSleep(readDurationMs);
@@ -88,6 +101,15 @@ public:
     int getReadCount() const { return readCallCount.load(); }
     void setReadDuration(int ms) { readDurationMs = ms; }
     void setDebug(bool value) { debug = value; }
+    void enableReadStartHandshake(bool holdAtStart)
+    {
+        signalReadStart = true;
+        holdReadAtStart = holdAtStart;
+        readStartedSem.reinit(0);
+        releaseReadSem.reinit(0);
+    }
+    bool waitForReadStart(unsigned timeoutMs) { return readStartedSem.wait(timeoutMs); }
+    void releaseReadStartHold() { releaseReadSem.signal(); }
 };
 
 // Test helper utilities
@@ -162,11 +184,15 @@ protected:
     {
         START_TEST
         // Test that first getCachedInfo() blocks until build completes
+        // Use handshake to control timing of build and ensure getCachedInfo blocks on it
         Owned<CTestInfoCacheReader> reader = new CTestInfoCacheReader("test", 60, 5, false);
         reader->setReadDuration(200);
+        reader->enableReadStartHandshake(true);
         reader->init();
+        CPPUNIT_ASSERT(reader->waitForReadStart(2000));
         
         unsigned start = msTick();
+        reader->releaseReadStartHold();
         Owned<CInfoCache> cache = reader->getCachedInfo();
         unsigned elapsed = msTick() - start;
         

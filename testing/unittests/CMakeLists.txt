@@ -135,7 +135,7 @@ target_link_libraries ( unittests
          logginglib
          workunit
          eventconsumption
-         smclib
+         SMCLib
          ${CppUnit_LIBRARIES}
     )
 
