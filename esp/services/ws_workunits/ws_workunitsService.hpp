@@ -341,6 +341,7 @@ public:
     bool onWUEclDefinitionAction(IEspContext &context, IEspWUEclDefinitionActionRequest &req, IEspWUEclDefinitionActionResponse &resp);
     bool onWUGetPlugins(IEspContext &context, IEspWUGetPluginsRequest &req, IEspWUGetPluginsResponse &resp);
     virtual bool onWUAnalyseHotspot(IEspContext &context, IEspWUAnalyseHotspotRequest &req, IEspWUAnalyseHotspotResponse &resp) override;
+    bool onWUHelperFileArchive(IEspContext &context, IEspWUHelperFileArchiveRequest &req, IEspWUHelperFileArchiveResponse &resp);
 
     bool unsubscribeServiceFromDali() override
     {

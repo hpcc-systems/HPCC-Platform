@@ -225,7 +225,7 @@ struct WUComponentLogOptions
             {
                 StringBuffer customFieldsList;
                 zapHttpRequest->getParameter("LogFilter_CustomColumns", customFieldsList);
-            
+
                 if(!customFieldsList.isEmpty())
                     customFields.appendList(customFieldsList.str(), ",");
             }
@@ -354,7 +354,7 @@ struct WUComponentLogOptions
 
         logFetchOptions.setFilter(logFetchFilter.getClear());
         CSortDirection espSortDirection = logFilterReq.getSortByTimeDirection();
-        logFetchOptions.addSortByCondition(LOGACCESS_MAPPEDFIELD_timestamp, "", espSortDirection == CSortDirection_ASC 
+        logFetchOptions.addSortByCondition(LOGACCESS_MAPPEDFIELD_timestamp, "", espSortDirection == CSortDirection_ASC
                                         ? SORTBY_DIRECTION_ascending : SORTBY_DIRECTION_descending);
     }
 };
@@ -916,6 +916,9 @@ public:
 
     IFileIOStream* createWUFileIOStream(IEspContext &context, const char *wuid, IArrayOf<IConstWUFileOption> &wuFileOptions,
         CWUFileDownloadOption &downloadOptions, StringBuffer &contentType);
+
+    void createHelperFileArchive(IEspContext &context, const char *wuid, IArrayOf<IConstWUFileOption> &wuFileOptions,
+        bool useGZip, const char *tempDirName, StringBuffer &archiveFileName, StringBuffer &archiveFileNameWithPath);
 
     void validateFilePath(const char *file, WsWuInfo &winfo, CWUFileType wuFileType, bool UNCFileName, const char *fileType, const char *compType, const char *compName);
     bool validateWUFile(const char *file, WsWuInfo &winfo, CWUFileType wuFileType);
