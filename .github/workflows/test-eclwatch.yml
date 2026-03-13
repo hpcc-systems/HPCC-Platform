@@ -58,6 +58,10 @@ jobs:
         working-directory: ${{ github.workspace }}/esp/src
         run: npm ci
 
+      - name: Lint
+        working-directory: ${{ github.workspace }}/esp/src
+        run: npm run lint
+
       - name: Install Playwright browsers
         working-directory: ${{ github.workspace }}/esp/src
         run: CI=1 npx playwright install --with-deps
