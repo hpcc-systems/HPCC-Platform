@@ -17,12 +17,34 @@
 
 #include "thexception.hpp"
 #include "jhtree.hpp"
+#include "jlog.hpp"
 #include "dasess.hpp"
 #include "dadfs.hpp"
+#include "mpcomm.hpp"
+
+#include <vector>
 
 #include "thmem.hpp"
 #include "thdiskbase.ipp"
 #include "thindexread.ipp"
+#include "thindexreadcommon.hpp"
+
+namespace
+{
+static void appendWithThousands(StringBuffer &out, unsigned __int64 value)
+{
+    StringBuffer digits;
+    digits.appendf("%" I64F "u", value);
+    const char *text = digits.str();
+    size32_t len = digits.length();
+    for (size32_t i = 0; i < len; ++i)
+    {
+        if (i && ((len - i) % 3 == 0))
+            out.append(',');
+        out.append(text[i]);
+    }
+}
+}
 
 class CIndexReadBase : public CMasterActivity
 {
@@ -70,6 +92,100 @@ protected:
             verifyex(comm.send(msg, s+1, mpTag));
         }
         return total > keyedLimit;
+    }
+    void monitorKeyedLimit()
+    {
+        if (container.queryLocalOrGrouped() || keyedLimit == RCMAX)
+            return;
+        ICommunicator &comm = queryJobChannel().queryJobComm();
+        const unsigned slaves = container.queryJob().querySlaves();
+        DISLOG("INDEXLIMIT: monitoring keyed limit (%" I64F "u) across %u slaves", (unsigned __int64)keyedLimit, slaves);
+        std::vector<rowcount_t> lastCounts(slaves, 0); // Track per-slave deltas to avoid double-counting.
+        rowcount_t total{0};
+        unsigned done{0};
+        bool abortSent{false};
+
+        while (!abortSoon && done < slaves)
+        {
+            CMessageBuffer msg;
+            rank_t sender{0};
+            if (!receiveMsg(msg, RANK_ALL, mpTag, &sender, LONGTIMEOUT))
+            {
+                WARNLOG("INDEXLIMIT: timeout waiting for keyed-limit progress (done=%u/%u)", done, slaves);
+                if (!abortSent)
+                {
+                    abortSent = true;
+                    for (rank_t r=1; r<=slaves; ++r)
+                    {
+                        CMessageBuffer abortMsg;
+                        abortMsg.append((byte)KeyedLimitMsg::Abort);
+                        comm.send(abortMsg, r, mpTag, MP_ASYNC_SEND);
+                    }
+                }
+                Owned<IException> e = MakeThorFatal(NULL, 0, "INDEXLIMIT: timeout waiting for keyed-limit progress (done=%u/%u)", done, slaves);
+                throw e.getClear();
+            }
+            if (abortSoon)
+                break;
+            byte msgType{0};
+            msg.read(msgType);
+            if (msgType != (byte)KeyedLimitMsg::Progress && msgType != (byte)KeyedLimitMsg::Done)
+                continue;
+
+            rowcount_t count{0};
+            msg.read(count);
+            if (sender < 1 || sender > (rank_t)slaves)
+                continue;
+            const unsigned index = (unsigned)sender - 1;
+            rowcount_t prev = lastCounts[index];
+            if (count > prev)
+                total += (count - prev);
+            lastCounts[index] = count;
+            if (msgType == (byte)KeyedLimitMsg::Done)
+                ++done;
+            if (!abortSent && total > keyedLimit)
+            {
+                abortSent = true;
+                DISLOG("INDEXLIMIT: master aborting keyed limit (reported keyed rows processed=%" I64F "u, limit=%" I64F "u)", (unsigned __int64)total, (unsigned __int64)keyedLimit);
+                // Broadcast a stop signal once the global keyed limit is exceeded.
+                for (rank_t r=1; r<=slaves; ++r)
+                {
+                    CMessageBuffer abortMsg;
+                    abortMsg.append((byte)KeyedLimitMsg::Abort);
+                    comm.send(abortMsg, r, mpTag, MP_ASYNC_SEND);
+                }
+            }
+        }
+
+        unsigned __int64 savedCounts{0};
+        unsigned __int64 fullScanPerSlave = (unsigned __int64)container.queryJob().getWorkUnitValueInt("indexlimitRowsPerSlave", 0);
+        if (!fullScanPerSlave)
+            fullScanPerSlave = (unsigned __int64)container.queryJob().queryWorkUnit().getApplicationValueInt("indexlimit", "rowsPerSlave", 0);
+        if (fullScanPerSlave)
+        {
+            unsigned __int64 fullScanTotal = fullScanPerSlave * slaves;
+            unsigned __int64 totalCount = (unsigned __int64)total;
+            if (fullScanTotal > totalCount)
+                savedCounts = fullScanTotal - totalCount;
+        }
+        else
+        {
+            rowcount_t maxCount{0};
+            for (rowcount_t count : lastCounts)
+            {
+                if (count > maxCount)
+                    maxCount = count;
+            }
+            unsigned __int64 maxTotal = (unsigned __int64)maxCount * slaves;
+            unsigned __int64 totalCount = (unsigned __int64)total;
+            if (maxTotal > totalCount)
+                savedCounts = maxTotal - totalCount;
+        }
+        StringBuffer savedCountsText;
+        appendWithThousands(savedCountsText, savedCounts);
+        StringBuffer fullScanPerSlaveText;
+        appendWithThousands(fullScanPerSlaveText, fullScanPerSlave);
+        DISLOG("INDEXLIMIT: monitor finished (savedCounts=%s, fullScanPerSlave=%s, reported keyed rows processed=%" I64F "u, done=%u/%u, abortSent=%s)", savedCountsText.str(), fullScanPerSlaveText.str(), (unsigned __int64)total, done, slaves, abortSent ? "true" : "false");
     }
     void prepareKey(IDistributedFile *index)
     {
@@ -360,7 +476,11 @@ public:
             return;
         keyedLimit = (rowcount_t)helper->getKeyedLimit();
         if (keyedLimit != RCMAX)
-            processKeyedLimit();
+        {
+            if (0 != (helper->getFlags() & (TIRkeyedlimitskips|TIRcountkeyedlimit)))
+                processKeyedLimit();
+            monitorKeyedLimit();
+        }
     }
 };
 

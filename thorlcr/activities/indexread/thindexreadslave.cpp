@@ -19,11 +19,13 @@
 #include "jfile.hpp"
 #include "jtime.hpp"
 #include "jsort.hpp"
+#include "jlog.hpp"
 
 #include "rtlkey.hpp"
 #include "jhtree.hpp"
 #include "rmtfile.hpp"
 #include "rmtclient.hpp"
+#include "mpcomm.hpp"
 
 #include "thorstep.ipp"
 
@@ -36,8 +38,12 @@
 
 #include "thdiskbaseslave.ipp"
 #include "thindexreadslave.ipp"
+#include "thindexreadcommon.hpp"
 
 enum AdditionStats { AS_Seeks, AS_Scans };
+
+// Throttle progress reporting and abort checks to avoid per-record overhead.
+static constexpr rowcount_t keyedLimitProgressInterval = 4096;
 class CIndexReadSlaveBase : public CSlaveActivity
 {
     typedef CSlaveActivity PARENT;
@@ -74,6 +80,13 @@ protected:
     bool keyedLimitSkips = false;
     bool rowLimitSkips = false;
     rowcount_t keyedProcessed = 0;
+    rowcount_t keyedLimitTarget = RCMAX;
+    rowcount_t keyedLimitReportAt = 0;
+    rowcount_t keyedLimitCheckAt = 0;
+    bool keyedLimitCheckComplete = false;
+    bool keyedLimitAbortEnabled = false;
+    bool keyedLimitExceededLogged = false;
+    bool limitAbort = false;
     rowcount_t rowLimit = RCMAX;
     bool useRemoteStreaming = false;
     Owned<IFileIO> lazyIFileIO;
@@ -140,6 +153,90 @@ protected:
         if (ret->queryTranslator().keyedTranslated())
             throw MakeStringException(0, "Untranslatable key layout mismatch reading index %s - keyed fields do not match", logicalFilename.get());
         return ret.getClear();
+    }
+    virtual bool enableKeyedLimitAbort() const
+    {
+        return false;
+    }
+    void resetKeyedLimitAbortState()
+    {
+        limitAbort = false;
+        keyedLimitAbortEnabled = enableKeyedLimitAbort() && (keyedLimit != RCMAX);
+        keyedLimitReportAt = keyedLimitProgressInterval;
+        keyedLimitCheckAt = keyedLimitProgressInterval;
+        // Only enable progress/abort after keyed-limit pre-check completes.
+        keyedLimitCheckComplete = (keyedLimitCount == RCMAX);
+    }
+    void sendKeyedLimitProgress(rowcount_t count, KeyedLimitMsg msgType)
+    {
+        if (!keyedLimitCheckComplete)
+            return;
+        CMessageBuffer msg;
+        msg.append((byte)msgType).append(count);
+        if (msgType == KeyedLimitMsg::Done && keyedLimitTarget == 1)
+            DISLOG("INDEXLIMIT: slave %u done (keyedProcessed=%" I64F "u)", queryJobChannel().queryMyRank(), (unsigned __int64)count);
+        if (!queryJobChannel().queryJobComm().send(msg, 0, mpTag, 5000))
+            throw MakeThorException(0, "Failed to send keyed-limit progress to master");
+    }
+    void maybeReportKeyedLimitProgress()
+    {
+        // Do not send progress on mpTag until keyed-limit pre-check/count has completed,
+        // otherwise the master may still be in count-aggregation mode on this same tag.
+        if (!keyedLimitCheckComplete)
+            return;
+        // Report in coarse intervals to keep the hot path cheap.
+        if (keyedProcessed < keyedLimitReportAt)
+            return;
+        keyedLimitReportAt = keyedProcessed + keyedLimitProgressInterval;
+        sendKeyedLimitProgress(keyedProcessed, KeyedLimitMsg::Progress);
+    }
+    bool checkLimitAbortSignal()
+    {
+        if (!keyedLimitAbortEnabled || !keyedLimitCheckComplete)
+            return false;
+        if (limitAbort)
+            return true;
+        // Probe at coarse intervals only; avoid per-record polling.
+        if (keyedProcessed < keyedLimitCheckAt)
+            return false;
+        keyedLimitCheckAt = keyedProcessed + keyedLimitProgressInterval;
+
+        ICommunicator &comm = queryJobChannel().queryJobComm();
+        rank_t sender = 0;
+        if (!comm.probe(0, mpTag, &sender, 0))
+            return false;
+        CMessageBuffer msg;
+        if (!comm.recv(msg, sender, mpTag, &sender, 0))
+            return false;
+        byte msgType = 0;
+        msg.read(msgType);
+        if (msgType == (byte)KeyedLimitMsg::Abort)
+        {
+            limitAbort = true;
+            DISLOG("INDEXLIMIT: slave %u received abort (keyedProcessed=%" I64F "u)", queryJobChannel().queryMyRank(), (unsigned __int64)keyedProcessed);
+            return true;
+        }
+        return false;
+    }
+    const void *handleLimitAbort(bool &limitHit, bool &exception)
+    {
+        limitHit = false;
+        exception = false;
+        if (!limitAbort)
+            return nullptr;
+        limitAbort = false;
+        limitHit = true;
+        // Mirror keyed-limit behavior for create/throw semantics.
+        if (container.queryLocalOrGrouped() || firstNode())
+        {
+            if (!keyedLimitSkips)
+            {
+                if (0 != (TIRkeyedlimitcreates & helper->getFlags()))
+                    return createKeyedLimitOnFailRow();
+                exception = true;
+            }
+        }
+        return nullptr;
     }
 public:
     IIndexLookup *getNextInput(IKeyManager *&keyManager, unsigned &partNum, bool useMerger)
@@ -379,9 +476,20 @@ public:
     virtual bool incKeyedExceedsLimit()
     {
         ++keyedProcessed;
+        if (keyedLimitAbortEnabled)
+        {
+            // Periodically report progress and check for manager aborts.
+            maybeReportKeyedLimitProgress();
+            if (checkLimitAbortSignal())
+                return true;
+        }
         // NB - this is only checking if local limit exceeded (skip case previously checked)
-        if (keyedProcessed > keyedLimit)
+        if (keyedLimit != RCMAX && keyedProcessed > keyedLimit)
+        {
+            if (keyedLimitAbortEnabled)
+                sendKeyedLimitProgress(keyedProcessed, KeyedLimitMsg::Progress);
             return true;
+        }
         return false;
     }
 
@@ -447,6 +555,7 @@ public:
             }
             keyedLimit = RCMAX; // don't check again [ during get() / stop() ]
             keyedLimitCount = RCMAX;
+            keyedLimitCheckComplete = true;
         }
         return ret;
     }
@@ -454,6 +563,12 @@ public:
     {
         limitHit = false;
         exception = false;
+        if (limitAbort)
+        {
+            // Abort path uses keyed-limit create/throw semantics.
+            DISLOG("INDEXLIMIT: Keyed-limit abort handled via keyed-limit create/throw semantics.");
+            return handleLimitAbort(limitHit, exception);
+        }
         if (checkKeyedLimit())
         {
             limitHit = true;
@@ -474,6 +589,7 @@ public:
     {
         choosenLimit = _choosenLimit;
         keyedLimit = _keyedLimit;
+        keyedLimitTarget = _keyedLimit;
         rowLimit = _rowLimit;
         if (!helper->canMatchAny())
         {
@@ -543,6 +659,11 @@ public:
             else
                 count += indexInput->getCount();
             bool limitHit = count > keyedLimit;
+            if (limitHit && (keyedLimit == 1 && !keyedLimitExceededLogged))
+            {
+                keyedLimitExceededLogged = true;
+                DISLOG("INDEXLIMIT: slave %u local hard (%s) pre-count (%" I64F "u) exceeded keyed limit (%" I64F "u)", queryJobChannel().queryMyRank(), hard ? "true" : "false", (unsigned __int64)count, (unsigned __int64)keyedLimit);
+            }
             if (keyManager)
                 resetManager(keyManager);
             if (limitHit)
@@ -686,6 +807,7 @@ public:
     // IThorDataLink
     virtual void start() override
     {
+        resetKeyedLimitAbortState();
         PARENT::start();
         keyedProcessed = 0;
         if (!eoi)
@@ -703,6 +825,7 @@ public:
     virtual void reset() override
     {
         PARENT::reset();
+        resetKeyedLimitAbortState();
         eoi = false;
         currentPart = 0;
         if (currentManager)
@@ -976,8 +1099,18 @@ public:
     {
         if (!PARENT::incKeyedExceedsLimit())
             return false;
+        if (limitAbort)
+        {
+            // Abort signaled; let handleKeyedLimit apply create/throw semantics.
+            DISLOG("INDEXLIMIT: Keyed-limit abort signaled; deferring to keyed-limit handling.");
+            return true;
+        }
         helper->onKeyedLimitExceeded(); // should throw exception
         return true;
+    }
+    virtual bool enableKeyedLimitAbort() const override
+    {
+        return !container.queryLocalOrGrouped();
     }
 // IThorSlaveActivity
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
@@ -1022,7 +1155,22 @@ public:
 // IRowStream
     virtual void stop() override
     {
-        if (RCMAX != keyedLimit) // NB: will not be true if nextRow() has handled
+        if (keyedLimitAbortEnabled)
+        {
+            // Complete the keyed-limit pre-check before sending Done so the master doesn't wait forever.
+            if (!keyedLimitCheckComplete && (RCMAX != keyedLimitCount))
+            {
+                // Ensure pre-check aggregation completes even if no rows were pulled.
+                keyedLimitCount = sendGetCount(keyedLimitCount);
+                keyedLimitCheckComplete = true;
+                if (keyedLimitCount > keyedLimit && !keyedLimitSkips && (container.queryLocalOrGrouped() || firstNode()))
+                    helper->onKeyedLimitExceeded(); // should throw exception
+                keyedLimit = RCMAX;
+                keyedLimitCount = RCMAX;
+            }
+            sendKeyedLimitProgress(keyedProcessed, KeyedLimitMsg::Done);
+        }
+        else if (RCMAX != keyedLimit) // NB: will not be true if nextRow() has handled
         {
             keyedLimitCount = sendGetCount(keyedProcessed);
             if (keyedLimitCount > keyedLimit && !keyedLimitSkips && (container.queryLocalOrGrouped() || firstNode()))
@@ -1038,10 +1186,10 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(slaveTimerStats, timeActivities);
-        if (RCMAX != keyedLimitCount)
+        if (RCMAX != keyedLimitCount || enableKeyedLimitAbort())
         {
-            bool limitHit;
-            bool exception;
+            bool limitHit{false};
+            bool exception{false};
             OwnedConstThorRow limitRow = handleKeyedLimit(limitHit, exception);
             if (exception)
                 helper->onKeyedLimitExceeded(); // should throw exception
@@ -1077,10 +1225,10 @@ public:
     }
     const void *nextRowGENoCatch(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
-        if (RCMAX != keyedLimitCount)
+        if (RCMAX != keyedLimitCount || enableKeyedLimitAbort())
         {
-            bool limitHit;
-            bool exception;
+            bool limitHit{false};
+            bool exception{false};
             OwnedConstThorRow limitRow = handleKeyedLimit(limitHit, exception);
             if (exception)
                 helper->onKeyedLimitExceeded(); // should throw exception
@@ -1247,7 +1395,7 @@ public:
             {
                 distributor->disconnect(true);
                 distributor->join();
-            }            
+            }
         }
         PARENT::stop();
     }
@@ -1419,7 +1567,7 @@ public:
             sz = sizeof(unsigned __int64);
         }
         dataLinkIncrement();
-        return result.finalizeRowClear(sz);     
+        return result.finalizeRowClear(sz);
     }
     virtual void stop() override
     {
@@ -1585,7 +1733,7 @@ class CIndexAggregateSlaveActivity : public CIndexReadSlaveBase
     CPartialResultAggregator aggregator;
 
 public:
-    CIndexAggregateSlaveActivity(CGraphElementBase *_container) 
+    CIndexAggregateSlaveActivity(CGraphElementBase *_container)
         : CIndexReadSlaveBase(_container), aggregator(*this)
     {
         helper = (IHThorIndexAggregateArg *)container.queryHelper();
@@ -1655,7 +1803,7 @@ public:
             }
             return nullptr;
         }
-    }  
+    }
 };
 
 CActivityBase *createIndexAggregateSlave(CGraphElementBase *container) { return new CIndexAggregateSlaveActivity(container); }
