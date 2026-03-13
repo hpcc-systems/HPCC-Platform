@@ -101,24 +101,38 @@ protected:
         const unsigned slaves = container.queryJob().querySlaves();
         DISLOG("INDEXLIMIT: monitoring keyed limit (%" I64F "u) across %u slaves", (unsigned __int64)keyedLimit, slaves);
         std::vector<rowcount_t> lastCounts(slaves, 0); // Track per-slave deltas to avoid double-counting.
-        rowcount_t total = 0;
-        unsigned done = 0;
-        bool abortSent = false;
+        rowcount_t total{0};
+        unsigned done{0};
+        bool abortSent{false};
 
         while (!abortSoon && done < slaves)
         {
             CMessageBuffer msg;
-            rank_t sender = 0;
-            if (!receiveMsg(msg, RANK_ALL, mpTag, &sender))
-                break;
+            rank_t sender{0};
+            if (!receiveMsg(msg, RANK_ALL, mpTag, &sender, LONGTIMEOUT))
+            {
+                WARNLOG("INDEXLIMIT: timeout waiting for keyed-limit progress (done=%u/%u)", done, slaves);
+                if (!abortSent)
+                {
+                    abortSent = true;
+                    for (rank_t r=1; r<=slaves; ++r)
+                    {
+                        CMessageBuffer abortMsg;
+                        abortMsg.append((byte)KeyedLimitMsg::Abort);
+                        comm.send(abortMsg, r, mpTag, MP_ASYNC_SEND);
+                    }
+                }
+                Owned<IException> e = MakeThorFatal(NULL, 0, "INDEXLIMIT: timeout waiting for keyed-limit progress (done=%u/%u)", done, slaves);
+                throw e.getClear();
+            }
             if (abortSoon)
                 break;
-            byte msgType = 0;
+            byte msgType{0};
             msg.read(msgType);
             if (msgType != (byte)KeyedLimitMsg::Progress && msgType != (byte)KeyedLimitMsg::Done)
                 continue;
 
-            rowcount_t count = 0;
+            rowcount_t count{0};
             msg.read(count);
             if (sender < 1 || sender > (rank_t)slaves)
                 continue;
@@ -143,7 +157,7 @@ protected:
             }
         }
 
-        unsigned __int64 savedCounts = 0;
+        unsigned __int64 savedCounts{0};
         unsigned __int64 fullScanPerSlave = (unsigned __int64)container.queryJob().getWorkUnitValueInt("indexlimitRowsPerSlave", 0);
         if (!fullScanPerSlave)
             fullScanPerSlave = (unsigned __int64)container.queryJob().queryWorkUnit().getApplicationValueInt("indexlimit", "rowsPerSlave", 0);
@@ -156,7 +170,7 @@ protected:
         }
         else
         {
-            rowcount_t maxCount = 0;
+            rowcount_t maxCount{0};
             for (rowcount_t count : lastCounts)
             {
                 if (count > maxCount)
