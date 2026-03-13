@@ -55,8 +55,8 @@
 #define CHECK_ATTRIBUTE(X) if (X && isAttribute(X)) throw MakeIPTException(PTreeExcpt_XPath_Unsupported, "Attribute usage invalid here");
 #define AMBIGUOUS_PATH(X,P) { StringBuffer buf; buf.append(X": ambiguous xpath \"").append(P).append("\"");  throw MakeIPTException(PTreeExcpt_XPath_Ambiguity,"%s",buf.str()); }
 
-#define PTREE_COMPRESS_THRESHOLD (4*1024)    // i.e. only use compress if > threshold
-#define PTREE_COMPRESS_BOTHER_PECENTAGE (80) // i.e. if it doesn't compress to <80 % of original size don't bother
+static constexpr size32_t ptreeCompressThreshold = 4*1024;    // i.e. only use compress if > threshold
+static constexpr unsigned ptreeCompressBotherPercentage = 80; // i.e. if it doesn't compress to <80 % of original size don't bother
 
 constexpr CompressionMethod defaultBinaryCompressionMethod = COMPRESS_METHOD_LZW_LITTLE_ENDIAN;
 
@@ -600,7 +600,7 @@ public:
         {
             const char *v = (*elements)->queryProp(_lhs);
             if (v)
-                emplace(std::make_pair(std::string(v), *elements));
+                emplace(v, *elements);
             elements++;
             if (last == elements)
                 break;
@@ -612,7 +612,7 @@ public:
     }
     void insertEntry(const char *v, const IPropertyTree *tree)
     {
-        emplace(std::make_pair(std::string(v), tree));
+        emplace(v, tree);
     }
     bool removeEntry(const char *v, const IPropertyTree *tree)
     {
@@ -659,7 +659,7 @@ public:
     CValueMap *addMapping(const char *lhs, IPTArrayValue &array)
     {
         CValueMap *valueMap = new CValueMap(lhs, array);
-        attrValueMaps.emplace(std::make_pair(std::string(lhs), valueMap));
+        attrValueMaps.emplace(lhs, valueMap);
         return valueMap;
     }
     CValueMap *addMappingIfNew(const char *lhs, IPTArrayValue &array)
@@ -959,10 +959,7 @@ public:
     {
         cp = 0;
         iterCount = iters.ordinality();
-        if (nextIterator())
-            return true;
-        else
-            return false;
+        return nextIterator();
     }
 
     virtual bool next() override
@@ -1013,9 +1010,9 @@ private:
 CPTValue::CPTValue(size32_t size, const void *data, bool binary, CompressionMethod currentCompressType, CompressionMethod preferredCompressType)
 {
     compressType = currentCompressType;
-    if (binary && (currentCompressType == COMPRESS_METHOD_NONE) && (preferredCompressType != COMPRESS_METHOD_NONE) && (size > PTREE_COMPRESS_THRESHOLD))
+    if (binary && (currentCompressType == COMPRESS_METHOD_NONE) && (preferredCompressType != COMPRESS_METHOD_NONE) && (size > ptreeCompressThreshold))
     {
-        unsigned newSize = size * PTREE_COMPRESS_BOTHER_PECENTAGE / 100;
+        unsigned newSize = size * ptreeCompressBotherPercentage / 100;
         void *newData = NULL;
         ICompressor *compressor = NULL;
         try
@@ -1202,8 +1199,9 @@ size32_t CPTValue::queryValueSize() const
 
 CPTArray::~CPTArray()
 {
-    if (map.load())
-        delete map.load();
+    CQualifierMap *m = map.load();
+    if (m)
+        delete m;
 }
 
 CQualifierMap *CPTArray::setMap(CQualifierMap *_map)
@@ -2147,7 +2145,7 @@ IPropertyTree *PTree::setPropTree(const char *xpath, IPropertyTree *val)
             dbgassertex(QUERYINTERFACE(_val, PTree));
             PTree *__val = static_cast<PTree *>(_val);
             __val->setName(prop);
-            addingNewElement(*_val, ANE_SET);
+            addingNewElement(*_val, aneSet);
             if (!checkChildren()) createChildMap();
             children->set(prop, _val);
             return _val;
@@ -3390,7 +3388,7 @@ void PTree::addLocal(size32_t l, const void *data, bool _binary, int pos)
         // detach children and attributes of this branch now owned by element of newly created array.
         IPropertyTree *element1 = detach();
         array = new CPTArray();
-        addingNewElement(*element1, ANE_APPEND);
+        addingNewElement(*element1, aneAppend);
         static_cast<PTree *>(element1)->setOwner(array);
         array->addElement(element1);
         value = array;
@@ -4134,8 +4132,7 @@ bool isEmptyPTree(const IPropertyTree *t)
         return true;
     if (t->numUniq())
         return false;
-    Owned<IAttributeIterator> ai = t->getAttributes();
-    if (ai->first())
+    if (t->getAttributeCount())
         return false;
     const char *s = t->queryProp(NULL);
     if (s&&*s)
