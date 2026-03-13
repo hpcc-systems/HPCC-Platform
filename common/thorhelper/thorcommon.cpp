@@ -264,14 +264,14 @@ bool CStreamMerger::ensureNext(const void * seek, unsigned numFields, bool & was
 }
 
 bool CStreamMerger::ensureNext()
-{ 
+{
     bool isCompleteMatch = true;
-    return ensureNext(NULL, 0, isCompleteMatch, NULL); 
+    return ensureNext(NULL, 0, isCompleteMatch, NULL);
 }
 
 void CStreamMerger::permute()
-{ 
-    permute(NULL, 0, NULL); 
+{
+    permute(NULL, 0, NULL);
 }
 
 bool CStreamMerger::promote(unsigned p)
@@ -715,7 +715,7 @@ extern const char * getActivityText(ThorActivityKind kind)
     case TAKdiskcount:              return "Disk Count";
     case TAKdiskgroupaggregate:     return "Disk Grouped Aggregate";
     case TAKdiskexists:             return "Disk Exists";
-    case TAKindexread:              return "Index Read";   
+    case TAKindexread:              return "Index Read";
     case TAKindexnormalize:         return "Index Normalize";
     case TAKindexaggregate:         return "Index Aggregate";
     case TAKindexcount:             return "Index Count";
@@ -879,7 +879,7 @@ extern bool isActivitySink(ThorActivityKind kind)
 {
     switch (kind)
     {
-    case TAKdiskwrite: 
+    case TAKdiskwrite:
     case TAKworkunitwrite:
     case TAKapply:
     case TAKremoteresult:
@@ -943,7 +943,7 @@ IRowInterfaces *createRowInterfaces(IOutputMetaData *meta, unsigned actid, unsig
         IEngineRowAllocator * queryRowAllocator()
         {
             if (allocatorlock.lock()) {
-                if (!allocator&&meta) 
+                if (!allocator&&meta)
                     allocator.setown(context->getRowAllocatorEx(meta, actid, heapFlags));
                 allocatorlock.unlock();
             }
@@ -952,7 +952,7 @@ IRowInterfaces *createRowInterfaces(IOutputMetaData *meta, unsigned actid, unsig
         IOutputRowSerializer * queryRowSerializer()
         {
             if (serializerlock.lock()) {
-                if (!serializer&&meta) 
+                if (!serializer&&meta)
                     serializer.setown(meta->createDiskSerializer(context,actid));
                 serializerlock.unlock();
             }
@@ -961,13 +961,13 @@ IRowInterfaces *createRowInterfaces(IOutputMetaData *meta, unsigned actid, unsig
         IOutputRowDeserializer * queryRowDeserializer()
         {
             if (deserializerlock.lock()) {
-                if (!deserializer&&meta) 
+                if (!deserializer&&meta)
                     deserializer.setown(meta->createDiskDeserializer(context,actid));
                 deserializerlock.unlock();
             }
             return deserializer;
         }
-        IOutputMetaData *queryRowMetaData() 
+        IOutputMetaData *queryRowMetaData()
         {
             return meta;
         }
@@ -1396,7 +1396,7 @@ class CRowStreamWriter final : private IRowSerializerTarget, implements ILogical
     static unsigned wrnum;
 #endif
 
-    void flushBuffer(bool final) 
+    void flushBuffer(bool final)
     {
         try
         {
@@ -1573,7 +1573,7 @@ public:
     void endNested(size32_t pos)
     {
         size32_t sz = bufpos+extbuf.length()-(pos + sizeof(size32_t));
-        size32_t wr = sizeof(size32_t); 
+        size32_t wr = sizeof(size32_t);
         byte *out = (byte *)&sz;
         if (pos<ROW_WRITER_BUFFERSIZE) {
             size32_t space = ROW_WRITER_BUFFERSIZE-pos;
@@ -1650,45 +1650,84 @@ ILogicalRowWriter *createRowWriter(IFileIOStream *strm, IRowInterfaces *rowIf, u
 
 class CDiskMerger : implements IDiskMerger, public CInterface
 {
-    IArrayOf<IFile> tempfiles;
+    class TempFileManager
+    {
+        IArrayOf<IFile> tempfiles;
+        StringAttr tempnamebase;
+        TempFileTracker tempFileTracker;
+
+    public:
+        TempFileManager(const char *_tempnamebase, const TempFileTracker *_tempFileTracker)
+            : tempnamebase(_tempnamebase)
+        {
+            if (_tempFileTracker)
+                tempFileTracker = *_tempFileTracker;
+        }
+
+        IFile *createTempFile()
+        {
+            StringBuffer tempname(tempnamebase);
+            tempname.append('.').append(tempfiles.ordinality()).append('_').append((__int64)GetCurrentThreadId()).append('_').append((unsigned)GetCurrentProcessId());
+            tempFileTracker.note(tempname.str());
+            IFile *file = createIFile(tempname.str());
+            tempfiles.append(*file);
+            return file;
+        }
+
+        unsigned ordinality() const
+        {
+            return tempfiles.ordinality();
+        }
+
+        IFile &item(unsigned idx)
+        {
+            return tempfiles.item(idx);
+        }
+
+        void removeAll() noexcept
+        {
+            for (unsigned i = 0; i < tempfiles.ordinality(); i++)
+            {
+                try
+                {
+                    tempfiles.item(i).remove();
+                }
+                catch (IException *e)
+                {
+                    // Exceptions inside destructors are bad.
+                    EXCLOG(e);
+                    e->Release();
+                }
+            }
+        }
+    };
+
+    TempFileManager tempFileMgr;
     IRowStream **strms;
     Linked<IRecordSize> irecsize;
-    StringAttr tempnamebase;
     Linked<IRowLinkCounter> linker;
     Linked<IRowInterfaces> rowInterfaces;
-    
+
 public:
     IMPLEMENT_IINTERFACE;
 
-    CDiskMerger(IRowInterfaces *_rowInterfaces, IRowLinkCounter *_linker, const char *_tempnamebase)
-        : tempnamebase(_tempnamebase), linker(_linker), rowInterfaces(_rowInterfaces)
+    CDiskMerger(IRowInterfaces *_rowInterfaces, IRowLinkCounter *_linker, const char *_tempnamebase, const TempFileTracker *_tempFileTracker)
+        : tempFileMgr(_tempnamebase, _tempFileTracker), linker(_linker), rowInterfaces(_rowInterfaces)
     {
         strms = NULL;
     }
     ~CDiskMerger()
     {
-        for (unsigned i=0;i<tempfiles.ordinality();i++) {
+        for (unsigned i=0;i<tempFileMgr.ordinality();i++) {
             if (strms&&strms[i])
                 strms[i]->Release();
-            try
-            {
-                tempfiles.item(i).remove();
-            }
-            catch (IException * e)
-            {
-                //Exceptions inside destructors are bad.
-                EXCLOG(e);
-                e->Release();
-            }
         }
+        tempFileMgr.removeAll();
         free(strms);
     }
     IRowWriter *createWriteBlock()
     {
-        StringBuffer tempname(tempnamebase);
-        tempname.append('.').append(tempfiles.ordinality()).append('_').append((__int64)GetCurrentThreadId()).append('_').append((unsigned)GetCurrentProcessId());
-        IFile *file = createIFile(tempname.str());
-        tempfiles.append(*file);
+        IFile *file = tempFileMgr.createTempFile();
         return createRowWriter(file, rowInterfaces);
     }
     void put(const void **rows,unsigned numrows)
@@ -1712,15 +1751,15 @@ public:
     }
     IRowStream *merge(ICompare *icompare, bool partdedup)
     {
-        unsigned numstrms = tempfiles.ordinality();
+        unsigned numstrms = tempFileMgr.ordinality();
         strms = (IRowStream **)calloc(numstrms,sizeof(IRowStream *));
         unsigned i;
         for (i=0;i<numstrms;i++) {
-            strms[i] = createRowStream(&tempfiles.item(i), rowInterfaces);
+            strms[i] = createRowStream(&tempFileMgr.item(i), rowInterfaces);
         }
-        if (numstrms==1) 
+        if (numstrms==1)
             return LINK(strms[0]);
-        if (icompare) 
+        if (icompare)
             return createRowStreamMerger(numstrms, strms, icompare, partdedup, linker);
         return createConcatRowStream(numstrms,strms);
     }
@@ -1737,12 +1776,17 @@ public:
             ++count;
         }
         return count;
-    }    
+    }
 };
+
+IDiskMerger *createDiskMerger(IRowInterfaces *rowInterfaces, IRowLinkCounter *linker, const char *tempnamebase, const TempFileTracker *tempFileTracker)
+{
+    return new CDiskMerger(rowInterfaces, linker, tempnamebase, tempFileTracker);
+}
 
 IDiskMerger *createDiskMerger(IRowInterfaces *rowInterfaces, IRowLinkCounter *linker, const char *tempnamebase)
 {
-    return new CDiskMerger(rowInterfaces, linker, tempnamebase);
+    return new CDiskMerger(rowInterfaces, linker, tempnamebase, nullptr);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
