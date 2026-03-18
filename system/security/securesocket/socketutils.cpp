@@ -698,6 +698,11 @@ public:
         }
         return true; // Callback complete, processor will Release()
     }
+    
+    virtual void afterCompletion() override
+    {
+        Release();
+    }
 };
 
 void CSocketConnectionListener::handleAcceptedConnection(int socketfd)

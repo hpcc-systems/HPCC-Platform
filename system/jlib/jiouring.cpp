@@ -356,12 +356,7 @@ void URingProcessor::processCompletions()
         if (dequeueCompletion(response))
         {
             if (response.callback->onAsyncComplete(response.result))
-            {
-                // Cast to IInterface to call Release() - all async callbacks should implement IInterface
-                IInterface * iface = dynamic_cast<IInterface *>(response.callback);
-                if (iface)
-                    iface->Release();
-            }
+                response.callback->afterCompletion();
         }
     }
 }
@@ -409,12 +404,7 @@ public:
             if (processor.dequeueCompletion(response))
             {
                 if (response.callback->onAsyncComplete(response.result))
-                {
-                    // Cast to IInterface to call Release() - all async callbacks should implement IInterface
-                    IInterface * iface = dynamic_cast<IInterface *>(response.callback);
-                    if (iface)
-                        iface->Release();
-                }
+                    response.callback->afterCompletion();
             }
         }
         return 0;

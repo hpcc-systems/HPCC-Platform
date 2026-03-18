@@ -33,13 +33,16 @@ struct iovec {
 
 interface IAsyncProcessor;
 // Callback interface for async I/O completions
-// NOTE: Implementations should also extend IInterface for proper lifecycle management
 interface IAsyncCallback
 {
     // Called when an async operation completes
     // result: Result of the operation (>=0 for success, negative error code for failure)
-    // Returns: true if the callback object should be freed (Release() called), false otherwise
+    // Returns: true if afterCompletion() should be called, false otherwise
     virtual bool onAsyncComplete(int result) = 0;
+    
+    // Called after onAsyncComplete() returns true to perform cleanup
+    // Default implementation does nothing. Override to call Release() if needed.
+    virtual void afterCompletion() {}
 };
 
 //-----------------------------------------------------------------------------------------------

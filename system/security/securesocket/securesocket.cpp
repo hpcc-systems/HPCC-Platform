@@ -243,6 +243,11 @@ protected:
         finalCallback.onAsyncComplete(error);
         return true;  // Always complete on error
     }
+    
+    virtual void afterCompletion() override
+    {
+        Release();
+    }
 };
 
 // Async TLS Accept Handler - manages the async TLS accept state machine
