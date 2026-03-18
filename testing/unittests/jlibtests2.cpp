@@ -1663,7 +1663,7 @@ class IOURingTest : public CppUnit::TestFixture
         virtual bool onAsyncComplete(int result) override
         {
             sem.signal();
-            return true;  // Callback complete, processor will call Release()
+            return true;
         };
 
     public:

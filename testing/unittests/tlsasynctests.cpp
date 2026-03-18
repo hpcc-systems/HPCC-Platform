@@ -292,9 +292,13 @@ private:
                 owner->acceptCount++;
                 owner->handleClient(secureSocket.getClear());
             }
+            return true;
+        }
+        
+        virtual void afterCompletion() override
+        {
             // Relinquish self-ownership, destroys handler (refcount 1->0)
             Release();
-            return true;
         }
     };
 
