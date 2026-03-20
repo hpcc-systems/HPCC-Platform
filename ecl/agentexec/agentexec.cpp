@@ -23,10 +23,12 @@
 #include "jlog.hpp"
 #include "jfile.hpp"
 #include "jutil.hpp"
+#include "jptree.hpp"
 #include "daqueue.hpp"
 #include "workunit.hpp"
 #include "environment.hpp"
 #include "dafdesc.hpp"
+#include <functional>
 
 class CEclAgentExecutionServer : public CInterfaceOf<IThreadFactory>, implements IAbortHandler
 {
@@ -41,10 +43,13 @@ public:
     virtual bool onAbort() override;
 private:
     bool executeWorkunit(IJobQueueItem *item);
+    void buildQueueNames(StringBuffer &queueNames) const;
+    void configUpdate();
 
     const char *agentName;
     const char *daliServers;
     const char *apptype;
+    StringAttr queueNames;
     Owned<IJobQueue> queue;
     Owned<IJobQueue> lingerQueue; // used for thor agent linger queue support
     Linked<IPropertyTree> config;
@@ -52,6 +57,9 @@ private:
     std::atomic<bool> running = { false };
     bool isThorAgent = false;
     bool disableQueuePriority = false; // temporary JIC, while new client priority queuing beds in.
+    CriticalSection queueUpdateCS;
+    StringAttr updatedQueueNames;
+    CConfigUpdateHook reloadConfigHook;
 
 friend class WaitThread;
 };
@@ -95,11 +103,14 @@ CEclAgentExecutionServer::CEclAgentExecutionServer(IPropertyTree *_config) : con
         unsigned poolSize = config->getPropInt("@maxActive", 100);
         pool.setown(createThreadPool("agentPool", this, false, nullptr, poolSize, INFINITE));
     }
+    reloadConfigHook.installOnce(std::bind(&CEclAgentExecutionServer::configUpdate, this), false);
+    PROGLOG("DJPS reloadConfigHook.installOnce() completed");
 }
 
 
 CEclAgentExecutionServer::~CEclAgentExecutionServer()
 {
+    reloadConfigHook.clear();
     if (pool)
         pool->joinAll(false, INFINITE);
 
@@ -108,15 +119,65 @@ CEclAgentExecutionServer::~CEclAgentExecutionServer()
 }
 
 
+void CEclAgentExecutionServer::buildQueueNames(StringBuffer &queueNames) const
+{
+#ifdef _CONTAINERIZED
+    Owned<IPropertyTree> currentConfig = getComponentConfig();
+    const char *queueOwner = agentName;
+    if (currentConfig && currentConfig->hasProp("@name"))
+        queueOwner = currentConfig->queryProp("@name");
+    if (isThorAgent)
+    {
+        getClusterThorQueueName(queueNames, queueOwner);
+    }
+    else
+    {
+        getClusterEclAgentQueueName(queueNames, queueOwner);
+        if (currentConfig)
+        {
+            Owned<IPropertyTreeIterator> auxQueueIter = currentConfig->getElements("auxQueues");
+            ForEach(*auxQueueIter)
+            {
+                const char *auxQueueName = auxQueueIter->query().queryProp(nullptr);
+                if (isEmptyString(auxQueueName))
+                    continue;
+                queueNames.append(',');
+                getClusterEclAgentQueueName(queueNames, auxQueueName);
+            }
+        }
+    }
+#else
+    SCMStringBuffer scmQueueNames;
+    getAgentQueueNames(scmQueueNames, agentName);
+    queueNames.set(scmQueueNames.str());
+#endif
+    PROGLOG("DJPS AgentExec: Discovered queue(s) '%s'", queueNames.str());
+}
+
+void CEclAgentExecutionServer::configUpdate()
+{
+    StringBuffer newQueueNames;
+    buildQueueNames(newQueueNames);
+    if (!newQueueNames.length())
+        ERRLOG("No queues found to listen on");
+    Linked<IJobQueue> currentQueue;
+    {
+        CriticalBlock b(queueUpdateCS);
+        if (strsame(queueNames, newQueueNames))
+            return;
+        updatedQueueNames.set(newQueueNames);
+        currentQueue.set(queue);
+        PROGLOG("DJPS Updating queue due to queue names change from '%s' to '%s'", queueNames.str(), newQueueNames.str());
+    }
+    if (currentQueue)
+        currentQueue->cancelAcceptConversation();
+}
+
+
 //---------------------------------------------------------------------------------
 
 int CEclAgentExecutionServer::run()
 {
-#ifdef _CONTAINERIZED
-    StringBuffer queueNames;
-#else
-    SCMStringBuffer queueNames;
-#endif
     Owned<IFile> sentinelFile = createSentinelTarget();
     removeSentinelFile(sentinelFile);
     try
@@ -126,7 +187,9 @@ int CEclAgentExecutionServer::run()
 #ifdef _CONTAINERIZED
         if (isThorAgent)
         {
-            getClusterThorQueueName(queueNames, agentName);
+            StringBuffer newQueueNames;
+            buildQueueNames(newQueueNames);
+            queueNames.set(newQueueNames);
             if (disableQueuePriority)
             {
                 // old mechanism used to test a separate queue that only Thor instances listened to (<name>.lingerthor)
@@ -139,17 +202,14 @@ int CEclAgentExecutionServer::run()
         }
         else
         {
-            getClusterEclAgentQueueName(queueNames, agentName);
-            Owned<IPropertyTreeIterator> auxQueueIter = config->getElements("auxQueues");
-            ForEach(*auxQueueIter)
-            {
-                queueNames.append(',');
-                const char *auxQueueName = auxQueueIter->query().queryProp(nullptr);
-                getClusterEclAgentQueueName(queueNames, auxQueueName);
-            }
+            StringBuffer newQueueNames;
+            buildQueueNames(newQueueNames);
+            queueNames.set(newQueueNames);
         }
 #else
-        getAgentQueueNames(queueNames, agentName);
+        StringBuffer newQueueNames;
+        buildQueueNames(newQueueNames);
+        queueNames.set(newQueueNames);
 #endif
         queue.setown(createJobQueue(queueNames.str()));
         queue->connect(false);
@@ -178,6 +238,27 @@ int CEclAgentExecutionServer::run()
         unsigned __int64 priority = 0;
         while (running)
         {
+            bool queueChanged = false;
+            {
+                CriticalBlock b(queueUpdateCS);
+                if (updatedQueueNames)
+                {
+                    queueNames.set(updatedQueueNames);
+                    updatedQueueNames.clear();
+                    queue.clear();
+                    queue.setown(createJobQueue(queueNames.str()));
+                    queueChanged = true;
+                }
+                if (!running)
+                    break;
+            }
+            if (queueChanged)
+            {
+                queue->connect(false);
+                serverStatus.queryProperties()->setProp("@queue", queueNames.str());
+                serverStatus.commitProperties();
+                PROGLOG("DJPS AgentExec: Updated queue(s) '%s'", queueNames.str());
+            }
             if (pool)
             {
                 if (!pool->waitAvailable(10000))
@@ -209,6 +290,18 @@ int CEclAgentExecutionServer::run()
             }
             else
             {
+                bool queueUpdatePending = false;
+                {
+                    CriticalBlock b(queueUpdateCS);
+                    queueUpdatePending = updatedQueueNames.length() != 0;
+                }
+                if (!running)
+                    break;
+                if (queueUpdatePending)
+                {
+                    PROGLOG("DJPS queueUpdatePending %d", updatedQueueNames.length());
+                    continue;
+                }
                 removeSentinelFile(sentinelFile); // no reason to restart
                 break;
             }
@@ -460,8 +553,14 @@ bool CEclAgentExecutionServer::onAbort()
 {
     DBGLOG("Close down requested");
     running = false;
-    if (queue)
-        queue->cancelAcceptConversation();
+    Linked<IJobQueue> currentQueue;
+    {
+        CriticalBlock b(queueUpdateCS);
+        if (queue)
+            currentQueue.set(queue);
+    }
+    if (currentQueue)
+        currentQueue->cancelAcceptConversation();
     return false;
 }
 
