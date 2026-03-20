@@ -886,7 +886,7 @@ thor: []
     </para>
 
     <para>
-      <emphasis role="bold">Further Reading:</emphasis> For bare metal DFS connectivity and hybrid setup, ensure that remote storage definitions are configured in your environment. Bare-metal systems can access remote file systems via the WsDfs ESP service, and secure access (including client certificates) may be required for inter-environment scenarios. Refer to the HPCC Platform documentation for details on configuring remote storage and securing dafilesrv access.
+      <emphasis role="bold">Further Reading:</emphasis> For bare metal DFS connectivity and hybrid setup, ensure that remote storage definitions are configured in your environment. Bare-metal systems can access remote file systems via the WsDFU ESP service, and secure access (including client certificates) may be required for inter-environment scenarios. Refer to the HPCC Platform documentation for details on configuring remote storage and securing dafilesrv access.
     </para>
 
     <sect2 id="DFSClientCerts-Overview">
