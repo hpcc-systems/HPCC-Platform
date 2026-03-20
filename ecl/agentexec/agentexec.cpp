@@ -156,6 +156,7 @@ void CEclAgentExecutionServer::buildQueueNames(StringBuffer &queueNames) const
 
 void CEclAgentExecutionServer::configUpdate()
 {
+    PROGLOG("DJPS configUpdate()");
     StringBuffer newQueueNames;
     buildQueueNames(newQueueNames);
     if (!newQueueNames.length())
@@ -163,6 +164,7 @@ void CEclAgentExecutionServer::configUpdate()
     Linked<IJobQueue> currentQueue;
     {
         CriticalBlock b(queueUpdateCS);
+        PROGLOG("DJPS strsame(queueNames: '%s', newQueueNames: '%s')", queueNames.str(), newQueueNames.str());
         if (strsame(queueNames, newQueueNames))
             return;
         updatedQueueNames.set(newQueueNames);
@@ -243,6 +245,7 @@ int CEclAgentExecutionServer::run()
                 CriticalBlock b(queueUpdateCS);
                 if (updatedQueueNames)
                 {
+                    PROGLOG("DJPS updatedQueueNames detected");
                     queueNames.set(updatedQueueNames);
                     updatedQueueNames.clear();
                     queue.clear();
@@ -250,10 +253,14 @@ int CEclAgentExecutionServer::run()
                     queueChanged = true;
                 }
                 if (!running)
+                {
+                    PROGLOG("DJPS !running");
                     break;
+                }
             }
             if (queueChanged)
             {
+                PROGLOG("DJPS actioning queueChanged");
                 queue->connect(false);
                 serverStatus.queryProperties()->setProp("@queue", queueNames.str());
                 serverStatus.commitProperties();
@@ -299,7 +306,7 @@ int CEclAgentExecutionServer::run()
                     break;
                 if (queueUpdatePending)
                 {
-                    PROGLOG("DJPS queueUpdatePending %d", updatedQueueNames.length());
+                    PROGLOG("DJPS queueUpdatePending %ld", updatedQueueNames.length());
                     continue;
                 }
                 removeSentinelFile(sentinelFile); // no reason to restart
