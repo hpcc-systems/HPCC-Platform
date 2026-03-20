@@ -571,7 +571,9 @@ public:
     // ~8 GB uncompressed; with ~50% compression ratio the on-disk file is just over 4 GB.
     static constexpr offset_t defaultUncompressedSize = (offset_t)8 * 0x40000000 + 0x180000;
     static constexpr size32_t defaultChunkSize = 0x400000;  // 4 MB -- Azure Blob optimal block size
+    static constexpr size32_t compressBlockSize = 0x10000/2;   // 64K -- compressed block size for test file creation
     static constexpr size32_t readSize = 0x100000;   // 1 MB consumer read size
+    static constexpr size32_t overflowMaxSize = 0x400000;  // 4 MB overflow region
     static constexpr const char * defaultFilename = "parallelReadAheadTimingTest.tmp";
     static constexpr const char * defaultCompression = "zstd";
 
@@ -587,110 +589,153 @@ public:
 
     void testParallelReadAheadTiming()
     {
-        Owned<IPropertyTree> config = getComponentConfigSP();
-
-        StringBuffer configuredFilename;
-        config->getProp("JlibParallelReadAheadTimingTest/@filename", configuredFilename);
-
-        StringBuffer compressionType;
-        config->getProp("JlibParallelReadAheadTimingTest/@compression", compressionType);
-        if (!compressionType.length())
-            compressionType.set(defaultCompression);
-
-        offset_t uncompressedSize = defaultUncompressedSize;
-        unsigned sizeMB = config->getPropInt("JlibParallelReadAheadTimingTest/@size", 0);
-        if (sizeMB)
-            uncompressedSize = (offset_t)sizeMB * 0x100000;
-
-        // If the uncompressed size is smaller than the default chunk size, reduce it
-        size32_t chunkSize = defaultChunkSize;
-        if (uncompressedSize < chunkSize)
-            chunkSize = (size32_t)uncompressedSize;
-
-        unsigned expectedCrc = 0;
-        bool verifyCrc = false;
-
-        if (configuredFilename.length())
+        try
         {
-            filename.set(configuredFilename);
-            DBGLOG("Using configured filename: %s  compression=%s", filename.get(), compressionType.str());
-        }
-        else
-        {
-            filename.set(defaultFilename);
-        }
+            Owned<IPropertyTree> config = getComponentConfigSP();
 
-        {
-            DBGLOG("Creating %.2f GB test file (compression=%s)...",
-                   (double)uncompressedSize / 0x40000000, compressionType.str());
-            expectedCrc = createCompressedTestFile(filename, uncompressedSize, compressionType, chunkSize);
-            createdFile = true;
-            verifyCrc = true;
+            StringBuffer configuredFilename;
+            config->getProp("JlibParallelReadAheadTimingTest/@filename", configuredFilename);
 
-            Owned<IFile> file = createIFile(filename);
-            double ratio = (double)file->size() / uncompressedSize * 100;
-            DBGLOG("File created: compressed=%.1f MB  ratio=%.1f%%",
-                   (double)file->size() / 0x100000, ratio);
-        }
+            StringBuffer compressionType;
+            config->getProp("JlibParallelReadAheadTimingTest/@compression", compressionType);
+            if (!compressionType.length())
+                compressionType.set(defaultCompression);
 
-        Owned<IExpander> expander = getExpander(compressionType);
+            offset_t uncompressedSize = defaultUncompressedSize;
+            unsigned sizeMB = config->getPropInt("JlibParallelReadAheadTimingTest/@size", 0);
+            if (sizeMB)
+                uncompressedSize = (offset_t)sizeMB * 0x100000;
 
-        // --- Serial baseline: single-threaded sequential read with decompression ---
-        unsigned serialCrc = 0;
-        __uint64 serialNs;
-        {
-            Owned<IFile> file = createIFile(filename);
-            Owned<IFileIO> io = file->open(IFOread);
-            Owned<ISerialInputStream> raw = createSerialInputStream(io);
-            Owned<IBufferedSerialInputStream> ioStream = createBufferedInputStream(raw, chunkSize);
-            Owned<ISerialInputStream> decompressed = createDecompressingInputStream(ioStream, expander);
-            Owned<IBufferedSerialInputStream> in = createBufferedInputStream(decompressed, chunkSize);
-            serialNs = readStreamWithCrc(in, readSize, serialCrc);
-        }
-        if (verifyCrc)
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Serial CRC mismatch", expectedCrc, serialCrc);
-        logResult("Serial", uncompressedSize, serialNs, serialNs);
+            // If the uncompressed size is smaller than the default chunk size, reduce it
+            size32_t chunkSize = defaultChunkSize;
+            if (uncompressedSize < chunkSize)
+                chunkSize = (size32_t)uncompressedSize;
 
-        // --- Parallel configurations: sweep several concurrency levels ---
-        // Quick sanity check: single-threaded parallel read-ahead with decompression
-        {
-            unsigned sanityCrc = 0;
-            Owned<IFile> file = createIFile(filename);
-            Owned<IFileIO> io = file->open(IFOread);
-            Owned<IBufferedSerialInputStream> readAhead = createParallelReadAheadInputStream(io, 1, chunkSize);
-            Owned<ISerialInputStream> decompressed = createDecompressingInputStream(readAhead, expander);
-            Owned<IBufferedSerialInputStream> in = createBufferedInputStream(decompressed, chunkSize);
-            readStreamWithCrc(in, readSize, sanityCrc);
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Single-thread parallel CRC mismatch", serialCrc, sanityCrc);
-        }
+            unsigned expectedCrc = 0;
+            bool verifyCrc = false;
 
-        static constexpr unsigned concurrencyLevels[] = { 4, 8, 16, 32 };
-        for (unsigned numThreads : concurrencyLevels)
-        {
-            unsigned parallelCrc = 0;
-            __uint64 parallelNs;
+            if (configuredFilename.length())
+            {
+                filename.set(configuredFilename);
+                DBGLOG("Using configured filename: %s  compression=%s", filename.get(), compressionType.str());
+            }
+            else
+            {
+                filename.set(defaultFilename);
+            }
+
+            {
+                DBGLOG("Creating %.2f GB test file (compression=%s)...",
+                    (double)uncompressedSize / 0x40000000, compressionType.str());
+                expectedCrc = createCompressedTestFile(filename, uncompressedSize, compressionType, compressBlockSize);
+                createdFile = true;
+                verifyCrc = true;
+
+                Owned<IFile> file = createIFile(filename);
+                double ratio = (double)file->size() / uncompressedSize * 100;
+                DBGLOG("File created: compressed=%.1f MB  ratio=%.1f%%",
+                    (double)file->size() / 0x100000, ratio);
+            }
+
+            Owned<IExpander> expander = getExpander(compressionType);
+
+            // --- Serial baseline: single-threaded sequential read with decompression ---
+            unsigned serialCrc = 0;
+            __uint64 serialNs;
             {
                 Owned<IFile> file = createIFile(filename);
                 Owned<IFileIO> io = file->open(IFOread);
-                Owned<IBufferedSerialInputStream> readAhead = createParallelReadAheadInputStream(io, numThreads, chunkSize);
-                Owned<ISerialInputStream> decompressed = createDecompressingInputStream(readAhead, expander);
+                Owned<ISerialInputStream> raw = createSerialInputStream(io);
+                Owned<IBufferedSerialInputStream> ioStream = createBufferedInputStream(raw, chunkSize);
+                Owned<ISerialInputStream> decompressed = createDecompressingInputStream(ioStream, expander);
                 Owned<IBufferedSerialInputStream> in = createBufferedInputStream(decompressed, chunkSize);
-                parallelNs = readStreamWithCrc(in, readSize, parallelCrc);
-                CPPUNIT_ASSERT(in->eos());
+                serialNs = readStreamWithCrc(in, readSize, serialCrc);
             }
             if (verifyCrc)
+                CPPUNIT_ASSERT_EQUAL_MESSAGE("Serial CRC mismatch", expectedCrc, serialCrc);
+            logResult("Serial", uncompressedSize, serialNs, serialNs);
+
+            // --- Parallel configurations: sweep several concurrency levels ---
+            // Quick sanity check: parallel read-ahead with decompression
             {
-                VStringBuffer msg("Parallel-%u CRC mismatch", numThreads);
-                CPPUNIT_ASSERT_EQUAL_MESSAGE(msg.str(), expectedCrc, parallelCrc);
+                unsigned sanityCrc = 0;
+                Owned<IFile> file = createIFile(filename);
+                Owned<IFileIO> io = file->open(IFOread);
+                Owned<IBufferedSerialInputStream> readAhead = createParallelReadAheadInputStream(io, 2, chunkSize, std::min<size32_t>(overflowMaxSize, (2 - 1) * chunkSize));
+                Owned<ISerialInputStream> decompressed = createDecompressingInputStream(readAhead, expander);
+                Owned<IBufferedSerialInputStream> in = createBufferedInputStream(decompressed, chunkSize);
+                readStreamWithCrc(in, readSize, sanityCrc);
+                CPPUNIT_ASSERT_EQUAL_MESSAGE("parallel CRC mismatch", serialCrc, sanityCrc);
             }
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Parallel CRC differs from serial", serialCrc, parallelCrc);
 
-            VStringBuffer label("Parallel-%u", numThreads);
-            logResult(label.str(), uncompressedSize, parallelNs, serialNs);
+            static constexpr unsigned concurrencyLevels[] = { 4, 8, 16, 32 };
+            for (unsigned numThreads : concurrencyLevels)
+            {
+                unsigned parallelCrc = 0;
+                __uint64 parallelNs;
+                {
+                    Owned<IFile> file = createIFile(filename);
+                    Owned<IFileIO> io = file->open(IFOread);
+                    Owned<IBufferedSerialInputStream> readAhead = createParallelReadAheadInputStream(io, numThreads, chunkSize, std::min<size32_t>(overflowMaxSize, (numThreads - 1) * chunkSize));
+                    Owned<ISerialInputStream> decompressed = createDecompressingInputStream(readAhead, expander);
+                    Owned<IBufferedSerialInputStream> in = createBufferedInputStream(decompressed, chunkSize);
+                    parallelNs = readStreamWithCrc(in, readSize, parallelCrc);
+                    CPPUNIT_ASSERT(in->eos());
+                }
+                if (verifyCrc)
+                {
+                    VStringBuffer msg("Parallel-%u CRC mismatch", numThreads);
+                    CPPUNIT_ASSERT_EQUAL_MESSAGE(msg.str(), expectedCrc, parallelCrc);
+                }
+                CPPUNIT_ASSERT_EQUAL_MESSAGE("Parallel CRC differs from serial", serialCrc, parallelCrc);
 
-            // Sanity: parallel should not be pathologically slower than serial
-            VStringBuffer failMsg("Parallel-%u is unexpectedly slow compared to serial", numThreads);
-            // CPPUNIT_ASSERT_MESSAGE(failMsg.str(), parallelNs < serialNs * 5);
+                VStringBuffer label("Parallel-%u", numThreads);
+                logResult(label.str(), uncompressedSize, parallelNs, serialNs);
+
+                // Sanity: parallel should not be pathologically slower than serial
+                VStringBuffer failMsg("Parallel-%u is unexpectedly slow compared to serial", numThreads);
+                // CPPUNIT_ASSERT_MESSAGE(failMsg.str(), parallelNs < serialNs * 5);
+            }
+
+            // --- Sweep: concurrency x chunk size x consumer read size ---
+            DBGLOG("--- Sweep: threads x chunkSize x readSize ---");
+            static constexpr unsigned sweepThreads[] = { 2, 4, 8, 16 };
+            static constexpr size32_t sweepChunkSizes[] = { 0x40000, 0x100000, 0x400000 };   // 256K, 1M, 4M
+            static constexpr size32_t sweepReadSizes[] = { 0x10000, 0x100000, 0x400000 };    //  64K, 1M, 4M
+            for (size32_t testChunkSize : sweepChunkSizes)
+            {
+                for (unsigned numThreads : sweepThreads)
+                {
+                    for (size32_t testReadSize : sweepReadSizes)
+                    {
+                        unsigned parallelCrc = 0;
+                        __uint64 parallelNs;
+                        {
+                            size32_t currentOverflowMaxSize = std::min<size32_t>(overflowMaxSize, (numThreads - 1) * testChunkSize);
+                            Owned<IFile> file = createIFile(filename);
+                            Owned<IFileIO> io = file->open(IFOread);
+                            Owned<IBufferedSerialInputStream> readAhead = createParallelReadAheadInputStream(io, numThreads, testChunkSize, currentOverflowMaxSize);
+                            Owned<ISerialInputStream> decompressed = createDecompressingInputStream(readAhead, expander);
+                            Owned<IBufferedSerialInputStream> in = createBufferedInputStream(decompressed, testReadSize);
+                            parallelNs = readStreamWithCrc(in, testReadSize, parallelCrc);
+                            CPPUNIT_ASSERT(in->eos());
+                        }
+                        VStringBuffer crcMsg("Sweep t=%u chunk=%uK read=%uK CRC mismatch",
+                                            numThreads, testChunkSize / 1024, testReadSize / 1024);
+                        CPPUNIT_ASSERT_EQUAL_MESSAGE(crcMsg.str(), serialCrc, parallelCrc);
+
+                        VStringBuffer label("t=%u c=%uK r=%uK", numThreads, testChunkSize / 1024, testReadSize / 1024);
+                        logResult(label.str(), uncompressedSize, parallelNs, serialNs);
+                    }
+                }
+            }
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg("Unexpected exception in testParallelReadAheadTiming: ");
+            e->errorMessage(msg);
+            CPPUNIT_FAIL(msg.str());
+            e->Release();
         }
     }
 
@@ -699,7 +744,7 @@ private:
     {
         double mbs = (double)dataSize / elapsedNs * 1000;
         double speedup = (double)serialNs / elapsedNs;
-        DBGLOG("%-14s %lluus  (%.1f MB/s)  speedup=%.2fx", label, elapsedNs / 1000, mbs, speedup);
+        DBGLOG("%-24s %lluus  (%.1f MB/s)  speedup=%.2fx", label, elapsedNs / 1000, mbs, speedup);
     }
 
     StringAttr filename;

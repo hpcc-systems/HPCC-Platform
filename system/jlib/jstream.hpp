@@ -103,7 +103,7 @@ class MemoryBuffer;
 
 extern jlib_decl ICrcSerialInputStream * createCrcInputStream(ISerialInputStream * input);
 extern jlib_decl IBufferedSerialInputStream * createBufferedInputStream(ISerialInputStream * input, size32_t blockReadSize);
-extern jlib_decl IBufferedSerialInputStream * createParallelReadAheadInputStream(IFileIO * input, unsigned numThreads, size32_t chunkSize);
+extern jlib_decl IBufferedSerialInputStream * createParallelReadAheadInputStream(IFileIO * input, unsigned numThreads, size32_t chunkSize, size32_t overflowMaxSize=0);
 extern jlib_decl ISerialInputStream * createDecompressingInputStream(IBufferedSerialInputStream * input, IExpander * decompressor);
 extern jlib_decl ISerialInputStream * createSerialInputStream(IFileIO * input);
 extern jlib_decl ISerialInputStream * createSerialInputStream(IFileIO * input, offset_t startOffset, offset_t length);
