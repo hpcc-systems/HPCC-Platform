@@ -119,6 +119,7 @@ class AzureFileClient : public AzureAPICopyClientBase
 {
     std::unique_ptr<Shares::ShareFileClient> fileClient;
     Shares::StartFileCopyOperation fileCopyOp;
+    std::shared_ptr<const Azure::Core::Credentials::TokenCredential> credential;
 
     virtual void doStartCopy(const char * source) override
     {
@@ -151,9 +152,17 @@ class AzureFileClient : public AzureAPICopyClientBase
         fileClient->Delete();
     }
 public:
-    AzureFileClient(const char *target)
+    AzureFileClient(const char *target, bool useManagedIdentity)
     {
-        fileClient.reset(new Shares::ShareFileClient(target));
+        if (useManagedIdentity)
+        {
+            // ShareTokenIntent is required when using token authentication with Azure Files
+            clientOptions.ShareTokenIntent = Shares::Models::ShareTokenIntent::Backup;
+            credential = getAzureManagedIdentityCredential();
+            fileClient.reset(new Shares::ShareFileClient(target, credential, clientOptions));
+        }
+        else
+            fileClient.reset(new Shares::ShareFileClient(target));
     }
 };
 
@@ -193,9 +202,12 @@ class AzureBlobClient : public AzureAPICopyClientBase
         blobClient->Delete();
     }
 public:
-    AzureBlobClient(const char * target)
+    AzureBlobClient(const char * target, bool useManagedIdentity)
     {
-        blobClient.reset(new BlobClient(target));
+        if (useManagedIdentity)
+            blobClient.reset(new BlobClient(target, getAzureManagedIdentityCredential()));
+        else
+            blobClient.reset(new BlobClient(target));
     }
 };
 
@@ -232,10 +244,11 @@ public:
         StringBuffer targetURI;
         getAzureURI(targetURI, tgtStripeNum,  tgtPath, targetApiInfo);
         Owned<IAPICopyClientOp> apiClient;
+        bool tgtUseManagedIdentity = targetApiInfo->useManagedIdentity();
         if (isAzureFile(targetApiInfo->getStorageType()))
-            apiClient.setown(new AzureFileClient(targetURI.str()));
+            apiClient.setown(new AzureFileClient(targetURI.str(), tgtUseManagedIdentity));
         else
-            apiClient.setown(new AzureBlobClient(targetURI.str()));
+            apiClient.setown(new AzureBlobClient(targetURI.str(), tgtUseManagedIdentity));
 
         StringBuffer sourceURI;
         getAzureURI(sourceURI, srcStripeNum, srcPath, sourceApiInfo);

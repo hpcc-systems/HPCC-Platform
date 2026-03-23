@@ -137,6 +137,10 @@ public:
         getSecretValue(token, "storage", secretName, "token", false);
         return token.trimRight();
     }
+    virtual bool useManagedIdentity() const override
+    {
+        return xml->getPropBool("@managed", false);
+    }
 
 private:
     IPropertyTree * queryContainer(unsigned stripeNumber) const
