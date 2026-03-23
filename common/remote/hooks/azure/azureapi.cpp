@@ -119,11 +119,20 @@ class AzureFileClient : public AzureAPICopyClientBase
 {
     std::unique_ptr<Shares::ShareFileClient> fileClient;
     Shares::StartFileCopyOperation fileCopyOp;
+    bool sourceIsBlob = false;
+    Shares::ShareClientOptions clientOptions;
     std::shared_ptr<const Azure::Core::Credentials::TokenCredential> credential;
 
     virtual void doStartCopy(const char * source) override
     {
-        fileCopyOp = fileClient->StartCopy(source);
+        Shares::StartFileCopyOptions options;
+        if (sourceIsBlob)
+        {
+            // Azure Blob storage does not have Smb properties. Explicitly set to none, otherise
+            // the copy will fail because it could not get the Smb properties from the source..
+            options.SmbPropertiesToCopy = Shares::CopyableFileSmbPropertyFlags::None;
+        }
+        fileCopyOp = fileClient->StartCopy(source, options);
     }
     virtual ApiCopyStatus doGetProgress(CDateTime & dateTime, int64_t & outputLength) override
     {
@@ -152,7 +161,8 @@ class AzureFileClient : public AzureAPICopyClientBase
         fileClient->Delete();
     }
 public:
-    AzureFileClient(const char *target, bool useManagedIdentity)
+    AzureFileClient(const char *target, bool _sourceIsBlob, bool useManagedIdentity)
+        : sourceIsBlob(_sourceIsBlob)
     {
         if (useManagedIdentity)
         {
@@ -246,7 +256,7 @@ public:
         Owned<IAPICopyClientOp> apiClient;
         bool tgtUseManagedIdentity = targetApiInfo->useManagedIdentity();
         if (isAzureFile(targetApiInfo->getStorageType()))
-            apiClient.setown(new AzureFileClient(targetURI.str(), tgtUseManagedIdentity));
+            apiClient.setown(new AzureFileClient(targetURI.str(), isAzureBlob(sourceApiInfo->getStorageType()), tgtUseManagedIdentity));
         else
             apiClient.setown(new AzureBlobClient(targetURI.str(), tgtUseManagedIdentity));
 
