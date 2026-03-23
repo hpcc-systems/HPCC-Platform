@@ -317,10 +317,45 @@ public:
 
         StringBuffer sourceURI;
         getAzureURI(sourceURI, srcStripeNum, srcPath, sourceApiInfo);
+
+        // For async server-side copy (StartCopy), the source URL must be self-authenticating
+        // because the Azure service fetches it independently. If the source uses managed identity
+        // (no SAS token), generate a short-lived User Delegation SAS so the target service can read it.
+        if (sourceApiInfo->useManagedIdentity() && isAzureBlob(sourceApiInfo->getStorageType()))
+        {
+            std::string delegationSas = generateUserDelegationSas(srcStripeNum, srcPath, sourceApiInfo);
+            // GenerateSasToken() returns a string starting with '?' so append directly
+            sourceURI.append(delegationSas.c_str());
+        }
+
         apiClient->startCopy(sourceURI.str());
         return apiClient.getClear();
     }
 protected:
+    // Generate a short-lived User Delegation SAS for reading a source blob using managed identity.
+    // This allows the async StartCopy service to access the source without a stored secret.
+    std::string generateUserDelegationSas(unsigned stripeNum, const char *filePath, const IStorageApiInfo *apiInfo) const
+    {
+        const char *accountName = apiInfo->queryStorageApiAccount(stripeNum);
+        std::string serviceUrl = std::string("https://") + accountName + ".blob.core.windows.net";
+
+        BlobServiceClient serviceClient(serviceUrl, getAzureManagedIdentityCredential());
+
+        // Request a delegation key valid for 1 hour
+        auto expiresOn = Azure::DateTime(std::chrono::system_clock::now() + std::chrono::hours(1));
+        auto userDelegationKey = serviceClient.GetUserDelegationKey(expiresOn).Value;
+
+        Sas::BlobSasBuilder sasBuilder;
+        sasBuilder.Protocol = Sas::SasProtocol::HttpsOnly;
+        sasBuilder.ExpiresOn = expiresOn;
+        sasBuilder.BlobContainerName = apiInfo->queryStorageContainerName(stripeNum);
+        sasBuilder.BlobName = stripDevicePrefix(filePath);
+        sasBuilder.Resource = Sas::BlobSasResource::Blob;
+        sasBuilder.SetPermissions(Sas::BlobSasPermissions::Read);
+
+        return sasBuilder.GenerateSasToken(userDelegationKey, accountName);
+    }
+
     void getAzureURI(StringBuffer & uri, unsigned stripeNum, const char *filePath, const IStorageApiInfo *apiInfo) const
     {
         const char *accountName = apiInfo->queryStorageApiAccount(stripeNum);
@@ -332,9 +367,26 @@ protected:
             uri.append(".blob");
         uri.append(".core.windows.net/");
 
+        const char *path = stripDevicePrefix(filePath);
+
         StringBuffer tmp, token;
         const char * container = apiInfo->queryStorageContainerName(stripeNum);
-        uri.appendf("%s%s%s", container, encodeURL(tmp, filePath).str(), apiInfo->getSASToken(stripeNum, token).str());
+        uri.appendf("%s/%s%s", container, encodeURL(tmp, path).str(), apiInfo->getSASToken(stripeNum, token).str());
+    }
+
+    // Strip leading '/' and device/stripe prefix (e.g., "d2/") from a file path.
+    // The stripe number selects the account/container, not the storage path.
+    static const char * stripDevicePrefix(const char *path)
+    {
+        if (path && path[0] == '/')
+            path++;
+        if (path && path[0] == 'd' && isdigit(path[1]))
+        {
+            const char *slash = strchr(path, '/');
+            if (slash)
+                path = slash + 1;
+        }
+        return path;
     }
     static inline bool isAzureFile(const char *storageType)
     {
