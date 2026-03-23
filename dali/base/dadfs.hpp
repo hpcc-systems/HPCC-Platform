@@ -849,7 +849,8 @@ enum DistributedFileSystemError
     DFSERR_EmptyStoragePlane,
     DFSERR_MissingStoragePlane,
     DFSERR_PhysicalCompressedPartInvalid,
-    DFSERR_InvalidRemoteFileContext
+    DFSERR_InvalidRemoteFileContext,
+    DFSERR_MissingStoragePlaneName
 };
 
 
