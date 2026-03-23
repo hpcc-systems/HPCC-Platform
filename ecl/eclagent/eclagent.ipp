@@ -35,6 +35,8 @@
 #include "thorcommon.hpp"
 #include "enginecontext.hpp"
 
+#include <set>
+
 #define MAX_EDGEDATA_LENGTH 30000
 #define MAX_HEX_SIZE 500
 
@@ -172,17 +174,17 @@ public:
     {
         return ctx->getTempfileBase(buff);
     }
-    virtual const char *noteTemporaryFile(const char *fname)
+    virtual const char *noteTemporaryFile(const char *name) override
     {
-        return ctx->noteTemporaryFile(fname);
+        return ctx->noteTemporaryFile(name);
     }
-    virtual const char *noteTemporaryFilespec(const char *fspec)
+    virtual const char *queryTemporaryFile(const char *name) override
     {
-        return ctx->noteTemporaryFilespec(fspec);
+        return ctx->queryTemporaryFile(name);
     }
-    virtual const char *queryTemporaryFile(const char *fname)
+    virtual void removeTemporaryFile(const char *fname) override
     {
-        return ctx->queryTemporaryFile(fname);
+        ctx->removeTemporaryFile(fname);
     }
     virtual void reloadWorkUnit()
     {
@@ -350,7 +352,6 @@ public:
     virtual bool onDebuggerTimeout();
 };
 
-
 class CHThorDebugContext;
 class EclAgent : implements IAgentContext, implements ICodeContext, implements IRowAllocatorMetaActIdCacheCallback, implements IEngineContext, public CInterface
 {
@@ -378,7 +379,7 @@ private:
     outputFmts outputFmt = ofSTD;
     unsigned __int64 stopAfter;
     mutable CriticalSection wusect;
-    StringArray tempFiles;
+    std::set<std::string> tempFileSet; // Set of actual temp file names on disk
     CriticalSection tfsect;
     IArray persistReadLocks;
     StringArray processedPersists;
@@ -404,6 +405,7 @@ private:
 
 private:
     void doSetResultString(type_t type, const char * stepname, unsigned sequence, int len, const char *val);
+    void buildTempFilename(StringBuffer & tempFilename, const char *filename);
     IEclProcess *loadProcess();
     StringBuffer & getTempfileBase(StringBuffer & buff);
     const char *queryTempfilePath();
@@ -615,9 +617,9 @@ public:
 
     virtual unsigned __int64 getDatasetHash(const char * name, unsigned __int64 hash);
     virtual void reportProgress(const char *msg, unsigned flags=0);
-    virtual const char *noteTemporaryFile(const char *fname);
-    virtual const char *noteTemporaryFilespec(const char *fspec);
-    virtual const char *queryTemporaryFile(const char *fname);
+    virtual const char *noteTemporaryFile(const char *name) override;
+    virtual const char *queryTemporaryFile(const char *name) override;
+    virtual void removeTemporaryFile(const char *fname) override;
     virtual void deleteFile(const char * logicalName);
 
     void addException(ErrorSeverity severity, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool failOnError, bool isAbort);

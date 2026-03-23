@@ -610,51 +610,85 @@ const char *EclAgent::queryTempfilePath()
     return agentTempDir.str();
 }
 
-StringBuffer & EclAgent::getTempfileBase(StringBuffer & buff)
+StringBuffer &EclAgent::getTempfileBase(StringBuffer &buff)
 {
     return buff.append(queryTempfilePath()).append(PATHSEPCHAR).appendLower(wuid);
 }
 
-const char *EclAgent::queryTemporaryFile(const char *fname)
+void EclAgent::buildTempFilename(StringBuffer &tempFilename, const char *name)
 {
-    StringBuffer tempfilename;
-    getTempfileBase(tempfilename).append(PATHSEPCHAR).append(fname);
-    CriticalBlock crit(tfsect);
-    ForEachItemIn(idx, tempFiles)
+    getTempfileBase(tempFilename).append(PATHSEPCHAR).append(name);
+}
+
+const char *EclAgent::queryTemporaryFile(const char *name)
+{
+    dbgassertex(!isEmptyString(name));
+
+    StringBuffer tempFilename;
+    buildTempFilename(tempFilename, name);
+
     {
-        if (strcmp(tempFiles.item(idx), tempfilename.str())==0)
-            return tempFiles.item(idx);
+        CriticalBlock crit(tfsect);
+
+        auto it = tempFileSet.find(tempFilename.str());
+        if (it != tempFileSet.end())
+            return it->c_str();
     }
-    StringBuffer errmsg;
-    errmsg.append("Attempt to read temp file that has not yet been registered: ").append(tempfilename);
+
+    VStringBuffer errmsg("Attempt to read temp file that has not yet been registered: %s", name);
     fail(0, errmsg.str());
-    return 0;
+    return nullptr;
 }
 
-const char *EclAgent::noteTemporaryFile(const char *fname)
+const char *EclAgent::noteTemporaryFile(const char *name)
 {
-    StringBuffer tempfilename;
-    getTempfileBase(tempfilename).append(PATHSEPCHAR).append(fname);
-    CriticalBlock crit(tfsect);
-    tempFiles.append(tempfilename.str());
-    return tempFiles.item(tempFiles.length()-1);
+    dbgassertex(!isEmptyString(name));
+
+    StringBuffer tempFilename;
+    buildTempFilename(tempFilename, name);
+
+    std::pair<std::set<std::string>::iterator, bool> inserted;
+    {
+        CriticalBlock crit(tfsect);
+
+        inserted = tempFileSet.emplace(tempFilename.str());
+    }
+
+    // The returned pointer refers to the std::string stored in tempFileSet and
+    // is only valid while that entry remains in the set.
+
+    if (!inserted.second)
+    {
+        VStringBuffer errmsg("Temp file already registered: %s", name);
+        fail(0, errmsg.str());
+        return nullptr;
+    }
+
+    return inserted.first->c_str();
 }
 
-const char *EclAgent::noteTemporaryFilespec(const char *fspec)
+void EclAgent::removeTemporaryFile(const char *fname)
 {
+    dbgassertex(!isEmptyString(fname));
+
     CriticalBlock crit(tfsect);
-    tempFiles.append(fspec);
-    return tempFiles.item(tempFiles.length()-1);
+
+    auto it = tempFileSet.find(std::string(fname));
+    dbgassertex(it != tempFileSet.end());
+    if (it != tempFileSet.end())
+    {
+        remove(it->c_str());
+        tempFileSet.erase(it);
+    }
 }
 
 void EclAgent::deleteTempFiles()
 {
     CriticalBlock crit(tfsect);
-    ForEachItemIn(idx, tempFiles)
-    {
-        remove(tempFiles.item(idx));
-    }
-    tempFiles.kill();
+
+    for (const auto& f : tempFileSet)
+        remove(f.c_str());
+    tempFileSet.clear();
 }
 
 const char *EclAgent::loadResource(unsigned id)
