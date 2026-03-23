@@ -122,9 +122,64 @@ class AzureFileClient : public AzureAPICopyClientBase
     bool sourceIsBlob = false;
     Shares::ShareClientOptions clientOptions;
     std::shared_ptr<const Azure::Core::Credentials::TokenCredential> credential;
+    std::string targetUrl;
+
+    // Azure Files requires parent directories to exist before creating a file.
+    // Walk the path components and create each directory level if it doesn't exist.
+    void ensureParentDirectories()
+    {
+        // Parse the target URL to extract share and path components
+        // URL format: https://account.file.core.windows.net/share/dir1/dir2/filename
+        Azure::Core::Url parsed(targetUrl);
+        std::string urlPath = parsed.GetPath(); // e.g., "share/dir1/dir2/filename"
+
+        // Split into components
+        std::vector<std::string> components;
+        size_t start = 0;
+        while (start < urlPath.size())
+        {
+            size_t pos = urlPath.find('/', start);
+            if (pos == std::string::npos)
+                break; // last component is the filename — skip it
+            if (pos > start)
+                components.push_back(urlPath.substr(start, pos - start));
+            start = pos + 1;
+        }
+
+        if (components.size() < 2)
+            return; // No parent directories to create (just share/filename)
+
+        // First component is the share name, remaining are directories
+        std::string baseUrl = parsed.GetScheme() + "://" + parsed.GetHost() + "/" + components[0];
+        std::string dirUrl = baseUrl;
+        for (size_t i = 1; i < components.size(); i++)
+        {
+            dirUrl += "/" + components[i];
+            try
+            {
+                if (credential)
+                {
+                    Shares::ShareDirectoryClient dirClient(dirUrl, credential, clientOptions);
+                    dirClient.CreateIfNotExists();
+                }
+                else
+                {
+                    Shares::ShareDirectoryClient dirClient(dirUrl, clientOptions);
+                    dirClient.CreateIfNotExists();
+                }
+            }
+            catch (const Azure::Core::RequestFailedException& e)
+            {
+                IERRLOG("Failed to create directory '%s': %s (code %d)", dirUrl.c_str(), e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+                throw;
+            }
+        }
+    }
 
     virtual void doStartCopy(const char * source) override
     {
+        ensureParentDirectories();
+
         Shares::StartFileCopyOptions options;
         if (sourceIsBlob)
         {
@@ -162,7 +217,7 @@ class AzureFileClient : public AzureAPICopyClientBase
     }
 public:
     AzureFileClient(const char *target, bool _sourceIsBlob, bool useManagedIdentity)
-        : sourceIsBlob(_sourceIsBlob)
+        : sourceIsBlob(_sourceIsBlob), targetUrl(target)
     {
         if (useManagedIdentity)
         {
