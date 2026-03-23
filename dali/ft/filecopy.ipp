@@ -308,6 +308,7 @@ protected:
     CIArrayOf<FilePartInfo> sources;
     Linked<IDistributedFile> distributedTarget;
     Linked<IDistributedFile> distributedSource;
+    Linked<IFileDescriptor> savedSource;
     TargetLocationArray     targets;
     StringBuffer            targetPlane;
     bool targetSupportsConcurrentWrite = true; // if false, will prevent multiple writers to same target file (e.g. not supported by Azure Blob storage)
