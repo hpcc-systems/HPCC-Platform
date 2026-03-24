@@ -2334,7 +2334,23 @@ FILESERVICES_API void FILESERVICES_CALL fsLogicalFileList(ICodeContext *ctx, siz
         SocketEndpoint ep(foreigndali);
         foreignNode.setown(createINode(ep));
     }
-    Owned<IPropertyTreeIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator(masklower.str(),ctx->queryUserDescriptor(),true,includesuper,foreignNode);
+
+    // NB: This block below, is effectively an expanded version of the legacy getDFAttributesIterator() functionality, with the addition of an optional maxFilesLimit
+    StringBuffer filterBuf;
+    // all non-superfiles
+    if (!includesuper)
+        filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFFileType).append(DFUQFilterSeparator).append(DFUQFFTnonsuperfileonly).append(DFUQFilterSeparator);
+    filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFFileNameWithPrefix).append(DFUQFilterSeparator).append(masklower).append(DFUQFilterSeparator);
+    static unsigned maxFileLimit = []()
+    {
+        return getGlobalConfigSP()->getPropInt("expert/@maxLogicalFileList", UINT_MAX);
+    }();
+    if (UINT_MAX != maxFileLimit)
+        filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFMaxFiles).append(DFUQFilterSeparator).append(maxFileLimit).append(DFUQFilterSeparator);
+
+    bool allMatchingFilesReceived;
+    Owned<IPropertyTreeIterator> iter = queryDistributedFileDirectory().getDFAttributesFilteredIterator(filterBuf, nullptr, nullptr, ctx->queryUserDescriptor(), true, allMatchingFilesReceived, nullptr, foreignNode);
+
     if (iter) {
         StringBuffer s;
         ForEach(*iter) {
