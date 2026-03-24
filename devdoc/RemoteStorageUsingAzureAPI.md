@@ -38,7 +38,7 @@ In the `<Globals>` section of `environment.xml` add your storage plane definitio
       <planes category="remote"
               name="plane1"
               numDevices="20"
-              striped="true"
+              striped="1"
               prefix="azureblob:plane1">
               <storageapi type="azureblob" managed="1">
                   <containers account="<STORAGE_ACCOUNT_1>" name="hpcc-data"/>

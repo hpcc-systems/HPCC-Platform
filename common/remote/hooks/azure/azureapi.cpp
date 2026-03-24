@@ -204,8 +204,8 @@ class AzureFileClient : public AzureAPICopyClientBase
         Shares::StartFileCopyOptions options;
         if (sourceIsBlob)
         {
-            // Azure Blob storage does not have Smb properties. Explicitly set to none, otherise
-            // the copy will fail because it could not get the Smb properties from the source..
+            // Azure Blob storage does not have SMB properties. Explicitly set to none; otherwise,
+            // the copy will fail because it could not retrieve the SMB properties from the source.
             options.SmbPropertiesToCopy = Shares::CopyableFileSmbPropertyFlags::None;
         }
         fileCopyOp = fileClient->StartCopy(source, options);
