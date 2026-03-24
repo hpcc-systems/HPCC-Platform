@@ -2,8 +2,6 @@
 
 This document describes how to configure a bare-metal Azure-VM HPCC Systems environment to access remote cloud storage via the Azure Storage API. This is the recommended approach for copying files from a cloud-based HPCC environment (e.g., a production Thor cluster running in Azure) to a local HPCC environment.
 
-For background on why Azure API copying is preferred over traditional dafilesrv-based transfers, see [Remote File Roxie](Remote%20File%20Roxie.md).
-
 ## Prerequisites
 
 Before starting, ensure the following are in place:
