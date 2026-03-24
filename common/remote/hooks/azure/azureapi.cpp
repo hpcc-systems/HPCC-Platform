@@ -21,6 +21,8 @@
 #include "azureapi.hpp"
 #include "azureapiutils.hpp"
 
+#include <set>
+
 using namespace Azure::Storage;
 using namespace Azure::Storage::Files;
 using namespace Azure::Storage::Blobs;
@@ -28,6 +30,15 @@ using namespace Azure::Storage::Blobs;
 // Forward declarations from the individual implementations
 extern IFile * createAzureBlob(const char * filename);
 extern IFile * createAzureFile(const char * filename);
+
+// Cache of Azure Files directory URLs already created/verified, to avoid
+// redundant CreateIfNotExists metadata calls across multi-part copies.
+// Scoped to the owning CAzureApiCopyClient so it is freed when the copy session ends.
+struct CreatedDirsCache
+{
+    CriticalSection lock;
+    std::set<std::string> dirs;
+};
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -123,6 +134,7 @@ class AzureFileClient : public AzureAPICopyClientBase
     Shares::ShareClientOptions clientOptions;
     std::shared_ptr<const Azure::Core::Credentials::TokenCredential> credential;
     std::string targetUrl;
+    CreatedDirsCache &createdDirsCache;
 
     // Azure Files requires parent directories to exist before creating a file.
     // Walk the path components and create each directory level if it doesn't exist.
@@ -155,6 +167,11 @@ class AzureFileClient : public AzureAPICopyClientBase
         for (size_t i = 1; i < components.size(); i++)
         {
             dirUrl += "/" + components[i];
+            {
+                CriticalBlock block(createdDirsCache.lock);
+                if (createdDirsCache.dirs.count(dirUrl))
+                    continue;
+            }
             try
             {
                 if (credential)
@@ -166,6 +183,10 @@ class AzureFileClient : public AzureAPICopyClientBase
                 {
                     Shares::ShareDirectoryClient dirClient(dirUrl, clientOptions);
                     dirClient.CreateIfNotExists();
+                }
+                {
+                    CriticalBlock block(createdDirsCache.lock);
+                    createdDirsCache.dirs.insert(dirUrl);
                 }
             }
             catch (const Azure::Core::RequestFailedException& e)
@@ -216,8 +237,8 @@ class AzureFileClient : public AzureAPICopyClientBase
         fileClient->Delete();
     }
 public:
-    AzureFileClient(const char *target, bool _sourceIsBlob, bool useManagedIdentity)
-        : sourceIsBlob(_sourceIsBlob), targetUrl(target)
+    AzureFileClient(const char *target, bool _sourceIsBlob, bool useManagedIdentity, CreatedDirsCache &_createdDirsCache)
+        : sourceIsBlob(_sourceIsBlob), targetUrl(target), createdDirsCache(_createdDirsCache)
     {
         if (useManagedIdentity)
         {
@@ -311,7 +332,7 @@ public:
         Owned<IAPICopyClientOp> apiClient;
         bool tgtUseManagedIdentity = targetApiInfo->useManagedIdentity();
         if (isAzureFile(targetApiInfo->getStorageType()))
-            apiClient.setown(new AzureFileClient(targetURI.str(), isAzureBlob(sourceApiInfo->getStorageType()), tgtUseManagedIdentity));
+            apiClient.setown(new AzureFileClient(targetURI.str(), isAzureBlob(sourceApiInfo->getStorageType()), tgtUseManagedIdentity, createdDirsCache));
         else
             apiClient.setown(new AzureBlobClient(targetURI.str(), tgtUseManagedIdentity));
 
@@ -398,6 +419,7 @@ protected:
     }
 
     Linked<IStorageApiInfo> sourceApiInfo, targetApiInfo;
+    mutable CreatedDirsCache createdDirsCache;
 };
 
 //---------------------------------------------------------------------------------------------------------------------
