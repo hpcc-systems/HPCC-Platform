@@ -2846,7 +2846,14 @@ void FileSprayer::transferUsingAPI(IAPICopyClient * copyClient)
 
                 // Calculate which stripe (i.e., which storage account/device) this part
                 // lives on, using the logical file name hash and the number of devices
-                unsigned lfnHash = savedSource->queryProperties().getPropInt("@lfnHash");
+                unsigned lfnHash = savedSource->queryProperties().getPropInt("@lfnHash", -1);
+                if (lfnHash < 0)
+                {
+                    const char *logicalName = savedSource->queryLogicalName();
+                    if (isEmptyString(logicalName))
+                        throw makeStringException(-1, "Missing @lfnHash and logical name when determining source stripe");
+                    lfnHash = getFilenameHash(logicalName);
+                }
                 unsigned numDevices = storagePlane->numDevices();
                 sourceStripeNum = calcStripeNumber(srcPart->queryPartIndex(), lfnHash, numDevices);
             }
