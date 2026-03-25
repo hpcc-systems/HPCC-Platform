@@ -2842,17 +2842,22 @@ void FileSprayer::transferUsingAPI(IAPICopyClient * copyClient)
 
                 // Strip the plane's prefix from the full path to get the relative path
                 // within the storage container (e.g., remove "azureblob:plane1" prefix)
-                sourcePath.remove(0, strlen(storagePlane->queryPrefix()));
+                const char *planePrefix = storagePlane->queryPrefix();
+                size_t prefixLen = strlen(planePrefix);
+                if (prefixLen > sourcePath.length() || strncmp(sourcePath.str(), planePrefix, prefixLen) != 0)
+                    throw makeStringExceptionV(-1, "Source path '%s' does not begin with expected plane prefix '%s' for plane '%s'", sourcePath.str(), planePrefix, planeName);
+                sourcePath.remove(0, prefixLen);
 
                 // Calculate which stripe (i.e., which storage account/device) this part
                 // lives on, using the logical file name hash and the number of devices
                 unsigned lfnHash = savedSource->queryProperties().getPropInt("@lfnHash", -1);
                 if (lfnHash < 0)
                 {
-                    const char *logicalName = savedSource->queryLogicalName();
-                    if (isEmptyString(logicalName))
+                    StringBuffer logicalName;
+                    savedSource->getTraceName(logicalName);
+                    if (logicalName.isEmpty())
                         throw makeStringException(-1, "Missing @lfnHash and logical name when determining source stripe");
-                    lfnHash = getFilenameHash(logicalName);
+                    lfnHash = getFilenameHash(logicalName.str());
                 }
                 unsigned numDevices = storagePlane->numDevices();
                 sourceStripeNum = calcStripeNumber(srcPart->queryPartIndex(), lfnHash, numDevices);
