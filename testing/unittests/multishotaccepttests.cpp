@@ -48,7 +48,7 @@ private:
     
 public:
     TestConnectionListener(unsigned port, bool useTLS = false, bool useIOUring = true)
-        : CSocketConnectionListener(port, useTLS, 0, 0, useIOUring)
+        : CSocketConnectionListener(port, useTLS, 0, 0, useIOUring, false)
     {
     }
     

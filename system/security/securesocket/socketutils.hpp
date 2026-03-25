@@ -158,10 +158,10 @@ class SECURESOCKET_API CSocketConnectionListener : protected CReadSelectHandler,
 public:
     // _useIOUring: true to enable io_uring multishot accept (if available), false to use traditional thread-based accept
     //              Defaults to true, but can be overridden by expert/@useIOUring configuration setting
-    CSocketConnectionListener(unsigned port, bool _useTLS, unsigned _inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets, bool _useIOUring = true);
+    CSocketConnectionListener(unsigned port, bool _useTLS, unsigned _inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets, bool _useIOUring, bool _useUDS);
     ~CSocketConnectionListener() override;
 
-    void startPort(unsigned short port);
+    void startPort(unsigned short port, bool useUDS);
     void stop();
     bool checkSelfDestruct(const void *p,size32_t sz);
     AcceptMethod getAcceptMethod() const { return acceptMethod.load(); }
@@ -266,7 +266,7 @@ class SECURESOCKET_API CTcpSender
 {
     friend class CSocketTarget;
 public:
-    CTcpSender(bool _lowLatency) : lowLatency(_lowLatency) {}
+    CTcpSender(bool _lowLatency, bool _useUDS) : lowLatency(_lowLatency), useUDS(_useUDS) {}
 
     CSocketTarget * queryWorkerSocket(const SocketEndpoint &ep);
     void setAsyncProcessor(IAsyncProcessor * _asyncSender) { asyncSender.set(_asyncSender); }
@@ -279,6 +279,7 @@ protected:
     std::unordered_map<SocketEndpoint, Owned<CSocketTarget>, HashSocketEndpoint> workerSockets;
     Owned<IAsyncProcessor> asyncSender;
     const bool lowLatency;
+    const bool useUDS;
 };
 
 #endif

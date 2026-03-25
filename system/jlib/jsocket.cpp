@@ -64,6 +64,7 @@
 #else
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 #include <netinet/tcp.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -385,7 +386,7 @@ struct xfd_set { __fd_mask fds_bits[XFD_SETSIZE / __NFDBITS]; }; // define our o
 #define T_SOCKET int
 #define SEND_FLAGS (MSG_NOSIGNAL)
 #endif
-enum SOCKETMODE { sm_tcp_server, sm_tcp, sm_udp_server, sm_udp, sm_multicast_server, sm_multicast};
+enum SOCKETMODE { sm_tcp_server, sm_tcp, sm_udp_server, sm_udp, sm_multicast_server, sm_multicast, sm_unix_server, sm_unix };
 
 #define BADSOCKERR(err) ((err==JSE_BADF)||(err==JSE_NOTSOCK))
 
@@ -656,7 +657,7 @@ public:
     size32_t    udp_write_to(const SocketEndpoint &ep,void const* buf, size32_t size);
     void        close();
     void        errclose();
-    bool        connectionless() { return (sockmode!=sm_tcp)&&(sockmode!=sm_tcp_server); }
+    bool        connectionless() { return (sockmode!=sm_tcp)&&(sockmode!=sm_tcp_server)&&(sockmode!=sm_unix)&&(sockmode!=sm_unix_server); }
     void        shutdown(unsigned mode=SHUTDOWN_READWRITE);
     void        shutdownNoThrow(unsigned mode);
 
@@ -933,6 +934,7 @@ typedef union {
     struct sockaddr sa;
     struct sockaddr_in6 sin6;
     struct sockaddr_in sin;
+    struct sockaddr_un sun;
 } J_SOCKADDR;
 
 #define DEFINE_SOCKADDR(name) J_SOCKADDR name; memset(&name,0,sizeof(J_SOCKADDR))
@@ -965,6 +967,16 @@ inline void LogErr(unsigned err,unsigned ref,const char *info,unsigned lineno,co
     }
 }
 
+
+inline socklen_t setUnixSockAddr(J_SOCKADDR &u, const IpAddress &ip, unsigned short port) {
+    StringBuffer ipStr;
+    ip.getIpText(ipStr);
+    ipStr.replace((char) '.', (char) '_');
+    ipStr.replace((char) ':', (char) '_');
+    u.sun.sun_family = AF_UNIX;
+    snprintf(u.sun.sun_path, sizeof(u.sun.sun_path), "/tmp/hpcc_uds_%s_%u.sock", ipStr.str(), port);
+    return sizeof(u.sun);
+}
 
 
 inline socklen_t setSockAddr(J_SOCKADDR &u, const IpAddress &ip,unsigned short port)
@@ -1137,7 +1149,7 @@ static bool set_socket_nonblock(T_SOCKET sock, bool nonblocking)
 // Static helper: Prepare a socket for connection (shared by sync and async paths)
 // Returns the socket descriptor and sockaddr structure
 // Throws exception on error
-static T_SOCKET prepare_socket_for_connect(const IpAddress & targetip, unsigned short hostport, J_SOCKADDR & sockaddr, socklen_t & sockaddrlen, const char * tracename)
+static T_SOCKET prepare_socket_for_connect(const IpAddress & targetip, unsigned short hostport, SOCKETMODE sockmode, J_SOCKADDR & sockaddr, socklen_t & sockaddrlen, const char * tracename)
 {
     if (targetip.isNull())
     {
@@ -1148,8 +1160,26 @@ static T_SOCKET prepare_socket_for_connect(const IpAddress & targetip, unsigned 
     }
 
     memset(&sockaddr, 0, sizeof(J_SOCKADDR));
-    sockaddrlen = setSockAddr(sockaddr, targetip, hostport);
-    T_SOCKET sock = ::socket(sockaddr.sa.sa_family, SOCK_STREAM, targetip.isIp4() ? 0 : PF_INET6);
+#ifndef _WIN32
+    if (sockmode == sm_unix_server || sockmode == sm_unix) {
+        sockaddrlen = setUnixSockAddr(sockaddr, targetip, hostport);
+    }
+    else
+#endif
+    {
+        sockaddrlen = setSockAddr(sockaddr, targetip, hostport);
+    }
+
+    T_SOCKET sock;
+#ifndef _WIN32
+    if (sockmode == sm_unix_server || sockmode == sm_unix) {
+        sock = ::socket(AF_UNIX, SOCK_STREAM, 0);
+    }
+    else
+#endif
+    {
+        sock = ::socket(sockaddr.sa.sa_family, SOCK_STREAM, targetip.isIp4() ? 0 : PF_INET6);
+    }
     if (sock == INVALID_SOCKET)
     {
         int err = SOCKETERRNO();
@@ -1237,7 +1267,7 @@ int CSocket::pre_connect(bool block)
 {
     DEFINE_SOCKADDR(u);
     socklen_t ul;
-    sock = prepare_socket_for_connect(targetip, hostport, u, ul, tracename);
+    sock = prepare_socket_for_connect(targetip, hostport, sockmode, u, ul, tracename);
     owned = true;
     state = ss_pre_open;            // will be set to open by post_connect
 
@@ -1271,7 +1301,7 @@ void CSocket::prepareForAsyncConnect(struct sockaddr *& addr, size32_t & addrlen
     // Prepare the socket for async connection
     DEFINE_SOCKADDR(u);
     socklen_t ul;
-    sock = prepare_socket_for_connect(targetip, hostport, u, ul, tracename);
+    sock = prepare_socket_for_connect(targetip, hostport, sockmode, u, ul, tracename);
     owned = true;
     state = ss_pre_open;  // will be set to open by finishAsyncConnect
 
@@ -1330,10 +1360,19 @@ void CSocket::open(int listen_queue_size,bool reuseports)
     // This is used when a unique IP:port is needed for MP client
     // INode/IGroup internals, but client never actually accepts connections.
 
-    if (IP6preferred)
-        sock = ::socket(AF_INET6, connectionless()?SOCK_DGRAM:SOCK_STREAM, PF_INET6);
+#ifndef _WIN32
+    if (sockmode == sm_unix_server || sockmode == sm_unix) {
+        sock = ::socket(AF_UNIX, connectionless()?SOCK_DGRAM:SOCK_STREAM, 0);
+    }
     else
-        sock = ::socket(AF_INET, connectionless()?SOCK_DGRAM:SOCK_STREAM, 0);
+#endif
+    {
+        if (IP6preferred)
+            sock = ::socket(AF_INET6, connectionless()?SOCK_DGRAM:SOCK_STREAM, PF_INET6);
+        else
+            sock = ::socket(AF_INET, connectionless()?SOCK_DGRAM:SOCK_STREAM, 0);
+    }
+
     if (sock == INVALID_SOCKET) {
         THROWJSOCKTARGETEXCEPTION(SOCKETERRNO());
     }
@@ -1366,11 +1405,22 @@ void CSocket::open(int listen_queue_size,bool reuseports)
 
     DEFINE_SOCKADDR(u);
     socklen_t  ul;
-    if (!targetip.isNull()) {
-        ul = setSockAddr(u,targetip,hostport);
+#ifndef _WIN32
+    if (sockmode == sm_unix_server) {
+        IpAddress bindIp;
+        if (targetip.isNull()) GetHostIp(bindIp); else bindIp = targetip;
+        ul = setUnixSockAddr(u, bindIp, hostport);
+        ::unlink(u.sun.sun_path); // MUST clean up previous dead file before bind
     }
-    else 
-        ul = setSockAddrAny(u,hostport);
+    else
+#endif
+    {
+        if (!targetip.isNull()) {
+            ul = setSockAddr(u,targetip,hostport);
+        }
+        else
+            ul = setSockAddrAny(u,hostport);
+    }
     int saverr;
     if (::bind(sock, &u.sa, ul) != 0) {
         saverr = SOCKETERRNO();
@@ -1494,7 +1544,17 @@ ISocket* CSocket::accept(bool allowcancel)
     }
 
     SocketEndpoint peerEp;
-    getSockAddrEndpoint(peerSockAddr, peerSockAddrLen, peerEp);
+#ifndef _WIN32
+    if (peerSockAddr.sa.sa_family == AF_UNIX) {
+        // dummy up peer IP so logging logic doesn't crash on AF_UNIX structures
+        peerEp.set("127.0.0.1", 1);
+    }
+    else
+#endif
+    {
+        getSockAddrEndpoint(peerSockAddr, peerSockAddrLen, peerEp);
+    }
+
     CSocket *ret = new CSocket(newsock,sm_tcp,true,&peerEp);
     ret->checkCfgKeepAlive();
     ret->set_inherit(false);
@@ -2017,12 +2077,12 @@ ISocket *  ISocket::connect_wait( const SocketEndpoint & ep, unsigned timems)
 
 // Create a socket prepared for async connection - returns socket descriptor and sockaddr for use with io_uring
 // memory for addr is allocated by this function and must be freed -- via free() -- by the caller
-ISocket * ISocket::createForAsyncConnect(const SocketEndpoint & ep, struct sockaddr *& addr, size32_t & addrlen)
+ISocket * ISocket::createForAsyncConnect(const SocketEndpoint & ep, struct sockaddr *& addr, size32_t & addrlen, bool useUDS)
 {
     if (ep.isNull() || (ep.port==0))
         THROWJSOCKEXCEPTION(JSOCKERR_bad_address);
 
-    Owned<CSocket> csock = new CSocket(ep, sm_tcp, NULL);
+    Owned<CSocket> csock = new CSocket(ep, useUDS ? sm_unix : sm_tcp, NULL);
     csock->prepareForAsyncConnect(addr, addrlen);
     return csock.getClear();
 }
@@ -7747,4 +7807,29 @@ extern jlib_decl void shutdownAndCloseNoThrow(ISocket * optSocket)
     {
         e->Release();
     }
+}
+
+ISocket* ISocket::unix_create(unsigned short port, int listen_queue_size)
+{
+#ifndef _WIN32
+    assertex(port != 0); // Need to consider how port 0 fallback works since there are no ephemeral local socket ports out-of-the-box
+    SocketEndpoint dummyEp;
+    dummyEp.port = port;
+    Owned<CSocket> sock = new CSocket(dummyEp, sm_unix_server, NULL);
+    sock->open(listen_queue_size);
+    return sock.getClear();
+#else
+    return create(port, listen_queue_size);
+#endif
+}
+
+ISocket* ISocket::unix_connect(const SocketEndpoint &ep)
+{
+#ifndef _WIN32
+    Owned<CSocket> sock = new CSocket(ep, sm_unix, NULL);
+    sock->connect_wait(DEFAULT_CONNECT_TIME);
+    return sock.getClear();
+#else
+    return connect(ep);
+#endif
 }

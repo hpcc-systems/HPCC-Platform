@@ -432,7 +432,7 @@ class RoxieTcpListener : public CSocketConnectionListener
 {
 public:
     RoxieTcpListener(IRoxieWorkerRequestReceiver & _receiver)
-     : CSocketConnectionListener(0, false, 0, 0), receiver(_receiver)
+     : CSocketConnectionListener(0, false, 0, 0, true, useUdsTransport), receiver(_receiver)
     {
     }
 
@@ -466,7 +466,7 @@ protected:
 class RoxieTcpWorkerCommunicator : public CInterfaceOf<IRoxieWorkerCommunicator>
 {
 public:
-    RoxieTcpWorkerCommunicator() : sender(true) {}
+    RoxieTcpWorkerCommunicator() : sender(true, useUdsTransport) {}
 
     virtual size32_t queryMaxPacketSize() const override
     {
@@ -478,7 +478,7 @@ public:
         assertex(!running);
         running = true;
         listener.reset(new RoxieTcpListener(_receiver));
-        listener->startPort(ccdMulticastPort);
+        listener->startPort(ccdMulticastPort, useUdsTransport);
     }
 
     virtual void stopListening() override

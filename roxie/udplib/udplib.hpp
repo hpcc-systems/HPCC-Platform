@@ -229,6 +229,7 @@ extern UDPLIB_API bool udpEncryptOnSendThread;
 //Should be in ccd
 extern UDPLIB_API unsigned multicastTTL;
 extern UDPLIB_API bool useTcpTransport;
+extern UDPLIB_API bool useUdsTransport;
 
 // -- Reported metrics --------------------------------------------------------------------------
 

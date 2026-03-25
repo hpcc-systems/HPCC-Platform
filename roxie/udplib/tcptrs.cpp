@@ -44,7 +44,7 @@ using roxiemem::DataBuffer;
 class DataBufferTcpSender : public CTcpSender
 {
 public:
-    DataBufferTcpSender(bool _lowLatency) : CTcpSender(_lowLatency) {}
+    DataBufferTcpSender(bool _lowLatency) : CTcpSender(_lowLatency, useUdsTransport) {}
 
 protected:
     virtual void releaseBuffer(void * buffer) override

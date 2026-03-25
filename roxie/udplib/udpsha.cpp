@@ -80,6 +80,7 @@ bool udpEncryptOnSendThread = false;
 
 unsigned multicastTTL = 1;
 bool useTcpTransport = false;
+bool useUdsTransport = false;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
