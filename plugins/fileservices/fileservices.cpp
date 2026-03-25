@@ -3190,7 +3190,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfGetLogicalFileAttribute(ICodeContex
         }
     }
     else
-        ret.append("!FileNotFound");  // return sentinel value instead of throwing when file is not found
+        ret.append("!FileNotFound");
     return ret.detach();
 }
 
