@@ -112,7 +112,16 @@ data:
 {{ include "hpcc.addWaitAndRunVolume" . | indent 10 }}
 {{- end }}
           restartPolicy: Never
-      backoffLimit: 0
+      backoffLimit: 10
+      podFailurePolicy:
+        rules:
+        - action: FailJob
+          onExitCodes:
+            operator: NotIn
+            values: [0]
+        - action: Ignore
+          onPodConditions:
+          - type: Unschedulable
 {{- end }}
 {{- end -}}
 

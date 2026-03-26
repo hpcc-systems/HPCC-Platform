@@ -145,7 +145,16 @@ data:
 {{ include "hpcc.addWaitAndRunVolume" . | indent 10 }}
 {{- end }}
           restartPolicy: Never
-      backoffLimit: 0
+      backoffLimit: 10
+      podFailurePolicy:
+        rules:
+        - action: FailJob
+          onExitCodes:
+            operator: NotIn
+            values: [0]
+        - action: Ignore
+          onPodConditions:
+          - type: Unschedulable
 {{- end }}
 
 {{- $_ := set . "lifeCycleCtx" (dict "containers" list) }}
@@ -218,7 +227,16 @@ data:
 {{ include "hpcc.addWaitAndRunVolume" . | indent 10 }}
 {{- end }}
           restartPolicy: Never
-      backoffLimit: 0
+      backoffLimit: 10
+      podFailurePolicy:
+        rules:
+        - action: FailJob
+          onExitCodes:
+            operator: NotIn
+            values: [0]
+        - action: Ignore
+          onPodConditions:
+          - type: Unschedulable
 
 {{- $_ := set $configCtx "lifeCycleCtx" (dict "containers" list) }}
   thorworker-job.yaml:
@@ -299,7 +317,16 @@ data:
 {{ include "hpcc.addWaitAndRunVolume" . | indent 10 }}
 {{- end }}
           restartPolicy: Never
-      backoffLimit: 0
+      backoffLimit: 10
+      podFailurePolicy:
+        rules:
+        - action: FailJob
+          onExitCodes:
+            operator: NotIn
+            values: [0]
+        - action: Ignore
+          onPodConditions:
+          - type: Unschedulable
 
   thormanager-networkpolicy.yaml:
     apiVersion: networking.k8s.io/v1

@@ -3,6 +3,7 @@ name: hpcc
 description: A Helm chart for launching a HPCC cluster using Kubernetes
 icon: https://hpccsystems.com/sites/default/files/header-logo_0.png
 type: application
+kubeVersion: ">=1.26.0-0"
 
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
