@@ -75,3 +75,7 @@ target_link_libraries ( xmllib
 IF (USE_CPPUNIT)
   target_link_libraries (xmllib ${CppUnit_LIBRARIES})
 ENDIF()
+
+IF (APPLE AND USE_LIBXSLT)
+  target_link_libraries (xmllib iconv)
+ENDIF()
