@@ -1249,12 +1249,12 @@ public:
         DBGLOG("Testing CRC buffered output stream");
 
         // Test data with known CRC values
-        constexpr const char *testData1 = "Hello, World!";
-        constexpr size32_t len1 = strlen(testData1);
-        constexpr const char *testData2 = "This is test data for CRC calculation.";
-        constexpr size32_t len2 = strlen(testData2);
-        constexpr const char *testData3 = "0123456789ABCDEF";
-        constexpr size32_t len3 = strlen(testData3);
+        static const char testData1[] = "Hello, World!";
+        const size32_t len1 = sizeof(testData1) - 1;
+        static const char testData2[] = "This is test data for CRC calculation.";
+        const size32_t len2 = sizeof(testData2) - 1;
+        static const char testData3[] = "0123456789ABCDEF";
+        const size32_t len3 = sizeof(testData3) - 1;
 
         // Test: Multiple put() calls with multiple put() methods using MemoryBuffer
         {

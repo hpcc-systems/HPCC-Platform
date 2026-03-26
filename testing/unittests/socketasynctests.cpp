@@ -543,7 +543,7 @@ public:
         
         constexpr unsigned numConnections = 5;
         
-        class MultiConnectCallback : public IAsyncCallback
+        class MultiConnectCallback final : public IAsyncCallback
         {
         public:
             Semaphore completed;
