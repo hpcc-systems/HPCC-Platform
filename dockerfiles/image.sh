@@ -15,6 +15,20 @@ globals() {
     SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )"
     ROOT_DIR=$(git rev-parse --show-toplevel)
 
+    # Resolve git directories (handles worktrees where .git is a file)
+    GIT_COMMON_DIR=$(cd "$ROOT_DIR" && git rev-parse --git-common-dir)
+    if [[ ! "$GIT_COMMON_DIR" = /* ]]; then
+        GIT_COMMON_DIR="$ROOT_DIR/$GIT_COMMON_DIR"
+    fi
+    GIT_WORKTREE_DIR=$(cd "$ROOT_DIR" && git rev-parse --git-dir)
+    if [[ ! "$GIT_WORKTREE_DIR" = /* ]]; then
+        GIT_WORKTREE_DIR="$ROOT_DIR/$GIT_WORKTREE_DIR"
+    fi
+    IS_WORKTREE=0
+    if [ "$GIT_COMMON_DIR" != "$GIT_WORKTREE_DIR" ]; then
+        IS_WORKTREE=1
+    fi
+
     set +e
     if [ -f "$ROOT_DIR/.env" ]; then
         export $(grep -v '^#' "$ROOT_DIR/.env" | sed -e 's/\r$//' | xargs) > /dev/null
@@ -107,20 +121,38 @@ finalize_platform_core_image() {
     if [ "$MODE" = "debug" ] || [ "$MODE" = "relwithdebinfo" ]; then
         # Add sources
         echo "--- Adding sources to '$image_name' image ---"
+        # Compute modified files on the host where git works natively
+        local MODIFIED_FILES_TMP=$(mktemp "$ROOT_DIR/modified-files.XXXXXX")
+        chmod 644 "$MODIFIED_FILES_TMP"
+        pushd $ROOT_DIR >/dev/null
+        git ls-files --modified --exclude-standard > "$MODIFIED_FILES_TMP"
+        popd >/dev/null
+
+        local CONTAINER=""
+        trap 'if [ -n "$CONTAINER" ]; then docker rm -f "$CONTAINER" 2>/dev/null; fi' ERR
+
         local CONTAINER=$(docker run -d \
             --mount source=$ROOT_DIR,target=/hpcc-dev/HPCC-Platform-local,type=bind,readonly \
+            --mount source=$GIT_COMMON_DIR,target=/hpcc-dev/git-common,type=bind,readonly \
             --mount source=$HPCC_BUILD,target=/hpcc-dev/build,type=volume \
             hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc "tail -f /dev/null")
         docker exec --user root --workdir /hpcc-dev $CONTAINER /bin/bash -c "rm -rf /hpcc-dev/HPCC-Platform && mkdir /hpcc-dev/HPCC-Platform && chown -R hpcc:hpcc /hpcc-dev/HPCC-Platform"
-        docker exec --workdir /hpcc-dev $CONTAINER /bin/bash -c "git config --global --add safe.directory /hpcc-dev/HPCC-Platform-local"
         docker exec --workdir /hpcc-dev $CONTAINER /bin/bash -c "git config --global --add safe.directory /hpcc-dev/HPCC-Platform-local/.git"
-        docker exec --workdir /hpcc-dev $CONTAINER /bin/bash -c "git clone --single-branch file:///hpcc-dev/HPCC-Platform-local /hpcc-dev/HPCC-Platform"
+        docker exec --workdir /hpcc-dev $CONTAINER /bin/bash -c "git config --global --add safe.directory /hpcc-dev/git-common"
+        if [ "$IS_WORKTREE" -eq 1 ]; then
+            docker exec --workdir /hpcc-dev $CONTAINER /bin/bash -c "git clone --single-branch --branch $GIT_BRANCH file:///hpcc-dev/git-common /hpcc-dev/HPCC-Platform"
+        else
+            docker exec --workdir /hpcc-dev $CONTAINER /bin/bash -c "git clone --single-branch file:///hpcc-dev/HPCC-Platform-local /hpcc-dev/HPCC-Platform"
+        fi
         docker exec --workdir /hpcc-dev/HPCC-Platform $CONTAINER /bin/bash -c "git reset --hard --recurse-submodules"
-        docker exec --workdir /hpcc-dev/HPCC-Platform-local $CONTAINER /bin/bash -c "git ls-files --modified --exclude-standard -z | xargs -0 -I {} cp {} /hpcc-dev/HPCC-Platform/{}"
+        local modified_basename=$(basename "$MODIFIED_FILES_TMP")
+        docker exec --workdir /hpcc-dev/HPCC-Platform-local $CONTAINER /bin/bash -c "while IFS= read -r f; do [ -f \"\$f\" ] && cp \"\$f\" \"/hpcc-dev/HPCC-Platform/\$f\" || true; done < /hpcc-dev/HPCC-Platform-local/$modified_basename"
+        rm -f "$MODIFIED_FILES_TMP"
         docker exec --workdir /hpcc-dev/HPCC-Platform $CONTAINER /bin/bash -c "rm -rf ./.git"
         docker exec --user root --workdir /hpcc-dev $CONTAINER /bin/bash -c "find /hpcc-dev/HPCC-Platform -exec touch -r /hpcc-dev/build/CMakeCache.txt {} +"
         docker commit $CONTAINER hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc
-        docker rm -f $CONTAINER
+        docker rm -f "$CONTAINER"
+        trap 'trapFunc "${LINENO}/${BASH_LINENO}" "$?" "$BASH_COMMAND"' ERR
     fi
 
     docker tag hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc incr-core:$MODE
@@ -195,16 +227,48 @@ clean() {
     docker volume rm hpcc_src hpcc_build hpcc_build_debug hpcc_build_release hpcc_opt 2>/dev/null || true
 }
 
+init_worktree() {
+    if [ "$IS_WORKTREE" -eq 1 ]; then
+        echo "--- Init worktree ---"
+        docker run --rm \
+            --mount source=hpcc_src,target=/hpcc-dev/HPCC-Platform,type=volume \
+            --mount source=$GIT_WORKTREE_DIR,target=/hpcc-dev/git-worktree-ro,type=bind,readonly \
+            --mount source=$GIT_COMMON_DIR,target=/hpcc-dev/git-common,type=bind \
+            build-$BUILD_OS:$VCPKG_REF \
+                "cd /hpcc-dev/HPCC-Platform && \
+                if [ ! -f .git/commondir ]; then \
+                    rm -rf .git && \
+                    mkdir -p .git && \
+                    echo /hpcc-dev/git-common > .git/commondir && \
+                    ln -sfn /hpcc-dev/git-common/modules .git/modules; \
+                fi && \
+                cp /hpcc-dev/git-worktree-ro/HEAD .git/ && \
+                cp /hpcc-dev/git-worktree-ro/index .git/"
+    fi
+}
+
 run() {
     local cmd=$1
-    docker run --rm \
-        --mount source=$ROOT_DIR,target=/hpcc-dev/HPCC-Platform-local,type=bind,readonly \
-        --mount source=hpcc_src,target=/hpcc-dev/HPCC-Platform,type=volume \
-        --mount source="$ROOT_DIR/.git",target=/hpcc-dev/HPCC-Platform/.git,type=bind \
-        --mount source=$HPCC_BUILD,target=/hpcc-dev/build,type=volume \
-        build-$BUILD_OS:$VCPKG_REF \
-            "cd /hpcc-dev/HPCC-Platform && \
-            $cmd"
+    if [ "$IS_WORKTREE" -eq 1 ]; then
+        docker run --rm \
+            --mount source=$ROOT_DIR,target=/hpcc-dev/HPCC-Platform-local,type=bind,readonly \
+            --mount source=hpcc_src,target=/hpcc-dev/HPCC-Platform,type=volume \
+            --mount source=$GIT_COMMON_DIR,target=/hpcc-dev/git-common,type=bind \
+            --mount source=$HPCC_BUILD,target=/hpcc-dev/build,type=volume \
+            build-$BUILD_OS:$VCPKG_REF \
+                "cd /hpcc-dev/HPCC-Platform && \
+                git config --global --add safe.directory /hpcc-dev/HPCC-Platform && \
+                $cmd"
+    else
+        docker run --rm \
+            --mount source=$ROOT_DIR,target=/hpcc-dev/HPCC-Platform-local,type=bind,readonly \
+            --mount source=hpcc_src,target=/hpcc-dev/HPCC-Platform,type=volume \
+            --mount source="$GIT_COMMON_DIR",target=/hpcc-dev/HPCC-Platform/.git,type=bind \
+            --mount source=$HPCC_BUILD,target=/hpcc-dev/build,type=volume \
+            build-$BUILD_OS:$VCPKG_REF \
+                "cd /hpcc-dev/HPCC-Platform && \
+                $cmd"
+    fi
 }
 
 init_hpcc_src() {
@@ -313,6 +377,8 @@ build() {
     fi
 
     create_platform_core_image $base
+
+    init_worktree
 
     RSYNC_TMP_FILE=$(mktemp "$ROOT_DIR/tempfile.XXXXXX")
 
