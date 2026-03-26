@@ -170,6 +170,9 @@ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
 
   #Compiler complains about a variable is set but not used 
   set_source_files_properties (hqlgram.cpp PROPERTIES COMPILE_FLAGS " -Wno-error=unused-but-set-variable -Wno-error=class-memaccess")
+    if (CMAKE_COMPILER_IS_CLANG)
+        set_source_files_properties (hqlgram.cpp PROPERTIES COMPILE_FLAGS " -Wno-error=unused-but-set-variable -Wno-error=class-memaccess -Wno-error=nontrivial-memcall")
+    endif()
 endif()
 
 if (WIN32)
