@@ -257,6 +257,12 @@ set_environmentvars() {
     cfg.parser ${HPCC_CONFIG}
     cfg.section.${SECTION}
 
+    if [ -n "${user}" ] && [ -n "${group}" ]; then
+        group=$(resolve_runtime_group ${user} ${group})
+    elif [ -n "${user}" ]; then
+        group=$(id -gn ${user} 2>/dev/null)
+    fi
+
     if [ -n "${umask}" ]; then
         umask $umask
     fi
@@ -464,7 +470,7 @@ startCmd() {
       WAITTIME=720
     fi
 
-    if [[ ${compType} = "dafilesrv" || ${compType} = "backupnode" ]]; then
+        if [[ ${compType} = "dafilesrv" || ${compType} = "backupnode" || ${compType} = "thor" ]]; then
       SENTINEL_CHECK=0
     fi
 
@@ -637,7 +643,7 @@ stop_component() {
 
         local RESULT=1
         local WAITTIME=30
-        [[ $compType = "dali" ]] && WAITTIME=720
+        [[ $compType = "dali" ]] && WAITTIME=120
         while [[ $RESULT -ne 0 && $WAITTIME -gt 0 ]]; do
             checkPidExist $PIDPATH
             RESULT=$__pidExists
@@ -649,8 +655,52 @@ stop_component() {
         done
 
         if [[ $RESULT -ne 0 ]]; then
-            log_failure_msg
-            return $RESULT
+            if [[ ${compType} = "dali" ]]; then
+                log "${compName} graceful stop timed out, forcing shutdown"
+
+                if [[ -e "${COMPPIDPATH}" ]]; then
+                    ${START_STOP_DAEMON} -K -p ${COMPPIDPATH} >/dev/null 2>&1 || true
+                fi
+                ${START_STOP_DAEMON} -K -p ${PIDPATH} >/dev/null 2>&1 || true
+
+                local FORCE_WAIT=15
+                while [[ $FORCE_WAIT -gt 0 ]]; do
+                    checkPidExist $PIDPATH
+                    local initRunning=$__pidExists
+                    checkPidExist $COMPPIDPATH
+                    local compRunning=$__pidExists
+                    if [[ $initRunning -eq 0 && $compRunning -eq 0 ]]; then
+                        RESULT=0
+                        break
+                    fi
+                    ((FORCE_WAIT--))
+                    sleep 1
+                done
+
+                if [[ $RESULT -ne 0 ]]; then
+                    # Last resort: clear stale/stuck dali helpers by process name.
+                    pkill -f '^dalistop$' >/dev/null 2>&1 || true
+                    pkill -f '^daserver$' >/dev/null 2>&1 || true
+                    pkill -f 'init_dali' >/dev/null 2>&1 || true
+                    sleep 1
+                    pkill -9 -f '^dalistop$' >/dev/null 2>&1 || true
+                    pkill -9 -f '^daserver$' >/dev/null 2>&1 || true
+                    pkill -9 -f 'init_dali' >/dev/null 2>&1 || true
+
+                    checkPidExist $PIDPATH
+                    local initRunning=$__pidExists
+                    checkPidExist $COMPPIDPATH
+                    local compRunning=$__pidExists
+                    if [[ $initRunning -eq 0 && $compRunning -eq 0 ]]; then
+                        RESULT=0
+                    fi
+                fi
+            fi
+
+            if [[ $RESULT -ne 0 ]]; then
+                log_failure_msg
+                return $RESULT
+            fi
         fi
     fi
 
@@ -703,7 +753,9 @@ restart_component() {
       fi
       ${INIT_PATH}/dafilesrv start 2>/dev/null
     else
-      check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1
+            local SENTINEL_CHECK=1
+            [[ ${compType} = "thor" ]] && SENTINEL_CHECK=0
+            check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} ${SENTINEL_CHECK}
       RCRESTART=$?
       if [ $RCRESTART -ne 0 ];then
         log  "$compName ---> Stopped.  Now Starting ..."
@@ -713,14 +765,16 @@ restart_component() {
         stop_component ${compName}
       fi
       start_component $compName
-      check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1
+            check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} ${SENTINEL_CHECK}
       RCRESTART=$?
       return $RCRESTART
     fi
 }
 
 status_component() {
-  check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1
+    local SENTINEL_CHECK=1
+    [[ ${compType} = "thor" ]] && SENTINEL_CHECK=0
+    check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} ${SENTINEL_CHECK}
   RCSTATUS=$?
   getPid ${COMPPIDPATH}
   if [[ ${RCSTATUS} -ne 0 ]]; then
@@ -806,6 +860,29 @@ check_group(){
         rm -rf /tmp/file.$$
         return 0
     fi
+}
+
+# Normalize runtime group for a user. If the configured group is not usable,
+# fall back to the user's primary group (common on macOS where user!=group).
+resolve_runtime_group(){
+    local userName=$1
+    local configuredGroup=$2
+    local primaryGroup
+
+    check_group ${configuredGroup}
+    if [ $? -eq 1 ]; then
+        echo "${configuredGroup}"
+        return 0
+    fi
+
+    primaryGroup=$(id -gn ${userName} 2>/dev/null)
+    if [ -n "${primaryGroup}" ]; then
+        echo "${primaryGroup}"
+        return 0
+    fi
+
+    echo "${configuredGroup}"
+    return 0
 }
 
 

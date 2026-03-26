@@ -77,6 +77,11 @@ set_environmentvars
 envfile=$configs/$environment
 bin_path=${INSTALL_DIR}/bin
 
+resolved_group=$(resolve_runtime_group ${user} ${group})
+if [ "${resolved_group}" != "${group}" ]; then
+    group=${resolved_group}
+fi
+
 component=""
 runSetupOnly=0
 source ${configgen_path}/hpcc_setenv
@@ -97,7 +102,7 @@ if [ $? -ne 1 ];then
    exit 3
 fi
 
-check_getopt
+check_getopt "$@" || exit 3
 
 COMPS=$(${configgen_path}/configgen -env ${envfile} -ip "127.0.0.1" -list)
 rc=$?
@@ -129,7 +134,7 @@ if [ -z "${component}" ] ; then
     exit 3
 fi
 
-TEMP=`getopt -o h --long help -n 'dafilesrv' -- "$@"`
+TEMP=`${GETOPT_CMD:-getopt} -o h --long help -n 'dafilesrv' -- "$@"`
 if [ $? != 0 ] ; then echo "Failure to parse commandline." >&2 ; exit 1 ; fi
 eval set -- $TEMP
 while true ; do

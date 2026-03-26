@@ -382,10 +382,30 @@ log_action_end_msg () {
 }
 
 check_getopt () {
-  `getopt -T 1>/dev/null 2>&1`
-  if [ $? -ne 4 ]; then
-    echo "Incompatible version of getopt"
+    local getopt_bin
+    local getopt_rc
+    local os
+
+    for getopt_bin in "${GETOPT_CMD:-}" getopt /opt/homebrew/opt/gnu-getopt/bin/getopt /usr/local/opt/gnu-getopt/bin/getopt /opt/local/bin/getopt ; do
+        [ -z "${getopt_bin}" ] && continue
+        command -v "${getopt_bin}" >/dev/null 2>&1 || [ -x "${getopt_bin}" ] || continue
+        "${getopt_bin}" -T 1>/dev/null 2>&1
+        getopt_rc=$?
+        if [ ${getopt_rc} -eq 4 ]; then
+            GETOPT_CMD="${getopt_bin}"
+            export GETOPT_CMD
+            return 0
+        fi
+    done
+
     os=$(uname)
+    if [ "${os}" == "Darwin" ] && [ $# -eq 0 ]; then
+        # macOS startup paths with no CLI options can proceed without GNU getopt.
+        return 0
+    fi
+
+    if [ ${getopt_rc:-0} -ne 4 ]; then
+    echo "Incompatible version of getopt"
     if [ "${os}" == "Darwin" ]; then
       echo "Update from an external source"
       echo "Example: brew install gnu-getopt"
@@ -394,7 +414,7 @@ check_getopt () {
     else
       echo "getopt must support long options"
     fi
-    exit 3
+        return 3
   fi
 }
 

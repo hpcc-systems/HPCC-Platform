@@ -165,15 +165,28 @@ PATH_PREFIX=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^path 
 export PID=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^pid *= *" | sed -e 's/^pid *= *//'`
 export LD_PRELOAD=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^JNI_PATH *= *" | sed -e 's/^JNI_PATH *= *//'`:$LD_PRELOAD
 
-NEW_PATH="${PATH_PREFIX}/bin"
-for D in ${PATH//:/ } ; do
-    if [ "${D}" = "${NEW_PATH}" ]; then
-        unset NEW_PATH
-        break
+HPCC_PATH_LIST="${PATH_PREFIX}/bin ${PATH_PREFIX}/sbin ${PATH_PREFIX}/etc/init.d ${PATH_PREFIX}/testing/regress"
+FILTERED_PATH=""
+IFS=':' read -r -a PATH_ENTRIES <<< "${PATH}"
+for D in "${PATH_ENTRIES[@]}" ; do
+    SKIP=0
+    for HPCC_D in ${HPCC_PATH_LIST}; do
+        if [ "${D}" = "${HPCC_D}" ]; then
+            SKIP=1
+            break
+        fi
+    done
+    if [ ${SKIP} -eq 0 ]; then
+        if [ -n "${FILTERED_PATH}" ]; then
+            FILTERED_PATH="${FILTERED_PATH}:${D}"
+        else
+            FILTERED_PATH="${D}"
+        fi
     fi
 done
-if [ -n "${NEW_PATH}" ]; then
-    NEW_PATH="${NEW_PATH}:${PATH_PREFIX}/sbin:${PATH_PREFIX}/etc/init.d:${PATH_PREFIX}/testing/regress"
+NEW_PATH="${PATH_PREFIX}/bin:${PATH_PREFIX}/sbin:${PATH_PREFIX}/etc/init.d:${PATH_PREFIX}/testing/regress"
+if [ -n "${FILTERED_PATH}" ]; then
+    NEW_PATH="${NEW_PATH}:${FILTERED_PATH}"
 fi
 
 if [[ $platform == 'linux' ]]; then
@@ -220,11 +233,7 @@ if [ `basename -- "$0"` = "hpcc_setenv" ]; then
         exit 1
     fi
     # Not being sourced directly, so echo out commands to do so to the caller
-    if [ -n "${NEW_PATH}" ]; then
-        echo "export PATH=${PATH:+${PATH}:}${NEW_PATH}"
-    else
-        echo "# \$PATH already contains ${PATH_PREFIX}/bin"
-    fi
+    echo "export PATH=${NEW_PATH}"
     if [[ $platform == 'linux' ]]; then
         if [ -n "${NEW_LIB}" ]; then
             echo "export LD_LIBRARY_PATH=${LD_LIBRARY_PATH:+${LD_LIBRARY_PATH}:}${NEW_LIB}"
@@ -256,9 +265,7 @@ else
         return
     fi
     # being sourced - can set environment vars directly
-    if [ -n "${NEW_PATH}" ]; then
-        export PATH=${PATH:+${PATH}:}${NEW_PATH}
-    fi
+    export PATH=${NEW_PATH}
     if [[ $platform == 'linux' ]]; then
         if [ -n "${NEW_LIB}" ]; then
             export LD_LIBRARY_PATH=${LD_LIBRARY_PATH:+${LD_LIBRARY_PATH}:}${NEW_LIB}

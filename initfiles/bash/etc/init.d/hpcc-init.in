@@ -114,6 +114,12 @@ FORCE=${FORCE:-NO_FORCE}
 set_environmentvars
 envfile=$configs/$environment
 
+resolved_group=$(resolve_runtime_group ${user} ${group})
+if [ "${resolved_group}" != "${group}" ]; then
+    log "Configured group '${group}' is not usable for user '${user}', using '${resolved_group}'"
+    group=${resolved_group}
+fi
+
 # Know HPCC user after set_environmentvars
 log_dir_owner=$(ls -ld $LOG_DIR | awk '{print $3}')
 [ "log_dir_owner" != "${user}" ] && chown ${user}:${group} $LOG_DIR
@@ -144,7 +150,7 @@ if [ $? -ne 1 ];then
    exit 3
 fi
 
-check_getopt
+check_getopt "$@" || exit 3
 
 basepath=`pwd`
 
@@ -227,7 +233,7 @@ component=""
 runSetupOnly=0
 dafilesrvflag=0
 
-TEMP=`getopt -o c:hdf --long help,componentlist,typelist,debug,force -n 'hpcc-init' -- "$@"`
+TEMP=`${GETOPT_CMD:-getopt} -o c:hdf --long help,componentlist,typelist,debug,force -n 'hpcc-init' -- "$@"`
 if [ $? != 0 ] ; then echo "Failure to parse commandline." >&2 ; exit 1 ; fi
 eval set -- $TEMP
 while true ; do

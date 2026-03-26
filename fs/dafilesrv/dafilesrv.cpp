@@ -610,10 +610,18 @@ int main(int argc, const char* argv[])
             Owned<IPropertyTreeIterator> iter = daFileSrv->getElements("Instance");
             ForEach(*iter)
             {
-                IpAddress instanceIP(iter->query().queryProp("@netAddress"));
+                const char *instanceAddr = iter->query().queryProp("@netAddress");
+                if (isEmptyString(instanceAddr))
+                    continue;
+                IpAddress instanceIP(instanceAddr);
                 if (instanceIP.ipequals(queryHostIP()))
                     dafileSrvInstance = &iter->query();
             }
+            // If host IP matching fails (e.g. localhost-vs-interface differences),
+            // fall back to first configured instance instead of dereferencing null.
+            if (!dafileSrvInstance)
+                dafileSrvInstance = daFileSrv->queryPropTree("Instance[1]");
+
             if (dafileSrvInstance)
             {
                 // check if there's a DaFileSrvGroup
@@ -634,7 +642,8 @@ int main(int argc, const char* argv[])
 
             // merge in bare-metal dafilesrv instance expert settings
             IPropertyTree *instanceExpert = nullptr;
-            instanceExpert = dafileSrvInstance->queryPropTree("expert");
+            if (dafileSrvInstance)
+                instanceExpert = dafileSrvInstance->queryPropTree("expert");
             if (instanceExpert)
                 synchronizePTree(expert, instanceExpert, false, true);
         }
@@ -643,7 +652,8 @@ int main(int argc, const char* argv[])
         replaceComponentConfig(newConfig, getGlobalConfigSP());
 
         // bare-metal gets it's certificate info. from environment at the moment, 'keyPairInfo' not used in containerized mode
-        keyPairInfo.set(env->queryPropTree("EnvSettings/Keys"));
+        if (env)
+            keyPairInfo.set(env->queryPropTree("EnvSettings/Keys"));
     }
 
 #ifndef _USE_OPENSSL

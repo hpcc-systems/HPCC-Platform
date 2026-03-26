@@ -146,7 +146,11 @@ for i in "" ${compArray[@]} ; do
     fi
 done
 
-chown -R ${USER_NAME}:${USER_NAME} ${certPath}
+USER_GROUP=$(id -gn ${USER_NAME} 2>/dev/null)
+if [ -z "${USER_GROUP}" ]; then
+    USER_GROUP=${USER_NAME}
+fi
+chown -R ${USER_NAME}:${USER_GROUP} ${certPath}
 
 if [ ! -e ${homePath}/.ssh/id_rsa ]; then
     cp ${certPath}/key.pem ${homePath}/.ssh/id_rsa
