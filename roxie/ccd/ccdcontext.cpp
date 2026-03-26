@@ -1179,7 +1179,7 @@ public:
 
 //---------------------------------------------------------------------------------------
 
-static const StatisticsMapping graphStatistics({});
+static const StatisticsMapping graphStatistics(std::initializer_list<StatisticKind>{});
 class CRoxieContextBase : implements IRoxieAgentContext, implements ICodeContext, implements roxiemem::ITimeLimiter, implements IRowAllocatorMetaActIdCacheCallback, public CInterface
 {
 protected:

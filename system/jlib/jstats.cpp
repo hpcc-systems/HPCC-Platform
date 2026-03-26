@@ -1411,7 +1411,7 @@ bool StatisticsMapping::equals(const StatisticsMapping & other)
     return true;
 }
 
-const StatisticsMapping noStatistics({});
+const StatisticsMapping noStatistics(std::initializer_list<StatisticKind>{});
 const StatisticsMapping jhtreeCacheStatistics({ StNumIndexSeeks, StNumIndexScans, StNumPostFiltered, StNumIndexWildSeeks,
                                                 StNumNodeCacheAdds, StNumLeafCacheAdds, StNumBlobCacheAdds, StNumNodeCacheHits, StNumLeafCacheHits, StNumBlobCacheHits, StCycleNodeLoadCycles, StCycleLeafLoadCycles,
                                                 StCycleBlobLoadCycles, StCycleNodeReadCycles, StCycleLeafReadCycles, StCycleBlobReadCycles, StNumNodeDiskFetches, StNumLeafDiskFetches, StNumBlobDiskFetches,
