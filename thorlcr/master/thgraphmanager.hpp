@@ -18,8 +18,11 @@
 #ifndef _THGRAPHMANAGER_HPP
 #define _THGRAPHMANAGER_HPP
 
-#include <vector>
+#include <initializer_list>
 #include <string>
+#include <vector>
+
+#include "jstats.h"
 
 class CSDSServerStatus;
 interface IException;
@@ -52,6 +55,7 @@ void publishPodNames(IWorkUnit *workunit, const char *graphName, const std::vect
 void relayWuidException(IConstWorkUnit *wu, const IException *exception);
 void auditThorSystemEvent(const char *eventName);
 void auditThorSystemEvent(const char *eventName, std::initializer_list<const char*> args);
+void auditThorSystemEvent(const char *eventName, std::initializer_list<StatisticKind> statKinds, std::initializer_list<stat_type> statValues);
 void auditThorJobEvent(const char *eventName, const char *wuid, const char *graphName, const char *user);
 
 

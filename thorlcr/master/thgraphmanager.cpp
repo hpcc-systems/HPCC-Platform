@@ -1376,11 +1376,20 @@ void publishPodNames(IWorkUnit *workunit, const char *graphName, const std::vect
     }
 }
 
-static void auditThorSystemEventBuilder(std::string &msg, const char *eventName, std::initializer_list<const char*> args)
+static void auditThorSystemEventBuilder(std::string &msg, const char *eventName, std::initializer_list<const char*> args, std::initializer_list<StatisticKind> statKinds, std::initializer_list<stat_type> statValues)
 {
+    dbgassertex(statKinds.size() == statValues.size());
     msg += std::string(",Progress,Thor,") + eventName + "," + getComponentConfigSP()->queryProp("@name");
     for (auto arg : args)
         msg += "," + std::string(arg);
+    auto kindIt = statKinds.begin();
+    auto valueIt = statValues.begin();
+    for (; kindIt != statKinds.end(); ++kindIt, ++valueIt)
+    {
+        StringBuffer sb;
+        formatStatistic(sb, *valueIt, *kindIt);
+        msg += std::string(",") + queryStatisticName(*kindIt) + "=" + sb.str();
+    }
     if (isContainerized())
         msg += std::string(",") + k8s::queryMyPodName() + "," + k8s::queryMyContainerName();
     else
@@ -1389,6 +1398,11 @@ static void auditThorSystemEventBuilder(std::string &msg, const char *eventName,
         const char *queueName = queryServerStatus().queryProperties()->queryProp("@queue");
         msg += std::string(",") + nodeGroup + "," + queueName;
     }
+}
+
+static void auditThorSystemEventBuilder(std::string &msg, const char *eventName, std::initializer_list<const char*> args)
+{
+    auditThorSystemEventBuilder(msg, eventName, args, {}, {});
 }
 
 void auditThorSystemEvent(const char *eventName)
@@ -1402,6 +1416,13 @@ void auditThorSystemEvent(const char *eventName, std::initializer_list<const cha
 {
     std::string msg;
     auditThorSystemEventBuilder(msg, eventName, args);
+    LOG(MCauditInfo, "%s", msg.c_str());
+}
+
+void auditThorSystemEvent(const char *eventName, std::initializer_list<StatisticKind> statKinds, std::initializer_list<stat_type> statValues)
+{
+    std::string msg;
+    auditThorSystemEventBuilder(msg, eventName, {}, statKinds, statValues);
     LOG(MCauditInfo, "%s", msg.c_str());
 }
 

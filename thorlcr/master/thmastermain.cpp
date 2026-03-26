@@ -1144,11 +1144,7 @@ int main( int argc, const char *argv[]  )
             throwStringExceptionV(0, "Failed to connect to all nodes");
         PROGLOG("verified mp connection to rest of cluster");
 
-        auditThorSystemEvent("Startup");
-        auditStartLogged = true;
-
         writeSentinelFile(sentinelFile);
-
 #ifndef _CONTAINERIZED
         unsigned pinterval = globals->getPropInt("@system_monitor_interval",1000*60);
         if (pinterval)
@@ -1164,6 +1160,8 @@ int main( int argc, const char *argv[]  )
         double expenseStart = calcCostNs(getThorManagerRate(), startupElapsedTimeNs) + calcCostNs(getThorWorkerRate(), workerWaitingTimeNs);
         cost_type costStart = money2cost_type(expenseStart);
         recordGlobalMetrics("Queue", { {"component", "thor" }, { "name", thorName } }, { StNumStarts, StTimeProvision, StTimeStart, StCostStart }, { 1ULL, workerProvisionTimeNs, startupElapsedTimeNs, costStart });
+        auditThorSystemEvent("Startup", { StNumStarts, StTimeProvision, StTimeStart, StCostStart }, { 1ULL, workerProvisionTimeNs, startupElapsedTimeNs, costStart });
+        auditStartLogged = true;
 
         // NB: workunit/graphName only set in one-shot mode (if isCloud())
         thorMain(logHandler, workunit, graphName);
