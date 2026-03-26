@@ -50,5 +50,9 @@ target_link_libraries ( htpasswdSecurity
          dalibase
          ${APRUTIL_LIBRARY}
          ${APR_LIBRARY}
-         ${Iconv_LIBRARIES}
     )
+IF (APPLE)
+    target_link_libraries (htpasswdSecurity iconv)
+ELSE()
+    target_link_libraries (htpasswdSecurity ${Iconv_LIBRARIES})
+ENDIF()
