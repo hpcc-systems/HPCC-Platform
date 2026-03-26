@@ -41,6 +41,7 @@
 #include "jfile.hpp"
 #include "jdebug.hpp"
 #include "jcomp.ipp"
+#include "jhash.hpp"
 
 #define CC_EXTRA_OPTIONS        ""
 #ifdef GENERATE_LISTING
@@ -777,6 +778,7 @@ void CppCompiler::expandRootDirectory(StringBuffer & expanded, StringBuffer & in
 StringBuffer & CppCompiler::getObjectName(StringBuffer & out, const char * filename)
 {
     out.append(targetDir);
+    out.appendf("%08x_", hashcz((const unsigned char *)filename, 0));
     if (targetCompiler == Vs6CppCompiler)
         splitFilename(filename, NULL, NULL, &out, NULL);
     else
