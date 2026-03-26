@@ -27,6 +27,27 @@ endif()
 configure_file("version.in" "version")
 configure_file("environment.conf.in" "environment.conf" IMMEDIATE)
 configure_file("environment.xml.in" "environment.xml" IMMEDIATE)
+
+# Optional localhost override for local deployments. This is intentionally
+# platform-agnostic and can be enabled explicitly when needed.
+option(HPCC_FORCE_LOCALHOST_ADDRESSES "Force localhost addresses in generated environment.xml" OFF)
+
+# Backward compatibility with previous option name.
+if(DEFINED HPCC_FORCE_LOCALHOST_ON_MACOS)
+    message(STATUS "HPCC_FORCE_LOCALHOST_ON_MACOS is deprecated; use HPCC_FORCE_LOCALHOST_ADDRESSES")
+    if(HPCC_FORCE_LOCALHOST_ON_MACOS)
+        set(HPCC_FORCE_LOCALHOST_ADDRESSES ON CACHE BOOL "Force localhost addresses in generated environment.xml" FORCE)
+    endif()
+endif()
+
+if(HPCC_FORCE_LOCALHOST_ADDRESSES)
+    file(READ "${CMAKE_CURRENT_BINARY_DIR}/environment.xml" _hpcc_environment_xml)
+    string(REPLACE "netAddress=\".\"" "netAddress=\"127.0.0.1\"" _hpcc_environment_xml "${_hpcc_environment_xml}")
+    string(REPLACE "server=\".\"" "server=\"127.0.0.1\"" _hpcc_environment_xml "${_hpcc_environment_xml}")
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/environment.xml" "${_hpcc_environment_xml}")
+    message(STATUS "HPCC localhost override enabled: generated environment.xml uses 127.0.0.1 for local addresses")
+endif()
+
 configure_file("genenvrules.conf.in" "genenvrules.conf" @ONLY)
 foreach(iFILES
         ${CMAKE_CURRENT_BINARY_DIR}/environment.conf
