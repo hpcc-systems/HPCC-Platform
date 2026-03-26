@@ -48,7 +48,8 @@ struct CConnectedWorkerDetail
     std::string containerName;
 
 };
-void publishPodNames(IWorkUnit *workunit, const char *graphName, const std::vector<CConnectedWorkerDetail> *connectedWorkers);
+void publishManagerPodName(IWorkUnit *workunit, const char *graphName);
+void publishWorkerPodNames(IWorkUnit *workunit, const std::vector<CConnectedWorkerDetail> &workers);
 void relayWuidException(IConstWorkUnit *wu, const IException *exception);
 void auditThorSystemEvent(const char *eventName);
 void auditThorSystemEvent(const char *eventName, std::initializer_list<const char*> args);

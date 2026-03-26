@@ -1353,26 +1353,20 @@ static int recvNextGraph(unsigned timeoutMs, const char *wuid, StringBuffer &ret
 
 
 static std::vector<CConnectedWorkerDetail> connectedWorkers;
-void publishPodNames(IWorkUnit *workunit, const char *graphName, const std::vector<CConnectedWorkerDetail> *_connectedWorkers)
+void publishManagerPodName(IWorkUnit *workunit, const char *graphName)
 {
-    // skip if Thor manager already published (implying worker pods already published too)
     // NB: this will always associate the new 'graphName' with the manager pod meta info.
-    if (workunit->setContainerizedProcessInfo("Thor", globals->queryProp("@name"), k8s::queryMyPodName(), k8s::queryMyContainerName(), graphName, nullptr))
+    workunit->setContainerizedProcessInfo("Thor", globals->queryProp("@name"), k8s::queryMyPodName(), k8s::queryMyContainerName(), graphName, nullptr);
+}
+
+void publishWorkerPodNames(IWorkUnit *workunit, const std::vector<CConnectedWorkerDetail> &workers)
+{
+    assertex(connectedWorkers.empty());
+    connectedWorkers = workers;
+    for (unsigned workerNum=0; workerNum<connectedWorkers.size(); workerNum++)
     {
-        if (_connectedWorkers)
-        {
-            assertex(connectedWorkers.empty());
-            connectedWorkers = *_connectedWorkers;
-        }
-        else
-        {
-            assertex(!connectedWorkers.empty());
-        }
-        for (unsigned workerNum=0; workerNum<connectedWorkers.size(); workerNum++)
-        {
-            const CConnectedWorkerDetail &worker = connectedWorkers[workerNum];
-            workunit->setContainerizedProcessInfo("ThorWorker", globals->queryProp("@name"), worker.podName.c_str(), worker.containerName.c_str(), nullptr, std::to_string(workerNum+1).c_str());
-        }
+        const CConnectedWorkerDetail &worker = connectedWorkers[workerNum];
+        workunit->setContainerizedProcessInfo("ThorWorker", globals->queryProp("@name"), worker.podName.c_str(), worker.containerName.c_str(), nullptr, std::to_string(workerNum+1).c_str());
     }
 }
 
@@ -1561,7 +1555,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
 
                                     {
                                         Owned<IWorkUnit> wu = &workunit->lock();
-                                        publishPodNames(wu, currentGraphName, nullptr);
+                                        publishManagerPodName(wu, currentGraphName);
                                     }
                                     SocketEndpoint dummyAgentEp;
                                     jobManager->execute(workunit, currentWuid, currentGraphName, dummyAgentEp);

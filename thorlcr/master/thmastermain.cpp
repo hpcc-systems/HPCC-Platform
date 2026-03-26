@@ -296,70 +296,106 @@ public:
         constexpr unsigned defaultPendingTimeSecs = 600;
         unsigned pendingTimeoutSecs = getConfigInt("@schedulingTimeoutSecs", defaultPendingTimeSecs);
         PROGLOG("Waiting for %u workers to register - max registration time = %u minutes", workers, maxRegistrationMins);
-        CTimeMon registerTM(maxRegistrationMins * oneMinMs);
-        while (remaining)
+
+        // Publish manager pod info ASAP, before waiting for workers to register
+        if (isContainerized())
         {
-            // on timeout, check for any failed k8s worker job
-            if (!queryWorldCommunicator().recv(msg, nullptr, MPTAG_THORREGISTRATION, &_sender, oneMinMs))
+            const char *wuid = globals->queryProp("@workunit");
+            const char *graphName = globals->queryProp("@graphName");
+            Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+            Owned<IWorkUnit> workunit = factory->updateWorkUnit(wuid);
+            publishManagerPodName(workunit, graphName);
+        }
+
+        CTimeMon registerTM(maxRegistrationMins * oneMinMs);
+        Owned<IException> workerRegistrationException;
+        try
+        {
+            while (remaining)
             {
-                ::Release(_sender);
-                if (registerTM.timedout())
-                    throw makeStringExceptionV(TE_AbortException, "Timeout waiting for all workers to register within timeout period (%u mins)", maxRegistrationMins);
-
-                if (isContainerized())
+                // on timeout, check for any failed k8s worker job
+                if (!queryWorldCommunicator().recv(msg, nullptr, MPTAG_THORREGISTRATION, &_sender, oneMinMs))
                 {
-                    // NB: this is checking for error only, will throw an exception if any found.
-                    bool wasScheduled = false;
-                    k8s::waitJob("thorworker", "job", cloudJobName.str(), pendingTimeoutSecs, 0, k8s::KeepJobs::all, wasScheduled);
-                }
+                    ::Release(_sender);
+                    if (registerTM.timedout())
+                        throw makeStringExceptionV(TE_AbortException, "Timeout waiting for all workers to register within timeout period (%u mins)", maxRegistrationMins);
 
-                // NB: will not reach here if waitJob fails.
-                PROGLOG("Waiting for %u remaining workers to register", remaining);
-            }
-            else
-            {
-                Owned<INode> sender = _sender;
-                StringBuffer workerEPStr;
-                sender->endpoint().getEndpointHostText(workerEPStr);
-
-                auto findFunc = [&workerEPStr](const CConnectedWorkerDetail& worker)
-                {
-                    return streq(worker.host.c_str(), workerEPStr.str());
-                };
-                if (connectedWorkers.end() != std::find_if(connectedWorkers.begin(), connectedWorkers.end(), findFunc))
-                    throw makeStringExceptionV(TE_AbortException, "Same worker registered twice!! : %s", workerEPStr.str());
-
-                /* NB: in base metal setup, the workers know which worker number they are in advance, and send their workerNum at registration.
-                * In non attached storage setup, they do not send a worker by default and instead are given a # once all are registered
-                */
-                unsigned workerNum;
-                msg.read(workerNum);
-                StringBuffer workerPodName, workerContainerName;
-                if (NotFound == workerNum)
-                {
                     if (isContainerized())
                     {
-                        msg.read(workerPodName);
-                        msg.read(workerContainerName);
+                        // NB: this is checking for error only, will throw an exception if any found.
+                        bool wasScheduled = false;
+                        k8s::waitJob("thorworker", "job", cloudJobName.str(), pendingTimeoutSecs, 0, k8s::KeepJobs::all, wasScheduled);
                     }
-                    connectedWorkers.emplace_back(workerEPStr.str(), workerPodName.str(), workerContainerName.str());
-                    PROGLOG("Worker connected from %s", workerEPStr.str());
+
+                    // NB: will not reach here if waitJob fails.
+                    PROGLOG("Waiting for %u remaining workers to register", remaining);
                 }
                 else
                 {
-                    unsigned pos = workerNum - 1; // NB: workerNum is 1 based
-                    while (connectedWorkers.size() < pos)
-                        connectedWorkers.emplace_back();
-                    if (connectedWorkers.size() == pos)
-                        connectedWorkers.emplace_back(workerEPStr.str());
+                    Owned<INode> sender = _sender;
+                    StringBuffer workerEPStr;
+                    sender->endpoint().getEndpointHostText(workerEPStr);
+
+                    auto findFunc = [&workerEPStr](const CConnectedWorkerDetail& worker)
+                    {
+                        return streq(worker.host.c_str(), workerEPStr.str());
+                    };
+                    if (connectedWorkers.end() != std::find_if(connectedWorkers.begin(), connectedWorkers.end(), findFunc))
+                        throw makeStringExceptionV(TE_AbortException, "Same worker registered twice!! : %s", workerEPStr.str());
+
+                    /* NB: in base metal setup, the workers know which worker number they are in advance, and send their workerNum at registration.
+                    * In non attached storage setup, they do not send a worker by default and instead are given a # once all are registered
+                    */
+                    unsigned workerNum;
+                    msg.read(workerNum);
+                    StringBuffer workerPodName, workerContainerName;
+                    if (NotFound == workerNum)
+                    {
+                        if (isContainerized())
+                        {
+                            msg.read(workerPodName);
+                            msg.read(workerContainerName);
+                        }
+                        connectedWorkers.emplace_back(workerEPStr.str(), workerPodName.str(), workerContainerName.str());
+                        PROGLOG("Worker connected from %s", workerEPStr.str());
+                    }
                     else
-                        connectedWorkers[pos] = {workerEPStr.str()};
-                    PROGLOG("Worker %u connected from %s", workerNum, workerEPStr.str());
+                    {
+                        unsigned pos = workerNum - 1; // NB: workerNum is 1 based
+                        while (connectedWorkers.size() < pos)
+                            connectedWorkers.emplace_back();
+                        if (connectedWorkers.size() == pos)
+                            connectedWorkers.emplace_back(workerEPStr.str());
+                        else
+                            connectedWorkers[pos] = {workerEPStr.str()};
+                        PROGLOG("Worker %u connected from %s", workerNum, workerEPStr.str());
+                    }
+                    --remaining;
+                    workerProvisionTracker.noteComplete();
                 }
-                --remaining;
-                workerProvisionTracker.noteComplete();
             }
         }
+        catch (IException *e)
+        {
+            workerRegistrationException.setown(e);
+        }
+
+        // Publish workers that connected (even if not all connected due to exception/timeout)
+        if (isContainerized())
+        {
+            unsigned wfid = globals->getPropInt("@wfid");
+            const char *wuid = globals->queryProp("@workunit");
+            const char *graphName = globals->queryProp("@graphName");
+            Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+            Owned<IWorkUnit> workunit = factory->updateWorkUnit(wuid);
+            if (!workerRegistrationException)
+                addTimeStamp(workunit, wfid, graphName, StWhenK8sReady);
+            publishWorkerPodNames(workunit, connectedWorkers);
+        }
+
+        if (workerRegistrationException)
+            throw workerRegistrationException.getClear();
+
         assertex(workers == connectedWorkers.size());
 
         unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_WORKERPORTINC);
@@ -392,17 +428,6 @@ public:
             }
             processGroup.setown(createIGroup(connectedWorkerEps));
             setupCluster(queryMyNode(), processGroup, channelsPerWorker, workerBasePort, localThorPortInc);
-        }
-
-        if (isContainerized())
-        {
-            unsigned wfid = globals->getPropInt("@wfid");
-            const char *wuid = globals->queryProp("@workunit");
-            const char *graphName = globals->queryProp("@graphName");
-            Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-            Owned<IWorkUnit> workunit = factory->updateWorkUnit(wuid);
-            addTimeStamp(workunit, wfid, graphName, StWhenK8sReady);
-            publishPodNames(workunit, graphName, &connectedWorkers);
         }
 
         //Check that nothing has caused the global configuration to be refreshed - otherwise inconsistent values may be used by the slave
