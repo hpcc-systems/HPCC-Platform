@@ -63,7 +63,7 @@ constexpr CompressionMethod defaultBinaryCompressionMethod = COMPRESS_METHOD_ZST
 class NullPTreeIterator final : implements IPropertyTreeIterator
 {
 public:
-    virtual ~NullPTreeIterator() {}
+    ~NullPTreeIterator() {}
     virtual void Link() const override {}
     virtual bool Release() const override { return true; }
 // IPropertyTreeIterator

@@ -944,7 +944,9 @@ public:
     {
         StringBuffer time;
         formatTime(time, heartbeatTimer.queryElapsedNS());
-        log(true, "%s complete. Total time: %s, Total dirs: %lu, Total files: %lu", op, time.str(), processedDirs.load(), processedFiles.load());
+        const unsigned long dirs = static_cast<unsigned long>(processedDirs.load());
+        const unsigned long files = static_cast<unsigned long>(processedFiles.load());
+        log(true, "%s complete. Total time: %s, Total dirs: %lu, Total files: %lu", op, time.str(), dirs, files);
     }
 
     void checkHeartbeat(const char * op)
@@ -962,13 +964,15 @@ public:
         struct tm *utc_tm = gmtime(&now);
         char timestamp[32];
         strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", utc_tm);
+        const unsigned long dirs = static_cast<unsigned long>(processedDirs.load());
+        const unsigned long files = static_cast<unsigned long>(processedFiles.load());
 
         if (elapsedDays > 0)
-            log(true, "%s - elapsed: %ud %uh processed: %lu dirs, %lu files (%s UTC)", op, elapsedDays, remainingHours, processedDirs.load(), processedFiles.load(), timestamp);
+            log(true, "%s - elapsed: %ud %uh processed: %lu dirs, %lu files (%s UTC)", op, elapsedDays, remainingHours, dirs, files, timestamp);
         else if (elapsedHours > 0)
-            log(true, "%s - elapsed: %uh %um processed: %lu dirs, %lu files (%s UTC)", op, elapsedHours, remainingMinutes, processedDirs.load(), processedFiles.load(), timestamp);
+            log(true, "%s - elapsed: %uh %um processed: %lu dirs, %lu files (%s UTC)", op, elapsedHours, remainingMinutes, dirs, files, timestamp);
         else
-            log(true, "%s - elapsed: %um processed: %lu dirs, %lu files (%s UTC)", op, elapsedMinutes, processedDirs.load(), processedFiles.load(), timestamp);
+            log(true, "%s - elapsed: %um processed: %lu dirs, %lu files (%s UTC)", op, elapsedMinutes, dirs, files, timestamp);
 
         heartbeatTimer.updatePeriod();
     }

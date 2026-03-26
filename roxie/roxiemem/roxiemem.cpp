@@ -7068,12 +7068,12 @@ public:
     TestingRowBuffer(unsigned _cost, unsigned _id) : cost(_cost), id(_id)
     {
     }
-    virtual ~TestingRowBuffer() { kill(); }
+    ~TestingRowBuffer() { kill(); }
 
 //interface IBufferedRowCallback
-    virtual unsigned getSpillCost() const { return cost; }
-    virtual unsigned getActivityId() const { return id; }
-    virtual bool freeBufferedRows(bool critical)
+    unsigned getSpillCost() const { return cost; }
+    unsigned getActivityId() const { return id; }
+    bool freeBufferedRows(bool critical)
     {
         if (rows.ordinality() == 0)
             return false;
@@ -7448,8 +7448,8 @@ protected:
                 double speedup = (double)mapMicrosecs / umapMicrosecs;
 
                 DBGLOG("  Mixed (80%% hit):");
-                DBGLOG("    std::map:         %.2f ns/lookup (%u us total)", mapNsPerLookup, mapMicrosecs);
-                DBGLOG("    std::unordered_map: %.2f ns/lookup (%u us total)", umapNsPerLookup, umapMicrosecs);
+                DBGLOG("    std::map:         %.2f ns/lookup (%u us total, %u hits)", mapNsPerLookup, mapMicrosecs, mapHits);
+                DBGLOG("    std::unordered_map: %.2f ns/lookup (%u us total, %u hits)", umapNsPerLookup, umapMicrosecs, umapHits);
                 DBGLOG("    Speedup: %.2fx", speedup);
             }
 

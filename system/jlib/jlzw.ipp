@@ -68,7 +68,7 @@ protected:
     void flushbuf();
     void initCommon();
     void ensure(size32_t sz);
-    virtual void initdict();
+    void initdict();
     size32_t inlen;
     size32_t outlen;
     size32_t maxlen;
