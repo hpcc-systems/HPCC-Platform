@@ -686,10 +686,7 @@ int main( int argc, const char *argv[]  )
     SocketEndpoint thorEp;
     const char *manager = globals->queryProp("@master");
     if (manager)
-    {
         thorEp.set(manager);
-        thorEp.setLocalHost(thorEp.port);
-    }
     else
         thorEp.setLocalHost(0);
 

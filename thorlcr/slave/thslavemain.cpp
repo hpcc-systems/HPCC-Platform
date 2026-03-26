@@ -447,11 +447,25 @@ int main( int argc, const char *argv[]  )
         startSlaveLog(); // configures 'logHandler'
 
         // In container world, SLAVE= will not be used
+        const bool forceLoopback = (nullptr != getenv("HPCC_THOR_FORCE_LOOPBACK"));
+        SocketEndpoint configuredMasterEp(master);
+        const bool masterIsLoopback = configuredMasterEp.isLoopBack();
+
         const char *slave = globals->queryProp("@slave");
         if (slave)
         {
             slfEp.set(slave);
-            localHostToNIC(slfEp);
+            // For local Thor (master on loopback), keep slave endpoint on loopback
+            // so worker registration and expected endpoints remain consistent.
+            const bool localThorLoopback = (masterIsLoopback && strncmp(slave, ".", 1) == 0);
+            if (forceLoopback || localThorLoopback)
+            {
+                unsigned port = slfEp.port;
+                slfEp.set("127.0.0.1");
+                slfEp.port = port;
+            }
+            else if (!slfEp.isLoopBack())
+                localHostToNIC(slfEp);
         }
         else 
             slfEp.setLocalHost(0);
@@ -470,8 +484,15 @@ int main( int argc, const char *argv[]  )
         DBGLOG("MPServer started on port %d", getFixedPort(TPORT_mp));
 #endif
 
-        SocketEndpoint masterEp(master);
-        localHostToNIC(masterEp);
+        SocketEndpoint masterEp(configuredMasterEp);
+        if (forceLoopback)
+        {
+            unsigned port = masterEp.port;
+            masterEp.set("127.0.0.1");
+            masterEp.port = port;
+        }
+        else if (!masterEp.isLoopBack())
+            localHostToNIC(masterEp);
         setMasterPortBase(masterEp.port);
 
         if (RegisterSelf(masterEp))

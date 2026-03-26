@@ -1677,7 +1677,13 @@ void CSocket::cancel_accept()
 #endif
     if (!in_accept) {
         accept_cancel_state = accept_cancelled;
+    #ifdef __APPLE__
+        // cancel_accept is best-effort cleanup; shutdown may return ENOTCONN on macOS during teardown.
+        // Use non-throwing shutdown path to avoid aborting callers that do not expect exceptions here.
+        shutdownNoThrow(SHUTDOWN_READWRITE);
+    #else
         shutdown();
+    #endif
         errclose();
         return;
     }
