@@ -56,6 +56,7 @@ private:
     Owned<IThreadPool> pool; // for containerized only
     std::atomic<bool> running = { false };
     bool isThorAgent = false;
+    bool isRoxieAgent = false;
     bool disableQueuePriority = false; // temporary JIC, while new client priority queuing beds in.
     CriticalSection queueUpdateCS;
     StringAttr updatedQueueNames;
@@ -92,7 +93,8 @@ CEclAgentExecutionServer::CEclAgentExecutionServer(IPropertyTree *_config) : con
     disableQueuePriority = getComponentConfigSP()->getPropBool("expert/@disableQueuePriority");
 
     StatisticCreatorType ctype = SCThthor;
-    if (strieq(apptype, "roxie"))
+    isRoxieAgent = strieq(apptype, "roxie");
+    if (isRoxieAgent)
         ctype = SCTroxie;
     else if (strieq(apptype, "thor"))
         ctype = SCTthor;
@@ -102,15 +104,20 @@ CEclAgentExecutionServer::CEclAgentExecutionServer(IPropertyTree *_config) : con
     {
         unsigned poolSize = config->getPropInt("@maxActive", 100);
         pool.setown(createThreadPool("agentPool", this, false, nullptr, poolSize, INFINITE));
+
+        if (!isRoxieAgent)
+        {
+            reloadConfigHook.installOnce(std::bind(&CEclAgentExecutionServer::configUpdate, this), false);
+            PROGLOG("DJPS reloadConfigHook.installOnce() completed");
+        }
     }
-    reloadConfigHook.installOnce(std::bind(&CEclAgentExecutionServer::configUpdate, this), false);
-    PROGLOG("DJPS reloadConfigHook.installOnce() completed");
 }
 
 
 CEclAgentExecutionServer::~CEclAgentExecutionServer()
 {
-    reloadConfigHook.clear();
+    if (!isRoxieAgent)
+        reloadConfigHook.clear();
     if (pool)
         pool->joinAll(false, INFINITE);
 
@@ -180,6 +187,11 @@ void CEclAgentExecutionServer::configUpdate()
 
 int CEclAgentExecutionServer::run()
 {
+#ifdef _CONTAINERIZED
+    StringBuffer queueNames;
+#else
+    SCMStringBuffer queueNames;
+#endif
     Owned<IFile> sentinelFile = createSentinelTarget();
     removeSentinelFile(sentinelFile);
     try
@@ -187,12 +199,23 @@ int CEclAgentExecutionServer::run()
         Owned<IGroup> serverGroup = createIGroupRetry(daliServers, DALI_SERVER_PORT);
         initClientProcess(serverGroup, DCR_AgentExec);
 #ifdef _CONTAINERIZED
-        if (isThorAgent)
+        if (isRoxieAgent)
+        {
+            getClusterEclAgentQueueName(queueNames, agentName);
+            Owned<IPropertyTreeIterator> auxQueueIter = config->getElements("auxQueues");
+            ForEach(*auxQueueIter)
+            {
+                queueNames.append(',');
+                const char *auxQueueName = auxQueueIter->query().queryProp(nullptr);
+                getClusterEclAgentQueueName(queueNames, auxQueueName);
+            }
+        }
+        else
         {
             StringBuffer newQueueNames;
             buildQueueNames(newQueueNames);
             queueNames.set(newQueueNames);
-            if (disableQueuePriority)
+            if (isThorAgent && disableQueuePriority)
             {
                 // old mechanism used to test a separate queue that only Thor instances listened to (<name>.lingerthor)
                 // by queuing to it for a short period, and if not pulled off, launching a new instance. (see queueJobIfQueueWaiting)
@@ -202,16 +225,17 @@ int CEclAgentExecutionServer::run()
                 lingerQueue.setown(createJobQueue(lingerQueueName));
             }
         }
+#else
+        if (isRoxieAgent)
+        {
+            getAgentQueueNames(queueNames, agentName);
+        }
         else
         {
             StringBuffer newQueueNames;
             buildQueueNames(newQueueNames);
             queueNames.set(newQueueNames);
         }
-#else
-        StringBuffer newQueueNames;
-        buildQueueNames(newQueueNames);
-        queueNames.set(newQueueNames);
 #endif
         queue.setown(createJobQueue(queueNames.str()));
         queue->connect(false);
@@ -240,31 +264,34 @@ int CEclAgentExecutionServer::run()
         unsigned __int64 priority = 0;
         while (running)
         {
-            bool queueChanged = false;
+            if (!isRoxieAgent)
             {
-                CriticalBlock b(queueUpdateCS);
-                if (updatedQueueNames)
+                bool queueChanged = false;
                 {
-                    PROGLOG("DJPS updatedQueueNames detected");
-                    queueNames.set(updatedQueueNames);
-                    updatedQueueNames.clear();
-                    queue.clear();
-                    queue.setown(createJobQueue(queueNames.str()));
-                    queueChanged = true;
+                    CriticalBlock b(queueUpdateCS);
+                    if (updatedQueueNames)
+                    {
+                        PROGLOG("DJPS updatedQueueNames detected");
+                        queueNames.set(updatedQueueNames);
+                        updatedQueueNames.clear();
+                        queue.clear();
+                        queue.setown(createJobQueue(queueNames.str()));
+                        queueChanged = true;
+                    }
+                    if (!running)
+                    {
+                        PROGLOG("DJPS !running");
+                        break;
+                    }
                 }
-                if (!running)
+                if (queueChanged)
                 {
-                    PROGLOG("DJPS !running");
-                    break;
+                    PROGLOG("DJPS actioning queueChanged");
+                    queue->connect(false);
+                    serverStatus.queryProperties()->setProp("@queue", queueNames.str());
+                    serverStatus.commitProperties();
+                    PROGLOG("DJPS AgentExec: Updated queue(s) '%s'", queueNames.str());
                 }
-            }
-            if (queueChanged)
-            {
-                PROGLOG("DJPS actioning queueChanged");
-                queue->connect(false);
-                serverStatus.queryProperties()->setProp("@queue", queueNames.str());
-                serverStatus.commitProperties();
-                PROGLOG("DJPS AgentExec: Updated queue(s) '%s'", queueNames.str());
             }
             if (pool)
             {
@@ -297,17 +324,20 @@ int CEclAgentExecutionServer::run()
             }
             else
             {
-                bool queueUpdatePending = false;
+                if (!isRoxieAgent)
                 {
-                    CriticalBlock b(queueUpdateCS);
-                    queueUpdatePending = updatedQueueNames.length() != 0;
-                }
-                if (!running)
-                    break;
-                if (queueUpdatePending)
-                {
-                    PROGLOG("DJPS queueUpdatePending %ld", updatedQueueNames.length());
-                    continue;
+                    bool queueUpdatePending = false;
+                    {
+                        CriticalBlock b(queueUpdateCS);
+                        queueUpdatePending = updatedQueueNames.length() != 0;
+                    }
+                    if (!running)
+                        break;
+                    if (queueUpdatePending)
+                    {
+                        PROGLOG("DJPS queueUpdatePending %ld", updatedQueueNames.length());
+                        continue;
+                    }
                 }
                 removeSentinelFile(sentinelFile); // no reason to restart
                 break;
@@ -560,14 +590,22 @@ bool CEclAgentExecutionServer::onAbort()
 {
     DBGLOG("Close down requested");
     running = false;
-    Linked<IJobQueue> currentQueue;
+    if (isRoxieAgent)
     {
-        CriticalBlock b(queueUpdateCS);
         if (queue)
-            currentQueue.set(queue);
+            queue->cancelAcceptConversation();
     }
-    if (currentQueue)
-        currentQueue->cancelAcceptConversation();
+    else
+    {
+        Linked<IJobQueue> currentQueue;
+        {
+            CriticalBlock b(queueUpdateCS);
+            if (queue)
+                currentQueue.set(queue);
+        }
+        if (currentQueue)
+            currentQueue->cancelAcceptConversation();
+    }
     return false;
 }
 
