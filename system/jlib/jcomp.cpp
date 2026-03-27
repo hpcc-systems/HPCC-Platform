@@ -778,7 +778,8 @@ void CppCompiler::expandRootDirectory(StringBuffer & expanded, StringBuffer & in
 StringBuffer & CppCompiler::getObjectName(StringBuffer & out, const char * filename)
 {
     out.append(targetDir);
-    out.appendf("%08x_", hashcz((const unsigned char *)filename, 0));
+    out.appendf("%08x_", hashcz_fnv1a((const unsigned char *)filename, fnvInitialHash32));
+
     if (targetCompiler == Vs6CppCompiler)
         splitFilename(filename, NULL, NULL, &out, NULL);
     else
