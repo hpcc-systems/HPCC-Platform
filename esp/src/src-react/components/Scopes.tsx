@@ -326,12 +326,10 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
         {
             key: "mine", text: nlsHPCC.Mine, disabled: !currentUser?.username || !data.length, iconProps: { iconName: "Contact" }, canCheck: true, checked: filter.Owner === currentUser.username,
             onClick: () => {
-                if (filter.Owner === currentUser.username) {
-                    filter.Owner = "";
-                } else {
-                    filter.Owner = currentUser.username;
-                }
-                applyFilter(filter);
+                applyFilter({
+                    ...filter,
+                    Owner: filter.Owner === currentUser.username ? "" : currentUser.username
+                });
             }
         },
     ], [applyFilter, currentUser, data, filter, hasFilter, refreshData, selection, setShowDeleteConfirm, uiState.hasSelection, viewByScope]);

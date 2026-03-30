@@ -32,7 +32,7 @@ export const QueryDetails: React.FunctionComponent<QueryDetailsProps> = ({
     state = {},
     queryParams = {}
 }) => {
-    state.testTab = state.testTab ?? "form";
+    const effectiveState = React.useMemo(() => ({ ...state, testTab: state.testTab ?? "Form" }), [state]);
 
     const [query, setQuery] = React.useState<any>();
     const [wuid, setWuid] = React.useState<string>("");
@@ -60,14 +60,14 @@ export const QueryDetails: React.FunctionComponent<QueryDetailsProps> = ({
     const onTabSelect = React.useCallback((tab: TabInfo) => {
         switch (tab.id) {
             case "testPages":
-                pushUrl(tab.__state ?? `/queries/${querySet}/${queryId}/testPages/${state.testTab}`);
+                pushUrl(tab.__state ?? `/queries/${querySet}/${queryId}/testPages/${effectiveState.testTab}`);
                 break;
             default:
                 pushUrl(tab.__state ?? `/queries/${querySet}/${queryId}/${tab.id}`);
                 break;
         }
         updateFullscreen(fullscreen);
-    }, [fullscreen, queryId, querySet, state.testTab]);
+    }, [fullscreen, queryId, querySet, effectiveState.testTab]);
 
     const tabs = React.useMemo((): TabInfo[] => {
         return [{
@@ -135,7 +135,7 @@ export const QueryDetails: React.FunctionComponent<QueryDetailsProps> = ({
                     <Resources wuid={wuid} />
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "testPages"} size={size}>
-                    <QueryTests queryId={queryId} querySet={querySet} tab={state.testTab} />
+                    <QueryTests queryId={queryId} querySet={querySet} tab={effectiveState.testTab} />
                 </DelayLoadedPanel>
             </div>
         }</SizeMe>

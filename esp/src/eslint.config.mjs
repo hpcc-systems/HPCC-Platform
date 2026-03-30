@@ -70,7 +70,6 @@ export default defineConfig(
             // TODO: Address in future PRs, tackle one at a time ---
             "react-hooks/preserve-manual-memoization": "off",
             "react-hooks/incompatible-library": "off",
-            "react-hooks/immutability": "off",
             "react-hooks/refs": "off",
             "react-hooks/purity": "off",
             "react-hooks/set-state-in-effect": "off",

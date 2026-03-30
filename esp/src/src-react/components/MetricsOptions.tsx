@@ -48,6 +48,8 @@ const GridOptions: React.FunctionComponent<GridOptionsProps> = ({
     const strSelectionRef = React.useRef(strSelection);
     strSelectionRef.current = strSelection;
 
+    const isSyncingRef = React.useRef(false);
+
     const columns = React.useMemo((): FluentColumns => {
         return {
             col1: {
@@ -66,24 +68,36 @@ const GridOptions: React.FunctionComponent<GridOptionsProps> = ({
         setData(strArray.map(str => ({ id: str, key: str })));
     }, [strArray]);
 
+    const handlerRef = React.useRef<Selection | null>(null);
     const selectionHandler = useConst(() => {
-        return new Selection({
+        handlerRef.current = new Selection({
             getKey: (item: { id: string; key: string }) => item.key,
-            onSelectionChanged: () => setSelectionRef.current(selectionHandler.getSelection().map(item => item.id)),
-            onItemsChanged: () => {
-                selectionHandler.setAllSelected(false);
-                for (const str of strSelectionRef.current) {
-                    selectionHandler.setKeySelected(str, true, false);
+            onSelectionChanged: () => {
+                if (!isSyncingRef.current) {
+                    setSelectionRef.current(handlerRef.current!.getSelection().map((item: any) => item.id));
                 }
+            },
+            onItemsChanged: () => {
+                isSyncingRef.current = true;
+                handlerRef.current!.setAllSelected(false);
+                for (const str of strSelectionRef.current) {
+                    handlerRef.current!.setKeySelected(str, true, false);
+                }
+                isSyncingRef.current = false;
             }
         });
+        return handlerRef.current;
     });
 
     React.useEffect(() => {
+        isSyncingRef.current = true;
+        selectionHandler.setChangeEvents(false);
         selectionHandler.setAllSelected(false);
         for (const str of strSelection) {
             selectionHandler.setKeySelected(str, true, false);
         }
+        selectionHandler.setChangeEvents(true);
+        isSyncingRef.current = false;
     }, [selectionHandler, strSelection]);
 
     return <div style={{ position: "relative", height: 400 }}>
@@ -161,7 +175,7 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
     logicalGraph
 }) => {
     const [globalScopeTypes, globalProperties] = useMetricMeta();
-    const { viewIds, viewId, setViewId, view, addView, deleteView, renameView, isDefaultView, updateView, save } = useMetricsViews(logicalGraph);
+    const { viewIds, viewId, setViewId, view, addView, deleteView, renameView, isDefaultView, updateView, resetView, save } = useMetricsViews(logicalGraph);
     const [dirtyView, setDirtyView] = React.useState<MetricsView>(clone(view));
     const [showAdd, setShowAdd] = React.useState(false);
     const [showRename, setShowRename] = React.useState(false);
@@ -226,8 +240,7 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
                 <DefaultButton
                     text={nlsHPCC.Reset}
                     onClick={() => {
-                        setDirtyView(clone(view));
-                        forceRefresh();
+                        resetView(true);
                     }}
                 />
             </>}>
@@ -262,7 +275,7 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
                                     strArray={globalScopeTypes}
                                     strSelection={dirtyView.scopeTypes}
                                     setSelection={scopeTypes => {
-                                        dirtyView.scopeTypes = [...scopeTypes];
+                                        setDirtyView(prev => ({ ...prev, scopeTypes: [...scopeTypes] }));
                                     }}
                                 ></GridOptions>
                             </StackItemShim>
@@ -272,7 +285,7 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
                                     strArray={globalProperties}
                                     strSelection={dirtyView.properties}
                                     setSelection={properties => {
-                                        dirtyView.properties = [...properties];
+                                        setDirtyView(prev => ({ ...prev, properties: [...properties] }));
                                     }}
                                 ></GridOptions>
                             </StackItemShim>
@@ -282,41 +295,34 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
                 {selectedTab === "sql" &&
                     <div className={styles.sqlPanel} style={{ height: innerHeight }}>
                         <SourceEditor mode="sql" text={dirtyView.sql} toolbar={false} onTextChange={sql => {
-                            dirtyView.sql = sql;
-                            forceRefresh();
+                            setDirtyView(prev => ({ ...prev, sql }));
                         }} />
                     </div>
                 }
                 {selectedTab === "graph" &&
                     <div className={styles.graphPanel} style={{ height: innerHeight }}>
                         <Checkbox label={nlsHPCC.IgnoreGlobalStoreOutEdges} checked={dirtyView.ignoreGlobalStoreOutEdges} onChange={(ev, checked) => {
-                            dirtyView.ignoreGlobalStoreOutEdges = checked;
-                            forceRefresh();
+                            setDirtyView(prev => ({ ...prev, ignoreGlobalStoreOutEdges: checked }));
                         }} />
                         <TextField label={nlsHPCC.SubgraphLabel} value={dirtyView.subgraphTpl} multiline autoAdjustHeight onChange={(evt, newValue) => {
-                            dirtyView.subgraphTpl = newValue;
-                            forceRefresh();
+                            setDirtyView(prev => ({ ...prev, subgraphTpl: newValue }));
                         }} />
                         <TextField label={nlsHPCC.ActivityLabel} value={dirtyView.activityTpl} multiline autoAdjustHeight onChange={(evt, newValue) => {
-                            dirtyView.activityTpl = newValue;
-                            forceRefresh();
+                            setDirtyView(prev => ({ ...prev, activityTpl: newValue }));
                         }} />
                         <TextField label={nlsHPCC.EdgeLabel} value={dirtyView.edgeTpl} multiline autoAdjustHeight onChange={(evt, newValue) => {
-                            dirtyView.edgeTpl = newValue;
-                            forceRefresh();
+                            setDirtyView(prev => ({ ...prev, edgeTpl: newValue }));
                         }} />
                     </div>
                 }
                 {selectedTab === "layout" &&
                     <div className={styles.layoutPanel} style={{ height: innerHeight }}>
                         <Checkbox label={nlsHPCC.Timeline} checked={dirtyView.showTimeline} onChange={(ev, checked) => {
-                            dirtyView.showTimeline = checked;
-                            forceRefresh();
+                            setDirtyView(prev => ({ ...prev, showTimeline: checked }));
                         }} />
                         <JSONSourceEditor json={dirtyView.layout} toolbar={false} onChange={obj => {
                             if (obj) {
-                                dirtyView.layout = obj as DockPanelLayout;
-                                forceRefresh();
+                                setDirtyView(prev => ({ ...prev, layout: obj as DockPanelLayout }));
                             }
                         }} />
                     </div>

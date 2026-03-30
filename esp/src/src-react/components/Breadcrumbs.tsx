@@ -19,14 +19,11 @@ export const Breadcrumbs: React.FunctionComponent<BreadcrumbsProps> = ({
     const crumbs = React.useMemo(() => {
         const paths = decodeURI(hashPath).split("/").filter(path => !!path);
 
-        let fullPath = "#";
         return [{ text: "", key: "home", href: "#/" },
         ...paths.map((path, idx) => {
-            const href = idx < (paths.length - 1) ? `${fullPath}/${path}` : undefined;
+            const href = idx < (paths.length - 1) ? `#/${paths.slice(0, idx + 1).join("/")}` : undefined;
             const style = { fontSize: 10, lineHeight: "10px" };
-            const retVal: IBreadcrumbItem = { text: path.toUpperCase(), key: "" + idx, href, style };
-            fullPath = `${fullPath}/${path}`;
-            return retVal;
+            return { text: path.toUpperCase(), key: "" + idx, href, style } as IBreadcrumbItem;
         }).filter((row, idx) => idx >= ignoreN)];
     }, [hashPath, ignoreN]);
 

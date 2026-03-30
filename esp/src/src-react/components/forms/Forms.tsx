@@ -50,7 +50,7 @@ export const TableForm: React.FunctionComponent<TableFormProps> = ({
 
         const clearedFields: Fields = {};
         for (const key in localFields) {
-            const field = localFields[key];
+            const field = { ...localFields[key] };
             if (field.type === "links") {
                 clearedFields[key] = { ...field };
                 continue;
@@ -87,14 +87,14 @@ export const TableForm: React.FunctionComponent<TableFormProps> = ({
     }, [doReset, localFields, onReset]);
 
     const onChange = React.useCallback((id, value) => {
-        const field = localFields[id];
+        const field = { ...localFields[id] };
         switch (field.type) {
             case "links":
                 break;
             default:
                 field.value = value;
         }
-        setLocalFields({ ...localFields });
+        setLocalFields({ ...localFields, [id]: field });
     }, [localFields]);
     return <TableGroup fields={localFields} onChange={onChange} />;
 };

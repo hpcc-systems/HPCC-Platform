@@ -310,15 +310,16 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedMetrics]);
 
+    const updateViewRef = React.useRef(updateView);
+    updateViewRef.current = updateView;
+
     React.useEffect(() => {
 
         //  Update layout prior to unmount  ---
-        if (dockpanel && updateView) {
+        if (dockpanel) {
             return () => {
-                if (dockpanel && updateView) {
-                    updateView({ layout: dockpanel.getLayout() });
-                    save();
-                }
+                updateViewRef.current?.({ layout: dockpanel.getLayout() });
+                save();
             };
         }
     }, [dockpanel, save, updateView]);

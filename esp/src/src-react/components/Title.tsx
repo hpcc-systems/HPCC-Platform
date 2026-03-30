@@ -94,7 +94,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
             if (evt.ctrlKey) {
                 window.open(`#/search/${searchValue.trim()}`);
             } else {
-                window.location.href = `#/search/${searchValue.trim()}`;
+                window.location.assign(`#/search/${searchValue.trim()}`);
             }
         } else {
             setSearchValue(evt.target.value);

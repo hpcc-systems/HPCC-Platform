@@ -234,13 +234,15 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
     const [loaded, setLoaded] = React.useState(false);
     const [columnWidths] = useNonReactiveEphemeralPageStore("columnWidths");
 
+    const handlerRef = React.useRef<ISelection>(null);
     const selectionHandler = useConst(() => {
-        return isISelection(setSelection) ? setSelection : new Selection({
+        handlerRef.current = isISelection(setSelection) ? setSelection : new Selection({
             canSelectItem: (item: any, index?: number) => canSelectRow ? canSelectRow(item, index ?? -1) : true,
             onSelectionChanged: () => {
-                setSelection(selectionHandler.getSelection());
+                setSelection(handlerRef.current!.getSelection());
             }
         });
+        return handlerRef.current;
     });
 
     const abortController = React.useRef<AbortController>();

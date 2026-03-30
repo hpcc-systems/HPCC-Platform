@@ -155,12 +155,10 @@ export const EventScheduler: React.FunctionComponent<EventSchedulerProps> = ({
         {
             key: "mine", text: nlsHPCC.Mine, disabled: !currentUser?.username || !total, iconProps: { iconName: "Contact" }, canCheck: true, checked: filter["Owner"] === currentUser.username,
             onClick: () => {
-                if (filter["Owner"] === currentUser.username) {
-                    filter["Owner"] = "";
-                } else {
-                    filter["Owner"] = currentUser.username;
-                }
-                pushParams(filter);
+                pushParams({
+                    ...filter,
+                    Owner: filter["Owner"] === currentUser.username ? "" : currentUser.username
+                });
             }
         },
     ], [currentUser.username, filter, hasFilter, refreshData, selection, setShowDescheduleConfirm, store, total]);

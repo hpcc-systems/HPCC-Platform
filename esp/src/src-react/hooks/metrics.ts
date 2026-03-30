@@ -228,21 +228,27 @@ export function useMetricsViews(logicalGraph: boolean): useMetricsViewsResult {
         for (const key in _) {
             newView[key] = _[key];
         }
-        views[label] = newView;
-        origViews[label] = clone(newView);
-        _viewIds.set(Object.keys(views));
+        const updatedViews = { ...views, [label]: newView };
+        const updatedOrigViews = { ...origViews, [label]: clone(newView) };
+        _views.set(updatedViews);
+        _origViews.set(updatedOrigViews);
+        _viewIds.set(Object.keys(updatedViews));
         setViewId(label);
-        setMetricViewStr(JSON.stringify({ viewId: label, views }));
+        setMetricViewStr(JSON.stringify({ viewId: label, views: updatedViews }));
         refresh();
     }, [origViews, refresh, setMetricViewStr, setViewId, view, views]);
 
     const deleteView = React.useCallback((id: string) => {
         if (id in DefaultMetricsViews) return;
-        delete views[id];
-        delete origViews[id];
-        _viewIds.set(Object.keys(views));
+        const updatedViews = { ...views };
+        delete updatedViews[id];
+        const updatedOrigViews = { ...origViews };
+        delete updatedOrigViews[id];
+        _views.set(updatedViews);
+        _origViews.set(updatedOrigViews);
+        _viewIds.set(Object.keys(updatedViews));
         setViewId("Default");
-        setMetricViewStr(JSON.stringify({ viewId: "Default", views }));
+        setMetricViewStr(JSON.stringify({ viewId: "Default", views: updatedViews }));
         refresh();
     }, [origViews, refresh, setMetricViewStr, setViewId, views]);
 
@@ -250,13 +256,15 @@ export function useMetricsViews(logicalGraph: boolean): useMetricsViewsResult {
         if (oldId in DefaultMetricsViews) return;
         if (oldId === newId || !newId) return;
         if (newId in views) return;
-        views[newId] = views[oldId];
-        origViews[newId] = origViews[oldId];
-        delete views[oldId];
-        delete origViews[oldId];
-        _viewIds.set(Object.keys(views));
+        const updatedViews = { ...views, [newId]: views[oldId] };
+        delete updatedViews[oldId];
+        const updatedOrigViews = { ...origViews, [newId]: origViews[oldId] };
+        delete updatedOrigViews[oldId];
+        _views.set(updatedViews);
+        _origViews.set(updatedOrigViews);
+        _viewIds.set(Object.keys(updatedViews));
         setViewId(newId);
-        setMetricViewStr(JSON.stringify({ viewId: newId, views }));
+        setMetricViewStr(JSON.stringify({ viewId: newId, views: updatedViews }));
         refresh();
     }, [origViews, refresh, setMetricViewStr, setViewId, views]);
 
@@ -265,23 +273,29 @@ export function useMetricsViews(logicalGraph: boolean): useMetricsViewsResult {
     }, []);
 
     const updateView = React.useCallback((_: Partial<MetricsView>, forceRefresh = false) => {
+        const updatedView = { ...view };
         for (const key in _) {
-            view[key] = _[key];
+            updatedView[key] = _[key];
         }
+        _view.set(updatedView);
+        _views.set({ ...views, [viewId]: updatedView });
         if (forceRefresh) {
             refresh();
         }
-    }, [refresh, view]);
+    }, [refresh, view, viewId, views]);
 
     const resetView = React.useCallback((forceRefresh = false) => {
         const def = DefaultMetricsViews[viewId] ?? DefaultMetricsViews["Default"];
+        const updatedView = { ...view };
         for (const key in def) {
-            view[key] = def[key];
+            updatedView[key] = def[key];
         }
+        _view.set(updatedView);
+        _views.set({ ...views, [viewId]: updatedView });
         if (forceRefresh) {
             refresh();
         }
-    }, [refresh, view, viewId]);
+    }, [refresh, view, viewId, views]);
 
     const save = React.useCallback(() => {
         return setMetricViewStr(JSON.stringify({ viewId, views }));
