@@ -37,7 +37,18 @@ extern IFile * createAzureFile(const char * filename);
 // Scoped to the owning CAzureApiCopyClient so it is freed when the copy session ends.
 struct CreatedDirsCache
 {
-    CriticalSection lock;
+    bool contains(const std::string &path) const
+    {
+        CriticalBlock block(lock);
+        return dirs.count(path) != 0;
+    }
+    void insert(const std::string &path)
+    {
+        CriticalBlock block(lock);
+        dirs.insert(path);
+    }
+private:
+    mutable CriticalSection lock;
     std::set<std::string> dirs;
 };
 
@@ -172,11 +183,8 @@ class AzureFileClient : public AzureAPICopyClientBase
         for (size_t i = 1; i < components.size(); i++)
         {
             dirUrl += "/" + components[i];
-            {
-                CriticalBlock block(createdDirsCache.lock);
-                if (createdDirsCache.dirs.count(dirUrl))
-                    continue;
-            }
+            if (createdDirsCache.contains(dirUrl))
+                continue;
             try
             {
                 std::string authUrl = dirUrl + querySuffix;
@@ -190,10 +198,7 @@ class AzureFileClient : public AzureAPICopyClientBase
                     Shares::ShareDirectoryClient dirClient(authUrl, clientOptions);
                     dirClient.CreateIfNotExists();
                 }
-                {
-                    CriticalBlock block(createdDirsCache.lock);
-                    createdDirsCache.dirs.insert(dirUrl);
-                }
+                createdDirsCache.insert(dirUrl);
             }
             catch (const Azure::Core::RequestFailedException& e)
             {
