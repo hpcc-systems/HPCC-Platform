@@ -2843,10 +2843,9 @@ void FileSprayer::transferUsingAPI(IAPICopyClient * copyClient)
                 // Strip the plane's prefix from the full path to get the relative path
                 // within the storage container (e.g., remove "azureblob:plane1" prefix)
                 const char *planePrefix = storagePlane->queryPrefix();
-                size_t prefixLen = strlen(planePrefix);
-                if (prefixLen > sourcePath.length() || strncmp(sourcePath.str(), planePrefix, prefixLen) != 0)
+                if (!startsWith(sourcePath, planePrefix))
                     throw makeStringExceptionV(-1, "Source path '%s' does not begin with expected plane prefix '%s' for plane '%s'", sourcePath.str(), planePrefix, planeName);
-                sourcePath.remove(0, prefixLen);
+                sourcePath.remove(0, strlen(planePrefix));
 
                 // Calculate which stripe (i.e., which storage account/device) this part
                 // lives on, using the logical file name hash and the number of devices
