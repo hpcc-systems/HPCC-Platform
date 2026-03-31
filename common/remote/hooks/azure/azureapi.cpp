@@ -374,18 +374,18 @@ protected:
 
         Sas::BlobSasBuilder sasBuilder;
         sasBuilder.Protocol = Sas::SasProtocol::HttpsOnly;
-        sasBuilder.ExpiresOn = delegationKey.second;
+        sasBuilder.ExpiresOn = delegationKey->SignedExpiresOn;
         sasBuilder.BlobContainerName = apiInfo->queryStorageContainerName(stripeNum);
         sasBuilder.BlobName = stripDevicePrefix(filePath);
         sasBuilder.Resource = Sas::BlobSasResource::Blob;
         sasBuilder.SetPermissions(Sas::BlobSasPermissions::Read);
 
-        return sasBuilder.GenerateSasToken(delegationKey.first, accountName);
+        return sasBuilder.GenerateSasToken(*delegationKey, accountName);
     }
 
     // Return a cached UserDelegationKey for the given account, refreshing if expired or absent.
     // The key is valid for 1 hour; we refresh with 5 minutes of margin to avoid using a nearly-expired key.
-    std::pair<Blobs::Models::UserDelegationKey, Azure::DateTime> getCachedDelegationKey(const char *accountName) const
+    std::shared_ptr<const Blobs::Models::UserDelegationKey> getCachedDelegationKey(const char *accountName) const
     {
         CriticalBlock block(delegationKeyCS);
         auto it = delegationKeyCache.find(accountName);
@@ -394,22 +394,21 @@ protected:
         {
             // Reuse if the key still has at least 5 minutes of validity
             if (it->second.fetchedAt + std::chrono::minutes(55) > now)
-                return { it->second.key, it->second.expiresOn };
+                return it->second.key;
         }
 
         std::string serviceUrl = std::string("https://") + accountName + ".blob.core.windows.net";
         BlobServiceClient serviceClient(serviceUrl, getAzureManagedIdentityCredential());
 
         auto expiresOn = Azure::DateTime(now + std::chrono::hours(1));
-        auto userDelegationKey = serviceClient.GetUserDelegationKey(expiresOn).Value;
+        auto key = std::make_shared<Blobs::Models::UserDelegationKey>(serviceClient.GetUserDelegationKey(expiresOn).Value);
 
         CachedDelegationKey entry;
-        entry.key = userDelegationKey;
-        entry.expiresOn = expiresOn;
+        entry.key = key;
         entry.fetchedAt = now;
         delegationKeyCache[accountName] = std::move(entry);
 
-        return { userDelegationKey, expiresOn };
+        return key;
     }
 
     void getAzureURI(StringBuffer & uri, unsigned stripeNum, const char *filePath, const IStorageApiInfo *apiInfo) const
@@ -455,8 +454,7 @@ protected:
 
     struct CachedDelegationKey
     {
-        Blobs::Models::UserDelegationKey key;
-        Azure::DateTime expiresOn;
+        std::shared_ptr<const Blobs::Models::UserDelegationKey> key;
         std::chrono::system_clock::time_point fetchedAt;
     };
 
