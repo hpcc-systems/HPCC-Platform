@@ -1550,6 +1550,12 @@ CEvent::CEvent()
         attributes[i].setup(EventAttr(i));
 }
 
+CEvent::CEvent(const CEvent& other)
+    : CEvent()
+{
+    *this = other;
+}
+
 class EventAttributeStates
 {
 public:
