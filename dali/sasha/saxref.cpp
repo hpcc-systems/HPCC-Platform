@@ -2899,6 +2899,11 @@ public:
                 OERRLOG("Could not connect to /Environment/Software");
                 return;
             }
+
+            // Bare-metal only: resolve cluster names to node groups by matching against
+            // ThorCluster/RoxieCluster entries under /Environment/Software.
+            // Clusters that don't match a Thor or Roxie entry (e.g. standalone data
+            // planes) will not be added to 'groups' and will be skipped by the XREF scan.
             clustersToGroups(conn->queryRoot(),list,cnames,groups,NULL);
         }
         IArrayOf<IGroup> groupsdone;
