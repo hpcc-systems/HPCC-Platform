@@ -129,6 +129,57 @@ private:
 };
 
 
+//---------------------------------------------------------------------------------------------------------------------
+// Directory iterator for Azure File Shares using ShareDirectoryClient::ListFilesAndDirectories API.
+
+class AzureFileDirectoryIterator final : public AzureDirectoryIteratorBase
+{
+public:
+    AzureFileDirectoryIterator(Azure::Storage::Files::Shares::ShareDirectoryClient _dirClient,
+                               const char *_fullPrefix, const char *_shareName,
+                               const char *_mask, bool _includeDirs)
+        : AzureDirectoryIteratorBase(_fullPrefix, _shareName, _mask, _includeDirs),
+          dirClient(std::move(_dirClient)) {}
+
+protected:
+    virtual IFile *createFile(const char *fullPath, const DirEntry &entry) override;
+    virtual void resetPaging() override { pagedResponse.reset(); }
+
+    virtual void fetchPage() override
+    {
+        if (!pagedResponse)
+        {
+            ListFilesAndDirectoriesOptions options;
+            options.Include = Azure::Storage::Files::Shares::Models::ListFilesIncludeFlags::Timestamps;
+            pagedResponse.emplace(dirClient.ListFilesAndDirectories(options));
+        }
+        else
+        {
+            pagedResponse->MoveToNextPage();
+        }
+        extractItems(*pagedResponse);
+        hasMorePages = pagedResponse->NextPageToken.HasValue() && !pagedResponse->NextPageToken.Value().empty();
+    }
+
+private:
+    void extractItems(const ListFilesAndDirectoriesPagedResponse &response)
+    {
+        if (includeDirs)
+        {
+            for (const auto &dir : response.Directories)
+                if (matchesMask(dir.Name.c_str()))
+                    items.push_back({dir.Name, true, -1, toTimeT(dir.Details.LastModified)});
+        }
+        for (const auto &file : response.Files)
+            if (matchesMask(file.Name.c_str()))
+                items.push_back({file.Name, false, file.Details.FileSize, toTimeT(file.Details.LastModified)});
+    }
+
+    Azure::Storage::Files::Shares::ShareDirectoryClient dirClient;
+    std::optional<ListFilesAndDirectoriesPagedResponse> pagedResponse;
+};
+
+
 class AzureFile final : implements CInterfaceOf<IFile>
 {
     friend class AzureFileIO;
@@ -189,10 +240,7 @@ public:
     }
 
 // Directory functions
-    virtual IDirectoryIterator *directoryFiles(const char *mask, bool sub, bool includeDirs) override
-    {
-        UNIMPLEMENTED_X("AzureFile::directoryFiles");
-    }
+    virtual IDirectoryIterator *directoryFiles(const char *mask, bool sub, bool includeDirs) override;
     virtual bool getInfo(bool &isdir,offset_t &size,CDateTime &modtime) override
     {
         ensureMetaData();
@@ -237,11 +285,21 @@ public:
 public:
     SharedFileClient getFileClient() const;
     void invalidateMeta() { haveMeta = false; }
+    void setListedInfo(bool _isDir, offset_t _fileSize, time_t _lastModified)
+    {
+        haveMeta = true;
+        isDir = _isDir;
+        fileExists = true;
+        fileSize = _fileSize;
+        lastModified = _lastModified;
+        createdOn = 0;
+    }
 
 protected:
     std::shared_ptr<StorageSharedKeyCredential> getSharedKeyCredentials() const;
     std::string getFileUrl() const;
     std::shared_ptr<ShareClient> getShareClient() const;
+    Azure::Storage::Files::Shares::ShareDirectoryClient getDirectoryClient() const;
 
     void ensureMetaData();
     void gatherMetaData();
@@ -331,10 +389,10 @@ AzureFile::AzureFile(const char *_azureFileName) : fullName(_azureFileName)
             if ((device == 0) || (device > numDevices))
                 throw makeStringExceptionV(99, "Device %d out of range for plane %s", device, planeName.str());
 
-            if (!endDevice || (*endDevice != '/'))
+            if (!endDevice || (*endDevice != '/' && *endDevice != '\0'))
                 throw makeStringExceptionV(99, "Unexpected end of device partition %s", fullName.str());
 
-            filename = endDevice+1;
+            filename = (*endDevice == '/') ? endDevice+1 : endDevice;
         }
 
         VStringBuffer childPath("containers[%u]", device);
@@ -363,12 +421,18 @@ AzureFile::AzureFile(const char *_azureFileName) : fullName(_azureFileName)
         if (!useManagedIdentity && isEmptyString(secretName))
             throw makeStringExceptionV(99, "Missing secret name for plane %s", planeName.str());
 
-        fileName.set(slash+1);
+        fileName.set(filename);
     }
     else
         throw makeStringExceptionV(99, "Unexpected prefix on azure filename %s", fullName.str());
-
     fileUrl = ::getFileUrl(accountName, shareName, fileName);
+}
+
+IFile * AzureFileDirectoryIterator::createFile(const char *fullPath, const DirEntry &entry)
+{
+    AzureFile *file = new AzureFile(fullPath);
+    file->setListedInfo(entry.isDir, entry.size, entry.modifiedTime);
+    return file;
 }
 
 SharedFileClient AzureFile::getFileClient() const
@@ -403,6 +467,42 @@ std::shared_ptr<ShareClient> AzureFile::getShareClient() const
     {
         return std::make_shared<ShareClient>(getShareUrl(accountName, shareName), getSharedKeyCredentials());
     }
+}
+
+Azure::Storage::Files::Shares::ShareDirectoryClient AzureFile::getDirectoryClient() const
+{
+    auto shareClient = getShareClient();
+    auto dirClient = shareClient->GetRootDirectoryClient();
+
+    // Navigate to the subdirectory specified by fileName
+    // fileName is the path within the share, e.g. "path/to/dir"
+    const char *path = fileName.str();
+    if (!isEmptyString(path))
+    {
+        StringArray components;
+        components.appendList(path, "/");
+        ForEachItemIn(i, components)
+        {
+            const char *component = components.item(i);
+            if (!isEmptyString(component))
+                dirClient = dirClient.GetSubdirectoryClient(component);
+        }
+    }
+    return dirClient;
+}
+
+IDirectoryIterator * AzureFile::directoryFiles(const char *mask, bool sub, bool includeDirs)
+{
+    if (sub)
+        UNIMPLEMENTED_X("AzureFile::directoryFiles recursive");
+
+    // Build the full azure path prefix for constructing child IFile paths
+    StringBuffer fullPathPrefix(fullName);
+    if (fullPathPrefix.length() > 0 && fullPathPrefix.charAt(fullPathPrefix.length()-1) != '/')
+        fullPathPrefix.append('/');
+
+    auto dirClient = getDirectoryClient();
+    return new AzureFileDirectoryIterator(std::move(dirClient), fullPathPrefix.str(), shareName.str(), mask, includeDirs);
 }
 
 void AzureFile::ensureMetaData()

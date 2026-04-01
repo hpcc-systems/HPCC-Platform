@@ -153,6 +153,77 @@ private:
 };
 
 
+//---------------------------------------------------------------------------------------------------------------------
+// Directory iterator for Azure Blob Storage using ListBlobsByHierarchy API.
+// Uses "/" as a delimiter to simulate directory listing, returning both blobs
+// (files) and blob prefixes (virtual directories) at the current level.
+
+class AzureBlobDirectoryIterator final : public AzureDirectoryIteratorBase
+{
+public:
+    AzureBlobDirectoryIterator(std::shared_ptr<BlobContainerClient> _containerClient,
+                               const char *_prefix, const char *_fullPrefix,
+                               const char *_containerName,
+                               const char *_mask, bool _includeDirs)
+        : AzureDirectoryIteratorBase(_fullPrefix, _containerName, _mask, _includeDirs),
+          containerClient(std::move(_containerClient)), prefix(_prefix) {}
+
+protected:
+    virtual IFile *createFile(const char *fullPath, const DirEntry &entry) override;
+    virtual void resetPaging() override { pagedResponse.reset(); }
+
+    virtual void fetchPage() override
+    {
+        if (!pagedResponse)
+        {
+            ListBlobsOptions options;
+            if (!prefix.empty())
+                options.Prefix = prefix;
+            pagedResponse.emplace(containerClient->ListBlobsByHierarchy("/", options));
+        }
+        else
+        {
+            pagedResponse->MoveToNextPage();
+        }
+        extractItems(*pagedResponse);
+        hasMorePages = pagedResponse->NextPageToken.HasValue() && !pagedResponse->NextPageToken.Value().empty();
+    }
+
+private:
+    void extractItems(const ListBlobsByHierarchyPagedResponse &response)
+    {
+        if (includeDirs)
+        {
+            for (const auto &dp : response.BlobPrefixes)
+            {
+                std::string tail = stripPrefix(dp);
+                if (!tail.empty() && tail.back() == '/')
+                    tail.pop_back();
+                if (!tail.empty() && matchesMask(tail.c_str()))
+                    items.push_back({std::move(tail), true, -1, 0});
+            }
+        }
+        for (const auto &blob : response.Blobs)
+        {
+            std::string tail = stripPrefix(blob.Name);
+            if (!tail.empty() && tail.find('/') == std::string::npos && matchesMask(tail.c_str()))
+                items.push_back({std::move(tail), false, blob.BlobSize, toTimeT(blob.Details.LastModified)});
+        }
+    }
+
+    std::string stripPrefix(const std::string &name) const
+    {
+        if (!prefix.empty() && name.compare(0, prefix.size(), prefix) == 0)
+            return name.substr(prefix.size());
+        return name;
+    }
+
+    std::shared_ptr<BlobContainerClient> containerClient;
+    std::string prefix;
+    std::optional<ListBlobsByHierarchyPagedResponse> pagedResponse;
+};
+
+
 class AzureBlob final : implements CInterfaceOf<IFile>
 {
 public:
@@ -211,10 +282,7 @@ public:
     }
 
 // Directory functions
-    virtual IDirectoryIterator *directoryFiles(const char *mask, bool sub, bool includeDirs) override
-    {
-        UNIMPLEMENTED_X("AzureBlob::directoryFiles");
-    }
+    virtual IDirectoryIterator *directoryFiles(const char *mask, bool sub, bool includeDirs) override;
     virtual bool getInfo(bool &isdir,offset_t &size,CDateTime &modtime) override
     {
         ensureMetaData();
@@ -259,6 +327,15 @@ public:
 public:
     SharedBlobClient getBlobClient() const;
     void invalidateMeta() { haveMeta = false; }
+    void setListedInfo(bool _isDir, offset_t _fileSize, time_t _lastModified)
+    {
+        haveMeta = true;
+        isDir = _isDir;
+        fileExists = true;
+        fileSize = _fileSize;
+        lastModified = _lastModified;
+        createdOn = 0;
+    }
     const AzureAPIConfig & queryConfig() const { return config; }
 
 protected:
@@ -624,10 +701,10 @@ AzureBlob::AzureBlob(const char *_azureFileName, AzureAPIConfig &&_config) : ful
             if ((device == 0) || (device > numDevices))
                 throw makeStringExceptionV(99, "Device %d out of range for plane %s", device, planeName.str());
 
-            if (!endDevice || (*endDevice != '/'))
+            if (!endDevice || (*endDevice != '/' && *endDevice != '\0'))
                 throw makeStringExceptionV(99, "Unexpected end of device partition %s", fullName.str());
 
-            filename = endDevice+1;
+            filename = (*endDevice == '/') ? endDevice+1 : endDevice;
         }
 
         VStringBuffer childPath("containers[%u]", device);
@@ -660,8 +737,14 @@ AzureBlob::AzureBlob(const char *_azureFileName, AzureAPIConfig &&_config) : ful
     }
     else
         throw makeStringExceptionV(99, "Unexpected prefix on azure filename %s", fullName.str());
-
     blobUrl = ::getBlobUrl(accountName, containerName, blobName);
+}
+
+IFile * AzureBlobDirectoryIterator::createFile(const char *fullPath, const DirEntry &entry)
+{
+    AzureBlob *file = static_cast<AzureBlob *>(createAzureBlob(fullPath));
+    file->setListedInfo(entry.isDir, entry.size, entry.modifiedTime);
+    return file;
 }
 
 std::shared_ptr<StorageSharedKeyCredential> AzureBlob::getSharedKeyCredentials() const
@@ -784,6 +867,27 @@ IFileIO * AzureBlob::createFileReadIO()
 IFileIO * AzureBlob::createFileWriteIO()
 {
     return new AzureBlobBlockBlobWriteIO(this);
+}
+
+IDirectoryIterator * AzureBlob::directoryFiles(const char *mask, bool sub, bool includeDirs)
+{
+    if (sub)
+        UNIMPLEMENTED_X("AzureBlob::directoryFiles recursive");
+
+    // Build the blob prefix for listing. The blobName is the path within the container.
+    // For directory listing, we want to list blobs under this prefix with "/" delimiter.
+    std::string listPrefix(blobName.str());
+    if (!listPrefix.empty() && listPrefix.back() != '/')
+        listPrefix += '/';
+
+    // Build the full azure path prefix for constructing child IFile paths
+    // fullName is e.g. "azureblob:plane/path" or "azureblob:plane/d1/path"
+    StringBuffer fullPathPrefix(fullName);
+    if (fullPathPrefix.length() > 0 && fullPathPrefix.charAt(fullPathPrefix.length()-1) != '/')
+        fullPathPrefix.append('/');
+
+    auto containerClient = getBlobContainerClient();
+    return new AzureBlobDirectoryIterator(containerClient, listPrefix.c_str(), fullPathPrefix.str(), containerName.str(), mask, includeDirs);
 }
 
 void AzureBlob::ensureMetaData()
