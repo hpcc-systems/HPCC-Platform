@@ -3413,7 +3413,7 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIPTTest, "JlibIPTTest");
 
 #include "platform.h"
 #include "jfile.ipp"
-#include "jptree.hpp"
+#include "jptree.ipp"
 #include "jiface.hpp"
 #include "jio.hpp"
 #include "jstring.hpp"
@@ -3685,11 +3685,6 @@ protected:
         CPPUNIT_ASSERT_EQUAL(memoryBufferSize, streamBufferSize);
         CPPUNIT_ASSERT(memcmp(memoryBuffer.toByteArray(), streamBuffer.toByteArray(), memoryBufferSize) == 0);
 
-        // Copy streamBuffer to streamBuffer2 and streamBuffer3 for deserialization tests
-        MemoryBuffer streamBuffer2, streamBuffer3;
-        streamBuffer2.append(streamBuffer.length(), streamBuffer.toByteArray());
-        streamBuffer3.append(streamBuffer.length(), streamBuffer.toByteArray());
-
         // Time deserialize() method
         Owned<IPropertyTree> memoryBufferDeserializedTree = createPTree();
         timer.reset();
@@ -3712,7 +3707,8 @@ protected:
         timer.reset();
         try
         {
-            streamDeserializedTree->deserializeFromStream(*in);
+            PTreeDeserializeContext ctx;
+            streamDeserializedTree->deserializeFromStream(*in, ctx);
         }
         catch (IException *e)
         {
@@ -3726,7 +3722,8 @@ protected:
         // Create PTree from Binary tests
         //
         // Test 1: Call with null nodeCreator (should fall back to createPTree(src, ipt_none))
-        Owned<IBufferedSerialInputStream> in2 = createBufferedSerialInputStream(streamBuffer2);
+        streamBuffer.reset(); // Reset stream position for new read
+        Owned<IBufferedSerialInputStream> in2 = createBufferedSerialInputStream(streamBuffer);
         Owned<IPropertyTree> deserializedCreatePTreeFromBinaryWithNull;
         try
         {
@@ -3752,8 +3749,8 @@ protected:
             }
         };
         Owned<TestNodeCreator> nodeCreator = new TestNodeCreator();
-        // Reset stream position
-        Owned<IBufferedSerialInputStream> in3 = createBufferedSerialInputStream(streamBuffer3);
+        streamBuffer.reset(); // Reset stream position for new read
+        Owned<IBufferedSerialInputStream> in3 = createBufferedSerialInputStream(streamBuffer);
         Owned<IPropertyTree> deserializedCreatePTreeFromBinaryWithCreator;
         try
         {
