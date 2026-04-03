@@ -18,6 +18,10 @@
 
 //void qsortvec(void **a, size_t n, size_t es)
 {
+    // Avoid pointer arithmetic on null/empty/trivial ranges.
+    if (!a || (n <= 1))
+        return;
+
 #ifdef PARANOID
     void **starta = a;
     size_t startn = n;
