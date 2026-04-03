@@ -596,6 +596,7 @@ bool HqlCppWriter::generateFunctionPrototype(IHqlExpression * funcdef, const cha
 {
     IHqlExpression *body = funcdef->queryChild(0);
     IHqlExpression *formals = funcdef->queryChild(1);
+    IHqlExpression *bodyCode = body->queryChild(0);
     if (body->hasAttribute(_disallowed_Atom))
         throwError(HQLERR_ServiceDefinitionNotAllowed);
 
@@ -629,10 +630,41 @@ bool HqlCppWriter::generateFunctionPrototype(IHqlExpression * funcdef, const cha
     else if (isLocal || isVirtual)
         api = LocalApi;
 
+    bool isProjectedScript = (body && body->hasAttribute(projectedAtom) && body->hasAttribute(languageAtom))
+        || (bodyCode && bodyCode->hasAttribute(projectedAtom) && bodyCode->hasAttribute(languageAtom));
+
+    // PROJECTED internal helper names are emitted as userN_V. If we are seeing this
+    // generated form, force internal linkage even if projected markers were stripped
+    // when converting through an external funcdef wrapper.
+    bool isProjectedHelperName = false;
+    if (name && startsWith(name, "user"))
+    {
+        const char * p = name + 4;
+        bool hasBaseDigits = false;
+        while (*p && isdigit(*p))
+        {
+            hasBaseDigits = true;
+            p++;
+        }
+        if (hasBaseDigits && (*p == '_'))
+        {
+            p++;
+            bool hasVariationDigits = false;
+            while (*p && isdigit(*p))
+            {
+                hasVariationDigits = true;
+                p++;
+            }
+            isProjectedHelperName = hasVariationDigits && (*p == '\0');
+        }
+    }
+
     if (isInline)
         out.append("inline");
     else if (isVirtual)
         out.append("virtual");
+    else if (isProjectedScript || isProjectedHelperName)
+        out.append("static");
     else
         out.append("extern");
 

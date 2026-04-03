@@ -2125,6 +2125,7 @@ protected:
     unsigned            nextGlobalCompareId = 1;
     HqlExprArray        internalFunctions;
     HqlExprArray        internalFunctionExternals;
+    std::unordered_map<std::string, unsigned> projectedEntrypointVariations;
     UniqueSequenceCounter spillSequence;
     std::vector<IHqlStmt *> metaPassStmts;
     
