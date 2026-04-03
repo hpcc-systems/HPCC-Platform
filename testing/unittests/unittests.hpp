@@ -75,3 +75,6 @@ public:
         e->Release(); \
         CPPUNIT_FAIL(msg.str()); \
     }
+
+const char * queryUnitTestDaliStorePath();
+unsigned queryUnitTestDaliStoreIterations();

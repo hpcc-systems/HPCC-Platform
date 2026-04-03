@@ -28,6 +28,7 @@
 #include "daclient.hpp"
 #include "dadfs.hpp"
 #include "dafdesc.hpp"
+#include "dadiags.hpp"
 #include "dasds.hpp"
 #include "danqs.hpp"
 #include "dautils.hpp"
@@ -37,6 +38,8 @@
 
 #include <vector>
 #include <future>
+#include <cstdint>
+#include <cstdlib>
 #include <math.h>
 
 #include "jthread.hpp"
@@ -4506,6 +4509,414 @@ testCategory2[] (1999011313..1999011313) => {TimeLocalExecute=40}
 
 CPPUNIT_TEST_SUITE_REGISTRATION( DaliGlobalMetricsTester );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( DaliGlobalMetricsTester, "DaliGlobalMetricsTester" );
+
+//---------------------------------------------------------------------------------------------------------------------
+
+class DaliStoreLoadAndSaveTimingStressTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(DaliStoreLoadAndSaveTimingStressTest);
+    CPPUNIT_TEST(testStoreRoundTripTiming);
+    CPPUNIT_TEST_SUITE_END();
+
+    struct XmlTimingResults
+    {
+        double avgLoadTimeMs{0.0};
+        double avgSaveTimeMs{0.0};
+        double avgDiagSaveTimeMs{0.0};
+    };
+
+    class DaliClientScope
+    {
+    public:
+        DaliClientScope()
+        {
+            daliClientInit();
+        }
+        ~DaliClientScope()
+        {
+            daliClientEnd();
+        }
+    };
+
+    bool loadXmlData(const char *filename, MemoryBuffer &xmlData, size32_t &xmlDataLen)
+    {
+        Owned<IFile> file = createIFile(filename);
+        if (!file->exists())
+            return false;
+
+        Owned<IFileIO> fileIO = file->open(IFOread);
+        if (!fileIO)
+            return false;
+
+        offset_t fileSize = fileIO->size();
+        // Keep the file size within signed 32-bit range before narrowing casts and avoid huge XML files.
+        if (fileSize <= 0 || fileSize > INT32_MAX)
+            return false;
+
+        xmlDataLen = (size32_t)fileSize;
+        xmlData.setLength(xmlDataLen);
+        size32_t numRead = fileIO->read(0, xmlDataLen, xmlData.bufferBase());
+        return numRead == xmlDataLen;
+    }
+
+    void assertDaliRunning()
+    {
+        constexpr unsigned timeoutMs{5000};
+        try
+        {
+            Owned<IRemoteConnection> conn = querySDS().connect("/", myProcessSession(), RTM_LOCK_READ, timeoutMs);
+            if (!conn)
+                CPPUNIT_FAIL("Dali is not running or not reachable (unable to connect to /)");
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            VStringBuffer failMsg("Dali is not running or not reachable: %s", msg.str());
+            CPPUNIT_FAIL(failMsg.str());
+        }
+    }
+
+    bool queryCurrentStoreEdition(unsigned &edition, StringBuffer &dataPath)
+    {
+        edition = 0;
+        dataPath.clear();
+        querySDS().queryProperties().getProp("@dataPathUrl", dataPath);
+        if (!dataPath.length())
+            return false;
+
+        addPathSepChar(dataPath);
+        Owned<IDirectoryIterator> dIter = createDirectoryIterator(dataPath, "store.*");
+        if (!dIter || !dIter->first())
+            return false;
+
+        bool found = false;
+        do
+        {
+            const char *filename = dIter->query().queryFilename();
+            if (!filename)
+                continue;
+
+            StringBuffer tail, ext;
+            splitFilename(filename, NULL, NULL, &tail, &ext);
+            StringBuffer storeName;
+            storeName.append(tail).append(ext);
+            if (!startsWith(storeName.str(), "store."))
+                continue;
+
+            const char *editionText = storeName.str() + 6;
+            if (!editionText || !*editionText)
+                continue;
+
+            char *end = nullptr;
+            unsigned long parsed = strtoul(editionText, &end, 10);
+            if (!end || *end)
+                continue;
+
+            unsigned candidate = (unsigned)parsed;
+            if (!found || candidate > edition)
+            {
+                edition = candidate;
+                found = true;
+            }
+        } while (dIter->next());
+
+        return found;
+    }
+
+    bool queryCurrentStoreXmlPath(StringBuffer &storeFilename, unsigned &edition)
+    {
+        storeFilename.clear();
+        StringBuffer dataPath;
+        if (!queryCurrentStoreEdition(edition, dataPath))
+            return false;
+
+        addPathSepChar(dataPath);
+        VStringBuffer preferredStorePath("%sdalisds%u.xml", dataPath.str(), edition);
+        Owned<IFile> preferredStore = createIFile(preferredStorePath.str());
+        if (preferredStore->exists())
+        {
+            storeFilename.set(preferredStorePath.str());
+            return true;
+        }
+
+        // Fallback: choose the highest edition dalisds*.xml if the preferred edition file is absent.
+        Owned<IDirectoryIterator> dIter = createDirectoryIterator(dataPath, "dalisds*.xml");
+        if (!dIter || !dIter->first())
+            return false;
+
+        bool found = false;
+        unsigned highestEdition = 0;
+        do
+        {
+            const char *filename = dIter->query().queryFilename();
+            if (!filename)
+                continue;
+
+            StringBuffer tail, ext;
+            splitFilename(filename, NULL, NULL, &tail, &ext);
+            if (stricmp(ext.str(), ".xml") != 0)
+                continue;
+
+            const char *baseName = tail.str();
+            if (!startsWith(baseName, "dalisds"))
+                continue;
+
+            const char *editionText = baseName + strlen("dalisds");
+            if (!editionText || !*editionText)
+                continue;
+
+            char *end = nullptr;
+            unsigned long parsed = strtoul(editionText, &end, 10);
+            if (!end || *end)
+                continue;
+
+            unsigned candidate = (unsigned)parsed;
+            if (!found || candidate > highestEdition)
+                highestEdition = candidate;
+            found = true;
+        } while (dIter->next());
+
+        if (!found)
+            return false;
+
+        edition = highestEdition;
+        storeFilename.clear().append(dataPath).append("dalisds").append(edition).append(".xml");
+        return true;
+    }
+
+    Owned<IPropertyTree> runLoadPhase(const char *sourceXPath, byte flags, bool cloneToLocal, unsigned timeoutMs, CCycleTimer &timer, __uint64 &totalLoadNs)
+    {
+        Owned<IRemoteConnection> readConn = querySDS().connect(sourceXPath, myProcessSession(), RTM_LOCK_READ, timeoutMs);
+        CPPUNIT_ASSERT(readConn);
+        timer.reset();
+        IPropertyTree *readRoot = readConn->queryRoot();
+        totalLoadNs += timer.elapsedNs();
+        CPPUNIT_ASSERT(readRoot);
+        IPropertyTree *sourceTree = readRoot->queryPropTree("Store");
+        CPPUNIT_ASSERT(sourceTree);
+
+        Owned<IPropertyTree> tree;
+        if (cloneToLocal)
+            tree.setown(createPTreeFromIPT(sourceTree, (ipt_flags)flags));
+        else
+            tree.setown(createPTreeFromIPT(sourceTree, ipt_none));
+        return tree.getClear();
+    }
+
+    void runSdsSavePhase(const char *xpath, IPropertyTree *tree, unsigned timeoutMs, CCycleTimer &timer, __uint64 &totalSaveNs)
+    {
+        unsigned mode = RTM_CREATE_QUERY | RTM_LOCK_WRITE;
+        Owned<IRemoteConnection> conn = querySDS().connect(xpath, myProcessSession(), mode, timeoutMs);
+        CPPUNIT_ASSERT(conn);
+        IPropertyTree *root = conn->queryRoot();
+        CPPUNIT_ASSERT(root);
+        root->setPropTree("Store", LINK(tree));
+        timer.reset();
+        conn->commit();
+        totalSaveNs += timer.elapsedNs();
+    }
+
+    void runVerifyAndListPhase(const char *xpath, unsigned timeoutMs)
+    {
+        Owned<IRemoteConnection> verifyConn = querySDS().connect(xpath, myProcessSession(), RTM_LOCK_READ, timeoutMs);
+        CPPUNIT_ASSERT(verifyConn);
+        IPropertyTree *verifyRoot = verifyConn->queryRoot();
+        CPPUNIT_ASSERT(verifyRoot);
+        CPPUNIT_ASSERT(verifyRoot->queryPropTree("Store") != nullptr);
+
+        unsigned rootAttrCount{0};
+        {
+            Owned<IAttributeIterator> rootAttrs = verifyRoot->getAttributes();
+            ForEach(*rootAttrs)
+                rootAttrCount++;
+        }
+        unsigned rootChildCount{0};
+        {
+            Owned<IPropertyTreeIterator> rootChildren = verifyRoot->getElements("*");
+            ForEach(*rootChildren)
+                rootChildCount++;
+        }
+        fprintf(stdout, "sds-ls -la %s\n", xpath);
+        fprintf(stdout, "drwxr-xr-x 1 sds sds %5u %s (attrs=%u)\n", rootChildCount, xpath, rootAttrCount);
+        Owned<IPropertyTreeIterator> entryIter = verifyRoot->getElements("*");
+        ForEach(*entryIter)
+        {
+            IPropertyTree &entry = entryIter->query();
+            const char *entryName = entry.queryName();
+            if (!entryName)
+                entryName = "__unnamed__";
+            unsigned entryAttrCount{0};
+            Owned<IAttributeIterator> entryAttrs = entry.getAttributes();
+            ForEach(*entryAttrs)
+                entryAttrCount++;
+            unsigned entryChildCount{0};
+            Owned<IPropertyTreeIterator> entryChildren = entry.getElements("*");
+            ForEach(*entryChildren)
+                entryChildCount++;
+            StringBuffer entryXml;
+            toXML(&entry, entryXml);
+            char entryType = entryChildCount ? 'd' : '-';
+            fprintf(stdout, "%crw-r--r-- 1 sds sds %5u %s/%s (attrs=%u children=%u)\n", entryType, (unsigned)entryXml.length(), xpath, entryName, entryAttrCount, entryChildCount);
+        }
+    }
+
+    void runDiagSavePhaseAndVerifyStoreEdition(CCycleTimer &timer, __uint64 &totalDiagSaveNs)
+    {
+        unsigned editionBeforeDiagSave{0};
+        StringBuffer dataPath;
+        CPPUNIT_ASSERT(queryCurrentStoreEdition(editionBeforeDiagSave, dataPath));
+
+        MemoryBuffer saveRequest;
+        saveRequest.append("save");
+        timer.reset();
+        getDaliDiagnosticValue(saveRequest);
+        totalDiagSaveNs += timer.elapsedNs();
+
+        unsigned editionAfterDiagSave = 0;
+        StringBuffer verifyDataPath;
+        CPPUNIT_ASSERT(queryCurrentStoreEdition(editionAfterDiagSave, verifyDataPath));
+        if (editionAfterDiagSave == editionBeforeDiagSave)
+        {
+            VStringBuffer msg("Dalidiag save did not advance store edition in '%s' (before=%u after=%u)",
+                              verifyDataPath.str(),
+                              editionBeforeDiagSave,
+                              editionAfterDiagSave);
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+
+    void runTiming(const char *sourceXPath, byte flags, const char *modeLabel, bool cloneToLocal, unsigned iterations, XmlTimingResults &results)
+    {
+        __uint64 totalLoadNs{0};
+        __uint64 totalSaveNs{0};
+        __uint64 totalDiagSaveNs{0};
+        CCycleTimer timer;
+        constexpr unsigned timeoutMs{20000};
+
+        for (unsigned i = 0; i < iterations; i++)
+        {
+            // Phase 1: Load from SDS and clone to a local tree for the selected mode.
+            Owned<IPropertyTree> tree = runLoadPhase(sourceXPath, flags, cloneToLocal, timeoutMs, timer, totalLoadNs);
+
+            // Phase 2: Save the cloned tree to SDS and time the commit.
+            VStringBuffer xpath("/DaliStoreLoadAndSaveTimingStressTest/%s/i%u", modeLabel, i);
+            runSdsSavePhase(xpath.str(), tree, timeoutMs, timer, totalSaveNs);
+
+            // Phase 3: Reopen and verify saved content, then print a ls-style diagnostic listing.
+            runVerifyAndListPhase(xpath.str(), timeoutMs);
+
+            // Phase 4: Force dalidiag-style SDS save, time it, and verify store edition advanced.
+            runDiagSavePhaseAndVerifyStoreEdition(timer, totalDiagSaveNs);
+        }
+
+        constexpr double nsPerMs{1000000.0};
+        results.avgLoadTimeMs = (double)totalLoadNs / (double)iterations / nsPerMs;
+        results.avgSaveTimeMs = (double)totalSaveNs / (double)iterations / nsPerMs;
+        results.avgDiagSaveTimeMs = (double)totalDiagSaveNs / (double)iterations / nsPerMs;
+    }
+
+    void printResults(const char *storeFilename, size32_t xmlDataLen, unsigned iterations, const XmlTimingResults &xmlNormalResults, const XmlTimingResults &xmlLowMemResults)
+    {
+        double lowMemLoadDiff{0.0};
+        if (xmlNormalResults.avgLoadTimeMs != 0.0)
+            lowMemLoadDiff = ((xmlLowMemResults.avgLoadTimeMs - xmlNormalResults.avgLoadTimeMs) * 100.0) / xmlNormalResults.avgLoadTimeMs;
+
+        double lowMemSaveDiff{0.0};
+        if (xmlNormalResults.avgSaveTimeMs != 0.0)
+            lowMemSaveDiff = ((xmlLowMemResults.avgSaveTimeMs - xmlNormalResults.avgSaveTimeMs) * 100.0) / xmlNormalResults.avgSaveTimeMs;
+
+        double lowMemDiagSaveDiff{0.0};
+        if (xmlNormalResults.avgDiagSaveTimeMs != 0.0)
+            lowMemDiagSaveDiff = ((xmlLowMemResults.avgDiagSaveTimeMs - xmlNormalResults.avgDiagSaveTimeMs) * 100.0) / xmlNormalResults.avgDiagSaveTimeMs;
+
+        fprintf(stdout, "\n=== XML TIMING COMPARISON TEST ===\n");
+        fprintf(stdout, "Store file: %s\n", storeFilename);
+        fprintf(stdout, "XML data size: %u bytes\n", xmlDataLen);
+        fprintf(stdout, "Iterations: %u\n", iterations);
+        fprintf(stdout, "┌──────────────────────┬─────────────────┬─────────────────┬─────────────────┐\n");
+        fprintf(stdout, "│ Mode                 │ Avg SDS Load    │ Avg SDS Save    │ Avg Diag Save   │\n");
+        fprintf(stdout, "│                      │ (ms)            │ (ms)            │ (ms)            │\n");
+        fprintf(stdout, "├──────────────────────┼─────────────────┼─────────────────┼─────────────────┤\n");
+        fprintf(stdout, "│ XML Normal           │ %15.6f │ %15.6f │ %15.6f │\n",
+                xmlNormalResults.avgLoadTimeMs,
+                xmlNormalResults.avgSaveTimeMs,
+                xmlNormalResults.avgDiagSaveTimeMs);
+        fprintf(stdout, "│ XML Low Memory       │ %15.6f │ %15.6f │ %15.6f │\n",
+                xmlLowMemResults.avgLoadTimeMs,
+                xmlLowMemResults.avgSaveTimeMs,
+                xmlLowMemResults.avgDiagSaveTimeMs);
+        fprintf(stdout, "│ XML LowMem Diff      │ %+14.2f%% │ %+14.2f%% │ %+14.2f%% │\n",
+                lowMemLoadDiff,
+                lowMemSaveDiff,
+                lowMemDiagSaveDiff);
+        fprintf(stdout, "└──────────────────────┴─────────────────┴─────────────────┴─────────────────┘\n");
+        fflush(stdout);
+    }
+
+public:
+    void testStoreRoundTripTiming()
+    {
+        START_TEST
+
+        DaliClientScope daliClientScope;
+        assertDaliRunning();
+
+        StringBuffer selectedStoreFilename;
+        unsigned selectedStoreEdition = 0;
+        const char *configuredStoreFilename = queryUnitTestDaliStorePath();
+        if (configuredStoreFilename && *configuredStoreFilename)
+            selectedStoreFilename.set(configuredStoreFilename);
+        else
+        {
+            if (!queryCurrentStoreXmlPath(selectedStoreFilename, selectedStoreEdition))
+            {
+                DBGLOG("Skipping DaliStoreLoadAndSaveTimingStressTest. Supply --dali-store <path> or ensure @dataPathUrl contains dalisds*.xml");
+                return;
+            }
+            DBGLOG("Auto-selected dali store file '%s' (edition=%u)", selectedStoreFilename.str(), selectedStoreEdition);
+        }
+        const char *storeFilename = selectedStoreFilename.str();
+
+        unsigned iterations = queryUnitTestDaliStoreIterations();
+        CPPUNIT_ASSERT(iterations != 0);
+
+        MemoryBuffer xmlData;
+        size32_t xmlDataLen{0};
+        if (!loadXmlData(storeFilename, xmlData, xmlDataLen))
+        {
+            VStringBuffer msg("Unable to open or read dali store file '%s'", storeFilename);
+            CPPUNIT_FAIL(msg.str());
+        }
+
+        const char *xmlText = static_cast<const char *>(xmlData.bufferBase());
+        constexpr const char *sourceXPath = "/DaliStoreLoadAndSaveTimingStressTest/source";
+        {
+            Owned<IPropertyTree> sourceTree = createPTreeFromXMLString(xmlDataLen, xmlText, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+            constexpr unsigned timeoutMs{20000};
+            unsigned mode = RTM_CREATE_QUERY | RTM_LOCK_WRITE;
+            Owned<IRemoteConnection> sourceConn = querySDS().connect(sourceXPath, myProcessSession(), mode, timeoutMs);
+            CPPUNIT_ASSERT(sourceConn);
+            IPropertyTree *sourceRoot = sourceConn->queryRoot();
+            CPPUNIT_ASSERT(sourceRoot);
+            sourceRoot->setPropTree("Store", LINK(sourceTree));
+            sourceConn->commit();
+        }
+
+        XmlTimingResults xmlNormalResults;
+        runTiming(sourceXPath, ipt_none, "normal", true, iterations, xmlNormalResults);
+        XmlTimingResults xmlLowMemResults;
+        runTiming(sourceXPath, ipt_lowmem, "lowmem", true, iterations, xmlLowMemResults);
+
+        printResults(storeFilename, xmlDataLen, iterations, xmlNormalResults, xmlLowMemResults);
+
+        END_TEST
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(DaliStoreLoadAndSaveTimingStressTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(DaliStoreLoadAndSaveTimingStressTest, "DaliStoreLoadAndSaveTimingStressTest");
 
 //---------------------------------------------------------------------------------------------------------------------
 

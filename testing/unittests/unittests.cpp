@@ -25,6 +25,10 @@
 #include "thorhelper.hpp"
 #include "libbase58.h"
 
+#include <climits>
+#include <cstdlib>
+#include <cstring>
+
 /*
  * This is the main unittest driver for HPCC. From here,
  * all unit tests, be they internal or external (API),
@@ -58,6 +62,10 @@ void usage()
     "    -l  --list       List matching tests but do not execute them\n"
     "    -u  --unload     Unload dynamically-loaded dlls before termination (may crash on some systems)\n"
     "    -x  --exclude    Exclude subsequent test names\n"
+    "        --dali-store <path>\n"
+    "                     XML file used by DaliStoreLoadAndSaveTimingStressTest\n"
+    "        --dali-store-iterations <count>\n"
+    "                     Iterations for DaliStoreLoadAndSaveTimingStressTest (default 5)\n"
     "\n");
 }
 
@@ -135,6 +143,33 @@ global:
       category: data
 )!!";
 
+static StringAttr daliStorePath;
+static unsigned daliStoreIterations = 5;
+
+const char * queryUnitTestDaliStorePath()
+{
+    return daliStorePath.get();
+}
+
+unsigned queryUnitTestDaliStoreIterations()
+{
+    return daliStoreIterations;
+}
+
+static bool parsePositiveUnsigned(const char * text, unsigned & value)
+{
+    if (!text || !*text)
+        return false;
+
+    char * end = nullptr;
+    unsigned long parsed = strtoul(text, &end, 10);
+    if ((end == text) || *end || parsed == 0 || parsed > UINT_MAX)
+        return false;
+
+    value = (unsigned)parsed;
+    return true;
+}
+
 int main(int argc, const char *argv[])
 {
     InitModuleObjects();
@@ -176,6 +211,38 @@ int main(int argc, const char *argv[])
                 argNo++;
                 if (argNo<argc)
                    loadLocations.append(argv[argNo]);
+            }
+            else if (streq(arg, "--dali-store"))
+            {
+                argNo++;
+                if (argNo<argc)
+                    daliStorePath.set(argv[argNo]);
+                else
+                {
+                    usage();
+                    exit(4);
+                }
+            }
+            else if (strncmp(arg, "--dali-store=", 13) == 0)
+                daliStorePath.set(arg + 13);
+            else if (streq(arg, "--dali-store-iterations"))
+            {
+                argNo++;
+                if (argNo<argc && parsePositiveUnsigned(argv[argNo], daliStoreIterations))
+                    ;
+                else
+                {
+                    usage();
+                    exit(4);
+                }
+            }
+            else if (strncmp(arg, "--dali-store-iterations=", 24) == 0)
+            {
+                if (!parsePositiveUnsigned(arg + 24, daliStoreIterations))
+                {
+                    usage();
+                    exit(4);
+                }
             }
             else
             {
@@ -971,7 +1038,7 @@ class RelaxedAtomicTimingTest : public CppUnit::TestFixture
 
         for (int a = 0; a < 201; a++)
             ra[a] = 0;
-        
+
         class T : public CThreaded
         {
         public:
@@ -1037,7 +1104,7 @@ class RelaxedAtomicTimingTest : public CppUnit::TestFixture
             CriticalSection &lock;
         } t1a(count, ra[0], lock[0], mode), t2a(count, ra[0], lock[0], mode), t3a(count, ra[0], lock[0], mode),
           t1b(count, ra[0], lock[0], mode), t2b(count, ra[1], lock[1], mode), t3b(count, ra[2], lock[2], mode),
-          t1c(count, ra[0], lock[0], mode), t2c(count, ra[100], lock[100], mode), t3c(count, ra[200], lock[200], mode);;  
+          t1c(count, ra[0], lock[0], mode), t2c(count, ra[100], lock[100], mode), t3c(count, ra[200], lock[200], mode);;
         DBGLOG("Testing RelaxedAtomics (test mode %u)", mode);
         t1a.start(false);
         t2a.start(false);
@@ -1080,7 +1147,7 @@ class compressToBufferTest : public CppUnit::TestFixture
 
     bool testOne(unsigned len, CompressionMethod method, bool prevResult, const char *options=nullptr)
     {
-        constexpr const char *in = 
+        constexpr const char *in =
           "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
           "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
           "HelloHelloHelloHelloHelloHelloHelloHelloHelloHello"
@@ -1119,7 +1186,7 @@ class compressToBufferTest : public CppUnit::TestFixture
                DBGLOG("compressToBuffer %x size %u did not compress", (byte) method, len);
             ret = false;
         }
-        else 
+        else
         {
             if (!prevResult)
                 DBGLOG("compressToBuffer %x size %u compressed to %u in %lluns", (byte) method, len, compressed.length(), start.elapsedNs());
