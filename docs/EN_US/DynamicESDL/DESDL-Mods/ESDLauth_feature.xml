@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_AuthFeature">
   <title>auth_feature</title>
@@ -280,7 +280,7 @@ variable-name ::= ( 'SERVICE' | 'METHOD' ) </programlisting>
   service level by its own <emphasis>auth_feature</emphasis> string.</para>
 
   <para><emphasis role="bold">See Also: </emphasis> <link
-  linkend="ESDLESPservice">ESPservice</link>, <link
+  linkend="EPservice">ESPservice</link>, <link
   linkend="ESPmethod">ESPmethod</link>, <link linkend="ESDL_Attributes">ESDL
   Attributes</link></para>
 </sect1>
