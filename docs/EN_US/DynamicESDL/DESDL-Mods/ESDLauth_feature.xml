@@ -6,7 +6,7 @@
 
   <para><indexterm>
       <primary>auth_feature</primary>
-    </indexterm> The <emphasis>auth_feature</emphasis> attribute configures
+    </indexterm>The <emphasis>auth_feature</emphasis> attribute configures
   feature-level security in ESDL by associating features and access levels to
   <code>ESPservice</code> and <code>ESPmethod</code> elements. This provides
   fine-grained, declarative access control for ESDL services and
