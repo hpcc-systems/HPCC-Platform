@@ -108,8 +108,7 @@ public:
         CPPUNIT_TEST(testEventCompleteness);
         CPPUNIT_TEST(testPullEvents);
         CPPUNIT_TEST(testFailCreate);
-        CPPUNIT_TEST(testAllRecordFunctions);
-        CPPUNIT_TEST(testAllReadFunction);
+        CPPUNIT_TEST(testAllEventsFunction);
         CPPUNIT_TEST(testCleanup);
     CPPUNIT_TEST_SUITE_END();
 
@@ -1208,7 +1207,11 @@ attribute: DataSize = 73
         return ss.str();
     }
 
-    void testAllRecordFunctions()
+    constexpr static unsigned testChannelId = 123;
+    constexpr static unsigned testReplicaId = 231;
+    constexpr static __uint64 testInstanceId = 789;
+
+    void testAllRecordFunction()
     {
         START_TEST
 
@@ -1216,7 +1219,7 @@ attribute: DataSize = 73
         EventRecordingSummary summary;
 
         // Record a variety of events to a test file
-        CPPUNIT_ASSERT(recorder.startRecording("all", "pullevents.evt", "testprocess", 1, 2, 3, false));
+        CPPUNIT_ASSERT(recorder.startRecording("all", "pullevents.evt", "testprocess", testChannelId, testReplicaId, testInstanceId, false));
         CPPUNIT_ASSERT(recorder.isRecording());
 
         // Add a demo call to each of the record() functions
@@ -1227,7 +1230,7 @@ attribute: DataSize = 73
         recorder.recordIndexEviction(4, 32768, NodeLeaf, 4096);
         recorder.recordIndexPayload(5, 40960, true, 250);
 
-        // Add a EventRecordingActive event
+        // Add an EventRecordingActive event
         recorder.pauseRecording(true, true);
         recorder.pauseRecording(false, true);
 
@@ -1262,7 +1265,7 @@ attribute: DataSize = 73
         event.setValue(EvAttrNodeKind, (unsigned)NodeLeaf);
         recorder.recordEvent(event);
 
-        CPPUNIT_ASSERT(recorder.stopRecording(&summary));
+        CPPUNIT_ASSERT(recorder.stopRecording(&summary, false));
         CPPUNIT_ASSERT(!recorder.isRecording());
 
         END_TEST
@@ -1285,6 +1288,9 @@ attribute: DataSize = 73
         {
             EventType type = event.queryType();
             CPPUNIT_ASSERT_MESSAGE("Event type should be valid", type >= EventNone && type < EventMax);
+            CPPUNIT_ASSERT_EQUAL(testChannelId, (unsigned)event.queryAttribute(EvAttrChannelId).queryNumericValue());
+            CPPUNIT_ASSERT_EQUAL(testReplicaId, (unsigned)event.queryAttribute(EvAttrReplicaId).queryNumericValue());
+            CPPUNIT_ASSERT_EQUAL(testInstanceId, (unsigned __int64)event.queryAttribute(EvAttrInstanceId).queryNumericValue());
             eventTypeSeen[type] = true;
         }
 
@@ -1312,6 +1318,12 @@ attribute: DataSize = 73
             CPPUNIT_FAIL(VStringBuffer("Event types not seen in pullevents.evt: %s\n", missingEvents.str()).str());
 
         END_TEST
+    }
+
+    void testAllEventsFunction()
+    {
+        testAllRecordFunction();
+        testAllReadFunction();
     }
 
 };
