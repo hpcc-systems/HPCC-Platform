@@ -240,7 +240,7 @@ export const JsonImportForm: React.FunctionComponent<JsonImportFormProps> = ({
                     />}
                 rules={{
                     pattern: {
-                        value: /^([_a-z0-9]+(::)?)+$/i,
+                        value: /^[_a-z0-9]+(::[_a-z0-9]+)*(?:::)?$/i,
                         message: nlsHPCC.ValidationErrorNamePrefix
                     }
                 }}
