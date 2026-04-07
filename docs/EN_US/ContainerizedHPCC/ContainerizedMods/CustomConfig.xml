@@ -916,9 +916,11 @@ thor: []
     Kubernetes, certificate management is typically automated using
     <emphasis>cert-manager</emphasis>. Manual manifest examples are provided
     for reference and advanced use cases, but most users should follow
-    automated workflows. See the <ulink
+    automated workflows. For best practices see: </para>
+
+    <para><ulink
     url="https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/examples/certmanager/README.md">https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/examples/certmanager/README.md
-    </ulink> for best practices.</para>
+    </ulink> </para>
 
     <para><emphasis role="bold">Further Reading:</emphasis> For bare metal DFS
     connectivity and hybrid setup, ensure that remote storage definitions are
