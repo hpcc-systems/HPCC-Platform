@@ -858,57 +858,109 @@ thor: []
   </sect1>
 
   <sect1 id="DFSClientCerts" role="nobrk">
-    <title>Configuring DFS Client Certificates for Secure External Access</title>
+    <title>Configuring DFS Client Certificates for Secure External
+    Access</title>
 
-    <para>
-      <emphasis role="bold">Scope and Scenarios:</emphasis> This section documents how to configure HPCC Systems<superscript>®</superscript> to require and validate client certificates for external DFS (dafilesrv) access in <emphasis>hybrid</emphasis> and <emphasis>inter-environment</emphasis> deployments. These scenarios include:
-      <itemizedlist>
-        <listitem><para>Kubernetes-to-Kubernetes (k8s-to-k8s) clusters</para></listitem>
-        <listitem><para>Bare metal to Kubernetes (bm-to-k8s)</para></listitem>
-        <listitem><para>Kubernetes to bare metal (k8s-to-bm)</para></listitem>
-        <listitem><para>Legacy tooling or remote clients (e.g., DFUPlus, ECL IDE) accessing DFS from outside the cluster</para></listitem>
-      </itemizedlist>
-      <emphasis role="bold">Important:</emphasis> In standard containerized HPCC Systems<superscript>®</superscript> deployments, logical file access is handled via persistent volume mounts (PVCs) or cloud storage APIs, not dafilesrv. dafilesrv is primarily used for hybrid or inter-environment scenarios (e.g., bare-metal to Kubernetes, Kubernetes to Kubernetes) where direct access to physical data is required. <emphasis>DFUPlus</emphasis> and <emphasis>ECL IDE</emphasis> do not directly access dafilesrv; they interact with HPCC via ESP services.
-    </para>
+    <para><emphasis role="bold">Scope and Scenarios:</emphasis> This section
+    documents how to configure HPCC Systems<superscript>®</superscript> to
+    require and validate client certificates for external DFS (dafilesrv)
+    access in <emphasis>hybrid</emphasis> and
+    <emphasis>inter-environment</emphasis> deployments. These scenarios
+    include: <itemizedlist>
+        <listitem>
+          <para>Kubernetes-to-Kubernetes (k8s-to-k8s) clusters</para>
+        </listitem>
 
-    <para>
-      <emphasis role="bold">dafilesrv roles:</emphasis> dafilesrv serves three main functions in cloud environments:
-      <itemizedlist>
-        <listitem><para>rowservice – for streaming connectors (e.g., Java/Spark)</para></listitem>
-        <listitem><para>direct-access – for external systems (mainly bare-metal) that cannot mount cloud storage directly</para></listitem>
-        <listitem><para>spray-service – used internally by DFUServer for spray/despray operations</para></listitem>
-      </itemizedlist>
-      Client certificates are only required for secure external access in these hybrid/inter-environment scenarios.
-    </para>
+        <listitem>
+          <para>Bare metal to Kubernetes (bm-to-k8s)</para>
+        </listitem>
 
-    <para>
-      <emphasis role="bold">Certificate Management:</emphasis> In Kubernetes, certificate management is typically automated using <emphasis>cert-manager</emphasis>. Manual manifest examples are provided for reference and advanced use cases, but most users should follow automated workflows. See the <ulink url="https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/examples/certmanager/README.md">cert-manager README</ulink> for best practices.
-    </para>
+        <listitem>
+          <para>Kubernetes to bare metal (k8s-to-bm)</para>
+        </listitem>
 
-    <para>
-      <emphasis role="bold">Further Reading:</emphasis> For bare metal DFS connectivity and hybrid setup, ensure that remote storage definitions are configured in your environment. Bare-metal systems can access remote file systems via the WsDFU ESP service, and secure access (including client certificates) may be required for inter-environment scenarios. Refer to the HPCC Platform documentation for details on configuring remote storage and securing dafilesrv access.
-    </para>
+        <listitem>
+          <para>Legacy tooling or remote clients (e.g., DFUPlus, ECL IDE)
+          accessing DFS from outside the cluster</para>
+        </listitem>
+      </itemizedlist> <emphasis role="bold">Important:</emphasis> In standard
+    containerized HPCC Systems<superscript>®</superscript> deployments,
+    logical file access is handled via persistent volume mounts (PVCs) or
+    cloud storage APIs, not dafilesrv. dafilesrv is primarily used for hybrid
+    or inter-environment scenarios (e.g., bare-metal to Kubernetes, Kubernetes
+    to Kubernetes) where direct access to physical data is required.
+    <emphasis>DFUPlus</emphasis> and <emphasis>ECL IDE</emphasis> do not
+    directly access dafilesrv; they interact with HPCC via ESP
+    services.</para>
+
+    <para><emphasis role="bold">dafilesrv roles:</emphasis> dafilesrv serves
+    three main functions in cloud environments: <itemizedlist>
+        <listitem>
+          <para>rowservice – for streaming connectors (e.g.,
+          Java/Spark)</para>
+        </listitem>
+
+        <listitem>
+          <para>direct-access – for external systems (mainly bare-metal) that
+          cannot mount cloud storage directly</para>
+        </listitem>
+
+        <listitem>
+          <para>spray-service – used internally by DFUServer for spray/despray
+          operations</para>
+        </listitem>
+      </itemizedlist> Client certificates are only required for secure
+    external access in these hybrid/inter-environment scenarios.</para>
+
+    <para><emphasis role="bold">Certificate Management:</emphasis> In
+    Kubernetes, certificate management is typically automated using
+    <emphasis>cert-manager</emphasis>. Manual manifest examples are provided
+    for reference and advanced use cases, but most users should follow
+    automated workflows. See the <ulink
+    url="https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/examples/certmanager/README.md">https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/examples/certmanager/README.md
+    </ulink> for best practices.</para>
+
+    <para><emphasis role="bold">Further Reading:</emphasis> For bare metal DFS
+    connectivity and hybrid setup, ensure that remote storage definitions are
+    configured in your environment. Bare-metal systems can access remote file
+    systems via the WsDFU ESP service, and secure access (including client
+    certificates) may be required for inter-environment scenarios. Refer to
+    the HPCC Platform documentation for details on configuring remote storage
+    and securing dafilesrv access.</para>
 
     <sect2 id="DFSClientCerts-Overview">
       <title>Overview</title>
 
-      <para>
-        <emphasis role="bold">HPCC DFS (Distributed File System):</emphasis> In HPCC, DFS refers to logical file access, which abstracts the physical location of data. Physical data may reside on local disk mounts, network-attached storage, cloud storage accounts, or other backends. In containerized and cloud environments, storage is typically managed via persistent volumes (PVCs) or cloud storage services, not dafilesrv.
-      </para>
+      <para><emphasis role="bold">HPCC DFS (Distributed File
+      System):</emphasis> In HPCC, DFS refers to logical file access, which
+      abstracts the physical location of data. Physical data may reside on
+      local disk mounts, network-attached storage, cloud storage accounts, or
+      other backends. In containerized and cloud environments, storage is
+      typically managed via persistent volumes (PVCs) or cloud storage
+      services, not dafilesrv.</para>
 
-      <para>
-        <emphasis role="bold">dafilesrv:</emphasis> dafilesrv is one mechanism for accessing the physical data behind logical DFS files, but is mainly used for remote, hybrid, or inter-environment scenarios. Secure access to dafilesrv is required only when clients or tools (such as DFUPlus, ECL IDE, or custom applications) need to access DFS files from outside the cluster or across environments. For standard single-cluster deployments, dafilesrv is not involved in logical file access.
-      </para>
+      <para><emphasis role="bold">dafilesrv:</emphasis> dafilesrv is one
+      mechanism for accessing the physical data behind logical DFS files, but
+      is mainly used for remote, hybrid, or inter-environment scenarios.
+      Secure access to dafilesrv is required only when clients or tools (such
+      as DFUPlus, ECL IDE, or custom applications) need to access DFS files
+      from outside the cluster or across environments. For standard
+      single-cluster deployments, dafilesrv is not involved in logical file
+      access.</para>
 
-      <para>
-        <emphasis role="bold">Note:</emphasis> DFUPlus and ECL IDE do not directly access dafilesrv; they interact with HPCC Systems<superscript>®</superscript> via ESP services. Client certificates for dafilesrv are only needed for secure external access in hybrid/inter-environment scenarios.
-      </para>
+      <para><emphasis role="bold">Note:</emphasis> DFUPlus and ECL IDE do not
+      directly access dafilesrv; they interact with HPCC
+      Systems<superscript>®</superscript> via ESP services. Client
+      certificates for dafilesrv are only needed for secure external access in
+      hybrid/inter-environment scenarios.</para>
     </sect2>
 
     <sect2 id="DFSClientCerts-GenerateCA">
       <title>Step 1: Create a Certificate Authority (CA)</title>
 
-      <para>Use <emphasis role="strong">cert-manager</emphasis> to create a CA in your Kubernetes cluster for hybrid/inter-environment scenarios where dafilesrv is used. For example:</para>
+      <para>Use <emphasis role="strong">cert-manager</emphasis> to create a CA
+      in your Kubernetes cluster for hybrid/inter-environment scenarios where
+      dafilesrv is used. For example:</para>
 
       <programlisting>
 apiVersion: cert-manager.io/v1
@@ -939,7 +991,9 @@ spec:
     <sect2 id="DFSClientCerts-ServerCert">
       <title>Step 2: Issue Server Certificates for dafilesrv</title>
 
-      <para>Issue a server certificate for dafilesrv using the CA. This step is only required for deployments where dafilesrv is used for external access (not standard single-cluster setups). Example:</para>
+      <para>Issue a server certificate for dafilesrv using the CA. This step
+      is only required for deployments where dafilesrv is used for external
+      access (not standard single-cluster setups). Example:</para>
 
       <programlisting>
 apiVersion: cert-manager.io/v1
@@ -972,7 +1026,8 @@ dafilesrv:
     <sect2 id="DFSClientCerts-ClientCerts">
       <title>Step 3: Issue Client Certificates</title>
 
-      <para>Issue client certificates for each external user or tool that will access dafilesrv in a hybrid/inter-environment scenario. Example:</para>
+      <para>Issue client certificates for each external user or tool that will
+      access dafilesrv in a hybrid/inter-environment scenario. Example:</para>
 
       <programlisting>
 apiVersion: cert-manager.io/v1
@@ -994,7 +1049,11 @@ spec:
     <sect2 id="DFSClientCerts-ClientConfig">
       <title>Step 4: Configure External Clients</title>
 
-      <para>Configure your external client (e.g., DFUPlus, ECL IDE, or custom application) to use the client certificate and key, and to trust the CA certificate. This is only required for direct dafilesrv access in hybrid/inter-environment scenarios. For example, with <emphasis>DFUPlus</emphasis>:</para>
+      <para>Configure your external client (e.g., DFUPlus, ECL IDE, or custom
+      application) to use the client certificate and key, and to trust the CA
+      certificate. This is only required for direct dafilesrv access in
+      hybrid/inter-environment scenarios. For example, with
+      <emphasis>DFUPlus</emphasis>:</para>
 
       <programlisting>
 dfuplus ...
