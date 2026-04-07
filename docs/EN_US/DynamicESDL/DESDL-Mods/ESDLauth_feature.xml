@@ -281,6 +281,5 @@ variable-name ::= ( 'SERVICE' | 'METHOD' ) </programlisting>
 
   <para><emphasis role="bold">See Also: </emphasis> <link
   linkend="EPservice">ESPservice</link>, <link
-  linkend="ESPmethod">ESPmethod</link>, <link linkend="ESDL_Attributes">ESDL
-  Attributes</link></para>
+  linkend="ESPmethod">ESPmethod</link></para>
 </sect1>
