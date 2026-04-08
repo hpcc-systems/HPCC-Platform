@@ -115,15 +115,14 @@ protected:
                 if (!abortSent)
                 {
                     abortSent = true;
-                    for (rank_t r=1; r<=slaves; ++r)
+                    for (rank_t r = 1; r <= slaves; ++r)
                     {
                         CMessageBuffer abortMsg;
                         abortMsg.append((byte)KeyedLimitMsg::Abort);
                         comm.send(abortMsg, r, mpTag, MP_ASYNC_SEND);
                     }
                 }
-                Owned<IException> e = MakeThorFatal(NULL, 0, "INDEXLIMIT: timeout waiting for keyed-limit progress (done=%u/%u)", done, slaves);
-                throw e.getClear();
+                throw MakeThorFatal(NULL, 0, "INDEXLIMIT: timeout waiting for keyed-limit progress (done=%u/%u)", done, slaves);
             }
             if (abortSoon)
                 break;
@@ -148,7 +147,7 @@ protected:
                 abortSent = true;
                 DISLOG("INDEXLIMIT: master aborting keyed limit (reported keyed rows processed=%" I64F "u, limit=%" I64F "u)", (unsigned __int64)total, (unsigned __int64)keyedLimit);
                 // Broadcast a stop signal once the global keyed limit is exceeded.
-                for (rank_t r=1; r<=slaves; ++r)
+                for (rank_t r = 1; r <= slaves; ++r)
                 {
                     CMessageBuffer abortMsg;
                     abortMsg.append((byte)KeyedLimitMsg::Abort);
@@ -477,7 +476,7 @@ public:
         keyedLimit = (rowcount_t)helper->getKeyedLimit();
         if (keyedLimit != RCMAX)
         {
-            if (0 != (helper->getFlags() & (TIRkeyedlimitskips|TIRcountkeyedlimit)))
+            if (0 != (helper->getFlags() & (TIRkeyedlimitskips | TIRcountkeyedlimit)))
                 processKeyedLimit();
             monitorKeyedLimit();
         }

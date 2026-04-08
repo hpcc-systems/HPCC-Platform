@@ -43,7 +43,7 @@
 enum AdditionStats { AS_Seeks, AS_Scans };
 
 // Throttle progress reporting and abort checks to avoid per-record overhead.
-static constexpr rowcount_t keyedLimitProgressInterval = 4096;
+static constexpr rowcount_t keyedLimitProgressInterval = 16384;
 class CIndexReadSlaveBase : public CSlaveActivity
 {
     typedef CSlaveActivity PARENT;
@@ -192,7 +192,7 @@ protected:
     }
     bool checkLimitAbortSignal()
     {
-        if (!keyedLimitAbortEnabled || !keyedLimitCheckComplete)
+        if (!keyedLimitCheckComplete)
             return false;
         if (limitAbort)
             return true;
@@ -222,8 +222,6 @@ protected:
     {
         limitHit = false;
         exception = false;
-        if (!limitAbort)
-            return nullptr;
         limitAbort = false;
         limitHit = true;
         // Mirror keyed-limit behavior for create/throw semantics.
@@ -238,6 +236,7 @@ protected:
         }
         return nullptr;
     }
+
 public:
     IIndexLookup *getNextInput(IKeyManager *&keyManager, unsigned &partNum, bool useMerger)
     {
@@ -659,7 +658,7 @@ public:
             else
                 count += indexInput->getCount();
             bool limitHit = count > keyedLimit;
-            if (limitHit && (keyedLimit == 1 && !keyedLimitExceededLogged))
+            if (limitHit && keyedLimit == 1 && !keyedLimitExceededLogged)
             {
                 keyedLimitExceededLogged = true;
                 DISLOG("INDEXLIMIT: slave %u local hard (%s) pre-count (%" I64F "u) exceeded keyed limit (%" I64F "u)", queryJobChannel().queryMyRank(), hard ? "true" : "false", (unsigned __int64)count, (unsigned __int64)keyedLimit);
