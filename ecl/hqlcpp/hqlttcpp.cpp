@@ -1255,7 +1255,7 @@ void HqlGlobalDatasetTransformer::analyseExpr(IHqlExpression * expr)
             globalsUsed.setown(globalsUsed->clone());
 
         if (!globalsUsed->globals.contains(*extra->globalInfo))
-            globalsUsed->globals.append(*extra->globalInfo);
+            globalsUsed->globals.append(OLINK(*extra->globalInfo));
     }
 
     //If we have have a thor graph, check what globals it contains.
