@@ -891,8 +891,10 @@ void CppCompiler::setStripSymbols(bool stripSymbols)
 {
     if (stripSymbols)
     {
+#ifndef __APPLE__
         if ((targetCompiler == GccCppCompiler) || (targetCompiler == ClangCppCompiler))
             addLinkOption("-s");
+#endif
     }
 }
 
