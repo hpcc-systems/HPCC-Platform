@@ -93,10 +93,10 @@ protected:
         }
         return total > keyedLimit;
     }
-    void monitorKeyedLimit()
+    rowcount_t monitorKeyedLimit()
     {
         if (container.queryLocalOrGrouped() || keyedLimit == RCMAX)
-            return;
+            return 0;
         ICommunicator &comm = queryJobChannel().queryJobComm();
         const unsigned slaves = container.queryJob().querySlaves();
         DISLOG("INDEXLIMIT: monitoring keyed limit (%" I64F "u) across %u slaves", (unsigned __int64)keyedLimit, slaves);
@@ -185,6 +185,7 @@ protected:
         StringBuffer fullScanPerSlaveText;
         appendWithThousands(fullScanPerSlaveText, fullScanPerSlave);
         DISLOG("INDEXLIMIT: monitor finished (savedCounts=%s, fullScanPerSlave=%s, reported keyed rows processed=%" I64F "u, done=%u/%u, abortSent=%s)", savedCountsText.str(), fullScanPerSlaveText.str(), (unsigned __int64)total, done, slaves, abortSent ? "true" : "false");
+        return total;
     }
     void prepareKey(IDistributedFile *index)
     {

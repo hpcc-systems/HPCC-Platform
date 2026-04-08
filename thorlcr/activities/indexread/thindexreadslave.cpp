@@ -149,10 +149,24 @@ protected:
     {
         return false;
     }
+    virtual rowcount_t queryKeyedLimitAbortLimit() const
+    {
+        return keyedLimit;
+    }
+    virtual rowcount_t queryKeyedLimitProgress() const
+    {
+        return keyedProcessed;
+    }
+    virtual void onKeyedLimitExceededStop()
+    {
+    }
     void resetKeyedLimitAbortState()
     {
         limitAbort.store(false);
-        keyedLimitAbortEnabled = enableKeyedLimitAbort() && (keyedLimit != RCMAX);
+        rowcount_t abortLimit = queryKeyedLimitAbortLimit();
+        keyedLimitAbortEnabled = enableKeyedLimitAbort() && (abortLimit != RCMAX);
+        if (keyedLimitAbortEnabled)
+            keyedLimitTarget = abortLimit;
         keyedLimitLastReportMs = msTick();
         // Only enable progress/abort after keyed-limit pre-check completes.
         keyedLimitCheckComplete = (keyedLimitCount == RCMAX);
@@ -197,7 +211,44 @@ protected:
         if ((now - keyedLimitLastReportMs) < keyedLimitProgressHeartbeatMs)
             return;
         keyedLimitLastReportMs = now;
-        sendKeyedLimitProgress(keyedProcessed, KeyedLimitMsg::Progress);
+        sendKeyedLimitProgress(queryKeyedLimitProgress(), KeyedLimitMsg::Progress);
+    }
+    bool maybeCheckKeyedLimitAbort()
+    {
+        if (!keyedLimitAbortEnabled)
+            return false;
+        maybeReportKeyedLimitProgress();
+        return checkLimitAbortSignal();
+    }
+    void reportKeyedLimitExceededStop()
+    {
+        if (!keyedLimitSkips && (container.queryLocalOrGrouped() || firstNode()))
+            onKeyedLimitExceededStop();
+    }
+    void finalizeKeyedLimitAbortOnStop()
+    {
+        if (!keyedLimitAbortEnabled)
+            return;
+        // Complete the keyed-limit pre-check before sending Done so the master doesn't wait forever.
+        if (!keyedLimitCheckComplete && (RCMAX != keyedLimitCount))
+        {
+            // Ensure pre-check aggregation completes even if no rows were pulled.
+            keyedLimitCount = sendGetCount(keyedLimitCount);
+            keyedLimitCheckComplete = true;
+            if (keyedLimitCount > keyedLimit)
+                reportKeyedLimitExceededStop();
+            keyedLimit = RCMAX;
+            keyedLimitCount = RCMAX;
+        }
+        sendKeyedLimitProgress(queryKeyedLimitProgress(), KeyedLimitMsg::Done);
+    }
+    void finalizeKeyedLimitCountOnStop(rowcount_t count)
+    {
+        if (RCMAX == keyedLimit)
+            return;
+        keyedLimitCount = sendGetCount(count);
+        if (keyedLimitCount > keyedLimit)
+            reportKeyedLimitExceededStop();
     }
     bool checkLimitAbortSignal()
     {
@@ -493,18 +544,14 @@ public:
     virtual bool incKeyedExceedsLimit()
     {
         ++keyedProcessed;
-        if (keyedLimitAbortEnabled)
-        {
-            // Periodically report progress and check for manager aborts.
-            maybeReportKeyedLimitProgress();
-            if (checkLimitAbortSignal())
-                return true;
-        }
+        // Periodically report progress and check for manager aborts.
+        if (maybeCheckKeyedLimitAbort())
+            return true;
         // NB - this is only checking if local limit exceeded (skip case previously checked)
         if (keyedLimit != RCMAX && keyedProcessed > keyedLimit)
         {
             if (keyedLimitAbortEnabled)
-                sendKeyedLimitProgress(keyedProcessed, KeyedLimitMsg::Progress);
+                sendKeyedLimitProgress(queryKeyedLimitProgress(), KeyedLimitMsg::Progress);
             return true;
         }
         return false;
@@ -1143,6 +1190,10 @@ public:
     {
         return !container.queryLocalOrGrouped();
     }
+    virtual void onKeyedLimitExceededStop() override
+    {
+        helper->onKeyedLimitExceeded(); // should throw exception
+    }
 // IThorSlaveActivity
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
@@ -1187,26 +1238,9 @@ public:
     virtual void stop() override
     {
         if (keyedLimitAbortEnabled)
-        {
-            // Complete the keyed-limit pre-check before sending Done so the master doesn't wait forever.
-            if (!keyedLimitCheckComplete && (RCMAX != keyedLimitCount))
-            {
-                // Ensure pre-check aggregation completes even if no rows were pulled.
-                keyedLimitCount = sendGetCount(keyedLimitCount);
-                keyedLimitCheckComplete = true;
-                if (keyedLimitCount > keyedLimit && !keyedLimitSkips && (container.queryLocalOrGrouped() || firstNode()))
-                    helper->onKeyedLimitExceeded(); // should throw exception
-                keyedLimit = RCMAX;
-                keyedLimitCount = RCMAX;
-            }
-            sendKeyedLimitProgress(keyedProcessed, KeyedLimitMsg::Done);
-        }
-        else if (RCMAX != keyedLimit) // NB: will not be true if nextRow() has handled
-        {
-            keyedLimitCount = sendGetCount(keyedProcessed);
-            if (keyedLimitCount > keyedLimit && !keyedLimitSkips && (container.queryLocalOrGrouped() || firstNode()))
-                helper->onKeyedLimitExceeded(); // should throw exception
-        }
+            finalizeKeyedLimitAbortOnStop();
+        else
+            finalizeKeyedLimitCountOnStop(keyedProcessed); // NB: will not be true if nextRow() has handled
         if (currentManager)
         {
             resetManager(currentManager);
@@ -1470,6 +1504,10 @@ public:
         helper = static_cast <IHThorIndexCountArg *> (container.queryHelper());
         appendOutputLinked(this);
     }
+    virtual void onKeyedLimitExceededStop() override
+    {
+        helper->onKeyedLimitExceeded(); // should throw exception
+    }
     virtual void prepareManager(IKeyManager *manager) override
     {
         PARENT::prepareManager(manager);
@@ -1602,12 +1640,10 @@ public:
     }
     virtual void stop() override
     {
-        if (RCMAX != keyedLimit) // NB: will not be true if nextRow() has handled
-        {
-            keyedLimitCount = sendGetCount(keyedProcessed);
-            if (keyedLimitCount > keyedLimit && !keyedLimitSkips && (container.queryLocalOrGrouped() || firstNode()))
-                helper->onKeyedLimitExceeded(); // should throw exception
-        }
+        if (keyedLimitAbortEnabled)
+            finalizeKeyedLimitAbortOnStop();
+        else
+            finalizeKeyedLimitCountOnStop(keyedProcessed); // NB: will not be true if nextRow() has handled
         PARENT::stop();
     }
     virtual void abort() override
