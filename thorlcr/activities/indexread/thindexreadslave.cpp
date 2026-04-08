@@ -15,36 +15,25 @@
     limitations under the License.
 ############################################################################## */
 
-#include "jio.hpp"
-#include "jfile.hpp"
-#include "jtime.hpp"
-#include "jsort.hpp"
 #include "jlog.hpp"
-
-#include "rtlkey.hpp"
 #include "jhtree.hpp"
 #include "rmtfile.hpp"
-#include "rmtclient.hpp"
-#include "mpcomm.hpp"
+#include "jthread.hpp"
+#include "jtime.hpp"
 
 #include "thorstep.ipp"
-
-#include "thexception.hpp"
 #include "thmfilemanager.hpp"
-#include "thactivityutil.ipp"
-#include "thbufdef.hpp"
-#include "thsortu.hpp"
 #include "../hashdistrib/thhashdistribslave.ipp"
-
 #include "thdiskbaseslave.ipp"
-#include "thindexreadslave.ipp"
 #include "thindexreadcommon.hpp"
+
+#include <atomic>
 
 enum AdditionStats { AS_Seeks, AS_Scans };
 
-// Throttle progress reporting and abort checks to avoid per-record overhead.
-static constexpr rowcount_t keyedLimitProgressInterval = 16384;
-class CIndexReadSlaveBase : public CSlaveActivity
+// Emit keyed-limit progress on a time heartbeat instead of row-count cadence.
+static constexpr unsigned keyedLimitProgressHeartbeatMs = 2500;
+class CIndexReadSlaveBase : public CSlaveActivity, implements IThreaded
 {
     typedef CSlaveActivity PARENT;
 protected:
@@ -81,18 +70,20 @@ protected:
     bool rowLimitSkips = false;
     rowcount_t keyedProcessed = 0;
     rowcount_t keyedLimitTarget = RCMAX;
-    rowcount_t keyedLimitReportAt = 0;
-    rowcount_t keyedLimitCheckAt = 0;
+    unsigned keyedLimitLastReportMs = 0;
     bool keyedLimitCheckComplete = false;
     bool keyedLimitAbortEnabled = false;
     bool keyedLimitExceededLogged = false;
-    bool limitAbort = false;
+    std::atomic<bool> limitAbort{false};
     rowcount_t rowLimit = RCMAX;
     bool useRemoteStreaming = false;
     Owned<IFileIO> lazyIFileIO;
     mutable CriticalSection keyManagersCS;  // CS for any updates to keyManagers
     unsigned fileTableStart = NotFound;
     std::vector<Owned<CStatsContextLogger>> contextLoggers;
+    CThreaded keyedLimitAbortListenerThread;
+    std::atomic<bool> keyedLimitAbortListenerStarted{false};
+    std::atomic<bool> keyedLimitAbortListenerStop{false};
 
 
     class TransformCallback : implements IThorIndexCallback , public CSimpleInterface
@@ -160,12 +151,29 @@ protected:
     }
     void resetKeyedLimitAbortState()
     {
-        limitAbort = false;
+        limitAbort.store(false);
         keyedLimitAbortEnabled = enableKeyedLimitAbort() && (keyedLimit != RCMAX);
-        keyedLimitReportAt = keyedLimitProgressInterval;
-        keyedLimitCheckAt = keyedLimitProgressInterval;
+        keyedLimitLastReportMs = msTick();
         // Only enable progress/abort after keyed-limit pre-check completes.
         keyedLimitCheckComplete = (keyedLimitCount == RCMAX);
+    }
+    void maybeStartKeyedLimitAbortListener()
+    {
+        if (!keyedLimitAbortEnabled || !keyedLimitCheckComplete)
+            return;
+        bool expected = false;
+        if (!keyedLimitAbortListenerStarted.compare_exchange_strong(expected, true))
+            return;
+        keyedLimitAbortListenerStop.store(false);
+        keyedLimitAbortListenerThread.init(this, false);
+    }
+    void stopKeyedLimitAbortListener()
+    {
+        if (!keyedLimitAbortListenerStarted.exchange(false))
+            return;
+        keyedLimitAbortListenerStop.store(true);
+        queryJobChannel().queryJobComm().cancel(0, mpTag);
+        keyedLimitAbortListenerThread.join();
     }
     void sendKeyedLimitProgress(rowcount_t count, KeyedLimitMsg msgType)
     {
@@ -184,44 +192,24 @@ protected:
         // otherwise the master may still be in count-aggregation mode on this same tag.
         if (!keyedLimitCheckComplete)
             return;
-        // Report in coarse intervals to keep the hot path cheap.
-        if (keyedProcessed < keyedLimitReportAt)
+        // Heartbeat progress updates by elapsed time rather than record cadence.
+        unsigned now = msTick();
+        if ((now - keyedLimitLastReportMs) < keyedLimitProgressHeartbeatMs)
             return;
-        keyedLimitReportAt = keyedProcessed + keyedLimitProgressInterval;
+        keyedLimitLastReportMs = now;
         sendKeyedLimitProgress(keyedProcessed, KeyedLimitMsg::Progress);
     }
     bool checkLimitAbortSignal()
     {
         if (!keyedLimitCheckComplete)
             return false;
-        if (limitAbort)
-            return true;
-        // Probe at coarse intervals only; avoid per-record polling.
-        if (keyedProcessed < keyedLimitCheckAt)
-            return false;
-        keyedLimitCheckAt = keyedProcessed + keyedLimitProgressInterval;
-
-        ICommunicator &comm = queryJobChannel().queryJobComm();
-        if (!comm.probe(0, mpTag, nullptr, 0))
-            return false;
-        CMessageBuffer msg;
-        if (!comm.recv(msg, 0, mpTag, nullptr, 0))
-            return false;
-        byte msgType = 0;
-        msg.read(msgType);
-        if (msgType == (byte)KeyedLimitMsg::Abort)
-        {
-            limitAbort = true;
-            DISLOG("INDEXLIMIT: slave %u received abort (keyedProcessed=%" I64F "u)", queryJobChannel().queryMyRank(), (unsigned __int64)keyedProcessed);
-            return true;
-        }
-        return false;
+        return limitAbort.load();
     }
     const void *handleLimitAbort(bool &limitHit, bool &exception)
     {
         limitHit = false;
         exception = false;
-        limitAbort = false;
+        limitAbort.store(false);
         limitHit = true;
         // Mirror keyed-limit behavior for create/throw semantics.
         if (container.queryLocalOrGrouped() || firstNode())
@@ -234,6 +222,37 @@ protected:
             }
         }
         return nullptr;
+    }
+    virtual void threadmain() override
+    {
+        try
+        {
+            ICommunicator &comm = queryJobChannel().queryJobComm();
+            for (;;)
+            {
+                if (keyedLimitAbortListenerStop.load())
+                    break;
+                CMessageBuffer msg;
+                if (!comm.recv(msg, 0, mpTag, nullptr))
+                    break;
+                if (keyedLimitAbortListenerStop.load())
+                    break;
+                byte msgType = 0;
+                msg.read(msgType);
+                if (msgType == (byte)KeyedLimitMsg::Abort)
+                {
+                    limitAbort.store(true);
+                    DISLOG("INDEXLIMIT: slave %u received abort", queryJobChannel().queryMyRank());
+                    break;
+                }
+            }
+        }
+        catch (IException *e)
+        {
+            if (!keyedLimitAbortListenerStop.load())
+                ActPrintLog(e, "INDEXLIMIT: keyed-limit abort listener failed");
+            e->Release();
+        }
     }
 
 public:
@@ -554,6 +573,7 @@ public:
             keyedLimit = RCMAX; // don't check again [ during get() / stop() ]
             keyedLimitCount = RCMAX;
             keyedLimitCheckComplete = true;
+            maybeStartKeyedLimitAbortListener();
         }
         return ret;
     }
@@ -561,7 +581,7 @@ public:
     {
         limitHit = false;
         exception = false;
-        if (limitAbort)
+        if (limitAbort.load())
         {
             // Abort path uses keyed-limit create/throw semantics.
             DISLOG("INDEXLIMIT: Keyed-limit abort handled via keyed-limit create/throw semantics.");
@@ -625,7 +645,7 @@ public:
     }
 public:
     CIndexReadSlaveBase(CGraphElementBase *container)
-        : CSlaveActivity(container, indexReadActivityStatistics), callback(*this)
+        : CSlaveActivity(container, indexReadActivityStatistics), keyedLimitAbortListenerThread("CIndexReadKeyedLimitAbortListener"), callback(*this)
     {
         helper = (IHThorIndexReadBaseArg *)container->queryHelper();
         limitTransformExtra = nullptr;
@@ -819,9 +839,11 @@ public:
             eoi = false;
             configureNextInput();
         }
+        maybeStartKeyedLimitAbortListener();
     }
     virtual void reset() override
     {
+        stopKeyedLimitAbortListener();
         PARENT::reset();
         resetKeyedLimitAbortState();
         eoi = false;
@@ -831,6 +853,16 @@ public:
             resetManager(currentManager);
             currentManager = nullptr;
         }
+    }
+    virtual void stop() override
+    {
+        stopKeyedLimitAbortListener();
+        PARENT::stop();
+    }
+    virtual void abort() override
+    {
+        stopKeyedLimitAbortListener();
+        PARENT::abort();
     }
     virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const
     {
@@ -911,6 +943,7 @@ public:
     }
     virtual void done() override
     {
+        stopKeyedLimitAbortListener();
         lazyIFileIO.clear();
         PARENT::done();
     }
@@ -1097,7 +1130,7 @@ public:
     {
         if (!PARENT::incKeyedExceedsLimit())
             return false;
-        if (limitAbort)
+        if (limitAbort.load())
         {
             // Abort signaled; let handleKeyedLimit apply create/throw semantics.
             DISLOG("INDEXLIMIT: Keyed-limit abort signaled; deferring to keyed-limit handling.");
