@@ -21,6 +21,7 @@
 
 #include "jlib.hpp"
 #include "jstring.hpp"
+#include <string>
 
 interface ISyncedPropertyTree;
 
@@ -70,6 +71,9 @@ constexpr static char defaultMaskChar = '*';
 constexpr static unsigned defaultMaskingPercentage = 90;
 //creates a masked version of a secret
 extern jlib_decl void maskSecret(StringBuffer & maskedSecret, const char * originalSecret, unsigned maskPercentage = defaultMaskingPercentage, bool maskRightSide = true, char maskChar = defaultMaskChar);
+
+extern jlib_decl std::string generateGithubIAT(const char * appId, const char * appKey, const char * installationId);
+extern jlib_decl IFile * getFileWithGitAccessToken(const char * gitUser);
 
 #ifdef _USE_CPPUNIT
 extern jlib_decl std::string testBuildSecretKey(const char * category, const char * name, const char * optVaultId, const char * optVersion);

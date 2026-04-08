@@ -56,6 +56,9 @@ if (NOT WIN32 AND NOT WIN64 AND NOT APPLE AND NOT EMSCRIPTEN)
     pkg_check_modules(liburing REQUIRED IMPORTED_TARGET liburing>=2.0)
 endif ()
 
+find_package(CURL REQUIRED)
+find_path(JWT_CPP_INCLUDE_DIRS "jwt-cpp/base.h" HINTS "${VCPKG_INSTALLED_DIR}")
+
 SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STRICT_CXX_FLAGS}")
 
 set (    SRCS
@@ -212,6 +215,7 @@ set (    INCLUDES
         ${HPCC_SOURCE_DIR}/system/security/cryptohelper/digisign.cpp
         ${HPCC_SOURCE_DIR}/system/security/cryptohelper/pke.cpp
         ${HPCC_SOURCE_DIR}/system/security/cryptohelper/ske.cpp
+        ${JWT_CPP_INCLUDE_DIRS}/jwt-cpp/jwt.h
         )
 
 set_source_files_properties(jmd5.cpp jsort.cpp PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)

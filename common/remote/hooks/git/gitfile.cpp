@@ -250,20 +250,9 @@ protected:
             addPathSepChar(scriptPath).append("bin/hpccaskpass.sh");
             env.emplace_back("GIT_ASKPASS", scriptPath);
 
-            Owned<const IPropertyTree> secret = getSecret("git", gitUser);
-            if (secret)
-            {
-                MemoryBuffer gitKey;
-                if (getSecretKeyValue(gitKey, secret, "password"))
-                {
-                    extractedKey.setown(writeToProtectedTempFile("eclcc", "git", gitKey.length(), gitKey.toByteArray()));
-                    env.emplace_back("HPCC_GIT_PASSPATH", extractedKey->queryFilename());
-                }
-                else
-                    OWARNLOG("Secret doesn't contain password for git user %s", gitUser);
-            }
-            else
-                OWARNLOG("No secret found for git user %s", gitUser);
+            extractedKey.setown(getFileWithGitAccessToken(gitUser));
+            if (extractedKey)
+                env.emplace_back("HPCC_GIT_PASSPATH", extractedKey->queryFilename());
         }
         Owned<IPipeProcess> pipe = createPipeProcess();
         for (const auto & cur : env)

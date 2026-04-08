@@ -1008,32 +1008,11 @@ unsigned EclRepositoryManager::runGitCommand(StringBuffer * output, const char *
             // If gituser is specified never prompt for credentials, otherwise the server can hang.
             env.emplace_back("GIT_TERMINAL_PROMPT", "0");
 
-            if (!options.gitPasswordPath.isEmpty())
+            extractedKey.setown(getFileWithGitAccessToken(options.gitUser.str()));
+            if (extractedKey)
             {
-                //Convert to an absolute path, and check the file exists, because git will be run in a different directory
-                StringBuffer absolutePath;
-                makeAbsolutePath(options.gitPasswordPath.str(), absolutePath, true);
-
-                env.emplace_back("HPCC_GIT_PASSPATH", absolutePath);
+                env.emplace_back("HPCC_GIT_PASSPATH", extractedKey->queryFilename());
                 useScript = true;
-            }
-            else
-            {
-                Owned<const IPropertyTree> secret = getSecret("git", options.gitUser.str());
-                if (secret)
-                {
-                    MemoryBuffer gitKey;
-                    if (!getSecretKeyValue(gitKey, secret, "password"))
-                        DBGLOG("Secret doesn't contain password for git user %s", options.gitUser.str());
-                    else
-                    {
-                        extractedKey.setown(writeToProtectedTempFile("eclcc", "git", gitKey.length(), gitKey.toByteArray()));
-                        env.emplace_back("HPCC_GIT_PASSPATH", extractedKey->queryFilename());
-                        useScript = true;
-                    }
-                }
-                else
-                    DBGLOG("No secret found for git user %s", options.gitUser.str());
             }
         }
 

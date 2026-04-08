@@ -49,6 +49,20 @@
 #pragma GCC diagnostic pop
 #endif
 
+#ifdef verify
+    #define JWT_HAS_VERIFY_MACRO
+    #define OLD_VERIFY verify
+    #undef verify
+#endif
+
+#include "jwt-cpp/jwt.h"
+#include "nlohmann/json.hpp"
+
+#ifdef JWT_HAS_VERIFY_MACRO
+    //Force an error if verify macro is used in any of the following code
+    #undef verify
+#endif
+
 #ifdef _USE_OPENSSL
 #include <opensslcommon.hpp>
 #include <openssl/x509v3.h>
@@ -2426,4 +2440,71 @@ void maskSecret(StringBuffer & maskedSecret, const char * originalSecret, unsign
         for (size_t i = secretLen - unmaskedCharsCount; i < secretLen; ++i)
             maskedSecret.append(originalSecret[i]);
     }
+}
+
+std::string generateGithubIAT(const char * appId, const char * appKey, const char * installationId)
+{
+    try
+    {
+        auto now = std::chrono::system_clock::now();
+        auto token = jwt::create()
+            .set_issuer(appId)
+            .set_issued_at(now)
+            .set_expires_at(now + std::chrono::minutes(10))
+            .sign(jwt::algorithm::rs256("", appKey));
+
+        httplib::SSLClient cli("api.github.com");
+        cli.set_bearer_token_auth(token.c_str());
+        cli.set_default_headers({
+            {"User-Agent", "ECL-Compiler/1.0"},
+            {"Accept", "application/vnd.github.v3+json"}
+        });
+
+        // Generate Access Token
+        std::string tokenPath = "/app/installations/";
+        tokenPath += installationId;
+        tokenPath += "/access_tokens";
+        auto postRes = cli.Post(tokenPath.c_str());
+        if (!postRes || postRes->status != 201)
+        {
+            DBGLOG("Failed to generate GitHub IAT. HTTP status: %d", postRes ? postRes->status : -1);
+            return "";
+        }
+
+        auto tokenJson = nlohmann::json::parse(postRes->body);
+        return tokenJson["token"].get<std::string>();
+    }
+    catch (const std::exception& e)
+    {
+        DBGLOG("Exception generating GitHub IAT: %s", e.what());
+    }
+
+    return "";
+}
+
+IFile * getFileWithGitAccessToken(const char * gitUser)
+{
+    Owned<const IPropertyTree> secret = getSecret("git", gitUser);
+    if (!secret)
+    {
+        DBGLOG("No secret found for git user %s", gitUser);
+        return nullptr;
+    }
+
+    MemoryBuffer gitKey;
+    if (getSecretKeyValue(gitKey, secret, "password"))
+        return writeToProtectedTempFile("eclcc", "git", gitKey.length(), gitKey.toByteArray());
+
+    StringBuffer appId, appKey, installationId;
+    if (getSecretKeyValue(appId, secret, "appid") && getSecretKeyValue(appKey, secret, "appkey") && getSecretKeyValue(installationId, secret, "installationid"))
+    {
+        // Generate an Installation Access Token (IAT) from the App ID, Private Key, and Installation ID
+        std::string iat = generateGithubIAT(appId.str(), appKey.str(), installationId.str());
+        if (!iat.empty())
+            return writeToProtectedTempFile("eclcc", "git", iat.length(), iat.c_str());
+        return nullptr;
+    }
+
+    DBGLOG("Secret doesn't contain password or github app credentials for git user %s", gitUser);
+    return nullptr;
 }
