@@ -202,11 +202,10 @@ protected:
         keyedLimitCheckAt = keyedProcessed + keyedLimitProgressInterval;
 
         ICommunicator &comm = queryJobChannel().queryJobComm();
-        rank_t sender = 0;
-        if (!comm.probe(0, mpTag, &sender, 0))
+        if (!comm.probe(0, mpTag, nullptr, 0))
             return false;
         CMessageBuffer msg;
-        if (!comm.recv(msg, sender, mpTag, &sender, 0))
+        if (!comm.recv(msg, 0, mpTag, nullptr, 0))
             return false;
         byte msgType = 0;
         msg.read(msgType);
