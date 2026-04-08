@@ -145,7 +145,7 @@ protected:
             if (!abortSent && total > keyedLimit)
             {
                 abortSent = true;
-                DISLOG("INDEXLIMIT: master aborting keyed limit (reported keyed rows processed=%" I64F "u, limit=%" I64F "u)", (unsigned __int64)total, (unsigned __int64)keyedLimit);
+                DISLOG("INDEXLIMIT: master aborting keyed limit (reported progress=%" I64F "u, limit=%" I64F "u)", (unsigned __int64)total, (unsigned __int64)keyedLimit);
                 // Broadcast a stop signal once the global keyed limit is exceeded.
                 for (rank_t r = 1; r <= slaves; ++r)
                 {
@@ -184,7 +184,7 @@ protected:
         appendWithThousands(savedCountsText, savedCounts);
         StringBuffer fullScanPerSlaveText;
         appendWithThousands(fullScanPerSlaveText, fullScanPerSlave);
-        DISLOG("INDEXLIMIT: monitor finished (savedCounts=%s, fullScanPerSlave=%s, reported keyed rows processed=%" I64F "u, done=%u/%u, abortSent=%s)", savedCountsText.str(), fullScanPerSlaveText.str(), (unsigned __int64)total, done, slaves, abortSent ? "true" : "false");
+        DISLOG("INDEXLIMIT: monitor finished (savedCounts=%s, fullScanPerSlave=%s, reported progress=%" I64F "u, done=%u/%u, abortSent=%s)", savedCountsText.str(), fullScanPerSlaveText.str(), (unsigned __int64)total, done, slaves, abortSent ? "true" : "false");
         return total;
     }
     void prepareKey(IDistributedFile *index)
@@ -497,6 +497,18 @@ class CIndexCountActivityMaster : public CIndexReadBase
 
     IHThorIndexCountArg *helper;
 
+    rowcount_t queryMonitorLimit() const
+    {
+        if (0 == (helper->getFlags() & TIRaggregateexists))
+            return RCMAX;
+        rowcount_t chooseNLimit = (rowcount_t)helper->getChooseNLimit();
+        if (chooseNLimit == RCMAX)
+            return RCMAX;
+        if (chooseNLimit == 0)
+            return 0;
+        return chooseNLimit - 1;
+    }
+
     void processKeyedLimit()
     {
         if (PARENT::processKeyedLimit())
@@ -522,7 +534,15 @@ public:
         keyedLimit = (rowcount_t)helper->getKeyedLimit();
         if (keyedLimit != RCMAX)
             processKeyedLimit();
-        rowcount_t total = aggregateToLimit();
+        rowcount_t total = 0;
+        rowcount_t monitorLimit = queryMonitorLimit();
+        if (monitorLimit != RCMAX)
+        {
+            keyedLimit = monitorLimit;
+            total = monitorKeyedLimit();
+        }
+        else
+            total = aggregateToLimit();
         CMessageBuffer msg;
         msg.append(total);
         ICommunicator &comm = queryJobChannel().queryJobComm();

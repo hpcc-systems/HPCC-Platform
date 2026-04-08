@@ -1484,6 +1484,7 @@ class CIndexCountSlaveActivity : public CIndexReadSlaveBase
 
     IHThorIndexCountArg *helper;
     rowcount_t preknownTotalCount = 0;
+    rowcount_t countedValid = 0;
     bool totalCountKnown = false;
     bool done = false;
 
@@ -1503,6 +1504,26 @@ public:
     {
         helper = static_cast <IHThorIndexCountArg *> (container.queryHelper());
         appendOutputLinked(this);
+    }
+    virtual bool enableKeyedLimitAbort() const override
+    {
+        return !container.queryLocalOrGrouped() && (0 != (helper->getFlags() & TIRaggregateexists));
+    }
+    virtual rowcount_t queryKeyedLimitAbortLimit() const override
+    {
+        if (0 == (helper->getFlags() & TIRaggregateexists))
+            return keyedLimit;
+        if (choosenLimit == RCMAX)
+            return RCMAX;
+        if (choosenLimit == 0)
+            return 0;
+        return choosenLimit - 1;
+    }
+    virtual rowcount_t queryKeyedLimitProgress() const override
+    {
+        if (0 == (helper->getFlags() & TIRaggregateexists))
+            return PARENT::queryKeyedLimitProgress();
+        return countedValid;
     }
     virtual void onKeyedLimitExceededStop() override
     {
@@ -1539,6 +1560,9 @@ public:
             totalCountKnown = true;
             preknownTotalCount = 0;
         }
+        countedValid = 0;
+        if (keyedLimitAbortEnabled)
+            keyedLimitLastReportMs = 0; // force a prompt initial progress report in monitor mode
         done = false;
     }
 
@@ -1582,6 +1606,9 @@ public:
                                 break;
                             ++progress;
                             totalCount += helper->numValid(key);
+                            countedValid = totalCount;
+                            if (maybeCheckKeyedLimitAbort())
+                                break;
                             if (totalCount > rowLimit)
                                 break;
                             if (keyManager)
@@ -1591,6 +1618,8 @@ public:
                         }
                         if (keyManager)
                             resetManager(keyManager);
+                        if (checkLimitAbortSignal())
+                            break;
                         if ((totalCount > choosenLimit))
                             break;
                     }
@@ -1602,10 +1631,19 @@ public:
             }
             if (!container.queryLocalOrGrouped())
             {
-                sendPartialCount(*this, totalCount);
-                if (!firstNode())
-                    return nullptr;
-                totalCount = getFinalCount(*this);
+                if (keyedLimitAbortEnabled)
+                {
+                    if (!firstNode())
+                        return nullptr;
+                    totalCount = getFinalCount(*this);
+                }
+                else
+                {
+                    sendPartialCount(*this, totalCount);
+                    if (!firstNode())
+                        return nullptr;
+                    totalCount = getFinalCount(*this);
+                }
             }
             if (totalCount > rowLimit)
             {
