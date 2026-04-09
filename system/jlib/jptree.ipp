@@ -45,7 +45,7 @@ public:
     {
         // Since most nodes have <= 15 attribute name/value pairs;
         // reserve space up front to avoid reallocations.
-        static constexpr size32_t expectedMaximumAttributeOffsetCount = 15 * 2;
+        constexpr size32_t expectedMaximumAttributeOffsetCount = 15 * 2;
         matchOffsets.reserve(expectedMaximumAttributeOffsetCount);
     }
 };
@@ -873,7 +873,6 @@ class jlib_decl CAtomPTree : public PTree
     PtrStrUnion<HashKeyElement> name;
 protected:
     virtual bool removeAttribute(const char *k) override;
-    static CriticalSection &queryHashCrit();
     virtual IPropertyTree *create(IBufferedSerialInputStream &in, PTreeDeserializeContext &ctx) override
     {
         IPropertyTree *tree = new CAtomPTree();

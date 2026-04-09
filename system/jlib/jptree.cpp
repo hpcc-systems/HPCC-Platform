@@ -3845,6 +3845,7 @@ void LocalPTree::deserializeAttributes(const char *base, PTreeDeserializeContext
     attrs = newAttrs;
 
     // Process each name/value pair
+    dbgassertex(!arrayOwner);
     for (unsigned i = 0; i < ctx.matchOffsets.size(); i += 2)
     {
         const char *attrName = base + ctx.matchOffsets[i];
@@ -3853,13 +3854,6 @@ void LocalPTree::deserializeAttributes(const char *base, PTreeDeserializeContext
 
         if (!v->key.set(attrName)) // AttrStr will not return encoding marker when get() is called
             v->key.setPtr(isnocase() ? AttrStr::createNC(attrName) : AttrStr::create(attrName));
-        if (arrayOwner)
-        {
-            CQualifierMap *map = arrayOwner->queryMap();
-            if (map)
-                map->insertEntryIfMapped(attrName, attrValue, this);
-        }
-
         if (!v->value.set(attrValue))
             v->value.setPtr(AttrStr::create(attrValue));
     }
@@ -4073,40 +4067,25 @@ void CAtomPTree::deserializeAttributes(const char *base, PTreeDeserializeContext
         return;
 
     // Allocate memory for all attributes (existing + new) in one go, and copy existing attributes if needed.
+    dbgassertex(numAttrs == 0);
     unsigned insertPos = numAttrs;
     AttrValue *newattrs = newAttrArray(insertPos + newAttrPairs);
-    if (attrs)
-    {
-        memcpy(newattrs, attrs, insertPos * sizeof(AttrValue));
-        freeAttrArray(attrs, insertPos);
-    }
     attrs = newattrs;
     numAttrs = insertPos + newAttrPairs;
 
     // Set attribute values and update qualifier map if needed
+    dbgassertex(!arrayOwner);
     for (unsigned i = 0; i < ctx.matchOffsets.size(); i += 2)
     {
         const char *attrName = base + ctx.matchOffsets[i];
         const char *attrValue = base + ctx.matchOffsets[i + 1];
-
-        if (arrayOwner)
-        {
-            CQualifierMap *map = arrayOwner->queryMap();
-            if (map)
-                map->insertEntryIfMapped(attrName, attrValue, this);
-        }
-
         AttrValue *v = &newattrs[insertPos++];
+
         if (!v->key.set(attrName))
             v->key.setPtr(attrHT->addkey(attrName, isnocase()));
         if (!v->value.set(attrValue))
             v->value.setPtr(attrHT->addval(attrValue));
     }
-}
-
-CriticalSection &CAtomPTree::queryHashCrit()
-{
-    return hashcrit;
 }
 
 void CAtomPTree::setAttribute(const char *key, const char *val, bool encoded)
