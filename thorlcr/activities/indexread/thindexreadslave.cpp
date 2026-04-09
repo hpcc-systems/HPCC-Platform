@@ -75,6 +75,7 @@ protected:
     bool keyedLimitAbortEnabled = false;
     bool keyedLimitExceededLogged = false;
     std::atomic<bool> limitAbort{false};
+    std::atomic<bool> keyedLimitDoneSent{false};
     rowcount_t rowLimit = RCMAX;
     bool useRemoteStreaming = false;
     Owned<IFileIO> lazyIFileIO;
@@ -163,6 +164,7 @@ protected:
     void resetKeyedLimitAbortState()
     {
         limitAbort.store(false);
+        keyedLimitDoneSent.store(false);
         rowcount_t abortLimit = queryKeyedLimitAbortLimit();
         keyedLimitAbortEnabled = enableKeyedLimitAbort() && (abortLimit != RCMAX);
         if (keyedLimitAbortEnabled)
@@ -193,9 +195,15 @@ protected:
     {
         if (!keyedLimitCheckComplete)
             return;
+        if (msgType == KeyedLimitMsg::Done)
+        {
+            bool expected = false;
+            if (!keyedLimitDoneSent.compare_exchange_strong(expected, true))
+                return;
+        }
         CMessageBuffer msg;
         msg.append((byte)msgType).append(count);
-        if (msgType == KeyedLimitMsg::Done && keyedLimitTarget == 1)
+        if (msgType == KeyedLimitMsg::Done)
             DISLOG("INDEXLIMIT: slave %u done (keyedProcessed=%" I64F "u)", queryJobChannel().queryMyRank(), (unsigned __int64)count);
         if (!queryJobChannel().queryJobComm().send(msg, 0, mpTag, 5000))
             throw MakeThorException(0, "Failed to send keyed-limit progress to master");
@@ -294,6 +302,7 @@ protected:
                 {
                     limitAbort.store(true);
                     DISLOG("INDEXLIMIT: slave %u received abort", queryJobChannel().queryMyRank());
+                    sendKeyedLimitProgress(queryKeyedLimitProgress(), KeyedLimitMsg::Done);
                     break;
                 }
             }

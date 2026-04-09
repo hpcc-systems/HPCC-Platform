@@ -15,18 +15,10 @@
     limitations under the License.
 ############################################################################## */
 
-#include "thexception.hpp"
-#include "jhtree.hpp"
-#include "jlog.hpp"
-#include "dasess.hpp"
-#include "dadfs.hpp"
-#include "mpcomm.hpp"
-
 #include <vector>
 
-#include "thmem.hpp"
+#include "jhtree.hpp"
 #include "thdiskbase.ipp"
-#include "thindexread.ipp"
 #include "thindexreadcommon.hpp"
 
 namespace
@@ -101,6 +93,7 @@ protected:
         const unsigned slaves = container.queryJob().querySlaves();
         DISLOG("INDEXLIMIT: monitoring keyed limit (%" I64F "u) across %u slaves", (unsigned __int64)keyedLimit, slaves);
         std::vector<rowcount_t> lastCounts(slaves, 0); // Track per-slave deltas to avoid double-counting.
+        std::vector<bool> doneSeen(slaves, false);
         rowcount_t total{0};
         unsigned done{0};
         bool abortSent{false};
@@ -111,7 +104,16 @@ protected:
             rank_t sender{0};
             if (!receiveMsg(msg, RANK_ALL, mpTag, &sender, LONGTIMEOUT))
             {
-                WARNLOG("INDEXLIMIT: timeout waiting for keyed-limit progress (done=%u/%u)", done, slaves);
+                StringBuffer missingDone;
+                for (unsigned i = 0; i < slaves; ++i)
+                {
+                    if (doneSeen[i])
+                        continue;
+                    if (missingDone.length())
+                        missingDone.append(",");
+                    missingDone.append(i + 1);
+                }
+                WARNLOG("INDEXLIMIT: timeout waiting for keyed-limit progress (done=%u/%u, missingDoneSlaves=[%s])", done, slaves, missingDone.str());
                 if (!abortSent)
                 {
                     abortSent = true;
@@ -141,7 +143,14 @@ protected:
                 total += (count - prev);
             lastCounts[index] = count;
             if (msgType == (byte)KeyedLimitMsg::Done)
-                ++done;
+            {
+                if (!doneSeen[index])
+                {
+                    doneSeen[index] = true;
+                    ++done;
+                }
+                DISLOG("INDEXLIMIT: monitor received Done from slave %u (count=%" I64F "u, done=%u/%u)", (unsigned)sender, (unsigned __int64)count, done, slaves);
+            }
             if (!abortSent && total > keyedLimit)
             {
                 abortSent = true;
