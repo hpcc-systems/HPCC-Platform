@@ -633,9 +633,10 @@ bool HqlCppWriter::generateFunctionPrototype(IHqlExpression * funcdef, const cha
     bool isProjectedScript = (body && body->hasAttribute(projectedAtom) && body->hasAttribute(languageAtom))
         || (bodyCode && bodyCode->hasAttribute(projectedAtom) && bodyCode->hasAttribute(languageAtom));
 
-    // PROJECTED internal helper names are emitted as userN_V. If we are seeing this
-    // generated form, force internal linkage even if projected markers were stripped
-    // when converting through an external funcdef wrapper.
+    // PROJECTED internal helper names are emitted as userN_V. Force internal linkage for
+    // this generated form even if projected markers were stripped via an external wrapper.
+    // Repeated calls are safe: internal helpers are cached per original funcdef and reused,
+    // so we do not generate multiple conflicting definitions for the same helper.
     bool isProjectedHelperName = false;
     if (name && startsWith(name, "user"))
     {
@@ -664,6 +665,7 @@ bool HqlCppWriter::generateFunctionPrototype(IHqlExpression * funcdef, const cha
     else if (isVirtual)
         out.append("virtual");
     else if (isProjectedScript || isProjectedHelperName)
+        // These are generated internal helpers, not API symbols; keep them TU-local.
         out.append("static");
     else
         out.append("extern");

@@ -6059,6 +6059,8 @@ IHqlExpression * HqlCppTranslator::doBuildInternalFunction(IHqlExpression * func
         && (bodyCode->hasAttribute(projectedAtom) || (body && body->hasAttribute(projectedAtom)));
     if (isProjectedScript)
     {
+        // Initial embedded naming (e.g. userN/entrypoint) happens earlier, before we know whether
+        // PROJECTED requires per-instantiation uniqueness, so patch the entrypoint here.
         StringBuffer baseName;
         getAttribute(body, entrypointAtom, baseName);
         if (!baseName.length())
@@ -6071,30 +6073,20 @@ IHqlExpression * HqlCppTranslator::doBuildInternalFunction(IHqlExpression * func
 
         HqlExprArray bodyArgs;
         bodyArgs.append(*LINK(bodyCode));
-        bool hadEntrypoint = false;
         for (unsigned idx = 1; idx < body->numChildren(); idx++)
         {
             IHqlExpression * cur = body->queryChild(idx);
+            // Drop any existing entrypoint and append the unique variation once after the loop.
             if (cur->isAttribute() && cur->queryName() == entrypointAtom)
-            {
-                if (!hadEntrypoint)
-                {
-                    bodyArgs.append(*createExprAttribute(entrypointAtom, LINK(variedNameExpr)));
-                    hadEntrypoint = true;
-                }
-            }
-            else
-                bodyArgs.append(*LINK(cur));
+                continue;
+
+            bodyArgs.append(*LINK(cur));
         }
-        if (!hadEntrypoint)
-            bodyArgs.append(*createExprAttribute(entrypointAtom, LINK(variedNameExpr)));
+        bodyArgs.append(*createExprAttribute(entrypointAtom, LINK(variedNameExpr)));
 
         OwnedHqlExpr newBody = body->clone(bodyArgs);
 
-        HqlExprArray funcdefArgs;
-        funcdefArgs.append(*newBody.getClear());
-        unwindChildren(funcdefArgs, funcdef, 1);
-        variedFuncdef.setown(funcdef->clone(funcdefArgs));
+        variedFuncdef.setown(replaceChild(funcdef, 0, newBody));
         funcdef = variedFuncdef;
     }
 
