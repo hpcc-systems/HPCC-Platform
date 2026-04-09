@@ -151,6 +151,8 @@ interface jlib_decl IPropertyTree : extends serializable
     virtual void serializeToStream(IBufferedSerialOutputStream &out) const = 0;
     virtual void deserializeFromStream(IBufferedSerialInputStream &in, PTreeDeserializeContext &ctx) = 0;
 
+    virtual void deserializeAttributes(const char *base, PTreeDeserializeContext &ctx) = 0;
+
 private:
     void setProp(const char *, int); // dummy to catch accidental use of setProp when setPropInt() intended
     void addProp(const char *, int); // likewise

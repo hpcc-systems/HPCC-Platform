@@ -3088,16 +3088,7 @@ void PTree::deserializeSelf(IBufferedSerialInputStream &src, PTreeDeserializeCon
     if (unlikely(!base))
         throwUnexpectedX("PTree deserialization error: end of stream, expected attribute name");
 
-    size_t numStringOffsets = ctx.matchOffsets.size();
-    if (unlikely(numStringOffsets % 2 != 0))
-        throwUnexpectedX("PTree deserialization error: end of stream, expected attribute value");
-    constexpr bool attributeNameNotEncoded = false; // Deserialized attribute name is in its original unencoded form
-    for (size_t i = 0; i < numStringOffsets; i += 2)
-    {
-        const char *attrName = base + ctx.matchOffsets[i];
-        const char *attrValue = base + ctx.matchOffsets[i + 1];
-        setAttribute(attrName, attrValue, attributeNameNotEncoded);
-    }
+    deserializeAttributes(base, ctx);
 
     src.skip(skipLen); // Skip over all attributes and the terminator
 
@@ -3109,6 +3100,21 @@ void PTree::deserializeSelf(IBufferedSerialInputStream &src, PTreeDeserializeCon
         value = new CPTValue(src, size);
     else
         value = nullptr;
+}
+
+void PTree::deserializeAttributes(const char *base, PTreeDeserializeContext &ctx)
+{
+    size_t numStringOffsets = ctx.matchOffsets.size();
+    if (unlikely(numStringOffsets % 2 != 0))
+        throwUnexpectedX("PTree deserialization error: end of stream, expected attribute value");
+
+    constexpr bool attributeNameNotEncoded = false; // Deserialized attribute name is in its original unencoded form
+    for (size_t i = 0; i < numStringOffsets; i += 2)
+    {
+        const char *attrName = base + ctx.matchOffsets[i];
+        const char *attrValue = base + ctx.matchOffsets[i + 1];
+        setAttribute(attrName, attrValue, attributeNameNotEncoded);
+    }
 }
 
 void PTree::serializeAttributes(MemoryBuffer &tgt)
