@@ -395,6 +395,7 @@ public:
     CriticalSection dirsCrit;
     CriticalSection filesCrit;
     CriticalSection dirDescCrit;
+    std::atomic<unsigned> activeReferences{0};
     offset_t totalsize[2];              //  across all nodes
     offset_t minsize[2];                //  smallest node size
     offset_t maxsize[2];                //  largest node size
@@ -485,13 +486,27 @@ public:
         return partNum==(dirPerPartNum-1);
     }
 
-    void remove(cDirDesc *dir)
+    void noteAcquire()
     {
-        StringBuffer dirName;
-        dir->getName(dirName);
+        activeReferences.fetch_add(1, std::memory_order_relaxed);
+    }
 
+    void noteRelease()
+    {
+        activeReferences.fetch_sub(1, std::memory_order_relaxed);
+    }
+
+    void removeIfEmpty(const char *name)
+    {
         CriticalBlock block(dirsCrit);
-        dirs.erase(dirName.str());
+        auto it = dirs.find(name);
+        if (it == dirs.end())
+            return;
+        if (it->second->activeReferences.load(std::memory_order_relaxed) != 0)
+            return;
+        if (!it->second->empty())
+            return;
+        dirs.erase(it);
     }
 
     cFileDesc *getFile(const char *filename)
@@ -543,7 +558,10 @@ public:
     cDirDesc *lookupDir(const char *name, XRefAllocator *allocator)
     {
         CriticalBlock block(dirsCrit);
-        return lookupDirNonThreadSafe(name, allocator);
+        cDirDesc *ret = lookupDirNonThreadSafe(name, allocator);
+        if (ret)
+            ret->noteAcquire(); // Mark as in-use so the parent cannot remove it while it is being scanned.
+        return ret;
     }
 
     static const char *decodeName(unsigned drv,const char *name,unsigned node, unsigned numnodes,
@@ -765,8 +783,10 @@ public:
 
     bool empty(unsigned drv)
     {
-        // NB: Thread-safety not required because called after directory scan
-        // completes, when structure is read-only and no longer being modified.
+        // NB: Called after directory scan completes when the structure is read-only,
+        // and from removeIfEmpty() during the scan after activeReferences==0 has established that
+        // no thread is still scanning or modifying this directory. removeIfEmpty also calls empty
+        // under a the dirs CriticalSection to be thread-safe.
         // empty if no files, and all subdirs are empty
         if ((!files.empty())||(totalsize[drv]!=0))
             return false;
@@ -1690,18 +1710,30 @@ public:
             addPathSepChar(path).append(dirs.item(i));
             if (file.get()&&!resetRemoteFilename(file,path.str())) // sneaky way of avoiding cache
                 file.clear();
-            if (!scanDirectory(node,ep,path,drv,pdir->lookupDir(dirs.item(i),&allocator),file,filePathOffset,stripeNum,pdir,scopeSz))
+            cDirDesc *child = pdir->lookupDir(dirs.item(i),&allocator);
+            if (!scanDirectory(node,ep,path,drv,child,file,filePathOffset,stripeNum,pdir,scopeSz))
+            {
+                if (child)
+                    child->noteRelease();
                 return false;
+            }
             path.setLength(dsz);
+
+            if (child)
+            {
+                bool childIsDirPerPart = child->isDirPerPartCandidate();
+                child->noteRelease();
+                if (childIsDirPerPart)
+                {
+                    // Try to remove this directory if there are currently no other threads accessing it.
+                    // It is possible that this dir-per-part dir is deleted and then another thread re-creates
+                    // it during its scan. This is ok as it should also be cleaned up if still empty.
+                    pdir->removeIfEmpty(dirs.item(i));
+                }
+            }
         }
 
-        if (pdir->isDirPerPartCandidate() && pdir->empty())
-        {
-            // This is safe to remove as each thread works on its own stripe directory which contains a unique set of dir-per-part directories
-            parent->remove(pdir);
-            // Skip adding node stats and incrementing processedDirs for deleted directories
-        }
-        else
+        if (!pdir->isDirPerPartCandidate() || !pdir->empty())
             pdir->addNodeStats(node,drv,scopeSz);
 
         processedDirs++;
