@@ -1222,8 +1222,14 @@ attribute: DataSize = 73
         CPPUNIT_ASSERT(recorder.startRecording("all", "pullevents.evt", "testprocess", testChannelId, testReplicaId, testInstanceId, false));
         CPPUNIT_ASSERT(recorder.isRecording());
 
+        // File information
+        recorder.recordPlaneInformation("data", "/data", false);
+        recorder.recordFileInformation(100, "/data/testfile.idx");
+
         // Add a demo call to each of the record() functions
         // Index-related events
+        recorder.recordIndexOpen(100, 9933);
+
         recorder.recordIndexCacheHit(1, 8192, NodeBranch, 1024, 100);
         recorder.recordIndexCacheMiss(2, 16384, NodeLeaf);
         recorder.recordIndexLoad(3, 24576, NodeBranch, 2048, 150, 200);
@@ -1244,9 +1250,6 @@ attribute: DataSize = 73
         recorder.recordDaliGetChildrenFor(1007, 225, 768);
         recorder.recordDaliGetElements("/Test/Path/Elements", 1008, 275, 1536);
         recorder.recordDaliSubscribe("/Test/Subscribe/Path", 1009, 125);
-
-        // File information
-        recorder.recordFileInformation(100, "testfile.idx");
 
         // Query events
         recorder.recordQueryStart("TestQuery");
