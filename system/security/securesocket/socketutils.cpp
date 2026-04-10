@@ -659,6 +659,20 @@ void CSocketConnectionListener::startSingleshotAccept()
 class CAsyncTLSAcceptCallback : public CSimpleInterfaceOf<IAsyncCallback>
 {
 private:
+    void closeSecureSocketNoThrow()
+    {
+        if (!secureSocket)
+            return;
+        try
+        {
+            secureSocket->close();
+        }
+        catch (...)
+        {
+            OERRLOG("MP Connect Thread: secure socket close failed during async TLS accept cleanup");
+        }
+    }
+
     Linked<CSocketConnectionListener> listener;
     Owned<ISecureSocket> secureSocket;
     
@@ -672,7 +686,7 @@ public:
     {
         if (result < 0)
         {
-            secureSocket->close();
+            closeSecureSocketNoThrow();
             if (result != PORT_CHECK_SSL_ACCEPT_ERROR)
                 PROGLOG("MP Connect Thread: failed to async accept secure connection (result=%d)", result);
             return true; // Callback complete, processor will Release()
@@ -694,7 +708,7 @@ public:
         {
             EXCLOG(e, "Error adding async accepted connection");
             e->Release();
-            secureSocket->close();
+            closeSecureSocketNoThrow();
         }
         return true; // Callback complete, processor will Release()
     }

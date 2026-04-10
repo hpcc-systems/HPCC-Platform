@@ -386,6 +386,20 @@ public:
     }
 };
 
+class OneShotAsyncCallback : public IAsyncCallback
+{
+public:
+    Semaphore completed;
+    int result = -999;
+
+    virtual bool onAsyncComplete(int _result) override
+    {
+        result = _result;
+        completed.signal();
+        return false;
+    }
+};
+
 class AsyncSocketConnectionTests : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(AsyncSocketConnectionTests);
@@ -466,20 +480,6 @@ public:
             return;
         }
         
-        class ConnectCallback : public CSimpleInterfaceOf<IAsyncCallback>
-        {
-        public:
-            Semaphore completed;
-            int result = -999;
-            
-            virtual bool onAsyncComplete(int _result) override
-            {
-                result = _result;
-                completed.signal();
-                return true;
-            }
-        };
-        
         try
         {
             SockAddrHolder addrHolder;
@@ -490,7 +490,7 @@ public:
             ASSERT(addrHolder.get() != nullptr);
             ASSERT(addrlen > 0);
             
-            ConnectCallback callback;
+            OneShotAsyncCallback callback;
             uring->enqueueSocketConnect(socket, addrHolder.get(), addrlen, callback);
             
             // Wait for async connection to complete
@@ -544,29 +544,15 @@ public:
         
         constexpr unsigned numConnections = 5;
         
-        class MultiConnectCallback : public CSimpleInterfaceOf<IAsyncCallback>
-        {
-        public:
-            Semaphore completed;
-            int result = -999;
-            
-            virtual bool onAsyncComplete(int _result) override
-            {
-                result = _result;
-                completed.signal();
-                return true;
-            }
-        };
-        
         try
         {
             std::vector<Owned<ISocket>> sockets;
             std::vector<SockAddrHolder> addrHolders(numConnections);
-            std::vector<std::unique_ptr<MultiConnectCallback>> callbacks;
+            std::vector<std::unique_ptr<OneShotAsyncCallback>> callbacks;
             
             // Create callbacks
             for (unsigned i = 0; i < numConnections; i++)
-                callbacks.push_back(std::make_unique<MultiConnectCallback>());
+                callbacks.push_back(std::make_unique<OneShotAsyncCallback>());
             
             // Create and queue multiple connections
             for (unsigned i = 0; i < numConnections; i++)
@@ -658,21 +644,6 @@ public:
             return;
         }
         
-        class ReconnectCallback : public CSimpleInterfaceOf<IAsyncCallback>
-        {
-        public:
-            
-            Semaphore completed;
-            int result = -999;
-            
-            virtual bool onAsyncComplete(int _result) override
-            {
-                result = _result;
-                completed.signal();
-                return true;
-            }
-        };
-
         try
         {
             // First connection
@@ -681,7 +652,7 @@ public:
                 size32_t addrlen = 0;
                 
                 Owned<ISocket> socket = ISocket::createForAsyncConnect(ep, addrHolder.getRef(), addrlen);
-                ReconnectCallback callback;
+                OneShotAsyncCallback callback;
                 
                 uring->enqueueSocketConnect(socket, addrHolder.get(), addrlen, callback);
                 callback.completed.wait(5000);
@@ -703,7 +674,7 @@ public:
                 size32_t addrlen = 0;
                 
                 Owned<ISocket> socket = ISocket::createForAsyncConnect(ep, addrHolder.getRef(), addrlen);
-                ReconnectCallback callback;
+                OneShotAsyncCallback callback;
                 
                 uring->enqueueSocketConnect(socket, addrHolder.get(), addrlen, callback);
                 callback.completed.wait(5000);
@@ -756,28 +727,13 @@ public:
             return;
         }
         
-        class TimeoutCallback : public CSimpleInterfaceOf<IAsyncCallback>
-        {
-        public:
-            
-            Semaphore completed;
-            int result = -999;
-            
-            virtual bool onAsyncComplete(int _result) override
-            {
-                result = _result;
-                completed.signal();
-                return true;
-            }
-        };
-        
         try
         {
             SockAddrHolder addrHolder;
             size32_t addrlen = 0;
             
             Owned<ISocket> socket = ISocket::createForAsyncConnect(ep, addrHolder.getRef(), addrlen);
-            TimeoutCallback callback;
+            OneShotAsyncCallback callback;
             
             uring->enqueueSocketConnect(socket, addrHolder.get(), addrlen, callback);
             
@@ -818,21 +774,6 @@ public:
             return;
         }
         
-        class ReconnectCallback : public CSimpleInterfaceOf<IAsyncCallback>
-        {
-        public:
-            
-            Semaphore completed;
-            int result = -999;
-            
-            virtual bool onAsyncComplete(int _result) override
-            {
-                result = _result;
-                completed.signal();
-                return true;
-            }
-        };
-        
         try
         {
             const unsigned numReconnects = 10;
@@ -843,7 +784,7 @@ public:
                 size32_t addrlen = 0;
                 
                 Owned<ISocket> socket = ISocket::createForAsyncConnect(ep, addrHolder.getRef(), addrlen);
-                ReconnectCallback callback;
+                OneShotAsyncCallback callback;
                 
                 uring->enqueueSocketConnect(socket, addrHolder.get(), addrlen, callback);
                 
@@ -977,21 +918,6 @@ public:
             return;
         }
         
-        class RapidCallback : public CSimpleInterfaceOf<IAsyncCallback>
-        {
-        public:
-            
-            Semaphore completed;
-            int result = -999;
-            
-            virtual bool onAsyncComplete(int _result) override
-            {
-                result = _result;
-                completed.signal();
-                return true;
-            }
-        };
-        
         try
         {
             const unsigned numCycles = 20;
@@ -1002,7 +928,7 @@ public:
                 size32_t addrlen = 0;
                 
                 Owned<ISocket> socket = ISocket::createForAsyncConnect(ep, addrHolder.getRef(), addrlen);
-                RapidCallback callback;
+                OneShotAsyncCallback callback;
                 
                 uring->enqueueSocketConnect(socket, addrHolder.get(), addrlen, callback);
                 
@@ -1045,28 +971,13 @@ public:
             return;
         }
         
-        class CancelCallback : public CSimpleInterfaceOf<IAsyncCallback>
-        {
-        public:
-            
-            Semaphore completed;
-            int result = -999;
-            
-            virtual bool onAsyncComplete(int _result) override
-            {
-                result = _result;
-                completed.signal();
-                return true;
-            }
-        };
-        
         try
         {
             SockAddrHolder addrHolder;
             size32_t addrlen = 0;
             
             Owned<ISocket> socket = ISocket::createForAsyncConnect(ep, addrHolder.getRef(), addrlen);
-            CancelCallback callback;
+            OneShotAsyncCallback callback;
             
             uring->enqueueSocketConnect(socket, addrHolder.get(), addrlen, callback);
             
