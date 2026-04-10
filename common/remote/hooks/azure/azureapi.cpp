@@ -203,7 +203,7 @@ class AzureFileClient : public AzureAPICopyClientBase
             catch (const Azure::Core::RequestFailedException& e)
             {
                 IERRLOG("Failed to create directory '%s': %s (code %d)", dirUrl.c_str(), e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
-                throw;
+                throw makeStringExceptionV(MSGAUD_operator, -1, "Failed to create directory '%s': %s (%d)", dirUrl.c_str(), e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
             }
         }
     }
@@ -400,8 +400,11 @@ protected:
         std::string serviceUrl = std::string("https://") + accountName + ".blob.core.windows.net";
         BlobServiceClient serviceClient(serviceUrl, getAzureManagedIdentityCredential());
 
+        // Backdate the key start time to tolerate normal clock skew between nodes and Azure.
+        Blobs::GetUserDelegationKeyOptions options;
+        options.StartsOn = Azure::DateTime(now - std::chrono::minutes(5));
         auto expiresOn = Azure::DateTime(now + std::chrono::hours(1));
-        auto key = std::make_shared<Blobs::Models::UserDelegationKey>(serviceClient.GetUserDelegationKey(expiresOn).Value);
+        auto key = std::make_shared<Blobs::Models::UserDelegationKey>(serviceClient.GetUserDelegationKey(expiresOn, options).Value);
 
         CachedDelegationKey entry;
         entry.key = key;
