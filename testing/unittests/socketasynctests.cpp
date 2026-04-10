@@ -726,6 +726,8 @@ public:
             DBGLOG("io_uring not available, skipping test");
             return;
         }
+
+        OneShotAsyncCallback callback;
         
         try
         {
@@ -733,7 +735,6 @@ public:
             size32_t addrlen = 0;
             
             Owned<ISocket> socket = ISocket::createForAsyncConnect(ep, addrHolder.getRef(), addrlen);
-            OneShotAsyncCallback callback;
             
             uring->enqueueSocketConnect(socket, addrHolder.get(), addrlen, callback);
             
@@ -970,6 +971,8 @@ public:
             DBGLOG("io_uring not available, skipping test");
             return;
         }
+
+        OneShotAsyncCallback callback;
         
         try
         {
@@ -977,7 +980,6 @@ public:
             size32_t addrlen = 0;
             
             Owned<ISocket> socket = ISocket::createForAsyncConnect(ep, addrHolder.getRef(), addrlen);
-            OneShotAsyncCallback callback;
             
             uring->enqueueSocketConnect(socket, addrHolder.get(), addrlen, callback);
             
