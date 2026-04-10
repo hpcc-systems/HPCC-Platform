@@ -3102,21 +3102,6 @@ void PTree::deserializeSelf(IBufferedSerialInputStream &src, PTreeDeserializeCon
         value = nullptr;
 }
 
-void PTree::deserializeAttributes(const char *base, PTreeDeserializeContext &ctx)
-{
-    size_t numStringOffsets = ctx.matchOffsets.size();
-    if (unlikely(numStringOffsets % 2 != 0))
-        throwUnexpectedX("PTree deserialization error: end of stream, expected attribute value");
-
-    constexpr bool attributeNameNotEncoded = false; // Deserialized attribute name is in its original unencoded form
-    for (size_t i = 0; i < numStringOffsets; i += 2)
-    {
-        const char *attrName = base + ctx.matchOffsets[i];
-        const char *attrValue = base + ctx.matchOffsets[i + 1];
-        setAttribute(attrName, attrValue, attributeNameNotEncoded);
-    }
-}
-
 void PTree::serializeAttributes(MemoryBuffer &tgt)
 {
     IAttributeIterator *aIter = getAttributes();
@@ -3841,8 +3826,12 @@ void LocalPTree::deserializeAttributes(const char *base, PTreeDeserializeContext
     if (!newAttrPairs)
         return;
 
+    // Expected to run on an empty tree.
+    // Qualifier map will never be set up during deserialization, so no need to update.
+    if (unlikely(numAttrs == 0 || !arrayOwner || !attrs))
+        dbgassertex(true);
+
     // Allocate space for existing and new attributes
-    dbgassertex(numAttrs == 0);
     AttrValue *newAttrs = (AttrValue *)realloc(attrs, newAttrPairs * sizeof(AttrValue));
     if (unlikely(!newAttrs))
     {
@@ -3852,7 +3841,6 @@ void LocalPTree::deserializeAttributes(const char *base, PTreeDeserializeContext
     attrs = newAttrs;
 
     // Process each name/value pair
-    dbgassertex(!arrayOwner);
     for (unsigned i = 0; i < ctx.matchOffsets.size(); i += 2)
     {
         const char *attrName = base + ctx.matchOffsets[i];
@@ -4073,25 +4061,38 @@ void CAtomPTree::deserializeAttributes(const char *base, PTreeDeserializeContext
     if (!newAttrPairs)
         return;
 
+    // Expected to run on an empty tree.
+    // Qualifier map will never be set up during deserialization, so no need to update.
+    if (unlikely(numAttrs == 0 || !arrayOwner || !attrs))
+        dbgassertex(true);
+
     // Allocate memory for all attributes (existing + new) in one go, and copy existing attributes if needed.
-    dbgassertex(numAttrs == 0);
     unsigned insertPos = 0; // Position to insert new attributes
-    AttrValue *newattrs = newAttrArray(insertPos + newAttrPairs);
-    attrs = newattrs;
+    CLeavableCriticalBlock block(hashcrit);
+    AttrValue *newAttrs = newAttrArray(insertPos + newAttrPairs);
+    block.leave();
+    attrs = newAttrs;
     numAttrs = newAttrPairs;
 
-    // Set attribute names and values
-    dbgassertex(!arrayOwner);
+    // Process each name/value pair
     for (unsigned i = 0; i < ctx.matchOffsets.size(); i += 2)
     {
         const char *attrName = base + ctx.matchOffsets[i];
         const char *attrValue = base + ctx.matchOffsets[i + 1];
-        AttrValue *v = &newattrs[insertPos++];
+        AttrValue *v = &newAttrs[insertPos++];
 
         if (!v->key.set(attrName))
+        {
+            block.enter();
             v->key.setPtr(attrHT->addkey(attrName, isnocase()));
+            block.leave();
+        }
         if (!v->value.set(attrValue))
+        {
+            block.enter();
             v->value.setPtr(attrHT->addval(attrValue));
+            block.leave();
+        }
     }
 }
 

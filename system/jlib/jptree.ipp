@@ -774,13 +774,15 @@ public:
     virtual void serializeToStream(IBufferedSerialOutputStream &out) const override;
     virtual void deserializeFromStream(IBufferedSerialInputStream &src, PTreeDeserializeContext &ctx) override;
 
-    virtual void deserializeAttributes(const char *base, PTreeDeserializeContext &ctx) override;
 // serializable impl.
     virtual void serialize(MemoryBuffer &tgt) override;
     virtual void deserialize(MemoryBuffer &src) override;
 
 protected:
     aindex_t getChildMatchPos(const char *xpath);
+
+    // Designed to be executed on an empty PTree.
+    virtual void deserializeAttributes(const char *base, PTreeDeserializeContext &ctx) = 0;
 
     virtual ChildMap *checkChildren() const;
     virtual bool isEquivalent(IPropertyTree *tree) const { return (nullptr != QUERYINTERFACE(tree, PTree)); }
@@ -881,7 +883,7 @@ protected:
         tree->deserializeFromStream(in, ctx);
         return tree;
     }
-    virtual void deserializeAttributes(const char *base, PTreeDeserializeContext &ctx) override;
+    void deserializeAttributes(const char *base, PTreeDeserializeContext &ctx) override;
 public:
     CAtomPTree(const char *name=nullptr, byte flags=ipt_none, IPTArrayValue *value=nullptr, ChildMap *children=nullptr);
     ~CAtomPTree();
@@ -913,7 +915,7 @@ protected:
         tree->deserializeFromStream(in, ctx);
         return tree;
     }
-    virtual void deserializeAttributes(const char *base, PTreeDeserializeContext &ctx) override;
+    void deserializeAttributes(const char *base, PTreeDeserializeContext &ctx) override;
     AttrStrUnion name;
 public:
     LocalPTree(const char *name=nullptr, byte flags=ipt_none, IPTArrayValue *value=nullptr, ChildMap *children=nullptr);
