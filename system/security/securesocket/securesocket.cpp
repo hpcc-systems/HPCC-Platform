@@ -23,6 +23,7 @@
 //jlib
 #include "jliball.hpp"
 #include "string.h"
+#include <atomic>
 #include <mutex>
 
 #ifdef _WIN32
@@ -108,38 +109,35 @@ namespace securesocket
 // Helper function to check if TLS io_uring is enabled via configuration
 // Cached on first call for performance (config is read-only after startup)
 // Unit tests can reset cache to force re-read
-static bool tlsIOUringCached = false;
-static bool tlsIOUringCacheSet = false;
+static std::atomic<bool> tlsIOUringCached{false};
+static std::atomic<bool> tlsIOUringCacheSet{false};
 
 bool isTLSIOUringEnabled()
 {
-    if (!tlsIOUringCacheSet)
+    if (!tlsIOUringCacheSet.load(std::memory_order_acquire))
     {
+        bool enabled = false;
         try
         {
             Owned<IPropertyTree> config = getComponentConfigSP();
             if (config)
-            {
-                tlsIOUringCached = config->getPropBool("expert/@useTLSIOUring", false);
-            }
-            else
-            {
-                tlsIOUringCached = false;
-            }
+                enabled = config->getPropBool("expert/@useTLSIOUring", false);
         }
         catch (...)
         {
-            tlsIOUringCached = false;
+            enabled = false;
         }
-        tlsIOUringCacheSet = true;
+        tlsIOUringCached.store(enabled, std::memory_order_relaxed);
+        tlsIOUringCacheSet.store(true, std::memory_order_release);
     }
-    return tlsIOUringCached;
+    return tlsIOUringCached.load(std::memory_order_relaxed);
 }
 
 // Function to reset the cache for unit testing
 void resetTLSIOUringEnabledCache()
 {
-    tlsIOUringCacheSet = false;
+    tlsIOUringCached.store(false, std::memory_order_relaxed);
+    tlsIOUringCacheSet.store(false, std::memory_order_release);
 }
 
 class CStringSet : public CInterface
@@ -460,9 +458,9 @@ private:
     }
 
     TLSWriteState state = TLSWriteState::Initial;
-    const byte * plainBuf;
-    size32_t plainSize;
-    size32_t totalWritten;
+    const byte * plainBuf = nullptr;
+    size32_t plainSize = 0;
+    size32_t totalWritten = 0;
     MemoryAttr encryptedBuffer;
 };
 
