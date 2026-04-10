@@ -3842,7 +3842,8 @@ void LocalPTree::deserializeAttributes(const char *base, PTreeDeserializeContext
         return;
 
     // Allocate space for existing and new attributes
-    AttrValue *newAttrs = (AttrValue *)realloc(attrs, (numAttrs + newAttrPairs) * sizeof(AttrValue));
+    dbgassertex(numAttrs == 0);
+    AttrValue *newAttrs = (AttrValue *)realloc(attrs, newAttrPairs * sizeof(AttrValue));
     if (unlikely(!newAttrs))
     {
         VStringBuffer err("PTree deserialization error: out of memory reading attributes, numAttrs=%u, newAttrPairs=%u", numAttrs, newAttrPairs);
@@ -4074,12 +4075,12 @@ void CAtomPTree::deserializeAttributes(const char *base, PTreeDeserializeContext
 
     // Allocate memory for all attributes (existing + new) in one go, and copy existing attributes if needed.
     dbgassertex(numAttrs == 0);
-    unsigned insertPos = numAttrs;
+    unsigned insertPos = 0; // Position to insert new attributes
     AttrValue *newattrs = newAttrArray(insertPos + newAttrPairs);
     attrs = newattrs;
-    numAttrs = insertPos + newAttrPairs;
+    numAttrs = newAttrPairs;
 
-    // Set attribute values and update qualifier map if needed
+    // Set attribute names and values
     dbgassertex(!arrayOwner);
     for (unsigned i = 0; i < ctx.matchOffsets.size(); i += 2)
     {
