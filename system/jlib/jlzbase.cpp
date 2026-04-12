@@ -108,6 +108,17 @@ size32_t CBlockCompressor::write(const void *buf,size32_t len)
     if (unlikely(full))
         return 0;
 
+    // Prevent size32_t overflow on highly compressible data (e.g. ZStd).
+    // One example compressed at a ratio of 1:10,000!
+    // Check before the loop to respect allowPartialWrites contract (all-or-nothing).
+    const size32_t safetyThreshold = 0xF0000000; // 3.75GB
+    offset_t projectedSize = (offset_t)totalWritten + len;
+    if (projectedSize >= safetyThreshold)
+    {
+        full = true;
+        return 0;
+    }
+
     // no more than wrmax per write (unless dynamically sizing)
     const byte * buffer = (const byte *)buf;
     size32_t written = 0;
@@ -117,7 +128,6 @@ size32_t CBlockCompressor::write(const void *buf,size32_t len)
 
     //Keep looping until all data is written and we can guarantee that the remaining data will fit into the
     //buffer uncompressed - so that we can guarantee the data will be written fully.
-
     while (len)
     {
         size32_t uncompressedMax = maxOutputSize-outlen-sizeof(size32_t);
