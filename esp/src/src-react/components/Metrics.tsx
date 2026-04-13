@@ -69,6 +69,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     if (querySet && queryId) {
         wuid = "";
     }
+
     const styles = useStyles();
     const { isDark } = useUserTheme();
     const [selectedMetricsSource, setSelectedMetricsSource] = React.useState<SelectedMetricsSource>("");
@@ -472,7 +473,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                         <MetricsGraph
                             metrics={metrics}
                             metricGraphData={metricGraphData}
-                            selection={selection.filter(id => id !== GLOBAL_FAKE_ID)}
+                            selection={selection?.filter(id => id !== GLOBAL_FAKE_ID)}
                             selectedMetricsSource={selectedMetricsSource}
                             status={status}
                             onLineageSelectionChange={onLineageSelectionChange}
