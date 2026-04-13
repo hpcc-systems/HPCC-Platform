@@ -3767,7 +3767,7 @@ public:
         XRefAllocator allocator(1);
         std::unique_ptr<cMisplacedRec> rec(cMisplacedRec::create(&allocator));
 
-        rec->init(0, 5, 2, 4); // drv=0, part=5, node=2, totalNodes=4
+        rec->init(0, 5, 2, 4, 0); // drv=0, part=5, node=2, totalNodes=4, stripe=0
 
         CPPUNIT_ASSERT_EQUAL((unsigned short)5, rec->pn);
         CPPUNIT_ASSERT_EQUAL((unsigned short)2, rec->nn);
@@ -3780,7 +3780,7 @@ public:
         XRefAllocator allocator(1);
         std::unique_ptr<cMisplacedRec> rec(cMisplacedRec::create(&allocator));
 
-        rec->init(0, 5, 2, 4);
+        rec->init(0, 5, 2, 4, 0);
 
         CPPUNIT_ASSERT(rec->eq(0, 5, 2, 4));
         CPPUNIT_ASSERT(!rec->eq(0, 6, 2, 4)); // different part
@@ -3792,7 +3792,7 @@ public:
         XRefAllocator allocator(1);
         std::unique_ptr<cMisplacedRec> rec(cMisplacedRec::create(&allocator));
 
-        rec->init(1, 5, 2, 4); // drv=1, part=5, node=2, totalNodes=4
+        rec->init(1, 5, 2, 4, 0); // drv=1, part=5, node=2, totalNodes=4, stripe=0
 
         CPPUNIT_ASSERT_EQUAL(1U, rec->getDrv(4));
         CPPUNIT_ASSERT_EQUAL(2U, rec->getNode(4));
@@ -3962,7 +3962,7 @@ public:
         unsigned filenameLen = 8; // length of "testfile"
         const char *fn = "testfile._$P$_of_456";
         cFileDesc *file = dir->ensureFile(fn, numParts, false, filenameLen, &allocator);
-        dir->setMisplacedAndPresent(file, false, partNum, drv, "/home/test/testfile._123_of_456", nodeNum, numNodes);
+        dir->setMisplacedAndPresent(file, false, partNum, drv, "/home/test/testfile._123_of_456", nodeNum, numNodes, 0);
         CPPUNIT_ASSERT(!dir->empty(0));
         CPPUNIT_ASSERT(!dir->empty(1));
 
@@ -3993,14 +3993,14 @@ public:
         cFileDesc *file = dir->ensureFile(fn, numParts, false, filenameLen, &allocator);
 
         // Mark as misplaced
-        dir->setMisplacedAndPresent(file, true, partNum, drv, "/home/test/misplacedfile._6_of_10", nodeNum, numNodes);
+        dir->setMisplacedAndPresent(file, true, partNum, drv, "/home/test/misplacedfile._6_of_10", nodeNum, numNodes, 0);
         CPPUNIT_ASSERT(file->misplaced != nullptr);
         CPPUNIT_ASSERT(file->misplaced->pn == partNum);
         CPPUNIT_ASSERT(file->misplaced->nn == nodeNum);
         CPPUNIT_ASSERT(file->misplaced->marked == false);
 
         // Mark as present (not misplaced)
-        dir->setMisplacedAndPresent(file, false, partNum, drv, "/home/test/misplacedfile._6_of_10", nodeNum, numNodes);
+        dir->setMisplacedAndPresent(file, false, partNum, drv, "/home/test/misplacedfile._6_of_10", nodeNum, numNodes, 0);
         CPPUNIT_ASSERT(file->testpresent(drv, partNum));
     }
 
@@ -4106,8 +4106,8 @@ public:
         std::unique_ptr<cDirDesc> dir(cDirDesc::create("directory", &allocator));
         const char *fn = "multi._$P$_of_10";
         cFileDesc *file = dir->ensureFile(fn, 10, false, 8, &allocator);
-        dir->setMisplacedAndPresent(file, true, 1, 0, "/home/test/multi._2_of_10", 0, 20);
-        dir->setMisplacedAndPresent(file, true, 2, 0, "/home/test/multi._3_of_10", 0, 20);
+        dir->setMisplacedAndPresent(file, true, 1, 0, "/home/test/multi._2_of_10", 0, 20, 0);
+        dir->setMisplacedAndPresent(file, true, 2, 0, "/home/test/multi._3_of_10", 0, 20, 0);
         CPPUNIT_ASSERT(file->misplaced != nullptr);
         CPPUNIT_ASSERT(file->misplaced->next != nullptr);
         CPPUNIT_ASSERT(file->misplaced->pn == 2 && file->misplaced->next->pn == 1);
@@ -4128,7 +4128,7 @@ public:
         cFileDesc *file = dir->ensureFile(fn, NotFound, false, 0, &allocator);
         CPPUNIT_ASSERT(file != nullptr);
         CPPUNIT_ASSERT(file->N == 1);
-        dir->setMisplacedAndPresent(file, true, 0, 0, "/home/test/externalfile.dat", 0, 1);
+        dir->setMisplacedAndPresent(file, true, 0, 0, "/home/test/externalfile.dat", 0, 1, 0);
         CPPUNIT_ASSERT(file->misplaced != nullptr);
     }
 };

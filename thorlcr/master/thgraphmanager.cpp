@@ -1384,16 +1384,30 @@ void publishPodNames(IWorkUnit *workunit, const char *graphName, const std::vect
 
 static void auditThorSystemEventBuilder(std::string &msg, const char *eventName, std::initializer_list<const char*> args)
 {
-    msg += std::string(",Progress,Thor,") + eventName + "," + getComponentConfigSP()->queryProp("@name");
+    msg.append(",Progress,Thor,");
+    msg.append(nullText(eventName));
+    msg.push_back(',');
+    msg.append(nullText(getComponentConfigSP()->queryProp("@name")));
     for (auto arg : args)
-        msg += "," + std::string(arg);
+    {
+        msg.push_back(',');
+        msg.append(nullText(arg));
+    }
     if (isContainerized())
-        msg += std::string(",") + k8s::queryMyPodName() + "," + k8s::queryMyContainerName();
+    {
+        msg.push_back(',');
+        msg.append(nullText(k8s::queryMyPodName()));
+        msg.push_back(',');
+        msg.append(nullText(k8s::queryMyContainerName()));
+    }
     else
     {
         const char *nodeGroup = queryServerStatus().queryProperties()->queryProp("@nodeGroup");
         const char *queueName = queryServerStatus().queryProperties()->queryProp("@queue");
-        msg += std::string(",") + nodeGroup + "," + queueName;
+        msg.push_back(',');
+        msg.append(nullText(nodeGroup));
+        msg.push_back(',');
+        msg.append(nullText(queueName));
     }
 }
 
