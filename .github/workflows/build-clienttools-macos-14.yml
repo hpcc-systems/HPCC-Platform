@@ -32,6 +32,10 @@ on:
         required: false
         default: false
 
+permissions:
+  contents: write
+  packages: read
+
 jobs:
   generate_macos_14_clienttools:
     name: Generate MacOS 14 Clienttools

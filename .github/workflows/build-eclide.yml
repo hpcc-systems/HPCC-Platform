@@ -38,6 +38,10 @@ on:
         required: false
         default: false
 
+permissions:
+  contents: write
+  packages: read
+
 jobs:
 
   build-bare-metal-eclide:
