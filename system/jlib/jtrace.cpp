@@ -56,6 +56,7 @@
 
 #include "platform.h"
 #include "jlib.hpp"
+#include "jerror.hpp"
 #include "jmisc.hpp"
 #include "jtrace.hpp"
 #include "lnuid.h"
@@ -1864,7 +1865,7 @@ CTraceManager::CTraceManager(const char * componentName, const IPropertyTree * c
 
 CTraceManager::CTraceManager()
 {
-    throw makeStringExceptionV(-1, "TraceManager must be intialized!");
+    throw makeStringExceptionV(JLIBERR_UtilTracemanagerMustBeInitialized, "TraceManager must be initialized!");
 }
 
 ISpan * CTraceManager::createServerSpan(const char * name, StringArray & httpHeaders, SpanFlags flags) const

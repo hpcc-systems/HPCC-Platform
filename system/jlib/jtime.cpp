@@ -824,7 +824,7 @@ static unsigned daysInMonth(unsigned y, unsigned m)
     if ((m==2)&&isLeapYear(y))
         return 29;
     if(m < 1 || m > 12)
-        throw MakeStringException(0, "month should between 1 and 12");
+        throw MakeStringException(JLIBERR_SystemMonthShouldBetween1And12, "month should between 1 and 12");
     return days[m - 1];
 }
 
@@ -1137,7 +1137,7 @@ public:
     {
         char const * specend = cron.set(spec);
         if (*specend)
-            throw MakeStringException(0, "Bad cron spec %s", spec);
+            throw MakeStringException(JLIBERR_SystemBadCronSpecS, "Bad cron spec %s", spec);
     }
     CronTableItem * prev;
     CronTableItem * next;

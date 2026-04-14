@@ -369,7 +369,7 @@ void CppCompiler::addCompileOption(const char * option)
 void CppCompiler::setPrecompileHeader(bool _pch)
 {
     if (targetCompiler==Vs6CppCompiler)
-        throw MakeStringException(0, "precompiled header generation only supported for g++ and compatible compilers");
+        throw MakeStringException(JLIBERR_UtilPrecompiledHeaderNotSupported, "precompiled header generation only supported for g++ and compatible compilers");
     precompileHeader = _pch;
 }
 

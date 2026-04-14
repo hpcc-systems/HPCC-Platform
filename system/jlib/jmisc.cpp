@@ -27,6 +27,7 @@
 #include "jexcept.hpp"
 #include "jstring.hpp"
 #include "jdebug.hpp"
+#include "jerror.hpp"
 
 #ifdef _WIN32
 #include <direct.h>
@@ -567,7 +568,7 @@ bool invoke_program(const char *command_line, DWORD &runcode, bool wait, const c
 
         OERRLOG("%s",s.str());
         if(throwException)
-            throw MakeStringExceptionDirect(-1, s.str());
+            throw MakeStringExceptionDirect(JLIBERR_UtilProcessForkFailed, s.str());
         return false;
     }
 

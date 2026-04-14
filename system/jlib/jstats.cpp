@@ -1435,7 +1435,7 @@ const StatisticsMapping * queryStatsMapping(const StatsScopeId & scope, unsigned
 
     StringBuffer scopeText;
     scope.getScopeText(scopeText);
-    throw makeStringExceptionV(0, "No Stats mapping found for scope '%s' hashcode %u", scopeText.str(), hashcode);
+    throw makeStringExceptionV(JLIBERR_UtilNoStatsMappingFoundForScopeS, "No Stats mapping found for scope '%s' hashcode %u", scopeText.str(), hashcode);
 }
 
 //--------------------------------------------------------------------------------------------------------------------
@@ -3599,7 +3599,7 @@ void ScopeFilter::addScope(const char * scope)
     }
 
     if (ids)
-        throw makeStringExceptionV(0, "Cannot filter by id and scope in the same request");
+        throw makeStringExceptionV(JLIBERR_UtilCannotFilterByIdAndScopeIn, "Cannot filter by id and scope in the same request");
 
     unsigned depth = queryScopeDepth(scope);
     if ((scopes.ordinality() == 0) || (depth < minDepth))
@@ -3628,7 +3628,7 @@ void ScopeFilter::addScopeType(StatisticScopeType scopeType)
 void ScopeFilter::addId(const char * id)
 {
     if (scopes)
-        throw makeStringExceptionV(0, "Cannot filter by id and scope in the same request");
+        throw makeStringExceptionV(JLIBERR_UtilCannotFilterByIdAndScopeIn_1, "Cannot filter by id and scope in the same request");
 
     ids.append(id);
 }
@@ -3636,7 +3636,7 @@ void ScopeFilter::addId(const char * id)
 void ScopeFilter::setDepth(unsigned low, unsigned high)
 {
     if (low > high)
-        throw makeStringExceptionV(0, "Depth parameters in wrong order %u..%u", low, high);
+        throw makeStringExceptionV(JLIBERR_UtilDepthParametersInWrongOrderUU, "Depth parameters in wrong order %u..%u", low, high);
 
     minDepth = low;
     maxDepth = high;
@@ -3646,7 +3646,7 @@ void ScopeFilter::setDepth(unsigned low, unsigned high)
 void ScopeFilter::intersectDepth(const unsigned low, const unsigned high)
 {
     if (low > high)
-        throw makeStringExceptionV(0, "Depth parameters in wrong order %u..%u", low, high);
+        throw makeStringExceptionV(JLIBERR_UtilDepthParametersInWrongOrderUU_1, "Depth parameters in wrong order %u..%u", low, high);
 
     if (minDepth < low)
         minDepth = low;
@@ -4105,7 +4105,7 @@ void StatisticsFilter::addFilter(const char * filter)
         setValueRange(lowValue, highValue);
     }
     else
-        throw MakeStringException(1, "Unknown stats filter '%s' - expected creator,creatortype,depth,kind,measure,scope,scopetype", filter);
+        throw MakeStringException(JLIBERR_UtilUnknownStatsFilter, "Unknown stats filter '%s' - expected creator,creatortype,depth,kind,measure,scope,scopetype", filter);
 }
 
 
@@ -4118,7 +4118,7 @@ void StatisticsFilter::setFilter(const char * filter)
     {
         const char * closeBra = strchr(filter, ']');
         if (!closeBra)
-            throw MakeStringException(1, "Missing close bracket ']' in '%s' ", filter);
+            throw MakeStringException(JLIBERR_UtilMissingCloseBracketInS, "Missing close bracket ']' in '%s' ", filter);
 
         const char * comma = strchr(closeBra, ',');
         if (comma)
@@ -4236,7 +4236,7 @@ public:
         {
             if (lm && sm)
                 return true;
-            throw MakeStringException(0, "A stats category %s (%s) is already registered", shortName.get(), longName.get());
+            throw MakeStringException(JLIBERR_UtilAStatsCategorySSIsAlready, "A stats category %s (%s) is already registered", shortName.get(), longName.get());
         }
         return false;
     }
@@ -4263,7 +4263,7 @@ static void checkKind(StatisticKind kind)
     {
         const StatisticMeta & meta = statsMetaData[kind];
         if (meta.kind != kind)
-            throw makeStringExceptionV(0, "Statistic %u in the wrong order", kind);
+            throw makeStringExceptionV(JLIBERR_UtilStatisticUInTheWrongOrder, "Statistic %u in the wrong order", kind);
     }
 
     StatisticKind serialKind = querySerializedKind(kind);
