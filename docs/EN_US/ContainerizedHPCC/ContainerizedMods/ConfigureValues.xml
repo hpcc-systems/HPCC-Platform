@@ -300,6 +300,42 @@
         or dfuwu-archiver as that is a value limitation, you can choose to
         either have the service or not (set the 'disabled' value to
         true).</para>
+
+        <sect4 id="ValYML_Sasha_GlobalMessageHousekeeping">
+          <title>global-message-housekeeping</title>
+
+          <para>The <emphasis>global-message-housekeeping</emphasis> Sasha
+          service manages the lifecycle of global messages stored in the
+          system. It periodically scans persisted global messages and
+          permanently deletes those that exceed the configured retention
+          period.</para>
+
+          <para>The following configuration parameters are available for the
+          <emphasis>global-message-housekeeping</emphasis> service:</para>
+
+          <para><emphasis role="bold">disabled</emphasis> -- Setting this
+          value to <emphasis>true</emphasis> disables the service. The default
+          value is <emphasis>false</emphasis>.</para>
+
+          <para><emphasis role="bold">interval</emphasis> -- The interval (in
+          hours) between housekeeping maintenance cycles. Setting this value
+          to zero disables the service. The default value is
+          <emphasis>24</emphasis>.</para>
+
+          <para><emphasis role="bold">retentionDays</emphasis> -- The number
+          of days to retain global messages before they are permanently
+          deleted. Messages older than this threshold are removed during each
+          maintenance cycle. The default value is
+          <emphasis>30</emphasis>.</para>
+
+          <para>Example Helm configuration:</para>
+
+          <programlisting>sasha:
+  global-message-housekeeping:
+    disabled: false
+    interval: 24
+    retentionDays: 60</programlisting>
+        </sect4>
       </sect3>
 
       <sect3 id="ValYML_Thor">
