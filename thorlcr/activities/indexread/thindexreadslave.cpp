@@ -1644,6 +1644,8 @@ public:
                 {
                     if (!firstNode())
                         return nullptr;
+                    // Ensure the monitor can reach done=slaves before node 1 waits for final count.
+                    sendKeyedLimitProgress(queryKeyedLimitProgress(), KeyedLimitMsg::Done);
                     totalCount = getFinalCount(*this);
                 }
                 else
