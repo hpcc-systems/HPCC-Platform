@@ -33,6 +33,8 @@ public:
     const char* queryOptions() const { return options; }
     StringBuffer& getResults(StringBuffer& results) const;
 protected:
+    virtual IEventMultiplexer* createMultiplexer(CMetaInfoState& metaState) override;
+
     StringBuffer outputPath;
     StringBuffer options;
     EventRecordingSummary summary;

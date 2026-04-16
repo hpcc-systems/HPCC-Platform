@@ -82,7 +82,7 @@ const EventFileProperties& CEventConsumingOp::queryIteratorProperties()
             break;
         default:
             {
-                Owned<IEventMultiplexer> multiplexer = createEventMultiplexer(*metaState);
+                Owned<IEventMultiplexer> multiplexer = createMultiplexer(*metaState);
                 cachedSource.set(multiplexer.get());
                 for (const std::string& path : inputPaths)
                 {
@@ -133,4 +133,9 @@ bool CEventConsumingOp::traverseEvents(IEventVisitor& visitor)
 
     visitIterableEvents(*cachedSource, *visitationHead);
     return true;
+}
+
+IEventMultiplexer* CEventConsumingOp::createMultiplexer(CMetaInfoState& metaState)
+{
+    return createSerialEventMultiplexer(metaState);
 }

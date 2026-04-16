@@ -21,6 +21,7 @@
 #include "eventfilter.h"
 #include "eventmodeling.h"
 #include "eventmetaparser.hpp"
+#include "eventiterator.h"
 #include <set>
 #include <string>
 
@@ -46,6 +47,9 @@ public:
 protected:
     IEventFilter* ensureFilter();
     bool traverseEvents(IEventVisitor& visitor);
+
+    // Operation implementations may choose which multiplexing strategy to use.
+    virtual IEventMultiplexer* createMultiplexer(CMetaInfoState& metaState);
 
     // Query the EventFileProperties from the iterator that will be used for traversal.
     // This method is only valid during doOp() execution, after input paths are set.
