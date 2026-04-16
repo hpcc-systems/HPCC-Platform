@@ -36,7 +36,7 @@ FilterLibIface1(DATASET(namesRec) ds, STRING search) := INTERFACE
 END;</programlisting>
 
     <para>This example defines the INTERFACE for a library that takes two
-    inputs--a DATASET (with the specified layout format) and a STRING--and which
+    inputs--a DATASET (with the specified layout format) and a STRING--and
     gives you the ability to output two DATASET results.</para>
 
     <para>For most library queries it may be preferable to also use a separate
@@ -293,6 +293,24 @@ MyResults := LIBRARY(LibToUse, InterfaceCommonToBoth(args));
     <para>Query libraries can currently only EXPORT datasets, datarows, and
     single-valued expressions. In particular they cannot EXPORT actions (like
     OUTPUT), TRANSFORM structures, or other MODULE structures.</para>
+
+    <para>To use OUTPUT in a LIBRARY, you will need:</para>
+
+    <orderedlist>
+      <listitem>
+        <para>To use WHEN, SUCCESS to attach the OUTPUT to an activity within
+        the library</para>
+      </listitem>
+
+      <listitem>
+        <para>To output to a named dataset result with ,EXTEND</para>
+      </listitem>
+
+      <listitem>
+        <para>To specify an output to the same named dataset result in any
+        query that calls the library and expects to see output</para>
+      </listitem>
+    </orderedlist>
   </sect2>
 
   <sect2 id="Notes_on_the_implementation">
