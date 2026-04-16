@@ -166,7 +166,7 @@ export const Xrefs: React.FunctionComponent<XrefsProps> = ({
             onRender: () => (
                 <TextField
                     styles={{ root: { width: 250, marginLeft: 8, marginRight: 8, marginTop: 6 } }}
-                    placeholder={nlsHPCC.ExampleScopePlaceholder}
+                    placeholder={nlsHPCC.Filter}
                     value={filterScopes}
                     onChange={(_, newValue) => handleFilterScopesChange(newValue || "")}
                 />
