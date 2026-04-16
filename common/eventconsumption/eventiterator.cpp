@@ -196,9 +196,120 @@ CPropertyTreeEvents::CPropertyTreeEvents(const IPropertyTree& _events, unsigned 
     properties.bytesRead = uint32_t(events->getPropInt("@bytesRead"));
 }
 
-// Implementation of IEventMultiplexer that merges events from multiple underlying event iterators.
-// Events should be distributed in chronological order according to the EventTimestamp attribute//
-// value. Events with timestamps are always distributed before events without.
+// Incomplete implementation of IEventMultiplexer that is an abstract base for multiple
+// multiplexing strategies.
+class event_decl CEventMultiplexer : public CInterfaceOf<IEventMultiplexer>
+{
+public:
+    virtual const EventFileProperties& queryFileProperties() const override;
+    virtual void addSource(IEventIterator& source) override;
+
+public:
+    CEventMultiplexer(CMetaInfoState& _metaState);
+    // Tests if a subclass source collection references the specified iterator.
+    virtual bool contains(IEventIterator& source) const = 0;
+
+protected:
+    // Tests if the subclass source collection contains no sources.
+    virtual bool isEmpty() const = 0;
+    // Tests for same instance or same path from properties. Same instance is a logic error that
+    // yields an exception. Same path is a user error that blocks an add from occurring without
+    // throwing an exception.
+    virtual bool areSame(IEventIterator& candidate, IEventIterator& existing) const;
+    // Applies subclass-specific conditions to source acceptance.
+    virtual bool acceptsSource(IEventIterator& source) { return true; };
+    // Adds the unique and accepted source to the subclass collection of sources.
+    virtual void onAddSource(IEventIterator& source) = 0;
+
+    CMetaInfoState& metaState;
+    Owned<IEventVisitor> metaStateCollector;
+    EventFileProperties properties;
+    bool acceptSources{true};
+};
+
+const EventFileProperties& CEventMultiplexer::queryFileProperties() const
+{
+    return properties;
+}
+
+void CEventMultiplexer::addSource(IEventIterator& source)
+{
+    if (!acceptSources)
+        throw makeStringException(0, "event multiplexer cannot add a source after event consumption has started");
+    if (areSame(source, *this))
+        return;
+    if (!acceptsSource(source))
+        return;
+    const EventFileProperties& sourceProps = source.queryFileProperties();
+    if (isEmpty())
+    {
+        // First source - initialize properties
+        properties.processDescriptor.set(sourceProps.processDescriptor.get());
+        properties.version = sourceProps.version;
+        properties.channelId = sourceProps.channelId;
+        properties.replicaId = sourceProps.replicaId;
+        properties.instanceId = sourceProps.instanceId;
+        properties.options.includeTraceIds = sourceProps.options.includeTraceIds;
+        properties.options.includeThreadIds = sourceProps.options.includeThreadIds;
+        properties.options.includeStackTraces = sourceProps.options.includeStackTraces;
+    }
+    else if (!contains(source))
+    {
+        const char* actual = sourceProps.processDescriptor.str();
+        const char* expected = properties.processDescriptor.str();
+        if (!streq(expected, actual))
+            throw makeStringExceptionV(0, "file source mismatch - needed ProcessDescriptor '%s' but found '%s'", expected, actual);
+
+        // Aggregate properties - use ambiguous value when sources conflict
+        if (sourceProps.version != properties.version)
+            properties.version = AmbiguousVersion;
+        if (sourceProps.channelId != properties.channelId)
+            properties.channelId = AmbiguousChannelId;
+        if (sourceProps.replicaId != properties.replicaId)
+            properties.replicaId = AmbiguousReplicaId;
+        if (sourceProps.instanceId != properties.instanceId)
+            properties.instanceId = AmbiguousInstanceId;
+
+        // Update tri-state options
+        auto updateTriState = [](EventFileOption& current, EventFileOption sourceOpt) {
+            if (EventFileOption::Ambiguous == current)
+                return; // already ambiguous
+            if (current == sourceOpt)
+                return; // still the same
+            current = EventFileOption::Ambiguous;
+        };
+        updateTriState(properties.options.includeTraceIds, sourceProps.options.includeTraceIds);
+        updateTriState(properties.options.includeThreadIds, sourceProps.options.includeThreadIds);
+        updateTriState(properties.options.includeStackTraces, sourceProps.options.includeStackTraces);
+    }
+    else
+        return; // Reject instances that are duplicates or already contained
+    onAddSource(source);
+    metaStateCollector->visitFile(sourceProps.path.str(), sourceProps.version);
+}
+
+CEventMultiplexer::CEventMultiplexer(CMetaInfoState& _metaState)
+    : metaState(_metaState)
+{
+    metaStateCollector.setown(metaState.getCollector());
+    properties.path.set("multiplexed");
+}
+
+bool CEventMultiplexer::areSame(IEventIterator& needle, IEventIterator& within) const
+{
+    // it is a logic error for the same instance to be added twice
+    if (&needle == &within)
+        throw makeStringException(0, "event multiplexer cannot add a source already in use");
+    // it is a recoverable user error to refer to the same file twice
+    const char* path = needle.queryFileProperties().path.str();
+    if (!isEmptyString(path) && streq(path, within.queryFileProperties().path.str()))
+        return true;
+    return false;
+}
+
+// Concrete extension of CEventMultiplexer that distributes events in chronological order according
+// to the EventTimestamp attribute value. Events with timestamps are always distributed before
+// events without.
 //
 // An event file iterator is guaranteed to provide events with timestamps and in chronological
 // order.
@@ -206,33 +317,25 @@ CPropertyTreeEvents::CPropertyTreeEvents(const IPropertyTree& _events, unsigned 
 // A property tree event iterator provides events in the order they appear in the tree, with or
 // without timestamps. If a multiplexer source input provides events in non-chronological order,
 // this iterator will distribute those events in non-chronological order.
-class event_decl CEventMultiplexer : public CInterfaceOf<IEventMultiplexer>
+class event_decl CChronologicalEventMultiplexer : public CEventMultiplexer
 {
 public:
     using Sources = std::list<std::pair<Linked<IEventIterator>, CEvent>>;
-public: // IEventMultiplexer
+    using CEventMultiplexer::CEventMultiplexer;
+
     virtual bool nextEvent(CEvent& event) override;
-    virtual const EventFileProperties& queryFileProperties() const override;
-    virtual void addSource(IEventIterator& source) override;
-public:
-    CEventMultiplexer(CMetaInfoState& metaState);
-    bool hasSource(IEventIterator& source) const;
 protected:
-    CMetaInfoState& metaState;
-    Owned<IEventVisitor> metaStateCollector;
-    EventFileProperties properties;
+    virtual bool contains(IEventIterator& source) const override;
+    virtual bool isEmpty() const override { return sources.empty(); }
+    virtual bool acceptsSource(IEventIterator& source) override;
+    virtual void onAddSource(IEventIterator& source) override;
+
+private:
     Sources sources;
-    std::unordered_map<size_t, __uint64> idMap;
-    std::unordered_map<std::string, __uint64> pathMap;
-    bool acceptSources{true};
+    CEvent firstEvent;
 };
 
-IEventMultiplexer* createEventMultiplexer(CMetaInfoState& metaState)
-{
-    return new CEventMultiplexer(metaState);
-}
-
-bool CEventMultiplexer::nextEvent(CEvent& event)
+bool CChronologicalEventMultiplexer::nextEvent(CEvent& event)
 {
     // If at least one source has a next event with a timestamp, choose the timestamped event with
     // the lowest chronological value.
@@ -253,6 +356,7 @@ bool CEventMultiplexer::nextEvent(CEvent& event)
     // source.
     if (sources.end() == best)
         best = sources.begin();
+
     // If a best candidate has been identified, prepare for its use.
     // If no best candidate has been found, no events remain.
     if (best != sources.end())
@@ -261,6 +365,7 @@ bool CEventMultiplexer::nextEvent(CEvent& event)
         (void)metaStateCollector->visitEvent(event);
         properties.eventsRead++;
         acceptSources = false;
+
         if (!best->first->nextEvent(best->second))
         {
             // Source completed - accumulate final stats
@@ -274,94 +379,100 @@ bool CEventMultiplexer::nextEvent(CEvent& event)
         return false;
 }
 
-const EventFileProperties& CEventMultiplexer::queryFileProperties() const
+bool CChronologicalEventMultiplexer::contains(IEventIterator& source) const
 {
-    return properties;
-}
-
-CEventMultiplexer::CEventMultiplexer(CMetaInfoState& _metaState)
-    : metaState(_metaState)
-{
-    metaStateCollector.setown(metaState.getCollector());
-    properties.path.set("multiplexed");
-}
-
-void CEventMultiplexer::addSource(IEventIterator& source)
-{
-    if (!acceptSources)
-        throw makeStringException(0, "event multiplexer cannot add a source after event consumption has started");
-    if (this == &source)
-        throw makeStringException(0, "event multiplexer cannot add itself as source");
-    if (hasSource(source))
-        throw makeStringException(0, "event multiplexer cannot add a source already in use");
-    CEvent next;
-    if (!source.nextEvent(next))
-        return;
-    const EventFileProperties& sourceProps = source.queryFileProperties();
-    if (sources.empty())
+    for (const auto& entry : sources)
     {
-        // First source - initialize properties
-        properties.processDescriptor.set(sourceProps.processDescriptor.get());
-        properties.version = sourceProps.version;
-        properties.channelId = sourceProps.channelId;
-        properties.replicaId = sourceProps.replicaId;
-        properties.instanceId = sourceProps.instanceId;
-        properties.options.includeTraceIds = sourceProps.options.includeTraceIds;
-        properties.options.includeThreadIds = sourceProps.options.includeThreadIds;
-        properties.options.includeStackTraces = sourceProps.options.includeStackTraces;
-    }
-    else
-    {
-        const char* actual = sourceProps.processDescriptor.str();
-        const char* expected = properties.processDescriptor.str();
-        if (!streq(expected, actual))
-            throw makeStringExceptionV(0, "file source mismatch - needed ProcessDescriptor '%s' but found '%s'", expected, actual);
-        for (const Sources::value_type& entry : sources)
-        {
-            if (&source == entry.first.get())
-                return;
-            const char* path = sourceProps.path.str();
-            if (!isEmptyString(path) && streq(path, entry.first->queryFileProperties().path.str()))
-                return;
-        }
-
-        // Aggregate properties - use ambiguous value when sources conflict
-        if (sourceProps.version != properties.version)
-            properties.version = AmbiguousVersion;
-        if (sourceProps.channelId != properties.channelId)
-            properties.channelId = AmbiguousChannelId;
-        if (sourceProps.replicaId != properties.replicaId)
-            properties.replicaId = AmbiguousReplicaId;
-        if (sourceProps.instanceId != properties.instanceId)
-            properties.instanceId = AmbiguousInstanceId;
-
-        // Update tri-state options
-        auto updateTriState = [](EventFileOption& current, EventFileOption source) {
-            if (EventFileOption::Ambiguous == current)
-                return; // already ambiguous
-            if (current == source)
-                return; // still the same
-            current = EventFileOption::Ambiguous;
-        };
-        updateTriState(properties.options.includeTraceIds, sourceProps.options.includeTraceIds);
-        updateTriState(properties.options.includeThreadIds, sourceProps.options.includeThreadIds);
-        updateTriState(properties.options.includeStackTraces, sourceProps.options.includeStackTraces);
-    }
-    sources.emplace_back(Linked(&source), next);
-    metaStateCollector->visitFile(sourceProps.path.str(), sourceProps.version);
-}
-
-bool CEventMultiplexer::hasSource(IEventIterator& source) const
-{
-    for (const Sources::value_type& entry : sources)
-    {
-        if (&source == entry.first.get())
+        if (areSame(source, *entry.first))
             return true;
         CEventMultiplexer* nested = dynamic_cast<CEventMultiplexer*>(entry.first.get());
-        if (nested && nested->hasSource(source))
+        if (nested && nested->contains(source))
             return true;
     }
     return false;
+}
+
+bool CChronologicalEventMultiplexer::acceptsSource(IEventIterator& source)
+{
+    return source.nextEvent(firstEvent);
+}
+
+void CChronologicalEventMultiplexer::onAddSource(IEventIterator& source)
+{
+    sources.emplace_back(Linked<IEventIterator>(&source), firstEvent);
+}
+
+IEventMultiplexer* createChronologicalEventMultiplexer(CMetaInfoState& metaState)
+{
+    return new CChronologicalEventMultiplexer(metaState);
+}
+
+// Concrete extension of CEventMultiplexer that distributes events from each source sequentially.
+class event_decl CSerialEventMultiplexer : public CEventMultiplexer
+{
+public:
+    using Sources = std::vector<Linked<IEventIterator>>;
+    using CEventMultiplexer::CEventMultiplexer;
+
+    virtual bool nextEvent(CEvent& event) override;
+protected:
+    virtual bool contains(IEventIterator& source) const override;
+    virtual bool isEmpty() const override { return sources.empty(); }
+    virtual bool acceptsSource(IEventIterator& source) override;
+    virtual void onAddSource(IEventIterator& source) override;
+
+private:
+    Sources sources;
+    size_t currentSourceIndex = 0;
+};
+
+// Concrete implementation of CEventMultiplexer that iterates all events from the first source
+// before continuing iteration with the next source.
+bool CSerialEventMultiplexer::nextEvent(CEvent& event)
+{
+    while (currentSourceIndex < sources.size())
+    {
+        IEventIterator* source = sources[currentSourceIndex].get();
+        if (source->nextEvent(event))
+        {
+            (void)metaStateCollector->visitEvent(event);
+            properties.eventsRead++;
+            acceptSources = false;
+            return true;
+        }
+
+        const EventFileProperties& sourceProps = source->queryFileProperties();
+        properties.bytesRead += sourceProps.bytesRead;
+        currentSourceIndex++;
+    }
+    return false;
+}
+
+bool CSerialEventMultiplexer::acceptsSource(IEventIterator& source)
+{
+    return true;
+}
+
+bool CSerialEventMultiplexer::contains(IEventIterator& source) const
+{
+    for (const auto& entry : sources)
+    {
+        if (areSame(source, *entry))
+            return true;
+        CEventMultiplexer* nested = dynamic_cast<CEventMultiplexer*>(entry.get());
+        if (nested && nested->contains(source))
+            return true;
+    }
+    return false;
+}
+void CSerialEventMultiplexer::onAddSource(IEventIterator& source)
+{
+    sources.emplace_back(&source);
+}
+
+IEventMultiplexer* createSerialEventMultiplexer(CMetaInfoState& metaState)
+{
+    return new CSerialEventMultiplexer(metaState);
 }
 
 void visitIterableEvents(IEventIterator& iter, IEventVisitor& visitor)

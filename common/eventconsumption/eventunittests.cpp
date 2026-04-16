@@ -174,7 +174,7 @@ void testEventVisitationLinks(const IPropertyTree& inputTree, const IPropertyTre
                 break;
             default:
                 {
-                    Owned<IEventMultiplexer> multiplexer = createEventMultiplexer(*metaState);
+                    Owned<IEventMultiplexer> multiplexer = createChronologicalEventMultiplexer(*metaState);
                     for (auto& s : sources)
                         multiplexer->addSource(*s.getClear());
                     input.setown(multiplexer.getClear());

@@ -60,3 +60,8 @@ bool CDumpEventsOp::doOp()
     }
     return traverseEvents(*visitor);
 }
+
+IEventMultiplexer* CDumpEventsOp::createMultiplexer(CMetaInfoState& metaState)
+{
+    return createChronologicalEventMultiplexer(metaState);
+}

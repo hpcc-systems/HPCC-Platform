@@ -73,5 +73,7 @@ public:
     virtual bool doOp() override;
 
 protected:
+    virtual IEventMultiplexer* createMultiplexer(CMetaInfoState& metaState) override;
+
     OutputFormat format = OutputFormat::text;
 };
