@@ -3658,7 +3658,6 @@ protected:
         "    </Policies>"
         "  </Cache>"
         "</Configuration>"};
-    static const std::string treeRootName;
 
     // Complete round-trip test method that performs serialization, deserialization, and validation
     void performRoundTripTest(const char *testName, IPropertyTree *tree)
@@ -3766,17 +3765,15 @@ protected:
 
     void expectTruncatedStreamFailure(const MemoryBuffer &serialized, size32_t truncationOffset, const char *contextDescription)
     {
-        {
-            VStringBuffer assertMsg("Serialized stream shorter than truncation offset for %s", contextDescription);
-            CPPUNIT_ASSERT_MESSAGE(assertMsg.str(), truncationOffset < serialized.length());
-        }
+        VStringBuffer assertMsg("Serialized stream shorter than truncation offset for %s", contextDescription);
+        CPPUNIT_ASSERT_MESSAGE(assertMsg.str(), truncationOffset < serialized.length());
 
         MemoryBuffer truncated;
         truncated.append(truncationOffset, serialized.toByteArray());
         Owned<IBufferedSerialInputStream> in{createBufferedSerialInputStream(truncated)};
         try
         {
-            createPTreeFromBinary(*in, ipt_none);
+            Owned<IPropertyTree> unexpected{createPTreeFromBinary(*in, ipt_none)};
             CPPUNIT_FAIL(VStringBuffer("Expected createPTreeFromBinary to fail for %s", contextDescription).str());
         }
         catch (IException *e)
@@ -3811,7 +3808,7 @@ public:
     // Malformed buffered-serial stream truncations test: ensure deserialize errors are reported without relying on specific format offsets
     void testMalformedStreamTruncations()
     {
-        Owned<IPropertyTree> original{createPTree(treeRootName.c_str())};
+        Owned<IPropertyTree> original{createPTree("root")};
         original->setProp("@scenario", "truncation-test");
         original->setProp("child", "value");
 
@@ -3846,8 +3843,6 @@ public:
         }
     }
 };
-
-const std::string PTreeSerializationDeserializationTest::treeRootName{"Root"};
 
 CPPUNIT_TEST_SUITE_REGISTRATION(PTreeSerializationDeserializationTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeSerializationDeserializationTest, "PTreeSerializationDeserializationTest");
