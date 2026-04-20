@@ -157,20 +157,9 @@ private:
                 const CJobBase &job = graph.queryJob();
                 Owned<IWorkUnit> wu = &(job.queryWorkUnit().lock());
 
-                // Ensure that the cost warning message hasn't already been logged
-                Owned<IConstWUExceptionIterator> exceptions = &wu->getExceptions();
-                ForEach(*exceptions)
-                {
-                    IConstWUException &ex = exceptions->query();
-                    if (ex.getExceptionCode() == ENGINEERR_WARN_COST_EXCEEDED)
-                    {
-                        warnCostLimit = 0; // disable warnCostLimit checking for this graph execution
-                        return;
-                    }
-                }
                 VStringBuffer msg("High job cost - current cost %0.2f exceeds warning threshold %0.2f", cost_type2money(totalCost), cost_type2money(warnCostLimit));
-                addExceptionToWorkunit(wu, SeverityWarning, queryComponentName(), ENGINEERR_WARN_COST_EXCEEDED, msg.str(), nullptr, 0, 0, 0);
-                OWARNLOG("%s (Job %s)", msg.str(), wu->queryWuid());
+                if (ensureExceptionToWorkunit(wu, SeverityWarning, queryComponentName(), ENGINEERR_WARN_COST_EXCEEDED, msg.str(), nullptr, 0, 0, 0))
+                    OWARNLOG("%s (Job %s)", msg.str(), wu->queryWuid());
                 warnCostLimit = 0; // disable warnCostLimit checking for this graph execution
             }
         }

@@ -563,8 +563,11 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
             w->setXmlParams(_queryXML);
         updateSuppliedXmlParams(w);
     }
-    abortmonitor->setGuillotineCost(getGuillotineCost(wu));
-    abortmonitor->setWarnCostLimit(getWarnCost(wu));
+    cost_type guillotineCost = getGuillotineCost(wu);
+    abortmonitor->setGuillotineCost(guillotineCost);
+    cost_type warnCost = getWarnCost(wu);
+    if (warnCost < guillotineCost)
+        abortmonitor->setWarnCostLimit(warnCost);
     configurePreferredPlanes();
     agentMachineCost = getMachineCostRate();
 }
@@ -3369,9 +3372,10 @@ void EclAgent::abortMonitor()
                 }
                 if (abortmonitor->warnCostLimit && (totalCost > abortmonitor->warnCostLimit))
                 {
-                    VStringBuffer msg("High job cost - current cost %0.2f", cost_type2money(totalCost));
-                    addExceptionEx(SeverityWarning, MSGAUD_programmer, "eclagent", ENGINEERR_WARN_COST_EXCEEDED, msg.str(), NULL, 0, 0, false, false);
-                    OWARNLOG("%s (Job %s)", msg.str(), wuid.str());
+                    VStringBuffer msg("High job cost - current cost %0.2f exceeds warning threshold %0.2f", cost_type2money(totalCost), cost_type2money(abortmonitor->warnCostLimit));
+                    WorkunitUpdate wu = updateWorkUnit();
+                    if (ensureExceptionToWorkunit(wu, SeverityWarning, queryComponentName(), ENGINEERR_WARN_COST_EXCEEDED, msg.str(), nullptr, 0, 0, 0))
+                        OWARNLOG("%s (Job %s)", msg.str(), wu->queryWuid());
                     abortmonitor->setWarnCostLimit(0); // only warn once
                 }
                 checkCostInterval=CHECK_COST_INTERVAL;

@@ -13518,10 +13518,28 @@ extern WORKUNIT_API void addExceptionToWorkunit(IWorkUnit * wu, ErrorSeverity se
     {
         we->setExceptionLineNo(lineno);
         if (column)
-            we->setExceptionColumn(lineno);
+            we->setExceptionColumn(column);
     }
     if (activity)
         we->setActivityId(activity);
+}
+
+extern WORKUNIT_API bool ensureExceptionToWorkunit(IWorkUnit * wu, ErrorSeverity severity, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, unsigned activity)
+{
+    // Insert the exception only if there is no existing exception with the same code.
+    // If no code is supplied, there is nothing stable to dedupe on, so always add.
+    if (code)
+    {
+        Owned<IConstWUExceptionIterator> exceptions = &wu->getExceptions();
+        ForEach(*exceptions)
+        {
+            // Exception code is the canonical dedupe key for this helper.
+            if (exceptions->query().getExceptionCode() == code)
+                return false;
+        }
+    }
+    addExceptionToWorkunit(wu, severity, source, code, text, filename, lineno, column, activity);
+    return true;
 }
 
 const char * skipLeadingXml(const char * text)
