@@ -130,7 +130,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   AND
   ANY
   APPLY
-  _ARRAY_
+  TOK_ARRAY
   AS
   ASCII
   ASIN
@@ -814,7 +814,7 @@ explicitDatasetType1
                             $$.setType(tableType.getClear());
                             $$.setPosition($1);
                         }
-    | _ARRAY_ explicitDatasetType
+    | TOK_ARRAY explicitDatasetType
                         {
                             $$.setType(makeOutOfLineModifier($2.getType()));
                             $$.setPosition($1);

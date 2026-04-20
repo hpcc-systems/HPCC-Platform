@@ -11552,7 +11552,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case ANDAND: msg.append("&&"); break;
     case ANY: msg.append("ANY"); break;
     case APPLY: msg.append("APPLY"); break;
-    case _ARRAY_: msg.append("_ARRAY_"); break;
+    case TOK_ARRAY: msg.append("_ARRAY_"); break;
     case AS: msg.append("AS"); break;
     case ASCII: msg.append("ASCII"); break;
     case ASIN: msg.append("ASIN"); break;
@@ -12099,7 +12099,7 @@ void HqlGram::simplifyExpected(int *expected)
     simplify(expected, SCOPE_ID, '$', HASH_DOLLAR, '^', 0);
     simplify(expected, RECORD, RECORDOF, RECORD_ID, RECORD_FUNCTION, VALUE_MACRO, '{', '@', '$', HASH_DOLLAR, IF, 0);
     simplify(expected, IFBLOCK, ANY, PACKED, BIG, LITTLE, 0);
-    simplify(expected, SIMPLE_TYPE, _ARRAY_, LINKCOUNTED, EMBEDDED, STREAMED, 0);
+    simplify(expected, SIMPLE_TYPE, TOK_ARRAY, LINKCOUNTED, EMBEDDED, STREAMED, 0);
     simplify(expected, END, '}', 0);
 }
 

@@ -655,7 +655,7 @@ ALL                 { RETURNSYM(ALL); }
 ALLNODES            { RETURNSYM(ALLNODES); }
 ANY                 { RETURNSYM(ANY); }
 APPLY               { RETURNSYM(APPLY); }
-_ARRAY_             { RETURNSYM(_ARRAY_); }
+_ARRAY_             { RETURNSYM(TOK_ARRAY); }
 AS                  { RETURNSYM(AS); }
 ASCII               { RETURNSYM(ASCII); }
 ASIN                { RETURNSYM(ASIN); }

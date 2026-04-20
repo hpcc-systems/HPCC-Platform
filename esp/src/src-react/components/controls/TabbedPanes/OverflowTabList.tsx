@@ -31,10 +31,12 @@ export const OverflowTabList: React.FunctionComponent<OverflowTabListProps> = ({
             if (tab.id === selected) {
                 tab.__state = state;
             }
+            const overflowTab = <Tab value={tab.id} icon={tab.icon} disabled={tab.disabled}>{tab.label}<Count value={tab.count} /></Tab>;
             return <OverflowItem key={tab.id} id={tab.id} priority={tab.id === selected ? 2 : 1}>
-                <Tooltip content={tab.tooltipText || tab.label} relationship="label">
-                    <Tab value={tab.id} icon={tab.icon} disabled={tab.disabled}>{tab.label}<Count value={tab.count} /></Tab>
-                </Tooltip>
+                {tab.tooltipText
+                    ? <Tooltip content={tab.tooltipText} relationship="label">{overflowTab}</Tooltip>
+                    : overflowTab
+                }
             </OverflowItem>;
         }), tabsIndex];
     }, [selected, state, tabs]);

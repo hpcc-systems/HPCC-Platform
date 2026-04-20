@@ -205,7 +205,7 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
             document.body.removeChild(link);
             window.URL.revokeObjectURL(urlBlob);
         }).catch(err => {
-            logger.error(err)
+            logger.error(err);
         });
     }, [checkedRows, wuid]);
 
