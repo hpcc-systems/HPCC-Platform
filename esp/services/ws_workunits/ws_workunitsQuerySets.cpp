@@ -3084,7 +3084,51 @@ public:
         entry->setPropBool("@makeActive", makeActive);
         entry->setPropInt("@activationMode", makeActive ? activationMode : CWUQueryActivationMode_NoActivate);
         entry->setProp("@userid", userid);
-        entry->addPropTree("Info", createPTreeFromIPT(query));
+        IPropertyTree *info = entry->addPropTree("Info", createPTreeFromIPT(query));
+
+        // Normalize info to have attributes instead of child elements for certain fields
+        if (info->hasProp("priority"))
+        {
+            updateQueryPriority(info, info->queryProp("priority"));
+            info->removeProp("priority");
+        }
+        if (info->hasProp("memoryLimit"))
+        {
+            updateMemoryLimitSetting(info, info->queryProp("memoryLimit"));
+            info->removeProp("memoryLimit");
+        }
+        if (info->hasProp("timeLimit"))
+        {
+            const char *val = info->queryProp("timeLimit");
+            if (val && *val)
+            {
+                int tl = atoi(val);
+                if (tl > 0)
+                    info->setPropInt("@timeLimit", tl);
+            }
+            info->removeProp("timeLimit");
+        }
+        if (info->hasProp("warnTimeLimit"))
+        {
+            const char *val = info->queryProp("warnTimeLimit");
+            if (val && *val)
+            {
+                int wtl = atoi(val);
+                if (wtl > 0)
+                    info->setPropInt("@warnTimeLimit", wtl);
+            }
+            info->removeProp("warnTimeLimit");
+        }
+        if (info->hasProp("Comment"))
+        {
+            info->setProp("@comment", info->queryProp("Comment"));
+            info->removeProp("Comment");
+        }
+        if (info->hasProp("snapshot"))
+        {
+            info->setProp("@snapshot", info->queryProp("snapshot"));
+            info->removeProp("snapshot");
+        }
 
         Owned<IAttributeIterator> aiter = query->getAttributes();
         IPropertyTree *attrs = entry->addPropTree("Attrs");
