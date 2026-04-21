@@ -70,6 +70,10 @@ Use the copy query command and copy or add the Packagemap.
 With data copy start in the logs…copy from remote location specified if data doesn’t exist on the local system.
 The remote location is the remote Dali (use the --daliip=<daliIP> parameter to specify the remote Dali)
 You can also use ECL Watch.
+
+You can also use the kubectl cp command to copy data files directly into a pod's drop zone. For example:
+kubectl cp mydata.csv <pod-name>:/var/lib/HPCCSystems/mydropzone/mydata.csv
+See the "Copying Files To and From a Pod" section in the Containerized HPCC Systems Platform book for more details.
 ```
 
 9. **How can I start a cloud cluster? (akin to the old Virtual Box image)?**
