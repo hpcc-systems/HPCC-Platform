@@ -1636,10 +1636,13 @@ unsigned EclAgent::getNodes()//retrieve node count for current cluster
     return clusterWidth;
 }
 
-void EclAgent::setBlocked()
+void EclAgent::setBlocked(const char *reason)
 {
+    if (isEmptyString(reason))
+        throw makeStringException(-1, "EclAgent::setBlocked requires a non-empty reason");
+
     WorkunitUpdate w = updateWorkUnit();
-    w->setState(WUStateBlocked);
+    setBlockedState(w, reason);
 }
 
 void EclAgent::setRunning()
@@ -2851,11 +2854,7 @@ IRemoteConnection *EclAgent::getPersistReadLock(const char * logicalName)
 
 void EclAgent::setBlockedOnPersist(const char * logicalName)
 {
-    StringBuffer s;
-    s.append("Waiting for persist ").append(logicalName);
-    WorkunitUpdate w = updateWorkUnit();
-    w->setState(WUStateBlocked);
-    w->setStateEx(s.str());
+    setBlocked(VStringBuffer("Waiting for persist ").append(logicalName).str());
 }
 
 bool EclAgent::isPersistUptoDate(Owned<IRemoteConnection> &persistLock, IRuntimeWorkflowItem & item, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile)

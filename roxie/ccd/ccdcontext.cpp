@@ -582,8 +582,7 @@ private:
         StringBuffer s;
         s.append("Waiting for persist ").append(logicalName);
         WorkunitUpdate w(&workunit->lock());
-        w->setState(WUStateBlocked);
-        w->setStateEx(s.str());
+        setBlockedState(w, s.str());
     }
 
     bool isPersistUptoDate(Owned<IRemoteConnection> &persistLock, IRuntimeWorkflowItem & item, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile)
