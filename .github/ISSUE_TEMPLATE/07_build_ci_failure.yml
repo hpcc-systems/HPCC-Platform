@@ -1,0 +1,74 @@
+name: Build/CI/packaging failure
+description: Report failures in build pipelines, dependency resolution, or packaging
+title: "[Build]: <short description of failure>"
+labels: ["build-process", "infrastructure"]
+type: "Bug"
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What failed and where did it fail?
+      placeholder: Clear and concise description of the build or CI failure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: failure_area
+    attributes:
+      label: Failure area
+      options:
+        - Local build
+        - CI workflow
+        - Dependency resolution
+        - Test stage
+        - Packaging/release
+        - Deployment pipeline
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: command_or_job
+    attributes:
+      label: Command, workflow, or job name
+      description: Include command line, workflow file, job name, or build target
+      placeholder: cmake --build ..., GitHub Actions workflow/job, package target, etc.
+
+  - type: textarea
+    id: error_output
+    attributes:
+      label: Error output
+      description: Paste the relevant failing logs or error messages
+      render: shell
+    validations:
+      required: true
+
+  - type: input
+    id: commit
+    attributes:
+      label: Commit/branch
+      description: Commit SHA or branch where the failure occurred
+      placeholder: branch name or commit SHA
+
+  - type: input
+    id: version
+    attributes:
+      label: HPCC Platform version
+      description: Version/build if known
+      placeholder: 9.14.x / build number
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment details
+      description: OS, runner/executor type, container image, compiler/toolchain
+      placeholder: Ubuntu version, runner type, docker image tag, compiler version
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: I searched for existing build/CI issues before filing this report
+          required: true

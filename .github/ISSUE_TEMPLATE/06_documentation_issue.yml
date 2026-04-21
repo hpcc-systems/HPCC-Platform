@@ -1,0 +1,57 @@
+name: Documentation issue
+description: Report missing, unclear, or incorrect documentation
+title: "[Docs]: <short description of doc issue>"
+labels: ["documentation"]
+type: "Task"
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What is wrong or missing in the documentation?
+      placeholder: Clear and concise description of the documentation issue
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: Documentation location
+      description: Link to the page/file/section, if available
+      placeholder: https://... or docs path
+
+  - type: dropdown
+    id: issue_type
+    attributes:
+      label: Issue type
+      options:
+        - Incorrect content
+        - Missing content
+        - Outdated content
+        - Unclear/confusing explanation
+        - Broken link or example
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Suggested improvement
+      description: What should the docs say or include instead?
+      placeholder: Proposed text, examples, or structure changes
+
+  - type: textarea
+    id: audience
+    attributes:
+      label: Audience and impact
+      description: Who is impacted and how?
+      placeholder: New users, operators, developers, etc.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: I searched for existing documentation issues before filing this report
+          required: true

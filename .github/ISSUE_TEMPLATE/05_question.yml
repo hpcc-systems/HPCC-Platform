@@ -1,0 +1,27 @@
+name: Question
+description: Ask a usage or behavior question
+title: "[Question]: <short description of question>"
+labels: ["question"]
+type: "Task"
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What are you trying to do, and where are you blocked?
+      placeholder: Describe your goal and your specific question
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Share relevant details (version, environment, commands, snippets)
+      placeholder: Version, cluster/environment details, related logs or config
+
+  - type: textarea
+    id: tried
+    attributes:
+      label: What you already tried
+      placeholder: Steps, docs, or examples already tested
