@@ -8,6 +8,7 @@
 #include "mpcomm.hpp"
 #include "dasds.hpp"
 #include "sautil.hpp"
+#include "sacoalescer.hpp"
 #include "dalienv.hpp"
 
 #define DEFAULT_INTERVAL                1       // 1 hour
