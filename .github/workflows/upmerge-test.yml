@@ -6,11 +6,12 @@ on:
     branches:
       - "candidate-*"
 
+permissions:
+  contents: read
+
 jobs:
   upmerge-test:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
       - name: "Debug Vars"
         env:

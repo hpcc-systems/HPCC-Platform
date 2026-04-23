@@ -66,6 +66,10 @@ on:
       LNB_TOKEN:
         required: false
 
+permissions:
+  contents: read
+  packages: read
+
 jobs:
 
   build-gh_runner:
