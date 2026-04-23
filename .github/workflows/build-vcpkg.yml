@@ -58,6 +58,8 @@ concurrency:
 permissions:
   contents: read
   actions: write
+  pull-requests: read
+  packages: read
 
 jobs:
   pre_job:

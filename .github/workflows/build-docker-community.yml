@@ -63,6 +63,9 @@ on:
         required: false
         default: ''
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build Community Platform

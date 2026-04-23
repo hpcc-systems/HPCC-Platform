@@ -67,6 +67,9 @@ on:
       LNB_TOKEN:
         required: false
 
+permissions:
+  contents: read
+
 jobs:
 
   build-docker:
