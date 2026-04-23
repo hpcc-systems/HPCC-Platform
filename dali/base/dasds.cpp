@@ -1961,7 +1961,7 @@ public:
         if (it == extTable.end())
             return false;
         Linked<CTransactionItem> item = *(it->second);
-        b.leave();
+        b.ensureLeave();
         mb.append(item->ext.dataLength, item->ext.data);
         return true;
     }

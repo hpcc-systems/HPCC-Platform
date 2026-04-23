@@ -386,7 +386,7 @@ public:
             if (it != endpointMap.end())
             {
                 storageSecret.append(it->second.secret.c_str());
-                b.leave();
+                b.ensureLeave();
                 if (0 == storageSecret.length())
                 {
                     VStringBuffer secureUrl("https://%s", endpointStr.str());
@@ -2650,4 +2650,3 @@ extern IIndexLookup *createRemoteFilteredKey(SocketEndpoint &ep, const char * fi
     }
     return nullptr;
 }
-

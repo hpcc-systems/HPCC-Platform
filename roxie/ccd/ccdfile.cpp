@@ -1983,7 +1983,7 @@ public:
                             {
                                 if (!useRemoteResources)
                                 {
-                                    block.leave();
+                                    block.ensureLeave();
                                     ret->checkOpen();
                                     doCopy(ret, false, CFflush_rdwr);
                                     return;
@@ -2005,7 +2005,7 @@ public:
                             // This is to avoid huge contention on the source dafilesrv if the Roxie is live.
                             if (numParts==1 || (partNo==numParts && fileType==ROXIE_KEY) || !useRemoteResources)
                             {
-                                block.leave();
+                                block.ensureLeave();
                                 ret->checkOpen();
                                 doCopy(ret, false, CFflush_rdwr);
                                 return;

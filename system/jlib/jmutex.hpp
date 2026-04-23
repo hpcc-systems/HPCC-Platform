@@ -420,26 +420,26 @@ class CLeavableCriticalBlock
 public:
     inline CLeavableCriticalBlock(CriticalSection &_crit) : crit(_crit)
     {
-        enter();
+        ensureEnter();
     }
     inline CLeavableCriticalBlock(CriticalSection &_crit, bool lock) : crit(_crit)
     {
         if (lock)
-            enter();
+            ensureEnter();
     }
     inline ~CLeavableCriticalBlock()
     {
         if (locked)
             crit.leave();
     }
-    inline void enter()
+    inline void ensureEnter()
     {
         if (locked)
             return;
         locked = true;
         crit.enter();
     }
-    inline void leave()
+    inline void ensureLeave()
     {
         if (locked)
         {
