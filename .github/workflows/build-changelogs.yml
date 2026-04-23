@@ -28,13 +28,14 @@ on:
         description: 'Previous Gold Version'
         required: true
 
+permissions:
+  contents: write
+
 jobs:
   changelogs:
     name: Generate Changelogs
     runs-on: ubuntu-latest
     if: ${{ github.repository_owner == 'hpcc-systems' }}
-    permissions:
-      contents: write
     steps:
       - name: Checkout HPCC-Platform
         uses: actions/checkout@v4

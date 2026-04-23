@@ -5,13 +5,14 @@ on:
     workflows: ["Upmerge Test"]
     types: [completed]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   post-comment:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'failure' }}
-    permissions:
-      contents: read
-      pull-requests: write
     steps:
       - name: "Download Artifacts"
         uses: actions/download-artifact@v4

@@ -14,6 +14,9 @@ on:
         required: false
         default: 'docker-ubuntu-22_04-containerized'
 
+permissions:
+  contents: read
+
 jobs:
   build-docker:
     name: build-docker-${{ inputs.os }}
