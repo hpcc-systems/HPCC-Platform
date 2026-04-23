@@ -56,6 +56,14 @@ void handleRequestException(const Azure::Core::RequestFailedException& e, const 
 void handleRequestException(const std::exception& e, const char * op, unsigned attempt, unsigned maxRetries, const char * filename);
 void handleRequestException(const std::exception& e, const char * op, unsigned attempt, unsigned maxRetries, const char * filename, offset_t pos, offset_t len);
 
+struct DirEntry
+{
+    std::string name;
+    bool isDir;
+    int64_t size;
+    time_t modifiedTime;
+};
+
 //---------------------------------------------------------------------------------------------------------------------
 // Base class for Azure directory iterators (Blob and File).
 // Subclasses implement fetchPage() to populate the items vector using the
@@ -67,14 +75,6 @@ class AzureDirectoryIteratorBase : implements IDirectoryIterator, public CInterf
 {
 public:
     IMPLEMENT_IINTERFACE;
-
-    struct DirEntry
-    {
-        std::string name;
-        bool isDir;
-        int64_t size;
-        time_t modifiedTime;
-    };
 
     AzureDirectoryIteratorBase(const char *_fullPrefix, const char *_containerOrShare, const char *_mask, bool _includeDirs)
         : fullPrefix(_fullPrefix), containerOrShare(_containerOrShare), mask(_mask), includeDirs(_includeDirs) {}

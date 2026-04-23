@@ -228,6 +228,8 @@ class AzureBlob final : implements CInterfaceOf<IFile>
 {
 public:
     AzureBlob(const char *_azureFileName, AzureAPIConfig &&_config);
+    AzureBlob(const char *_azureFileName, AzureAPIConfig &&_config, const DirEntry &entry)
+    : AzureBlob(_azureFileName, std::move(_config)) { setListedInfo(entry.isDir, entry.size, entry.modifiedTime); }
     virtual bool exists() override
     {
         ensureMetaData();
@@ -742,9 +744,7 @@ AzureBlob::AzureBlob(const char *_azureFileName, AzureAPIConfig &&_config) : ful
 
 IFile * AzureBlobDirectoryIterator::createFile(const char *fullPath, const DirEntry &entry)
 {
-    AzureBlob *file = static_cast<AzureBlob *>(createAzureBlob(fullPath));
-    file->setListedInfo(entry.isDir, entry.size, entry.modifiedTime);
-    return file;
+    return createAzureBlob(fullPath, entry);
 }
 
 std::shared_ptr<StorageSharedKeyCredential> AzureBlob::getSharedKeyCredentials() const
@@ -1006,4 +1006,9 @@ static AzureAPIConfig getAzureConfig()
 IFile *createAzureBlob(const char *azureFileName)
 {
     return new AzureBlob(azureFileName, getAzureConfig());
+}
+
+IFile *createAzureBlob(const char *azureFileName, const DirEntry &entry)
+{
+    return new AzureBlob(azureFileName, getAzureConfig(), entry);
 }
