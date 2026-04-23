@@ -87,29 +87,39 @@ public:
         resetPaging();
         return loadNextPage() && advance();
     }
-    virtual bool next() override                        { itemIndex++; return advance(); }
-    virtual bool isValid() override                     { return curValid; }
+    virtual bool next() override    { itemIndex++; return advance(); }
+    virtual bool isValid() override { return curValid; }
     virtual IFile &query() override
     {
         if (!curFile)
         {
             StringBuffer fullPath(fullPrefix);
-            fullPath.append(curName);
+            fullPath.append(queryCurEntry().name);
             curFile.setown(createFile(fullPath.str(), items[itemIndex]));
         }
         return *curFile;
     }
-    virtual StringBuffer &getName(StringBuffer &buf) override { if (isValid()) buf.append(curName); return buf; }
-    virtual bool isDir() override                       { return curIsDir; }
-    virtual __int64 getFileSize() override              { return curIsDir ? -1 : curSize; }
+    virtual StringBuffer &getName(StringBuffer &buf) override
+    {
+        if (isValid())
+            buf.append(queryCurEntry().name);
+        return buf;
+    }
+    virtual bool isDir() override { return queryCurEntry().isDir; }
+    virtual __int64 getFileSize() override
+    {
+        const DirEntry &entry = queryCurEntry();
+        return entry.isDir ? -1 : entry.size;
+    }
     virtual bool getModifiedTime(CDateTime &ret) override
     {
-        if (curIsDir || curModifiedTime == 0)
+        const DirEntry &entry = queryCurEntry();
+        if (entry.isDir)
         {
             ret.clear();
             return false;
         }
-        ret.set(curModifiedTime);
+        ret.set(entry.modifiedTime);
         return true;
     }
 
@@ -185,22 +195,15 @@ private:
                 return false;
             }
         }
-        const DirEntry &entry = items[itemIndex];
-        curName.set(entry.name.c_str());
-        curIsDir = entry.isDir;
-        curSize = entry.size;
-        curModifiedTime = entry.modifiedTime;
         curFile.clear(); // Created lazily in query() - scanDirectory never calls it
         curValid = true;
         return true;
     }
 
+    inline const DirEntry & queryCurEntry() const { return items[itemIndex]; }
+
     Owned<IFile> curFile;
-    StringAttr curName;
     bool curValid = false;
-    bool curIsDir = false;
-    int64_t curSize = -1;
-    time_t curModifiedTime = 0;
 };
 
 #endif
