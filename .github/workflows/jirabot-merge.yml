@@ -7,6 +7,10 @@ on:
       - "master"
       - "candidate-*"
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   jirabot:
     runs-on: ubuntu-latest

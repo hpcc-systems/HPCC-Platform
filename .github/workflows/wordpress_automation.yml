@@ -11,6 +11,10 @@ on:
         type: string
         description: 'The git tag to build the asset from'
         required: true
+
+permissions:
+  contents: read
+
 jobs:
   generate-asset-manifest:
     runs-on: ubuntu-latest

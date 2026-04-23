@@ -5,6 +5,9 @@ on:
     - cron: '30 4 * * 5'
     # Friday, 4:30 AM UTC
 
+permissions:
+  contents: read
+
 jobs:
     jfrog:
         name: "Cleanup Jfrog hpccpl-docker-local"

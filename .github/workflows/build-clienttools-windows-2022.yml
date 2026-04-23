@@ -41,7 +41,10 @@ on:
         description: 'Make Latest'
         required: false
         default: false
-      
+
+permissions:
+  contents: write
+  packages: read
 
 jobs:
   generate_windows_2022_clienttools:
