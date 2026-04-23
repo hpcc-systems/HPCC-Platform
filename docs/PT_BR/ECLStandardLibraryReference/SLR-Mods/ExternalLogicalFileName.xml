@@ -51,6 +51,9 @@
   função processa caracteres maiúsculos prefixando-os com um caractere de
   escape na string de retorno.</para>
 
+  <para>Para mapeamento de caminhos baseado em storage plane, consulte
+  <link linkend="PlaneLogicalFileName">STD.File.PlaneLogicalFileName</link>.</para>
+
   <para>Exemplo:</para>
 
   <programlisting format="linespecific">IP   := '10.150.254.6';
