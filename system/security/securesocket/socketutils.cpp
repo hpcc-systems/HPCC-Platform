@@ -425,7 +425,7 @@ void CReadSelectHandler::clearupSocketHandlers()
 
 //---------------------------------------------------------------------------------------------------------------------
 
-CSocketConnectionListener::CSocketConnectionListener(unsigned port, bool _useTLS, unsigned _inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets, bool _useIOUring)
+CSocketConnectionListener::CSocketConnectionListener(unsigned port, bool _useTLS, unsigned _inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets, bool _useIOUring, bool _useUDS)
     : CReadSelectHandler(_inactiveCloseTimeoutMs, _maxListenHandlerSockets, _useIOUring), Thread("CSocketConnectionListener"), useTLS(_useTLS)
 {
     // Determine accept method based on io_uring availability and configuration
@@ -438,7 +438,7 @@ CSocketConnectionListener::CSocketConnectionListener(unsigned port, bool _useTLS
         acceptMethod.store(AcceptMethod::SelectThread);
 
     if (port)
-        startPort(port);
+        startPort(port, _useUDS);
 
     if (useTLS)
         secureContextServer.setown(createSecureSocketContextSecretSrv("local", nullptr, true));
@@ -484,12 +484,15 @@ bool CSocketConnectionListener::checkSelfDestruct(const void *p,size32_t sz)
     return true;
 }
 
-void CSocketConnectionListener::startPort(unsigned short port)
+void CSocketConnectionListener::startPort(unsigned short port, bool useUDS)
 {
     if (!listenSocket)
     {
         unsigned listenQueueSize = 600; // default
-        listenSocket.setown(ISocket::create(port, listenQueueSize));
+        if (useUDS)
+            listenSocket.setown(ISocket::unix_create(port, listenQueueSize));
+        else
+            listenSocket.setown(ISocket::create(port, listenQueueSize));
     }
 
     AcceptMethod method = acceptMethod.load();
@@ -806,7 +809,7 @@ void CSocketConnectionListener::onAsyncComplete(int result)
     // until it's cancelled or encounters an error
     if (aborting.load())
         return;
-    
+
     handleAcceptedConnection(result);
     
     // If using single-shot accept (not multishot), we need to re-queue another accept
@@ -830,7 +833,11 @@ void CSocketTarget::connect()
     // Must be called within a critical section....
     try
     {
-        socket.setown(ISocket::connect_timeout(ep, 5000));
+        if (sender.useUDS)
+            socket.setown(ISocket::unix_connect(ep));
+        else
+            socket.setown(ISocket::connect_timeout(ep, 5000));
+
         if (socket)
         {
             // Keep track of the number of connections - a useful stat, and to distinguish between initial connection and reconnection.
@@ -987,7 +994,7 @@ void CSocketTarget::startAsyncConnect()
         if (enableAsyncConnect && sender.asyncSender)
         {
             size32_t addrlen = 0;
-            socket.setown(ISocket::createForAsyncConnect(ep, addr, addrlen));
+            socket.setown(ISocket::createForAsyncConnect(ep, addr, addrlen, sender.useUDS));
             if (socket)
             {
                 // Queue the async connect operation

@@ -894,7 +894,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         IPropertyTree * pageCache = topology->queryPropTree("pageCache");
 
         bool isBatchRoxie = strisame(roxieMode, "batch");
-        useTcpTransport = strisame(protocol, "tcp");
+        useTcpTransport = strisame(protocol, "tcp") || strisame(protocol, "uds");
+        useUdsTransport = strisame(protocol, "uds");
         bool usingRemoteStorage = (pageCache != nullptr);
 
         // --- These options have the following effects on the defaults:

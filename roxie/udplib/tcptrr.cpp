@@ -107,7 +107,7 @@ class CTcpReceiveManager : implements IReceiveManager, public CInterface
     {
     public:
         PacketListener(CTcpReceiveManager & _receiver)
-        : CSocketConnectionListener(0, false, 0, 0), receiver(_receiver)
+        : CSocketConnectionListener(0, false, 0, 0, true, useUdsTransport), receiver(_receiver)
         {
             maxInitialReadSize = roxiemem::DATA_ALIGNMENT_SIZE * 4;
         }
@@ -150,7 +150,7 @@ public:
         udpBufferManager = bufferManager; // ugly global variable...
         if (!collateDirectly)
             collatorThread.start(false);
-        listener.startPort(data_port);
+        listener.startPort(data_port, useUdsTransport);
     }
 
     ~CTcpReceiveManager()

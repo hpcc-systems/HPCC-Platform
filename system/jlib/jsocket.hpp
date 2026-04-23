@@ -289,7 +289,7 @@ public:
     
     // Async connection support for io_uring
     //
-    static ISocket*  createForAsyncConnect(const SocketEndpoint & ep, struct sockaddr *& addr, size32_t & addrlen);
+    static ISocket*  createForAsyncConnect(const SocketEndpoint & ep, struct sockaddr *& addr, size32_t & addrlen, bool useUDS);
     static void completeAsyncConnect(ISocket * socket, int connectResult);
     
     
@@ -332,6 +332,10 @@ public:
     // Creates an ISocket for an already created socket
     //
     static ISocket*  attach(int s,bool tcpip=true);
+
+    // --- UDS Fast-Path ---
+    static ISocket*  unix_create(unsigned short port, int listen_queue_size = DEFAULT_LISTEN_QUEUE_SIZE);
+    static ISocket*  unix_connect(const SocketEndpoint &ep);
 
     // suppresGCIfMinSize - if true, will suppress graceful close if size_read >= min_size
     // This is the default behavior for backwards compatibility.

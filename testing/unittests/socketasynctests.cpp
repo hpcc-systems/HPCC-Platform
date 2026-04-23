@@ -411,6 +411,8 @@ protected:
         return config.getClear();
     }
 
+    static constexpr bool useUDS = false;
+
 public:
     void testSyncConnect()
     {
@@ -484,7 +486,7 @@ public:
             SockAddrHolder addrHolder;
             size32_t addrlen = 0;
             
-            Owned<ISocket> socket = ISocket::createForAsyncConnect(ep, addrHolder.getRef(), addrlen);
+            Owned<ISocket> socket = ISocket::createForAsyncConnect(ep, addrHolder.getRef(), addrlen, useUDS);
             ASSERT(socket.get() != nullptr);
             ASSERT(addrHolder.get() != nullptr);
             ASSERT(addrlen > 0);
@@ -569,7 +571,7 @@ public:
             {
                 size32_t addrlen = 0;
                 
-                Owned<ISocket> socket = ISocket::createForAsyncConnect(ep, addrHolders[i].getRef(), addrlen);
+                Owned<ISocket> socket = ISocket::createForAsyncConnect(ep, addrHolders[i].getRef(), addrlen, useUDS);
                 uring->enqueueSocketConnect(socket, addrHolders[i].get(), addrlen, callbacks[i]);
                 
                 sockets.push_back(std::move(socket));
@@ -613,7 +615,7 @@ public:
             SockAddrHolder addrHolder;
             size32_t addrlen = 0;
             
-            Owned<ISocket> socket = ISocket::createForAsyncConnect(ep, addrHolder.getRef(), addrlen);
+            Owned<ISocket> socket = ISocket::createForAsyncConnect(ep, addrHolder.getRef(), addrlen, useUDS);
             
             // Simulate failed async connect
             try
@@ -674,7 +676,7 @@ public:
                 SockAddrHolder addrHolder;
                 size32_t addrlen = 0;
                 
-                Owned<ISocket> socket = ISocket::createForAsyncConnect(ep, addrHolder.getRef(), addrlen);
+                Owned<ISocket> socket = ISocket::createForAsyncConnect(ep, addrHolder.getRef(), addrlen, useUDS);
                 ReconnectCallback callback;
                 
                 uring->enqueueSocketConnect(socket, addrHolder.get(), addrlen, callback);
@@ -696,7 +698,7 @@ public:
                 SockAddrHolder addrHolder;
                 size32_t addrlen = 0;
                 
-                Owned<ISocket> socket = ISocket::createForAsyncConnect(ep, addrHolder.getRef(), addrlen);
+                Owned<ISocket> socket = ISocket::createForAsyncConnect(ep, addrHolder.getRef(), addrlen, useUDS);
                 ReconnectCallback callback;
                 
                 uring->enqueueSocketConnect(socket, addrHolder.get(), addrlen, callback);
@@ -768,7 +770,7 @@ public:
             SockAddrHolder addrHolder;
             size32_t addrlen = 0;
             
-            Owned<ISocket> socket = ISocket::createForAsyncConnect(ep, addrHolder.getRef(), addrlen);
+            Owned<ISocket> socket = ISocket::createForAsyncConnect(ep, addrHolder.getRef(), addrlen, useUDS);
             TimeoutCallback callback;
             
             uring->enqueueSocketConnect(socket, addrHolder.get(), addrlen, callback);
@@ -832,7 +834,7 @@ public:
                 SockAddrHolder addrHolder;
                 size32_t addrlen = 0;
                 
-                Owned<ISocket> socket = ISocket::createForAsyncConnect(ep, addrHolder.getRef(), addrlen);
+                Owned<ISocket> socket = ISocket::createForAsyncConnect(ep, addrHolder.getRef(), addrlen, useUDS);
                 ReconnectCallback callback;
                 
                 uring->enqueueSocketConnect(socket, addrHolder.get(), addrlen, callback);
@@ -989,7 +991,7 @@ public:
                 SockAddrHolder addrHolder;
                 size32_t addrlen = 0;
                 
-                Owned<ISocket> socket = ISocket::createForAsyncConnect(ep, addrHolder.getRef(), addrlen);
+                Owned<ISocket> socket = ISocket::createForAsyncConnect(ep, addrHolder.getRef(), addrlen, useUDS);
                 RapidCallback callback;
                 
                 uring->enqueueSocketConnect(socket, addrHolder.get(), addrlen, callback);
@@ -1051,7 +1053,7 @@ public:
             SockAddrHolder addrHolder;
             size32_t addrlen = 0;
             
-            Owned<ISocket> socket = ISocket::createForAsyncConnect(ep, addrHolder.getRef(), addrlen);
+            Owned<ISocket> socket = ISocket::createForAsyncConnect(ep, addrHolder.getRef(), addrlen, useUDS);
             CancelCallback callback;
             
             uring->enqueueSocketConnect(socket, addrHolder.get(), addrlen, callback);
