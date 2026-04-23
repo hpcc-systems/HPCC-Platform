@@ -17,6 +17,9 @@ on:
       - "!community_8.0.*"
       - "!community_7.*"
 
+permissions:
+  contents: read
+
 jobs:
   preamble:
     name: Publish Release

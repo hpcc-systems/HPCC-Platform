@@ -41,7 +41,10 @@ env:
   UPLOAD_ARTIFACT: false 
   LIST_BUNDLES_DYNAMICALLY: true
   SET_FAILURE_STATUS: false
-  
+
+permissions:
+  contents: read
+
 jobs:
   main:
     runs-on: ${{ inputs.os }}

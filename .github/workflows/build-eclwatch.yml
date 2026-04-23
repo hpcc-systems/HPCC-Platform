@@ -7,6 +7,9 @@ on:
         type: string
         description: 'Asset name'
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: "Build eclwatch"

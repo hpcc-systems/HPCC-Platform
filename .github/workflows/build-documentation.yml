@@ -47,6 +47,9 @@ on:
         required: false
         default: false
 
+permissions:
+  contents: write
+
 jobs:
   build-documentation:
     runs-on: "ubuntu-latest"
