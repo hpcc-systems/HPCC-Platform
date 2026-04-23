@@ -121,7 +121,7 @@ protected:
     // Subclass creates the appropriate IFile (AzureBlob or AzureFile) for the given path
     virtual IFile *createFile(const char *fullPath, const DirEntry &entry) = 0;
 
-    bool matchesMask(const char *name) const { return !mask.length() || WildMatch(name, mask, false); }
+    bool matchesMask(const char *name) const { return mask.isEmpty() || WildMatch(name, mask, false); }
 
     static time_t toTimeT(const Azure::DateTime &dt)
     {
