@@ -219,7 +219,6 @@ export = {
     DefinitionDeleted: "Definicija je izbrisana",
     DefinitionID: "ID",
     Definitions: "Definicije",
-    DelayedReplication: "Odgođena replikacija",
     Delete: "Obrišite",
     DeleteBinding: "Izbrišite Vezivanje",
     Deleted: "Obrisan",
