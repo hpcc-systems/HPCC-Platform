@@ -23,6 +23,11 @@ globals() {
 
     GIT_REF=$(git rev-parse --short=8 HEAD)
     GIT_BRANCH=$(git branch --show-current)
+    if [ -z "$GIT_BRANCH" ]; then
+        # Detached HEAD builds have no branch name; use a stable fallback tag.
+        GIT_BRANCH="detached-$GIT_REF"
+    fi
+
     IMAGE_BRANCH_TAG=$(echo "$GIT_BRANCH" | sed 's/[^a-zA-Z0-9_.]/-/g')
 
     pushd $ROOT_DIR/vcpkg
