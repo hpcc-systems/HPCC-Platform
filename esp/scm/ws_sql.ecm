@@ -328,7 +328,9 @@ ESPresponse CreateTableAndLoadResponse
     ESPstruct ECLWorkunit Workunit;
 };
 
-ESPservice [version("3.06"), default_client_version("3.06"), auth_feature("DEFERRED"), exceptions_inline("./smc_xslt/exceptions.xslt")] wssql
+//This service references shared structures such as ECLWorkunit defined in ws_workunits_struct, changes to those structures
+//must be accounted for with an uptick in version of this service
+ESPservice [version("3.07"), default_client_version("3.07"), auth_feature("DEFERRED"), exceptions_inline("./smc_xslt/exceptions.xslt")] wssql
 {
     ESPmethod [min_ver("3.03")] CreateTableAndLoad(CreateTableAndLoadRequest, CreateTableAndLoadResponse);
     ESPmethod [min_ver("3.02")] SetRelatedIndexes(SetRelatedIndexesRequest, SetRelatedIndexesResponse);
