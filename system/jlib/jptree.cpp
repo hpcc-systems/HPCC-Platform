@@ -8397,12 +8397,31 @@ static constexpr const char * currentVersion = "1.0";
 
 //---------------------------------------------------------------------------------------------------------------------
 /*
- * Use source to overwrite any changes in target
- *   Attributes are replaced
- *   Singleton elements are replaced.
- *   Entire arrays of scalar elements are replaced.
- *   Entire arrays of elements with no name attribute are replaced.
- *   Elements with a name attribute are matched by name.  If there is a match it is merged.  If there is no match it is added.
+ * mergeConfiguration: Merge source into target.
+ *
+ * Default behaviour (mergeListItemContent=false, altNameAttribute=nullptr):
+ *   Attributes in target are overwritten by source (if overwriteAttr is true).
+ *   Scalar/single-value elements are overwritten by source; non-array subtrees are merged
+ *   recursively, so target-only child elements are preserved.
+ *   Entire arrays are replaced - the target list is removed and source items are added.
+ *
+ * Legacy behaviour (mergeListItemContent=true, or altNameAttribute is non-empty):
+ *   Providing a non-empty altNameAttribute implies mergeListItemContent=true.
+ *   As above for scalar arrays and arrays whose items have no @name attribute.
+ *   For arrays whose source items have a @name attribute (or altNameAttribute): the target
+ *   list is NOT deleted first.  Each source item is matched against the target by @name.
+ *   If a match is found the target item's content is merged recursively; if no match is found
+ *   the source item is appended to the target list.
+ *
+ *   NB: This matching is applied recursively at EVERY level of the tree — there is no way to
+ *   scope it to a specific subtree.  Any list item with a @name (or altNameAttribute) attribute
+ *   anywhere in the tree will be subject to identity-matching.  Callers should be aware that
+ *   adding @name attributes to list items at any depth will silently change merge behaviour.
+ *   Furthermore, if the source contains multiple list items with the same @name (or
+ *   altNameAttribute) value, each successive item will be merged on top of the same target
+ *   node, silently collapsing what should be N distinct items into one — losing data without
+ *   warning.
+ *   This legacy mode is retained for ESP application config layering and the @extends mechanism.
 */
 
 static bool checkInSequence(IPropertyTree & child, StringAttr &seqname, bool &first, bool &endprior)
@@ -8450,8 +8469,11 @@ static IPropertyTree *ensureMergeConfigTarget(IPropertyTree &target, const char 
     return match;
 }
 
-void mergeConfiguration(IPropertyTree & target, const IPropertyTree & source, const char *altNameAttribute, bool overwriteAttr)
+void mergeConfiguration(IPropertyTree & target, const IPropertyTree & source, const char *altNameAttribute, bool overwriteAttr, bool mergeListItemContent)
 {
+    if (altNameAttribute && *altNameAttribute)
+        mergeListItemContent = true;
+
     Owned<IAttributeIterator> aiter = source.getAttributes();
     ForEach(*aiter)
     {
@@ -8465,24 +8487,45 @@ void mergeConfiguration(IPropertyTree & target, const IPropertyTree & source, co
     {
         IPropertyTree & child = iter->query();
         const char * tag = child.queryName();
-        const char * name = child.queryProp("@name");
+        const char * name = nullptr;
         bool altname = false;
-
-        //Legacy support for old component configuration files that have repeated elements with no name tag but another unique id
-        if (!name && altNameAttribute && *altNameAttribute)
+        if (mergeListItemContent)
         {
-            name = child.queryProp(altNameAttribute);
-            altname = name!=nullptr;
+            //Legacy: match array items by @name (or altNameAttribute) so that identically-named
+            //items are merged rather than replaced.  Applied globally at every depth — see caveat above.
+            name = child.queryProp("@name");
+            if (!name && altNameAttribute && *altNameAttribute)
+            {
+                name = child.queryProp(altNameAttribute);
+                altname = name!=nullptr;
+            }
         }
 
         bool first = false;
         bool endprior = false;
         bool sequence = checkInSequence(child, seqname, first, endprior);
-        if (first && (!name || isScalarItem(child))) //arrays of unnamed objects or scalars are replaced
-            target.removeProp(tag);
+        if (first && (!name || isScalarItem(child)))
+            target.removeProp(tag); //replace entire array (default), or scalars/unnamed items (mergeListItemContent mode)
 
-        IPropertyTree * match = ensureMergeConfigTarget(target, tag, altname ? altNameAttribute : "@name", name, sequence);
-        mergeConfiguration(*match, child, altNameAttribute, overwriteAttr);
+        IPropertyTree * match = nullptr;
+        if (!mergeListItemContent)
+        {
+            //Default path: arrays are replaced wholesale, singletons are overwritten.
+            if (sequence)
+                match = target.addPropTreeArrayItem(tag, createPTree(tag));
+            else
+            {
+                match = target.queryPropTree(tag);
+                if (!match)
+                    match = target.addPropTree(tag);
+            }
+        }
+        else
+        {
+            //Legacy path: find or create target node matched by @name/@altName identity.
+            match = ensureMergeConfigTarget(target, tag, altname ? altNameAttribute : "@name", name, sequence);
+        }
+        mergeConfiguration(*match, child, altNameAttribute, overwriteAttr, mergeListItemContent);
     }
 
     const char * sourceValue = source.queryProp("");
@@ -8491,8 +8534,10 @@ void mergeConfiguration(IPropertyTree & target, const IPropertyTree & source, co
 
 /*
  * Load a json/yaml configuration file.
- * If there is an extends tag in the root of the file then this file is applied as a delta to the base file
- * the configuration is the contents of the tag within the file that matches the component tag.
+ * If there is an @extends tag in the root of the file then this file is applied as a delta to the
+ * base file using mergeConfiguration.  If altNameAttribute is non-null it implies
+ * mergeListItemContent=true (legacy identity-matching behaviour — see mergeConfiguration comment).
+ * The returned configuration is the subtree matching componentTag.
 */
 static IPropertyTree * loadConfiguration(const char * filename, const char * componentTag, bool required, const char *altNameAttribute)
 {
@@ -9222,13 +9267,13 @@ static std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfigura
     if (configGlobal)
     {
         if (newGlobalConfig)
-            mergeConfiguration(*newGlobalConfig, *configGlobal);
+            mergeConfiguration(*newGlobalConfig, *configGlobal); //default: lists replaced
         else
             newGlobalConfig.setown(configGlobal.getClear());
     }
 
     if (delta)
-        mergeConfiguration(*newComponentConfig, *delta, altNameAttribute);
+        mergeConfiguration(*newComponentConfig, *delta, altNameAttribute); //NB: if altNameAttribute is non-null, implies mergeListItemContent=true (legacy)
 
     const char * * environment = const_cast<const char * *>(getSystemEnv());
     for (const char * * cur = environment; *cur; cur++)

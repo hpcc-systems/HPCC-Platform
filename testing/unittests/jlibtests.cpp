@@ -2844,19 +2844,71 @@ public:
     z: kept
 )!!";
 
+                        // with mergeListItemContent=false
+                        static constexpr const char * yamlBlockLeftStd = R"!!(a:
+  attr: left_attr
+  list:
+  - name: left_list_name1
+    x: left_x
+  - name: left_list_name2
+    x: left_x2
+  settings:
+    mode: left_mode
+    type: left_type
+  values:
+  - values_1
+  - values_2
+)!!";
+
+                        static constexpr const char * yamlBlockRightStd = R"!!(a:
+  attr: right_attr
+  list:
+  - name: right_list_name1
+    y: right_y
+  - name: right_list_name2
+    y: right_y2
+  settings:
+    mode: right_mode
+    level: right_level
+  values:
+  - values_3
+)!!";
+
+                        static constexpr const char * yamlMergedStd = R"!!(a:
+  attr: right_attr
+  list:
+  - name: right_list_name1
+    y: right_y
+  - name: right_list_name2
+    y: right_y2
+  settings:
+    level: right_level
+    mode: right_mode
+    type: left_type
+  values:
+  - values_3
+)!!";
+
+
         StringBuffer ml;
 
         Owned<IPropertyTree> treeLeft = createPTreeFromYAMLString(yamlLeft, ipt_none, ptr_ignoreWhiteSpace, nullptr);
         Owned<IPropertyTree> treeRight = createPTreeFromYAMLString(yamlRight, ipt_none, ptr_ignoreWhiteSpace, nullptr);
-        mergeConfiguration(*treeLeft, *treeRight, "@altname");
+        mergeConfiguration(*treeLeft, *treeRight, "@altname", true, true);
         toYAML(treeLeft, ml.clear(), 0, YAML_SortTags|YAML_HideRootArrayObject);
         CPPUNIT_ASSERT(streq(ml, yamlMerged));
 
         Owned<IPropertyTree> treeBlockLeft = createPTreeFromYAMLString(yamlBlockLeft, ipt_none, ptr_ignoreWhiteSpace, nullptr);
         Owned<IPropertyTree> treeBlockRight = createPTreeFromYAMLString(yamlBlockRight, ipt_none, ptr_ignoreWhiteSpace, nullptr);
-        mergeConfiguration(*treeBlockLeft, *treeBlockRight, "@altname");
+        mergeConfiguration(*treeBlockLeft, *treeBlockRight, "@altname", true, true);
         toYAML(treeBlockLeft, ml.clear(), 0, YAML_SortTags|YAML_HideRootArrayObject);
         CPPUNIT_ASSERT(streq(ml, yamlMerged));
+
+        Owned<IPropertyTree> treeBlockLeftStd = createPTreeFromYAMLString(yamlBlockLeftStd, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+        Owned<IPropertyTree> treeBlockRightStd = createPTreeFromYAMLString(yamlBlockRightStd, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+        mergeConfiguration(*treeBlockLeftStd, *treeBlockRightStd);
+        toYAML(treeBlockLeftStd, ml.clear(), 0, YAML_SortTags|YAML_HideRootArrayObject);
+        CPPUNIT_ASSERT(streq(ml, yamlMergedStd));
     }
 
     void testRootArrayMarkup()
