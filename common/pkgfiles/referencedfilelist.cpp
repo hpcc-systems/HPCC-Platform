@@ -757,6 +757,8 @@ static void dfuCopy(IDFUWorkUnit *publisherWu, IUserDescriptor *user, const char
     else
         wu->setCommand(DFUcmd_copy);
 
+    IDFUoptions *parentOptions = publisherWu->queryUpdateOptions();
+
     IDFUfileSpec *wuFSpecSource = wu->queryUpdateSource();
     IDFUfileSpec *wuFSpecDest = wu->queryUpdateDestination();
     IDFUoptions *wuOptions = wu->queryUpdateOptions();
@@ -781,6 +783,10 @@ static void dfuCopy(IDFUWorkUnit *publisherWu, IUserDescriptor *user, const char
     wuOptions->setOverwrite(overwrite);
     wuOptions->setPreserveCompression(preserveCompression);
     wuOptions->setNoSplit(nosplit);
+
+    const char * keyCompression = parentOptions->queryKeyCompression();
+    if (!isEmptyString(keyCompression))
+        wuOptions->setKeyCompression(keyCompression);
 
     setRoxieClusterPartDiskMapping(destPlane, defaultFolder.str(), defaultReplicateFolder.str(), supercopy, wuFSpecDest, wuOptions);
     wuFSpecDest->setWrap(true); // roxie always wraps
