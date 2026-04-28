@@ -33,7 +33,7 @@ jobs:
           sudo rm -rf /usr/local/lib/android
 
       - name: Download Package
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ${{ inputs.asset-name }}
           path: ${{ inputs.asset-name }}
@@ -115,7 +115,7 @@ jobs:
 
       - name: unittests-logs-artifact
         if: ${{ failure() || cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-unit-${{ inputs.asset-name }}
           path: |

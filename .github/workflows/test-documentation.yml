@@ -38,7 +38,7 @@ jobs:
 
     steps:
       - name: Checkout HPCC-Platform
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.ref }}
           submodules: recursive
@@ -69,10 +69,10 @@ jobs:
 
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
   
       - name: Create Build Image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           builder: ${{ steps.buildx.outputs.name }}
           file: ${{ github.workspace }}/HPCC-Platform/dockerfiles/${{ inputs.os }}.dockerfile
@@ -98,7 +98,7 @@ jobs:
           docker run --rm --mount source="${{ github.workspace }}/HPCC-Platform",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached --mount source="${{ github.workspace }}/build",target=/hpcc-dev/build,type=bind,consistency=cached ${{ steps.vars.outputs.docker_tag_candidate_base }} "cd /hpcc-dev/build/Release/docs/PT_BR && zip ALL_HPCC_DOCS_PT_BR-$(echo '${{ steps.vars.outputs.community_tag }}' | sed 's/community_//' ).zip *.pdf"
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.asset-name }}
           path: |
