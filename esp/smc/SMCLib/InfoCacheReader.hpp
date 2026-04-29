@@ -92,9 +92,9 @@ public:
             if (!active)
                 return nullptr;
             firstBlocked = true;
-            b.leave();
+            b.ensureLeave();
             firstSem.wait();
-            b.enter();
+            b.ensureEnter();
             if (first)
                 return nullptr;
         }
@@ -159,4 +159,3 @@ public:
 };
 
 #endif //_ESPWIZ_InfoCacheReader_HPP__
-

@@ -3411,7 +3411,7 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
                 //Avoid linking and releasing cacheEntry if the match is already loaded.  Link the node then leave
                 //the critical section asap
                 fastPathMatch->Link();
-                block.leave();
+                block.ensureLeave();
 
                 //Update ctx stats outside of the critical section.
                 if (unlikely(recordingEvents()))
