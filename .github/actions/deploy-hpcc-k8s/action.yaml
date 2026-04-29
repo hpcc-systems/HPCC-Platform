@@ -129,6 +129,8 @@ runs:
     - name: Install HPCC Cluster
       run: |
         cat <<EOF > values.yaml
+        global:
+          omitResources: true
         certificates:
           enabled: true
         dafilesrv:
