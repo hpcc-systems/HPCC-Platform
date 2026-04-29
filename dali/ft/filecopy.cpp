@@ -2998,9 +2998,9 @@ void FileSprayer::avoidRecompressionIfPossible()
     if (!keyCompression.isEmpty())
     {
         const char * existingCompression = srcAttr->queryProp("@compressionType");
-        // Check the prefix.  This means requesting to compression to "hybrid" will avoid recompressing
+        // Check the prefix.  This means requesting compression to "hybrid" will avoid recompressing
         // an index that was compressed with "hybrid:zstds(level=6)" for example.
-        if (!isEmptyString(existingCompression) && !startsWithIgnoreCase(existingCompression, keyCompression.get()))
+        if (!isEmptyString(existingCompression) && startsWithIgnoreCase(existingCompression, keyCompression.get()))
             keyCompression.clear();
     }
 }

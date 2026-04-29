@@ -1039,7 +1039,7 @@ class CCompressedSpillingRowStream: public CSimpleInterfaceOf<ISmartRowBuffer>, 
             {
                 // wait for writer to commit
                 readerWaitingForCommit = true;
-                b.leave();
+                b.ensureLeave();
                 trace("READ: waiting for committedRows(currently = %" RCPF "u) to catch up to nextInputRow = %" RCPF "u", committedRows.load(), nextInputRow);
                 moreRows.wait();
                 assertex(nextInputRow < committedRows);
@@ -1130,7 +1130,7 @@ public:
                             // Recheck Q now have CS, if reader here and writer ready to signal more, then it may have just released CS
                             if (inMemRows.dequeue(e))
                             {
-                                b.leave();
+                                b.ensureLeave();
                                 return getQRow(e);
                             }
                             else if (outputComplete)// && (nextInputRow == nextOutputRow))

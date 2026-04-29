@@ -1673,7 +1673,7 @@ public:
                                         parent->files.erase(it);
                                         parentScopeSz -= filesz;
 
-                                        parentBlock.leave();
+                                        parentBlock.ensureLeave();
 
                                         pdir->addExistingFile(fn, file);
                                         scopeSz += filesz; // moved file - MORE this isn't really correct
@@ -1681,7 +1681,7 @@ public:
                                     else
                                     {
                                         // No previously moved file and no dir-per-part. Create in current directory
-                                        parentBlock.leave();
+                                        parentBlock.ensureLeave();
 
                                         file = pdir->ensureFile(fn, numParts, false, filenameLen, &allocator);
 

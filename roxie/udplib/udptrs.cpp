@@ -339,7 +339,7 @@ public:
                 msg.packets = 0;
                 msg.flowSeq = nextFlowSequence();
                 setRequestExpiryTime(msTick() + udpFlowAckTimeout);
-                block.leave();
+                block.ensureLeave();
                 sendRequest(msg, false);
             }
             else
@@ -352,7 +352,7 @@ public:
                 //The flow event is sent on the data socket, so it needs to wait for all the data to be sent before being received
                 //therefore use the updDataSendTimeout instead of udpFlowAckTimeout
                 setRequestExpiryTime(msTick() + updDataSendTimeout);
-                block.leave();
+                block.ensureLeave();
                 sendRequest(msg, true);
             }
         }
@@ -360,7 +360,7 @@ public:
         {
             msg.cmd = flowType::send_completed;
             requestExpiryTime = 0;
-            block.leave();
+            block.ensureLeave();
             sendRequest(msg, true);
         }
     }
@@ -380,7 +380,7 @@ public:
             msg.flowSeq = nextFlowSequence();
             msg.sourceNode = sourceIP;
             setRequestExpiryTime(msTick() + udpFlowAckTimeout);
-            block.leave();
+            block.ensureLeave();
             sendRequest(msg, false);
         }
     }
@@ -424,7 +424,7 @@ public:
             msg.flowSeq = activeFlowSequence;
             msg.sourceNode = sourceIP;
             setRequestExpiryTime(msTick() + udpFlowAckTimeout);
-            block.leave();
+            block.ensureLeave();
             sendRequest(msg, false);
         }
     }
