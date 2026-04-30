@@ -1,6 +1,6 @@
 # PR Title Validation
 # ====================
-# Ensures pull request titles start with "HPCC-" followed by digits
+# Ensures pull request titles follow the Conventional Commits format
 #
 name: pr-title-check
 
@@ -19,6 +19,9 @@ permissions:
   contents: read
   pull-requests: read
 
+env:
+  VALID_TYPES: "build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test|deps|release|hotfix|security"
+
 jobs:
   validate-title:
     runs-on: ubuntu-latest
@@ -35,18 +38,21 @@ jobs:
         run: |
           echo "Checking PR title: $PR_TITLE"
 
-          # Check if title starts with HPCC- (case sensitive) followed by digits
-          if echo "$PR_TITLE" | grep -qE '^HPCC-[0-9]+'; then
-            echo "✓ PR title is valid: starts with HPCC- followed by digits"
+          # Check if title follows Conventional Commits format
+          if echo "$PR_TITLE" | grep -qE "^(${VALID_TYPES})(\([a-zA-Z0-9_.-]+\))?!?: .+"; then
+            echo "✓ PR title is valid: follows Conventional Commits format"
           else
             echo "✗ PR title is invalid"
             echo ""
-            echo "PR titles must start with 'HPCC-' (case insensitive) followed by digits."
+            echo "PR titles must follow the Conventional Commits specification."
+            echo "Format: <type>(<optional scope>)<!>: <description>"
+            echo "Valid types: ${VALID_TYPES//|/, }"
             echo "Examples:"
-            echo "  ✓ HPCC-12345 Fix memory leak in Thor"
-            echo "  ✗ hpcc-999 Update documentation"
+            echo "  ✓ fix(dfu): resolve memory leak in thor"
+            echo "  ✓ feat: add a new logging feature"
+            echo "  ✓ refactor!: breaking change API redesign"
+            echo "  ✗ HPCC-12345 Update documentation"
             echo "  ✗ Fix memory leak"
-            echo "  ✗ HPCC- Missing ticket number"
             exit 1
           fi
 
@@ -72,19 +78,20 @@ jobs:
           # Get the full commit message body
           FULL_COMMIT_MSG=$(git log --format=%B -n 1 "$FIRST_COMMIT")
 
-          # Check if commit message starts with HPCC- (case sensitive) followed by digits
-          if echo "$COMMIT_MSG" | grep -qE '^HPCC-[0-9]+'; then
-            echo "✓ First commit message is valid: starts with HPCC- followed by digits"
+          # Check if commit message follows Conventional Commits format
+          if echo "$COMMIT_MSG" | grep -qE "^(${VALID_TYPES})(\([a-zA-Z0-9_.-]+\))?!?: .+"; then
+            echo "✓ First commit message is valid: follows Conventional Commits format"
           else
             echo "✗ First commit message is invalid"
             echo ""
-            echo "The first commit message must start with 'HPCC-' (case sensitive) followed by digits."
+            echo "The first commit message must follow the Conventional Commits specification."
+            echo "Format: <type>(<optional scope>)<!>: <description>"
+            echo "Valid types: ${VALID_TYPES//|/, }"
             echo "Examples:"
-            echo "  ✓ HPCC-12345 Fix memory leak in Thor"
-            echo "  ✓ HPCC-999: Update documentation"
-            echo "  ✗ hpcc-999 Wrong case"
+            echo "  ✓ fix(dfu): resolve memory leak in thor"
+            echo "  ✓ docs: update documentation"
+            echo "  ✓ refactor!: breaking change API redesign"
             echo "  ✗ Fix memory leak"
-            echo "  ✗ HPCC- Missing ticket number"
             exit 1
           fi
 
