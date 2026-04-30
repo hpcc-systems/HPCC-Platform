@@ -45,7 +45,7 @@ public:
     {
         // Since most nodes have <= 15 attribute name/value pairs;
         // reserve space up front to avoid reallocations.
-        static constexpr size32_t expectedMaximumAttributeOffsetCount = 15 * 2;
+        constexpr size32_t expectedMaximumAttributeOffsetCount = 15 * 2;
         matchOffsets.reserve(expectedMaximumAttributeOffsetCount);
     }
 };
@@ -770,7 +770,6 @@ public:
     virtual IPropertyTree *addPropTreeArrayItem(const char *xpath, IPropertyTree *val) override;
     virtual bool isArray(const char *xpath=NULL) const override;
     virtual unsigned getAttributeCount() const override;
-
     virtual void serializeToStream(IBufferedSerialOutputStream &out) const override;
     virtual void deserializeFromStream(IBufferedSerialInputStream &src, PTreeDeserializeContext &ctx) override;
 // serializable impl.
@@ -779,6 +778,9 @@ public:
 
 protected:
     aindex_t getChildMatchPos(const char *xpath);
+
+    // Designed to be executed on an empty PTree.
+    virtual void deserializeAttributes(const char *base, PTreeDeserializeContext &ctx) = 0;
 
     virtual ChildMap *checkChildren() const;
     virtual bool isEquivalent(IPropertyTree *tree) const { return (nullptr != QUERYINTERFACE(tree, PTree)); }
@@ -879,6 +881,7 @@ protected:
         tree->deserializeFromStream(in, ctx);
         return tree;
     }
+    virtual void deserializeAttributes(const char *base, PTreeDeserializeContext &ctx) override;
 public:
     CAtomPTree(const char *name=nullptr, byte flags=ipt_none, IPTArrayValue *value=nullptr, ChildMap *children=nullptr);
     ~CAtomPTree();
@@ -898,8 +901,6 @@ public:
         return tree;
     }
 };
-
-
 jlib_decl IPropertyTree *createPropBranch(IPropertyTree *tree, const char *xpath, bool createIntermediates=false, IPropertyTree **created=NULL, IPropertyTree **createdParent=NULL);
 
 class jlib_decl LocalPTree : public PTree
@@ -912,6 +913,7 @@ protected:
         tree->deserializeFromStream(in, ctx);
         return tree;
     }
+    virtual void deserializeAttributes(const char *base, PTreeDeserializeContext &ctx) override;
     AttrStrUnion name;
 public:
     LocalPTree(const char *name=nullptr, byte flags=ipt_none, IPTArrayValue *value=nullptr, ChildMap *children=nullptr);
