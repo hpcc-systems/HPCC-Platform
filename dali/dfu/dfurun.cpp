@@ -1132,7 +1132,7 @@ public:
             if (isForeign)
                 srcdali.setown(createINode(foreignEp));
             // note  dstlfn doesn't have roxie prefix
-            if (!doSubFileCopy(ctx,dstlfn,srcdali,slfn.get(true),wuid,iskey,newroxieprefix.str()))
+            if (!doSubFileCopy(ctx,dstlfn,srcdali,slfn.get(false),wuid,iskey,newroxieprefix.str()))
                 throw MakeStringException(-1,"File %s could not be copied - see %s",dstlfn,wuid.isEmpty()?"unknown":wuid.get());
         }
         else
