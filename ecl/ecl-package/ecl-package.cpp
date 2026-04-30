@@ -629,7 +629,7 @@ public:
                     "   --source-process         Process cluster to copy files from\n"
                     "   --allow-foreign          Do not fail if foreign files are used in packagemap\n"
                     "   --preload-all            Set preload files option for all packages\n"
-                    "   --replace                Replace existing packagmap"
+                    "   --replace                Replace existing packagemap\n"
                     "   --update-super-files     Update local DFS super-files if remote DALI has changed\n"
                     "   --update-clone-from      Update local clone from location if remote DALI has changed\n"
                     "   --dont-append-cluster    Only use to avoid locking issues due to adding cluster to file\n",
@@ -800,7 +800,7 @@ public:
                     "   --pmid                 Identifier of package map - defaults to source PMID\n"
                     "   --source-process       Process cluster to copy files from\n"
                     "   --preload-all          Set preload files option for all packages\n"
-                    "   --replace              Replace existing packagmap\n"
+                    "   --replace              Replace existing packagemap\n"
                     "   --update-super-files   Update local DFS super-files if remote DALI has changed\n"
                     "   --update-clone-from    Update local clone from location if remote DALI has changed\n"
                     "   --dont-append-cluster  Only use to avoid locking issues due to adding cluster to file\n",
