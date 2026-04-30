@@ -15,6 +15,7 @@
 #include "jconfig.hpp"
 
 #include "sautil.hpp"
+#include "saqmon.hpp"
 
 //not currently created or used in the containerized version
 

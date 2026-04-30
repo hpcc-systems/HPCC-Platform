@@ -28,6 +28,7 @@
 #include "rmtfile.hpp"
 
 #include "sautil.hpp"
+#include "saxref.hpp"
 #include "sacoalescer.hpp"
 #include "sacmd.hpp"
 #include "salds.hpp"

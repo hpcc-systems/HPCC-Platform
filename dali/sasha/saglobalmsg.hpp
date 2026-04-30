@@ -1,8 +1,8 @@
 #ifndef SAGLOBALMSG_HPP
 #define SAGLOBALMSG_HPP
 
-interface ISashaServer;
+#include "sautil.hpp"
 
-extern ISashaServer *createSashaGlobalMessageServer();
+extern sashalib_decl ISashaServer *createSashaGlobalMessageServer();
 
 #endif
