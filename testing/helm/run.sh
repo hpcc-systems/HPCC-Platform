@@ -4,6 +4,30 @@ options="--set global.image.version=someversion --set global.image.pullPolicy=Al
 hpccchart=$scriptdir/../../helm/hpcc
 failed=0
 
+assert_contains() {
+   local file=$1
+   local pattern=$2
+   local message=$3
+
+   if ! grep -q "$pattern" "$file"
+   then
+      echo "$message"
+      failed=1
+   fi
+}
+
+assert_not_contains() {
+   local file=$1
+   local pattern=$2
+   local message=$3
+
+   if grep -q "$pattern" "$file"
+   then
+      echo "$message"
+      failed=1
+   fi
+}
+
 helm version
 echo Testing unmodified values file
 helm lint $hpccchart ${options} > results.txt 2> errors.txt
@@ -33,6 +57,22 @@ do
          cat errors.txt
          cat results.txt
          failed=1
+      else
+             base=$(basename "$file" .yaml)
+             if [[ "$base" =~ ^component-config-sasha-([^-]+)-(enabled|disabled)$ ]]; then
+                service="${BASH_REMATCH[1]}"
+                state="${BASH_REMATCH[2]}"
+                configmap_name="sasha-${service}-configmap-volume"
+                mount_path="/etc/component-configs/sasha-${service}"
+
+                if [[ "$state" == "enabled" ]]; then
+                   assert_contains results.txt "$mount_path" "$file did not mount $mount_path for $service enabled"
+                   assert_contains results.txt "name: $configmap_name" "$file did not render $configmap_name for $service enabled"
+                else
+                   assert_not_contains results.txt "$mount_path" "$file unexpectedly mounted $mount_path for $service disabled"
+                   assert_not_contains results.txt "name: $configmap_name" "$file unexpectedly rendered $configmap_name for $service disabled"
+                fi
+             fi
       fi
    fi
 done
