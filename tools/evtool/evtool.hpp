@@ -205,6 +205,11 @@ Filters:
                                 - FileInformation
                                 - RecordingActive
                                 - IndexPayload
+                                - QueryStart
+                                - QueryStop
+                                - RecordingSource
+                                - IndexOpen
+                                - PlaneInformation
                               Event context names are also accepted. An event
                               context is a built-in grouping of related events
                               including:
@@ -222,12 +227,16 @@ Filters:
                                   - IndexCacheHit
                                   - IndexCacheMiss
                                   - IndexLoad
-                                  - IndexPayload
                                   - IndexEviction
                                   - FileInformation
                                   - IndexPayload
+                                  - QueryStart
+                                  - QueryStop
+                                  - IndexOpen
                                 - Other
                                   - RecordingActive
+                                  - RecordingSource
+                                  - PlaneInformation
     --attribute:<attr>=<val>  Skip events the include the specified attribute
                               but which do not have a specified value. Events
                               without the specified attribute are not skipped.
@@ -249,16 +258,18 @@ Filters:
                               Choices for <attr> are derived from the EventAttr
                               enumeration:
                                 - FileId: numeric, but a string token joins the
-                                    current event with a preceding occurrence
-                                    of MetaFileInformation, by file ID, and
-                                    applies the filter to the path.
+                                    current event with preceding occurrences
+                                    of FileInformation, enabling filter by
+                                    physical file path, or PlaneInformation,
+                                    enabling filter by plane. Logical file
+                                    name filtering requires FileInformation
+                                    in combination with PlaneInformation
                                 - FileOffset: numeric
                                 - NodeKind: numeric (0, 1, or 2) or text
                                     equivalent (branch, leaf, or blob)
                                 - ReadTime: numeric
-                                - ExpandTime: numeric
+                                - ElapsedTime: numeric
                                 - InMemorySize: numeric
-                                - InCache: Boolean
                                 - Path: string
                                 - ConnectId: numeric
                                 - Enabled: Boolean
@@ -271,6 +282,16 @@ Filters:
                                 - EventThreadId: numeric
                                 - EventStackTrace: string
                                 - DataSize: numeric
+                                - ExpandTime: numeric
+                                - FirstUse: Boolean
+                                - ServiceName: string
+                                - ChannelId: numeric
+                                - ReplicaId: numeric
+                                - InstanceId: numeric
+                                - ProcessDescriptor: string
+                                - OpenTime: numeric
+                                - Plane: string
+                                - IsStriped: Boolean
 )!!!";
         size32_t usageStrLength = size32_t(strlen(usageStr));
         out.put(usageStrLength, usageStr);
