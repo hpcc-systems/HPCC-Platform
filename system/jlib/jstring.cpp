@@ -2699,13 +2699,6 @@ void toLower(std::string & value)
     std::transform(value.cbegin(), value.cend(), value.begin(), func);
 }
 
-void ltrim(std::string & value)
-{
-    value.erase(value.begin(), std::find_if(value.begin(), value.end(), [](unsigned char ch) {
-        return !std::isspace(ch);
-    }));
-}
-
 StringBuffer & ncnameEscape(char const * in, StringBuffer & out)
 {
     if(!isalpha(*in))

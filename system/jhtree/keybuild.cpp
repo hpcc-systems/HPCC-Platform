@@ -281,7 +281,7 @@ public:
             }
         }
 
-        if (!isEmptyString(compression) && !strsame(compression, "lzw") && !strsame(compression, "default"))
+        if (!isEmptyString(compression))
         {
             hdr->version = 2;    // Old builds will give a reasonable error message
             if (strieq(compression, "POC") || startsWithIgnoreCase(compression, "POC:"))

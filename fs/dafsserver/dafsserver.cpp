@@ -2659,89 +2659,22 @@ public:
 };
 
 
-class CRemoteIndexWriteHelper : public CThorIndexWriteArg
-{
-    UnexpectedVirtualFieldCallback fieldCallback;
-    Owned<const IDynamicTransform> translator;
-    std::vector<std::pair<std::string, std::string>> indexMetaData;
-public:
-    CRemoteIndexWriteHelper(const char * _filename, const char* _compression, IOutputMetaData * _inMeta, IOutputMetaData * _outMeta, unsigned _flags)
-     : filename(_filename), compression(_compression), inMeta(_inMeta), outMeta(_outMeta), flags(_flags)
-    {
-        const RtlRecord &inRecord = inMeta->queryRecordAccessor(true);
-        const RtlRecord &outRecord = outMeta->queryRecordAccessor(true);
-        translator.setown(createRecordTranslator(outRecord, inRecord));
-    }
-
-    void setIndexMeta(const std::string& name, const std::string& value)
-    {
-        indexMetaData.emplace_back(name, value);
-    }
-
-    virtual const char * getFileName() override { return filename.c_str(); }
-    virtual int getSequence() override { return 0; }
-    virtual IOutputMetaData * queryDiskRecordSize() override { return outMeta; }
-    virtual const char * queryRecordECL() override { return nullptr; }
-    virtual unsigned getFlags() override { return flags; }
-    virtual unsigned getKeyedSize() override
-    {
-        if (outMeta == nullptr)
-            return 0;
-
-        const RtlRecord& recAccessor = outMeta->queryRecordAccessor(true);
-        return recAccessor.getFixedOffset(recAccessor.getNumKeyedFields());
-    }
-    virtual unsigned getMaxKeySize() override { return 0; }
-    virtual unsigned getFormatCrc() override { return 0; }
-    virtual unsigned getWidth() override { return indexMetaData.size(); }
-    virtual const char * queryCompression() override { return compression.c_str(); }
-    virtual bool getIndexMeta(size32_t & lenName, char * & name, size32_t & lenValue, char * & value, unsigned idx) override
-    {
-        if (idx >= indexMetaData.size())
-            return false;
-
-        const auto &entry = indexMetaData[idx];
-
-        lenName = entry.first.length();
-        name = (char*) rtlMalloc(lenName);
-        memcpy(name, entry.first.c_str(), lenName);
-
-        lenValue = entry.second.length();
-        value = (char*) rtlMalloc(lenValue);
-        memcpy(value, entry.second.c_str(), lenValue);
-
-        return true;
-    }
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * row, IBlobCreator * blobs, unsigned __int64 & filepos) override
-    {
-        // Seems like an UnexpectedVirtualFieldCallback could be used but what about blobs?
-        return translator->translate(rowBuilder, fieldCallback, (const byte *)row);
-    }
-
-public:
-    std::string filename;
-    std::string compression;
-    IOutputMetaData * inMeta = nullptr;
-    IOutputMetaData * outMeta = nullptr;
-    unsigned flags = 0;
-};
-
 class CRemoteIndexWriteActivity : public CRemoteWriteBaseActivity, implements IBlobCreator
 {
     Owned<IFileIOStream> iFileIOStream;
     Owned<IKeyBuilder> builder;
-    Owned<CRemoteIndexWriteHelper> helper;
     Linked<IOutputMetaData> inMeta, outMeta;
     UnexpectedVirtualFieldCallback fieldCallback;
-    OwnedMalloc<char> prevRowBuffer;
+    Owned<const IDynamicTransform> translator;
+    OwnedMalloc<char> prevRowKeyBuffer;
     OwnedMalloc<char> rowBuffer;
+    Owned<IPropertyTree> metadata;
 
     uint64_t uncompressedSize = 0;
     uint64_t processed = 0;
     size32_t maxDiskRecordSize = 0;
     size32_t keyedSize = 0;
-    size32_t maxRecordSizeSeen = 0; // used to store the maximum record size seen, for metadata
-    size32_t lastRowSize = 0;        // size of the last row written (in output disk format)
+    size32_t maxRecordSizeSeen = 0;
     bool isTlk = false;
     bool opened = false;
 
@@ -2749,10 +2682,10 @@ class CRemoteIndexWriteActivity : public CRemoteWriteBaseActivity, implements IB
     {
         unsigned __int64 fpos = 0;
         RtlStaticRowBuilder rowBuilder(rowBuffer, maxDiskRecordSize);
-        size32_t indexRowSize = helper->transform(rowBuilder, row, this, fpos);
+        size32_t indexRowSize = translator->translate(rowBuilder, fieldCallback, (const byte *)row);
 
         // Key builder checks for duplicate records so we can just check for sortedness
-        if (memcmp(prevRowBuffer.get(), rowBuffer.get(), keyedSize) > 0)
+        if (memcmp(prevRowKeyBuffer.get(), rowBuffer.get(), keyedSize) > 0)
         {
             throw createDafsExceptionV(DAFSERR_cmdstream_generalwritefailure, "CRemoteIndexWriteActivity: Incoming rows are not sorted.");
         }
@@ -2764,9 +2697,7 @@ class CRemoteIndexWriteActivity : public CRemoteWriteBaseActivity, implements IB
             maxRecordSizeSeen = indexRowSize;
 
         processed++;
-        // Store the full last row (not just keyed fields) so it can be serialized on close
-        lastRowSize = indexRowSize;
-        memcpy(prevRowBuffer.get(), rowBuffer.get(), indexRowSize);
+        memcpy(prevRowKeyBuffer.get(), rowBuffer.get(), keyedSize);
     }
 
     void openFileStream()
@@ -2774,7 +2705,7 @@ class CRemoteIndexWriteActivity : public CRemoteWriteBaseActivity, implements IB
         if (!recursiveCreateDirectoryForFile(fileName))
             throw createDafsExceptionV(DAFSERR_cmdstream_openfailure, "Failed to create directory for file: '%s'", fileName.get());
         OwnedIFile iFile = createIFile(fileName);
-    
+
         iFileIO.setown(iFile->open(IFOcreate));
         if (!iFileIO)
             throw createDafsExceptionV(DAFSERR_cmdstream_openfailure, "Failed to open: '%s' for write", fileName.get());
@@ -2797,79 +2728,73 @@ public:
         outMeta.setown(getTypeInfoOutputMetaData(config, "output", false));
         if (!outMeta)
             throw createDafsException(DAFSERR_cmdstream_protocol_failure, "CRemoteIndexWriteActivity: output metadata missing");
-        
-        std::string compression = config.queryProp("compressed", "default");
-        toLower(compression);
 
-        unsigned flags = COL_PREFIX | HTREE_FULLSORT_KEY | USE_TRAILING_HEADER | HTREE_COMPRESSED_KEY | HTREE_QUICK_COMPRESSED_KEY;
-
-        if (compression == "default" || compression == "lzw")
-        {
-            compression = "";
-        }
+        isTlk = config.getPropBool("isTlk", false);
 
         bool isVariable = outMeta->isVariableSize();
-        if (isVariable)
-            flags |= HTREE_VARSIZE;
 
-        helper.setown(new CRemoteIndexWriteHelper(fileName.get(), compression.c_str(), inMeta, outMeta, flags));
+        StringBuffer compressionType;
+        getIndexCompressionType(compressionType, nullptr, config.queryProp("compressed", "legacy"));
 
-        unsigned nodeSize = NODESIZE;
+        buildUserMetadata(metadata, nullptr, compressionType.str());
+        setRtlFormat(*metadata, outMeta);
+
         if (config.hasProp("nodeSize"))
-        {
-            nodeSize = config.getPropInt("nodeSize");
-            helper->setIndexMeta("_nodeSize", std::to_string(nodeSize));
-        }
+            metadata->setPropInt("_nodeSize", config.getPropInt("nodeSize"));
 
         bool noSeek = config.getPropBool("noSeek", true);
-        helper->setIndexMeta("_noSeek", boolToStr(noSeek));
-        if (noSeek)
-            flags |= TRAILING_HEADER_ONLY;
-        
-        bool useTrailingHeader = config.getPropBool("useTrailingHeader", true);
-        helper->setIndexMeta("_useTrailingHeader", boolToStr(useTrailingHeader));
-        if (useTrailingHeader)
-            flags |= USE_TRAILING_HEADER;
-        else
-            flags &= ~USE_TRAILING_HEADER;
+        metadata->setPropBool("_noSeek", noSeek);
 
-        if (hasTrailingFileposition(helper->queryDiskRecordSize()->queryTypeInfo()))
+        bool useTrailingHeader = config.getPropBool("useTrailingHeader", true);
+        metadata->setPropBool("_useTrailingHeader", useTrailingHeader);
+
+        if (hasTrailingFileposition(outMeta->queryTypeInfo()))
             throw createDafsException(DAFSERR_cmdstream_protocol_failure, "CRemoteIndexWriteActivity: trailing fileposition not supported, use FILEPOSITION(FALSE)");
 
+        unsigned flags = COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY;
         if (isVariable)
-        {
-            if (helper->getFlags() & TIWmaxlength)
-                maxDiskRecordSize = helper->getMaxKeySize();
-            else
-                maxDiskRecordSize = KEYBUILD_MAXLENGTH; // Current default behaviour, could be improved in the future
-        }
+            flags |= HTREE_VARSIZE;
+        if (isTlk)
+            flags |= HTREE_TOPLEVEL_KEY;
+        if (noSeek)
+            flags |= TRAILING_HEADER_ONLY;
+        if (useTrailingHeader)
+            flags |= USE_TRAILING_HEADER;
+
+        const RtlRecord &outRecord = outMeta->queryRecordAccessor(true);
+        keyedSize = outRecord.getFixedOffset(outRecord.getNumKeyedFields());
+
+        if (isTlk)
+            maxDiskRecordSize = keyedSize;
+        else if (isVariable)
+            maxDiskRecordSize = KEYBUILD_MAXLENGTH;
         else
-            maxDiskRecordSize = helper->queryDiskRecordSize()->getFixedSize();
+            maxDiskRecordSize = outMeta->getFixedSize();
 
         if (maxDiskRecordSize > KEYBUILD_MAXLENGTH)
             throw MakeStringException(99, "Index maximum record length (%d) exceeds 32k internal limit", maxDiskRecordSize);
 
-        keyedSize = helper->getKeyedSize();
+        const RtlRecord &inRecord = inMeta->queryRecordAccessor(true);
+        translator.setown(createRecordTranslator(outRecord, inRecord));
 
         rowBuffer.allocateN(maxDiskRecordSize, true);
-        prevRowBuffer.allocateN(maxDiskRecordSize, true);
+        prevRowKeyBuffer.allocateN(keyedSize, true);
+
+        unsigned nodeSize = metadata->getPropInt("_nodeSize", NODESIZE);
 
         openFileStream();
-        builder.setown(createKeyBuilder(iFileIOStream.get(), flags, maxDiskRecordSize, nodeSize, keyedSize, 0, helper.get(), compression.c_str(), true, false));
+        KeyBuilderOptions options(flags, maxDiskRecordSize, nodeSize, keyedSize, nullptr);
+        options.setCompression(compressionType);
+        options.isTLK = isTlk;
+        builder.setown(createKeyBuilder(iFileIOStream, options));
     }
 
     ~CRemoteIndexWriteActivity()
     {
         try
         {
-            if (builder != nullptr && helper != nullptr)
+            if (builder)
             {
-                Owned<IPropertyTree> metadata = createPTree("metadata");
-                buildUserMetadata(metadata, *helper);
-
-                metadata->setProp("_record_ECL", helper->queryRecordECL());
-                setRtlFormat(*metadata, helper->queryDiskRecordSize());
-
                 unsigned int fileCrc;
                 builder->finish(metadata, &fileCrc, maxRecordSizeSeen, nullptr);
             }
@@ -2903,11 +2828,9 @@ public:
 
     virtual void serializeCloseInfo(MemoryBuffer &closeInfo) const override
     {
-        // Serialize the last row written, so the client can use it (e.g. to build the TLK).
-        // Format: size32_t lastRowSize, followed by lastRowSize bytes of row data.
-        closeInfo.append(lastRowSize);
-        if (lastRowSize)
-            closeInfo.append(lastRowSize, prevRowBuffer.get());
+        closeInfo.append(keyedSize);
+        if (processed)
+            closeInfo.append(keyedSize, prevRowKeyBuffer.get());
     }
     virtual void serializeCursor(MemoryBuffer &tgt) const override {}
     virtual void restoreCursor(MemoryBuffer &src) override {}
@@ -5205,19 +5128,19 @@ public:
          *  "format" : "binary",
          *  "command": "newstream"
          *  "replylimit" : "64",
-         *  "compressed" : "LZW", // Default, LZW, ROW, INPLACE:*
-         *  "nodeSize" : 32768,
-         *  "noSeek" : false, // if true don't add the header that allows seeking
          *  "node" : {
          *   "kind" : "indexwrite",
          *   "filename": "examplefilename",
+         *   "compressed" : "hybrid", // optional, defaults to hybrid
+         *   "noSeek" : false, // optional, if true don't add the header that allows seeking
+         *   "isTlk" : false, // optional, if true only the keyed portion of each row is stored
          *   "input" : {
          *    "f1" : "string",
          *    "f2" : "string"
          *   },
          *   "output" : {
          *    "f1" : "string5",
-         *    "f2" : "string5",
+         *    "f2" : "string5"
          *   }
          *  }
          * }
