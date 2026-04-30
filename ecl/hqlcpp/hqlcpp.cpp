@@ -6116,9 +6116,48 @@ IHqlExpression * HqlCppTranslator::doBuildInternalFunction(IHqlExpression * func
     if (match != NotFound)
         return LINK(&internalFunctionExternals.item(match));
 
+    IHqlExpression * originalFuncdef = funcdef;
+    OwnedHqlExpr variedFuncdef;
+    IHqlExpression * body = funcdef->queryChild(0);
+    IHqlExpression * bodyCode = body ? body->queryChild(0) : nullptr;
+    bool isProjectedScript = bodyCode && (bodyCode->getOperator() == no_embedbody) && bodyCode->hasAttribute(languageAtom)
+        && (bodyCode->hasAttribute(projectedAtom) || (body && body->hasAttribute(projectedAtom)));
+    if (isProjectedScript)
+    {
+        // Initial embedded naming (e.g. userN/entrypoint) happens earlier, before we know whether
+        // PROJECTED requires per-instantiation uniqueness, so patch the entrypoint here.
+        StringBuffer baseName;
+        getAttribute(body, entrypointAtom, baseName);
+        if (!baseName.length())
+            baseName.append(funcdef->queryName());
+
+        unsigned nextVariation = ++projectedEntrypointVariations[baseName.str()];
+        StringBuffer variedName(baseName);
+        variedName.append("_").append(nextVariation);
+        OwnedHqlExpr variedNameExpr = createConstant(variedName);
+
+        HqlExprArray bodyArgs;
+        bodyArgs.append(*LINK(bodyCode));
+        for (unsigned idx = 1; idx < body->numChildren(); idx++)
+        {
+            IHqlExpression * cur = body->queryChild(idx);
+            // Drop any existing entrypoint and append the unique variation once after the loop.
+            if (cur->isAttribute() && cur->queryName() == entrypointAtom)
+                continue;
+
+            bodyArgs.append(*LINK(cur));
+        }
+        bodyArgs.append(*createExprAttribute(entrypointAtom, LINK(variedNameExpr)));
+
+        OwnedHqlExpr newBody = body->clone(bodyArgs);
+
+        variedFuncdef.setown(replaceChild(funcdef, 0, newBody));
+        funcdef = variedFuncdef;
+    }
+
     OwnedHqlExpr externalFuncdef = createExternalFuncdefFromInternal(funcdef);
 
-    internalFunctions.append(*LINK(funcdef));
+    internalFunctions.append(*LINK(originalFuncdef));
     internalFunctionExternals.append(*LINK(externalFuncdef));
 
     buildFunctionDefinition(funcdef);
