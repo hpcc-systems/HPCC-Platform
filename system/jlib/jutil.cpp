@@ -504,43 +504,67 @@ HINSTANCE LoadSharedObject(const char *name, bool isGlobal, bool raiseOnError)
         name = rfn.getLocalPath(tmp).str();
     }
 
+    unsigned __int64 _marginMs = 0;
+    findPlaneAttrFromPath(name, WriteSyncMarginMs, 0, _marginMs); // ok to return false, leaving _marginMs as 0 (unset)
+    unsigned marginMs = (unsigned)_marginMs;
 
+    CCycleTimer loadLibraryTimer;
+    auto checkAndDelayRetry = [&]()
+    {
+        if (!marginMs)
+            return false;
+        unsigned elapsedMs = loadLibraryTimer.elapsedMs();
+        if (elapsedMs < marginMs)
+            MilliSleep(marginMs - elapsedMs);
+        return true; // i.e. if there was a margin, we always signal to caller to retry
+    };
 #if defined(_WIN32)
     HINSTANCE h = LoadLibrary(name);
+
     if (!LoadSucceeded(h))
     {
-        int errcode = GetLastError();
-        StringBuffer errmsg;
-        formatSystemError(errmsg, errcode);
-        //Strip trailing newlines - makes output/errors messages cleaner
-        unsigned len = errmsg.length();
-        while (len)
+        if (checkAndDelayRetry())
+            h = LoadLibrary(name);
+        if (!LoadSucceeded(h))
         {
-            char c = errmsg.charAt(len-1);
-            if ((c != '\r') && (c != '\n'))
-                break;
-            len--;
+            int errcode = GetLastError();
+            StringBuffer errmsg;
+            formatSystemError(errmsg, errcode);
+            //Strip trailing newlines - makes output/errors messages cleaner
+            unsigned len = errmsg.length();
+            while (len)
+            {
+                char c = errmsg.charAt(len-1);
+                if ((c != '\r') && (c != '\n'))
+                    break;
+                len--;
+            }
+            errmsg.setLength(len);
+            DBGLOG("Error loading %s: %d - %s", name, errcode, errmsg.str());
+            if (raiseOnError)
+                throw MakeStringException(0, "Error loading %s: %d - %s", name, errcode, errmsg.str());
         }
-        errmsg.setLength(len);
-        DBGLOG("Error loading %s: %d - %s", name, errcode, errmsg.str());
-        if (raiseOnError)
-            throw MakeStringException(0, "Error loading %s: %d - %s", name, errcode, errmsg.str());
     }
 #else
     HINSTANCE h = dlopen((char *)name, isGlobal ? RTLD_NOW|RTLD_GLOBAL : RTLD_NOW);
-    if(h == NULL)
+    if (h == NULL)
     {
-        // Try again, with .so extension if necessary
-        StringBuffer path, tail, ext;
-        splitFilename(name, &path, &path, &tail, &ext, false);
-        if (!streq(ext.str(), SharedObjectExtension))
-        {
-            // Assume if there's no .so, there may also be no lib at the beginning
-            if (strncmp(tail.str(), SharedObjectPrefix, strlen(SharedObjectPrefix)) != 0)
-                path.append(SharedObjectPrefix);
-            path.append(tail).append(ext).append(SharedObjectExtension);
-            name = path.str();
+        if (checkAndDelayRetry())
             h = dlopen((char *)name, isGlobal ? RTLD_NOW|RTLD_GLOBAL : RTLD_NOW);
+        StringBuffer path;
+        if (h == NULL)
+        {
+            StringBuffer tail, ext;
+            splitFilename(name, &path, &path, &tail, &ext, false);
+            if (!streq(ext.str(), SharedObjectExtension))
+            {
+                // Assume if there's no .so, there may also be no lib at the beginning
+                if (strncmp(tail.str(), SharedObjectPrefix, strlen(SharedObjectPrefix)) != 0)
+                    path.append(SharedObjectPrefix);
+                path.append(tail).append(ext).append(SharedObjectExtension);
+                name = path.str();
+                h = dlopen((char *)name, isGlobal ? RTLD_NOW|RTLD_GLOBAL : RTLD_NOW);
+            }
         }
         if (h == NULL)
         {
