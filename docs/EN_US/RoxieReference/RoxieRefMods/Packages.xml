@@ -93,7 +93,7 @@
       </listitem>
     </itemizedlist>
 
-    <para><emphasis role="redbold"></emphasis></para>
+    <para><emphasis role="redbold"/></para>
 
     <para><emphasis role="bold">Example 1:</emphasis></para>
 
@@ -177,7 +177,7 @@
 
     <para><programlisting role="bold">ecl packagemap add --activate</programlisting></para>
 
-    <para></para>
+    <para/>
 
     <para>Later when new data arrives, follow these steps to update the data
     using packages:</para>
@@ -221,7 +221,7 @@
 
     <para><programlisting role="bold">ecl packagemap add --activate</programlisting></para>
 
-    <para></para>
+    <para/>
   </sect1>
 
   <sect1>
@@ -252,7 +252,7 @@
 
     <para><emphasis role="bold">Example</emphasis>:</para>
 
-    <para></para>
+    <para/>
 
     <programlisting> 1.  &lt;RoxiePackages&gt;
  2.   &lt;!-- Begin Queries --&gt;
@@ -300,6 +300,48 @@
   &lt;/Package&gt;
 &lt;/PackageMap&gt;
 </programlisting></para>
+
+    <sect2 id="RefFilesDirectly">
+      <title>Referencing Files Directly</title>
+
+      <para>In addition to <emphasis role="bold">SuperFile</emphasis>
+      elements, you can use a <emphasis role="bold">File</emphasis> element
+      inside a <emphasis role="bold">Package</emphasis> element to directly
+      reference files that are not part of superfiles. This is useful when
+      testing deployments with simple queries where the data files are not
+      organized as superfiles or superkeys.</para>
+
+      <para>The <emphasis role="bold">File</emphasis> element uses a <emphasis
+      role="bold">value</emphasis> attribute to specify the logical file name.
+      The <emphasis role="bold">File</emphasis> element inherits any <emphasis
+      role="bold">daliip</emphasis>, <emphasis
+      role="bold">sourceCluster</emphasis>, and <emphasis
+      role="bold">remoteStorage</emphasis> attributes from its parent
+      <emphasis role="bold">Package</emphasis> element.</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting>&lt;RoxiePackages&gt;
+  &lt;Package id="MyQuery"&gt;
+    &lt;File value="~thor::mydatafile"/&gt;
+  &lt;/Package&gt;
+&lt;/RoxiePackages&gt;
+</programlisting>
+
+      <para>The following example shows a package that specifies the <emphasis
+      role="bold">daliip</emphasis> and <emphasis
+      role="bold">sourceCluster</emphasis> attributes on the parent <emphasis
+      role="bold">Package</emphasis> element. These are inherited by the
+      <emphasis role="bold">File</emphasis> element and are used to resolve
+      the file from the specified cluster.</para>
+
+      <programlisting>&lt;RoxiePackages&gt;
+  &lt;Package id="MyQuery" daliip="127.0.0.1" sourceCluster="thor1"&gt;
+    &lt;File value="~thor::mydatafile"/&gt;
+  &lt;/Package&gt;
+&lt;/RoxiePackages&gt;
+</programlisting>
+    </sect2>
   </sect1>
 
   <sect1>

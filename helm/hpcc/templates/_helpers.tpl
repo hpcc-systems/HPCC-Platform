@@ -461,9 +461,10 @@ Used to give eclwatch a list of configured components and their configmap names.
 {{- range $dali := (.root.Values.dali | default dict) }}
  {{- if and (not $dali.disabled) (hasKey $dali "services") -}}
   {{- $daliSashaServicesCtx := dict "services" ($dali.services | default dict) -}}
+  {{- include "hpcc.getSashaServices" $daliSashaServicesCtx -}}
   {{- range $serviceName, $_service := $daliSashaServicesCtx.services }}
    {{- $service := ($_service | default dict) -}}
-   {{- if not (has $serviceName $componentNames) -}}
+   {{- if and (not $service.disabled) (not (has (printf "sasha-%s" $serviceName) $componentNames)) -}}
     {{- $componentNames = append $componentNames (printf "sasha-%s" $serviceName) -}}
    {{- end -}}
   {{- end -}}
@@ -474,7 +475,7 @@ Used to give eclwatch a list of configured components and their configmap names.
 {{- include "hpcc.getSashaServices" $sashaServicesCtx -}}
 {{- range $serviceName, $_service := $sashaServicesCtx.services }}
  {{- $service := ($_service | default dict) -}}
- {{- if not (has $serviceName $componentNames) -}}
+ {{- if and (not $service.disabled) (not (has (printf "sasha-%s" $serviceName) $componentNames)) -}}
   {{- $componentNames = append $componentNames (printf "sasha-%s" $serviceName) -}}
  {{- end -}}
 {{- end -}}

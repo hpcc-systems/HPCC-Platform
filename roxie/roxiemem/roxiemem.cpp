@@ -6712,7 +6712,7 @@ public:
                             bottom->Link();
 
                             //Leave the critical section before initialising the return result
-                            block.leave();
+                            block.ensureLeave();
 
                             dataBuffersActive.fetch_add(1);
                             curFree->nextDataId = 0;
@@ -6731,7 +6731,7 @@ public:
                     nextOffset += DATA_ALIGNMENT_SIZE;
 
                     //Leave the critical section before initialising the return result
-                    block.leave();
+                    block.ensureLeave();
 
                     dataBuffersActive.fetch_add(1);
                     DataBuffer *x = ::new(result) DataBuffer();
@@ -6780,7 +6780,7 @@ public:
                                     finger->Link();
 
                                     //Leave the critical section before initialising the return result
-                                    block.leave();
+                                    block.ensureLeave();
 
                                     dataBuffersActive.fetch_add(1);
                                     curFree->nextDataId = 0;

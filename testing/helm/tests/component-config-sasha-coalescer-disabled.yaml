@@ -1,0 +1,17 @@
+esp:
+- name: eclwatch
+  auth: none
+  application: eclwatch
+  service:
+    servicePort: 8880
+    visibility: cluster
+
+sasha:
+  disabled: true
+
+dali:
+- name: mydali
+  auth: none
+  services:
+    coalescer:
+      disabled: true

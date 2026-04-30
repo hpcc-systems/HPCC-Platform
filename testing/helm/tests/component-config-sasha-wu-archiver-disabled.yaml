@@ -1,0 +1,11 @@
+esp:
+- name: eclwatch
+  auth: none
+  application: eclwatch
+  service:
+    servicePort: 8880
+    visibility: cluster
+
+sasha:
+  wu-archiver:
+    disabled: true

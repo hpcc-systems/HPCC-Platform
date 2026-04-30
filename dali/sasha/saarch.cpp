@@ -15,6 +15,7 @@
 #include "workunit.hpp"
 #include "environment.hpp"
 #include "sautil.hpp"
+#include "saarch.hpp"
 #include "workunitservices.ipp"
 
 

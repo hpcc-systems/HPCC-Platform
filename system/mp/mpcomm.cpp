@@ -481,7 +481,7 @@ static void trackPortProbe(cycle_t createTimeCycles, const char *peerEndpointTes
 
             portProbeLastLog = nowCycles;
 
-            b.leave(); // leave crit before logging
+            b.ensureLeave(); // leave crit before logging
 
             unsigned __int64 totalProbes = numGracefulClose + numError + numTimeout;
             DBGLOG("Port probes: %" I64F "u [graceful=%" I64F "u (%" I64F "u ms),error=%" I64F "u (%" I64F "u ms),timedout=%" I64F "u (%" I64F "u ms). Last: %s, type=%s, time: %" I64F "u",
@@ -611,7 +611,7 @@ class CMPConnectThread: public Thread
                         closedOrHandled = true;
                         // process() will remove itself from handler, and need to avoid it doing so while in 'crit'
                         // since the maintenance thread could also be trying to manipulate handlers and calling closeIfTimedout()
-                        b.leave();
+                        b.ensureLeave();
                         selectHandler.process(*this);
                     }
                 }

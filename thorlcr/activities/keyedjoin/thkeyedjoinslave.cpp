@@ -1107,7 +1107,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 else if (state == ts_initial)
                 {
                     state = ts_starting;
-                    b.leave();
+                    b.ensureLeave();
                     if (limiter)
                         limiter->inc(); // blocks if hit lookup thread limit
                     if (activity.abortSoon)
@@ -1122,10 +1122,10 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 else if (state == ts_stopping)
                 {
                     state = ts_initial;
-                    b.leave();
+                    b.ensureLeave();
                     // stopping/stopped
                     threaded.join(); // must be sure finished
-                    b.enter();
+                    b.ensureEnter();
                     // cycle around to start thread again, or bail out if someone else already has.
                 }
             }
@@ -3849,4 +3849,3 @@ CActivityBase *createKeyedJoinSlave(CGraphElementBase *container)
         return LegacyKJ::createKeyedJoinSlave(container);
     return new CKeyedJoinSlave(container);
 }
-

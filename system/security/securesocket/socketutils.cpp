@@ -133,7 +133,7 @@ bool CReadSocketHandler::notifySelected(ISocket *sock, unsigned selected)
                     // process() will remove itself from handler, and need to avoid it doing so while in 'crit'
                     // since the maintenance thread could also be trying to manipulate handlers and calling closeIfTimedout()
                     closedOrHandled = true;
-                    b.leave();
+                    b.ensureLeave();
 
                     processor.stopProcessing(*this);
                     processor.processMessage(target, readSoFar);
@@ -895,9 +895,9 @@ size32_t CSocketTarget::writeSync(const void * data, size32_t len)
 void CSocketTarget::waitForRequestSpace(CLeavableCriticalBlock & block)
 {
     threadsWaiting++;
-    block.leave();
+    block.ensureLeave();
     waitSem.wait();
-    block.enter();
+    block.ensureEnter();
 }
 
 void CSocketTarget::writeAsync(const void * data, size32_t len, void * ownedBuffer)
