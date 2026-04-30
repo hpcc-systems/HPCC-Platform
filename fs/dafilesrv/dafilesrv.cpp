@@ -385,7 +385,7 @@ int main(int argc, const char* argv[])
     StringBuffer componentName;
 
     // NB: bare-metal dafilesrv does not have a component specific xml
-    Owned<IPropertyTree> extractedGlobalConfig = createPTree("dafilesrv");
+    Owned<IPropertyTree> extractedGlobalConfig;
 
 #ifndef _CONTAINERIZED
     Owned<IPropertyTree> env = getHPCCEnvironment();
@@ -393,7 +393,10 @@ int main(int argc, const char* argv[])
     {
         IPropertyTree* globalTracing = env->getPropTree("Software/tracing");
         if (globalTracing != nullptr)
+        {
+            extractedGlobalConfig.setown(createPTree("dafilesrv"));
             extractedGlobalConfig->addPropTree("tracing", globalTracing);
+        }
     }
 #endif
 
