@@ -219,7 +219,6 @@ export = {
     DefinitionDeleted: "定义已删除",
     DefinitionID: "定义识别码",
     Definitions: "定义",
-    DelayedReplication: "已延迟的复制",
     Delete: "删除",
     DeleteBinding: "删除连接",
     Deleted: "已删除",
