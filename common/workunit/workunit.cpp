@@ -8872,7 +8872,7 @@ void CLocalWorkUnit::setSummary(SummaryType type, const SummaryMap &map)
     {
         if (list.length())
             list.append('\n');
-        list.appendf("%01x:%s", (unsigned) flags, name.c_str());    
+        list.appendf("%01x:%s", (unsigned) flags, name.c_str());
     }
     CriticalBlock block(crit);
     IPropertyTree *summaries = ensurePTree(p, "Summaries");
@@ -14451,7 +14451,24 @@ bool isValidMemoryValue(const char *memoryUnit)
 }
 
 
+static void setAndLogQueuedStateInfo(IConstWorkUnit &workunit, const char *queue, const char *wuid, unsigned wfid, const char *graph, unsigned timeLimit, unsigned priority)
+{
+    PROGLOG("Enqueuing on %s to run wuid=%s, graph=%s, timelimit=%d seconds, priority=%d", queue, wuid, graph, timeLimit, priority);
+
+    VStringBuffer blockedReason("Waiting for Thor instance on queue %s, graph %s", queue, graph);
+
+    Owned<IWorkUnit> w = &workunit.lock();
+    setBlockedState(w, blockedReason);
+    addTimeStamp(w, wfid, graph, StWhenQueued);
+}
+
 // used by eclagent and roxie
+
+void setBlockedState(IWorkUnit *wu, const char *reason)
+{
+    wu->setState(WUStateBlocked);
+    wu->setStateEx(reason);
+}
 
 #define ABORT_POLL_PERIOD (5*1000)
 void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IPropertyTree &config)
@@ -14477,11 +14494,6 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
     // NB: If a single agent were to want to launch >1 Thor, then the threading could be in the workflow above this call.
 
     {
-        Owned<IWorkUnit> w = &workunit.lock();
-        w->setState(WUStateBlocked);
-    }
-
-    {
         CCycleTimer elapsedTimer;
 
         bool thisThor = true;
@@ -14504,12 +14516,7 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
         // or an existing idle Thor listening on the same queue will pick it up.
 
         VStringBuffer queueName("%s.thor", queue);
-        DBGLOG("Queueing wuid=%s, graph=%s, on queue=%s, timelimit=%u seconds", wuid.str(), graphName, queueName.str(), timelimit);
-
-        {
-            Owned<IWorkUnit> w = &workunit.lock();
-            addTimeStamp(w, wfid, graphName, StWhenQueued);
-        }
+        setAndLogQueuedStateInfo(workunit, queueName, wuid, wfid, graphName, timelimit, priority);
 
         Owned<IJobQueue> jobQueue = createJobQueue(queueName);
         IJobQueueItem *item = createJobQueueItem(jobName);
@@ -14631,11 +14638,6 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
             }
         }
 
-        {
-            Owned<IWorkUnit> w = &workunit.lock();
-            w->setState(WUStateBlocked);
-        }
-
         class cPollThread: public Thread  // MORE - why do we ned a thread here?
         {
             Semaphore sem;
@@ -14686,13 +14688,9 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
 
         pollthread.start(false);
 
-        {
-            Owned<IWorkUnit> w = &workunit.lock();
-            addTimeStamp(w, wfid, graphName, StWhenQueued);
-        }
+        setAndLogQueuedStateInfo(workunit, queueName.str(), wuid.str(), wfid, graphName, timelimit, priority);
 
         CCycleTimer elapsedTimer;
-        PROGLOG("Enqueuing on %s to run wuid=%s, graph=%s, timelimit=%d seconds, priority=%d", queueName.str(), wuid.str(), graphName, timelimit, priority);
         IJobQueueItem* item = createJobQueueItem(jobName);
         item->setOwner(owner.str());
         item->setPriority(priority);

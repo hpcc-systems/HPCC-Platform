@@ -1835,6 +1835,8 @@ constexpr bool defaultAnalyzeWhenComplete = isContainerized() ? false : true;
 // (Note: it is not presently possible to analyze with defaultAnalyzeWhenComplete option and in thor)
 constexpr bool defaultAnalyzeInEclAgent = isContainerized() ? false : true;
 
+extern WORKUNIT_API void setBlockedState(IWorkUnit *wu, const char *reason);
+
 extern WORKUNIT_API void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IPropertyTree &config);
 
 extern WORKUNIT_API TraceFlags wuLoadTraceFlags(IConstWorkUnit * wu, const std::initializer_list<TraceOption> & optNames, TraceFlags dft);

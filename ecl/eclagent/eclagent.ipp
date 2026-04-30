@@ -466,7 +466,7 @@ public:
     EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bool _resetWorkflow, bool _noRetry, char const * _logname, const char *_allowedPipeProgs, IPropertyTree *_queryXML, ILogMsgHandler * _logMsgHandler);
     ~EclAgent();
 
-    void setBlocked();
+    void setBlocked(const char *reason);
     void setRunning();
     void setDebugPaused();
     void setDebugRunning();
