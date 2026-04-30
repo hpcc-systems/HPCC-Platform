@@ -432,7 +432,7 @@ public:
     void recordDaliConnect(const char * xpath, __int64 id, stat_type elapsedNs, size32_t dataSize);
     void recordDaliEnsureLocal(__int64 id, stat_type elapsedNs, size32_t dataSize);
     void recordDaliGet(__int64 id, stat_type elapsedNs, size32_t dataSize);
-    void recordDaliGetChildren(__int64 id, stat_type elapsedNs, size32_t dataSize);
+    void recordDaliGetChildren(const char * path, __int64 id, stat_type elapsedNs, size32_t dataSize);
     void recordDaliGetChildrenFor(__int64 id, stat_type elapsedNs, size32_t dataSize);
     void recordDaliGetElements(const char * path, __int64 id, stat_type elapsedNs, size32_t dataSize);
     void recordDaliSubscribe(const char * xpath, __int64 id, stat_type elapsedNs);
