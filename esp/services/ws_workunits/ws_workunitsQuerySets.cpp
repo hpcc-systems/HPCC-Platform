@@ -733,6 +733,34 @@ static inline void updateQueryPriority(IPropertyTree *queryTree, const char *val
     }
 }
 
+static void convertPropertyStrToAttribute(IPropertyTree *info, const char *property)
+{
+    if (info && property && *property)
+    {
+        const char *element = property+1;
+        if (info->hasProp(element))
+        {
+            info->setProp(property, info->queryProp(element));
+            info->removeProp(element);
+        }
+    }
+}
+
+static void convertPropertyIntToAttribute(IPropertyTree *info, const char *property)
+{
+    if (info && property && *property)
+    {
+        const char *element = property+1;
+        if (info->hasProp(element))
+        {
+            int value = info->getPropInt(element);
+            if (value > 0)
+                info->setPropInt(property, value);
+            info->removeProp(element);
+        }
+    }
+}
+
 void gatherFileErrors(IReferencedFileList *files, IArrayOf<IConstLogicalFileError> &errors)
 {
     if (!files)
@@ -3097,38 +3125,10 @@ public:
             updateMemoryLimitSetting(info, info->queryProp("memoryLimit"));
             info->removeProp("memoryLimit");
         }
-        if (info->hasProp("timeLimit"))
-        {
-            const char *val = info->queryProp("timeLimit");
-            if (val && *val)
-            {
-                int tl = atoi(val);
-                if (tl > 0)
-                    info->setPropInt("@timeLimit", tl);
-            }
-            info->removeProp("timeLimit");
-        }
-        if (info->hasProp("warnTimeLimit"))
-        {
-            const char *val = info->queryProp("warnTimeLimit");
-            if (val && *val)
-            {
-                int wtl = atoi(val);
-                if (wtl > 0)
-                    info->setPropInt("@warnTimeLimit", wtl);
-            }
-            info->removeProp("warnTimeLimit");
-        }
-        if (info->hasProp("Comment"))
-        {
-            info->setProp("@comment", info->queryProp("Comment"));
-            info->removeProp("Comment");
-        }
-        if (info->hasProp("snapshot"))
-        {
-            info->setProp("@snapshot", info->queryProp("snapshot"));
-            info->removeProp("snapshot");
-        }
+        convertPropertyIntToAttribute(info, "@timeLimit");
+        convertPropertyIntToAttribute(info, "@warnTimeLimit");
+        convertPropertyStrToAttribute(info, "@comment");
+        convertPropertyStrToAttribute(info, "@snapshot");
 
         Owned<IAttributeIterator> aiter = query->getAttributes();
         IPropertyTree *attrs = entry->addPropTree("Attrs");
