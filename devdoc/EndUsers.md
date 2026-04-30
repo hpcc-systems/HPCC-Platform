@@ -95,6 +95,12 @@ ECL is the Enterprise Control Language designed specifically for huge data proje
 
 [ECL Language Reference](https://hpccsystems.com/wp-content/uploads/_documents/ECLR_EN_US/index.html) Online Access to the ECL Language Reference.
 
+### Field Translation
+
+Documentation for configuring field layout translation behavior and precedence across activity, query, and global levels.
+
+[Field Translation](./userdoc/FieldTranslation.md)
+
 ### ECL Standard Library
 
 The ECL Standard Library is a collection of pre-built functions, modules, and utilities that provide common functionality for ECL programming in the HPCC Systems Platform. It's designed to help developers write ECL code more efficiently by providing reusable components for common data processing tasks.
