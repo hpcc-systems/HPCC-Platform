@@ -72,6 +72,11 @@ public:
 
     ~CInfoCacheReaderThread()
     {
+        stop();
+    }
+
+    void stop()
+    {
         stopping = true;
         sem.signal();
         firstSem.signal(); // in case
@@ -133,6 +138,12 @@ public:
     bool isActive() const { return active; }
 };
 
+/*
+    Derived instances are expected to be heap allocated and rely on Release()
+    semantics to ensure the background thread is stopped before destruction.
+    If stack allocated, caller must ensure the thread is stopped before destructor
+    runs (e.g. by calling stopThread() from derived class destructor).
+*/
 class CInfoCacheReader : implements IInfoCacheReader, public CInterface
 {
 public:
@@ -156,6 +167,15 @@ public:
     virtual bool isActive() const override { return infoCacheReaderThread->isActive(); }
 
     virtual CInfoCache* read() = 0;
+
+protected:
+    void stopThread() { if (infoCacheReaderThread) infoCacheReaderThread->stop(); }
+
+    virtual void beforeDispose() override
+    {
+        stopThread();
+        CInterface::beforeDispose();
+    }
 };
 
 #endif //_ESPWIZ_InfoCacheReader_HPP__
