@@ -22,7 +22,7 @@ on:
         default: false
         type: boolean
       architecture:
-        description: 'Architecture, either -arm or empty string'
+        description: 'Architecture, either -arm64 or empty string'
         required: false
         type: string
         default: ''
@@ -48,7 +48,7 @@ on:
         required: false
         default: false
       architecture:
-        description: 'Architecture, either -arm or empty string'
+        description: 'Architecture, either -arm64 or empty string'
         required: false
         type: string
         default: ''
@@ -59,7 +59,7 @@ permissions:
 jobs:
   build:
     name: Build internal platform
-    runs-on: ubuntu-24.04${{ inputs.architecture }}
+    runs-on: ${{ inputs.architecture == '-arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
     steps:
       - name: Free additional disk space (remove Android SDK + Tools)
         continue-on-error: true
@@ -158,7 +158,7 @@ jobs:
           push: ${{ github.repository_owner == 'hpcc-systems' }}
           load: ${{ github.repository_owner != 'hpcc-systems' }}
           build-args: |
-            VCPKG_REF=${{ steps.vars.outputs.vcpkg_sha_short }}${{ inputs.architecture }}
+            VCPKG_REF=${{ steps.vars.outputs.vcpkg_sha_short }}${{ inputs.architecture == '-arm64' && '-arm' || inputs.architecture }}
           tags: |
             ${{ steps.vars.outputs.docker_tag_candidate_base }}
           cache-from: |
@@ -259,15 +259,15 @@ jobs:
           build-args: |
             PKG_FILE=${{ steps.ln-container.outputs.k8s_pkg_file }}
           tags: |
-            ${{ secrets.JFROG_REGISTRY || 'dummy.io' }}/hpccpl-docker-local/platform-core-ln:${{ steps.vars.outputs.hpcc_version }}
+            ${{ secrets.JFROG_REGISTRY || 'dummy.io' }}/hpccpl-docker-local/platform-core-ln:${{ steps.vars.outputs.hpcc_version }}${{ inputs.architecture }}
           cache-from: |
-            type=registry,ref=hpccsystems/platform-core-${{ inputs.os }}:${{ steps.vars.outputs.candidate_base_branch }}
+            type=registry,ref=hpccsystems/platform-core-${{ inputs.os }}:${{ steps.vars.outputs.candidate_base_branch }}${{ inputs.architecture }}
   
       - name: JFrog Docker Push and Publish
         if: ${{ inputs.build-docker-image && github.repository_owner == 'hpcc-systems' }}
         run: |
-          jf docker push ${{ secrets.JFROG_REGISTRY || 'dummy.io' }}/hpccpl-docker-local/platform-core-ln:${{ steps.vars.outputs.hpcc_version }} --build-name=platform-core-ln --build-number=${{ steps.vars.outputs.hpcc_version }} --project=hpccpl
-          jf rt bp platform-core-ln ${{ steps.vars.outputs.hpcc_version }} --project=hpccpl
+          jf docker push ${{ secrets.JFROG_REGISTRY || 'dummy.io' }}/hpccpl-docker-local/platform-core-ln:${{ steps.vars.outputs.hpcc_version }}${{ inputs.architecture }} --build-name=platform-core-ln${{ inputs.architecture }} --build-number=${{ steps.vars.outputs.hpcc_version }}${{ inputs.architecture }} --project=hpccpl
+          jf rt bp platform-core-ln${{ inputs.architecture }} ${{ steps.vars.outputs.hpcc_version }}${{ inputs.architecture }} --project=hpccpl
 
       - name: Cleanup Environment
         if: always()

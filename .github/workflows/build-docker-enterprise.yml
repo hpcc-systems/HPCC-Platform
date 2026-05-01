@@ -22,7 +22,7 @@ on:
         default: false
         type: boolean
       architecture:
-        description: 'Architecture, either -arm or empty string'
+        description: 'Architecture, either -arm64 or empty string'
         required: false
         type: string
         default: ''
@@ -48,7 +48,7 @@ on:
         required: false
         default: false
       architecture:
-        description: 'Architecture, either -arm or empty string'
+        description: 'Architecture, either -arm64 or empty string'
         required: false
         type: string
         default: ''
@@ -59,7 +59,7 @@ permissions:
 jobs:
   build:
     name: Build enterprise platform
-    runs-on: ubuntu-24.04${{ inputs.architecture }}
+    runs-on: ${{ inputs.architecture == '-arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
     steps:
       - name: Free additional disk space (remove Android SDK + Tools)
         continue-on-error: true
@@ -158,7 +158,7 @@ jobs:
           push: ${{ github.repository_owner == 'hpcc-systems' }}
           load: ${{ github.repository_owner != 'hpcc-systems' }}
           build-args: |
-            VCPKG_REF=${{ steps.vars.outputs.vcpkg_sha_short }}${{ inputs.architecture }}
+            VCPKG_REF=${{ steps.vars.outputs.vcpkg_sha_short }}${{ inputs.architecture == '-arm64' && '-arm' || inputs.architecture }}
           tags: |
             ${{ steps.vars.outputs.docker_tag_candidate_base }}
           cache-from: |
