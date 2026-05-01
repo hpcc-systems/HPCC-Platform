@@ -19,6 +19,7 @@
 
 ARG BASE_IMAGE=ubuntu:22.04
 FROM ${BASE_IMAGE}
+ARG TARGETARCH=amd64
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -59,11 +60,11 @@ RUN apt-get install -y \
     gdb \
     nano 
 
-RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.29.7/bin/linux/amd64/kubectl && \
+RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.29.7/bin/linux/${TARGETARCH}/kubectl && \
     chmod +x ./kubectl && \
     mv ./kubectl /usr/local/bin
 
-RUN curl -LO https://packagecloud.io/github/git-lfs/packages/ubuntu/jammy/git-lfs_3.7.1_amd64.deb/download && \
+RUN curl -LO https://packagecloud.io/github/git-lfs/packages/ubuntu/jammy/git-lfs_3.7.1_${TARGETARCH}.deb/download && \
     dpkg -i download && \
     rm download
 
@@ -82,7 +83,7 @@ RUN mkdir /var/log/HPCCSystems && chown hpcc:hpcc /var/log/HPCCSystems
 RUN mkdir /var/lock/HPCCSystems && chown hpcc:hpcc /var/lock/HPCCSystems
 RUN mkdir /var/run/HPCCSystems && chown hpcc:hpcc /var/run/HPCCSystems
 
-ARG PKG_FILE=hpccsystems-platform-community_9.2.4-1jammy_amd64_k8s.deb
+ARG PKG_FILE=hpccsystems-platform-community_9.2.4-1jammy_${TARGETARCH}_k8s.deb
 COPY ./${PKG_FILE} /tmp/${PKG_FILE}
 RUN dpkg -i /tmp/${PKG_FILE} && \
     apt-get install -f && \
