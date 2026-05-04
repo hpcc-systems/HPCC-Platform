@@ -73,6 +73,9 @@
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/LogicalFileList.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/LogicalFileListFiltered.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/GetNoCommonDefault.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
 

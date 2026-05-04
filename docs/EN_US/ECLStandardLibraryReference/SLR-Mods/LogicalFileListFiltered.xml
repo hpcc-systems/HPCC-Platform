@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="LogicalFileListFiltered">
+  <title>LogicalFileListFiltered</title>
+
+  <para><emphasis role="bold">STD.File.LogicalFileListFiltered<indexterm>
+      <primary>STD.File.LogicalFileListFiltered</primary>
+    </indexterm><indexterm>
+      <primary>File.LogicalFileListFiltered</primary>
+    </indexterm><indexterm>
+      <primary>LogicalFileListFiltered</primary>
+    </indexterm>(</emphasis> <emphasis role="bold"> [ </emphasis>
+  <emphasis>namepattern </emphasis> <emphasis role="bold">] [, </emphasis>
+  <emphasis>filters</emphasis> <emphasis role="bold"> ] [, </emphasis>
+  <emphasis>fields</emphasis> <emphasis role="bold"> ]</emphasis> <emphasis
+  role="bold"> [, </emphasis> <emphasis>unknownszero </emphasis> <emphasis
+  role="bold">] </emphasis><emphasis role="bold"> [, </emphasis>
+  <emphasis>remoteDfs </emphasis> <emphasis role="bold">] [, </emphasis>
+  <emphasis>maxFileLimit </emphasis> <emphasis role="bold">]
+  )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>namepattern</emphasis></entry>
+
+          <entry>Optional. A null-terminated string containing the mask
+          pattern of the files to list. If omitted, the default is '*' (all
+          files).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>filters</emphasis></entry>
+
+          <entry>Optional. A comma-separated string of filter expressions for
+          advanced filtering. Examples include 'size&gt;100000000' for files
+          larger than 100MB, 'owner:username' to filter by owner,
+          'is:superfile' to include only SuperFiles, 'is:normal' for normal
+          files, 'has:description' for files with descriptions, and
+          'modified&gt;=2026-01-01' for files modified on or after a specific
+          date. If omitted, the default is '' (no filtering).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>fields</emphasis></entry>
+
+          <entry>Optional. A comma-separated string specifying which fields to
+          return in the result set. For any non-empty value, the filename
+          field ('name') is always included even if you do not request it
+          explicitly. Examples include 'name' for just the filename, 'size'
+          for filename and size, or 'superfile,owner' for filename, superfile,
+          and owner. If omitted or empty, the default is the legacy field
+          subset 'name,superfile,size,rowcount,modified,owner,cluster'.
+          Request any additional fields you want explicitly.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>unknownszero</emphasis></entry>
+
+          <entry>Optional. A boolean flag indicating whether to set unknown
+          numeric result values, including file sizes and row counts, to zero
+          (0) instead of minus-one (-1). If omitted, the default is
+          FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>remoteDfs</emphasis></entry>
+
+          <entry>Optional. The name of the remote DFS service used to resolve
+          the file. If blank then the file is resolved locally. If omitted,
+          the default is blank. (Not yet supported; specifying this will raise
+          an error.)</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>maxFileLimit</emphasis></entry>
+
+          <entry>Optional. Maximum number of files to return. Set to -1 to use
+          server default limit (100,000). Maximum client-side limit is
+          1,000,000. If omitted, the default is -1.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis/></entry>
+
+          <entry>LogicalFileListFiltered returns a record containing count,
+          limitBreached, and a dataset of file information in the format shown
+          below.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">LogicalFileListFiltered </emphasis>function
+  returns a record containing the number of files returned, a flag indicating
+  whether the result was limited by maxFileLimit, and a dataset of logical
+  files in the environment with enhanced filtering and detailed file
+  information.</para>
+
+  <para>Record formats:</para>
+
+  <para><programlisting format="linespecific">EXPORT FsLogicalFileInfoRecordEx := RECORD(FsLogicalFileInfoRecord)
+  VARSTRING description;
+  VARSTRING workunit;
+  VARSTRING job;
+  VARSTRING directory;
+  BOOLEAN compressed;
+  INTEGER4 recordsize;
+  VARSTRING kind;
+  INTEGER8 compressedsize;
+  BOOLEAN persistent;
+  VARSTRING protect;
+  STRING19 accessed;
+  INTEGER4 expiredays;
+  REAL8 readcost;
+  REAL8 writecost;
+END;
+
+EXPORT FsLogicalFileListResult := RECORD
+  UNSIGNED4 count;
+  BOOLEAN limitBreached;
+  DATASET(FsLogicalFileInfoRecordEx) files;
+END;</programlisting></para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+
+// List all files
+result1 := STD.File.LogicalFileListFiltered();
+OUTPUT(result1.count);
+OUTPUT(result1.files);
+
+// List with limit
+result2 := STD.File.LogicalFileListFiltered(maxFileLimit := 100);
+OUTPUT(result2.limitBreached);
+
+// List files larger than 100MB
+result3 := STD.File.LogicalFileListFiltered(filters := 'size&gt;100000000');
+
+// List superfiles owned by userXYZ
+result4 := STD.File.LogicalFileListFiltered(filters := 'owner:userXYZ,is:superfile');
+
+// List normal files without description, modified on or after 01 Jan 2026
+result5 := STD.File.LogicalFileListFiltered(filters := 'is:normal,!has:description,modified&gt;=2026-01-01');
+
+// List only specific fields
+result6 := STD.File.LogicalFileListFiltered(fields := 'name,size,modified,owner');</programlisting>
+
+  <para>See Also: <link
+  linkend="LogicalFileList">LogicalFileList</link></para>
+</sect1>
