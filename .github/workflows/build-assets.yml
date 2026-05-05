@@ -224,7 +224,7 @@ jobs:
   build-clienttools-internal-macos:
     needs: preamble
     permissions:
-      contents: read
+      contents: write
       actions: write
       packages: read
     strategy:
@@ -256,7 +256,7 @@ jobs:
   build-clienttools-internal-windows:
     needs: preamble
     permissions:
-      contents: read
+      contents: write
       actions: write
       packages: read
     uses: ./.github/workflows/build-clienttools-windows-2022.yml
