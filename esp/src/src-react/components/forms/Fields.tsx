@@ -378,6 +378,7 @@ interface StringField extends BaseField {
     readonly?: boolean;
     multiline?: boolean;
     errorMessage?: string;
+    autoComplete?: React.InputHTMLAttributes<HTMLInputElement>["autoComplete"];
 }
 
 interface NumericField extends BaseField {
@@ -1103,8 +1104,9 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                             type={field.type === "string" ? "text" : field.type}
                             name={fieldID}
                             value={field.value}
-                            title={field.value}
+                            title={field.type === "password" ? undefined : field.value}
                             placeholder={field.placeholder}
+                            autoComplete={field.autoComplete ?? (field.type === "password" ? "new-password" : undefined)}
                             onChange={(evt, data) => onChange(fieldID, data.value)}
                             readOnly={field.readonly}
                             disabled={field.disabled(field) ? true : false}
