@@ -464,6 +464,15 @@ replicate=1</programlisting>
                   </row>
 
                   <row>
+                    <entry><emphasis>dstNumParts</emphasis></entry>
+
+                    <entry>Optional. Optional. Set to a positive integer to
+                    override the number of parts created when spraying. If
+                    omitted (or set to 0), the spray uses the target cluster's
+                    default part count.</entry>
+                  </row>
+
+                  <row>
                     <entry><programlisting role="tab">  <emphasis role="bold">fixed</emphasis> format options:</programlisting></entry>
                   </row>
 
