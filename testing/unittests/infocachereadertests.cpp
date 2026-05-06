@@ -73,6 +73,7 @@ public:
     {
         this->debug = debug;
     }
+
     
     virtual CInfoCache* read() override
     {
