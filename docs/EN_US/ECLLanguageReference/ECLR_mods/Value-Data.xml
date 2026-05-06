@@ -26,6 +26,10 @@
 
   <para>The upper size limit for any DATA value is 4GB.</para>
 
+  <para>Fields can optionally have a <emphasis role="bold">LENGTHSIZE</emphasis><indexterm>
+      <primary>LENGTHSIZE</primary>
+    </indexterm> attribute to specify the number of bytes (1, 2, or 4) used to store a variable-length field's length prefix. The default is 4 bytes. This is useful for reducing memory usage for small variable-length data blocks. If a longer data block is assigned, it will be truncated.</para>
+
   <para>Example:</para>
 
   <programlisting lang="ECL_Runnable">DATA8 MyHexString := x'1234567890ABCDEF'; 
