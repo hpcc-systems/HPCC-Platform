@@ -1005,9 +1005,9 @@ void EventRecorder::recordDaliGet(__int64 id, stat_type elapsedNs, size32_t data
     recordDaliEvent(EventDaliGet, id, elapsedNs, dataSize);
 }
 
-void EventRecorder::recordDaliGetChildren(__int64 id, stat_type elapsedNs, size32_t dataSize)
+void EventRecorder::recordDaliGetChildren(const char * path, __int64 id, stat_type elapsedNs, size32_t dataSize)
 {
-    recordDaliEvent(EventDaliGetChildren, id, elapsedNs, dataSize);
+    recordDaliEvent(EventDaliGetChildren, path ? path : "", id, elapsedNs, dataSize);
 }
 
 void EventRecorder::recordDaliGetChildrenFor(__int64 id, stat_type elapsedNs, size32_t dataSize)

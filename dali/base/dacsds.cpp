@@ -1423,7 +1423,9 @@ void CClientSDSManager::getChildren(CRemoteTreeBase &parent, CRemoteConnection &
     parent.deserializeChildrenRT(mb);
 
     if (unlikely(recordingEvents()))
-        queryRecorder().recordDaliGetChildren(connection.queryConnectionId(), elapsedTime.elapsedNs(), sendSize + mb.length());
+    {
+        queryRecorder().recordDaliGetChildren(parent.queryName(), connection.queryConnectionId(), elapsedTime.elapsedNs(), sendSize + mb.length());
+    }
 }
 
 static void matchServerTree(CClientRemoteTree *local, IPropertyTree &matchTree, ICopyArrayOf<CClientRemoteTree> &matchedLocals, ICopyArrayOf<IPropertyTree> &matched, bool allTail, MemoryBuffer &mb)
