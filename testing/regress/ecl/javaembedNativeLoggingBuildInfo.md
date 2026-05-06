@@ -16,8 +16,8 @@ testing/regress/ecl/
 The jar file can be built using Maven with the provided POM configuration.
 
 **Dependencies:**
-- Log4j Core 2.20.0
-- Log4j API 2.20.0
+- Log4j Core 2.24.3
+- Log4j API 2.24.3
 - Java 17 (configurable)
 - Apache Maven 3.8.7
 
