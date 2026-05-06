@@ -83,6 +83,20 @@ service via remote file reads with the ~remote:: syntax.
 Setting expert.allowForeign to true, enables foreign access for compatibility with legacy bare-metal environments
 that have their Dali and Dafilesrv's open.
 
+## foreignSequentialBlockedIOSizeK (unsigned)
+
+Controls the block size (in KB) used for sequential foreign index reads.
+
+Defaults: 4096 (4 MB) in containerized environments, 0 (system default) in bare-metal environments.
+Setting to 0 disables blocked IO and uses the system default.
+
+## foreignRandomBlockedIOSizeK (unsigned)
+
+Controls the block size (in KB) used for random foreign reads (e.g. filtered index reads).
+If not set, `foreignSequentialBlockedIOSizeK` is used as the fallback value.
+Defaults: 64 (64 KB) in containerized environments, 0 (system default) in bare-metal environments.
+Setting to 0 disables blocked IO and uses the system default.
+
 ## regex (cacheSize: unsigned)
 
 See the regex example above.  If set, this should be added at the global level.

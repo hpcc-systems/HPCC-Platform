@@ -80,6 +80,7 @@ protected:
     mutable CriticalSection keyManagersCS;  // CS for any updates to keyManagers
     unsigned fileTableStart = NotFound;
     std::vector<Owned<CStatsContextLogger>> contextLoggers;
+    size32_t foreignBlockedIOSize = (size32_t)-1;
 
 
     class TransformCallback : implements IThorIndexCallback , public CSimpleInterface
@@ -294,18 +295,23 @@ public:
                 part.getFilename(0, rfn);
                 StringBuffer path;
                 rfn.getPath(path); // NB: use for tracing only, IDelayedFile uses IPartDescriptor and any copy
-                StringBuffer planeName;
-                part.queryOwner().getClusterLabel(0, planeName);
 
-                size32_t blockedIOSize = getPlaneAttributeValue(planeName, BlockedRandomIO, (size32_t)-1);
-                if (!helper->hasSegmentMonitors()) // unfiltered
+                size32_t blockedIOSize = 0;
+                if (foreignBlockedIOSize != (size32_t)-1) // set in init if foreign
+                    blockedIOSize = foreignBlockedIOSize;
+                else
                 {
+                    StringBuffer planeName;
+                    part.queryOwner().getClusterLabel(0, planeName);
+
                     // If unfiltered, use the sequential block size if defined in the plane, or component config.
-                    // If not, default to the random block size defined in the plane, or component config.
-                    blockedIOSize = getPlaneAttributeValue(planeName, BlockedSequentialIO, blockedIOSize);
+                    blockedIOSize = getPlaneAttributeValue(planeName, BlockedSequentialIO, (size32_t)-1);
+                    if (helper->hasSegmentMonitors())
+                        blockedIOSize = getPlaneAttributeValue(planeName, BlockedRandomIO, blockedIOSize);
+
+                    if ((size32_t)-1 == blockedIOSize)
+                        blockedIOSize = 0;
                 }
-                if ((size32_t)-1 == blockedIOSize)
-                    blockedIOSize = 0;
 
                 Owned<IKeyIndex> keyIndex = createKeyIndex(path, crc, *lazyIFileIO, (unsigned) -1, false, blockedIOSize);
                 IContextLogger * contextLogger = isSuperFile?contextLoggers[p]:contextLoggers[0];
@@ -564,6 +570,17 @@ public:
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         data.read(logicalFilename);
+
+        CDfsLogicalFileName dlfn;
+        dlfn.set(logicalFilename);
+
+        foreignBlockedIOSize = (size32_t)-1; // unset
+        if (dlfn.isForeign())
+        {
+            // all other logical files will map to a plane (inc. ~remote files), for foreign files we look for an expert setting which defines sequential and random block size
+            foreignBlockedIOSize = getForeignBlockedIOSize(helper->hasSegmentMonitors()); // defaults to sensible sizes in containerized
+        }
+
         if (!container.queryLocalOrGrouped())
             mpTag = container.queryJobChannel().deserializeMPTag(data); // channel to pass back partial counts for aggregation
         if (initialized)
