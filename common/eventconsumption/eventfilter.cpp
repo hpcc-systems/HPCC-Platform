@@ -276,6 +276,30 @@ protected:
         }
     };
 
+
+    struct PathFilterTerm : public StringFilterTerm
+    {
+        using StringFilterTerm::StringFilterTerm;
+
+        bool matches(const CEvent& event, const CEventAttribute& attribute) const override
+        {
+#if defined(_DEBUG)
+            assertex(attribute.queryId() == EvAttrPath);
+#endif
+            if (StringFilterTerm::matches(event, attribute))
+                return true;
+
+            if (event.queryType() == MetaFileInformation)
+            {
+                const char* logicalName = metaInfoState.queryLogicalFileName(event);
+                if (!isEmptyString(logicalName) && helper.matches(logicalName))
+                    return true;
+            }
+
+            return false;
+        }
+    };
+
     struct FileIdFilterTerm : public UnsignedFilterTerm
     {
         using UnsignedFilterTerm::UnsignedFilterTerm;
@@ -286,29 +310,19 @@ protected:
             {
                 __uint64 fileId = event.queryNumericValue(EvAttrFileId);
                 if (!observeMatchedText(event.queryTextValue(EvAttrPath), fileId))
-                    (void)observeMatchedText(metaInfoState.queryLogicalFileName(event), fileId);
+                {
+                    if (!observeMatchedText(metaInfoState.queryLogicalFileName(event), fileId))
+                        (void)observeMatchedText(metaInfoState.queryPlane(event), fileId);
+                }
             }
         }
 
         bool matches(const CEvent& event, const CEventAttribute& attribute) const override
         {
-            switch (attribute.queryId())
-            {
-            case EvAttrFileId:
-                return matchedPaths.count(event.queryNumericValue(EvAttrFileId)) || UnsignedFilterTerm::matches(event, attribute);
-            case EvAttrPath:
-                switch (event.queryType())
-                {
-                case MetaPlaneInformation:
-                    return checkMatchedText(attribute.queryTextValue());
-                case MetaFileInformation:
-                    return matches(event, event.queryAttribute(EvAttrFileId));
-                default: // dali events through index event fileID?
-                    return checkMatchedText(attribute.queryTextValue());
-                }
-            default:
-                return false;
-            }
+#if defined(_DEBUG)
+            assertex(attribute.queryId() == EvAttrFileId);
+#endif
+            return matchedPaths.count(attribute.queryNumericValue()) || UnsignedFilterTerm::matches(event, attribute);
         }
 
         bool acceptToken(const char* token, FilterTermComparison comp) override
@@ -626,26 +640,17 @@ public: // IEventFilter
 
     virtual bool acceptAttribute(EventAttr id, const char* values) override
     {
-        if (EvAttrFileId == id)
+        switch (id)
         {
-            // Special case to join EventIndexCacheHit, EventIndexCacheMiss, EventIndexLoad, and
-            // EventIndexEviction with MetaFileInformation by the common EvAttrFileId attribute. The
-            // result allows the index events to be filtered by path using the file ID.
-            //
-            // MetaFileInformation events cannot be filtered by file ID.
-            FilterTerm* term = ensureTerm<FileIdFilterTerm>(id);
-            if (!terms[EvAttrPath])
-                terms[EvAttrPath].set(term);
-            else if (terms[EvAttrPath] != term)
-                throw makeStringException(-1, "event attribute EvAttrPath has a conflicting filter term for EvAttrFileId");
-            return term->accept(values);
-        }
-        else if (EvAttrEventTraceId == id)
+        case EvAttrFileId:
+            return ensureTerm<FileIdFilterTerm>(id)->accept(values);
+        case EvAttrEventTraceId:
             return ensureTerm<TraceIdFilterTerm>(id)->accept(values);
-        else if (EvAttrNodeKind == id)
+        case EvAttrNodeKind:
             return ensureTerm<NodeKindFilterTerm>(id)->accept(values);
-        else
-        {
+        case EvAttrPath:
+            return ensureTerm<PathFilterTerm>(id)->accept(values);
+        default:
             switch (queryEventAttributeType(id))
             {
             case EATtraceid:
@@ -666,7 +671,9 @@ public: // IEventFilter
             default:
                 throw makeStringExceptionV(-1, "event attribute id %d has an unknown type %d", int(id), int(queryEventAttributeType(id)));
             }
+            break;
         }
+        // The preceding switch statements must return or throw for all cases.
     }
 
 protected:
@@ -776,6 +783,9 @@ class EventFilterTests : public CppUnit::TestFixture
     CPPUNIT_TEST(testFilterByAttributeByFileIdLogicalFilenamePathMatch);
     CPPUNIT_TEST(testFilterByAttributeByPath1);
     CPPUNIT_TEST(testFilterByAttributeByPath2);
+    CPPUNIT_TEST(testFilterByAttributeByPathLogicalNameMatch);
+    CPPUNIT_TEST(testFilterByAttributeByPathEventTypeIsolation);
+    CPPUNIT_TEST(testFilterByAttributeByPathUnmappedLogicalName);
     CPPUNIT_TEST(testFilterByAttributeByPath3);
     CPPUNIT_TEST(testFilterByAttributeByBool1);
     CPPUNIT_TEST(testFilterByAttributeByBool2);
@@ -784,9 +794,42 @@ class EventFilterTests : public CppUnit::TestFixture
     CPPUNIT_TEST(testFilterByAttributeByTimestamp3);
     CPPUNIT_TEST(testFilterByAttributeByTraceId);
     CPPUNIT_TEST(testFilterByAttributeByFileIdNumericPathMatch);
+    CPPUNIT_TEST(testFilterByAttributeByFileIdPlaneMatch);
     CPPUNIT_TEST_SUITE_END();
 
 public:
+    void testFilterByAttributeByFileIdPlaneMatch()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link kind="event-filter">
+                    <attribute id="fileId" values="[eq]myplane"/>
+                </link>
+                <input>
+                    <event type="PlaneInformation" Plane="myplane" Path="/path/to/file/" IsStriped="0" />
+                    <event type="FileInformation" FileId="1" Path="/path/to/file/some/logical/file::1"/>
+                    <event type="FileInformation" FileId="2" Path="/path/to/file/some/logical/file::2"/>
+                    <event type="FileInformation" FileId="3" Path="/other/to/file/some/logical/file::3"/>
+                    <event type="FileInformation" FileId="4" Path="/path/to/file/some/logical/file::4"/>
+                    <event type="FileInformation" FileId="5" Path="/other/to/file/some/logical/file::5"/>
+                    <event type="FileInformation" FileId="6" Path="/other/to/file/some/logical/file::6"/>
+                    <event type="IndexCacheMiss" FileId="1"/>
+                    <event type="IndexCacheMiss" FileId="3"/>
+                    <event type="IndexCacheMiss" FileId="4"/>
+                </input>
+                <expect>
+                    <event type="PlaneInformation" Plane="myplane" Path="/path/to/file/" IsStriped="0" />
+                    <event type="FileInformation" FileId="1" Path="/path/to/file/some/logical/file::1"/>
+                    <event type="FileInformation" FileId="2" Path="/path/to/file/some/logical/file::2"/>
+                    <event type="FileInformation" FileId="4" Path="/path/to/file/some/logical/file::4"/>
+                    <event type="IndexCacheMiss" FileId="1"/>
+                    <event type="IndexCacheMiss" FileId="4"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData, PTEFlenientParsing);
+    }
+
     void testFilterByAttributeByFileIdNumericPathMatch()
     {
         constexpr const char* testData = R"!!!(
@@ -1180,14 +1223,14 @@ public:
                     <event list="[neq]FileInformation"/>
                 </link>
                 <input>
-                    <event type="FileInformation" FileId="1" Path="/path/to/file/1.txt"/>
-                    <event type="FileInformation" FileId="2" Path="/path/to/file/2.txt"/>
-                    <event type="FileInformation" FileId="3" Path="/path/to/file/3.txt"/>
-                    <event type="FileInformation" FileId="4" Path="/path/to/file/4.txt"/>
-                    <event type="FileInformation" FileId="5" Path="/path/to/file/5.txt"/>
-                    <event type="FileInformation" FileId="6" Path="/path/to/file/6.txt"/>
-                    <event type="FileInformation" FileId="7" Path="/path/to/file/7.txt"/>
-                    <event type="FileInformation" FileId="8" Path="/path/to/file/8.txt"/>
+                    <event type="FileInformation" FileId="1" Path="testfile_1.txt"/>
+                    <event type="FileInformation" FileId="2" Path="testfile_2.txt"/>
+                    <event type="FileInformation" FileId="3" Path="testfile_3.txt"/>
+                    <event type="FileInformation" FileId="4" Path="testfile_4.txt"/>
+                    <event type="FileInformation" FileId="5" Path="testfile_5.txt"/>
+                    <event type="FileInformation" FileId="6" Path="testfile_6.txt"/>
+                    <event type="FileInformation" FileId="7" Path="testfile_7.txt"/>
+                    <event type="FileInformation" FileId="8" Path="testfile_8.txt"/>
                     <event type="IndexCacheMiss" FileId="1"/>
                     <event type="IndexCacheMiss" FileId="2"/>
                     <event type="IndexCacheMiss" FileId="3"/>
@@ -1237,6 +1280,7 @@ public:
                     <event type="IndexCacheMiss" FileId="8"/>
                 </input>
                 <expect>
+                    <event type="PlaneInformation" Plane="myplane" Path="/path/to/file/" IsStriped="0" />
                     <event type="IndexCacheMiss" FileId="1"/>
                     <event type="IndexCacheMiss" FileId="4"/>
                     <event type="IndexCacheMiss" FileId="7"/>
@@ -1274,6 +1318,7 @@ public:
                     <event type="IndexCacheMiss" FileId="8"/>
                 </input>
                 <expect>
+                    <event type="PlaneInformation" Plane="myplane" Path="/path/to/file/" IsStriped="0" />
                     <event type="FileInformation" FileId="1" Path="/path/to/file/some/logical/file::1"/>
                     <event type="FileInformation" FileId="4" Path="/path/to/file/some/logical/file::4"/>
                     <event type="FileInformation" FileId="7" Path="/path/to/file/some/logical/file::7"/>
@@ -1293,23 +1338,23 @@ public:
         constexpr const char* testData = R"!!!(
             <test>
                 <link kind="event-filter">
-                    <attribute id="Path" values="[lt]/path/to/file/2.txt,[gte]/path/to/file/8.txt,/path/to/file/3.txt,*5.txt"/>
+                    <attribute id="Path" values="[lt]testfile_2.txt,[gte]testfile_8.txt,testfile_3.txt,*5.txt"/>
                 </link>
                 <input>
-                    <event type="FileInformation" FileId="1" Path="/path/to/file/1.txt"/>
-                    <event type="FileInformation" FileId="2" Path="/path/to/file/2.txt"/>
-                    <event type="FileInformation" FileId="3" Path="/path/to/file/3.txt"/>
-                    <event type="FileInformation" FileId="4" Path="/path/to/file/4.txt"/>
-                    <event type="FileInformation" FileId="5" Path="/path/to/file/5.txt"/>
-                    <event type="FileInformation" FileId="6" Path="/path/to/file/6.txt"/>
-                    <event type="FileInformation" FileId="7" Path="/path/to/file/7.txt"/>
-                    <event type="FileInformation" FileId="8" Path="/path/to/file/8.txt"/>
+                    <event type="FileInformation" FileId="1" Path="testfile_1.txt"/>
+                    <event type="FileInformation" FileId="2" Path="testfile_2.txt"/>
+                    <event type="FileInformation" FileId="3" Path="testfile_3.txt"/>
+                    <event type="FileInformation" FileId="4" Path="testfile_4.txt"/>
+                    <event type="FileInformation" FileId="5" Path="testfile_5.txt"/>
+                    <event type="FileInformation" FileId="6" Path="testfile_6.txt"/>
+                    <event type="FileInformation" FileId="7" Path="testfile_7.txt"/>
+                    <event type="FileInformation" FileId="8" Path="testfile_8.txt"/>
                 </input>
                 <expect>
-                    <event type="FileInformation" FileId="1" Path="/path/to/file/1.txt"/>
-                    <event type="FileInformation" FileId="3" Path="/path/to/file/3.txt"/>
-                    <event type="FileInformation" FileId="5" Path="/path/to/file/5.txt"/>
-                    <event type="FileInformation" FileId="8" Path="/path/to/file/8.txt"/>
+                    <event type="FileInformation" FileId="1" Path="testfile_1.txt"/>
+                    <event type="FileInformation" FileId="3" Path="testfile_3.txt"/>
+                    <event type="FileInformation" FileId="5" Path="testfile_5.txt"/>
+                    <event type="FileInformation" FileId="8" Path="testfile_8.txt"/>
                 </expect>
             </test>
         )!!!";
@@ -1321,24 +1366,81 @@ public:
         constexpr const char* testData = R"!!!(
             <test>
                 <link kind="event-filter">
-                    <attribute id="Path" values="[gt]/path/to/file/6.txt,[lte]/path/to/file/3.txt"/>
+                    <attribute id="Path" values="[gt]testfile_6.txt,[lte]testfile_3.txt"/>
                 </link>
                 <input>
-                    <event type="FileInformation" FileId="1" Path="/path/to/file/1.txt"/>
-                    <event type="FileInformation" FileId="2" Path="/path/to/file/2.txt"/>
-                    <event type="FileInformation" FileId="3" Path="/path/to/file/3.txt"/>
-                    <event type="FileInformation" FileId="4" Path="/path/to/file/4.txt"/>
-                    <event type="FileInformation" FileId="5" Path="/path/to/file/5.txt"/>
-                    <event type="FileInformation" FileId="6" Path="/path/to/file/6.txt"/>
-                    <event type="FileInformation" FileId="7" Path="/path/to/file/7.txt"/>
-                    <event type="FileInformation" FileId="8" Path="/path/to/file/8.txt"/>
+                    <event type="FileInformation" FileId="1" Path="testfile_1.txt"/>
+                    <event type="FileInformation" FileId="2" Path="testfile_2.txt"/>
+                    <event type="FileInformation" FileId="3" Path="testfile_3.txt"/>
+                    <event type="FileInformation" FileId="4" Path="testfile_4.txt"/>
+                    <event type="FileInformation" FileId="5" Path="testfile_5.txt"/>
+                    <event type="FileInformation" FileId="6" Path="testfile_6.txt"/>
+                    <event type="FileInformation" FileId="7" Path="testfile_7.txt"/>
+                    <event type="FileInformation" FileId="8" Path="testfile_8.txt"/>
                 </input>
                 <expect>
-                    <event type="FileInformation" FileId="1" Path="/path/to/file/1.txt"/>
-                    <event type="FileInformation" FileId="2" Path="/path/to/file/2.txt"/>
-                    <event type="FileInformation" FileId="3" Path="/path/to/file/3.txt"/>
-                    <event type="FileInformation" FileId="7" Path="/path/to/file/7.txt"/>
-                    <event type="FileInformation" FileId="8" Path="/path/to/file/8.txt"/>
+                    <event type="FileInformation" FileId="1" Path="testfile_1.txt"/>
+                    <event type="FileInformation" FileId="2" Path="testfile_2.txt"/>
+                    <event type="FileInformation" FileId="3" Path="testfile_3.txt"/>
+                    <event type="FileInformation" FileId="7" Path="testfile_7.txt"/>
+                    <event type="FileInformation" FileId="8" Path="testfile_8.txt"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData, PTEFlenientParsing);
+    }
+
+
+    void testFilterByAttributeByPathLogicalNameMatch()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link kind="event-filter">
+                    <attribute id="Path" values="scope::logical::name::1"/>
+                </link>
+                <input>
+                    <event type="PlaneInformation" Plane="myplane" Path="/path/to/file/" IsStriped="0" />
+                    <event type="FileInformation" FileId="1" Path="/path/to/file/scope/logical/name/1"/>
+                    <event type="FileInformation" FileId="2" Path="/path/to/file/scope/logical/name/2"/>
+                </input>
+                <expect>
+                    <event type="FileInformation" FileId="1" Path="/path/to/file/scope/logical/name/1"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData, PTEFlenientParsing);
+    }
+
+    void testFilterByAttributeByPathEventTypeIsolation()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link kind="event-filter">
+                    <attribute id="Path" values="scope::logical::name"/>
+                </link>
+                <input>
+                    <!-- Provide a non-FileInformation event with a Path -> Should be rejected unless path literally matches -->
+                    <event type="PlaneInformation" Plane="myplane_iso" Path="/path/to/file/scope/logical/name" IsStriped="0" />
+                    <event type="PlaneInformation" Plane="myplane_iso2" Path="/path/to/file/other" IsStriped="0" />
+                </input>
+                <expect>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData, PTEFlenientParsing);
+    }
+
+    void testFilterByAttributeByPathUnmappedLogicalName()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link kind="event-filter">
+                    <attribute id="Path" values="some_value"/>
+                </link>
+                <input>
+                    <event type="FileInformation" FileId="1" Path="/path/to/file/some/logical/name/1"/>
+                </input>
+                <expect>
                 </expect>
             </test>
         )!!!";
@@ -1350,26 +1452,26 @@ public:
         constexpr const char* testData = R"!!!(
             <test>
                 <link kind="event-filter">
-                    <attribute id="Path" values="[neq]/path/to/file/1.txt"/>
+                    <attribute id="Path" values="[neq]testfile_1.txt"/>
                 </link>
                 <input>
-                    <event type="FileInformation" FileId="1" Path="/path/to/file/1.txt"/>
-                    <event type="FileInformation" FileId="2" Path="/path/to/file/2.txt"/>
-                    <event type="FileInformation" FileId="3" Path="/path/to/file/3.txt"/>
-                    <event type="FileInformation" FileId="4" Path="/path/to/file/4.txt"/>
-                    <event type="FileInformation" FileId="5" Path="/path/to/file/5.txt"/>
-                    <event type="FileInformation" FileId="6" Path="/path/to/file/6.txt"/>
-                    <event type="FileInformation" FileId="7" Path="/path/to/file/7.txt"/>
-                    <event type="FileInformation" FileId="8" Path="/path/to/file/8.txt"/>
+                    <event type="FileInformation" FileId="1" Path="testfile_1.txt"/>
+                    <event type="FileInformation" FileId="2" Path="testfile_2.txt"/>
+                    <event type="FileInformation" FileId="3" Path="testfile_3.txt"/>
+                    <event type="FileInformation" FileId="4" Path="testfile_4.txt"/>
+                    <event type="FileInformation" FileId="5" Path="testfile_5.txt"/>
+                    <event type="FileInformation" FileId="6" Path="testfile_6.txt"/>
+                    <event type="FileInformation" FileId="7" Path="testfile_7.txt"/>
+                    <event type="FileInformation" FileId="8" Path="testfile_8.txt"/>
                 </input>
                 <expect>
-                    <event type="FileInformation" FileId="2" Path="/path/to/file/2.txt"/>
-                    <event type="FileInformation" FileId="3" Path="/path/to/file/3.txt"/>
-                    <event type="FileInformation" FileId="4" Path="/path/to/file/4.txt"/>
-                    <event type="FileInformation" FileId="5" Path="/path/to/file/5.txt"/>
-                    <event type="FileInformation" FileId="6" Path="/path/to/file/6.txt"/>
-                    <event type="FileInformation" FileId="7" Path="/path/to/file/7.txt"/>
-                    <event type="FileInformation" FileId="8" Path="/path/to/file/8.txt"/>
+                    <event type="FileInformation" FileId="2" Path="testfile_2.txt"/>
+                    <event type="FileInformation" FileId="3" Path="testfile_3.txt"/>
+                    <event type="FileInformation" FileId="4" Path="testfile_4.txt"/>
+                    <event type="FileInformation" FileId="5" Path="testfile_5.txt"/>
+                    <event type="FileInformation" FileId="6" Path="testfile_6.txt"/>
+                    <event type="FileInformation" FileId="7" Path="testfile_7.txt"/>
+                    <event type="FileInformation" FileId="8" Path="testfile_8.txt"/>
                 </expect>
             </test>
         )!!!";

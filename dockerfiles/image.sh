@@ -2,6 +2,8 @@
 
 set -eEuo pipefail
 
+RSYNC_PROGRESS_ARGS="--info=progress2,stats2 --human-readable"
+
 trapFunc() {
   local lineno="$1"
   local code="$2"
@@ -25,19 +27,28 @@ globals() {
     GIT_BRANCH=$(git branch --show-current)
     IMAGE_BRANCH_TAG=$(echo "$GIT_BRANCH" | sed 's/[^a-zA-Z0-9_.]/-/g')
 
-    pushd $ROOT_DIR/vcpkg
-    VCPKG_REF=$(git rev-parse --short=8 HEAD)
-    popd
+    # Read the vcpkg submodule commit from the superproject gitlink.
+    # Avoid entering vcpkg directly because its .git metadata may be transiently invalid.
+    VCPKG_REF=$(git rev-parse --short=8 HEAD:vcpkg 2>/dev/null || true)
+    if [ -z "$VCPKG_REF" ]; then
+        VCPKG_REF=$(git ls-tree --full-tree HEAD vcpkg 2>/dev/null | awk 'NR==1 {print $3}' | cut -c1-8)
+    fi
+    if [ -z "$VCPKG_REF" ]; then
+        echo "Unable to resolve vcpkg gitlink from repository HEAD"
+        exit 1
+    fi
     if [ "$ARCH" == "arm64" ]; then
         VCPKG_REF="$VCPKG_REF-arm"
         RELEASE_BASE_IMAGE="arm64v8/$RELEASE_BASE_IMAGE"
         DOCKER_PLATFORM="--platform linux/arm64"
+        TARGETARCH="arm64"
     else
         DOCKER_PLATFORM=""
+        TARGETARCH="amd64"
     fi
     DOCKER_USERNAME="${DOCKER_USERNAME:-hpccbuilds}"
 
-    CMAKE_OPTIONS="-G Ninja -DCPACK_THREADS=$(docker info --format '{{.NCPU}}') -DUSE_OPTIONAL=OFF -DCONTAINERIZED=ON -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON"
+    CMAKE_OPTIONS="-G Ninja -DCPACK_THREADS=$(docker info --format '{{.NCPU}}') -DUSE_OPTIONAL=OFF -DCONTAINERIZED=ON -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DVCPKG_AUTO_UPDATE_SUBMODULE=OFF"
     if [ "$USE_CPPUNIT" -eq 1 ]; then
         CMAKE_OPTIONS="$CMAKE_OPTIONS -DUSE_CPPUNIT=ON"
     fi
@@ -73,6 +84,7 @@ create_platform_core_image() {
     docker build --rm $DOCKER_PLATFORM -f "$SCRIPT_DIR/platform-core-$BUILD_OS.dockerfile" \
         -t platform-core:release \
         --build-arg BASE_IMAGE=$base \
+        --build-arg TARGETARCH=$TARGETARCH \
             "$SCRIPT_DIR/." 
 
     if [ "$MODE" = "debug" ]; then
@@ -80,6 +92,7 @@ create_platform_core_image() {
         docker build --rm $DOCKER_PLATFORM -f "$SCRIPT_DIR/platform-core-debug-$BUILD_OS.dockerfile" \
             -t platform-core:debug \
             --build-arg BASE_IMAGE=platform-core:release \
+            --build-arg TARGETARCH=$TARGETARCH \
                 "$SCRIPT_DIR/."
     fi
 
@@ -88,6 +101,7 @@ create_platform_core_image() {
         docker build --rm $DOCKER_PLATFORM -f "$SCRIPT_DIR/platform-core-debug-$BUILD_OS.dockerfile" \
             -t platform-core:relwithdebinfo \
             --build-arg BASE_IMAGE=platform-core:release \
+            --build-arg TARGETARCH=$TARGETARCH \
                 "$SCRIPT_DIR/."
     fi
 }
@@ -118,12 +132,7 @@ finalize_platform_core_image() {
             --mount source=$HPCC_BUILD,target=/hpcc-dev/build,type=volume \
             hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc "tail -f /dev/null")
         docker exec --user root --workdir /hpcc-dev $CONTAINER /bin/bash -c "rm -rf /hpcc-dev/HPCC-Platform && mkdir /hpcc-dev/HPCC-Platform && chown -R hpcc:hpcc /hpcc-dev/HPCC-Platform"
-        docker exec --workdir /hpcc-dev $CONTAINER /bin/bash -c "git config --global --add safe.directory /hpcc-dev/HPCC-Platform-local"
-        docker exec --workdir /hpcc-dev $CONTAINER /bin/bash -c "git config --global --add safe.directory /hpcc-dev/HPCC-Platform-local/.git"
-        docker exec --workdir /hpcc-dev $CONTAINER /bin/bash -c "git clone --single-branch file:///hpcc-dev/HPCC-Platform-local /hpcc-dev/HPCC-Platform"
-        docker exec --workdir /hpcc-dev/HPCC-Platform $CONTAINER /bin/bash -c "git reset --hard --recurse-submodules"
-        docker exec --workdir /hpcc-dev/HPCC-Platform-local $CONTAINER /bin/bash -c "git ls-files --modified --exclude-standard -z | xargs -0 -I {} cp {} /hpcc-dev/HPCC-Platform/{}"
-        docker exec --workdir /hpcc-dev/HPCC-Platform $CONTAINER /bin/bash -c "rm -rf ./.git"
+        docker exec --user root --workdir /hpcc-dev $CONTAINER /bin/bash -c "rsync -a --delete --exclude='.git*' --filter=':- .gitignore' $RSYNC_PROGRESS_ARGS /hpcc-dev/HPCC-Platform-local/ /hpcc-dev/HPCC-Platform/ && chown -R hpcc:hpcc /hpcc-dev/HPCC-Platform"
         docker exec --user root --workdir /hpcc-dev $CONTAINER /bin/bash -c "find /hpcc-dev/HPCC-Platform -exec touch -r /hpcc-dev/build/CMakeCache.txt {} +"
         docker commit $CONTAINER hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc
         docker rm -f $CONTAINER
@@ -206,7 +215,6 @@ run() {
     docker run --rm $DOCKER_PLATFORM \
         --mount source=$ROOT_DIR,target=/hpcc-dev/HPCC-Platform-local,type=bind,readonly \
         --mount source=hpcc_src,target=/hpcc-dev/HPCC-Platform,type=volume \
-        --mount source="$ROOT_DIR/.git",target=/hpcc-dev/HPCC-Platform/.git,type=bind \
         --mount source=$HPCC_BUILD,target=/hpcc-dev/build,type=volume \
         build-$BUILD_OS:$VCPKG_REF \
             "cd /hpcc-dev/HPCC-Platform && \
@@ -216,8 +224,8 @@ run() {
 init_hpcc_src() {
     echo "--- Init hpcc_src volume ---"
     if ! docker volume ls -q -f name=hpcc_src | grep -q hpcc_src; then
-        echo "--- git reset ---"
-        run "git reset --hard --recurse-submodules"
+        echo "--- Sync all sources to hpcc_src (without git metadata) ---"
+        run "rsync -a --delete --exclude='.git*' --filter=':- .gitignore' $RSYNC_PROGRESS_ARGS /hpcc-dev/HPCC-Platform-local/ /hpcc-dev/HPCC-Platform/"
     fi
 }
 
@@ -251,21 +259,20 @@ md5_hash() {
 
 calc_diffs() {
     init_hpcc_src
-    local rsync_tmp_basename=$(basename "$RSYNC_TMP_FILE")
-    run "git ls-files --modified --exclude-standard" > $RSYNC_TMP_FILE
-    run "rsync -av --delete --files-from=/hpcc-dev/HPCC-Platform-local/$rsync_tmp_basename /hpcc-dev/HPCC-Platform-local/ /hpcc-dev/HPCC-Platform/"
-
     pushd $ROOT_DIR >/dev/null
-    git status --short | grep '^ M' | cut -c4- > $RSYNC_TMP_FILE
+    {
+        git diff --name-only --diff-filter=ACMRTUXB HEAD
+        git ls-files --others --exclude-standard
+    } | sort -u > "$RSYNC_TMP_FILE"
     local tmp=$(mktemp)
-    echo "$GIT_REF" > $tmp
+    echo "$GIT_REF" > "$tmp"
     while read file; do
         if [ -f "$file" ]; then
-            md5_hash "$file" >> $tmp
+            md5_hash "$file" >> "$tmp"
         fi
-    done < $RSYNC_TMP_FILE
+    done < "$RSYNC_TMP_FILE"
     local crc=$(md5_hash "$tmp")
-    rm $tmp
+    rm "$tmp"
     popd >/dev/null
     echo $crc
 }
@@ -273,8 +280,7 @@ calc_diffs() {
 sync_files() {
     echo "--- Sync files ---"
     local rsync_tmp_basename=$(basename "$RSYNC_TMP_FILE")
-    run "rsync -av --delete --files-from=/hpcc-dev/HPCC-Platform-local/$rsync_tmp_basename /hpcc-dev/HPCC-Platform-local/ /hpcc-dev/HPCC-Platform/ && 
-        git submodule update --init --recursive"
+    run "rsync -av --delete $RSYNC_PROGRESS_ARGS --files-from=/hpcc-dev/HPCC-Platform-local/$rsync_tmp_basename /hpcc-dev/HPCC-Platform-local/ /hpcc-dev/HPCC-Platform/"
 }
 
 check_cache() {
@@ -330,9 +336,18 @@ build() {
 
     rm $RSYNC_TMP_FILE
 
-    local cmakecache_exists=$(run "test -e /hpcc-dev/build/CMakeCache.txt && echo '1' || echo '0'")
+    local cmakecache_valid=$(run "test -s /hpcc-dev/build/CMakeCache.txt && grep -q '^CMAKE_PROJECT_NAME:' /hpcc-dev/build/CMakeCache.txt && echo '1' || echo '0'")
+    local cmakecache_generator=""
+    if [ "$cmakecache_valid" == "1" ]; then
+        cmakecache_generator=$(run "grep '^CMAKE_GENERATOR:INTERNAL=' /hpcc-dev/build/CMakeCache.txt | cut -d '=' -f 2")
+    fi
 
-    if [ "$RECONFIGURE" -eq 1 ] || [ "$cmakecache_exists" == "0" ]; then
+    if [ "$cmakecache_valid" == "1" ] && [ "$cmakecache_generator" != "Ninja" ]; then
+        echo "--- Cached CMake generator '$cmakecache_generator' is not supported; reconfiguring with Ninja ---"
+        RECONFIGURE=1
+    fi
+
+    if [ "$RECONFIGURE" -eq 1 ] || [ "$cmakecache_valid" == "0" ]; then
         configure "$CMAKE_OPTIONS $cmake_options"
     fi
 
@@ -375,8 +390,8 @@ install() {
 }
 
 function cleanup() {
-    if [ -v RSYNC_TMP_FILE ]; then
-        rm $RSYNC_TMP_FILE 2> /dev/null || true
+    if [ -n "${RSYNC_TMP_FILE:-}" ]; then
+        rm "$RSYNC_TMP_FILE" 2> /dev/null || true
     fi
 }
 
@@ -517,6 +532,12 @@ case $key in
         ;;
 esac
 done
+
+# `clean` should not depend on full environment initialization.
+if [ "$ACTION" = "clean" ]; then
+    clean
+    exit 0
+fi
 
 globals
 

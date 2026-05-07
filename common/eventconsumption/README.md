@@ -144,17 +144,33 @@ All numeric comparisons are supported. A `timestamp` value will be converted to 
 
 ###### Special Cases
 
-1. Index Events
+1. Index Events - FileId
 
-All index context events include the `FileId` attribute. The `FileInformation` meta event includes the `Path` attribute. All index events can filter `FileId` using either the actual numeric value or the related `Path` value from a previously seen `FileInformation` meta event. A `FileId` term with a file path pattern follows [text](#text) rules while a term with a file identifier follows [numeric](#numeric) rules.
+Index events using `FileId` can be filtered [numerically](#numeric) using individual values or ranges.
 
-2. NodeKind Attribute
+[Text](#text) tokens may also be used to filter by:
+
+- physical file path
+- storage plane
+- logical file name
+
+Text filtering by physical file path requires a preceding `FileInformation` that associates `FileId` with a `Path` matching the filter term token.
+
+Text filtering by storage plane requires preceding instances of both `PlaneInformation` and `FileInformation`. The `FileId` is associated with the `FileInformation`'s `Path`, which maps to the `PlaneInformation`'s `Path`, which is paired with `Plane`.
+
+Text filtering by logical file name also requires preceding instances of both `PlaneInformation` and `FileInformation`. The `FileId` is associated with the `FileInformation`'s `Path`, which maps to the `PlaneInformation`'s `Path`. The logical file name is derived from both `Path` values and `PlaneInformation`'s `IsStriped` property.
+
+2. Index Events - NodeKind
 
 Events using `NodeKind` can be filtered by either the numerical value (0, 1, or 2) or the text equivalent (*branch*, *leaf*, *blob*, respectively). Text is converted to the numeric equivalent, and numeric values are compared. With only three valid values, number ranges are not supported but all other numeric comparisons are available.
 
 Remember that `IndexPayload` does not use `NodeKind` but has an implied logical value of `LeafNode`. Likewise for `FileInformation`, even though the value has no meaning for the meta event. `NodeKind` cannot, by itself, be used to block all index events for leaf nodes.
 
-3. TraceID Attribute
+3. Index Events - Path
+
+Index events including the `Path` attribute can be filtered by wildcard patterns that resemble either a physical file path or a logical file name. Given a physical file path such as `/storage/plane/prefix/logical/file/path._N_of_M`, a filter term value of `logical::file::path` is treated as `*/logical/file/path*`.
+
+4. TraceID Attribute
 
 All events may include a `TraceId` attribute, subject to options specified when recording started. Many, but not all, events are recorded within the scope of `QueryStart` and `QueryStop` events, which means the `TraceId` is associated with a `ServiceName` attribute. `TraceId` filter terms can include service names, resulting in the acceptance of all `TraceId` values associated with the named services.
 

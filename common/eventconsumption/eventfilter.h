@@ -73,7 +73,8 @@ interface IEventFilter : extends IEventVisitationLink
     // Supported special cases include:
     // - Timestamps may be given using a standard date/time format, such as "2025-01-01T00:00:00".
     // - A filter for the integral EvAttrFileId may include string tokens that will be applied to
-    //   a corresponding EvAttrPath attribute previously observed in a MetaFileInformation event.
+    //   a corresponding EvAttrPath or EvAttrPlane attribute previously observed in a FileInformation
+    //   or PlaneInformation event.
     virtual bool acceptAttribute(EventAttr attr, const char* values) = 0;
 };
 
