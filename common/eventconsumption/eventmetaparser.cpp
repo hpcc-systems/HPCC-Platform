@@ -73,6 +73,11 @@ CMetaInfoState::CCollector::CCollector(CMetaInfoState& _metaState)
 {
 }
 
+CMetaInfoState::~CMetaInfoState()
+{
+    clearAll();
+}
+
 IEventVisitationLink* CMetaInfoState::getCollector()
 {
     return new CCollector(*this);
@@ -82,6 +87,22 @@ const char* CMetaInfoState::queryFilePath(__uint64 fileId) const
 {
     auto it = fileIdToPath.find(fileId);
     return (it != fileIdToPath.end()) ? it->second : "";
+}
+
+const char* CMetaInfoState::queryPlane(const CEvent& event) const
+{
+    if (event.hasAttribute(EvAttrPlane))
+        return event.queryTextValue(EvAttrPlane);
+
+    if (!event.hasAttribute(EvAttrFileId))
+        return "";
+
+    auto it = fileIdToPlane.find(event.queryNumericValue(EvAttrFileId));
+    if (it != fileIdToPlane.end())
+    {
+        return it->second;
+    }
+    return "";
 }
 
 const char* CMetaInfoState::queryLogicalFileName(const CEvent& event) const
@@ -122,10 +143,13 @@ void CMetaInfoState::clearAll()
 {
     fileIdToPath.clear();
     fileIdToLogicalName.clear();
+    fileIdToPlane.clear();
     logicalNamePool.clear();
     sourceToProps.clear();
     indexFiles.clear();
     traceIdToService.clear();
+
+    // Cleared last as other containers hold pointers to plane string buffers.
     planes.clear();
 }
 
@@ -173,6 +197,8 @@ void CMetaInfoState::onEvent(CEvent& event)
 
                     // Derive logical file name eagerly
                     const PlaneInformation* bestPlane = findBestPlaneMatch(path);
+                    if (bestPlane)
+                        fileIdToPlane[targetFileId] = bestPlane->plane.c_str();
                     fileIdToLogicalName[targetFileId] = deriveLogicalFileName(path, bestPlane);
                 }
             }
@@ -346,6 +372,7 @@ const char* CMetaInfoState::deriveLogicalFileName(const char* path, const CMetaI
 class EventMetaStateTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(EventMetaStateTest);
+    CPPUNIT_TEST(testPlaneLookup);
     CPPUNIT_TEST(testDataDrivenLogicalFileNameDerivation);
     CPPUNIT_TEST(testConflictingPlanePath);
     CPPUNIT_TEST(testConflictingPlaneStriped);
@@ -366,6 +393,44 @@ class EventMetaStateTest : public CppUnit::TestFixture
     }
 
 public:
+    void testPlaneLookup()
+    {
+        START_TEST
+        CMetaInfoState state;
+        const char* xmlEvents = R"(
+<events>
+  <event type="PlaneInformation" Plane="myplane" Path="/var/lib/hpccsystems/hpcc-data/myplane/" IsStriped="0" />
+  <event type="PlaneInformation" Plane="mystripedplane" Path="/var/lib/hpccsystems/hpcc-data/mystripedplane/" IsStriped="1" />
+  <event type="FileInformation" FileId="1" Path="/var/lib/hpccsystems/hpcc-data/myplane/some/logical/file::1" />
+  <event type="FileInformation" FileId="2" Path="/var/lib/hpccsystems/hpcc-data/mystripedplane/d123/some/logical/file::2" />
+  <event type="FileInformation" FileId="3" Path="/var/lib/hpccsystems/hpcc-data/unknownplane/some/logical/file::3" />
+</events>
+)";
+        executeTestEvents(xmlEvents, state);
+
+        CEvent q1;
+        q1.reset(MetaFileInformation);
+        q1.setValue(EvAttrFileId, (unsigned long long)1);
+        const char * plane1 = state.queryPlane(q1);
+        CPPUNIT_ASSERT(plane1 != nullptr && *plane1 != 0);
+        CPPUNIT_ASSERT_EQUAL(std::string("myplane"), std::string(plane1));
+
+        CEvent q2;
+        q2.reset(MetaFileInformation);
+        q2.setValue(EvAttrFileId, (unsigned long long)2);
+        const char * plane2 = state.queryPlane(q2);
+        CPPUNIT_ASSERT(plane2 != nullptr && *plane2 != 0);
+        CPPUNIT_ASSERT_EQUAL(std::string("mystripedplane"), std::string(plane2));
+
+        CEvent q3;
+        q3.reset(MetaFileInformation);
+        q3.setValue(EvAttrFileId, (unsigned long long)3);
+        const char * plane3 = state.queryPlane(q3);
+        CPPUNIT_ASSERT(plane3 == nullptr || *plane3 == 0);
+
+        END_TEST
+    }
+
     void testDataDrivenLogicalFileNameDerivation()
     {
         START_TEST

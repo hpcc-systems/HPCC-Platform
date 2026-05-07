@@ -82,13 +82,17 @@ private:
     };
 
 public:
+    ~CMetaInfoState();
+
+    // Obtain a new event visitor instance to populate this state object.
     IEventVisitationLink* getCollector();
+
     // Accessor functions for file ID to path mappings
     // Note: Returns "" (empty string) to represent a cache miss
     const char* queryFilePath(__uint64 fileId) const;
+    const char* queryPlane(const CEvent& event) const;
     const char* queryLogicalFileName(const CEvent& event) const;
     bool hasFileMapping(__uint64 fileId) const;
-
 
     // Accessor functions for trace ID to service name mappings
     // Note: Returns "" (empty string) to represent a cache miss
@@ -132,6 +136,8 @@ private:
     // This is safe because std::set is a node-based container which guarantees
     // memory stability; element pointers are never invalidated when the set grows.
     Planes planes;
+    // fileIdToPlane caches the storage plane identifier for each known file Id
+    std::unordered_map<__uint64, const char*> fileIdToPlane;
     std::unordered_map<__uint64, const char*> fileIdToLogicalName;
     std::set<std::string, std::less<>> logicalNamePool;
 };
