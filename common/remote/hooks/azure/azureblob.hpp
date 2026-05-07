@@ -19,6 +19,7 @@
 #define AZURE_BLOB_HPP
 
 #include "jfile.hpp"
+#include "azureapiutils.hpp"
 
 /*
  * Direct access to files in Azure blobs
@@ -27,5 +28,6 @@
  */
 
 IFile * createAzureBlob(const char * filename);
+IFile * createAzureBlob(const char * filename, const DirEntry &entry);
 
 #endif
