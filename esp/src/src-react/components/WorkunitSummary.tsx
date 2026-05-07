@@ -69,11 +69,15 @@ interface MessageBarContent {
 interface WorkunitSummaryProps {
     wuid: string;
     otTraceParent?: string;
+    engineRedirected?: boolean;
+    targetClusterType?: string;
 }
 
 export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
     wuid,
-    otTraceParent = ""
+    otTraceParent = "",
+    engineRedirected = false,
+    targetClusterType = ""
 }) => {
     const { workunit, lastUpdate, refresh } = useWorkunit(wuid, true);
     const [exceptions, , refreshSavings] = useWorkunitExceptions(wuid);
@@ -271,6 +275,12 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
         }, 0) || 0;
     }, [exceptions]);
 
+    const engineRedirectSuffix = React.useMemo(() => {
+        if (!engineRedirected)
+            return "";
+        return `${targetClusterType ? `${targetClusterType} ` : ""}${nlsHPCC.RedirectedByPickBestEngine}`;
+    }, [engineRedirected, targetClusterType]);
+
     return <HolyGrail
         header={<>
             <CommandBar items={buttons} />
@@ -304,6 +314,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
                                 "fileAccessCost": { label: nlsHPCC.FileAccessCost, type: "string", value: `${formatCost(workunit?.FileAccessCost)}`, readonly: true },
                                 "protected": { label: nlsHPCC.Protected, type: "checkbox", value: wuProtected },
                                 "cluster": { label: nlsHPCC.Cluster, type: "string", value: workunit?.Cluster, readonly: true },
+                                ...(engineRedirected && engineRedirectSuffix ? { "clusterRedirect": { label: nlsHPCC.RedirectedTo, type: "string", value: engineRedirectSuffix, readonly: true } } : {}),
                                 "totalClusterTime": { label: nlsHPCC.TotalClusterTime, type: "string", value: workunit?.TotalClusterTime ? workunit?.TotalClusterTime : "0.00", readonly: true },
                                 "abortedBy": { label: nlsHPCC.AbortedBy, type: "string", value: workunit?.AbortBy, readonly: true },
                                 "abortedTime": { label: nlsHPCC.AbortedTime, type: "string", value: workunit?.AbortTime, readonly: true },

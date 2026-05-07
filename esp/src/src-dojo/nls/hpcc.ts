@@ -1042,6 +1042,8 @@ export = {
         ThorNetworkAddress: "Thor Network Address",
         ThorMasterAddress: "Thor Master Address",
         ThorProcess: "Thor Process",
+        RedirectedByPickBestEngine: "(redirected by pickBestEngine)",
+        RedirectedTo: "Redirected to",
         ThreadID: "Thread ID",
         Table: "Table",
         Time: "Time",

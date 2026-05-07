@@ -20570,12 +20570,19 @@ void HqlCppTranslator::pickBestEngine(HqlExprArray & exprs)
                 return;
         }
         // if we got this far, thor not required
-        setTargetClusterType(HThorCluster);  // MORE - what about Roxie?
-        DBGLOG("Thor query redirected to hthor instead");
-        Owned<IWUException> we = wu()->createException();
-        we->setSeverity(SeverityInformation);
-        we->setExceptionMessage("Thor query redirected to hthor.  Set #option ('pickBestEngine', 0) to override.");
+        recordPickBestEngineRedirect();
     }
+}
+
+
+void HqlCppTranslator::recordPickBestEngineRedirect()
+{
+    setTargetClusterType(HThorCluster);  // MORE - what about Roxie?
+    wu()->setDebugValue("engineRedirected", "1", true);
+    DBGLOG("Thor query redirected to hthor instead");
+    Owned<IWUException> we = wu()->createException();
+    we->setSeverity(SeverityInformation);
+    we->setExceptionMessage("Thor query redirected to hthor.  Set #option ('pickBestEngine', 0) to override.");
 }
 
 
@@ -20593,11 +20600,7 @@ void HqlCppTranslator::pickBestEngine(WorkflowArray & workflow)
             }
             // if we got this far, thor not required
         }
-        setTargetClusterType(HThorCluster);
-        DBGLOG("Thor query redirected to hthor instead");
-        Owned<IWUException> we = wu()->createException();
-        we->setSeverity(SeverityInformation);
-        we->setExceptionMessage("Thor query redirected to hthor.  Set #option ('pickBestEngine', 0) to override.");
+        recordPickBestEngineRedirect();
     }
 }
 
