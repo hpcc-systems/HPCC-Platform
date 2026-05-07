@@ -30,11 +30,39 @@ class event_decl CMetaInfoState : public CInterface
 public:
     struct IndexFileProperties
     {
-        Owned<String> path;
+        std::string path;
         uint32_t id;
 
-        IndexFileProperties(String* _path, uint32_t _id) : path(_path), id(_id) {}
+        IndexFileProperties(std::string _path, uint32_t _id) : path(std::move(_path)), id(_id) {}
     };
+
+    struct PlaneInformation
+    {
+        std::string plane;
+        std::string path;
+        bool striped{false};
+
+        PlaneInformation() = default;
+        PlaneInformation(const CEvent& event)
+        {
+            if (event.queryType() != MetaPlaneInformation)
+                throw makeStringExceptionV(0, "Invalid event type (%s) for PlaneInformation", queryEventName(event.queryType()));
+            if (event.hasAttribute(EvAttrPlane))
+                plane = event.queryTextValue(EvAttrPlane);
+            if (event.hasAttribute(EvAttrPath))
+                path = event.queryTextValue(EvAttrPath);
+            if (event.hasAttribute(EvAttrIsStriped))
+                striped = event.queryBooleanValue(EvAttrIsStriped);
+        }
+
+        bool operator < (const PlaneInformation& other) const
+        {
+            return (plane < other.plane);
+        }
+    };
+
+    using Planes = std::set<PlaneInformation>;
+
 
 private:
     class event_decl CCollector : public CInterfaceOf<IEventVisitationLink>
@@ -56,14 +84,16 @@ private:
 public:
     IEventVisitationLink* getCollector();
     // Accessor functions for file ID to path mappings
+    // Note: Returns "" (empty string) to represent a cache miss
     const char* queryFilePath(__uint64 fileId) const;
+    const char* queryLogicalFileName(const CEvent& event) const;
     bool hasFileMapping(__uint64 fileId) const;
-    void clearFileMappings();
+
 
     // Accessor functions for trace ID to service name mappings
+    // Note: Returns "" (empty string) to represent a cache miss
     const char* queryServiceName(const char* traceId) const;
     bool hasServiceMapping(const char* traceId) const;
-    void clearServiceMappings();
 
     // Clear all mappings
     void clearAll();
@@ -73,15 +103,35 @@ private:
     void onEvent(CEvent& event);
     uint32_t generateSourceFileId(const CEvent& event);
     uint32_t generateRuntimeFileId(const CEvent& event);
+    const PlaneInformation* findBestPlaneMatch(const char* path) const;
+    const char* deriveLogicalFileName(const char* path, const PlaneInformation* plane);
 
 private:
+
+
     size_t sourceCount{0};
 
     // File ID to path mappings (from MetaFileInformation events)
+    // Note: fileIdToPath stores pointers to the string buffers owned by indexFiles.
+    // This is safe because std::set is a node-based container which guarantees
+    // memory stability; element pointers are never invalidated when the set grows.
     std::set<IndexFileProperties, std::less<>> indexFiles;
     std::unordered_map<size_t, const IndexFileProperties*> sourceToProps;
-    std::unordered_map<__uint64, Owned<String>> fileIdToPath;
+    std::unordered_map<__uint64, const char*> fileIdToPath;
 
     // Trace ID to service name mappings (from EventQueryStart events)
     std::unordered_map<std::string, std::string> traceIdToService;
+
+    // Physical file paths mapped to logical file names.
+    //
+    // planes tracks the configuration required to identify the logical file name of a physical file
+    // logicalNamePool owns the string memory for each unique derived logical file name
+    // fileIdToLogicalName caches the derived logical file name for each known file ID
+    //
+    // Note: fileIdToLogicalName stores pointers to the string buffers owned by logicalNamePool.
+    // This is safe because std::set is a node-based container which guarantees
+    // memory stability; element pointers are never invalidated when the set grows.
+    Planes planes;
+    std::unordered_map<__uint64, const char*> fileIdToLogicalName;
+    std::set<std::string, std::less<>> logicalNamePool;
 };

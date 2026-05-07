@@ -374,6 +374,7 @@ public:
 
 public:
     CEvent();
+    CEvent(const CEvent& other);
     CEvent& operator = (const CEvent& other);
     void reset(EventType _type);
     // Reset the event type while retaining attribute values common to both the

@@ -284,8 +284,9 @@ protected:
         {
             if (MetaFileInformation == event.queryType())
             {
-                if (helper.matches(event.queryTextValue(EvAttrPath)))
-                    matchedPaths.insert(event.queryNumericValue(EvAttrFileId));
+                __uint64 fileId = event.queryNumericValue(EvAttrFileId);
+                if (!observeMatchedText(event.queryTextValue(EvAttrPath), fileId))
+                    (void)observeMatchedText(metaInfoState.queryLogicalFileName(event), fileId);
             }
         }
 
@@ -296,10 +297,14 @@ protected:
             case EvAttrFileId:
                 return matchedPaths.count(event.queryNumericValue(EvAttrFileId)) || UnsignedFilterTerm::matches(event, attribute);
             case EvAttrPath:
+                switch (event.queryType())
                 {
-                    __uint64 fileId = event.queryNumericValue(EvAttrFileId);
-                    const char* filePath = metaInfoState.queryFilePath(fileId);
-                    return filePath && helper.matches(filePath);
+                case MetaPlaneInformation:
+                    return checkMatchedText(attribute.queryTextValue());
+                case MetaFileInformation:
+                    return matches(event, event.queryAttribute(EvAttrFileId));
+                default: // dali events through index event fileID?
+                    return checkMatchedText(attribute.queryTextValue());
                 }
             default:
                 return false;
@@ -310,8 +315,35 @@ protected:
         {
             if (UnsignedFilterTerm::acceptToken(token, comp))
                 return true;
-            // Token not a number or range; assume it is a path pattern
             return helper.acceptToken(token, comp);
+        }
+
+        // Returns true when the supplied text value is present and matches the
+        // string criteria accepted by this filter term.
+        // text: Candidate text considered for matching.
+        // return: True if text is non-empty and matches helper; otherwise false.
+        bool checkMatchedText(const char* text) const
+        {
+            return !isEmptyString(text) && helper.matches(text);
+        }
+
+        // Applies text matching for the supplied file and records the file id in
+        // matchedPaths when the text matches, allowing later file-id based matches.
+        // text: Candidate text considered for matching.
+        // fileId: File identifier associated with the candidate text.
+        // return: True if the text matched and fileId was recorded; otherwise false.
+        //
+        // The method is const because it is called from the const observe() method.
+        // Concurrent access to the mutable matchedPaths is not possible and no
+        // synchronization is required.
+        bool observeMatchedText(const char* text, __uint64 fileId) const
+        {
+            if (checkMatchedText(text))
+            {
+                matchedPaths.insert(fileId);
+                return true;
+            }
+            return false;
         }
 
         StringMatchHelper helper;
@@ -740,6 +772,8 @@ class EventFilterTests : public CppUnit::TestFixture
     CPPUNIT_TEST(testFilterByEventByBadName);
     CPPUNIT_TEST(testFilterByEventByBadComparison);
     CPPUNIT_TEST(testFilterByAttributeByFileId);
+    CPPUNIT_TEST(testFilterByAttributeByFileIdLogicalFilename);
+    CPPUNIT_TEST(testFilterByAttributeByFileIdLogicalFilenamePathMatch);
     CPPUNIT_TEST(testFilterByAttributeByPath1);
     CPPUNIT_TEST(testFilterByAttributeByPath2);
     CPPUNIT_TEST(testFilterByAttributeByPath3);
@@ -749,9 +783,28 @@ class EventFilterTests : public CppUnit::TestFixture
     CPPUNIT_TEST(testFilterByAttributeByTimestamp2);
     CPPUNIT_TEST(testFilterByAttributeByTimestamp3);
     CPPUNIT_TEST(testFilterByAttributeByTraceId);
+    CPPUNIT_TEST(testFilterByAttributeByFileIdNumericPathMatch);
     CPPUNIT_TEST_SUITE_END();
 
 public:
+    void testFilterByAttributeByFileIdNumericPathMatch()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link kind="event-filter">
+                    <attribute id="fileId" values="[gt]4"/>
+                </link>
+                <input>
+                    <event type="FileInformation" FileId="1" Path="/path/1"/>
+                    <event type="FileInformation" FileId="5" Path="/path/5"/>
+                </input>
+                <expect>
+                    <event type="FileInformation" FileId="5" Path="/path/5"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData, PTEFlenientParsing);
+    }
     void testFilterByEventsUnfiltered()
     {
         EventType foo;
@@ -1149,6 +1202,85 @@ public:
                     <event type="IndexCacheMiss" FileId="3"/>
                     <event type="IndexCacheMiss" FileId="4"/>
                     <event type="IndexCacheMiss" FileId="6"/>
+                    <event type="IndexCacheMiss" FileId="8"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData, PTEFlenientParsing);
+    }
+
+    void testFilterByAttributeByFileIdLogicalFilename()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link kind="event-filter">
+                    <attribute id="fileId" values="[eq]some::logical::file::1,[gte]some::logical::file::7,*4*"/>
+                    <event list="[neq]FileInformation"/>
+                </link>
+                <input>
+                    <event type="PlaneInformation" Plane="myplane" Path="/path/to/file/" IsStriped="0" />
+                    <event type="FileInformation" FileId="1" Path="/path/to/file/some/logical/file::1"/>
+                    <event type="FileInformation" FileId="2" Path="/path/to/file/some/logical/file::2"/>
+                    <event type="FileInformation" FileId="3" Path="/path/to/file/some/logical/file::3"/>
+                    <event type="FileInformation" FileId="4" Path="/path/to/file/some/logical/file::4"/>
+                    <event type="FileInformation" FileId="5" Path="/path/to/file/some/logical/file::5"/>
+                    <event type="FileInformation" FileId="6" Path="/path/to/file/some/logical/file::6"/>
+                    <event type="FileInformation" FileId="7" Path="/path/to/file/some/logical/file::7"/>
+                    <event type="FileInformation" FileId="8" Path="/path/to/file/some/logical/file::8"/>
+                    <event type="IndexCacheMiss" FileId="1"/>
+                    <event type="IndexCacheMiss" FileId="2"/>
+                    <event type="IndexCacheMiss" FileId="3"/>
+                    <event type="IndexCacheMiss" FileId="4"/>
+                    <event type="IndexCacheMiss" FileId="5"/>
+                    <event type="IndexCacheMiss" FileId="6"/>
+                    <event type="IndexCacheMiss" FileId="7"/>
+                    <event type="IndexCacheMiss" FileId="8"/>
+                </input>
+                <expect>
+                    <event type="IndexCacheMiss" FileId="1"/>
+                    <event type="IndexCacheMiss" FileId="4"/>
+                    <event type="IndexCacheMiss" FileId="7"/>
+                    <event type="IndexCacheMiss" FileId="8"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData, PTEFlenientParsing);
+    }
+
+    void testFilterByAttributeByFileIdLogicalFilenamePathMatch()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link kind="event-filter">
+                    <attribute id="fileId" values="[eq]some::logical::file::1,[gte]some::logical::file::7,*4*"/>
+                </link>
+                <input>
+                    <event type="PlaneInformation" Plane="myplane" Path="/path/to/file/" IsStriped="0" />
+                    <event type="FileInformation" FileId="1" Path="/path/to/file/some/logical/file::1"/>
+                    <event type="FileInformation" FileId="2" Path="/path/to/file/some/logical/file::2"/>
+                    <event type="FileInformation" FileId="3" Path="/path/to/file/some/logical/file::3"/>
+                    <event type="FileInformation" FileId="4" Path="/path/to/file/some/logical/file::4"/>
+                    <event type="FileInformation" FileId="5" Path="/path/to/file/some/logical/file::5"/>
+                    <event type="FileInformation" FileId="6" Path="/path/to/file/some/logical/file::6"/>
+                    <event type="FileInformation" FileId="7" Path="/path/to/file/some/logical/file::7"/>
+                    <event type="FileInformation" FileId="8" Path="/path/to/file/some/logical/file::8"/>
+                    <event type="IndexCacheMiss" FileId="1"/>
+                    <event type="IndexCacheMiss" FileId="2"/>
+                    <event type="IndexCacheMiss" FileId="3"/>
+                    <event type="IndexCacheMiss" FileId="4"/>
+                    <event type="IndexCacheMiss" FileId="5"/>
+                    <event type="IndexCacheMiss" FileId="6"/>
+                    <event type="IndexCacheMiss" FileId="7"/>
+                    <event type="IndexCacheMiss" FileId="8"/>
+                </input>
+                <expect>
+                    <event type="FileInformation" FileId="1" Path="/path/to/file/some/logical/file::1"/>
+                    <event type="FileInformation" FileId="4" Path="/path/to/file/some/logical/file::4"/>
+                    <event type="FileInformation" FileId="7" Path="/path/to/file/some/logical/file::7"/>
+                    <event type="FileInformation" FileId="8" Path="/path/to/file/some/logical/file::8"/>
+                    <event type="IndexCacheMiss" FileId="1"/>
+                    <event type="IndexCacheMiss" FileId="4"/>
+                    <event type="IndexCacheMiss" FileId="7"/>
                     <event type="IndexCacheMiss" FileId="8"/>
                 </expect>
             </test>
