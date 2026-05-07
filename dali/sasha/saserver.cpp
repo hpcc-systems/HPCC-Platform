@@ -430,6 +430,7 @@ int main(int argc, const char* argv[])
             {
                 addAbortHandler(actionOnAbort);
                 initializeStoragePlanes(true, true);
+                installDefaultFileHooks(serverConfig);
 #ifdef _CONTAINERIZED
                 service = serverConfig->queryProp("@service");
                 if (isEmptyString(service))
