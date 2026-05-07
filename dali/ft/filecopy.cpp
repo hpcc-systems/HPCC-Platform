@@ -1613,11 +1613,13 @@ IAPICopyClient * FileSprayer::getAPICopyClient()
     if (needCalcCRC && !sources.item(0).hasCRC)
         return nullptr;
 
-    if (!distributedSource)
-        return nullptr;
-
     StringBuffer sourceClusterName;
-    distributedSource->getClusterName(0, sourceClusterName);
+    if (distributedSource)
+        distributedSource->getClusterName(0, sourceClusterName);
+    else if (savedSource)
+        savedSource->getClusterGroupName(0, sourceClusterName);
+    else
+        return nullptr;
     Owned<const IStoragePlane> sourcePlane = getDataStoragePlane(sourceClusterName.str(), false);
     if (!sourcePlane)
         return nullptr;
@@ -2816,10 +2818,54 @@ void FileSprayer::transferUsingAPI(IAPICopyClient * copyClient)
             }
 
             unsigned inputPartNum = sources.item(cur.whichInput).partNum;
-            IDistributedFilePart & srcDistFilePart = distributedSource->queryPart(inputPartNum);
             StringBuffer sourcePath;
-            srcDistFilePart.getStorageFilePath(sourcePath, copyNum);
-            unsigned sourceStripeNum = srcDistFilePart.getStripeNum(copyNum);
+            unsigned sourceStripeNum;
+            if (distributedSource)
+            {
+                IDistributedFilePart & srcDistFilePart = distributedSource->queryPart(inputPartNum);
+                srcDistFilePart.getStorageFilePath(sourcePath, copyNum);
+                sourceStripeNum = srcDistFilePart.getStripeNum(copyNum);
+            }
+            else
+            {
+                // Non-distributed source (e.g., a remote file descriptor obtained via DFS).
+                // We need to manually resolve the storage path and stripe number since
+                // there is no IDistributedFilePart with helper methods available.
+                IPartDescriptor *srcPart = savedSource->queryPart(inputPartNum);
+                srcPart->getPath(sourcePath, copyNum);
+
+                // Look up the storage plane by the cluster/group name associated with the source
+                const char *planeName = savedSource->queryClusterNum(0)->queryGroupName();
+                Owned<const IStoragePlane> storagePlane = getDataStoragePlane(planeName, false);
+                if (!storagePlane)
+                {
+                    if (isEmptyString(planeName))
+                        throw makeStringExceptionV(DFSERR_MissingStoragePlaneName, "Could not look up storage plane. Missing plane name in IClusterInfo.");
+                    else
+                        throw makeStringExceptionV(DFSERR_MissingStoragePlane, "Missing storage plane: %s", planeName);
+                }
+
+                // Strip the plane's prefix from the full path to get the relative path
+                // within the storage container (e.g., remove "azureblob:plane1" prefix)
+                const char *planePrefix = storagePlane->queryPrefix();
+                if (!startsWith(sourcePath, planePrefix))
+                    throw makeStringExceptionV(-1, "Source path '%s' does not begin with expected plane prefix '%s' for plane '%s'", sourcePath.str(), planePrefix, planeName);
+                sourcePath.remove(0, strlen(planePrefix));
+
+                // Calculate which stripe (i.e., which storage account/device) this part
+                // lives on, using the logical file name hash and the number of devices
+                unsigned lfnHash = savedSource->queryProperties().getPropInt("@lfnHash", -1);
+                if (lfnHash == (unsigned)-1)
+                {
+                    StringBuffer logicalName;
+                    savedSource->getTraceName(logicalName);
+                    if (logicalName.isEmpty())
+                        throw makeStringException(-1, "Missing @lfnHash and logical name when determining source stripe");
+                    lfnHash = getFilenameHash(logicalName.str());
+                }
+                unsigned numDevices = storagePlane->numDevices();
+                sourceStripeNum = calcStripeNumber(srcPart->queryPartIndex(), lfnHash, numDevices);
+            }
 
             unsigned outputPartNum = targets.item(cur.whichOutput).partNum;
             IDistributedFilePart & tgtDistFilePart = distributedTarget->queryPart(outputPartNum);
@@ -2989,6 +3035,7 @@ void FileSprayer::setReplicate(bool _replicate)
 void FileSprayer::setSource(IDistributedFile * source)
 {
     distributedSource.set(source);
+    savedSource.setown(source->getFileDescriptor());
     srcAttr.setown(createPTreeFromIPT(&source->queryAttributes()));
     IPropertyTree *history = source->queryHistory();
     if (history)
@@ -3028,6 +3075,7 @@ void FileSprayer::setSource(IFileDescriptor * source)
 
 void FileSprayer::setSource(IFileDescriptor * source, unsigned copy, unsigned mirrorCopy)
 {
+    savedSource.set(source);
     IPropertyTree *attr = &source->queryProperties();
     compressedInput = source->isCompressed();
     extractSourceFormat(attr);
