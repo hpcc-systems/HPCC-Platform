@@ -38,7 +38,7 @@ jobs:
     if: ${{ github.repository_owner == 'hpcc-systems' }}
     steps:
       - name: Checkout HPCC-Platform
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: refs/tags/community_${{ inputs.current-version }}
           submodules: recursive
@@ -46,7 +46,7 @@ jobs:
           fetch-tags: true
           fetch-depth: 0
       - name: Checkout LN
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ github.repository_owner }}/LN
           ref: refs/tags/internal_${{ inputs.current-version }}
@@ -56,7 +56,7 @@ jobs:
           fetch-tags: true
           fetch-depth: 0
       - name: Checkout ECLIDE
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ github.repository_owner }}/ECLIDE
           ref: refs/tags/eclide_${{ inputs.current-version }}
@@ -65,7 +65,7 @@ jobs:
           fetch-tags: true
           fetch-depth: 0
       - name: Checkout PrettyGitLogs
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: hpcc-systems/PrettyGitLogs
           ref: master
@@ -172,7 +172,7 @@ jobs:
             perl ./prettyLogs.pl -bt eclide_${current_version} -et eclide_${previous_rc_version} -repo ../ECLIDE -sort -html eclide_${current_version}
           fi
       - name: Upload Changelogs
-        uses: ncipollo/release-action@v1.16.0
+        uses: ncipollo/release-action@v1
         with:
           allowUpdates: true
           generateReleaseNotes: false

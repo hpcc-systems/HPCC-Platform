@@ -138,14 +138,14 @@ jobs:
           ${{ !contains(inputs.os, 'windows') && 'sudo' || '' }} rm -rf "$VCPKG_INSTALLATION_ROOT"
 
       - name: Checkout HPCC-Platform
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: recursive
           path: ${{ github.workspace }}/HPCC-Platform
 
       - name: Checkout LN
         if: ${{ inputs.ln == true }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ github.repository_owner }}/LN
           token: ${{ secrets.LNB_TOKEN }}
@@ -185,14 +185,14 @@ jobs:
         run: |
           echo "${{ toJSON(steps.vars.outputs) }}"
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v5
         id: cache
         with:
           path: |
             ${{github.workspace}}/build/vcpkg_installed
           key: vcpkg-${{ inputs.os }}-${{ steps.vars.outputs.vcpkg_sha_short }}
 
-      - uses: hendrikmuhs/ccache-action@v1.2
+      - uses: hendrikmuhs/ccache-action@v1.2.23
         with:
           save: ${{ inputs.update-cache == true }}
           key: gh-runner-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}
@@ -218,7 +218,7 @@ jobs:
 
       - name: Upload Package
         if: ${{ inputs.upload-package == true }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.asset-name }}
           path: |
@@ -228,7 +228,7 @@ jobs:
 
       - name: Upload Support Files
         if: ${{ inputs.upload-package == true }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.asset-name }}-support-files
           path: |
@@ -238,7 +238,7 @@ jobs:
 
       - name: Upload ECL Watch UI Test Files
         if: ${{ inputs.upload-package == true }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.asset-name }}-ecl_watch_playwright_report
           path: |
@@ -247,7 +247,7 @@ jobs:
 
       - name: Upload Error Logs
         if: ${{ failure() || cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.os }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}-gh-runner-logs
           path: ${{ github.workspace }}/build/**/*.log
