@@ -16,18 +16,18 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: ["24", "22", "20"]
+        node: ["24", "22"]
       fail-fast: false
 
     steps:
       - name: Free additional disk space (remove Android SDK + Tools)
         run: |
           sudo rm -rf /usr/local/lib/android
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: "recursive"
           
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node }}
 
@@ -45,7 +45,7 @@ jobs:
         
       - name: Upload Package
         if: ${{ matrix.node == '22' && inputs.asset-name}}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.asset-name }}
           path: |

@@ -53,7 +53,7 @@ jobs:
           sudo rm -rf "$VCPKG_INSTALLATION_ROOT"
 
       - name: Checkout HPCC-Platform
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.community-ref }}
           submodules: recursive
@@ -61,7 +61,7 @@ jobs:
       
       - name: Checkout LN
         if: ${{ inputs.ln-ref != '' }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ln-ref }}
           submodules: recursive
@@ -106,7 +106,7 @@ jobs:
 
       - name: Release Community Clienttools
         if: ${{ inputs.ln-ref == '' }}
-        uses: ncipollo/release-action@v1.16.0
+        uses: ncipollo/release-action@v1
         with:
           allowUpdates: true
           generateReleaseNotes: false
@@ -131,7 +131,7 @@ jobs:
 
       - name: Upload Error Logs
         if: ${{ failure() || cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: macos-14-clienttools-logs-${{ github.job }}-${{ github.run_number }}
           path: ./build/**/*.log

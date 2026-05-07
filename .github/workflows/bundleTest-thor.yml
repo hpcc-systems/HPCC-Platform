@@ -54,7 +54,7 @@ jobs:
           sudo rm -rf /usr/local/lib/android
 
       - name: Download Package
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ${{ inputs.asset-name }}
           path: ${{ inputs.asset-name }}
@@ -86,7 +86,7 @@ jobs:
 
       - name: Checkout ecl-bundles repository
         if: ${{ env.LIST_BUNDLES_DYNAMICALLY == 'true' }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: hpcc-systems/ecl-bundles
 
@@ -375,7 +375,7 @@ jobs:
           
       - name: ml-thor-test-logs-artifact
         if: ${{ failure() || cancelled() || env.UPLOAD_ARTIFACT == 'true' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.asset-name }}-bundle-test-logs
           path: |

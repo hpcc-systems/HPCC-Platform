@@ -29,10 +29,10 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.repository == 'hpcc-systems/HPCC-Platform' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: false
-      - uses: azure/setup-helm@v3
+      - uses: azure/setup-helm@v5
         with:
           version: 'latest'
           token: ${{ secrets.GITHUB_TOKEN }}

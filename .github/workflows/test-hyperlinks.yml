@@ -71,7 +71,7 @@ jobs:
       branch_changed: ${{ steps.branch_changed.outputs.branch_changed }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Check for code changes between commits
@@ -86,7 +86,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps: 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: hpcc-systems/HPCC-Platform
           fetch-depth: 2
@@ -350,7 +350,7 @@ jobs:
           fi
           
       - name: Upload logs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: ${{ failure() || cancelled() || inputs.debug-mode == 'true'}}
         with:
           name: Hyperlinks-testing-log
