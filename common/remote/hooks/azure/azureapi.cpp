@@ -21,6 +21,10 @@
 #include "azureapi.hpp"
 #include "azureapiutils.hpp"
 
+#include <map>
+#include <set>
+#include <vector>
+
 using namespace Azure::Storage;
 using namespace Azure::Storage::Files;
 using namespace Azure::Storage::Blobs;
@@ -28,6 +32,26 @@ using namespace Azure::Storage::Blobs;
 // Forward declarations from the individual implementations
 extern IFile * createAzureBlob(const char * filename);
 extern IFile * createAzureFile(const char * filename);
+
+// Cache of Azure Files directory URLs already created/verified, to avoid
+// redundant CreateIfNotExists metadata calls across multi-part copies.
+// Scoped to the owning CAzureApiCopyClient so it is freed when the copy session ends.
+struct CreatedDirsCache
+{
+    bool contains(const std::string &path) const
+    {
+        CriticalBlock block(lock);
+        return dirs.count(path) != 0;
+    }
+    void insert(const std::string &path)
+    {
+        CriticalBlock block(lock);
+        dirs.insert(path);
+    }
+private:
+    mutable CriticalSection lock;
+    std::set<std::string> dirs;
+};
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -119,10 +143,84 @@ class AzureFileClient : public AzureAPICopyClientBase
 {
     std::unique_ptr<Shares::ShareFileClient> fileClient;
     Shares::StartFileCopyOperation fileCopyOp;
+    bool sourceIsBlob = false;
+    Shares::ShareClientOptions clientOptions;
+    std::shared_ptr<const Azure::Core::Credentials::TokenCredential> credential;
+    std::string targetUrl;
+    CreatedDirsCache &createdDirsCache;
+
+    // Azure Files requires parent directories to exist before creating a file.
+    // Walk the path components and create each directory level if it doesn't exist.
+    void ensureParentDirectories()
+    {
+        // Parse the target URL to extract share and path components
+        // URL format: https://account.file.core.windows.net/share/dir1/dir2/filename
+        Azure::Core::Url parsed(targetUrl);
+        std::string urlPath = parsed.GetPath(); // e.g., "share/dir1/dir2/filename"
+
+        // Split into components
+        std::vector<std::string> components;
+        size_t start = 0;
+        while (start < urlPath.size())
+        {
+            size_t pos = urlPath.find('/', start);
+            if (pos == std::string::npos)
+                break; // last component is the filename — skip it
+            if (pos > start)
+                components.push_back(urlPath.substr(start, pos - start));
+            start = pos + 1;
+        }
+
+        if (components.size() < 2)
+            return; // No parent directories to create (just share/filename)
+
+        // First component is the share name, remaining are directories
+        std::string baseUrl = parsed.GetScheme() + "://" + parsed.GetHost() + "/" + components[0];
+        // Preserve the query string (contains the SAS token for non-managed-identity auth)
+        std::string queryString = parsed.GetAbsoluteUrl();
+        auto queryPos = queryString.find('?');
+        std::string querySuffix = (queryPos != std::string::npos) ? queryString.substr(queryPos) : "";
+        std::string dirUrl = baseUrl;
+        for (size_t i = 1; i < components.size(); i++)
+        {
+            dirUrl += "/" + components[i];
+            if (createdDirsCache.contains(dirUrl))
+                continue;
+            try
+            {
+                std::string authUrl = dirUrl + querySuffix;
+                if (credential)
+                {
+                    Shares::ShareDirectoryClient dirClient(authUrl, credential, clientOptions);
+                    dirClient.CreateIfNotExists();
+                }
+                else
+                {
+                    Shares::ShareDirectoryClient dirClient(authUrl, clientOptions);
+                    dirClient.CreateIfNotExists();
+                }
+                createdDirsCache.insert(dirUrl);
+            }
+            catch (const Azure::Core::RequestFailedException& e)
+            {
+                IERRLOG("Failed to create directory '%s': %s (code %d)", dirUrl.c_str(), e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+                throw makeStringExceptionV(MSGAUD_operator, -1, "Failed to create directory '%s': %s (%d)", dirUrl.c_str(), e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+            }
+        }
+    }
 
     virtual void doStartCopy(const char * source) override
     {
-        fileCopyOp = fileClient->StartCopy(source);
+        ensureParentDirectories();
+
+        Shares::StartFileCopyOptions options;
+        if (sourceIsBlob)
+        {
+            // Azure Blob storage does not have SMB properties. Explicitly set to none; otherwise,
+            // the copy will fail because it could not retrieve the SMB properties from the source.
+            options.SmbPropertiesToCopy = Shares::CopyableFileSmbPropertyFlags::None;
+        }
+        fileCopyOp = fileClient->StartCopy(source, options);
     }
     virtual ApiCopyStatus doGetProgress(CDateTime & dateTime, int64_t & outputLength) override
     {
@@ -151,9 +249,18 @@ class AzureFileClient : public AzureAPICopyClientBase
         fileClient->Delete();
     }
 public:
-    AzureFileClient(const char *target)
+    AzureFileClient(const char *target, bool _sourceIsBlob, bool useManagedIdentity, CreatedDirsCache &_createdDirsCache)
+        : sourceIsBlob(_sourceIsBlob), targetUrl(target), createdDirsCache(_createdDirsCache)
     {
-        fileClient.reset(new Shares::ShareFileClient(target));
+        if (useManagedIdentity)
+        {
+            // ShareTokenIntent is required when using token authentication with Azure Files
+            clientOptions.ShareTokenIntent = Shares::Models::ShareTokenIntent::Backup;
+            credential = getAzureManagedIdentityCredential();
+            fileClient.reset(new Shares::ShareFileClient(target, credential, clientOptions));
+        }
+        else
+            fileClient.reset(new Shares::ShareFileClient(target));
     }
 };
 
@@ -193,9 +300,12 @@ class AzureBlobClient : public AzureAPICopyClientBase
         blobClient->Delete();
     }
 public:
-    AzureBlobClient(const char * target)
+    AzureBlobClient(const char * target, bool useManagedIdentity)
     {
-        blobClient.reset(new BlobClient(target));
+        if (useManagedIdentity)
+            blobClient.reset(new BlobClient(target, getAzureManagedIdentityCredential()));
+        else
+            blobClient.reset(new BlobClient(target));
     }
 };
 
@@ -232,17 +342,79 @@ public:
         StringBuffer targetURI;
         getAzureURI(targetURI, tgtStripeNum,  tgtPath, targetApiInfo);
         Owned<IAPICopyClientOp> apiClient;
+        bool tgtUseManagedIdentity = targetApiInfo->useManagedIdentity();
         if (isAzureFile(targetApiInfo->getStorageType()))
-            apiClient.setown(new AzureFileClient(targetURI.str()));
+            apiClient.setown(new AzureFileClient(targetURI.str(), isAzureBlob(sourceApiInfo->getStorageType()), tgtUseManagedIdentity, createdDirsCache));
         else
-            apiClient.setown(new AzureBlobClient(targetURI.str()));
+            apiClient.setown(new AzureBlobClient(targetURI.str(), tgtUseManagedIdentity));
 
         StringBuffer sourceURI;
         getAzureURI(sourceURI, srcStripeNum, srcPath, sourceApiInfo);
+
+        // For async server-side copy (StartCopy), the source URL must be self-authenticating
+        // because the Azure service fetches it independently. If the source uses managed identity
+        // (no SAS token), generate a short-lived User Delegation SAS so the target service can read it.
+        if (sourceApiInfo->useManagedIdentity() && isAzureBlob(sourceApiInfo->getStorageType()))
+        {
+            std::string delegationSas = generateUserDelegationSas(srcStripeNum, srcPath, sourceApiInfo);
+            // GenerateSasToken() returns a string starting with '?' so append directly
+            sourceURI.append(delegationSas.c_str());
+        }
+
         apiClient->startCopy(sourceURI.str());
         return apiClient.getClear();
     }
 protected:
+    // Generate a short-lived User Delegation SAS for reading a source blob using managed identity.
+    // This allows the async StartCopy service to access the source without a stored secret.
+    std::string generateUserDelegationSas(unsigned stripeNum, const char *filePath, const IStorageApiInfo *apiInfo) const
+    {
+        const char *accountName = apiInfo->queryStorageApiAccount(stripeNum);
+
+        auto delegationKey = getCachedDelegationKey(accountName);
+
+        Sas::BlobSasBuilder sasBuilder;
+        sasBuilder.Protocol = Sas::SasProtocol::HttpsOnly;
+        sasBuilder.ExpiresOn = delegationKey->SignedExpiresOn;
+        sasBuilder.BlobContainerName = apiInfo->queryStorageContainerName(stripeNum);
+        sasBuilder.BlobName = stripDevicePrefix(filePath);
+        sasBuilder.Resource = Sas::BlobSasResource::Blob;
+        sasBuilder.SetPermissions(Sas::BlobSasPermissions::Read);
+
+        return sasBuilder.GenerateSasToken(*delegationKey, accountName);
+    }
+
+    // Return a cached UserDelegationKey for the given account, refreshing if expired or absent.
+    // The key is valid for 1 hour; we refresh with 5 minutes of margin to avoid using a nearly-expired key.
+    std::shared_ptr<const Blobs::Models::UserDelegationKey> getCachedDelegationKey(const char *accountName) const
+    {
+        CriticalBlock block(delegationKeyCS);
+        auto it = delegationKeyCache.find(accountName);
+        auto now = std::chrono::system_clock::now();
+        if (it != delegationKeyCache.end())
+        {
+            // Reuse if the key still has at least 5 minutes of validity
+            if (it->second.fetchedAt + std::chrono::minutes(55) > now)
+                return it->second.key;
+        }
+
+        std::string serviceUrl = std::string("https://") + accountName + ".blob.core.windows.net";
+        BlobServiceClient serviceClient(serviceUrl, getAzureManagedIdentityCredential());
+
+        // Backdate the key start time to tolerate normal clock skew between nodes and Azure.
+        Blobs::GetUserDelegationKeyOptions options;
+        options.StartsOn = Azure::DateTime(now - std::chrono::minutes(5));
+        auto expiresOn = Azure::DateTime(now + std::chrono::hours(1));
+        auto key = std::make_shared<Blobs::Models::UserDelegationKey>(serviceClient.GetUserDelegationKey(expiresOn, options).Value);
+
+        CachedDelegationKey entry;
+        entry.key = key;
+        entry.fetchedAt = now;
+        delegationKeyCache[accountName] = std::move(entry);
+
+        return key;
+    }
+
     void getAzureURI(StringBuffer & uri, unsigned stripeNum, const char *filePath, const IStorageApiInfo *apiInfo) const
     {
         const char *accountName = apiInfo->queryStorageApiAccount(stripeNum);
@@ -254,9 +426,26 @@ protected:
             uri.append(".blob");
         uri.append(".core.windows.net/");
 
+        const char *path = stripDevicePrefix(filePath);
+
         StringBuffer tmp, token;
         const char * container = apiInfo->queryStorageContainerName(stripeNum);
-        uri.appendf("%s%s%s", container, encodeURL(tmp, filePath).str(), apiInfo->getSASToken(stripeNum, token).str());
+        uri.appendf("%s/%s%s", container, encodeURL(tmp, path).str(), apiInfo->getSASToken(stripeNum, token).str());
+    }
+
+    // Strip leading '/' and device/stripe prefix (e.g., "d2/") from a file path.
+    // The stripe number selects the account/container, not the storage path.
+    static const char * stripDevicePrefix(const char *path)
+    {
+        if (path && path[0] == '/')
+            path++;
+        if (path && path[0] == 'd' && isdigit(path[1]))
+        {
+            const char *slash = strchr(path, '/');
+            if (slash)
+                path = slash + 1;
+        }
+        return path;
     }
     static inline bool isAzureFile(const char *storageType)
     {
@@ -267,7 +456,16 @@ protected:
         return strsame(storageType, "azureblob");
     }
 
+    struct CachedDelegationKey
+    {
+        std::shared_ptr<const Blobs::Models::UserDelegationKey> key;
+        std::chrono::system_clock::time_point fetchedAt;
+    };
+
     Linked<IStorageApiInfo> sourceApiInfo, targetApiInfo;
+    mutable CreatedDirsCache createdDirsCache;
+    mutable CriticalSection delegationKeyCS;
+    mutable std::map<std::string, CachedDelegationKey> delegationKeyCache;
 };
 
 //---------------------------------------------------------------------------------------------------------------------
