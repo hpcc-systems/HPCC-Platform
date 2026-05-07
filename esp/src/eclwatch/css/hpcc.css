@@ -27,26 +27,6 @@ body {
     padding: 0;
 }
 
-button:hover {
-    color: rgb(0, 0, 0);
-    background-color: rgb(175, 217, 255);
-}
-
-h1 {
-    font-size: 1.5em;
-}
-
-/*Use this when creating a small popup form*/
-.smallForm label {
-    float: left;
-    width: 26%;
-    margin: 0 15px 0 0;
-    text-align: left;
-    padding-top: 4px;
-    font-weight: bold;
-    height: 20px;
-}
-
 form label {
     margin: 0 8px 0 0;
     font-weight: bold;
@@ -69,18 +49,6 @@ form li {
 form li label {
     float: left;
     width: 14%;
-    margin: 0 15px 0 0;
-    text-align: left;
-    padding-top: 4px;
-}
-
-.dijitDialogPaneContent {
-    overflow-x: hidden !important;
-}
-
-.dijitDialogPaneContent form li label {
-    float: left;
-    width: 25%;
     margin: 0 15px 0 0;
     text-align: left;
     padding-top: 4px;

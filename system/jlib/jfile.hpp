@@ -431,6 +431,7 @@ interface IStorageApiInfo : implements IInterface
     virtual const char * queryStorageApiAccount(unsigned stripeNumber) const = 0;
     virtual const char * queryStorageContainerName(unsigned stripeNumber) const = 0;
     virtual StringBuffer & getSASToken(unsigned stripeNumber, StringBuffer & token) const = 0;
+    virtual bool useManagedIdentity() const = 0;
 };
 enum class ApiCopyStatus { NotStarted, Pending, Success, Failed, Aborted };
 interface IAPICopyClientOp : implements IInterface

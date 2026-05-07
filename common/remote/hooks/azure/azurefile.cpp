@@ -439,7 +439,9 @@ SharedFileClient AzureFile::getFileClient() const
 {
     if (useManagedIdentity)
     {
-        return std::make_shared<ShareFileClient>(getFileUrl(), getAzureManagedIdentityCredential());
+        ShareClientOptions clientOptions;
+        clientOptions.ShareTokenIntent = Models::ShareTokenIntent::Backup;
+        return std::make_shared<ShareFileClient>(getFileUrl(), getAzureManagedIdentityCredential(), clientOptions);
     }
     else
     {
@@ -461,7 +463,9 @@ std::shared_ptr<ShareClient> AzureFile::getShareClient() const
 {
     if (useManagedIdentity)
     {
-        return std::make_shared<ShareClient>(getShareUrl(accountName, shareName), getAzureManagedIdentityCredential());
+        ShareClientOptions clientOptions;
+        clientOptions.ShareTokenIntent = Models::ShareTokenIntent::Backup;
+        return std::make_shared<ShareClient>(getShareUrl(accountName, shareName), getAzureManagedIdentityCredential(), clientOptions);
     }
     else
     {

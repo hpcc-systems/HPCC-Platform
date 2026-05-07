@@ -104,9 +104,17 @@ std::shared_ptr<Azure::Storage::StorageSharedKeyCredential> getAzureSharedKeyCre
     }
 }
 
+static std::shared_ptr<Azure::Core::Credentials::TokenCredential> cachedManagedIdentityCredential;
+static CriticalSection managedIdentityCredentialCS;
+
 std::shared_ptr<Azure::Core::Credentials::TokenCredential> getAzureManagedIdentityCredential()
 {
-    // MORE: Should we create a cache of credentials?  We would need to be careful about the lifetime of the managed identity credential
+    // Cache the credential object so that the Azure SDK's internal token caching is effective.
+    // Without this, every blob/file client creation allocates a new credential and triggers a
+    // fresh token request to the IMDS endpoint, which quickly leads to HTTP 429 throttling.
+    CriticalBlock block(managedIdentityCredentialCS);
+    if (cachedManagedIdentityCredential)
+        return cachedManagedIdentityCredential;
 
     // Azure SDK credential objects handle token refresh automatically
     const char * federatedTokenFile = std::getenv("AZURE_FEDERATED_TOKEN_FILE");
@@ -120,12 +128,12 @@ std::shared_ptr<Azure::Core::Credentials::TokenCredential> getAzureManagedIdenti
 #ifdef AZURE_HAS_WORKLOAD_IDENTITY_CREDENTIAL
             DBGLOG("Using Azure Workload Identity authentication (clientId=%s, tenantId=%s, tokenFile=%s)",
                 clientId ? clientId : "<none>", tenantId ? tenantId : "<none>", federatedTokenFile);
-            return std::make_shared<Azure::Identity::WorkloadIdentityCredential>();
+            cachedManagedIdentityCredential = std::make_shared<Azure::Identity::WorkloadIdentityCredential>();
 #else
             // SDK doesn't have WorkloadIdentityCredential - check if workload identity environment is configured
             DBGLOG("Using DefaultAzureCredential for Workload Identity (SDK < 1.6.0) (clientId=%s, tenantId=%s, tokenFile=%s)",
                 clientId ? clientId : "<none>", tenantId ? tenantId : "<none>", federatedTokenFile);
-            return std::make_shared<Azure::Identity::DefaultAzureCredential>();
+            cachedManagedIdentityCredential = std::make_shared<Azure::Identity::DefaultAzureCredential>();
 #endif
         }
         catch (const Azure::Core::RequestFailedException& e)
@@ -133,6 +141,7 @@ std::shared_ptr<Azure::Core::Credentials::TokenCredential> getAzureManagedIdenti
             throw makeStringExceptionV(-1, "Azure authentication failed: %s (%d)",
                 e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
         }
+        return cachedManagedIdentityCredential;
     }
     // else fall through
 
@@ -148,15 +157,16 @@ std::shared_ptr<Azure::Core::Credentials::TokenCredential> getAzureManagedIdenti
     try
     {
         if (clientId)
-            return std::make_shared<Azure::Identity::ManagedIdentityCredential>(clientId);
+            cachedManagedIdentityCredential = std::make_shared<Azure::Identity::ManagedIdentityCredential>(clientId);
         else
-            return std::make_shared<Azure::Identity::ManagedIdentityCredential>();
+            cachedManagedIdentityCredential = std::make_shared<Azure::Identity::ManagedIdentityCredential>();
     }
     catch (const Azure::Core::RequestFailedException& e)
     {
         throw makeStringExceptionV(-1, "Azure Managed Identity authentication failed: %s (%d)",
             e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
     }
+    return cachedManagedIdentityCredential;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
