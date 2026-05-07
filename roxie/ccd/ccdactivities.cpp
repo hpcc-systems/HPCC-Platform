@@ -1032,7 +1032,8 @@ public:
                 unsigned projectedFormatCrc = helper->getProjectedFormatCrc();
                 unsigned expectedFormatCrc = helper->getDiskFormatCrc();
                 translators.setown(datafile->getTranslators(projectedFormatCrc, helper->queryProjectedDiskRecordSize(), expectedFormatCrc, helper->queryDiskRecordSize(), getEnableFieldTranslation(), expectedFileMode(), queryFactory.queryQueryName()));
-                manager.setown(datafile->getIndexManager(isOpt, channel, translators->queryActualLayout(0), _graphNode.getPropBool("att[@name=\"preload\"]/@value", false)));
+                bool preload = !ignoreDiskPreload && _graphNode.getPropBool("att[@name=\"preload\"]/@value", false);
+                manager.setown(datafile->getIndexManager(isOpt, channel, translators->queryActualLayout(0), preload));
                 Owned<IPropertyTreeIterator> memKeyInfo = queryFactory.queryPackage().getInMemoryIndexInfo(_graphNode);
                 Owned<IPropertyTree> memKeyHint;
                 if (!memKeyInfo && _graphNode.hasProp("hint[@name=\"key\"]"))

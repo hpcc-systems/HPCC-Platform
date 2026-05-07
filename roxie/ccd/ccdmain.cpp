@@ -92,6 +92,7 @@ unsigned indexReadChunkSize = 60000;
 unsigned maxBlockSize = 10000000;
 unsigned maxLockAttempts = 5;
 bool pretendAllOpt = false;
+bool ignoreDiskPreload = false;
 bool traceStartStop = false;
 bool traceActivityCharacteristics = false;
 unsigned actResetLogPeriod = 300;
@@ -1242,6 +1243,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             fieldTranslationEnabled = getTranslationMode(val, false);
 
         pretendAllOpt = topology->getPropBool("@ignoreMissingFiles", false);
+        ignoreDiskPreload = topology->getPropBool("@ignoreDiskPreload", false);
         memoryStatsInterval = topology->getPropInt("@memoryStatsInterval", 60);
         roxiemem::setMemoryStatsInterval(memoryStatsInterval);
         socketCheckInterval = topology->getPropInt("@socketCheckInterval", runOnce ? 0 : 5000);

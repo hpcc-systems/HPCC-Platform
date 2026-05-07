@@ -23529,7 +23529,8 @@ public:
                     unsigned expectedFormatCrc = helper->getDiskFormatCrc();
                     unsigned projectedFormatCrc = helper->getProjectedFormatCrc();
                     translators.setown(datafile->getTranslators(projectedFormatCrc, helper->queryProjectedDiskRecordSize(), expectedFormatCrc, helper->queryDiskRecordSize(), getEnableFieldTranslation(), expectedFileMode(), queryFactory.queryQueryName()));
-                    manager.setown(datafile->getIndexManager(isOpt, channel, translators->queryActualLayout(0), _graphNode.getPropBool("att[@name=\"preload\"]/@value", false)));
+                    bool preload = !ignoreDiskPreload && _graphNode.getPropBool("att[@name=\"preload\"]/@value", false);
+                    manager.setown(datafile->getIndexManager(isOpt, channel, translators->queryActualLayout(0), preload));
                     const IPropertyTree *options = datafile->queryProperties();
                     if (options)
                     {
