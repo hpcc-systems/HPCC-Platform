@@ -733,6 +733,34 @@ static inline void updateQueryPriority(IPropertyTree *queryTree, const char *val
     }
 }
 
+static void convertPropertyStrToAttribute(IPropertyTree *info, const char *property)
+{
+    if (info && property && *property)
+    {
+        const char *element = property+1;
+        if (info->hasProp(element))
+        {
+            info->setProp(property, info->queryProp(element));
+            info->removeProp(element);
+        }
+    }
+}
+
+static void convertPropertyIntToAttribute(IPropertyTree *info, const char *property)
+{
+    if (info && property && *property)
+    {
+        const char *element = property+1;
+        if (info->hasProp(element))
+        {
+            int value = info->getPropInt(element);
+            if (value > 0)
+                info->setPropInt(property, value);
+            info->removeProp(element);
+        }
+    }
+}
+
 void gatherFileErrors(IReferencedFileList *files, IArrayOf<IConstLogicalFileError> &errors)
 {
     if (!files)
@@ -3084,7 +3112,23 @@ public:
         entry->setPropBool("@makeActive", makeActive);
         entry->setPropInt("@activationMode", makeActive ? activationMode : CWUQueryActivationMode_NoActivate);
         entry->setProp("@userid", userid);
-        entry->addPropTree("Info", createPTreeFromIPT(query));
+        IPropertyTree *info = entry->addPropTree("Info", createPTreeFromIPT(query));
+
+        // Normalize info to have attributes instead of child elements for certain fields
+        if (info->hasProp("priority"))
+        {
+            updateQueryPriority(info, info->queryProp("priority"));
+            info->removeProp("priority");
+        }
+        if (info->hasProp("memoryLimit"))
+        {
+            updateMemoryLimitSetting(info, info->queryProp("memoryLimit"));
+            info->removeProp("memoryLimit");
+        }
+        convertPropertyIntToAttribute(info, "@timeLimit");
+        convertPropertyIntToAttribute(info, "@warnTimeLimit");
+        convertPropertyStrToAttribute(info, "@comment");
+        convertPropertyStrToAttribute(info, "@snapshot");
 
         Owned<IAttributeIterator> aiter = query->getAttributes();
         IPropertyTree *attrs = entry->addPropTree("Attrs");
