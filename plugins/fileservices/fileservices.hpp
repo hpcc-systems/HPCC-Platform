@@ -157,6 +157,7 @@ FILESERVICES_API const byte * FILESERVICES_CALL fsLogicalFileListFiltered(ICodeC
 FILESERVICES_API void FILESERVICES_CALL fsSuperFileContents(ICodeContext *ctx,size32_t & __lenResult,void * & __result, const char *lsuperlfn, bool recurse);
 FILESERVICES_API void FILESERVICES_CALL fsLogicalFileSuperOwners(ICodeContext *ctx,size32_t & __lenResult,void * & __result, const char *lfn);
 FILESERVICES_API char *  FILESERVICES_CALL fsExternalLogicalFileName(const char *location, const char *path,bool abspath);
+FILESERVICES_API char *  FILESERVICES_CALL fsPlaneLogicalFileName(const char *planeName, const char *path,bool abspath);
 FILESERVICES_API int  FILESERVICES_CALL fsCompareFiles(ICodeContext *ctx,const char *lfn1, const char *lfn2,bool logicalonly, bool usecrcs);
 FILESERVICES_API int  FILESERVICES_CALL fsCompareFiles_v2(ICodeContext *ctx,const char *lfn1, const char *lfn2,bool logicalonly, bool usecrcs, int timeOut);
 FILESERVICES_API char *  FILESERVICES_CALL fsVerifyFile(ICodeContext *ctx,const char *lfn,bool usecrcs);

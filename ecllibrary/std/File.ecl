@@ -182,6 +182,19 @@ EXPORT varstring ExternalLogicalFileName(varstring location, varstring path, boo
     lib_fileservices.FileServices.ExternalLogicalFileName(location, path, abspath);
 
 /**
+ * Returns an encoded logical filename that can be used to refer to a file on a named data plane.
+ *
+ * @param planeName     The storage plane name. Only planes of category 'lz' are currently supported.
+ * @param path          The file path. Relative paths are interpreted under the plane prefix. Absolute paths must
+ *                      start with the plane prefix.
+ * @param abspath       Should a tilde (~) be prepended to the resulting logical file name. Defaults to TRUE.
+ * @return              The encoded logical filename.
+ */
+
+EXPORT varstring PlaneLogicalFileName(varstring planeName, varstring path, boolean abspath=TRUE) :=
+    lib_fileservices.FileServices.PlaneLogicalFileName(planeName, path, abspath);
+
+/**
  * Returns a string containing the description information associated with the specified filename. This description
  * is set either through ECL watch or by using the FileServices.SetFileDescription function.
  *

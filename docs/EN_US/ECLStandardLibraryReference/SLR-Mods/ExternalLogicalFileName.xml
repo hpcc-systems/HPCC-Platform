@@ -50,6 +50,9 @@
   (typically a landing zone). It handles upper case characters by escaping
   those characters in the return string.</para>
 
+  <para>For storage-plane based path mapping, see
+  <link linkend="PlaneLogicalFileName">STD.File.PlaneLogicalFileName</link>.</para>
+
   <para>Example:</para>
 
   <programlisting format="linespecific">IP   := '10.150.254.6';

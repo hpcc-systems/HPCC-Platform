@@ -168,6 +168,9 @@
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/ExternalLogicalFileName.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/PlaneLogicalFileName.xml"
+            xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/MoveExternalFile.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
 

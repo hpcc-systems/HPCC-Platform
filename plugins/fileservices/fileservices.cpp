@@ -40,6 +40,7 @@
 #include "rtlfield.hpp"
 #include "eclrtl.hpp"
 #include "rtlds_imp.hpp"
+#include "jplane.hpp"
 
 #define USE_DALIDFS
 #define SDS_LOCK_TIMEOUT  10000
@@ -2132,6 +2133,36 @@ FILESERVICES_API char *  FILESERVICES_CALL fsExternalLogicalFileName(const char 
         ret.append('~');
     CDfsLogicalFileName lfn;
     lfn.setExternal(location,path);
+    return lfn.get(ret).detach();
+}
+
+FILESERVICES_API char *  FILESERVICES_CALL fsPlaneLogicalFileName(const char *planeName, const char *path, bool abspath)
+{
+    if (isEmptyString(planeName))
+        throw makeStringException(-1, "Plane name not set");
+    if (isEmptyString(path))
+        throw makeStringException(-1, "Path not set");
+
+    Owned<const IStoragePlane> plane = getStoragePlaneByName(planeName, true);
+    const IPropertyTree * planeConfig = plane->queryConfig(); // cannot be null
+    const char * category = planeConfig->queryProp("@category");
+    if (!strsame(category, "lz"))
+        throw makeStringExceptionV(-1, "Storage plane '%s' is category '%s'; only 'lz' planes are supported", planeName, isEmptyString(category) ? "" : category);
+
+    const char * relativePath = path;
+    if (isAbsolutePath(path))
+    {
+        relativePath = getRelativePath(path, plane->queryPrefix());
+        if (!relativePath)
+            throw makeStringExceptionV(-1, "Absolute path '%s' is not within plane '%s' prefix '%s'", path, plane->queryName(), plane->queryPrefix());
+    }
+
+    StringBuffer ret;
+    if (abspath)
+        ret.append('~');
+
+    CDfsLogicalFileName lfn;
+    lfn.setPlaneExternal(plane->queryName(), relativePath);
     return lfn.get(ret).detach();
 }
 
