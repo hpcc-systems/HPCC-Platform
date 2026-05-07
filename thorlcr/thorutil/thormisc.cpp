@@ -1835,21 +1835,3 @@ offset_t verifyFileSize(IFile *file, offset_t expectedSize, unsigned maxRetries,
     throw makeStringExceptionV(0, "File size mismatch for '%s' after %u retries: expected %" I64F "d, got %" I64F "d",
                 filename, maxRetries, expectedSize, actualSize);
 }
-
-size32_t getForeignBlockedIOSize(bool isFiltered)
-{
-    unsigned foreignBlockedIOSizeK = (unsigned)getExpertOptInt64("foreignSequentialBlockedIOSizeK", (unsigned)-1);
-    if (isFiltered)
-    {
-        foreignBlockedIOSizeK = (unsigned)getExpertOptInt64("foreignRandomBlockedIOSizeK", foreignBlockedIOSizeK);
-        if ((unsigned)-1 == foreignBlockedIOSizeK)
-            foreignBlockedIOSizeK = isContainerized() ? 64 : 0; // default to 64k random block size for filtered foreign reads on containerized environment
-    }
-    else
-    {
-        if ((unsigned)-1 == foreignBlockedIOSizeK)
-            foreignBlockedIOSizeK = isContainerized() ? 4 * 1024 : 0; // default to 4MB sequential block size for unfiltered foreign reads on containerized environment
-    }
-    verifyex(foreignBlockedIOSizeK <= ((size32_t)-1) / 1024);
-    return foreignBlockedIOSizeK * 1024;
-}

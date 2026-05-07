@@ -17,6 +17,7 @@
 
 #include "jio.hpp"
 #include "jfile.hpp"
+#include "jplane.hpp"
 #include "jtime.hpp"
 #include "jsort.hpp"
 
@@ -303,14 +304,7 @@ public:
                 {
                     StringBuffer planeName;
                     part.queryOwner().getClusterLabel(0, planeName);
-
-                    // If unfiltered, use the sequential block size if defined in the plane, or component config.
-                    blockedIOSize = getPlaneAttributeValue(planeName, BlockedSequentialIO, (size32_t)-1);
-                    if (helper->hasSegmentMonitors())
-                        blockedIOSize = getPlaneAttributeValue(planeName, BlockedRandomIO, blockedIOSize);
-
-                    if ((size32_t)-1 == blockedIOSize)
-                        blockedIOSize = 0;
+                    blockedIOSize = getIndexBlockedIOSize(planeName, helper->hasSegmentMonitors());
                 }
 
                 Owned<IKeyIndex> keyIndex = createKeyIndex(path, crc, *lazyIFileIO, (unsigned) -1, false, blockedIOSize);
