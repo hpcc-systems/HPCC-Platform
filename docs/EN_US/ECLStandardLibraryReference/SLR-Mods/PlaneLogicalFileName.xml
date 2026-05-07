@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="PlaneLogicalFileName">
+  <title>PlaneLogicalFileName</title>
+
+  <para><emphasis role="bold">STD.File.PlaneLogicalFileName<indexterm>
+      <primary>STD.File.PlaneLogicalFileName</primary>
+    </indexterm><indexterm>
+      <primary>File.PlaneLogicalFileName</primary>
+    </indexterm><indexterm>
+      <primary>PlaneLogicalFileName</primary>
+    </indexterm>(</emphasis> <emphasis> planeName, path, abspath=TRUE </emphasis>
+  <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>planeName</emphasis></entry>
+
+          <entry>A null-terminated string containing the storage plane name.
+          The plane must exist and currently must be an <emphasis>lz</emphasis>
+          category plane.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>path</emphasis></entry>
+
+          <entry>A null-terminated string containing a relative or absolute
+          path. Absolute paths must be within the selected plane prefix.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>abspath</emphasis></entry>
+
+          <entry>A BOOLEAN value that specifies whether to prepend
+          <emphasis>~</emphasis> to the returned logical filename. Defaults to
+          TRUE.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>PlaneLogicalFileName returns a VARSTRING (null-terminated)
+          value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">PlaneLogicalFileName </emphasis>function
+  returns an encoded plane-scoped logical filename using
+  <emphasis>~plane::&lt;planeName&gt;::...</emphasis> syntax. Use this when
+  constructing logical names for files addressed by storage plane and path
+  instead of host/IP addressing.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">OUTPUT(STD.File.PlaneLogicalFileName('mylz1', 'subdir1/subdir2/somefile.txt'));
+//returns:
+//~plane::mylz1::subdir1::subdir2::somefile.txt
+
+OUTPUT(STD.File.PlaneLogicalFileName('mylz2', '/var/lib/HPCCSystems/thelz2prefix/subdir2/subdir3/somefile.txt'));
+//returns:
+//~plane::mylz2::subdir2::subdir3::somefile.txt
+</programlisting>
+</sect1>

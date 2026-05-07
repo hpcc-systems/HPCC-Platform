@@ -62,6 +62,11 @@ export default defineConfig(
             }],
 
             ...reactHooks.configs.recommended.rules,
+            "react-hooks/immutability": "off",
+            "react-hooks/preserve-manual-memoization": "off",
+            "react-hooks/refs": "off",
+            "react-hooks/set-state-in-effect": "off",
+            "react-hooks/use-memo": "off",
             'react-refresh/only-export-components': [
                 'off',
                 { allowConstantExport: true },

@@ -18,6 +18,7 @@
 //nothor            HPCC-26144 plane:: currently not supported on thor
 
 import Std.File;
+import Std.Str;
 
 rec := RECORD
  string f;
@@ -27,13 +28,14 @@ ds := DATASET([{'a'}], rec);
 dropzone := 'mydropzone' : STORED('dropzone');
 
 string getFName(string ext) := FUNCTION
- RETURN '~PLANE::' + dropzone + '::'  + WORKUNIT + 'external' + ext;
+ RETURN File.PlaneLogicalFileName(dropzone, WORKUNIT + '/external' + ext);
 END;
 
 external1 := getFName('1');
 external2 := getFName('2');
 
 SEQUENTIAL(
+ASSERT(external1 = '~plane::' + dropzone + '::' + '^' + Str.ToLowerCase(WORKUNIT) + '::external1'),
 File.DeleteLogicalFile(external1, true),
 File.DeleteLogicalFile(external2, true),
 OUTPUT(ds,,external1),
