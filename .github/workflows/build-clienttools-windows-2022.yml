@@ -53,7 +53,7 @@ jobs:
 
     steps:
       - name: Checkout HPCC-Platform
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.community-ref }}
           submodules: recursive
@@ -61,7 +61,7 @@ jobs:
 
       - name: Checkout LN
         if: ${{ inputs.ln-ref != '' }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ github.repository_owner }}/LN
           ref: ${{ inputs.ln-ref }}
@@ -85,7 +85,7 @@ jobs:
           "SM_CLIENT_CERT_FILE=$p12Path" | Out-File -FilePath $env:GITHUB_ENV -Append
           
       - name: Setup Software Trust Manager
-        uses: digicert/code-signing-software-trust-action@v1.0.1
+        uses: digicert/code-signing-software-trust-action@v1.2.1
         with:
           simple-signing-mode: true
           keypair-alias: "RIS_Data_Services_HPCC_Systems"
@@ -142,7 +142,7 @@ jobs:
 
       - name: Release Community Clienttools
         if: ${{ inputs.ln-ref == '' }}
-        uses: ncipollo/release-action@v1.16.0
+        uses: ncipollo/release-action@v1
         with:
           allowUpdates: true
           generateReleaseNotes: false
@@ -162,7 +162,7 @@ jobs:
 
       - name: Share Asset for ECLIDE build
         if: ${{ inputs.upload-package }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.asset-name }}
           path: ./build/hpccsystems-clienttools*.exe
@@ -170,7 +170,7 @@ jobs:
       
       - name: Upload Error Logs
         if: ${{ failure() || cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-2022-clienttools-logs-${{ github.job }}-${{ github.run_number }}
           path: ./build/**/*.log

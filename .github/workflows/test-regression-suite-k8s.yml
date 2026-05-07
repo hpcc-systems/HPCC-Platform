@@ -35,7 +35,7 @@ jobs:
     runs-on: ${{ inputs.os }}
     steps:
       - name: Checkout PR
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: recursive
           path: ./HPCC-Platform

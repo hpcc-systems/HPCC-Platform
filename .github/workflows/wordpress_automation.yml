@@ -22,7 +22,7 @@ jobs:
 
       # Look into checking out only HPCC-Platform/build_utils/builds_file_transfer directory
       - name: Checkout HPCC-Platform
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ github.repository_owner }}/HPCC-Platform
           ref: 'master'

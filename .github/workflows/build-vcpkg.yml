@@ -68,7 +68,7 @@ jobs:
       branch_changed: ${{ steps.branch_changed.outputs.branch_changed }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Check for code changes between commits
@@ -188,7 +188,7 @@ jobs:
     steps:
       - name: Check for Documentation Changes
         id: changed
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v4
         with:
           filters: |
             src:

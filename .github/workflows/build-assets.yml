@@ -50,7 +50,7 @@ jobs:
       is_latest: ${{ steps.vars.outputs.is_latest }}
     steps:
       - name: Checkout HPCC-Platform
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ github.repository_owner }}/HPCC-Platform
           submodules: recursive
@@ -92,7 +92,7 @@ jobs:
           echo "${{ toJSON(steps.vars.outputs) }})"
 
       - name: Release HPCC-Platform
-        uses: ncipollo/release-action@v1.16.0
+        uses: ncipollo/release-action@v1
         with:
           allowUpdates: true
           generateReleaseNotes: false

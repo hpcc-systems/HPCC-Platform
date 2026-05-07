@@ -63,7 +63,7 @@ jobs:
           ls -la $VCPKG_INSTALLATION_ROOT
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'microsoft'
           java-version: '17'
@@ -77,14 +77,14 @@ jobs:
           curl -o fop/fop/saxon-he-12.4.jar https://repo1.maven.org/maven2/net/sf/saxon/Saxon-HE/12.4/saxon-he-12.4.jar
 
       - name: Checkout HPCC-Platform
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.community-ref }}
           submodules: recursive
           path: ./HPCC-Platform
  
       - name: Checkout ECLIDE
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ github.repository_owner }}/ECLIDE
           ref: ${{ inputs.eclide-ref }}
@@ -99,19 +99,19 @@ jobs:
           mkdir -p ./ECLIDE/docs
 
       - name: Fetch html artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ${{ inputs.documentation-asset-name }}
           merge-multiple: true
 
       - name: Fetch clienttools artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ${{ inputs.clienttools-community-asset-name }}
           merge-multiple: true
 
       - name: Fetch clienttools internal artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ${{ inputs.clienttools-internal-asset-name }}
           merge-multiple: true
@@ -174,7 +174,7 @@ jobs:
           "SM_CLIENT_CERT_FILE=$p12Path" | Out-File -FilePath $env:GITHUB_ENV -Append
           
       - name: Setup Software Trust Manager
-        uses: digicert/code-signing-software-trust-action@v1.0.1
+        uses: digicert/code-signing-software-trust-action@v1.2.1
         with:
           simple-signing-mode: true
           keypair-alias: "RIS_Data_Services_HPCC_Systems"
@@ -218,7 +218,7 @@ jobs:
           SM_CLIENT_CERT_PASSWORD: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
 
       - name: Upload Assets
-        uses: ncipollo/release-action@v1.16.0
+        uses: ncipollo/release-action@v1
         with:
           allowUpdates: true
           generateReleaseNotes: false
@@ -238,7 +238,7 @@ jobs:
 
       - name: Upload Error Logs
         if: ${{ failure() || cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-2022-eclide-logs
           path: ./ECLIDE/build/**/*.log

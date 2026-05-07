@@ -80,7 +80,7 @@ jobs:
           df -h
 
       - name: Checkout HPCC-Platform
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ github.repository_owner }}/HPCC-Platform
           ref: ${{ inputs.community_ref }}
@@ -131,7 +131,7 @@ jobs:
         run: echo "${{ toJson(steps.vars.outputs)}}"
 
       - name: Checkout LN
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ github.repository_owner }}/LN
           ref: ${{ steps.vars.outputs.internal_ref }}
@@ -141,16 +141,16 @@ jobs:
   
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
   
       - name: Login to DockerHub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
   
       - name: Create Build Image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           builder: ${{ steps.buildx.outputs.name }}
           file: ${{ steps.vars.outputs.folder_platform }}/dockerfiles/${{ inputs.os }}.dockerfile
@@ -200,7 +200,7 @@ jobs:
   
       - name: Upload error logs
         if: ${{ failure() || cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build-platform-enterprise-${{ inputs.os }}${{ inputs.container && '-containerized' || '' }}-logs
           path: ${{ steps.vars.outputs.folder_build }}/**/*.log
