@@ -409,7 +409,7 @@ protected:
         for (SummaryStats::value_type& e : summary)
         {
             const char* filePath = operation.queryMetaInfoState().queryFilePath(e.first);
-            appendCSVColumns(line, e.first, filePath ? filePath : "");
+            appendCSVColumns(line, e.first, filePath);
             for (unsigned nodeKind = 0; nodeKind < NumNodeKinds; nodeKind++)
             {
                 if (!haveNodeKindEntries[nodeKind])
@@ -517,7 +517,7 @@ protected:
                 const IndexHashKey& key = entry.first;
                 NodeStats& nodeStats = entry.second;
                 const char* filePath = operation.queryMetaInfoState().queryFilePath(key.fileId);
-                appendCSVColumns(line, key.fileId, filePath ? filePath : "", key.offset);
+                appendCSVColumns(line, key.fileId, filePath, key.offset);
                 appendCSVColumn(line, mapNodeKind((NodeKind)nodeKind));
                 appendCSVColumn(line, nodeStats.inMemorySize);
                 appendCSVEvents(line, nodeStats.events);

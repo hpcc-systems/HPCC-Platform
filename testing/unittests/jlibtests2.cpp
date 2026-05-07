@@ -107,6 +107,7 @@ public:
         CPPUNIT_TEST(testRecordingSourceRecursionLimit);
         CPPUNIT_TEST(testEventCompleteness);
         CPPUNIT_TEST(testPullEvents);
+        CPPUNIT_TEST(testEventCopy);
         CPPUNIT_TEST(testFailCreate);
         CPPUNIT_TEST(testCleanup);
     CPPUNIT_TEST_SUITE_END();
@@ -1171,6 +1172,47 @@ attribute: DataSize = 73
             CPPUNIT_ASSERT_EQUAL(byte(1), props.channelId);
             CPPUNIT_ASSERT_EQUAL(byte(2), props.replicaId);
             CPPUNIT_ASSERT_EQUAL(3U, (unsigned)props.instanceId);
+        }
+        catch (IException * e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+
+    void testEventCopy()
+    {
+        try
+        {
+            // Dynamically allocate a CEvent to control object lifetime manually
+            CEvent* e1 = new CEvent();
+            e1->reset(EventIndexCacheMiss);
+            e1->setValue(EvAttrFileId, 100U);
+
+            // Force the implicit shallow copy
+            // e2's internal objects (e.g., AssignedAttributes) will retain a reference
+            // to e1's memory address, NOT e2's memory address.
+            CEvent e2(*e1);
+
+            // Delete the original memory allocation so that the reference dangles
+            delete e1;
+
+            // Attempting to iterate or set values on the shallow copy triggers the dangling reference.
+            // This is the identical scenario to std::vector resizing.
+            e2.setValue(EvAttrFileOffset, 200ULL);
+
+            unsigned assignedCount = 0;
+            for (auto& attr : e2.assignedAttributes)
+            {
+                assignedCount++;
+            }
+
+            // We expect at least the two attributes we assigned.
+            // If the copy constructor is missing, this traversal might segfault
+            // or read corrupted data from the deleted heap.
+            CPPUNIT_ASSERT(assignedCount >= 2);
         }
         catch (IException * e)
         {

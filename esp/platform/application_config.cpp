@@ -31,13 +31,17 @@
 
 enum class LdapType { LegacyAD, AzureAD };
 
+// ESP application config is built by layering multiple YAML fragments (common/*.yaml then app/*.yaml).
+// mergeListItemContent=true is used so that list items with @name (e.g. xslt stylesheets, Stores)
+// are matched by identity and merged rather than replaced across fragments.
+// NB: this applies the @name matching globally at every depth — see mergeConfiguration caveat.
 static void appendPTreeFromYamlFile(IPropertyTree *tree, const char *file, bool overwriteAttr)
 {
     Owned<IPropertyTree> appendTree = createPTreeFromYAMLFile(file);
     if (appendTree->hasProp("esp"))
-        mergeConfiguration(*tree, *appendTree->queryPropTree("esp"), nullptr, overwriteAttr);
+        mergeConfiguration(*tree, *appendTree->queryPropTree("esp"), nullptr, overwriteAttr, true);
     else
-        mergeConfiguration(*tree, *appendTree, nullptr, overwriteAttr);
+        mergeConfiguration(*tree, *appendTree, nullptr, overwriteAttr, true);
 }
 
 IPropertyTree *loadApplicationConfig(const char *application, const char* argv[])

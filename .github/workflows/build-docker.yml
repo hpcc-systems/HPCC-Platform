@@ -94,14 +94,14 @@ jobs:
           df -h
 
       - name: Checkout HPCC-Platform
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: recursive
           path: ${{ github.workspace }}/HPCC-Platform
 
       - name: Checkout LN
         if: ${{ inputs.ln == true }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ github.repository_owner }}/LN
           token: ${{ secrets.LNB_TOKEN }}
@@ -131,14 +131,14 @@ jobs:
 
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Pull Build Image
         run: |
           docker pull ${{ steps.vars.outputs.docker_tag }} || true
           docker pull ${{ steps.vars.outputs.docker_tag_candidate_base }} || true
 
-      - uses: hendrikmuhs/ccache-action@v1.2
+      - uses: hendrikmuhs/ccache-action@v1.2.23
         with:
           save: ${{ inputs.update-cache == true }}
           key: docker${{ inputs.tag_postfix }}-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}
@@ -149,7 +149,7 @@ jobs:
             docker${{ inputs.tag_postfix }}-${{ inputs.os }}-
 
       - name: Docker build image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           builder: ${{ steps.buildx.outputs.name }}
           file: HPCC-Platform/dockerfiles/${{ inputs.os }}.dockerfile
@@ -188,7 +188,7 @@ jobs:
 
       - name: Upload Package
         if: ${{ inputs.upload-package == true }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.asset-name }}
           path: |
@@ -198,7 +198,7 @@ jobs:
 
       - name: Upload Support Files
         if: ${{ inputs.upload-package == true }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.asset-name }}-support-files
           path: |
@@ -208,7 +208,7 @@ jobs:
 
       - name: Upload Error Logs
         if: ${{ failure() || cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.os }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}-docker-logs
           path: ${{ github.workspace }}/build/**/*.log
