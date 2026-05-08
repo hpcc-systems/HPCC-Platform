@@ -1874,21 +1874,7 @@ int EspHttpBinding::getServiceWsdlOrXsd(IEspContext &context, CHttpRequest* requ
     if (!qualifyServiceName(context, service, method, serviceQName, &methodQName))
         return onGetNotFound(context, request,  response, service);
 
-    Owned<IProperties> params;
-    params.set(createProperties());
-
     double version = getVersion(context);
-
-    if (isWsdl)
-    {
-        params->setProp( "create_wsdl", "true()" );
-        StringBuffer location(m_wsdlAddress.str());
-        if (request->queryParameters()->hasProp("wsdl_destination_path"))
-            location.append(request->queryParameters()->queryProp("wsdl_destination_path"));
-        else
-            location.append('/').append(serviceQName.str()).appendf("?ver_=%g", version);
-        params->setProp("location", StringBuffer("'").append(location).append("'").str());
-    }
 
     StringBuffer schema;
     getServiceSchema(context, request, serviceQName, methodQName, version, isWsdl, false, schema);
@@ -2256,110 +2242,6 @@ int EspHttpBinding::onFinishUpload(IEspContext &ctx, CHttpRequest* request, CHtt
     response->setContent(content.str());
     response->send();
 
-    return 0;
-}
-
-int EspHttpBinding::getWsdlMessages(IEspContext &context, CHttpRequest *request, StringBuffer &content, const char *service, const char *method, bool mda)
-{
-    bool allMethods = (method==NULL || !*method);
-
-    MethodInfoArray methods;
-    getQualifiedNames(context, methods);
-    int count=methods.ordinality();
-    for (int indx=0; indx<count; indx++)
-    {
-        CMethodInfo &info = methods.item(indx);
-        {
-            if (allMethods || !Utils::strcasecmp(method, info.m_label.str()))
-            {
-                content.appendf("<message name=\"%sSoapIn\">", info.m_label.str());
-                if (context.queryOptions()&ESPCTX_WSDL_EXT)
-                    content.appendf("<part name=\"security\" element=\"tns:Security\"/>");
-                content.appendf("<part name=\"parameters\" element=\"tns:%s\"/>", info.m_requestLabel.str());
-                content.append("</message>");
-
-                content.appendf("<message name=\"%sSoapOut\">", info.m_label.str());
-                content.appendf("<part name=\"parameters\" element=\"tns:%s\"/>", info.m_responseLabel.str());
-                content.append("</message>");
-            }
-        }
-    }
-    content.append("<message name=\"EspSoapFault\">"
-        "<part name=\"parameters\" element=\"tns:Exceptions\"/>"
-        "</message>");
-
-    return 0;
-}
-
-int EspHttpBinding::getWsdlPorts(IEspContext &context, CHttpRequest *request, StringBuffer &content, const char *service, const char *method, bool mda)
-{
-    StringBuffer serviceName;
-    StringBuffer methName;
-    qualifyServiceName(context, service, method, serviceName, &methName);
-
-    content.appendf("<portType name=\"%sServiceSoap\">", serviceName.str());
-
-    bool allMethods = (method==NULL || !*method);
-    MethodInfoArray methods;
-    getQualifiedNames(context, methods);
-    int count=methods.ordinality();
-    for (int indx=0; indx<count; indx++)
-    {
-        CMethodInfo &info = methods.item(indx);
-        {
-            if (allMethods || !Utils::strcasecmp(method, info.m_label.str()))
-            {
-                content.appendf("<operation name=\"%s\">", info.m_label.str());
-                content.appendf("<input message=\"tns:%sSoapIn\"/>", info.m_label.str());
-                content.appendf("<output message=\"tns:%sSoapOut\"/>", info.m_label.str());
-                content.appendf("<fault name=\"excfault\" message=\"tns:EspSoapFault\"/>");
-                content.append("</operation>");
-                if (!allMethods) // no need to continue
-                    break;
-            }
-        }
-    }
-    content.append("</portType>");
-    return 0;
-}
-
-
-int EspHttpBinding::getWsdlBindings(IEspContext &context, CHttpRequest *request, StringBuffer &content, const char *service, const char *method, bool mda)
-{
-    StringBuffer serviceName;
-    StringBuffer methName;
-    qualifyServiceName(context, service, method, serviceName, &methName);
-
-    content.appendf("<binding name=\"%sServiceSoap\" type=\"tns:%sServiceSoap\">", serviceName.str(), serviceName.str());
-    content.append("<soap:binding transport=\"http://schemas.xmlsoap.org/soap/http\" style=\"document\"/>");
-
-    bool allMethods = (method==NULL || !*method);
-    MethodInfoArray methods;
-    getQualifiedNames(context, methods);
-    int count=methods.ordinality();
-    for (int indx=0; indx<count; indx++)
-    {
-        CMethodInfo &info = methods.item(indx);
-        {
-            if (allMethods || !Utils::strcasecmp(method, info.m_label.str()))
-            {
-                content.appendf("<operation name=\"%s\">", info.m_label.str());
-                //content.appendf("<soap:operation soapAction=\"%s/%s?ver_=%g\" style=\"document\"/>", serviceName.str(), info.m_label.str(), getWsdlVersion());
-                content.appendf("<soap:operation soapAction=\"%s/%s?ver_=%g\" style=\"document\"/>", serviceName.str(), info.m_label.str(), context.getClientVersion());
-                content.append("<input>");
-                if (context.queryOptions()&ESPCTX_WSDL_EXT)
-                    content.appendf("<soap:header message=\"tns:%sSoapIn\" part=\"security\" use=\"literal\"/>", info.m_label.str());
-                content.append("<soap:body use=\"literal\"/></input>");
-                content.append("<output><soap:body use=\"literal\"/></output>");
-                content.append("<fault  name=\"excfault\"><soap:fault name=\"excfault\" use=\"literal\"/></fault>");
-
-                content.append("</operation>");
-                if (!allMethods) // no need to continue
-                    break;
-            }
-        }
-    }
-    content.append("</binding>");
     return 0;
 }
 
