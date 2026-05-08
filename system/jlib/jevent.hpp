@@ -25,6 +25,7 @@
 #include "jstream.hpp"
 #include "jstring.hpp"
 #include "jstats.h"
+#include <condition_variable>
 
 // The order should not be changed, or items removed. New values should always be appended before EventMax
 // The meta prefix is used when there are records that provide extra meta data to help interpret
@@ -517,7 +518,9 @@ protected:
     std::atomic<bool> isStarted{false};             // Use 2 flags for whether started and stopped to ensure clean
     std::atomic<bool> isStopped{true};              // termination in stopRecording()
     offset_type nextOffset{0};
-    offset_type nextWriteOffset{0};
+    std::atomic<offset_type> nextWriteOffset{0};
+    std::mutex writeMutex;
+    std::condition_variable writeCv;
     offset_type numEvents{0};
     unsigned pendingEventCounts[numBlocks] = {0};
     std::atomic<cycle_t> startCycles{0};
@@ -530,7 +533,7 @@ protected:
     unsigned writersWaiting{0};
     byte compressionType;
     bool outputToLog{false};
-    bool corruptOutput{false};
+    std::atomic<bool> corruptOutput{false};
     bool createSpans{false};
     bool suppressPayloadHits{false};
     StringBuffer outputFilename;
