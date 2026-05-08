@@ -1,0 +1,61 @@
+name: Security issue
+description: Report a security vulnerability in HPCC Platform
+title: "[Security]: <short description>"
+labels: ["security"]
+type: "Bug"
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Vulnerability description
+      description: Describe the security issue, including what an attacker could achieve
+      placeholder: Clear and concise description of the vulnerability
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Provide steps to demonstrate or reproduce the issue
+      placeholder: |
+        1. ...
+        2. ...
+        3. Observe ...
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: What is the potential impact? (e.g. data exposure, privilege escalation, denial of service)
+      placeholder: Describe the impact and affected components
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: HPCC Platform version
+      description: Version(s) known to be affected
+      placeholder: 9.14.x / build number
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment details
+      description: OS, deployment type (bare metal/K8s/cloud), and relevant config details
+      placeholder: Linux distro, container image tag, deployment notes, etc.
+
+  - type: textarea
+    id: mitigation
+    attributes:
+      label: Suggested mitigation (optional)
+      description: If you have a suggested fix or workaround, describe it here
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I have checked that this issue has not already been reported
+          required: true

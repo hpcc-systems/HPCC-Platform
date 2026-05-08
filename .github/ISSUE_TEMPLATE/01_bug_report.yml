@@ -1,0 +1,86 @@
+name: Bug report
+description: Report a reproducible bug in HPCC Platform
+title: "[Bug]: <short description of bug>"
+labels: ["Bug"]
+type: "Bug"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report an issue.
+        If this relates to an existing GitHub issue, include it below (for example: #12345).
+
+  - type: input
+    id: related_issue
+    attributes:
+      label: Related GitHub issue (optional)
+      description: Existing GitHub issue number, if available
+      placeholder: "#12345"
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What is the bug?
+      placeholder: Clear and concise description of the problem
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Provide exact steps so we can reproduce the issue
+      placeholder: |
+        1. Go to ...
+        2. Run ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      placeholder: What actually happened?
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: HPCC Platform version
+      description: Include exact version/build where possible
+      placeholder: 9.14.x / build number
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment details
+      description: OS, deployment type (bare metal/K8s/cloud), and relevant config details
+      placeholder: Linux distro, container image tag, deployment notes, etc.
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and diagnostics
+      description: Paste relevant logs, stack traces, or links to artifacts
+      render: shell
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: I searched for existing issues before filing this report
+          required: true
+        - label: I included enough detail for someone else to reproduce this issue
+          required: true

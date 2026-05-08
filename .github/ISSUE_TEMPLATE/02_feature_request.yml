@@ -1,0 +1,75 @@
+name: Feature request
+description: Suggest an improvement or new capability
+title: "[Feature]: <short description of feature>"
+labels: ["enhancement"]
+type: "Feature"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for sharing your idea.
+        If this relates to an existing GitHub issue, include it below (for example: #12345).
+
+  - type: input
+    id: related_issue
+    attributes:
+      label: Related GitHub issue (optional)
+      description: Existing GitHub issue number, if available
+      placeholder: "#12345"
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What problem are you trying to solve?
+      placeholder: Clear description of the current limitation or pain point
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe what you want to happen
+      placeholder: Describe the proposed behavior and user impact
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any alternative approaches or workarounds?
+      placeholder: What other options did you evaluate?
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Area/component
+      description: Which major area is most related?
+      options:
+        - ECL
+        - ESP
+        - Thor
+        - Roxie
+        - Dali
+        - Tooling/Build
+        - Docs
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Compatibility considerations
+      description: Could this change affect existing behavior, APIs, or queries?
+      placeholder: Backward compatibility notes
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: I searched for existing feature requests before filing this request
+          required: true

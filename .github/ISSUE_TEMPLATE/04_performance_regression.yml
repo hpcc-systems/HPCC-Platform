@@ -1,0 +1,71 @@
+name: Performance regression
+description: Report a slowdown, increased resource usage, or throughput regression
+title: "[Performance]: <short description of regression>"
+labels: ["performance"]
+type: "Bug"
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What got slower or more resource intensive?
+      placeholder: Clear and concise description of the regression
+    validations:
+      required: true
+
+  - type: textarea
+    id: baseline
+    attributes:
+      label: Baseline vs current behavior
+      description: Compare previous behavior to current behavior with concrete numbers if possible
+      placeholder: |
+        Before: query completed in 2.1s, CPU 45%
+        Now: query completed in 8.4s, CPU 92%
+    validations:
+      required: true
+
+  - type: textarea
+    id: workload
+    attributes:
+      label: Workload and data characteristics
+      description: Describe dataset size, query shape, concurrency, and execution path
+      placeholder: Dataset size, index usage, cluster size, concurrency, etc.
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction details
+      description: Provide commands, scripts, or steps used to observe the regression
+      placeholder: |
+        1. Deploy ...
+        2. Run ...
+        3. Measure ...
+
+  - type: input
+    id: version
+    attributes:
+      label: HPCC Platform version
+      description: Include affected and last known good versions if available
+      placeholder: "Affected: 9.14.x, Last known good: 9.12.x"
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment details
+      description: OS, deployment type (bare metal/K8s/cloud), and hardware profile
+      placeholder: Linux distro, CPU/RAM, storage type, cluster topology
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Attach profiling output, logs, metrics, flame graphs, or benchmark results
+      render: shell
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: I searched for existing performance issues before filing this report
+          required: true
