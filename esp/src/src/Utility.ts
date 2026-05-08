@@ -83,6 +83,8 @@ export function espTime2Seconds(duration?: string) {
         return 0;
     } else if (!isNaN(+duration)) {
         return parseFloat(duration);
+    } else if (duration.length > 32) {
+        throw new Error("Input too long");
     }
     const re = /(?:(?:(\d+).days.)?(?:(\d+)h)?(?:(\d+)m)?(?:(\d+\.\d+|\d+)s))|(?:(\d+\.\d+|\d+)ms|(\d+\.\d+|\d+)us|(\d+\.\d+|\d+)ns)/;
     const match = re.exec(duration);
