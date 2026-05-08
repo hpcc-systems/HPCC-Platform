@@ -48,7 +48,7 @@ void CBlockCompressor::initCommon(size32_t initialSize)
 
 void CBlockCompressor::open(void *buf,size32_t max, size32_t fixedRowSize, bool _allowPartialWrites)
 {
-    assertex(buf && max);
+    assertex(buf && max && (max > 2 * sizeof(size32_t)));
     originalMax = max;
     maxOutputSize = max;
     allowPartialWrites = _allowPartialWrites;
@@ -60,7 +60,8 @@ void CBlockCompressor::open(void *buf,size32_t max, size32_t fixedRowSize, bool 
 
 void CBlockCompressor::open(MemoryBuffer &mb, size32_t initialSize, size32_t fixedRowSize)
 {
-    if (!initialSize)
+    //Check if initialSize is not supplied, or is too small
+    if (initialSize < sizeof(size32_t)*2)
         initialSize = FCMP_BUFFER_SIZE; // 1MB
 
     originalMax = 0;
@@ -89,6 +90,11 @@ void CBlockCompressor::close()
 
     //Any remaining data is copied uncompressed.
     size32_t totlen = outlen+sizeof(size32_t)+inlen;
+    if (outBufMb && (totlen > maxOutputSize))
+    {
+        maxOutputSize = totlen;
+        outbuf = (byte *)outBufMb->ensureCapacity(maxOutputSize);
+    }
     assertex(maxOutputSize>=totlen);
     size32_t *tsize = (size32_t *)(outbuf+outlen);
     *tsize = inlen;
@@ -112,7 +118,7 @@ size32_t CBlockCompressor::write(const void *buf,size32_t len)
     // One example compressed at a ratio of 1:10,000!
     // Check before the loop to respect allowPartialWrites contract (all-or-nothing).
     const size32_t safetyThreshold = 0xF0000000; // 3.75GB
-    offset_t projectedSize = (offset_t)totalWritten + len;
+    offset_t projectedSize = (offset_t)totalWritten + inlen + len;
     if (projectedSize >= safetyThreshold)
     {
         full = true;
@@ -166,17 +172,20 @@ size32_t CBlockCompressor::write(const void *buf,size32_t len)
             //write() will be called again with the remainder of the data.
             if (extraWritten != toCopy)
             {
-                if (allowPartialWrites || written == 0)
+                if (allowPartialWrites)
                     return written;
 
-                // Disallow partial writes, but a block of data including part of the row has already been compressed
-                // We need to undo the first compression to restore the previous good data.
-                byte * prevout = outbuf + savedOutlen;
-                size32_t compressedSize = *(size32_t *)prevout;
+                if (outlen > savedOutlen)
+                {
+                    // Disallow partial writes, but a block of data including part of the row has already been compressed
+                    // We need to undo the first compression to restore the previous good data.
+                    byte * prevout = outbuf + savedOutlen;
+                    size32_t compressedSize = *(size32_t *)prevout;
 
-                //Only need to expand the first block that was compressed by this write call
-                size32_t expanded = expandDirect(maxInputSize, inbuf, compressedSize, prevout + sizeof(size32_t));
-                assertex(expanded >= savedInlen);
+                    //Only need to expand the first block that was compressed by this write call
+                    size32_t expanded = expandDirect(maxInputSize, inbuf, compressedSize, prevout + sizeof(size32_t));
+                    assertex(expanded >= savedInlen);
+                }
 
                 inlen = savedInlen;
                 outlen = savedOutlen;
@@ -202,13 +211,30 @@ bool CBlockCompressor::adjustLimit(size32_t newLimit)
     assertex(!outBufMb);       // Only supported when a fixed size buffer is provided
     assertex(newLimit <= originalMax);
 
-    //Reject the limit change if it is too small for the data already committed.
-    size32_t reservedSpace = outlen + sizeof(size32_t) * 2;
-    if (newLimit < reservedSpace)
-        return false;
+    // Case 1: Does the data fit including the uncompressed portion?
+    size32_t requiredSpace = outlen + sizeof(size32_t) + inlen;
+    if (newLimit >= requiredSpace)
+    {
+        maxOutputSize = newLimit;
+        return true;
+    }
 
-    maxOutputSize = newLimit;
-    return true;
+    // Case 2: We would exceed the limit. Attempt to compress the pending data
+    // to see if we can shrink the footprint enough to fit.
+    if (inlen > 0)
+    {
+        flushCompress(0);    // This uses the current (larger) maxOutputSize to do its work
+        
+        requiredSpace = outlen + sizeof(size32_t) + inlen;
+        if (newLimit >= requiredSpace)
+        {
+            maxOutputSize = newLimit;
+            return true;
+        }
+    }
+
+    // Still too large even after compression attempt
+    return false;
 }
 
 //Try and compress inlen + extra bytes of data - inlen is guaranteed to fit uncompressed.
@@ -275,8 +301,11 @@ size32_t CBlockCompressor::flushCompress(size32_t extra)
                 {
                     spaceLeft += sizeof(size32_t);  //Can squeeze in 4 more bytes because there is no compressed size
                     assertex(spaceLeft >= inlen);
-                    size_t delta = spaceLeft - inlen;
-                    inlen = spaceLeft;
+                    size_t maxKeep = spaceLeft;
+                    if (maxKeep > toCompress)
+                        maxKeep = toCompress;
+                    size_t delta = maxKeep - inlen;
+                    inlen = maxKeep;
                     return delta;
                 }
 
