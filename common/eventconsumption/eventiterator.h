@@ -47,7 +47,7 @@ enum PropertyTreeEventFlags : unsigned
 // - <value> is a text representation of the value to be assigned to the event attribute, where
 //   the text must be directly convertible to the attribute's underlying data type. The only
 //   exception is that a timestamp value may be a human readable date/time string instead of a
-//   a number of nanoseconds.
+//   number of nanoseconds.
 // - filename, version, and bytesRead are optional values that will be used to satisfy the query*
 //   methods. Default values of nullptr, 0, and 0 are used when omitted.
 extern event_decl IEventIterator* createPropertyTreeEvents(const IPropertyTree& events, unsigned flags);
@@ -66,9 +66,13 @@ interface IEventMultiplexer : extends IEventIterator
 // meta state collector in the visitation chain should be avoided.
 //
 // All sources must be added before any event consumption. The meta state depends on the
-// the total number of sources from which it will receive events. Processing an event
+// total number of sources from which it will receive events. Processing an event
 // before all sources are known can yield incorrect results.
-extern event_decl IEventMultiplexer* createEventMultiplexer(CMetaInfoState& metaState);
+extern event_decl IEventMultiplexer* createChronologicalEventMultiplexer(CMetaInfoState& metaState);
+
+// Creates an IEventMultiplexer that iterates one source at a time. This can be a better choice
+// than the chronological multiplexer when operations do not need to retain event order.
+extern event_decl IEventMultiplexer* createSerialEventMultiplexer(CMetaInfoState& metaState);
 
 // Dispatch the contents of an event iterator to an event visitor.
 extern event_decl void visitIterableEvents(IEventIterator& iter, IEventVisitor& visitor);

@@ -69,6 +69,11 @@ bool CEventSavingOp::doOp()
     return true;
 }
 
+IEventMultiplexer* CEventSavingOp::createMultiplexer(CMetaInfoState& metaState)
+{
+    return createChronologicalEventMultiplexer(metaState);
+}
+
 void CEventSavingOp::setOutputPath(const char* path)
 {
     outputPath = path;
