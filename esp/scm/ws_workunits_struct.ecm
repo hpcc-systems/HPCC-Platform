@@ -377,6 +377,7 @@ ESPStruct [nil_remove] ECLWorkunitLW
     [min_ver("1.91")] bool NoAccess(false);
 };
 
+// This structure is shared, changes to the structure must force a version uptick on wssql as well
 ESPStruct [nil_remove] ECLWorkunit
 {
     string Wuid;
