@@ -1,4 +1,5 @@
 import * as React from "react";
+import { flushSync } from "react-dom";
 import { Root, createRoot } from "react-dom/client";
 import { LightThemed, Themed } from "./Themed";
 
@@ -39,8 +40,12 @@ export class ReactRoot {
     }
 
     dispose(): void {
-        this._root?.unmount();
+        const root = this._root;
         this._root = undefined;
+        if (root) {
+            flushSync(() => { });
+            root.unmount();
+        }
     }
 
     render<P>(C: React.FunctionComponent<P>, props: Readonly<P>) {
