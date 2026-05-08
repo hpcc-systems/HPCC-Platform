@@ -137,9 +137,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="93.80pt" />
+        <colspec colwidth="93.80pt"/>
 
-        <colspec />
+        <colspec/>
 
         <tbody>
           <row>
@@ -460,9 +460,9 @@
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
-          <colspec colwidth="93.80pt" />
+          <colspec colwidth="93.80pt"/>
 
-          <colspec />
+          <colspec/>
 
           <tbody>
             <row>
@@ -643,9 +643,9 @@ OUTPUT(People(Attr1=FALSE));
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
-          <colspec colwidth="93.80pt" />
+          <colspec colwidth="93.80pt"/>
 
-          <colspec />
+          <colspec/>
 
           <tbody>
             <row>
@@ -787,9 +787,9 @@ OUTPUT(People(Attr1=FALSE));
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="95.80pt" />
+        <colspec colwidth="95.80pt"/>
 
-        <colspec />
+        <colspec/>
 
         <tbody>
           <row>
@@ -951,9 +951,9 @@ OUTPUT(ds,,'~thor::outdata.csv',CSV(HEADING(FORMAT(STD.Str.ToUpperCase))));
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
-          <colspec colwidth="93.80pt" />
+          <colspec colwidth="93.80pt"/>
 
-          <colspec />
+          <colspec/>
 
           <tbody>
             <row>
@@ -1074,9 +1074,9 @@ OUTPUT(ds,,'~thor::outdata.csv',CSV(HEADING(FORMAT(STD.Str.ToUpperCase))));
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
-          <colspec colwidth="84.45pt" />
+          <colspec colwidth="84.45pt"/>
 
-          <colspec />
+          <colspec/>
 
           <tbody>
             <row>
@@ -1200,9 +1200,9 @@ OUTPUT(B,,'fred3.xml',XML('MyRow',TRIM,OPT));
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
-          <colspec colwidth="93.80pt" />
+          <colspec colwidth="93.80pt"/>
 
-          <colspec />
+          <colspec/>
 
           <tbody>
             <row>
@@ -1324,9 +1324,9 @@ OUTPUT(B,,'fred3.xml',XML('MyRow',TRIM,OPT));
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
-          <colspec colwidth="84.45pt" />
+          <colspec colwidth="84.45pt"/>
 
-          <colspec />
+          <colspec/>
 
           <tbody>
             <row>
@@ -1424,9 +1424,9 @@ OUTPUT(B,,'fred2.json',JSON('MyResult', HEADING('[', ']')));
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
-          <colspec colwidth="93.80pt" />
+          <colspec colwidth="93.80pt"/>
 
-          <colspec />
+          <colspec/>
 
           <tbody>
             <row>
@@ -1496,8 +1496,10 @@ OUTPUT(B,,'fred2.json',JSON('MyResult', HEADING('[', ']')));
     role="bold">NAMED<indexterm>
         <primary>NAMED</primary>
       </indexterm>(</emphasis><emphasis> name </emphasis><emphasis
-    role="bold">) [,EXTEND<indexterm>
+    role="bold">) [,EXTEND |,OVERWRITE<indexterm>
         <primary>EXTEND</primary>
+      </indexterm> <indexterm>
+        <primary>OVERWRITE</primary>
       </indexterm>] [</emphasis><emphasis>,</emphasis><emphasis
     role="bold">ALL<indexterm>
         <primary>ALL</primary>
@@ -1509,9 +1511,14 @@ OUTPUT(B,,'fred2.json',JSON('MyResult', HEADING('[', ']')));
     Rules</link>)</para>
 
     <para>The EXTEND option allows multiple OUTPUT actions to the same
-    <emphasis>named</emphasis> result. The ALL option is used to override the
-    implicit CHOOSEN applied to interactive queries in the Query Builder
-    program. This specifies returning all records.</para>
+    <emphasis>named</emphasis> result. The OVERWRITE option is an alternative
+    to EXTEND and replaces the existing named result. The ALL option is used
+    to override the implicit CHOOSEN applied to interactive queries in the ECL
+    IDE program. This specifies returning all records.</para>
+
+    <para>When writing multiple OUTPUT actions to the same named result,
+    specify either EXTEND or OVERWRITE. Omitting both may result in a
+    code-generation or runtime error.</para>
 
     <para>Example:</para>
 
@@ -1536,6 +1543,9 @@ OUTPUT(DATASET([{100, 'Failed'}],errMsgRec),NAMED('ErrorResult'),EXTEND);
 
 //Something else creates the dataset
 OUTPUT(makeErrMsg(101, 'Failed again'),NAMED('ErrorResult'),EXTEND);
+
+//replace any existing named result instead of appending.
+OUTPUT(makeErrMsg(103, 'Replacement message'),NAMED('ErrorResult'),OVERWRITE);
   
 //output and dataset handled elsewhere.
 rptErrMsg(102, 'And again');
@@ -1557,17 +1567,23 @@ rptErrMsg(102, 'And again');
     NAMED<indexterm>
         <primary>NAMED</primary>
       </indexterm>(</emphasis><emphasis> name </emphasis><emphasis
-    role="bold">) ] )</emphasis></para>
+    role="bold">) [,OVERWRITE<indexterm>
+        <primary>OVERWRITE</primary>
+      </indexterm>] ] )</emphasis></para>
 
     <para>This form is used to allow scalar <emphasis>expression</emphasis>
     output, particularly within SEQUENTIAL and PARALLEL action<indexterm>
         <primary>PARALLEL action</primary>
       </indexterm>s.</para>
 
+    <para>For named scalar output, OVERWRITE replaces an existing named result
+    in the workunit.</para>
+
     <para>Example:</para>
 
     <programlisting lang="ECL_Runnable">OUTPUT(10) // scalar value output
 OUTPUT('Fred') // scalar value output
+OUTPUT('replaced',NAMED('ErrorReason'),OVERWRITE) // overwrite named scalar output
 </programlisting>
   </sect2>
 
@@ -1589,8 +1605,12 @@ OUTPUT('Fred') // scalar value output
     The name of the file in the DFU is
     <emphasis>scope</emphasis>::RESULT::<emphasis>workunitid</emphasis>. This
     is useful when you want to view a large result
-    <emphasis>recordset</emphasis> in the Query Builder program but do not
-    want that much data to take up memory in the system data store.</para>
+    <emphasis>recordset</emphasis> in the ECL IDE program but do not want that
+    much data to take up memory in the system data store.</para>
+
+    <para>For named results stored directly in a workunit (using NAMED), see
+    <link linkend="Named_OUTPUT">Named OUTPUT</link> for EXTEND and OVERWRITE
+    semantics.</para>
 
     <para>Example:</para>
 
