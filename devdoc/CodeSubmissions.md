@@ -15,8 +15,8 @@ There are a few things that should be considered when creating a PR to increase 
   - You'll be able to provide more details.
   - Use bullet points to help keep your information organized and easy to read.
   - If adding detailed commit messages from commandline, the user can do the following:\
-    git commit -m "HPCC-XXXXX top level commit message" -m " - detailed commit message line 1: <press Enter>
-    1)  - this is the continuation of my detailed commit message <press Enter>
+    git commit -m "HPCC-XXXXX top level commit message" -m " - detailed commit message line 1: `<press Enter>`
+    1)  - this is the continuation of my detailed commit message `<press Enter>`
     2)  - this is the next line in the detailed commit message." 
     - the final quotation mark will end the detailed commit message.
 * If the component name (when applicable) can fit into the top level commit message, it would help clarify information.
@@ -65,7 +65,7 @@ All pull requests should be reviewed by someone who is not the author before mer
 
 Contributors should use the github reviewers section on the PR to request reviews.  After a contributor has pushed a set of changes in response to a review, they should refresh the github review status, so the users are notified it is ready for re-review.  When the review is complete, a person with responsibility for merging changes to that part of the system should be added as a reviewer (or refreshed), with a comment that it is ready to merge.
 
-Reviewers should check for PRs that are ready for their review via github's webpage (filter "review-requested:\<reviewer-id>") or via the github CLI (e.g. gh pr status).  Contributors should similarly ensure they stay up to date with any comments on requests for change on their submissions.
+Reviewers should check for PRs that are ready for their review via github's webpage (filter `review-requested:<reviewer-id>`) or via the github CLI (e.g. gh pr status). Contributors should similarly ensure they stay up to date with any comments on requests for change on their submissions.
 
 ## Target branch
 The [Version support](VersionSupport.md) document contains details of the different versions that are supported, and which version should be targetted for different kinds of changes.  Occasionally earlier branches will be chosen, (e.g. security fixes to even older versions) but they should always be carefully discussed (and documented).
