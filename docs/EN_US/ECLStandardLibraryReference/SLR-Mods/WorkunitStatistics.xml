@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="WorkunitStatistics">
+  <title>WorkunitStatistics</title>
+
+  <para><emphasis role="bold">STD.System.Workunit.WorkunitStatistics
+  <indexterm>
+      <primary>STD.System.Workunit.WorkunitStatistics</primary>
+    </indexterm> <indexterm>
+      <primary>System.Workunit.WorkunitStatistics</primary>
+    </indexterm> <indexterm>
+      <primary>Workunit.WorkunitStatistics</primary>
+    </indexterm> <indexterm>
+      <primary>WorkunitStatistics</primary>
+    </indexterm> (</emphasis> <emphasis> wuid </emphasis> <emphasis
+  role="bold">[</emphasis><emphasis>, includeActivities </emphasis><emphasis
+  role="bold">] [</emphasis><emphasis>, _filter </emphasis><emphasis
+  role="bold">])</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="120.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>wuid</emphasis></entry>
+
+          <entry>A null-terminated string containing the WorkUnit
+          IDentifier.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>includeActivities</emphasis></entry>
+
+          <entry>Optional. A Boolean TRUE or FALSE flag specifying whether
+          activity-level statistics are included. If omitted, the default is
+          FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>_filter</emphasis></entry>
+
+          <entry>Optional. A null-terminated string containing a statistics
+          filter expression. If omitted, the default is an empty
+          string.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>WorkunitStatistics returns a DATASET value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">WorkunitStatistics </emphasis>function
+  returns a DATASET with this format:</para>
+
+  <programlisting>EXPORT WsStatistic := RECORD
+  UNSIGNED8 value;
+  UNSIGNED8 count;
+  UNSIGNED8 maxValue;
+  STRING creatorType;
+  STRING creator;
+  STRING scopeType;
+  STRING scope;
+  STRING name;
+  STRING description;
+  STRING unit;
+END;</programlisting>
+
+  <para>Each record in the returned dataset specifies a statistic for the
+  workunit.</para>
+
+  <para>The optional <literal>_filter</literal> parameter is a comma-separated
+  list of <literal>option[value]</literal> clauses that can be used to limit
+  which scopes are searched and which statistics are returned.</para>
+
+  <para>The supported filter clauses are:</para>
+
+  <itemizedlist>
+    <listitem>
+      <para><literal>scope[&lt;scope-id&gt;]</literal>,
+      <literal>stype[&lt;scope-type&gt;]</literal>, or
+      <literal>id[&lt;id&gt;]</literal> to select matching scopes. These
+      clauses may be repeated, but <literal>scope</literal>,
+      <literal>stype</literal>, and <literal>id</literal> should not be mixed
+      in the same filter.</para>
+    </listitem>
+
+    <listitem>
+      <para><literal>depth[n]</literal>, <literal>depth[low,high]</literal>,
+      or <literal>depth[low..high]</literal> to restrict the depth searched
+      for matches.</para>
+    </listitem>
+
+    <listitem>
+      <para><literal>source[global|stats|statistics|graph|workflow|exception|all]</literal>
+      to choose which workunit sources are searched.</para>
+    </listitem>
+
+    <listitem>
+      <para><literal>where[&lt;stat&gt;]</literal>,
+      <literal>where[&lt;stat&gt;(=|&lt;|&lt;=|&gt;|&gt;=)&lt;value&gt;]</literal>,
+      or <literal>where[&lt;stat&gt;=&lt;low&gt;..&lt;high&gt;]</literal> to
+      filter by statistic existence or value range.</para>
+    </listitem>
+
+    <listitem>
+      <para><literal>matched[true|false]</literal>,
+      <literal>nested[&lt;depth&gt;|all]</literal>, and
+      <literal>include[&lt;scope-type&gt;]</literal> or
+      <literal>includetype[&lt;scope-type&gt;]</literal> to control which
+      matching scopes are returned.</para>
+    </listitem>
+
+    <listitem>
+      <para><literal>properties[statistics|hints|attributes|notes|scope|all]</literal>
+      or <literal>props[...]</literal> to choose categories of properties to
+      return.</para>
+    </listitem>
+
+    <listitem>
+      <para><literal>statistic[&lt;statistic-kind&gt;|none|all]</literal> or
+      <literal>stat[...]</literal>,
+      <literal>attribute[&lt;attribute-name&gt;|none|all]</literal> or
+      <literal>attr[...]</literal>,
+      <literal>hint[&lt;hint-name&gt;]</literal>,
+      <literal>property[&lt;name&gt;]</literal> or
+      <literal>prop[...]</literal>,
+      <literal>measure[&lt;measure&gt;]</literal>, and
+      <literal>version[&lt;version&gt;]</literal> to control which details are
+      returned for each scope.</para>
+    </listitem>
+  </itemizedlist>
+
+  <para>Common scope type values include <literal>global</literal>,
+  <literal>graph</literal>, <literal>subgraph</literal>,
+  <literal>activity</literal>, <literal>operation</literal>,
+  <literal>workflow</literal>, <literal>file</literal>, and
+  <literal>child</literal>. Statistic names use the internal statistic kind
+  names, for example <literal>TimeElapsed</literal> and
+  <literal>NumRowsProcessed</literal>.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">OUTPUT(STD.System.Workunit.WorkunitStatistics('W20260330-164946'));
+OUTPUT(STD.System.Workunit.WorkunitStatistics('W20260330-164946', TRUE));
+OUTPUT(STD.System.Workunit.WorkunitStatistics('W20260330-164946', FALSE,
+       'source[stats],where[TimeElapsed&gt;1000000]'));
+OUTPUT(STD.System.Workunit.WorkunitStatistics('W20260330-164946', TRUE,
+       'stype[activity],where[NumRowsProcessed&gt;0],stat[NumRowsProcessed],
+       stat[TimeElapsed]'));</programlisting>
+</sect1>
