@@ -340,6 +340,52 @@
 
     <para><programlisting>kubectl logs &lt;pod-name&gt; -c &lt;container-name&gt;</programlisting></para>
   </sect1>
+  <sect1 id="CopyingFilesFromPod" role="brk">
+    <title>Copying Files To and From a Pod</title>
+
+    <para>The <emphasis role="strong">kubectl cp</emphasis> command allows you
+    to copy files and directories between your local file system and a
+    container running in a pod. This is especially useful for retrieving log
+    files, core dumps, or configuration files from a pod for deeper analysis,
+    or for uploading data files (such as input data) directly into a pod's
+    drop zone.</para>
+
+    <para>To copy a file <emphasis>from</emphasis> a pod to your local machine,
+    use the following command in a terminal window:</para>
+
+    <para><programlisting>kubectl cp &lt;pod-name&gt;:&lt;path/to/remote/file&gt; &lt;path/to/local/destination&gt;</programlisting></para>
+
+    <para>For example, to copy a log file from a pod named
+    <emphasis>myesp-6476c6659b-vqckq</emphasis>:</para>
+
+    <para><programlisting>kubectl cp myesp-6476c6659b-vqckq:/var/log/myapp.log ./myapp.log</programlisting></para>
+
+    <para>To copy a file <emphasis>to</emphasis> a pod from your local machine,
+    reverse the source and destination arguments:</para>
+
+    <para><programlisting>kubectl cp &lt;path/to/local/file&gt; &lt;pod-name&gt;:&lt;path/to/remote/destination&gt;</programlisting></para>
+
+    <para>For example, to upload a data file to the drop zone of a pod named
+    <emphasis>mydropzone-7d9f8b6c4-xkp2t</emphasis>:</para>
+
+    <para><programlisting>kubectl cp mydata.csv mydropzone-7d9f8b6c4-xkp2t:/var/lib/HPCCSystems/dropzone/mydata.csv</programlisting></para>
+
+    <para>If the pod runs multiple containers, specify the target container
+    using the <emphasis>-c</emphasis> flag:</para>
+
+    <para><programlisting>kubectl cp &lt;pod-name&gt;:&lt;path/to/remote/file&gt; &lt;path/to/local/destination&gt; -c &lt;container-name&gt;</programlisting></para>
+
+    <para>If you are working across multiple namespaces, prefix the pod name
+    with the namespace:</para>
+
+    <para><programlisting>kubectl cp &lt;namespace&gt;/&lt;pod-name&gt;:&lt;path/to/remote/file&gt; &lt;path/to/local/destination&gt;</programlisting></para>
+
+    <note>
+      <para>The <emphasis>kubectl cp</emphasis> command requires the
+      <emphasis>tar</emphasis> utility to be present inside the container. Most
+      HPCC Systems container images include it by default.</para>
+    </note>
+  </sect1>
 
   <sect1 id="ViewingServiceLogs">
     <title>Viewing Service Logs</title>
