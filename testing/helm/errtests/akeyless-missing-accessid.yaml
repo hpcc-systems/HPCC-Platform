@@ -1,0 +1,7 @@
+# Invalid: Akeyless vault missing required accessId
+vaults:
+  ecl:
+    - name: my-akeyless-vault
+      url: https://api.akeyless.io
+      type: akeyless
+      accessKey: my-access-key-value
