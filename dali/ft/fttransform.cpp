@@ -568,8 +568,9 @@ void CIndexTransformer::initializeTransform(IFileIOStream * out)
     if (!diskmeta)
     {
         // We don't have record info - fake it? We could pretend it's a single field...
-        UNIMPLEMENTED;
+        // UNIMPLEMENTED;
         // manager.setown(createLocalKeyManager(fake, index, nullptr));
+        throw MakeStringException(888, "No disk meta information found for '%s'", keyName);
     }
 
     const RtlRecord &inrec = diskmeta->queryRecordAccessor(true);
