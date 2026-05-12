@@ -464,6 +464,14 @@ startCmd() {
       WAITTIME=720
     fi
 
+    if [[ -n "${HPCC_WAIT_TIME}" ]]; then
+      if [[ "${HPCC_WAIT_TIME}" =~ ^[0-9]+$ ]]; then
+        WAITTIME=${HPCC_WAIT_TIME}
+      else
+        log "Ignoring invalid HPCC_WAIT_TIME value '${HPCC_WAIT_TIME}'; using WAITTIME=${WAITTIME}"
+      fi
+    fi
+
     if [[ ${compType} = "dafilesrv" || ${compType} = "backupnode" ]]; then
       SENTINEL_CHECK=0
     fi
@@ -638,6 +646,9 @@ stop_component() {
         local RESULT=1
         local WAITTIME=30
         [[ $compType = "dali" ]] && WAITTIME=720
+        if [[ "${HPCC_WAIT_TIME}" =~ ^[0-9]+$ ]]; then
+            WAITTIME=${HPCC_WAIT_TIME}
+        fi
         while [[ $RESULT -ne 0 && $WAITTIME -gt 0 ]]; do
             checkPidExist $PIDPATH
             RESULT=$__pidExists

@@ -174,3 +174,20 @@ supports sub-installs using uninstall files that are placed in
 
             :   -   postinst.in - post install used by DEB package
                 -   postrm.in - post remove used by DEB package
+
+## Environment Variables
+
+The following environment variables can be set before running hpcc-init to
+control its behaviour.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `HPCC_CONFIG` | `${CONFIG_DIR}/environment.conf` | Path to the HPCC environment config file |
+| `HPCC_XMLFILE` | `${CONFIG_DIR}/environment.xml` | Path to the HPCC environment XML file |
+| `HPCC_WAIT_TIME` | 120 (start), 30 (stop) | Override the number of seconds to wait when checking if a component has started or stopped. Dali defaults are 720 seconds for both start and stop; setting this variable overrides those defaults too. |
+
+Example — use a 5-minute timeout when starting:
+
+```bash
+HPCC_WAIT_TIME=300 /etc/init.d/hpcc-init start
+```
