@@ -331,6 +331,7 @@ extern unsigned defaultWarnTimeLimit[3];
 extern unsigned defaultMinTimeLimit[3];
 extern unsigned defaultThorConnectTimeout;
 extern bool pretendAllOpt;
+extern bool ignoreDiskPreload;
 extern ClientCertificate clientCert;
 extern bool useHardLink;
 extern unsigned __int64 maxFileAgeNS[2];
