@@ -126,7 +126,7 @@ When tests are defined in the [tests] section, the script will:
 3. **Generate summary.txt**: Records all configuration values, test parameters, and metadata before execution
 4. **Execute Test**: Run testsocket with specified options
 5. **Capture Results**: Save results.xml from testsocket output
-6. **Extract Statistics**: Parse <SummaryStats> XML and save to stats.txt
+6. **Extract Statistics**: Parse `<SummaryStats>` XML and save to stats.txt
 7. **Process Timings**: Run extract-roxie-timings.py to generate stats-summary.csv
 8. **Copy Events** (if --copy-events): Copy trace files from remote machines
 9. **Generate CSV Summary**: Create statssummary.csv with configuration and statistics
@@ -139,7 +139,7 @@ results/
     {timestamp}/
       summary.txt           # Complete configuration and test metadata
       results.xml           # Full testsocket output
-      stats.txt            # Extracted <SummaryStats> XML
+      stats.txt            # Extracted `<SummaryStats>` XML
       stats-summary.csv    # Processed timing statistics
       statssummary.csv     # Combined configuration and statistics
       events/              # Event trace files (if --copy-events used)
@@ -160,7 +160,7 @@ The summary.txt file contains:
 ### Statistics Extraction
 
 If extract-roxie-timings.py is present in the same directory, the script will:
-1. Extract all <SummaryStats> tags from results.xml and save to stats.txt
+1. Extract all `<SummaryStats>` tags from results.xml and save to stats.txt
 2. Run extract-roxie-timings.py on stats.txt to generate stats-summary.csv
 3. Merge statistics into statssummary.csv alongside configuration values
 

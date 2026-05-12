@@ -170,7 +170,7 @@ vaults:
 
 ## Configuring Akeyless in environment.xml (bare-metal / VM deployments)
 
-For non-containerized deployments, Akeyless vaults are configured in the `<vaults>` section under `<Environment><Software>` in the environment.xml file.  The XML attributes correspond directly to the YAML properties described above.
+For non-containerized deployments, Akeyless vaults are configured in the `<vaults>` section under `<Environment><Software>` in the environment.xml file. The XML attributes correspond directly to the YAML properties described above.
 
 ### Single vault category
 
@@ -452,7 +452,7 @@ If you encounter issues, review the [Troubleshooting](#troubleshooting) section 
 
 - **"missing accessId for akeyless auth"** — The `accessId` property is missing or empty in the vault configuration.
 - **"missing accessKey or client-secret for akeyless auth"** — Neither `accessKey` nor `client-secret` was provided.  One of the two is required.
-- **"appRole secret <name> not found" or "appRole secret id not found at '<name>/secret-id'"** — When using the Akeyless HVP Gateway with Hashicorp AppRole-style configuration, ensure the secret referenced by `appRoleSecret` exists and its `secret-id` value is set to the Akeyless Access Key.  Keep the same secret name, but replace the previous Vault secret-id value with the Akeyless Access Key.
+- **"appRole secret `<name>` not found" or "appRole secret id not found at '`<name>`/secret-id'"** — When using the Akeyless HVP Gateway with Hashicorp AppRole-style configuration, ensure the secret referenced by `appRoleSecret` exists and its `secret-id` value is set to the Akeyless Access Key. Keep the same secret name, but replace the previous Vault secret-id value with the Akeyless Access Key.
 - **Authentication failures (401/403)** — Verify that the access ID and access key are correct.  If using `client-secret`, verify the Kubernetes secret contains an `access-key` key with the correct value.  If using HVP with AppRole-style configuration, verify the secret referenced by `appRoleSecret` exists and that its `secret-id` value contains the Akeyless Access Key.
 - **Secret not found (404)** — Verify that the full secret path (namespace + secret name) matches the path in Akeyless.  Check for leading slash mismatches.
 - **Connection errors** — Verify the `url` is correct and reachable from within the cluster.  If using `verify_server: false`, ensure this is intentional (testing only).
