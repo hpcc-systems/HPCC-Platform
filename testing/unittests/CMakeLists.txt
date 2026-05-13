@@ -43,7 +43,9 @@ set (    SRCS
          cryptotests.cpp
          hqltests.cpp
          esdltests.cpp
+         ${HPCC_SOURCE_DIR}/system/security/LdapSecurity/ldapsanitization.cpp
          loggingtests.cpp
+         ldaptests.cpp
          txSummarytests.cpp
          accessmaptests.cpp
          fxpptests.cpp
@@ -85,6 +87,7 @@ include_directories (
          .
          ./../../system/include
          ./../../system/jlib
+         ./../../system/security/LdapSecurity
          ./../../system/mp
          ./../../system/libbase58
          ./../../fs/dafsclient
