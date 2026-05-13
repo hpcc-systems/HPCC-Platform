@@ -1585,8 +1585,8 @@ void CEspHttpServer::verifyCookie(EspAuthRequest& authReq, CESPCookieVerificatio
     else if (strieq(name, SESSION_TIMEOUT_COOKIE) || strieq(name, SESSION_AUTH_MSG_COOKIE) || strieq(name, USER_ACCT_ERROR_COOKIE))
     {
         //SESSION_TIMEOUT_COOKIE: used to pass timeout settings to a client.
-        //SESSION_AUTH_MSG_COOKIE: used to pass authentication message to a client.
-        //USER_ACCT_ERROR_COOKIE: used to pass user account status to a client.
+        //SESSION_AUTH_MSG_COOKIE: used to pass one-time login/authentication messages to a client.
+        //USER_ACCT_ERROR_COOKIE: legacy one-time account status cookie; clients should clear it if present.
         //A client should clean it as soon as received. ESP always returns invalid if it is asked.
         cookie.verificationDetails.set("ESP cannot verify this cookie. It is one-time use only.");
     }
@@ -2493,6 +2493,9 @@ void CEspHttpServer::logoutSession(EspAuthRequest& authReq, const char* sessionI
     clearCookie(authReq.authBinding->querySessionIDCookieName());
     clearCookie(SESSION_AUTH_OK_COOKIE);
     clearCookie(SESSION_TIMEOUT_COOKIE);
+    clearCookie(SESSION_AUTH_MSG_COOKIE);
+    clearCookie(USER_ACCT_ERROR_COOKIE);
+    clearCookie(SESSION_START_URL_COOKIE);
     if (lock)
     {
         sendLockResponse(true, false, "Locked");
@@ -2508,6 +2511,7 @@ void CEspHttpServer::logoutSession(EspAuthRequest& authReq, const char* sessionI
 EspAuthState CEspHttpServer::handleAuthFailed(bool sessionAuth, EspAuthRequest& authReq, bool unlock, const char* msg)
 {
     ISecUser *user = authReq.ctx->queryUser();
+    const char *loginMsg = msg;
     if (user)
     {
         switch (user->getAuthenticateStatus())
@@ -2523,18 +2527,18 @@ EspAuthState CEspHttpServer::handleAuthFailed(bool sessionAuth, EspAuthRequest& 
             break;
         case AS_ACCOUNT_DISABLED :
             ESPLOG(LogMin, "Account disabled for %s", authReq.ctx->queryUserId());
-            addCookie(USER_ACCT_ERROR_COOKIE, "Account Disabled", 0, false);
+            loginMsg = "Account Disabled";
             break;
         case AS_ACCOUNT_EXPIRED :
             ESPLOG(LogMin, "Account expired for %s", authReq.ctx->queryUserId());
-            addCookie(USER_ACCT_ERROR_COOKIE, "Account Expired", 0, false);
+            loginMsg = "Account Expired";
             break;
         case AS_ACCOUNT_LOCKED :
             ESPLOG(LogMin, "Account locked for %s", authReq.ctx->queryUserId());
-            addCookie(USER_ACCT_ERROR_COOKIE, "Account Locked", 0, false);
+            loginMsg = "Account Locked";
             break;
         case AS_ACCOUNT_ROOT_ACCESS_DENIED :
-            addCookie(USER_ACCT_ERROR_COOKIE, authReq.ctx->getRespMsg(), 0, false);
+            loginMsg = "Access denied: your account is not authorized for this service.";
             break;
         }
     }
@@ -2551,7 +2555,7 @@ EspAuthState CEspHttpServer::handleAuthFailed(bool sessionAuth, EspAuthRequest& 
     if (!sessionAuth)
         m_response->sendBasicChallenge(authReq.authBinding->getChallengeRealm(), true);
     else
-        askUserLogin(authReq, msg);
+        askUserLogin(authReq, loginMsg);
 
     return authFailed;
 }
@@ -2578,6 +2582,8 @@ void CEspHttpServer::askUserLogin(EspAuthRequest& authReq, const char* msg)
             sessionStartURL.append("?").append(authReq.requestParams->queryProp("__querystring"));
         addCookie(SESSION_START_URL_COOKIE, encodeURL(encoded.clear(), sessionStartURL.str()), 0, true); //time out when browser is closed
     }
+    clearCookie(USER_ACCT_ERROR_COOKIE);
+    clearCookie(SESSION_AUTH_MSG_COOKIE);
     if (!isEmptyString(msg))
         addCookie(SESSION_AUTH_MSG_COOKIE, msg, 0, false); //time out when browser is closed
     m_response->redirect(*m_request, encodeURL(encoded.clear(), authReq.authBinding->queryLoginURL()));
