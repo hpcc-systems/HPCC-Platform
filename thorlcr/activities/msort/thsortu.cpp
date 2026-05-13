@@ -950,9 +950,14 @@ public:
                         state = JScompare;
                     }
                     else if (rightidx<rightgroup.ordinality()) {
-                        if (helper->match(nextleft,rightgroup.query(rightidx)))
-                            ret.setown(outrow(Onext,Ogroup));
-                        rightidx++;
+                        do {
+                            if (helper->match(nextleft,rightgroup.query(rightidx))) {
+                                ret.setown(outrow(Onext,Ogroup));
+                                rightidx++;
+                                break;
+                            }
+                            rightidx++;
+                        } while (rightidx<rightgroup.ordinality());
                     }
                     else { // all done
                         ret.setown(outrow(Onext,Oouter));
@@ -1264,26 +1269,30 @@ retry:
                             state = JSload;
                         }
                         else if ((rightidx<curgroup.ordinality())&&(!firstonlyR||(rightidx==0))) {
-                            const void *r = curgroup.query(rightidx);
-                            if (helper->match(l,r)) {
-                                if (keepremaining>0) {
-                                    if (!exclude) {
-                                        RtlDynamicRowBuilder rtmp(allocator);
-                                        size32_t sz = helper->transform(rtmp,l,r,++joinCounter, JTFmatchedleft|JTFmatchedright);
-                                        if (sz)
-                                            ret.setown(rtmp.finalizeRowClear(sz));
+                            do {
+                                const void *r = curgroup.query(rightidx);
+                                if (helper->match(l,r)) {
+                                    if (keepremaining>0) {
+                                        if (!exclude) {
+                                            RtlDynamicRowBuilder rtmp(allocator);
+                                            size32_t sz = helper->transform(rtmp,l,r,++joinCounter, JTFmatchedleft|JTFmatchedright);
+                                            if (sz)
+                                                ret.setown(rtmp.finalizeRowClear(sz));
+                                        }
+                                        if (ret.get()&&(keepremaining!=(unsigned)-1))
+                                            keepremaining--;
+                                        // treat SKIP and exclude as match success
+                                        if (rightouter)
+                                            rightmatched[rightidx] = true;
+                                        leftmatched = true;
                                     }
-                                    if (ret.get()&&(keepremaining!=(unsigned)-1))
-                                        keepremaining--;
-                                    // treat SKIP and exclude as match success
-                                    if (rightouter)
-                                        rightmatched[rightidx] = true;
-                                    leftmatched = true;
+                                    else
+                                        rightidx = curgroup.ordinality()-1;
+                                    rightidx++;
+                                    break;
                                 }
-                                else
-                                    rightidx = curgroup.ordinality()-1;
-                            }
-                            rightidx++;
+                                rightidx++;
+                            } while ((rightidx<curgroup.ordinality())&&!firstonlyR);
                         }
                         else { // right all done
                             if (leftouter&&!leftmatched) {
