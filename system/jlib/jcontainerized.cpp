@@ -137,15 +137,14 @@ void waitJob(const char *componentName, const char *resourceType, const char *jo
                     VStringBuffer errMsg("Job %s failed [%s].", jobName.str(), output.str());
                     VStringBuffer checkInitContainerExitCodes("kubectl get pods --selector=job-name=%s '-o=jsonpath={range .items[*].status.initContainerStatuses[*]}{.state.terminated.exitCode},{\"initContainer\"},{.name}{\"|\"}{end}'", jobName.str());
                     runKubectlCommand(componentName, checkInitContainerExitCodes, nullptr, &output.clear());
-                    DBGLOG("checkInitContainerExitCodes - output = %s", output.str());
                     if (!checkExitCodes(errMsg, output))
                     {
                         // no init container failures, check regular containers
                         VStringBuffer checkContainerExitCodes("kubectl get pods --selector=job-name=%s '-o=jsonpath={range .items[*].status.containerStatuses[*]}{.state.terminated.exitCode},{\"container\"},{.name}{\"|\"}{end}'", jobName.str());
                         runKubectlCommand(componentName, checkContainerExitCodes, nullptr, &output.clear());
-                        DBGLOG("checkContainerExitCodes - output = %s", output.str());
                         checkExitCodes(errMsg, output);
                     }
+                    OERRLOG("%s", errMsg.str()); // report all k8s job failures to operator
                     throw makeStringException(0, errMsg);
                 }
                 // Check for success: k8s <1.31 uses "Complete: True", k8s >=1.31 produces "SuccessCriteriaMet: True" 1st
