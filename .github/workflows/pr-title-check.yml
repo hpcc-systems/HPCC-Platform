@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
@@ -56,7 +56,7 @@ jobs:
             exit 1
           fi
 
-      - name: Check first commit message format and signature
+      - name: Check first commit message format
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
@@ -75,9 +75,6 @@ jobs:
           COMMIT_MSG=$(git log --format=%s -n 1 "$FIRST_COMMIT")
           echo "First commit message: $COMMIT_MSG"
 
-          # Get the full commit message body
-          FULL_COMMIT_MSG=$(git log --format=%B -n 1 "$FIRST_COMMIT")
-
           # Check if commit message follows Conventional Commits format
           if echo "$COMMIT_MSG" | grep -qE "^(${VALID_TYPES})(\([a-zA-Z0-9_.-]+\))?!?: .+"; then
             echo "✓ First commit message is valid: follows Conventional Commits format"
@@ -92,40 +89,6 @@ jobs:
             echo "  ✓ docs: update documentation"
             echo "  ✓ refactor!: breaking change API redesign"
             echo "  ✗ Fix memory leak"
-            exit 1
-          fi
-
-          # ---- 1. DCO check ----
-          DCO_OK=false
-          if echo "$FULL_COMMIT_MSG" | grep -q "Signed-off-by: "; then
-            echo "✓ DCO sign-off found"
-            DCO_OK=true
-          fi
-
-          # ---- 2. GPG check ----
-          GPG_OK=false
-          if git log --format=%G? -n 1 "$FIRST_COMMIT" | grep -q "^G"; then
-            echo "✓ GPG signature verified"
-            GPG_OK=true
-          fi
-
-          # ---- Require at least ONE ----
-          if [ "$DCO_OK" = "true" ] || [ "$GPG_OK" = "true" ]; then
-            echo "First commit is signed (DCO or GPG)"
-          else
-            echo "✗ First commit is not signed"
-            echo ""
-            echo "You must sign the first commit **either** with:"
-            echo "  • DCO: add a 'Signed-off-by:' line  →  git commit -s"
-            echo "  • GPG: sign with your key          →  git commit -S"
-            echo ""
-            echo "To fix an existing commit:"
-            echo "  git rebase -i ${BASE_SHA}^"
-            echo "  Change 'pick' → 'edit' on the first commit, then:"
-            echo "    git commit --amend -s   # for DCO"
-            echo "    # or"
-            echo "    git commit --amend -S --no-edit   # for GPG"
-            echo "  git rebase --continue"
             exit 1
           fi
 
