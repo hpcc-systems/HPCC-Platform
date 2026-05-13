@@ -28,6 +28,19 @@ export const Login: React.FunctionComponent<LoginProps> = ({
 
 }) => {
 
+    const clearCookie = React.useCallback((name: string) => {
+        document.cookie = `${name}=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Path=/;`;
+    }, []);
+
+    const consumeLoginMessage = React.useCallback((cookies: Record<string, string>) => {
+        const loginMessage = cookies.ESPAuthenticationMSG || cookies.ESPUserAcctError || "";
+        if (cookies.ESPAuthenticationMSG || cookies.ESPUserAcctError) {
+            clearCookie("ESPAuthenticationMSG");
+            clearCookie("ESPUserAcctError");
+        }
+        return loginMessage;
+    }, [clearCookie]);
+
     const { theme } = useUserTheme();
 
     const { createUserSession } = useUserSession();
@@ -39,12 +52,22 @@ export const Login: React.FunctionComponent<LoginProps> = ({
 
     React.useEffect(() => {
         const cookies = Utility.parseCookies();
+
+        // Check for session-restore redirect before consuming login-message cookies
+        // so they are not cleared before the redirect can occur.
         if (cookies["ESPSessionState"] === "true") {
             const lastUrl = window.localStorage.getItem("pageOnLock") ?? "/";
             window.localStorage.removeItem("pageOnLock");
             replaceUrl(lastUrl);
+            return;
         }
-    }, []);
+
+        const loginMessage = consumeLoginMessage(cookies);
+        if (loginMessage) {
+            setErrorMessage(loginMessage);
+            setShowError(true);
+        }
+    }, [consumeLoginMessage]);
 
     const loginStyles = React.useMemo(() => mergeStyleSets({
         root: {
@@ -112,11 +135,15 @@ export const Login: React.FunctionComponent<LoginProps> = ({
 
                 const cookies = Utility.parseCookies();
 
-                if (cookies.ESPAuthenticationMSG && loginResponse?.url.indexOf("esp/files/Login.html") > -1) {
-                    setErrorMessage(cookies.ESPAuthenticationMSG);
+                const isRedirectedToLogin = loginResponse?.url.indexOf("esp/files/Login.html") > -1;
+
+                if (isRedirectedToLogin) {
+                    const loginMessage = consumeLoginMessage(cookies);
+                    setErrorMessage(loginMessage || nlsHPCC.InvalidUsernamePassword);
                     setShowError(true);
                 } else {
                     createUserSession(cookies).then(() => {
+                        setShowError(false);
                         setErrorMessage("");
                         const lastUrl = window.localStorage.getItem("pageOnLock") ?? "/";
                         window.localStorage.removeItem("pageOnLock");
@@ -125,7 +152,7 @@ export const Login: React.FunctionComponent<LoginProps> = ({
                 }
             }
         )();
-    }, [handleSubmit, createUserSession]);
+    }, [handleSubmit, createUserSession, consumeLoginMessage]);
 
     return <div className={loginStyles.root}>
         <div className={loginStyles.container}>
