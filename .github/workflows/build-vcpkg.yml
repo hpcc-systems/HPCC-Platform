@@ -188,13 +188,13 @@ jobs:
       asset-name: 'docker-package'
     secrets: inherit
 
-  build-docker-ubuntu-24_04-arm:
+  build-docker-ubuntu-24_04-arm64:
     needs: [pre_job]
     if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.platform == 'true') }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ubuntu-24.04
-      tag_postfix: "-arm"
+      tag_postfix: "-arm64"
     secrets: inherit
 
   build-docker-ubuntu-24_04:
@@ -205,13 +205,15 @@ jobs:
       os: ubuntu-24.04
     secrets: inherit
 
-  build-docker-ubuntu-22_04-arm:
+  build-docker-ubuntu-22_04-arm64-package:
     needs: [pre_job]
-    if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.platform == 'true') }}
+    if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.platform == 'true' || needs.pre_job.outputs.testing == 'true') }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ubuntu-22.04
-      tag_postfix: "-arm"
+      tag_postfix: "-arm64"
+      upload-package: true
+      asset-name: 'docker-ubuntu-22_04-arm64'
     secrets: inherit
 
   build-docker-ubuntu-22_04:

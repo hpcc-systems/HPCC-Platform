@@ -27,7 +27,7 @@ on:
         type: string
         default: ''
       architecture:
-        description: 'Architecture, either -arm or empty string'
+        description: 'Architecture, either -arm64 or empty string'
         required: false
         type: string
         default: ''
@@ -59,7 +59,7 @@ on:
         default: ''
       architecture:
         type: string
-        description: 'Architecture, either -arm or empty string'
+        description: 'Architecture, either -arm64 or empty string'
         required: false
         default: ''
 
@@ -69,7 +69,7 @@ permissions:
 jobs:
   build:
     name: Build Community Platform
-    runs-on: ubuntu-24.04${{ inputs.architecture }}
+    runs-on: ${{ inputs.architecture == '-arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
     steps:
       - name: Free additional disk space (remove Android SDK + Tools)
         continue-on-error: true
@@ -159,7 +159,7 @@ jobs:
           push: ${{ github.repository_owner == 'hpcc-systems' }}
           load: ${{ github.repository_owner != 'hpcc-systems' }}
           build-args: |
-            VCPKG_REF=${{ steps.vars.outputs.vcpkg_sha_short }}${{ inputs.architecture }}
+            VCPKG_REF=${{ steps.vars.outputs.vcpkg_sha_short }}${{ inputs.architecture == '-arm64' && '-arm' || inputs.architecture }}
           tags: |
             ${{ steps.vars.outputs.docker_tag_candidate_base }}
           cache-from: |
@@ -236,11 +236,11 @@ jobs:
           build-args: |
             PKG_FILE=${{ steps.container.outputs.k8s_pkg_file }}
           tags: |
-            hpccsystems/platform-core:${{ steps.vars.outputs.hpcc_version }}
-            hpccsystems/platform-core-${{ inputs.os }}:${{ steps.vars.outputs.community_tag }}
-            hpccsystems/platform-core-${{ inputs.os }}:${{ steps.vars.outputs.candidate_base_branch }}
+            hpccsystems/platform-core:${{ steps.vars.outputs.hpcc_version }}${{ inputs.architecture }}
+            hpccsystems/platform-core-${{ inputs.os }}:${{ steps.vars.outputs.community_tag }}${{ inputs.architecture }}
+            hpccsystems/platform-core-${{ inputs.os }}:${{ steps.vars.outputs.candidate_base_branch }}${{ inputs.architecture }}
           cache-from: |
-            type=registry,ref=hpccsystems/platform-core-${{ inputs.os }}:${{ steps.vars.outputs.candidate_base_branch }}
+            type=registry,ref=hpccsystems/platform-core-${{ inputs.os }}:${{ steps.vars.outputs.candidate_base_branch }}${{ inputs.architecture }}
   
       - name: Cleanup Environment
         if: always()
