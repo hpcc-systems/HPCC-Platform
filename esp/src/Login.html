@@ -100,7 +100,6 @@
                     <input id="username" type="text" name="username" placeholder="username" class="loginStr" autofocus></input>
                     <input id="password" type="password" name="password" placeholder="password" class="loginStr"></input>
                     <p id="hidden_msg" class="loginStr"></p>
-                    <p id="disabled_msg" class="loginStr"></p>
                     <button class="loginStr" id="button" type="submit"></button>
                 </form>
             </div>
@@ -115,7 +114,6 @@
 
                     var loginStr = document.getElementById("loginStr");
                     var error = document.getElementById("hidden_msg");
-                    var disabled = document.getElementById('disabled_msg');
                     var username = document.getElementById("username");
                     var password = document.getElementById("password");
                     var button = document.getElementById("button");
@@ -124,7 +122,6 @@
 
                     loginStr.innerHTML = nlsHPCC.PleaseLogIntoECLWatch;
                     error.innerHTML = nlsHPCC.InvalidUsernamePassword;
-                    disabled.innerhtml = nlsHPCC.AccountDisabled;
                     username.innerHTML = nlsHPCC.Username;
                     password.innerHTML = nlsHPCC.Password;
                     button.innerHTML = nlsHPCC.Login;
@@ -140,21 +137,40 @@
                         alert(enableCookies);
                     }
 
-                    function deleteCookie(cname, cvalue, exMins) {
-                        var d = new Date();
-                        d.setTime(d.getTime() + (exMins * 60 * 1000));
-                        var expires = "expires=" + d.toUTCString();
-                        document.cookie = cname + "=" + cvalue + ";" + expires + ";";
+                    function deleteCookie(cname) {
+                        // Clear cookie using the same root path and explicit expiration.
+                        document.cookie = cname + "=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Path=/;";
                     }
 
-                    if (document.cookie.indexOf("ESPAuthenticationMSG") > -1) {
+                    function getCookie(name) {
+                        var key = name + "=";
+                        var cookieParts = document.cookie.split(";");
+                        for (var i = 0; i < cookieParts.length; i++) {
+                            var c = cookieParts[i].trim();
+                            if (c.indexOf(key) === 0) {
+                                var rawValue = c.substring(key.length, c.length);
+                                try {
+                                    return decodeURIComponent(rawValue);
+                                } catch (e) {
+                                    return rawValue;
+                                }
+                            }
+                        }
+                        return "";
+                    }
+
+                    function consumeLoginMessage() {
+                        var loginMessage = getCookie("ESPAuthenticationMSG") || getCookie("ESPUserAcctError");
+                        deleteCookie('ESPAuthenticationMSG');
+                        deleteCookie('ESPUserAcctError');
+                        return loginMessage;
+                    }
+
+                    var loginMessage = consumeLoginMessage();
+                    if (loginMessage) {
                         var element = document.getElementById('hidden_msg');
+                        element.textContent = loginMessage;
                         element.style.display = "inline-block";
-                        deleteCookie('ESPAuthenticationMSG', '', 0);
-                    } else if (document.cookie.indexOf("ESPUserAcctError") > -1) {
-                        var element = document.getElementById('disabled_msg');
-                        element.style.display = "inline-block";
-                        deleteCookie('ESPUserAcctError', '', 0);
                     }
                 });
             }
