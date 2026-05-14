@@ -20,3 +20,4 @@ dockerfiles/platform-build-incremental/hpcc.gitpatch
 .env
 /vcpkg.json
 /CMakeUserPresets.json
+*.xml~ 
