@@ -516,18 +516,27 @@ bool EventRecorder::stopRecording(EventRecordingSummary * optSummary, bool throw
     }
 
     bool ok = true;
+    offset_type currentNextWriteOffset;
+    offset_t bytesToWrite;
     {
         //MORE: Could avoid re-entering by using a leaveable critical block above
         CriticalBlock block(cs);
-        offset_type currentNextWriteOffset = nextWriteOffset.load(std::memory_order_relaxed);
+        currentNextWriteOffset = nextWriteOffset.load(std::memory_order_relaxed);
         if (getBlockFromOffset(nextOffset) != getBlockFromOffset(currentNextWriteOffset))
             ERRLOG("Inconsistent data write %llu v %llu", nextOffset, currentNextWriteOffset);
 
-        writeBlock(currentNextWriteOffset, nextOffset & blockMask);
+        bytesToWrite = nextOffset & blockMask;
+    }
+
+    writeBlock(currentNextWriteOffset, bytesToWrite);
+
+    {
+        std::unique_lock<std::mutex> lock(writeMutex);
 
         try
         {
-            outputStream->flush();
+            if (outputStream)
+                outputStream->flush();
         }
         catch (IException * e)
         {
@@ -536,10 +545,14 @@ bool EventRecorder::stopRecording(EventRecordingSummary * optSummary, bool throw
         }
         outputStream.clear();
 
-        offset_t sizeWritten = output->getStatistic(StSizeDiskWrite);
+        offset_t sizeWritten = 0;
+        if (output)
+            sizeWritten = output->getStatistic(StSizeDiskWrite);
+
         try
         {
-            output->close();
+            if (output)
+                output->close();
         }
         catch (IException * e)
         {
@@ -550,7 +563,8 @@ bool EventRecorder::stopRecording(EventRecordingSummary * optSummary, bool throw
 
         if (corruptOutput)
         {
-            outputFile->remove();
+            if (outputFile)
+                outputFile->remove();
             ok = false;
         }
 
@@ -652,7 +666,8 @@ void EventRecorder::commitEvent(offset_type startOffset, size32_t size)
             pendingEventCounts[thisBlock] = count;
             if (count == 0)
             {
-                if (getBlockFromOffset(nextOffset) != thisBlock)
+                offset_type blockStartOffset = startOffset & ~((offset_type)blockMask);
+                if (nextOffset >= blockStartOffset + OutputBlockSize)
                     commitBlock = true;
             }
         }
@@ -1243,11 +1258,14 @@ void EventRecorder::writeByte(offset_type & offset, byte value)
 void EventRecorder::writeBlock(offset_type startOffset, size32_t size)
 {
     std::unique_lock<std::mutex> lock(writeMutex);
-    writeCv.wait(lock, [this, startOffset] { return nextWriteOffset.load(std::memory_order_relaxed) == startOffset; });
+    writeCv.wait(lock, [this, startOffset] { return nextWriteOffset.load(std::memory_order_relaxed) >= startOffset; });
+
+    if (nextWriteOffset.load(std::memory_order_relaxed) > startOffset)
+        return; // This block was already flushed or bypassed (e.g. by stopRecording)
 
     try
     {
-        if (!corruptOutput)
+        if (!corruptOutput && outputStream)
         {
             size32_t blockOffset = startOffset & bufferMask;
             outputStream->put(size, (const byte *)buffer.get() + blockOffset);
