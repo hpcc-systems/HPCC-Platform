@@ -1038,7 +1038,7 @@
         },
         "kind": {
           "type": "string",
-          "enum": ["kv-v2", "kv-v1"]
+          "enum": ["kv-v2", "kv-v1", "akeyless"]
         },
         "type": {
           "description": "The vault provider type (e.g. 'akeyless' or kv backend)",
@@ -1114,6 +1114,7 @@
             "required": ["type"]
           },
           "then": {
+            "required": ["accessId"],
             "oneOf": [
               {
                 "required": ["accessKey"],
@@ -1123,7 +1124,47 @@
                 "required": ["client-secret"],
                 "not": { "required": ["accessKey"] }
               }
-            ]
+            ],
+            "properties": {
+              "kind": { "enum": ["akeyless"] }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": { "const": "akeyless" }
+            },
+            "required": ["kind"]
+          },
+          "then": {
+            "required": ["accessId"],
+            "oneOf": [
+              {
+                "required": ["accessKey"],
+                "not": { "required": ["client-secret"] }
+              },
+              {
+                "required": ["client-secret"],
+                "not": { "required": ["accessKey"] }
+              }
+            ],
+            "properties": {
+              "type": { "enum": ["akeyless"] }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": { "enum": ["kv-v1", "kv-v2"] }
+            },
+            "required": ["type"]
+          },
+          "then": {
+            "properties": {
+              "kind": { "enum": ["kv-v1", "kv-v2"] }
+            }
           }
         }
       ]

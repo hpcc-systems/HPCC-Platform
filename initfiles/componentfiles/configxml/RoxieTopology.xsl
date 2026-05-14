@@ -20,6 +20,7 @@
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xml:space="default"
  xmlns:seisint="http://seisint.com" exclude-result-prefixes="seisint">
     <xsl:output method="xml" indent="yes" omit-xml-declaration="no" encoding="UTF-8"/>
+    <xsl:include href="vaults-common.xsl"/>
     <xsl:template match="text()"/>
     <xsl:param name="process" select="'unknown'"/>
     <xsl:param name="isLinuxInstance" select="1"/>
@@ -123,7 +124,7 @@
             </xsl:attribute>
             <xsl:copy-of select="./expert"/>
             <xsl:copy-of select="./pageCache"/>
-            <xsl:copy-of select="/Environment/Software/vaults"/>
+            <xsl:call-template name="copyVaultsConfig"/>
             <xsl:copy-of select="/Environment/Software/Directories"/>
             <xsl:choose>
                 <xsl:when test="tracing">
