@@ -26,6 +26,7 @@
 #include "jexcept.hpp"
 #include "nlp.hpp"
 #include "manifest.hpp"
+#include "workunit.hpp"
 
 #include "unicode/usearch.h"
 using namespace icu;
@@ -51,6 +52,8 @@ ECL_NLP_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 namespace nlp
 {
 
+    static constexpr int NLPERR_NO_RESOURCES_IN_MANIFEST = 20001;
+
     IPluginContext *parentCtx = NULL;
     static CriticalSection cs;
     static NLPEng *nlpEng = NULL;
@@ -62,6 +65,36 @@ namespace nlp
             std::shared_ptr<IManifest> manifest(createIManifest(ctx));
             StringBuffer sb;
             manifest->extractResources(sb);
+            if (sb.isEmpty())
+            {
+                StringAttr wuid;
+                if (ctx)
+                    wuid.setown(ctx->getWuid());
+
+                StringBuffer dllName;
+                if (wuid.length())
+                {
+                    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+                    if (factory)
+                    {
+                        Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid);
+                        if (wu)
+                        {
+                            Owned<IConstWUQuery> q = wu->getQuery();
+                            if (q)
+                            {
+                                SCMStringBuffer queryDll;
+                                q->getQueryDllName(queryDll);
+                                dllName.set(queryDll.str());
+                            }
+                        }
+                    }
+                }
+
+                throw makeStringExceptionV(NLPERR_NO_RESOURCES_IN_MANIFEST, "No NLP resources found in query manifest (wuid=%s, dll=%s)",
+                                           wuid.length() ? wuid.get() : "<unknown>",
+                                           dllName.length() ? dllName.str() : "<unknown>");
+            }
             nlpEng = new NLPEng(sb.str());
         }
     }
