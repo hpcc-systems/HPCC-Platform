@@ -2945,7 +2945,7 @@ void DiskReadBuilderBase::buildMembers(IHqlExpression * expr)
             getStringValue(format, fileType);
             format.toLowerCase();
         }
-        instance->startctx.addQuotedF("virtual const char * queryFormat() { return \"%s\"; }", format.str());
+        instance->startctx.addQuotedF("virtual const char * queryFormat() override { return \"%s\"; }", format.str());
     }
 
     //---- virtual bool canMatchAny() { return <value>; } ----
