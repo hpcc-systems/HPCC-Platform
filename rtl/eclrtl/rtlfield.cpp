@@ -393,11 +393,14 @@ unsigned RtlTypeInfoBase::getLengthSizeBytes() const
     switch (length)
     {
     case 1:
+    case UNKNOWN_LENGTH1:
+        return 1;
     case 2:
-        return length;
+    case UNKNOWN_LENGTH2:
+        return 2;
     }
-    dbgassertex(length == 0 || length == UNKNOWN_LENGTH);
-    //case 0, UNKNOWN_LENGTH - no
+    // Some generated metadata uses non-1/2 markers for variable-length payloads.
+    // Any value not explicitly handled above maps to a 4-byte length prefix.
     return 4;
 }
 
@@ -408,8 +411,10 @@ size32_t RtlTypeInfoBase::getUnknownLengthMax() const
         switch (length)
         {
         case 1:
+        case UNKNOWN_LENGTH1:
             return 0xFF;
         case 2:
+        case UNKNOWN_LENGTH2:
             return 0xFFFF;
         }
     }
@@ -421,9 +426,11 @@ void RtlTypeInfoBase::writeSize(void * dest, size32_t size) const
     switch (length)
     {
     case 1:
+    case UNKNOWN_LENGTH1:
         rtlWriteInt1(dest, size);
         break;
     case 2:
+    case UNKNOWN_LENGTH2:
         rtlWriteInt2(dest, size);
         break;
     default:
@@ -439,9 +446,11 @@ size32_t RtlTypeInfoBase::readAheadSize(IRowPrefetcherSource & in) const
     switch (length)
     {
     case 1:
+    case UNKNOWN_LENGTH1:
         in.read(1, temp);
         return rtlReadInt1(temp);
     case 2:
+    case UNKNOWN_LENGTH2:
         in.read(2, temp);
         return rtlReadInt2(temp);
     default:
@@ -454,8 +463,10 @@ size32_t RtlTypeInfoBase::readSize(const void * src) const
     switch (length)
     {
     case 1:
+    case UNKNOWN_LENGTH1:
         return rtlReadInt1(src);
     case 2:
+    case UNKNOWN_LENGTH2:
         return rtlReadInt2(src);
     default:
         return rtlReadInt4(src);
@@ -1250,8 +1261,10 @@ size32_t RtlStringTypeInfo::size(const byte * self, const byte * selfrow) const
     switch (length)
     {
     case 1:
+    case UNKNOWN_LENGTH1:
         return 1 + rtlReadInt1(self);
     case 2:
+    case UNKNOWN_LENGTH2:
         return 2 + rtlReadInt2(self);
     default:
         return 4 + rtlReadSize32t(self);
