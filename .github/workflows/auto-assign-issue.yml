@@ -1,0 +1,175 @@
+name: Auto Assign Issue by Label
+
+on:
+  # Uncomment to enable automatic assignment on issue events:
+  # issues:
+  #   types: [opened, labeled]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Issue number to test against"
+        required: true
+        type: number
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  auto-assign:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event.issue.state == 'open'
+    concurrency:
+      group: assign-issue-${{ github.event.issue.number || inputs.issue_number }}
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install Python dependencies
+        run: pip install --quiet --no-deps pyyaml==6.0.3
+
+      - name: Assign issue based on label mapping
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_API_URL: ${{ github.api_url }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
+          MAPPING_FILE: .github/label-assignees.yml
+        shell: python
+        run: |
+          import json
+          import os
+          import urllib.error
+          import urllib.request
+          import yaml
+
+          REQUEST_TIMEOUT_SECONDS = 30
+
+
+          def github_request(method, path, payload=None):
+              url = f"{os.environ['GITHUB_API_URL']}{path}"
+              headers = {
+                  "Accept": "application/vnd.github+json",
+                  "Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
+                  "X-GitHub-Api-Version": "2022-11-28",
+              }
+              data = None
+              if payload is not None:
+                  data = json.dumps(payload).encode("utf-8")
+                  headers["Content-Type"] = "application/json"
+
+              req = urllib.request.Request(url, data=data, headers=headers, method=method)
+              try:
+                  with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT_SECONDS) as response:
+                      body = response.read().decode("utf-8")
+                      return json.loads(body) if body else {}
+              except urllib.error.HTTPError as error:
+                  body = error.read().decode("utf-8", errors="replace")
+                  print(f"GitHub API request failed: {method} {url} -> HTTP {error.code}: {error.reason} — {body}")
+                  raise
+              except urllib.error.URLError as error:
+                  print(f"Network error during GitHub API request: {method} {url} -> {error.reason}")
+                  raise
+
+
+          def parse_mapping(filepath):
+              """Parse label-to-assignee mappings from the YAML file.
+
+              Expected format:
+                  assignees:
+                    <github-username>:
+                      - <label-name>
+                      - <label-name>
+
+              Returns:
+                  dict: Mapping of lowercase label names to a list of assignee
+                        usernames. If the same label appears under multiple users
+                        all of them are collected. Returns an empty dict if the
+                        file is not found or contains no valid mappings.
+              """
+              mapping = {}
+              try:
+                  with open(filepath, encoding="utf-8") as f:
+                      data = yaml.safe_load(f)
+              except FileNotFoundError:
+                  print(f"Mapping file '{filepath}' not found.")
+                  return mapping
+
+              if data is None:
+                  data = {}
+              elif not isinstance(data, dict):
+                  print(f"Warning: mapping file top level is not a mapping — got {type(data).__name__}")
+                  return mapping
+
+              raw = data.get("assignees")
+              if not isinstance(raw, dict):
+                  print(f"Warning: 'assignees' in mapping file is not a mapping — got {type(raw).__name__}")
+                  return mapping
+              for username, labels in raw.items():
+                  if not isinstance(username, str):
+                      print(f"Warning: non-string assignee key {username!r} — skipping")
+                      continue
+                  if not labels:
+                      continue
+                  if not isinstance(labels, list):
+                      print(f"Warning: labels for '{username}' is not a list — skipping")
+                      continue
+                  for label in labels:
+                      if not isinstance(label, str):
+                          print(f"Warning: non-string label value {label!r} under '{username}' — skipping")
+                          continue
+                      label_lower = label.lower()
+                      mapping.setdefault(label_lower, []).append(username)
+
+              return mapping
+
+
+          mapping = parse_mapping(os.environ["MAPPING_FILE"])
+          if not mapping:
+              print("No label-to-assignee mappings found. Nothing to do.")
+              raise SystemExit(0)
+
+          repo = os.environ["GITHUB_REPOSITORY"]
+          issue_number = os.environ["ISSUE_NUMBER"]
+
+          issue = github_request("GET", f"/repos/{repo}/issues/{issue_number}")
+          if "pull_request" in issue:
+              print("Item is a pull request, not an issue. Skipping auto-assignment.")
+              raise SystemExit(0)
+          if issue.get("state") != "open":
+              print("Issue is no longer open. Skipping auto-assignment.")
+              raise SystemExit(0)
+          if issue.get("assignees"):
+              print("Issue already has an assignee. Skipping auto-assignment.")
+              raise SystemExit(0)
+
+          issue_labels = [label["name"].lower() for label in issue.get("labels", [])]
+
+          if not issue_labels:
+              print("Issue has no labels. Nothing to assign.")
+              raise SystemExit(0)
+
+          assignees = []
+          seen = set()
+          for label in issue_labels:
+              for assignee in mapping.get(label, []):
+                  if assignee not in seen:
+                      seen.add(assignee)
+                      assignees.append(assignee)
+                      print(f"Label '{label}' matched candidate assignee '{assignee}'")
+
+          if not assignees:
+              print("No matching label mappings found for this issue's labels.")
+              raise SystemExit(0)
+
+          if len(assignees) > 3:
+              print(f"Warning: {len(assignees)} assignees matched but the limit is 3. "
+                    f"Leaving issue #{issue_number} unassigned.")
+              raise SystemExit(0)
+
+          path = f"/repos/{repo}/issues/{issue_number}/assignees"
+
+          github_request("POST", path, {"assignees": assignees})
+          print(f"Successfully assigned issue #{issue_number} to: {', '.join(assignees)}")

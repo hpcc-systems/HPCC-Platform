@@ -1,0 +1,162 @@
+# Label to Assignee Mapping
+#
+# Maps GitHub usernames to the issue labels that trigger auto-assignment.
+# An issue is auto-assigned only when it currently has no assignee.
+# If multiple labels on an issue match different users, all matching users
+# are assigned.  If multiple users list the same label, all of them are
+# assigned (same behaviour as matching via different labels).  If more than
+# 3 users would be assigned, the issue is left unassigned and a warning is
+# logged.
+#
+# Format:
+#   assignees:
+#     <github-username>:
+#       - <label-name>   # optional inline comment
+
+assignees:
+
+  AhmedSha_risk:
+    - cost
+    - dfuplus
+    - DFU-Server
+    - ecl-command
+    - ECL-Plus
+    - ECL-Scheduler
+    - metrics
+    - workunit
+    - Workunit-Analyser
+
+  AsseliTX_risk:
+    - ESDL
+    - ESP
+    - javascript
+    - services
+    - session-management
+    - SoapPlus
+    - ws_logaccess
+    - ws_store
+    - WS-Access-Account
+    - WS-DFU-WS-FS
+    - WS-ECL
+    - WS-FileIO
+    - WS-Workunit-Server
+    - wscloud
+    - WsSMC
+    - WsSQL
+    - WsTopology
+    - WsWorkunit
+    - WsWorkunits
+    - WuDetails
+
+  CampDa01_risk:
+    - ECL-Standard-Library
+
+  CobbetJX_risk:
+    - BackUpNode
+    - cloud
+    - dafilesrv
+    - dali
+    - DFS
+    - files
+    - fs
+    - FTSlave
+    - helm
+    - sasha
+    - thor
+
+  DefabiJX_risk:
+    - DevDoc
+    - documentation
+    - documentation-informal
+    - training
+
+  delvja01_risk:
+    - XREF
+
+  FortGo01_risk:
+    - terraform
+
+  GardMi01_risk:
+    - AWS
+    - Azure
+    - build-process
+    - build-tools
+    - Config-Process-Services
+    - Copilot
+    - deployment
+    - Ganglia-Monitoring
+    - GitHub
+    - infrastructure
+    - init-system
+    - monitoring
+    - Nagios-Monitoring
+
+  HallidGX_risk:
+    - clienttools
+    - code-generator
+    - Core-Libraries
+    - dumpkey
+    - ecl
+    - ECL-Samples
+    - EclAgent
+    - eclcc
+    - eclccserver
+    - eclrtl
+    - EclServer
+    - Embedded-Languages
+    - FieldTranslation
+    - FileView
+    - hql
+    - hthor
+    - JHTree
+    - JLib
+    - jlog
+    - JTrace
+    - LibBase58
+    - memory-manager
+    - Performance-suite
+    - plugins
+    - roxie
+    - RoxiePipe
+    - S3
+    - smart-stepping
+    - ThorHelper
+    - tools
+    - toposerver
+    - unittests
+    - Workflow
+
+  KellMa02_risk:
+    - MP
+    - testsocket
+
+  KlemTi01_risk:
+    - DESDL
+    - DESDL-LN
+    - event-recording
+
+  McMuJa01_risk:
+    - spark-hpcc
+
+  RowlKe01_risk:
+    - config-UI
+    - config-Utils
+    - ConfigManager-2-0
+    - configmgr
+    - configuration
+    - CryptoPlugin
+    - LDAP
+    - LDAPEnvironment
+    - security
+    - security-manager
+    - ws_codesign
+
+  SmithG3_risk:
+    - ECL-Watch
+    - ELK-support
+
+  VAMOSAX_risk:
+    - OBT
+    - regression-suite
+    - Regression-Test-Engine
+    - testing
