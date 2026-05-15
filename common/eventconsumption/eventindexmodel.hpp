@@ -115,8 +115,8 @@ public:
     {
     public:
         const IndexHashKey key; // enables mapping from MRU to hash table on MRU removals
-        struct Value* prev{nullptr};
-        struct Value* next{nullptr};
+        Value* prev{nullptr};
+        Value* next{nullptr};
         Value(const IndexHashKey& _key) : key(_key) {}
     };
     using Hash = std::unordered_map<const IndexHashKey, std::unique_ptr<Value>, IndexHashKeyHash>;
