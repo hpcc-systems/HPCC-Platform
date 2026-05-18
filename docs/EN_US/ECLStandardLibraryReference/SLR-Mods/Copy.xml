@@ -63,9 +63,9 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec colwidth="80.50pt" />
+      <colspec colwidth="80.50pt"/>
 
-      <colspec />
+      <colspec/>
 
       <tbody>
         <row>
@@ -251,6 +251,18 @@
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">STD.File.Copy('OUT::MyFile',STD.System.Thorlib.Group(),'OUT::MyNewFile');
-</programlisting>
+  <para><emphasis role="bold">Note:</emphasis> In containerized HPCC Systems
+  deployments, the <emphasis>destinationGroup</emphasis> parameter should be a
+  named data plane (for example, <emphasis role="bold">'data'</emphasis>)
+  rather than <emphasis
+  role="bold">STD.System.Thorlib.Group()</emphasis>.</para>
+
+  <programlisting format="linespecific">// Recommended: explicit data plane name (containerized and bare-metal)
+STD.File.Copy('OUT::MyFile', 'data', 'OUT::MyNewFile');
+
+// Also valid in containerized: empty string uses the default data plane
+STD.File.Copy('OUT::MyFile', '', 'OUT::MyNewFile');
+
+// Bare-metal: specify a cluster/group name or use STD.System.Thorlib.Group()
+ STD.File.Copy('OUT::MyFile', STD.System.Thorlib.Group(), 'OUT::MyNewFile');</programlisting>
 </sect1>
