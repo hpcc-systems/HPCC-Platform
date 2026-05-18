@@ -21,6 +21,7 @@
 #include "jsecrets.hpp"
 #include "jargv.hpp"
 #include "jflz.hpp"
+#include "jstring.hpp"
 #include "httpclient.hpp"
 
 #include "workunit.hpp"
@@ -2107,7 +2108,10 @@ public:
         if (optIncThorSlave)
             urlTail.append("&IncludeThorSlaveLog=on");
         if (!optProblemDesc.isEmpty())
-            urlTail.append("&ProblemDescription=").append(optProblemDesc.get());
+        {
+            urlTail.append("&ProblemDescription=");
+            appendURL(&urlTail, optProblemDesc.get());
+        }
         EclCmdURL eclCmdURL("WsWorkunits", !streq(optServer, ".") ? optServer : "localhost", optPort, optSSL, urlTail.str());
 
         //Create CURL command
@@ -2121,7 +2125,7 @@ public:
         if (optCreateDirs)
             curlCommand.append(" --create-dirs");
 
-        curlCommand.appendf(" -o %s %s", outputFile.str(), eclCmdURL.str());
+        curlCommand.appendf(" -o \"%s\" \"%s\"", outputFile.str(), eclCmdURL.str());
 
         Owned<IPipeProcess> pipe = createPipeProcess();
         if (!pipe->run(optVerbose ? "EXEC" : NULL, curlCommand.str(), NULL, false, true, true))
