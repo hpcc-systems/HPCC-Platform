@@ -24,6 +24,12 @@ const cookieStore = cookieKeyValStore();
 const sessionStore = sessionKeyValStore();
 const userStore = userKeyValStore();
 
+function getLoginUrl(): string {
+    if (window.location.pathname.indexOf("/esp/files/nightly.html") >= 0)
+        return `${window.location.pathname}#/login`;
+    return dojoConfig.urlInfo.basePath + "/Login.html";
+}
+
 export async function fetchModernMode(): Promise<string> {
     return Promise.all([
         sessionStore.get(ModernMode),
@@ -164,7 +170,7 @@ export function initSession() {
 
         idleWatcher.start();
     } else if (cookie("ECLWatchUser")) {
-        window.location.replace(dojoConfig.urlInfo.basePath + "/Login.html");
+        window.location.replace(getLoginUrl());
     }
 }
 

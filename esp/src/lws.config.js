@@ -45,6 +45,7 @@ console.log("Port:  " + port);
 let rewrite = [
     { from: "/esp/files/stub.htm", to: "/stub.htm" },
     { from: "/esp/files/index.html", to: "/index.html" },
+    { from: "/esp/files/nightly.html", to: "/nightly.html" },
     { from: "/esp/files/Login.html", to: "/Login.html" },
     { from: "/esp/files/GetUserName.html", to: "/GetUserName.html" },
     { from: "/esp/titlebar(.*)", to: protocol + "://" + ip + ":" + port + "/esp/titlebar$1" },
@@ -60,6 +61,7 @@ let rewrite = [
     { from: "/esp/files/esp/logout", to: protocol + "://" + ip + ":" + port + "/esp/logout" },
     { from: "/esp/files/esp/reset_session_timeout", to: protocol + "://" + ip + ":" + port + "/esp/reset_session_timeout" },
     { from: "/esp/files/node_modules/@hpcc-js/(.*)/dist/index.min.js", to: "/node_modules/@hpcc-js/$1/dist/index.js" },
+    { from: "/esp/files/dist-nightly/(.*)", to: "/build/dist-nightly/$1" },
     { from: "/esp/files/dist/(.*)", to: "/build/dist/$1" },
     { from: "/esp/files/img/(.*)", to: "build/esp/files/img/$1" },
     { from: "/esp/files/(.*/*.css)", to: "/build/esp/files/$1" },
