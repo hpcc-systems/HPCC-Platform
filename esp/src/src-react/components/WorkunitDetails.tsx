@@ -71,6 +71,16 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
         return parseQuery("?" + parentUrlParts[1]);
     }, [parentUrl]);
 
+    const engineRedirected = React.useMemo(() => {
+        const redirectFlagVar = variables.find(v => v.Name.toLowerCase() === "engineredirected");
+        return ["1", "true", "yes"].includes(redirectFlagVar?.Value?.toLowerCase() ?? "");
+    }, [variables]);
+
+    const targetClusterType = React.useMemo(() => {
+        const clusterTypeVar = variables.find(v => v.Name.toLowerCase() === "targetclustertype");
+        return clusterTypeVar?.Value?.trim();
+    }, [variables]);
+
     React.useEffect(() => {
         const traceInfo: Variable = variables.filter(v => v.Name === "ottraceparent")[0];
         setOtTraceParent(traceInfo?.Value ?? "");
@@ -207,7 +217,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                     <OverflowTabList tabs={tabs} selected={tab} onTabSelect={onTabSelect} size="medium" />
                 </FullscreenStack>
                 <DelayLoadedPanel visible={tab === "summary"} size={size}>
-                    <WorkunitSummary wuid={wuid} otTraceParent={otTraceParent} />
+                    <WorkunitSummary wuid={wuid} otTraceParent={otTraceParent} engineRedirected={engineRedirected} targetClusterType={targetClusterType} />
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "variables"} size={size}>
                     <Variables variables={variables} refreshData={refreshVariables} />

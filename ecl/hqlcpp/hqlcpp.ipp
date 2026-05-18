@@ -2034,6 +2034,7 @@ protected:
     void processEmbeddedLibraries(HqlExprArray & exprs, HqlExprArray & internalLibraries, bool isLibrary);
     void pickBestEngine(WorkflowArray & array);
     void pickBestEngine(HqlExprArray & exprs);
+    void recordPickBestEngineRedirect();
     IHqlExpression * separateLibraries(IHqlExpression * query, HqlExprArray & internalLibraries);
 
     void doBuildSerialize(BuildCtx & ctx, IIdAtom * name, IHqlExpression * length, CHqlBoundExpr & bound, const char * bufferName);

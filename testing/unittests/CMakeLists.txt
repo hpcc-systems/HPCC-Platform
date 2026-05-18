@@ -54,6 +54,7 @@ set (    SRCS
          socketasynctests.cpp
          multishotaccepttests.cpp
          infocachereadertests.cpp
+         tlsasynctests.cpp
          ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp/fxpp/FragmentedXmlPullParser.cpp
          ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp/fxpp/FragmentedXmlAssistant.cpp
          ${CMAKE_BINARY_DIR}/generated/ws_loggingservice_esp.cpp
@@ -69,6 +70,13 @@ set (    SRCS
          ${HPCC_SOURCE_DIR}/ecl/schemasniffer/json2ecl.cpp
          ${HPCC_SOURCE_DIR}/ecl/schemasniffer/xml2ecl.cpp
     )
+
+    if (NOT TARGET SMCLib)
+        set (SRCS
+            ${SRCS}
+            ${HPCC_SOURCE_DIR}/esp/smc/SMCLib/InfoCacheReader.cpp
+        )
+    endif ()
 
 if (NOT CONTAINERIZED)
 set (    SRCS
@@ -129,6 +137,10 @@ ADD_DEFINITIONS( -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( unittests ${SRCS} )
 
+if (NOT TARGET SMCLib)
+    target_compile_definitions ( unittests PRIVATE SMCLIB_EXPORTS )
+endif ()
+
 install ( TARGETS unittests RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( unittests
          jlib
@@ -142,9 +154,12 @@ target_link_libraries ( unittests
          logginglib
          workunit
          eventconsumption
-         SMCLib
          ${CppUnit_LIBRARIES}
     )
+
+if (TARGET SMCLib)
+    target_link_libraries ( unittests SMCLib )
+endif ()
 
 if (NOT CONTAINERIZED)
   target_link_libraries ( unittests configmgr )

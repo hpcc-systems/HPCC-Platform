@@ -1,0 +1,16 @@
+# Valid: Akeyless vault with accessKey
+vaults:
+  ecl:
+    - name: my-akeyless-vault
+      url: https://api.akeyless.io
+      type: akeyless
+      accessId: my-access-id
+      accessKey: my-access-key-value
+      accessType: access_key
+  # Valid: Akeyless vault using client-secret instead
+  eclUser:
+    - name: my-akeyless-ecl-user-vault
+      url: https://api.akeyless.io
+      kind: akeyless
+      accessId: another-access-id
+      client-secret: my-k8s-secret-for-key

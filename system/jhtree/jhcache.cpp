@@ -27,6 +27,7 @@
 #include <sys/file.h>
 #endif
 #include <algorithm>
+#include <memory>
 
 #include <cmath>
 
@@ -45,8 +46,25 @@ byte * CCachedIndexRead::getBufferForUpdate(offset_t offset, size32_t writeSize)
 {
     baseOffset = offset;
     size = writeSize;
+#ifndef __linux__
     void * base = data.ensure(writeSize);
     return static_cast<byte *>(base);
+#else
+    // OPT: could we try to get next avail buffer from a pre allocated pool ?
+    if (writeSize > data.length())
+    {
+        size32_t mSize = writeSize;
+        if (mSize < 4096)
+            mSize = 4096;
+        byte *cdata;
+        int rc = posix_memalign((void **)&cdata, 4096, mSize);
+        if (rc != 0)
+            throw makeStringExceptionV(0, "getBufferForUpdate: unable to alloc mem for aligned buffer: %u %d", writeSize, rc);
+        // NB: any previous contents in data are not required
+        data.setOwn(mSize, cdata);
+    }
+    return (byte *)data.get();
+#endif
 }
 
 const byte * CCachedIndexRead::queryBuffer(offset_t offset, size32_t readSize) const
@@ -70,6 +88,8 @@ const byte * CCachedIndexRead::queryFillBuffer(offset_t offset, size32_t size, I
 }
 
 #ifdef __linux__
+static constexpr int maxCriticalSections = 16381; // largest prime < 16k
+
 static unsigned cacheIndex(offset_t cacheVal, unsigned numCacheEntries)
 {
     // murmur64 bit mix modified to use mix13 parameters
@@ -161,15 +181,8 @@ public:
         {
             if ( (strisame(ioMethodStr, "direct")) && ((readSize % 4096) == 0) )
             {
-                // same as fCrit ...
-                rc = posix_memalign((void **)&alignedAddr, 4096, numCrits * pageSize);
-                if (rc == 0)
-                {
-                    ioMethod = DIRECT;
-                    openFlags |= O_DIRECT;
-                }
-                else
-                    DBGLOG("Error allocating aligned buffer, disabling direct i/o, errno %d", rc);
+                ioMethod = DIRECT;
+                openFlags |= O_DIRECT;
             }
 #ifdef RWF_UNCACHED
             else if (strisame(ioMethodStr, "uncached"))
@@ -182,14 +195,22 @@ public:
         if (!cacheFile)
             cacheFile = "/tmp/roxiecache.tmp";
 
+        cache = std::make_unique<CacheEntry []>(numEntries);
+
+        numCrits = largestPrime(numEntries / 16);
+        if (numCrits < 1)
+            numCrits = 1;
+        if (numCrits > maxCriticalSections)
+            numCrits = maxCriticalSections;
+
+        fCrit = std::make_unique<CriticalSection []>(numCrits);
+
         rc = openPageCacheFile(cacheFile, openFlags);
         if (rc < 0)
             return;
 
-        cache = new CacheEntry [numEntries];
-
         DBGLOG("Disk pageCache readSize: %u pageSize %u", readSize, pageSize);
-        DBGLOG("Disk pageCache num sets: %d file size: %llu MB critsecs: %d", numSets, totSize / 1048576ULL, numCrits);
+        DBGLOG("Disk pageCache num sets: %d file size: %llu MB critsecs: %d entries: %u", numSets, totSize / 1048576ULL, numCrits, numEntries);
 
         StringBuffer ioMsg("Disk pageCache i/o method: ");
         if (ioMethod == NORMAL)
@@ -200,11 +221,8 @@ public:
             ioMsg.append("uncached");
         DBGLOG("%s", ioMsg.str());
 
-        size_t directMem = 0;
-        if (ioMethod == DIRECT)
-            directMem = numCrits * pageSize;
-        size_t totMem = (sizeof(CDiskPageCache) + directMem + (numEntries * sizeof(CacheEntry))) / 1024;
-        DBGLOG("Disk pageCache memory size: %zu + %zu = %zu KB", sizeof(CDiskPageCache) + directMem, (numEntries * sizeof(CacheEntry)), totMem);
+        size_t totMem = ((numCrits * sizeof(CriticalSection)) + (numEntries * sizeof(CacheEntry))) / 1024;
+        DBGLOG("Disk pageCache memory size: %zu + %zu = %zu KB", (numCrits * sizeof(CriticalSection)), (numEntries * sizeof(CacheEntry)), totMem);
 
         cacheOK = true;
 #endif
@@ -218,16 +236,7 @@ public:
             close(cacheFd);
             cacheFd = -1;
         }
-        if (alignedAddr)
-        {
-            free(alignedAddr);
-            alignedAddr = nullptr;
-        }
-        if (cache)
-        {
-            delete[] cache;
-            cache = nullptr;
-        }
+        cacheOK = false;
     }
 
 #ifdef __linux__
@@ -263,7 +272,8 @@ public:
             return -1;
         }
 
-        posix_fadvise(cacheFd, 0ULL, totSize, POSIX_FADV_RANDOM | POSIX_FADV_NOREUSE);
+        // turn off read-ahead ...
+        posix_fadvise(cacheFd, 0ULL, totSize, POSIX_FADV_RANDOM);
 
         return 0;
     }
@@ -275,85 +285,46 @@ public:
         critIndex = cacheKey % numCrits;
     }
 
-    bool readCacheFile(offset_t cacheFileOffset, unsigned critIndex, unsigned toRead, byte *data)
+    bool readCacheFile(offset_t cacheFileOffset, unsigned toRead, byte *data)
     {
-#ifdef __NR_preadv2
+        // OPT: look into using io_uring or more iov entries, we know there will be many of these happening concurrently ...
         struct iovec iov[1];
+        iov[0].iov_base = data;
         iov[0].iov_len = toRead;
 
         int pFlags = 0;
-        if (ioMethod == DIRECT)
-        {
-            iov[0].iov_base = &alignedAddr[critIndex * pageSize];
 # ifdef RWF_HIPRI
+        if (ioMethod == DIRECT)
             pFlags |= RWF_HIPRI;
 # endif
-        }
-        else
-        {
-            iov[0].iov_base = data;
 # ifdef RWF_UNCACHED
-            // GH NOTE: could still cache reads ...
-            if (ioMethod == UNCACHED)
-                pFlags |= RWF_UNCACHED;
+        // GH NOTE: could still cache reads ...
+        if (ioMethod == UNCACHED)
+            pFlags |= RWF_UNCACHED;
 # endif
-        }
 
         int rc = preadv2(cacheFd, iov, 1, cacheFileOffset, pFlags);
 
-#else // preadv2
-        int rc;
-        if (ioMethod == DIRECT)
-            rc = pread64(cacheFd, &alignedAddr[critIndex * pageSize], toRead, cacheFileOffset);
-        else
-            rc = pread64(cacheFd, data, toRead, cacheFileOffset);
-#endif // preadv2
-
-        if ((unsigned)rc == toRead)
-        {
-            if (ioMethod == DIRECT)
-                memcpy(data, &alignedAddr[critIndex * pageSize], toRead);
-            return true;
-        }
-
-        return false;
+        return ((unsigned)rc == toRead);
     }
 
-    bool writeCacheFile(offset_t cacheFileOffset, unsigned critIndex, const byte *data)
+    bool writeCacheFile(offset_t cacheFileOffset, const byte *data)
     {
-        if (ioMethod == DIRECT)
-            memcpy(&alignedAddr[critIndex * pageSize], data, pageSize);
-
-#ifdef __NR_pwritev2
         struct iovec iov[1];
+        iov[0].iov_base = (void *)data;
         iov[0].iov_len = pageSize;
 
         int pFlags = 0;
-        if (ioMethod == DIRECT)
-        {
-            iov[0].iov_base = &alignedAddr[critIndex * pageSize];
 # ifdef RWF_HIPRI
+        if (ioMethod == DIRECT)
             pFlags |= RWF_HIPRI;
 # endif
-        }
-        else
-        {
-            iov[0].iov_base = (void *)data;
 # ifdef RWF_UNCACHED
-            if (ioMethod == UNCACHED)
-                pFlags |= RWF_UNCACHED;
+        if (ioMethod == UNCACHED)
+            pFlags |= RWF_UNCACHED;
 # endif
-        }
 
         int rc = pwritev2(cacheFd, iov, 1, cacheFileOffset, pFlags);
-
-#else // pwritev2
-        int rc;
-        if (ioMethod == DIRECT)
-            rc = pwrite64(cacheFd, &alignedAddr[critIndex * pageSize], pageSize, cacheFileOffset);
-        else
-            rc = pwrite64(cacheFd, data, pageSize, cacheFileOffset);
-#endif // pwritev2
 
         return ((unsigned)rc == pageSize);
     }
@@ -408,7 +379,7 @@ public:
 
         byte * data = nodeData.getBufferForUpdate(alignedPos, readSize);
 
-        bool ret = readCacheFile(cacheFileOffset, critIndex, readSize, data);
+        bool ret = readCacheFile(cacheFileOffset, readSize, data);
         if (ret)
         {
             curCacheSet.delegateIndexToMostRecentlyUsed(setIndex);
@@ -449,7 +420,8 @@ public:
 
         offset_t cacheFileOffset = (setIndex * setSize) + ((offset_t)cacheKey * pageSize);
 
-        bool ret = writeCacheFile(cacheFileOffset, critIndex, data);
+        // OPT: possibly write async here ... (handling if another read happens when write is in flight)
+        bool ret = writeCacheFile(cacheFileOffset, data);
         if (ret)
         {
             curCacheSet.setEntry(setIndex, cacheVal);
@@ -488,8 +460,8 @@ protected:
     static constexpr unsigned offsetBits = 40;
     static constexpr unsigned fileIdBits = 64 - offsetBits;
     static constexpr int numSets = 16; // 4, 8, 16 ...
-    static constexpr int numCrits = 256;
     static constexpr offset_t invalidValue = ~(offset_t)0;
+    int numCrits{0};
     offset_t totSize{0};
     offset_t setSize{0};
     size32_t pageSize{0};
@@ -500,9 +472,8 @@ protected:
     unsigned numEntries{1};
     int pageSizeExp{0};
     int cacheFd{-1};
-    CriticalSection fCrit[numCrits];
+    std::unique_ptr <CriticalSection []> fCrit;
     IOMethod ioMethod{NORMAL};
-    byte *alignedAddr{nullptr};
     CriticalSection crit;
     bool cacheOK{false};
 
@@ -581,7 +552,7 @@ protected:
         }
 
     };
-    CacheEntry *cache{nullptr};
+    std::unique_ptr <CacheEntry []> cache;
 };
 
 //--------------------------------------------------------------------------------------------------------------------

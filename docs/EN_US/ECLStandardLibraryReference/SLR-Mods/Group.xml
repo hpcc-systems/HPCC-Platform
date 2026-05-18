@@ -35,6 +35,17 @@
   specify the target CLUSTER for an OUTPUT action or a PERSISTed
   attribute.</para>
 
+  <para><emphasis role="bold">Deprecated in containerized
+  environments.</emphasis> In containerized HPCC Systems deployments, compute
+  nodes are ephemeral and the node group name has no stable meaning. Storage
+  is decoupled from compute and is referenced via data planes (for example,
+  <emphasis role="bold">'data'</emphasis>). In containerized deployments this
+  function returns a blank string (<emphasis role="bold">''</emphasis>), which
+  is interpreted as the default data plane. New ECL code targeting
+  containerized HPCC should use an explicit data plane name (for example,
+  <emphasis role="bold">'data'</emphasis>) rather than calling this
+  function.</para>
+
   <para>Example:</para>
 
   <programlisting format="linespecific">IMPORT STD;

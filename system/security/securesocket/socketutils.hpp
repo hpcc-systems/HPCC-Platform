@@ -77,7 +77,7 @@ public:
     virtual bool notifySelected(ISocket *sock, unsigned selected) override;
 
 // interface IAsyncCallback
-    virtual void onAsyncComplete(int result) override;
+    virtual bool onAsyncComplete(int result) override;
 
 protected:
     void processPendingMessages();
@@ -170,9 +170,10 @@ public:
     virtual int run() override;
 
 // interface IAsyncCallback
-    virtual void onAsyncComplete(int result) override;
+    virtual bool onAsyncComplete(int result) override;
 
 private:
+    friend class CAsyncTLSAcceptCallback;
     void startSingleshotAccept();
     void handleAcceptedConnection(int socketfd);
 
@@ -240,7 +241,7 @@ protected:
     void waitForRequestSpace(CLeavableCriticalBlock & block);
 
 // interface IAsyncCallback
-    virtual void onAsyncComplete(int result) override;
+    virtual bool onAsyncComplete(int result) override;
 
 
 protected:
