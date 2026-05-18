@@ -65,6 +65,13 @@ set (    SRCS
          rtlxmltests.cpp
     )
 
+    if (NOT TARGET SMCLib)
+        set (SRCS
+            ${SRCS}
+            ${HPCC_SOURCE_DIR}/esp/smc/SMCLib/InfoCacheReader.cpp
+        )
+    endif ()
+
 if (NOT CONTAINERIZED)
 set (    SRCS
          ${SRCS}
@@ -123,6 +130,10 @@ ADD_DEFINITIONS( -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( unittests ${SRCS} )
 
+if (NOT TARGET SMCLib)
+    target_compile_definitions ( unittests PRIVATE SMCLIB_EXPORTS )
+endif ()
+
 install ( TARGETS unittests RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( unittests
          jlib
@@ -136,9 +147,12 @@ target_link_libraries ( unittests
          logginglib
          workunit
          eventconsumption
-         SMCLib
          ${CppUnit_LIBRARIES}
     )
+
+if (TARGET SMCLib)
+    target_link_libraries ( unittests SMCLib )
+endif ()
 
 if (NOT CONTAINERIZED)
   target_link_libraries ( unittests configmgr )
