@@ -205,7 +205,7 @@ public:
     CIArrayOf<CFileCrcItem> list;
 
     CFileCrcList(bool &_stopped, IUserDescriptor *_udesc)
-        : stopped(_stopped), udesc(_udesc)
+        : udesc(_udesc), stopped(_stopped)
     {
     }
 
