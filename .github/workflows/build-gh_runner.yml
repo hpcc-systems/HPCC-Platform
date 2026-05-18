@@ -68,6 +68,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   packages: read
 
 jobs:
@@ -184,6 +185,12 @@ jobs:
         shell: "bash"
         run: |
           echo "${{ toJSON(steps.vars.outputs) }}"
+
+      - name: Download ECL Watch Nightly
+        if: ${{ startsWith(github.ref, 'refs/tags/') && inputs.upload-package == true }}
+        uses: ./HPCC-Platform/.github/actions/download-eclwatch-nightly
+        with:
+          destination: ${{ github.workspace }}/build/esp/src/build/dist-nightly
 
       - uses: actions/cache@v5
         id: cache

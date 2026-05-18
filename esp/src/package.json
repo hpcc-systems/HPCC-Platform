@@ -25,6 +25,7 @@
     "bundle-dev": "node node_modules/webpack/bin/webpack.js --env development --config webpack.config.js",
     "bundle-watch": "npm run bundle-dev -- --watch",
     "build": "npm-run-all --parallel copy-res compile --serial bundle",
+    "build-nightly": "cross-env ECLWATCH_DIST_URL=/esp/files/dist-nightly/ npm-run-all --parallel copy-res compile --serial bundle",
     "build-dev": "npm-run-all --parallel copy-res compile --serial bundle-dev",
     "dev-start-ws": "ws",
     "dev-start": "run-p bundle-watch dev-start-ws",

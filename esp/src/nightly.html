@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="robots" content="noindex">
+    <title>ECL Watch</title>
+    <link rel="stylesheet" href="/esp/files/dist-nightly/font-awesome/css/font-awesome.min.css">
+    <link rel="icon" type="image/png" href="/esp/files/img/favlogo.png">
+    <style>
+        body {
+            padding: 0px;
+            margin: 0px;
+        }
+
+        #placeholder,
+        .placeholder {
+            position: absolute;
+            left: 0px;
+            top: 0px;
+            right: 0px;
+            bottom: 0px;
+        }
+    </style>
+    <script type="text/javascript" src="/esp/files/dgrid-shim/index.min.js">
+    </script>
+
+    <script type="text/javascript">
+        getAuthType();
+        function getAuthType() {
+            if (document.cookie.indexOf("ESPSessionState=true") > -1) {
+                checkCookie();
+            } else if (document.cookie.indexOf("ESPSessionState=false") > -1) {
+                // No session required - continue loading
+            } else {
+                sendAuthRequest();
+            }
+
+            function checkCookie() {
+                if (document.cookie.indexOf("ESPAuthenticated=true") > -1)
+                    return;
+                if (window.location.hash.indexOf("#/login") !== 0)
+                    window.location.replace(location.origin + "/esp/files/nightly.html#/login");
+            }
+
+            function sendAuthRequest() {
+                var xhttp = new XMLHttpRequest();
+                xhttp.onload = function () {
+                    var responseType = this.responseXML && this.responseXML.childNodes && this.responseXML.childNodes.length ? this.responseXML.childNodes[0].textContent : "None";
+                    if (this.readyState == 4 && this.status == 200) {
+                        switch (responseType) {
+                            case 'Mixed':
+                            case 'PerSessionOnly':
+                                document.cookie = ("ESPSessionState=true");
+                                break;
+                            case 'PerRequestOnly':
+                            case 'UserNameOnly':
+                            case 'None':
+                                document.cookie = ("ESPSessionState=false");
+                                break;
+                            default:
+                                document.cookie = ("ESPSessionState=false");
+                        }
+                    } else {
+                        document.cookie = ("ESPSessionState=false");
+                        console.error('Authorization Request Error:  ' + this.status + ' ' + this.statusText);
+                    }
+                }
+                xhttp.open('GET', '/esp/getauthtype', true);
+                xhttp.send();
+            }
+        }
+    </script>
+    <script type="text/javascript" src="/esp/files/dist-nightly/src-dojo.eclwatch.js" charset="utf-8"></script>
+    <script type="text/javascript" src="/esp/files/dist-nightly/src-lib.eclwatch.js" charset="utf-8"></script>
+</head>
+
+<body class="flat">
+    <!-- overlay -->
+    <div id="placeholder"></div>
+    <div id="loadingOverlay" class="loadingOverlay pageOverlay"></div>
+    <!-- application -->
+    <script src="/esp/files/dist-nightly/index.eclwatch.js" charset="utf-8"></script>
+</body>
+
+</html>

@@ -19,12 +19,18 @@ proxyItems.forEach(item => {
     };
 });
 
+const distPublicPath = (process.env.ECLWATCH_DIST_URL || "/esp/files/dist/").replace(/\/?$/, "/");
+const distUrl = distPublicPath.replace(/\/$/, "");
+
 const plugins = [
     new DojoWebpackPlugin({
         loaderConfig: require("./eclwatch/dojoConfig"),
-        environment: { dojoRoot: "build/dist" },
+        environment: { dojoRoot: "build/dist", distUrl },
         buildEnvironment: { dojoRoot: "node_modules" }, // used at build time
         locales: ["en", "bs", "es", "fr", "hr", "hu", "pt-br", "sr", "zh"]
+    }),
+    new webpack.DefinePlugin({
+        __ECLWATCH_DIST_URL__: JSON.stringify(distUrl)
     }),
     // For plugins registered after the DojoAMDPlugin, data.request has been normalized and
     // resolved to an absMid and loader-config maps and aliases have been applied
@@ -68,7 +74,7 @@ module.exports = function (env) {
         output: {
             filename: "[name].eclwatch.js",
             path: path.resolve(__dirname, "build/dist"),
-            publicPath: "/esp/files/dist/",
+            publicPath: distPublicPath,
             pathinfo: true
         },
         module: {

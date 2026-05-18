@@ -13,7 +13,7 @@ define([
     hpccMap,
     DojoD3, Mapping) {
 
-    hpccMap.topoJsonFolder("/esp/files/dist/TopoJSON");
+    hpccMap.topoJsonFolder(__ECLWATCH_DIST_URL__ + "/TopoJSON");
 
     return declare([Mapping, DojoD3], {
         mapping: {
