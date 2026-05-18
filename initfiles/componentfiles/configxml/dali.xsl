@@ -19,6 +19,7 @@
 
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xml:space="default">
   <xsl:output method="xml" indent="yes" omit-xml-declaration="no" encoding="UTF-8"/>
+  <xsl:include href="vaults-common.xsl"/>
   <xsl:template match="text()"/>
   <xsl:param name="process" select="'dali'"/>
   <xsl:param name="isLinuxInstance" select="0"/>
@@ -403,7 +404,8 @@
   </xsl:template>
 
   <xsl:template name="addVaultsConfig">
-    <xsl:copy-of select="/Environment/Software/vaults"/>
+    <xsl:call-template name="validateLdapVaultReferences"/>
+    <xsl:call-template name="copyVaultsConfig"/>
   </xsl:template>
 
 </xsl:stylesheet>

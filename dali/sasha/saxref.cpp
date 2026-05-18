@@ -998,7 +998,9 @@ public:
     {
         StringBuffer time;
         formatTime(time, heartbeatTimer.queryElapsedNS());
-        log(true, "%s complete. Total time: %s, Total dirs: %lu, Total files: %lu", op, time.str(), processedDirs.load(), processedFiles.load());
+        const uint64_t dirs = processedDirs.load();
+        const uint64_t files = processedFiles.load();
+        log(true, "%s complete. Total time: %s, Total dirs: %" I64F "u, Total files: %" I64F "u", op, time.str(), (unsigned __int64)dirs, (unsigned __int64)files);
     }
 
     void checkHeartbeat(const char * op)
@@ -1016,13 +1018,15 @@ public:
         struct tm *utc_tm = gmtime(&now);
         char timestamp[32];
         strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", utc_tm);
+        const uint64_t dirs = processedDirs.load();
+        const uint64_t files = processedFiles.load();
 
         if (elapsedDays > 0)
-            log(true, "%s - elapsed: %ud %uh processed: %lu dirs, %lu files (%s UTC)", op, elapsedDays, remainingHours, processedDirs.load(), processedFiles.load(), timestamp);
+            log(true, "%s - elapsed: %ud %uh processed: %" I64F "u dirs, %" I64F "u files (%s UTC)", op, elapsedDays, remainingHours, (unsigned __int64)dirs, (unsigned __int64)files, timestamp);
         else if (elapsedHours > 0)
-            log(true, "%s - elapsed: %uh %um processed: %lu dirs, %lu files (%s UTC)", op, elapsedHours, remainingMinutes, processedDirs.load(), processedFiles.load(), timestamp);
+            log(true, "%s - elapsed: %uh %um processed: %" I64F "u dirs, %" I64F "u files (%s UTC)", op, elapsedHours, remainingMinutes, (unsigned __int64)dirs, (unsigned __int64)files, timestamp);
         else
-            log(true, "%s - elapsed: %um processed: %lu dirs, %lu files (%s UTC)", op, elapsedMinutes, processedDirs.load(), processedFiles.load(), timestamp);
+            log(true, "%s - elapsed: %um processed: %" I64F "u dirs, %" I64F "u files (%s UTC)", op, elapsedMinutes, (unsigned __int64)dirs, (unsigned __int64)files, timestamp);
 
         heartbeatTimer.updatePeriod();
     }

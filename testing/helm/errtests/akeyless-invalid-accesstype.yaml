@@ -1,0 +1,9 @@
+# Invalid: Akeyless vault with unsupported accessType (only "access_key" allowed)
+vaults:
+  ecl:
+    - name: my-akeyless-vault
+      url: https://api.akeyless.io
+      type: akeyless
+      accessId: my-access-id
+      accessKey: my-access-key-value
+      accessType: invalid_type

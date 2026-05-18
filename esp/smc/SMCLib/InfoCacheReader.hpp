@@ -66,7 +66,7 @@ class TPWRAPPER_API CInfoCacheReaderThread : public CSimpleInterfaceOf<IThreaded
 
 public:
     CInfoCacheReaderThread(CInfoCacheReader* _reader, const char* _name, unsigned _autoRebuildSeconds, unsigned _forceRebuildSeconds, bool _enableAutoRebuild)
-        : name(_name), autoRebuildSeconds(_autoRebuildSeconds), forceRebuildSeconds(_forceRebuildSeconds), infoCacheReader(_reader), threaded(_name), enableAutoRebuild(_enableAutoRebuild)
+        : name(_name), enableAutoRebuild(_enableAutoRebuild), autoRebuildSeconds(_autoRebuildSeconds), forceRebuildSeconds(_forceRebuildSeconds), infoCacheReader(_reader), threaded(_name)
     {
     };
 
