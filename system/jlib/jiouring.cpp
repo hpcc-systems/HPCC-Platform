@@ -354,7 +354,10 @@ void URingProcessor::processCompletions()
     {
         CompletionResponse response;
         if (dequeueCompletion(response))
-            response.callback->onAsyncComplete(response.result);
+        {
+            if (response.callback->onAsyncComplete(response.result))
+                response.callback->afterCompletion();
+        }
     }
 }
 
@@ -376,9 +379,10 @@ class TerminateCompletionThreadAction final : public IAsyncCallback
 {
 public:
     TerminateCompletionThreadAction(std::atomic<bool> & _aborting) : aborting(_aborting) {}
-    virtual void onAsyncComplete(int result) override
+    virtual bool onAsyncComplete(int result) override
     {
         aborting = true;
+        return false;  // Don't free this object
     };
 private:
     std::atomic<bool> & aborting;
@@ -398,7 +402,10 @@ public:
         {
             CompletionResponse response;
             if (processor.dequeueCompletion(response))
-                response.callback->onAsyncComplete(response.result);
+            {
+                if (response.callback->onAsyncComplete(response.result))
+                    response.callback->afterCompletion();
+            }
         }
         return 0;
     }
