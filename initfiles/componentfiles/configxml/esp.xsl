@@ -22,6 +22,7 @@
     xmlns:seisint="http://seisint.com" xmlns:exslt="http://exslt.org/common" exclude-result-prefixes="seisint exslt">
 
     <xsl:output method="xml" indent="yes" omit-xml-declaration="no" encoding="UTF-8"/>
+    <xsl:include href="vaults-common.xsl"/>
     <!--xsl:template match="text()"/-->
     <xsl:param name="process" select="'esp'"/>
     <xsl:param name="instance" select="'2wd20'"/>
@@ -274,7 +275,8 @@
             </xsl:variable>
             <xsl:apply-templates select="exslt:node-set($importedServiceDefinitionFiles)" mode="processImportedServiceDefinitions"/>
             <xsl:apply-templates select="node()"/>
-            <xsl:copy-of select="/Environment/Software/vaults"/>
+            <xsl:call-template name="validateLdapVaultReferences"/>
+            <xsl:call-template name="copyVaultsConfig"/>
         </xsl:copy>
 
     </xsl:template>

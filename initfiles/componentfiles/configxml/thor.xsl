@@ -20,6 +20,7 @@
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
  xmlns:fo="http://www.w3.org/1999/XSL/Format" xml:space="default">
     <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="yes" omit-xml-declaration="yes"/>
+  <xsl:include href="vaults-common.xsl"/>
     <xsl:param name="process" select="'thor'"/>
     <xsl:param name="isLinuxInstance" select="0"/>
     <xsl:param name="tempPath" select="'c:\temp\'"/>
@@ -190,7 +191,7 @@
 
       <xsl:apply-templates select="@*[string(.) != '']"/>
 
-      <xsl:copy-of select="/Environment/Software/vaults"/>
+      <xsl:call-template name="copyVaultsConfig"/>
       <xsl:copy-of select="/Environment/Software/Directories"/> 
       <xsl:choose>
           <xsl:when test="tracing">
