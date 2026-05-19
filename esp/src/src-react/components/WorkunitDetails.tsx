@@ -38,6 +38,7 @@ type StringStringMap = { [key: string]: string };
 
 interface WorkunitDetailsProps {
     wuid: string;
+    urlWuid?: string;
     parentUrl?: string;
     tab?: string;
     fullscreen?: boolean;
@@ -47,12 +48,15 @@ interface WorkunitDetailsProps {
 
 export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
     wuid,
+    urlWuid,
     parentUrl = "/workunits",
     tab = "summary",
     fullscreen = false,
     state,
     queryParams = {}
 }) => {
+    const routeWuid = urlWuid ?? wuid;
+    const isCompare = !!urlWuid && urlWuid !== wuid;
 
     const { workunit } = useWorkunit(wuid, true);
     const [variables, , , refreshVariables] = useWorkunitVariables(wuid);
@@ -107,6 +111,10 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
     }, [wuid]);
 
     React.useEffect(() => {
+        if (isCompare) {
+            //  Next/Previous workunit navigation is intentionally disabled in compare mode  ---
+            return;
+        }
         setNextPrev({
             next: () => {
                 const now = new Date(Date.now());
@@ -135,12 +143,12 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
         return () => {
             setNextPrev(undefined);
         };
-    }, [nextWuid, query, setNextPrev, wuid]);
+    }, [isCompare, nextWuid, query, setNextPrev, wuid]);
 
     const onTabSelect = React.useCallback((tab: TabInfo) => {
-        pushUrl(tab.__state ?? `${parentUrl}/${wuid}/${tab.id}`);
+        pushUrl(tab.__state ?? `${parentUrl}/${routeWuid}/${tab.id}`);
         updateFullscreen(fullscreen);
-    }, [fullscreen, parentUrl, wuid]);
+    }, [fullscreen, parentUrl, routeWuid]);
 
     const tabs = React.useMemo((): TabInfo[] => {
         return [{
@@ -227,7 +235,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                         "__legacy" in queryParams.outputs ? <IFrame src={`/WsWorkunits/WUResult?Wuid=${wuid}&ResultName=${state?.outputs}`} height="99%" /> :
                             "__visualize" in queryParams.outputs ? <DojoAdapter widgetClassID="VizWidget" params={{ Wuid: wuid, Sequence: state?.outputs }} /> :
                                 <Result wuid={wuid} resultName={state?.outputs} filter={queryParams.outputs} /> :
-                        <Results wuid={wuid} />
+                        <Results wuid={wuid} parentUrl={`${parentUrl}/${routeWuid}/outputs`} />
                     }
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "inputs"} size={size}>
@@ -242,7 +250,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                             <Shimmer />
                         </>
                     }>
-                        <Metrics wuid={wuid} targetsRoxie={targetsRoxie} parentUrl={`${parentUrl}/${wuid}/metrics`} viewSelection={state?.metrics?.view} lineageSelection={state?.metrics?.lineageSelection} selection={state?.metrics?.selection} />
+                        <Metrics wuid={wuid} targetsRoxie={targetsRoxie} parentUrl={`${parentUrl}/${routeWuid}/metrics`} viewSelection={state?.metrics?.view} lineageSelection={state?.metrics?.lineageSelection} selection={state?.metrics?.selection} />
                     </React.Suspense>
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "workflows"} size={size}>
@@ -255,10 +263,10 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                     <Queries filter={{ WUID: wuid }} />
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "resources"} size={size}>
-                    <Resources wuid={wuid} parentUrl={`${parentUrl}/${wuid}/resources`} selectedResource={state?.resources} />
+                    <Resources wuid={wuid} parentUrl={`${parentUrl}/${routeWuid}/resources`} selectedResource={state?.resources} />
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "helpers"} size={size}>
-                    <Helpers wuid={wuid} parentUrl={`${parentUrl}/${wuid}/helpers`} selectedTreeValue={state?.helpers} />
+                    <Helpers wuid={wuid} parentUrl={`${parentUrl}/${routeWuid}/helpers`} selectedTreeValue={state?.helpers} />
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "logs"} size={size}>
                     <Logs wuid={wuid} filter={queryParams.logs} setLogCount={setLogCount} />
@@ -266,7 +274,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                 <DelayLoadedPanel visible={tab === "eclsummary"} size={size}>
                     <ECLArchive
                         wuid={wuid}
-                        parentUrl={`${parentUrl}/${wuid}/eclsummary`}
+                        parentUrl={`${parentUrl}/${routeWuid}/eclsummary`}
                         selection={state?.eclsummary?.lineageSelection ?? state?.eclsummary}
                         lineNum={state?.eclsummary?.selection ? state?.eclsummary?.selection[0] : undefined}
                     />
@@ -280,7 +288,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                             <Shimmer />
                         </>
                     }>
-                        <Metrics wuid={wuid} logicalGraph={true} parentUrl={`${parentUrl}/${wuid}/logicalgraph`} lineageSelection={state?.logicalgraph?.lineageSelection} selection={state?.logicalgraph?.selection} />
+                        <Metrics wuid={wuid} logicalGraph={true} parentUrl={`${parentUrl}/${routeWuid}/logicalgraph`} lineageSelection={state?.logicalgraph?.lineageSelection} selection={state?.logicalgraph?.selection} />
                     </React.Suspense>
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "xml"} size={size}>

@@ -12,6 +12,54 @@ export interface RouteEx<R = any, C extends RouterContext = RouterContext> exten
 
 type RoutesEx<R = any, C extends RouterContext = RouterContext> = Array<RouteEx<R, C>>;
 
+function isCompareWuid(wuid: string): boolean {
+    return typeof wuid === "string" && wuid.indexOf(",") >= 0;
+}
+
+function splitCompareWuids(wuid: string): string[] {
+    return wuid.split(",").map(s => s.trim()).filter(s => s.length > 0);
+}
+
+function parseWorkunitTabState(tab: string, state: string) {
+    switch (tab) {
+        case "metrics":
+        case "logicalgraph":
+            return { [tab]: { selection: state.split(",") } };
+        case "eclsummary":
+            return { [tab]: state };
+        default:
+            return { [tab]: state };
+    }
+}
+
+function renderWorkunit(wuid: string, parentUrl: string, fullscreen: boolean, queryParams: object, tab?: string, state?: object) {
+    return import("./components/WorkunitDetails").then(_ => {
+        return <_.WorkunitDetails wuid={wuid} parentUrl={parentUrl} fullscreen={fullscreen} tab={tab} state={state} queryParams={queryParams} />;
+    });
+}
+
+function renderWorkunitCompare(wuid: string, parentUrl: string, fullscreen: boolean, queryParams: object, tab?: string, state?: object) {
+    return import("./components/WorkunitCompare").then(_ => {
+        return <_.WorkunitCompare wuids={splitCompareWuids(wuid)} parentUrl={parentUrl} fullscreen={fullscreen} tab={tab} state={state} queryParams={queryParams} />;
+    });
+}
+
+function redirectToCompare(params: Record<string, unknown>, search?: string): false {
+    const segments = [params.Wuid, params.Tab, params.State, params.State2, params.State3]
+        .filter(Boolean)
+        .join("/");
+    replaceUrl(`/compare/${segments}${search ?? ""}`);
+    return false;
+}
+
+function redirectToWorkunits(params: Record<string, unknown>, search?: string): false {
+    const segments = [params.Wuid, params.Tab, params.State, params.State2, params.State3]
+        .filter(Boolean)
+        .join("/");
+    replaceUrl(`/workunits/${segments}${search ?? ""}`);
+    return false;
+}
+
 const workunitsChildren: Route[] = [
     {
         path: "", action: (ctx) => import("./components/Workunits").then(_ => {
@@ -24,41 +72,103 @@ const workunitsChildren: Route[] = [
         })
     },
     {
-        path: "/:Wuid", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => {
-            return <_.WorkunitDetails wuid={params.Wuid as string} parentUrl={params.parentUrl as string} fullscreen={parseFullscreen(ctx.search)} queryParams={{ summary: parseSearch(ctx.search) as any }} />;
-        })
-    },
-    {
-        path: "/:Wuid/:Tab", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => {
-            return <_.WorkunitDetails wuid={params.Wuid as string} parentUrl={params.parentUrl as string} fullscreen={parseFullscreen(ctx.search)} tab={params.Tab as string} queryParams={{ [params.Tab as string]: parseSearch(ctx.search) as any }} />;
-        })
-    },
-    {
-        path: "/:Wuid/:Tab/:State", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => {
-            let state;
-            switch (params.Tab) {
-                case "metrics":
-                case "logicalgraph":
-                    state = { [params.Tab as string]: { selection: (params.State as string).split(",") } };
-                    break;
-                case "eclsummary":
-                    state = { [params.Tab as string]: params.State as string };
-                    break;
-                default:
-                    state = { [params.Tab as string]: (params.State as string) };
+        path: "/:Wuid", action: (ctx, params) => {
+            const wuid = params.Wuid as string;
+            if (isCompareWuid(wuid)) {
+                return redirectToCompare(params, ctx.search);
             }
-            return <_.WorkunitDetails wuid={params.Wuid as string} parentUrl={params.parentUrl as string} fullscreen={parseFullscreen(ctx.search)} tab={params.Tab as string} state={state} queryParams={{ [params.Tab as string]: parseSearch(ctx.search) as any }} />;
+            return renderWorkunit(wuid, params.parentUrl as string, parseFullscreen(ctx.search), { summary: parseSearch(ctx.search) as any });
+        }
+    },
+    {
+        path: "/:Wuid/:Tab", action: (ctx, params) => {
+            const wuid = params.Wuid as string;
+            if (isCompareWuid(wuid)) {
+                return redirectToCompare(params, ctx.search);
+            }
+            return renderWorkunit(wuid, params.parentUrl as string, parseFullscreen(ctx.search), { [params.Tab as string]: parseSearch(ctx.search) as any }, params.Tab as string);
+        }
+    },
+    {
+        path: "/:Wuid/:Tab/:State", action: (ctx, params) => {
+            const wuid = params.Wuid as string;
+            if (isCompareWuid(wuid)) {
+                return redirectToCompare(params, ctx.search);
+            }
+            const state = parseWorkunitTabState(params.Tab as string, params.State as string);
+            return renderWorkunit(wuid, params.parentUrl as string, parseFullscreen(ctx.search), { [params.Tab as string]: parseSearch(ctx.search) as any }, params.Tab as string, state);
+        }
+    },
+    {
+        path: "/:Wuid/:Tab/:State/:State2", action: (ctx, params) => {
+            const wuid = params.Wuid as string;
+            if (isCompareWuid(wuid)) {
+                return redirectToCompare(params, ctx.search);
+            }
+            const state = { [params.Tab as string]: { lineageSelection: params.State, selection: (params.State2 as string).split(",") } };
+            return renderWorkunit(wuid, params.parentUrl as string, parseFullscreen(ctx.search), { [params.Tab as string]: parseSearch(ctx.search) as any }, params.Tab as string, state);
+        }
+    },
+    {
+        path: "/:Wuid/:Tab/:State/:State2/:State3", action: (ctx, params) => {
+            const wuid = params.Wuid as string;
+            if (isCompareWuid(wuid)) {
+                return redirectToCompare(params, ctx.search);
+            }
+            const state = { [params.Tab as string]: { view: params.State, lineageSelection: params.State2, selection: (params.State3 as string).split(",") } };
+            return renderWorkunit(wuid, params.parentUrl as string, parseFullscreen(ctx.search), { [params.Tab as string]: parseSearch(ctx.search) as any }, params.Tab as string, state);
+        }
+    },
+];
+
+const compareWorkunitsChildren: Route[] = [
+    {
+        path: "", action: () => import("./components/WorkunitCompare").then(_ => {
+            return <_.WorkunitCompare wuids={[]} parentUrl="/compare" />;
         })
     },
     {
-        path: "/:Wuid/:Tab/:State/:State2", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => {
-            return <_.WorkunitDetails wuid={params.Wuid as string} parentUrl={params.parentUrl as string} fullscreen={parseFullscreen(ctx.search)} tab={params.Tab as string} state={{ [params.Tab as string]: { lineageSelection: params.State, selection: (params.State2 as string).split(",") } }} queryParams={{ [params.Tab as string]: parseSearch(ctx.search) as any }} />;
-        })
+        path: "/:Wuid", action: (ctx, params) => {
+            if (!isCompareWuid(params.Wuid as string)) {
+                return redirectToWorkunits(params, ctx.search);
+            }
+            return renderWorkunitCompare(params.Wuid as string, "/compare", parseFullscreen(ctx.search), { summary: parseSearch(ctx.search) as any });
+        }
     },
     {
-        path: "/:Wuid/:Tab/:State/:State2/:State3", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => {
-            return <_.WorkunitDetails wuid={params.Wuid as string} parentUrl={params.parentUrl as string} fullscreen={parseFullscreen(ctx.search)} tab={params.Tab as string} state={{ [params.Tab as string]: { view: params.State, lineageSelection: params.State2, selection: (params.State3 as string).split(",") } }} queryParams={{ [params.Tab as string]: parseSearch(ctx.search) as any }} />;
-        })
+        path: "/:Wuid/:Tab", action: (ctx, params) => {
+            if (!isCompareWuid(params.Wuid as string)) {
+                return redirectToWorkunits(params, ctx.search);
+            }
+            return renderWorkunitCompare(params.Wuid as string, "/compare", parseFullscreen(ctx.search), { [params.Tab as string]: parseSearch(ctx.search) as any }, params.Tab as string);
+        }
+    },
+    {
+        path: "/:Wuid/:Tab/:State", action: (ctx, params) => {
+            if (!isCompareWuid(params.Wuid as string)) {
+                return redirectToWorkunits(params, ctx.search);
+            }
+            const state = parseWorkunitTabState(params.Tab as string, params.State as string);
+            return renderWorkunitCompare(params.Wuid as string, "/compare", parseFullscreen(ctx.search), { [params.Tab as string]: parseSearch(ctx.search) as any }, params.Tab as string, state);
+        }
+    },
+    {
+        path: "/:Wuid/:Tab/:State/:State2", action: (ctx, params) => {
+            if (!isCompareWuid(params.Wuid as string)) {
+                return redirectToWorkunits(params, ctx.search);
+            }
+            const state = { [params.Tab as string]: { lineageSelection: params.State, selection: (params.State2 as string).split(",") } };
+            return renderWorkunitCompare(params.Wuid as string, "/compare", parseFullscreen(ctx.search), { [params.Tab as string]: parseSearch(ctx.search) as any }, params.Tab as string, state);
+        }
+    },
+    {
+        path: "/:Wuid/:Tab/:State/:State2/:State3", action: (ctx, params) => {
+            if (!isCompareWuid(params.Wuid as string)) {
+                return redirectToWorkunits(params, ctx.search);
+            }
+            const state = { [params.Tab as string]: { view: params.State, lineageSelection: params.State2, selection: (params.State3 as string).split(",") } };
+            return renderWorkunitCompare(params.Wuid as string, "/compare", parseFullscreen(ctx.search), { [params.Tab as string]: parseSearch(ctx.search) as any }, params.Tab as string, state);
+        }
     },
 ];
 
@@ -142,6 +252,11 @@ export const routes: RoutesEx = [
                 })
             },
         ]
+    },
+    {
+        mainNav: ["workunits"],
+        path: "/compare",
+        children: compareWorkunitsChildren
     },
     //  Files  ---
     {
