@@ -264,6 +264,69 @@ export class MetricGraph extends Graph2<IScopeEx, IScopeEdge, IScopeEx> {
         return this.outEdges(v.name).filter(e => e.__parentName === v.__parentName);
     }
 
+    activityByID(id: string): IScopeEx | undefined {
+        const name = this._activityIndex[id];
+        return name && this.vertexExists(name) ? this.vertex(name) : undefined;
+    }
+
+    inActivities(scope: IScopeEx): IScopeEx[] {
+        if (!this.vertexExists(scope.name)) return [];
+        return this.inEdges(scope.name)
+            .map(e => this.activityByID(e.IdSource))
+            .filter(v => !!v);
+    }
+
+    outActivities(scope: IScopeEx): IScopeEx[] {
+        if (!this.vertexExists(scope.name)) return [];
+        return this.outEdges(scope.name)
+            .map(e => this.activityByID(e.IdTarget))
+            .filter(v => !!v);
+    }
+
+    allSubgraphVertices(scopeName: string): IScopeEx[] {
+        const result: IScopeEx[] = [...this.subgraphVertices(scopeName)];
+        for (const child of this.subgraphSubgraphs(scopeName)) {
+            result.push(...this.allSubgraphVertices(child.name));
+        }
+        return result;
+    }
+
+    inSubgraphActivities(scope: IScopeEx): IScopeEx[] {
+        if (!this.subgraphExists(scope.name)) return [];
+        const allVertices = this.allSubgraphVertices(scope.name);
+        const innerNames = new Set(allVertices.map(v => v.name));
+        const sources: IScopeEx[] = [];
+        const seen = new Set<string>();
+        for (const v of allVertices) {
+            for (const e of this.inEdges(v.name)) {
+                const src = this.activityByID(e.IdSource);
+                if (src && !innerNames.has(src.name) && !seen.has(src.name)) {
+                    seen.add(src.name);
+                    sources.push(src);
+                }
+            }
+        }
+        return sources;
+    }
+
+    outSubgraphActivities(scope: IScopeEx): IScopeEx[] {
+        if (!this.subgraphExists(scope.name)) return [];
+        const allVertices = this.allSubgraphVertices(scope.name);
+        const innerNames = new Set(allVertices.map(v => v.name));
+        const targets: IScopeEx[] = [];
+        const seen = new Set<string>();
+        for (const v of allVertices) {
+            for (const e of this.outEdges(v.name)) {
+                const tgt = this.activityByID(e.IdTarget);
+                if (tgt && !innerNames.has(tgt.name) && !seen.has(tgt.name)) {
+                    seen.add(tgt.name);
+                    targets.push(tgt);
+                }
+            }
+        }
+        return targets;
+    }
+
     protected _dedupVertices: { [scopeName: string]: boolean } = {};
 
     private _buildVertexTemplate(v: IScopeEx, options: MetricsView, isHidden: boolean = false): string {
