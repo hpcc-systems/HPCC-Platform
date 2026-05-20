@@ -27,6 +27,7 @@
 #include "jlz4.hpp"
 #include "jzstd.hpp"
 #include "jplane.hpp"
+#include "jerror.hpp"
 
 #ifdef _WIN32
 #include <io.h>
@@ -313,7 +314,7 @@ void CLZWCompressor::open(void *buf,size32_t max, size32_t fixedRowSize, bool _a
     outbuf = buf;
     outBufMb = NULL;
     if (max<=SAFETY_MARGIN+sizeof(size32_t)) // minimum required
-        throw makeStringException(0, "CLZWCompressor: target buffer too small");
+        throw makeStringException(JLIBERR_CompressClzwcompressorTargetBufferTooSmall, "CLZWCompressor: target buffer too small");
     maxlen=max-SAFETY_MARGIN;
     initCommon();
 }
@@ -752,7 +753,7 @@ size32_t RLEExpand(void *dst,const void *src,size32_t expsize)
                 if (c>=0xd0) {
                     *(out++) = c;
                     if (c>=0xe0)
-                        throw MakeStringException(-1,"Corrupt RLE format");
+                        throw MakeStringException(JLIBERR_CompressCorruptRleFormat,"Corrupt RLE format");
                     goto Escape;
                 }
                 c+=15;
@@ -782,7 +783,7 @@ void compressToBuffer(MemoryBuffer & out, size32_t len, const void * src, Compre
         if (!handler)
         {
             VStringBuffer s("Unknown compression method %x requested in compressToBuffer", (byte) method);
-            throw makeStringException(0, s.str());
+            throw makeStringException(JLIBERR_CompressUnexpectedZeroLengthCompressionBlock, s.str());
         }
         unsigned originalLength = out.length();
         // For back-compatibility, we always store COMPRESS_METHOD_LZW_LITTLE_ENDIAN as 1 as earlier versions stored a boolean here
@@ -849,7 +850,7 @@ void decompressToBuffer(MemoryBuffer & out, MemoryBuffer & in, const char *optio
         if (!handler)
         {
             VStringBuffer s("Unknown decompression method %x required in decompressToBuffer", (byte) method);
-            throw makeStringException(0, s.str());
+            throw makeStringException(JLIBERR_CompressUnexpectedZeroLengthCompressionBlock, s.str());
         }
         Owned<IExpander> expander = handler->getExpander(options);
         unsigned outSize = expander->init(in.readDirect(srcLen));
@@ -1078,7 +1079,7 @@ size32_t DiffExpand(const void *src,void *dst,const void *prev,size32_t rs)
         if ((int)rs<=0) {
             if (rs == 0)
                 break;
-            throw MakeStringException(-1,"Corrupt compressed data(1)");
+            throw MakeStringException(JLIBERR_CompressCorruptCompressedData1,"Corrupt compressed data(1)");
         }
         cnt=(size32_t)*s;
         s++;
@@ -1150,7 +1151,7 @@ public:
                 if ((int)rs<=0) {
                     if (rs == 0)
                         return;
-                    throw MakeStringException(-1,"Corrupt compressed data(2)");
+                    throw MakeStringException(JLIBERR_CompressCorruptCompressedData2,"Corrupt compressed data(2)");
                 }
                 cnt=(size32_t)*s;
                 s++;
@@ -1210,7 +1211,7 @@ public:
                 if ((int)rs<=0) {
                     if (rs == 0)
                         return (size32_t)(d-(byte *)dst);
-                    throw MakeStringException(-1,"Corrupt compressed data(3)");
+                    throw MakeStringException(JLIBERR_CompressCorruptCompressedData3,"Corrupt compressed data(3)");
                 }
                 cnt=(size32_t)*s;
                 s++;
@@ -1277,7 +1278,7 @@ public:
                 if ((int)rs<=0) {
                     if (rs == 0)
                         return sz?1:0;
-                    throw MakeStringException(-1,"Corrupt compressed data(4)");
+                    throw MakeStringException(JLIBERR_CompressCorruptCompressedData4,"Corrupt compressed data(4)");
                 }
                 cnt=(size32_t)*s;
                 s++;
@@ -1352,7 +1353,7 @@ class jlib_decl CRDiffCompressor : public ICompressor, public CInterface
     inline void ensure(size32_t sz)
     {
         if (NULL == outBufMb)
-            throw MakeStringException(-3,"CRDiffCompressor row doesn't fit in buffer!");
+            throw MakeStringException(JLIBERR_CompressCrdiffcompressorRowDoesNotFitInBuffer,"CRDiffCompressor row does not fit in buffer!");
         dbgassertex(remaining<sz);
         verifyex(outBufMb->ensureCapacity(outBufMb->capacity()+(sz-remaining)));
         outbuf = ((byte *)outBufMb->bufferBase())+outBufStart;
@@ -1373,7 +1374,7 @@ public:
     virtual void open(MemoryBuffer &mb, size32_t initialSize, size32_t fixedRowSize) override
     {
         if (fixedRowSize == 0)
-            throw makeStringException(-1, "CRDiffCompressor used with variable sized row");
+            throw makeStringException(JLIBERR_CompressCrdiffcompressorUsedWithVariableSizedRow, "CRDiffCompressor used with variable sized row");
 
         allowPartialWrites = false; // buffer is always expanded to fit
         outBufMb = &mb;
@@ -1387,14 +1388,14 @@ public:
     {
         assertex(buf);
         if (fixedRowSize == 0)
-            throw makeStringException(-1, "CRDiffCompressor used with variable sized row");
+            throw makeStringException(JLIBERR_CompressCrdiffcompressorUsedWithVariableSizedRow_1, "CRDiffCompressor used with variable sized row");
 
         originalMax = max;
         allowPartialWrites = _allowPartialWrites;
         outbuf = buf;
         outBufMb = NULL;
         if (max<=2+sizeof(size32_t)*2) // minimum required (actually will need enough for recsize so only a guess)
-            throw makeStringException(0, "CRDiffCompressor: target buffer too small");
+            throw makeStringException(JLIBERR_CompressCrdiffcompressorTargetBufferTooSmall, "CRDiffCompressor: target buffer too small");
         initCommon(fixedRowSize);
         remaining = max-outlen;
     }
@@ -1440,7 +1441,7 @@ public:
         for (size32_t i =0; i < buflen; i += recsize)
         {
             if (unlikely(i+recsize > buflen))
-                throw MakeStringException(-1,"CRDiffCompressor used with variable sized row");
+                throw MakeStringException(JLIBERR_CompressCrdiffcompressorUsedWithVariableSizedRow_1,"CRDiffCompressor used with variable sized row");
 
             const byte * row = cur+i;
             if (!isFirstRow())
@@ -1532,7 +1533,7 @@ public:
             outbuf = (unsigned char *)malloc(bufalloc);
         }
         if (outlen<recsize)
-            throw MakeStringException(-1,"CRDiffExpander: invalid buffer format");
+            throw MakeStringException(JLIBERR_CompressCrdiffexpanderInvalidBufferFormat,"CRDiffExpander: invalid buffer format");
         unsigned char *out=outbuf;
         memcpy(out,in,recsize);
         const unsigned char *prev = out;
@@ -1541,7 +1542,7 @@ public:
         size_t remaining = outlen-recsize;
         while (remaining) {
             if (remaining<recsize)
-                throw MakeStringException(-2,"CRDiffExpander: invalid buffer format");
+                throw MakeStringException(JLIBERR_CompressCrdiffexpanderInvalidBufferFormat_1,"CRDiffExpander: invalid buffer format");
             size32_t sz = DiffExpand(in,out,prev,recsize);
             in += sz;
             prev = out;
@@ -1633,7 +1634,7 @@ public:
     virtual void open(MemoryBuffer &mb, size32_t initialSize, size32_t fixedRowSize) override
     {
         if (fixedRowSize == 0)
-            throw makeStringException(-1, "CRandRDiffCompressor used with variable sized row");
+            throw makeStringException(JLIBERR_CompressCrandrdiffcompressorUsedWithVariableSizedRow, "CRandRDiffCompressor used with variable sized row");
 
         allowPartialWrites = false; // buffer is always expanded to fit
         outBufMb = &mb;
@@ -1647,7 +1648,7 @@ public:
     {
         assertex(buf);
         if (fixedRowSize == 0)
-            throw makeStringException(-1, "CRandRDiffCompressor used with variable sized row");
+            throw makeStringException(JLIBERR_CompressCrandrdiffcompressorUsedWithVariableSizedRow_1, "CRandRDiffCompressor used with variable sized row");
 
         max = _max;
         originalMax = max;
@@ -1656,7 +1657,7 @@ public:
         outBufMb = NULL;
         recsize = fixedRowSize;
         if (max<=MIN_RRDHEADER_SIZE+sizeof(unsigned short)+3) // hopefully a lot bigger!
-            throw makeStringException(0, "CRandRDiffCompressor: target buffer too small");
+            throw makeStringException(JLIBERR_CompressCrandrdiffcompressorTargetBufferTooSmall, "CRandRDiffCompressor: target buffer too small");
         initCommon();
     }
 
@@ -1725,7 +1726,7 @@ public:
         for (size32_t i=0; i < buflen; i += recsize)
         {
             if (i+recsize > buflen)
-                throw makeStringExceptionV(-1,"CRandRDiffCompressor used with variable sized row (%u, %u, %u)", recsize, buflen, buflen - i);
+                throw makeStringExceptionV(JLIBERR_CompressCrandrdiffcompressorUsedWithVariableSizedRowU,"CRandRDiffCompressor used with variable sized row (%u, %u, %u)", recsize, buflen, buflen - i);
 
             const byte * row = cur+i;
 
@@ -1943,7 +1944,7 @@ struct CompressedFileTrailer
         {
             if (compressedType < NEWCOMPRESSEDFILEFLAG + COMPRESS_METHOD_LAST_PERSISTED)
                 return (unsigned)(compressedType - NEWCOMPRESSEDFILEFLAG);
-            throw makeStringExceptionV(-1, "File has compression type %u, which is not supported by this version", (unsigned)(compressedType - NEWCOMPRESSEDFILEFLAG));
+            throw makeStringExceptionV(JLIBERR_CompressFileHasCompressionTypeUWhichIs, "File has compression type %u, which is not supported by this version", (unsigned)(compressedType - NEWCOMPRESSEDFILEFLAG));
         }
         return COMPRESS_METHOD_NONE;
     }
@@ -2164,7 +2165,7 @@ class CCompressedFileReader final : public CCompressedFileBase
                 {
                     size32_t nextSize = expander->expandNext(expandedBuffer);
                     if (nextSize == 0)
-                        throw makeStringException(-1, "Unexpected zero length compression block");
+                        throw makeStringException(JLIBERR_CompressUnexpectedZeroLengthCompressionBlock, "Unexpected zero length compression block");
 
                     startChunkExpandedPos = nextChunkExpandedPos;
                     nextChunkExpandedPos = nextChunkExpandedPos+nextSize;
@@ -2201,13 +2202,13 @@ class CCompressedFileReader final : public CCompressedFileBase
                 lastIOOffset = firstIOOffset + sizeRead;
 
                 if (sizeRead < toread)
-                    throw makeStringException(-1, "Read past end of IO buffer");
+                    throw makeStringException(JLIBERR_CompressReadPastEndOfIoBuffer, "Read past end of IO buffer");
             }
             else
             {
                 // We always read whole blocks - so this should be guaranteed to be false
                 if (nextIOOffset + toread > lastIOOffset)
-                    throw makeStringException(-1, "Read past end of IO buffer");
+                    throw makeStringException(JLIBERR_CompressReadPastEndOfIoBuffer_1, "Read past end of IO buffer");
             }
             startBlockIOPos = nextIOOffset;
         }
@@ -2252,7 +2253,7 @@ class CCompressedFileReader final : public CCompressedFileBase
                 {
                     unsigned numZeros = countZeros(trailer.blockSize, (const byte *)compbuf);
                     if (numZeros >= 16)
-                        throw makeStringExceptionV(-1, "Unexpected zero fill in compressed file at position %llu length %u", compressedPos, numZeros);
+                        throw makeStringExceptionV(JLIBERR_CompressUnexpectedZeroFillInCompressedFileAt, "Unexpected zero fill in compressed file at position %llu length %u", compressedPos, numZeros);
                 }
 
                 startChunkExpandedPos = startBlockExpandedPos;
@@ -2302,7 +2303,7 @@ public:
             {
                 ICompressHandler *handler = queryCompressHandler(compMethod);
                 if (unlikely(!handler))
-                    throw makeStringExceptionV(-1, "Unsupported compression method %u", compMethod);
+                    throw makeStringExceptionV(JLIBERR_CompressUnsupportedCompressionMethodU, "Unsupported compression method %u", compMethod);
                 expander.setown(handler->getExpander(nullptr));
             }
         }
@@ -2468,7 +2469,7 @@ public:
         size32_t ret = 0;
         for (;;) {
             if (pos!=trailer.expandedSize)
-                throw MakeStringException(-1,"sequential writes only on compressed file");
+                throw MakeStringException(JLIBERR_CompressSequentialWritesOnlyOnCompressedFile,"sequential writes only on compressed file");
             size32_t done = compress(data,len);
             trailer.expandedSize += done;
             len -= done;
@@ -2690,7 +2691,7 @@ ICompressedFileIO *createCompressedFileReader(IFileIO *fileio,IExpander *expande
     if (isCompressedFile(fileio, &trailer))
     {
         if (expander&&(trailer.recordSize!=0))
-            throw MakeStringException(-1, "Compressed file format error(%d), Encrypted?",trailer.recordSize);
+            throw MakeStringException(JLIBERR_CompressCompressedFileFormatErrorDEncrypted, "Compressed file format error(%d), Encrypted?",trailer.recordSize);
 
         //MORE: Revisit the compressed io size when the compressed file supports it (post refactoring)
         CompressionMethod compMethod = getCompressedMethod(trailer.compressedType);
@@ -2720,7 +2721,7 @@ ICompressedFileIO *createCompressedFileReader(IFile *file,IExpander *expander, s
                     if (compMethod)
                     {
                         if (expander&&(trailer.recordSize!=0))
-                            throw MakeStringException(-1, "Compressed file format error(%d), Encrypted?",trailer.recordSize);
+                            throw MakeStringException(JLIBERR_CompressCompressedFileFormatErrorDEncrypted_1, "Compressed file format error(%d), Encrypted?",trailer.recordSize);
 
                         //MORE: Revisit the compressed io size when the compressed file supports it (post refactoring)
                         return new CCompressedFileReader(NULL,mmfile,trailer,expander,compMethod,ioBufferSize);
@@ -2753,14 +2754,14 @@ ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio, bool append, bool
                 if (fileio->read(fsize-sizeof(WinCompressedFileTrailer),sizeof(WinCompressedFileTrailer),&wintrailer)==sizeof(WinCompressedFileTrailer)) {
                     wintrailer.translate(trailer);
                     if (trailer.recordSize!=0)
-                        throw makeStringException(-1, "Appending to a row compressed file is not supported");
+                        throw makeStringException(JLIBERR_CompressAppendingToARowCompressedFileIs, "Appending to a row compressed file is not supported");
                     compMethod = getCompressedMethod(trailer.compressedType);
                     appending = true;
                     if (compMethod)
                         break;
                 }
             }
-            throw MakeStringException(-1,"Appending to file that is not compressed");
+            throw MakeStringException(JLIBERR_CompressAppendingToFileThatIsNotCompressed,"Appending to file that is not compressed");
         }
     }
     else
@@ -2774,7 +2775,7 @@ ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio, bool append, bool
     {
         ICompressHandler * compressorFactory = queryCompressHandler((CompressionMethod)compMethod);
         if (!compressorFactory)
-            throw makeStringExceptionV(-1, "Unsupported compression method %u", compMethod);
+            throw makeStringExceptionV(JLIBERR_CompressUnsupportedCompressionMethodU_1, "Unsupported compression method %u", compMethod);
 
         localCompressor.setown(compressorFactory->getCompressor(nullptr));
         compressor = localCompressor;
@@ -2878,7 +2879,7 @@ public:
         outbuf = blk;
         outBufMb = NULL;
         if (blksize <= AES_PADDING_SIZE+sizeof(size32_t))
-            throw makeStringException(0, "CAESCompressor: target buffer too small");
+            throw makeStringException(JLIBERR_CompressCaescompressorTargetBufferTooSmall, "CAESCompressor: target buffer too small");
         size32_t subsz = blksize-AES_PADDING_SIZE-sizeof(size32_t);
         comp->open(compattr.reserveTruncate(subsz), subsz, fixedRowSize, allowPartialWrites);
     }
@@ -3380,7 +3381,7 @@ void setDefaultCompressor(const char *type)
 {
     ICompressHandler *_defaultCompressor = queryCompressHandler(type);
     if (!_defaultCompressor)
-        throw MakeStringException(-1, "setDefaultCompressor: '%s' compressor not registered", type);
+        throw MakeStringException(JLIBERR_CompressSetdefaultcompressorSCompressorNotRegistered, "setDefaultCompressor: '%s' compressor not registered", type);
     defaultCompressor.set(_defaultCompressor);
 }
 

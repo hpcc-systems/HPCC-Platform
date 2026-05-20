@@ -148,6 +148,7 @@ unsigned crc32(const char *buf, unsigned len, unsigned crc)
 
 #else // _USE_OLD_CRC32
 
+//LNRSPII:LINES_3:NON_IDENTIFYING:PERSON,DL_OR_DOB:hallidgx_risk
 /////////////////////////////////////////////////////////////
 // Copyright (c) 2011-2013 Stephan Brumme. All rights reserved.
 // see http://create.stephan-brumme.com/disclaimer.html

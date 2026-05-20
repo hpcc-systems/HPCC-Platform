@@ -27,6 +27,7 @@
 #include "jlog.ipp"
 #include "jisem.hpp"
 #include "jtask.hpp"
+#include "jerror.hpp"
 
 #include <assert.h>
 #ifdef _WIN32
@@ -282,10 +283,10 @@ bool Thread::isCurrentThread() const
 void Thread::setNice(int _nicelevel)
 {
     if (_nicelevel < -20 || _nicelevel > 19)
-        throw MakeStringException(0, "nice level should be between -20 and 19");
+        throw MakeStringException(JLIBERR_SystemNiceLevelShouldBeBetween20And, "nice level should be between -20 and 19");
 
     if(alive)
-        throw MakeStringException(0, "nice can only be set before the thread is started.");
+        throw MakeStringException(JLIBERR_SystemNiceCanOnlyBeSetBeforeThe, "nice can only be set before the thread is started.");
     
     nicelevel = _nicelevel;
 }
@@ -322,7 +323,7 @@ int Thread::begin()
 #ifndef NO_CATCHALL
     catch (...)
     {
-        handleException(MakeStringException(0, "Unknown exception in Thread %s", getName()));
+        handleException(MakeStringException(JLIBERR_SystemUnknownExceptionInThreadS, "Unknown exception in Thread %s", getName()));
     }
 #endif
 
@@ -396,7 +397,7 @@ void Thread::start(bool inheritThreadContext)
         IWARNLOG("Thread::start(%s) - Thread already started!",getName());
         PrintStackReport();
 #ifdef _DEBUG
-        throw MakeStringException(-1,"Thread::start(%s) - Thread already started!",getName());
+        throw MakeStringException(JLIBERR_SystemThreadStartSThreadAlreadyStarted,"Thread::start(%s) - Thread already started!",getName());
 #endif
         return;
     }
@@ -480,7 +481,7 @@ void Thread::startRelease()
         if (starting.wait(1000*10))
             break;
         else if (0 == --retryCount)
-            throw MakeStringException(-1, "Thread::start(%s) failed", getName());
+            throw MakeStringException(JLIBERR_SystemThreadStartSFailed, "Thread::start(%s) failed", getName());
         IWARNLOG("Thread::start(%s) stalled, waiting to start, retrying", getName());
     }
 #endif
@@ -610,7 +611,7 @@ void CThreadedPersistent::start(bool inheritThreadContext)
         VStringBuffer msg("CThreadedPersistent::start(%s) - not ready", athread.getName());
         IWARNLOG("%s", msg.str());
         PrintStackReport();
-        throw MakeStringExceptionDirect(-1, msg.str());
+        throw MakeStringExceptionDirect(JLIBERR_SystemThreadPersistentNotReady, msg.str());
     }
     if (inheritThreadContext)
         athread.captureThreadLoggingInfo();
@@ -706,7 +707,7 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
     #ifndef NO_CATCHALL
                     catch (...)
                     {
-                        erre.setownIfNull(MakeStringException(0, "Unknown exception in Thread %s", getName()));
+                        erre.setownIfNull(MakeStringException(JLIBERR_SystemUnknownExceptionInThreadS_1, "Unknown exception in Thread %s", getName()));
                     }
     #endif
                     ready.signal();
@@ -758,7 +759,7 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
     #ifndef NO_CATCHALL
                     catch (...)
                     {
-                        erre.setownIfNull(MakeStringException(0, "Unknown exception in Thread %s", getName()));
+                        erre.setownIfNull(MakeStringException(JLIBERR_SystemUnknownExceptionInThreadS_1, "Unknown exception in Thread %s", getName()));
                     }
     #endif
                     return 0;
@@ -783,7 +784,7 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
 #ifndef NO_CATCHALL
             catch (...)
             {
-                e.setownIfNull(MakeStringException(0, "Unknown exception in main Thread"));
+                e.setownIfNull(MakeStringException(JLIBERR_SystemUnknownExceptionInMainThread, "Unknown exception in main Thread"));
             }
 #endif
 
@@ -918,7 +919,7 @@ public:
             catch (...)
             {
                 cthreadname.swapWith(runningName); // swap back
-                handleException(MakeStringException(0, "Unknown exception in Thread from pool %s", parent.poolname.get()));
+                handleException(MakeStringException(JLIBERR_SystemUnknownExceptionInThreadFromPoolS, "Unknown exception in Thread from pool %s", parent.poolname.get()));
             }
 #endif
             callThreadTerminationHooks(true);    // Reset any per-thread state.
@@ -1029,7 +1030,7 @@ class CThreadPool: public CThreadPoolBase, implements IThreadPool, public CInter
                 if (!availsem.wait(0)) // make sure take allocated sem if has become available
                 {
                     if (noBlock || timeout > 0)
-                        throw MakeStringException(0, "No threads available in pool %s", poolname.get());
+                        throw MakeStringException(JLIBERR_SystemNoThreadsAvailableInPoolS, "No threads available in pool %s", poolname.get());
                     IWARNLOG("Pool limit exceeded for %s", poolname.get());
                 }
             }
@@ -1401,7 +1402,7 @@ static void CheckAllowedProgram(const char *prog,const char *allowed)
             return;
     }
     AERRLOG("Unauthorized pipe program(%s)",head.str());
-    throw MakeStringException(-1,"Unauthorized pipe program(%s)",head.str());
+    throw MakeStringException(JLIBERR_SystemUnauthorizedPipeProgramS,"Unauthorized pipe program(%s)",head.str());
 }
 
 class CPipeProcessException : public CSimpleInterfaceOf<IPipeProcessException>
@@ -2715,7 +2716,7 @@ void PerfTracer::dostart(unsigned seconds)
     if (!pipe->run(nullptr, cmd, ".", false, true, false, 1024*1024))
     {
         pipe.clear();
-        throw makeStringException(0, "Failed to run doperf");
+        throw makeStringException(JLIBERR_SystemFailedToRunDoperf, "Failed to run doperf");
     }
 #else
     UNIMPLEMENTED;

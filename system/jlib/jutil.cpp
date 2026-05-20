@@ -499,7 +499,7 @@ HINSTANCE LoadSharedObject(const char *name, bool isGlobal, bool raiseOnError)
         rfn.setRemotePath(name);
         if (!rfn.isLocal()) {
             // I guess could copy to a temporary location but currently just fail
-            throw MakeStringException(-1,"LoadSharedObject: %s is not a local file",name);
+            throw MakeStringException(JLIBERR_UtilLoadsharedobjectSIsNotALocalFile,"LoadSharedObject: %s is not a local file",name);
         }
         name = rfn.getLocalPath(tmp).str();
     }
@@ -542,7 +542,7 @@ HINSTANCE LoadSharedObject(const char *name, bool isGlobal, bool raiseOnError)
             errmsg.setLength(len);
             DBGLOG("Error loading %s: %d - %s", name, errcode, errmsg.str());
             if (raiseOnError)
-                throw MakeStringException(0, "Error loading %s: %d - %s", name, errcode, errmsg.str());
+                throw MakeStringException(JLIBERR_UtilErrorLoadingSDS, "Error loading %s: %d - %s", name, errcode, errmsg.str());
         }
     }
 #else
@@ -575,7 +575,7 @@ HINSTANCE LoadSharedObject(const char *name, bool isGlobal, bool raiseOnError)
                 if (isCorruptDll(dlErrorMsg.str()))
                     throw new CorruptDllException(errno, name, dlErrorMsg.str());
                 else
-                    throw MakeStringException(0, "Error loading %s: %s", name, dlErrorMsg.str());
+                    throw MakeStringException(JLIBERR_UtilErrorLoadingSS, "Error loading %s: %s", name, dlErrorMsg.str());
             }
         }
     }
@@ -676,16 +676,16 @@ IPluggableFactory *loadPlugin(const IPropertyTree *pluginInfo)
     const char *pluginName = pluginInfo->queryProp("@pluginName");
     const char *entrypoint = pluginInfo->queryProp("@entrypoint");
     if (!pluginName || !entrypoint)
-        throw makeStringException(0, "Plugin information missing plugin name or entrypoint");
+        throw makeStringException(JLIBERR_UtilPluginInformationMissingPluginNameOrEntrypoint, "Plugin information missing plugin name or entrypoint");
     Owned<SharedObject> pluginDll = new SharedObject;
     if (!pluginDll->load(pluginName, false, true))
-        throw makeStringExceptionV(0, "Failed to load plugin %s", pluginName);
+        throw makeStringExceptionV(JLIBERR_UtilFailedToLoadPluginS, "Failed to load plugin %s", pluginName);
     IPluggableFactoryFactory pf = (IPluggableFactoryFactory) pluginDll->getEntry(entrypoint);
     if (!pf)
-        throw makeStringExceptionV(0, "Function %s not found in plugin %s", entrypoint,  pluginName);
+        throw makeStringExceptionV(JLIBERR_UtilFunctionSNotFoundInPluginS, "Function %s not found in plugin %s", entrypoint,  pluginName);
     IPluggableFactory *factory =  pf(pluginDll, pluginInfo);
     if (!factory)
-        throw makeStringExceptionV(0, "Factory function %s returned NULL in plugin %s", entrypoint, pluginName);
+        throw makeStringExceptionV(JLIBERR_UtilFactoryFunctionSReturnedNullInPlugin, "Factory function %s returned NULL in plugin %s", entrypoint, pluginName);
     return factory;
 }
 
@@ -2647,7 +2647,7 @@ bool getConfigurationDirectory(const IPropertyTree *useTree, const char *categor
     {
         Owned<const IStoragePlane> storagePlane = getStoragePlaneByName(instance, false);
         if (!storagePlane)
-            throw makeStringExceptionV(-1, "no default directory available for plane '%s'", instance);
+            throw makeStringExceptionV(JLIBERR_UtilNoDefaultDirectoryAvailableForPlaneS, "no default directory available for plane '%s'", instance);
         dirout.append(storagePlane->queryPrefix());
         return true;
     }
@@ -2655,7 +2655,7 @@ bool getConfigurationDirectory(const IPropertyTree *useTree, const char *categor
     {
         Owned<const IStoragePlane> storagePlane = getStoragePlaneByName(instance, false);
         if (!storagePlane)
-            throw makeStringExceptionV(-1, "no default directory available for plane '%s'", instance);
+            throw makeStringExceptionV(JLIBERR_UtilNoDefaultDirectoryAvailableForPlaneS_1, "no default directory available for plane '%s'", instance);
         dirout.append(storagePlane->queryMirrorPrefix());
         return true;
     }
@@ -2696,10 +2696,10 @@ bool getConfigurationDirectory(const IPropertyTree *useTree, const char *categor
     }
     if (streq(category, "key") || streq(category, "run"))
     {
-        throw makeStringExceptionV(-1, "Unexpected category '%s' requested in containerized mode", category);
+        throw makeStringExceptionV(JLIBERR_UtilUnexpectedCategorySRequestedInContainerizedMode, "Unexpected category '%s' requested in containerized mode", category);
     }
 
-    throw makeStringExceptionV(-1, "Unrecognised configuration category %s", category);
+    throw makeStringExceptionV(JLIBERR_UtilUnrecognisedConfigurationCategoryS, "Unrecognised configuration category %s", category);
 #else
     Linked<const IPropertyTree> dirtree = useTree;
     if (!dirtree)
@@ -2958,7 +2958,7 @@ int parseCommandLine(const char * cmdline, MemoryBuffer &mb, const char** &argvo
                     }
                     if (c) {
                         if (argc==256)
-                            throw makeStringException(-1, "parseCommandLine: too many arguments");
+                            throw makeStringException(JLIBERR_UtilParsecommandlineTooManyArguments, "parseCommandLine: too many arguments");
                         arg[argc] = 0;
                     }
                 }
@@ -3096,7 +3096,7 @@ static StringBuffer &doGetTempFilePath(StringBuffer & target, const char *tempCa
     }
 
 #ifdef _WIN32
-    throw MakeStringException(-1, "Unable to create temp directory");
+    throw MakeStringException(JLIBERR_UtilUnableToCreateTempDirectory, "Unable to create temp directory");
 #else
     // uniq tmp - perhaps previous dirs above were owned by others ...
     dir.clear();
@@ -3106,7 +3106,7 @@ static StringBuffer &doGetTempFilePath(StringBuffer & target, const char *tempCa
     strcpy(templt, dir.str());
     char *td = mkdtemp(templt);
     if (!td)
-        throw MakeStringException(-1, "Unable to create temp directory");
+        throw MakeStringException(JLIBERR_UtilUnableToCreateTempDirectory_1, "Unable to create temp directory");
     return target.set(templt);
 #endif
 }
@@ -3130,7 +3130,7 @@ jlib_decl StringBuffer &createUniqueTempDirectoryName(StringBuffer & ret)
     OwnedMalloc<char> uniqueDir(dir.detach());
     char *td = mkdtemp(uniqueDir);
     if (!td)
-        throw makeStringException(-1, "Unable to create temp directory");
+        throw makeStringException(JLIBERR_UtilUnableToCreateTempDirectory_1, "Unable to create temp directory");
     return ret.append(uniqueDir);
 }
 
@@ -3234,7 +3234,7 @@ extern jlib_decl offset_t friendlyStringToSize(const char *in)
             case 'P': scale = 1000000000000000; break;
             case 'E': scale = 1000000000000000000; break;
             default:
-                throw makeStringExceptionV(0, "Invalid size suffix %s", tail);
+                throw makeStringExceptionV(JLIBERR_UtilInvalidSizeSuffixS, "Invalid size suffix %s", tail);
             }
         }
         else if (streq(tail+1, "i"))
@@ -3248,11 +3248,11 @@ extern jlib_decl offset_t friendlyStringToSize(const char *in)
             case 'P': scale = 1llu<<50; break;
             case 'E': scale = 1llu<<60; break;
             default:
-                throw makeStringExceptionV(0, "Invalid size suffix %s", tail);
+                throw makeStringExceptionV(JLIBERR_UtilInvalidSizeSuffixS_1, "Invalid size suffix %s", tail);
             }
         }
         else
-            throw makeStringExceptionV(0, "Invalid size suffix %s", tail);
+            throw makeStringExceptionV(JLIBERR_UtilInvalidSizeSuffixS_1, "Invalid size suffix %s", tail);
     }
     return result * scale;
 }
@@ -3275,7 +3275,7 @@ extern jlib_decl double friendlyCPUToDecimal(const char *in)
                 return num/1000.0;
         }
     }
-    throw makeStringExceptionV(0, "Invalid cpu string: '%s'", in);
+    throw makeStringExceptionV(JLIBERR_UtilInvalidCpuStringS, "Invalid cpu string: '%s'", in);
 }
 
 extern jlib_decl double getResourcedCpus(const char *resourceName)
@@ -3297,7 +3297,7 @@ void jlib_decl atomicWriteFile(const char *fileName, const char *output)
     {
         OwnedIFileIO ifileio = newFile->open(IFOcreate);
         if (!ifileio)
-            throw MakeStringException(0, "atomicWriteFile: could not create output file %s", newFileName.str());
+            throw MakeStringException(JLIBERR_UtilAtomicwritefileCouldNotCreateOutputFileS, "atomicWriteFile: could not create output file %s", newFileName.str());
         ifileio->write(0, strlen(output), output);
         ifileio->close();
     }
@@ -3305,13 +3305,13 @@ void jlib_decl atomicWriteFile(const char *fileName, const char *output)
     VStringBuffer newFileName("%s.XXXXXX", fileName);
     int fh = mkstemp(const_cast<char *>(newFileName.str()));
     if (fh==-1)
-        throw MakeStringException(0, "atomicWriteFile: could not create output file for %s", fileName);
+        throw MakeStringException(JLIBERR_UtilAtomicwritefileCouldNotCreateOutputFileFor, "atomicWriteFile: could not create output file for %s", fileName);
     Owned<IFile> newFile = createIFile(newFileName);
     Owned<IFile> file = createIFile(fileName);
     {
         OwnedIFileIO ifileio = createIFileIO(file, fh, IFOwrite);
         if (!ifileio)
-            throw MakeStringException(0, "atomicWriteFile: could not create output file %s", newFileName.str());
+            throw MakeStringException(JLIBERR_UtilAtomicwritefileCouldNotCreateOutputFileS_1, "atomicWriteFile: could not create output file %s", newFileName.str());
         ifileio->write(0, strlen(output), output);
         ifileio->close();
     }
@@ -3326,7 +3326,7 @@ void jlib_decl atomicWriteFile(const char *fileName, const char *output)
 const char * generatePassword(StringBuffer &pwd, int pwdLen)
 {
     if (pwdLen < 8)
-        throw makeStringException(0, "Generated Passwords must be at least 8 characters in length");
+        throw makeStringException(JLIBERR_UtilGeneratedPasswordsMustBeAtLeast8, "Generated Passwords must be at least 8 characters in length");
 
     #define NUM_GROUPS 4    //4 character groups follow
     const char alphaUC[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -3461,7 +3461,7 @@ extern jlib_decl void getResourceFromJfrog(StringBuffer &localPath, IPropertyTre
     configFile->remove(); // Remove file with Jfrog credentials after call is made
 
     if (result != 0)
-        throw makeStringExceptionV(0, "Error loading resource from jfrog: %s\n%s", errOut.str(), jfrogOut.str());
+        throw makeStringExceptionV(JLIBERR_UtilErrorLoadingResourceFromJfrogSNS, "Error loading resource from jfrog: %s\n%s", errOut.str(), jfrogOut.str());
 
     item.setProp("@resourcePath", localPath);
 
@@ -3471,7 +3471,7 @@ extern jlib_decl void getResourceFromJfrog(StringBuffer &localPath, IPropertyTre
         StringBuffer calculated;
         md5_filesum(localPath, calculated);
         if (!strieq(calculated, md5))
-            throw makeStringExceptionV(0, "MD5 mismatch on file %s in manifest", filename.str());
+            throw makeStringExceptionV(JLIBERR_UtilMd5MismatchOnFileSInManifest, "MD5 mismatch on file %s in manifest", filename.str());
     }
 }
 
@@ -3513,7 +3513,7 @@ unsigned readDigits(char const * & str, unsigned numDigits, bool throwOnFailure)
         if (!isdigit(c))
         {
             if (throwOnFailure)
-                throw makeStringExceptionV(-1, "Invalid format (readDigits): %s", str);
+                throw makeStringExceptionV(JLIBERR_UtilInvalidFormatReaddigitsS, "Invalid format (readDigits): %s", str);
             return 0;
         }
         ret  = ret * 10 + (c - '0');

@@ -33,6 +33,7 @@
 #include <atomic>
 #include <vector>
 #include <memory>
+#include "jerror.hpp"
 
 constexpr size32_t minBlockReadSize = 0x4000;       //16K - used when fetching a single row from a file (e.g. FETCH/KEYED JOIN)
 constexpr size32_t defaultBlockReadSize = 0x100000; //1MB
@@ -93,16 +94,16 @@ CFileOutputStream::CFileOutputStream(int _handle)
 void CFileOutputStream::writeByte(byte b)
 {
     if (_write(handle, &b, 1) != 1)
-        throw MakeStringException(-1, "Error while writing byte 0x%x\n", (unsigned)b);
+        throw MakeStringException(JLIBERR_SystemErrorWhileWritingByte, "Error while writing byte 0x%x", (unsigned)b);
 }
 
 void CFileOutputStream::writeBytes(const void *b, int len)
 {
     ssize_t written = _write(handle, b, len);
     if (written < 0)
-        throw MakeStringException(-1, "Error while writing %d bytes\n", len);
+        throw MakeStringException(JLIBERR_SystemErrorWhileWritingDBytes, "Error while writing %d bytes", len);
     if (written != len)
-        throw MakeStringException(-1, "Truncated (%d) while writing %d bytes\n", (int)written, len);
+        throw MakeStringException(JLIBERR_SystemTruncatedDWhileWritingDBytes, "Truncated (%d) while writing %d bytes", (int)written, len);
 }
 
 extern jlib_decl IByteOutputStream *createOutputStream(int handle)
@@ -201,7 +202,7 @@ public:
 
         // Check for wrapping on very large allocations
         if (unlikely(roundedWanted == 0))
-            throw makeStringExceptionV(-1, "Blocked input stream record too large to read %u at offset %llu", wanted, nextBlockOffset);
+            throw makeStringExceptionV(JLIBERR_SystemBlockedInputStreamRecordTooLargeTo, "Blocked input stream record too large to read %u at offset %llu", wanted, nextBlockOffset);
         expandBuffer(roundedWanted);
 
         while (unlikely(wanted > available()))
@@ -220,7 +221,7 @@ public:
     {
         size32_t numRead = read(len, ptr);
         if (unlikely(numRead != len))
-            throw makeStringExceptionV(-1, "End of input stream for read of %u bytes at offset %llu", len, tell()-numRead);
+            throw makeStringExceptionV(JLIBERR_SystemEndOfInputStreamForReadOf, "End of input stream for read of %u bytes at offset %llu", len, tell()-numRead);
     }
 
     virtual bool eos() override
@@ -318,7 +319,7 @@ private:
 
             // Check for wrapping on very large allocations
             if (unlikely(nextReadSize < blockReadSize))
-                throw makeStringExceptionV(-1, "Blocked input stream record too large to read %u at offset %llu", nextReadSize - blockReadSize, nextBlockOffset);
+                throw makeStringExceptionV(JLIBERR_SystemBlockedInputStreamRecordTooLargeTo_1, "Blocked input stream record too large to read %u at offset %llu", nextReadSize - blockReadSize, nextBlockOffset);
         }
     }
 
@@ -834,7 +835,7 @@ public:
         if (available == 0)
             return 0;
         if (available < sizeHeader)
-            throw makeStringExceptionV(-1, "End of input stream for read of %u bytes at offset %llu (%llu)", len, tell(), input->tell());
+            throw makeStringExceptionV(JLIBERR_SystemEndOfInputStreamForReadOf_1, "End of input stream for read of %u bytes at offset %llu (%llu)", len, tell(), input->tell());
 
         size32_t decompressedSize = *(const size32_t *)next;   // Technically illegal - should copy to an aligned object
         size32_t compressedSize = *((const size32_t *)next + 1); // Technically illegal - should copy to an aligned object
@@ -858,7 +859,7 @@ public:
             input->skip(sizeHeader);
             next = static_cast<const byte *>(input->peek(compressedSize, available));
             if (available < compressedSize)
-                throw makeStringExceptionV(-1, "End of input stream for read of %u bytes at offset %llu (%llu)", len, tell(), input->tell()+available);
+                throw makeStringExceptionV(JLIBERR_SystemEndOfInputStreamForReadOf_1, "End of input stream for read of %u bytes at offset %llu (%llu)", len, tell(), input->tell()+available);
             sizeNextHeader = 0;
         }
 
@@ -1070,7 +1071,7 @@ public:
     {
         size32_t numRead = read(len, ptr);
         if (numRead != len)
-            throw makeStringExceptionV(-1, "End of input stream for read of %u bytes at offset %llu", len, tell()-numRead);
+            throw makeStringExceptionV(JLIBERR_SystemEndOfInputStreamForReadOf_1, "End of input stream for read of %u bytes at offset %llu", len, tell()-numRead);
     }
 
     virtual void skip(size32_t len) override
@@ -1736,7 +1737,7 @@ public:
         unsigned written = output->write(nextOffset, len, ptr);
         nextOffset += len;
         if (written != len)
-            throw makeStringExceptionV(-1, "Failed to write %u bytes at offset %llu", len-written, nextOffset);
+            throw makeStringExceptionV(JLIBERR_SystemFailedToWriteUBytesAtOffset, "Failed to write %u bytes at offset %llu", len-written, nextOffset);
     }
 
     virtual offset_t tell() const override

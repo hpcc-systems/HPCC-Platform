@@ -32,6 +32,7 @@
 #include <list>
 #include <set>
 #include "jlzw.hpp"
+#include "jerror.hpp"
 
 // Should be increased if the file format changes
 // Should be increased whenever new attributes are added - unless attribute types are specified in the file
@@ -1698,7 +1699,7 @@ public:
         EventType eventType;
         readToken(eventType);
         if (eventType >= EventMax)
-            throw makeStringExceptionV(-1, "invalid event type %u", eventType);
+            throw makeStringExceptionV(JLIBERR_SystemInvalidEventTypeU, "invalid event type %u", eventType);
         event.reset(eventType);
         switch (eventType)
         {
@@ -1708,7 +1709,7 @@ public:
             // At most one occurrence of RecordingSource is allowed per file. The single instance,
             // if present, must be the first recorded element.
             if (properties.eventsRead || haveRecordingSource)
-                throw makeStringException(0, "RecordingSource can only be the first recorded event");
+                throw makeStringException(JLIBERR_SystemRecordingsourceCanOnlyBeTheFirstRecorded, "RecordingSource can only be the first recorded event");
             haveRecordingSource = true;
             if (!readAttributes(event))
                 return false;
@@ -1718,14 +1719,14 @@ public:
             {
                 __uint64 channelId = event.queryNumericValue(EvAttrChannelId);
                 if (channelId > UINT8_MAX)
-                    throw makeStringExceptionV(0, "ChannelId value %llu exceeds maximum allowed value %u", channelId, UINT8_MAX);
+                    throw makeStringExceptionV(JLIBERR_SystemChannelidValueLluExceedsMaximumAllowedValue, "ChannelId value %llu exceeds maximum allowed value %u", channelId, UINT8_MAX);
                 properties.channelId = static_cast<byte>(channelId);
             }
             if (event.hasAttribute(EvAttrReplicaId))
             {
                 __uint64 replicaId = event.queryNumericValue(EvAttrReplicaId);
                 if (replicaId > UINT8_MAX)
-                    throw makeStringExceptionV(0, "ReplicaId value %llu exceeds maximum allowed value %u", replicaId, UINT8_MAX);
+                    throw makeStringExceptionV(JLIBERR_SystemReplicaidValueLluExceedsMaximumAllowedValue, "ReplicaId value %llu exceeds maximum allowed value %u", replicaId, UINT8_MAX);
                 properties.replicaId = static_cast<byte>(replicaId);
             }
             if (event.hasAttribute(EvAttrInstanceId))
@@ -1760,13 +1761,13 @@ public:
             if (EvAttrNone == attr)
                 return true;
             if (attr >= EvAttrMax)
-                throw makeStringExceptionV(-1, "invalid attribute type %u", attr);
+                throw makeStringExceptionV(JLIBERR_SystemInvalidAttributeTypeU, "invalid attribute type %u", attr);
             switch (attrInformation[attr].type)
             {
             case EATnone:
-                throw makeStringExceptionV(-1, "no data type for attribute %s", queryEventAttributeName(attr));
+                throw makeStringExceptionV(JLIBERR_SystemNoDataTypeForAttributeS, "no data type for attribute %s", queryEventAttributeName(attr));
             default:
-                throw makeStringExceptionV(-1, "unknown data type %d for attribute %s", attrInformation[attr].type, queryEventAttributeName(attr));
+                throw makeStringExceptionV(JLIBERR_SystemUnknownDataTypeDForAttributeS, "unknown data type %d for attribute %s", attrInformation[attr].type, queryEventAttributeName(attr));
             case EATbool:
                 good = finishAttribute<bool>(event, attr);
                 break;
@@ -1802,7 +1803,7 @@ protected:
         const char * path = filename;
         Owned<IFile> file = createIFile(path);
         if (!file || !file->exists())
-            throw makeStringExceptionV(-1, "file '%s' not found", path);
+            throw makeStringExceptionV(JLIBERR_SystemFileSNotFound, "file '%s' not found", path);
         return file.getClear();
     }
 
@@ -1810,19 +1811,19 @@ protected:
     {
         Owned<IFileIO> fileIO = file.open(IFOread);
         if (!fileIO)
-            throw makeStringExceptionV(-1, "file '%s' not opened for reading", file.queryFilename());
+            throw makeStringExceptionV(JLIBERR_SystemFileSNotOpenedForReading, "file '%s' not opened for reading", file.queryFilename());
         Owned<ISerialInputStream> baseStream = createSerialInputStream(fileIO);
         Owned<IBufferedSerialInputStream> bufferedStream = createBufferedInputStream(baseStream, 0x100000, false);
 
         char header[sizeof(magicHeader)];
         bufferedStream->read(sizeof(header), header);
         if (memcmp(header, magicHeader, sizeof(magicHeader)) != 0)
-            throw makeStringExceptionV(-1, "file '%s' is not an event file", file.queryFilename());
+            throw makeStringExceptionV(JLIBERR_SystemFileSIsNotAnEventFile, "file '%s' is not an event file", file.queryFilename());
 
         bufferedStream->read(sizeof(properties.version), &properties.version);
         //MORE: Need to handle multiple file versions
         if (properties.version != currentVersion)
-            throw makeStringExceptionV(-1, "unsupported file version %u (required %u)", properties.version, currentVersion);
+            throw makeStringExceptionV(JLIBERR_SystemUnsupportedFileVersionURequiredU, "unsupported file version %u (required %u)", properties.version, currentVersion);
 
         byte compressionType;
         bufferedStream->read(sizeof(compressionType), &compressionType);
@@ -1846,7 +1847,7 @@ protected:
     T readToken(T& token)
     {
         if (stream->read(sizeof(token), &token) != sizeof(token))
-            throw makeStringException(-1, "unexpected eof");
+            throw makeStringException(JLIBERR_SystemUnexpectedEof, "unexpected eof");
         properties.bytesRead += sizeof(token);
         return token;
     }
@@ -1857,7 +1858,7 @@ protected:
         assertex(len);
         token.setLength(len);
         if (stream->read(len, const_cast<char*>(token.str())) != len)
-            throw makeStringExceptionV(-1, "eof before end of %u byte string", len);
+            throw makeStringExceptionV(JLIBERR_SystemEofBeforeEndOfUByteString, "eof before end of %u byte string", len);
         properties.bytesRead += len;
         return token;
     }
@@ -1866,7 +1867,7 @@ protected:
     StringBuffer& readToken(StringBuffer& token)
     {
         if (!readZeroTerminatedString(token, *stream))
-            throw makeStringExceptionV(-1, "eof before end of NULL terminated string");
+            throw makeStringExceptionV(JLIBERR_SystemEofBeforeEndOfNullTerminatedString, "eof before end of NULL terminated string");
         return token;
     }
 
@@ -1916,7 +1917,7 @@ protected:
     {
         MemoryAttr buffer(len);
         if (stream->read(len, buffer.mem()) != len)
-            throw makeStringExceptionV(-1, "eof before end of %u byte string", len);
+            throw makeStringExceptionV(JLIBERR_SystemEofBeforeEndOfUByteString_1, "eof before end of %u byte string", len);
         properties.bytesRead += len;
 
         StringBuffer hexText;
