@@ -953,7 +953,7 @@ FileLogMsgHandler::FileLogMsgHandler(const char * _filename, const char * _heade
         StringBuffer err;
         err.appendf("LOGGING: could not open file '%s' for output",filename.get());
         OERRLOG("%s",err.str()); // make sure doesn't get lost!
-        throw MakeStringException(3000,"%s",err.str()); // 3000: internal error
+        throw MakeStringException(JLIBERR_CannotOpenLogFile,"%s",err.str()); // 3000: internal error
     }
     if(headerText) fprintf(handle, "--- %s ---\n", (const char *)headerText);
 }
@@ -3271,7 +3271,7 @@ IComponentLogFileCreator * createComponentLogFileCreator(const char *_component)
 ILogAccessFilter * getLogAccessFilterFromPTree(IPropertyTree * xml)
 {
     if (xml == nullptr)
-        throw makeStringException(-2,"getLogAccessFilterFromPTree: input tree cannot be null");
+        throw makeStringException(JLIBERR_UtilGetlogaccessfilterfromptreeInputTreeCannotBeNull,"getLogAccessFilterFromPTree: input tree cannot be null");
 
     StringBuffer type;
     xml->getProp("@type", type);
@@ -3641,4 +3641,19 @@ IException * ctxlogReport(IException * e, const char * prefix, LogMsgClass cls)
 {
     ctxlogReport(MCexception(e, cls), e, prefix);
     return e;
+}
+
+LogAccessLogFormat logAccessFormatFromName(const char * name)
+{
+    if (isEmptyString(name))
+        throw makeStringException(JLIBERR_UtilEncounteredEmptyLogAccessFormatName, "Encountered empty Log Access Format name");
+
+    if(strieq(name, "xml"))
+        return LOGACCESS_LOGFORMAT_xml;
+    else if(strieq(name, "json"))
+        return LOGACCESS_LOGFORMAT_json;
+    else if(strieq(name, "csv"))
+        return LOGACCESS_LOGFORMAT_csv;
+    else
+        throw makeStringExceptionV(JLIBERR_UtilEncounteredUnknownLogAccessFormatNameS, "Encountered unknown Log Access Format name: '%s'", name);
 }

@@ -24,6 +24,7 @@
 #include "jflz.hpp"
 #include "jlzbase.hpp"
 #include "jzstd.hpp"
+#include "jerror.hpp"
 
 #include <zstd.h>
 
@@ -47,7 +48,7 @@ public:
         if (ZSTD_isError(compressedSize))
         {
             if (unlikely(ZSTD_getErrorCode(compressedSize) != ZSTD_error_dstSize_tooSmall))
-                throw makeStringExceptionV(0, "ZStd compression error: %s", ZSTD_getErrorName(compressedSize));
+                throw makeStringExceptionV(JLIBERR_CompressZstdCompressionErrorS, "ZStd compression error: %s", ZSTD_getErrorName(compressedSize));
 
             if (numCompressed)
                 *numCompressed = 0;
@@ -63,7 +64,7 @@ public:
         assertex(destSize != 0);
         size_t result = ZSTD_decompress(dest, destSize, src, srcSize);
         if (ZSTD_isError(result))
-            throw makeStringExceptionV(0, "ZStd decompression error: %s", ZSTD_getErrorName(result));
+            throw makeStringExceptionV(JLIBERR_CompressZstdDecompressionErrorS, "ZStd decompression error: %s", ZSTD_getErrorName(result));
         return (size32_t)result;
     }
 
@@ -109,7 +110,7 @@ public:
         if (ZSTD_isError(result))
         {
             if (unlikely(ZSTD_getErrorCode(result) != ZSTD_error_dstSize_tooSmall))
-                throw makeStringExceptionV(0, "ZStd decompression error: %s", ZSTD_getErrorName(result));
+                throw makeStringExceptionV(JLIBERR_CompressZstdDecompressionErrorS_1, "ZStd decompression error: %s", ZSTD_getErrorName(result));
             //If the buffer is too small, return 0, and the caller can try again
             return 0;
         }
@@ -155,7 +156,7 @@ public:
         processOptionString(options, processOption);
         zstdStream = ZSTD_createCStream();
         if (!zstdStream)
-            throw makeStringException(0, "Failed to create ZStd compression stream");
+            throw makeStringException(JLIBERR_CompressFailedToCreateZstdCompressionStream, "Failed to create ZStd compression stream");
     }
 
     virtual ~CZStdStreamCompressor()
@@ -169,7 +170,7 @@ public:
         CStreamCompressor::open(buf, max, fixedRowSize, _allowPartialWrites);
         size_t result = ZSTD_initCStream(zstdStream, compressionLevel);
         if (ZSTD_isError(result))
-            throw makeStringExceptionV(0, "Failed to initialize ZStd compression stream: %s", ZSTD_getErrorName(result));
+            throw makeStringExceptionV(JLIBERR_CompressFailedToInitializeZstdCompressionStreamS, "Failed to initialize ZStd compression stream: %s", ZSTD_getErrorName(result));
     }
 
     virtual CompressionMethod getCompressionMethod() const override { return COMPRESS_METHOD_ZSTDS; }
@@ -194,7 +195,7 @@ protected:
     {
         size_t result = ZSTD_initCStream(zstdStream, compressionLevel);
         if (ZSTD_isError(result))
-            throw makeStringExceptionV(0, "Failed to initialize ZStd compression stream: %s", ZSTD_getErrorName(result));
+            throw makeStringExceptionV(JLIBERR_CompressFailedToInitializeZstdCompressionStreamS_1, "Failed to initialize ZStd compression stream: %s", ZSTD_getErrorName(result));
     }
 
     virtual bool tryCompress(bool isFinalCompression) override
@@ -221,7 +222,7 @@ protected:
         size32_t newCompressedSize = (size32_t)output.pos;
 
         if (ZSTD_isError(result))
-            throw makeStringExceptionV(0, "ZStd compression error: %s.  Compress limit(%u,%u) compressed(%u:0..%u), uncompressed(%u:%u..%u)->%u total(%u)", ZSTD_getErrorName(result), outMax, remaining, outlen, lastCompress, uncompressed, lastCompress, inlen, newCompressedSize, outlen + 8 + inlen - lastCompress);
+            throw makeStringExceptionV(JLIBERR_CompressZstdCompressionErrorSCompressLimitUU, "ZStd compression error: %s.  Compress limit(%u,%u) compressed(%u:0..%u), uncompressed(%u:%u..%u)->%u total(%u)", ZSTD_getErrorName(result), outMax, remaining, outlen, lastCompress, uncompressed, lastCompress, inlen, newCompressedSize, outlen + 8 + inlen - lastCompress);
 
         if (result != 0)
         {
@@ -262,7 +263,7 @@ public:
     {
         zstdDStream = ZSTD_createDStream();
         if (!zstdDStream)
-            throw makeStringException(0, "Failed to create ZStd decompression stream");
+            throw makeStringException(JLIBERR_CompressFailedToCreateZstdDecompressionStream, "Failed to create ZStd decompression stream");
     }
 
     ~CZStdStreamExpander()
@@ -276,7 +277,7 @@ public:
         assertex(destSize != 0);
         size_t result = ZSTD_decompress(dest, destSize, src, srcSize);
         if (ZSTD_isError(result))
-            throw makeStringExceptionV(0, "ZStd decompression error: %s", ZSTD_getErrorName(result));
+            throw makeStringExceptionV(JLIBERR_CompressZstdDecompressionErrorS_1, "ZStd decompression error: %s", ZSTD_getErrorName(result));
 
         return (size32_t)result;
     }
@@ -286,7 +287,7 @@ protected:
     {
         size_t result = ZSTD_initDStream(zstdDStream);
         if (ZSTD_isError(result))
-            throw makeStringExceptionV(0, "Failed to reset ZStd decompression stream: %s", ZSTD_getErrorName(result));
+            throw makeStringExceptionV(JLIBERR_CompressFailedToResetZstdDecompressionStreamS, "Failed to reset ZStd decompression stream: %s", ZSTD_getErrorName(result));
     }
 
     virtual int decodeStreamBlock(const void * src, size32_t srcSize, void * dest, size32_t destSize) override
@@ -297,7 +298,7 @@ protected:
         size_t result = ZSTD_decompressStream(zstdDStream, &output, &input);
 
         if (ZSTD_isError(result))
-            throw makeStringExceptionV(0, "ZStd stream decompression error: %s", ZSTD_getErrorName(result));
+            throw makeStringExceptionV(JLIBERR_CompressZstdStreamDecompressionErrorS, "ZStd stream decompression error: %s", ZSTD_getErrorName(result));
 
         // Return the number of bytes written to the output buffer
         return (int)output.pos;

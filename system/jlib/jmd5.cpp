@@ -16,6 +16,7 @@
 ############################################################################## */
 
 
+//LNRSPII:LINES_53:NON_IDENTIFYING:EMAIL,PERSON,DL_OR_DOB:hallidgx_risk
 /*
   Copyright (C) 1999, 2000, 2002 Aladdin Enterprises.  All rights reserved.
 
@@ -68,7 +69,8 @@
   1999-10-18 lpd Fixed typo in header comment (ansi2knr rather than md5).
   1999-05-03 lpd Original version.
  */
-// Following added by Gavin 
+// Following added by Gavin
+
 #include "platform.h"               // GH modified
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 #define ARCH_IS_BIG_ENDIAN 0
@@ -79,6 +81,7 @@
 #include "jmd5.hpp"
 #include "jfile.hpp"
 #include "jlog.hpp"
+#include "jerror.hpp"
 #include <string.h>
 
 #undef BYTE_ORDER   /* 1 = big-endian, -1 = little-endian, 0 = unknown */
@@ -464,7 +467,7 @@ void md5_filesum(const char* filename, StringBuffer& outstring)
     Owned<IFileIO> io = file->openShared(IFOread, IFSHread);
 
     if (!io)
-        throw MakeStringException(1, "File %s could not be opened", file->queryFilename());
+        throw MakeStringException(JLIBERR_UtilFileSCouldNotBeOpened, "File %s could not be opened", file->queryFilename());
 
     offset_t size = io->size();
     offset_t readPos = 0;
@@ -474,7 +477,7 @@ void md5_filesum(const char* filename, StringBuffer& outstring)
         offset_t sizeRead = io->read(readPos, CHUNKSIZE, contents);
 
         if (0 == sizeRead)
-            throw MakeStringException(1, "File %s only read %llu of %llu bytes", file->queryFilename(), size-readPos, size);
+            throw MakeStringException(JLIBERR_UtilFileSOnlyReadLluOfLlu, "File %s only read %llu of %llu bytes", file->queryFilename(), size-readPos, size);
 
         readPos += sizeRead;
         md5_append(&context, (const unsigned char *)contents, (int)sizeRead);

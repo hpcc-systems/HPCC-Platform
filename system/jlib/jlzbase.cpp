@@ -410,12 +410,12 @@ void CBlockExpander::expand(void *buf)
             size32_t written = expandDirect(outlen - done, outbuf + done, szchunk, in);
             done += written;
             if (!written||(done>outlen))
-                throw makeStringExceptionV(0, "BlockExpander - corrupt data(1) %u %u",written,szchunk);
+                throw makeStringExceptionV(JLIBERR_CompressBlockexpanderCorruptData1UU, "BlockExpander - corrupt data(1) %u %u",written,szchunk);
         }
         else
         {
             if (szchunk+done!=outlen)
-                throw makeStringExceptionV(0, "BlockExpander - corrupt data(2) %u %u",szchunk,outlen);
+                throw makeStringExceptionV(JLIBERR_CompressBlockexpanderCorruptData2UU, "BlockExpander - corrupt data(2) %u %u",szchunk,outlen);
             memcpy(outbuf+done,in,szchunk);
             break;
         }
@@ -490,7 +490,7 @@ size32_t CBlockExpander::expandNext(MemoryBuffer & target)
     in = (const size32_t *)(((const byte *)in)+szchunk);
     totalExpanded += written;
     if (totalExpanded > outlen)
-        throw makeStringExceptionV(0, "BlockExpander - corrupt data(3) %u %u",written,szchunk);
+        throw makeStringExceptionV(JLIBERR_CompressBlockexpanderCorruptData3UU, "BlockExpander - corrupt data(3) %u %u",written,szchunk);
     return written;
 }
 
@@ -571,7 +571,7 @@ void CStreamCompressor::open(void *buf, size32_t max, size32_t fixedRowSize, boo
 
 void CStreamCompressor::open(MemoryBuffer &mb, size32_t initialSize, size32_t fixedRowSize)
 {
-    throw makeStringException(99, "Stream compressors does not support MemoryBuffer output");
+    throw makeStringException(JLIBERR_CompressStreamCompressorsDoesNotSupportMemorybufferOutput, "Stream compressors does not support MemoryBuffer output");
 }
 
 void CStreamCompressor::close()
@@ -619,7 +619,7 @@ void CStreamCompressor::close()
     targetLen += uncompressed;
 
     if (targetLen > outMax)
-        throw makeStringExceptionV(99, "Total size too large uncompressed(%u) = %u > %u", uncompressed, outlen, outMax);
+        throw makeStringExceptionV(JLIBERR_CompressTotalSizeTooLargeUncompressedUU, "Total size too large uncompressed(%u) = %u > %u", uncompressed, outlen, outMax);
 
     active = 1-active; // The newly compressed data should be returned from bufptr()
     outlen = targetLen;

@@ -26,6 +26,7 @@
 #include "jfile.hpp"
 #include "jsecrets.hpp"
 #include "jlog.hpp"
+#include "jerror.hpp"
 
 //------------------------------------------------------------------------------------------------------------
 
@@ -150,7 +151,7 @@ private:
         VStringBuffer path("containers[%u]", stripeNumber);
         IPropertyTree *container = xml->queryPropTree(path.str());
         if (!container)
-            throw makeStringExceptionV(-1, "No container provided: path %s", path.str());
+            throw makeStringExceptionV(JLIBERR_UtilNoContainerProvidedPathS, "No container provided: path %s", path.str());
         return container;
     }
     Owned<const IPropertyTree> xml;
@@ -504,7 +505,7 @@ static const CStoragePlane * doFindStoragePlaneFromPath(const char * path, bool 
         return bestMatch;
 
     if (required)
-        throw makeStringExceptionV(99, "Could not map filename to storage plane %s", path);
+        throw makeStringExceptionV(JLIBERR_UtilCouldNotMapFilenameToStoragePlane, "Could not map filename to storage plane %s", path);
 
     return nullptr;
 }
@@ -519,7 +520,7 @@ static const CStoragePlane * doFindStoragePlaneByName(const char * name, bool re
     }
 
     if (required)
-        throw makeStringExceptionV(99, "Unknown storage plane '%s'", name);
+        throw makeStringExceptionV(JLIBERR_UtilUnknownStoragePlaneS, "Unknown storage plane '%s'", name);
 
     return nullptr;
 }
@@ -537,7 +538,7 @@ IPropertyTree * getHostGroup(const char * name, bool required)
             return match;
     }
     if (required)
-        throw makeStringExceptionV(-1, "No entry found for hostGroup: '%s'", name ? name : "<null>");
+        throw makeStringExceptionV(JLIBERR_UtilNoEntryFoundForHostgroupS, "No entry found for hostGroup: '%s'", name ? name : "<null>");
     return nullptr;
 }
 
@@ -593,7 +594,7 @@ const IPropertyTree * getStoragePlaneConfig(const char * name, bool required)
         return LINK(it->second->queryConfig());
 
     if (required)
-        throw makeStringExceptionV(99, "Unknown storage plane %s", name);
+        throw makeStringExceptionV(JLIBERR_UtilUnknownStoragePlaneS_1, "Unknown storage plane %s", name);
     return nullptr;
 }
 
@@ -856,7 +857,7 @@ bool getPlaneHost(StringBuffer &host, const IPropertyTree *plane, unsigned which
 
     unsigned maxHosts = hostGroup->getCount("hosts");
     if (which >= maxHosts)
-        throw makeStringExceptionV(0, "getPlaneHost: index %u out of range 1..%u", which, maxHosts);
+        throw makeStringExceptionV(JLIBERR_UtilGetplanehostIndexUOutOfRange1U, "getPlaneHost: index %u out of range 1..%u", which, maxHosts);
     VStringBuffer xpath("hosts[%u]", which+1); // which is 0 based
     host.append(hostGroup->queryProp(xpath));
     return true;
@@ -886,7 +887,7 @@ static const IStoragePlane * getStoragePlane(const char * name, const std::vecto
     if (r == categories.end())
     {
         if (required)
-            throw makeStringExceptionV(-1, "storage plane '%s' does not match request categories (plane category=%s)", name, category);
+            throw makeStringExceptionV(JLIBERR_UtilStoragePlaneSDoesNotMatchRequest, "storage plane '%s' does not match request categories (plane category=%s)", name, category);
         return nullptr;
     }
 

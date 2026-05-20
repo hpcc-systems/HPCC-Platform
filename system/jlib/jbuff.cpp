@@ -37,6 +37,7 @@
 #include "jexcept.hpp"
 #include "jmisc.hpp"
 #include "jutil.hpp"
+#include "jerror.hpp"
 
 #ifdef _DEBUG
 #define KILL_CLEARS_MEMORY  
@@ -698,7 +699,7 @@ MemoryBuffer &MemoryBuffer::appendFile(const char *fileName)
     int h = _open(fileName, _O_BINARY | _O_RDONLY | _O_SEQUENTIAL);
     
     if (h == HFILE_ERROR)
-        throw MakeStringException(0, "MemoryBuffer: Error reading file : %s", fileName);
+        throw MakeStringException(JLIBERR_BufferErrorReadingFile, "MemoryBuffer: Error reading file : %s", fileName);
     
     append(fileName);
     
@@ -935,7 +936,7 @@ MemoryBuffer &MemoryBuffer::readFile(StringAttr &fileName)
     
     int h = _open(fileName.get(), _O_WRONLY|_O_CREAT|_O_TRUNC|_O_BINARY|_O_SEQUENTIAL, _S_IREAD | _S_IWRITE);
     if (h == HFILE_ERROR)
-        throw MakeStringException(0, "MemoryBuffer: Unable to create file : %s, error=%d", fileName.get(), GetLastError());
+        throw MakeStringException(JLIBERR_BufferUnableToCreateFile, "MemoryBuffer: Unable to create file : %s, error=%d", fileName.get(), GetLastError());
     
     CHECKREADPOS(fileSize);
     int w;
@@ -943,12 +944,12 @@ MemoryBuffer &MemoryBuffer::readFile(StringAttr &fileName)
         w = _write(h, buffer+readPos, fileSize);
         if (w == 0) {
             _close(h);
-            throw MakeStringException(0, "MemoryBuffer: Disk full writing %d to file : %s", fileSize, fileName.get());
+            throw MakeStringException(JLIBERR_BufferDiskFull, "MemoryBuffer: Disk full writing %d to file : %s", fileSize, fileName.get());
         }
         if (w == -1)
         {
             _close(h);
-            throw MakeStringException(0, "MemoryBuffer: Error writing to file : %s, error=%d", fileName.get(), GetLastError());
+            throw MakeStringException(JLIBERR_BufferErrorWritingFile, "MemoryBuffer: Error writing to file : %s, error=%d", fileName.get(), GetLastError());
         }
         readPos += (size32_t)w;
         fileSize -= (size32_t)w;
@@ -1302,7 +1303,7 @@ MemoryBuffer &CLargeMemoryAllocator::serialize(MemoryBuffer &mb)
     memsize_t al = allocated();
     size32_t sz = (size32_t)al;
     if (sz!=al)
-        throw MakeStringException(-1,"CLargeMemoryAllocator::serialize overflow");
+        throw MakeStringException(JLIBERR_UtilClargememoryallocatorSerializeOverflow,"CLargeMemoryAllocator::serialize overflow");
     byte *d = (byte *)mb.reserveTruncate(sz)+sz;
     Chunk *p = &chunk;
     while (sz&&p) {

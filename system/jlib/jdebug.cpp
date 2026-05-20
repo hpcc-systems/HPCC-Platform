@@ -33,6 +33,7 @@
 #include <time.h>
 #include <atomic>
 #include <cmath>
+#include "jerror.hpp"
 
 #ifdef _WIN32
 #define DPSAPI_VERSION 1
@@ -527,7 +528,7 @@ class DefaultTimeReporter : implements ITimeReporter, public CInterface
              if (!idx--)
                  return (TimeSectionInfo &) iter.query();
         }
-        throw MakeStringException(2, "Invalid index to DefaultTimeReporter");
+        throw MakeStringException(JLIBERR_UtilInvalidIndexToDefaulttimereporter, "Invalid index to DefaultTimeReporter");
     }
 public:
     IMPLEMENT_IINTERFACE
@@ -1784,7 +1785,7 @@ bool applyResourcedCPUAffinity(const IPropertyTree *resourceSection)
         return false;
     double cpus = friendlyCPUToDecimal(cpusText);
     if (0.0 == cpus)
-        throw makeStringExceptionV(0, "Invalid number of resources cpus: %s", cpusText);
+        throw makeStringExceptionV(JLIBERR_UtilInvalidNumberOfResourcesCpusS, "Invalid number of resources cpus: %s", cpusText);
     unsigned __int64 cpusI = (unsigned __int64)std::ceil(cpus);
     if (cpus != (double)cpusI)
         OWARNLOG("Fractional number of CPUs '%s' specified can cause poor performance, rounding up to: %" I64F "u", cpusText, cpusI);

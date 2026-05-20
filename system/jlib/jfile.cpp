@@ -1023,7 +1023,7 @@ void copyFileSection(IFile * src, IFile * target, offset_t toOfs, offset_t fromO
         tgtFlags = IFEnocache;
     OwnedIFileIO targetIO = target->open(omode, tgtFlags);
     if (!targetIO)
-        throw MakeStringException(-1, "copyFile: target path '%s' could not be created", target->queryFilename());
+        throw MakeStringException(JLIBERR_FileCopyTargetCreateFailed, "copyFile: target path '%s' could not be created", target->queryFilename());
     MemoryAttr mb;
     void * buffer = mb.allocate(buffersize);
     IFEflags srcFlags = IFEnone;
@@ -1031,7 +1031,7 @@ void copyFileSection(IFile * src, IFile * target, offset_t toOfs, offset_t fromO
         srcFlags = IFEnocache;
     OwnedIFileIO sourceIO = src->open(IFOread, srcFlags);
     if (!sourceIO)
-        throw MakeStringException(-1, "copySection: source '%s' not found", src->queryFilename());
+        throw MakeStringException(JLIBERR_FileCopySourceNotFound, "copySection: source '%s' not found", src->queryFilename());
 
     offset_t offset = 0;
     offset_t total;
@@ -1224,7 +1224,7 @@ public:
         if (cfileio)
             handle = cfileio->queryHandle();
         if (handle==NULLFILE)
-            throw makeStringException(-1, "CDiscretionaryFileLock - invalid parameter");
+            throw makeStringException(JLIBERR_FileLockInvalidParameter, "CDiscretionaryFileLock - invalid parameter");
     }
     ~CDiscretionaryFileLock()
     {
@@ -1702,7 +1702,7 @@ public:
 
     IMemoryMappedFile *openMemoryMapped(offset_t ofs, memsize_t len, bool write)
     {
-        throw MakeStringException(-1,"Remote file cannot be memory mapped");
+        throw MakeStringException(JLIBERR_MemoryMapRemoteFileError, "Remote file cannot be memory mapped");
         return NULL;
     }
 };
@@ -1730,7 +1730,7 @@ IFileIO *_createIFileIO(const void *buffer, unsigned sz, bool readOnly)
         virtual size32_t read(offset_t pos, size32_t len, void * data)
         {
             if (pos>sz)
-                throw MakeStringException(-1, "CMemoryBufferIO: read beyond end of buffer pos=%" I64F "d, len=%d, buffer length=%d", pos, len, mb.length());
+                throw MakeStringException(JLIBERR_MemoryBufferReadBeyondEnd, "CMemoryBufferIO: read beyond end of buffer pos=%" I64F "d, len=%d, buffer length=%d", pos, len, mb.length());
             if (pos+len > sz)
                 len = (size32_t)(sz-pos);
             memcpy(data, (byte *)buffer+pos, len);
@@ -1742,7 +1742,7 @@ IFileIO *_createIFileIO(const void *buffer, unsigned sz, bool readOnly)
         {
             assertex(!readOnly);
             if (pos+len>sz)
-                throw MakeStringException(-1, "CMemoryBufferIO: UNIMPLEMENTED, writing beyond buffer, pos=%" I64F "d, len=%d, buffer length=%d", pos, len, mb.length());
+                throw MakeStringException(JLIBERR_MemoryBufferWriteBeyondEndUnimplemented, "CMemoryBufferIO: UNIMPLEMENTED, writing beyond buffer, pos=%" I64F "d, len=%d, buffer length=%d", pos, len, mb.length());
             memcpy((byte *)buffer+pos, data, len);
             return len;
         }
@@ -1755,7 +1755,7 @@ IFileIO *_createIFileIO(const void *buffer, unsigned sz, bool readOnly)
         virtual void setSize(offset_t size)
         {
             if (size > mb.length())
-                throw MakeStringException(-1, "CMemoryBufferIO: UNIMPLEMENTED, setting size %" I64F "d beyond end of buffer, buffer length=%d", size, mb.length());
+                throw MakeStringException(JLIBERR_MemoryBufferSetSizeBeyondEndUnimplemented, "CMemoryBufferIO: UNIMPLEMENTED, setting size %" I64F "d beyond end of buffer, buffer length=%d", size, mb.length());
             mb.setLength((size32_t)size);
         }
         virtual IFile * queryFile() const override
@@ -1782,7 +1782,7 @@ class jlib_decl CSequentialFileIO : public CFileIO
     void checkPos(const char *fn,offset_t _pos)
     {
         if (_pos!=pos)
-            throw MakeStringException(-1, "CSequentialFileIO %s out of sequence (%" I64F "d,%" I64F "d)",fn,pos,_pos);
+            throw MakeStringException(JLIBERR_SequentialFileOutOfSequence, "CSequentialFileIO %s out of sequence (%" I64F "d,%" I64F "d)",fn,pos,_pos);
     }
 
 public:
@@ -2918,7 +2918,7 @@ void CNoSeekFileIOStream::seek(offset_t pos, IFSmode origin)
         break;
     }
     if (prevOffset != nextOffset)
-        throw makeStringExceptionV(0, "Seek on non-seekable CFileIOStream (from %" I64F "u to %" I64F "u)", prevOffset, nextOffset);
+        throw makeStringExceptionV(JLIBERR_FileStreamSeekNotSeekable, "Seek on non-seekable CFileIOStream (from %" I64F "u to %" I64F "u)", prevOffset, nextOffset);
 
     //No need to call stream->seek since it will have no effect
 }
@@ -3266,17 +3266,17 @@ void renameFile(const char *target, const char *source, bool overwritetarget)
 {
     OwnedIFile src = createIFile(source);
     if (!src)
-        throw MakeStringException(-1, "renameFile: source '%s' not found", source);
+        throw MakeStringException(JLIBERR_FileRenameSourceNotFound, "renameFile: source '%s' not found", source);
     if (src->isFile()!=fileBool::foundYes)
-        throw MakeStringException(-1, "renameFile: source '%s' is not a valid file", source);
+        throw MakeStringException(JLIBERR_FileRenameSourceInvalid, "renameFile: source '%s' is not a valid file", source);
     if (src->isReadOnly()!=fileBool::foundNo)
-        throw MakeStringException(-1, "renameFile: source '%s' is readonly", source);
+        throw MakeStringException(JLIBERR_FileRenameSourceReadOnly, "renameFile: source '%s' is readonly", source);
 
     OwnedIFile tgt = createIFile(target);
     if (!tgt)
-        throw MakeStringException(-1, "renameFile: target path '%s' could not be created", target);
+        throw MakeStringException(JLIBERR_FileRenameTargetCreateFailed, "renameFile: target path '%s' could not be created", target);
     if (tgt->exists() && !overwritetarget)
-        throw MakeStringException(-1, "renameFile: target file already exists: '%s' will not overwrite", target);
+        throw MakeStringException(JLIBERR_FileRenameTargetExists, "renameFile: target file already exists: '%s' will not overwrite", target);
 
     src->rename(target);
 }
@@ -3285,10 +3285,10 @@ void copyFile(const char *target, const char *source, size32_t buffersize, ICopy
 {
     OwnedIFile src = createIFile(source);
     if (!src)
-        throw MakeStringException(-1, "copyFile: source '%s' not found", source);
+        throw MakeStringException(JLIBERR_FileCopySourceNotFound, "copyFile: source '%s' not found", source);
     OwnedIFile tgt = createIFile(target);
     if (!tgt)
-        throw MakeStringException(-1, "copyFile: target path '%s' could not be created", target);
+        throw MakeStringException(JLIBERR_FileCopyTargetCreateFailed, "copyFile: target path '%s' could not be created", target);
     copyFile(tgt, src, buffersize, progress, copyFlags);
 }
 
@@ -3335,7 +3335,7 @@ void doCopyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFilePr
         srcFlags = IFEnocache;
     OwnedIFileIO sourceIO = source->open(IFOread, srcFlags);
     if (!sourceIO)
-        throw MakeStringException(-1, "copyFile: source '%s' not found", source->queryFilename());
+        throw MakeStringException(JLIBERR_FileCopySourceNotFound, "copyFile: source '%s' not found", source->queryFilename());
 
 #ifdef __linux__
 
@@ -3362,7 +3362,7 @@ void doCopyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFilePr
         tgtFlags = IFEnocache;
     targetIO.setown(dest->open(IFOcreate, tgtFlags));
     if (!targetIO)
-        throw MakeStringException(-1, "copyFile: target path '%s' could not be created", dest->queryFilename());
+        throw MakeStringException(JLIBERR_FileCopyTargetCreateFailed, "copyFile: target path '%s' could not be created", dest->queryFilename());
     MemoryAttr mb;
     void * buffer = copyintercept?NULL:mb.allocate(buffersize);
 
@@ -4471,7 +4471,7 @@ IFile * createIFile(const char * filename)
     rfn.setRemotePath(filename);
 
     if (rfn.isNull())
-        throw MakeStringException(-1, "CreateIFile cannot resolve %s", filename);
+        throw MakeStringException(JLIBERR_CreateIFileCannotResolve, "CreateIFile cannot resolve %s", filename);
 
     ret = createIFileByHook(rfn);           // use daliservix in preference
     if (ret)
@@ -4535,7 +4535,7 @@ IFile * createIFile(const char * filename)
     if (memcmp(filename,"smb://",6)==0)  // don't support samba - try remote
         return createIFile(filename+4);
 #endif
-    throw MakeStringException(-1, "createIFile: cannot attach to %s", filename);
+    throw MakeStringException(JLIBERR_CreateIFileCannotAttach, "createIFile: cannot attach to %s", filename);
 #endif
 }
 
@@ -4543,7 +4543,7 @@ void touchFile(IFile *iFile)
 {
     Owned<IFileIO> iFileIO = iFile->open(IFOcreate);
     if (!iFileIO)
-        throw makeStringExceptionV(0, "touchFile: failed to create file %s", iFile->queryFilename());
+        throw makeStringExceptionV(JLIBERR_TouchFileFailedToCreate, "touchFile: failed to create file %s", iFile->queryFilename());
     iFileIO->close();
 }
 
@@ -4740,12 +4740,12 @@ extern jlib_decl void createHardLink(const char* fileName, const char* existingF
         err.appendf("Failed to create log alias %s for %s: %s", fileName, existingFileName, lpMsgBuf);
         LocalFree( lpMsgBuf );
 
-        throw MakeStringException(-1, "createHardLink:: %s.",err.str());
+        throw MakeStringException(JLIBERR_CreateHardLinkFailed, "createHardLink:: %s.",err.str());
 
     }
 #else
     if (link(existingFileName, fileName) != 0) // error
-        throw MakeStringException(-1, "Failed to create log alias %s for %s: error code = %d", fileName, existingFileName, errno);
+        throw MakeStringException(JLIBERR_CreateLogAliasFailed, "Failed to create log alias %s for %s: error code = %d", fileName, existingFileName, errno);
 #endif
 
 }
@@ -4785,7 +4785,7 @@ void testDirectory()
 
 void RemoteFilename::badFilename(const char * filename)
 {
-    throw MakeStringException(-1, "Badly formatted file entry %s", filename);
+    throw MakeStringException(JLIBERR_BadlyFormattedFileEntry, "Badly formatted file entry %s", filename);
 }
 
 bool RemoteFilename::equals(const RemoteFilename & other) const
@@ -5276,7 +5276,7 @@ void RemoteMultiFilename::append(const RemoteFilename &inrfn)
     else if (!rfn.queryIP().ipequals(ep)) {
         StringBuffer path;
         rfn.getRemotePath(path);
-        throw MakeStringException(-1, "Component file IP does not match: %s", path.str());
+        throw MakeStringException(JLIBERR_ComponentFileIPMismatch, "Component file IP does not match: %s", path.str());
     }
     RemoteFilenameArray::append(rfn);
 }
@@ -5739,7 +5739,7 @@ StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out, bool mustE
         {
             OwnedIFile iFile = createIFile(relpath);
             if (!iFile->exists())
-                throw makeStringExceptionV(-1, "makeAbsolutePath: could not resolve absolute path for %s", relpath);
+                throw makeStringExceptionV(JLIBERR_MakeAbsolutePathResolveFailed, "makeAbsolutePath: could not resolve absolute path for %s", relpath);
         }
         return out.append(relpath); // if remote then already should be absolute
     }
@@ -5756,7 +5756,7 @@ StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out, bool mustE
     {
         OwnedIFile iFile = createIFile(rPath);
         if (!iFile->exists())
-            throw makeStringExceptionV(-1, "makeAbsolutePath: could not resolve absolute path for %s", rPath);
+            throw makeStringExceptionV(JLIBERR_MakeAbsolutePathResolveFailed, "makeAbsolutePath: could not resolve absolute path for %s", rPath);
     }
     out.append(rPath);
 #else
@@ -5996,7 +5996,7 @@ void extractBlobElements(const char * prefix, const RemoteFilename &filename, Ex
     Owned<IFile> file = createIFile(filename);
     Owned<IFileIO> inIO = file->open(IFOread);
     if (!inIO)
-        throw MakeStringException(-1, "extractBlobElements: file '%s' not found", filenameText.str());
+        throw MakeStringException(JLIBERR_ExtractBlobElementsFileNotFound, "extractBlobElements: file '%s' not found", filenameText.str());
     Owned<IFileIOStream> in = createIOStream(inIO);
 
     MemoryBuffer buffer;
@@ -6279,7 +6279,7 @@ public:
         }
         if (exc.get())
             throw exc.getClear();
-        throw MakeStringException(0, "%s: Failed to open part file at any of the following locations: ", locations.str());
+        throw MakeStringException(JLIBERR_FailedToOpenPartFileAnyLocation, "%s: Failed to open part file at any of the following locations: ", locations.str());
     }
 };
 
@@ -6315,7 +6315,7 @@ public:
                 return;
         }
 
-        Owned<IException> e = makeStringExceptionV(-1, "InputStream::get read past end of stream (%u,%u) @offset %llu", (unsigned)len, (unsigned)totalRead, tell()-totalRead);
+        Owned<IException> e = makeStringExceptionV(JLIBERR_InputStreamReadPastEnd, "InputStream::get read past end of stream (%u,%u) @offset %llu", (unsigned)len, (unsigned)totalRead, tell()-totalRead);
         ERRLOG(e);
         throw e.getClear();
     }
@@ -6440,7 +6440,7 @@ public:
     {
         offset_t fs = mmfile->fileSize();
         if ((memsize_t)fs!=fs)
-            throw MakeStringException(-1,"CMemoryMappedSerialStream file too big to be mapped");
+            throw MakeStringException(JLIBERR_StreamFileTooBigToMap, "CMemoryMappedSerialStream file too big to be mapped");
         if ((flen!=(offset_t)-1)&&(fs>flen))
             fs = flen;
         mmsize = (memsize_t)fs;
@@ -6487,7 +6487,7 @@ public:
         if (len>left) {
             PrintStackReport();
             IERRLOG("CFileSerialStream::get read past end of stream.3 (%u,%u)",(unsigned)len,(unsigned)left);
-            throw MakeStringException(-1,"CMemoryMappedSerialStream::get read past end of stream (%u,%u)",(unsigned)len,(unsigned)left);
+            throw MakeStringException(JLIBERR_MappedStreamReadPastEnd, "CMemoryMappedSerialStream::get read past end of stream (%u,%u)",(unsigned)len,(unsigned)left);
         }
         memcpy(ptr,mmbase+mmofs,len);
         mmofs += len;
@@ -6512,7 +6512,7 @@ public:
     {
         memsize_t left = mmsize-mmofs;
         if (len>left)
-            throw MakeStringException(-1,"CMemoryMappedSerialStream::skip read past end of stream (%u,%u)",(unsigned)len,(unsigned)left);
+            throw MakeStringException(JLIBERR_MappedStreamSkipPastEnd, "CMemoryMappedSerialStream::skip read past end of stream (%u,%u)",(unsigned)len,(unsigned)left);
         mmofs += len;
     }
 
@@ -6554,7 +6554,7 @@ public:
     {
         if (len>buffer.remaining()) {
             IERRLOG("CMemoryBufferSerialStream::get read past end of stream.4(%u,%u)",(unsigned)len,(unsigned)buffer.remaining());
-            throw MakeStringException(-1,"CMemoryBufferSerialStream::get read past end of stream (%u,%u)",(unsigned)len,(unsigned)buffer.remaining());
+            throw MakeStringException(JLIBERR_BufferStreamReadPastEnd, "CMemoryBufferSerialStream::get read past end of stream (%u,%u)",(unsigned)len,(unsigned)buffer.remaining());
         }
         const void * data = buffer.readDirect(len);
         memcpy(ptr,data,len);
@@ -6577,7 +6577,7 @@ public:
     virtual void skip(size32_t len) override
     {
         if (len>buffer.remaining())
-            throw MakeStringException(-1,"CMemoryBufferSerialStream::skip read past end of stream (%u,%u)",(unsigned)len,(unsigned)buffer.remaining());
+            throw MakeStringException(JLIBERR_BufferStreamSkipPastEnd, "CMemoryBufferSerialStream::skip read past end of stream (%u,%u)",(unsigned)len,(unsigned)buffer.remaining());
 
         buffer.skip(len);
     }
@@ -6714,7 +6714,7 @@ public:
         if (p==NULL)
             p = ptr;
         else if ((p<ptr)||(p>ptr+size))
-            throw MakeStringException(-1,"CMemoryMappedFile::nextPtr - outside map");
+            throw MakeStringException(JLIBERR_MemoryMappedFileOutsideMap, "CMemoryMappedFile::nextPtr - outside map");
         memsize_t d = (byte *)p-ptr;
         offset_t o = ofs+d+skip;
         if (o>=filesize) {
@@ -6764,7 +6764,7 @@ public:
         if (_size==(memsize_t)-1) {
             size = (memsize_t)(filesize-_ofs);
             if (size!=(filesize-_ofs))
-                throw MakeStringException(-1,"CMemoryMappedFile::reinit file too big");
+                throw MakeStringException(JLIBERR_MemoryMappedFileReinitTooBig, "CMemoryMappedFile::reinit file too big");
         }
         else
             size = _size;
@@ -6953,7 +6953,7 @@ class CCachedFileIO: implements IFileIO, public CInterface
     {
         StringBuffer tmp;
         filename.getRemotePath(tmp);
-        throw MakeStringException(-1, "CCachedFileIO(%s) %s not supported", tmp.str(), s);
+        throw MakeStringException(JLIBERR_CachedFileIONotSupported, "CCachedFileIO(%s) %s not supported", tmp.str(), s);
     }
 public:
     unsigned accesst;
@@ -7124,7 +7124,7 @@ IFileIO *CCachedFileIO::open()
         if (!cachedio.get()) {
             StringBuffer tmp;
             filename.getRemotePath(tmp);
-            throw MakeStringException(-1, "CCachedFileIO::open(%d) '%s' failed", (int)mode, tmp.str());
+            throw MakeStringException(JLIBERR_CachedFileIOOpenFailed, "CCachedFileIO::open(%d) '%s' failed", (int)mode, tmp.str());
         }
     }
     accesst = msTick();
@@ -7284,7 +7284,7 @@ public:
 IDirectoryIterator *getSortedDirectoryIterator(IFile *directory, SortDirectoryMode mode, bool rev, const char *mask, bool sub, bool includedirs)
 {
     if (!directory || directory->isDirectory()!=fileBool::foundYes)
-        throw MakeStringException(-1, "Invalid IFile input in getSortedDirectoryIterator()");
+        throw MakeStringException(JLIBERR_InvalidIFileInputSortedDirIterator, "Invalid IFile input in getSortedDirectoryIterator()");
 
     Owned<IDirectoryIterator> files = directory->directoryFiles(mask, sub, includedirs);
     if (SD_nosort == mode)
@@ -7295,7 +7295,7 @@ IDirectoryIterator *getSortedDirectoryIterator(IFile *directory, SortDirectoryMo
 IDirectoryIterator *getSortedDirectoryIterator(const char *dirName, SortDirectoryMode mode, bool rev, const char *mask, bool sub, bool includedirs)
 {
     if (isEmptyString(dirName))
-        throw MakeStringException(-1, "Invalid dirName input in getSortedDirectoryIterator()");
+        throw MakeStringException(JLIBERR_InvalidDirNameInputSortedDirIterator, "Invalid dirName input in getSortedDirectoryIterator()");
 
     Owned<IFile> dir = createIFile(dirName);
     return getSortedDirectoryIterator(dir, mode, rev, mask, sub, includedirs);
@@ -7476,7 +7476,7 @@ public:
     virtual bool add(const char *filename, FileWatchEvents events) override
     {
         if (isEmptyString(filename))
-            throw makeStringException(-1, "CFileEventWatcher::add() - invalid empty filename");
+            throw makeStringException(JLIBERR_FileEventWatcherAddInvalidEmpty, "CFileEventWatcher::add() - invalid empty filename");
         CriticalBlock b(crit);
         auto iter = monitoredFiles.find(filename);
         if (iter != monitoredFiles.end()) // filename already monitored
@@ -7608,7 +7608,7 @@ public:
 
         //A sanity check to catch calls from multiple threads - (see HPCC-31852).
         if (unlikely(isActive))
-            throw makeStringExceptionV(99, "Reentrant call to CBlockedFileIO::read(%llu, %u) [%llu]", pos, len, lastReadPos);
+            throw makeStringExceptionV(JLIBERR_ReentrantCallCBlockedFileIORead, "Reentrant call to CBlockedFileIO::read(%llu, %u) [%llu]", pos, len, lastReadPos);
         isActive = true;
 
         size32_t totalCopied = 0;

@@ -17,6 +17,7 @@
 
 
 #include "jencrypt.hpp"
+#include "jerror.hpp"
 
 #ifdef _USE_OPENSSL
 
@@ -1778,7 +1779,7 @@ inline Rijndael::KeyLength getAesKeyType(size_t keylen)
     if (keylen==24)
         return Rijndael::Key24Bytes;
     if (keylen < 32)
-        throw MakeStringException(-1,"AES Encryption error: %d is not a valid key length", (unsigned)keylen);
+        throw MakeStringException(JLIBERR_UtilAesEncryptionErrorDIsNotA,"AES Encryption error: %d is not a valid key length", (unsigned)keylen);
 
     return Rijndael::Key32Bytes;
 }
@@ -1798,7 +1799,7 @@ MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *input, size
     if(len >= 0)
         output.setLength(origLen+len);
     else 
-        throw MakeStringException(-1,"AES Encryption error: %d, %s", len, getAesErrorText(len));
+        throw MakeStringException(JLIBERR_UtilAesEncryptionErrorDS,"AES Encryption error: %d, %s", len, getAesErrorText(len));
     return output;
 }
 
@@ -1814,7 +1815,7 @@ MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *input, size
     if(len >= 0)
         output.setLength(origLen+len);
     else 
-        throw MakeStringException(-1,"AES Decryption error: %d, %s", len, getAesErrorText(len));
+        throw MakeStringException(JLIBERR_UtilAesDecryptionErrorDS,"AES Decryption error: %d, %s", len, getAesErrorText(len));
     return output;
 }
 
@@ -1824,7 +1825,7 @@ size_t aesEncryptInPlace(const void *key, size_t keylen, void *buffer, size_t in
         return 0;
     // Make sure there is space for the padding. This is up to 16 bytes
     if (maxlen - inlen < 16)
-        throw MakeStringException(-1,"AES Encryption error: Insufficient space in input buffer");
+        throw MakeStringException(JLIBERR_UtilAesEncryptionErrorInsufficientSpaceInInput,"AES Encryption error: Insufficient space in input buffer");
     Rijndael rin;
     Rijndael::KeyLength keyType = getAesKeyType(keylen);
     
@@ -1834,7 +1835,7 @@ size_t aesEncryptInPlace(const void *key, size_t keylen, void *buffer, size_t in
     if(len >= 0)
         return len;
     else 
-        throw MakeStringException(-1,"AES Encryption error: %d, %s", len, getAesErrorText(len));
+        throw MakeStringException(JLIBERR_UtilAesEncryptionErrorDS_1,"AES Encryption error: %d, %s", len, getAesErrorText(len));
 }
 
 size_t aesDecryptInPlace(const void *key, size_t keylen, void *data, size_t inlen)
@@ -1846,7 +1847,7 @@ size_t aesDecryptInPlace(const void *key, size_t keylen, void *data, size_t inle
     size32_t truncInLen = (size32_t)inlen;
     int len = rin.padDecrypt((const UINT8 *)data, truncInLen, (UINT8 *) data, inlen);
     if(len < 0)
-        throw MakeStringException(-1,"AES Decryption error: %d, %s", len, getAesErrorText(len));
+        throw MakeStringException(JLIBERR_UtilAesDecryptionErrorDS_1,"AES Decryption error: %d, %s", len, getAesErrorText(len));
     return len;
 }
 
@@ -1859,7 +1860,7 @@ static void encryptError(const char *what)
 {
     char errorMessage[256];
     ERR_error_string_n(ERR_get_error(), errorMessage, sizeof(errorMessage));
-    throw makeStringExceptionV(0, "openssl::aesEncrypt: unexpected failure in %s: %s", what, errorMessage);
+    throw makeStringExceptionV(JLIBERR_UtilOpensslAesencryptUnexpectedFailureInSS, "openssl::aesEncrypt: unexpected failure in %s: %s", what, errorMessage);
 }
 
 MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *plaintext, size_t plaintext_len, MemoryBuffer &output)
@@ -1965,7 +1966,7 @@ static void decryptError(const char *what)
 {
     char errorMessage[256];
     ERR_error_string_n(ERR_get_error(), errorMessage, sizeof(errorMessage));
-    throw makeStringExceptionV(0, "openssl::aesDecrypt: unexpected failure in %s: %s", what, errorMessage);
+    throw makeStringExceptionV(JLIBERR_UtilOpensslAesdecryptUnexpectedFailureInSS, "openssl::aesDecrypt: unexpected failure in %s: %s", what, errorMessage);
 }
 
 MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *ciphertext, size_t ciphertext_len, MemoryBuffer &output)

@@ -76,7 +76,7 @@ protected:
             return;
 
         if (toflush > LZ4_MAX_INPUT_SIZE)
-            throw makeStringExceptionV(-1, "LZ4Compressor::flushcommitted - input size %u exceeds maximum %d", toflush, LZ4_MAX_INPUT_SIZE);
+            throw makeStringExceptionV(JLIBERR_CompressLz4compressorFlushcommittedInputSizeUExceedsMaximum, "LZ4Compressor::flushcommitted - input size %u exceeds maximum %d", toflush, LZ4_MAX_INPUT_SIZE);
 
         size32_t outSzRequired = outlen+sizeof(size32_t)*2+LZ4_COMPRESSBOUND(toflush);
         if (!dynamicOutSz)
