@@ -2,7 +2,7 @@ import * as React from "react";
 import { useConst } from "@fluentui/react-hooks";
 import { tokens } from "@fluentui/react-components";
 import { d3Event, Palette } from "@hpcc-js/common";
-import { ColumnFormat, Table } from "@hpcc-js/dgrid";
+import { ColumnFormat, ColumnSetTable } from "@hpcc-js/dgrid";
 import { encodeHTML, formatDecimal } from "src/Utility";
 import { formatTwoDigits } from "src/Session";
 import nlsHPCC from "src/nlsHPCC";
@@ -21,7 +21,7 @@ const ECL_WORKUNIT_REGEX = /^W\d{8}-\d{6}(?:-\d+)?$/;
 const isDfuWu = (workunitId: string): boolean => DFU_WORKUNIT_REGEX.test(workunitId);
 const isEclWu = (workunitId: string): boolean => ECL_WORKUNIT_REGEX.test(workunitId);
 
-class TableEx extends Table {
+class TableEx extends ColumnSetTable {
     constructor() {
         super();
         this
@@ -87,6 +87,9 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
     //  Props Table  ---
     const propsTable = useConst(() => new TableEx()
         .columns([nlsHPCC.Property, nlsHPCC.Value, "Avg", "Min", "Max", "Delta", "StdDev", "SkewMin", "SkewMax", "NodeMin", "NodeMax", "StdDevs"])
+        .columnSets([
+            [nlsHPCC.Property]
+        ])
         .columnFormats([
             new ColumnFormat()
                 .column(nlsHPCC.Property)
