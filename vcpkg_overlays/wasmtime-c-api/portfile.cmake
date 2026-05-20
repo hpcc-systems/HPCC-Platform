@@ -1,10 +1,10 @@
-if (WIN32)
+if (VCPKG_TARGET_IS_WINDOWS)
     vcpkg_download_distfile(ARCHIVE
         URLS "https://github.com/bytecodealliance/wasmtime/releases/download/v${VERSION}/wasmtime-v${VERSION}-x86_64-windows-c-api.zip"
         FILENAME "wasmtime-v${VERSION}-x86_64-windows-c-api.zip"
         SHA512 dc96b8908ae1a4eb2bc502cebdfac314240202d02962adabe4763c9dd5aec10f356ed456f1b989aefef2fa0b8dc3b32f80dea817f2c0b01f94d28c7c03e8fc40
     )
-elseif (APPLE)
+elseif (VCPKG_TARGET_IS_OSX)
     if (VCPKG_TARGET_ARCHITECTURE STREQUAL "arm64")
         vcpkg_download_distfile(ARCHIVE
             URLS "https://github.com/bytecodealliance/wasmtime/releases/download/v${VERSION}/wasmtime-v${VERSION}-aarch64-macos-c-api.tar.xz"
@@ -36,17 +36,29 @@ elseif (VCPKG_TARGET_IS_LINUX)
     else()
         message(FATAL_ERROR "Unsupported Linux target architecture for wasmtime-c-api: ${VCPKG_TARGET_ARCHITECTURE}")
     endif()
+else()
+    message(FATAL_ERROR "Unsupported target platform for wasmtime-c-api")
 endif()
 
-vcpkg_extract_source_archive_ex(
-    OUT_SOURCE_PATH SOURCE_PATH
-    ARCHIVE ${ARCHIVE}
+vcpkg_extract_source_archive(
+    SOURCE_PATH
+    ARCHIVE "${ARCHIVE}"
 )
 
 file(COPY ${SOURCE_PATH}/include/. DESTINATION ${CURRENT_PACKAGES_DIR}/include/wasmtime-c-api)
-if (WIN32)
-    file(COPY ${SOURCE_PATH}/lib/. DESTINATION ${CURRENT_PACKAGES_DIR}/debug/bin)
-    file(COPY ${SOURCE_PATH}/lib/. DESTINATION ${CURRENT_PACKAGES_DIR}/bin)
+if (VCPKG_TARGET_IS_WINDOWS)
+    file(GLOB wasmtime_dlls "${SOURCE_PATH}/lib/*.dll")
+    file(GLOB wasmtime_libs "${SOURCE_PATH}/lib/*.lib")
+
+    if(wasmtime_dlls)
+        file(COPY ${wasmtime_dlls} DESTINATION ${CURRENT_PACKAGES_DIR}/debug/bin)
+        file(COPY ${wasmtime_dlls} DESTINATION ${CURRENT_PACKAGES_DIR}/bin)
+    endif()
+
+    if(wasmtime_libs)
+        file(COPY ${wasmtime_libs} DESTINATION ${CURRENT_PACKAGES_DIR}/debug/lib)
+        file(COPY ${wasmtime_libs} DESTINATION ${CURRENT_PACKAGES_DIR}/lib)
+    endif()
 else ()
     file(COPY ${SOURCE_PATH}/lib/. DESTINATION ${CURRENT_PACKAGES_DIR}/debug/lib)
     file(COPY ${SOURCE_PATH}/lib/. DESTINATION ${CURRENT_PACKAGES_DIR}/lib)

@@ -1,7 +1,9 @@
 if(VCPKG_TARGET_IS_OSX)
     set(ncurses_system_prefixes "")
+    set(ncurses_user_prefix "")
     if(DEFINED ENV{VCPKG_NCURSES_SYSTEM_PREFIX} AND NOT "$ENV{VCPKG_NCURSES_SYSTEM_PREFIX}" STREQUAL "")
-        list(APPEND ncurses_system_prefixes "$ENV{VCPKG_NCURSES_SYSTEM_PREFIX}")
+        set(ncurses_user_prefix "$ENV{VCPKG_NCURSES_SYSTEM_PREFIX}")
+        list(APPEND ncurses_system_prefixes "${ncurses_user_prefix}")
     endif()
     list(APPEND ncurses_system_prefixes "/opt/local" "/opt/homebrew" "/usr/local")
 
@@ -13,7 +15,11 @@ if(VCPKG_TARGET_IS_OSX)
         endif()
     endforeach()
 
-    if(ncurses_system_prefix)
+    if(ncurses_user_prefix AND NOT ncurses_system_prefix STREQUAL ncurses_user_prefix)
+        message(FATAL_ERROR "VCPKG_NCURSES_SYSTEM_PREFIX is set to '${ncurses_user_prefix}' but no usable ncurses libraries were found there")
+    endif()
+
+    if(ncurses_system_prefix AND NOT VCPKG_LIBRARY_LINKAGE STREQUAL "dynamic")
         message(STATUS "Using system ncurses from ${ncurses_system_prefix}")
 
         file(MAKE_DIRECTORY
@@ -30,25 +36,12 @@ if(VCPKG_TARGET_IS_OSX)
             endif()
         endforeach()
 
-        if(VCPKG_LIBRARY_LINKAGE STREQUAL "dynamic")
-            file(GLOB dylibs
-                "${ncurses_system_prefix}/lib/libncursesw*.dylib"
-                "${ncurses_system_prefix}/lib/libformw*.dylib"
-                "${ncurses_system_prefix}/lib/libmenuw*.dylib"
-                "${ncurses_system_prefix}/lib/libpanelw*.dylib"
-            )
-            if(dylibs)
-                file(COPY ${dylibs} DESTINATION "${CURRENT_PACKAGES_DIR}/lib")
-                file(COPY ${dylibs} DESTINATION "${CURRENT_PACKAGES_DIR}/debug/lib")
+        foreach(lib libncursesw.a libformw.a libmenuw.a libpanelw.a)
+            if(EXISTS "${ncurses_system_prefix}/lib/${lib}")
+                file(COPY "${ncurses_system_prefix}/lib/${lib}" DESTINATION "${CURRENT_PACKAGES_DIR}/lib")
+                file(COPY "${ncurses_system_prefix}/lib/${lib}" DESTINATION "${CURRENT_PACKAGES_DIR}/debug/lib")
             endif()
-        else()
-            foreach(lib libncursesw.a libformw.a libmenuw.a libpanelw.a)
-                if(EXISTS "${ncurses_system_prefix}/lib/${lib}")
-                    file(COPY "${ncurses_system_prefix}/lib/${lib}" DESTINATION "${CURRENT_PACKAGES_DIR}/lib")
-                    file(COPY "${ncurses_system_prefix}/lib/${lib}" DESTINATION "${CURRENT_PACKAGES_DIR}/debug/lib")
-                endif()
-            endforeach()
-        endif()
+        endforeach()
 
         foreach(tool ncursesw6-config ncurses6-config)
             if(EXISTS "${ncurses_system_prefix}/bin/${tool}")
@@ -61,6 +54,7 @@ if(VCPKG_TARGET_IS_OSX)
             file(GLOB pcs "${ncurses_system_prefix}/lib/pkgconfig/*ncurses*.pc" "${ncurses_system_prefix}/lib/pkgconfig/*form*.pc" "${ncurses_system_prefix}/lib/pkgconfig/*menu*.pc" "${ncurses_system_prefix}/lib/pkgconfig/*panel*.pc")
             if(pcs)
                 file(COPY ${pcs} DESTINATION "${CURRENT_PACKAGES_DIR}/lib/pkgconfig")
+                vcpkg_fixup_pkgconfig()
             endif()
         endif()
 
@@ -71,6 +65,8 @@ if(VCPKG_TARGET_IS_OSX)
             file(WRITE "${CURRENT_PACKAGES_DIR}/share/${PORT}/copyright" "ncurses is provided by system package manager.\n")
         endif()
         return()
+    elseif(ncurses_system_prefix AND VCPKG_LIBRARY_LINKAGE STREQUAL "dynamic")
+        message(STATUS "Skipping system ncurses staging for dynamic macOS build; using source build path")
     endif()
 endif()
 
