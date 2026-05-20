@@ -50,9 +50,9 @@ features:
   - title: Issues
     details: Report and track issues relating to the HPCC Platform.
     icon:
-      dark:  /devdoc/jira.png
-      light: /devdoc/jira.png
-    link: https://hpccsystems.atlassian.net
+      dark:  /devdoc/GHIssues.png
+      light: /devdoc/GHIssues.png
+    link: https://github.com/hpcc-systems/HPCC-Platform/issues
   - title: Contribute to Documentation
     icon:
       dark:  /devdoc/quill.png
