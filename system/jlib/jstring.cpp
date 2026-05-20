@@ -35,6 +35,7 @@
 #include "jdebug.hpp"
 #include "jutil.hpp"
 #include "junicode.hpp"
+#include "jerror.hpp"
 
 #define DOUBLE_FORMAT   "%.16g"
 #define FLOAT_FORMAT    "%.7g"
@@ -431,7 +432,7 @@ StringBuffer & StringBuffer::limited_valist_appendf(size_t szLimit, const char *
     catch (IException *e)
     {
         StringBuffer eMsg;
-        IException *e2 = MakeStringException(-1, "StringBuffer::valist_appendf(\"%s\"): vsnprintf failed or result exceeds limit (%zu): %s", format, size, e->errorMessage(eMsg).str());
+        IException *e2 = MakeStringException(JLIBERR_UtilStringbufferValistAppendf, "StringBuffer::valist_appendf(\"%s\"): vsnprintf failed or result exceeds limit (%zu): %s", format, size, e->errorMessage(eMsg).str());
         e->Release();
         throw e2;
     }
@@ -476,7 +477,7 @@ StringBuffer & StringBuffer::limited_valist_appendf(size_t szLimit, const char *
             catch (IException *e)
             {
                 StringBuffer eMsg;
-                IException *e2 = MakeStringException(-1, "StringBuffer::valist_appendf(\"%s\"): vsnprintf failed (%zu): %s", format, size, e->errorMessage(eMsg).str());
+                IException *e2 = MakeStringException(JLIBERR_UtilStringbufferValistAppendf_1, "StringBuffer::valist_appendf(\"%s\"): vsnprintf failed (%zu): %s", format, size, e->errorMessage(eMsg).str());
                 e->Release();
                 throw e2;
             }
@@ -550,7 +551,7 @@ char * StringBuffer::reserveTruncate(size_t size)
         {
             char * newStr = (char *)malloc(newMax);
             if (!newStr)
-                throw MakeStringException(-1, "StringBuffer::_realloc: Failed to realloc newMax = %zu, oldMax = %zu", newMax, maxLen);
+                throw MakeStringException(JLIBERR_UtilStringbufferReallocFailedToReallocNewmaxZu, "StringBuffer::_realloc: Failed to realloc newMax = %zu, oldMax = %zu", newMax, maxLen);
             memcpy_iflen(newStr, buffer, curLen);
             buffer = newStr;
             maxLen = newMax;
@@ -560,7 +561,7 @@ char * StringBuffer::reserveTruncate(size_t size)
     {
         char * newStr = (char *) realloc(buffer, newMax);
         if (!newStr)
-            throw MakeStringException(-1, "StringBuffer::_realloc: Failed to realloc newMax = %zu, oldMax = %zu", newMax, maxLen);
+            throw MakeStringException(JLIBERR_UtilStringbufferReallocFailedToReallocNewmaxZu_1, "StringBuffer::_realloc: Failed to realloc newMax = %zu, oldMax = %zu", newMax, maxLen);
         buffer = newStr;
         maxLen = newMax;
     }
@@ -1015,7 +1016,7 @@ StringBuffer &replaceVariables(StringBuffer & result, const char *source, bool e
                     continue;
                 }
                 if (exceptions)
-                    throw MakeStringException(-1, "string substitution variable %s not set", name.str());
+                    throw MakeStringException(JLIBERR_UtilStringSubstitutionVariableSNotSet, "string substitution variable %s not set", name.str());
             }
         }
         result.append(*source);
@@ -2111,7 +2112,7 @@ const char *decodeJSON(const char *j, StringBuffer &ret, unsigned len, const cha
                         }
                     }
 #ifdef JSONSTRICT
-                    throw MakeStringException(-1, "invalid json \\u escaped sequence");
+                    throw MakeStringException(JLIBERR_UtilInvalidJsonUEscapedSequence, "invalid json \\u escaped sequence");
 #endif
                     ret.append(*j);
                     break;
@@ -2139,7 +2140,7 @@ const char *decodeJSON(const char *j, StringBuffer &ret, unsigned len, const cha
                 default:
                 {
 #ifdef JSONSTRICT
-                    throw MakeStringException(-1, "invalid json escaped sequence");
+                    throw MakeStringException(JLIBERR_UtilInvalidJsonEscapedSequence, "invalid json escaped sequence");
 #endif
                     ret.append('\\');
                     ret.append(*j);
@@ -2246,7 +2247,7 @@ const char *decodeXML(const char *x, StringBuffer &ret, const char **errMark, IE
                     if (numstart==numend || *numend != ';')
                     {
                         if (strict)
-                            throw MakeStringException(-1, "invalid escaped sequence");
+                            throw MakeStringException(JLIBERR_UtilInvalidEscapedSequence, "invalid escaped sequence");
                     }
                     else // always convert to utf-8. Should potentially throw error if not marked as utf-8 encoded doc and out of ascii range.
                     {
@@ -2259,7 +2260,7 @@ const char *decodeXML(const char *x, StringBuffer &ret, const char **errMark, IE
                 case ';':
                 case '\0':
                     if (strict)
-                        throw MakeStringException(-1, "invalid escaped sequence");
+                        throw MakeStringException(JLIBERR_UtilInvalidEscapedSequence_1, "invalid escaped sequence");
                     break;
                 default:
                     if (entityHelper)
@@ -2279,7 +2280,7 @@ const char *decodeXML(const char *x, StringBuffer &ret, const char **errMark, IE
                         }
                     }
                     if (strict)
-                        throw MakeStringException(-1, "invalid escaped sequence");
+                        throw MakeStringException(JLIBERR_UtilInvalidEscapedSequence_1, "invalid escaped sequence");
                     break;
                 }
             }
@@ -2571,7 +2572,7 @@ void decodeCppEscapeSequence(StringBuffer & out, const char * in, bool errorIfIn
                     break;
                 default:
                     if (errorIfInvalid)
-                        throw MakeStringException(1, "unrecognised character escape sequence '\\%c'", next);
+                        throw MakeStringException(JLIBERR_UtilUnrecognisedCharacterEscapeSequenceC, "unrecognised character escape sequence '\\%c'", next);
                     in--;   // keep it as is.
                     break;
                 }

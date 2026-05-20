@@ -1783,7 +1783,8 @@ int EspHttpBinding::onGetVersion(IEspContext &context, CHttpRequest* request, CH
 {
     StringBuffer verxml;
     StringBuffer srvQName;
-    qualifyServiceName(context, service, NULL, srvQName, NULL);
+    if (!qualifyServiceName(context, service, NULL, srvQName, NULL))
+        return onGetNotFound(context, request, response, service);
     verxml.appendf("<VersionInfo><Service>%s</Service><Version>%.3f</Version></VersionInfo>", srvQName.str(), m_wsdlVer);
 
     response->setContent(verxml.str());
@@ -2575,7 +2576,8 @@ int EspHttpBinding::formatResultsPage(IEspContext &context, const char *serv, co
     StringBuffer serviceQName;
     StringBuffer methodQName;
 
-    qualifyServiceName(context, serv, method, serviceQName, &methodQName);
+    if (!qualifyServiceName(context, serv, method, serviceQName, &methodQName))
+        return -1;
 
     page.append(
         "<html>"

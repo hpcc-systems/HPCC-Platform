@@ -27,6 +27,7 @@
 #include "jhash.hpp"
 #include "jmutex.hpp"
 #include "jexcept.hpp"
+#include "jerror.hpp"
 #include "jlzw.hpp"
 #include "jregexp.hpp"
 #include "jstring.hpp"
@@ -6213,7 +6214,7 @@ IPropertyTree *createPTree(IFile &ifile, byte flags, PTreeReaderOptions readFlag
 {
     OwnedIFileIO ifileio = ifile.open(IFOread);
     if (!ifileio)
-        throw MakeStringException(0, "Could not locate filename: %s", ifile.queryFilename());
+        throw MakeStringException(JLIBERR_ParseCouldNotLocateFilenameS, "Could not locate filename: %s", ifile.queryFilename());
     return createPTree(*ifileio, flags, readFlags, iMaker);
 }
 
@@ -6497,7 +6498,7 @@ void saveXML(IFile &ifile, const IPropertyTree *tree, unsigned indent, unsigned 
 {
     OwnedIFileIO ifileio = ifile.open(IFOcreate);
     if (!ifileio)
-        throw MakeStringException(0, "saveXML: could not find %s to open", ifile.queryFilename());
+        throw MakeStringException(JLIBERR_ParseSavexmlCouldNotFindSToOpen, "saveXML: could not find %s to open", ifile.queryFilename());
     saveXML(*ifileio, tree, indent, flags);
     ifileio->close(); // Ensure errors are reported
 }
@@ -7005,7 +7006,7 @@ bool validateXMLParseXPath(const char *xpath, StringBuffer *error)
             {
                 if (error)
                 {
-                    Owned<IException> e = MakeStringException(0, "Invalid extract xml text '<>' usage, xpath cannot from be absolute: %s", xpath);
+                    Owned<IException> e = MakeStringException(JLIBERR_ParseInvalidExtractXmlTextUsageXpath, "Invalid extract xml text '<>' usage, xpath cannot from be absolute: %s", xpath);
                     e->errorMessage(*error);
                 }
                 return false;
@@ -8293,14 +8294,14 @@ static void ensureHttpParameter(IPropertyTree *pt, StringBuffer &tag, const char
     if ('@'==*tag)
     {
         if (path && *path)
-            throw MakeStringException(-1, "'@' not allowed in parent node of parameter path: %s", fullpath);
+            throw MakeStringException(JLIBERR_ParseNotAllowedInParentNodeOf, "'@' not allowed in parent node of parameter path: %s", fullpath);
         pt->setProp(tag, value);
         return;
     }
     if (tag.charAt(tag.length()-1)=='$')
     {
         if (path && *path)
-            throw MakeStringException(-1, "'$' not allowed in parent node of parameter path: %s", fullpath);
+            throw MakeStringException(JLIBERR_ParseNotAllowedInParentNodeOf_1, "'$' not allowed in parent node of parameter path: %s", fullpath);
         tag.setLength(tag.length()-1);
         StringArray values;
         values.appendList(value, "\r");
@@ -8374,7 +8375,7 @@ IPropertyTree *createPTreeFromHttpPath(const char *nameWithAttrs, IPropertyTree 
         StringBuffer name;
         StringAttr value;
         if (!checkParseUrlPathNodeValue(nameAttrList.item(pos), name, value))
-            throw MakeStringException(-1, "Invalid URL parameter format %s", nameAttrList.item(pos));
+            throw MakeStringException(JLIBERR_ParseInvalidUrlParameterFormatS, "Invalid URL parameter format %s", nameAttrList.item(pos));
         StringBuffer xpath("@");
         xpath.append(name.str());
         if (!value.get())
@@ -8392,7 +8393,7 @@ IPropertyTree *createPTreeFromHttpPath(const char *nameWithAttrs, IPropertyTree 
         {
             const char *tag = inputNodes.item(in);
             if (!validateXMLTag(tag))
-                throw MakeStringException(-1, "Invalid REST query input specifier %s", input);
+                throw MakeStringException(JLIBERR_ParseInvalidRestQueryInputSpecifierS, "Invalid REST query input specifier %s", input);
             parent = parent->addPropTree(tag, createPTree(tag, flags));
         }
     }
@@ -8617,7 +8618,7 @@ void mergeConfiguration(IPropertyTree & target, const IPropertyTree & source, co
 static IPropertyTree * loadConfiguration(const char * filename, const char * componentTag, bool required, const char *altNameAttribute)
 {
     if (!checkFileExists(filename))
-        throw makeStringExceptionV(99, "Configuration file %s not found", filename);
+        throw makeStringExceptionV(JLIBERR_ParseConfigurationFileSNotFound, "Configuration file %s not found", filename);
 
     const char * ext = pathExtension(filename);
     Owned<IPropertyTree> configTree;
@@ -8632,20 +8633,20 @@ static IPropertyTree * loadConfiguration(const char * filename, const char * com
             StringBuffer msg;
             E->errorMessage(msg);
             ::Release(E);
-            throw makeStringExceptionV(99, "Error loading configuration file %s (invalid yaml): %s", filename, msg.str());
+            throw makeStringExceptionV(JLIBERR_ParseErrorLoadingConfigurationFileSInvalidYaml, "Error loading configuration file %s (invalid yaml): %s", filename, msg.str());
         }
     }
     else
-        throw makeStringExceptionV(99, "Unrecognised file extension %s", ext);
+        throw makeStringExceptionV(JLIBERR_ParseUnrecognisedFileExtensionS, "Unrecognised file extension %s", ext);
 
     if (!configTree)
-        throw makeStringExceptionV(99, "Error loading configuration file %s", filename);
+        throw makeStringExceptionV(JLIBERR_ParseErrorLoadingConfigurationFileS, "Error loading configuration file %s", filename);
 
     IPropertyTree * config = configTree->queryPropTree(componentTag);
     if (!config)
     {
         if (required)
-            throw makeStringExceptionV(99, "Section %s is missing from file %s", componentTag, filename);
+            throw makeStringExceptionV(JLIBERR_ParseSectionSIsMissingFromFileS, "Section %s is missing from file %s", componentTag, filename);
         return nullptr;
     }
     const char * base = configTree->queryProp("@extends");
@@ -8759,13 +8760,13 @@ static void applyCommandLineOption(IPropertyTree * config, const char * option, 
         {
             config = config->queryPropTree(elemName);
             if (!config)
-                throw makeStringExceptionV(99, "Cannot override scalar configuration element %s with structure", elemName.get());
+                throw makeStringExceptionV(JLIBERR_ParseCannotOverrideScalarConfigurationElementSWith, "Cannot override scalar configuration element %s with structure", elemName.get());
         }
         option = tail+1;
     }
 
     if (!validateXMLTag(option))
-        throw makeStringExceptionV(99, "Invalid option name '%s'", option);
+        throw makeStringExceptionV(JLIBERR_ParseInvalidOptionNameS, "Invalid option name '%s'", option);
 
     StringBuffer path;
     path.append('@').append(option);
@@ -8857,7 +8858,7 @@ void initNullConfiguration()
 {
     CriticalBlock b(configCS);
     if (componentConfiguration || globalConfiguration)
-        throw makeStringException(99, "Configuration has already been initialised");
+        throw makeStringException(JLIBERR_ParseConfigurationHasAlreadyBeenInitialised, "Configuration has already been initialised");
     if (!nullConfiguration)
         nullConfiguration.setown(createPTree());
     componentConfiguration.set(nullConfiguration);
@@ -9318,7 +9319,7 @@ static std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfigura
     if (optConfig)
     {
         if (streq(optConfig, "1"))
-            throw makeStringExceptionV(99, "Name of configuration file omitted (use --config=<filename>)");
+            throw makeStringExceptionV(JLIBERR_ParseNameOfConfigurationFileOmittedUseConfigFilename, "Name of configuration file omitted (use --config=<filename>)");
 
         //--config= with no filename can be used to ignore the legacy configuration file
         if (!isEmptyString(optConfig))
@@ -9396,7 +9397,7 @@ IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, IPropertyTree
 {
     assertex(configFileUpdater); // NB: loadConfiguration should always be called after configFileUpdater is initialized
     if (configFileUpdater->isInitialized())
-        throw makeStringExceptionV(99, "Configuration for component %s has already been initialised", componentTag);
+        throw makeStringExceptionV(JLIBERR_ParseConfigurationForComponentSHasAlreadyBeen, "Configuration for component %s has already been initialised", componentTag);
 
     /* In k8s, pods auto-restart by default on monitored ConfigMap settings/areas
      * ConfigMap settings/areas deliberately not monitored will rely on this config updater mechanism,
@@ -9424,7 +9425,7 @@ IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, IPropertyTree
 IPropertyTree * loadConfiguration(const char * defaultYaml, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute, bool monitor)
 {
     if (componentConfiguration)
-        throw makeStringExceptionV(99, "Configuration for component %s has already been initialised", componentTag);
+        throw makeStringExceptionV(JLIBERR_ParseConfigurationForComponentSHasAlreadyBeen_1, "Configuration for component %s has already been initialised", componentTag);
 
     Owned<IPropertyTree> componentDefault;
     Owned<IPropertyTree> defaultGlobalConfig;
@@ -9433,7 +9434,7 @@ IPropertyTree * loadConfiguration(const char * defaultYaml, const char * * argv,
         Owned<IPropertyTree> defaultConfig = createPTreeFromYAML(defaultYaml);
         componentDefault.set(defaultConfig->queryPropTree(componentTag));
         if (!componentDefault)
-            throw makeStringExceptionV(99, "Default configuration does not contain the tag %s", componentTag);
+            throw makeStringExceptionV(JLIBERR_ParseDefaultConfigurationDoesNotContainTheTag, "Default configuration does not contain the tag %s", componentTag);
         defaultGlobalConfig.set(defaultConfig->queryPropTree("global"));
     }
     else
@@ -9462,7 +9463,7 @@ public:
         iEvent(&_iEvent), readerOptions(_readerOptions)
     {
         if (!yaml_parser_initialize(&parser))
-            throw makeStringException(99, "Filed to initialize libyaml parser");
+            throw makeStringException(JLIBERR_ParseFailedToInitializeLibyamlParser, "Failed to initialize libyaml parser");
         yaml_parser_set_input_string(&parser, (const unsigned char *)buf, bufLength);
         noRoot = 0 != ((unsigned)readerOptions & (unsigned)ptr_noRoot);
     }
@@ -9474,16 +9475,16 @@ public:
     yaml_event_type_t nextEvent(yaml_event_t &event, yaml_event_type_t final=YAML_NO_EVENT, yaml_event_type_t expected=YAML_NO_EVENT, const char *error="")
     {
         if (!yaml_parser_parse(&parser, &event))
-            throw makeStringExceptionV(99, "libyaml parser error %s", parser.problem);
+            throw makeStringExceptionV(JLIBERR_ParseLibyamlParserErrorS, "libyaml parser error %s", parser.problem);
         if (event.type!=final && expected!=YAML_NO_EVENT && event.type!=expected)
-            throw makeStringExceptionV(99, "libyaml parser %s", error);
+            throw makeStringExceptionV(JLIBERR_ParseLibyamlParserS, "libyaml parser %s", error);
         return event.type;
     }
 
     virtual void loadSequence(const char *tagname)
     {
         if (!tagname)
-            throw makeStringException(99, "libyaml parser expected sequence name");
+            throw makeStringException(JLIBERR_ParseLibyamlParserExpectedSequenceName, "libyaml parser expected sequence name");
 
         yaml_event_t event;
         yaml_event_type_t eventType = YAML_NO_EVENT;
@@ -9630,14 +9631,14 @@ public:
             case YAML_MAPPING_START_EVENT:
                 //root content, the start of all mappings, should be only one at the root
                 if (content)
-                    throw makeStringException(99, "YAML: Currently only support one content section (map) per stream");
+                    throw makeStringException(JLIBERR_ParseYamlCurrentlyOnlySupportOneContentSection, "YAML: Currently only support one content section (map) per stream");
                 loadMap(noRoot ? nullptr : "__object__", false); //root map
                 content=true;
                 break;
             case YAML_SEQUENCE_START_EVENT:
                 //root content, sequence (array), should be only one at the root and can't mix with mappings
                 if (content)
-                    throw makeStringException(99, "YAML: Currently only support one content section (sequence) per stream");
+                    throw makeStringException(JLIBERR_ParseYamlCurrentlyOnlySupportOneContentSection_1, "YAML: Currently only support one content section (sequence) per stream");
                 if (!noRoot)
                     iEvent->beginNode("__array__", false, 0);
                 loadSequence("__item__");
@@ -9652,7 +9653,7 @@ public:
             case YAML_DOCUMENT_START_EVENT:
                 //should only support one?  multiple documents would imply an extra level of nesting (future flag?)
                 if (doc)
-                    throw makeStringException(99, "YAML: Currently only support one document per stream");
+                    throw makeStringException(JLIBERR_ParseYamlCurrentlyOnlySupportOneDocumentPer, "YAML: Currently only support one document per stream");
                 doc=true;
                 break;
             case YAML_DOCUMENT_END_EVENT:
@@ -9741,7 +9742,7 @@ public:
     YAMLEmitter(IIOStream &ios, int indent) : out(ios)
     {
         if (!yaml_emitter_initialize(&emitter))
-            throw MakeStringException(0, "YAMLEmitter: failed to initialize");
+            throw MakeStringException(JLIBERR_ParseYamlemitterFailedToInitialize, "YAMLEmitter: failed to initialize");
         yaml_emitter_set_output(&emitter, yaml_write_iiostream, &out);
         yaml_emitter_set_canonical(&emitter, false);
         yaml_emitter_set_unicode(&emitter, true);
@@ -9771,7 +9772,7 @@ public:
     void checkInit(int success, const char *descr)
     {
         if (success==0)
-            throw MakeStringException(0, "YAMLEmitter: %s failed", descr);
+            throw MakeStringException(JLIBERR_ParseYamlemitterSFailed, "YAMLEmitter: %s failed", descr);
     }
     void writeValue(const char *value, bool element, bool hidden, bool binary)
     {
@@ -10023,7 +10024,7 @@ void saveYAML(IFile &ifile, const IPropertyTree *tree, unsigned indent, unsigned
 {
     OwnedIFileIO ifileio = ifile.open(IFOcreate);
     if (!ifileio)
-        throw MakeStringException(0, "saveXML: could not find %s to open", ifile.queryFilename());
+        throw MakeStringException(JLIBERR_ParseSavexmlCouldNotFindSToOpen_1, "saveXML: could not find %s to open", ifile.queryFilename());
     saveYAML(*ifileio, tree, indent, flags);
     ifileio->close();
 }

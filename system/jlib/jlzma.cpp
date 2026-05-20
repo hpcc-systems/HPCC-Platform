@@ -20,6 +20,7 @@
 #include "platform.h"
 
 #include "jlzma.hpp"
+#include "jerror.hpp"
 
 #include "Types.h"
 #include "LzFind.h"
@@ -57,10 +58,10 @@ public:
         if (!enc) {
             enc = LzmaEnc_Create(&g_Alloc);
             if (enc == 0)
-                throw MakeStringException(-1,"LzmaEnc_Create failed");
+                throw MakeStringException(JLIBERR_CompressLzmaencCreateFailed,"LzmaEnc_Create failed");
             LzmaEncProps_Init(&props);
             if (LzmaEnc_SetProps(enc, &props)!=SZ_OK) 
-                throw MakeStringException(-1,"LzmaEnc_SetProps failed");
+                throw MakeStringException(JLIBERR_CompressLzmaencSetpropsFailed,"LzmaEnc_SetProps failed");
         }
         if (inlength+LZMA_PROPS_SIZE+sizeof(size32_t)<1024)
             return (size32_t)-1; // don't compress less than 1K
@@ -72,7 +73,7 @@ public:
         if (res==SZ_ERROR_OUTPUT_EOF) 
             return (size32_t)-1;
         if (res!=SZ_OK)
-            throw MakeStringException(-1,"LzmaEnc_MemEncode failed(%d)",(int)res);
+            throw MakeStringException(JLIBERR_CompressLzmaencMemencodeFailedD,"LzmaEnc_MemEncode failed(%d)",(int)res);
         return reslen+propsize+sizeof(size32_t);
     }
 
@@ -85,7 +86,7 @@ public:
         SRes res = LzmaDecode((byte *)output, &reslen, (const byte *)input+sizeof(size32_t)+propsize, &inlen, 
             (byte *)input+sizeof(size32_t), propsize, LZMA_FINISH_END, &status, &g_Alloc);
         if (res!=SZ_OK)
-            throw MakeStringException(-1,"LzmaDecode failed(%d)",(int)res);
+            throw MakeStringException(JLIBERR_CompressLzmadecodeFailedD,"LzmaDecode failed(%d)",(int)res);
         return reslen;
     }
 
@@ -119,7 +120,7 @@ void LZMADecompressToBuffer(MemoryBuffer & out, const void * src)
         CLZMA lzma;
         size32_t written = lzma.expand(sz,cmpsz,o,expsz);
         if (written!=expsz)
-            throw MakeStringException(0, "fastLZDecompressToBuffer - corrupt data(1) %d %d",written,expsz);
+            throw MakeStringException(JLIBERR_CompressFastlzdecompresstobufferCorruptData1DD, "fastLZDecompressToBuffer - corrupt data(1) %d %d",written,expsz);
     }
     else
         memcpy(o,sz,expsz);
@@ -135,7 +136,7 @@ void LZMADecompressToBuffer(MemoryBuffer & out, MemoryBuffer & in)
         CLZMA lzma;
         size32_t written = lzma.expand(in.readDirect(cmpsz),cmpsz,o,expsz);
         if (written!=expsz)
-            throw MakeStringException(0, "fastLZDecompressToBuffer - corrupt data(3) %d %d",written,expsz);
+            throw MakeStringException(JLIBERR_CompressFastlzdecompresstobufferCorruptData3DD, "fastLZDecompressToBuffer - corrupt data(3) %d %d",written,expsz);
     }
     else
         memcpy(o,in.readDirect(cmpsz),expsz);
@@ -151,7 +152,7 @@ void LZMADecompressToAttr(MemoryAttr & out, const void * src)
         CLZMA lzma;
         size32_t written = lzma.expand(sz,cmpsz,o,expsz);
         if (written!=expsz)
-            throw MakeStringException(0, "fastLZDecompressToBuffer - corrupt data(2) %d %d",written,expsz);
+            throw MakeStringException(JLIBERR_CompressFastlzdecompresstobufferCorruptData2DD, "fastLZDecompressToBuffer - corrupt data(2) %d %d",written,expsz);
     }
     else
         memcpy(o,sz,expsz);
@@ -167,7 +168,7 @@ void LZMALZDecompressToBuffer(MemoryAttr & out, MemoryBuffer & in)
         CLZMA lzma;
         size32_t written = lzma.expand(in.readDirect(cmpsz),cmpsz,o,expsz);
         if (written!=expsz)
-            throw MakeStringException(0, "fastLZDecompressToBuffer - corrupt data(4) %d %d",written,expsz);
+            throw MakeStringException(JLIBERR_CompressFastlzdecompresstobufferCorruptData4DD, "fastLZDecompressToBuffer - corrupt data(4) %d %d",written,expsz);
     }
     else
         memcpy(o,in.readDirect(cmpsz),expsz);

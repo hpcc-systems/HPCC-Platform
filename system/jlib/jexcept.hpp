@@ -25,6 +25,7 @@
 #include "jiface.hpp"
 #include "jlib.hpp"
 #include "errno.h"
+#include "errorlist.h"
 
 jlib_decl const char* serializeMessageAudience(MessageAudience ma);
 jlib_decl MessageAudience deserializeMessageAudience(const char* text);
@@ -142,7 +143,7 @@ __declspec(noreturn) void jlib_decl throwUnexpectedException(const char * what, 
 
 const char jlib_decl *sanitizeSourceFile(const char *file);
 
-#define makeUnexpectedException()  makeStringExceptionV(9999, "Internal Error in %s() at %s(%d)", __func__, sanitizeSourceFile(__FILE__), __LINE__)
+#define makeUnexpectedException()  makeStringExceptionV(UNEXPECTED_ERROR_CODE, "Internal Error in %s() at %s(%d)", __func__, sanitizeSourceFile(__FILE__), __LINE__)
 #define throwUnexpected()          throwUnexpectedException(__func__, sanitizeSourceFile(__FILE__), __LINE__)
 #define throwUnexpectedX(x)        throwUnexpectedException(x, __func__, sanitizeSourceFile(__FILE__), __LINE__)
 #define assertThrow(x)             assertex(x)

@@ -20,6 +20,7 @@
 #include "jsuperhash.hpp"
 #include "jmisc.hpp"
 #include "jfile.hpp"
+#include "jerror.hpp"
 
 #include <stdio.h>
 #include <assert.h>
@@ -278,7 +279,7 @@ bool TimedMutex::lockWait(unsigned timeout)
 
 void TimedMutexBlock::throwLockException(unsigned timeout)
 {
-    throw MakeStringException(0,"Can not lock - %d",timeout);
+    throw MakeStringException(JLIBERR_SystemCanNotLockD,"Can not lock - %d",timeout);
 }
 
 

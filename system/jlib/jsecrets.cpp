@@ -140,19 +140,19 @@ static bool isValidSecretOrKeyName(const char *name, bool isKeyName)
 static void validateCategoryName(const char *category)
 {
     if (!isValidSecretOrKeyName(category, true))
-      throw makeStringExceptionV(-1, "Invalid secret category %s", category);
+      throw makeStringExceptionV(JLIBERR_SystemInvalidSecretCategoryS, "Invalid secret category %s", category);
 }
 
 static void validateSecretNameNotEmpty(const char *name)
 {
     if (isEmptyString(name))
-        throw makeStringExceptionV(-1, "Invalid secret name %s", name);
+        throw makeStringExceptionV(JLIBERR_SystemInvalidSecretNameS, "Invalid secret name %s", name);
 }
 
 static void validateKeyName(const char *key)
 {
     if (!isValidSecretOrKeyName(key, true))
-      throw makeStringExceptionV(-1, "Invalid secret key name %s", key);
+      throw makeStringExceptionV(JLIBERR_SystemInvalidSecretKeyNameS, "Invalid secret key name %s", key);
 }
 
 static bool isUnsignedInteger(const char *value)
@@ -216,7 +216,7 @@ static void splitUrlAuthorityHostPort(const char *authority, size_t authorityLen
 static inline void extractUrlProtocol(const char *&url, StringBuffer *scheme)
 {
     if (!url)
-        throw makeStringException(-1, "Invalid empty URL");
+        throw makeStringException(JLIBERR_SystemInvalidEmptyUrl, "Invalid empty URL");
     if (0 == strnicmp(url, "HTTPS://", 8))
     {
         url+=8;
@@ -230,7 +230,7 @@ static inline void extractUrlProtocol(const char *&url, StringBuffer *scheme)
             scheme->append("http://");
     }
     else
-        throw MakeStringException(-1, "Invalid URL, protocol not recognized %s", url);
+        throw MakeStringException(JLIBERR_SystemInvalidUrlProtocolNotRecognizedS, "Invalid URL, protocol not recognized %s", url);
 }
 
 static void splitUrlSections(const char *url, const char * &authority, size_t &authorityLen, StringBuffer &fullpath, StringBuffer *scheme)
@@ -705,7 +705,7 @@ protected:
 
     void throwAuthError(const char *authType, const char *msg)
     {
-        Owned<IException> e = makeStringExceptionV(0, "Vault [%s] %s auth error %s", name.str(), authType, msg);
+        Owned<IException> e = makeStringExceptionV(JLIBERR_SystemVaultSSAuthErrorS, "Vault [%s] %s auth error %s", name.str(), authType, msg);
         OERRLOG(e);
         throw e.getClear();
     }
@@ -1693,7 +1693,7 @@ MODULE_EXIT()
 static IPropertyTree * resolveLocalSecret(const char *category, const char * name)
 {
     if (!isValidSecretOrKeyName(name, false))
-        throw makeStringExceptionV(-1, "Invalid secret name %s", name);
+        throw makeStringExceptionV(JLIBERR_SystemInvalidSecretNameS_1, "Invalid secret name %s", name);
 
     StringBuffer path;
     buildSecretPath(path, category, name);
@@ -1848,10 +1848,10 @@ extern jlib_decl bool getSecretValue(StringBuffer & result, const char *category
 {
     Owned<const IPropertyTree> secret = getSecret(category, name);
     if (required && !secret)
-        throw MakeStringException(-1, "secret %s.%s not found", category, name);
+        throw MakeStringException(JLIBERR_SystemSecretSSNotFound, "secret %s.%s not found", category, name);
     bool found = getSecretKeyValue(result, secret, key);
     if (required && !found)
-        throw MakeStringException(-1, "secret %s.%s missing key %s", category, name, key);
+        throw MakeStringException(JLIBERR_SystemSecretSSMissingKeyS, "secret %s.%s missing key %s", category, name, key);
     return true;
 }
 
@@ -2073,9 +2073,9 @@ void setTestUdpKey()
 const MemoryAttr &getSecretUdpKey(bool required)
 {
     if (!udpKeyInitialized)
-        throw makeStringException(-1, "UDP Key not initialized.");
+        throw makeStringException(JLIBERR_SystemUdpKeyNotInitialized, "UDP Key not initialized.");
     if (required && !udpKey.length())
-        throw makeStringException(-1, "UDP Key not found, cert-manager integration/configuration required.");
+        throw makeStringException(JLIBERR_SystemUdpKeyNotFoundCertManagerIntegrationConfigurationRequired, "UDP Key not found, cert-manager integration/configuration required.");
     return udpKey;
 }
 
@@ -2278,7 +2278,7 @@ public:
     {
         secret.setown(getSyncedSecret(_category, _secretName, nullptr, nullptr));
         if (!secret->isValid())
-            throw makeStringExceptionV(-1, "secret %s.%s not found", _category, _secretName);
+            throw makeStringExceptionV(JLIBERR_SystemSecretSSNotFound_1, "secret %s.%s not found", _category, _secretName);
         createConfig();
     }
 

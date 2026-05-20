@@ -21,6 +21,7 @@
 #include "jsort.hpp"
 #include "jmisc.hpp"
 #include "jlib.hpp"
+#include "jerror.hpp"
 
 #include <assert.h>
 
@@ -62,7 +63,7 @@ void Allocator::_reallocate(aindex_t newLen, size32_t itemSize)
         if (newLen >= newMax) // wraparound
         {
             IERRLOG("Out of memory (overflow) in Array allocator: itemSize = %u, trying to allocate %u items", itemSize, newLen);
-            throw MakeStringException(0, "Out of memory (overflow) in Array allocator: itemSize = %u, trying to allocate %u items",itemSize, newLen);
+            throw MakeStringException(JLIBERR_ArrayOverflow, "Out of memory (overflow) in Array allocator: itemSize = %u, trying to allocate %u items",itemSize, newLen);
         }
     }
     else
@@ -74,13 +75,13 @@ void Allocator::_reallocate(aindex_t newLen, size32_t itemSize)
     if (allocSize < newMax)
     {
         IERRLOG("Out of memory (overflow) in Array allocator: itemSize = %u, trying to allocate %u items", itemSize, newLen);
-        throw MakeStringException(0, "Out of memory (overflow) in Array allocator: itemSize = %u, trying to allocate %u items",itemSize, newLen);
+        throw MakeStringException(JLIBERR_ArrayOverflow, "Out of memory (overflow) in Array allocator: itemSize = %u, trying to allocate %u items",itemSize, newLen);
     }
     void *newhead = realloc(_head, allocSize);
     if (!newhead) 
     {
         IERRLOG("Out of memory in Array allocator: itemSize = %u, trying to allocate %u items", itemSize, max);
-        throw MakeStringException(0, "Out of memory in Array allocator: itemSize = %u, trying to allocate %u items",itemSize, max);
+        throw MakeStringException(JLIBERR_ArrayAllocationFailed, "Out of memory in Array allocator: itemSize = %u, trying to allocate %u items",itemSize, max);
     }
     max = newMax;
     _head = newhead;
@@ -93,14 +94,14 @@ void Allocator::_reallocateExact(aindex_t newLen, size32_t itemSize)
         return;
 
     if (used > newLen)
-        throw MakeStringException(0, "Reallocate an array would contain too few items: itemSize = %u, trying to allocate %u items contains %u",itemSize, newLen, used);
+        throw MakeStringException(JLIBERR_ArrayTooFewItems, "Reallocate an array would contain too few items: itemSize = %u, trying to allocate %u items contains %u",itemSize, newLen, used);
 
     size_t allocSize = (size_t)itemSize * newLen;
     void *newhead = realloc(_head, allocSize);
     if (!newhead)
     {
         IERRLOG("Out of memory in Array allocator: itemSize = %u, trying to allocate %u items", itemSize, max);
-        throw MakeStringException(0, "Out of memory in Array allocator: itemSize = %u, trying to allocate %u items",itemSize, max);
+        throw MakeStringException(JLIBERR_ArrayAllocationFailed, "Out of memory in Array allocator: itemSize = %u, trying to allocate %u items",itemSize, max);
     }
     max = newLen;
     _head = newhead;

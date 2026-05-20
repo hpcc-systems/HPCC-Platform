@@ -85,6 +85,7 @@
 #include "jprop.hpp"
 #include "jregexp.hpp"
 #include "jdebug.hpp"
+#include "jerror.hpp"
 
 // epoll only with linux
 
@@ -4006,7 +4007,7 @@ void IpAddress::ipserialize(MemoryBuffer & out) const
 {
     if (((netaddr[2]==0xffff0000)||(netaddr[2]==0))&&(netaddr[1]==0)&&(netaddr[0]==0)) {
         if (netaddr[3]==IPV6_SERIALIZE_PREFIX)
-            throw MakeStringException(-1,"Invalid network address"); // hack prevention
+            throw MakeStringException(JLIBERR_SocketInvalidNetworkAddress,"Invalid network address"); // hack prevention
         out.append(sizeof(netaddr[3]), &netaddr[3]); 
     }
     else {
@@ -5019,7 +5020,7 @@ public:
                 // bad socket not found
                 PROGLOG("CSocketSelectThread::updateSelectVars cannot find socket error");
                 if (validateerrcount>10)
-                    throw MakeStringException(-1,"CSocketSelectThread:Socket select error %d",validateselecterror);
+                    throw MakeStringException(JLIBERR_SocketSelectError,"CSocketSelectThread:Socket select error %d",validateselecterror);
             }
         }
         else
@@ -5754,7 +5755,7 @@ public:
                 // bad socket not found
                 IWARNLOG("CSocketEpollThread::updateEpollVars cannot find socket error");
                 if (validateerrcount>10)
-                    throw MakeStringException(-1,"CSocketEpollThread:Socket epoll error %d",validateselecterror);
+                    throw MakeStringException(JLIBERR_SocketEpollError,"CSocketEpollThread:Socket epoll error %d",validateselecterror);
             }
         }
         else
@@ -5992,7 +5993,7 @@ public:
     {
         if ( !sock || !nfy ||
              !(mode & (SELECTMODE_READ|SELECTMODE_WRITE|SELECTMODE_EXCEPT)) )
-            throw MakeStringException(-1,"CSocketEpollHandler::add() invalid sock or nfy or mode");
+            throw MakeStringException(JLIBERR_SocketEpollInvalidState,"CSocketEpollHandler::add() invalid sock or nfy or mode");
 
         CriticalBlock block(sect);
         if (stopped)
@@ -6990,7 +6991,7 @@ bool SocketEndpointArray::fromName(const char *name, unsigned defport)
     case 1:
         break;
     default:
-        throw MakeStringException(-1, "Invalid name %s SocketEndpointArray::fromName", name);
+        throw MakeStringException(JLIBERR_SocketInvalidEndpointName, "Invalid name %s SocketEndpointArray::fromName", name);
     }
 #if defined(__linux__) || defined (__APPLE__) || defined(getaddrinfo)
     if (IP4only)
@@ -7468,7 +7469,7 @@ int wait_multiple(bool isRead,               //IN   true if wait read, false it 
     catch (const std::bad_alloc &e)
     {
         int err = SOCKETERRNO();
-        throw MakeStringException(-1,"wait_multiple::fds malloc failure %d", err);
+        throw MakeStringException(JLIBERR_SocketWaitMultipleMalloc,"wait_multiple::fds malloc failure %d", err);
     }
     for (aindex_t idx = 0; idx < numSocks; idx++)
     {
@@ -7536,7 +7537,7 @@ int wait_multiple(bool isRead,               //IN   true if wait read, false it 
 #ifndef _USE_SELECT
             delete [] fds;
 #endif
-            throw MakeStringException(-1,"wait_multiple::select/poll error %d", err);
+            throw MakeStringException(JLIBERR_SocketWaitMultipleError,"wait_multiple::select/poll error %d", err);
         }
     }
 #ifndef _USE_SELECT

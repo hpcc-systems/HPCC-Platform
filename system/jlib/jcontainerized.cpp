@@ -145,7 +145,7 @@ void waitJob(const char *componentName, const char *resourceType, const char *jo
                         checkExitCodes(errMsg, output);
                     }
                     OERRLOG("%s", errMsg.str()); // report all k8s job failures to operator
-                    throw makeStringException(0, errMsg);
+                    throw makeStringException(JLIBERR_UtilKubernetesJobFailed, errMsg);
                 }
                 // Check for success: k8s <1.31 uses "Complete: True", k8s >=1.31 produces "SuccessCriteriaMet: True" 1st
                 // followed by "Complete: True"
@@ -160,7 +160,7 @@ void waitJob(const char *componentName, const char *resourceType, const char *jo
                     DBGLOG("UNKNOWN: kubectl output (from %s): %s", checkJobExitStatus.str(), output.str());
                     // Non-empty status but not a recognized success or failure condition
                     if (getExpertOptBool("k8sFailOnUnknownErr", true))
-                        throw makeStringExceptionV(0, "Job %s completed with unknown status condition [%s]", jobName.str(), output.str());
+                        throw makeStringExceptionV(JLIBERR_UtilJobSCompletedWithUnknownStatusCondition, "Job %s completed with unknown status condition [%s]", jobName.str(), output.str());
                     else
                     {
                         WARNLOG("Job %s completed with unknown status condition [%s] - assuming success based on expert/@k8sFailOnUnknownErr=false", jobName.str(), output.str());
@@ -185,7 +185,7 @@ void waitJob(const char *componentName, const char *resourceType, const char *jo
                     schedulingTimeout = true;
                     VStringBuffer getReason("kubectl get pods --selector=job-name=%s \"--output=jsonpath={range .items[*].status.conditions[?(@.type=='PodScheduled')]}{.reason}{': '}{.message}{end}\"", jobName.str());
                     runKubectlCommand(componentName, getReason, nullptr, &output.clear());
-                    throw makeStringExceptionV(0, "Failed to run %s - pod not scheduled after %u seconds: %s ", jobName.str(), pendingTimeoutSecs, output.str());
+                    throw makeStringExceptionV(JLIBERR_UtilFailedToRunSPodNot, "Failed to run %s - pod not scheduled after %u seconds: %s ", jobName.str(), pendingTimeoutSecs, output.str());
                 }
                 else if (streq(output, "True"))
                     wasScheduled = true;
@@ -193,7 +193,7 @@ void waitJob(const char *componentName, const char *resourceType, const char *jo
             if (0 == totalWaitTimeSecs)
                 break;
             if ((INFINITE != totalWaitTimeSecs) && msTick()-start > totalWaitTimeSecs*1000)
-                throw makeStringExceptionV(0, "Wait job timeout (%u secs) expired, whilst running: %s", totalWaitTimeSecs, jobName.str());
+                throw makeStringExceptionV(JLIBERR_UtilWaitJobTimeoutUSecsExpiredWhilst, "Wait job timeout (%u secs) expired, whilst running: %s", totalWaitTimeSecs, jobName.str());
 
             MilliSleep(delay);
             if (delay < 10000)
@@ -373,7 +373,7 @@ std::vector<std::vector<std::string>> getPodNodes(const char *selector)
     runKubectlCommand("get-worker-nodes", getWorkerNodes, nullptr, &result);
 
     if (result.isEmpty())
-        throw makeStringExceptionV(-1, "No worker nodes found for selector '%s'", selector);
+        throw makeStringExceptionV(JLIBERR_UtilNoWorkerNodesFoundForSelectorS, "No worker nodes found for selector '%s'", selector);
 
     const char *start = result.str();
     const char *finger = start;
@@ -387,7 +387,7 @@ std::vector<std::vector<std::string>> getPodNodes(const char *selector)
             case ',':
             {
                 if (start == finger)
-                    throw makeStringException(-1, "getPodNodes: Missing node name(s) in output");
+                    throw makeStringException(JLIBERR_UtilGetpodnodesMissingNodeNameSInOutput, "getPodNodes: Missing node name(s) in output");
                 fieldName.assign(start, finger-start);
                 current.emplace_back(std::move(fieldName));
                 finger++;
@@ -398,7 +398,7 @@ std::vector<std::vector<std::string>> getPodNodes(const char *selector)
             case '\0':
             {
                 if (start == finger)
-                    throw makeStringException(-1, "getPodNodes: Missing pod name(s) in output");
+                    throw makeStringException(JLIBERR_UtilGetpodnodesMissingPodNameSInOutput, "getPodNodes: Missing pod name(s) in output");
                 fieldName.assign(start, finger-start);
                 current.emplace_back(std::move(fieldName));
                 results.emplace_back(std::move(current));
@@ -443,7 +443,7 @@ void runKubectlCommand(const char *title, const char *cmd, const char *input, St
             {
                 if (input)
                     MLOG(MCdebugError, "Using input %s", input);
-                throw makeStringExceptionV(0, "Failed to run %s: error %u: %s", cmd, ret, error.str());
+                throw makeStringExceptionV(JLIBERR_UtilFailedToRunSErrorUS, "Failed to run %s: error %u: %s", cmd, ret, error.str());
             }
             return;
         }
@@ -491,7 +491,7 @@ std::pair<std::string, unsigned> getExternalService(const char *serviceName)
         VStringBuffer exceptionText("Failed to get external service for '%s'. Error: [%d, ", serviceName, e->errorCode());
         e->errorMessage(exceptionText).append("]");
         e->Release();
-        throw makeStringException(-1, exceptionText);
+        throw makeStringException(JLIBERR_UtilK8sServiceQueryFailed, exceptionText);
     }
     StringArray fields;
     fields.appendList(output, ",");

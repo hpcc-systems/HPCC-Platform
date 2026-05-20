@@ -8,8 +8,11 @@
 #include <iostream>
 #include <fstream>
 
+namespace
+{
 std::shared_ptr<IManifest> instance;
-std::once_flag initFlag;
+std::mutex instanceMutex;
+}
 
 class Manifest : public IManifest
 {
@@ -18,6 +21,47 @@ protected:
     Owned<ILoadedDllEntry> dll;
     Owned<IPropertyTree> manifest;
     StringBuffer manifestDir;
+
+    bool loadManifestFromDll(const char *dllname, bool resourcesOnly)
+    {
+        if (!dllname || !*dllname)
+            return false;
+
+        if (resourcesOnly)
+            dll.setown(queryDllServer().loadDllResources(dllname, DllLocationAnywhere));
+        else
+            dll.setown(queryDllServer().loadDll(dllname, DllLocationAnywhere));
+
+        if (!dll)
+            return false;
+
+        StringBuffer xml;
+        manifest.setown(getEmbeddedManifestXML(dll, xml) ? createPTreeFromXMLString(xml.str()) : createPTree());
+        manifestDir.set(manifest->queryProp("@manifestDir"));
+        return true;
+    }
+
+    bool tryFallbackLoad(const char *dllname)
+    {
+        try
+        {
+            // Fallback for platforms where resource-only loading is not implemented.
+            if (!loadManifestFromDll(dllname, false))
+                DBGLOG("Fallback load failed for %s", dllname);
+            return !!dll;
+        }
+        catch (IException *e)
+        {
+            VStringBuffer msg("Fallback load failed for %s", dllname);
+            EXCLOG(e, msg.str());
+            e->Release();
+        }
+        catch (...)
+        {
+            DBGLOG("Fallback load failed for %s", dllname);
+        }
+        return false;
+    }
 
     static IConstWorkUnit *getWorkunit(ICodeContext *ctx)
     {
@@ -36,12 +80,10 @@ protected:
             q->getQueryDllName(dllname);
             if (dllname.length())
             {
+                bool loaded = false;
                 try
                 {
-                    dll.setown(queryDllServer().loadDllResources(dllname.str(), DllLocationAnywhere));
-                    StringBuffer xml;
-                    manifest.setown(getEmbeddedManifestXML(dll, xml) ? createPTreeFromXMLString(xml.str()) : createPTree());
-                    manifestDir.set(manifest->queryProp("@manifestDir"));
+                    loaded = loadManifestFromDll(dllname.str(), true);
                 }
                 catch (IException *e)
                 {
@@ -53,6 +95,9 @@ protected:
                 {
                     DBGLOG("Failed to load %s", dllname.str());
                 }
+
+                if (!loaded)
+                    tryFallbackLoad(dllname.str());
             }
         }
 
@@ -72,8 +117,9 @@ public:
 
     static std::shared_ptr<IManifest> getInstance(ICodeContext *ctx)
     {
-        std::call_once(initFlag, [ctx]()
-                       { instance = std::shared_ptr<Manifest>(new Manifest(ctx)); });
+        std::lock_guard<std::mutex> lock(instanceMutex);
+        if (!instance)
+            instance = std::shared_ptr<Manifest>(new Manifest(ctx));
         return instance;
     }
 
@@ -144,6 +190,9 @@ public:
     //  --- IManifest ---
     virtual const char *extractResources(StringBuffer &sb) const
     {
+        if (!dll)
+            return sb.str();
+
         // dll->queryManifestFiles extracts the manifest files to a tmp folder the paths as a StringArray
         const StringArray &resFiles = dll->queryManifestFiles("UNKNOWN", "nlp");
         if (resFiles.length() > 0)
@@ -161,6 +210,9 @@ public:
 
     virtual bool getResourceData(const char *partialPath, MemoryBuffer &mb) const
     {
+        if (!dll)
+            return false;
+
         Linked<IPropertyTree> res = queryResourcePT(partialPath);
         if (!res)
             return false;
