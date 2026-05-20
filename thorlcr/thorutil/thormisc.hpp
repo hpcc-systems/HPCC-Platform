@@ -744,6 +744,4 @@ extern graph_decl std::vector<std::string> captureDebugInfo(const char *dir, con
 
 extern graph_decl offset_t verifyFileSize(IFile *file, offset_t expectedSize, unsigned maxRetries=5, unsigned retryDelayMs=200);
 
-extern graph_decl size32_t getForeignBlockedIOSize(bool isFiltered);
-
 #endif
