@@ -25,6 +25,7 @@
 #include "permissions.ipp"
 #include "aci.ipp"
 #include "ldapsecurity.ipp"
+#include "ldapsanitization.hpp"
 #include "jsmartsock.hpp"
 #include "jrespool.tpp"
 #include "mpbase.hpp"
@@ -1789,7 +1790,7 @@ public:
                 filter.append("sAMAccountName=");
             else
                 filter.append("uid=");
-            filter.append(username);
+            appendEscapedLdapFilter(username, filter);
 
             char* attrs[] = {"cn", "userAccountControl", "pwdLastSet", "givenName", "sn", "employeeId", "distinguishedName", "employeeNumber", NULL};
 
