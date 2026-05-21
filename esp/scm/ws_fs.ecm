@@ -77,6 +77,7 @@ ESPStruct [nil_remove] DFUWorkunit
     string TimeStarted;
     string TimeStopped;
     string StateMessage;
+    [min_ver("1.29")] string StateReason;
 
     // Monitor
     string MonitorEventName;
@@ -731,7 +732,7 @@ ESPresponse [exceptions_inline, nil_remove] GetRemoteTargetsResponse
 
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.28"),
+    version("1.29"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
 {
     ESPmethod EchoDateTime(EchoDateTime, EchoDateTimeResponse);

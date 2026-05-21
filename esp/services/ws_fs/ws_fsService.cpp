@@ -330,6 +330,10 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
         encodeDFUstate(state,statemsg);
         dest.setStateMessage(statemsg.str());
 
+        StringBuffer reasonmsg;
+        if (prog->getStateReason(reasonmsg).length() > 0)
+            dest.setStateReason(reasonmsg.str());
+
         CDateTime startAt;
         CDateTime stopAt;
         prog->getTimeStarted(startAt);
@@ -912,6 +916,11 @@ bool CFileSprayEx::getOneDFUWorkunit(IEspContext& context, const char* wuid, IEs
         encodeDFUstate(state, statemsg);
         resultWU->setState(state);
         resultWU->setStateMessage(statemsg.str());
+
+        StringBuffer reasonmsg;
+        if (prog->getStateReason(reasonmsg).length() > 0)
+            resultWU->setStateReason(reasonmsg.str());
+
         resultWU->setPercentDone(prog->getPercentDone());
     }
 
@@ -1156,6 +1165,11 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
                 StringBuffer prgmsg;
                 encodeDFUstate(state, prgmsg);
                 resultWU->setStateMessage(prgmsg.str());
+
+                StringBuffer reasonmsg;
+                if (prog->getStateReason(reasonmsg).length() > 0)
+                    resultWU->setStateReason(reasonmsg.str());
+
                 resultWU->setPercentDone(prog->getPercentDone());
                 if (version >= 1.23)
                     resultWU->setFileAccessCost(cost_type2money(prog->getFileAccessCost()));
@@ -1370,11 +1384,14 @@ void CFileSprayEx::getInfoFromSasha(IEspContext &context, const char *sashaServe
    if(progress)
     {
         const char * state = progress->queryProp("@state");
+        const char * stateReason = progress->queryProp("@stateReason");
         const char * timeStarted = progress->queryProp("@timestarted");
         const char * timeStopped = progress->queryProp("@timestopped");
 
         if (state && *state)
             info->setStateMessage(state);
+        if (stateReason && *stateReason)
+            info->setStateReason(stateReason);
         if (timeStarted && *timeStarted)
         {
             StringBuffer startStr(timeStarted);

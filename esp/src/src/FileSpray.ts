@@ -271,6 +271,7 @@ export const States = {
     6: "finished",
     7: "monitoring",
     8: "aborting",
+    9: "blocked",
     999: "not found"
 };
 

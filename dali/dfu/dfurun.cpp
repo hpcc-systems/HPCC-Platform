@@ -24,6 +24,7 @@ test multiclusteradd with replicate
 #include <platform.h>
 #include <stdio.h>
 #include <limits.h>
+#include <algorithm>
 #include "jexcept.hpp"
 #include "jptree.hpp"
 #include "jsocket.hpp"
@@ -1102,12 +1103,60 @@ public:
         }
 
         // first see if target exists (and remove if does and overwrite specified)
-        Owned<IDistributedFile> dfile = wsdfs::lookup(dlfn,ctx.user,AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser,INFINITE);
+        Owned<IDistributedFile> dfile;
+
+        // Retry `attempt(perAttemptTimeoutMs)` with short-timeout intervals while
+        // updating the workunit state to DFUstate_blocked so ECL Watch shows contention.
+        // `waitMsg` is the human-readable description shown in logs and the blocked state reason.
+        // `attempt` must throw SDSExcpt_LockTimeout when the per-attempt timeout expires.
+        auto withBlockedStateRetry = [&](const char *waitMsg, auto attempt)
+        {
+            constexpr unsigned totalLockTimeoutMs = 5 * 60 * 1000; // 5 minutes total
+            constexpr unsigned initialRetryMs = 5000; // short so blocked state is visible quickly
+            unsigned retryMs = initialRetryMs;
+            DFUstate oldState = ctx.superprogress->getState();
+            CCycleTimer timer;
+            while (true)
+            {
+                try
+                {
+                    unsigned remaining = timer.remainingMs(totalLockTimeoutMs);
+                    if (remaining == 0)
+                        throw makeStringExceptionV(SDSExcpt_LockTimeout, "Timed out: %s", waitMsg);
+                    attempt(std::min(remaining, retryMs));
+                    break;
+                }
+                catch (IException *e)
+                {
+                    if ((e->errorCode() != SDSExcpt_LockTimeout) || (timer.remainingMs(totalLockTimeoutMs) == 0))
+                        throw;
+                    e->Release();
+                    PROGLOG("%s", waitMsg);
+                    if (ctx.superprogress->getState() != DFUstate_blocked)
+                        ctx.superprogress->setState(DFUstate_blocked, waitMsg);
+                    retryMs = 60000; // after first timeout, increase to 1 minute to reduce log spam and load on dali
+                }
+            }
+            if (ctx.superprogress->getState() == DFUstate_blocked)
+                ctx.superprogress->setState(oldState);
+        };
+
+        VStringBuffer lookupMsg("looking up destination file: %s", dlfn.get());
+        auto attemptLookup = [&](unsigned timeoutMs)
+        {
+            dfile.setown(wsdfs::lookup(dlfn, ctx.user, AccessMode::tbdWrite, false, false, nullptr, defaultPrivilegedUser, timeoutMs));
+        };
+        withBlockedStateRetry(lookupMsg, attemptLookup);
+
+        Owned<IDistributedSuperFile> dsuper;
+
+        IDistributedSuperFile *sourceSuperfile = file->querySuperFile();
         if (dfile)
         {
             if (!ctx.superoptions->getOverwrite())
                 throw MakeStringException(-1,"Destination file %s already exists",dlfn.get());
-            if (!dfile->querySuperFile())
+            dsuper.set(dfile->querySuperFile());
+            if (!dsuper || !sourceSuperfile) // dest cannot be reused in-place: either dest is not a superfile, or source is not a superfile; delete and recreate. If both are superfiles, the dest superfile is reused in-place with its subfiles replaced.
             {
                 if (ctx.superoptions->getIfModified()&&
                     (file->queryAttributes().hasProp("@fileCrc")&&file->queryAttributes().getPropInt64("@size")&&
@@ -1115,28 +1164,46 @@ public:
                     (file->queryAttributes().getPropInt64("@size")==dfile->getFileSize(false,false))))
                 {
                     PROGLOG("File copy of %s not done as file unchanged",slfn.get(true));
+                    ctx.level--;
                     return;
                 }
+                dfile->detach();
+                dfile.clear();
+                dsuper.clear();
             }
-            dfile->detach();
-            dfile.clear();
         }
-        const IPropertyTree &fileAttrs = file->queryAttributes();
-        IDistributedSuperFile *sourceSuperfile = file->querySuperFile();
         if (!sourceSuperfile)
         {
             StringAttr wuid;
-            const char *kind = fileAttrs.queryProp("@kind");
+            const char *kind = file->queryAttributes().queryProp("@kind");
             bool iskey = kind&&(strcmp(kind,"key")==0);
             Owned<INode> srcdali;
             if (isForeign)
                 srcdali.setown(createINode(foreignEp));
             // note  dstlfn doesn't have roxie prefix
             if (!doSubFileCopy(ctx,dstlfn,srcdali,slfn.get(false),wuid,iskey,newroxieprefix.str()))
-                throw MakeStringException(-1,"File %s could not be copied - see %s",dstlfn,wuid.isEmpty()?"unknown":wuid.get());
+                throw makeStringExceptionV(-1, "File %s could not be copied - see %s", dstlfn, wuid.isEmpty()?"unknown":wuid.get());
         }
         else
         {
+            bool superCreated = false;
+            if (!dsuper)
+            {
+                dsuper.setown(queryDistributedFileDirectory().createSuperFile(dlfn.get(),ctx.user,true,false));
+                if (!dsuper)
+                    throw makeStringExceptionV(-1, "SuperFile %s could not be created", dlfn.get());
+                superCreated = true;
+            }
+            DistributedFilePropertyLock lfnLock;
+            VStringBuffer lockMsg("acquiring write lock on superfile: %s", dlfn.get());
+            auto attemptLock = [&](unsigned timeoutMs)
+            {
+                lfnLock.lock(dsuper, timeoutMs);
+            };
+            withBlockedStateRetry(lockMsg, attemptLock);
+            if (!superCreated)
+                dsuper->removeSubFile(nullptr, false); // clear existing subfiles before repopulating
+
             unsigned numtodo = sourceSuperfile->numSubFiles();
             Owned<IDistributedFileIterator> sIter = sourceSuperfile->getSubFileIterator();
             unsigned numdone=0;
@@ -1154,17 +1221,12 @@ public:
                 if ((ctx.level==1)&&ctx.feedback)
                     ctx.feedback->displayProgress(numtodo?(numdone*100/numtodo):0,0,"unknown",0,0,"",0,0,0,0,0);
             }
-            // now construct the superfile
-            Owned<IDistributedSuperFile> sfile = queryDistributedFileDirectory().createSuperFile(dlfn.get(),ctx.user,true,false);
-            if (!sfile)
-                throw MakeStringException(-1,"SuperFile %s could not be created",dlfn.get());
+            // now populate the superfile
             ForEachItemIn(i,subfiles)
-                sfile->addSubFile(subfiles.item(i));
+                dsuper->addSubFile(subfiles.item(i));
             if (newroxieprefix.length())
-            {
-                DistributedFilePropertyLock lock(sfile);
-                lock.queryAttributes().setProp("@roxiePrefix",newroxieprefix.str());
-            }
+                lfnLock.queryAttributes().setProp("@roxiePrefix",newroxieprefix.str());
+            lfnLock.commit();
         }
         if ((ctx.level==1)&&ctx.feedback)
             ctx.feedback->displaySummary("0",0);
