@@ -1,6 +1,14 @@
 #!/bin/bash
 set -e
 
+usage() {
+    echo "Usage: $0 [-h] [--arm] [-a x64|arm64] [target]"
+    echo "  -h, --help              display this help message"
+    echo "  --arm                   shorthand for --architecture arm64"
+    echo "  -a, --architecture      override default architecture (x64 or arm64)"
+    echo "  target                  optional build target (for example ubuntu-22.04)"
+}
+
 function detect_arch() {
     if [ -z "$ARCH" ]; then
         if [ "$(uname -m)" == "x86_64" ]; then
@@ -20,8 +28,31 @@ function detect_arch() {
     fi
 }
 
+function detect_host_arch() {
+    case "$(uname -m)" in
+        x86_64)
+            HOST_ARCH="x64"
+            ;;
+        aarch64|arm64)
+            HOST_ARCH="arm64"
+            ;;
+        *)
+            HOST_ARCH="unknown"
+            ;;
+    esac
+}
+
+function validate_arch_support() {
+    detect_host_arch
+    if [ "$ARCH" == "arm64" ] && [ "$HOST_ARCH" != "arm64" ]; then
+        echo "Warning: building ARM64 on a non-ARM host via Docker emulation."
+        echo "This is expected to be much slower than a native ARM64 build."
+    fi
+}
+
 function set_globals() {
     detect_arch
+    validate_arch_support
     SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
     ROOT_DIR=$(git rev-parse --show-toplevel)
 
@@ -40,6 +71,9 @@ function set_globals() {
     popd
     if [ "$ARCH" == "arm64" ]; then
         VCPKG_REF="$VCPKG_REF-arm"
+        DOCKER_PLATFORM="--platform linux/arm64"
+    else
+        DOCKER_PLATFORM=""
     fi
 
     GITHUB_BRANCH=$(git log -50 --pretty=format:"%D" | tr ',' '\n' | grep 'upstream/' | awk 'NR==1 {sub("upstream/", ""); print}' | xargs)
@@ -58,6 +92,8 @@ function set_globals() {
 
 function print_globals() {
     echo "ARCH: $ARCH"
+    echo "HOST_ARCH: $HOST_ARCH"
+    echo "DOCKER_PLATFORM: $DOCKER_PLATFORM"
     echo "ROOT_DIR: $ROOT_DIR"
     echo "SCRIPT_DIR: $SCRIPT_DIR"
     echo "GITHUB_REF: $GITHUB_REF"
@@ -67,9 +103,9 @@ function print_globals() {
     echo "CMAKE_OPENBLAS_OPTIONS: $CMAKE_OPENBLAS_OPTIONS"
     echo "CMAKE_PLATFORM_OPTIONS: $CMAKE_PLATFORM_OPTIONS"
     echo "GITHUB_ACTOR: $GITHUB_ACTOR"
-    echo "GITHUB_TOKEN: $GITHUB_TOKEN"
+    echo "GITHUB_TOKEN: [redacted]"
     echo "DOCKER_USERNAME: $DOCKER_USERNAME"
-    echo "DOCKER_PASSWORD: $DOCKER_PASSWORD"
+    echo "DOCKER_PASSWORD: [redacted]"
     echo "USER_ID: $USER_ID"
     echo "GROUP_ID: $GROUP_ID"
 }
@@ -81,7 +117,7 @@ function cleanup() {
 
 function doBuild() {
 
-    docker buildx build --progress plain --rm -f "$SCRIPT_DIR/$1.dockerfile" \
+    docker buildx build --progress plain --rm $DOCKER_PLATFORM -f "$SCRIPT_DIR/$1.dockerfile" \
         --build-arg VCPKG_REF=$VCPKG_REF \
         --build-arg GROUP_ID=$GROUP_ID \
         --build-arg USER_ID=$USER_ID \
@@ -101,7 +137,7 @@ function doBuild() {
     fi
 
     mkdir -p $HOME/.ccache
-    docker run --rm \
+    docker run --rm $DOCKER_PLATFORM \
         --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached \
         --mount source="$(realpath ~)/.cache/vcpkg",target=/root/.cache/vcpkg,type=bind,consistency=cached \
         --mount source="$HOME/.ccache",target=/root/.ccache,type=bind,consistency=cached \
@@ -120,11 +156,49 @@ function doBuild() {
     rm -f $ROOT_DIR/vcpkg/vcpkg 
 }
 
+TARGET=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        --arm)
+            ARCH="arm64"
+            shift
+            ;;
+        -a|--architecture)
+            if [[ -z "$2" ]]; then
+                echo "Missing value for $1"
+                usage
+                exit 1
+            fi
+            ARCH="$2"
+            shift 2
+            ;;
+        -*)
+            echo "Unknown option: $1"
+            usage
+            exit 1
+            ;;
+        *)
+            if [[ -n "$TARGET" ]]; then
+                echo "Only one build target may be specified"
+                usage
+                exit 1
+            fi
+            TARGET="$1"
+            shift
+            ;;
+    esac
+done
+
 set_globals
 print_globals
 
-if [ "$1" != "" ]; then
-    doBuild $1
+if [[ -n "$TARGET" ]]; then
+    doBuild "$TARGET"
 else
     trap 'cleanup; exit' EXIT
     mkdir -p $ROOT_DIR/build/docker-logs

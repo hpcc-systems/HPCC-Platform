@@ -76,11 +76,19 @@ cd dockerfiles
 # Single target
 ./build.sh ubuntu-22.04
 
-# Override architecture
+# Request an ARM build
+./build.sh --arm ubuntu-22.04
+
+# Or override architecture explicitly
+./build.sh --architecture arm64 ubuntu-22.04
+
+# Environment variable override still works
 ARCH=arm64 ./build.sh ubuntu-22.04
 ```
 
 Build output is written back into the repo under `build/<target>/`.
+
+When `--arm` is used on a non-ARM host, `build.sh` uses Docker emulation and prints a warning because the build will be much slower than on a native ARM64 machine.
 
 ### Deploy to a local Kubernetes cluster
 

@@ -139,6 +139,29 @@ vcpkg_install_make()
 
 vcpkg_fixup_pkgconfig()
 
+file(GLOB ncurses_headers "${CURRENT_PACKAGES_DIR}/include/ncurses/*.h")
+if(ncurses_headers)
+    file(MAKE_DIRECTORY "${CURRENT_PACKAGES_DIR}/include/ncursesw")
+    file(COPY ${ncurses_headers} DESTINATION "${CURRENT_PACKAGES_DIR}/include/ncursesw")
+
+    file(COPY ${ncurses_headers} DESTINATION "${CURRENT_PACKAGES_DIR}/include")
+
+    foreach(header curses.h ncurses.h ncurses_dll.h term.h)
+        if(EXISTS "${CURRENT_PACKAGES_DIR}/include/ncurses/${header}")
+            file(COPY "${CURRENT_PACKAGES_DIR}/include/ncurses/${header}" DESTINATION "${CURRENT_PACKAGES_DIR}/include")
+        endif()
+    endforeach()
+
+    file(GLOB ncurses_compat_headers
+        "${CURRENT_PACKAGES_DIR}/include/*.h"
+        "${CURRENT_PACKAGES_DIR}/include/ncursesw/*.h"
+    )
+    foreach(file IN LISTS ncurses_compat_headers)
+        vcpkg_replace_string("${file}" [[#include <ncurses/([^>]*)>]] [[#include "\1"]] REGEX IGNORE_UNCHANGED)
+        vcpkg_replace_string("${file}" [[#include <ncursesw/([^>]*)>]] [[#include "\1"]] REGEX IGNORE_UNCHANGED)
+    endforeach()
+endif()
+
 file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/bin")
 file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/bin")
 file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/include")
