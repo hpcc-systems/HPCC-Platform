@@ -509,7 +509,7 @@ private:
     StringAttr espApplicationName;
 };
 
-void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml=NULL, bool protect=false);
+void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml, bool protect, const char *sourceProcess, const char *sourceFilename);
 
 class CClusterQueryStateParam : public CInterface
 {
