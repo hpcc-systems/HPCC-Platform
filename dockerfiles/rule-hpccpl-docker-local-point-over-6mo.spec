@@ -5,7 +5,7 @@
             "items.find": 
             {
                 "repo": "hpccpl-docker-local",
-                "path": "platform-core-ln",
+                "path": {"$match": "platform-core-ln*"},
                 "created": {"$before": "6mo"},
                 "type": "folder",
                 "name": {"$nmatch": "*-latest"},
