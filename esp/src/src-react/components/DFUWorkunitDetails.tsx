@@ -251,7 +251,7 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
                             "user": { label: nlsHPCC.User, type: "string", value: workunit?.User, readonly: true },
                             "protected": { label: nlsHPCC.Protected, type: "checkbox", value: _protected },
                             "command": { label: nlsHPCC.Command, type: "string", value: FileSpray.CommandMessages[workunit?.Command], readonly: true },
-                            "state": { label: nlsHPCC.State, type: "string", value: FileSpray.States[workunit?.State], readonly: true },
+                            "state": { label: nlsHPCC.State, type: "string", value: workunit?.properties?.["StateReason"] ? `${FileSpray.States[workunit?.State]} - ${workunit?.properties?.["StateReason"]}` : FileSpray.States[workunit?.State], readonly: true },
                             "accessCost": { label: nlsHPCC.FileAccessCost, type: "string", value: `${formatCost(workunit?.FileAccessCost ?? 0)}`, readonly: true },
                             "timeStarted": { label: nlsHPCC.TimeStarted, type: "string", value: workunit?.TimeStarted, readonly: true },
                             "secondsLeft": { label: nlsHPCC.SecondsRemaining, type: "number", value: workunit?.SecsLeft, readonly: true },

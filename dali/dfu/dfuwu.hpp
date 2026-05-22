@@ -47,7 +47,8 @@ enum DFUstate
     DFUstate_failed,
     DFUstate_finished,
     DFUstate_monitoring,
-    DFUstate_aborting
+    DFUstate_aborting,
+    DFUstate_blocked
 };
 
 enum DFUcmd
@@ -314,6 +315,7 @@ interface IConstDFUprogress: extends IInterface
     virtual StringBuffer &formatProgressMessage(StringBuffer &str) const = 0; // default progress message (maybe add options)
     virtual StringBuffer &formatSummaryMessage(StringBuffer &str) const = 0;  // default summary message (maybe add options)
     virtual DFUstate getState() const = 0;
+    virtual StringBuffer &getStateReason(StringBuffer &str) const = 0;
     virtual CDateTime &getTimeStarted(CDateTime &val) const = 0;
     virtual CDateTime &getTimeStopped(CDateTime &val) const = 0;
     virtual unsigned getTotalNodes() const = 0;
@@ -330,7 +332,7 @@ interface IDFUprogress: extends IConstDFUprogress
                              unsigned kbPerSecondAve, unsigned kbPerSecondRate,
                              unsigned slavesDone, bool replicating, unsigned __int64 numReads, unsigned __int64 numWrites)=0;
     virtual void setDone(const char * timeTaken, unsigned kbPerSecond, bool set100pc) = 0;
-    virtual void setState(DFUstate state) = 0;
+    virtual void setState(DFUstate state, const char *reason = nullptr) = 0;
     virtual void setTotalNodes(unsigned val) = 0;
     virtual void setPercentDone(unsigned pc)=0;
     virtual void setSubInProgress(const char *str) = 0;     // set sub-DFUWUs in progress

@@ -234,6 +234,7 @@ protected:
 private:
     bool firstMultiPart();
     bool nextMultiPart();
+    size32_t getPartBlockedIOSize(IDistributedFilePart &part) const;
     bool setCurrentPart(unsigned whichPart);
     void clearTlk()                                         { tlk.clear(); tlManager.clear(); }
     void openTlk();
@@ -274,6 +275,7 @@ protected:
     bool singlePart = false;                // a single part index, not part of a super file - optimize so never reload the part.
     bool localSortKey = false;
     bool initializedFileInfo = false;
+    size32_t foreignBlockedIOSize = (size32_t)-1;
 
 //for layout translation
     Owned<const IDynamicTransform> layoutTrans;
@@ -330,6 +332,9 @@ void CHThorIndexReadActivityBase::resolveIndexFilename()
 {
     // A logical filename for the key should refer to a single physical file - either the TLK or a monolithic key
     OwnedRoxieString lfn(helper.getFileName());
+    CDfsLogicalFileName dlfn;
+    dlfn.set(lfn);
+    foreignBlockedIOSize = dlfn.isForeign() ? getForeignBlockedIOSize(helper.hasSegmentMonitors()) : (size32_t)-1;
     Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(agent, lfn, "IndexRead", 0 != (helper.getFlags() & TIRoptional),true, AccessMode::tbdRead, defaultPrivilegedUser);
     df.set(ldFile ? ldFile->queryDistributedFile() : NULL);
     if (!df)
@@ -452,7 +457,8 @@ bool CHThorIndexReadActivityBase::doPreopenLimitFile(unsigned __int64 & count, u
 IKeyIndex * CHThorIndexReadActivityBase::doPreopenLimitPart(unsigned __int64 & result, unsigned __int64 limit, unsigned part)
 {
     Owned<IKeyIndex> kidx;
-    kidx.setown(openKeyFile(df->queryPart(part)));
+    IDistributedFilePart & filePart = df->queryPart(part);
+    kidx.setown(openKeyFile(filePart, getPartBlockedIOSize(filePart)));
     if(df->numParts() == 1)
         verifyIndex(kidx);
     if (limit != (unsigned) -1)
@@ -573,17 +579,20 @@ void CHThorIndexReadActivityBase::killPart()
         klManager.clear();
 }
 
+size32_t CHThorIndexReadActivityBase::getPartBlockedIOSize(IDistributedFilePart &part) const
+{
+    if (foreignBlockedIOSize != (size32_t)-1)
+        return foreignBlockedIOSize;
+
+    StringBuffer planeName;
+    df->getClusterName(part.copyClusterNum(0), planeName);
+    return getIndexBlockedIOSize(planeName, helper.hasSegmentMonitors());
+}
+
 bool CHThorIndexReadActivityBase::setCurrentPart(unsigned whichPart)
 {
     IDistributedFilePart &part = df->queryPart(whichPart);
-    size32_t blockedSize = 0;
-    if (!helper.hasSegmentMonitors()) // unfiltered
-    {
-        StringBuffer planeName;
-        df->getClusterName(part.copyClusterNum(0), planeName);
-        blockedSize = getBlockedFileIOSize(planeName);
-    }
-    keyIndex.setown(openKeyFile(part, blockedSize));
+    keyIndex.setown(openKeyFile(part, getPartBlockedIOSize(part)));
     if(df->numParts() == 1)
         verifyIndex(keyIndex);
     initPart();

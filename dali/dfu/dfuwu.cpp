@@ -96,6 +96,7 @@ struct DFUstateStruct { int val; const char *str; } DFUstates[] =
     {DFUstate_finished,"finished"},
     {DFUstate_monitoring,"monitoring"},
     {DFUstate_aborting,"aborting"},
+    {DFUstate_blocked,"blocked"},
     {DFUstate_unknown,""}               // must be last
 };
 
@@ -625,6 +626,12 @@ public:
         CriticalBlock block(parent->crit);
         return decodeDFUstate(queryRoot()->queryProp("@state"));
     }
+    StringBuffer &getStateReason(StringBuffer &str) const
+    {
+        CriticalBlock block(parent->crit);
+        queryRoot()->getProp("@stateReason",str);
+        return str;
+    }
     CDateTime &getTimeStarted(CDateTime &val) const
     {
         CriticalBlock block(parent->crit);
@@ -695,7 +702,7 @@ public:
         queryRoot()->setPropInt("@replicating",0);
         parent->commit();
     }
-    void setState(DFUstate state)
+    void setState(DFUstate state, const char *reason = nullptr)
     {
         CriticalBlock block(parent->crit);
         CDateTime dt;
@@ -703,8 +710,11 @@ public:
         bool subtask = isSubTaskWuid(parent->queryId());
         switch (state) {
         case DFUstate_started:
-            dt.setTimeStamp(getTimeStampNowValue());
-            setTimeStarted(dt);
+            if (!queryRoot()->hasProp("@timestarted"))
+            {
+                dt.setTimeStamp(getTimeStampNowValue());
+                setTimeStarted(dt);
+            }
             break;
         case DFUstate_aborting:
             {
@@ -727,6 +737,11 @@ public:
         StringBuffer s;
         encodeDFUstate(state,s);
         queryRoot()->setProp("@state",s.str());
+
+        if (!isEmptyString(reason))
+            queryRoot()->setProp("@stateReason", reason);
+        else
+            queryRoot()->removeProp("@stateReason");
 
         parent->commit();
         if (subtask && !noted)

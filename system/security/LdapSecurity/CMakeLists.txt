@@ -32,6 +32,7 @@ set (    SRCS
          ../shared/authmap.cpp 
          ../shared/caching.cpp 
          aci.cpp 
+         ldapsanitization.cpp
          ldapconnection.cpp 
          ldapsecurity.cpp 
          permissions.cpp 

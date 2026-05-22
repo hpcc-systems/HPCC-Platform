@@ -543,31 +543,41 @@ interface ISimpleSuperFileEnquiry: extends IInterface // lightweight local
  * Use this instead of locking/unlocking manually. Manual lock is deprecated and will
  * disappear soon.
  */
-class DistributedFilePropertyLock {
+class DistributedFilePropertyLock
+{
 protected:
-    IDistributedFile *file;
-    bool reload;
-    bool unlocked;
+    IDistributedFile *file = nullptr;
+    bool reload = false;
 public:
-    DistributedFilePropertyLock(IDistributedFile *_file)
-        : file(_file), reload(false), unlocked(false)
+    DistributedFilePropertyLock()
     {
-        reload = file->lockProperties();
+    }
+    DistributedFilePropertyLock(IDistributedFile *_file)
+    {
+        lock(_file, INFINITE);
     }
     ~DistributedFilePropertyLock()
     {
-        if (!unlocked)
+        if (file)
             unlock();
+    }
+    void lock(IDistributedFile *_file, unsigned timeoutMs)
+    {
+        assertex(!file && _file);
+        reload = _file->lockProperties(timeoutMs);
+        file = _file;
     }
     void unlock()
     {
+        assertex(file);
         file->unlockProperties(TAS_NONE);
-        unlocked = true;
+        file = nullptr;
     }
     void commit()
     {
+        assertex(file);
         file->unlockProperties(TAS_SUCCESS);
-        unlocked = true;
+        file = nullptr;
     }
     // MORE: Implement rollback when necessary
     IPropertyTree &queryAttributes()

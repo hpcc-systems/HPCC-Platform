@@ -77,6 +77,11 @@ if(NOT "${DESTDIR}" STREQUAL "")
 
 
     install(CODE "
+    # Run deployment setup directly during install to avoid nested build-tool recursion.
+    execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${RUNTIME_PATH} ${LOG_PATH} ${LOCK_PATH} ${PID_PATH} ${INIT_PATH} ${CONFIG_DIR})
+    execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/genenvrules.conf ${CONFIG_DIR}/genenvrules.conf)
+    execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/../../bash/etc/init.d/dafilesrv ${INIT_PATH}/dafilesrv)
+    execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/../../bash/etc/init.d/hpcc-init ${INIT_PATH}/hpcc-init)
     if(NOT EXISTS ${CONFIG_DIR}/${ENV_XML_FILE})
         execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/${ENV_XML_FILE} ${CONFIG_DIR})
         message(STATUS \"Copying ${ENV_XML_FILE} to ${CONFIG_DIR}\")
@@ -91,10 +96,12 @@ if(NOT "${DESTDIR}" STREQUAL "")
     endif()
     " COMPONENT Runtime)
 
-    add_custom_target(configure ALL
+    add_custom_target(configure
         DEPENDS configure_directories
         configure_genenvrules_conf
         configure_service_files
         COMMENT "Configuring ${DESTDIR} for deployment")
+
+    # Do not add configure to ALL. Install performs equivalent setup via install(CODE) above.
 
 endif()

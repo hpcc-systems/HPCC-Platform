@@ -40,6 +40,8 @@ export function getStateIconClass(state: number) {
             return "iconRunning";
         case 8:
             return "iconAborting";
+        case 9:
+            return "iconWarning";
         case 999:
             return "iconDeleted";
     }
@@ -64,6 +66,8 @@ export function getStateImage(state: number) {
             return Utility.getImageURL("workunit_running.png");
         case 8:
             return Utility.getImageURL("workunit_aborting.png");
+        case 9:
+            return Utility.getImageURL("workunit_warning.png");
         case 999:
             return Utility.getImageURL("workunit_deleted.png");
     }

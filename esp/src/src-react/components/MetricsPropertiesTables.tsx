@@ -2,7 +2,7 @@ import * as React from "react";
 import { useConst } from "@fluentui/react-hooks";
 import { tokens } from "@fluentui/react-components";
 import { d3Event, Palette } from "@hpcc-js/common";
-import { ColumnFormat, Table } from "@hpcc-js/dgrid";
+import { ColumnFormat, ColumnSetTable } from "@hpcc-js/dgrid";
 import { encodeHTML, formatDecimal } from "src/Utility";
 import { formatTwoDigits } from "src/Session";
 import nlsHPCC from "src/nlsHPCC";
@@ -11,6 +11,7 @@ import { useWorkunitArchive } from "../hooks/workunit";
 import { useUserTheme } from "../hooks/theme";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 import { Attribute, UNNAMED_QUERY } from "../util/metricArchive";
+import { MetricGraph } from "../util/metricGraph";
 
 Palette.rainbow("StdDevs", ["#ffffff", "#ffffff", "#fff3cd", "#ffeaa7", "#fdcb6e", "#e17055", "#e17055"]);
 Palette.rainbow("StdDevsDark", ["#222222", "#222222", "#3d3520", "#4a3c1a", "#5a4a2e", "#6b2323", "#6b2323"]);
@@ -21,7 +22,7 @@ const ECL_WORKUNIT_REGEX = /^W\d{8}-\d{6}(?:-\d+)?$/;
 const isDfuWu = (workunitId: string): boolean => DFU_WORKUNIT_REGEX.test(workunitId);
 const isEclWu = (workunitId: string): boolean => ECL_WORKUNIT_REGEX.test(workunitId);
 
-class TableEx extends Table {
+class TableEx extends ColumnSetTable {
     constructor() {
         super();
         this
@@ -67,6 +68,7 @@ export interface MetricsPropertiesTablesProps {
     queryId?: string;
     scopesTableColumns?: string[];
     scopes?: IScopeEx[];
+    metricGraph?: MetricGraph;
 }
 
 export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesTablesProps> = ({
@@ -74,19 +76,23 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
     querySet = "",
     queryId = "",
     scopesTableColumns = [],
-    scopes = []
+    scopes = [],
+    metricGraph
 }) => {
 
     const [, , , archive,] = useWorkunitArchive(wuid);
     const { isDark } = useUserTheme();
 
     const sortByColumns = React.useMemo(() => {
-        return ["id", "type", "name", ...scopesTableColumns];
+        return ["id", "source", "target", "type", "name", ...scopesTableColumns];
     }, [scopesTableColumns]);
 
     //  Props Table  ---
     const propsTable = useConst(() => new TableEx()
         .columns([nlsHPCC.Property, nlsHPCC.Value, "Avg", "Min", "Max", "Delta", "StdDev", "SkewMin", "SkewMax", "NodeMin", "NodeMax", "StdDevs"])
+        .columnSets([
+            [nlsHPCC.Property]
+        ])
         .columnFormats([
             new ColumnFormat()
                 .column(nlsHPCC.Property)
@@ -188,6 +194,47 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
                 }
                 scopeProps.push([row.Key, rowValue, row.Avg, row.Min, row.Max, row.Delta, row.StdDev === undefined ? "" : `${row.StdDev} (${formatDecimal(row.StdDevs)}σ)`, row.SkewMin, row.SkewMax, row.NodeMin, row.NodeMax, row.StdDevs]);
             }
+            if (metricGraph) {
+                const activityLink = (v) => {
+                    const splitName = v.name.split(":");
+                    const lastNode = splitName.pop();
+                    const label = v.Label ? `${v.id} (${encodeHTML(v.Label)})` : v.id;
+                    if (wuid) {
+                        return `<a href="#/workunits/${encodeURIComponent(wuid)}/metrics/${splitName.map(encodeURIComponent).join(":")}/${encodeURIComponent(lastNode)}" style="${linkStyle}">${label}</a>`;
+                    } else if (querySet && queryId) {
+                        return `<a href="#/queries/${encodeURIComponent(querySet)}/${encodeURIComponent(queryId)}/metrics/statistics/${splitName.map(encodeURIComponent).join(":")}/${encodeURIComponent(lastNode)}" style="${linkStyle}">${label}</a>`;
+                    }
+                    return label;
+                };
+                if (item.type === "edge") {
+                    const sourceActivity = metricGraph.activityByID(item.IdSource);
+                    const targetActivity = metricGraph.activityByID(item.IdTarget);
+                    if (sourceActivity) {
+                        scopeProps.push(["source", activityLink(sourceActivity), "", "", "", "", "", "", "", "", "", 0]);
+                    }
+                    if (targetActivity) {
+                        scopeProps.push(["target", activityLink(targetActivity), "", "", "", "", "", "", "", "", "", 0]);
+                    }
+                } else if (metricGraph.subgraphExists(item.name)) {
+                    const inActivities = metricGraph.inSubgraphActivities(item);
+                    const outActivities = metricGraph.outSubgraphActivities(item);
+                    if (inActivities.length > 0) {
+                        scopeProps.push(["source", inActivities.map(activityLink).join(", "), "", "", "", "", "", "", "", "", "", 0]);
+                    }
+                    if (outActivities.length > 0) {
+                        scopeProps.push(["target", outActivities.map(activityLink).join(", "), "", "", "", "", "", "", "", "", "", 0]);
+                    }
+                } else {
+                    const inActivities = metricGraph.inActivities(item);
+                    const outActivities = metricGraph.outActivities(item);
+                    if (inActivities.length > 0) {
+                        scopeProps.push(["source", inActivities.map(activityLink).join(", "), "", "", "", "", "", "", "", "", "", 0]);
+                    }
+                    if (outActivities.length > 0) {
+                        scopeProps.push(["target", outActivities.map(activityLink).join(", "), "", "", "", "", "", "", "", "", "", 0]);
+                    }
+                }
+            }
             scopeProps.sort((l, r) => {
                 const lIdx = sortByColumns.indexOf(l[0]);
                 const rIdx = sortByColumns.indexOf(r[0]);
@@ -218,7 +265,7 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
             .data(props)
             .lazyRender()
             ;
-    }, [archive, findArchiveItemByPath, linkStyle, propsTable, queryId, querySet, scopes, sortByColumns, wuid]);
+    }, [archive, findArchiveItemByPath, linkStyle, metricGraph, propsTable, queryId, querySet, scopes, sortByColumns, wuid]);
 
     return <AutosizeHpccJSComponent widget={propsTable}></AutosizeHpccJSComponent>;
 };

@@ -1,0 +1,62 @@
+name: "Download ECL Watch Nightly"
+description: "Download the latest non-expired ECL Watch nightly artifact into a package build tree."
+
+inputs:
+  destination:
+    description: "Destination directory for the downloaded nightly dist files."
+    required: true
+  artifact-name:
+    description: "Name of the ECL Watch nightly artifact."
+    required: false
+    default: eclwatch-nightly
+
+runs:
+  using: "composite"
+  steps:
+    - name: Locate latest ECL Watch nightly
+      id: nightly
+      uses: actions/github-script@v8
+      env:
+        NIGHTLY_ARTIFACT_NAME: ${{ inputs.artifact-name }}
+        NIGHTLY_DESTINATION: ${{ inputs.destination }}
+      with:
+        github-token: ${{ github.token }}
+        script: |
+          const fs = require("fs");
+
+          const artifactName = process.env.NIGHTLY_ARTIFACT_NAME;
+          const destination = process.env.NIGHTLY_DESTINATION;
+          const [owner, repo] = context.repo.owner && context.repo.repo
+            ? [context.repo.owner, context.repo.repo]
+            : "${{ github.repository }}".split("/");
+
+          fs.rmSync(destination, { recursive: true, force: true });
+          fs.mkdirSync(destination, { recursive: true });
+
+          const artifacts = await github.paginate(github.rest.actions.listArtifactsForRepo, {
+            owner,
+            repo,
+            name: artifactName,
+            per_page: 100
+          });
+
+          const artifact = artifacts
+            .filter(item => !item.expired && item.workflow_run?.id)
+            .sort((left, right) => Date.parse(right.created_at) - Date.parse(left.created_at))[0];
+
+          if (!artifact) {
+            core.setFailed(`Unable to find a non-expired ${artifactName} artifact in ${owner}/${repo}.`);
+            return;
+          }
+
+          core.info(`Using ${artifactName} artifact ${artifact.id} from run ${artifact.workflow_run.id}, created ${artifact.created_at}.`);
+          core.setOutput("run-id", String(artifact.workflow_run.id));
+
+    - name: Download latest ECL Watch nightly
+      uses: actions/download-artifact@v8
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ inputs.destination }}
+        repository: ${{ github.repository }}
+        run-id: ${{ steps.nightly.outputs.run-id }}
+        github-token: ${{ github.token }}
