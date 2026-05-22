@@ -1280,6 +1280,17 @@ void CGraphBase::clean()
     containers.releaseAll();
     sinks.kill();
     activeSinks.kill();
+
+    if (doTrace(traceThorMemory) && started && !queryOwner())
+    {
+        roxiemem::IRowManager *rowMgr = queryJobChannel().queryRowManager();
+        unsigned leaked = rowMgr->allocated();
+        if (leaked)
+        {
+            WARNLOG("Roxiemem leak after graph %" GIDPF "d destroyed: %u allocation(s)", queryGraphId(), leaked);
+            rowMgr->reportLeaks();
+        }
+    }
 }
 
 void CGraphBase::serializeCreateContexts(MemoryBuffer &mb)
@@ -2510,7 +2521,8 @@ public:
         // The delay should never be hit, but leaving as it was for now, in case the thread pools are lingering longer than
         // expected.
         constexpr unsigned delay = 1000;
-        graphPool.setown(createThreadPool("CGraphExecutor pool (delay=1000)", factory, true, &jobChannel, limit*2, delay));
+        bool traceMemory = doTrace(traceThorMemory); // if tracing memory, mandate 1 thread, otherwise new graphs start as old is clearing up, and memory report can be misleading.
+        graphPool.setown(createThreadPool("CGraphExecutor pool (delay=1000)", factory, true, &jobChannel, traceMemory ? 1 : limit*2, delay));
     }
     ~CGraphExecutor()
     {

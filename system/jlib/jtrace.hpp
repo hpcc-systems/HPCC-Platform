@@ -450,7 +450,8 @@ constexpr TraceFlags traceAborts = TraceFlags::flag29;
 constexpr TraceFlags traceAcknowledge = TraceFlags::flag30;
 
 // Specific to Thor
-constexpr TraceFlags traceGraphDtor = TraceFlags::flag16; // trace timing of graph destruction
+constexpr TraceFlags traceGraphDtor = TraceFlags::flag16;  // trace timing of graph destruction
+constexpr TraceFlags traceThorMemory = TraceFlags::flag17; // trace memory issues (e.g. leaks)
 
 // Specific to dfuserver and dafilesrv
 constexpr TraceFlags traceSprayDetails = TraceFlags::flag16;
@@ -510,6 +511,7 @@ constexpr std::initializer_list<TraceOption> thorTraceOptions
 {
     COMMON_TRACE_OPTIONS,
     TRACEOPT(traceGraphDtor),
+    TRACEOPT(traceThorMemory),
 };
 
 constexpr std::initializer_list<TraceOption> eclccTraceOptions
