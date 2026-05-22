@@ -4803,7 +4803,7 @@ void writeSharedObject(const char *srcpath, const MemoryBuffer &obj, const char 
     throw MakeStringException(ECLWATCH_CANNOT_COPY_DLL, "Failed copying shared object %s", srcpath);
 }
 
-void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml, bool protect)
+void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml, bool protect, const char *sourceProcess, const char *sourceFilename)
 {
     StringBuffer dllpath, dllname;
 
@@ -4833,8 +4833,17 @@ void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *cl
         }
     }
 
+    StringBuffer originalDllName(sourceFilename);
+    if (originalDllName.isEmpty() && !isEmptyString(name))
+        originalDllName.append(name).append(SharedObjectExtension);
+
     NewWsWorkunit wu(context, wuid);
     wuid.set(wu->queryWuid()); // Update the wuid to the new unique value
+
+    if (!originalDllName.isEmpty())
+        wu->setApplicationValue("deploy", "sourceQuery", originalDllName.str(), true);
+    if (!isEmptyString(sourceProcess))
+        wu->setApplicationValue("deploy", "sourceEnvironment", sourceProcess, true);
 
     //Write the dll to a filename based on the unique wuid
     StringBuffer baseDllName;
@@ -4888,7 +4897,7 @@ void CWsWorkunitsEx::deploySharedObjectReq(IEspContext &context, IEspWUDeployWor
     }
 
     StringBuffer wuid;
-    deploySharedObject(context, wuid, cluster, req.getName(), *uncompressed, dir, xml, req.getProtect());
+    deploySharedObject(context, wuid, cluster, req.getName(), *uncompressed, dir, xml, req.getProtect(), nullptr, req.getFileName());
 
     WsWuInfo winfo(context, wuid.str());
     winfo.getCommon(resp.updateWorkunit(), WUINFO_All);

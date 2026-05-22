@@ -269,12 +269,39 @@ jobs:
             ${{ secrets.JFROG_REGISTRY || 'dummy.io' }}/hpccpl-docker-local/platform-core-ln:${{ steps.vars.outputs.hpcc_version }}
           cache-from: |
             type=registry,ref=hpccsystems/platform-core-${{ inputs.os }}:${{ steps.vars.outputs.candidate_base_branch }}
+
+      - name: Locate withsymbols_k8s deb file
+        if: ${{ inputs.build-docker-image}}
+        id: ln-container-withsymbols
+        run: |
+          withsymbols_k8s_pkg_path=$(ls -t ${{ steps.vars.outputs.folder_build }}/*64_withsymbols_k8s.deb 2>/dev/null | head -1)
+          withsymbols_k8s_pkg_file=$(basename "$withsymbols_k8s_pkg_path")
+          echo "withsymbols_k8s_pkg_file=$withsymbols_k8s_pkg_file" >> $GITHUB_OUTPUT
+          echo "$withsymbols_k8s_pkg_file"
   
+      - name: Create Docker Image With Symbols
+        uses: docker/build-push-action@v5
+        if: ${{ inputs.build-docker-image }}
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          file: ${{ steps.vars.outputs.folder_platform }}/dockerfiles/platform-core-${{ inputs.os }}/Dockerfile
+          context: ${{ steps.vars.outputs.folder_build }}
+          push: false
+          load: true
+          build-args: |
+            PKG_FILE=${{ steps.ln-container-withsymbols.outputs.withsymbols_k8s_pkg_file }}
+          tags: |
+            ${{ secrets.JFROG_REGISTRY || 'dummy.io' }}/hpccpl-docker-local/platform-core-ln-withsymbols:${{ steps.vars.outputs.hpcc_version }}
+          cache-from: |
+            type=registry,ref=hpccsystems/platform-core-${{ inputs.os }}:${{ steps.vars.outputs.candidate_base_branch }}
+
       - name: JFrog Docker Push and Publish
         if: ${{ inputs.build-docker-image && github.repository_owner == 'hpcc-systems' }}
         run: |
           jf docker push ${{ secrets.JFROG_REGISTRY || 'dummy.io' }}/hpccpl-docker-local/platform-core-ln:${{ steps.vars.outputs.hpcc_version }} --build-name=platform-core-ln --build-number=${{ steps.vars.outputs.hpcc_version }} --project=hpccpl
           jf rt bp platform-core-ln ${{ steps.vars.outputs.hpcc_version }} --project=hpccpl
+          jf docker push ${{ secrets.JFROG_REGISTRY || 'dummy.io' }}/hpccpl-docker-local/platform-core-ln-withsymbols:${{ steps.vars.outputs.hpcc_version }} --build-name=platform-core-ln-withsymbols --build-number=${{ steps.vars.outputs.hpcc_version }} --project=hpccpl
+          jf rt bp platform-core-ln-withsymbols ${{ steps.vars.outputs.hpcc_version }} --project=hpccpl
 
       - name: Cleanup Environment
         if: always()
