@@ -8,8 +8,10 @@ import { replaceUrl } from "./util/history";
 
 import "src-react-css/index.css";
 
+declare const __ECLWATCH_DIST_URL__: string;
+
 ECLWatchLogger.init();
-initializeIcons("/esp/files/dist/fluentui-fonts/");
+initializeIcons(`${__ECLWATCH_DIST_URL__}/fluentui-fonts/`);
 
 const logger = scopedLogger("../index.tsx");
 

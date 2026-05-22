@@ -55,6 +55,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   build:
@@ -129,6 +130,12 @@ jobs:
   
       - name: Print Vars
         run: echo "${{ toJson(steps.vars.outputs)}}"
+
+      - name: Download ECL Watch Nightly
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        uses: ./HPCC-Platform/.github/actions/download-eclwatch-nightly
+        with:
+          destination: ${{ steps.vars.outputs.folder_build }}/esp/src/build/dist-nightly
 
       - name: Checkout LN
         uses: actions/checkout@v6
