@@ -120,7 +120,7 @@ include("${cmake_vars_file}")
 
 # There are compilation errors on gcc 15. adding `-std=c17` to CFLAGS for workaround.
 # ref: https://gitlab.archlinux.org/archlinux/packaging/packages/ncurses/-/issues/3
-if(VCPKG_DETECTED_CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND VCPKG_DETECTED_CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15)
+if(VCPKG_DETECTED_CMAKE_C_COMPILER_ID STREQUAL "GNU" AND VCPKG_DETECTED_CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 15)
     set(ENV{CFLAGS} "$ENV{CFLAGS} -std=c17")
 endif()
 
