@@ -16,6 +16,11 @@
   )</emphasis></para>
 
   <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset,
+  </emphasis><emphasis role="bold">ALL<indexterm>
+      <primary>ALL</primary>
+    </indexterm> )</emphasis></para>
+
+  <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset,
   expression </emphasis><emphasis role="bold"> [<emphasis>,</emphasis>
   MERGE(</emphasis><emphasis> sorts </emphasis><emphasis role="bold">) ]
   </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
@@ -46,15 +51,22 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="82.20pt" />
+        <colspec colwidth="82.20pt"/>
 
-        <colspec />
+        <colspec/>
 
         <tbody>
           <row>
             <entry><emphasis>recordset</emphasis></entry>
 
             <entry>The set of records to distribute.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALL</emphasis></entry>
+
+            <entry>Specifies each record is sent to all nodes in the
+            cluster.</entry>
           </row>
 
           <row>
@@ -209,6 +221,21 @@
     equivalent to distributing by a hash of the entire record.</para>
   </sect2>
 
+  <sect2 id="All_DISTRIBUTE">
+    <title>ALL DISTRIBUTE</title>
+
+    <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset,
+    </emphasis><emphasis role="bold">ALL )</emphasis></para>
+
+    <para>This form redistributes the <emphasis>recordset</emphasis> to all
+    nodes. Each input record is duplicated on every node in the
+    cluster.</para>
+
+    <para>This is useful when subsequent LOCAL processing requires a full copy
+    of the same data on each node (for example, LOCAL joins against a shared
+    lookup dataset).</para>
+  </sect2>
+
   <sect2 id="Expression_DISTRIBUTE">
     <title>Expression DISTRIBUTE</title>
 
@@ -274,8 +301,10 @@
     <para>Example:</para>
 
     <programlisting lang="ECL">MySet1 := DISTRIBUTE(Person); //"random" distribution - no skew
+  //ALL example:
+MySetAll := DISTRIBUTE(Person, ALL); //duplicate every record to every node
+ //Example where all people with the same SSN end up on the same node
 MySet2 := DISTRIBUTE(Person,HASH32(Person.per_ssn));
- //all people with the same SSN end up on the same node
  //INDEX example:
 mainRecord := RECORD
   INTEGER8 sequence;
