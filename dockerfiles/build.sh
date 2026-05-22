@@ -44,9 +44,13 @@ function detect_host_arch() {
 
 function validate_arch_support() {
     detect_host_arch
-    if [ "$ARCH" == "arm64" ] && [ "$HOST_ARCH" != "arm64" ]; then
-        echo "Warning: building ARM64 on a non-ARM host via Docker emulation."
-        echo "This is expected to be much slower than a native ARM64 build."
+    if [ "$HOST_ARCH" == "unknown" ]; then
+        echo "Warning: host architecture could not be determined; Docker emulation may be used."
+        return
+    fi
+    if [ "$ARCH" != "$HOST_ARCH" ]; then
+        echo "Warning: building $ARCH on a $HOST_ARCH host via Docker emulation."
+        echo "This is expected to be much slower than a native build."
     fi
 }
 
@@ -73,7 +77,7 @@ function set_globals() {
         VCPKG_REF="$VCPKG_REF-arm"
         DOCKER_PLATFORM="--platform linux/arm64"
     else
-        DOCKER_PLATFORM=""
+        DOCKER_PLATFORM="--platform linux/amd64"
     fi
 
     GITHUB_BRANCH=$(git log -50 --pretty=format:"%D" | tr ',' '\n' | grep 'upstream/' | awk 'NR==1 {sub("upstream/", ""); print}' | xargs)
