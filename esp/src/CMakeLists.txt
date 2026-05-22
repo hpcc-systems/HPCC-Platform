@@ -36,6 +36,7 @@ file(COPY
     ${CMAKE_CURRENT_SOURCE_DIR}/GetUserName.html
     ${CMAKE_CURRENT_SOURCE_DIR}/index.html
     ${CMAKE_CURRENT_SOURCE_DIR}/Login.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/nightly.html
     ${CMAKE_CURRENT_SOURCE_DIR}/lws.config.js
     ${CMAKE_CURRENT_SOURCE_DIR}/package-lock.json
     ${CMAKE_CURRENT_SOURCE_DIR}/package.json
@@ -386,6 +387,7 @@ set ( SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/GetUserName.html
     ${CMAKE_CURRENT_SOURCE_DIR}/index.html
     ${CMAKE_CURRENT_SOURCE_DIR}/Login.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/nightly.html
     ${CMAKE_CURRENT_SOURCE_DIR}/lws.config.js
     ${CMAKE_CURRENT_SOURCE_DIR}/package-lock.json
     ${CMAKE_CURRENT_SOURCE_DIR}/package.json
