@@ -2063,7 +2063,11 @@ protected:
                 gatheredRHSNodeStreams.append(* overflowStream.getClear());
             }
             if (gatheredRHSNodeStreams.ordinality())
-                return createConcatRowStream(gatheredRHSNodeStreams.ordinality(), gatheredRHSNodeStreams.getArray());
+            {
+                Owned<IRowStream> concatStream = createConcatRowStream(gatheredRHSNodeStreams.ordinality(), gatheredRHSNodeStreams.getArray());
+                gatheredRHSNodeStreams.kill(); // CConcatRowStream has linked each stream; safe to release array now
+                return concatStream.getClear();
+            }
         }
         return NULL;
     }
@@ -2849,6 +2853,7 @@ public:
     virtual void reset() override
     {
         PARENT::reset();
+        gatheredRHSNodeStreams.kill(); // safeguard: clear any streams not consumed via getGatheredRHSStream()
         if (isSmart())
         {
             if (!isRhsConstant())
