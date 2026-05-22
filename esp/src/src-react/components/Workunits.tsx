@@ -39,6 +39,7 @@ const FilterFields: Fields = {
     "MinimumExecuteCost": { type: "string", label: nlsHPCC.MinimumExecuteCost, placeholder: "0.0002" },
     "MinimumFileAccessCost": { type: "string", label: nlsHPCC.MinimumFileAccessCost, placeholder: "0.03" },
     "ECL": { type: "string", label: nlsHPCC.ECL, placeholder: nlsHPCC.dataset },
+    "ErrorContents": { type: "string", label: nlsHPCC.Errors, placeholder: nlsHPCC.UnexpectedProcessTermination },
     "LogicalFile": { type: "string", label: nlsHPCC.LogicalFile, placeholder: nlsHPCC.somefile },
     "LogicalFileSearchType": { type: "logicalfile-type", label: nlsHPCC.LogicalFileType, placeholder: "", disabled: (params: Fields) => !params.LogicalFile.value },
     "LastNDays": { type: "string", label: nlsHPCC.LastNDays, placeholder: "2" },

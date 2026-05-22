@@ -5032,6 +5032,7 @@ EnumMapping workunitSortFields[] =
    { WUSFcostexecute, "@costExecute" },
    { WUSFcostcompile, "@costCompile" },
    { WUSFcostfileaccess, "@costFileAccess" },
+   { WUSFerrormessage, "Exceptions/Exception" },
    { WUSFterm, NULL }
 };
 
@@ -6165,7 +6166,12 @@ public:
             query.append('?');
         if (flags & WUSFwild)
             query.append('~');
-        query.append('"').append(value).append("\"]");
+        bool hasSingleQuote = (strchr(value, '\'') != nullptr);
+        bool hasDoubleQuote = (strchr(value, '"') != nullptr);
+        if (hasDoubleQuote && hasSingleQuote)
+            throw MakeStringException(WUERR_InvalidUserInput, "WU query filter value cannot contain both single-quote and double-quote characters");
+        char q = hasDoubleQuote ? '\'' : '"';
+        query.append(q).append(value).append(q).append(']');
     };
 
     static void appendMinCostToQueryString(StringBuffer& query, WUSortField filter, const char* value)

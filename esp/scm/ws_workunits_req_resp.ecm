@@ -87,6 +87,8 @@ ESPrequest [nil_remove] WUQueryRequest
     [min_ver("2.02")] double MinimumFileAccessCost(0);
     [min_ver("2.02")] double MinimumCompileCost(0);
 
+    [min_ver("2.07")] string ErrorContents;
+
     string Sortby;
     bool Descending(false);
     int64 CacheHint;

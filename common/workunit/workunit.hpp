@@ -1208,7 +1208,7 @@ enum SummaryFlags : byte
 };
 BITMASK_ENUM(SummaryFlags);
 
-struct ncasecomp { 
+struct ncasecomp {
     bool operator() (const std::string& lhs, const std::string& rhs) const {
         return stricmp(lhs.c_str(), rhs.c_str()) < 0;
     }
@@ -1499,6 +1499,7 @@ enum WUSortField
     WUSFcostexecute = 17,
     WUSFcostcompile = 18,
     WUSFcostfileaccess = 19,
+    WUSFerrormessage = 20,
     WUSFterm = 0,
     WUSFreverse = 256,
     WUSFnocase = 512,

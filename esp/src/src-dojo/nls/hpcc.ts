@@ -1156,6 +1156,7 @@ export = {
         UnavailableInContainerized: "This is unavailable in a containerized environment.",
         Unbound: "unbound",
         undefined: "undefined",
+        UnexpectedProcessTermination: "unexpected process termination",
         Unknown: "Unknown",
         Unlock: "Unlock",
         UnlockSDSLock: "Unlock SDS Lock",

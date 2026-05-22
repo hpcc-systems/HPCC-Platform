@@ -1755,11 +1755,11 @@ void doWUQueryByFile(IEspContext &context, const char *logicalFile, IEspWUQueryR
     resp.setNumWUs(1);
 }
 
-bool addWUQueryFilter(WUSortField *filters, unsigned short &count, MemoryBuffer &buff, const char *name, WUSortField value)
+bool addWUQueryFilter(std::vector<WUSortField> &filters, MemoryBuffer &buff, const char *name, WUSortField value)
 {
     if (isEmpty(name))
         return false;
-    filters[count++] = value;
+    filters.push_back(value);
     if ((value & WUSFwild) != 0 && !containsWildcard(name))
     {
         VStringBuffer s("*%s*", name);
@@ -1770,17 +1770,17 @@ bool addWUQueryFilter(WUSortField *filters, unsigned short &count, MemoryBuffer 
     return true;
 }
 
-bool addWUQueryFilterDouble(WUSortField *filters, unsigned short &count, MemoryBuffer &buff, double double_num, WUSortField value)
+bool addWUQueryFilterDouble(std::vector<WUSortField> &filters, MemoryBuffer &buff, double double_num, WUSortField value)
 {
     if (double_num == 0)
         return false;
     VStringBuffer vBuf("%f", double_num);
-    filters[count++] = value;
+    filters.push_back(value);
     buff.append(vBuf);
     return true;
 }
 
-bool addWUQueryFilterTime(WUSortField *filters, unsigned short &count, MemoryBuffer &buff, const char *stime, WUSortField value)
+bool addWUQueryFilterTime(std::vector<WUSortField> &filters, MemoryBuffer &buff, const char *stime, WUSortField value)
 {
     if (isEmpty(stime))
         return false;
@@ -1790,23 +1790,23 @@ bool addWUQueryFilterTime(WUSortField *filters, unsigned short &count, MemoryBuf
     dt.getDate(year, month, day, true);
     dt.getTime(hour, minute, second, nano, true);
     VStringBuffer wuid("W%4d%02d%02d-%02d%02d%02d",year,month,day,hour,minute,second);
-    filters[count++] = value;
+    filters.push_back(value);
     buff.append(wuid.str());
     return true;
 }
 
-bool addWUQueryFilterTotalClusterTime(WUSortField *filters, unsigned short &count, MemoryBuffer &filterBuf, unsigned milliseconds, WUSortField value)
+bool addWUQueryFilterTotalClusterTime(std::vector<WUSortField> &filters, MemoryBuffer &filterBuf, unsigned milliseconds, WUSortField value)
 {
     if (milliseconds == 0)
         return false;
 
     VStringBuffer vBuf("%u", milliseconds);
-    filters[count++] = value;
+    filters.push_back(value);
     filterBuf.append(vBuf);
     return true;
 }
 
-bool addWUQueryFilterApplication(WUSortField *filters, unsigned short &count, MemoryBuffer &buff, const char *appname, const char *appkey, const char *appdata)
+bool addWUQueryFilterApplication(std::vector<WUSortField> &filters, MemoryBuffer &buff, const char *appname, const char *appkey, const char *appdata)
 {
     if (isEmpty(appname))
         return false;  // appname must be specified
@@ -1815,7 +1815,7 @@ bool addWUQueryFilterApplication(WUSortField *filters, unsigned short &count, Me
     VStringBuffer path("%s/%s", appname, appkey && *appkey ? appkey : "*");
     buff.append(path.str());
     buff.append(appdata);
-    filters[count++] = WUSFappvalue;
+    filters.push_back(WUSFappvalue);
     return true;
 }
 
@@ -1898,8 +1898,7 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
     WUSortField sortorder;
     readWUQuerySortOrder(req.getSortby(), req.getDescending(), sortorder);
 
-    WUSortField filters[10];
-    unsigned short filterCount = 0;
+    std::vector<WUSortField> filters;
     MemoryBuffer filterbuf;
 
     WuidPattern wuidPattern(req.getWuid());
@@ -1909,7 +1908,7 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
     bool bDoubleCheckState = false;
     if(req.getState() && *req.getState())
     {
-        filters[filterCount++] = WUSFstate;
+        filters.push_back(WUSFstate);
         if (!strieq(req.getState(), "unknown"))
             filterbuf.append(req.getState());
         else
@@ -1918,36 +1917,37 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
             bDoubleCheckState = true;
     }
 
-    addWUQueryFilter(filters, filterCount, filterbuf, wuidPattern.str(), WUSFwildwuid);
-    addWUQueryFilter(filters, filterCount, filterbuf, req.getCluster(), WUSFcluster);
-    addWUQueryFilter(filters, filterCount, filterbuf, req.getLogicalFile(), (WUSortField) (WUSFfileread | WUSFnocase));
-    addWUQueryFilter(filters, filterCount, filterbuf, req.getOwner(), (WUSortField) (WUSFuser | WUSFnocase));
-    addWUQueryFilter(filters, filterCount, filterbuf, req.getJobname(), (WUSortField) (WUSFjob | WUSFnocase));
-    addWUQueryFilter(filters, filterCount, filterbuf, req.getECL(), (WUSortField) (WUSFecl | WUSFwild));
-    addWUQueryFilterDouble(filters, filterCount, filterbuf, req.getMinimumCompileCost(), WUSFcostcompile);
-    addWUQueryFilterDouble(filters, filterCount, filterbuf, req.getMinimumExecuteCost(), WUSFcostexecute);
-    addWUQueryFilterDouble(filters, filterCount, filterbuf, req.getMinimumFileAccessCost(), WUSFcostfileaccess);
+    addWUQueryFilter(filters, filterbuf, wuidPattern.str(), WUSFwildwuid);
+    addWUQueryFilter(filters, filterbuf, req.getCluster(), WUSFcluster);
+    addWUQueryFilter(filters, filterbuf, req.getLogicalFile(), (WUSortField) (WUSFfileread | WUSFnocase));
+    addWUQueryFilter(filters, filterbuf, req.getOwner(), (WUSortField) (WUSFuser | WUSFnocase));
+    addWUQueryFilter(filters, filterbuf, req.getJobname(), (WUSortField) (WUSFjob | WUSFnocase));
+    addWUQueryFilter(filters, filterbuf, req.getECL(), (WUSortField) (WUSFecl | WUSFwild));
+    addWUQueryFilter(filters, filterbuf, req.getErrorContents(), (WUSortField) (WUSFerrormessage | WUSFwild | WUSFnocase));
+    addWUQueryFilterDouble(filters, filterbuf, req.getMinimumCompileCost(), WUSFcostcompile);
+    addWUQueryFilterDouble(filters, filterbuf, req.getMinimumExecuteCost(), WUSFcostexecute);
+    addWUQueryFilterDouble(filters, filterbuf, req.getMinimumFileAccessCost(), WUSFcostfileaccess);
     CWUProtectFilter protectedFilter = req.getProtected();
     if (protectedFilter != CWUProtectFilter_All)
-        addWUQueryFilter(filters, filterCount, filterbuf, (protectedFilter == CWUProtectFilter_Protected) ? "1" : "0", WUSFprotected);
+        addWUQueryFilter(filters, filterbuf, (protectedFilter == CWUProtectFilter_Protected) ? "1" : "0", WUSFprotected);
 
-    addWUQueryFilterTotalClusterTime(filters, filterCount, filterbuf, req.getTotalClusterTimeThresholdMilliSec(), WUSFtotalthortime);
+    addWUQueryFilterTotalClusterTime(filters, filterbuf, req.getTotalClusterTimeThresholdMilliSec(), WUSFtotalthortime);
 
-    addWUQueryFilterTime(filters, filterCount, filterbuf, req.getStartDate(), WUSFwuid);
-    addWUQueryFilterTime(filters, filterCount, filterbuf, req.getEndDate(), WUSFwuidhigh);
+    addWUQueryFilterTime(filters, filterbuf, req.getStartDate(), WUSFwuid);
+    addWUQueryFilterTime(filters, filterbuf, req.getEndDate(), WUSFwuidhigh);
     if (version < 1.55)
-        addWUQueryFilterApplication(filters, filterCount, filterbuf, req.getApplicationName(), req.getApplicationKey(), req.getApplicationData());
+        addWUQueryFilterApplication(filters, filterbuf, req.getApplicationName(), req.getApplicationKey(), req.getApplicationData());
     else
     {
         IArrayOf<IConstApplicationValue>& applicationFilters = req.getApplicationValues();
         ForEachItemIn(i, applicationFilters)
         {
             IConstApplicationValue &item = applicationFilters.item(i);
-            addWUQueryFilterApplication(filters, filterCount, filterbuf, item.getApplication(), item.getName(), item.getValue());
+            addWUQueryFilterApplication(filters, filterbuf, item.getApplication(), item.getName(), item.getValue());
         }
     }
 
-    filters[filterCount] = WUSFterm;
+    filters.push_back(WUSFterm);
 
     __int64 cacheHint = 0;
     if (!req.getCacheHint_isNull())
@@ -1956,7 +1956,7 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
     unsigned numWUs;
     PROGLOG("WUQuery: getWorkUnitsSorted");
-    Owned<IConstWorkUnitIterator> it = factory->getWorkUnitsSorted(sortorder, filters, filterbuf.bufferBase(), begin, pagesize+1, &cacheHint, &numWUs); // MORE - need security flags here!
+    Owned<IConstWorkUnitIterator> it = factory->getWorkUnitsSorted(sortorder, filters.data(), filterbuf.bufferBase(), begin, pagesize+1, &cacheHint, &numWUs); // MORE - need security flags here!
     if (version >= 1.41)
         resp.setCacheHint(cacheHint);
     PROGLOG("WUQuery: getWorkUnitsSorted done");
@@ -2120,8 +2120,7 @@ void doWULightWeightQueryWithSort(IEspContext &context, IEspWULightWeightQueryRe
     WUSortField sortOrder;
     readWUQuerySortOrder(req.getSortBy(), req.getDescending(), sortOrder);
 
-    WUSortField filters[10];
-    unsigned short filterCount = 0;
+    std::vector<WUSortField> filters;
     MemoryBuffer filterbuf;
 
     WuidPattern wuidPattern(req.getWuid());
@@ -2131,7 +2130,7 @@ void doWULightWeightQueryWithSort(IEspContext &context, IEspWULightWeightQueryRe
     bool bDoubleCheckState = false;
     if(req.getState() && *req.getState())
     {
-        filters[filterCount++] = WUSFstate;
+        filters.push_back(WUSFstate);
         if (!strieq(req.getState(), "unknown"))
             filterbuf.append(req.getState());
         else
@@ -2140,22 +2139,22 @@ void doWULightWeightQueryWithSort(IEspContext &context, IEspWULightWeightQueryRe
             bDoubleCheckState = true;
     }
 
-    addWUQueryFilter(filters, filterCount, filterbuf, wuidPattern.str(), WUSFwildwuid);
-    addWUQueryFilter(filters, filterCount, filterbuf, req.getCluster(), WUSFcluster);
-    addWUQueryFilter(filters, filterCount, filterbuf, req.getOwner(), (WUSortField) (WUSFuser | WUSFnocase));
-    addWUQueryFilter(filters, filterCount, filterbuf, req.getJobName(), (WUSortField) (WUSFjob | WUSFnocase));
+    addWUQueryFilter(filters, filterbuf, wuidPattern.str(), WUSFwildwuid);
+    addWUQueryFilter(filters, filterbuf, req.getCluster(), WUSFcluster);
+    addWUQueryFilter(filters, filterbuf, req.getOwner(), (WUSortField) (WUSFuser | WUSFnocase));
+    addWUQueryFilter(filters, filterbuf, req.getJobName(), (WUSortField) (WUSFjob | WUSFnocase));
 
     //StartDate example: 2015-08-26T14:26:00
-    addWUQueryFilterTime(filters, filterCount, filterbuf, req.getStartDate(), WUSFwuid);
-    addWUQueryFilterTime(filters, filterCount, filterbuf, req.getEndDate(), WUSFwuidhigh);
+    addWUQueryFilterTime(filters, filterbuf, req.getStartDate(), WUSFwuid);
+    addWUQueryFilterTime(filters, filterbuf, req.getEndDate(), WUSFwuidhigh);
     IArrayOf<IConstApplicationValue>& applicationFilters = req.getApplicationValues();
     ForEachItemIn(i, applicationFilters)
     {
         IConstApplicationValue &item = applicationFilters.item(i);
-        addWUQueryFilterApplication(filters, filterCount, filterbuf, item.getApplication(), item.getName(), item.getValue());
+        addWUQueryFilterApplication(filters, filterbuf, item.getApplication(), item.getName(), item.getValue());
     }
 
-    filters[filterCount] = WUSFterm;
+    filters.push_back(WUSFterm);
 
     __int64 cacheHint = 0;
     if (!req.getCacheHint_isNull())
@@ -2164,7 +2163,7 @@ void doWULightWeightQueryWithSort(IEspContext &context, IEspWULightWeightQueryRe
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
     unsigned numWUs;
     PROGLOG("getWorkUnitsSorted(LightWeight)");
-    Owned<IConstWorkUnitIterator> it = factory->getWorkUnitsSorted(sortOrder, filters, filterbuf.bufferBase(), pageStartFrom, pageSize+1, &cacheHint, &numWUs); // MORE - need security flags here!
+    Owned<IConstWorkUnitIterator> it = factory->getWorkUnitsSorted(sortOrder, filters.data(), filterbuf.bufferBase(), pageStartFrom, pageSize+1, &cacheHint, &numWUs); // MORE - need security flags here!
     resp.setCacheHint(cacheHint);
     PROGLOG("getWorkUnitsSorted(LightWeight) done");
 
