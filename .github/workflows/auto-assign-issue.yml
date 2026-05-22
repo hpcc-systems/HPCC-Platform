@@ -1,9 +1,8 @@
 name: Auto Assign Issue by Label
 
 on:
-  # Uncomment to enable automatic assignment on issue events:
-  # issues:
-  #   types: [opened, labeled]
+  issues:
+    types: [opened, labeled]
   workflow_dispatch:
     inputs:
       issue_number:
