@@ -613,10 +613,29 @@ int main(int argc, const char* argv[])
             Owned<IPropertyTreeIterator> iter = daFileSrv->getElements("Instance");
             ForEach(*iter)
             {
-                IpAddress instanceIP(iter->query().queryProp("@netAddress"));
+                const char *instanceAddr = iter->query().queryProp("@netAddress");
+                if (isEmptyString(instanceAddr))
+                    continue;
+                IpAddress instanceIP(instanceAddr);
                 if (instanceIP.ipequals(queryHostIP()))
-                    dafileSrvInstance = &iter->query();
+                {
+                    _dafileSrvInstance.set(&iter->query());
+                    dafileSrvInstance = _dafileSrvInstance;
+                    break;
+                }
             }
+            // If host IP matching fails (e.g. localhost-vs-interface differences),
+            // fall back to first configured instance instead of dereferencing null.
+            if (!dafileSrvInstance)
+            {
+                IPropertyTree *firstInstance = daFileSrv->queryPropTree("Instance[1]");
+                if (firstInstance)
+                {
+                    _dafileSrvInstance.set(firstInstance);
+                    dafileSrvInstance = _dafileSrvInstance;
+                }
+            }
+
             if (dafileSrvInstance)
             {
                 // check if there's a DaFileSrvGroup
@@ -628,8 +647,10 @@ int main(int argc, const char* argv[])
                     if (daFileSrvGroup)
                     {
                         // create a copy of the group settings and merge in (overwrite) with the instance settings, i.e. any group settings become defaults
-                        _dafileSrvInstance.setown(createPTreeFromIPT(daFileSrvGroup));
-                        synchronizePTree(_dafileSrvInstance, dafileSrvInstance, false, false);
+                        Owned<IPropertyTree> mergedInstance;
+                        mergedInstance.setown(createPTreeFromIPT(daFileSrvGroup));
+                        synchronizePTree(mergedInstance, dafileSrvInstance, false, false);
+                        _dafileSrvInstance.setown(mergedInstance.getClear());
                         dafileSrvInstance = _dafileSrvInstance;
                     }
                 }
@@ -637,7 +658,8 @@ int main(int argc, const char* argv[])
 
             // merge in bare-metal dafilesrv instance expert settings
             IPropertyTree *instanceExpert = nullptr;
-            instanceExpert = dafileSrvInstance->queryPropTree("expert");
+            if (dafileSrvInstance)
+                instanceExpert = dafileSrvInstance->queryPropTree("expert");
             if (instanceExpert)
                 synchronizePTree(expert, instanceExpert, false, true);
         }
@@ -645,7 +667,7 @@ int main(int argc, const char* argv[])
         // update config and hook callback with dafilesrv expert PTree
         replaceComponentConfig(newConfig, getGlobalConfigSP());
 
-        // bare-metal gets it's certificate info. from environment at the moment, 'keyPairInfo' not used in containerized mode
+        // bare-metal gets its certificate info. from environment at the moment, 'keyPairInfo' not used in containerized mode
         keyPairInfo.set(env->queryPropTree("EnvSettings/Keys"));
     }
 

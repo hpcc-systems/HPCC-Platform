@@ -341,3 +341,9 @@ jobs:
       cmake-configuration-ex: '-DCMAKE_OSX_ARCHITECTURES=arm64 -DUSE_CPPUNIT=OFF -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DSUPPRESS_CASSANDRAEMBED=ON -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
     secrets: inherit
 
+  build-build-eclwatch:
+    if: ${{ github.event_name == 'schedule' }}
+    uses: ./.github/workflows/build-eclwatch.yml
+    with:
+      asset-name: 'eclwatch-nightly'
+    secrets: inherit

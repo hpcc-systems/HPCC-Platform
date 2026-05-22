@@ -656,6 +656,37 @@ size32_t getBlockedRandomIOSize(const char *planeName, size32_t defaultSize)
     return (size32_t)getPlaneAttributeValue(planeName, BlockedRandomIO, defaultSize);
 }
 
+size32_t getForeignBlockedIOSize(bool isFiltered)
+{
+    unsigned foreignBlockedIOSizeK = (unsigned)getExpertOptInt64("foreignSequentialBlockedIOSizeK", (unsigned)-1);
+    if (isFiltered)
+    {
+        foreignBlockedIOSizeK = (unsigned)getExpertOptInt64("foreignRandomBlockedIOSizeK", foreignBlockedIOSizeK);
+        if ((unsigned)-1 == foreignBlockedIOSizeK)
+            foreignBlockedIOSizeK = isContainerized() ? 64 : 0; // default to 64k random block size for filtered foreign reads on containerized environment
+    }
+    else
+    {
+        if ((unsigned)-1 == foreignBlockedIOSizeK)
+            foreignBlockedIOSizeK = isContainerized() ? 4 * 1024 : 0; // default to 4MB sequential block size for unfiltered foreign reads on containerized environment
+    }
+    verifyex(foreignBlockedIOSizeK <= ((size32_t)-1) / 1024);
+    return foreignBlockedIOSizeK * 1024;
+}
+
+// This is the block size to use for index reads, conditional on whether reading with/without filtered. If filtered, use the random IO size, otherwise the sequential IO size.
+size32_t getIndexBlockedIOSize(const char *planeName, bool isFiltered)
+{
+    // If unfiltered, use the sequential block size if defined in the plane, or component config.
+    size32_t blockedIOSize = getBlockedFileIOSize(planeName, (size32_t)-1);
+    if (isFiltered)
+        blockedIOSize = getBlockedRandomIOSize(planeName, blockedIOSize);
+
+    if ((size32_t)-1 == blockedIOSize)
+        blockedIOSize = 0; // caller should interpret as use default
+    return blockedIOSize;
+}
+
 static std::atomic<int> avoidRename{-1};
 static CriticalSection avoidRenameCS;
 // returns true if configured and should use 'result'

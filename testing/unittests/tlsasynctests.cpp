@@ -472,6 +472,218 @@ public:
     }
 };
 
+// Helper class to test async TLS accept followed by synchronous I/O on the same secure socket.
+// This validates that sockets switched to memory BIO during async handshake still work with
+// existing synchronous read/write code paths.
+class AsyncAcceptSyncEchoServer : public Thread
+{
+private:
+    Owned<ISocket> listenSocket;
+    Owned<ISecureSocketContext> secureContext;
+    Linked<IAsyncProcessor> processor;
+    std::atomic<bool> running{true};
+    unsigned short port = 0;
+    Semaphore started;
+    std::atomic<bool> startupSucceeded{false};
+    CTLSTestCertificate cert;
+    std::atomic<unsigned> acceptCount{0};
+    Semaphore messageHandled;
+    CriticalSection workerThreadsCrit;
+    std::vector<std::thread> workerThreads;
+
+    class AsyncAcceptHandler : public CSimpleInterfaceOf<IAsyncCallback>
+    {
+    private:
+        AsyncAcceptSyncEchoServer *owner;
+        Owned<ISecureSocket> secureSocket;
+
+    public:
+        AsyncAcceptHandler(AsyncAcceptSyncEchoServer *_owner, ISecureSocket *_socket)
+            : owner(_owner), secureSocket(_socket)
+        {
+        }
+
+        virtual bool onAsyncComplete(int result) override
+        {
+            if (result == 0 && owner->running)
+            {
+                owner->acceptCount++;
+                owner->startSyncEchoWorker(secureSocket.getClear());
+            }
+            return true;
+        }
+
+        virtual void afterCompletion() override
+        {
+            Release();
+        }
+    };
+
+    void startSyncEchoWorker(ISecureSocket *secureSocket)
+    {
+        CriticalBlock block(workerThreadsCrit);
+        workerThreads.emplace_back([this, secureSocket]()
+        {
+            Owned<ISecureSocket> ownedSecureSocket;
+            ownedSecureSocket.setown(secureSocket);
+            try
+            {
+                char buffer[1024];
+                size32_t bytesRead = 0;
+                ownedSecureSocket->readtms(buffer, 1, sizeof(buffer), bytesRead, 5000);
+                if (bytesRead > 0)
+                {
+                    ownedSecureSocket->writetms(buffer, bytesRead, bytesRead, 5000);
+                    messageHandled.signal();
+                }
+            }
+            catch (IException *e)
+            {
+                e->Release();
+            }
+            catch (...)
+            {
+            }
+
+            try
+            {
+                ownedSecureSocket->close();
+            }
+            catch (...)
+            {
+            }
+        });
+    }
+
+    void joinWorkerThreads()
+    {
+        std::vector<std::thread> threads;
+        {
+            CriticalBlock block(workerThreadsCrit);
+            threads.swap(workerThreads);
+        }
+
+        for (auto &thread : threads)
+        {
+            if (thread.joinable())
+                thread.join();
+        }
+    }
+
+public:
+    AsyncAcceptSyncEchoServer(IAsyncProcessor *_processor) : Thread("AsyncAcceptSyncEchoServer"), processor(_processor)
+    {
+    }
+
+    ~AsyncAcceptSyncEchoServer()
+    {
+        stop();
+    }
+
+    void start()
+    {
+        Thread::start(false);
+        if (!started.wait(10000))
+            throw MakeStringException(-1, "AsyncAcceptSyncEchoServer startup timed out");
+        if (!startupSucceeded.load())
+            throw MakeStringException(-1, "AsyncAcceptSyncEchoServer startup failed");
+    }
+
+    void stop()
+    {
+        running = false;
+        if (listenSocket)
+        {
+            try
+            {
+                listenSocket->cancel_accept();
+                listenSocket->close();
+            }
+            catch (...)
+            {
+            }
+        }
+        join();
+        joinWorkerThreads();
+    }
+
+    unsigned short getPort() const { return port; }
+    unsigned getAcceptCount() const { return acceptCount; }
+    bool waitForMessageHandled(unsigned timeoutMs) { return messageHandled.wait(timeoutMs); }
+
+    virtual int run() override
+    {
+        bool startupSignaled = false;
+        auto signalStarted = [&]()
+        {
+            if (!startupSignaled)
+            {
+                started.signal();
+                startupSignaled = true;
+            }
+        };
+
+        try
+        {
+            startupSucceeded = false;
+
+            Owned<IPropertyTree> config = createPTree("tls");
+            config->setProp("certificate", cert.queryCert());
+            config->setProp("privatekey", cert.queryKey());
+            secureContext.setown(createSecureSocketContextEx2(config, ServerSocket));
+
+            listenSocket.setown(createTestListenerSocket().getClear());
+            SocketEndpoint ep;
+            listenSocket->getEndpoint(ep);
+            port = ep.port;
+
+            startupSucceeded = true;
+            signalStarted();
+
+            while (running)
+            {
+                try
+                {
+                    Owned<ISocket> client = listenSocket->accept(true);
+                    if (!client || !running)
+                        break;
+
+                    ISecureSocket *secureClient = secureContext->createSecureSocket(client.getClear());
+                    AsyncAcceptHandler *handler = new AsyncAcceptHandler(this, secureClient);
+                    secureClient->startAsyncAccept(processor, *handler, SSLogMin);
+                }
+                catch (IJSOCK_Exception *e)
+                {
+                    switch (e->errorCode())
+                    {
+                    case JSOCKERR_cancel_accept:
+                    case JSOCKERR_graceful_close:
+                        running = false;
+                        break;
+                    }
+                    e->Release();
+                }
+                catch (IException *e)
+                {
+                    e->Release();
+                }
+            }
+        }
+        catch (IException *e)
+        {
+            startupSucceeded = false;
+            signalStarted();
+            e->Release();
+        }
+        catch (...)
+        {
+            startupSucceeded = false;
+            signalStarted();
+        }
+        return 0;
+    }
+};
+
 class TLSAsyncTests : public CppUnit::TestFixture
 {
 private:
@@ -495,6 +707,8 @@ private:
         CPPUNIT_TEST(testAsyncTLSConnectBasic);
         CPPUNIT_TEST(testAsyncTLSConnectFallback);
         CPPUNIT_TEST(testAsyncTLSConnectMultiple);
+        CPPUNIT_TEST(testSyncIOAfterAsyncTLSConnect);
+        CPPUNIT_TEST(testSyncIOAfterAsyncTLSAccept);
         CPPUNIT_TEST(testAsyncTLSReadBasic);
         CPPUNIT_TEST(testAsyncTLSReadFallback);
         CPPUNIT_TEST(testAsyncTLSReadMultipleMessages);
@@ -614,8 +828,8 @@ public:
         {
             StringBuffer msg;
             e->errorMessage(msg);
-            CPPUNIT_FAIL(msg.str());
             e->Release();
+            CPPUNIT_FAIL(msg.str());
         }
 
         server.stop();
@@ -665,8 +879,8 @@ public:
         {
             StringBuffer msg;
             e->errorMessage(msg);
-            CPPUNIT_FAIL(msg.str());
             e->Release();
+            CPPUNIT_FAIL(msg.str());
         }
 
         server.stop();
@@ -717,8 +931,8 @@ public:
         {
             StringBuffer msg;
             e->errorMessage(msg);
-            CPPUNIT_FAIL(msg.str());
             e->Release();
+            CPPUNIT_FAIL(msg.str());
         }
 
         server.stop();
@@ -771,8 +985,8 @@ public:
         {
             StringBuffer msg;
             e->errorMessage(msg);
-            CPPUNIT_FAIL(msg.str());
             e->Release();
+            CPPUNIT_FAIL(msg.str());
         }
 
         server.stop();
@@ -822,8 +1036,8 @@ public:
         {
             StringBuffer msg;
             e->errorMessage(msg);
-            CPPUNIT_FAIL(msg.str());
             e->Release();
+            CPPUNIT_FAIL(msg.str());
         }
 
         server.stop();
@@ -882,8 +1096,8 @@ public:
         {
             StringBuffer msg;
             e->errorMessage(msg);
-            CPPUNIT_FAIL(msg.str());
             e->Release();
+            CPPUNIT_FAIL(msg.str());
         }
 
         server.stop();
@@ -921,8 +1135,8 @@ public:
             StringBuffer msg;
             e->errorMessage(msg);
             uring->terminate();
-            CPPUNIT_FAIL(msg.str());
             e->Release();
+            CPPUNIT_FAIL(msg.str());
             return;
         }
         
@@ -1052,8 +1266,8 @@ public:
         {
             StringBuffer msg;
             e->errorMessage(msg);
-            CPPUNIT_FAIL(msg.str());
             e->Release();
+            CPPUNIT_FAIL(msg.str());
         }
 
         // Don't call uring->terminate() - let Owned<> handle it
@@ -1151,8 +1365,8 @@ public:
         {
             StringBuffer msg;
             e->errorMessage(msg);
-            CPPUNIT_FAIL(msg.str());
             e->Release();
+            CPPUNIT_FAIL(msg.str());
         }
 
         // Don't call uring->terminate() - let Owned<> handle it
@@ -1504,8 +1718,8 @@ public:
         {
             StringBuffer msg;
             e->errorMessage(msg);
-            CPPUNIT_FAIL(msg.str());
             e->Release();
+            CPPUNIT_FAIL(msg.str());
         }
 
         server.stop();
@@ -1559,8 +1773,8 @@ public:
         {
             StringBuffer msg;
             e->errorMessage(msg);
-            CPPUNIT_FAIL(msg.str());
             e->Release();
+            CPPUNIT_FAIL(msg.str());
         }
 
         server.stop();
@@ -1626,8 +1840,127 @@ public:
         {
             StringBuffer msg;
             e->errorMessage(msg);
-            CPPUNIT_FAIL(msg.str());
             e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+
+        server.stop();
+        uring->terminate();
+    }
+
+    void testSyncIOAfterAsyncTLSConnect()
+    {
+        Owned<IPropertyTree> config = createIOUringConfig();
+        Owned<IAsyncProcessor> uring = createURingProcessorIfEnabled(config, true);
+
+        if (!uring)
+            return;
+
+        SimpleTLSEchoServer server;
+        server.start();
+
+        try
+        {
+            SocketEndpoint ep("127.0.0.1", server.getPort());
+
+            Owned<ISocket> socket = ISocket::connect_timeout(ep, 5000);
+            ASSERT(socket.get() != nullptr);
+
+            Owned<IPropertyTree> tlsConfig = createTLSClientConfig();
+            Owned<ISecureSocketContext> clientContext = createSecureSocketContextEx2(tlsConfig, ClientSocket);
+            Owned<ISecureSocket> secureSocket = clientContext->createSecureSocket(socket.getClear());
+
+            class ConnectCallback : public CSimpleInterfaceOf<IAsyncCallback>
+            {
+            public:
+                Semaphore completed;
+                int result = -999;
+
+                virtual bool onAsyncComplete(int _result) override
+                {
+                    result = _result;
+                    completed.signal();
+                    return true;
+                }
+            };
+
+            ConnectCallback callback;
+            secureSocket->startAsyncConnect(uring, callback, SSLogMin);
+
+            ASSERT(callback.completed.wait(5000));
+            ASSERT(callback.result == 0);
+
+            const char *msg = "sync io after async connect";
+            secureSocket->write(msg, strlen(msg));
+
+            char buffer[256];
+            memset(buffer, 0, sizeof(buffer));
+            size32_t bytesRead = 0;
+            secureSocket->readtms(buffer, strlen(msg), sizeof(buffer), bytesRead, 5000);
+
+            ASSERT(bytesRead == strlen(msg));
+            ASSERT(memcmp(buffer, msg, strlen(msg)) == 0);
+
+            secureSocket->close();
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+
+        server.stop();
+        uring->terminate();
+    }
+
+    void testSyncIOAfterAsyncTLSAccept()
+    {
+        Owned<IPropertyTree> config = createIOUringConfig();
+        Owned<IAsyncProcessor> uring = createURingProcessorIfEnabled(config, true);
+
+        if (!uring)
+            return;
+
+        AsyncAcceptSyncEchoServer server(uring);
+        server.start();
+
+        try
+        {
+            SocketEndpoint ep("127.0.0.1", server.getPort());
+
+            Owned<ISocket> socket = ISocket::connect_timeout(ep, 5000);
+            ASSERT(socket.get() != nullptr);
+
+            Owned<IPropertyTree> tlsConfig = createTLSClientConfig();
+            Owned<ISecureSocketContext> clientContext = createSecureSocketContextEx2(tlsConfig, ClientSocket);
+            Owned<ISecureSocket> secureSocket = clientContext->createSecureSocket(socket.getClear());
+
+            int status = secureSocket->secure_connect(SSLogMin);
+            ASSERT(status == 0);
+
+            const char *msg = "sync io after async accept";
+            secureSocket->write(msg, strlen(msg));
+
+            char buffer[256];
+            memset(buffer, 0, sizeof(buffer));
+            size32_t bytesRead = 0;
+            secureSocket->readtms(buffer, strlen(msg), sizeof(buffer), bytesRead, 5000);
+
+            ASSERT(bytesRead == strlen(msg));
+            ASSERT(memcmp(buffer, msg, strlen(msg)) == 0);
+            ASSERT(server.waitForMessageHandled(5000));
+            ASSERT(server.getAcceptCount() >= 1);
+
+            secureSocket->close();
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
         }
 
         server.stop();
@@ -1700,8 +2033,8 @@ public:
         {
             StringBuffer msg;
             e->errorMessage(msg);
-            CPPUNIT_FAIL(msg.str());
             e->Release();
+            CPPUNIT_FAIL(msg.str());
         }
 
         server.stop();
@@ -1765,8 +2098,8 @@ public:
         {
             StringBuffer msg;
             e->errorMessage(msg);
-            CPPUNIT_FAIL(msg.str());
             e->Release();
+            CPPUNIT_FAIL(msg.str());
         }
 
         server.stop();
@@ -1853,8 +2186,8 @@ public:
         {
             StringBuffer msg;
             e->errorMessage(msg);
-            CPPUNIT_FAIL(msg.str());
             e->Release();
+            CPPUNIT_FAIL(msg.str());
         }
 
         server.stop();
@@ -1937,8 +2270,8 @@ public:
         {
             StringBuffer msg;
             e->errorMessage(msg);
-            CPPUNIT_FAIL(msg.str());
             e->Release();
+            CPPUNIT_FAIL(msg.str());
         }
 
         server.stop();
@@ -2015,8 +2348,8 @@ public:
         {
             StringBuffer msg;
             e->errorMessage(msg);
-            CPPUNIT_FAIL(msg.str());
             e->Release();
+            CPPUNIT_FAIL(msg.str());
         }
 
         server.stop();
@@ -2081,8 +2414,8 @@ public:
         {
             StringBuffer msg;
             e->errorMessage(msg);
-            CPPUNIT_FAIL(msg.str());
             e->Release();
+            CPPUNIT_FAIL(msg.str());
         }
 
         server.stop();
@@ -2184,8 +2517,8 @@ public:
         {
             StringBuffer msg;
             e->errorMessage(msg);
-            CPPUNIT_FAIL(msg.str());
             e->Release();
+            CPPUNIT_FAIL(msg.str());
         }
 
         server.stop();
@@ -2291,8 +2624,8 @@ public:
         {
             StringBuffer msg;
             e->errorMessage(msg);
-            CPPUNIT_FAIL(msg.str());
             e->Release();
+            CPPUNIT_FAIL(msg.str());
         }
 
         server.stop();
@@ -2354,8 +2687,8 @@ public:
         {
             StringBuffer msg;
             e->errorMessage(msg);
-            CPPUNIT_FAIL(msg.str());
             e->Release();
+            CPPUNIT_FAIL(msg.str());
         }
 
         server.stop();
@@ -2444,8 +2777,8 @@ public:
             // tearDown() will restore the setting, no need to do it here
             StringBuffer msg;
             e->errorMessage(msg);
-            CPPUNIT_FAIL(msg.str());
             e->Release();
+            CPPUNIT_FAIL(msg.str());
             return;
         }
 
@@ -2547,8 +2880,8 @@ public:
             // tearDown() will restore the setting, no need to do it here
             StringBuffer msg;
             e->errorMessage(msg);
-            CPPUNIT_FAIL(msg.str());
             e->Release();
+            CPPUNIT_FAIL(msg.str());
             return;
         }
 
@@ -2619,8 +2952,8 @@ public:
         {
             StringBuffer msg;
             e->errorMessage(msg);
-            CPPUNIT_FAIL(msg.str());
             e->Release();
+            CPPUNIT_FAIL(msg.str());
         }
 
         server.stop();

@@ -24,6 +24,7 @@
 #include "jliball.hpp"
 #include "string.h"
 #include <atomic>
+#include <limits>
 #include <mutex>
 
 #ifdef _WIN32
@@ -364,7 +365,8 @@ public:
         {
         case TLSWriteState::WantRead:
             // Renegotiation data arrived, feed to BIO and retry write
-            BIO_write(network_bio, encryptedBuffer.bytes(), result);
+            if (BIO_write(network_bio, encryptedBuffer.bytes(), result) != result)
+                return handleError(-1);
             complete = safeTryOperation();
             break;
             
@@ -598,6 +600,8 @@ private:
 private:
     StringBuffer& get_cn(X509* cert, StringBuffer& cn);
     void handleError(int ssl_err, bool writing, bool wait, unsigned timeoutMs, const char *opStr);
+    bool flushPendingEncryptedOutput(CCycleTimer &timer, unsigned timeoutMs, const char *opStr);
+    size32_t readAndQueueEncryptedSocketInput(CCycleTimer &timer, unsigned timeoutMs, const char *opStr);
     
     // Make verify_cert and network_bio accessible to async handlers
     friend class CAsyncTLSAcceptHandler;
@@ -1693,7 +1697,8 @@ bool CAsyncTLSReadHandler::onAsyncComplete(int result)
     if (state == TLSReadState::WantRead && result > 0)
     {
         // Feed received encrypted bytes to SSL's network BIO
-        BIO_write(network_bio, encryptedBuffer.bytes(), result);
+        if (BIO_write(network_bio, encryptedBuffer.bytes(), result) != result)
+            return handleError(-1);
         state = TLSReadState::Reading;
     }
     else if (state == TLSReadState::WantWrite)
@@ -1735,8 +1740,9 @@ bool CAsyncTLSReadHandler::tryRead()
     while (totalRead < minSize && totalRead < maxSize)
     {
         size32_t bytesToRead = maxSize - totalRead;
-        
-        int ret = SSL_read(ssl, (char*)appBuffer + totalRead, bytesToRead);
+        size32_t readChunk = std::min(bytesToRead, (size32_t)std::numeric_limits<int>::max());
+
+        int ret = SSL_read(ssl, (char*)appBuffer + totalRead, (int)readChunk);
         
         if (ret > 0)
         {
@@ -1974,6 +1980,39 @@ void CSecureSocket::handleError(int ssl_err, bool writing, bool wait, unsigned t
     }
 }
 
+bool CSecureSocket::flushPendingEncryptedOutput(CCycleTimer &timer, unsigned timeoutMs, const char *opStr)
+{
+    byte encryptedWriteBuffer[16384];
+
+    bool flushed = false;
+    while (true)
+    {
+        int pending = BIO_pending(network_bio);
+        if (pending <= 0)
+            return flushed;
+
+        size32_t chunk = std::min((size32_t)pending, (size32_t)sizeof(encryptedWriteBuffer));
+        int bytesRead = BIO_read(network_bio, encryptedWriteBuffer, chunk);
+        if (bytesRead <= 0)
+            THROWJSOCKEXCEPTION_MSG(-1, VStringBuffer("%s: failed to drain encrypted TLS output", opStr).str());
+
+        unsigned remainingMs = timer.remainingMs(timeoutMs);
+        m_socket->writetms(encryptedWriteBuffer, bytesRead, bytesRead, remainingMs);
+        flushed = true;
+    }
+}
+
+size32_t CSecureSocket::readAndQueueEncryptedSocketInput(CCycleTimer &timer, unsigned timeoutMs, const char *opStr)
+{
+    byte encryptedReadBuffer[16384];
+    size32_t encryptedRead = 0;
+    unsigned remainingMs = timer.remainingMs(timeoutMs);
+    m_socket->readtms(encryptedReadBuffer, 1, sizeof(encryptedReadBuffer), encryptedRead, remainingMs);
+    if (encryptedRead > 0 && BIO_write(network_bio, encryptedReadBuffer, encryptedRead) != encryptedRead)
+        THROWJSOCKEXCEPTION_MSG(-1, VStringBuffer("%s: failed to queue encrypted socket input", opStr).str());
+    return encryptedRead;
+}
+
 int CSecureSocket::secure_connect(int logLevel)
 {
     if (m_fqdn.length() > 0)
@@ -2052,10 +2091,85 @@ void CSecureSocket::readtms(void* buf, size32_t min_size, size32_t max_size, siz
     // because we may not get another poll notification because SSL internally has read everything.
     sizeRead = 0;
     CCycleTimer timer;
+
+    if (network_bio)
+    {
+
+        while (true)
+        {
+            ERR_clear_error();
+            size32_t bytesToRead = max_size - sizeRead;
+            size32_t readChunk = std::min(bytesToRead, (size32_t)std::numeric_limits<int>::max());
+            int rc = SSL_read(m_ssl, (char *)buf + sizeRead, (int)readChunk);
+            unsigned remainingMs = timer.remainingMs(timeoutMs);
+            if (rc > 0)
+            {
+                sizeRead += rc;
+                if (sizeRead == max_size)
+                    break;
+                if (0 == remainingMs)
+                {
+                    if (sizeRead >= min_size)
+                        break;
+                    THROWJSOCKEXCEPTION_MSG(JSOCKERR_timeout_expired, "timeout expired");
+                }
+                continue;
+            }
+
+            if (0 == rc)
+            {
+                m_socket->shutdownNoThrow();
+                if (suppresGCIfMinSize && (sizeRead >= min_size))
+                    break;
+                THROWJSOCKEXCEPTION(JSOCKERR_graceful_close);
+            }
+
+            int ssl_err = SSL_get_error(m_ssl, rc);
+            if (ssl_err == SSL_ERROR_WANT_READ)
+            {
+                if (sizeRead >= min_size)
+                    break;
+
+                flushPendingEncryptedOutput(timer, timeoutMs, "SSL_read");
+
+                size32_t encryptedRead = readAndQueueEncryptedSocketInput(timer, timeoutMs, "SSL_read");
+                if (encryptedRead == 0)
+                {
+                    m_socket->shutdownNoThrow();
+                    if (suppresGCIfMinSize && (sizeRead >= min_size))
+                        break;
+                    THROWJSOCKEXCEPTION(JSOCKERR_graceful_close);
+                }
+                continue;
+            }
+
+            if (ssl_err == SSL_ERROR_WANT_WRITE)
+            {
+                if (sizeRead >= min_size)
+                    break;
+
+                if (flushPendingEncryptedOutput(timer, timeoutMs, "SSL_read"))
+                    continue;
+
+                // No TLS output to flush; use wait/write-error handling instead of spinning.
+                handleError(ssl_err, false, true, remainingMs, "SSL_read");
+                continue;
+            }
+
+            bool wait = sizeRead < min_size; // if >= min_size, then handleError will validate errors only
+            handleError(ssl_err, false, wait, remainingMs, "SSL_read");
+            if (sizeRead >= min_size)
+                break;
+        }
+    }
+    else
+    {
     while (true)
     {
         ERR_clear_error();
-        int rc = SSL_read(m_ssl, (char*)buf + sizeRead, max_size - sizeRead);
+        size32_t bytesToRead = max_size - sizeRead;
+        size32_t readChunk = std::min(bytesToRead, (size32_t)std::numeric_limits<int>::max());
+        int rc = SSL_read(m_ssl, (char*)buf + sizeRead, (int)readChunk);
         unsigned remainingMs = timer.remainingMs(timeoutMs);
         if (rc > 0)
         {
@@ -2087,6 +2201,7 @@ void CSecureSocket::readtms(void* buf, size32_t min_size, size32_t max_size, siz
                 break;
         }
     }
+    }
 
     cycle_t elapsedCycles = timer.elapsedCycles();
     if (!SSTATS)
@@ -2116,6 +2231,52 @@ size32_t CSecureSocket::writetms(void const* buf, size32_t minSize, size32_t siz
     size32_t bytesWritten = 0;
     size32_t bytesRemaining = size;
     char *cbuf = (char *)buf;
+
+    if (network_bio)
+    {
+
+        ERR_clear_error();
+        while (bytesRemaining)
+        {
+            size32_t bytesChunk = MIN(bytesRemaining, 0x4000);
+            int rc = SSL_write(m_ssl, &cbuf[bytesWritten], bytesChunk);
+            if (rc > 0)
+            {
+                dbgassertex(bytesChunk == rc);
+                bytesRemaining -= rc;
+                bytesWritten += rc;
+                flushPendingEncryptedOutput(timer, timeoutMs, "SSL_write");
+                continue;
+            }
+
+            int ssl_err = SSL_get_error(m_ssl, rc);
+            unsigned remainingMs = timer.remainingMs(timeoutMs);
+            if (ssl_err == SSL_ERROR_WANT_READ)
+            {
+                flushPendingEncryptedOutput(timer, timeoutMs, "SSL_write");
+
+                size32_t encryptedRead = readAndQueueEncryptedSocketInput(timer, timeoutMs, "SSL_write");
+                if (encryptedRead == 0)
+                {
+                    m_socket->shutdownNoThrow();
+                    THROWJSOCKEXCEPTION(JSOCKERR_graceful_close);
+                }
+                continue;
+            }
+
+            if (ssl_err == SSL_ERROR_WANT_WRITE)
+            {
+                if (flushPendingEncryptedOutput(timer, timeoutMs, "SSL_write"))
+                    continue;
+            }
+
+            handleError(ssl_err, true, true, remainingMs, "SSL_write");
+        }
+
+        flushPendingEncryptedOutput(timer, timeoutMs, "SSL_write");
+    }
+    else
+    {
     ERR_clear_error();
     while (bytesRemaining)
     {
@@ -2134,6 +2295,7 @@ size32_t CSecureSocket::writetms(void const* buf, size32_t minSize, size32_t siz
             unsigned remainingMs = timer.remainingMs(timeoutMs);
             handleError(ssl_err, true, true, remainingMs, "SSL_write");
         }
+    }
     }
 
     cycle_t elapsedCycles = timer.elapsedCycles();
