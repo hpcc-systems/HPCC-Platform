@@ -3,6 +3,7 @@ var fs = require("fs");
 function getConfig(env) {
     // dojoRoot is defined if we're running in node (i.e. building)
     var dojoRoot = env.dojoRoot;
+    var distUrl = env.distUrl || "/esp/files/dist";
     var baseUrl = dojoRoot ? "." : "/esp/files";
     var hpccBaseUrl = fs.existsSync(baseUrl + "/node_modules/@hpcc-js") ? baseUrl + "/node_modules/@hpcc-js" : baseUrl + "/../../../hpcc-js/packages";
 
@@ -48,7 +49,7 @@ function getConfig(env) {
             "@hpcc-js/timeline": hpccBaseUrl + "/timeline/dist/index",
             "@hpcc-js/tree": hpccBaseUrl + "/tree/dist/index",
             "@hpcc-js/util": hpccBaseUrl + "/util/dist/index",
-            "@hpcc-js/TopoJSON": dojoRoot ? "/esp/files/dist/TopoJSON" : hpccBaseUrl + "/map/TopoJSON",
+            "@hpcc-js/TopoJSON": dojoRoot ? distUrl + "/TopoJSON" : hpccBaseUrl + "/map/TopoJSON",
             "clipboard": baseUrl + "/node_modules/clipboard/dist/clipboard",
             "codemirror": baseUrl + "/node_modules/codemirror",
             "crossfilter": baseUrl + "/node_modules/crossfilter2/crossfilter.min",
