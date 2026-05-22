@@ -9,9 +9,16 @@ if(VCPKG_TARGET_IS_OSX)
 
     set(ncurses_system_prefix "")
     foreach(prefix IN LISTS ncurses_system_prefixes)
-        if(EXISTS "${prefix}/lib/libncursesw.a" OR EXISTS "${prefix}/lib/libncursesw.dylib")
-            set(ncurses_system_prefix "${prefix}")
-            break()
+        if(VCPKG_LIBRARY_LINKAGE STREQUAL "dynamic")
+            if(EXISTS "${prefix}/lib/libncursesw.dylib")
+                set(ncurses_system_prefix "${prefix}")
+                break()
+            endif()
+        else()
+            if(EXISTS "${prefix}/lib/libncursesw.a")
+                set(ncurses_system_prefix "${prefix}")
+                break()
+            endif()
         endif()
     endforeach()
 
@@ -74,7 +81,6 @@ vcpkg_download_distfile(
     ARCHIVE_PATH
     URLS
         "https://invisible-mirror.net/archives/ncurses/ncurses-${VERSION}.tar.gz"
-        "ftp://ftp.invisible-island.net/ncurses/ncurses-${VERSION}.tar.gz"
         "https://ftp.gnu.org/gnu/ncurses/ncurses-${VERSION}.tar.gz"
     FILENAME "ncurses-${VERSION}.tgz"
     SHA512 1c2efff87a82a57e57b0c60023c87bae93f6718114c8f9dc010d4c21119a2f7576d0225dab5f0a227c2cfc6fb6bdbd62728e407f35fce5bf351bb50cf9e0fd34
