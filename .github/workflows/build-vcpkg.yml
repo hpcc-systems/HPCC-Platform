@@ -2,6 +2,11 @@ name: PR Build and Test (build-vcpkg.yml)
 on:
   workflow_dispatch:
     inputs:
+      nightly:
+        type: boolean
+        description: 'Run the nightly job set'
+        required: false
+        default: false
       os:
         type: choice
         options:
@@ -170,7 +175,7 @@ jobs:
           echo "=========================="
 
   build-workflow-dispatch:
-    if: ${{ contains('workflow_dispatch', github.event_name) }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.nightly != true }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ${{ inputs.os }}
@@ -180,7 +185,7 @@ jobs:
     secrets: inherit
 
   test-workflow-dispatch:
-    if: ${{ contains('workflow_dispatch', github.event_name) && inputs.smoketest == true }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.nightly != true && inputs.smoketest == true }}
     needs: build-workflow-dispatch
     uses: ./.github/workflows/test-smoke-gh_runner.yml
     with:
@@ -281,7 +286,7 @@ jobs:
       asset-name: 'Documentation'
 
   build-docker-rockylinux-8:
-    if: ${{ contains('schedule,push', github.event_name) }}
+    if: ${{ contains('schedule,push', github.event_name) || (github.event_name == 'workflow_dispatch' && inputs.nightly == true) }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: rockylinux-8
@@ -298,7 +303,7 @@ jobs:
     secrets: inherit
 
   build-gh_runner-ubuntu-22_04:
-    if: ${{ contains('schedule,push', github.event_name) }}
+    if: ${{ contains('schedule,push', github.event_name) || (github.event_name == 'workflow_dispatch' && inputs.nightly == true) }}
     uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: ubuntu-22.04
@@ -314,7 +319,7 @@ jobs:
     secrets: inherit
 
   build-gh_runner-windows-2025:
-    if: ${{ contains('schedule,push', github.event_name) }}
+    if: ${{ contains('schedule,push', github.event_name) || (github.event_name == 'workflow_dispatch' && inputs.nightly == true) }}
     uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: windows-2025
@@ -342,7 +347,7 @@ jobs:
     secrets: inherit
 
   build-build-eclwatch:
-    if: ${{ github.event_name == 'schedule' }}
+    if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.nightly == true) }}
     uses: ./.github/workflows/build-eclwatch.yml
     with:
       asset-name: 'eclwatch-nightly'
