@@ -158,7 +158,6 @@ public:
                         {
                             te->base_type.set(e.queryProp("base_type"));
                             te->comment.append("values[");
-                            bool start=1;
                             Owned<IPropertyTreeIterator> it = e.getElements("EsdlEnumItem");
                             for (it->first(); it->isValid(); it->next())
                             {
@@ -376,7 +375,7 @@ public:
         else
         {
             int count = trees.all->getCount("esxdl");
-            if (trees.all->getCount("esxdl") > 0)
+            if (count > 0)
             {
                 Owned<IPropertyTree> file = trees.all->getPropTree("esxdl[1]");
                 if (file)

@@ -118,7 +118,7 @@ interface IEsdlDefElement : extends IEsdlDefObject
 interface IEsdlDefArray : extends IEsdlDefObject
 {
     virtual IProperties *queryRecSelectors()=0;
-    virtual const bool checkIsEsdlList()=0;
+    virtual bool checkIsEsdlList()=0;
 };
 
 interface IEsdlDefEnumDef : extends IEsdlDefObject
@@ -347,7 +347,6 @@ protected:
 
     virtual void reportSelf(Flags flags, const StringBuffer& msg) const
     {
-        Flags masked = getFlags(flags);
         const char* componentLabel = getComponentLabel(flags);
         const char* levelLabel = getLevelLabel(flags);
 
