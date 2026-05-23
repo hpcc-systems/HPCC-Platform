@@ -3,36 +3,43 @@ name: Build ECL Watch (build-eclwatch.yml)
 on:
   workflow_call:
     inputs:
+      os:
+        type: string
+        description: 'Operating System'
+        required: false
+        default: 'ubuntu-22.04'
       asset-name:
         type: string
         description: 'Asset name'
 
 permissions:
   contents: read
+  actions: read
+  packages: read
 
 jobs:
   build:
     name: "Build eclwatch"
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.os }}
 
     steps:
 
-      - uses: actions/checkout@v6
+      - name: Checkout Repository
+        uses: actions/checkout@v6
         with:
           submodules: "recursive"
           
-      - uses: actions/setup-node@v6
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
         with:
-          node-version: 24
-          cache: 'npm'
-          cache-dependency-path: ${{ github.workspace }}/esp/src/package-lock.json
+          node-version: 22
 
       - name: Install Dependencies
-        working-directory: ${{ github.workspace }}/esp/src
+        working-directory: esp/src
         run: npm ci
 
       - name: Build
-        working-directory: ${{ github.workspace }}/esp/src
+        working-directory: esp/src
         env:
           ECLWATCH_DIST_URL: /esp/files/dist-nightly/
         run: npm run build
@@ -43,5 +50,5 @@ jobs:
         with:
           name: ${{ inputs.asset-name }}
           path: |
-            ${{ github.workspace }}/esp/src/build/dist/**/*
+            esp/src/build/dist/**/*
           if-no-files-found: error
