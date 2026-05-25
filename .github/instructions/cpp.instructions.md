@@ -50,7 +50,12 @@ applyTo:
 - **Member vs Parameter Naming**: Use strict `camelCase`. When a parameter's sole purpose is to initialize a member variable of the same name (like in a setter or constructor), prefix the parameter with an underscore (e.g., assigning parameter `_count` to member `count`).
 
 ## Exception Handling
-- Throw and catch HPCC native exceptions utilizing `IException`. Use `ThrowStringException(...)` or `MakeStringException(...)` formats instead of throwing raw `std::runtime_error` or `std::exception`.
+- Throw and catch HPCC native exceptions using `IException`. Do not throw raw `std::runtime_error` or `std::exception`.
+- Use `throwStringExceptionV(code, format, ...)` to throw, and `makeStringExceptionV(code, format, ...)` / `makeStringException(code, msg)` to create without throwing.
+- The legacy macro aliases `ThrowStringException`, `MakeStringException`, and `MakeMultiException` are legacy — do not use them in new code; use the underlying functions directly (`throwStringExceptionV`, `makeStringExceptionV`, `makeMultiException`).
+- **Catch patterns**:
+  - When only HPCC exceptions are expected, catch `IException *` (or the relevant subtype) alone — no catch-all needed.
+  - Add `catch (...)` only where non-HPCC exceptions could escape: critical server paths, third-party library call sites, or any boundary where an unhandled exception would crash a long-running process. A bare `catch (...)` that silently swallows exceptions is a bug — it must at minimum log the event.
 - Exceptions must be caught at the correct level and must not leak resources.
 
 ## Security
