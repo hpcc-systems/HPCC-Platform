@@ -40,9 +40,7 @@ jobs:
 
       - name: Build
         working-directory: esp/src
-        env:
-          ECLWATCH_DIST_URL: /esp/files/dist-nightly/
-        run: npm run build
+        run: npm run build-nightly
         
       - name: Upload Package
         if: ${{ inputs.asset-name }}
@@ -50,5 +48,5 @@ jobs:
         with:
           name: ${{ inputs.asset-name }}
           path: |
-            esp/src/build/dist/**/*
+            esp/src/build/dist-nightly/
           if-no-files-found: error
