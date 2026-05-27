@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include "platform.h"
+#include <atomic>
 #include <limits.h>
 
 #include "jlib.hpp"
@@ -148,8 +149,7 @@ class CSortMerge: public CSimpleInterface, implements ISocketSelectNotify
     unsigned ndone;
     bool started;
     CSortTransferServerThread *parent;
-    bool done;
-    bool closing;
+    std::atomic_bool done;
     Semaphore donesem;
     Owned<IException> exception;
     ISocketSelectHandler *selecthandler;
@@ -232,56 +232,53 @@ public:
         }
         else
             peer[0] = 0;
-        while (!done)
+        while (!done.load())
             donesem.wait();
         if (exception)
             throw exception.getClear();
         if (peer[0])
             LOG(MCthorDetailedDebugInfo, "waitdone exit");
     }
-    bool notifySelected(ISocket *sock,unsigned selected)
+    bool notifySelected(ISocket *,unsigned)
     {
-        while (!done) {
-            try {
-                if (closing) {
-                    closing = false;
-#ifdef _FULL_TRACE
-                    LOG(MCthorDetailedDebugInfo, "notifySelected calling closedown");
-#endif
-                    closedown();
-#ifdef _FULL_TRACE
-                    LOG(MCthorDetailedDebugInfo, "notifySelected called closedown");
-#endif
-                    done = true;
-                    donesem.signal();
-                    return false;
-                }
-            }
-            catch (IException *e)
-            {
-                IERRLOG(e,"CSortMerge notifySelected.1");
-                exception.setown(e);
-                done = true;
-                donesem.signal();
-                return false;
-            }
-            try
-            {
-                if (processRows()) 
-                    return false;   // false correct here
-            }
-            catch (IException *e)
-            {
-                IERRLOG(e,"CSortMerge notifySelected.2");
-                exception.setown(e);
-            }
-            closing = true;
-            CriticalBlock block(crit);
-            if (!sock||!socket)
-                break;
-            if (sock->avail_read()==0)
-                break;
+        if (done.load())
+            return false;
+
+        try
+        {
+            if (processRows())
+                return false;   // false correct here
         }
+        catch (IException *e)
+        {
+            IERRLOG(e,"CSortMerge notifySelected");
+            if (!exception)
+                exception.setown(e);
+            else
+                e->Release();
+        }
+
+        try
+        {
+#ifdef _FULL_TRACE
+            LOG(MCthorDetailedDebugInfo, "notifySelected calling closedown");
+#endif
+            closedown();
+#ifdef _FULL_TRACE
+            LOG(MCthorDetailedDebugInfo, "notifySelected called closedown");
+#endif
+        }
+        catch (IException *e)
+        {
+            IERRLOG(e,"CSortMerge notifySelected closedown");
+            if (!exception)
+                exception.setown(e);
+            else
+                e->Release();
+        }
+
+        done.store(true);
+        donesem.signal();
         return false; // false correct here
     }
 };
@@ -291,13 +288,16 @@ class CSortTransferServerThread: protected Thread, implements IMergeTransferServ
 {
 protected: friend class CSortMerge;
     ISortSlaveBase &slave;
-    bool term;
+    std::atomic_bool term;
     Owned<ISocket> server;
     CriticalSection childsect;
     CSortMergeArray children;
     Owned<ISocketSelectHandler> selecthandler;
     Linked<IThorRowInterfaces> rowif;
     CriticalSection rowifsect;
+    CriticalSection serversect;
+    CriticalSection acceptsect;
+    Linked<ISocket> pendingSocket;
     Semaphore rowifsem;
     Owned<ISecureSocketContext> secureContextServer;
     Owned<ISecureSocketContext> secureContextClients;
@@ -314,7 +314,7 @@ public:
     {
         unsigned port = in.getTransferPort();
         server.setown(ISocket::create(port));
-        term = false;
+        term.store(false);
 #if defined(_USE_OPENSSL)
         if (slave.queryTLS())
         {
@@ -336,7 +336,7 @@ public:
     {
         // bit of a kludge
         CriticalBlock block(rowifsect);
-        while (!rowif&&!term) {
+        while (!rowif && !term.load()) {
             DBGLOG("CSortTransferServerThread waiting for row interface");
             CriticalUnblock unblock(rowifsect);
             rowifsem.wait(60*1000);
@@ -346,13 +346,27 @@ public:
     void stop()
     {
         DBGLOG("CSortTransferServerThread::stop");
-        term = true;
+        term.store(true);
+        rowifsem.signal();
+        Linked<ISocket> listenServer;
+        {
+            CriticalBlock block(serversect);
+            listenServer.set(server);
+        }
+        Linked<ISocket> activeSocket;
+        {
+            CriticalBlock block(acceptsect);
+            activeSocket.set(pendingSocket);
+        }
         try {
-            server->cancel_accept();
+            if (listenServer)
+                listenServer->cancel_accept();
         }
         catch (IJSOCK_Exception *e) {
             PrintExceptionLog(e,"CSortTransferServerThread:stop");
         }
+        shutdownAndCloseNoThrow(listenServer);
+        shutdownAndCloseNoThrow(activeSocket);
         verifyex(join(10*60*1000));
         DBGLOG("CSortTransferServerThread::stopped");
     }
@@ -361,10 +375,32 @@ public:
     {
         DBGLOG("CSortTransferServerThread started port %d",slave.getTransferPort());
         unsigned numretries = 10;
+        constexpr unsigned acceptPollMs = 1000;
         try {
-            while (!term)
+            while (!term.load())
             {
-                Owned<ISocket> socket = server->accept(true);
+                Linked<ISocket> listenServer;
+                {
+                    CriticalBlock block(serversect);
+                    if (!server)
+                        break;
+                    listenServer.set(server);
+                }
+
+                int canAccept = listenServer->wait_read(acceptPollMs);
+                if (canAccept < 0)
+                {
+                    if (!term.load())
+                        IWARNLOG("CSortTransferServerThread: wait_read failed");
+                    break;
+                }
+                if (canAccept == 0)
+                    continue;
+
+                if (term.load())
+                    break;
+
+                Owned<ISocket> socket = listenServer->accept(true);
                 if (!socket)
                     break;
 
@@ -390,13 +426,44 @@ public:
                 rowcount_t poscount=0;
                 rowcount_t numrecs=0;
                 ISocketRowWriter *strm=NULL;
+                {
+                    CriticalBlock block(acceptsect);
+                    pendingSocket.set(socket);
+                }
                 try
                 {
                     waitRowIF();
-                    strm = ConnectMergeWrite(rowif,socket,0x100000,poscount,numrecs);
+                    if (term.load())
+                    {
+                        CriticalBlock block(acceptsect);
+                        pendingSocket.clear();
+                        break;
+                    }
+
+                    Linked<IThorRowInterfaces> localRowif;
+                    {
+                        CriticalBlock block(rowifsect);
+                        localRowif.set(rowif);
+                    }
+                    if (!localRowif)
+                    {
+                        CriticalBlock block(acceptsect);
+                        pendingSocket.clear();
+                        break;
+                    }
+
+                    strm = ConnectMergeWrite(localRowif,socket,0x100000,poscount,numrecs);
+                    {
+                        CriticalBlock block(acceptsect);
+                        pendingSocket.clear();
+                    }
                 }
                 catch (IJSOCK_Exception *e) // retry if failed
                 {
+                    {
+                        CriticalBlock block(acceptsect);
+                        pendingSocket.clear();
+                    }
                     PrintExceptionLog(e, "WARNING: Exception(ConnectMergeWrite)");
                     if (--numretries==0)
                         throw;
@@ -405,6 +472,10 @@ public:
                 }
                 catch (IException *e) // only retry if serialization check failed, indicating possible foreign client connect
                 {
+                    {
+                        CriticalBlock block(acceptsect);
+                        pendingSocket.clear();
+                    }
                     PrintExceptionLog(e, "WARNING: Exception(ConnectMergeWrite)");
 
                     if (TE_SortConnectProtocolErr != e->errorCode())
@@ -428,7 +499,16 @@ public:
             }
             e->Release();
         }
-        shutdownAndCloseNoThrow(server);
+        Owned<ISocket> listenServer;
+        {
+            CriticalBlock block(serversect);
+            listenServer.setown(server.getClear());
+        }
+        {
+            CriticalBlock block(acceptsect);
+            pendingSocket.clear();
+        }
+        shutdownAndCloseNoThrow(listenServer);
         subjoin();
         DBGLOG("CSortTransferServerThread finished");
         return 0;
@@ -453,7 +533,10 @@ public:
             c.Release();
         }
         children.kill();
-        rowif.clear();
+        {
+            CriticalBlock rowifBlock(rowifsect);
+            rowif.clear();
+        }
 
     }
 
@@ -571,8 +654,7 @@ CSortMerge::CSortMerge(CSortTransferServerThread *_parent,ISocket* _socket,ISock
     ndone = 0;
     started = false;
     selecthandler = _selecthandler;
-    done = false;
-    closing = false;
+    done.store(false);
 }
 
 void CSortMerge::closedown()
