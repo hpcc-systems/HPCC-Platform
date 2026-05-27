@@ -975,7 +975,7 @@ public:
                                 rowcount_t numLeftRows = (lhsProgressCount - 1) - startMatchLhsProgressCount;
                                 matchStats.noteGroup(numLeftRows, rightgroup.ordinality());
                                 startMatchLhsProgressCount = (lhsProgressCount - 1);
-                                state = JSrightgrouponly;
+                                state = rightouter ? JSrightgrouponly : JScompare;
                             }
                             else if (cmp<0) 
                             {
@@ -990,12 +990,11 @@ public:
                             rowcount_t numLeftRows = lhsProgressCount - startMatchLhsProgressCount;
                             matchStats.noteGroup(numLeftRows, rightgroup.ordinality());
                             startMatchLhsProgressCount = lhsProgressCount;
-                            state = JSrightgrouponly;
+                            state = rightouter ? JSrightgrouponly : JScompare;
                         }
                     }
                     break;
                 case JSrightgrouponly:
-                    //FUTURE: Avoid walking the right group if it is an inner/left only join.
                     // right group
                     if (rightidx<rightgroup.ordinality())
                         ret.setown(outrow(Oouter,Ogroup));
@@ -1314,7 +1313,7 @@ retry:
                             joinCounter = 0;
                             leftidx++;
                             if ((leftidx>=curgroup.ordinality())||(firstonlyL&&(leftidx>0)))
-                                state = JSrightonly;
+                                state = rightouter ? JSrightonly : JSload;
                             else
                                 leftmatched = false;
                         }
