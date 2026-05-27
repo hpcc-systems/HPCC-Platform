@@ -116,7 +116,11 @@ function print_globals() {
 
 function cleanup() {
     rm -f $ROOT_DIR/vcpkg/vcpkg || true
-    kill $(jobs -p)
+    local job_pids
+    job_pids=$(jobs -p) || true
+    if [[ -n "$job_pids" ]]; then
+        kill $job_pids || true
+    fi
 }
 
 function doBuild() {
@@ -204,7 +208,7 @@ print_globals
 if [[ -n "$TARGET" ]]; then
     doBuild "$TARGET"
 else
-    trap 'cleanup; exit' EXIT
+    trap 'cleanup || true' EXIT
     mkdir -p $ROOT_DIR/build/docker-logs
     doBuild wasm32-emscripten &> $ROOT_DIR/build/docker-logs/wasm32-emscripten.log &
     doBuild ubuntu-24.04 &> $ROOT_DIR/build/docker-logs/ubuntu-24.04.log &
