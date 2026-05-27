@@ -2806,10 +2806,15 @@ public:
 
         try
         {
-            // Create io_uring processor - this should succeed since @useIOUring is true
+            // Create io_uring processor if available in this environment; @useIOUring enables it but
+            // creation may still fail if kernel/liburing support is unavailable
             Owned<IPropertyTree> uringConfig = createIOUringConfig();
             Owned<IAsyncProcessor> uring = createURingProcessorIfEnabled(uringConfig, true);
-            ASSERT(uring.get() != nullptr); // Should be created since expert/@useIOUring is true
+            if (!uring)
+            {
+                DBGLOG("io_uring not available, skipping test");
+                return;
+            }
 
             // However, TLS socket operations should fall back to sync due to @useTLSIOUring=false
             SimpleTLSEchoServer server;
