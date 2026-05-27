@@ -119,6 +119,8 @@ The HPCC Systems Platform uses Helm (a package manager for Kubernetes) to deploy
 
 [Helm Examples](./helmReadmes.md) General documentation for the Helm examples.
 
+[Guide to HPCC Helm Pods](../helm/HPCC_Helm_Pods.md) Describes the pods created by the HPCC Systems® Helm charts.
+
 ## Dali
 
 Dali is the central metadata repository and coordination service in the HPCC Systems Platform. It plays a critical role in managing and storing system metadata, including file information, cluster configurations, and workunit details. Dali ensures consistency and synchronization across the platform, enabling efficient resource management and job execution.
