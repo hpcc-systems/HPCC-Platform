@@ -121,7 +121,9 @@ version: "1.0"
 unittests:
 - PTreeBinaryTimingStressTest:
     path: ""
-    iterations: 5
+    xmlIterations: 5
+    binaryIterations: 32
+    binaryThreadCounts: "1,2,4,8,16,32"
 global:
   storage:
     planes:

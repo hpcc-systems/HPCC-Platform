@@ -26,6 +26,7 @@
 #include <memory>
 #include <random>
 #include <vector>
+#include <future>
 
 #include "jsem.hpp"
 #include "jfile.hpp"
@@ -3465,6 +3466,7 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIPTTest, "JlibIPTTest");
 #include "jstring.hpp"
 #include <string>
 #include "jstats.h"
+#include <cstdlib>
 #include <thread>
 #include <atomic>
 
@@ -3746,7 +3748,7 @@ protected:
             deserializeElapsedNs = timer.elapsedNs();
             CPPUNIT_ASSERT(areMatchingPTrees(originalTree, memoryBufferDeserialized));
         }
-        
+
         // Time deserializeFromStream() method
         __uint64 deserializeFromStreamElapsedNs = 0;
         {
@@ -3837,13 +3839,15 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeSerializationDeserializationTest, "PT
 /* Test suite for PTree Binary and XML timing tests
  *
  * Custom specific unittest parameters:
- * --PTreeBinaryTimingStressTest.path=/x/y/z/file.bin  Provide the Dali binary test data path. Can be .bin or .bin.zst (Zstd compressed)\n"
- * --PTreeBinaryTimingStressTest.iterations=999        Override default PTree timing iterations\n"
-*/
+ * --PTreeBinaryTimingStressTest.path=/x/y/z/file.bin             Provide the Dali binary test data path. Can be .bin or .bin.zst (Zstd compressed)
+ * --PTreeBinaryTimingStressTest.xmlIterations=5                  Override default XML timing iterations
+ * --PTreeBinaryTimingStressTest.binaryIterations=32              Override default total iterations distributed across workers for binary thread tests
+ * --PTreeBinaryTimingStressTest.binaryThreadCounts=1,2,4,8,16,32 CSV list of thread counts used by binary thread tests
+ */
 class PTreeBinaryTimingStressTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(PTreeBinaryTimingStressTest);
-    CPPUNIT_TEST(testBinaryTimingWithNormalVsLowMem);
+    CPPUNIT_TEST(testBinaryTimingSingleAndMultiThreadWithNormalVsLowMem);
     CPPUNIT_TEST(testXMLTimingWithNormalVsLowMem);
     CPPUNIT_TEST_SUITE_END();
 
@@ -3858,119 +3862,204 @@ public:
             binaryPath.append(relativeBinPath);
         }
 
-        constexpr unsigned defaultPtreeIterations = 5;
-        iterations = getComponentConfigSP()->getPropInt("PTreeBinaryTimingStressTest/@iterations", defaultPtreeIterations);
-        if (iterations == 0)
-            CPPUNIT_FAIL("PTree binary timing test iterations must be greater than zero");
+        // XML is roughly 5x slower than binary and so it would be a waste of time to only have one iteration argument.
+        // For example, if we had 32 iterations then the XML test would take 10 * 2 * 32 = 640 seconds to execute.
+        xmlIterations = (unsigned)getComponentConfigSP()->getPropInt("PTreeBinaryTimingStressTest/@xmlIterations", 5);
+        CPPUNIT_ASSERT_MESSAGE("PTree XML timing test xmlIterations must be greater than zero and <= 1000000", xmlIterations > 0 && xmlIterations <= 1000000);
+
+        binaryIterations = (unsigned)getComponentConfigSP()->getPropInt("PTreeBinaryTimingStressTest/@binaryIterations", 32);
+        CPPUNIT_ASSERT_MESSAGE("PTree binary parallel contention binaryIterations must be greater than zero and <= 1000000", binaryIterations > 0 && binaryIterations <= 1000000);
+
+        const char *binaryThreadCountsCsv = getComponentConfigSP()->queryProp("PTreeBinaryTimingStressTest/@binaryThreadCounts", "1,2,4,8,16,32");
+        StringArray tokens;
+        tokens.appendListUniq(binaryThreadCountsCsv, ",", true);
+        ForEachItemIn(i, tokens)
+        {
+            unsigned val = (unsigned)atoi(tokens.item(i));
+            CPPUNIT_ASSERT_MESSAGE(VStringBuffer("Invalid thread count: %s", tokens.item(i)).str(), val > 0);
+            CPPUNIT_ASSERT_MESSAGE(VStringBuffer("Thread count %u exceeds maximum allowed (1024) to prevent resource exhaustion", val).str(), val <= 1024);
+            CPPUNIT_ASSERT_MESSAGE(VStringBuffer("PTree binary parallel contention binaryIterations (%u) must be a multiple of thread count (%u)", binaryIterations, val).str(), binaryIterations % val == 0);
+            binaryThreadCounts.push_back(val);
+        }
+        CPPUNIT_ASSERT_MESSAGE("PTree binary parallel contention binaryThreadCounts must contain at least one positive integer", !binaryThreadCounts.empty());
     }
 
-    void testBinaryTimingWithNormalVsLowMem()
+    void testBinaryTimingSingleAndMultiThreadWithNormalVsLowMem()
     {
-        // Load Binary data
         MemoryBuffer binaryData;
-        try
+        readBinaryFile(binaryData);
+
+        DBGLOG("=== BINARY PARALLEL TIMING COMPARISON TEST (size=%u bytes, iters=%u) ===", binaryData.length(), binaryIterations);
+        DBGLOG("%7s %12s %12s %12s %12s %12s", "Threads", "Normal(ms)", "N.Avg(ms)", "LowMem(ms)", "LM.Avg(ms)", "Diff(%)");
+
+        for (unsigned threadCount : binaryThreadCounts)
         {
-            // Read raw file (with automatic decompression)
-            readBinaryFile(binaryPath.str(), binaryData);
+            TimingResults normalResults;
+            CCycleTimer normalTimer;
+            runParallelBinaryTest(binaryData, threadCount, ipt_none);
+            normalResults.wallMs = normalTimer.elapsedNs() / 1e6;
+            normalResults.avgMs = normalResults.wallMs / binaryIterations;
+
+            TimingResults lowMemResults;
+            CCycleTimer lowMemTimer;
+            runParallelBinaryTest(binaryData, threadCount, ipt_lowmem);
+            lowMemResults.wallMs = lowMemTimer.elapsedNs() / 1e6;
+            lowMemResults.avgMs = lowMemResults.wallMs / binaryIterations;
+
+            // it would be possible on a very fast processor for the wallMs to be zero (e.g. a root only tree) hence the test below
+            double diffWall = (normalResults.wallMs > 0) ? calculatePercentDiff(normalResults.wallMs, lowMemResults.wallMs) : 0.0;
+
+            DBGLOG("%7u %12.3f %12.3f %12.3f %12.3f %+12.2f", threadCount, normalResults.wallMs, normalResults.avgMs, lowMemResults.wallMs,
+                   lowMemResults.avgMs, diffWall);
         }
-        catch (IException *e)
-        {
-            StringBuffer msg;
-            e->errorMessage(msg);
-            e->Release();
-            CPPUNIT_FAIL(msg.str());
-        }
-
-        unsigned binaryDataLen = (unsigned)binaryData.length();
-        CPPUNIT_ASSERT_MESSAGE("Binary timing test data is empty", binaryDataLen > 0);
-
-        // Run Binary timing tests
-        TimingResults binaryNormalResults = performBinaryTimingTestWithResults("Binary Normal", binaryData, iterations, ipt_none);
-        TimingResults binaryLowMemResults = performBinaryTimingTestWithResults("Binary Low Memory", binaryData, iterations, ipt_lowmem);
-
-        // Calculate differences
-        double lowMemDeserializeDiff = 0.0;
-        if (binaryNormalResults.avgDeserializeNs)
-            lowMemDeserializeDiff = ((double)binaryLowMemResults.avgDeserializeNs - (double)binaryNormalResults.avgDeserializeNs) / (double)binaryNormalResults.avgDeserializeNs * 100.0;
-
-        // Display results
-        DBGLOG("=== BINARY TIMING COMPARISON TEST ===");
-        DBGLOG("Binary data size: %u bytes", binaryDataLen);
-        DBGLOG("Iterations: %u", iterations);
-        DBGLOG("┌──────────────────────┬─────────────────┐");
-        DBGLOG("│ Mode                 │ Avg Deserialize │");
-        DBGLOG("│                      │ (nanoseconds)   │");
-        DBGLOG("├──────────────────────┼─────────────────┤");
-        DBGLOG("│ Binary Normal        │ %15lld │",
-               (long long)binaryNormalResults.avgDeserializeNs);
-        DBGLOG("│ Binary Low Memory    │ %15lld │",
-               (long long)binaryLowMemResults.avgDeserializeNs);
-        DBGLOG("│ Binary LowMem Diff   │ %+14.2f%% │",
-               lowMemDeserializeDiff);
-        DBGLOG("└──────────────────────┴─────────────────┘");
     }
 
     void testXMLTimingWithNormalVsLowMem()
     {
-        // Load Binary data
         MemoryBuffer binaryData;
-        try
-        {
-            // Read raw file (with automatic decompression)
-            readBinaryFile(binaryPath.str(), binaryData);
-        }
-        catch (IException *e)
-        {
-            StringBuffer msg;
-            e->errorMessage(msg);
-            e->Release();
-            CPPUNIT_FAIL(msg.str());
-        }
+        readBinaryFile(binaryData);
 
-        unsigned binaryDataLen = (unsigned)binaryData.length();
-        CPPUNIT_ASSERT_MESSAGE("Binary timing test data is empty", binaryDataLen > 0);
-
-        // Convert binary to tree, then tree to XML
         binaryData.reset();
         Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(binaryData);
         Owned<IPropertyTree> tree = createPTreeFromBinary(*in, ipt_none);
         StringBuffer xmlOutput;
         toXML(tree, xmlOutput);
 
-        // Run XML timing tests
-        TimingResults xmlNormalResults = performXMLTimingTestWithResults("XML Normal", xmlOutput.str(), iterations, ipt_none);
-        TimingResults xmlLowMemResults = performXMLTimingTestWithResults("XML Low Memory", xmlOutput.str(), iterations, ipt_lowmem);
+        TimingResults xmlNormalResults;
+        CCycleTimer xmlNormalTimer;
+        runXMLTimingTest(xmlOutput.str(), xmlIterations, ipt_none);
+        xmlNormalResults.wallMs = xmlNormalTimer.elapsedNs() / 1e6;
+        xmlNormalResults.avgMs = xmlNormalResults.wallMs / xmlIterations;
 
-        // Calculate differences
-        double lowMemDeserializeDiff = 0.0;
-        if (xmlNormalResults.avgDeserializeNs)
-            lowMemDeserializeDiff = ((double)xmlLowMemResults.avgDeserializeNs - (double)xmlNormalResults.avgDeserializeNs) / (double)xmlNormalResults.avgDeserializeNs * 100.0;
+        TimingResults xmlLowMemResults;
+        CCycleTimer xmlLowMemTimer;
+        runXMLTimingTest(xmlOutput.str(), xmlIterations, ipt_lowmem);
+        xmlLowMemResults.wallMs = xmlLowMemTimer.elapsedNs() / 1e6;
+        xmlLowMemResults.avgMs = xmlLowMemResults.wallMs / xmlIterations;
 
-        // Display results
-        DBGLOG("=== XML TIMING COMPARISON TEST ===");
-        DBGLOG("Binary data size: %u bytes", binaryDataLen);
-        DBGLOG("Iterations: %u", iterations);
-        DBGLOG("┌──────────────────────┬─────────────────┐");
-        DBGLOG("│ Mode                 │ Avg Deserialize │");
-        DBGLOG("│                      │ (nanoseconds)   │");
-        DBGLOG("├──────────────────────┼─────────────────┤");
-        DBGLOG("│ XML Normal           │ %15lld │",
-               (long long)xmlNormalResults.avgDeserializeNs);
-        DBGLOG("│ XML Low Memory       │ %15lld │",
-               (long long)xmlLowMemResults.avgDeserializeNs);
-        DBGLOG("│ XML LowMem Diff      │ %+14.2f%% │",
-               lowMemDeserializeDiff);
-        DBGLOG("└──────────────────────┴─────────────────┘");
+        // it would be possible on a very fast processor for the wallMs to be zero (e.g. a root only tree) hence the test below
+        double diffWall = (xmlNormalResults.wallMs > 0) ? calculatePercentDiff(xmlNormalResults.wallMs, xmlLowMemResults.wallMs) : 0.0;
+
+        DBGLOG("=== XML TIMING COMPARISON TEST (size=%u bytes, iters=%u) ===", xmlOutput.length(), xmlIterations);
+        DBGLOG("%7s %12s %12s %12s %12s %12s", "Threads", "Normal(ms)", "N.Avg(ms)", "LowMem(ms)", "LM.Avg(ms)", "Diff(%)");
+        DBGLOG("%7s %12.3f %12.3f %12.3f %12.3f %+12.2f", "1", xmlNormalResults.wallMs, xmlNormalResults.avgMs, xmlLowMemResults.wallMs, xmlLowMemResults.avgMs,
+               diffWall);
     }
 
 protected:
+    static double calculatePercentDiff(double baseline, double result)
+    {
+        CPPUNIT_ASSERT_MESSAGE("Baseline timing must be greater than zero", baseline > 0.0);
+
+        return ((result - baseline) / baseline) * 100.0;
+    }
+
     struct TimingResults
     {
-        __int64 avgDeserializeNs{0};
-        __int64 totalDeserializeNs{0};
-        const char *testName{nullptr};
-        byte flags{ipt_none};
+        double wallMs = 0.0;
+        double avgMs = 0.0;
     };
+
+    void runParallelBinaryTest(const MemoryBuffer &binaryData, unsigned threadCount, byte flags)
+    {
+        const unsigned itersPerThread = binaryIterations / threadCount;
+        std::atomic<bool> stop{false};
+
+        auto workerTask = [&]()
+        {
+            try
+            {
+                MemoryBuffer workingBuffer;
+                for (unsigned i = 0; i < itersPerThread && !stop; ++i)
+                {
+                    workingBuffer.setBuffer(binaryData.length(), (void *)binaryData.bufferBase(), false);
+                    Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(workingBuffer.reset());
+                    Owned<IPropertyTree> tree = createPTreeFromBinary(*in, flags);
+                }
+            }
+            catch(IException *)
+            {
+                stop = true;
+                throw;
+            }
+            catch (const std::exception &e)
+            {
+                stop = true;
+                throw makeStringExceptionV(-1, "Worker thread exception: %s", e.what());
+            }
+        };
+
+        try
+        {
+            if (threadCount == 1)
+                workerTask();
+            else
+            {
+                std::vector<std::future<void>> futures;
+                futures.reserve(threadCount);
+                Owned<IException> firstException;
+
+                try
+                {
+                    for (unsigned i = 0; i < threadCount; ++i)
+                        futures.emplace_back(std::async(std::launch::async, workerTask));
+                }
+                catch (const std::exception &e)
+                {
+                    stop = true;
+                    if (!firstException)
+                        firstException.setown(makeStringExceptionV(-1, "Failed to launch worker thread: %s", e.what()));
+                }
+
+                for (auto &f : futures)
+                {
+                    try
+                    {
+                        f.get();
+                    }
+                    catch (IException *e)
+                    {
+                        if (!firstException)
+                            firstException.setown(e);
+                        else
+                            e->Release();
+                    }
+                }
+
+                if (firstException)
+                {
+                    StringBuffer errMsg;
+                    firstException->errorMessage(errMsg);
+                    CPPUNIT_FAIL(errMsg.str());
+                }
+            }
+        }
+        catch (IException *e)
+        {
+            StringBuffer errMsg;
+            e->errorMessage(errMsg);
+            e->Release();
+            CPPUNIT_FAIL(errMsg.str());
+        }
+    }
+
+    void runXMLTimingTest(const char *xml, unsigned iterations, byte flags)
+    {
+        try
+        {
+            for (unsigned i = 0; i < iterations; ++i)
+            {
+                Owned<IPropertyTree> tree = createPTreeFromXMLString(xml, flags, ptr_ignoreWhiteSpace, nullptr);
+            }
+        }
+        catch (IException *e)
+        {
+            StringBuffer errMsg;
+            e->errorMessage(errMsg);
+            e->Release();
+            CPPUNIT_FAIL(errMsg.str());
+        }
+    }
 
     void decompressZstdBuffer(const void *compressedData, size_t compressedSize, const char *actualPath, MemoryBuffer &output)
     {
@@ -3998,91 +4087,56 @@ protected:
         }
     }
 
-    void readBinaryFile(const char *filePath, MemoryBuffer &output)
+    void readBinaryFile(MemoryBuffer &binaryData)
     {
-        Owned<IFile> binaryFile = createIFile(filePath);
-        if (!binaryFile->exists())
-            throw makeStringExceptionV(-1, "Binary file \"%s\" does not exist", filePath);
-
-        Owned<IFileIO> fileIO = binaryFile->open(IFOread);
-        output.clear();
-        ::read(fileIO, 0, (size32_t)-1, output);
-
-        const char *ext = pathExtension(filePath);
-        if (strsame(ext, ".zst"))
+        try
         {
-            MemoryBuffer compressed;
-            output.swapWith(compressed);
-            decompressZstdBuffer(compressed.toByteArray(), compressed.length(), filePath, output);
+            Owned<IFile> binaryFile = createIFile(binaryPath.str());
+            if (!binaryFile->exists())
+                throw makeStringExceptionV(-1, "Binary file \"%s\" does not exist", binaryPath.str());
+
+            Owned<IFileIO> fileIO = binaryFile->open(IFOread);
+            binaryData.clear();
+            ::read(fileIO, 0, (size32_t)-1, binaryData);
+
+            const char *ext = pathExtension(binaryPath.str());
+            if (strsame(ext, ".zst"))
+            {
+                MemoryBuffer compressed;
+                binaryData.swapWith(compressed);
+                decompressZstdBuffer(compressed.toByteArray(), compressed.length(), binaryPath.str(), binaryData);
+            }
         }
-    }
-
-    TimingResults performBinaryTimingTestWithResults(const char *testName, MemoryBuffer &binaryDataBuffer, unsigned iterations, byte flags)
-    {
-        assertex(testName);
-        unsigned binaryDataLen = binaryDataBuffer.length();
-        assertex(binaryDataLen > 0);
-        assertex(iterations > 0);
-
-        CCycleTimer timer;
-        cycle_t totalDeserializeCycles = 0;
-
-        for (unsigned i = 0; i < iterations; i++)
+        catch (IException *e)
         {
-            binaryDataBuffer.reset();
-            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(binaryDataBuffer);
-            timer.reset();
-            Owned<IPropertyTree> deserializedTree = createPTreeFromBinary(*in, flags);
-            totalDeserializeCycles += timer.elapsedCycles();
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+        catch (const std::exception &e)
+        {
+            CPPUNIT_FAIL(e.what());
+        }
+        catch (...)
+        {
+            CPPUNIT_FAIL("Unknown exception caught while reading binary file");
         }
 
-        TimingResults results;
-        results.totalDeserializeNs = cycle_to_nanosec(totalDeserializeCycles);
-        results.avgDeserializeNs = cycle_to_nanosec(totalDeserializeCycles / iterations);
-        results.testName = testName;
-        results.flags = flags;
-
-        return results;
-    }
-
-    TimingResults performXMLTimingTestWithResults(const char *testName, const char *xmlData, unsigned iterations, byte flags)
-    {
-        assertex(testName);
-        assertex(xmlData);
-        assertex(iterations > 0);
-
-        // Time the XML deserialization
-        CCycleTimer timer;
-        cycle_t totalDeserializeCycles = 0;
-
-        for (unsigned i = 0; i < iterations; i++)
-        {
-            timer.reset();
-            Owned<IPropertyTree> deserializedTree = createPTreeFromXMLString(xmlData, flags, ptr_ignoreWhiteSpace, nullptr);
-            totalDeserializeCycles += timer.elapsedCycles();
-        }
-
-        TimingResults results;
-        results.totalDeserializeNs = cycle_to_nanosec(totalDeserializeCycles);
-        results.avgDeserializeNs = cycle_to_nanosec(totalDeserializeCycles / iterations);
-        results.testName = testName;
-        results.flags = flags;
-
-        // Log XML data size for reference
-        DBGLOG("%s: XML data size: %zu bytes", testName, strlen(xmlData));
-
-        return results;
+        unsigned binaryDataLen = binaryData.length();
+        CPPUNIT_ASSERT_MESSAGE("Binary timing test data is empty", binaryDataLen > 0);
     }
 
     StringBuffer binaryPath;
-    unsigned iterations{0};
+    unsigned xmlIterations = 0;
+    unsigned binaryIterations = 0;
+    std::vector<unsigned> binaryThreadCounts;
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(PTreeBinaryTimingStressTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeBinaryTimingStressTest, "PTreeBinaryTimingStressTest");
 
 #include "jdebug.hpp"
-#include "jmutex.hpp"
 #include <shared_mutex>
 
 class SReadWriteLock
