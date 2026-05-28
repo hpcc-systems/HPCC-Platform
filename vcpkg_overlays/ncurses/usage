@@ -1,0 +1,14 @@
+The package ncurses is compatible with built-in CMake variables:
+
+    set(CURSES_NEED_NCURSES TRUE)
+    find_package(Curses REQUIRED)
+    target_include_directories(main PRIVATE ${CURSES_INCLUDE_DIRS})
+    target_compile_options(main PRIVATE ${CURSES_CFLAGS})
+    target_link_libraries(main PRIVATE ${CURSES_LIBRARIES})
+
+On macOS in this overlay:
+
+    - System ncurses staging is used for static linkage.
+    - Dynamic linkage skips system staging and uses the source-build path.
+    - You may override ncurses discovery with VCPKG_NCURSES_SYSTEM_PREFIX.
+    - If VCPKG_NCURSES_SYSTEM_PREFIX is set, it must contain a usable ncurses installation.
