@@ -1,63 +1,30 @@
 import * as React from "react";
-import { DefaultButton, DetailsList, DetailsListLayoutMode, IColumn } from "@fluentui/react";
-import { SizeMe } from "../layouts/SizeMe";
-import { DaliService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
-import { TableGroup } from "./forms/Groups";
+import { daliService } from "../comms/dali";
+import { useDaliResult } from "../hooks/useDaliResult";
+import { DaliAdminForm } from "./DaliAdminForm";
 import nlsHPCC from "src/nlsHPCC";
-import { HolyGrail } from "../layouts/HolyGrail";
-import { parser } from "src-dojo/index";
 
-const logger = scopedLogger("src-react/components/DFSExist.tsx");
+const logger = scopedLogger("src-react/components/DFSExists.tsx");
 
-const myDaliService = new DaliService({ baseUrl: "" });
-
-interface DFSExistProps {
-}
-
-export const DFSExists: React.FunctionComponent<DFSExistProps> = ({
-
-}) => {
-
-    const [columns, setColumns] = React.useState<IColumn[]>([]);
-    const [items, setItems] = React.useState<any[]>([]);
-    const [fileName, setFileName] = React.useState<string>("");
+export const DFSExists: React.FunctionComponent = () => {
+    const { columns, items, setColumns, setItems } = useDaliResult();
+    const [fileName, setFileName] = React.useState("");
 
     const onSubmit = React.useCallback(() => {
-        myDaliService.DFSExists({ FileName: fileName }).then(response => {
-            const data = parser.parse(response.Result);
-            setColumns(data.columns.map((col, idx) => {
-                return {
-                    key: col,
-                    name: col,
-                    fileName: col,
-                    minWidth: 100
-                };
-            }));
-            setItems(data);
-        }).catch(err => logger.error(err));
-    }, [fileName]);
+        daliService.DFSExists({ FileName: fileName })
+            .then(response => {
+                setColumns([{ key: "Result", name: "Result", fieldName: "result", minWidth: 100 }]);
+                setItems([{ key: "Result", result: String(response.Result) }]);
+            })
+            .catch(err => logger.error(err));
+    }, [fileName, setColumns, setItems]);
 
-    return <HolyGrail
-        header={<span><TableGroup fields={{
-            "FileName": { label: nlsHPCC.FileName, type: "string", value: fileName },
-        }} onChange={(id, value) => {
-            setFileName(value);
-        }} /><DefaultButton onClick={onSubmit} text={nlsHPCC.Submit} /></span>}
-        main={<SizeMe>{({ size }) => {
-            const height = `${size.height}px`;
-            return <div style={{ position: "relative", width: "100%", height: "100%" }}>
-                <div style={{ position: "absolute", width: "100%", height: `${size.height}px` }}>
-                    <DetailsList compact={true}
-                        items={items}
-                        columns={columns}
-                        setKey="key"
-                        layoutMode={DetailsListLayoutMode.justified}
-                        selectionPreservedOnEmptyClick={true}
-                        styles={{ root: { height, minHeight: height, maxHeight: height } }}
-                    />
-                </div>
-            </div>;
-        }}</SizeMe>}
+    return <DaliAdminForm
+        fields={{ "FileName": { label: nlsHPCC.FileName, type: "string", value: fileName } }}
+        onChange={(_, v) => setFileName(v)}
+        onSubmit={onSubmit}
+        columns={columns}
+        items={items}
     />;
-}; 
+};
