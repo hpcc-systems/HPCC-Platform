@@ -111,9 +111,7 @@ protected:
 public:
     Manifest(const Manifest &) = delete;
     Manifest &operator=(const Manifest &) = delete;
-    ~Manifest()
-    {
-    }
+    ~Manifest() override = default;
 
     static std::shared_ptr<IManifest> getInstance(ICodeContext *ctx)
     {

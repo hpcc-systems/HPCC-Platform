@@ -48,11 +48,21 @@ if (PLATFORM AND USE_OPENSSLV3)
         TARGETS sslservices
         DESTINATION plugins CALC_DEPS
     )
-    install(
-        FILES ${OPENSSL_LIBRARIES}
-        DESTINATION ${LIB_DIR}
-        COMPONENT Runtime
-    )
+
+    set(OPENSSL_INSTALL_LIBS)
+    foreach(opensslLib IN LISTS OPENSSL_LIBRARIES)
+        if(IS_ABSOLUTE "${opensslLib}" AND EXISTS "${opensslLib}")
+            list(APPEND OPENSSL_INSTALL_LIBS "${opensslLib}")
+        endif()
+    endforeach()
+
+    if(OPENSSL_INSTALL_LIBS)
+        install(
+            FILES ${OPENSSL_INSTALL_LIBS}
+            DESTINATION ${LIB_DIR}
+            COMPONENT Runtime
+        )
+    endif()
 
     target_link_libraries(
         sslservices

@@ -387,7 +387,7 @@ public:
     }
 };
 
-class OneShotAsyncCallback : public IAsyncCallback
+class OneShotAsyncCallback final : public IAsyncCallback
 {
 public:
     Semaphore completed;

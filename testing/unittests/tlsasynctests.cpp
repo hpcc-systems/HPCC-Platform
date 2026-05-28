@@ -350,7 +350,7 @@ private:
     }
 
 public:
-    AsyncTLSEchoServer(IAsyncProcessor *_processor) : Thread("AsyncTLSEchoServer"), port(0), processor(_processor)
+    AsyncTLSEchoServer(IAsyncProcessor *_processor) : Thread("AsyncTLSEchoServer"), processor(_processor), port(0)
     {
     }
 

@@ -618,7 +618,7 @@ public:
         if (!ownData)
         {
             data = (RoxiePacketHeader *) malloc(lengthRemaining);
-            memcpy(data, _data, lengthRemaining);
+            memcpy((void *)data, _data, lengthRemaining);
         }
         assertex(lengthRemaining >= (int) sizeof(RoxiePacketHeader));
         data->packetlength = lengthRemaining;
@@ -770,7 +770,7 @@ public:
     {
         unsigned length = data->packetlength;
         RoxiePacketHeader *newdata = (RoxiePacketHeader *) malloc(length);
-        memcpy(newdata, data, length);
+        memcpy((void *)newdata, data, length);
         newdata->channel = channel;
         newdata->retries |= ROXIE_BROADCAST;
         return createRoxiePacket(newdata, length, true);
@@ -876,7 +876,7 @@ public:
     {
         unsigned length = data->packetlength;
         RoxiePacketHeader *newdata = (RoxiePacketHeader *) malloc(length);
-        memcpy(newdata, data, length);
+        memcpy((void *)newdata, data, length);
         newdata->channel = channel;
         newdata->retries |= ROXIE_BROADCAST;
         return new CNocryptRoxieQueryPacket(newdata, length, true);
@@ -929,7 +929,7 @@ public:
     {
         unsigned length = data->packetlength;
         RoxiePacketHeader *newdata = (RoxiePacketHeader *) malloc(length);
-        memcpy(newdata, data, length);
+        memcpy((void *)newdata, data, length);
         newdata->channel = channel;
         newdata->retries |= ROXIE_BROADCAST;
         return new CSerializedRoxieQueryPacket(newdata, length, true);

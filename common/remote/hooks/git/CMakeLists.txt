@@ -45,3 +45,12 @@ target_link_libraries ( gitfile
     jlib
     libgit2::libgit2package
 )
+
+IF (APPLE)
+    find_library(APPLE_NATIVE_ICONV NAMES iconv PATHS "${CMAKE_OSX_SYSROOT}/usr/lib" "/usr/lib" NO_DEFAULT_PATH)
+    IF (APPLE_NATIVE_ICONV)
+        target_link_libraries (gitfile ${APPLE_NATIVE_ICONV})
+    ELSE()
+        target_link_libraries (gitfile iconv)
+    ENDIF()
+ENDIF()

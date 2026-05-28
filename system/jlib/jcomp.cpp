@@ -114,6 +114,15 @@ static StringBuffer &dequote(StringBuffer &in)
     return in;
 }
 
+static void ensureRPath(StringBuffer &stdLibs, StringArray &addedRPaths, const char *rpathFlag, const StringBuffer &thislib)
+{
+    if (rpathFlag && !addedRPaths.contains(thislib.str(), false))
+    {
+        stdLibs.append(" ").append(rpathFlag).append(thislib);
+        addedRPaths.append(thislib.str());
+    }
+}
+
 static void doSetCompilerPath(const char * path, const char * includes, const char * libs, const char * tmpdir, unsigned targetCompiler, bool verbose)
 {
     if (!includes)
@@ -128,6 +137,7 @@ static void doSetCompilerPath(const char * path, const char * includes, const ch
     compilerRoot.set(path ? path : targetCompiler!=Vs6CppCompiler ? "/usr" : ".\\CL");
     stdIncludes.set(includes);
     stdLibs.clear();
+    StringArray addedRPaths;
     for (;;)
     {
         StringBuffer thislib;
@@ -136,8 +146,7 @@ static void doSetCompilerPath(const char * path, const char * includes, const ch
         if (thislib.length())
         {
             stdLibs.append(" ").append(USE_LIBPATH_FLAG[targetCompiler]).append(thislib).append(USE_LIBPATH_TAIL[targetCompiler]);
-            if (USE_LIBRPATH_FLAG[targetCompiler])
-                stdLibs.append(" ").append(USE_LIBRPATH_FLAG[targetCompiler]).append(thislib);
+            ensureRPath(stdLibs, addedRPaths, USE_LIBRPATH_FLAG[targetCompiler], thislib);
         }
         if (!*libs)
             break;
@@ -419,9 +428,19 @@ void CppCompiler::addLibrary(const char * libName)
 
 void CppCompiler::addLibraryPath(const char * libPath)
 {
-    linkerOptions.append(" ").append(USE_LIBPATH_FLAG[targetCompiler]).append(libPath).append(USE_LIBPATH_TAIL[targetCompiler]);
+    if (!linkerLibPaths.contains(libPath, false))
+    {
+        linkerOptions.append(" ").append(USE_LIBPATH_FLAG[targetCompiler]).append(libPath).append(USE_LIBPATH_TAIL[targetCompiler]);
+        linkerLibPaths.append(libPath);
+    }
     if (USE_LIBRPATH_FLAG[targetCompiler])
-        linkerOptions.append(" ").append(USE_LIBRPATH_FLAG[targetCompiler]).append(libPath);
+    {
+        if (!linkerRPaths.contains(libPath, false))
+        {
+            linkerOptions.append(" ").append(USE_LIBRPATH_FLAG[targetCompiler]).append(libPath);
+            linkerRPaths.append(libPath);
+        }
+    }
 }
 
 void CppCompiler::_addInclude(StringBuffer &s, const char * paths)
@@ -894,8 +913,10 @@ void CppCompiler::setStripSymbols(bool stripSymbols)
 {
     if (stripSymbols)
     {
+#ifndef __APPLE__
         if ((targetCompiler == GccCppCompiler) || (targetCompiler == ClangCppCompiler))
             addLinkOption("-s");
+#endif
     }
 }
 

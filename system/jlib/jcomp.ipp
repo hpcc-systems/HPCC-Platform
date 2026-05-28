@@ -80,6 +80,8 @@ protected:
     StringArray     allSources;
     StringArray     allFlags;
     StringArray     logFiles;
+    StringArray     linkerLibPaths;
+    StringArray     linkerRPaths;
     StringAttr      ccLogPath;
     StringAttr      coreName;
     unsigned        targetCompiler;
