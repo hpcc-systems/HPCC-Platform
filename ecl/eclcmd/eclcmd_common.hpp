@@ -242,6 +242,8 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_NO_STD_INC "--nostdinc"
 #define ECLOPT_FETCH_REPOS "--fetchrepos"
 #define ECLOPT_UPDATE_REPOS "--updaterepos"
+#define ECLOPT_CLEAN_REPOS "--cleanrepos"
+#define ECLOPT_CLEAN_INVALID_REPOS "--cleaninvalidrepos"
 #define ECLOPT_DEFAULT_GIT_PREFIX "--defaultgitprefix"
 
 #define ECLOPT_REPO_MAPPING "-R"
