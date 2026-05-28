@@ -135,7 +135,8 @@ bool warmOsCache(const char *cacheInfo, ICacheWarmer *callback)
 #ifdef _STANDALONE_CCDCACHE
 // See example code at https://github.com/sublimehq/mmap-example/blob/master/read_mmap.cc
 
-thread_local volatile bool sigbus_jmp_set;
+#include <atomic>
+thread_local volatile bool sigbus_jmp_set{false};
 thread_local sigjmp_buf sigbus_jmp_buf;
 
 static void handle_sigbus(int c)

@@ -24,6 +24,7 @@
 #include "rmtfile.hpp"
 #include "thorhelper.hpp"
 #include "libbase58.h"
+#include <atomic>
 
 /*
  * This is the main unittest driver for HPCC. From here,
@@ -121,7 +122,9 @@ version: "1.0"
 unittests:
 - PTreeBinaryTimingStressTest:
     path: ""
-    iterations: 5
+    xmlIterations: 5
+    binaryIterations: 32
+    binaryThreadCounts: "1,2,4,8,16,32"
 global:
   storage:
     planes:
@@ -350,10 +353,11 @@ class PtreeThreadingStressTest : public CppUnit::TestFixture
         enum ContentionMode { max_contention, some_contention, min_contention, some_control, min_control };
         class casyncfor: public CAsyncFor
         {
-            volatile int v = 0;
+            std::atomic<int> v{0};
             void donothing()
             {
-                v++;
+                //Do not use atomic increment - the aim is minimal work.
+                v = v + 1;
             }
             byte flags = ipt_none;
             ContentionMode mode = max_contention;

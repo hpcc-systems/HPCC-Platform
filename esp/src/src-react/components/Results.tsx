@@ -26,6 +26,7 @@ const useStyles = makeStyles({
 
 interface ResultsProps {
     wuid: string;
+    parentUrl?: string;
     sort?: QuerySortItem;
 }
 
@@ -33,8 +34,11 @@ const defaultSort = { attribute: "Wuid", descending: true };
 
 export const Results: React.FunctionComponent<ResultsProps> = ({
     wuid,
+    parentUrl,
     sort = defaultSort
 }) => {
+
+    const outputBaseUrl = parentUrl ?? `/workunits/${wuid}/outputs`;
 
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [results, , , refreshData] = useWorkunitResults(wuid);
@@ -54,7 +58,7 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
             Name: {
                 label: nlsHPCC.Name, width: 180, sortable: true,
                 formatter: (Name, row) => {
-                    return <Link href={`#/workunits/${row.Wuid}/outputs/${Name}${hashHistory.location.search}`}>{Name}</Link>;
+                    return <Link href={`#${outputBaseUrl}/${Name}${hashHistory.location.search}`}>{Name}</Link>;
                 }
             },
             FileName: {
@@ -77,7 +81,7 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
                 }
             }
         };
-    }, []);
+    }, [outputBaseUrl]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -90,10 +94,10 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
             onClick: () => {
                 if (selection.length === 1) {
-                    window.location.href = `#/workunits/${wuid}/outputs/${selection[0].Name}${hashHistory.location.search}`;
+                    window.location.href = `#${outputBaseUrl}/${selection[0].Name}${hashHistory.location.search}`;
                 } else {
                     for (let i = selection.length - 1; i >= 0; --i) {
-                        window.open(`#/workunits/${wuid}/outputs/${selection[i].Name}${hashHistory.location.search}`, "_blank");
+                        window.open(`#${outputBaseUrl}/${selection[i].Name}${hashHistory.location.search}`, "_blank");
                     }
                 }
             }
@@ -102,10 +106,10 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
             key: "open legacy", text: nlsHPCC.OpenLegacyMode, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
             onClick: () => {
                 if (selection.length === 1) {
-                    window.location.href = `#/workunits/${wuid}/outputs/${selection[0].Name}?__legacy`;
+                    window.location.href = `#${outputBaseUrl}/${selection[0].Name}?__legacy`;
                 } else {
                     for (let i = selection.length - 1; i >= 0; --i) {
-                        window.open(`#/workunits/${wuid}/outputs/${selection[i].Name}?__legacy`, "_blank");
+                        window.open(`#${outputBaseUrl}/${selection[i].Name}?__legacy`, "_blank");
                     }
                 }
             }
@@ -114,15 +118,15 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
             key: "visualize", text: nlsHPCC.Visualize, disabled: !uiState.hasSelection, iconProps: { iconName: "BarChartVertical" },
             onClick: () => {
                 if (selection.length === 1) {
-                    window.location.href = `#/workunits/${wuid}/outputs/${selection[0].Sequence}?__visualize`;
+                    window.location.href = `#${outputBaseUrl}/${selection[0].Sequence}?__visualize`;
                 } else {
                     for (let i = selection.length - 1; i >= 0; --i) {
-                        window.open(`#/workunits/${wuid}/outputs/${selection[i].Sequence}?__visualize`, "_blank");
+                        window.open(`#${outputBaseUrl}/${selection[i].Sequence}?__visualize`, "_blank");
                     }
                 }
             }
         },
-    ], [refreshData, selection, uiState.hasSelection, wuid]);
+    ], [outputBaseUrl, refreshData, selection, uiState.hasSelection]);
 
     const copyButtons = useCopyButtons(columns, selection, "results");
 

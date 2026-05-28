@@ -128,6 +128,7 @@ export = {
         ColumnMode: "Column Mode",
         Command: "Command",
         Comment: "Comment",
+        Compare: "Compare",
         CompileCost: "Compile Cost",
         Compiled: "Compiled",
         Compiling: "Compiling",

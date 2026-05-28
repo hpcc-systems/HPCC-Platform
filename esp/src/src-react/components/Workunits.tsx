@@ -13,7 +13,7 @@ import { useConfirm } from "../hooks/confirm";
 import { useMyAccount } from "../hooks/user";
 import { useUserStore } from "../hooks/store";
 import { useLogicalClustersPalette } from "../hooks/platform";
-import { calcSearch, pushParams } from "../util/history";
+import { calcSearch, pushParams, pushUrl } from "../util/history";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { CreateWUQueryStore } from "../comms/workunit";
 import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
@@ -211,6 +211,13 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                         window.open(`#/workunits/${selection[i].Wuid}`, "_blank");
                     }
                 }
+            }
+        },
+        {
+            key: "compare", text: nlsHPCC.Compare, disabled: selection.length < 2, iconProps: { iconName: "DiffSideBySide" },
+            onClick: () => {
+                const wuids = selection.map(wu => wu.Wuid).join(",");
+                pushUrl(`/workunits/${wuids}`);
             }
         },
         {

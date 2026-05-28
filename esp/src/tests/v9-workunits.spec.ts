@@ -128,6 +128,43 @@ test.describe("V9 Workunits", () => {
         }
     });
 
+    test("Should compare two workunits and preserve WUIDs while navigating tabs", async ({ page }) => {
+        await page.locator(".ms-DetailsRow").first().waitFor({ state: "visible", timeout: 10000 });
+        const rowCount = await page.locator(".ms-DetailsRow").count();
+        expect(rowCount).toBeGreaterThanOrEqual(2);
+
+        const firstRow = page.locator(".ms-DetailsRow").nth(0);
+        const secondRow = page.locator(".ms-DetailsRow").nth(1);
+        const selectedWuids = [
+            await firstRow.locator("a").first().innerText(),
+            await secondRow.locator("a").first().innerText()
+        ];
+
+        await firstRow.locator(".ms-DetailsRow-check").click();
+        await secondRow.locator(".ms-DetailsRow-check").click();
+        await expect(page.locator(".ms-DetailsRow.is-selected")).toHaveCount(2);
+
+        await page.getByRole("menuitem", { name: "Compare" }).click();
+        await page.waitForLoadState("networkidle");
+
+        const compareHash = new URL(page.url()).hash;
+        const compareMatch = compareHash.match(/^#\/compare\/([^/?]+)/);
+        expect(compareMatch).toBeTruthy();
+        const compareWuids = compareMatch![1].split(",");
+        expect(compareWuids).toEqual(expect.arrayContaining(selectedWuids));
+        await expect(page.locator(".reflex-splitter")).toHaveCount(1);
+
+        await page.getByRole("tab", { name: "Variables" }).first().click();
+        await page.waitForLoadState("networkidle");
+
+        const variablesHash = new URL(page.url()).hash;
+        expect(variablesHash).toContain("/variables");
+        const variablesMatch = variablesHash.match(/^#\/compare\/([^/?]+)\/variables/);
+        expect(variablesMatch).toBeTruthy();
+        const variablesWuids = variablesMatch![1].split(",");
+        expect(variablesWuids).toEqual(expect.arrayContaining(selectedWuids));
+    });
+
     test("Should handle workunit detail page tabs", async ({ page, browserName }) => {
         await page.locator(".ms-DetailsRow").first().waitFor({ state: "visible", timeout: 10000 });
         await expect(page.locator(".ms-DetailsRow")).not.toHaveCount(0);
