@@ -992,7 +992,7 @@ void jlib_decl checkedWriteLockEnter(ReadWriteLock &l, unsigned timeout, const c
 
 class CSingletonLock        // a lock that will generally only be locked once (for locking singleton objects - see below for examples
 {
-    volatile bool needlock;
+    std::atomic<bool> needlock;
     CriticalSection  sect;
 public:
     inline CSingletonLock()

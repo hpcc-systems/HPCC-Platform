@@ -24,6 +24,7 @@
 #include "rmtfile.hpp"
 #include "thorhelper.hpp"
 #include "libbase58.h"
+#include <atomic>
 
 /*
  * This is the main unittest driver for HPCC. From here,
@@ -352,10 +353,11 @@ class PtreeThreadingStressTest : public CppUnit::TestFixture
         enum ContentionMode { max_contention, some_contention, min_contention, some_control, min_control };
         class casyncfor: public CAsyncFor
         {
-            volatile int v = 0;
+            std::atomic<int> v{0};
             void donothing()
             {
-                v++;
+                //Do not use atomic increment - the aim is minimal work.
+                v = v + 1;
             }
             byte flags = ipt_none;
             ContentionMode mode = max_contention;

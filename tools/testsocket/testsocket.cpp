@@ -81,6 +81,20 @@ CriticalSection traceCrit;
 
 unsigned queryDelayMS = 0;
 unsigned queryAbsDelayMS = 0;  // ex: -u0 -qd 1000 for 1 q/s ...
+bool queryDelayFromFile = false;
+bool queryDelayDebug = false;
+StringAttr queryDelayFileName;
+FILE *queryDelayFile = nullptr;
+bool queryDelayFileInvalid = false;
+bool havePreviousQueryDelayTime = false;
+unsigned previousQueryDelayTimeMS = 0;
+unsigned nextQueryAbsDelayMS = 0;
+bool haveNextQueryAbsDelayMS = false;
+unsigned queryDelayEntriesLoaded = 0;
+unsigned queryDelayQueriesSubmitted = 0;
+unsigned nextExpectedQueryDeltaMS = 0;
+bool havePreviousSubmitTick = false;
+unsigned previousSubmitTick = 0;
 unsigned totalQueryCnt = 0;
 double totalQueryMS = 0.0;
 bool doRetries = false;
@@ -89,6 +103,140 @@ unsigned numExceptions = 0;
 
 Owned<ISpan> serverSpan;
 //---------------------------------------------------------------------------
+
+static bool parseTimeFileValue(const char *text, unsigned &timeMS)
+{
+    unsigned hours = 0;
+    unsigned minutes = 0;
+    unsigned seconds = 0;
+    unsigned milliseconds = 0;
+    char trailing = 0;
+    // Expected format: hr:min:sec.millisec (for example: 12:34:56.789)
+    // Allow and ignore any trailing characters after a valid timestamp prefix.
+    int matched = sscanf(text, "%u:%u:%u.%u %c", &hours, &minutes, &seconds, &milliseconds, &trailing);
+    if (matched != 4 && matched != 5)
+        return false;
+
+    if (minutes > 59 || seconds > 59 || milliseconds > 999)
+        return false;
+
+    unsigned __int64 totalMS = ((unsigned __int64) hours * 3600000) + ((unsigned __int64) minutes * 60000) + ((unsigned __int64) seconds * 1000) + milliseconds;
+    if (totalMS > (unsigned __int64) UINT_MAX)
+        return false;
+
+    timeMS = (unsigned) totalMS;
+    return true;
+}
+
+static bool readTimeFileEntry(FILE *in, unsigned &timeMS, bool &reachedEOF, bool &invalidData)
+{
+    reachedEOF = false;
+    invalidData = false;
+    constexpr size_t maxLineLength = 1024;
+    char line[maxLineLength];
+    for (;;)
+    {
+        if (!fgets(line, maxLineLength-1, in))
+        {
+            reachedEOF = (feof(in) != 0);
+            if (!reachedEOF)
+                invalidData = (ferror(in) != 0);
+            return false;
+        }
+        line[maxLineLength-1] = '\0';
+
+        bool lineComplete = (strchr(line, '\n') != nullptr) || (strchr(line, '\r') != nullptr) || feof(in);
+
+        if (!parseTimeFileValue(line, timeMS))
+        {
+            invalidData = true;
+            return false;
+        }
+
+        // If the line was longer than the fixed read buffer, consume remaining chunks.
+        while (!lineComplete)
+        {
+            if (!fgets(line, maxLineLength-1, in))
+            {
+                if (ferror(in))
+                {
+                    invalidData = true;
+                    return false;
+                }
+                break;  // EOF is acceptable
+            }
+            line[maxLineLength-1] = '\0';
+            lineComplete = (strchr(line, '\n') != nullptr) || (strchr(line, '\r') != nullptr) || feof(in);
+        }
+
+        queryDelayEntriesLoaded++;
+        return true;
+    }
+}
+
+static bool canSubmitNextQueryFromTimeFile()
+{
+    if (!queryDelayFromFile)
+        return true;
+    if (!havePreviousQueryDelayTime)
+        return false;
+    return queryDelayQueriesSubmitted < queryDelayEntriesLoaded;
+}
+
+static bool loadNextQueryAbsDelay()
+{
+    haveNextQueryAbsDelayMS = false;
+    if (!queryDelayFile)
+        return false;
+
+    queryDelayFileInvalid = false;
+    unsigned timeEntryMS = 0;
+    bool reachedEOF = false;
+    bool invalidData = false;
+    bool allowEOF = false;
+
+    if (!havePreviousQueryDelayTime)
+    {
+        allowEOF = true;
+        if (!readTimeFileEntry(queryDelayFile, timeEntryMS, reachedEOF, invalidData))
+        {
+            queryDelayFileInvalid = invalidData;
+            return reachedEOF;
+        }
+
+        // First timestamp establishes baseline; first query is never delayed.
+        previousQueryDelayTimeMS = timeEntryMS;
+        havePreviousQueryDelayTime = true;
+    }
+
+    if (!readTimeFileEntry(queryDelayFile, timeEntryMS, reachedEOF, invalidData))
+    {
+        queryDelayFileInvalid = invalidData;
+        return reachedEOF && allowEOF;
+    }
+
+    __int64 deltaMS = (__int64) timeEntryMS - (__int64) previousQueryDelayTimeMS;
+    previousQueryDelayTimeMS = timeEntryMS;
+    if (deltaMS < 0)
+        deltaMS = 0;
+
+    nextQueryAbsDelayMS = (unsigned) deltaMS;
+    haveNextQueryAbsDelayMS = true;
+    return true;
+}
+
+static unsigned consumeQueryAbsDelay()
+{
+    if (!queryDelayFromFile)
+        return queryAbsDelayMS;
+
+    if (!haveNextQueryAbsDelayMS)
+        return 0;
+
+    unsigned currentDelay = nextQueryAbsDelayMS;
+    loadNextQueryAbsDelay();
+    return currentDelay;
+}
 
 void SplitIpPort(StringAttr & ip, unsigned & port, const char * address)
 {
@@ -900,8 +1048,21 @@ protected:
 
 int sendQuery(const char * ip, unsigned port, const char * base)
 {
+    if (queryDelayFromFile && queryDelayDebug)
+    {
+        unsigned nowTick = msTick();
+        unsigned actualDeltaMS = havePreviousSubmitTick ? (nowTick - previousSubmitTick) : 0;
+        printf("fx-submit[%u]: planned-delta-ms=%u actual-delta-ms=%u\n", queryDelayQueriesSubmitted+1, nextExpectedQueryDeltaMS, actualDeltaMS);
+        previousSubmitTick = nowTick;
+        havePreviousSubmitTick = true;
+    }
+
     if (!multiThread)
+    {
+        if (queryDelayFromFile)
+            queryDelayQueriesSubmitted++;
         return doSendQuery(ip, port, base);
+    }
 
     if (multiThreadMax)
         okToSend.wait();
@@ -911,9 +1072,17 @@ int sendQuery(const char * ip, unsigned port, const char * base)
     //MORE: The caller should really join this thread before terminating
     thread->start(false);
     thread->Release();
+    if (queryDelayFromFile)
+        queryDelayQueriesSubmitted++;
 
-    if (multiThread && queryAbsDelayMS && !multiThreadMax)
-        Sleep(queryAbsDelayMS);
+    if (multiThread && !multiThreadMax)
+    {
+        unsigned submitDelayMS = consumeQueryAbsDelay();
+        if (queryDelayFromFile)
+            nextExpectedQueryDeltaMS = submitDelayMS;
+        if (submitDelayMS)
+            Sleep(submitDelayMS);
+    }
 
     return 0;
 }
@@ -930,6 +1099,8 @@ void usage(int exitCode)
     printf("  -dry      dry run - only echo the queries that will be sent\n");
     printf("  -f        take query from file\n");
     printf("  -ff       take multiple queries from file, one per line\n");
+    printf("  -fx <file> take thread submit times from file, one timestamp per line (requires -ff; forces -u0 behavior; first line is baseline; no delay for first query; subsequent delays are adjacent-line deltas)\n");
+    printf("  -fxd <file> same as -fx, plus debug submit timing (prints planned delta ms and actual elapsed ms since previous submit)\n");
     printf("  -tff      take multiple queries from file, one per line, preceded by the time at which it should be submitted (relative to time on first line)\n");
     printf("  -k        don't save the results to result.txt\n");
     printf("  -m        only save results to result.txt\n");
@@ -975,6 +1146,8 @@ int main(int argc, char **argv)
     bool fromFile = false;
     bool fromStdIn = false;
     bool fromMultiFile = false;
+    bool fromExplicitMultiFile = false;
+    StringAttr multiInputFileName;
     bool timedReplay = false;
     if (argc < 2 && !(argc==2 && strstr(argv[1], "::")))
         usage(1);
@@ -1050,7 +1223,42 @@ int main(int argc, char **argv)
         else if (stricmp(argv[arg], "-ff") == 0)
         {
             fromMultiFile = true;
-            ++arg;
+            fromExplicitMultiFile = true;
+            // Allow -ff <file> to be consumed here so later flags are still parsed.
+            if ((arg + 1) < argc && argv[arg+1][0] != '-')
+            {
+                multiInputFileName.set(argv[arg+1]);
+                arg += 2;
+            }
+            else
+                ++arg;
+        }
+        else if (stricmp(argv[arg], "-fx") == 0)
+        {
+            if ((arg + 1) >= argc)
+                usage(1);
+            if (queryDelayFromFile)
+            {
+                printf("Specify only one of -fx <time-file> or -fxd <time-file>\n");
+                usage(1);
+            }
+            queryDelayFromFile = true;
+            queryDelayFileName.set(argv[arg+1]);
+            arg += 2;
+        }
+        else if (stricmp(argv[arg], "-fxd") == 0)
+        {
+            if ((arg + 1) >= argc)
+                usage(1);
+            if (queryDelayFromFile)
+            {
+                printf("Specify only one of -fx <time-file> or -fxd <time-file>\n");
+                usage(1);
+            }
+            queryDelayFromFile = true;
+            queryDelayDebug = true;
+            queryDelayFileName.set(argv[arg+1]);
+            arg += 2;
         }
         else if (stricmp(argv[arg], "-tff") == 0)
         {
@@ -1223,16 +1431,51 @@ int main(int argc, char **argv)
             ++arg;
         }
     }
+
+    if (queryDelayFromFile && !fromExplicitMultiFile)
+    {
+        printf("-fx/-fxd requires -ff <query-input-file>\n");
+        usage(1);
+    }
+
+    if (queryDelayFromFile)
+    {
+        multiThread = true; // -fx/-fxd acts like -u0
+        if (multiThreadMax)
+        {
+            printf("-fx/-fxd overrides -u %u and forces -u0 behavior\n", multiThreadMax);
+            multiThreadMax = 0;
+        }
+    }
+
     if (persistConnections && multiThread)
     {
-        printf("Multi-thread (-u) not available with -persist - ignored\n");
-        multiThread = false;
+        printf("Multi-thread (-u) not compatible with -persist\n");
+        usage(2);
     }
 
     if (multiThread && queryDelayMS && !multiThreadMax)
     {
         queryAbsDelayMS = queryDelayMS;
         queryDelayMS = 0;
+    }
+
+    if (queryDelayFromFile)
+    {
+        queryDelayFile = fopen(queryDelayFileName, "rt");
+        if (!queryDelayFile)
+        {
+            printf("File %s could not be opened\n", queryDelayFileName.str());
+            usage(2);
+        }
+        if (!loadNextQueryAbsDelay())
+        {
+            if (queryDelayFileInvalid)
+            {
+                printf("Time file %s is invalid\n", queryDelayFileName.str());
+                usage(2);
+            }
+        }
     }
 
     if (generateClientSpans)
@@ -1284,12 +1527,12 @@ int main(int argc, char **argv)
 
     __int64 starttime,endtime;
     starttime = get_cycles_now();
-    if (arg < argc || fromStdIn)
+    if (arg < argc || fromStdIn || (fromMultiFile && multiInputFileName.length()))
     {
         echoResults = echoSingle;
         do
         {
-            const char * query = argv[arg];
+            const char * query = (fromMultiFile && multiInputFileName.length()) ? multiInputFileName.get() : argv[arg];
             if (fromMultiFile)
             {
                 FILE *in = fopen(query, "rt");
@@ -1350,6 +1593,12 @@ int main(int argc, char **argv)
                         }
                         if (query)
                         {
+                            if (!canSubmitNextQueryFromTimeFile())
+                            {
+                                if (!queryDelayFileInvalid)
+                                    DBGLOG("Stopping query submission: reached end of -fx time-file");
+                                break;
+                            }
                             ret = sendQuery(ip, socketPort, query);
                             firstLine = false;
                         }
@@ -1402,6 +1651,14 @@ int main(int argc, char **argv)
 
     while (runningQueries--)
         done.wait();
+
+    if (queryDelayFromFile && queryDelayFileInvalid)
+    {
+        printf("Time file %s is invalid\n", queryDelayFileName.str());
+        if (ret == 0)
+            ret = 2;
+    }
+
     if (persistConnections && persistSocket)
     {
         int sendlen=0;
@@ -1436,6 +1693,11 @@ int main(int argc, char **argv)
     if (trace != NULL)
     {
         fclose(trace);
+    }
+    if (queryDelayFile)
+    {
+        fclose(queryDelayFile);
+        queryDelayFile = nullptr;
     }
     
 #ifdef _DEBUG

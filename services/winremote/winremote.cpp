@@ -27,6 +27,7 @@
 #include "jstring.hpp"
 #include "jexcept.hpp"
 #include "jiter.ipp"
+#include <atomic>
 
 #include "jpqueue.hpp"
 
@@ -279,7 +280,7 @@ protected:
     }
 
     StringAttr  remote,user,pwd;
-    volatile bool stopped;
+    std::atomic<bool> stopped;
 
     struct SharePoint
     {

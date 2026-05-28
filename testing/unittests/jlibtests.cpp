@@ -2055,7 +2055,7 @@ class JlibReaderWriterTestTiming : public CppUnit::TestFixture
     private:
         IRowQueue & source;
         Semaphore & doneSem;
-        volatile unsigned work;
+        std::atomic<unsigned> work{0};
         unsigned workScale;
     };
 
@@ -2063,7 +2063,7 @@ class JlibReaderWriterTestTiming : public CppUnit::TestFixture
     {
     public:
         WriterBase(IRowQueue & _target, size_t _len, byte * _buffer, Semaphore & _startSem, Semaphore & _doneSem, unsigned _workScale)
-            : Thread("Writer"), len(_len), buffer(_buffer), target(_target), startSem(_startSem), doneSem(_doneSem), work(0), workScale(_workScale)
+            : Thread("Writer"), len(_len), buffer(_buffer), target(_target), startSem(_startSem), doneSem(_doneSem), workScale(_workScale)
         {
         }
 
@@ -2073,7 +2073,7 @@ class JlibReaderWriterTestTiming : public CppUnit::TestFixture
         IRowQueue & target;
         Semaphore & startSem;
         Semaphore & doneSem;
-        volatile unsigned work;
+        std::atomic<unsigned> work{0};
         unsigned workScale;
     };
     class Writer : public WriterBase
@@ -2224,7 +2224,7 @@ public:
         testQueue(127, 1, 127);
 
         cycle_t startTime = get_cycles_now();
-        volatile unsigned value = 0;
+        std::atomic<unsigned> value{0};
         for (unsigned pass = 0; pass < 10; pass++)
         {
             for (unsigned i2 = 0; i2 < bufferSize; i2++)
@@ -4478,7 +4478,7 @@ public:
         ProcessInfo prevProcess;
         ProcessInfo curProcess(ReadAllInfo);
         SystemInfo curSystem(ReadAllInfo);
-        volatile unsigned x = 0;
+        unsigned x = 0;
         for (unsigned i=0; i < 10; i++)
         {
             prevProcess = curProcess;
@@ -4502,6 +4502,7 @@ public:
                 x += j*j;
             Sleep(1000);
         }
+        DBGLOG("Dummy value to prevent optimization: %u", x);
     }
 
 };
