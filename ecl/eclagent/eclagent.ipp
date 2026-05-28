@@ -367,7 +367,7 @@ private:
     bool checkVersion;
     bool resetWorkflow;
     bool noRetry;
-    volatile bool isAborting;
+    std::atomic<bool> isAborting;
     bool useProductionLibraries;
     bool isStandAloneExe;
     bool isRemoteWorkunit;

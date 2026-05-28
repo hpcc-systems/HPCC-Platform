@@ -97,24 +97,25 @@ public:
     
 private:
 
+    //Always called within a critical section
     bool wait(unsigned timeout)
     {
         bool ret=false;
-        waiting++;
+        waiting = waiting + 1; // no need for atomic increment as always called within critical section
 
         mutex.unlock();
         ret=counter.wait(timeout);
         mutex.lock();
 
-        waiting--;
+        waiting = waiting - 1; // no need for atomic decrement as always called within critical section
         return ret;
     }
 
     Mutex mutex;
     Semaphore counter;
     std::list<T> queue;
-    volatile unsigned waiting;
-    volatile bool stopped; //need event
+    unsigned waiting;   // Not atomic because it is only accessed within a critical section
+    std::atomic<bool> stopped; //need event
 };
 
 interface ITask: extends IInterface
@@ -243,7 +244,7 @@ private:
 
     private:
         TaskQueue& tq;
-        volatile bool stopped;
+        std::atomic<bool> stopped;
         Owned<ITask> task;
     };
 

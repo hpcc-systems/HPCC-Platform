@@ -20,8 +20,9 @@
 #include "jlib.hpp"
 #include "eclplus.hpp"
 #include "formattypes.ipp"
+#include <atomic>
 
-static volatile bool ctrlcpressed = false;
+static std::atomic<bool> ctrlcpressed{false};
 
 bool ControlHandler();
 
