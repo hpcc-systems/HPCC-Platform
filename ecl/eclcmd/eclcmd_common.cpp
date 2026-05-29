@@ -760,6 +760,7 @@ eclCmdOptionMatchIndicator EclCmdWithEclTarget::matchCommandLineOption(ArgvItera
     //Process options which should be passed straight through to eclcc
     StringBuffer temp;
     if (iter.matchOptionText(temp, ECLOPT_FETCH_REPOS, true, false) || iter.matchOptionText(temp, ECLOPT_UPDATE_REPOS, true, false) ||
+        iter.matchOptionText(temp, ECLOPT_CLEAN_REPOS, true, false) || iter.matchOptionText(temp, ECLOPT_CLEAN_INVALID_REPOS, true, false) ||
         iter.matchOptionText(temp, ECLOPT_DEFAULT_GIT_PREFIX, false, false) || iter.matchOptionText(temp, ECLOPT_REPO_MAPPING, false, true))
     {
         extraOptions.append(temp);

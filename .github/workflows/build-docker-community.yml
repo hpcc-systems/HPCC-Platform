@@ -242,6 +242,7 @@ jobs:
           push: ${{ github.repository_owner == 'hpcc-systems' }}
           build-args: |
             PKG_FILE=${{ steps.container.outputs.k8s_pkg_file }}
+            TARGETARCH=${{ inputs.architecture == '-arm64' && 'arm64' || 'amd64' }}
           tags: |
             hpccsystems/platform-core:${{ steps.vars.outputs.hpcc_version }}${{ inputs.architecture }}
             hpccsystems/platform-core-${{ inputs.os }}:${{ steps.vars.outputs.community_tag }}${{ inputs.architecture }}

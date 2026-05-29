@@ -2077,7 +2077,7 @@ public:
                         filter.append("name=");
                     else
                         filter.append("ou=");
-                    filter.append(res->getName());
+                    appendEscapedLdapFilter(res->getName(), filter);
                     int count = countEntries(m_ldapconfig->getResourceBasedn(rtype), (char*)filter.str(), 10);
                     if(count != 0)
                         res->setAccessFlags(SecAccess_Full);
@@ -2264,7 +2264,7 @@ public:
                     basedn = m_ldapconfig->getSysUserBasedn();
             }
 
-            filter.append(user.getName());
+            appendEscapedLdapFilter(user.getName(), filter);
 
             TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
             
@@ -2656,9 +2656,15 @@ public:
             if (filter.isEmpty())
             {
                 if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
-                    filter.append("sAMAccountName=").append(act_name);
+                {
+                    filter.append("sAMAccountName=");
+                    appendEscapedLdapFilter(act_name, filter);
+                }
                 else
-                    filter.append("uid=").append(act_name);
+                {
+                    filter.append("uid=");
+                    appendEscapedLdapFilter(act_name, filter);
+                }
                 basedn = m_ldapconfig->getUserBasedn();
                 if (m_ldapconfig->isAzureAD() && strieq(act_name, m_ldapconfig->getSysUser()))
                     basedn = m_ldapconfig->getSysUserBasedn();
@@ -2682,7 +2688,8 @@ public:
         {
             if (filter.isEmpty())
             {
-                filter.append("cn=").append(act_name);
+                filter.append("cn=");
+                appendEscapedLdapFilter(act_name, filter);
                 basedn = m_ldapconfig->getGroupBasedn();
             }
             lookupSid(basedn, filter.str(), act_sid);
@@ -3250,7 +3257,8 @@ public:
         TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
 
         StringBuffer filter;
-        filter.append("sAMAccountName=").append(username);
+        filter.append("sAMAccountName=");
+        appendEscapedLdapFilter(username, filter);
 
         char        *attrs[] = {"distinguishedName", NULL};
         CLDAPMessage searchResult;
@@ -3461,7 +3469,8 @@ public:
         else
         {
             StringBuffer filter;
-            filter.append("uid=").append(username);
+            filter.append("uid=");
+            appendEscapedLdapFilter(username, filter);
 
             char        **values = NULL;
             LDAPMessage *message;
@@ -4104,7 +4113,7 @@ public:
                 return;
 
             StringBuffer filter("sAMAccountName=");
-            filter.append(user);
+            appendEscapedLdapFilter(user, filter);
 
             TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
 
@@ -4380,15 +4389,18 @@ public:
         StringBuffer filter;
         if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
         {
-            filter.append("distinguishedName=").append(grpdn.str());
+            filter.append("distinguishedName=");
+            appendEscapedLdapFilter(grpdn.str(), filter);
         }
         else if(m_ldapconfig->getServerType() == IPLANET)
         {
-            filter.append("entrydn=").append(grpdn.str());
+            filter.append("entrydn=");
+            appendEscapedLdapFilter(grpdn.str(), filter);
         }
         else if(m_ldapconfig->getServerType() == OPEN_LDAP)
         {
-            filter.append("cn=").append(groupname);
+            filter.append("cn=");
+            appendEscapedLdapFilter(groupname, filter);
         }
 
         TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
@@ -4806,7 +4818,7 @@ private:
         {
             StringBuffer filter;
             filter.append("sAMAccountName=");
-            filter.append(username);
+            appendEscapedLdapFilter(username, filter);
 
             char        *attribute;
             LDAPMessage *message;
@@ -4882,12 +4894,8 @@ private:
         }
 
         StringBuffer filter;
-        filter.append("distinguishedName=").append(dn);
-
-        filter.replaceString("\\", "\\5c");//Replace special characters with valid UTF-8 string (see valueencoding rule in RFC 4515)
-        filter.replaceString("*", "\\2a");
-        filter.replaceString("(", "\\28");
-        filter.replaceString(")", "\\29");
+        filter.append("distinguishedName=");
+        appendEscapedLdapFilter(dn, filter);
 
         char        *attribute;
         LDAPMessage *message;
@@ -5191,7 +5199,9 @@ private:
             namebuf.trim();
             if(namebuf.length() > 0)
             {
-                filter.append("(").append(id_fieldname).append("=").append(namebuf.str()).append(")");;
+                filter.append("(").append(id_fieldname).append("=");
+                appendEscapedLdapFilter(namebuf.str(), filter);
+                filter.append(")");
             }
         }
         filter.append(")");
@@ -5333,7 +5343,8 @@ private:
                     
                     if (cn.isEmpty())//only process leftmost part of ou, so "ou=s3,ou=s2,ou=s1" only specify ou=s3
                     {
-                        cn.append("ou=").append(curlen, curscope);
+                        cn.append("ou=");
+                        appendEscapedLdapFilter(curlen, curscope, cn);
                     }
 
                     isleaf = false;
@@ -5353,11 +5364,15 @@ private:
 
                 if(servertype == ACTIVE_DIRECTORY)
                 {
-                    filter.append("(distinguishedName=").append(dn.str()).append(")");
+                    filter.append("(distinguishedName=");
+                    appendEscapedLdapFilter(dn.str(), filter);
+                    filter.append(")");
                 }
                 else if(servertype == IPLANET)
                 {
-                    filter.append("(entrydn=").append(dn.str()).append(")");
+                    filter.append("(entrydn=");
+                    appendEscapedLdapFilter(dn.str(), filter);
+                    filter.append(")");
                 }
                 else if(servertype == OPEN_LDAP)
                 {
@@ -5878,7 +5893,8 @@ private:
         const char* username = user->getName();
 
         StringBuffer filter;
-        filter.append("sAMAccountName=").append(username);
+        filter.append("sAMAccountName=");
+        appendEscapedLdapFilter(username, filter);
 
         char        *attribute;
         LDAPMessage *message;
