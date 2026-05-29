@@ -561,9 +561,26 @@ NO_SANITIZE("undefined") __int64 rtlRound(double x)
     //coded rather oddly as microsoft's optimizer has a habit of throwing it away otherwise...
     volatile double tt = x * kk;
     x += tt;
+
+#if defined(__APPLE__) || defined(__aarch64__)
+    // On architectures where float->int out-of-bounds doesn't saturate to x86 indefinite integer
+    if (!isfinite(x))
+        return LLONG_MIN;
+    if (x >= 0.0)
+    {
+        if (x > (double)LLONG_MAX - 0.5)
+            return LLONG_MIN;
+    }
+    else
+    {
+        if (x < (double)LLONG_MIN + 0.5)
+            return LLONG_MIN;
+    }
+#endif
+
     if (x >= 0.0)
         return (__int64)(x + 0.5);
-    return -(__int64)(-x + 0.5);
+    return (__int64)(x - 0.5);
 }
 
 double rtlRoundTo(const double x, int places)

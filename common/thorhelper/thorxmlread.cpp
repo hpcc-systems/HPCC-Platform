@@ -881,8 +881,8 @@ public:
             bool simple = testForSimpleQualifier(qualifier);
             simpleQualifier.append(simple);
             if (-1 == topQualifier && !simple) topQualifier = qualifierStack.ordinality()-1;
-            path = nextSep+1;
             if (!nextSep) break;
+            path = nextSep+1;
         }
     }
     bool toQualify(unsigned which, bool simple)

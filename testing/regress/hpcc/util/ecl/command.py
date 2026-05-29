@@ -68,6 +68,11 @@ class ECLcmd(Shell):
 
         args = args + eclfile.getFParameters() + eclfile.getExtraDParameters()
 
+        if eclfile.isEclXml:
+            # Ignore archive major-version mismatch warning when submitting
+            # eclxml created by a different release.
+            args.append('-feclcc-w3118=ignore')
+
         if cmd == 'publish':
             args.append(eclfile.getArchiveName())
 
@@ -151,6 +156,7 @@ class ECLcmd(Shell):
                             i = ET.tostring(xml, short_empty_elements=False).decode("utf-8")
                         logger.debug("%3d. ret:'%s'", eclfile.getTaskId(),  i )
                         pass
+
                     try:
                         # "ecl run .... --poll" inserts 2 or 3 more lines and <Result> and </Result> tags into the result, filter them out
                         if not ( i.startswith("Polling for") or i.startswith("Getting Workunit") or i.startswith("Getting Results") or i.startswith("Retrieving Results") or i.startswith("<Result>") or i.startswith("</Result>")):
