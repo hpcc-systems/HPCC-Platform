@@ -426,8 +426,6 @@ private:
     size_t currentSourceIndex = 0;
 };
 
-// Concrete implementation of CEventMultiplexer that iterates all events from the first source
-// before continuing iteration with the next source.
 bool CSerialEventMultiplexer::nextEvent(CEvent& event)
 {
     while (currentSourceIndex < sources.size())

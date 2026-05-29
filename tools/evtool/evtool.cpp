@@ -30,6 +30,11 @@ int CEvtCommandBase::dispatch(int argc, const char* argv[], int pos)
     return doDispatch(argc, argv, pos);
 }
 
+unsigned CEvtCommandBase::consumeArgument(int argc, const char* argv[], int pos)
+{
+    return acceptArgument(argv[pos]) ? 1 : 0;
+}
+
 int CEvtCommandBase::doDispatch(int argc, const char* argv[], int pos)
 {
     for (int idx = pos + 1; idx < argc; ++idx)
@@ -42,13 +47,18 @@ int CEvtCommandBase::doDispatch(int argc, const char* argv[], int pos)
                 return 0;
             }
         }
-        else if (!acceptArgument(argv[idx]))
+        else
         {
-            StringBuffer err;
-            err << "invalid argument: " << argv[idx] << "\n\n";
-            consoleErr().put(err.length(), err.str());
-            usage(argc, argv, pos, consoleErr());
-            return 1;
+            unsigned consumed = consumeArgument(argc, argv, idx);
+            if (consumed == 0)
+            {
+                StringBuffer err;
+                err << "invalid argument: " << argv[idx] << "\n\n";
+                consoleErr().put(err.length(), err.str());
+                usage(argc, argv, pos, consoleErr());
+                return 1;
+            }
+            idx += (consumed - 1);
         }
     }
 
@@ -165,6 +175,46 @@ void CEvToolCommand::usage(int argc, const char* argv[], int pos, IBufferedSeria
 bool CEvToolCommand::acceptArgument(const char* arg)
 {
     return accept(arg);
+}
+
+
+
+unsigned CEvToolCommand::consumeArgument(int argc, const char* argv[], int pos)
+{
+    const char* arg = argv[pos];
+    if (!arg)
+        return 0;
+
+    // Evaluate long options specifically to pass the next token
+    if (arg[0] == '-' && arg[1] == '-' && arg[2] != '\0')
+    {
+        const char* opt = arg + 2;
+        const char* valueDelim = strchr(opt, '=');
+        if (valueDelim)
+        {
+            if (valueDelim[1])
+            {
+                StringAttr key(opt, valueDelim - opt);
+                if (acceptKVOption(key, valueDelim + 1))
+                    return 1;
+            }
+        }
+        else
+        {
+            unsigned consumed = acceptLongOption(opt, pos + 1 < argc ? argv[pos+1] : nullptr);
+            if (consumed)
+                return consumed;
+        }
+    }
+    // Standard handling for parameters, terse options
+    return accept(arg) ? 1 : 0;
+}
+
+unsigned CEvToolCommand::acceptLongOption(const char* key, const char* /*nextArg*/)
+{
+    // Generic fallback mapping to KV if it naturally uses `=` logic but was evaluated here,
+    // although realistically specific options are caught by overrides.
+    return acceptVerboseOption(key) ? 1 : 0;
 }
 
 bool CEvToolCommand::accept(const char* arg)
