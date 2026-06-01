@@ -2038,6 +2038,12 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
             info->setCompileCost(cost_type2money(cw.getCompileCost()));
         if (version>=2.03)
             info->setCostSavingPotential(cost_type2money(cw.getCostSavingPotential()));
+        if (version >= 2.08)
+        {
+            const char *failMsg = cw.queryFailMessage();
+            if (!isEmptyString(failMsg))
+                info->setFailureDesc(failMsg);
+        }
         results.append(*info.getClear());
     }
 

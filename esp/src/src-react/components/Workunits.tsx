@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, DetailsRow, ICommandBarItemProps, IDetailsRowProps, Icon, Image, Link } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, DetailsRow, ICommandBarItemProps, IDetailsRowProps, Icon, Image, Link, TooltipHost } from "@fluentui/react";
 import { hsl as d3Hsl } from "@hpcc-js/common";
 import { Workunit } from "@hpcc-js/comms";
 import { SizeMe } from "../layouts/SizeMe";
@@ -127,7 +127,13 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                 formatter: (Wuid: string, wu: Workunit) => {
                     const search = calcSearch(filter);
                     return <>
-                        <Image src={getStateImage(wu.StateID, wu.isComplete(), wu.Archived)} styles={{ root: { minWidth: "16px" } }} />
+                        {wu?.FailureDesc ?
+                            <TooltipHost content={wu?.FailureDesc}>
+                                <Image src={getStateImage(wu.StateID, wu.isComplete(), wu.Archived)} styles={{ root: { minWidth: "16px" } }} />
+                            </TooltipHost>
+                            :
+                            <Image src={getStateImage(wu.StateID, wu.isComplete(), wu.Archived)} styles={{ root: { minWidth: "16px" } }} />
+                        }
                         &nbsp;
                         <Link href={search ? `#/workunits!${calcSearch(filter)}/${Wuid}` : `#/workunits/${Wuid}`}>{Wuid}</Link >
                     </>;
@@ -137,7 +143,17 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             Jobname: { label: nlsHPCC.JobName },
             Cluster: { label: nlsHPCC.Cluster },
             RoxieCluster: { label: nlsHPCC.RoxieCluster, sortable: false },
-            State: { label: nlsHPCC.State, width: 60 },
+            State: {
+                label: nlsHPCC.State,
+                width: 60,
+                formatter: (state, wu) => {
+                    if (wu?.FailureDesc) {
+                        return <TooltipHost content={wu?.FailureDesc}>{state}</TooltipHost>;
+                    } else {
+                        return state;
+                    }
+                }
+            },
             TotalClusterTime: {
                 label: nlsHPCC.TotalClusterTime, width: 120,
                 justify: "right",

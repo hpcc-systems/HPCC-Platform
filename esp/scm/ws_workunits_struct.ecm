@@ -461,6 +461,7 @@ ESPStruct [nil_remove] ECLWorkunit
     [min_ver("1.87")] double CompileCost;
     [min_ver("1.91")] bool NoAccess(false);
     [min_ver("1.98")] ESParray<ESPstruct ECLWUProcess> ECLWUProcessList;
+    [min_ver("2.08")] string FailureDesc;
 };
 
 ESPStruct [nil_remove] WUECLAttribute

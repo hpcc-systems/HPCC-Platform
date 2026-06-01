@@ -3719,6 +3719,27 @@ static int getEnum(const IPropertyTree *p, const char *propname, const EnumMappi
     return getEnum(p->queryProp(propname),map);
 }
 
+static void queryLatestErrorExceptionMessage(const IPropertyTree & p, StringBuffer & out)
+{
+    unsigned lastSeq = 0;
+    out.clear();
+    Owned<IPropertyTreeIterator> exIter = p.getElements("Exceptions/Exception");
+    ForEach(*exIter)
+    {
+        IPropertyTree &e = exIter->query();
+        ErrorSeverity sev = (ErrorSeverity) e.getPropInt("@severity", SeverityError);
+        if (isError(sev))
+        {
+            unsigned seq = (unsigned) e.getPropInt("@sequence");
+            if (seq >= lastSeq)
+            {
+                lastSeq = seq;
+                out.set(e.queryProp(nullptr));
+            }
+        }
+    }
+}
+
 const char * getWorkunitActionStr(WUAction action)
 {
     return getEnumText(action, actions);
@@ -3754,6 +3775,14 @@ public:
         costFileAccess = p.getPropInt64("@costFileAccess");
         costCompile = p.getPropInt64("@costCompile");
         costSavingPotential = p.getPropInt64("@costSavingPotential");
+
+        // Only scan exceptions for failed/aborted workunits - no point doing so for others
+        if (state == WUStateFailed || state == WUStateAborted)
+        {
+            StringBuffer lastMsg;
+            queryLatestErrorExceptionMessage(p, lastMsg);
+            failMessage.set(lastMsg.str());
+        }
     }
     virtual const char *queryWuid() const { return wuid.str(); }
     virtual const char *queryUser() const { return user.str(); }
@@ -3781,8 +3810,9 @@ public:
 
     virtual unsigned getTotalThorTime() const { return totalThorTime; };
     virtual IConstWUAppValueIterator & getApplicationValues() const { return *new CArrayIteratorOf<IConstWUAppValue,IConstWUAppValueIterator> (appvalues, 0, (IConstWorkUnitInfo *) this); };
+    virtual const char *queryFailMessage() const { return failMessage.str(); };
 protected:
-    StringAttr wuid, user, jobName, clusterName, timeScheduled, wuscope;
+    StringAttr wuid, user, jobName, clusterName, timeScheduled, wuscope, failMessage;
     mutable CachedWUAppValues appvalues;
     unsigned totalThorTime;
     WUState state;
@@ -4357,6 +4387,8 @@ public:
             { return c->getAgentPID(); }
     virtual const char *queryStateDesc() const
             { return c->queryStateDesc(); }
+    virtual const char *queryFailMessage() const
+            { return c->queryFailMessage(); }
     virtual bool getRunningGraph(IStringVal & graphName, WUGraphIDType & subId) const
             { return c->getRunningGraph(graphName, subId); }
     virtual IConstWUScopeIterator & getScopeIterator(const WuScopeFilter & filter) const override
@@ -7116,6 +7148,7 @@ void CLocalWorkUnit::clearCached(bool clearTree)
     temporaries.kill();
     statistics.kill();
     appvalues.kill();
+    failMessage.clear();
 
     if (clearTree)
         p.clear();
@@ -7934,6 +7967,20 @@ const char *CLocalWorkUnit::queryActionDesc() const
 {
     CriticalBlock block(crit);
     return p->queryProp("Action");
+}
+
+const char *CLocalWorkUnit::queryFailMessage() const
+{
+    CriticalBlock block(crit);
+    WUState state = (WUState) getEnum(p, "@state", states);
+    if (state != WUStateFailed && state != WUStateAborted)
+        return "";
+    if (failMessage.length())
+        return failMessage.str();
+    StringBuffer lastMsg;
+    queryLatestErrorExceptionMessage(*p, lastMsg);
+    failMessage.set(lastMsg.str());
+    return failMessage.str();
 }
 
 bool CLocalWorkUnit::hasApplicationValue(const char *app, const char *propname) const

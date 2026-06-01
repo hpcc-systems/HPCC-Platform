@@ -1242,6 +1242,7 @@ interface IConstWorkUnitInfo : extends IInterface
 
     virtual unsigned getTotalThorTime() const = 0;
     virtual IConstWUAppValueIterator & getApplicationValues() const = 0;
+    virtual const char *queryFailMessage() const = 0;
 };
 
 interface IConstWorkUnit : extends IConstWorkUnitInfo

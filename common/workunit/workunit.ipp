@@ -158,6 +158,7 @@ protected:
     mutable bool temporariesCached;
     mutable bool variablesCached;
     mutable bool exceptionsCached;
+    mutable StringAttr failMessage;
     mutable bool pluginsCached;
     mutable bool librariesCached;
     mutable bool activitiesCached;
@@ -196,6 +197,7 @@ public:
     virtual void forceReload() {};
     virtual WUAction getAction() const;
     virtual const char *queryActionDesc() const;
+    virtual const char *queryFailMessage() const;
     virtual IStringVal & getApplicationValue(const char * application, const char * propname, IStringVal & str) const;
     virtual int getApplicationValueInt(const char * application, const char * propname, int defVal) const;
     virtual IConstWUAppValueIterator & getApplicationValues() const;
