@@ -60,9 +60,12 @@
 
 constexpr CompressionMethod defaultBinaryCompressionMethod = COMPRESS_METHOD_ZSTD3;
 
-const CCharacterSet validTagCharacters([](unsigned char c) { return (!isspace(c) && c != '>' && c != '/'); });
-const CCharacterSet validAttrCharacters([](unsigned char c) { return (c && !isspace(c) && c != '=' && c != '>' && c != '/'); });
-const CCharacterSet notSpaceNorGreater([](unsigned char c) { return (!isspace(c) && c != '>'); });
+static const CCharacterSet xpathStartCharSet([](unsigned char c) { return isValidXPathStartChr(c); });
+static const CCharacterSet xpathCharSet([](unsigned char c) { return isValidXPathChr(c); });
+static const CCharacterSet validTagCharacters([](unsigned char c) { return (!isspace(c) && c != '>' && c != '/' && c != '<'); });
+static const CCharacterSet validAttrCharacters([](unsigned char c) { return (c && !isspace(c) && c != '=' && c != '>' && c != '/'); });
+static const CCharacterSet notSpaceNorGreater([](unsigned char c) { return (!isspace(c) && c != '>'); });
+static const CCharacterSet wsCharSet([](unsigned char c) { return isspace(c); });
 
 class NullPTreeIterator final : implements IPropertyTreeIterator
 {
@@ -5074,14 +5077,198 @@ protected:
             line++;
         return true;
     }
-    inline bool checkSkipWS()
+    inline bool doSkipWS()
     {
-        while (isspace(nextChar)) if (!checkReadNext()) return false;
+        if (!wsCharSet.includes(nextChar))
+            return true;
+
+        for (;;)
+        {
+            const byte *start = buf + bufOffset;
+            unsigned newlines = 0;
+
+            const byte *p = start;
+            if (nullTerm)
+            {
+                for (;;)
+                {
+                    char c = (char)*p;
+                    //the null character is not a whitespace character, so no need for an extra check
+                    if (!wsCharSet.includes(c))
+                        break;
+
+                    if (unlikely(10 == c))
+                        newlines++;
+
+                    p++;
+                }
+            }
+            else
+            {
+                const byte *end = buf + bufRemaining;
+                while (p < end)
+                {
+                    char c = (char)*p;
+                    if (!wsCharSet.includes(c))
+                        break;
+
+                    if (unlikely(10 == c))
+                        newlines++;
+
+                    p++;
+                }
+            }
+
+            size32_t numMatched = p - start;
+            if (unlikely(numMatched > 0))
+            {
+                bufOffset += numMatched;
+                line += newlines;
+                curOffset += numMatched;
+            }
+
+            if (!checkReadNext())
+                return false;
+
+            if (!wsCharSet.includes(nextChar))
+                break;
+        }
         return true;
     }
+
+    inline bool checkSkipWS() { return doSkipWS(); }
     inline void skipWS()
     {
-        while (isspace(nextChar)) readNext();
+        if (!doSkipWS())
+            error("End of stream encountered whilst parsing", true, PTreeRead_EOS);
+    }
+    bool readMatching(StringBuffer &out, const CCharacterSet & firstCharSet, const CCharacterSet & restCharSet)
+    {
+        if (!firstCharSet.includes(nextChar))
+            return false;
+
+        for (;;)
+        {
+            out.append(nextChar);
+
+            const byte *start = buf + bufOffset;
+            unsigned newlines = 0;
+
+            const byte *p = start;
+            if (nullTerm)
+            {
+                for (;;)
+                {
+                    char c = (char)*p;
+                    if (!restCharSet.includes(c))
+                        break;
+                    if (unlikely(0 == c))
+                        break;
+
+                    if (unlikely(10 == c))
+                        newlines++;
+
+                    p++;
+                }
+            }
+            else
+            {
+                const byte *end = buf + bufRemaining;
+                while (p < end)
+                {
+                    char c = (char)*p;
+                    if (!restCharSet.includes(c))
+                        break;
+
+                    if (unlikely(10 == c))
+                        newlines++;
+
+                    p++;
+                }
+            }
+
+            size32_t numMatched = p - start;
+            if (likely(numMatched > 0))
+            {
+                out.append(numMatched, (const char *)start);
+                bufOffset += numMatched;
+                line += newlines;
+                curOffset += numMatched;
+            }
+
+            readNext();
+            if (!restCharSet.includes(nextChar))
+                break;
+        }
+        return true;
+    }
+    void readUntil(StringBuffer *out, char targetChar)
+    {
+        if (nextChar == targetChar)
+            return;
+
+        for (;;)
+        {
+            if (unlikely(nextChar == 0 && nullTerm))
+                break;
+
+            if (out)
+                out->append(nextChar);
+
+            const byte *start = buf + bufOffset;
+            unsigned newlines = 0;
+
+            const byte *p = start;
+            if (nullTerm)
+            {
+                for (;;)
+                {
+                    char c = (char)*p;
+                    if (c == targetChar)
+                        break;
+                    if (unlikely(0 == c))
+                        break;
+
+                    if (unlikely(10 == c))
+                        newlines++;
+
+                    p++;
+                }
+            }
+            else
+            {
+                const byte *end = buf + bufRemaining;
+                while (p < end)
+                {
+                    char c = (char)*p;
+                    if (c == targetChar)
+                        break;
+
+                    if (unlikely(10 == c))
+                        newlines++;
+
+                    p++;
+                }
+            }
+
+            size32_t numMatched = p - start;
+            if (likely(numMatched > 0))
+            {
+                if (out)
+                    out->append(numMatched, (const char *)start);
+                bufOffset += numMatched;
+                line += newlines;
+                curOffset += numMatched;
+            }
+            if (!checkReadNext())
+                break;
+            if (nextChar == targetChar)
+                break;
+        }
+    }
+    inline void skipUntil(char targetChar)
+    {
+        readUntil(nullptr, targetChar);
     }
 };
 
@@ -5138,25 +5325,21 @@ protected:
     }
     void readID(StringBuffer &id)
     {
-        if (isValidXPathStartChr(nextChar))
-        {
-            for (;;)
-            {
-                id.append(nextChar);
-                readNext();
-                if (!isValidXPathChr(nextChar)) break;
-            }
-        }
+        readMatching(id, xpathStartCharSet, xpathCharSet);
     }
     void skipString()
     {
         if ('"' == nextChar)
         {
-            do { readNext(); } while ('"' != nextChar);
+            readNext();
+            skipUntil('"');
+            if ('"' != nextChar) expecting("\"");
         }
         else if ('\'' == nextChar)
         {
-            do { readNext(); } while ('\'' != nextChar);
+            readNext();
+            skipUntil('\'');
+            if ('\'' != nextChar) expecting("'");
         }
         else expecting("\" or '");
     }
@@ -5335,38 +5518,26 @@ protected:
     {
         try { match("CDATA["); }
         catch (const char *) { error("Bad CDATA syntax"); }
+        readNext();
         for (;;)
         {
+            readUntil(&text, ']');
             readNext();
             while (']' == nextChar)
             {
                 readNext();
-                while (']' == nextChar)
-                {
-                    readNext();
-                    if ('>' == nextChar)
-                        return;
-                    else
-                        text.append(']');
-                }
-                text.append(']');
+                if ('>' == nextChar)
+                    return;
+                text.append("]");
             }
-            text.append(nextChar);
+            text.append(']');
         }
     }
     void parsePI(StringBuffer &target)
     {
         readNext();
-        if (!isValidXPathStartChr(nextChar))
+        if (!readMatching(target, xpathStartCharSet, xpathCharSet))
             error("Invalid PI target");
-
-        for (;;)
-        {
-            target.append(nextChar);
-            readNext();
-            if (!isValidXPathChr(nextChar))
-                break;
-        }
         skipWS();
         unsigned closeTag=0;
         for (;;)
@@ -5456,6 +5627,7 @@ class CXMLReader : public CXMLReaderBase, implements IPTreeReader
     bool rootTerminated;
     StringBuffer attrName, attrval;
     StringBuffer tmpStr;
+    StringBuffer mark;
 
     void init()
     {
@@ -5525,73 +5697,72 @@ public:
     void loadXML()
     {
         bool head=true;
-restart:
-        if (!checkReadNext()) return;
-        if (head)
+        while (checkReadNext())
         {
-            head = false;
-            if (checkBOM())
-                if (!checkReadNext()) return;
-        }
-        if (!checkSkipWS()) return;
-        if ('<' != nextChar)
-            expecting("<");
-        readNext();
-        if ('!' == nextChar)
-        {
+            if (head)
+            {
+                head = false;
+                if (checkBOM())
+                    if (!checkReadNext()) return;
+            }
+            if (!checkSkipWS()) return;
+            if ('<' != nextChar)
+                expecting("<");
             readNext();
-            parseOther();
-            goto restart;
+            if ('!' == nextChar)
+            {
+                readNext();
+                parseOther();
+                continue;
+            }
+            else if ('?' == nextChar)
+            {
+                parsePIOrDecl();
+                continue;
+            }
+            if (!noRoot && rootTerminated)
+            {
+                if (ignoreWhiteSpace)
+                    if (!checkSkipWS()) return;
+                error("Trailing xml after close of root tag");
+            }
+            _loadXML();
+            if (noRoot)
+            {
+                head = true;
+                hadXMLDecl = false;
+            }
+            else
+                rootTerminated = true;
         }
-        else if ('?' == nextChar)
-        {
-            parsePIOrDecl();
-            goto restart;
-        }
-        if (!noRoot && rootTerminated)
-        {
-            if (ignoreWhiteSpace)
-                if (!checkSkipWS()) return;
-            error("Trailing xml after close of root tag");
-        }
-        _loadXML();
-        if (noRoot)
-        {
-            head = true;
-            hadXMLDecl = false;
-        }
-        else
-            rootTerminated = true;
-        goto restart;
     }
     void _loadXML()
     {
-restart:
-        offset_t startOffset = curOffset-2;
-        if ('!' == nextChar) // not sure this branch can ever be hit.
+        offset_t startOffset;
+        for (;;)
         {
+            startOffset = curOffset-2;
+            if ('!' != nextChar)
+                break;
             parseComment();
             readNext();
             if ('<' != nextChar)
                 expecting("<");
-            goto restart;
         }
         if (ignoreWhiteSpace)
             skipWS();
         StringBuffer completeTagname;
-        unsigned afterFirstColonOffset = 0;
-        while (validTagCharacters.includes(nextChar))
-        {
-            completeTagname.append(nextChar);
-            if ((nextChar == ':') && (afterFirstColonOffset == 0))
-                afterFirstColonOffset = completeTagname.length();
-            readNext();
-            if ('<' == nextChar)
-                error("Unmatched close tag encountered");
-        }
+        readMatching(completeTagname, validTagCharacters, validTagCharacters);
+        if ('<' == nextChar)
+            error("Unmatched close tag encountered");
+
         const char * tagName = completeTagname.str();
         if (ignoreNameSpaces)
-            tagName += afterFirstColonOffset;
+        {
+            const char *colon = strchr(tagName, ':');
+            if (colon)
+                tagName = colon + 1;
+        }
 
         iEvent->beginNode(tagName, false, startOffset);
         skipWS();
@@ -5611,11 +5782,7 @@ restart:
 
             attrName.setLength(1);
             attrval.clear();
-            while (validAttrCharacters.includes(nextChar))
-            {
-                attrName.append(nextChar);
-                readNext();
-            }
+            readMatching(attrName, validAttrCharacters, validAttrCharacters);
             skipWS();
             if (nextChar == '=') readNext(); else expecting("=");
             skipWS();
@@ -5623,11 +5790,7 @@ restart:
             {
                 char quoteChar = nextChar;
                 readNext();
-                while (nextChar != quoteChar)
-                {
-                    attrval.append(nextChar);
-                    readNext();
-                }
+                readUntil(&attrval, quoteChar);
             }
             else
                 error();
@@ -5658,8 +5821,8 @@ restart:
                             skipWS();
                         if ('\0' == nextChar)
                             eos();
-                        StringBuffer mark;
-                        while (nextChar && nextChar !='<') { mark.append(nextChar); readNext(); }
+                        mark.clear();
+                        readUntil(&mark, '<');
                         size32_t l = mark.length();
                         size32_t r = l+1;
                         if (l)
@@ -5879,14 +6042,10 @@ public:
                 stack.append(*stateInfo);
                 if ('/' == nextChar)
                     error("Unmatched close tag encountered");
-                while (notSpaceNorGreater.includes(nextChar))
-                {
-                    stateInfo->tag.append(nextChar);
-                    readNext();
-                    if ('/' == nextChar) break;
-                    if ('<' == nextChar)
-                        error("Unmatched close tag encountered");
-                }
+                readMatching(stateInfo->tag, validTagCharacters, validTagCharacters);
+                if ('<' == nextChar)
+                    error("Unmatched close tag encountered");
+
                 stateInfo->wnsTag = stateInfo->tag.str();
                 if (ignoreNameSpaces)
                 {
@@ -5933,11 +6092,7 @@ public:
 
                     attrName.setLength(1);
                     attrval.clear();
-                    while (validAttrCharacters.includes(nextChar))
-                    {
-                        attrName.append(nextChar);
-                        readNext();
-                    }
+                    readMatching(attrName, validAttrCharacters, validAttrCharacters);
                     skipWS();
                     if (nextChar == '=') readNext(); else expecting("=");
                     skipWS();
@@ -5945,11 +6100,7 @@ public:
                     {
                         char quoteChar = nextChar;
                         readNext();
-                        while (nextChar != quoteChar)
-                        {
-                            attrval.append(nextChar);
-                            readNext();
-                        }
+                        readUntil(&attrval, quoteChar);
                     }
                     else
                         error();
