@@ -44,6 +44,14 @@ namespace
 {
 std::once_flag xmlLibraryInitFlag;
 
+// Allow internal entity substitution only, no external DTD or entities.
+constexpr int hpccXsltStylesheetParseOptions = XML_PARSE_NOENT | XML_PARSE_NO_XXE;
+
+// For parsing documents loaded at transform runtime via document():
+// Continues to allow that CDATA sections in loaded documents are merged into
+// text nodes, preserving text() matching behavior.
+constexpr int hpccXsltDocumentParseOptions = XML_PARSE_NOENT | XML_PARSE_NOCDATA | XML_PARSE_NO_XXE;
+
 xmlDocPtr readXmlMemoryWithOptions(const char *buffer, int size, const char *url, xmlDictPtr dict, int options)
 {
     xmlParserCtxtPtr context = xmlNewParserCtxt();
@@ -163,7 +171,7 @@ xsltStylesheetPtr CLibXsltSource::parseXsltFile()
     if (filename.isEmpty())
         return NULL;
 
-    xmlDocPtr doc = xsltDocDefaultLoader((xmlChar *)filename.get(), NULL, XSLT_PARSE_OPTIONS, NULL, XSLT_LOAD_START);
+    xmlDocPtr doc = xsltDocDefaultLoader((xmlChar *)filename.get(), NULL, hpccXsltStylesheetParseOptions, NULL, XSLT_LOAD_START);
     if (!doc)
         throw MakeStringException(XSLERR_InvalidSource, "Failed to parse XSLT source\n");
     doc->_private = static_cast<void *>(this);
@@ -197,7 +205,7 @@ void CLibXsltSource::compile()
                 compiledXslt = parseXsltFile();
             else if (srcType == IO_TYPE_BUFFER)
             {
-                xmlDocPtr xsldoc = xmlReadMemory(text.get(), text.length(), filename.get(), NULL, XSLT_PARSE_OPTIONS);
+                xmlDocPtr xsldoc = xmlReadMemory(text.get(), text.length(), filename.get(), NULL, hpccXsltStylesheetParseOptions);
                 if (!xsldoc)
                     throw MakeStringException(XSLERR_InvalidSource, "XSLT source contains invalid XML\n");
                 xsldoc->_private=(void*)this;
@@ -597,7 +605,7 @@ int CLibXslTransform::transform(xmlChar **xmlbuff, int &len)
         if (cfn && cfn->name.length())
             xsltRegisterExtFunction(ctxt, (const xmlChar *) cfn->name.get(), (const xmlChar *) cfn->uri.str(), globalLibXsltExtensionHandler);
     }
-    xsltSetCtxtParseOptions(ctxt, XSLT_PARSE_OPTIONS);
+    xsltSetCtxtParseOptions(ctxt, hpccXsltDocumentParseOptions);
     MemoryBuffer mp;
     if (params.length())
         mp.append(sizeof(const char *) * params.length(), params.getArray()).append((unsigned __int64)0);
@@ -922,3 +930,358 @@ void globalLibXsltExtensionHandler(xmlXPathParserContextPtr ctxt, int nargs)
 
     valuePush(ctxt, xmlXPathNewCString(out.str()));
 }
+
+#ifdef _USE_CPPUNIT
+#include "unittests.hpp"
+
+// Security regression tests: verify that XML_PARSE_DTDLOAD is not active when parsing
+// XSLT stylesheets or XML documents loaded at transform time, preventing XXE attacks.
+//
+// Each test crafts an XXE payload that would exfiltrate the contents of a canary file
+// if external entity loading were enabled.
+class LibXsltXXESecurityTests : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(LibXsltXXESecurityTests);
+        CPPUNIT_TEST(testXXE_StylesheetFromBuffer);
+        CPPUNIT_TEST(testXXE_StylesheetFromFile);
+        CPPUNIT_TEST(testXXE_DocumentFunction);
+    CPPUNIT_TEST_SUITE_END();
+
+    static constexpr const char * canaryFilename  = "xmllib_xxe_canary.txt";
+    static constexpr const char * canaryContent   = "XXECANARY";
+    static constexpr const char * xsltFilename    = "xmllib_xxe_stylesheet.xslt";
+    static constexpr const char * extDocFilename  = "xmllib_xxe_external.xml";
+
+    static void removeIfExists(const char * filename)
+    {
+        Owned<IFile> f = createIFile(filename);
+        if (f->exists())
+            f->remove();
+    }
+
+public:
+    void setUp() override
+    {
+        Owned<IFile> f = createIFile(canaryFilename);
+        Owned<IFileIO> io = f->open(IFOcreate);
+        CPPUNIT_ASSERT_MESSAGE("Failed to create canary file for XXE tests", io != nullptr);
+        io->write(0, strlen(canaryContent), canaryContent);
+    }
+
+    void tearDown() override
+    {
+        removeIfExists(canaryFilename);
+        removeIfExists(xsltFilename);
+        removeIfExists(extDocFilename);
+    }
+
+    // Test 1: XSLT loaded from an in-memory buffer (covers the setXslSource / WuWebView path).
+    // An attacker-controlled embedded XSLT with a DOCTYPE SYSTEM entity pointing at the canary.
+    void testXXE_StylesheetFromBuffer()
+    {
+        // Build the absolute path to the canary so the SYSTEM URI is unambiguous
+        StringBuffer canaryPath;
+        makeAbsolutePath(canaryFilename, canaryPath);
+
+        VStringBuffer xslt(
+            "<?xml version=\"1.0\"?>"
+            "<!DOCTYPE xsl:stylesheet ["
+            "  <!ENTITY xxe SYSTEM \"file://%s\">"
+            "]>"
+            "<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">"
+            "  <xsl:output method=\"text\"/>"
+            "  <xsl:template match=\"/\"><xsl:text>&xxe;</xsl:text></xsl:template>"
+            "</xsl:stylesheet>",
+            canaryPath.str());
+
+        Owned<IXslProcessor> proc = getXslProcessor();
+        Owned<IXslTransform> trans = proc->createXslTransform();
+        trans->setXmlSource("<root/>", 7);
+        trans->setXslSource(xslt.str(), xslt.length(), "xxe_test_buffer", ".");
+
+        StringBuffer output;
+        trans->transform(output);
+
+        CPPUNIT_ASSERT_MESSAGE(
+            "XXE vulnerability (stylesheet from buffer): canary content appeared in transform output - XML_PARSE_DTDLOAD must be removed",
+            strstr(output.str(), canaryContent) == nullptr);
+    }
+
+    // Test 2: XSLT loaded from a file (covers the loadXslFromFile / parseXsltFile path).
+    // Write the crafted XSLT to a temp file then load it via the file path.
+    void testXXE_StylesheetFromFile()
+    {
+        StringBuffer canaryPath;
+        makeAbsolutePath(canaryFilename, canaryPath);
+
+        VStringBuffer xslt(
+            "<?xml version=\"1.0\"?>"
+            "<!DOCTYPE xsl:stylesheet ["
+            "  <!ENTITY xxe SYSTEM \"file://%s\">"
+            "]>"
+            "<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">"
+            "  <xsl:output method=\"text\"/>"
+            "  <xsl:template match=\"/\"><xsl:text>&xxe;</xsl:text></xsl:template>"
+            "</xsl:stylesheet>",
+            canaryPath.str());
+
+        {
+            Owned<IFile> xsltFile = createIFile(xsltFilename);
+            Owned<IFileIO> io = xsltFile->open(IFOcreate);
+            CPPUNIT_ASSERT_MESSAGE("Failed to create stylesheet file for XXE tests", io != nullptr);
+            io->write(0, xslt.length(), xslt.str());
+        }
+
+        StringBuffer xsltPath;
+        makeAbsolutePath(xsltFilename, xsltPath);
+
+        Owned<IXslProcessor> proc = getXslProcessor();
+        Owned<IXslTransform> trans = proc->createXslTransform();
+        trans->setXmlSource("<root/>", 7);
+
+        try
+        {
+            trans->loadXslFromFile(xsltPath.str());
+
+            StringBuffer output;
+            trans->transform(output);
+
+            CPPUNIT_ASSERT_MESSAGE(
+                "XXE vulnerability (stylesheet from file): canary content appeared in transform output - XML_PARSE_DTDLOAD must be removed",
+                strstr(output.str(), canaryContent) == nullptr);
+        }
+        catch (IException *e)
+        {
+            // XSLERR_InvalidSource means the parse was aborted because the entity load was denied
+            // — also a secure outcome, so treat as pass. Any other exception re-throws to fail the test.
+            int code = e->errorCode();
+            if (code != XSLERR_InvalidSource)  
+                throw;  
+            e->Release();  
+        }
+    }
+
+    // Test 3: document() function call at transform time (covers xsltSetCtxtParseOptions path).
+    // The XSLT itself is clean; the external XML loaded via document() contains the SYSTEM entity.
+    void testXXE_DocumentFunction()
+    {
+        StringBuffer canaryPath;
+        makeAbsolutePath(canaryFilename, canaryPath);
+
+        // Write the external XML document with a SYSTEM entity referencing the canary
+        VStringBuffer extDoc(
+            "<?xml version=\"1.0\"?>"
+            "<!DOCTYPE root ["
+            "  <!ENTITY xxe SYSTEM \"file://%s\">"
+            "]>"
+            "<root>&xxe;</root>",
+            canaryPath.str());
+
+        StringBuffer extDocAbsPath;
+        {
+            Owned<IFile> docFile = createIFile(extDocFilename);
+            Owned<IFileIO> io = docFile->open(IFOcreate);
+            CPPUNIT_ASSERT_MESSAGE("Failed to create external XML document for XXE tests", io != nullptr);
+            io->write(0, extDoc.length(), extDoc.str());
+            makeAbsolutePath(extDocFilename, extDocAbsPath);
+        }
+
+        // Clean XSLT - uses document() to load the external XML and emit its text content
+        VStringBuffer xslt(
+            "<?xml version=\"1.0\"?>"
+            "<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">"
+            "  <xsl:output method=\"text\"/>"
+            "  <xsl:template match=\"/\">"
+            "    <xsl:value-of select=\"document('file://%s')/root\"/>"
+            "  </xsl:template>"
+            "</xsl:stylesheet>",
+            extDocAbsPath.str());
+
+        Owned<IXslProcessor> proc = getXslProcessor();
+        Owned<IXslTransform> trans = proc->createXslTransform();
+        trans->setXmlSource("<input/>", 8);
+        trans->setXslSource(xslt.str(), xslt.length(), "xxe_test_document", ".");
+
+        StringBuffer output;
+        trans->transform(output);
+
+        CPPUNIT_ASSERT_MESSAGE(
+            "XXE vulnerability (document() function): canary content appeared in transform output - XML_PARSE_DTDLOAD must be removed from xsltSetCtxtParseOptions",
+            strstr(output.str(), canaryContent) == nullptr);
+    }
+
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(LibXsltXXESecurityTests);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(LibXsltXXESecurityTests, "LibXsltXXESecurity");
+
+// Tests for XML_PARSE_NOENT | XML_PARSE_NO_XXE (libxml2 >= 2.13.0) as the preferred
+// option combination. Verifies three properties:
+//   1. Internal entity substitution still works.
+//   2. External SYSTEM entity references are NOT fetched.
+//   3. External DTD SYSTEM URIs are NOT fetched.
+//
+// These tests operate directly on xmlReadMemory so they are independent of the
+// XSLT layer and confirm the libxml2 option semantics in isolation.
+
+class LibXml2ParseOptionsTests : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(LibXml2ParseOptionsTests);
+        CPPUNIT_TEST(initParser);
+        CPPUNIT_TEST(testInternalEntitySubstituted);
+        CPPUNIT_TEST(testExternalSystemEntityBlocked);
+        CPPUNIT_TEST(testExternalDtdBlocked);
+    CPPUNIT_TEST_SUITE_END();
+
+    static constexpr const char * canaryFilename = "xmllib_opts_canary.txt";
+    static constexpr const char * dtdFilename    = "xmllib_opts_test.dtd";
+    static constexpr const char * canaryContent  = "PARSE_OPTIONS_CANARY";
+
+    static void removeIfExists(const char * filename)
+    {
+        Owned<IFile> f = createIFile(filename);
+        if (f->exists())
+            f->remove();
+    }
+
+    static void writeFile(const char * filename, const char * content)
+    {
+        Owned<IFile> f = createIFile(filename);
+        Owned<IFileIO> io = f->open(IFOcreate);
+        CPPUNIT_ASSERT_MESSAGE("Failed to create file for XXE tests", io != nullptr);
+        io->write(0, strlen(content), content);
+    }
+
+    // Returns the root element's full text content as a StringBuffer.
+    // Returns empty if the document is NULL or the root has no text children.
+    static void getRootText(xmlDocPtr doc, StringBuffer &result)
+    {
+        if (!doc)
+            return;
+        xmlNodePtr root = xmlDocGetRootElement(doc);
+        if (!root)
+            return;
+        xmlChar * content = xmlNodeGetContent(root);
+        if (content)
+        {
+            result.append((const char *)content);
+            xmlFree(content);
+        }
+        return;
+    }
+
+public:
+    void setUp() override
+    {
+        writeFile(canaryFilename, canaryContent);
+
+        // DTD file defines an entity that would be visible if the external DTD were loaded.
+        writeFile(dtdFilename, "<!ENTITY dtdent \"DTD_ENTITY_CONTENT\">");
+    }
+
+    void tearDown() override
+    {
+        removeIfExists(canaryFilename);
+        removeIfExists(dtdFilename);
+    }
+
+
+    void initParser()
+    {
+        // Not an actual test, just for setup to initialize parser
+        // in case run independently of or prior to XSLT tests.
+        xmlInitParser();
+    }
+
+    // Test 1: Internal entity declared in internal subset is substituted.
+    // This confirms XML_PARSE_NO_XXE does not disable internal entity substitution —
+    // only external loading is suppressed.
+    void testInternalEntitySubstituted()
+    {
+        constexpr const char * xml =
+            "<?xml version=\"1.0\"?>"
+            "<!DOCTYPE root ["
+            "  <!ENTITY greeting \"hello\">"
+            "]>"
+            "<root>&greeting;</root>";
+
+        xmlDocPtr doc = xmlReadMemory(xml, strlen(xml), "internal_ent.xml", NULL,
+                                      XML_PARSE_NOENT | XML_PARSE_NO_XXE);
+        std::unique_ptr<xmlDoc, decltype(&xmlFreeDoc)> docGuard(doc, xmlFreeDoc);
+
+        CPPUNIT_ASSERT_MESSAGE("Document must parse successfully", doc != nullptr);
+        StringBuffer text;
+        getRootText(doc, text);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE(
+            "Internal entity &greeting; must be substituted to 'hello'",
+            std::string("hello"), std::string(text.str()));
+    }
+
+    // Test 2: External SYSTEM entity reference is blocked.
+    // The entity declaration references the canary file via a SYSTEM URI.
+    // If XML_PARSE_NO_XXE is effective, the canary content must not appear in the tree.
+    void testExternalSystemEntityBlocked()
+    {
+        StringBuffer canaryPath;
+        makeAbsolutePath(canaryFilename, canaryPath);
+
+        VStringBuffer xml(
+            "<?xml version=\"1.0\"?>"
+            "<!DOCTYPE root ["
+            "  <!ENTITY xxe SYSTEM \"file://%s\">"
+            "]>"
+            "<root>&xxe;</root>",
+            canaryPath.str());
+
+        xmlDocPtr doc = xmlReadMemory(xml.str(), xml.length(), "ext_ent.xml", NULL,
+                                      XML_PARSE_NOENT | XML_PARSE_NO_XXE);
+        std::unique_ptr<xmlDoc, decltype(&xmlFreeDoc)> docGuard(doc, xmlFreeDoc);
+
+        // Document may be NULL (parse aborted) or present with unresolved entity.
+        // Either outcome is acceptable; what must NOT happen is canary content in the tree.
+        if (doc)
+        {
+            StringBuffer text;
+            getRootText(doc, text);
+            CPPUNIT_ASSERT_MESSAGE(
+                "External SYSTEM entity must not be loaded: canary content must be absent",
+                strstr(text.str(), canaryContent) == nullptr);
+        }
+        // doc == NULL means the parser rejected it entirely — also a passing outcome.
+    }
+
+    // Test 3: External DTD SYSTEM URI is not fetched.
+    // The DTD file defines an entity. If the DTD were loaded and XML_PARSE_DTDATTR were
+    // active, default attributes would appear; here we use a direct entity reference to
+    // the DTD-defined entity and confirm it is not resolved.
+    void testExternalDtdBlocked()
+    {
+        StringBuffer dtdPath;
+        makeAbsolutePath(dtdFilename, dtdPath);
+
+        VStringBuffer xml(
+            "<?xml version=\"1.0\"?>"
+            "<!DOCTYPE root SYSTEM \"file://%s\">"
+            "<root>&dtdent;</root>",
+            dtdPath.str());
+
+        xmlDocPtr doc = xmlReadMemory(xml.str(), xml.length(), "ext_dtd.xml", NULL,
+                                      XML_PARSE_NOENT | XML_PARSE_NO_XXE);
+        std::unique_ptr<xmlDoc, decltype(&xmlFreeDoc)> docGuard(doc, xmlFreeDoc);
+
+        // As with Test 2: NULL doc or present doc with unresolved entity both pass.
+        if (doc)
+        {
+            StringBuffer text;
+            getRootText(doc, text);
+            CPPUNIT_ASSERT_MESSAGE(
+                "External DTD must not be loaded: DTD entity content must be absent",
+                strstr(text.str(), "DTD_ENTITY_CONTENT") == nullptr);
+        }
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(LibXml2ParseOptionsTests);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(LibXml2ParseOptionsTests, "LibXml2ParseOptions");
+
+#endif // _USE_CPPUNIT
