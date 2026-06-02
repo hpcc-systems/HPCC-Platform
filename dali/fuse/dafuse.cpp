@@ -1009,6 +1009,7 @@ static bool parseParams(int &argc, char *argv[],IProperties *prop)
         prop->setProp("ACTION","unmount");
         if (prop->hasProp("DIR"))
             return true;
+        action = "unmount"; // because setProp may have invalidated action ptr
     }
     if (eqs(action,"creatopt")) {
         return true;

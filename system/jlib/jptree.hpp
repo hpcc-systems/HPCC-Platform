@@ -80,6 +80,16 @@ typedef unsigned IPTIteratorCodes;
 extern jlib_decl unsigned queryNumLocalTrees();
 extern jlib_decl unsigned queryNumAtomTrees();
 
+/**
+ * Note regarding IPropertyTree lifetime and safety:
+ * 1. It is not safe to query an attribute pointer without taking a copy (e.g. via StringBuffer)
+ *    and then set attributes within that same IPropertyTree. The act of setting an attribute
+ *    may cause internal memory allocations/expansions, potentially leaving any queried inline
+ *    attribute pointers dangling.
+ * 2. It is also not safe to query a property value or child tree and then overwrite or remove
+ *    that named property or tree. If a queried property value or child tree will be needed
+ *    whilst the parent IPropertyTree is being modified, a copy or linked copy must be taken first.
+ */
 interface jlib_decl IPropertyTree : extends serializable
 {
     virtual bool hasProp(const char *xpath) const = 0;

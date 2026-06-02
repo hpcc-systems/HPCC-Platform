@@ -697,7 +697,7 @@ int main( int argc, const char *argv[]  )
     // Restrict stack sizes on 32-bit systems
     Thread::setDefaultStackSize(0x10000);   // NB under windows requires linker setting (/stack:)
 #endif
-    const char *thorname = NULL;
+    StringBuffer thorName;
     StringBuffer nodeGroup, logUrl;
     unsigned channelsPerWorker;
     if (globals->hasProp("@channelsPerWorker"))
@@ -777,18 +777,18 @@ int main( int argc, const char *argv[]  )
         if (globals->getPropBool("@enableSysLog",true))
             UseSysLogForOperatorMessages();
 
-        thorname = globals->queryProp("@name");
-        if (!thorname)
+        globals->getProp("@name", thorName);
+        if (!thorName.length())
         {
-            WARNLOG("No 'name' setting, defaulting to \"local\"");
-            thorname = "local";
-            globals->setProp("@name", thorname);
+            WARNLOG("No 'name' setting, defaulting to \"thor\"");
+            thorName.set("thor");
+            globals->setProp("@name", thorName);
         }
 
         if (!globals->getProp("@nodeGroup", nodeGroup))
         {
-            nodeGroup.append(thorname);
-            globals->setProp("@nodeGroup", thorname);
+            nodeGroup.append(thorName);
+            globals->setProp("@nodeGroup", thorName);
         }
 
 #ifndef _CONTAINERIZED
@@ -969,16 +969,10 @@ int main( int argc, const char *argv[]  )
     bool workerNSInstalled = false;
     bool workerJobInstalled = false;
 
-    const char *thorName = globals->queryProp("@name");
 #ifdef _CONTAINERIZED
     StringBuffer queueNames;
     getClusterThorQueueName(queueNames, thorName);
 #else
-    if (!thorName)
-    {
-        thorName = "thor";
-        globals->setProp("@name", thorName);
-    }
     SCMStringBuffer queueNames;
     getThorQueueNames(queueNames, thorName);
 #endif
@@ -991,7 +985,7 @@ int main( int argc, const char *argv[]  )
 
         Owned<CRegistryServer> registry = new CRegistryServer();
 
-        serverStatus.queryProperties()->setProp("@thorname", thorname);
+        serverStatus.queryProperties()->setProp("@thorname", thorName);
         serverStatus.queryProperties()->setProp("@cluster", nodeGroup.str()); // JCSMORE rename
         serverStatus.queryProperties()->setProp("LogFile", logUrl.str()); // LogFile read by eclwatch (possibly)
         serverStatus.queryProperties()->setProp("@nodeGroup", nodeGroup.str());
@@ -1047,10 +1041,10 @@ int main( int argc, const char *argv[]  )
         {
             StringBuffer thorEpStr;
             PROGLOG("ThorManager version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getEndpointHostText(thorEpStr).str());
-            PROGLOG("Thor name = %s, queue = %s, nodeGroup = %s",thorname,queueName.str(),nodeGroup.str());
+            PROGLOG("Thor name = %s, queue = %s, nodeGroup = %s",thorName.str(),queueName.str(),nodeGroup.str());
             unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_WORKERPORTINC);
             unsigned workerBasePort = globals->getPropInt("@slaveport", DEFAULT_THORWORKERPORT);
-            Owned<IGroup> rawGroup = getClusterNodeGroup(thorname, "ThorCluster");
+            Owned<IGroup> rawGroup = getClusterNodeGroup(thorName, "ThorCluster");
             unsigned numWorkersPerNode = globals->getPropInt("@slavesPerNode", 1);
             setClusterGroup(queryMyNode(), rawGroup, numWorkersPerNode, channelsPerWorker, workerBasePort, localThorPortInc);
             numWorkers = queryNodeClusterWidth();

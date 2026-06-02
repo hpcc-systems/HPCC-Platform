@@ -964,8 +964,9 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
       const char* pszSubType = pParams->queryProp("subType");
       const char* pszSubTypeKey = pParams->queryProp("subTypeKey");
       const char* pszAttrName = pSetting->queryProp("@attrName");
-      const char* rowIndex = pSetting->queryProp("@rowIndex");
-      const char* pszOldValue = pSetting->queryProp("@oldValue");
+      StringBuffer rowIndex, pszOldValue;
+      pSetting->getProp("@rowIndex", rowIndex);
+      pSetting->getProp("@oldValue", pszOldValue);
 
       StringBuffer newValue(pSetting->queryProp("@newValue"));
       if (streq(pszAttrName, "wuQueueName") && !newValue.isEmpty())
@@ -990,8 +991,8 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
       }
       else if (!strcmp(pszCompType, "Topology"))
         xpath.appendf("[@name='%s']", pszSubTypeKey);
-      else if (pszSubType && strlen(rowIndex) > 0)
-        xpath.appendf("/%s[%s]", pszSubType, rowIndex);
+      else if (pszSubType && rowIndex.length())
+        xpath.appendf("/%s[%s]", pszSubType, rowIndex.str());
 
       IPropertyTree* pComp = pEnvSoftware->queryPropTree(xpath.str());
       if (!pComp)
@@ -1211,7 +1212,7 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
             }
             else if (pszSubType && strlen(rowIndex) > 0)
             {
-              xpath2.clear().appendf("%s[%s]", pszSubType, rowIndex);
+              xpath2.clear().appendf("%s[%s]", pszSubType, rowIndex.str());
               pComp = pTmpComp->queryPropTree(xpath2.str());
             }
             else if (pszSubType)
@@ -3159,18 +3160,19 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
         ForEach (*iterMNodes)
         {
           IPropertyTree* pMasterNode = &iterMNodes->query();
-          const char* pszMName = pMasterNode->queryProp(XML_ATTR_PROCESS);
-          pMasterNode->addProp("@_processId", pszMName);
+          StringBuffer pszMName;
+          pMasterNode->getProp(XML_ATTR_PROCESS, pszMName);
+          pMasterNode->addProp("@_processId", pszMName.str());
 
-          if (pszMName)
+          if (pszMName.length())
           {
-            xpath.clear().appendf(XML_TAG_THORMASTERPROCESS"/[@name='%s']", pszMName);
+            xpath.clear().appendf(XML_TAG_THORMASTERPROCESS"/[@name='%s']", pszMName.str());
             IPropertyTree* pMasterNodeTree = pComp->queryPropTree(xpath);
 
             //if not master, then spare
             if (!pMasterNodeTree)
             {
-              xpath.clear().appendf(XML_TAG_THORSPAREPROCESS"/[@name='%s']", pszMName);
+              xpath.clear().appendf(XML_TAG_THORSPAREPROCESS"/[@name='%s']", pszMName.str());
               IPropertyTree* pSpareNodeTree = pComp->queryPropTree(xpath);
               if (pSpareNodeTree)
               {
@@ -3214,12 +3216,13 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
               ForEach (*iterSNodes)
               {
                 IPropertyTree* pSlaveNode = &iterSNodes->query();
-                const char* pszSName = pSlaveNode->queryProp(XML_ATTR_PROCESS);
-                pSlaveNode->addProp("@_processId", pszSName);
+                StringBuffer pszSName;
+                pSlaveNode->getProp(XML_ATTR_PROCESS, pszSName);
+                pSlaveNode->addProp("@_processId", pszSName.str());
 
-                if (pszMName)
+                if (pszMName.length())
                 {
-                  xpath.clear().appendf("ThorSlaveProcess/[@name='%s']", pszSName);
+                  xpath.clear().appendf("ThorSlaveProcess/[@name='%s']", pszSName.str());
                   IPropertyTree* pSlaveNodeTree = pSrcTree->queryPropTree(xpath);
                   const char* pszComputer = pSlaveNodeTree->queryProp(XML_ATTR_COMPUTER);
 
@@ -3256,13 +3259,14 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
           xpath.clear().append(XML_TAG_ROXIE_SERVER);
           Owned<IPropertyTreeIterator> iterRoxieServers = pSrcTree->getElements(xpath.str());
 
-          ForEach (*iterRoxieServers )
-          {
-            IPropertyTree* pRoxieServer = &iterRoxieServers->query();
-             const char* pszNetAddr = pRoxieServer->queryProp(XML_ATTR_NETADDRESS);
-              if (pszNetAddr)
-                pRoxieServer->addProp(XML_ATTR_NETADDRESS, pszNetAddr);
-          }
+          // JCS - what was this code supposed to be doing? The pRoxieServer->addProp is setting the same value into the same tree. Perhaps it was supposed to be pSrcTree->addProp.. ?
+          // ForEach (*iterRoxieServers )
+          // {
+          //   IPropertyTree* pRoxieServer = &iterRoxieServers->query();
+          //    const char* pszNetAddr = pRoxieServer->queryProp(XML_ATTR_NETADDRESS);
+          //     if (pszNetAddr)
+          //       pRoxieServer->addProp(XML_ATTR_NETADDRESS, pszNetAddr);
+          // }
 
           xpath.clear().append(XML_TAG_ROXIE_ONLY_SLAVE);
           Owned<IPropertyTreeIterator> iterSlaves = pSrcTree->getElements(xpath.str());
