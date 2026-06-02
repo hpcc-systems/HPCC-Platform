@@ -27,6 +27,7 @@
 #include <sys/file.h>
 #endif
 #include <algorithm>
+#include <array>
 #include <memory>
 
 #include <cmath>
@@ -40,6 +41,7 @@
 #include "jstats.h"
 #include "jptree.hpp"
 #include "jhcache.hpp"
+#include "jthread.hpp"
 #include "jutil.hpp"
 
 byte * CCachedIndexRead::getBufferForUpdate(offset_t offset, size32_t writeSize)
@@ -136,11 +138,86 @@ static unsigned largestPrime(unsigned x)
 
 enum IOMethod { NORMAL, UNCACHED, DIRECT };
 
+struct alignas(CACHE_LINE_SIZE) PhaseStats
+{
+    std::atomic<unsigned long> count { 0 };
+    std::atomic<unsigned __int64> totalNs { 0 };
+    std::atomic<unsigned __int64> peak { 0 };
+};
+
+static_assert(sizeof(PhaseStats) <= CACHE_LINE_SIZE);
+static_assert((sizeof(PhaseStats) % CACHE_LINE_SIZE) == 0);
+
+struct alignas(CACHE_LINE_SIZE) BucketCounter
+{
+    std::atomic<unsigned long> value { 0 };
+    char padding[CACHE_LINE_SIZE - sizeof(std::atomic<unsigned long>)];
+};
+
+static_assert(sizeof(BucketCounter) == CACHE_LINE_SIZE);
+static_assert(alignof(BucketCounter) == CACHE_LINE_SIZE);
+
 //--------------------------------------------------------------------------------------------------------------------
 
 class CDiskPageCache final : public CInterfaceOf<IPageCache>
 {
 public:
+    enum StatPhase : unsigned
+    {
+        StatCacheLookup = 0,
+        StatDiskIo,
+        StatError,
+        NumStatPhases
+    };
+
+    static const char * queryStatPhaseName(unsigned phase)
+    {
+        static const std::array<const char *, NumStatPhases> phaseName = []()
+        {
+            std::array<const char *, NumStatPhases> names = {};
+            names[StatCacheLookup] = "lookup";
+            names[StatDiskIo] = "diskio";
+            names[StatError] = " ioerr";
+            return names;
+        }();
+        return (phase < NumStatPhases) ? phaseName[phase] : "unknown";
+    }
+
+    static constexpr unsigned numBuckets = 10;
+
+    class PageCacheStatsThread : public Thread
+    {
+    public:
+        PageCacheStatsThread(CDiskPageCache & _parent, unsigned _intervalMs)
+            : Thread("PageCacheStatsThread"), parent(_parent), intervalMs(_intervalMs)
+        {
+        }
+
+        virtual int run() override
+        {
+            while (!stopping)
+            {
+                if (wakeSem.wait(intervalMs))
+                    continue;
+
+                parent.logAndResetStats();
+            }
+            return 0;
+        }
+
+        void stop()
+        {
+            stopping = true;
+            wakeSem.signal();
+        }
+
+    private:
+        CDiskPageCache & parent;
+        unsigned intervalMs;
+        std::atomic<bool> stopping { false };
+        Semaphore wakeSem;
+    };
+
     CDiskPageCache(const IPropertyTree * config)
     {
 #ifdef __linux__
@@ -148,17 +225,22 @@ public:
         pageSize = config->getPropInt("@pageSize", 0x10000);
         readSize = config->getPropInt("@readSize", pageSize);
         cacheMissPenalty = config->getPropInt("@debugCacheMissPenalty", 0);
+        int bucketCeilingNs = config->getPropInt("@bucketCeilingNs", 100000);
+        if (bucketCeilingNs < 10)
+            bucketCeilingNs = 10;
+        bucketRangeCeiling = (unsigned)bucketCeilingNs;
+        bucketStep = (bucketRangeCeiling + (numBuckets - 1)) / numBuckets;
 
         if ( (config->getPropBool("@disable", false)) || (totSize == 0) )
             return;
 
         // throws means roxie will not start ...
         if ((pageSize < 8192) || !isPowerOf2(pageSize))
-            throw makeStringExceptionV(0, "Disk pageCache invalid page size %u", pageSize);
+            throw makeStringExceptionV(0, "pageCache error invalid page size %u", pageSize);
 
         // If read size is smaller than the page size, and a power of 2 then pageSize must be a multiple of readSize
         if ((readSize > pageSize) || !isPowerOf2(readSize))
-            throw makeStringExceptionV(0, "Disk pageCache invalid read size %u for page %u", readSize, pageSize);
+            throw makeStringExceptionV(0, "pageCache error invalid read size %u for page %u", readSize, pageSize);
 
         pageOffsetMask = ~(offset_t)(pageSize - 1);
         readOffsetMask = ~(offset_t)(readSize - 1);
@@ -209,10 +291,10 @@ public:
         if (rc < 0)
             return;
 
-        DBGLOG("Disk pageCache readSize: %u pageSize %u", readSize, pageSize);
-        DBGLOG("Disk pageCache num sets: %d file size: %llu MB critsecs: %d entries: %u", numSets, totSize / 1048576ULL, numCrits, numEntries);
+        DBGLOG("pageCache readSize: %u pageSize %u", readSize, pageSize);
+        DBGLOG("pageCache num sets: %d file size: %llu MB critsecs: %d entries: %u", numSets, totSize / 1048576ULL, numCrits, numEntries);
 
-        StringBuffer ioMsg("Disk pageCache i/o method: ");
+        StringBuffer ioMsg("pageCache i/o method: ");
         if (ioMethod == NORMAL)
             ioMsg.append("normal");
         else if (ioMethod == DIRECT)
@@ -222,15 +304,27 @@ public:
         DBGLOG("%s", ioMsg.str());
 
         size_t totMem = ((numCrits * sizeof(CriticalSection)) + (numEntries * sizeof(CacheEntry))) / 1024;
-        DBGLOG("Disk pageCache memory size: %zu + %zu = %zu KB", (numCrits * sizeof(CriticalSection)), (numEntries * sizeof(CacheEntry)), totMem);
+        DBGLOG("pageCache memory size: %zu + %zu = %zu KB", (numCrits * sizeof(CriticalSection)), (numEntries * sizeof(CacheEntry)), totMem);
+
+        zeroStats();
+        statsIntervalMs = config->getPropInt("@statsIntervalMs", 0);
+        statsEnabled = (statsIntervalMs > 0);
 
         cacheOK = true;
+
+        if (statsIntervalMs > 0)
+        {
+            if (statsIntervalMs < 5000)
+                statsIntervalMs = 5000;
+            startStatsThread((unsigned) statsIntervalMs);
+        }
 #endif
     }
 
     // NOTE: dtor/Release not called because MODULE_EXIT not called at _exit()
     virtual ~CDiskPageCache()
     {
+        stopStatsThread();
         if (cacheFd >= 0)
         {
             close(cacheFd);
@@ -245,7 +339,7 @@ public:
         cacheFd = open(cacheFile, openFlags, 0600);
         if (cacheFd < 0)
         {
-            DBGLOG("Error opening disk page cache file %s, errno %d", cacheFile, errno);
+            DBGLOG("pageCache error opening file %s, errno %d", cacheFile, errno);
             return -1;
         }
 
@@ -253,14 +347,14 @@ public:
         int rc = flock(cacheFd, LOCK_EX | LOCK_NB);
         if (rc != 0)
         {
-            DBGLOG("Error locking disk page cache file %s, errno %d", cacheFile, errno);
+            DBGLOG("pageCache error locking file %s, errno %d", cacheFile, errno);
             return -1;
         }
 
         rc = posix_fallocate(cacheFd, 0ULL, totSize);
         if (rc != 0)
         {
-            DBGLOG("Error allocating all space for disk page cache file %s (size: %llu), errno %d", cacheFile, totSize, rc);
+            DBGLOG("pageCache error allocating all space for file %s (size: %llu), errno %d", cacheFile, totSize, rc);
             return -1;
         }
 
@@ -268,7 +362,7 @@ public:
         rc = ftruncate(cacheFd, totSize);
         if (rc != 0)
         {
-            DBGLOG("Error setting size of disk page cache file %s (size: %llu), errno %d", cacheFile, totSize, rc);
+            DBGLOG("pageCache error setting size of file %s (size: %llu), errno %d", cacheFile, totSize, rc);
             return -1;
         }
 
@@ -344,6 +438,8 @@ public:
 #ifdef __linux__
         dbgassertex(size <= pageSize);
 
+        CCycleTimer readTimer(statsEnabled);
+
         offset_t alignedPos = offset & pageOffsetMask;
         offset_t alignedPosShift = alignedPos >> pageSizeExp;
 
@@ -351,7 +447,7 @@ public:
         fileId &= ~(1U << 31);
 
         if ( (fileId >= (1U << fileIdBits)) || (alignedPosShift >= (1ULL << offsetBits)) )
-            throw makeStringExceptionV(0, "disk page cache read: invalid fileId %u / offset %llu", fileId, alignedPos);
+            throw makeStringExceptionV(0, "pageCache error read: invalid fileId %u / offset %llu", fileId, alignedPos);
 
         offset_t cacheVal;
         unsigned cacheKey;
@@ -363,6 +459,12 @@ public:
         CacheEntry & curCacheSet = cache[cacheKey];
 
         uint8_t setIndex = curCacheSet.findInCacheSet(cacheVal);
+
+        if (statsEnabled)
+        {
+            updateR(StatCacheLookup, readTimer.elapsedNs());
+            readTimer.reset();
+        }
 
         if (setIndex == numSets)
             return onCacheMiss(fileId, offset, size);
@@ -383,12 +485,18 @@ public:
         if (ret)
         {
             curCacheSet.delegateIndexToMostRecentlyUsed(setIndex);
-            // hit++
+            if (statsEnabled)
+            {
+                cacheHits.fetch_add(1, std::memory_order_relaxed);
+                updateR(StatDiskIo, readTimer.elapsedNs());
+            }
             return true;
         }
 
         curCacheSet.setEntry(setIndex, invalidValue);
         curCacheSet.promoteIndexToLeastRecentlyUsed(setIndex);
+        if (statsEnabled)
+            updateR(StatError, readTimer.elapsedNs());
 #endif
         return onCacheMiss(fileId, offset, size);
     }
@@ -399,13 +507,15 @@ public:
     virtual void write(unsigned fileId, offset_t alignedPos, const byte * data) override
     {
 #ifdef __linux__
+        CCycleTimer writeTimer(statsEnabled);
+
         offset_t alignedPosShift = alignedPos >> pageSizeExp;
 
         // strip off topmost bit (cache tracking code might set this) or should we just use lower fileIdBits ?
         fileId &= ~(1U << 31);
 
         if ( (fileId >= (1U << fileIdBits)) || (alignedPosShift >= (1ULL << offsetBits)) )
-            throw makeStringExceptionV(0, "disk page cache write: invalid fileId %u / offset %llu", fileId, alignedPos);
+            throw makeStringExceptionV(0, "pageCache error write: invalid fileId %u / offset %llu", fileId, alignedPos);
 
         offset_t cacheVal;
         unsigned cacheKey;
@@ -420,17 +530,27 @@ public:
 
         offset_t cacheFileOffset = (setIndex * setSize) + ((offset_t)cacheKey * pageSize);
 
+        if (statsEnabled)
+        {
+            updateW(StatCacheLookup, writeTimer.elapsedNs());
+            writeTimer.reset();
+        }
+
         // OPT: possibly write async here ... (handling if another read happens when write is in flight)
         bool ret = writeCacheFile(cacheFileOffset, data);
         if (ret)
         {
             curCacheSet.setEntry(setIndex, cacheVal);
             curCacheSet.delegateIndexToMostRecentlyUsed(setIndex);
+            if (statsEnabled)
+                updateW(StatDiskIo, writeTimer.elapsedNs());
             return;
         }
 
         curCacheSet.setEntry(setIndex, invalidValue);
         // setIndex is already at least recently used ...
+        if (statsEnabled)
+            updateW(StatError, writeTimer.elapsedNs());
 #endif
     }
 
@@ -447,12 +567,173 @@ public:
         return cacheOK;
     }
 
+    void updateR(StatPhase phase, unsigned __int64 elapsedNs)
+    {
+        readStats[phase].count.fetch_add(1, std::memory_order_relaxed);
+        readStats[phase].totalNs.fetch_add(elapsedNs, std::memory_order_relaxed);
+        unsigned __int64 currentPeak = readStats[phase].peak.load(std::memory_order_relaxed);
+        while (elapsedNs > currentPeak &&
+               !readStats[phase].peak.compare_exchange_weak(currentPeak, elapsedNs, std::memory_order_relaxed))
+            ;
+
+        unsigned __int64 bucket = elapsedNs / bucketStep;
+        if (bucket >= numBuckets)
+            bucket = numBuckets - 1;
+        readMaxCnt[phase][(unsigned)bucket].value.fetch_add(1, std::memory_order_relaxed);
+    }
+
+    void updateW(StatPhase phase, unsigned __int64 elapsedNs)
+    {
+        writeStats[phase].count.fetch_add(1, std::memory_order_relaxed);
+        writeStats[phase].totalNs.fetch_add(elapsedNs, std::memory_order_relaxed);
+        unsigned __int64 currentPeak = writeStats[phase].peak.load(std::memory_order_relaxed);
+        while (elapsedNs > currentPeak &&
+               !writeStats[phase].peak.compare_exchange_weak(currentPeak, elapsedNs, std::memory_order_relaxed))
+            ;
+
+        unsigned __int64 bucket = elapsedNs / bucketStep;
+        if (bucket >= numBuckets)
+            bucket = numBuckets - 1;
+        writeMaxCnt[phase][(unsigned)bucket].value.fetch_add(1, std::memory_order_relaxed);
+    }
+
+    void zeroStats()
+    {
+        for (unsigned ix=0; ix<NumStatPhases; ix++)
+        {
+            readStats[ix].count.store(0, std::memory_order_relaxed);
+            readStats[ix].totalNs.store(0, std::memory_order_relaxed);
+            readStats[ix].peak.store(0, std::memory_order_relaxed);
+            writeStats[ix].count.store(0, std::memory_order_relaxed);
+            writeStats[ix].totalNs.store(0, std::memory_order_relaxed);
+            writeStats[ix].peak.store(0, std::memory_order_relaxed);
+            for (unsigned jx=0; jx<numBuckets; jx++)
+            {
+                readMaxCnt[ix][jx].value.store(0, std::memory_order_relaxed);
+                writeMaxCnt[ix][jx].value.store(0, std::memory_order_relaxed);
+            }
+        }
+    }
+
+    void logHistogram(const char * prefix, unsigned phase, const unsigned long * buckets)
+    {
+        StringBuffer msg;
+        msg.appendf("pageCache stats: %s %s", prefix, queryStatPhaseName(phase));
+        for (unsigned j=0; j<numBuckets; j++)
+            msg.appendf(" %10lu", buckets[j]);
+        DBGLOG("%s", msg.str());
+    }
+
+    void logAndResetStats()
+    {
+        if (!statsEnabled)
+            return;
+
+        // Note: interval stats are approximate under concurrency and may be attributed to adjacent log periods.
+        unsigned long currentHits = cacheHits.exchange(0, std::memory_order_relaxed);
+        unsigned long currentMisses = cacheMisses.exchange(0, std::memory_order_relaxed);
+
+        unsigned long readCount[NumStatPhases];
+        double readAvg[NumStatPhases];
+        unsigned __int64 readPeakNs[NumStatPhases];
+        unsigned long readBuckets[NumStatPhases][numBuckets];
+
+        unsigned long writeCount[NumStatPhases];
+        double writeAvg[NumStatPhases];
+        unsigned __int64 writePeakNs[NumStatPhases];
+        unsigned long writeBuckets[NumStatPhases][numBuckets];
+
+        bool hasRWActivity = false;
+        for (unsigned i=0; i<NumStatPhases; i++)
+        {
+            readCount[i] = readStats[i].count.exchange(0, std::memory_order_relaxed);
+            // it is possible another thread has updated count and totalNs here
+            unsigned __int64 readTotal = readStats[i].totalNs.exchange(0, std::memory_order_relaxed);
+            readPeakNs[i] = readStats[i].peak.exchange(0, std::memory_order_relaxed);
+            // leading to a larger totalNs for the count we read above
+            // but if count is large then shouldn't affect avg too much
+            // could switch an epoch method for correctness ...
+            readAvg[i] = readCount[i] ? (double)readTotal / readCount[i] : 0.0;
+
+            writeCount[i] = writeStats[i].count.exchange(0, std::memory_order_relaxed);
+            unsigned __int64 writeTotal = writeStats[i].totalNs.exchange(0, std::memory_order_relaxed);
+            writePeakNs[i] = writeStats[i].peak.exchange(0, std::memory_order_relaxed);
+            writeAvg[i] = writeCount[i] ? (double)writeTotal / writeCount[i] : 0.0;
+
+            hasRWActivity = hasRWActivity || (readCount[i] > 0) || (writeCount[i] > 0);
+
+            for (unsigned j=0; j<numBuckets; j++)
+            {
+                readBuckets[i][j] = readMaxCnt[i][j].value.exchange(0, std::memory_order_relaxed);
+                writeBuckets[i][j] = writeMaxCnt[i][j].value.exchange(0, std::memory_order_relaxed);
+            }
+        }
+
+        if (currentHits > 0 || currentMisses > 0 || hasRWActivity)
+        {
+            unsigned long totalAccesses = currentHits + currentMisses;
+            double hitRate = (totalAccesses > 0) ?
+                        (100.0 * currentHits / totalAccesses) : 0.0;
+
+            DBGLOG("pageCache stats: hits=%lu, misses=%lu, total=%lu, HitRate=%.2f%% bucketCeilingNs=%u",
+                    currentHits, currentMisses, totalAccesses, hitRate, bucketRangeCeiling);
+
+            for (unsigned i=StatCacheLookup; i<=StatDiskIo; i++)
+            {
+                DBGLOG("pageCache stats: read  %s %10lu %12.3lf peak=%" I64F "u", queryStatPhaseName(i), readCount[i], readAvg[i], readPeakNs[i]);
+                logHistogram("rhist", i, readBuckets[i]);
+            }
+
+            for (unsigned i=StatCacheLookup; i<=StatDiskIo; i++)
+            {
+                DBGLOG("pageCache stats: write %s %10lu %12.3lf peak=%" I64F "u", queryStatPhaseName(i), writeCount[i], writeAvg[i], writePeakNs[i]);
+                logHistogram("whist", i, writeBuckets[i]);
+            }
+
+            if ( (readCount[StatError] > 0) || (writeCount[StatError] > 0) )
+            {
+                // unusual errors ...
+                DBGLOG("pageCache stats: read  %s %10lu %12.3lf peak=%" I64F "u", queryStatPhaseName(StatError), readCount[StatError], readAvg[StatError], readPeakNs[StatError]);
+                DBGLOG("pageCache stats: write %s %10lu %12.3lf peak=%" I64F "u", queryStatPhaseName(StatError), writeCount[StatError], writeAvg[StatError], writePeakNs[StatError]);
+            }
+        }
+    }
+
 protected:
+    void startStatsThread(unsigned intervalMs)
+    {
+        try
+        {
+            statsThread.setown(new PageCacheStatsThread(*this, intervalMs));
+            statsThread->start(false);
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e, "pageCache error failed to start PageCacheStatsThread");
+            e->Release();
+            statsThread.clear();
+            statsEnabled = false;
+        }
+    }
+
+    void stopStatsThread()
+    {
+        if (statsThread)
+        {
+            statsThread->stop();
+            statsThread->join();
+            statsThread.clear();
+        }
+    }
+
     bool onCacheMiss(unsigned fileId, offset_t offset, size32_t size)
     {
+        if (statsEnabled)
+        {
+            cacheMisses.fetch_add(1, std::memory_order_relaxed);
+        }
         if (cacheMissPenalty)
             MilliSleep(cacheMissPenalty);
-        // miss++
         return false;
     }
 
@@ -469,13 +750,25 @@ protected:
     offset_t pageOffsetMask{0};
     offset_t readOffsetMask{0};
     unsigned cacheMissPenalty{0};
+    bool statsEnabled{false};
+    unsigned bucketRangeCeiling{100000};
+    unsigned bucketStep{10000};
     unsigned numEntries{1};
+    int statsIntervalMs{0};
     int pageSizeExp{0};
     int cacheFd{-1};
     std::unique_ptr <CriticalSection []> fCrit;
     IOMethod ioMethod{NORMAL};
     CriticalSection crit;
     bool cacheOK{false};
+    Owned<PageCacheStatsThread> statsThread;
+
+    alignas(CACHE_LINE_SIZE) std::atomic<unsigned long> cacheHits{0};
+    alignas(CACHE_LINE_SIZE) std::atomic<unsigned long> cacheMisses{0};
+    PhaseStats readStats[NumStatPhases];
+    BucketCounter readMaxCnt[NumStatPhases][numBuckets];
+    PhaseStats writeStats[NumStatPhases];
+    BucketCounter writeMaxCnt[NumStatPhases][numBuckets];
 
     struct CacheSet
     {
