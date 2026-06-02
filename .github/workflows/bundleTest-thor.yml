@@ -261,12 +261,12 @@ jobs:
                   # add a warning supression parameter in the file
                   for file in $ML_SUPPRESS_WARNING_FILES
                   do
-                      if [[ $( egrep -c '#ONWARNING\(30004' $bundle/$file ) -eq 0 ]]
+                      if [[ $( egrep -c '#ONWARNING\(31005' $bundle/$file ) -eq 0 ]]
                       then
                           pushd $bundle 
                           cp -fv $file $file-back
                           # Insert a comment and the "#ONWARNING" after the Copyright header
-                          sed -i '/## \*\//a \\n// Patched by the bundleTest on '"$( date '+%Y.%m.%d %H:%M:%S')"' \n#ONWARNING(30004, ignore); // Do not report execute time skew warning' $file
+                          sed -i '/## \*\//a \\n// Patched by the bundleTest on '"$( date '+%Y.%m.%d %H:%M:%S')"' \n#ONWARNING(31005, ignore); // Do not report execute time skew warning' $file
                           popd
                       fi
                   done
