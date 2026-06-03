@@ -1155,7 +1155,7 @@ public:
         targetWriterLimit = activity->getOptUInt(THOROPT_HDIST_TARGETWRITELIMIT);
         ::ActPrintLog(activity, thorDetailedLogLevel, "targetWriterLimit : %d", targetWriterLimit);
 
-        newLookAhead = activity->getOptBool("newlookahead", false);
+        newLookAhead = activity->getOptBool(THOROPT_NEWLOOKAHEAD, defaultNewLookAhead);
         if (newLookAhead)
             populateLookAheadOptions(*activity, options);
     }

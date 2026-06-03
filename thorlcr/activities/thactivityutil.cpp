@@ -229,8 +229,8 @@ public:
         required = _required;
         count = 0;
 
-        newLookAhead = activity.getOptBool("newlookahead", false);
-        if (activity.getOptBool("forcenewlookahead"))
+        newLookAhead = activity.getOptBool(THOROPT_NEWLOOKAHEAD, defaultNewLookAhead);
+        if (activity.getOptBool(THOROPT_FORCE_NEWLOOKAHEAD))
         {
             newLookAhead = true;
             allowspill = true;
