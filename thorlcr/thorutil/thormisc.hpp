@@ -45,7 +45,7 @@
 /// Thor options, that can be hints, workunit options, or global settings
 #define THOROPT_COMPRESS_SPILLS "v9_4_compressInternalSpills"                     // Compress internal spills, e.g. spills created by lookahead or sort gathering  (default = true)
 #define THOROPT_COMPRESS_SPILL_TYPE "v9_4_spillCompressorType"                    // Compress spill type, e.g. FLZ, LZ4 (or other to get previous)                 (default = LZ4)
-#define THOROPT_HDIST_SPILL "hdistSpill"                                          // Allow distribute receiver to spill to disk, rather than blocking              (default = true)
+#define THOROPT_HDIST_SPILL "hdistSpill"                                          // Allow distribute receiver to spill to disk, rather than blocking              (default = false)
 #define THOROPT_HDIST_WRITE_POOL_SIZE "hdistSendPoolSize"                         // Distribute send thread pool size                                              (default = 16)
 #define THOROPT_HDIST_BUCKET_SIZE "hdOutBufferSize"                               // Distribute target bucket send size                                            (default = 1MB)
 #define THOROPT_HDIST_BUFFER_SIZE "hdInBufferSize"                                // Distribute send buffer size (for all targets)                                 (default = 32MB)
