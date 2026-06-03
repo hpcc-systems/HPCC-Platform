@@ -47,6 +47,10 @@ cmake --build <build-dir> --parallel --target package
 - **ECL**: Enterprise Control Language compiler and runtime
 
 
+### Running Unit Tests
+**Shared object/DLL**: If the tests are in a shared object/dll, run them using the `unittests` program with the unit test name as an argument and the `-v` option to show progress. The `unittests` runner auto-loads from its default adjacent `lib`/`libs` directories; if the test library is installed elsewhere, also pass `-d <directory>`. For example, plugin-installed tests such as `DMetaphoneTest` may need `unittests -d <install>/plugins DMetaphoneTest -v`.
+- **Executable**: If the tests are in an exe, run the program with the `-selftest` argument (e.g., `roxie -selftest`).
+
 ### Development Workflow
 - See `devdoc/Development.md` for testing and development guidelines
 - Use pull requests with code reviews

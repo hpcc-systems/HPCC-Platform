@@ -19,6 +19,8 @@ set (    SRCS
 include_directories (
          ${HPCC_SOURCE_DIR}/plugins/common
          ${HPCC_SOURCE_DIR}/system/include
+         ${HPCC_SOURCE_DIR}/system/jlib
+         ${HPCC_SOURCE_DIR}/testing/unittests
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DDMETAPHONE_EXPORTS )
@@ -27,4 +29,5 @@ HPCC_ADD_LIBRARY( dmetaphone SHARED ${SRCS} )
 install ( TARGETS dmetaphone DESTINATION plugins )
 target_link_libraries ( dmetaphone
          jlib
+         ${CppUnit_LIBRARIES}
     )
