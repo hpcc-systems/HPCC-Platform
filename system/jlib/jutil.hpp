@@ -24,7 +24,7 @@
 #include "jarray.hpp"
 #include "jbuff.hpp"
 
-#include <algorithm> 
+#include <algorithm>
 #include <iterator>
 #include <functional>
 #include <vector>
@@ -75,6 +75,9 @@ int jlib_decl numtostr(char *dst, unsigned __int64 _value);
 // Translate "human readable" size strings like 4G to numbers
 extern jlib_decl offset_t friendlyStringToSize(const char *in);
 
+// Translate "human readable" time strings like 1m or 500ms to nanoseconds
+extern jlib_decl offset_t friendlyStringToDuration(const char *in);
+
 // Translate "human readable" cpu amounts that can either be a decimal (e.g. 2.5), or a number of milli-cores (e.g. 1500m)
 extern jlib_decl double friendlyCPUToDecimal(const char *in);
 
@@ -102,7 +105,7 @@ class jlib_decl SharedObject : public CInterfaceOf<IInterface>
 public:
     SharedObject()      { h = 0; bRefCounted = false; }
     ~SharedObject()     { unload(); }
-    
+
     bool load(const char * dllName, bool isGlobal, bool raiseOnError=false);
     bool loadCurrentExecutable();
     bool loadResources(const char * dllName);
@@ -138,7 +141,7 @@ extern jlib_decl unique_id_t    getUniqueId();
 extern jlib_decl StringBuffer & getUniqueId(StringBuffer & target);
 extern jlib_decl void           resetUniqueId();
 
-extern jlib_decl unsigned getRandom();              // global 
+extern jlib_decl unsigned getRandom();              // global
 extern jlib_decl void seedRandom(unsigned seed);
 
 interface IRandomNumberGenerator: public IInterface
@@ -162,7 +165,7 @@ extern jlib_decl void fillRandomData(size32_t writeSz, MemoryBuffer &mb);
 jlib_decl int rand_r(unsigned int *seed);
 #define RAND_R_MAX  INT_MAX
 
-#else 
+#else
 
 #define RAND_R_MAX  RAND_MAX
 
@@ -213,7 +216,7 @@ extern jlib_decl MemoryBuffer &JBASE64_Decode(ISimpleReadStream &in, MemoryBuffe
 extern jlib_decl bool JBASE64_Decode(size32_t length, const char *in, StringBuffer &out);
 
 extern jlib_decl void JBASE32_Encode(const char *in,StringBuffer &out);  // result all lower
-extern jlib_decl void JBASE32_Decode(const char *in,StringBuffer &out);  
+extern jlib_decl void JBASE32_Decode(const char *in,StringBuffer &out);
 
 /* URL: http://user:passwd@host:port/path */
 extern jlib_decl StringBuffer& encodeUrlUseridPassword(StringBuffer& out, const char* in);
@@ -434,9 +437,9 @@ extern jlib_decl const IProperties &queryEnvironmentConf();
  */
 extern jlib_decl IPropertyTree *getHPCCEnvironment();
 extern jlib_decl bool getConfigurationDirectory(const IPropertyTree *dirtree, // NULL to use HPCC config
-                                                const char *category, 
+                                                const char *category,
                                                 const char *component,
-                                                const char *instance, 
+                                                const char *instance,
                                                 StringBuffer &dirout);
 
 extern jlib_decl bool querySecuritySettings(DAFSConnectCfg *_connectMethod,

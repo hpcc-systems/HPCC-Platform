@@ -20,6 +20,7 @@
 #include "eventconsumption.h"
 #include "eventmetaparser.hpp"
 #include "jevent.hpp"
+#include <algorithm>
 #include <vector>
 #include <string>
 #include <map>
@@ -57,6 +58,18 @@ enum EventGroupExtAttr : unsigned
 };
 
 /**
+ * @struct GroupAttribute
+ * @brief Describes a single grouping attribute, including any scaling or bucketing modifier.
+ */
+struct GroupAttribute
+{
+    unsigned attrId;            // e.g., EvAttrFileOffset
+    EventAttrUnit unit;         // e.g., EAUsize
+    __uint64 bucketScale = 1;   // The divisor for bucketing, defaults to 1 (raw value)
+    bool isBucket = false;      // True if a user-supplied bucket modifier was parsed
+};
+
+/**
  * @class GroupAttributeExtractor
  * @brief Utility for resolving the string value of grouping attributes.
  *
@@ -66,10 +79,11 @@ enum EventGroupExtAttr : unsigned
 class event_decl GroupAttributeExtractor
 {
 public:
-    static unsigned getAttributeId(const char* attrName);
-    static std::string getValue(unsigned attrId, const CEvent& event, const CMetaInfoState* metaState);
-    static __uint64 getHash(const std::vector<unsigned>& attrIds, const CEvent& event, const CMetaInfoState* metaState);
-    static bool isEqual(const std::vector<unsigned>& attrIds, const CEvent& event, const CMetaInfoState* metaState, const std::vector<std::string>& groupValues);
+    static GroupAttribute parseAttribute(const char* attrDesc);
+    static std::string getValue(const GroupAttribute& attr, const CEvent& event, const CMetaInfoState* metaState);
+    static std::string formatValue(const GroupAttribute& attr, const std::string& rawValue);
+    static __uint64 getHash(const std::vector<GroupAttribute>& attrs, const CEvent& event, const CMetaInfoState* metaState);
+    static bool isEqual(const std::vector<GroupAttribute>& attrs, const CEvent& event, const CMetaInfoState* metaState, const std::vector<std::string>& groupValues);
 private:
     static const char* resolveStringAttribute(EventAttr attr, const CEvent& event, const CMetaInfoState* metaState);
 };
@@ -97,7 +111,7 @@ public:
     std::optional<TLeafAccumulator> leafSummary;
 
     void process(const CEvent& event, const CMetaInfoState* metaState,
-                 const std::vector<std::vector<unsigned>>& hierarchy, size_t currentLevel)
+                 const std::vector<std::vector<GroupAttribute>>& hierarchy, size_t currentLevel)
     {
         subTotal.accumulate(event, metaState);
 
@@ -121,40 +135,87 @@ public:
         if (it == range.second)
         {
             auto newNode = std::make_unique<CGroupNode>();
-            for (unsigned attrId : hierarchy[currentLevel])
-                newNode->groupValues.push_back(GroupAttributeExtractor::getValue(attrId, event, metaState));
+            for (const GroupAttribute& attr : hierarchy[currentLevel])
+                newNode->groupValues.push_back(GroupAttributeExtractor::getValue(attr, event, metaState));
             it = children.emplace(hash, std::move(newNode));
         }
 
         it->second->process(event, metaState, hierarchy, currentLevel + 1);
     }
 
-    void render(IGroupFormatter<TLeafAccumulator, TSubtotalAccumulator>& formatter, const std::vector<std::string>& parentGroupValues, size_t currentLevel, bool isRoot = false) const
+    void render(IGroupFormatter<TLeafAccumulator, TSubtotalAccumulator>& formatter, const std::vector<std::string>& parentGroupValues, const std::vector<std::vector<GroupAttribute>>& hierarchy, size_t currentLevel, bool isRoot = false) const
     {
+        std::vector<std::string> formattedGroupValues;
         const std::vector<std::string>& myGroupValues = isRoot ? parentGroupValues : this->groupValues;
 
+        if (isRoot)
+        {
+            formattedGroupValues = myGroupValues;
+        }
+        else
+        {
+            for (size_t i = 0; i < myGroupValues.size() && i < hierarchy[currentLevel - 1].size(); ++i)
+                formattedGroupValues.push_back(GroupAttributeExtractor::formatValue(hierarchy[currentLevel - 1][i], myGroupValues[i]));
+        }
+
         if (!isRoot)
-            formatter.beginGroup(currentLevel, myGroupValues);
+            formatter.beginGroup(currentLevel, formattedGroupValues);
 
-        std::map<std::vector<std::string>, CGroupNode<TLeafAccumulator, TSubtotalAccumulator>*> orderedChildren;
+        std::vector<const CGroupNode<TLeafAccumulator, TSubtotalAccumulator>*> orderedChildren;
+        orderedChildren.reserve(children.size());
         for (const auto& [hash, childNode] : children)
-            orderedChildren.emplace(childNode->groupValues, childNode.get());
+            orderedChildren.push_back(childNode.get());
 
-        for (const auto& [groupVals, childNode] : orderedChildren)
-            childNode->render(formatter, myGroupValues, currentLevel + 1, false);
+        std::sort(orderedChildren.begin(), orderedChildren.end(),
+            [&hierarchy, currentLevel](const auto* a, const auto* b)
+            {
+                for (size_t i = 0; i < a->groupValues.size() && i < hierarchy[currentLevel].size(); ++i)
+                {
+                    if (a->groupValues[i] != b->groupValues[i])
+                    {
+                        EventAttr attr = (EventAttr)hierarchy[currentLevel][i].attrId;
+                        if (attr < EvAttrMax)
+                        {
+                            switch (queryEventAttributeType(attr))
+                            {
+                            case EATu1:
+                            case EATu2:
+                            case EATu4:
+                            case EATu8:
+                            {
+                                char* endA = nullptr;
+                                char* endB = nullptr;
+                                __uint64 valA = strtoull(a->groupValues[i].c_str(), &endA, 10);
+                                __uint64 valB = strtoull(b->groupValues[i].c_str(), &endB, 10);
+                                if (endA != a->groupValues[i].c_str() && endB != b->groupValues[i].c_str())
+                                    return valA < valB;
+                                break;
+                            }
+                            default:
+                                break;
+                            }
+                        }
+                        return a->groupValues[i] < b->groupValues[i];
+                    }
+                }
+                return false;
+            });
+
+        for (const auto* childNode : orderedChildren)
+            childNode->render(formatter, formattedGroupValues, hierarchy, currentLevel + 1, false);
 
         if (leafSummary)
-            formatter.outputLeafSummary(myGroupValues, leafSummary.value());
+            formatter.outputLeafSummary(formattedGroupValues, leafSummary.value());
 
         if (!children.empty() || (isRoot && !leafSummary))
         {
             if (isRoot)
                 formatter.outputSubtotal(currentLevel, {"TOTAL"}, subTotal);
             else
-                formatter.outputSubtotal(currentLevel, myGroupValues, subTotal);
+                formatter.outputSubtotal(currentLevel, formattedGroupValues, subTotal);
         }
 
         if (!isRoot)
-            formatter.endGroup(currentLevel, myGroupValues);
+            formatter.endGroup(currentLevel, formattedGroupValues);
     }
 };

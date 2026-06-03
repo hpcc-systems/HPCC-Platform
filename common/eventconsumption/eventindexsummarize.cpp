@@ -1229,11 +1229,11 @@ public:
 class CGenericGroupCollector : public CSummaryCollector
 {
     std::vector<std::vector<std::string>> groupAttributesStrs;
-    std::vector<std::vector<unsigned>> groupAttributeIds;
+    std::vector<std::vector<GroupAttribute>> groupAttributeIds;
     CGroupNode<EventSummaryMetrics> root;
 
 public:
-    CGenericGroupCollector(CIndexFileSummary& _op, IBufferedSerialOutputStream* _out, const std::vector<std::vector<std::string>>& _attrStrs, const std::vector<std::vector<unsigned>>& _attrIds)
+    CGenericGroupCollector(CIndexFileSummary& _op, IBufferedSerialOutputStream* _out, const std::vector<std::vector<std::string>>& _attrStrs, const std::vector<std::vector<GroupAttribute>>& _attrIds)
         : CSummaryCollector(_op, IndexSummarization::byGroup, _out), groupAttributesStrs(_attrStrs), groupAttributeIds(_attrIds)
     {
     }
@@ -1263,7 +1263,7 @@ public:
         CCsvGroupFormatter formatter(out);
         formatter.beginReport(groupAttributesStrs);
         std::vector<std::string> rootVals;
-        root.render(formatter, rootVals, 0, true);
+        root.render(formatter, rootVals, groupAttributeIds, 0, true);
         formatter.endReport();
     }
 };
