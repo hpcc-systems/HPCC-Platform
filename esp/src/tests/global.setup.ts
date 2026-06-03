@@ -1,9 +1,9 @@
 import { test as setup } from "@playwright/test";
 import { Workunit, DFUWorkunit } from "@hpcc-js/comms";
-import { baseURL, ecl, saveDFUWUs, saveWUs, setDFUWU, setWU } from "./global";
+import { baseURL, userID, password, ecl, saveDFUWUs, saveWUs, setDFUWU, setWU } from "./global";
 
 async function submit(browserName: string, ecl: string): Promise<Workunit> {
-    const wu = await Workunit.submit({ baseUrl: baseURL, userID: browserName }, "thor", ecl);
+    const wu = await Workunit.submit({ baseUrl: baseURL, userID: userID || browserName, password }, "thor", ecl);
     wu.update({ Jobname: "global.setup.ts" });
     console.log(`    ${wu.Wuid}`);
     return wu.watchUntilComplete();
@@ -11,7 +11,7 @@ async function submit(browserName: string, ecl: string): Promise<Workunit> {
 
 let idx = 0;
 async function despray(browserName: string, sourceLogicalName: string): Promise<DFUWorkunit> {
-    const wu = await DFUWorkunit.despray({ baseUrl: baseURL, userID: browserName }, {
+    const wu = await DFUWorkunit.despray({ baseUrl: baseURL, userID: userID || browserName, password }, {
         destGroup: "mydropzone",
         destIP: ".",
         destPath: `/var/lib/HPCCSystems/mydropzone/${browserName}_${sourceLogicalName}_${++idx}`,

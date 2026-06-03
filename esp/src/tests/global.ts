@@ -7,6 +7,25 @@ export function setBaseURL(baseUrl: string) {
     baseURL = baseUrl;
 }
 
+export function loadEnvFile(dir: string = path.resolve(__dirname, "..")) {
+    const envFile = path.join(dir, ".env");
+    if (fs.existsSync(envFile)) {
+        for (const line of fs.readFileSync(envFile, "utf8").split("\n")) {
+            const match = line.match(/^\s*([\w]+)\s*=\s*(.*)\s*$/);
+            if (match && !process.env[match[1]]) {
+                process.env[match[1]] = match[2];
+            }
+        }
+    }
+}
+
+loadEnvFile();
+
+export const userID = process.env.AUTH ? process.env.HPCC_USER ?? "" : "";
+export const password = process.env.AUTH ? process.env.HPCC_PASSWORD ?? "" : "";
+
+export const storageStatePath = path.join(__dirname, ".auth-state.json");
+
 const WU_DATA_FILE = path.join(__dirname, "test-wus.json");
 const DFU_WU_DATA_FILE = path.join(__dirname, "test-dfu-wus.json");
 
@@ -128,27 +147,29 @@ export function setDFUWU(wu: DFUWorkunit) {
 
 export function getWULength(browser: string) {
     loadWUs();
-    return state.wus[browser]?.length ?? 0;
+    return state.wus[userID || browser]?.length ?? 0;
 }
 
 export function getDFUWULength(browser: string) {
     loadDFUWUs();
-    return dfuState.dfuWus[browser]?.length ?? 0;
+    return dfuState.dfuWus[userID || browser]?.length ?? 0;
 }
 
 export function getWuid(browser: string, idx: number): string {
-    const wuEntries = state.wus[browser];
+    const owner = userID || browser;
+    const wuEntries = state.wus[owner];
     if (!wuEntries || idx >= wuEntries.length) {
-        throw new Error(`No workunit found for browser "${browser}" at index ${idx}`);
+        throw new Error(`No workunit found for owner "${owner}" at index ${idx}`);
     }
     const wuEntry = wuEntries[idx];
     return wuEntry.Wuid;
 }
 
 export function getDFUWuid(browser: string, idx: number): string {
-    const wuEntries = dfuState.dfuWus[browser];
+    const owner = userID || browser;
+    const wuEntries = dfuState.dfuWus[owner];
     if (!wuEntries || idx >= wuEntries.length) {
-        throw new Error(`No DFU workunit found for browser "${browser}" at index ${idx}`);
+        throw new Error(`No DFU workunit found for owner "${owner}" at index ${idx}`);
     }
     const wuEntry = wuEntries[idx];
     return wuEntry.Wuid;
@@ -178,20 +199,20 @@ DenormedRec := RECORD
     DATASET(ChildRec) Children {MAXCOUNT(5)};
 END;
 
-NamesTable := DATASET([ {1, 'Gavin'}, 
-                        {2, 'Liz'}, 
-                        {3, 'Mr Nobody'}, 
-                        {4, 'Anywhere'}], 
-                      ParentRec);            
+NamesTable := DATASET([ {1, 'Gavin'},
+                        {2, 'Liz'},
+                        {3, 'Mr Nobody'},
+                        {4, 'Anywhere'}],
+                      ParentRec);
 
-NormAddrs := DATASET([{1, '10 Malt Lane'},     
-                      {2, '10 Malt Lane'},     
-                      {2, '3 The cottages'},     
-                      {4, 'Here'},     
-                      {4, 'There'},     
-                      {4, 'Near'},     
-                      {4, 'Far'}], 
-                     ChildRec);    
+NormAddrs := DATASET([{1, '10 Malt Lane'},
+                      {2, '10 Malt Lane'},
+                      {2, '3 The cottages'},
+                      {4, 'Here'},
+                      {4, 'There'},
+                      {4, 'Near'},
+                      {4, 'Far'}],
+                     ChildRec);
 
 DenormedRec ParentLoad(ParentRec L) := TRANSFORM
     SELF.NumRows := 0;
@@ -208,8 +229,8 @@ DenormedRec DeNormThem(DenormedRec L, ChildRec R, INTEGER C) := TRANSFORM
     SELF := L;
 END;
 
-DeNormedRecs := DENORMALIZE(Ptbl, NormAddrs, 
-                            LEFT.NameID = RIGHT.NameID, 
+DeNormedRecs := DENORMALIZE(Ptbl, NormAddrs,
+                            LEFT.NameID = RIGHT.NameID,
                             DeNormThem(LEFT, RIGHT, COUNTER));
 
 OUTPUT(DeNormedRecs,, 'global::setup::ts::NestedChildDataset', OVERWRITE);

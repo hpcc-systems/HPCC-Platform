@@ -1,9 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
-import { baseURL, setBaseURL } from "./tests/global";
+import { baseURL, setBaseURL, storageStatePath } from "./tests/global";
 
 const isCIL = !!process.env.CIL;
 const isCI = isCIL || !!process.env.CI;
 const isFull = !!process.env.FULL;
+const useAuth = !!process.env.AUTH;
 if (isCI && !isCIL) {
     setBaseURL("http://127.0.0.1:8010");
 } else {
@@ -43,9 +44,14 @@ export default defineConfig({
     },
 
     projects: [
+        ...(useAuth ? [{
+            name: "auth",
+            testMatch: /auth\.setup\.ts/,
+        }] : []),
         {
             name: "setup",
             testMatch: /global\.setup\.ts/,
+            dependencies: useAuth ? ["auth"] : [],
             teardown: "teardown"
         },
         {
@@ -54,18 +60,27 @@ export default defineConfig({
         },
         {
             name: "chromium",
-            use: { ...devices["Desktop Chrome"] },
+            use: {
+                ...devices["Desktop Chrome"],
+                ...(useAuth ? { storageState: storageStatePath } : {})
+            },
             dependencies: ["setup"]
         },
         ...(isFull ? [
             {
                 name: "firefox",
-                use: { ...devices["Desktop Firefox"] },
+                use: {
+                    ...devices["Desktop Firefox"],
+                    ...(useAuth ? { storageState: storageStatePath } : {})
+                },
                 dependencies: ["setup"]
             },
             {
                 name: "webkit",
-                use: { ...devices["Desktop Safari"] },
+                use: {
+                    ...devices["Desktop Safari"],
+                    ...(useAuth ? { storageState: storageStatePath } : {})
+                },
                 dependencies: ["setup"],
             }
         ] : [])
