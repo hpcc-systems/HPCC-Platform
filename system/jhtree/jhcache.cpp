@@ -145,7 +145,6 @@ struct alignas(CACHE_LINE_SIZE) PhaseStats
     std::atomic<unsigned __int64> peak { 0 };
 };
 
-static_assert(sizeof(PhaseStats) <= CACHE_LINE_SIZE);
 static_assert((sizeof(PhaseStats) % CACHE_LINE_SIZE) == 0);
 
 struct alignas(CACHE_LINE_SIZE) BucketCounter
@@ -164,23 +163,27 @@ class CDiskPageCache final : public CInterfaceOf<IPageCache>
 public:
     enum StatPhase : unsigned
     {
-        StatCacheLookup = 0,
-        StatDiskIo,
-        StatError,
+        StatReadCacheLookup = 0,
+        StatReadDiskIo,
+        StatWriteCacheLookup,
+        StatWriteDiskIo,
+        StatReadError,
+        StatWriteError,
         NumStatPhases
     };
 
     static const char * queryStatPhaseName(unsigned phase)
     {
-        static const std::array<const char *, NumStatPhases> phaseName = []()
+        switch (phase)
         {
-            std::array<const char *, NumStatPhases> names = {};
-            names[StatCacheLookup] = "lookup";
-            names[StatDiskIo] = "diskio";
-            names[StatError] = " ioerr";
-            return names;
-        }();
-        return (phase < NumStatPhases) ? phaseName[phase] : "unknown";
+        case StatReadCacheLookup: return "read lookup";
+        case StatReadDiskIo: return "read diskio";
+        case StatReadError: return "read ioerr";
+        case StatWriteCacheLookup: return "write lookup";
+        case StatWriteDiskIo: return "write diskio";
+        case StatWriteError: return "write ioerr";
+        }
+        return "unknown";
     }
 
     static constexpr unsigned numBuckets = 10;
@@ -462,7 +465,7 @@ public:
 
         if (statsEnabled)
         {
-            updateR(StatCacheLookup, readTimer.elapsedNs());
+            updateStats(StatReadCacheLookup, readTimer.elapsedNs());
             readTimer.reset();
         }
 
@@ -488,15 +491,22 @@ public:
             if (statsEnabled)
             {
                 cacheHits.fetch_add(1, std::memory_order_relaxed);
-                updateR(StatDiskIo, readTimer.elapsedNs());
+                updateStats(StatReadDiskIo, readTimer.elapsedNs());
             }
             return true;
+        }
+
+        if (statsEnabled)
+        {
+            cacheUsed.fetch_sub(1, std::memory_order_relaxed);
+            if (curCacheSet.isFull())
+                cacheFull.fetch_sub(1, std::memory_order_relaxed);
         }
 
         curCacheSet.setEntry(setIndex, invalidValue);
         curCacheSet.promoteIndexToLeastRecentlyUsed(setIndex);
         if (statsEnabled)
-            updateR(StatError, readTimer.elapsedNs());
+            updateStats(StatReadError, readTimer.elapsedNs());
 #endif
         return onCacheMiss(fileId, offset, size);
     }
@@ -527,30 +537,46 @@ public:
         CacheEntry & curCacheSet = cache[cacheKey];
 
         uint8_t setIndex = curCacheSet.getLeastRecentlyUsedIndex();
+        bool wasEmpty = curCacheSet.isEmpty(setIndex);
 
         offset_t cacheFileOffset = (setIndex * setSize) + ((offset_t)cacheKey * pageSize);
 
         if (statsEnabled)
         {
-            updateW(StatCacheLookup, writeTimer.elapsedNs());
+            updateStats(StatWriteCacheLookup, writeTimer.elapsedNs());
             writeTimer.reset();
         }
 
         // OPT: possibly write async here ... (handling if another read happens when write is in flight)
         bool ret = writeCacheFile(cacheFileOffset, data);
-        if (ret)
+        if (likely(ret))
         {
             curCacheSet.setEntry(setIndex, cacheVal);
             curCacheSet.delegateIndexToMostRecentlyUsed(setIndex);
             if (statsEnabled)
-                updateW(StatDiskIo, writeTimer.elapsedNs());
+            {
+                updateStats(StatWriteDiskIo, writeTimer.elapsedNs());
+                if (wasEmpty)
+                {
+                    cacheUsed.fetch_add(1, std::memory_order_relaxed);
+                    if (curCacheSet.isFull())
+                        cacheFull.fetch_add(1, std::memory_order_relaxed);
+                }
+            }
             return;
         }
 
         curCacheSet.setEntry(setIndex, invalidValue);
         // setIndex is already at least recently used ...
         if (statsEnabled)
-            updateW(StatError, writeTimer.elapsedNs());
+        {
+            if (!wasEmpty)
+            {
+                cacheUsed.fetch_sub(1, std::memory_order_relaxed);
+                cacheFull.fetch_sub(1, std::memory_order_relaxed);
+            }
+            updateStats(StatWriteError, writeTimer.elapsedNs());
+        }
 #endif
     }
 
@@ -567,50 +593,33 @@ public:
         return cacheOK;
     }
 
-    void updateR(StatPhase phase, unsigned __int64 elapsedNs)
+    void updateStats(StatPhase phase, unsigned __int64 elapsedNs)
     {
-        readStats[phase].count.fetch_add(1, std::memory_order_relaxed);
-        readStats[phase].totalNs.fetch_add(elapsedNs, std::memory_order_relaxed);
-        unsigned __int64 currentPeak = readStats[phase].peak.load(std::memory_order_relaxed);
+        PhaseStats & curStats = cacheStats[phase];
+        curStats.count.fetch_add(1, std::memory_order_relaxed);
+        curStats.totalNs.fetch_add(elapsedNs, std::memory_order_relaxed);
+        unsigned __int64 currentPeak = curStats.peak.load(std::memory_order_relaxed);
         while (elapsedNs > currentPeak &&
-               !readStats[phase].peak.compare_exchange_weak(currentPeak, elapsedNs, std::memory_order_relaxed))
+               !curStats.peak.compare_exchange_weak(currentPeak, elapsedNs, std::memory_order_relaxed))
             ;
 
         unsigned __int64 bucket = elapsedNs / bucketStep;
         if (bucket >= numBuckets)
             bucket = numBuckets - 1;
-        readMaxCnt[phase][(unsigned)bucket].value.fetch_add(1, std::memory_order_relaxed);
-    }
-
-    void updateW(StatPhase phase, unsigned __int64 elapsedNs)
-    {
-        writeStats[phase].count.fetch_add(1, std::memory_order_relaxed);
-        writeStats[phase].totalNs.fetch_add(elapsedNs, std::memory_order_relaxed);
-        unsigned __int64 currentPeak = writeStats[phase].peak.load(std::memory_order_relaxed);
-        while (elapsedNs > currentPeak &&
-               !writeStats[phase].peak.compare_exchange_weak(currentPeak, elapsedNs, std::memory_order_relaxed))
-            ;
-
-        unsigned __int64 bucket = elapsedNs / bucketStep;
-        if (bucket >= numBuckets)
-            bucket = numBuckets - 1;
-        writeMaxCnt[phase][(unsigned)bucket].value.fetch_add(1, std::memory_order_relaxed);
+        bucketCnt[phase][(unsigned)bucket].value.fetch_add(1, std::memory_order_relaxed);
     }
 
     void zeroStats()
     {
         for (unsigned ix=0; ix<NumStatPhases; ix++)
         {
-            readStats[ix].count.store(0, std::memory_order_relaxed);
-            readStats[ix].totalNs.store(0, std::memory_order_relaxed);
-            readStats[ix].peak.store(0, std::memory_order_relaxed);
-            writeStats[ix].count.store(0, std::memory_order_relaxed);
-            writeStats[ix].totalNs.store(0, std::memory_order_relaxed);
-            writeStats[ix].peak.store(0, std::memory_order_relaxed);
+            PhaseStats & curStats = cacheStats[ix];
+            curStats.count.store(0, std::memory_order_relaxed);
+            curStats.totalNs.store(0, std::memory_order_relaxed);
+            curStats.peak.store(0, std::memory_order_relaxed);
             for (unsigned jx=0; jx<numBuckets; jx++)
             {
-                readMaxCnt[ix][jx].value.store(0, std::memory_order_relaxed);
-                writeMaxCnt[ix][jx].value.store(0, std::memory_order_relaxed);
+                bucketCnt[ix][jx].value.store(0, std::memory_order_relaxed);
             }
         }
     }
@@ -633,40 +642,28 @@ public:
         unsigned long currentHits = cacheHits.exchange(0, std::memory_order_relaxed);
         unsigned long currentMisses = cacheMisses.exchange(0, std::memory_order_relaxed);
 
-        unsigned long readCount[NumStatPhases];
-        double readAvg[NumStatPhases];
-        unsigned __int64 readPeakNs[NumStatPhases];
-        unsigned long readBuckets[NumStatPhases][numBuckets];
-
-        unsigned long writeCount[NumStatPhases];
-        double writeAvg[NumStatPhases];
-        unsigned __int64 writePeakNs[NumStatPhases];
-        unsigned long writeBuckets[NumStatPhases][numBuckets];
+        unsigned long activeCount[NumStatPhases];
+        double activeAvg[NumStatPhases];
+        unsigned __int64 activePeakNs[NumStatPhases];
+        unsigned long activeBuckets[NumStatPhases][numBuckets];
 
         bool hasRWActivity = false;
         for (unsigned i=0; i<NumStatPhases; i++)
         {
-            readCount[i] = readStats[i].count.exchange(0, std::memory_order_relaxed);
+            PhaseStats & curStats = cacheStats[i];
+            activeCount[i] = curStats.count.exchange(0, std::memory_order_relaxed);
             // it is possible another thread has updated count and totalNs here
-            unsigned __int64 readTotal = readStats[i].totalNs.exchange(0, std::memory_order_relaxed);
-            readPeakNs[i] = readStats[i].peak.exchange(0, std::memory_order_relaxed);
+            unsigned __int64 readTotal = curStats.totalNs.exchange(0, std::memory_order_relaxed);
+            activePeakNs[i] = curStats.peak.exchange(0, std::memory_order_relaxed);
             // leading to a larger totalNs for the count we read above
             // but if count is large then shouldn't affect avg too much
             // could switch an epoch method for correctness ...
-            readAvg[i] = readCount[i] ? (double)readTotal / readCount[i] : 0.0;
+            activeAvg[i] = activeCount[i] ? (double)readTotal / activeCount[i] : 0.0;
 
-            writeCount[i] = writeStats[i].count.exchange(0, std::memory_order_relaxed);
-            unsigned __int64 writeTotal = writeStats[i].totalNs.exchange(0, std::memory_order_relaxed);
-            writePeakNs[i] = writeStats[i].peak.exchange(0, std::memory_order_relaxed);
-            writeAvg[i] = writeCount[i] ? (double)writeTotal / writeCount[i] : 0.0;
-
-            hasRWActivity = hasRWActivity || (readCount[i] > 0) || (writeCount[i] > 0);
+            hasRWActivity = hasRWActivity || (activeCount[i] > 0);
 
             for (unsigned j=0; j<numBuckets; j++)
-            {
-                readBuckets[i][j] = readMaxCnt[i][j].value.exchange(0, std::memory_order_relaxed);
-                writeBuckets[i][j] = writeMaxCnt[i][j].value.exchange(0, std::memory_order_relaxed);
-            }
+                activeBuckets[i][j] = bucketCnt[i][j].value.exchange(0, std::memory_order_relaxed);
         }
 
         if (currentHits > 0 || currentMisses > 0 || hasRWActivity)
@@ -678,23 +675,26 @@ public:
             DBGLOG("pageCache stats: hits=%lu, misses=%lu, total=%lu, HitRate=%.2f%% bucketCeilingNs=%u",
                     currentHits, currentMisses, totalAccesses, hitRate, bucketRangeCeiling);
 
-            for (unsigned i=StatCacheLookup; i<=StatDiskIo; i++)
+            //Output some information about how full the cache is, and how many slots are completely full.
+            __uint64 used = cacheUsed.load(std::memory_order_relaxed);
+            __uint64 maxUsed = (offset_t)numEntries * numSets;
+            __uint64 full = cacheFull.load(std::memory_order_relaxed);
+            __uint64 maxFull = numEntries;
+
+            DBGLOG("pageCache stats: usage=%.2f%% (%llu/%llu) full=(%llu/%llu)",
+                    maxUsed ? (100.0 * used / maxUsed) : 0.0, used, maxUsed, full, maxFull);
+
+            for (unsigned i=StatReadCacheLookup; i<=StatWriteDiskIo; i++)
             {
-                DBGLOG("pageCache stats: read  %s %10lu %12.3lf peak=%" I64F "u", queryStatPhaseName(i), readCount[i], readAvg[i], readPeakNs[i]);
-                logHistogram("rhist", i, readBuckets[i]);
+                DBGLOG("pageCache stats: %s cnt=%10lu avg=%12.3lfns peak=%" I64F "uns", queryStatPhaseName(i), activeCount[i], activeAvg[i], activePeakNs[i]);
+                logHistogram("hist", i, activeBuckets[i]);
             }
 
-            for (unsigned i=StatCacheLookup; i<=StatDiskIo; i++)
-            {
-                DBGLOG("pageCache stats: write %s %10lu %12.3lf peak=%" I64F "u", queryStatPhaseName(i), writeCount[i], writeAvg[i], writePeakNs[i]);
-                logHistogram("whist", i, writeBuckets[i]);
-            }
-
-            if ( (readCount[StatError] > 0) || (writeCount[StatError] > 0) )
+            if ( (activeCount[StatReadError] > 0) || (activeCount[StatWriteError] > 0) )
             {
                 // unusual errors ...
-                DBGLOG("pageCache stats: read  %s %10lu %12.3lf peak=%" I64F "u", queryStatPhaseName(StatError), readCount[StatError], readAvg[StatError], readPeakNs[StatError]);
-                DBGLOG("pageCache stats: write %s %10lu %12.3lf peak=%" I64F "u", queryStatPhaseName(StatError), writeCount[StatError], writeAvg[StatError], writePeakNs[StatError]);
+                for (unsigned i=StatReadError; i<=StatWriteError; i++)
+                    DBGLOG("pageCache stats: %s cnt=%10lu avg=%12.3lfns peak=%" I64F "uns", queryStatPhaseName(i), activeCount[i], activeAvg[i], activePeakNs[i]);
             }
         }
     }
@@ -765,10 +765,10 @@ protected:
 
     alignas(CACHE_LINE_SIZE) std::atomic<unsigned long> cacheHits{0};
     alignas(CACHE_LINE_SIZE) std::atomic<unsigned long> cacheMisses{0};
-    PhaseStats readStats[NumStatPhases];
-    BucketCounter readMaxCnt[NumStatPhases][numBuckets];
-    PhaseStats writeStats[NumStatPhases];
-    BucketCounter writeMaxCnt[NumStatPhases][numBuckets];
+    alignas(CACHE_LINE_SIZE) std::atomic<__uint64> cacheUsed{0}; // How many pages are in use
+    alignas(CACHE_LINE_SIZE) std::atomic<__uint64> cacheFull{0}; // How many of the cache sets are full
+    PhaseStats cacheStats[NumStatPhases];
+    BucketCounter bucketCnt[NumStatPhases][numBuckets];
 
     struct CacheSet
     {
@@ -790,12 +790,22 @@ protected:
         // array of cache set indexes in order from LRU (0) at the head to MRU (numSets-1) at the tail
         uint8_t lruArray[numSets];
 
+        bool isEmpty(uint8_t indx) const
+        {
+            return (cSet[indx].value == invalidValue);
+        }
+
+        bool isFull() const
+        {
+            return !isEmpty(getLeastRecentlyUsedIndex());
+        }
+
         void setEntry(uint8_t indx, offset_t val)
         {
             cSet[indx].value = val;
         }
 
-        uint8_t findInCacheSet(offset_t cacheValue)
+        uint8_t findInCacheSet(offset_t cacheValue) const
         {
             for (uint8_t ix=0; ix<numSets; ix++)
             {
@@ -805,7 +815,7 @@ protected:
             return numSets;
         }
 
-        uint8_t getLeastRecentlyUsedIndex()
+        uint8_t getLeastRecentlyUsedIndex() const
         {
             return lruArray[0];
         }
