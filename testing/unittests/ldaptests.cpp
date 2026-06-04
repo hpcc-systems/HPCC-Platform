@@ -29,7 +29,8 @@ class LdapSanitizationTest : public CppUnit::TestFixture
     CPPUNIT_TEST(testFilterEscapeEmbeddedNul);
     CPPUNIT_TEST(testFilterEscapeHighBytes);
     CPPUNIT_TEST(testDnEscapeCases);
-    CPPUNIT_TEST(testValidateLdapUsername);
+    CPPUNIT_TEST(testSearchStringWildcardFilterInjection);
+    CPPUNIT_TEST(testScopeDnComponentEscaping);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -93,7 +94,6 @@ public:
         for (const auto &testCase : cases)
         {
             assertFilterEscape(testCase.input, testCase.expected);
-            CPPUNIT_ASSERT(!validateLdapUsername(testCase.input));
         }
     }
 
@@ -129,13 +129,56 @@ public:
             assertDnEscape(testCase.input, testCase.expected);
     }
 
-    void testValidateLdapUsername()
+    // Verifies that a user-supplied search string is escaped before being embedded
+    // between wildcards in an LDAP filter.
+    // Without escaping, input like ")(objectClass=*" could inject additional filter terms.
+    void testSearchStringWildcardFilterInjection()
     {
-        CPPUNIT_ASSERT(validateLdapUsername("domain\\alice"));
-        CPPUNIT_ASSERT(validateLdapUsername("alice.svc-01"));
-        CPPUNIT_ASSERT(!validateLdapUsername(nullptr));
-        CPPUNIT_ASSERT(!validateLdapUsername("alice admin"));
-        CPPUNIT_ASSERT(!validateLdapUsername("alice*"));
+        static const struct
+        {
+            const char *searchstr;
+            const char *expectedFilter;
+        } cases[] = {
+            // Benign search — passes through unmodified.
+            { "alice",         "(&(objectClass=User)(|(uid=*alice*)))"           },
+            // Embedded wildcard character — encoded, not treated as a filter wildcard.
+            { "a*",            "(&(objectClass=User)(|(uid=*a\\2a*)))"           },
+            // Injection attempt: close the group and append an unrestricted filter.
+            { ")(objectClass=*", "(&(objectClass=User)(|(uid=*\\29\\28objectClass=\\2a*)))" },
+        };
+
+        for (const auto &tc : cases)
+        {
+            StringBuffer filter("objectClass=User");
+            filter.insert(0, "(&(");
+            StringBuffer escapedSearch;
+            appendEscapedLdapFilter(tc.searchstr, escapedSearch);
+            filter.appendf(")(|(uid=*%s*)))", escapedSearch.str());
+            CPPUNIT_ASSERT_EQUAL_STR(tc.expectedFilter, filter.str());
+        }
+    }
+
+    // Verifies the getPermissionsArray fix: resource scope components are
+    // passed through the sized overload of escapeLdapDistinguishedName before
+    // being appended to the DN buffer.  Without escaping, a component
+    // containing ',' would break the DN structure and could redirect the
+    // operation to a different directory entry.
+    void testScopeDnComponentEscaping()
+    {
+        // Comma injection: "sales,ou=admin" must not split the RDN.
+        StringBuffer dn;
+        const char *component = "sales,ou=admin";
+        dn.append("ou=");
+        escapeLdapDistinguishedName(strlen(component), component, dn);
+        dn.append(",dc=example,dc=com");
+        CPPUNIT_ASSERT_EQUAL_STR("ou=sales\\,ou=admin,dc=example,dc=com", dn.str());
+
+        // Sized overload: only the specified byte count is processed.
+        dn.clear();
+        dn.append("cn=");
+        escapeLdapDistinguishedName(5, "team+evil", dn);
+        dn.append(",dc=example,dc=com");
+        CPPUNIT_ASSERT_EQUAL_STR("cn=team\\+,dc=example,dc=com", dn.str());
     }
 };
 

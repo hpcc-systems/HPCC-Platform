@@ -125,22 +125,3 @@ void escapeLdapDistinguishedName(size_t inputLength, const char *input, StringBu
         }
     }
 }
-
-bool validateLdapUsername(const char *username)
-{
-    if (!username || !*username)
-        return false;
-
-    for (const unsigned char *cursor = reinterpret_cast<const unsigned char *>(username); *cursor; ++cursor)
-    {
-        // Keep locale-sensitive alnum validation for compatibility. A strict
-        // ASCII allowlist would be more deterministic, but it could reject
-        // existing users whose usernames rely on locale-specific characters.
-        if (std::isalnum(*cursor) || strchr("._-@\\/", *cursor))
-            continue;
-
-        return false;
-    }
-
-    return true;
-}
