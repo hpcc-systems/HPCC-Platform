@@ -10,7 +10,8 @@ import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { WUTimelineNoFetch } from "src/Timings";
 import * as Utility from "src/Utility";
-import { useMetricsViews, useWUQueryMetrics, scopeFilterMetrics, scopeFilterLogicalGraph, GLOBAL_FAKE_ID } from "../hooks/metrics";
+import { useMetricsViews, useWUQueryMetrics, scopeFilterMetrics, scopeFilterLogicalGraph, GLOBAL_FAKE_ID, METRICS_UNIFORM_TIME_UNITS } from "../hooks/metrics";
+import { useUserStore } from "../hooks/store";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 import { DockPanel, DockPanelItem, ResetableDockPanel } from "../layouts/DockPanel";
@@ -83,6 +84,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const [includePendingItems, setIncludePendingItems] = React.useState(true);
     const [matchCase, setMatchCase] = React.useState(false);
     const [matchWholeWord, setMatchWholeWord] = React.useState(false);
+    const [showTimingInSeconds, setShowTimingInSeconds] = useUserStore<boolean>(METRICS_UNIFORM_TIME_UNITS, false);
 
     const pushSelectionUrl = React.useCallback((parentUrl: string, viewId: string, lsName?: string, selection?: string[], replace: boolean = false) => {
         const hasLineage = !!lsName?.length;
@@ -228,7 +230,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
 
     const scopesTable = useConst(() => new ScopesTable()
         .multiSelect(true)
-        .metrics([], view.scopeTypes, view.properties, scopeFilter, matchCase, matchWholeWord)
+        .metrics([], view.scopeTypes, view.properties, scopeFilter, matchCase, matchWholeWord, showTimingInSeconds)
         .sortable(true)
     );
 
@@ -248,10 +250,10 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
             return metricGraph.itemStatus(row) !== "unknown";
         });
         scopesTable
-            .metrics(scopesTableMetrics, view.scopeTypes, view.properties, scopeFilter, matchCase, matchWholeWord)
+            .metrics(scopesTableMetrics, view.scopeTypes, view.properties, scopeFilter, matchCase, matchWholeWord, showTimingInSeconds)
             .lazyRender()
             ;
-    }, [includePendingItems, matchCase, matchWholeWord, metricGraph, metrics, scopeFilter, scopesTable, view.properties, view.scopeTypes]);
+    }, [includePendingItems, matchCase, matchWholeWord, metricGraph, metrics, scopeFilter, scopesTable, showTimingInSeconds, view.properties, view.scopeTypes]);
 
     const updateScopesTable = React.useCallback((selectionIds?: string[]) => {
         if (scopesTable?.renderCount() > 0) {
@@ -376,13 +378,19 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
             }
         },
         {
+            key: "showTimingInSeconds", text: nlsHPCC.TimeSeconds, canCheck: true, checked: showTimingInSeconds, iconProps: { iconName: "Clock" },
+            onClick: () => {
+                setShowTimingInSeconds(!showTimingInSeconds);
+            }
+        },
+        {
             key: "options", text: nlsHPCC.Options, hidden: logicalGraph, iconProps: { iconName: "Settings" },
             onClick: () => {
                 updateView({ layout: dockpanel.getLayout() });
                 setShowMetricOptions(true);
             }
         }
-    ].filter(item => item.hidden !== true), [dockpanel, hotspots, lineageSelectionScope?.name, logicalGraph, onHotspot, parentUrl, pushSelectionUrl, refresh, selection, save, setViewId, timeline, updateView, view.showTimeline, viewId, viewIds]);
+    ].filter(item => item.hidden !== true), [dockpanel, hotspots, lineageSelectionScope?.name, logicalGraph, onHotspot, parentUrl, pushSelectionUrl, refresh, selection, save, setShowTimingInSeconds, setViewId, showTimingInSeconds, timeline, updateView, view.showTimeline, viewId, viewIds]);
 
     const formatColumns = React.useMemo((): Utility.ColumnMap => {
         const copyColumns: Utility.ColumnMap = {};
