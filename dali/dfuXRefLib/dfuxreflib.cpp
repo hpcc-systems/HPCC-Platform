@@ -1061,7 +1061,7 @@ public:
     {
         if (!max)
             return 1;
-        bool *done = (bool *)calloc(sizeof(bool),max);
+        bool *done = (bool *)calloc(max, sizeof(bool));
         ForEachItemIn(i1,primarypna) 
             done[primarypna.item(i1)] = true;
         ForEachItemIn(i2,replicatepna) 

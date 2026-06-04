@@ -198,7 +198,7 @@ template <class T, unsigned int K> class KeptHashTableOf
  : public KeptHashTable
 {
   public:
-    inline KeptHashTableOf<T,K>(bool _ignorecase) : KeptHashTable(K, _ignorecase) {};
+    inline KeptHashTableOf(bool _ignorecase) : KeptHashTable(K, _ignorecase) {};
     inline T *create(const void *key) { return (T *) KeptHashTable::create(key); }
     inline T *createLink(const void *key) { return (T *) KeptHashTable::createLink(key); }
     inline T *find(const void *key) const { return (T *) KeptHashTable::find(key); }

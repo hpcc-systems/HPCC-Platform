@@ -7420,8 +7420,8 @@ class COrderedPTree : public BASE_PTREE
     public:
         IMPLEMENT_SUPERHASHTABLEOF_REF_FIND(IPropertyTree, constcharptr);
 
-        COrderedChildMap<BASECHILDMAP>() : BASECHILDMAP() { }
-        ~COrderedChildMap<BASECHILDMAP>() { SELF::kill(); }
+        COrderedChildMap() : BASECHILDMAP() { }
+        ~COrderedChildMap() { SELF::kill(); }
 
         virtual unsigned numChildren() const override { return order.ordinality(); }
         virtual IPropertyTreeIterator *getIterator(bool sort) override
@@ -7477,7 +7477,7 @@ class COrderedPTree : public BASE_PTREE
     };
 public:
     typedef COrderedPTree<BASE_PTREE> SELF;
-    COrderedPTree<BASE_PTREE>(const char *name=NULL, byte flags=ipt_none, IPTArrayValue *value=NULL, ChildMap *children=NULL)
+    COrderedPTree(const char *name=NULL, byte flags=ipt_none, IPTArrayValue *value=NULL, ChildMap *children=NULL)
         : BASE_PTREE(name, flags|ipt_ordered, value, children) { }
 
     virtual bool isEquivalent(IPropertyTree *tree) const override { return (NULL != QUERYINTERFACE(tree, COrderedPTree<BASE_PTREE>)); }

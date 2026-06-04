@@ -86,12 +86,12 @@ void promptFor(const char *prompt, const char *prop, bool hide, IProperties * gl
 #else
 #if defined (__linux__)
         int fn = fileno(stdin);
-        struct termio t;
-        /* If ioctl fails, we're probably not connected to a terminal. */
-        if(!ioctl(fn, TCGETA, &t))
+        struct termios t;
+        /* If tcgetattr fails, we're probably not connected to a terminal. */
+        if (!tcgetattr(fn, &t))
         {
             t.c_lflag &= ~ECHO;
-            ioctl(fn, TCSETA, &t);
+            tcsetattr(fn, TCSANOW, &t);
         }
 #endif
         for (;;)
@@ -102,10 +102,10 @@ void promptFor(const char *prompt, const char *prop, bool hide, IProperties * gl
             result.append(ch);
         }
 #if defined (__linux__)
-        if(!ioctl(fn, TCGETA, &t))
+        if (!tcgetattr(fn, &t))
         {
             t.c_lflag |= ECHO;
-            ioctl(fn, TCSETA, &t);
+            tcsetattr(fn, TCSANOW, &t);
         }
 #endif
 #endif

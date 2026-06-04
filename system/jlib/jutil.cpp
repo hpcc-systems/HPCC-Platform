@@ -41,10 +41,6 @@
 #include <unistd.h> // read()
 #include <sys/wait.h>
 #include <pwd.h>
-#ifdef __linux__
-#include <crypt.h>
-#include <shadow.h>
-#endif
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>

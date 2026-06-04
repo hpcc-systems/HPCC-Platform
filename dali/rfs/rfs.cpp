@@ -1169,7 +1169,7 @@ public:
         salt = nextsalt;
         nextsalt += 1000;
         maxconn = 16;
-        conn = (RFS_ConnectionBase **)calloc(sizeof(RFS_ConnectionBase *),maxconn);
+        conn = (RFS_ConnectionBase **)calloc(maxconn, sizeof(RFS_ConnectionBase *));
     }
 
     ~RFS_ConnectionList()

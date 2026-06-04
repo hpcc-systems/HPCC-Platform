@@ -7,6 +7,9 @@
 
 #include "jexcept.hpp"
 
+#include <cstring>
+#include <type_traits>
+
 auto UTF16_TAG = 1U << 31;
 
 //
@@ -135,6 +138,40 @@ T load_int(const wasmtime::Span<uint8_t> &data, uint32_t ptr)
     }
     return retVal;
 }
+
+template <typename T>
+constexpr uint32_t alignment()
+{
+    static_assert(std::is_trivially_copyable_v<T>, "load_list_from_range requires trivially copyable elements");
+    return alignof(T);
+}
+
+template <typename T>
+constexpr uint32_t alignment(const T &)
+{
+    return alignment<T>();
+}
+
+template <typename T>
+T load(const wasmtime::Span<uint8_t> &data, uint32_t ptr)
+{
+    static_assert(std::is_trivially_copyable_v<T>, "load requires trivially copyable types");
+
+    if (!isAligned(ptr, alignof(T)))
+        throw makeStringException(2, "Pointer is not aligned");
+
+    const size_t offset = static_cast<size_t>(ptr);
+    if (offset > data.size() || data.size() - offset < sizeof(T))
+        throw makeStringException(1, "Out of bounds access");
+
+    if constexpr (std::is_integral_v<T> || std::is_enum_v<T>)
+        return load_int<T>(data, ptr);
+
+    T retVal{};
+    memcpy(&retVal, &data[ptr], sizeof(T));
+    return retVal;
+}
+
 /* canonical load_string_from_range (python)  -------------------------------------------------------------
 
 def load_string_from_range(cx, ptr, tagged_code_units):

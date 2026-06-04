@@ -86,10 +86,10 @@ private:
     };
 
 public:
-    IpMapOf<T>(std::function<T *(const ServerIdentifier)> _tfunc) : tfunc(_tfunc)
+    IpMapOf(std::function<T *(const ServerIdentifier)> _tfunc) : tfunc(_tfunc)
     {
     }
-    ~IpMapOf<T>()
+    ~IpMapOf()
     {
         for (unsigned idx = 0; idx < 256; idx++)
         {

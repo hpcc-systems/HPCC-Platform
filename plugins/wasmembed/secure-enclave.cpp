@@ -296,7 +296,9 @@ public:
         {
             for (auto &result : wasmResults)
             {
-                wasmStore->call(gc_func_name, {result});
+                std::vector<wasmtime::Val> gcParams;
+                gcParams.push_back(result);
+                wasmStore->call(gc_func_name, gcParams);
             }
         }
     }

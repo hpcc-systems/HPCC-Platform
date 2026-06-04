@@ -88,7 +88,7 @@ public:
         m_container = ic;
     }
 
-    IEspContainer *queryContainer(IEspContainer * ic)
+    virtual IEspContainer *queryContainer() override
     {
         return m_container;
     }

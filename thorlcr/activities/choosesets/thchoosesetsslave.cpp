@@ -289,10 +289,10 @@ public:
             free(limits);
         }
         numSets = helper->getNumSets();
-        counts = (rowcount_t *)calloc(sizeof(rowcount_t), numSets);
-        priorCounts = (rowcount_t *)calloc(sizeof(rowcount_t), numSets);
-        totalCounts = (rowcount_t *)calloc(sizeof(rowcount_t), numSets);
-        limits = (__int64 *)calloc(sizeof(__int64), numSets);
+        counts = (rowcount_t *)calloc(numSets, sizeof(rowcount_t));
+        priorCounts = (rowcount_t *)calloc(numSets, sizeof(rowcount_t));
+        totalCounts = (rowcount_t *)calloc(numSets, sizeof(rowcount_t));
+        limits = (__int64 *)calloc(numSets, sizeof(__int64));
         helper->getLimits(limits);
         done = false;
         first = true;
@@ -401,8 +401,8 @@ public:
             free(numToSkip);
             free(numToReturn);
         }
-        numToSkip = (unsigned *)calloc(sizeof(unsigned), numSets);
-        numToReturn = (unsigned *)calloc(sizeof(unsigned), numSets);
+        numToSkip = (unsigned *)calloc(numSets, sizeof(unsigned));
+        numToReturn = (unsigned *)calloc(numSets, sizeof(unsigned));
     }
     CATCH_NEXTROW()
     {
@@ -481,7 +481,7 @@ public:
         ChooseSetsPlusActivity::start();
         if (counter)
             free(counter);
-        counter = (rowcount_t*)calloc(sizeof(rowcount_t), numSets);
+        counter = (rowcount_t*)calloc(numSets, sizeof(rowcount_t));
     }
     CATCH_NEXTROW()
     {

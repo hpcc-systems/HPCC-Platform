@@ -470,7 +470,7 @@ protected:
             htn = htn*2+1;
         else
             htn /= 2;
-        C **newtable = (C **)calloc(sizeof(C *),htn);
+        C **newtable = (C **)calloc(htn, sizeof(C *));
         while (t--!=table) {
             C *c = *t;
             if (c) {
@@ -492,7 +492,7 @@ public:
     {
         htn = _initialSize;
         n = 0;
-        table = (C **)calloc(sizeof(C *),htn);
+        table = (C **)calloc(htn, sizeof(C *));
     }
     ~CMinHashTable()
     {

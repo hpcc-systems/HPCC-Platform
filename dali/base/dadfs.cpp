@@ -5111,8 +5111,8 @@ public:
                 file = _file;
                 ok = true;
                 mexcept = _mexcept;
-                doneprim = (bool *)calloc(sizeof(bool),width);
-                donerep = (bool *)calloc(sizeof(bool),width);
+                doneprim = (bool *)calloc(width, sizeof(bool));
+                donerep = (bool *)calloc(width, sizeof(bool));
                 except = NULL;
                 ignoreprim = _ignoreprim;
                 ignorerep = _ignorerep;

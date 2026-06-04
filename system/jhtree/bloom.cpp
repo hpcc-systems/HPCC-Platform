@@ -272,7 +272,7 @@ UnsortedBloomBuilder::UnsortedBloomBuilder(const IBloomBuilderInfo &helper)
 {
     if (tableSize && helper.getBloomEnabled())
     {
-        hashes = (hash64_t *) calloc(sizeof(hash64_t), tableSize);
+        hashes = (hash64_t *) calloc(tableSize, sizeof(hash64_t));
     }
 
 }
@@ -284,7 +284,7 @@ UnsortedBloomBuilder::UnsortedBloomBuilder(const __uint64 _fields, unsigned _max
   probability(_probability)
 {
     if (tableSize)
-        hashes = (hash64_t *) calloc(sizeof(hash64_t), tableSize);
+        hashes = (hash64_t *) calloc(tableSize, sizeof(hash64_t));
 }
 
 UnsortedBloomBuilder::~UnsortedBloomBuilder()

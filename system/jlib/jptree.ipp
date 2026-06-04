@@ -465,7 +465,7 @@ struct PtrStrUnion
 #endif
     };
 
-    inline PtrStrUnion<PTR>() : ptr(nullptr) {}
+    inline PtrStrUnion() : ptr(nullptr) {}
     inline bool isPtr() const
     {
         return (flag&1) == 0;

@@ -11118,7 +11118,7 @@ public:
         numSets = helper.getNumSets();
         setCounts = new unsigned[numSets];
         memset(setCounts, 0, sizeof(unsigned)*numSets);
-        limits = (count_t *)calloc(sizeof(count_t), numSets);
+        limits = (count_t *)calloc(numSets, sizeof(count_t));
         helper.getLimits(limits);
     }
 
@@ -11185,7 +11185,7 @@ public:
     virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CRoxieServerChooseSetsExActivity::doStart(parentExtractSize, parentExtract, paused);
-        numToSkip = (unsigned *)calloc(sizeof(unsigned), numSets);
+        numToSkip = (unsigned *)calloc(numSets, sizeof(unsigned));
     }
 
     virtual void reset() 
@@ -11232,7 +11232,7 @@ public:
     virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CRoxieServerChooseSetsExActivity::doStart(parentExtractSize, parentExtract, paused);
-        counter = (count_t *)calloc(sizeof(count_t), numSets);
+        counter = (count_t *)calloc(numSets, sizeof(count_t));
     }
 
     virtual void reset() 

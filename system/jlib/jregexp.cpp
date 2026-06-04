@@ -1544,7 +1544,7 @@ bool StringMatcher::queryAddEntry(unsigned len, const char * text, unsigned acti
             return true;
         }
         if (!curElement.table)
-            curElement.table = (entry *)calloc(sizeof(entry), 256);
+            curElement.table = (entry *)calloc(256, sizeof(entry));
         curTable = curElement.table;
     }
 

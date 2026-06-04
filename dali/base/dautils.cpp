@@ -2110,7 +2110,7 @@ public:
             filteredAdd(sortvalues,namefilterlo,namefilterhi,unknownAttributes,&iter.query());
         nv = sortvalues.ordinality();
         nk = sortKeys.ordinality();
-        vals = (char **)calloc(sizeof(char *),nv*nk);
+        vals = (char **)calloc(nv*nk, sizeof(char *));
         unsigned *idx=(unsigned *)malloc(sizeof(unsigned)*nv);
         unsigned i;
         for (i=0;i<nv;i++)
