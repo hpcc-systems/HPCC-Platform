@@ -2564,8 +2564,12 @@ public:
 
     virtual void reportLeaks(unsigned &leaked, const IContextLogger &logctx) const 
     {
-        logctx.CTXLOG("Block size %" I64F "u was allocated by activity %u and not freed", (unsigned __int64) chunkCapacity, getActivityId(allocatorId));
-        leaked--;
+        // This item may have been freed, but the memory has not been reclaimed yet
+        if (count.load(std::memory_order_relaxed) > 1)
+        {
+            logctx.CTXLOG("Block size %" I64F "u was allocated by activity %u and not freed", (unsigned __int64) chunkCapacity, getActivityId(allocatorId));
+            leaked--;
+        }
     }
 
     virtual void getPeakActivityUsage(IActivityMemoryUsageMap *map) const 
