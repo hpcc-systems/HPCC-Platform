@@ -91,6 +91,7 @@ public:
     MetricStat readTime[NumBuckets];
     MetricStat expandTime;
     MetricStat elapsedTime;
+    MetricStat openTime;
 
     __uint64 firstTimestamp{0};
     __uint64 lastTimestamp{0};
@@ -172,6 +173,11 @@ void EventSummaryMetrics::accumulate(const CEvent& event, const CMetaInfoState* 
             elapsedAccum += tmp;
         }
         payloads++;
+        break;
+    case EventIndexOpen:
+        tmp = event.queryNumericValue(EvAttrOpenTime);
+        if (tmp)
+            openTime.accumulate(tmp);
         break;
     default:
         break;
@@ -1160,6 +1166,7 @@ class CCsvGroupFormatter : public IGroupFormatter<EventSummaryMetrics>
         buf.append(",").append(metrics.loads - metrics.readTime[Total].count);
         appendStat(buf, metrics.expandTime, true);
         buf.append(",").append(metrics.elapsedTime.sum);
+        appendStat(buf, metrics.openTime, true);
         buf.append("\n");
         out->put(buf.length(), buf.str());
     }
@@ -1194,6 +1201,7 @@ public:
         buf.append(",ContentiousReads");
         appendStat(buf, "ExpandTime", true);
         buf.append(",ElapsedTimeTotal");
+        appendStat(buf, "OpenTime", true);
         buf.append("\n");
         out->put(buf.length(), buf.str());
     }
@@ -1231,11 +1239,49 @@ class CGenericGroupCollector : public CSummaryCollector
     std::vector<std::vector<std::string>> groupAttributesStrs;
     std::vector<std::vector<GroupAttribute>> groupAttributeIds;
     CGroupNode<EventSummaryMetrics> root;
+    size_t maxGroupLevelPerEvent[EventMax];
+
+    void initIndexOpenMaxGroupLevel()
+    {
+        CEvent prototype;
+        prototype.reset(EventIndexOpen);
+        for (size_t idx = groupAttributeIds.size(); idx > 0; --idx)
+        {
+            for (const GroupAttribute& attr : groupAttributeIds[idx - 1])
+            {
+                if (GroupAttributeExtractor::isApplicable(attr, prototype))
+                {
+                    maxGroupLevelPerEvent[EventIndexOpen] = idx;
+                    return;
+                }
+            }
+        }
+        maxGroupLevelPerEvent[EventIndexOpen] = 0;
+    }
 
 public:
     CGenericGroupCollector(CIndexFileSummary& _op, IBufferedSerialOutputStream* _out, const std::vector<std::vector<std::string>>& _attrStrs, const std::vector<std::vector<GroupAttribute>>& _attrIds)
         : CSummaryCollector(_op, IndexSummarization::byGroup, _out), groupAttributesStrs(_attrStrs), groupAttributeIds(_attrIds)
     {
+        for (unsigned idx = EventNone; idx < EventMax; ++idx)
+        {
+            switch (idx)
+            {
+            case EventIndexCacheHit:
+            case EventIndexCacheMiss:
+            case EventIndexLoad:
+            case EventIndexPayload:
+            case EventIndexEviction:
+                maxGroupLevelPerEvent[idx] = groupAttributeIds.size();
+                break;
+            case EventIndexOpen:
+                initIndexOpenMaxGroupLevel();
+                break;
+            default:
+                maxGroupLevelPerEvent[idx] = 0;
+                break;
+            }
+        }
     }
 
     virtual bool visitEvent(CEvent& event) override
@@ -1249,12 +1295,12 @@ public:
         case EventIndexLoad:
         case EventIndexPayload:
         case EventIndexEviction:
+        case EventIndexOpen:
+            root.process(event, &operation.queryMetaInfoState(), groupAttributeIds, 0, maxGroupLevelPerEvent[type]);
             break;
         default:
-            return true;
+            break;
         }
-
-        root.process(event, &operation.queryMetaInfoState(), groupAttributeIds, 0);
         return true;
     }
 

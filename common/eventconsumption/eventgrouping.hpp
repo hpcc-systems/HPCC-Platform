@@ -80,6 +80,7 @@ class event_decl GroupAttributeExtractor
 {
 public:
     static GroupAttribute parseAttribute(const char* attrDesc);
+    static bool isApplicable(const GroupAttribute& attr, const CEvent& event);
     static std::string getValue(const GroupAttribute& attr, const CEvent& event, const CMetaInfoState* metaState);
     static std::string formatValue(const GroupAttribute& attr, const std::string& rawValue);
     static __uint64 getHash(const std::vector<GroupAttribute>& attrs, const CEvent& event, const CMetaInfoState* metaState);
@@ -111,7 +112,7 @@ public:
     std::optional<TLeafAccumulator> leafSummary;
 
     void process(const CEvent& event, const CMetaInfoState* metaState,
-                 const std::vector<std::vector<GroupAttribute>>& hierarchy, size_t currentLevel)
+                 const std::vector<std::vector<GroupAttribute>>& hierarchy, size_t currentLevel, size_t maxApplicableDepth)
     {
         subTotal.accumulate(event, metaState);
 
@@ -122,6 +123,9 @@ public:
             leafSummary->accumulate(event, metaState);
             return;
         }
+
+        if (currentLevel >= maxApplicableDepth)
+            return;
 
         __uint64 hash = GroupAttributeExtractor::getHash(hierarchy[currentLevel], event, metaState);
         auto range = children.equal_range(hash);
@@ -140,7 +144,7 @@ public:
             it = children.emplace(hash, std::move(newNode));
         }
 
-        it->second->process(event, metaState, hierarchy, currentLevel + 1);
+        it->second->process(event, metaState, hierarchy, currentLevel + 1, maxApplicableDepth);
     }
 
     void render(IGroupFormatter<TLeafAccumulator, TSubtotalAccumulator>& formatter, const std::vector<std::string>& parentGroupValues, const std::vector<std::vector<GroupAttribute>>& hierarchy, size_t currentLevel, bool isRoot = false) const

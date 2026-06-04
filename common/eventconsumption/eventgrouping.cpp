@@ -119,6 +119,30 @@ std::string GroupAttributeExtractor::formatValue(const GroupAttribute& groupAttr
     return rawValue;
 }
 
+
+bool GroupAttributeExtractor::isApplicable(const GroupAttribute& groupAttr, const CEvent& event)
+{
+    unsigned attrId = groupAttr.attrId;
+    if (attrId == EvExtAttrLogicalFileName)
+    {
+        return event.isAttribute(EvAttrFileId);
+    }
+
+    EventAttr attr = (EventAttr)attrId;
+    switch (attr)
+    {
+    case EvAttrNodeKind:
+        return event.isAttribute(attr) || event.queryType() == EventIndexPayload;
+    case EvAttrServiceName:
+        return event.isAttribute(attr) || event.isAttribute(EvAttrEventTraceId);
+    case EvAttrPath:
+    case EvAttrPlane:
+        return event.isAttribute(attr) || event.isAttribute(EvAttrFileId);
+    default:
+        return event.isAttribute(attr);
+    }
+}
+
 std::string GroupAttributeExtractor::getValue(const GroupAttribute& groupAttr, const CEvent& event, const CMetaInfoState* metaState)
 {
     unsigned attrId = groupAttr.attrId;
@@ -199,12 +223,16 @@ __uint64 GroupAttributeExtractor::getHash(const std::vector<GroupAttribute>& att
         {
         case EvAttrNodeKind:
         {
-            __uint64 val = 0;
             if (event.hasAttribute(attr))
-                val = event.queryNumericValue(attr);
+            {
+                __uint64 val = event.queryNumericValue(attr);
+                hash = fnv1a(&val, sizeof(val), hash);
+            }
             else if (event.queryType() == EventIndexPayload)
-                val = 1;
-            hash = fnv1a(&val, sizeof(val), hash);
+            {
+                __uint64 val = 1;
+                hash = fnv1a(&val, sizeof(val), hash);
+            }
             break;
         }
         case EvAttrServiceName:
@@ -273,13 +301,21 @@ bool GroupAttributeExtractor::isEqual(const std::vector<GroupAttribute>& attrs, 
         {
         case EvAttrNodeKind:
         {
-            __uint64 val = 0;
             if (event.hasAttribute(attr))
-                val = event.queryNumericValue(attr);
+            {
+                if (expected != mapNodeKind((NodeKind)event.queryNumericValue(attr)))
+                    return false;
+            }
             else if (event.queryType() == EventIndexPayload)
-                val = 1;
-            if (expected != mapNodeKind((NodeKind)val))
-                return false;
+            {
+                if (expected != mapNodeKind((NodeKind)1))
+                    return false;
+            }
+            else
+            {
+                if (expected != "")
+                    return false;
+            }
             break;
         }
         case EvAttrServiceName:
