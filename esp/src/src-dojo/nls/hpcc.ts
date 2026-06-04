@@ -1242,6 +1242,7 @@ export = {
         WUSnapShot: "WU Snapshot",
         WUSnapshots: "WU Snapshots",
         WUSummary: "WU Summary",
+        WUErrorsWarnings: "Errors/Warnings",
         XGMML: "XGMML",
         XLS: "XLS",
         XML: "XML",

@@ -60,6 +60,11 @@ function redirectToWorkunits(params: Record<string, unknown>, search?: string): 
     return false;
 }
 
+function redirectToWUSummary(search?: string): false {
+    replaceUrl(`/workunits/wu-summary${search ?? ""}`);
+    return false;
+}
+
 const workunitsChildren: Route[] = [
     {
         path: "", action: (ctx) => import("./components/Workunits").then(_ => {
@@ -224,6 +229,13 @@ export const routes: RoutesEx = [
         ]
     },
     //  ECL  ---
+    {
+        mainNav: ["workunits"],
+        path: "/workunits/wu-summary", action: (ctx) => import("./components/WUSSummary").then(_ => {
+            const filter = parseSearch(ctx.search) as any;
+            return <_.WUSSummary from={filter?.from} to={filter?.to} />;
+        })
+    },
     {
         mainNav: ["workunits"],
         path: "/workunits",
@@ -481,10 +493,7 @@ export const routes: RoutesEx = [
                 })
             },
             {
-                path: "/wu-summary", action: (ctx) => import("./components/WUSSummary").then(_ => {
-                    const filter = parseSearch(ctx.search) as any;
-                    return <_.WUSSummary from={filter?.from} to={filter?.to} />;
-                })
+                path: "/wu-summary", action: (ctx) => redirectToWUSummary(ctx.search)
             },
             {
                 path: "/global-stats", action: (ctx) => import("./components/GlobalMetrics").then(_ => {
@@ -638,10 +647,7 @@ export const routes: RoutesEx = [
                 }]
             },
             {
-                path: "/wu-summary", action: (ctx) => import("./components/WUSSummary").then(_ => {
-                    const filter = parseSearch(ctx.search) as any;
-                    return <_.WUSSummary from={filter?.from} to={filter?.to} />;
-                })
+                path: "/wu-summary", action: (ctx) => redirectToWUSummary(ctx.search)
             },
             {
                 path: "/global-stats", action: (ctx) => import("./components/GlobalMetrics").then(_ => {

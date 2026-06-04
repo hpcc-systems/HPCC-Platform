@@ -187,6 +187,7 @@ const subMenuItems: SubMenuItems = {
         // TODO: Post Tech Preview { headerText: nlsHPCC.Dashboard, itemKey: "/workunits/dashboard" },
         { headerText: nlsHPCC.Playground, itemKey: "/play" },
         { headerText: nlsHPCC.Compare, itemKey: "/compare" },
+        { headerText: nlsHPCC.WUErrorsWarnings, itemKey: "/workunits/wu-summary" },
     ],
     "files": [
         { headerText: nlsHPCC.LogicalFiles, itemKey: "/files" },
@@ -203,7 +204,6 @@ const subMenuItems: SubMenuItems = {
         { headerText: nlsHPCC.Pods, itemKey: "/topology/pods" },
         { headerText: nlsHPCC.Services, itemKey: "/topology/services" },
         { headerText: nlsHPCC.Logs, itemKey: "/topology/logs" },
-        { headerText: nlsHPCC.WUSummary, itemKey: "/topology/wu-summary" },
         { headerText: nlsHPCC.GlobalMetrics, itemKey: "/topology/global-stats" },
         { headerText: nlsHPCC.Security + " (L)", itemKey: "/topology/security" },
         { headerText: nlsHPCC.DESDL + " (L)", itemKey: "/topology/desdl" },
@@ -216,7 +216,6 @@ const subMenuItems: SubMenuItems = {
         { headerText: nlsHPCC.TargetClusters + " (L)", itemKey: "/operations/clusters" },
         { headerText: nlsHPCC.ClusterProcesses + " (L)", itemKey: "/operations/processes" },
         { headerText: nlsHPCC.SystemServers + " (L)", itemKey: "/operations/servers" },
-        { headerText: nlsHPCC.WUSummary, itemKey: "/operations/wu-summary" },
         { headerText: nlsHPCC.GlobalMetrics, itemKey: "/operations/global-stats" },
         { headerText: nlsHPCC.Security + " (L)", itemKey: "/operations/security" },
         { headerText: nlsHPCC.DESDL + " (L)", itemKey: "/operations/desdl" },
