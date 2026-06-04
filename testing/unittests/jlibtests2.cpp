@@ -1226,7 +1226,8 @@ attribute: DataSize = 73
     IEventVisitor* createVisitor(StringBuffer& out)
     {
         Owned<IBufferedSerialOutputStream> stream = createBufferedSerialOutputStream(out);
-        Owned<IEventVisitor> visitor = createDumpTextEventVisitor(*stream);
+        Owned<CMetaInfoState> metaState = new CMetaInfoState();
+        Owned<IEventVisitor> visitor = createDumpTextEventVisitor(*stream, *metaState, DumpMetaFlag::None);
         return new MockEventVisitor(*visitor);
     }
 
