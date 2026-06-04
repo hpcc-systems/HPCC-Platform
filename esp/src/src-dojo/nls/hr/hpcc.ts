@@ -1160,6 +1160,8 @@ export = {
     Unlock: "Otključajte",
     UnlockSDSLock: "Otključaj SDS Lock",
     Unprotect: "Ukinite Zaštitu",
+    UnprotectAll: "Ukinite svu zaštitu",
+    UnprotectAllConfirm: "Jeste li sigurni da želite ukloniti svu zaštitu s ove datoteke?",
     UnsupportedIE9FF: "Nisu Podržani (IE <= 9, FireFox)",
     Unsuspend: "Ukinite Suspenziju",
     Unsuspended: "Suspenzija Ukinuta",

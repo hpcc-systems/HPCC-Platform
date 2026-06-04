@@ -1161,6 +1161,8 @@ export = {
     Unlock: "Откључај",
     UnlockSDSLock: "Откључај СДС Лоцк",
     Unprotect: "Укините Заштиту",
+    UnprotectAll: "Укините сву заштиту",
+    UnprotectAllConfirm: "Да ли сте сигурни да желите да уклоните сву заштиту са ове датотеке?",
     UnsupportedIE9FF: "Нису Подржани (ИЕ <= 9, ФиреФоx)",
     Unsuspend: "Укините Суспензију",
     Unsuspended: "Суспензија Укинута",

@@ -1163,6 +1163,8 @@ export = {
     Unlock: "Desbloquear",
     UnlockSDSLock: "Desabilitar SDS Lock",
     Unprotect: "Desprotege",
+    UnprotectAll: "Desproteger tudo",
+    UnprotectAllConfirm: "Tem certeza de que deseja remover todas as proteções deste arquivo?",
     UnsupportedIE9FF: "Não Supportado",
     Unsuspend: "Reativar",
     Unsuspended: "Reativado",
