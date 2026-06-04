@@ -3469,6 +3469,8 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIPTTest, "JlibIPTTest");
 #include <cstdlib>
 #include <thread>
 #include <atomic>
+#include <bitset>
+#include <functional>
 
 IPropertyTree *createCompatibilityConfigPropertyTree()
 {
@@ -3840,18 +3842,34 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeSerializationDeserializationTest, "PT
  *
  * Custom specific unittest parameters:
  * --PTreeBinaryTimingStressTest.path=/x/y/z/file.bin             Provide the Dali binary test data path. Can be .bin or .bin.zst (Zstd compressed)
- * --PTreeBinaryTimingStressTest.xmlIterations=5                  Override default XML timing iterations
- * --PTreeBinaryTimingStressTest.binaryIterations=32              Override default total iterations distributed across workers for binary thread tests
- * --PTreeBinaryTimingStressTest.binaryThreadCounts=1,2,4,8,16,32 CSV list of thread counts used by binary thread tests
+ * --PTreeBinaryTimingStressTest.iterations=8                     Total iterations per selected mode
+ * --PTreeBinaryTimingStressTest.threadCounts=1,2,4               CSV list of thread counts used by timing tests
+ * --PTreeBinaryTimingStressTest.modes=bin-normal,bin-lowmem,xml-normal,xml-lowmem
+ *                                                                CSV list of explicit benchmark modes. Default runs all four.
+ * --PTreeBinaryTimingStressTest.validateContent=0                Validate that ipt_lowmem re-serializes byte-for-byte identically to the ipt_none reference (default: 0=off)
+ * --PTreeBinaryTimingStressTest.excludeDtorTime=1                Exclude tree destructor time from per-thread measurements via CCycleTimer; wall=max(perThread) (default: 1=on)
  */
 class PTreeBinaryTimingStressTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(PTreeBinaryTimingStressTest);
-    CPPUNIT_TEST(testBinaryTimingSingleAndMultiThreadWithNormalVsLowMem);
-    CPPUNIT_TEST(testXMLTimingWithNormalVsLowMem);
+    CPPUNIT_TEST(testPTreeTiming);
     CPPUNIT_TEST_SUITE_END();
 
 public:
+    enum ModeIndex : unsigned
+    {
+        modeBinNormal = 0,
+        modeBinLowMem,
+        modeXmlNormal,
+        modeXmlLowMem,
+        modeCount
+    };
+
+    bool modeEnabled(ModeIndex mode) const
+    {
+        return enabledModes.test(mode);
+    }
+
     PTreeBinaryTimingStressTest()
     {
         getComponentConfigSP()->getProp("PTreeBinaryTimingStressTest/@path", binaryPath);
@@ -3862,91 +3880,218 @@ public:
             binaryPath.append(relativeBinPath);
         }
 
-        // XML is roughly 5x slower than binary and so it would be a waste of time to only have one iteration argument.
-        // For example, if we had 32 iterations then the XML test would take 10 * 2 * 32 = 640 seconds to execute.
-        xmlIterations = (unsigned)getComponentConfigSP()->getPropInt("PTreeBinaryTimingStressTest/@xmlIterations", 5);
-        CPPUNIT_ASSERT_MESSAGE("PTree XML timing test xmlIterations must be greater than zero and <= 1000000", xmlIterations > 0 && xmlIterations <= 1000000);
+        iterations = (unsigned)getComponentConfigSP()->getPropInt("PTreeBinaryTimingStressTest/@iterations", 8);
+        constexpr unsigned maxIterations = 32 * 50;  // 1600
+        CPPUNIT_ASSERT_MESSAGE(VStringBuffer("PTree timing test iterations must be greater than zero and <= %u", maxIterations).str(), iterations > 0 && iterations <= maxIterations);
 
-        binaryIterations = (unsigned)getComponentConfigSP()->getPropInt("PTreeBinaryTimingStressTest/@binaryIterations", 32);
-        CPPUNIT_ASSERT_MESSAGE("PTree binary parallel contention binaryIterations must be greater than zero and <= 1000000", binaryIterations > 0 && binaryIterations <= 1000000);
-
-        const char *binaryThreadCountsCsv = getComponentConfigSP()->queryProp("PTreeBinaryTimingStressTest/@binaryThreadCounts", "1,2,4,8,16,32");
+        const char *threadCountsCsv = getComponentConfigSP()->queryProp("PTreeBinaryTimingStressTest/@threadCounts", "1,2,4");
         StringArray tokens;
-        tokens.appendListUniq(binaryThreadCountsCsv, ",", true);
+        tokens.appendListUniq(threadCountsCsv, ",", true);
         ForEachItemIn(i, tokens)
         {
             unsigned val = (unsigned)atoi(tokens.item(i));
             CPPUNIT_ASSERT_MESSAGE(VStringBuffer("Invalid thread count: %s", tokens.item(i)).str(), val > 0);
             CPPUNIT_ASSERT_MESSAGE(VStringBuffer("Thread count %u exceeds maximum allowed (1024) to prevent resource exhaustion", val).str(), val <= 1024);
-            CPPUNIT_ASSERT_MESSAGE(VStringBuffer("PTree binary parallel contention binaryIterations (%u) must be a multiple of thread count (%u)", binaryIterations, val).str(), binaryIterations % val == 0);
-            binaryThreadCounts.push_back(val);
+            threadCounts.push_back(val);
         }
-        CPPUNIT_ASSERT_MESSAGE("PTree binary parallel contention binaryThreadCounts must contain at least one positive integer", !binaryThreadCounts.empty());
-    }
-
-    void testBinaryTimingSingleAndMultiThreadWithNormalVsLowMem()
-    {
-        MemoryBuffer binaryData;
-        readBinaryFile(binaryData);
-
-        DBGLOG("=== BINARY PARALLEL TIMING COMPARISON TEST (size=%u bytes, iters=%u) ===", binaryData.length(), binaryIterations);
-        DBGLOG("%7s %12s %12s %12s %12s %12s", "Threads", "Normal(ms)", "N.Avg(ms)", "LowMem(ms)", "LM.Avg(ms)", "Diff(%)");
-
-        for (unsigned threadCount : binaryThreadCounts)
+        CPPUNIT_ASSERT_MESSAGE("PTree timing threadCounts must contain at least one positive integer", !threadCounts.empty());
+        for (unsigned threadCount : threadCounts)
         {
-            TimingResults normalResults;
-            CCycleTimer normalTimer;
-            runParallelBinaryTest(binaryData, threadCount, ipt_none);
-            normalResults.wallMs = normalTimer.elapsedNs() / 1e6;
-            normalResults.avgMs = normalResults.wallMs / binaryIterations;
-
-            TimingResults lowMemResults;
-            CCycleTimer lowMemTimer;
-            runParallelBinaryTest(binaryData, threadCount, ipt_lowmem);
-            lowMemResults.wallMs = lowMemTimer.elapsedNs() / 1e6;
-            lowMemResults.avgMs = lowMemResults.wallMs / binaryIterations;
-
-            // it would be possible on a very fast processor for the wallMs to be zero (e.g. a root only tree) hence the test below
-            double diffWall = (normalResults.wallMs > 0) ? calculatePercentDiff(normalResults.wallMs, lowMemResults.wallMs) : 0.0;
-
-            DBGLOG("%7u %12.3f %12.3f %12.3f %12.3f %+12.2f", threadCount, normalResults.wallMs, normalResults.avgMs, lowMemResults.wallMs,
-                   lowMemResults.avgMs, diffWall);
+            CPPUNIT_ASSERT_MESSAGE(VStringBuffer("PTree timing test iterations (%u) must be a multiple of threadCount (%u)", iterations, threadCount).str(),
+                                   (iterations % threadCount) == 0);
         }
+
+        enabledModes.set();
+        const char *modesCsv = getComponentConfigSP()->queryProp("PTreeBinaryTimingStressTest/@modes");
+        if (!isEmptyString(modesCsv))
+        {
+            enabledModes.reset();
+
+            StringArray modeTokens;
+            modeTokens.appendListUniq(modesCsv, ",", true);
+            ForEachItemIn(modeIdx, modeTokens)
+            {
+                const char *token = modeTokens.item(modeIdx);
+                if (strieq(token, "bin-normal"))
+                    enabledModes.set(modeBinNormal);
+                else if (strieq(token, "bin-lowmem"))
+                    enabledModes.set(modeBinLowMem);
+                else if (strieq(token, "xml-normal"))
+                    enabledModes.set(modeXmlNormal);
+                else if (strieq(token, "xml-lowmem"))
+                    enabledModes.set(modeXmlLowMem);
+                else
+                    CPPUNIT_ASSERT_MESSAGE(VStringBuffer("Unknown mode token in PTreeBinaryTimingStressTest/@modes: %s", token).str(), false);
+            }
+        }
+        CPPUNIT_ASSERT_MESSAGE("PTree timing test requires at least one enabled mode", enabledModes.any());
+
+        validateContent = getComponentConfigSP()->getPropBool("PTreeBinaryTimingStressTest/@validateContent", false);
+        excludeDtorTime = getComponentConfigSP()->getPropBool("PTreeBinaryTimingStressTest/@excludeDtorTime", true);
     }
 
-    void testXMLTimingWithNormalVsLowMem()
+    void testPTreeTiming()
     {
-        MemoryBuffer binaryData;
-        readBinaryFile(binaryData);
+        START_TEST
 
-        binaryData.reset();
-        Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(binaryData);
-        Owned<IPropertyTree> tree = createPTreeFromBinary(*in, ipt_none);
-        StringBuffer xmlOutput;
-        toXML(tree, xmlOutput);
+        MemoryBuffer binaryInput;
+        readBinaryFile(binaryInput);
 
-        TimingResults xmlNormalResults;
-        CCycleTimer xmlNormalTimer;
-        runXMLTimingTest(xmlOutput.str(), xmlIterations, ipt_none);
-        xmlNormalResults.wallMs = xmlNormalTimer.elapsedNs() / 1e6;
-        xmlNormalResults.avgMs = xmlNormalResults.wallMs / xmlIterations;
+        StringBuffer xmlInput;
+        bool runAnyXml = modeEnabled(modeXmlNormal) || modeEnabled(modeXmlLowMem);
+        if (runAnyXml)
+        {
+            MemoryBuffer input;
+            input.setBuffer(binaryInput.length(), (void *)binaryInput.bufferBase(), false);
+            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(input.reset());
+            Owned<IPropertyTree> tree = createPTreeFromBinary(*in, ipt_none);
+            toXML(tree, xmlInput);
+            DBGLOG("=== XML INPUT PREPARED (size=%u bytes, iters=%u) ===", xmlInput.length(), iterations);
+        }
 
-        TimingResults xmlLowMemResults;
-        CCycleTimer xmlLowMemTimer;
-        runXMLTimingTest(xmlOutput.str(), xmlIterations, ipt_lowmem);
-        xmlLowMemResults.wallMs = xmlLowMemTimer.elapsedNs() / 1e6;
-        xmlLowMemResults.avgMs = xmlLowMemResults.wallMs / xmlIterations;
+        unsigned enabledModeCount = 0;
+        ModeIndex baselineMode = modeCount;
+        for (unsigned mode = 0; mode < modeCount; ++mode)
+        {
+            ModeIndex modeIndex = (ModeIndex)mode;
+            if (modeEnabled(modeIndex))
+            {
+                if (enabledModeCount == 0)
+                    baselineMode = modeIndex;
+                ++enabledModeCount;
+            }
+        }
+        CPPUNIT_ASSERT_MESSAGE("PTree timing test requires at least one enabled mode", enabledModeCount > 0);
 
-        // it would be possible on a very fast processor for the wallMs to be zero (e.g. a root only tree) hence the test below
-        double diffWall = (xmlNormalResults.wallMs > 0) ? calculatePercentDiff(xmlNormalResults.wallMs, xmlLowMemResults.wallMs) : 0.0;
+        // Build the ipt_none reference binary only when validating an enabled lowmem mode.
+        // Re-serializing an ipt_none tree produces a stable byte sequence after any one-way format
+        // upgrades (e.g. legacy LZW). Comparing ipt_lowmem re-serialization against this reference
+        // catches atomization bugs (wrong atom -> wrong string -> different bytes).
+        validateContent = validateContent && modeEnabled(modeBinLowMem);
+        MemoryBuffer referenceBin;
+        if (validateContent)
+            buildReferenceBinary(binaryInput, referenceBin);
 
-        DBGLOG("=== XML TIMING COMPARISON TEST (size=%u bytes, iters=%u) ===", xmlOutput.length(), xmlIterations);
-        DBGLOG("%7s %12s %12s %12s %12s %12s", "Threads", "Normal(ms)", "N.Avg(ms)", "LowMem(ms)", "LM.Avg(ms)", "Diff(%)");
-        DBGLOG("%7s %12.3f %12.3f %12.3f %12.3f %+12.2f", "1", xmlNormalResults.wallMs, xmlNormalResults.avgMs, xmlLowMemResults.wallMs, xmlLowMemResults.avgMs,
-               diffWall);
+        bool anyComparing = enabledModeCount > 1;
+        StringBuffer header;
+        header.appendf("%7s", "Threads");
+        for (unsigned mode = 0; mode < modeCount; ++mode)
+        {
+            ModeIndex modeIndex = (ModeIndex)mode;
+            if (!modeEnabled(modeIndex))
+                continue;
+
+            const char *modeTag = queryModeToken(modeIndex);
+            header.appendf(" %12s %12s", modeTag, "Avg(ms)");
+            if (anyComparing && modeIndex != baselineMode)
+                header.appendf(" %12s", "Diff(%)");
+        }
+        DBGLOG("=== PTree PARALLEL BENCHMARK (size=%u bytes, iters=%u, dtor=%s, validate=%s) ===",
+                binaryInput.length(), iterations,
+                excludeDtorTime ? "excluded" : "included",
+                validateContent ? "on" : "off");
+        DBGLOG("%s", header.str());
+        if (anyComparing)
+            DBGLOG("Diff baseline mode: %s", queryModeToken(baselineMode));
+
+        const MemoryBuffer *binaryValidationReference = validateContent ? &referenceBin : nullptr;
+
+        for (unsigned threadCount : threadCounts)
+        {
+            std::vector<double> modeTimings;
+            modeTimings.reserve(enabledModeCount);
+
+            for (unsigned mode = 0; mode < modeCount; ++mode)
+            {
+                ModeIndex modeIndex = (ModeIndex)mode;
+                if (!modeEnabled(modeIndex))
+                    continue;
+
+                switch (modeIndex)
+                {
+                    case modeBinNormal:
+                        modeTimings.push_back(runBinaryMode(threadCount, binaryInput, ipt_none, nullptr));
+                        break;
+                    case modeBinLowMem:
+                        modeTimings.push_back(runBinaryMode(threadCount, binaryInput, ipt_lowmem, binaryValidationReference));
+                        break;
+                    case modeXmlNormal:
+                        modeTimings.push_back(runXmlMode(threadCount, xmlInput, ipt_none, nullptr));
+                        break;
+                    case modeXmlLowMem:
+                        modeTimings.push_back(runXmlMode(threadCount, xmlInput, ipt_lowmem, nullptr));
+                        break;
+                    default:
+                        CPPUNIT_FAIL("Unknown benchmark mode");
+                        break;
+                }
+            }
+
+            const double baseline = modeTimings[0];
+            StringBuffer row;
+            row.appendf("%7u", threadCount);
+
+            for (unsigned i = 0; i < modeTimings.size(); ++i)
+            {
+                const double wallMs = modeTimings[i];
+                row.appendf(" %12.3f %12.3f", wallMs, wallMs / iterations);
+                if (anyComparing && i > 0)
+                {
+                    double diff = (baseline > 0.0) ? calculatePercentDiff(baseline, wallMs) : 0.0;
+                    row.appendf(" %+12.2f", diff);
+                }
+            }
+            DBGLOG("%s", row.str());
+        }
+
+        END_TEST
     }
 
 protected:
+    const char *queryModeToken(ModeIndex mode) const
+    {
+        switch (mode)
+        {
+        case modeBinNormal:
+            return "bin-normal";
+        case modeBinLowMem:
+            return "bin-lowmem";
+        case modeXmlNormal:
+            return "xml-normal";
+        case modeXmlLowMem:
+            return "xml-lowmem";
+        default:
+            return "unknown";
+        }
+    }
+
+    double runBinaryMode(unsigned threadCount, const MemoryBuffer &binaryInput, unsigned ptreeFlags,
+                         const MemoryBuffer *validationReference)
+    {
+        auto createTreeFunc = [&]()
+        {
+            MemoryBuffer workingBuffer;
+            workingBuffer.setBuffer(binaryInput.length(), (void *)binaryInput.bufferBase(), false);
+            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(workingBuffer.reset());
+            return createPTreeFromBinary(*in, ptreeFlags);
+        };
+
+        validateMode(createTreeFunc, validationReference);
+        return runParallelTimingTest(threadCount, createTreeFunc);
+    }
+
+    double runXmlMode(unsigned threadCount, const char *xmlInput, unsigned ptreeFlags,
+                       const MemoryBuffer *validationReference)
+    {
+        auto createTreeFunc = [&]()
+        {
+            return createPTreeFromXMLString(xmlInput, ptreeFlags, ptr_ignoreWhiteSpace, nullptr);
+        };
+
+        validateMode(createTreeFunc, validationReference);
+        return runParallelTimingTest(threadCount, createTreeFunc);
+    }
+
     static double calculatePercentDiff(double baseline, double result)
     {
         CPPUNIT_ASSERT_MESSAGE("Baseline timing must be greater than zero", baseline > 0.0);
@@ -3954,28 +4099,74 @@ protected:
         return ((result - baseline) / baseline) * 100.0;
     }
 
-    struct TimingResults
+    // Deserialize binaryData with ipt_none and re-serialize into referenceBin.
+    void buildReferenceBinary(const MemoryBuffer &binaryData, MemoryBuffer &referenceBin)
     {
-        double wallMs = 0.0;
-        double avgMs = 0.0;
-    };
+        MemoryBuffer buf;
+        buf.setBuffer(binaryData.length(), (void *)binaryData.bufferBase(), false);
+        Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(buf.reset());
+        Owned<IPropertyTree> refTree = createPTreeFromBinary(*in, ipt_none);
+        Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(referenceBin);
+        refTree->serializeToStream(*out);
+        out->flush();
+    }
 
-    void runParallelBinaryTest(const MemoryBuffer &binaryData, unsigned threadCount, byte flags)
+    // Re-serialize tree and compare against referenceBin; throws on mismatch.
+    void validateTree(const IPropertyTree *tree, const MemoryBuffer &referenceBin)
     {
-        const unsigned itersPerThread = binaryIterations / threadCount;
+        MemoryBuffer candidateBin;
+        Owned<IBufferedSerialOutputStream> out = createBufferedSerialOutputStream(candidateBin);
+        tree->serializeToStream(*out);
+        out->flush();
+        if (candidateBin.length() != referenceBin.length() ||
+            memcmp(candidateBin.toByteArray(), referenceBin.toByteArray(), referenceBin.length()) != 0)
+        {
+            throw makeStringExceptionV(-1,
+                "Content validation FAILED: re-serialization of "
+                "(%u bytes) does not match ipt_none reference (%u bytes)",
+                candidateBin.length(), referenceBin.length());
+        }
+    }
+
+    void validateMode(const std::function<IPropertyTree *()> &createTreeFunc,
+                      const MemoryBuffer *validationReference)
+    {
+        if (!validationReference)
+            return;
+
+        Owned<IPropertyTree> validationTree = createTreeFunc();
+        validateTree(validationTree, *validationReference);
+    }
+
+    // Run iterations cycles on threadCount threads in parallel using createTreeFunc.
+    //
+    // When excludeDtorTime is true (default): each timed iteration uses CCycleTimer snapped
+    // immediately after tree creation. Wall time is
+    // reported as max(per-thread cycles), giving the parallel critical path without dtor noise.
+    //
+    // When excludeDtorTime is false: wall clock spans the entire run, including dtors.
+    //
+    // Returns wall time in milliseconds.
+    double runParallelTimingTest(unsigned threadCount,
+                                 const std::function<IPropertyTree *()> &createTreeFunc)
+    {
         std::atomic<bool> stop{false};
+        std::vector<uint64_t> perThreadCycles(threadCount, 0);
 
-        auto workerTask = [&]()
+        auto workerTask = [&](unsigned threadIdx)
         {
             try
             {
-                MemoryBuffer workingBuffer;
-                for (unsigned i = 0; i < itersPerThread && !stop; ++i)
+                const unsigned itersThisThread = iterations / threadCount;
+
+                uint64_t myCycles = 0;
+                for (unsigned i = 0; i < itersThisThread && !stop; ++i)
                 {
-                    workingBuffer.setBuffer(binaryData.length(), (void *)binaryData.bufferBase(), false);
-                    Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(workingBuffer.reset());
-                    Owned<IPropertyTree> tree = createPTreeFromBinary(*in, flags);
+                    CCycleTimer iterTimer;
+                    Owned<IPropertyTree> tree = createTreeFunc();
+                    myCycles += iterTimer.elapsedCycles();
                 }
+                perThreadCycles[threadIdx] = myCycles;
             }
             catch(IException *)
             {
@@ -3989,10 +4180,12 @@ protected:
             }
         };
 
+        CCycleTimer wallTimer;
+
         try
         {
             if (threadCount == 1)
-                workerTask();
+                workerTask(0);
             else
             {
                 std::vector<std::future<void>> futures;
@@ -4002,7 +4195,7 @@ protected:
                 try
                 {
                     for (unsigned i = 0; i < threadCount; ++i)
-                        futures.emplace_back(std::async(std::launch::async, workerTask));
+                        futures.emplace_back(std::async(std::launch::async, [&, i]() { workerTask(i); }));
                 }
                 catch (const std::exception &e)
                 {
@@ -4041,23 +4234,17 @@ protected:
             e->Release();
             CPPUNIT_FAIL(errMsg.str());
         }
-    }
 
-    void runXMLTimingTest(const char *xml, unsigned iterations, byte flags)
-    {
-        try
+        if (excludeDtorTime)
         {
-            for (unsigned i = 0; i < iterations; ++i)
-            {
-                Owned<IPropertyTree> tree = createPTreeFromXMLString(xml, flags, ptr_ignoreWhiteSpace, nullptr);
-            }
+            // Wall = max(per-thread deser-only cycles): parallel critical path, dtor excluded.
+            uint64_t maxCycles = *std::max_element(perThreadCycles.begin(), perThreadCycles.end());
+            return (double)cycle_to_nanosec(maxCycles) / 1e6;
         }
-        catch (IException *e)
+        else
         {
-            StringBuffer errMsg;
-            e->errorMessage(errMsg);
-            e->Release();
-            CPPUNIT_FAIL(errMsg.str());
+            // Wall = actual elapsed time including dtors and any first-iter validation overhead.
+            return (double)wallTimer.elapsedNs() / 1e6;
         }
     }
 
@@ -4128,9 +4315,11 @@ protected:
     }
 
     StringBuffer binaryPath;
-    unsigned xmlIterations = 0;
-    unsigned binaryIterations = 0;
-    std::vector<unsigned> binaryThreadCounts;
+    unsigned iterations = 0;
+    std::vector<unsigned> threadCounts;
+    std::bitset<modeCount> enabledModes;
+    bool validateContent{false};
+    bool excludeDtorTime{true};
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(PTreeBinaryTimingStressTest);
