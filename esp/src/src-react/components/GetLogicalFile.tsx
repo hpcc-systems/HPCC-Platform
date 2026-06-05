@@ -1,69 +1,27 @@
 import * as React from "react";
-import { DefaultButton, DetailsList, DetailsListLayoutMode, IColumn } from "@fluentui/react";
-import { SizeMe } from "../layouts/SizeMe";
-import { csvParse } from "d3-dsv";
-import { DaliService, WsDali } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
-import { TableGroup } from "./forms/Groups";
+import { daliService } from "../comms/dali";
+import { useDaliResult } from "../hooks/useDaliResult";
+import { DaliAdminForm } from "./DaliAdminForm";
 import nlsHPCC from "src/nlsHPCC";
-import { HolyGrail } from "../layouts/HolyGrail";
-
-class MyDaliService extends DaliService {
-    GetLogicalFile(request: WsDali.GetLogicalFileRequest): Promise<WsDali.ResultResponse> {
-        return this._connection.send("GetLogicalFile", request, "json", false, undefined, "ResultResponse");
-    }
-}
 
 const logger = scopedLogger("src-react/components/GetLogicalFile.tsx");
 
-const myDaliService = new MyDaliService({ baseUrl: "" });
-
-interface GetLogicalFileProps {
-}
-
-export const GetLogicalFile: React.FunctionComponent<GetLogicalFileProps> = ({
-
-}) => {
-
-    const [columns, setColumns] = React.useState<IColumn[]>([]);
-    const [items, setItems] = React.useState<any[]>([]);
-    const [fileName, setFileName] = React.useState<string>("");
+export const GetLogicalFile: React.FunctionComponent = () => {
+    const { columns, items, setResult } = useDaliResult();
+    const [fileName, setFileName] = React.useState("");
 
     const onSubmit = React.useCallback(() => {
-        myDaliService.GetLogicalFile({ FileName: fileName }).then(response => {
-            const data = csvParse(response.Result);
-            setColumns(data.columns.map((col, idx) => {
-                return {
-                    key: col,
-                    name: col,
-                    fieldName: col,
-                    minWidth: 100
-                };
-            }));
-            setItems(data);
-        }).catch(err => logger.error(err));
-    }, [fileName]);
+        daliService.GetLogicalFile({ FileName: fileName })
+            .then(response => setResult(response.Result))
+            .catch(err => logger.error(err));
+    }, [fileName, setResult]);
 
-    return <HolyGrail
-        header={<span><TableGroup fields={{
-            "FileName": { label: nlsHPCC.FileName, type: "string", value: fileName },
-        }} onChange={(id, value) => {
-            setFileName(value);
-        }} /><DefaultButton onClick={onSubmit} text={nlsHPCC.Submit} /></span>}
-        main={<SizeMe>{({ size }) => {
-            const height = `${size.height}px`;
-            return <div style={{ position: "relative", width: "100%", height: "100%" }}>
-                <div style={{ position: "absolute", width: "100%", height: `${size.height}px` }}>
-                    <DetailsList compact={true}
-                        items={items}
-                        columns={columns}
-                        setKey="key"
-                        layoutMode={DetailsListLayoutMode.justified}
-                        selectionPreservedOnEmptyClick={true}
-                        styles={{ root: { height, minHeight: height, maxHeight: height } }}
-                    />
-                </div>
-            </div>;
-        }}</SizeMe>}
+    return <DaliAdminForm
+        fields={{ "FileName": { label: nlsHPCC.FileName, type: "string", value: fileName } }}
+        onChange={(_, v) => setFileName(v)}
+        onSubmit={onSubmit}
+        columns={columns}
+        items={items}
     />;
-}; 
+};
