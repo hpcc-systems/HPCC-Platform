@@ -157,6 +157,7 @@ target_link_libraries ( unittests
          logginglib
          workunit
          eventconsumption
+         dmetaphone
          ${CppUnit_LIBRARIES}
     )
 

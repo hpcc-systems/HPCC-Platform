@@ -18,7 +18,7 @@
 // Analysis should show: Significant skew in DISTRIBUTE output
 //
 // NOTE: For faster nodes, it may be necessary to increase the size of testfile
-#ONWARNING(30002,ignore);
+#ONWARNING(31003,ignore);
 //nokey
 //noroxie
 //nohthor
@@ -38,5 +38,3 @@ visitcounts := TABLE(DISTRIBUTE(visits,HASH32(timestamp%2)),
                      layout_visitCounts,url,LOCAL);
 
 PARALLEL(OUTPUT(visitcounts), Helper.saveWUID('hashdistrib2'));
-
-

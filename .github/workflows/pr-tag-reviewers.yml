@@ -1,0 +1,294 @@
+name: PR Tag Reviewers
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize, ready_for_review]
+    branches:
+      - "master"
+      - "candidate-*"
+
+  # Trigger after selected long-running CI workflows complete.
+  workflow_run:
+    types: [completed]
+    workflows:
+      - "Tagged Build (build-assets.yml)"
+      - "PR Build and Test (build-vcpkg.yml)"
+      - "pr-metadata-check"
+      - "pr-sign-check"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.workflow_run.id || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  sync-tagged-reviewers:
+    runs-on: ubuntu-latest
+
+    # For workflow_run events, only proceed on successful completion.
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Sync requested reviewers from PR body when merge-ready
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+            function parseReviewersFromBody(body) {
+              const text = body || "";
+              const lines = text.split(/\r?\n/);
+              let line = null;
+              let lineNumber = null;
+
+              for (let index = 0; index < lines.length; index++) {
+                if (/^\s*Reviewers\s*:/i.test(lines[index])) {
+                  line = lines[index];
+                  lineNumber = index + 1;
+                  break;
+                }
+              }
+
+              if (!line) {
+                core.info('Tracing: no Reviewers: line found in PR body.');
+                return { users: [], teams: [] };
+              }
+
+              const tail = line.replace(/^\s*Reviewers\s*:/i, " ");
+              const sanitizedTail = JSON.stringify(tail);
+              const mentionRegex = /@([A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)?)/g;
+
+              const users = new Set();
+              const teams = new Set();
+              let match;
+              core.info(`Tracing: Reviewers line matched at body line ${lineNumber}: ${line}`);
+              core.info(`Tracing: Reviewers tail (sanitized): ${sanitizedTail}`);
+              while ((match = mentionRegex.exec(tail)) !== null) {
+                const token = match[1].trim();
+                if (!token) {
+                  core.info('Tracing: skipped empty mention token.');
+                  continue;
+                }
+                core.info(`Tracing: found mention token: ${token}`);
+                if (token.includes('/')) {
+                  teams.add(token.toLowerCase());
+                } else {
+                  users.add(token.toLowerCase());
+                }
+              }
+
+              core.info(`Tracing: parsed reviewers -> users=[${[...users].join(', ')}], teams=[${[...teams].join(', ')}]`);
+
+              return {
+                users: [...users],
+                teams: [...teams],
+              };
+            }
+
+            async function getPullRequestWithRetry(owner, repo, prNumber, retries = 5, delayMs = 3000) {
+              let pr = null;
+
+              for (let attempt = 1; attempt <= retries; attempt++) {
+                const data = await github.graphql(
+                  `query($owner: String!, $repo: String!, $number: Int!) {
+                    repository(owner: $owner, name: $repo) {
+                      pullRequest(number: $number) {
+                        number
+                        body
+                        isDraft
+                        mergeable
+                        mergeStateStatus
+                        author {
+                          login
+                        }
+                        reviewRequests(first: 100) {
+                          nodes {
+                            requestedReviewer {
+                              __typename
+                              ... on User {
+                                login
+                              }
+                              ... on Team {
+                                slug
+                                organization {
+                                  login
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }`,
+                  { owner, repo, number: prNumber }
+                );
+
+                pr = data?.repository?.pullRequest;
+                if (!pr) return null;
+
+                if (pr.mergeable !== 'UNKNOWN' && pr.mergeStateStatus !== 'UNKNOWN') {
+                  return pr;
+                }
+
+                core.info(`PR #${prNumber} mergeability is UNKNOWN (attempt ${attempt}/${retries}); retrying...`);
+                await sleep(delayMs);
+              }
+
+              return pr;
+            }
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Add one reviewer at a time so invalid mentions do not block valid ones.
+            async function requestReviewer(prNumber, user, team, failures) {
+              try {
+                let teamSlug = null;
+                if (team) {
+                  // PR body may use @org/team, but requestReviewers expects only team slug.
+                  const parts = team.split('/');
+                  if (parts.length === 2) {
+                    const mentionOrg = (parts[0] || '').toLowerCase();
+                    const repoOwner = owner.toLowerCase();
+                    if (mentionOrg !== repoOwner) {
+                      const message = `team mention @${team} is outside repo owner org @${repoOwner}; cannot request as reviewer`;
+                      core.warning(`PR #${prNumber}: ${message}`);
+                      failures.push(`PR #${prNumber} team @${team}: ${message}`);
+                      return;
+                    }
+                    teamSlug = parts[1];
+                  } else {
+                    teamSlug = team;
+                  }
+                }
+
+                await github.rest.pulls.requestReviewers({
+                  owner,
+                  repo,
+                  pull_number: prNumber,
+                  reviewers: user ? [user] : [],
+                  team_reviewers: teamSlug ? [teamSlug] : [],
+                });
+              } catch (err) {
+                const message = err?.message || String(err);
+                const label = user ? `user @${user}` : `team @${team}`;
+                core.warning(`PR #${prNumber}: failed to add ${label}: ${message}`);
+                failures.push(`PR #${prNumber} ${label}: ${message}`);
+              }
+            }
+
+            // Resolve PR numbers from either pull_request or workflow_run payloads.
+            function getPrNumbersFromEvent() {
+              const candidatePrNumbers = [];
+              const directPr = context.payload.pull_request?.number;
+              if (directPr) {
+                candidatePrNumbers.push(directPr);
+              }
+
+              if (context.eventName === 'workflow_run') {
+                const prs = context.payload.workflow_run?.pull_requests || [];
+                for (const p of prs) {
+                  if (p?.number) {
+                    candidatePrNumbers.push(p.number);
+                  }
+                }
+              }
+
+              return [...new Set(candidatePrNumbers)];
+            }
+
+            async function syncReviewersForPr(prNumber) {
+              const failures = [];
+              const pr = await getPullRequestWithRetry(owner, repo, prNumber);
+              if (!pr) {
+                core.info(`Unable to resolve PR #${prNumber}; skipping.`);
+                return failures;
+              }
+
+              // Gate only on review-readiness: not draft, no merge conflicts.
+              if (pr.isDraft || pr.mergeable !== 'MERGEABLE') {
+                core.info(
+                  `PR #${pr.number} is not review-ready yet: draft=${pr.isDraft}, mergeable=${pr.mergeable}, mergeStateStatus=${pr.mergeStateStatus}`
+                );
+                return failures;
+              }
+
+              // Parse desired reviewers from a single "Reviewers:" line in body.
+              const desired = parseReviewersFromBody(pr.body);
+              const authorLogin = pr.author?.login?.toLowerCase();
+              if (authorLogin) {
+                core.info(`Tracing: removing author from reviewer list: ${authorLogin}`);
+                desired.users = desired.users.filter((u) => u !== authorLogin);
+              }
+
+              if (!desired.users.length && !desired.teams.length) {
+                core.info(`PR #${pr.number}: no valid @mentions found on a Reviewers: line; no reviewer updates applied.`);
+                return failures;
+              }
+
+              const currentUsers = new Set();
+              const currentTeams = new Set();
+
+              for (const req of pr.reviewRequests?.nodes || []) {
+                const reviewer = req?.requestedReviewer;
+                if (reviewer?.__typename === 'User') {
+                  currentUsers.add(reviewer.login.toLowerCase());
+                } else if (reviewer?.__typename === 'Team') {
+                  currentTeams.add(`${reviewer.organization.login.toLowerCase()}/${reviewer.slug.toLowerCase()}`);
+                }
+              }
+
+              const toAddUsers = desired.users.filter((u) => !currentUsers.has(u));
+              const toAddTeams = desired.teams.filter((t) => !currentTeams.has(t));
+
+              core.info(
+                `Tracing: current reviewers -> users=[${[...currentUsers].join(', ')}], teams=[${[...currentTeams].join(', ')}]`
+              );
+              core.info(`Tracing: reviewers to add -> users=[${toAddUsers.join(', ')}], teams=[${toAddTeams.join(', ')}]`);
+
+              if (!toAddUsers.length && !toAddTeams.length) {
+                core.info(`PR #${pr.number}: requested reviewer set is already in sync.`);
+                return failures;
+              }
+
+              core.info(`PR #${pr.number}: adding reviewers: users=[${toAddUsers.join(', ')}], teams=[${toAddTeams.join(', ')}]`);
+
+              // Apply each mention independently and aggregate failures for final status.
+              for (const user of toAddUsers) {
+                await requestReviewer(pr.number, user, null, failures);
+              }
+
+              for (const team of toAddTeams) {
+                await requestReviewer(pr.number, null, team, failures);
+              }
+
+              return failures;
+            }
+
+            // Main flow: gather target PRs, sync each, then fail once if anything failed.
+            const prNumbers = getPrNumbersFromEvent();
+            if (!prNumbers.length) {
+              core.info('No PR number found in event payload; exiting.');
+              return;
+            }
+
+            const allFailures = [];
+            for (const number of prNumbers) {
+              try {
+                const failures = await syncReviewersForPr(number);
+                allFailures.push(...failures);
+              } catch (err) {
+                const message = err?.message || String(err);
+                core.warning(`PR #${number}: unexpected sync error: ${message}`);
+                allFailures.push(`PR #${number}: unexpected sync error: ${message}`);
+              }
+            }
+
+            if (allFailures.length) {
+              core.setFailed(
+                `One or more reviewer assignments failed:\n- ${allFailures.join('\n- ')}`
+              );
+            }
