@@ -6024,6 +6024,14 @@ private:
         if(username == NULL || *username == '\0')
             throw MakeStringException(-1, "Can't add user, username not set");
 
+        // For iPlanet/389ds the username is embedded verbatim into an LDAP URL inside an ACI
+        // string: (userdn = "ldap:///uid=<username>,..."). A '"' breaks out of the ACI string
+        // enabling clause injection; a '?' truncates the URL's DN component. Reject both at
+        // account creation so the bad value never enters the directory.
+        if(serverType != ACTIVE_DIRECTORY && usernameContainsLdapUrlForbiddenChars(username))
+            throw MakeStringException(-1, "Can't add user '%s': username contains character"
+                " not permitted in LDAP ACI userdn URLs ('\"' and '?' are forbidden)", username);
+
         const char* userPassword = user.credentials().getPassword();
         if(isEmptyString(userPassword))
         {

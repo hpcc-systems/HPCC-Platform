@@ -31,6 +31,7 @@ class LdapSanitizationTest : public CppUnit::TestFixture
     CPPUNIT_TEST(testDnEscapeCases);
     CPPUNIT_TEST(testSearchStringWildcardFilterInjection);
     CPPUNIT_TEST(testScopeDnComponentEscaping);
+    CPPUNIT_TEST(testUsernameContainsLdapUrlForbiddenChars);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -179,6 +180,22 @@ public:
         escapeLdapDistinguishedName(5, "team+evil", dn);
         dn.append(",dc=example,dc=com");
         CPPUNIT_ASSERT_EQUAL_STR("cn=team\\+,dc=example,dc=com", dn.str());
+    }
+
+    void testUsernameContainsLdapUrlForbiddenChars()
+    {
+        // Clean usernames — no forbidden chars
+        CPPUNIT_ASSERT(!usernameContainsLdapUrlForbiddenChars("alice"));
+        CPPUNIT_ASSERT(!usernameContainsLdapUrlForbiddenChars("domain\\alice"));
+        CPPUNIT_ASSERT(!usernameContainsLdapUrlForbiddenChars(nullptr));
+
+        // '"' enables ACI clause injection
+        CPPUNIT_ASSERT(usernameContainsLdapUrlForbiddenChars("foo\")(userdn=\"ldap:///anyone"));
+        CPPUNIT_ASSERT(usernameContainsLdapUrlForbiddenChars("alice\""));
+
+        // '?' truncates the DN component of the ldap:/// URL
+        CPPUNIT_ASSERT(usernameContainsLdapUrlForbiddenChars("alice?attrs=*"));
+        CPPUNIT_ASSERT(usernameContainsLdapUrlForbiddenChars("alice?"));
     }
 };
 

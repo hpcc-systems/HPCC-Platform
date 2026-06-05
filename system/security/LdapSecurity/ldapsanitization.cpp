@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include "ldapsanitization.hpp"
+#include "jstring.hpp"
 
 #include <cctype>
 #include <cstring>
@@ -124,4 +125,20 @@ void escapeLdapDistinguishedName(size_t inputLength, const char *input, StringBu
                 break;
         }
     }
+}
+
+bool usernameContainsLdapUrlForbiddenChars(const char *username)
+{
+    if (isEmptyString(username))
+        return false;
+
+    for (const char *p = username; *p; ++p)
+    {
+        // '"' can break out of the ACI string enabling clause injection;
+        // '?' truncates the DN component of the ldap:/// URL.
+        if (*p == '"' || *p == '?')
+            return true;
+    }
+
+    return false;
 }
