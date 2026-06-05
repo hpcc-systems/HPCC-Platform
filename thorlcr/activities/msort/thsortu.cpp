@@ -762,7 +762,8 @@ public:
                             throwUnexpected();
                     }
                 }
-                rightgroupmatched[rightidx] = true;
+                if (rightouter)
+                    rightgroupmatched[rightidx] = true;
             }
             if ((gotsz||denormGot||fret.get())&&(keepremaining!=(unsigned)-1))
                 keepremaining--;
@@ -840,8 +841,10 @@ public:
                             while ((nr<rightgroup.ordinality())&&(btwcompLR.upper->docompare(nextleft,rightgroup.query(nr))>0))
                                 nr++;
                             rightgroup.removeRows(0,nr);
-                            rightgroupmatched = (bool *)rightgroupmatchedbuf.clear().reserve(rightgroup.ordinality());
-                            memset_iflen(rightgroupmatched,rightmatched?1:0,rightgroup.ordinality());
+                            if (rightouter && rightgroup.ordinality()) {
+                                rightgroupmatched = (bool *)rightgroupmatchedbuf.clear().reserve(rightgroup.ordinality());
+                                memset(rightgroupmatched,rightmatched?1:0,rightgroup.ordinality());
+                            }
                         }
                         else
                             rightgroup.kill();
@@ -854,8 +857,10 @@ public:
                             limitedhelper->getGroup(rightgroup,nextleft);
                             if (rightgroup.ordinality()) {
                                 state = JSmatch;
-                                rightgroupmatched = (bool *)rightgroupmatchedbuf.clear().reserve(rightgroup.ordinality());
-                                memset(rightgroupmatched,1,rightgroup.ordinality()); // no outer
+                                if (rightouter && rightgroup.ordinality()) {
+                                    rightgroupmatched = (bool *)rightgroupmatchedbuf.clear().reserve(rightgroup.ordinality());
+                                    memset(rightgroupmatched,1,rightgroup.ordinality()); // no outer
+                                }
                             }
                             else 
                                 ret.setown(outrow(Onext,Oouter)); // out left outer and advance left
@@ -902,8 +907,10 @@ public:
                                 rightgroup.append(nextright.getClear());
                                 nextR();
                             }
-                            rightgroupmatched = (bool *)rightgroupmatchedbuf.clear().reserve(rightgroup.ordinality());
-                            memset_iflen(rightgroupmatched,rightmatched?1:0,rightgroup.ordinality());
+                            if (rightouter && rightgroup.ordinality()) {
+                                rightgroupmatched = (bool *)rightgroupmatchedbuf.clear().reserve(rightgroup.ordinality());
+                                memset(rightgroupmatched,rightmatched?1:0,rightgroup.ordinality());
+                            }
                             if (!hitatmost&&rightgroup.ordinality())
                                 state = JSmatch;
                             else if (cmp<0)
@@ -1260,8 +1267,10 @@ retry:
                     joinCounter = 0;
                     leftmatched = false;
                     if (state==JSload) {     // catch atmost above
-                        rightmatched = (bool *)rightmatchedbuf.clear().reserve(curgroup.ordinality());
-                        memset(rightmatched,rightouter?0:1,curgroup.ordinality());
+                        if (rightouter && curgroup.ordinality()) {
+                            rightmatched = (bool *)rightmatchedbuf.clear().reserve(curgroup.ordinality());
+                            memset(rightmatched,0,curgroup.ordinality());
+                        }
                         state = JSmatch; // ok we have group so match
                     }
                     break;
