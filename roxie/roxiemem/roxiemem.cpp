@@ -469,6 +469,15 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
         if (memTraceLevel)
             DBGLOG("Transparent huge pages are not supported on this kernel.  Requires kernel version > 2.6.38.");
 #endif
+
+#ifdef MADV_DONTDUMP
+        // Speed up core dumps and row memory can contain PII, so better to exclude it
+        madvise(heapBase,memsize,MADV_DONTDUMP);
+#endif
+#ifdef MADV_DONTFORK
+        // Prevent child processes from inheriting roxiemem
+        madvise(heapBase,memsize,MADV_DONTFORK);
+#endif
     }
 #endif
 
