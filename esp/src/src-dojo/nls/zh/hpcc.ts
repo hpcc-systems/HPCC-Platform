@@ -1160,6 +1160,8 @@ export = {
     Unlock: "解锁",
     UnlockSDSLock: "解锁SDS锁",
     Unprotect: "取消保护",
+    UnprotectAll: "取消所有保护",
+    UnprotectAllConfirm: "您确定要删除此文件的所有保护吗？",
     UnsupportedIE9FF: "不支持（IE <= 9, FireFox）",
     Unsuspend: "未暂停使用",
     Unsuspended: "未暂停使用",

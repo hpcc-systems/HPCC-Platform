@@ -34,6 +34,7 @@ public:
 protected:
     // CEvtCommandBase implementation
     virtual bool acceptArgument(const char* arg) override;
+    virtual unsigned consumeArgument(int argc, const char* argv[], int pos) override;
     virtual bool isValidRequest() override { return isGoodRequest(); }
     virtual int executeCommand() override { return doRequest(); }
 
@@ -42,6 +43,7 @@ protected:
     virtual bool acceptTerseOption(char opt);
     virtual bool acceptVerboseOption(const char* opt);
     virtual bool acceptKVOption(const char* key, const char* value);
+    virtual unsigned acceptLongOption(const char* key, const char* nextArg);
     virtual bool acceptParameter(const char* arg);
 
     // Usage output components

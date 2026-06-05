@@ -64,7 +64,7 @@ protected:
     IPropertyTree* active = nullptr;
 };
 
-IEventPTreeCreator* createEventPTreeCreator()
+IEventPTreeCreator* createEventPTreeCreator(CMetaInfoState& metaState, DumpMetaFlag flags)
 {
     class Creator : public CInterfaceOf<IEventPTreeCreator>
     {
@@ -79,13 +79,14 @@ IEventPTreeCreator* createEventPTreeCreator()
             return visitor->queryTree();
         }
 
-        Creator()
+        Creator(CMetaInfoState& metaState, DumpMetaFlag flags)
         {
             visitor.setown(new CPTreeEventVisitor);
+            visitor->setMetaInfo(metaState, flags);
         }
 
     private:
         Owned<CPTreeEventVisitor> visitor;
     };
-    return new Creator;
+    return new Creator(metaState, flags);
 }

@@ -37,8 +37,10 @@ class CLocalSortSlaveActivity : public CSlaveActivity
     IHThorSortArg *helper;
     ICompare *iCompare;
     Owned<IThorRowLoader> iLoader;
-    Owned<IRowStream> out;
+    Owned<IRowStream> ownedRowStream;     // owns the stream for the non-grouped path
+    IRowStream *curRowStream = nullptr;   // current stream (raw): either ownedRowStream.get() or loader-owned per-group stream
     bool unstable, eoi = false;
+    bool grouped = false;             // hoisted container.queryGrouped() to avoid per-row indirection
     CriticalSection loaderCs; // Ensure iLoader remains valid for the duration of mergeStats()
 
 public:
@@ -48,7 +50,8 @@ public:
         helper = (IHThorSortArg *)queryHelper();
         iCompare = helper->queryCompare();
         unstable = helper->getAlgorithmFlags()&TAFunstable;
-        unsigned spillPriority = container.queryGrouped() ? SPILL_PRIORITY_GROUPSORT : SPILL_PRIORITY_LARGESORT;
+        grouped = container.queryGrouped();
+        unsigned spillPriority = grouped ? SPILL_PRIORITY_GROUPSORT : SPILL_PRIORITY_LARGESORT;
         iLoader.setown(createThorRowLoader(*this, iCompare, unstable ? stableSort_none : stableSort_earlyAlloc, rc_mixed, spillPriority));
         setRequireInitData(false);
         appendOutputLinked(this);
@@ -63,12 +66,19 @@ public:
         ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
         eoi = false;
-        if (container.queryGrouped())
-            out.setown(iLoader->loadGroup(inputStream, abortSoon));
+        if (grouped)
+        {
+            curRowStream = iLoader->loadNextGroup(inputStream, abortSoon);
+            if (!curRowStream)
+                eoi = true;
+        }
         else
-            out.setown(iLoader->load(inputStream, abortSoon));
-        if (0 == iLoader->numRows())
-            eoi = true;
+        {
+            ownedRowStream.setown(iLoader->load(inputStream, abortSoon));
+            curRowStream = ownedRowStream;
+            if (0 == iLoader->numRows())
+                eoi = true;
+        }
     }
     virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const
     {
@@ -78,7 +88,8 @@ public:
     }
     virtual void stop() override
     {
-        out.clear();
+        curRowStream = nullptr;     // loader-owned (grouped) or aliases ownedRowStream (non-grouped)
+        ownedRowStream.clear();
         PARENT::stop();
     }
     CATCH_NEXTROW()
@@ -86,23 +97,23 @@ public:
         ActivityTimer t(slaveTimerStats, timeActivities);
         if (abortSoon || eoi)
             return NULL;
-        OwnedConstThorRow row = out->nextRow();
+        OwnedConstThorRow row = curRowStream->nextRow();
         if (!row)
         {
-            if (!container.queryGrouped())
+            if (!grouped)
             {
                 eoi = true;
                 return NULL;
             }
-            out.setown(iLoader->loadGroup(inputStream, abortSoon));
-            if (0 == iLoader->numRows())
+            curRowStream = iLoader->loadNextGroup(inputStream, abortSoon);
+            if (!curRowStream)
                 eoi = true;
             return NULL; // eog marker
         }
         dataLinkIncrement();
         return row.getClear();
     }
-    virtual bool isGrouped() const override { return container.queryGrouped(); }
+    virtual bool isGrouped() const override { return grouped; }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);

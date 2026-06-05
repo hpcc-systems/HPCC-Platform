@@ -21,21 +21,34 @@
 #include "eventvisitor.h"
 #include "eventoperation.h"
 
+enum class DumpMetaFlag : byte
+{
+    None            = 0,
+    ServiceName     = 0x01,
+    LogicalFileName = 0x02,
+    Path            = 0x04,
+    Plane           = 0x08,
+    All             = 0xFF
+};
+constexpr inline DumpMetaFlag operator|(DumpMetaFlag a, DumpMetaFlag b) noexcept { return static_cast<DumpMetaFlag>(static_cast<unsigned>(a) | static_cast<unsigned>(b)); }
+constexpr inline DumpMetaFlag operator&(DumpMetaFlag a, DumpMetaFlag b) noexcept { return static_cast<DumpMetaFlag>(static_cast<unsigned>(a) & static_cast<unsigned>(b)); }
+constexpr inline bool hasMetaFlag(DumpMetaFlag flags, DumpMetaFlag target) noexcept { return (flags & target) != DumpMetaFlag::None; }
+
 // Get a visitor that streams visited event data in JSON format.
-extern event_decl IEventVisitor* createDumpJSONEventVisitor(IBufferedSerialOutputStream& out);
+extern event_decl IEventVisitor* createDumpJSONEventVisitor(IBufferedSerialOutputStream& out, CMetaInfoState& metaState, DumpMetaFlag flags);
 
 // Get a visitor that streams visited event data in a flat text format.
-extern event_decl IEventVisitor* createDumpTextEventVisitor(IBufferedSerialOutputStream& out);
+extern event_decl IEventVisitor* createDumpTextEventVisitor(IBufferedSerialOutputStream& out, CMetaInfoState& metaState, DumpMetaFlag flags);
 
 // Get a visitor that streams visited event data in XML format.
-extern event_decl IEventVisitor* createDumpXMLEventVisitor(IBufferedSerialOutputStream& out);
+extern event_decl IEventVisitor* createDumpXMLEventVisitor(IBufferedSerialOutputStream& out, CMetaInfoState& metaState, DumpMetaFlag flags);
 
 // Get a visitor that streams visited event data in YAML format.
-extern event_decl IEventVisitor* createDumpYAMLEventVisitor(IBufferedSerialOutputStream& out);
+extern event_decl IEventVisitor* createDumpYAMLEventVisitor(IBufferedSerialOutputStream& out, CMetaInfoState& metaState, DumpMetaFlag flags);
 
 // Get a visitor that streams visited event data in CSV format.
 // The properties parameter is used to determine which optional columns to include.
-extern event_decl IEventVisitor* createDumpCSVEventVisitor(IBufferedSerialOutputStream& out, const EventFileProperties& properties);
+extern event_decl IEventVisitor* createDumpCSVEventVisitor(IBufferedSerialOutputStream& out, const EventFileProperties& properties, CMetaInfoState& metaState, DumpMetaFlag flags);
 
 // Encapsulation of a visitor that stores visited event data in a property tree and
 // access to the tree.
@@ -46,7 +59,7 @@ interface IEventPTreeCreator : extends IInterface
 };
 
 // Get an event property tree creator.
-extern event_decl IEventPTreeCreator* createEventPTreeCreator();
+extern event_decl IEventPTreeCreator* createEventPTreeCreator(CMetaInfoState& metaState, DumpMetaFlag flags);
 
 // Supported dump output formats.
 enum class OutputFormat : byte
@@ -68,6 +81,8 @@ class event_decl CDumpEventsOp : public CEventConsumingOp
 public:
     // Cache the requested output format.
     void setFormat(OutputFormat format);
+    void setMetaFlags(const char* metaFlagsStr);
+    DumpMetaFlag queryMetaFlags() const { return metaFlags; }
 
     // Perform the requested action.
     virtual bool doOp() override;
@@ -76,4 +91,5 @@ protected:
     virtual IEventMultiplexer* createMultiplexer(CMetaInfoState& metaState) override;
 
     OutputFormat format = OutputFormat::text;
+    DumpMetaFlag metaFlags = DumpMetaFlag::None;
 };

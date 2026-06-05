@@ -233,7 +233,7 @@ jobs:
 
   test-smoke-docker-ubuntu-22_04:
     needs: [build-docker-ubuntu-22_04, pre_job]
-    if: ${{ contains('pull_request,push', github.event_name) && needs.pre_job.outputs.testing == 'true' }}
+    if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.testing == 'true' || needs.pre_job.outputs.platform == 'true') }}
     uses: ./.github/workflows/test-smoke-gh_runner.yml
     with:
       os: ubuntu-22.04

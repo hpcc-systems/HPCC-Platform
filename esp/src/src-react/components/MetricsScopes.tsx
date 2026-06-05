@@ -3,6 +3,12 @@ import { Database } from "@hpcc-js/common";
 import { splitMetric, IScope } from "@hpcc-js/comms";
 import { CellFormatter, ColumnFormat, ColumnType, DBStore, RowType, Table } from "@hpcc-js/dgrid";
 
+function formatAsSeconds(value: number | undefined): string {
+    if (value === undefined) return "";
+    if (!Number.isFinite(value)) return "";
+    return `${value.toFixed(9).replace(/\.?0+$/, "") || "0"}s`;
+}
+
 class ColumnFormatEx extends ColumnFormat {
     formatterFunc(): CellFormatter | undefined {
         const colIdx = this._owner.columns().indexOf("__StdDevs");
@@ -99,7 +105,7 @@ export class ScopesTable extends Table {
     }
 
     _rawDataMap: { [id: number]: { property: string, subvalue?: string } } = {};
-    metrics(metrics: IScope[], scopeTypes: string[], properties: string[], scopeFilter: string, matchCase: boolean, matchWholeWord: boolean): this {
+    metrics(metrics: IScope[], scopeTypes: string[], properties: string[], scopeFilter: string, matchCase: boolean, matchWholeWord: boolean, showTimingInSeconds: boolean = false): this {
         let hasStdDevs = false;
         const expandedProps = new Map<string, boolean>();
         const filteredMetrics = metrics.filter(m => this.scopeFilterFunc(m, scopeFilter, matchCase, matchWholeWord))
@@ -129,20 +135,32 @@ export class ScopesTable extends Table {
                 this._rawDataMap[idxOffset++] = { property: p };
             }
         });
+
         const data = filteredMetrics.map((row, idx) => {
             row.__hpcc_id = row.name;
             return [idx, row.type, row.__StdDevs === 0 ? undefined : row.__StdDevs, row.name, ...properties.reduce((acc, p) => {
                 if (expandedProps.has(p)) {
-                    acc.push(row.__groupedProps[p]?.Max);
-                    acc.push(row.__groupedProps[p]?.Avg);
-                    acc.push(row.__groupedProps[p]?.Min);
+                    if (showTimingInSeconds && p.startsWith("Time")) {
+                        const parts = splitMetric(p);
+                        acc.push(formatAsSeconds(row[`${parts.measure}Max${parts.label}`]));
+                        acc.push(formatAsSeconds(row[`${parts.measure}Avg${parts.label}`]));
+                        acc.push(formatAsSeconds(row[`${parts.measure}Min${parts.label}`]));
+                    } else {
+                        acc.push(row.__groupedProps[p]?.Max);
+                        acc.push(row.__groupedProps[p]?.Avg);
+                        acc.push(row.__groupedProps[p]?.Min);
+                    }
                 } else {
-                    acc.push(row.__groupedProps[p]?.Value ??
-                        row.__groupedProps[p]?.Max ??
-                        row.__groupedProps[p]?.Avg ??
-                        row.__formattedProps[p] ??
-                        row[p] ??
-                        "");
+                    if (showTimingInSeconds && p.startsWith("Time")) {
+                        acc.push(formatAsSeconds(row[p]));
+                    } else {
+                        acc.push(row.__groupedProps[p]?.Value ??
+                            row.__groupedProps[p]?.Max ??
+                            row.__groupedProps[p]?.Avg ??
+                            row.__formattedProps[p] ??
+                            row[p] ??
+                            "");
+                    }
                 }
                 return acc;
             }, []), row.__StdDevs === 0 ? "" : row.__StdDevsSource, row];

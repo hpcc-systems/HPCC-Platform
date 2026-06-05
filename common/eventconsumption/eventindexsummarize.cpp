@@ -16,6 +16,190 @@
 ############################################################################## */
 
 #include "eventindexsummarize.h"
+#include "eventgrouping.hpp"
+#include "eventiterator.h"
+#include <functional>
+
+enum ReadBucket
+{
+    Total,
+    PageCache,
+    LocalFile,
+    RemoteFile,
+    NumBuckets
+};
+
+class event_decl MetricStat
+{
+public:
+    __uint64 count{0};
+    __uint64 min{0};
+    __uint64 max{0};
+    __uint64 sum{0};
+
+    void accumulate(__uint64 val)
+    {
+        if (count == 0 || val < min)
+            min = val;
+        if (count == 0 || val > max)
+            max = val;
+        sum += val;
+        count++;
+    }
+
+    void merge(const MetricStat& other)
+    {
+        if (other.count == 0)
+            return;
+        if (count == 0 || other.min < min)
+            min = other.min;
+        if (count == 0 || other.max > max)
+            max = other.max;
+        sum += other.sum;
+        count += other.count;
+    }
+
+    inline double avg() const
+    {
+        return count == 0 ? 0 : (double)sum / count;
+    }
+};
+
+struct PairHash
+{
+    template <class T1, class T2>
+    size_t operator()(const std::pair<T1, T2>& p) const
+    {
+        size_t h1 = std::hash<T1>{}(p.first);
+        size_t h2 = std::hash<T2>{}(p.second);
+        return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
+    }
+};
+
+class event_decl EventSummaryMetrics
+{
+public:
+    uint32_t hits{0};
+    uint32_t misses{0};
+    uint32_t loads{0};
+    uint32_t payloads{0};
+    uint32_t evictions{0};
+
+    std::unordered_map<std::pair<__uint64, __uint64>, __uint64, PairHash> uniqueNodesMemory;
+
+    MetricStat inMemorySize;
+    MetricStat readTime[NumBuckets];
+    MetricStat expandTime;
+    MetricStat elapsedTime;
+    MetricStat openTime;
+
+    __uint64 firstTimestamp{0};
+    __uint64 lastTimestamp{0};
+
+    __uint64 nodeCount() const { return uniqueNodesMemory.size(); }
+    __uint64 memorySize() const
+    {
+        return inMemorySize.sum;
+    }
+
+    void accumulate(const CEvent& event, const CMetaInfoState* metaState);
+
+protected:
+    void accumulateInMemorySize(const CEvent& event);
+};
+
+static constexpr __uint64 maxPageCacheNanos = 20'000; // 20us - typical upper bound for page cache reads
+static constexpr __uint64 maxLocalFileNanos = 600'000; // 600us - typical upper bound for local file reads
+static ReadBucket chooseBucketCategory(__uint64 time)
+{
+    if (time <= maxPageCacheNanos)
+        return PageCache;
+    if (time <= maxLocalFileNanos)
+        return LocalFile;
+    return RemoteFile;
+}
+
+// EventSummaryMetrics implementation
+void EventSummaryMetrics::accumulate(const CEvent& event, const CMetaInfoState* metaState)
+{
+    __uint64 ts = event.queryNumericValue(EvAttrEventTimestamp);
+    if (ts > 0)
+    {
+        if (firstTimestamp == 0 || ts < firstTimestamp)
+            firstTimestamp = ts;
+        if (lastTimestamp == 0 || ts > lastTimestamp)
+            lastTimestamp = ts;
+    }
+
+    EventType type = event.queryType();
+    __uint64 tmp;
+    __uint64 elapsedAccum = 0;
+
+    switch (type)
+    {
+    case EventIndexCacheHit:
+        accumulateInMemorySize(event);
+        hits++;
+        break;
+    case EventIndexCacheMiss:
+        misses++;
+        break;
+    case EventIndexLoad:
+        accumulateInMemorySize(event);
+        tmp = event.queryNumericValue(EvAttrReadTime);
+        if (tmp)
+        {
+            readTime[Total].accumulate(tmp);
+            readTime[chooseBucketCategory(tmp)].accumulate(tmp);
+            elapsedAccum += tmp;
+
+            tmp = event.queryNumericValue(EvAttrExpandTime);
+            if (tmp)
+            {
+                expandTime.accumulate(tmp);
+                elapsedAccum += tmp;
+            }
+        }
+        loads++;
+        break;
+    case EventIndexEviction:
+        evictions++;
+        break;
+    case EventIndexPayload:
+        tmp = event.queryNumericValue(EvAttrExpandTime);
+        if (tmp && event.queryBooleanValue(EvAttrFirstUse))
+        {
+            expandTime.accumulate(tmp);
+            elapsedAccum += tmp;
+        }
+        payloads++;
+        break;
+    case EventIndexOpen:
+        tmp = event.queryNumericValue(EvAttrOpenTime);
+        if (tmp)
+            openTime.accumulate(tmp);
+        break;
+    default:
+        break;
+    }
+
+    if (elapsedAccum > 0)
+    {
+        elapsedTime.accumulate(elapsedAccum);
+    }
+}
+
+void EventSummaryMetrics::accumulateInMemorySize(const CEvent& event)
+{
+    __uint64 fileId = event.queryNumericValue(EvAttrFileId);
+    __uint64 fileOffset = event.queryNumericValue(EvAttrFileOffset);
+    __uint64 inMemorySize = event.queryNumericValue(EvAttrInMemorySize);
+    if (inMemorySize)
+    {
+        if (uniqueNodesMemory.insert({{fileId, fileOffset}, inMemorySize}).second)
+            this->inMemorySize.accumulate(inMemorySize);
+    }
+}
 
 class CSummaryCollector : public CInterfaceOf<IEventVisitor>
 {
@@ -63,13 +247,6 @@ protected:
         RemoteFile,
         NumBuckets
     };
-    // ReadBucket categorizes read durations: Total is a special cumulative bucket that tracks
-    // aggregate metrics across all read operations, while PageCache, LocalFile, and RemoteFile
-    // represent mutually exclusive categories selected by time/source thresholds. The bucket
-    // boundaries for Total and RemoteFile are both intentionally UINT64_MAX. Total because every
-    // read counts toward the total time; RemoteFile because anything not read from the page cache
-    // or local storage must belong to the remaining catch-all bucket.
-    static constexpr __uint64 readBucketBoundary[NumBuckets] = {UINT64_MAX, 20'000, 400'000, UINT64_MAX};
 
     template <typename single_bucket_t, typename cumulative_bucket_t>
     static void accumulateBucket(const single_bucket_t& single, cumulative_bucket_t& cumulative)
@@ -99,17 +276,6 @@ protected:
                 cumulative.max = value;
             assertex(cumulative.min <= cumulative.max);
         }
-    }
-
-    // Identify the mutually exclusive read time category to which a given time belongs.
-    // The result will never be Total, which is not mutually exclusive.
-    static ReadBucket chooseBucketCategory(__uint64 time)
-    {
-        if (time <= readBucketBoundary[PageCache])
-            return PageCache;
-        if (time <= readBucketBoundary[LocalFile])
-            return LocalFile;
-        return RemoteFile;
     }
 
     void appendCSVColumn(StringBuffer& line, const char* value)
@@ -272,9 +438,6 @@ public: // IEventVisitor
             nodeStats.events.loads++;
             break;
         case EventIndexEviction:
-            tmp = event.queryNumericValue(EvAttrInMemorySize);
-            if (tmp)
-                nodeStats.inMemorySize = tmp;
             nodeStats.events.evictions++;
             break;
         case EventIndexPayload:
@@ -608,9 +771,6 @@ protected:
                 events.loads++;
                 break;
             case EventIndexEviction:
-                tmp = event.queryNumericValue(EvAttrInMemorySize);
-                if (tmp)
-                    nodeMemorySize[IndexHashKey(event)] = tmp; // Store/update memory size for this node
                 events.evictions++;
                 break;
             case EventIndexPayload:
@@ -941,11 +1101,230 @@ protected:
 
 };
 
+class CCsvGroupFormatter : public IGroupFormatter<EventSummaryMetrics>
+{
+    IBufferedSerialOutputStream* out;
+    std::vector<std::string> currentPath;
+    size_t numColumns = 0;
+
+    void appendStat(StringBuffer& buf, const char* prefix, bool includeCount = true)
+    {
+        if (includeCount)
+            buf.append(",").append(prefix).append("Count");
+        buf.append(",").append(prefix).append("Total").append(",").append(prefix).append("Avg").append(",").append(prefix).append("Min").append(",").append(prefix).append("Max");
+    }
+
+    void appendStat(StringBuffer& buf, const MetricStat& stat, bool includeCount = true)
+    {
+        if (includeCount)
+            buf.append(",").append(stat.count);
+        if (stat.count > 0)
+            buf.append(",").append(stat.sum).append(",").append((__uint64)stat.avg()).append(",").append(stat.min).append(",").append(stat.max);
+        else
+            buf.append(",,,,");
+    }
+
+    void outputRow(const std::vector<std::string>& path, const EventSummaryMetrics& metrics, bool /*isSubtotal*/)
+    {
+        StringBuffer buf;
+        for (size_t i = 0; i < numColumns; ++i)
+        {
+            if (i > 0)
+                buf.append(",");
+            if (i < path.size())
+                buf.append("\"").append(path[i].c_str()).append("\"");
+        }
+
+        // Format timestamps using CDateTime
+        StringBuffer earliestTsStr, latestTsStr;
+        if (metrics.firstTimestamp != 0 && metrics.firstTimestamp != UINT64_MAX)
+        {
+            CDateTime earliestDt;
+            earliestDt.setTimeStampNs(metrics.firstTimestamp);
+            earliestDt.getString(earliestTsStr);
+        }
+        if (metrics.lastTimestamp > 0)
+        {
+            CDateTime latestDt;
+            latestDt.setTimeStampNs(metrics.lastTimestamp);
+            latestDt.getString(latestTsStr);
+        }
+
+        if (numColumns > 0)
+            buf.append(",");
+        buf.append(earliestTsStr.str())
+           .append(",").append(latestTsStr.str())
+           .append(",").append(metrics.hits)
+           .append(",").append(metrics.misses)
+           .append(",").append(metrics.loads)
+           .append(",").append(metrics.payloads)
+           .append(",").append(metrics.evictions)
+           .append(",").append(metrics.nodeCount());
+        appendStat(buf, metrics.inMemorySize, false);
+        for (unsigned bucket = 0; bucket < NumBuckets; bucket++)
+            appendStat(buf, metrics.readTime[bucket], true);
+        buf.append(",").append(metrics.loads - metrics.readTime[Total].count);
+        appendStat(buf, metrics.expandTime, true);
+        buf.append(",").append(metrics.elapsedTime.sum);
+        appendStat(buf, metrics.openTime, true);
+        buf.append("\n");
+        out->put(buf.length(), buf.str());
+    }
+
+public:
+    CCsvGroupFormatter(IBufferedSerialOutputStream* _out) : out(_out) {}
+
+    virtual void beginReport(const std::vector<std::vector<std::string>>& groupColumns) override
+    {
+        numColumns = 0;
+        for (const auto& level : groupColumns)
+            numColumns += level.size();
+
+        StringBuffer buf;
+        for (const auto& level : groupColumns)
+        {
+            for (const auto& col : level)
+            {
+                if (!buf.isEmpty())
+                    buf.append(",");
+                buf.append(col.c_str());
+            }
+        }
+        if (!buf.isEmpty())
+            buf.append(",");
+        buf.append("FirstTimestamp,LastTimestamp,Hits,Misses,Loads,Payloads,Evictions,NodeCount");
+        appendStat(buf, "MemorySize", false);
+        appendStat(buf, "ReadTime", true);
+        appendStat(buf, "PageCacheReadTime", true);
+        appendStat(buf, "LocalDiskReadTime", true);
+        appendStat(buf, "RemoteDiskReadTime", true);
+        buf.append(",ContentiousReads");
+        appendStat(buf, "ExpandTime", true);
+        buf.append(",ElapsedTimeTotal");
+        appendStat(buf, "OpenTime", true);
+        buf.append("\n");
+        out->put(buf.length(), buf.str());
+    }
+
+    virtual void beginGroup(size_t /*level*/, const std::vector<std::string>& groupValues) override
+    {
+        for (const auto& v : groupValues)
+            currentPath.push_back(v);
+    }
+
+    virtual void outputLeafSummary(const std::vector<std::string>& /*groupValues*/, const EventSummaryMetrics& metrics) override
+    {
+        outputRow(currentPath, metrics, false);
+    }
+
+    virtual void outputSubtotal(size_t /*level*/, const std::vector<std::string>& , const EventSummaryMetrics& metrics) override
+    {
+        outputRow(currentPath, metrics, true);
+    }
+
+    virtual void endGroup(size_t /*level*/, const std::vector<std::string>& groupValues) override
+    {
+        for (size_t i = 0; i < groupValues.size(); ++i)
+        {
+            if (!currentPath.empty())
+                currentPath.pop_back();
+        }
+    }
+
+    virtual void endReport() override {}
+};
+
+class CGenericGroupCollector : public CSummaryCollector
+{
+    std::vector<std::vector<std::string>> groupAttributesStrs;
+    std::vector<std::vector<GroupAttribute>> groupAttributeIds;
+    CGroupNode<EventSummaryMetrics> root;
+    size_t maxGroupLevelPerEvent[EventMax];
+
+    void initIndexOpenMaxGroupLevel()
+    {
+        CEvent prototype;
+        prototype.reset(EventIndexOpen);
+        for (size_t idx = groupAttributeIds.size(); idx > 0; --idx)
+        {
+            for (const GroupAttribute& attr : groupAttributeIds[idx - 1])
+            {
+                if (GroupAttributeExtractor::isApplicable(attr, prototype))
+                {
+                    maxGroupLevelPerEvent[EventIndexOpen] = idx;
+                    return;
+                }
+            }
+        }
+        maxGroupLevelPerEvent[EventIndexOpen] = 0;
+    }
+
+public:
+    CGenericGroupCollector(CIndexFileSummary& _op, IBufferedSerialOutputStream* _out, const std::vector<std::vector<std::string>>& _attrStrs, const std::vector<std::vector<GroupAttribute>>& _attrIds)
+        : CSummaryCollector(_op, IndexSummarization::byGroup, _out), groupAttributesStrs(_attrStrs), groupAttributeIds(_attrIds)
+    {
+        for (unsigned idx = EventNone; idx < EventMax; ++idx)
+        {
+            switch (idx)
+            {
+            case EventIndexCacheHit:
+            case EventIndexCacheMiss:
+            case EventIndexLoad:
+            case EventIndexPayload:
+            case EventIndexEviction:
+                maxGroupLevelPerEvent[idx] = groupAttributeIds.size();
+                break;
+            case EventIndexOpen:
+                initIndexOpenMaxGroupLevel();
+                break;
+            default:
+                maxGroupLevelPerEvent[idx] = 0;
+                break;
+            }
+        }
+    }
+
+    virtual bool visitEvent(CEvent& event) override
+    {
+        // Implicit event filter applied unconditionally
+        EventType type = event.queryType();
+        switch (type)
+        {
+        case EventIndexCacheHit:
+        case EventIndexCacheMiss:
+        case EventIndexLoad:
+        case EventIndexPayload:
+        case EventIndexEviction:
+        case EventIndexOpen:
+            root.process(event, &operation.queryMetaInfoState(), groupAttributeIds, 0, maxGroupLevelPerEvent[type]);
+            break;
+        default:
+            break;
+        }
+        return true;
+    }
+
+    virtual void summarize() override
+    {
+        CCsvGroupFormatter formatter(out);
+        formatter.beginReport(groupAttributesStrs);
+        std::vector<std::string> rootVals;
+        root.render(formatter, rootVals, groupAttributeIds, 0, true);
+        formatter.endReport();
+    }
+};
+
 bool CIndexFileSummary::doOp()
 {
     Owned<CSummaryCollector> collector;
     switch (summarization)
     {
+    case IndexSummarization::byGroup:
+        collector.setown(new CGenericGroupCollector(*this, out, groupAttributes, groupAttributeIds));
+        break;
+    // TODO: The legacy collectors below are retained for verification of the generic byGroup
+    // output. Once the byGroup output is confirmed as an adequate replacement, these
+    // specific cases and their underlying classes can be removed.
     case IndexSummarization::byFile:
     case IndexSummarization::byNodeKind:
     case IndexSummarization::byNode:

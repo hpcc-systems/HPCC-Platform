@@ -135,3 +135,78 @@ test.describe("V9 Files - Logical Files", () => {
     });
 
 });
+test.describe("V9 Files - Protected By tab", () => {
+
+    test.beforeEach(async ({ page }) => {
+        await page.goto("index.html#/files");
+        await page.waitForLoadState("networkidle");
+    });
+
+    test("Unprotect All button is disabled when no protections exist", async ({ page, browserName }) => {
+        test.skip(browserName !== "chromium", "Chromium only");
+
+        const firstLink = page.locator("[role='gridcell'] a").first();
+        if (await firstLink.count() === 0) {
+            test.skip(true, "No logical files available");
+        }
+        await firstLink.click();
+        await page.waitForLoadState("networkidle");
+
+        const protectedByTab = page.getByRole("tab", { name: /Protected By/i });
+        if (await protectedByTab.count() === 0) {
+            test.skip(true, "Protected By tab not found");
+        }
+        await protectedByTab.click();
+        await page.waitForTimeout(1000);
+
+        const unprotectAllBtn = page.getByRole("menuitem", { name: /Unprotect All/i });
+        await expect(unprotectAllBtn).toBeVisible({ timeout: 5000 });
+
+        const rows = page.locator("[role='row'][data-item-index]");
+        const rowCount = await rows.count();
+        if (rowCount === 0) {
+            await expect(unprotectAllBtn).toHaveAttribute("aria-disabled", "true");
+        } else {
+            test.skip(true, "File has protections — cannot assert disabled state");
+        }
+    });
+
+    test("Unprotect All button shows confirmation dialog before acting", async ({ page, browserName }) => {
+        test.skip(browserName !== "chromium", "Chromium only");
+
+        const firstLink = page.locator("[role='gridcell'] a").first();
+        if (await firstLink.count() === 0) {
+            test.skip(true, "No logical files available");
+        }
+        await firstLink.click();
+        await page.waitForLoadState("networkidle");
+
+        const protectedByTab = page.getByRole("tab", { name: /Protected By/i });
+        if (await protectedByTab.count() === 0) {
+            test.skip(true, "Protected By tab not found");
+        }
+        await protectedByTab.click();
+        await page.waitForTimeout(1000);
+
+        const unprotectAllBtn = page.getByRole("menuitem", { name: /Unprotect All/i });
+        await expect(unprotectAllBtn).toBeVisible({ timeout: 5000 });
+
+        const isDisabled = await unprotectAllBtn.getAttribute("aria-disabled");
+        if (isDisabled === "true") {
+            test.skip(true, "No protections on this file — button is disabled");
+        }
+
+        await unprotectAllBtn.click();
+
+        // Confirmation dialog must appear before any action is taken
+        const dialog = page.getByRole("dialog");
+        await expect(dialog).toBeVisible({ timeout: 3000 });
+        await expect(dialog.getByText(/Unprotect All/i)).toBeVisible();
+        await expect(dialog.getByRole("button", { name: /OK/i })).toBeVisible();
+        await expect(dialog.getByRole("button", { name: /Cancel/i })).toBeVisible();
+
+        // Cancel — no changes should occur
+        await dialog.getByRole("button", { name: /Cancel/i }).click();
+        await expect(dialog).not.toBeVisible();
+    });
+});

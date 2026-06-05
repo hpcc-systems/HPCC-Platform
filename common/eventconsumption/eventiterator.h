@@ -44,7 +44,6 @@ enum PropertyTreeEventFlags : unsigned
 // - <event attribute name> is any text label associated with an EventAttr enumerated value; and
 // - `event` and `event/@type` are used in place of elements named for the event type because
 //   IPropertyTree only preserves element order of elements with the same name; and
-// - <value> is a text representation of the value to be assigned to the event attribute, where
 //   the text must be directly convertible to the attribute's underlying data type. The only
 //   exception is that a timestamp value may be a human readable date/time string instead of a
 //   number of nanoseconds.

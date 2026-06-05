@@ -54,6 +54,57 @@ constexpr static const char* DUMP_STRUCTURE_FILE_BYTES_READ = "bytesRead";
 //  `virtual void recordAttribute(EventAttr id, const char* name, const char* value, bool quoted) = 0;`
 class CDumpEventVisitor : public CInterfaceOf<IEventVisitor>
 {
+protected:
+    Linked<CMetaInfoState> metaState;
+    DumpMetaFlag metaFlags = DumpMetaFlag::None;
+    mutable bool inForEachMetaField = false;
+
+public:
+    void setMetaInfo(CMetaInfoState& _metaState, DumpMetaFlag _metaFlags)
+    {
+        metaState.set(&_metaState);
+        metaFlags = _metaFlags;
+    }
+
+    template <typename Functor>
+    void forEachMetaField(CEvent* event, Functor&& f) const
+    {
+        if (!metaState || metaFlags == DumpMetaFlag::None)
+            return;
+
+        inForEachMetaField = true;
+        COnScopeExit resetInForEachMetaField([this]() { inForEachMetaField = false; });
+
+        if (hasMetaFlag(metaFlags, DumpMetaFlag::ServiceName))
+        {
+            const char* val = nullptr;
+            if (event && event->hasAttribute(EvAttrEventTraceId))
+                val = metaState->queryServiceName(event->queryTextValue(EvAttrEventTraceId));
+            f("meta.ServiceName", val);
+        }
+        if (hasMetaFlag(metaFlags, DumpMetaFlag::LogicalFileName))
+        {
+            const char* val = nullptr;
+            if (event)
+                val = metaState->queryLogicalFileName(*event);
+            f("meta.LogicalFileName", val);
+        }
+        if (hasMetaFlag(metaFlags, DumpMetaFlag::Path))
+        {
+            const char* val = nullptr;
+            if (event && event->hasAttribute(EvAttrFileId))
+                val = metaState->queryFilePath(event->queryNumericValue(EvAttrFileId));
+            f("meta.Path", val);
+        }
+        if (hasMetaFlag(metaFlags, DumpMetaFlag::Plane))
+        {
+            const char* val = nullptr;
+            if (event)
+                val = metaState->queryPlane(*event);
+            f("meta.Plane", val);
+        }
+    }
+
 public: // IEventVisitor
     virtual bool visitEvent(CEvent& event) override
     {
@@ -76,6 +127,10 @@ public: // IEventVisitor
                 throw makeStringExceptionV(-1, "unsupported attribute type class %u", attr.queryTypeClass());
             }
         }
+        forEachMetaField(&event, [this](const char* name, const char* val) {
+            if (!isEmptyString(val))
+                doVisitAttribute(EvAttrNone, name, val);
+        });
         departEvent();
         return true;
     }

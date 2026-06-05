@@ -20,10 +20,17 @@ const METRIC_OPTIONS_4 = "MetricOptions-4";
 export const GLOBAL_FAKE_ID = "<global>";
 
 export const METRICS_GRAPH_TRACK_SELECTION = "metrics_graph_trackSelection";
+export const METRICS_UNIFORM_TIME_UNITS = "metrics_uniform_time_units";
 
 export function resetMetricsViews() {
     const store = userKeyValStore();
-    return Promise.all([store?.delete(METRIC_OPTIONS_2), store?.delete(METRIC_OPTIONS_3), store?.delete(METRIC_OPTIONS_4), store?.delete(METRICS_GRAPH_TRACK_SELECTION)]);
+    return Promise.all([
+        store?.delete(METRIC_OPTIONS_2),
+        store?.delete(METRIC_OPTIONS_3),
+        store?.delete(METRIC_OPTIONS_4),
+        store?.delete(METRICS_GRAPH_TRACK_SELECTION),
+        store?.delete(METRICS_UNIFORM_TIME_UNITS)
+    ]);
 }
 
 export interface MetricsView {

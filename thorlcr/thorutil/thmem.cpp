@@ -418,6 +418,7 @@ class CSpillableStream : public CSpillableStreamBase, implements IRowStream
     rowidx_t pos, numReadRows, granularity;
     const void **readRows;
     Owned<IRowStream> spillStream;
+    bool drained = false; // set once rows have been fully consumed; short-circuits subsequent nextRow without taking the row lock
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSpillableStreamBase);
@@ -452,6 +453,8 @@ public:
             return spillStream->nextRow();
         if (pos == numReadRows)
         {
+            if (drained) // fast path: once both the source rows and the local readRows buffer are exhausted, no lock needed
+                return nullptr;
             CRowsLockBlock block(*this);
             if (spillFile)
             {
@@ -472,6 +475,7 @@ public:
             if (0 == available)
             {
                 block.clearCB = true;
+                drained = true;
                 return NULL;
             }
             rowidx_t fetch = (available >= granularity) ? granularity : available;
@@ -480,7 +484,11 @@ public:
             if (available == fetch)
             {
                 block.clearCB = true;
-                rows.kill();
+                // NB: don't kill() - that would destroy the ptr-array allocation.
+                // clearRows() preserves the buffer (so it can be reused via reset()/swapRowData)
+                // and zeros firstRow/commitRows/numRows. Buffer is released by destructor for one-shot streams.
+                rows.clearRows();
+                drained = true; // subsequent nextRow can skip the lock and return NULL directly
             }
             numReadRows = fetch;
             pos = 0;
@@ -493,6 +501,58 @@ public:
     virtual void stop()
     {
         deactivateSpillingCallback();
+    }
+
+    // Reset this stream so it can be reused for another set of rows.
+    // Must only be called once the stream has been fully drained (or stopped).
+    //
+    // Tiny-group fast path: if newRows fits within `granularity` (i.e. one batch),
+    // transfer the rows directly into the pre-allocated readRows buffer.  This avoids
+    // the swap of the spillable-rows arrays AND lets nextRow consume the whole group
+    // without ever taking the row-array lock (drained=true is set up-front, so once
+    // readRows is exhausted nextRow short-circuits to nullptr).
+    //
+    // Larger-group path: swap newRows into the stream as before; the consumer's first
+    // nextRow will take the lock to refill readRows from `rows`.
+    //
+    // Both paths preserve the readRows buffer and the roxiemem callback registration.
+    void reset(CThorSpillableRowArray &newRows)
+    {
+        assertex(newRows.isFlushed());
+        spillStream.clear();
+        spillFile.clear();
+        // Release any rows still held (e.g. if the consumer stopped early) but keep the
+        // ptr-array allocation.
+        if (readRows && pos < numReadRows)
+            roxiemem::ReleaseRoxieRowRange(readRows, pos, numReadRows);
+        rows.clearRows();
+        if (!readRows)
+        {
+            // readRows was released by the spill-to-file path; re-allocate.
+            readRows = static_cast<const void * *>(rowIf->queryRowManager()->allocate(granularity * sizeof(void*), activity.queryContainer().queryId(), rows.queryDefaultMaxSpillCost()));
+        }
+        rowidx_t n = newRows.numCommitted();
+        if (n <= granularity)
+        {
+            // Tiny-group fast path - transfer rows directly into readRows.
+            // While rows live in readRows they are not spillable, which is acceptable for
+            // tiny groups consumed promptly.  We deliberately skip activateSpillingCallback
+            // here - `rows` is empty so freeBufferedRows would do nothing anyway.
+            if (n)
+                newRows.transferRowsCopy(readRows, true);
+            numReadRows = n;
+            pos = 0;
+            drained = true; // nothing in `rows`; nextRow returns nullptr without lock once readRows is exhausted
+        }
+        else
+        {
+            // Larger-group path: swapRowData exchanges only the row buffer + counts,
+            // leaving each side's configuration (stableSort etc.) intact.
+            rows.swapRowData(newRows);
+            pos = numReadRows = 0;
+            drained = false;
+            activateSpillingCallback();
+        }
     }
 };
 
@@ -812,6 +872,16 @@ void CThorExpandingRowArray::swap(CThorExpandingRowArray &other)
     numRows = otherNumRows;
     setup(otherRowIf, otherEmptyRowSemantics, otherStableSort, otherThrowOnOom);
     setDefaultMaxSpillCost(otherDefaultMaxSpillCost);
+}
+
+void CThorExpandingRowArray::swapRowData(CThorExpandingRowArray &other)
+{
+    // Storage-only swap: exchanges the row buffer and counts; each side keeps its own
+    // configuration (rowIf, stableSort, emptyRowSemantics, throwOnOom, rowManager, etc.).
+    std::swap(rows, other.rows);
+    std::swap(stableTable, other.stableTable);
+    std::swap(numRows, other.numRows);
+    std::swap(maxRows, other.maxRows);
 }
 
 void CThorExpandingRowArray::transferRows(rowidx_t & outNumRows, const void * * & outRows)
@@ -1576,6 +1646,14 @@ void CThorSpillableRowArray::swap(CThorSpillableRowArray &other)
     commitRows = otherCommitRows;
 }
 
+void CThorSpillableRowArray::swapRowData(CThorSpillableRowArray &other)
+{
+    CThorArrayLockBlock block(*this);
+    CThorExpandingRowArray::swapRowData(other);
+    std::swap(firstRow, other.firstRow);
+    std::swap(commitRows, other.commitRows);
+}
+
 void CThorSpillableRowArray::readBlock(const void **outRows, rowidx_t readRows)
 {
     CThorArrayLockBlock block(*this);
@@ -1648,6 +1726,13 @@ protected:
     unsigned options = 0;
     unsigned spillCompInfo = 0;
     RelaxedAtomic<__uint64> statSortCycles{0};
+
+    // Reusable stream infrastructure for the loadNextGroup API.  For the common in-memory
+    // fast path, loadNextGroup returns reusableGroupStream directly (loader-owned, lives
+    // until the next loadNextGroup/reset call).  For the slow path (overflow / shared /
+    // non-rc_mixed), the returned stream is held by currentGroupStream.
+    Owned<CSpillableStream> reusableGroupStream;
+    Owned<IRowStream> currentGroupStream;
     bool spillRows(bool critical)
     {
         //This must only be called while a lock is held on spillableRows
@@ -1843,11 +1928,97 @@ protected:
     }
     void reset()
     {
-        spillableRows.kill();
-        spillableRows.setup(rowIf, ers_forbidden, stableSort);
+        // Release currentGroupStream first so any rows still owned by a slow-path stream
+        // are freed before we recycle the spillable row array.  In the fast path,
+        // currentGroupStream is unused; the consumer has already drained the reusable
+        // group stream to EOG before getting here, and that stream's reset() (or the
+        // tiny-group prefill within it) has left spillableRows empty.
+        currentGroupStream.clear();
+        if (reusableGroupStream)
+        {
+            // Fast-path recycling: spillableRows is already empty/flushed.
+            // The next buildReusableGroupStream call will refill it via putRow().
+            // (The slow-path getStream also takes ownership of any rows in spillableRows,
+            // so this invariant also holds when the previous group spilled.)
+            dbgassertex(0 == spillableRows.numCommitted());
+            dbgassertex(spillableRows.isFlushed());
+        }
+        else
+        {
+            spillableRows.kill();
+            spillableRows.setup(rowIf, ers_forbidden, stableSort);
+        }
         spillFiles.kill();
         totalRows = 0;
         overflowCount = outStreams = 0;
+    }
+
+    // Read rows from 'in' until end-of-group (single NULL) and return a sorted stream
+    // over them.  Returns nullptr when 'in' produced no rows at all (end of input).
+    // The returned pointer is owned by the loader and is valid until the next call to
+    // loadNextGroup, reset, or loader destruction.
+    IRowStream *loadNextGroupImpl(IRowStream *in, const bool &abort)
+    {
+        // Lightweight per-group reset: clears currentGroupStream and recycles the
+        // spillable row array; preserves the reusable group stream object so its
+        // readRows buffer and roxiemem callback registration carry across groups.
+        reset();
+        activateSpillingCallback();
+        // setEmptyRowSemantics is a (mildly) chatty 2-field write; skip if already correct.
+        if (ers_forbidden != emptyRowSemantics)
+            setEmptyRowSemantics(ers_forbidden);
+
+        bool anyRow = false;
+        while (!abort)
+        {
+            const void *next = in->nextRow();
+            if (!next)
+                break;
+            anyRow = true;
+            putRow(next);
+        }
+        if (!anyRow)
+            return nullptr;
+
+        // Fast in-memory path: returns reusableGroupStream directly (no LINK; loader-owned).
+        // Slow path returns a freshly-owned stream that we stash in currentGroupStream.
+        bool useReusable = (0 == overflowCount) && (diskMemMix == rc_mixed) && !spillableRowSet;
+        if (useReusable)
+            return buildReusableGroupStream();
+        currentGroupStream.setown(getStream(nullptr, nullptr, false));
+        return currentGroupStream;
+    }
+
+    // Fast path: sort the just-loaded rows and hand them to the persistent reusable stream.
+    // For groups <= CSpillableStream::granularity (500) rows the stream's reset() prefills
+    // its readRows buffer directly and the consumer iterates lock-free.  Larger groups go
+    // via the swap+lock-on-refill path.  Returns a raw pointer owned by the loader.
+    IRowStream *buildReusableGroupStream()
+    {
+        {
+            CThorArrayLockBlock block(spillableRows);
+            outStreams++;
+            flush();
+            // Drop the loader-level spill callback before transferring rows to the stream;
+            // the reusable stream owns its own (sticky) callback registration.
+            deactivateSpillingCallback();
+            rowidx_t n = spillableRows.numCommitted();
+            // n > 0 here: loadNextGroupImpl only calls us when at least one row was read.
+            dbgassertex(n > 0);
+            totalRows += n;
+            if (iCompare && n > 1)
+            {
+                CCycleTimer timer;
+                spillableRows.sort(*iCompare, maxCores);
+                statSortCycles.fastAdd(timer.elapsedCycles());
+            }
+        }
+
+        if (!reusableGroupStream)
+            reusableGroupStream.setown(new CSpillableStream(activity, spillableRows, rowIf, emptyRowSemantics, spillPriority, spillCompInfo, tracingPrefix));
+        else
+            reusableGroupStream->reset(spillableRows);
+        return reusableGroupStream;
     }
 public:
     CThorRowCollectorBase(CActivityBase &_activity, IThorRowInterfaces *_rowIf, ICompare *_iCompare, StableSortFlag _stableSort, RowCollectorSpillFlags _diskMemMix, unsigned _spillPriority)
@@ -2063,6 +2234,10 @@ public:
     virtual IRowStream *loadGroup(IRowStream *in, const bool &abort, CThorExpandingRowArray *allMemRows, memsize_t *memUsage, bool doReset) override
     {
         return load(in, abort, trl_stopAtEog, allMemRows, memUsage, doReset);
+    }
+    virtual IRowStream *loadNextGroup(IRowStream *in, const bool &abort) override
+    {
+        return loadNextGroupImpl(in, abort);
     }
 };
 

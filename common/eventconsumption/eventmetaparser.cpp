@@ -167,7 +167,7 @@ void CMetaInfoState::onEvent(CEvent& event)
         PlaneInformation pi(event);
         auto it = planes.find(pi);
         if (it == planes.end())
-            planes.insert(pi);
+            planes.insert(std::move(pi));
         else if (it->path != pi.path || it->striped != pi.striped)
             throw makeStringExceptionV(0, "Conflicting plane definition: '%s'", pi.plane.c_str());
         break;

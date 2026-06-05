@@ -1162,6 +1162,8 @@ export = {
         Unlock: "Unlock",
         UnlockSDSLock: "Unlock SDS Lock",
         Unprotect: "Unprotect",
+        UnprotectAll: "Unprotect All",
+        UnprotectAllConfirm: "Are you sure you want to remove all protections from this file?",
         UnsupportedIE9FF: "Unsupported (IE <= 9, FireFox)",
         Unsuspend: "Unsuspend",
         Unsuspended: "Unsuspended",

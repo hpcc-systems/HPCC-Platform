@@ -2586,6 +2586,8 @@ public:
         return true;
     }
 
+    // NOTE: 'filter' must already have special characters escaped (e.g. via
+    // appendEscapedLdapFilter). This overload performs no escaping of its own.
     virtual void lookupSid(const char* basedn, const char* filter, MemoryBuffer& act_sid)
     {
         char        *attribute;       
@@ -2751,7 +2753,9 @@ public:
         if(searchstr && *searchstr && strcmp(searchstr, "*") != 0)
         {
             filter.insert(0, "(&(");
-            filter.appendf(")(|(%s=*%s*)(%s=*%s*)(%s=*%s*)))", act_fieldname, searchstr, "givenName", searchstr, "sn", searchstr);
+            StringBuffer escapedSearch;
+            appendEscapedLdapFilter(searchstr, escapedSearch);
+            filter.appendf(")(|(%s=*%s*)(%s=*%s*)(%s=*%s*)))", act_fieldname, escapedSearch.str(), "givenName", escapedSearch.str(), "sn", escapedSearch.str());
         }
 
         char *attrs[] = {act_fieldname, sid_fieldname, "cn", "userAccountControl", "pwdLastSet", "employeeId", "employeeNumber", NULL};
@@ -3556,7 +3560,9 @@ public:
         if(searchstr && *searchstr && strcmp(searchstr, "*") != 0)
         {
             filter.insert(0, "(&(");
-            filter.appendf(")(|(%s=*%s*)))", "uNCName", searchstr);
+            StringBuffer escapedSearch;
+            appendEscapedLdapFilter(searchstr, escapedSearch);
+            filter.appendf(")(|(%s=*%s*)))", "uNCName", escapedSearch.str());
         }
 
 
@@ -4655,7 +4661,9 @@ public:
         if(searchstr && *searchstr && strcmp(searchstr, "*") != 0)
         {
             filter.insert(0, "(&(");
-            filter.appendf(")(|(%s=*%s*)(%s=*%s*)(%s=*%s*)))", (m_ldapconfig->getServerType()==ACTIVE_DIRECTORY)?"sAMAcccountName":"uid", searchstr, "givenName", searchstr, "sn", searchstr);
+            StringBuffer escapedSearch;
+            appendEscapedLdapFilter(searchstr, escapedSearch);
+            filter.appendf(")(|(%s=*%s*)(%s=*%s*)(%s=*%s*)))", (m_ldapconfig->getServerType()==ACTIVE_DIRECTORY)?"sAMAccountName":"uid", escapedSearch.str(), "givenName", escapedSearch.str(), "sn", escapedSearch.str());
         }
 
         return countEntries(m_ldapconfig->getUserBasedn(), filter.str(), limit);
@@ -4669,7 +4677,9 @@ public:
         if(searchstr && *searchstr && strcmp(searchstr, "*") != 0)
         {
             filter.insert(0, "(&(");
-            filter.appendf(")(|(%s=*%s*)))", "uNCName", searchstr);
+            StringBuffer escapedSearch;
+            appendEscapedLdapFilter(searchstr, escapedSearch);
+            filter.appendf(")(|(%s=*%s*)))", "uNCName", escapedSearch.str());
         }
 
         return countEntries(basedn, filter.str(), limit);
@@ -5334,11 +5344,15 @@ private:
                     }
                     if(isleaf && (sd.getObjectClass() != NULL) && (stricmp(sd.getObjectClass(), "Volume") == 0))
                     {
-                        dn.append("cn=").append(curlen, curscope).append(",");
+                        dn.append("cn=");
+                        escapeLdapDistinguishedName(curlen, curscope, dn);
+                        dn.append(",");
                     }
                     else
                     {
-                        dn.append("ou=").append(curlen, curscope).append(",");
+                        dn.append("ou=");
+                        escapeLdapDistinguishedName(curlen, curscope, dn);
+                        dn.append(",");
                     }
                     
                     if (cn.isEmpty())//only process leftmost part of ou, so "ou=s3,ou=s2,ou=s1" only specify ou=s3
@@ -5357,7 +5371,9 @@ private:
 
                     if (curptr == resourcename && *curptr != ':') //handle a single char as the top scope, such as x::abc
                     {
-                        dn.append("ou=").append(1, curptr).append(",");
+                        dn.append("ou=");
+                        escapeLdapDistinguishedName(1, curptr, dn);
+                        dn.append(",");
                     }
                 }
                 dn.append(basedn);
@@ -6007,6 +6023,14 @@ private:
         const char* username = user.getName();
         if(username == NULL || *username == '\0')
             throw MakeStringException(-1, "Can't add user, username not set");
+
+        // For iPlanet/389ds the username is embedded verbatim into an LDAP URL inside an ACI
+        // string: (userdn = "ldap:///uid=<username>,..."). A '"' breaks out of the ACI string
+        // enabling clause injection; a '?' truncates the URL's DN component. Reject both at
+        // account creation so the bad value never enters the directory.
+        if(serverType != ACTIVE_DIRECTORY && usernameContainsLdapUrlForbiddenChars(username))
+            throw MakeStringException(-1, "Can't add user '%s': username contains character"
+                " not permitted in LDAP ACI userdn URLs ('\"' and '?' are forbidden)", username);
 
         const char* userPassword = user.credentials().getPassword();
         if(isEmptyString(userPassword))

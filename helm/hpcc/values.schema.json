@@ -601,6 +601,10 @@
       "description": "Details of the page cache ",
       "type": "object",
       "properties": {
+        "disable": {
+          "description": "Disable the page cache",
+          "type": "boolean"
+        },
         "sizeMB": {
           "description": "How much disk space (in MB) to reserve for the disk cache",
           "type": "integer"
@@ -612,6 +616,23 @@
         "readSize": {
           "description": "Recommended size when reading FROM the cache, must be a factor of pageSize",
           "type": "integer"
+        },
+        "bucketCeilingNs": {
+          "type": "integer",
+          "description": "page cache stats bucket ceiling in nanoseconds. Values below 10 are clamped to 10"
+        },
+        "statsIntervalMs": {
+          "type": "integer",
+          "description": "page cache statistics reporting interval in milliseconds. Set to 0 to disable stats; values below 5000 are raised to 5000"
+        },
+        "ioMethod": {
+          "type": "string",
+          "enum": ["normal", "direct", "uncached"],
+          "description": "Disk page cache I/O method"
+        },
+        "file": {
+          "type": "string",
+          "description": "Disk page cache backing file path"
         },
         "debugCacheMissPenalty": {
           "description": "How long to delay a read that fails to hit the cache.  Used to model the performance impact of cache misses",

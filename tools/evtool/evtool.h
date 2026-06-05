@@ -62,6 +62,7 @@ protected:
 
     // Abstract methods for different command types
     virtual bool acceptArgument(const char* arg) = 0;
+    virtual unsigned consumeArgument(int argc, const char* argv[], int pos);
     virtual bool isValidRequest() = 0;
     virtual int executeCommand() = 0;
 

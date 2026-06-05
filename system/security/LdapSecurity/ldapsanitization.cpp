@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include "ldapsanitization.hpp"
+#include "jstring.hpp"
 
 #include <cctype>
 #include <cstring>
@@ -126,21 +127,18 @@ void escapeLdapDistinguishedName(size_t inputLength, const char *input, StringBu
     }
 }
 
-bool validateLdapUsername(const char *username)
+bool usernameContainsLdapUrlForbiddenChars(const char *username)
 {
-    if (!username || !*username)
+    if (isEmptyString(username))
         return false;
 
-    for (const unsigned char *cursor = reinterpret_cast<const unsigned char *>(username); *cursor; ++cursor)
+    for (const char *p = username; *p; ++p)
     {
-        // Keep locale-sensitive alnum validation for compatibility. A strict
-        // ASCII allowlist would be more deterministic, but it could reject
-        // existing users whose usernames rely on locale-specific characters.
-        if (std::isalnum(*cursor) || strchr("._-@\\/", *cursor))
-            continue;
-
-        return false;
+        // '"' can break out of the ACI string enabling clause injection;
+        // '?' truncates the DN component of the ldap:/// URL.
+        if (*p == '"' || *p == '?')
+            return true;
     }
 
-    return true;
+    return false;
 }

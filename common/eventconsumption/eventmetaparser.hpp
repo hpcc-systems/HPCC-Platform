@@ -90,14 +90,16 @@ public:
     // Accessor functions for file ID to path mappings
     // Note: Returns "" (empty string) to represent a cache miss
     const char* queryFilePath(__uint64 fileId) const;
-    const char* queryPlane(const CEvent& event) const;
-    const char* queryLogicalFileName(const CEvent& event) const;
     bool hasFileMapping(__uint64 fileId) const;
 
     // Accessor functions for trace ID to service name mappings
     // Note: Returns "" (empty string) to represent a cache miss
     const char* queryServiceName(const char* traceId) const;
     bool hasServiceMapping(const char* traceId) const;
+
+    // Accessor functions for plane information
+    const char* queryLogicalFileName(const CEvent& event) const;
+    const char* queryPlane(const CEvent& event) const;
 
     // Clear all mappings
     void clearAll();

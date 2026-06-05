@@ -1161,6 +1161,8 @@ export = {
     Unlock: "Feloldott",
     UnlockSDSLock: "SDS zár feloldása",
     Unprotect: "Védelem nélkül",
+    UnprotectAll: "Az összes védelem törlése",
+    UnprotectAllConfirm: "Biztosan el szeretné távolítani az összes védelmet erről a fájlról?",
     UnsupportedIE9FF: "Nem támogatott böngészőprogram (IE <= 9, FireFox )",
     Unsuspend: "Folytat",
     Unsuspended: "Folytatva",

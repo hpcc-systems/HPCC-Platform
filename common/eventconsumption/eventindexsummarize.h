@@ -19,10 +19,13 @@
 
 #include "eventconsumption.h"
 #include "eventindex.hpp"
+#include "eventgrouping.hpp"
 #include "eventindexmodel.hpp"
 #include "eventoperation.h"
 #include "eventvisitor.h"
 #include <unordered_map>
+#include <string>
+#include <vector>
 
 enum class IndexSummarization
 {
@@ -31,6 +34,7 @@ enum class IndexSummarization
     byNode,
     byTrace,
     byService,
+    byGroup // Indicates using the generic grouping framework
 };
 
 class event_decl CIndexFileSummary : public CEventConsumingOp
@@ -39,6 +43,25 @@ public: // CEventConsumingOp
     virtual bool doOp() override;
 public:
     void setSummarization(IndexSummarization value) { summarization = value; }
+    void addGroupAttribute(const std::vector<std::string>& attrs)
+    {
+        std::vector<std::string> strippedAttrs;
+        std::vector<GroupAttribute> ids;
+        for (const auto& a : attrs)
+        {
+            ids.push_back(GroupAttributeExtractor::parseAttribute(a.c_str()));
+            size_t slashPos = a.find('/');
+            if (slashPos != std::string::npos)
+                strippedAttrs.push_back(a.substr(0, slashPos));
+            else
+                strippedAttrs.push_back(a);
+        }
+        groupAttributes.push_back(strippedAttrs);
+        groupAttributeIds.push_back(ids);
+        setSummarization(IndexSummarization::byGroup);
+    }
 protected:
-    IndexSummarization summarization = IndexSummarization::byFile;
+    IndexSummarization summarization = IndexSummarization::byGroup;
+    std::vector<std::vector<std::string>> groupAttributes;
+    std::vector<std::vector<GroupAttribute>> groupAttributeIds;
 };

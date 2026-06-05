@@ -23,6 +23,23 @@
 class CEvtDumpCommand : public TEventConsumingCommand<CDumpEventsOp>
 {
 public:
+    virtual bool acceptVerboseOption(const char* opt) override
+    {
+        if (streq(opt, "meta"))
+            return acceptKVOption("meta", "");
+        return TEventConsumingCommand<CDumpEventsOp>::acceptVerboseOption(opt);
+    }
+
+    virtual bool acceptKVOption(const char* key, const char* value) override
+    {
+        if (streq(key, "meta"))
+        {
+            op.setMetaFlags(value);
+            return true;
+        }
+        return TEventConsumingCommand<CDumpEventsOp>::acceptKVOption(key, value);
+    }
+
     virtual bool acceptTerseOption(char opt) override
     {
         switch (opt)
@@ -73,6 +90,10 @@ R"!!!(    -c                        Output as comma separated values.
     -j                        Output as JSON.
     -x                        Output as XML.
     -y                        Output as YAML.
+    --meta [ '=' <flags> ]    Include meta information columns in output.
+                              When specified, <flags> is a comma-separated
+                              list of one or more of:
+                              serviceName, logicalFileName, path, plane.
 )!!!";
         size32_t usageStrLength = size32_t(strlen(usageStr));
         out.put(usageStrLength, usageStr);

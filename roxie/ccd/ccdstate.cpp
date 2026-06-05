@@ -247,7 +247,7 @@ void stopDelayedReleaser()
 bool startRoxieEventRecording(const char * options, const char * filename)
 {
     unsigned mySubChannel = getMySubChannel(myChannel);
-    if (!startComponentRecording("roxie", options, filename, myChannel+1, mySubChannel+1, true))
+    if (!startComponentRecording("roxie", options, filename, myChannel, mySubChannel+1, true))
         return false;
 
     //Generate information about all files that are already registered - others will be added as they are opened

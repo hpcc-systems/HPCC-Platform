@@ -126,11 +126,22 @@ enum EventAttrTypeClass : byte
     EATCmax
 };
 
+enum EventAttrUnit : byte
+{
+    EAUnone,
+    EAUscalar,
+    EAUsize,
+    EAUduration,
+    EAUtimestamp,
+    EAUmax
+};
+
 extern jlib_decl EventType queryEventType(const char* name);
 extern jlib_decl const char * queryEventName(EventType event);
 extern jlib_decl EventAttr queryEventAttribute(const char* name);
 extern jlib_decl const char * queryEventAttributeName(EventAttr attr);
 extern jlib_decl EventAttrType queryEventAttributeType(EventAttr attr);
+extern jlib_decl EventAttrUnit queryEventAttributeUnit(EventAttr attr);
 
 struct jlib_decl EventRecordingSummary
 {

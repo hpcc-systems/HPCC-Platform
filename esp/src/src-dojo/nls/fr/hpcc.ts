@@ -1155,6 +1155,8 @@ export = {
     Unlock: "Déverrouiller",
     UnlockSDSLock: "Déverrouiller le verrouillage SDS",
     Unprotect: "Annuler",
+    UnprotectAll: "Tout annuler",
+    UnprotectAllConfirm: "Êtes-vous sûr de vouloir supprimer toutes les protections de ce fichier ?",
     UnsupportedIE9FF: "N'est pas supportée (IE <= 9, FireFox)",
     Unsuspend: "Annuler la suspension",
     Unsuspended: "Non suspendu",

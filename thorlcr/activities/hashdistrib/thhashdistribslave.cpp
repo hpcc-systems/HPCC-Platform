@@ -1131,7 +1131,18 @@ public:
             compressHandler = queryDefaultCompressHandler();
         ::ActPrintLog(activity, thorDetailedLogLevel, "Using compressor: %s", compressHandler ? compressHandler->queryType() : "NONE");
 
-        allowSpill = activity->getOptBool(THOROPT_HDIST_SPILL, true);
+        /*
+         * Spilling support here was introduced so hash distribute could keep accepting rows even when
+         * the sender was full because the receiver side was draining slowly. The original example was
+         * a downstream localsort that reads in phases while sorting/spilling.
+         *
+         * In practice this is often counter-productive: there is already an in-memory receive buffer
+         * (pullBufferSize), and enabling spill here tends to increase I/O, time (hence cost) and will
+         * trigger a lot more spilling.
+         * Downstream activities that know they are skewed (e.g. serial activities) already add read-ahead
+         * to smooth that consumption pattern.
+         */
+        allowSpill = activity->getOptBool(THOROPT_HDIST_SPILL, false);
         if (allowSpill)
             ActPrintLog("Using spilling buffer (will spill if overflows)");
         writerPoolSize = activity->getOptUInt(THOROPT_HDIST_WRITE_POOL_SIZE, DEFAULT_WRITEPOOLSIZE);
@@ -1144,7 +1155,7 @@ public:
         targetWriterLimit = activity->getOptUInt(THOROPT_HDIST_TARGETWRITELIMIT);
         ::ActPrintLog(activity, thorDetailedLogLevel, "targetWriterLimit : %d", targetWriterLimit);
 
-        newLookAhead = activity->getOptBool("newlookahead", false);
+        newLookAhead = activity->getOptBool(THOROPT_NEWLOOKAHEAD, defaultNewLookAhead);
         if (newLookAhead)
             populateLookAheadOptions(*activity, options);
     }

@@ -469,6 +469,15 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
         if (memTraceLevel)
             DBGLOG("Transparent huge pages are not supported on this kernel.  Requires kernel version > 2.6.38.");
 #endif
+
+#ifdef MADV_DONTDUMP
+        // Speed up core dumps and row memory can contain PII, so better to exclude it
+        madvise(heapBase,memsize,MADV_DONTDUMP);
+#endif
+#ifdef MADV_DONTFORK
+        // Prevent child processes from inheriting roxiemem
+        madvise(heapBase,memsize,MADV_DONTFORK);
+#endif
     }
 #endif
 
@@ -2564,8 +2573,12 @@ public:
 
     virtual void reportLeaks(unsigned &leaked, const IContextLogger &logctx) const 
     {
-        logctx.CTXLOG("Block size %" I64F "u was allocated by activity %u and not freed", (unsigned __int64) chunkCapacity, getActivityId(allocatorId));
-        leaked--;
+        // This item may have been freed, but the memory has not been reclaimed yet
+        if (count.load(std::memory_order_relaxed) > 1)
+        {
+            logctx.CTXLOG("Block size %" I64F "u was allocated by activity %u and not freed", (unsigned __int64) chunkCapacity, getActivityId(allocatorId));
+            leaked--;
+        }
     }
 
     virtual void getPeakActivityUsage(IActivityMemoryUsageMap *map) const 

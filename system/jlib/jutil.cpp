@@ -2836,7 +2836,7 @@ bool validateConfigurationDirectory(const IPropertyTree* useTree, const char* ca
     StringBuffer configDir;
     if (!getConfigurationDirectory(useTree, category, component, instance, configDir))
         return false;
-    
+
     addPathSepChar(configDir);
     return hasPrefix(dirToValidate, configDir, true);
 }
@@ -3211,6 +3211,54 @@ int getEnum(const char *v, const EnumMapping *map, int defval)
 }
 
 //---------------------------------------------------------------------------------------------------------------------
+
+extern jlib_decl offset_t friendlyStringToDuration(const char *in)
+{
+    constexpr offset_t SCALE_NS = 1;
+    constexpr offset_t SCALE_US = SCALE_NS * 1000;
+    constexpr offset_t SCALE_MS = SCALE_US * 1000;
+    constexpr offset_t SCALE_S  = SCALE_MS * 1000;
+    constexpr offset_t SCALE_M  = SCALE_S  * 60;
+    constexpr offset_t SCALE_H  = SCALE_M  * 60;
+    constexpr offset_t SCALE_D  = SCALE_H  * 24;
+
+    const char* start = in;
+    while (isspace((unsigned char)*start))
+        start++;
+    if (*start == '-')
+        throw makeStringExceptionV(-1, "Invalid duration format: negative values not allowed in '%s'", in);
+
+    char *tail = nullptr;
+    offset_t result = strtoull(start, &tail, 10);
+
+    // Catch cases where no digits were parsed at all (e.g., input was just "ms")
+    if (start == tail)
+        throw makeStringExceptionV(-1, "Invalid duration format: no numeric value found in '%s'", in);
+
+    offset_t scale = 1;
+    if (*tail)
+    {
+        if (strieq(tail, "ns"))
+            scale = SCALE_NS;
+        else if (strieq(tail, "us"))
+            scale = SCALE_US;
+        else if (strieq(tail, "ms"))
+            scale = SCALE_MS;
+        else if (strieq(tail, "s"))
+            scale = SCALE_S;
+        else if (strieq(tail, "m"))
+            scale = SCALE_M;
+        else if (strieq(tail, "h"))
+            scale = SCALE_H;
+        else if (strieq(tail, "d"))
+            scale = SCALE_D;
+        else
+            throw makeStringExceptionV(-1, "Invalid duration suffix '%s'", tail);
+    }
+    if (result > ((offset_t)-1) / scale)
+        throw makeStringExceptionV(-1, "Duration overflow for input '%s'", in);
+    return result * scale;
+}
 
 extern jlib_decl offset_t friendlyStringToSize(const char *in)
 {

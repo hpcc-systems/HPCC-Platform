@@ -24,8 +24,6 @@
 #include "thorcommon.hpp"
 #include "commonext.hpp"
 
-#define ERROR_ANALYSER_TIME_EXCEEDED 99999
-
 struct RoxieOptions
 {
 // The following are set from options in the query
@@ -220,7 +218,7 @@ protected:
         {
             if (timer.elapsedCycles() > maxExecuteCycles)
             {
-                throw makeStringExceptionV(ERROR_ANALYSER_TIME_EXCEEDED, "Cost optimizer exceeded max execute time (%llums) - analysis incomplete",  cycle_to_millisec(maxExecuteCycles));
+                throw makeStringExceptionV(ANA_TIME_EXCEEDED_ID, "Cost optimizer exceeded max execute time (%llums) - analysis incomplete",  cycle_to_millisec(maxExecuteCycles));
             }
         }
     }
@@ -1360,7 +1358,7 @@ void WorkunitAnalyserBase::collateWorkunitStats(IConstWorkUnit * workunit, const
         }
         catch (IException * e)
         {
-            if (e->errorCode() == ERROR_ANALYSER_TIME_EXCEEDED)
+            if (e->errorCode() == ANA_TIME_EXCEEDED_ID)
                 throw;
             e->Release();
         }

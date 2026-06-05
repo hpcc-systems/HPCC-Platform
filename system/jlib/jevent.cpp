@@ -165,37 +165,38 @@ struct EventAttrInformation
     EventAttrType type;
     unsigned size;
     EventAttrTypeClass typeClass;
+    EventAttrUnit unit;
 };
 
-#define DEFINE_ATTR(tag, type) { EvAttr##tag, #tag, EAT##type, attrTypeSizes[EAT##type], attrTypeClasses[EAT##type] }
+#define DEFINE_ATTR(tag, type, unit) { EvAttr##tag, #tag, EAT##type, attrTypeSizes[EAT##type], attrTypeClasses[EAT##type], EAU##unit }
 
 static constexpr EventAttrInformation attrInformation[] = {
-    DEFINE_ATTR(None, none),
-    DEFINE_ATTR(FileId, u4),
-    DEFINE_ATTR(FileOffset, u8),
-    DEFINE_ATTR(NodeKind, u1),
-    DEFINE_ATTR(ReadTime, u8),
-    DEFINE_ATTR(ElapsedTime, u8),
-    DEFINE_ATTR(InMemorySize, u4),
-    DEFINE_ATTR(Path, string),
-    DEFINE_ATTR(ConnectId, u8),
-    DEFINE_ATTR(Enabled, bool),
-    DEFINE_ATTR(FileSize, u8),
-    DEFINE_ATTR(EventTimestamp, timestamp),
-    DEFINE_ATTR(EventTraceId, string),
-    DEFINE_ATTR(EventThreadId, u8),
-    DEFINE_ATTR(EventStackTrace, string),
-    DEFINE_ATTR(DataSize, u4),
-    DEFINE_ATTR(ExpandTime, u8),
-    DEFINE_ATTR(FirstUse, bool),
-    DEFINE_ATTR(ServiceName, string),
-    DEFINE_ATTR(ChannelId, u1),
-    DEFINE_ATTR(ReplicaId, u1),
-    DEFINE_ATTR(InstanceId, u8),
-    DEFINE_ATTR(ProcessDescriptor, string),
-    DEFINE_ATTR(OpenTime, u8),
-    DEFINE_ATTR(Plane, string),
-    DEFINE_ATTR(IsStriped, bool),
+    DEFINE_ATTR(None, none, none),
+    DEFINE_ATTR(FileId, u4, none),
+    DEFINE_ATTR(FileOffset, u8, size),
+    DEFINE_ATTR(NodeKind, u1, none),
+    DEFINE_ATTR(ReadTime, u8, duration),
+    DEFINE_ATTR(ElapsedTime, u8, duration),
+    DEFINE_ATTR(InMemorySize, u4, size),
+    DEFINE_ATTR(Path, string, none),
+    DEFINE_ATTR(ConnectId, u8, none),
+    DEFINE_ATTR(Enabled, bool, none),
+    DEFINE_ATTR(FileSize, u8, size),
+    DEFINE_ATTR(EventTimestamp, timestamp, timestamp),
+    DEFINE_ATTR(EventTraceId, string, none),
+    DEFINE_ATTR(EventThreadId, u8, none),
+    DEFINE_ATTR(EventStackTrace, string, none),
+    DEFINE_ATTR(DataSize, u4, size),
+    DEFINE_ATTR(ExpandTime, u8, duration),
+    DEFINE_ATTR(FirstUse, bool, none),
+    DEFINE_ATTR(ServiceName, string, none),
+    DEFINE_ATTR(ChannelId, u1, none),
+    DEFINE_ATTR(ReplicaId, u1, none),
+    DEFINE_ATTR(InstanceId, u8, none),
+    DEFINE_ATTR(ProcessDescriptor, string, none),
+    DEFINE_ATTR(OpenTime, u8, duration),
+    DEFINE_ATTR(Plane, string, none),
+    DEFINE_ATTR(IsStriped, bool, none),
 };
 
 static_assert(_elements_in(attrInformation) == EvAttrMax);
@@ -252,6 +253,12 @@ EventAttrType queryEventAttributeType(EventAttr attr)
 {
     assertex(attr < EvAttrMax);
     return attrInformation[attr].type;
+}
+
+EventAttrUnit queryEventAttributeUnit(EventAttr attr)
+{
+    assertex(attr < EvAttrMax);
+    return attrInformation[attr].unit;
 }
 
 bool isHeaderAttribute(EventAttr attr)
