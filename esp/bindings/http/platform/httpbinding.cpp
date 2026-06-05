@@ -48,6 +48,10 @@
 #include "cumulativetimer.hpp"
 #include <memory>
 
+#ifdef _USE_CPPUNIT
+#include <cppunit/extensions/HelperMacros.h>
+#endif
+
 #include "esdl_def_helper.hpp"
 #include "datamasking.h"
 
@@ -305,6 +309,13 @@ IEspCorsHelper *createEspCorsHelper(IPropertyTree *cors)
 
 static std::map<std::string, Owned<ISecManager>> ldapInstances;
 static CriticalSection ldapInstancesCS;
+
+
+static void formatVersion(double version, StringBuffer& out)
+{
+    out.clear();
+    out.appendf("%.2f", version);
+}
 
 EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const char *procname)
 {
@@ -1821,8 +1832,11 @@ void  EspHttpBinding::getServiceSchema(IEspContext& context, CHttpRequest* reque
     StringBuffer nstr;
     generateEsdlNamespace(context, request, serviceQName, methodQName, nstr);
 
+    StringBuffer formattedVersion;
+    formatVersion(version, formattedVersion);
+
     IProperties *params = createProperties();
-    params->setProp("version", StringBuffer("'").appendf("%g", version).append("'"));
+    params->setProp("version", StringBuffer("'").append(formattedVersion).append("'"));
     params->setProp("tnsParam", StringBuffer("'").append(nstr).append("'").str());
 
     //
@@ -1834,7 +1848,7 @@ void  EspHttpBinding::getServiceSchema(IEspContext& context, CHttpRequest* reque
         if (request->queryParameters()->hasProp("wsdl_destination_path"))
             location.append(request->queryParameters()->queryProp("wsdl_destination_path"));
         else
-            location.append('/').append(serviceQName).appendf("?ver_=%g", version);
+            location.append('/').append(serviceQName).append("?ver_=").append(formattedVersion);
         params->setProp("location", StringBuffer("'").append(location).append("'").str());
         esdlXslType = EsdlXslToWsdl;
     }
@@ -2318,12 +2332,14 @@ int EspHttpBinding::onGetIndex(IEspContext &context, CHttpRequest* request,  CHt
         double ver = context.getClientVersion();
         if (ver<=0)
             ver = getWsdlVersion();
+        StringBuffer formattedVersion;
+        formatVersion(ver, formattedVersion);
         HtmlPage page("Enterprise Services Platform");
 
         page.appendContent(new CHtmlHeader(H1, serviceQName));
 
         const char* build_ver = getBuildVersion();
-        VStringBuffer build("Version: %g, Build: %s", ver, build_ver);
+        VStringBuffer build("Version: %s, Build: %s", formattedVersion.str(), build_ver);
         page.appendContent(new CHtmlHeader(H2, build));
 
         StringBuffer urlParams;
@@ -2416,6 +2432,8 @@ int EspHttpBinding::onGetXForm(IEspContext &context, CHttpRequest* request, CHtt
     }
     else
     {
+        // Fall back to default version if client doesn't specify- schema generation
+        // needs a nonzero version to function properly.
         double ver = getVersion(context);
         StringBuffer schema;
 
@@ -2438,9 +2456,9 @@ int EspHttpBinding::onGetXForm(IEspContext &context, CHttpRequest* request, CHtt
 
         // params
         xform->setStringParameter("serviceName", serviceQName);
-        StringBuffer version;
-        version.appendf("%g", ver);
-        xform->setStringParameter("serviceVersion", version);
+        StringBuffer formattedVersion;
+        formatVersion(ver, formattedVersion);
+        xform->setStringParameter("serviceVersion", formattedVersion);
 
         StringBuffer methodExt(methodQName);
         if (context.queryRequestParameters()->hasProp("json"))
@@ -2449,6 +2467,8 @@ int EspHttpBinding::onGetXForm(IEspContext &context, CHttpRequest* request, CHtt
 
         // pass params to form (excluding form and __querystring)
         StringBuffer xFormParams;
+        // Preserve the client requested version in the form query params to propagate
+        // the original intent of the request.
         if (!getUrlParams(context.queryRequestParameters(),xFormParams))
             xFormParams.appendf("%cver_=%g",(xFormParams.length()>0) ? '&' : '?', context.getClientVersion());
         xform->setStringParameter("queryParams", xFormParams.str());
@@ -2786,3 +2806,41 @@ void EspHttpBinding::sortResponse(IEspContext& context, CHttpRequest* request, M
         IERRLOG("Unexpected error: parsing XML: %s", e->errorMessage(msg).str());
     }
 }
+
+
+#ifdef _USE_CPPUNIT
+class HttpBindingTests : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(HttpBindingTests);
+    CPPUNIT_TEST(testFormatVersionAtLeastTwoDecimals);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void testFormatVersionAtLeastTwoDecimals()
+    {
+        StringBuffer formatted;
+
+        formatVersion(1, formatted);
+        CPPUNIT_ASSERT_EQUAL(std::string("1.00"), std::string(formatted.str()));
+
+        formatVersion(1.0, formatted);
+        CPPUNIT_ASSERT_EQUAL(std::string("1.00"), std::string(formatted.str()));
+
+        formatVersion(1.2, formatted);
+        CPPUNIT_ASSERT_EQUAL(std::string("1.20"), std::string(formatted.str()));
+
+        formatVersion(1.234, formatted);
+        CPPUNIT_ASSERT_EQUAL(std::string("1.23"), std::string(formatted.str()));
+
+        formatVersion(10.230000000000001, formatted);
+        const char *dot = strchr(formatted.str(), '.');
+        CPPUNIT_ASSERT(dot != nullptr);
+
+        unsigned decimals = formatted.length() - static_cast<unsigned>((dot - formatted.str()) + 1);
+        CPPUNIT_ASSERT(decimals >= 2);
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(HttpBindingTests);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(HttpBindingTests, "HttpBindingTests");
+#endif
