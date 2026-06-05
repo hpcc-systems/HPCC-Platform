@@ -361,6 +361,11 @@ public:
 
     inline const void **getRowArray() { return rows; }
     void swap(CThorExpandingRowArray &src);
+    // Exchange row storage only (rows/stableTable/numRows/maxRows) with another array,
+    // leaving each side's configuration (rowIf, stableSort, emptyRowSemantics, throwOnOom)
+    // untouched.  Useful when handing a ptr-array buffer back and forth between cooperating
+    // objects whose own settings should not be perturbed.
+    void swapRowData(CThorExpandingRowArray &src);
     void transfer(CThorExpandingRowArray &from)
     {
         kill();
@@ -493,6 +498,9 @@ public:
 
 // access to
     void swap(CThorSpillableRowArray &src);
+    // Storage-only swap (see CThorExpandingRowArray::swapRowData); additionally exchanges
+    // firstRow / commitRows.  Does not disturb either side's configuration.
+    void swapRowData(CThorSpillableRowArray &src);
     void transfer(CThorSpillableRowArray &from)
     {
         kill();
@@ -530,7 +538,9 @@ public:
     virtual void lock() const { cs.enter(); }
     virtual void unlock() const { cs.leave(); }
 
-private:
+    // Releases all rows but keeps the underlying ptr-array allocation; also resets
+    // firstRow/commitRows.  Caller must ensure no concurrent users (typically called
+    // under the array lock or when the array is known to be quiescent).
     void clearRows();
 };
 
@@ -558,6 +568,14 @@ interface IThorRowLoader : extends IThorRowCollectorCommon
 {
     virtual IRowStream *load(IRowStream *in, const bool &abort, bool preserveGrouping=false, CThorExpandingRowArray *allMemRows=NULL, memsize_t *memUsage=NULL, bool doReset=true) = 0;
     virtual IRowStream *loadGroup(IRowStream *in, const bool &abort, CThorExpandingRowArray *allMemRows=NULL, memsize_t *memUsage=NULL, bool doReset=true) = 0;
+
+    // Iterator-style API for repeated per-group loads.  Each call reads one group from
+    // 'in', sorts it, and returns the resulting stream.  Returns nullptr when 'in' has
+    // produced no more rows (end of input).  The returned pointer is owned by the
+    // loader and is valid only until the next loadNextGroup/reset/loader destruction.
+    // Designed to allow the in-memory fast path to reuse a single underlying spillable
+    // stream across groups.
+    virtual IRowStream *loadNextGroup(IRowStream *in, const bool &abort) = 0;
 };
 
 interface IThorRowCollector : extends IThorRowCollectorCommon
