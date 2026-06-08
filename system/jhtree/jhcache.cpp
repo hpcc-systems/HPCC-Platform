@@ -176,12 +176,12 @@ public:
     {
         switch (phase)
         {
-        case StatReadCacheLookup: return "read lookup";
-        case StatReadDiskIo: return "read diskio";
-        case StatReadError: return "read ioerr";
+        case StatReadCacheLookup: return "read lookup ";
+        case StatReadDiskIo: return "read diskio ";
+        case StatReadError: return "read ioerr  ";
         case StatWriteCacheLookup: return "write lookup";
         case StatWriteDiskIo: return "write diskio";
-        case StatWriteError: return "write ioerr";
+        case StatWriteError: return "write ioerr ";
         }
         return "unknown";
     }
@@ -235,7 +235,10 @@ public:
         bucketStep = (bucketRangeCeiling + (numBuckets - 1)) / numBuckets;
 
         if ( (config->getPropBool("@disable", false)) || (totSize == 0) )
+        {
+            DBGLOG("pageCache disabled");
             return;
+        }
 
         // throws means roxie will not start ...
         if ((pageSize < 8192) || !isPowerOf2(pageSize))
@@ -257,7 +260,6 @@ public:
         setSize = (offset_t)numEntries * (offset_t)pageSize;
         totSize = setSize * numSets;
 
-        int rc = 0;
         int openFlags = O_CREAT | O_RDWR;
 
         ioMethod = NORMAL;
@@ -290,9 +292,7 @@ public:
 
         fCrit = std::make_unique<CriticalSection []>(numCrits);
 
-        rc = openPageCacheFile(cacheFile, openFlags);
-        if (rc < 0)
-            return;
+        openPageCacheFile(cacheFile, openFlags);
 
         DBGLOG("pageCache readSize: %u pageSize %u", readSize, pageSize);
         DBGLOG("pageCache num sets: %d file size: %llu MB critsecs: %d entries: %u", numSets, totSize / 1048576ULL, numCrits, numEntries);
@@ -337,42 +337,44 @@ public:
     }
 
 #ifdef __linux__
-    int openPageCacheFile(const char *cacheFile, unsigned openFlags)
+    void openPageCacheFile(const char *cacheFile, unsigned openFlags)
     {
         cacheFd = open(cacheFile, openFlags, 0600);
         if (cacheFd < 0)
-        {
-            DBGLOG("pageCache error opening file %s, errno %d", cacheFile, errno);
-            return -1;
-        }
+            throw makeStringExceptionV(0, "pageCache error opening file %s, errno %d", cacheFile, errno);
 
         // prevent another HPCC process from accidentally using same file ...
-        int rc = flock(cacheFd, LOCK_EX | LOCK_NB);
+        // flock() has had issues with containers and zombie processes not unlocking
+        // instead use truncate to clear previous data
+        int rc = ftruncate(cacheFd, 0ULL);
         if (rc != 0)
         {
-            DBGLOG("pageCache error locking file %s, errno %d", cacheFile, errno);
-            return -1;
+            int errNum = errno;
+            close(cacheFd);
+            cacheFd = -1;
+            throw makeStringExceptionV(0, "pageCache error clearing file %s (size: %llu), errno %d", cacheFile, totSize, errNum);
         }
 
         rc = posix_fallocate(cacheFd, 0ULL, totSize);
         if (rc != 0)
         {
-            DBGLOG("pageCache error allocating all space for file %s (size: %llu), errno %d", cacheFile, totSize, rc);
-            return -1;
+            close(cacheFd);
+            cacheFd = -1;
+            throw makeStringExceptionV(0, "pageCache error allocating all space for file %s (size: %llu), errno %d", cacheFile, totSize, rc);
         }
 
         // if was previously larger ...
         rc = ftruncate(cacheFd, totSize);
         if (rc != 0)
         {
-            DBGLOG("pageCache error setting size of file %s (size: %llu), errno %d", cacheFile, totSize, rc);
-            return -1;
+            int errNum = errno;
+            close(cacheFd);
+            cacheFd = -1;
+            throw makeStringExceptionV(0, "pageCache error setting size of file %s (size: %llu), errno %d", cacheFile, totSize, errNum);
         }
 
         // turn off read-ahead ...
         posix_fadvise(cacheFd, 0ULL, totSize, POSIX_FADV_RANDOM);
-
-        return 0;
     }
 
     void getCacheInfo(unsigned fileId, offset_t alignedPosShift, offset_t &cacheVal, unsigned &cacheKey, unsigned &critIndex)
