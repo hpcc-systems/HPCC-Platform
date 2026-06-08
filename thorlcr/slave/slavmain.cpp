@@ -127,20 +127,23 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         activity_id id = 0;
         StringAttr fname;
         unsigned crc = 0;
+        size32_t blockedIOSize = 0;
 
         CLookupKey(MemoryBuffer &mb)
         {
             mb.read(id);
             mb.read(fname);
             mb.read(crc);
+            mb.read(blockedIOSize);
             unsigned h = hashvalue(id, crc);
+            h = hashvalue(h, blockedIOSize);
             hashv = hashc((const unsigned char *)&id, sizeof(unsigned), h);
         }
         unsigned queryHash() const { return hashv; }
         const char *queryFilename() const { return fname; }
         bool operator==(CLookupKey const &other) const
         {
-            return (id == other.id) && (crc == other.crc) && strsame(fname, other.fname);
+            return (id == other.id) && (crc == other.crc) && (blockedIOSize == other.blockedIOSize) && strsame(fname, other.fname);
         }
         const char *getTracing(StringBuffer &tracing) const
         {
@@ -388,8 +391,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         CKeyLookupContext(CKJService &_service, CActivityContext *_activityCtx, const CLookupKey &_key)
             : CContext(_service, _activityCtx), key(_key)
         {
-            size32_t blockedIOSize = getBlockedRandomIO(key.fname.str(), 0);
-            keyIndex.setown(createKeyIndex(key.fname, key.crc, false, blockedIOSize));
+            keyIndex.setown(createKeyIndex(key.fname, key.crc, false, key.blockedIOSize));
             expectedFormat.set(activityCtx->queryHelper()->queryIndexRecordSize());
             expectedFormatCrc = activityCtx->queryHelper()->getIndexFormatCrc();
         }
