@@ -22,9 +22,5 @@
 #include "slave.ipp"
 
 activityslaves_decl CActivityBase *createKeyedJoinSlave(CGraphElementBase *container);
-namespace LegacyKJ
-{
-    activityslaves_decl CActivityBase *createKeyedJoinSlave(CGraphElementBase *container);
-}
 
 #endif
