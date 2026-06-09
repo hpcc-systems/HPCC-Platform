@@ -1,6 +1,7 @@
 import * as React from "react";
-import { Checkbox, ColorPicker, DefaultButton, getColorFromString, IColor, Label, MessageBar, MessageBarType, PrimaryButton, TextField } from "@fluentui/react";
-import { StackShim, StackItemShim } from "@fluentui/react-migration-v8-v9";
+import { tinycolor } from "@ctrl/tinycolor";
+import { Button, Checkbox, ColorArea, ColorPicker, ColorSlider, Field, Input, Label, MessageBar, MessageBarActions, MessageBarBody, Textarea } from "@fluentui/react-components";
+import { DismissRegular } from "@fluentui/react-icons";
 import { useForm, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
 import { useActivity } from "./activity";
@@ -27,8 +28,6 @@ interface useBannerProps {
     setShowForm: (_: boolean) => void;
 }
 
-const white = getColorFromString("#ffffff");
-
 export function useBanner({ showForm, setShowForm }: useBannerProps): [React.FunctionComponent, React.FunctionComponent] {
 
     const { activity } = useActivity();
@@ -39,8 +38,8 @@ export function useBanner({ showForm, setShowForm }: useBannerProps): [React.Fun
     const [showBanner, setShowBanner] = React.useState(activity?.ShowBanner == 1 || false);
 
     const { handleSubmit, control, reset } = useForm<BannerConfigValues>({ defaultValues });
-    const [color, setColor] = React.useState(white);
-    const updateColor = React.useCallback((evt: any, colorObj: IColor) => setColor(colorObj), []);
+    const [color, setColor] = React.useState<{ h: number; s: number; v: number; a?: number }>(tinycolor("#ffffff").toHsv());
+    const updateColor = React.useCallback((_: unknown, data: { color: { h: number; s: number; v: number; a?: number } }) => setColor(data.color), []);
 
     const closeForm = React.useCallback(() => {
         setShowForm(false);
@@ -50,7 +49,7 @@ export function useBanner({ showForm, setShowForm }: useBannerProps): [React.Fun
         handleSubmit(
             (data, evt) => {
                 const request: any = data;
-                request.BannerColor = color.str;
+                request.BannerColor = tinycolor(color).toHexString();
                 request.BannerAction = request.BannerAction === true ? "1" : "0";
                 setBannerColor(request.BannerColor);
                 setBannerMessage(request.BannerContent);
@@ -64,7 +63,7 @@ export function useBanner({ showForm, setShowForm }: useBannerProps): [React.Fun
 
     React.useEffect(() => {
         if (!activity?.BannerColor) return;
-        setColor(getColorFromString(activity?.BannerColor));
+        setColor(tinycolor(activity?.BannerColor).toHsv());
         const values = {
             BannerAction: activity?.ShowBanner || 0,
             BannerContent: activity?.BannerContent || "",
@@ -77,11 +76,11 @@ export function useBanner({ showForm, setShowForm }: useBannerProps): [React.Fun
     const BannerConfig = React.useMemo(() => () => {
         return <MessageBox show={showForm} setShow={closeForm} title={nlsHPCC.SetBanner} minWidth={680}
             footer={<>
-                <PrimaryButton text={nlsHPCC.OK} onClick={handleSubmit(onSubmit)} />
-                <DefaultButton text={nlsHPCC.Cancel} onClick={closeForm} />
+                <Button appearance="primary" onClick={handleSubmit(onSubmit)}>{nlsHPCC.OK}</Button>
+                <Button onClick={closeForm}>{nlsHPCC.Cancel}</Button>
             </>}>
-            <StackShim horizontal horizontalAlign="space-between">
-                <StackItemShim grow={2}>
+            <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between" }}>
+                <div style={{ flexGrow: 2 }}>
                     <Controller
                         control={control} name="BannerAction"
                         render={({
@@ -90,7 +89,7 @@ export function useBanner({ showForm, setShowForm }: useBannerProps): [React.Fun
                                 control={control} name={fieldName}
                                 render={({
                                     field: { onChange, name: fieldName, value }
-                                }) => <Checkbox name={fieldName} checked={value == 1} onChange={onChange} label={nlsHPCC.Enable} />}
+                                }) => <Checkbox name={fieldName} checked={value == 1} onChange={(_, data) => onChange(data.checked)} label={nlsHPCC.Enable} />}
                             />
                         }
                     />
@@ -99,28 +98,26 @@ export function useBanner({ showForm, setShowForm }: useBannerProps): [React.Fun
                         render={({
                             field: { onChange, name: fieldName, value },
                             fieldState: { error }
-                        }) => <TextField
-                                name={fieldName}
-                                onChange={onChange}
-                                multiline
-                                autoAdjustHeight
-                                label={nlsHPCC.BannerMessage}
-                                value={value}
-                                errorMessage={error && error?.message}
-                            />}
+                        }) => <Field label={nlsHPCC.BannerMessage} validationMessage={error?.message}>
+                                <Textarea
+                                    name={fieldName}
+                                    value={value}
+                                    onChange={(_, data) => onChange(data.value)}
+                                />
+                            </Field>}
                     />
                     <Controller
                         control={control} name="BannerSize"
                         render={({
                             field: { onChange, name: fieldName, value },
                             fieldState: { error }
-                        }) => <TextField
-                                name={fieldName}
-                                onChange={onChange}
-                                label={nlsHPCC.BannerSize}
-                                value={value}
-                                errorMessage={error && error?.message}
-                            />}
+                        }) => <Field label={nlsHPCC.BannerSize} validationMessage={error?.message}>
+                                <Input
+                                    name={fieldName}
+                                    value={value}
+                                    onChange={(_, data) => onChange(data.value)}
+                                />
+                            </Field>}
                         rules={{
                             pattern: {
                                 value: /^[0-9]+$/i,
@@ -133,13 +130,13 @@ export function useBanner({ showForm, setShowForm }: useBannerProps): [React.Fun
                         render={({
                             field: { onChange, name: fieldName, value },
                             fieldState: { error }
-                        }) => <TextField
-                                name={fieldName}
-                                onChange={onChange}
-                                label={nlsHPCC.BannerScroll}
-                                value={value}
-                                errorMessage={error && error?.message}
-                            />}
+                        }) => <Field label={nlsHPCC.BannerScroll} validationMessage={error?.message}>
+                                <Input
+                                    name={fieldName}
+                                    value={value}
+                                    onChange={(_, data) => onChange(data.value)}
+                                />
+                            </Field>}
                         rules={{
                             pattern: {
                                 value: /^[0-9]+$/i,
@@ -147,15 +144,15 @@ export function useBanner({ showForm, setShowForm }: useBannerProps): [React.Fun
                             }
                         }}
                     />
-                </StackItemShim>
-                <StackItemShim>
+                </div>
+                <div>
                     <Label>{nlsHPCC.BannerColor}</Label>
-                    <ColorPicker
-                        onChange={updateColor}
-                        color={color}
-                    />
-                </StackItemShim>
-            </StackShim>
+                    <ColorPicker color={color} onColorChange={updateColor}>
+                        <ColorArea />
+                        <ColorSlider />
+                    </ColorPicker>
+                </div>
+            </div>
         </MessageBox>;
     }, [closeForm, color, control, handleSubmit, onSubmit, showForm, updateColor]);
 
@@ -169,19 +166,15 @@ export function useBanner({ showForm, setShowForm }: useBannerProps): [React.Fun
     const BannerMessageBar = React.useMemo(() => () => {
         return showBanner &&
             <MessageBar
-                messageBarType={MessageBarType.warning}
-                onDismiss={() => setShowBanner(false)}
-                dismissButtonAriaLabel="Close"
-                isMultiline={false}
-                truncated={true}
-                expandButtonProps={{ ariaLabel: "See More" }}
+                intent="warning"
                 style={{
                     color: bannerColor,
                     fontSize: `${bannerSize}px`,
                     lineHeight: `${bannerSize}px`
                 }}
             >
-                {bannerMessage}
+                <MessageBarBody>{bannerMessage}</MessageBarBody>
+                <MessageBarActions containerAction={<Button onClick={() => setShowBanner(false)} aria-label="Close" appearance="transparent" icon={<DismissRegular />} />} />
             </MessageBar>
             ;
     }, [bannerColor, bannerMessage, bannerSize, showBanner]);

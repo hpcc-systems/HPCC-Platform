@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, ICheckboxStyles, ISpinButtonStyles, Label, SpinButton } from "@fluentui/react";
+import { Checkbox, Label, SpinButton, SpinButtonChangeEvent, SpinButtonOnChangeData, makeStyles } from "@fluentui/react-components";
 import { scopedLogger } from "@hpcc-js/util";
 import { Workunit } from "@hpcc-js/comms";
 import nlsHPCC from "src/nlsHPCC";
@@ -15,8 +15,9 @@ interface HexViewProps {
 const bufferLength = 16 * 1024;
 const unknownChar = String.fromCharCode(8226);
 
-const spinStyles: Partial<ISpinButtonStyles> = { root: { width: 100 }, spinButtonWrapper: { width: 50 } };
-const checkboxStyles: Partial<ICheckboxStyles> = { root: { marginTop: 4 } };
+const useSpinStyles = makeStyles({
+    spin: { width: "100px" },
+});
 
 const isCharPrintable = (char) => {
     const charCode = char.charCodeAt(0);
@@ -35,8 +36,10 @@ export const HexView: React.FunctionComponent<HexViewProps> = ({
     const [cachedResponse, setCachedResponse] = React.useState<any[]>([]);
     const [lineLength, setLineLength] = React.useState("16");
     const [showEbcdic, setShowEbcdic] = React.useState(false);
+    const spinStyles = useSpinStyles();
 
-    const onLineLengthChange = React.useCallback((event: React.FormEvent<HTMLInputElement>, newValue?: string) => {
+    const onLineLengthChange = React.useCallback((_event: SpinButtonChangeEvent, data: SpinButtonOnChangeData) => {
+        const newValue = data.displayValue ?? (data.value !== undefined && data.value !== null ? String(data.value) : undefined);
         if (newValue !== undefined) {
             setLineLength(newValue);
         }
@@ -159,12 +162,17 @@ choosen(analysis_dataset, ${bufferLength});`;
         setText(doc);
     }, [cachedResponse, lineLength, showEbcdic]);
 
+    let parsedLength = parseInt(lineLength, 10);
+    if (isNaN(parsedLength) || parsedLength <= 0) {
+        parsedLength = 16;
+    }
+
     return <>
         <div style={{ display: "flex", padding: "8px", gap: "10px" }}>
             <Label>{nlsHPCC.Width}</Label>
-            <SpinButton value={lineLength.toString()} min={1} onChange={onLineLengthChange} styles={spinStyles} />
+            <SpinButton value={parsedLength} min={1} onChange={onLineLengthChange} className={spinStyles.spin} />
             <Label>{nlsHPCC.EBCDIC}</Label>
-            <Checkbox onChange={(ev, checked) => setShowEbcdic(checked)} styles={checkboxStyles} />
+            <Checkbox onChange={(_, data) => setShowEbcdic(!!data.checked)} style={{ marginTop: 4 }} />
         </div>
         <TextSourceEditor text={text} readonly={true} />
     </>;

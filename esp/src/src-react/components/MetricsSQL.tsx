@@ -1,6 +1,6 @@
 import * as React from "react";
-import { CommandBarButton } from "@fluentui/react";
-import { StackShim } from "@fluentui/react-migration-v8-v9";
+import { Button } from "@fluentui/react-components";
+import { ArrowDownload20Regular, Copy20Regular, Play20Regular } from "@fluentui/react-icons";
 import { useConst } from "@fluentui/react-hooks";
 import { IScope } from "@hpcc-js/comms";
 import { ICompletion } from "@hpcc-js/codemirror";
@@ -185,14 +185,14 @@ export const MetricsSQL: React.FunctionComponent<MetricsDataProps> = ({
 
     return <HolyGrail
         header={
-            <StackShim horizontal style={{ width: "100%", height: "80px" }}>
+            <div style={{ display: "flex", flexDirection: "row", width: "100%", height: "80px" }}>
                 <div style={{ width: "100%", height: "80px" }}>
                     <SQLSourceEditor sql={sql} toolbar={false} onSqlChange={onChange} onFetchHints={onFetchHints} onSubmit={onSubmit} ></SQLSourceEditor>
                 </div>
-                <CommandBarButton iconProps={{ iconName: "Play" }} onClick={() => setSql(dirtySql)} />
-                <CommandBarButton disabled={result.length === 0} iconProps={{ iconName: "Copy" }} onClick={onCopy} />
-                <CommandBarButton disabled={result.length === 0} iconProps={{ iconName: "Download" }} onClick={onDownload} />
-            </StackShim>
+                <Button appearance="subtle" icon={<Play20Regular />} onClick={() => setSql(dirtySql)} />
+                <Button appearance="subtle" disabled={result.length === 0} icon={<Copy20Regular />} onClick={onCopy} />
+                <Button appearance="subtle" disabled={result.length === 0} icon={<ArrowDownload20Regular />} onClick={onDownload} />
+            </div>
         }
         main={<AutosizeHpccJSComponent widget={scopesTable} ></AutosizeHpccJSComponent>}
     />;

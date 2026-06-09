@@ -56,14 +56,12 @@ const useStyles = makeStyles({
         whiteSpace: "nowrap",
         minWidth: 0,
         flex: 1,
-        selectors: {
-            ".fui-Text": {
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                minWidth: 0,
-                display: "block"
-            }
+        "& .fui-Text": {
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            minWidth: 0,
+            display: "block"
         }
     },
     headerIconBase: {
@@ -151,9 +149,9 @@ export const GenericCard: React.FunctionComponent<GenericCardProps> = ({
     const actionNodes = React.useMemo(() => {
         const flatten = (nodes: React.ReactNode): React.ReactElement[] => {
             const out: React.ReactElement[] = [];
-            React.Children.forEach(nodes, (child) => {
+            React.Children.forEach(nodes, (child: React.ReactNode) => {
                 if (!child) return;
-                if (React.isValidElement(child) && child.type === React.Fragment) {
+                if (React.isValidElement<React.FragmentProps>(child) && child.type === React.Fragment) {
                     out.push(...flatten(child.props.children));
                 } else if (React.isValidElement(child)) {
                     out.push(child);
@@ -182,8 +180,8 @@ export const GenericCard: React.FunctionComponent<GenericCardProps> = ({
         const handlers = new Map<string, () => void>();
         const seenIds = new Set<string>();
 
-        const asSmallIcon = (el?: React.ReactElement) =>
-            el ? React.cloneElement(el, { className: mergeClasses(el.props?.className, styles.headerActionIcon) }) : undefined;
+        const asSmallIcon = (el?: React.ReactElement<undefined | { className?: string }>) =>
+            el ? React.cloneElement(el as React.ReactElement<any>, { className: mergeClasses(el.props?.className, styles.headerActionIcon) }) : undefined;
 
         const getLabelFromProps = (props: any): string => {
             const title: string | undefined = props?.title;
@@ -210,10 +208,10 @@ export const GenericCard: React.FunctionComponent<GenericCardProps> = ({
                 const id = (childEl.props?.id as string) || `hdr-action-${idx}`;
                 if (seenIds.has(id)) return;
                 seenIds.add(id);
-                items.push(React.cloneElement(childEl as any, { id, key: id } as any));
+                items.push(React.cloneElement(childEl, { id, key: id }));
 
                 const innerArr = React.Children.toArray(childEl.props?.children ?? []);
-                const inner = (innerArr[0] as React.ReactElement<any> | undefined);
+                const inner = innerArr[0];
                 if (inner && React.isValidElement(inner)) {
                     if ((inner as React.ReactElement<any>).type === ToolbarButton) {
                         const innerEl = inner as React.ReactElement<any>;
@@ -223,7 +221,7 @@ export const GenericCard: React.FunctionComponent<GenericCardProps> = ({
                         const onClick = innerEl.props?.onClick as undefined | (() => void);
                         pushMenu(id, icon, label, disabled, onClick);
                     } else {
-                        const ip = (inner as any)?.props ?? {};
+                        const ip: { disabled?: boolean; onClick?: () => void } = inner?.props ?? {};
                         pushMenu(id, undefined, getLabelFromProps(ip), !!ip?.disabled, ip?.onClick);
                     }
                 }
@@ -240,7 +238,7 @@ export const GenericCard: React.FunctionComponent<GenericCardProps> = ({
                 const onClick = childEl.props?.onClick as undefined | (() => void);
                 items.push(
                     <OverflowItem id={id} key={id}>
-                        {React.cloneElement(childEl as any, { icon, className: mergeClasses(childEl.props?.className, styles.headerActionBtn) } as any)}
+                        {React.cloneElement(childEl, { icon, className: mergeClasses(childEl.props?.className, styles.headerActionBtn) })}
                     </OverflowItem>
                 );
                 pushMenu(id, icon, label, disabled, onClick);
@@ -281,16 +279,18 @@ export const GenericCard: React.FunctionComponent<GenericCardProps> = ({
             </Text>;
         }
         if (React.isValidElement(node)) {
-            const isTooltipLike = (node.props && ("content" in node.props || node.props?.relationship));
+            const nodeProps: { content?: React.ReactNode; relationship?: any; children?: React.ReactNode } = node.props;
+            const isTooltipLike = (nodeProps && ("content" in nodeProps || "relationship" in nodeProps));
             if (isTooltipLike) {
-                const trigger = node.props?.children as React.ReactNode;
+                const trigger = nodeProps?.children as React.ReactNode;
                 if (React.isValidElement(trigger)) {
-                    const triggerChildren = trigger.props?.children;
+                    const triggerEl = trigger as React.ReactElement<any>;
+                    const triggerChildren = triggerEl.props?.children;
                     const title = typeof triggerChildren === "string" ? triggerChildren : undefined;
-                    const clonedTrigger = React.cloneElement(trigger as React.ReactElement<any>, {
+                    const clonedTrigger = React.cloneElement(triggerEl, {
                         truncate: true,
-                        className: mergeClasses(trigger.props?.className, styles.headerName),
-                        title: trigger.props?.title ?? title
+                        className: mergeClasses(triggerEl.props?.className, styles.headerName),
+                        title: triggerEl.props?.title ?? title
                     });
                     return React.cloneElement(node as React.ReactElement<any>, {}, clonedTrigger);
                 }

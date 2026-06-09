@@ -1,5 +1,7 @@
 import * as React from "react";
-import { DefaultButton, IDropdownOption, MessageBar, MessageBarType, PrimaryButton, Spinner, } from "@fluentui/react";
+import { IDropdownOption } from "./Fields";
+import { Button, MessageBar, MessageBarActions, MessageBarBody, Spinner } from "@fluentui/react-components";
+import { DismissRegular } from "@fluentui/react-icons";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
@@ -77,9 +79,9 @@ export const GroupAddUserForm: React.FunctionComponent<GroupAddUserProps> = ({
 
     return <MessageBox show={showForm} setShow={closeForm} title={nlsHPCC.PleaseSelectAUserToAdd} minWidth={400}
         footer={<>
-            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
-            <PrimaryButton text={nlsHPCC.Add} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
-            <DefaultButton text={nlsHPCC.Cancel} onClick={() => { reset(defaultValues); closeForm(); }} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="after" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <Button appearance="primary" disabled={submitDisabled} onClick={handleSubmit(onSubmit)}>{nlsHPCC.Add}</Button>
+            <Button onClick={() => { reset(defaultValues); closeForm(); }}>{nlsHPCC.Cancel}</Button>
         </>}>
         <Controller
             control={control} name="usernames"
@@ -103,10 +105,9 @@ export const GroupAddUserForm: React.FunctionComponent<GroupAddUserProps> = ({
         />
         {showError &&
             <div style={{ marginTop: 16 }}>
-                <MessageBar
-                    messageBarType={MessageBarType.error} isMultiline={true}
-                    onDismiss={() => setShowError(false)} dismissButtonAriaLabel="Close">
-                    {errorMessage}
+                <MessageBar intent="error">
+                    <MessageBarBody>{errorMessage}</MessageBarBody>
+                    <MessageBarActions containerAction={<Button onClick={() => setShowError(false)} aria-label="Close" appearance="transparent" icon={<DismissRegular />} />} />
                 </MessageBar>
             </div>
         }

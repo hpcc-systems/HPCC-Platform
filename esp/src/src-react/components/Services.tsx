@@ -1,11 +1,11 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
+import { LockClosedFilled } from "@fluentui/react-icons";
 import { SizeMe } from "../layouts/SizeMe";
 import nlsHPCC from "src/nlsHPCC";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { useServices } from "../hooks/resources";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
-import { ShortVerticalDivider } from "./Common";
 
 interface ServicesProps {
 }
@@ -25,8 +25,9 @@ export const Services: React.FunctionComponent<ServicesProps> = ({
             Type: { label: nlsHPCC.Container, width: 200 },
             Port: { label: nlsHPCC.Port, width: 120 },
             TLSSecure: {
-                headerIcon: "LockSolid", label: nlsHPCC.TLS, width: 16,
-                formatter: secure => secure === true ? <Icon iconName="LockSolid" /> : ""
+                headerIconElement: <LockClosedFilled aria-label={nlsHPCC.Protected} />,
+                label: nlsHPCC.TLS, width: 16,
+                formatter: secure => secure === true ? <LockClosedFilled /> : ""
             }
         };
     }, []);
@@ -37,7 +38,7 @@ export const Services: React.FunctionComponent<ServicesProps> = ({
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => refreshData()
         },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider },
     ], [refreshData]);
 
     const copyButtons = useCopyButtons(columns, selection, "services");

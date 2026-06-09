@@ -1,12 +1,11 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link, ProgressIndicator } from "@fluentui/react";
-import { SelectTabData, SelectTabEvent, Tab, TabList } from "@fluentui/react-components";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
+import { Link, ProgressBar, SelectTabData, SelectTabEvent, Tab, TabList } from "@fluentui/react-components";
 import { useConst } from "@fluentui/react-hooks";
 import { ESPSearch } from "src/ESPSearch";
 import nlsHPCC from "src/nlsHPCC";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
-import { ShortVerticalDivider } from "./Common";
 import { Workunits } from "./Workunits";
 import { Files } from "./Files";
 import { Queries } from "./Queries";
@@ -110,7 +109,7 @@ export const Search: React.FunctionComponent<SearchProps> = ({
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => refreshData()
         },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider },
         {
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
             onClick: () => {
@@ -154,7 +153,7 @@ export const Search: React.FunctionComponent<SearchProps> = ({
         main={selectedKey === "all" ? <HolyGrail
             header={<>
                 <CommandBar items={buttons} farItems={copyButtons} />
-                <ProgressIndicator progressHidden={searchCount === 0} percentComplete={searchCount === 0 ? 0 : progress.value / searchCount} />
+                {searchCount > 0 && <ProgressBar value={progress.value / searchCount} />}
             </>}
             main={<FluentGrid
                 data={data}

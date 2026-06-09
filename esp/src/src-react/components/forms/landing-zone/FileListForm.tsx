@@ -1,19 +1,44 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, IDropdownOption, mergeStyleSets, PrimaryButton } from "@fluentui/react";
-import { StackShim } from "@fluentui/react-migration-v8-v9";
+import { Button, Checkbox, makeStyles, tokens } from "@fluentui/react-components";
+import { IDropdownOption } from "../Fields";
 import { FileSprayService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
 import { TargetDropzoneTextField, TargetFolderTextField, TargetServerTextField } from "../Fields";
 import { joinPath } from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
-import { useUserTheme } from "../../../hooks/theme";
 import { useFileUpload } from "../../../hooks/useFileUpload";
 import { MessageBox } from "../../../layouts/MessageBox";
 import { debounce } from "../../../util/throttle";
 import * as FormStyles from "./styles";
 
 const logger = scopedLogger("src-react/components/forms/landing-zone/FileListForm.tsx");
+
+const useFileListStyles = makeStyles({
+    progressMessage: {
+        margin: "10px 10px 8px 0",
+        display: "flex",
+        flexDirection: "column",
+        gap: "4px",
+        width: "100%"
+    },
+    progressBarWrapper: {
+        width: "100%",
+        height: "6px",
+        background: tokens.colorNeutralStroke2,
+        borderRadius: "3px",
+        overflow: "hidden",
+        position: "relative"
+    },
+    progressBarFill: {
+        height: "100%",
+        background: tokens.colorBrandBackground,
+        transitionProperty: "width",
+        transitionDuration: ".2s",
+        transitionTimingFunction: "linear",
+        width: "0"
+    }
+});
 
 const myFileSprayService = new FileSprayService({ baseUrl: "" });
 
@@ -63,7 +88,6 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
     const [os, setOs] = React.useState<number>();
 
     const { handleSubmit, control, reset } = useForm<FileListFormValues>({ defaultValues });
-    const { theme } = useUserTheme();
     const { uploadPct, isUploading, upload, cancelUpload: cancelXHR } = useFileUpload();
 
     const closeForm = React.useCallback(() => {
@@ -146,56 +170,27 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
         )();
     }, [closeForm, handleSubmit, machine, onSubmit, os, pathSep, reset, selection, upload]);
 
-    const componentStyles = mergeStyleSets(
-        FormStyles.componentStyles,
-        {
-            container: { minWidth: formMinWidth ? formMinWidth : 300 },
-            progressMessage: {
-                margin: "10px 10px 8px 0",
-                display: "flex",
-                flexDirection: "column",
-                gap: 4,
-                width: "100%"
-            },
-            progressBarWrapper: {
-                width: "100%",
-                height: 6,
-                background: theme.palette.neutralLight,
-                borderRadius: 3,
-                overflow: "hidden",
-                position: "relative"
-            },
-            progressBarFill: {
-                height: "100%",
-                background: theme.palette.themePrimary,
-                transition: "width .2s linear",
-                width: 0
-            }
-        }
-    );
+    const componentStyles = FormStyles.useComponentStyles();
+    const fileListStyles = useFileListStyles();
 
     return <MessageBox title={nlsHPCC.FileUploader} show={showForm} setShow={closeForm} disableClose={isUploading}
         footer={<>
             {isUploading &&
                 // TODO: need to figure out why there's some theme clashing issue here
                 // preventing just using a ProgressBar wrapped with a FluentProvider...
-                <div className={componentStyles.progressMessage} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={uploadPct}>
+                <div className={fileListStyles.progressMessage} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={uploadPct}>
                     <span>{nlsHPCC.Uploading}... {uploadPct > 0 && `${uploadPct}%`}</span>
-                    <div className={componentStyles.progressBarWrapper}>
-                        <div className={componentStyles.progressBarFill} style={{ width: `${uploadPct}%` }} />
+                    <div className={fileListStyles.progressBarWrapper}>
+                        <div className={fileListStyles.progressBarFill} style={{ width: `${uploadPct}%` }} />
                     </div>
                 </div>
             }
-            <PrimaryButton text={nlsHPCC.Upload} onClick={handleSubmit(doSubmit)} disabled={isUploading} />
+            <Button appearance="primary" onClick={handleSubmit(doSubmit)} disabled={isUploading}>{nlsHPCC.Upload}</Button>
             {isUploading &&
-                <DefaultButton text={nlsHPCC.Cancel} onClick={() => {
-                    if (window.confirm(nlsHPCC.CancelUploadConfirm)) {
-                        cancelUpload();
-                    }
-                }} />
+                <Button onClick={() => { if (window.confirm(nlsHPCC.CancelUploadConfirm)) { cancelUpload(); } }}>{nlsHPCC.Cancel}</Button>
             }
         </>}>
-        <StackShim>
+        <div style={{ display: "flex", flexDirection: "column" }}>
             <Controller
                 control={control} name="dropzone"
                 render={({
@@ -275,8 +270,8 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                     }
                 }}
             />
-        </StackShim>
-        <StackShim>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column" }}>
             <table className={`${componentStyles.twoColumnTable} ${componentStyles.selectionTable}`}>
                 <thead>
                     <tr>
@@ -301,8 +296,8 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                 control={control} name="overwrite"
                 render={({
                     field: { onChange, name: fieldName, value }
-                }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.Overwrite} />}
+                }) => <Checkbox name={fieldName} checked={value} onChange={(_, data) => onChange(data.checked)} label={nlsHPCC.Overwrite} />}
             />
-        </StackShim>
+        </div>
     </MessageBox>;
 };

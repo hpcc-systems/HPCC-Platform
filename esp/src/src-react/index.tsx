@@ -1,4 +1,3 @@
-import { initializeIcons } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import { cookieKeyValStore } from "src/KeyValStore";
 import { needsRedirectV9 } from "src/Session";
@@ -11,7 +10,6 @@ import "src-react-css/index.css";
 declare const __ECLWATCH_DIST_URL__: string;
 
 ECLWatchLogger.init();
-initializeIcons(`${__ECLWATCH_DIST_URL__}/fluentui-fonts/`);
 
 const logger = scopedLogger("../index.tsx");
 
@@ -48,7 +46,7 @@ async function loadUI() {
         import("./components/forms/Login").then(_ => {
             try {
                 const root = ReactRoot.create(document.getElementById("placeholder"));
-                root.render(_.Login, {});
+                root.lightThemedRender(_.Login, {});
                 document.getElementById("loadingOverlay").remove();
             } catch (e) {
                 logger.error(e);

@@ -1,5 +1,7 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, IDropdownOption, mergeStyleSets, ScrollablePane, ScrollbarVisibility, Sticky, StickyPositionType } from "@fluentui/react";
+import { ScrollablePane, ScrollbarVisibility, Sticky, StickyPositionType } from "./controls/ScrollablePane";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
+import { makeStyles } from "@fluentui/react-components";
 import nlsHPCC from "src/nlsHPCC";
 import { DPWorkunit } from "src/DataPatterns/DPWorkunit";
 import { Report } from "src/DataPatterns/Report";
@@ -7,17 +9,14 @@ import { useFile } from "../hooks/file";
 import { useWorkunit } from "../hooks/workunit";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 import { Optimize } from "./forms/Optimize";
-import { ShortVerticalDivider } from "./Common";
 import { TargetClusterTextField } from "./forms/Fields";
 import { WUStatus } from "src/react/wuStatus";
 
-const dpStyles = mergeStyleSets({
+const useStyles = makeStyles({
     inlineDropdown: {
+        minWidth: "100px",
         marginTop: "6px",
-        ".ms-Dropdown": {
-            minWidth: "100px"
-        }
-    }
+    },
 });
 
 interface DataPatternsProps {
@@ -29,6 +28,7 @@ export const DataPatterns: React.FunctionComponent<DataPatternsProps> = ({
     cluster,
     logicalFile
 }) => {
+    const styles = useStyles();
 
     const { file } = useFile(cluster, logicalFile);
     const dpWu = React.useMemo(() => {
@@ -68,7 +68,7 @@ export const DataPatterns: React.FunctionComponent<DataPatternsProps> = ({
                 refreshData(true);
             }
         },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider },
         {
             key: "analyze", text: nlsHPCC.Analyze, iconProps: { iconName: "AnalyticsView" },
             disabled: !!wu || !file?.Ecl,
@@ -80,15 +80,15 @@ export const DataPatterns: React.FunctionComponent<DataPatternsProps> = ({
         },
         {
             key: "targetCluster", itemType: ContextualMenuItemType.Normal,
-            commandBarButtonAs: () => <TargetClusterTextField
+            onRender: () => <TargetClusterTextField
                 key="targetClusterField"
                 disabled={!!wu}
                 placeholder={nlsHPCC.Target}
-                className={dpStyles.inlineDropdown}
+                className={styles.inlineDropdown}
                 required={true}
                 selectedKey={targetCluster}
-                onChange={(ev, row: IDropdownOption) => {
-                    setTargetCluster(row.key as string);
+                onChange={(ev, option) => {
+                    if (option && !Array.isArray(option)) setTargetCluster(option.key as string);
                 }}
             />
         }, {
@@ -101,18 +101,18 @@ export const DataPatterns: React.FunctionComponent<DataPatternsProps> = ({
                 });
             }
         },
-        { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_2", itemType: ContextualMenuItemType.Divider },
         {
             key: "optimize", text: nlsHPCC.Optimize,
             disabled: !isComplete,
             onClick: () => setShowOptimize(true)
         },
-        { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_3", itemType: ContextualMenuItemType.Divider },
         {
             key: "wuid", text: wuid,
             href: `#/workunits/${wuid}`,
         }
-    ].filter(row => row.key !== "wuid" || !!wuid), [dpWu, file, isComplete, refreshData, targetCluster, wu, wuid]);
+    ].filter(row => row.key !== "wuid" || !!wuid), [dpWu, file, isComplete, refreshData, styles.inlineDropdown, targetCluster, wu, wuid]);
 
     const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
     ], []);

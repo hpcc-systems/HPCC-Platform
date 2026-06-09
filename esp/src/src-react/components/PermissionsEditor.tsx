@@ -1,12 +1,11 @@
 import * as React from "react";
-import { Checkbox, CommandBar, ContextualMenuItemType, ICommandBarItemProps, Label } from "@fluentui/react";
-import { StackShim, StackItemShim } from "@fluentui/react-migration-v8-v9";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
+import { Checkbox, Label } from "@fluentui/react-components";
 import { WsAccess, AccessService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { ShortVerticalDivider } from "./Common";
 import { AddGroupResourceForm } from "./forms/AddGroupResource";
 
 const logger = scopedLogger("src-react/components/PermissionsEditor.tsx");
@@ -122,12 +121,12 @@ export const PermissionsEditor: React.FunctionComponent<PermissionsEditorProps> 
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => refreshData()
         },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider },
         {
             key: "add", text: nlsHPCC.Add,
             onClick: () => setShowAddGroup(true)
         },
-        { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_2", itemType: ContextualMenuItemType.Divider },
         {
             key: "delete", text: nlsHPCC.Delete, disabled: selectedIndex < 0,
             onClick: () => setShowDeleteConfirm(true)
@@ -172,30 +171,30 @@ export const PermissionsEditor: React.FunctionComponent<PermissionsEditorProps> 
             header={<CommandBar items={buttons} />}
             main={
                 <div style={{ margin: "0 10px" }}>
-                    <StackShim horizontal>
-                        <StackItemShim grow={1}><Label>{nlsHPCC.Account}</Label></StackItemShim>
-                        <StackItemShim style={{ width: "min-content", margin: "0 10px" }}><Label>{nlsHPCC.AllowAccess}</Label></StackItemShim>
-                        <StackItemShim style={{ width: "min-content", margin: "0 10px" }}><Label>{nlsHPCC.AllowRead}</Label></StackItemShim>
-                        <StackItemShim style={{ width: "min-content", margin: "0 10px" }}><Label>{nlsHPCC.AllowWrite}</Label></StackItemShim>
-                        <StackItemShim style={{ width: "min-content", margin: "0 16px 0 10px" }}><Label>{nlsHPCC.AllowFull}</Label></StackItemShim>
-                        <StackItemShim style={{ width: "min-content", margin: "0 10px 0 16px" }}><Label>{nlsHPCC.DenyAccess}</Label></StackItemShim>
-                        <StackItemShim style={{ width: "min-content", margin: "0 10px" }}><Label>{nlsHPCC.DenyRead}</Label></StackItemShim>
-                        <StackItemShim style={{ width: "min-content", margin: "0 10px" }}><Label>{nlsHPCC.DenyWrite}</Label></StackItemShim>
-                        <StackItemShim style={{ width: "min-content", margin: "0 10px" }}><Label>{nlsHPCC.DenyFull}</Label></StackItemShim>
-                    </StackShim>
+                    <div style={{ display: "flex", flexDirection: "row" }}>
+                        <div style={{ flexGrow: 1 }}><Label>{nlsHPCC.Account}</Label></div>
+                        <div style={{ width: "min-content", margin: "0 10px" }}><Label>{nlsHPCC.AllowAccess}</Label></div>
+                        <div style={{ width: "min-content", margin: "0 10px" }}><Label>{nlsHPCC.AllowRead}</Label></div>
+                        <div style={{ width: "min-content", margin: "0 10px" }}><Label>{nlsHPCC.AllowWrite}</Label></div>
+                        <div style={{ width: "min-content", margin: "0 16px 0 10px" }}><Label>{nlsHPCC.AllowFull}</Label></div>
+                        <div style={{ width: "min-content", margin: "0 10px 0 16px" }}><Label>{nlsHPCC.DenyAccess}</Label></div>
+                        <div style={{ width: "min-content", margin: "0 10px" }}><Label>{nlsHPCC.DenyRead}</Label></div>
+                        <div style={{ width: "min-content", margin: "0 10px" }}><Label>{nlsHPCC.DenyWrite}</Label></div>
+                        <div style={{ width: "min-content", margin: "0 10px" }}><Label>{nlsHPCC.DenyFull}</Label></div>
+                    </div>
                     {data?.map((permission, index) => (
-                        <StackShim key={`${permission.account_name}-${index}`} horizontal style={{ marginBottom: 5 }}>
-                            <StackItemShim><Checkbox checked={index === selectedIndex ? true : false} onChange={(ev) => onRowSelect(ev, index)} /></StackItemShim>
-                            <StackItemShim grow={1}>{permission.account_name}</StackItemShim>
-                            <StackItemShim style={{ width: 36, margin: "0 10px" }}><Checkbox checked={permission.allow_access} onChange={(ev) => onPermissionCheckboxClick(ev, permission, "allow_access")} /></StackItemShim>
-                            <StackItemShim style={{ width: 36, margin: "0 10px" }}><Checkbox checked={permission.allow_read} onChange={(ev) => onPermissionCheckboxClick(ev, permission, "allow_read")} /></StackItemShim>
-                            <StackItemShim style={{ width: 36, margin: "0 10px" }}><Checkbox checked={permission.allow_write} onChange={(ev) => onPermissionCheckboxClick(ev, permission, "allow_write")} /></StackItemShim>
-                            <StackItemShim style={{ width: 36, margin: "0 20px 0 10px" }}><Checkbox checked={permission.allow_full} onChange={(ev) => onPermissionCheckboxClick(ev, permission, "allow_full")} /></StackItemShim>
-                            <StackItemShim style={{ width: 36, margin: "0 10px" }}><Checkbox checked={permission.deny_access} onChange={(ev) => onPermissionCheckboxClick(ev, permission, "deny_access")} /></StackItemShim>
-                            <StackItemShim style={{ width: 36, margin: "0 10px" }}><Checkbox checked={permission.deny_read} onChange={(ev) => onPermissionCheckboxClick(ev, permission, "deny_read")} /></StackItemShim>
-                            <StackItemShim style={{ width: 36, margin: "0 10px" }}><Checkbox checked={permission.deny_write} onChange={(ev) => onPermissionCheckboxClick(ev, permission, "deny_write")} /></StackItemShim>
-                            <StackItemShim style={{ width: 36, margin: "0 10px" }}><Checkbox checked={permission.deny_full} onChange={(ev) => onPermissionCheckboxClick(ev, permission, "deny_full")} /></StackItemShim>
-                        </StackShim>
+                        <div key={`${permission.account_name}-${index}`} style={{ display: "flex", flexDirection: "row", marginBottom: 5 }}>
+                            <div><Checkbox checked={index === selectedIndex ? true : false} onChange={(ev) => onRowSelect(ev, index)} /></div>
+                            <div style={{ flexGrow: 1 }}>{permission.account_name}</div>
+                            <div style={{ width: 36, margin: "0 10px" }}><Checkbox checked={permission.allow_access} onChange={(ev) => onPermissionCheckboxClick(ev, permission, "allow_access")} /></div>
+                            <div style={{ width: 36, margin: "0 10px" }}><Checkbox checked={permission.allow_read} onChange={(ev) => onPermissionCheckboxClick(ev, permission, "allow_read")} /></div>
+                            <div style={{ width: 36, margin: "0 10px" }}><Checkbox checked={permission.allow_write} onChange={(ev) => onPermissionCheckboxClick(ev, permission, "allow_write")} /></div>
+                            <div style={{ width: 36, margin: "0 20px 0 10px" }}><Checkbox checked={permission.allow_full} onChange={(ev) => onPermissionCheckboxClick(ev, permission, "allow_full")} /></div>
+                            <div style={{ width: 36, margin: "0 10px" }}><Checkbox checked={permission.deny_access} onChange={(ev) => onPermissionCheckboxClick(ev, permission, "deny_access")} /></div>
+                            <div style={{ width: 36, margin: "0 10px" }}><Checkbox checked={permission.deny_read} onChange={(ev) => onPermissionCheckboxClick(ev, permission, "deny_read")} /></div>
+                            <div style={{ width: 36, margin: "0 10px" }}><Checkbox checked={permission.deny_write} onChange={(ev) => onPermissionCheckboxClick(ev, permission, "deny_write")} /></div>
+                            <div style={{ width: 36, margin: "0 10px" }}><Checkbox checked={permission.deny_full} onChange={(ev) => onPermissionCheckboxClick(ev, permission, "deny_full")} /></div>
+                        </div>
                     ))}
                 </div>
             }

@@ -1,5 +1,8 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, mergeStyles, MessageBar, MessageBarType, registerIcons, ScrollablePane, ScrollbarVisibility } from "@fluentui/react";
+import { ScrollablePane, ScrollbarVisibility } from "./controls/ScrollablePane";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
+import { Button, MessageBar, MessageBarActions, MessageBarBody, MessageBarIntent } from "@fluentui/react-components";
+import { DismissRegular } from "@fluentui/react-icons";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { WUStatus } from "src/react/index";
@@ -11,7 +14,6 @@ import { useLocalStore } from "../hooks/store";
 import { pushUrl, replaceUrl } from "../util/history";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { DockPanel, DockPanelItem, ResetableDockPanel } from "../layouts/DockPanel";
-import { ShortVerticalDivider } from "./Common";
 import { TableGroup } from "./forms/Groups";
 import { PublishQueryForm } from "./forms/PublishQuery";
 import { SlaveLogs } from "./forms/SlaveLogs";
@@ -29,21 +31,9 @@ export function resetWorkunitSummarySplitter() {
     return store?.delete(WU_SUMMARY_SPLITTER);
 }
 
-registerIcons({
-    icons: {
-        "open-telemetry": (
-            // .../eclwatch/img/opentelemetry-icon-color.svg
-            <svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="-12.70 -12.70 1024.40 1024.40"><path fill="#f5a800" d="M528.7 545.9c-42 42-42 110.1 0 152.1s110.1 42 152.1 0 42-110.1 0-152.1-110.1-42-152.1 0zm113.7 113.8c-20.8 20.8-54.5 20.8-75.3 0-20.8-20.8-20.8-54.5 0-75.3 20.8-20.8 54.5-20.8 75.3 0 20.8 20.7 20.8 54.5 0 75.3zm36.6-643l-65.9 65.9c-12.9 12.9-12.9 34.1 0 47l257.3 257.3c12.9 12.9 34.1 12.9 47 0l65.9-65.9c12.9-12.9 12.9-34.1 0-47L725.9 16.7c-12.9-12.9-34-12.9-46.9 0zM217.3 858.8c11.7-11.7 11.7-30.8 0-42.5l-33.5-33.5c-11.7-11.7-30.8-11.7-42.5 0L72.1 852l-.1.1-19-19c-10.5-10.5-27.6-10.5-38 0-10.5 10.5-10.5 27.6 0 38l114 114c10.5 10.5 27.6 10.5 38 0s10.5-27.6 0-38l-19-19 .1-.1 69.2-69.2z" /><path fill="#425cc7" d="M565.9 205.9L419.5 352.3c-13 13-13 34.4 0 47.4l90.4 90.4c63.9-46 153.5-40.3 211 17.2l73.2-73.2c13-13 13-34.4 0-47.4L613.3 205.9c-13-13.1-34.4-13.1-47.4 0zm-94 322.3l-53.4-53.4c-12.5-12.5-33-12.5-45.5 0L184.7 663.2c-12.5 12.5-12.5 33 0 45.5l106.7 106.7c12.5 12.5 33 12.5 45.5 0L458 694.1c-25.6-52.9-21-116.8 13.9-165.9z" /></svg>
-        ),
-        "open-telemetry-disabled": (
-            <svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="-12.70 -12.70 1024.40 1024.40"><path fill="var(--colorNeutralForegroundDisabled)" d="M528.7 545.9c-42 42-42 110.1 0 152.1s110.1 42 152.1 0 42-110.1 0-152.1-110.1-42-152.1 0zm113.7 113.8c-20.8 20.8-54.5 20.8-75.3 0-20.8-20.8-20.8-54.5 0-75.3 20.8-20.8 54.5-20.8 75.3 0 20.8 20.7 20.8 54.5 0 75.3zm36.6-643l-65.9 65.9c-12.9 12.9-12.9 34.1 0 47l257.3 257.3c12.9 12.9 34.1 12.9 47 0l65.9-65.9c12.9-12.9 12.9-34.1 0-47L725.9 16.7c-12.9-12.9-34-12.9-46.9 0zM217.3 858.8c11.7-11.7 11.7-30.8 0-42.5l-33.5-33.5c-11.7-11.7-30.8-11.7-42.5 0L72.1 852l-.1.1-19-19c-10.5-10.5-27.6-10.5-38 0-10.5 10.5-10.5 27.6 0 38l114 114c10.5 10.5 27.6 10.5 38 0s10.5-27.6 0-38l-19-19 .1-.1 69.2-69.2z" /><path fill="var(--colorNeutralForegroundDisabled)" d="M565.9 205.9L419.5 352.3c-13 13-13 34.4 0 47.4l90.4 90.4c63.9-46 153.5-40.3 211 17.2l73.2-73.2c13-13 13-34.4 0-47.4L613.3 205.9c-13-13.1-34.4-13.1-47.4 0zm-94 322.3l-53.4-53.4c-12.5-12.5-33-12.5-45.5 0L184.7 663.2c-12.5 12.5-12.5 33 0 45.5l106.7 106.7c12.5 12.5 33 12.5 45.5 0L458 694.1c-25.6-52.9-21-116.8 13.9-165.9z" /></svg>
-        )
-    }
-});
-
-const otIconStyle = mergeStyles({
-    width: 16
-});
+// .../eclwatch/img/opentelemetry-icon-color.svg inlined as React element
+const OT_ICON_COLORED = <svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="-12.70 -12.70 1024.40 1024.40" style={{ width: 16, height: 16 }}><path fill="#f5a800" d="M528.7 545.9c-42 42-42 110.1 0 152.1s110.1 42 152.1 0 42-110.1 0-152.1-110.1-42-152.1 0zm113.7 113.8c-20.8 20.8-54.5 20.8-75.3 0-20.8-20.8-20.8-54.5 0-75.3 20.8-20.8 54.5-20.8 75.3 0 20.8 20.7 20.8 54.5 0 75.3zm36.6-643l-65.9 65.9c-12.9 12.9-12.9 34.1 0 47l257.3 257.3c12.9 12.9 34.1 12.9 47 0l65.9-65.9c12.9-12.9 12.9-34.1 0-47L725.9 16.7c-12.9-12.9-34-12.9-46.9 0zM217.3 858.8c11.7-11.7 11.7-30.8 0-42.5l-33.5-33.5c-11.7-11.7-30.8-11.7-42.5 0L72.1 852l-.1.1-19-19c-10.5-10.5-27.6-10.5-38 0-10.5 10.5-10.5 27.6 0 38l114 114c10.5 10.5 27.6 10.5 38 0s10.5-27.6 0-38l-19-19 .1-.1 69.2-69.2z" /><path fill="#425cc7" d="M565.9 205.9L419.5 352.3c-13 13-13 34.4 0 47.4l90.4 90.4c63.9-46 153.5-40.3 211 17.2l73.2-73.2c13-13 13-34.4 0-47.4L613.3 205.9c-13-13.1-34.4-13.1-47.4 0zm-94 322.3l-53.4-53.4c-12.5-12.5-33-12.5-45.5 0L184.7 663.2c-12.5 12.5-12.5 33 0 45.5l106.7 106.7c12.5 12.5 33 12.5 45.5 0L458 694.1c-25.6-52.9-21-116.8 13.9-165.9z" /></svg>;
+const OT_ICON_DISABLED = <svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="-12.70 -12.70 1024.40 1024.40" style={{ width: 16, height: 16 }}><path fill="var(--colorNeutralForegroundDisabled)" d="M528.7 545.9c-42 42-42 110.1 0 152.1s110.1 42 152.1 0 42-110.1 0-152.1-110.1-42-152.1 0zm113.7 113.8c-20.8 20.8-54.5 20.8-75.3 0-20.8-20.8-20.8-54.5 0-75.3 20.8-20.8 54.5-20.8 75.3 0 20.8 20.7 20.8 54.5 0 75.3zm36.6-643l-65.9 65.9c-12.9 12.9-12.9 34.1 0 47l257.3 257.3c12.9 12.9 34.1 12.9 47 0l65.9-65.9c12.9-12.9 12.9-34.1 0-47L725.9 16.7c-12.9-12.9-34-12.9-46.9 0zM217.3 858.8c11.7-11.7 11.7-30.8 0-42.5l-33.5-33.5c-11.7-11.7-30.8-11.7-42.5 0L72.1 852l-.1.1-19-19c-10.5-10.5-27.6-10.5-38 0-10.5 10.5-10.5 27.6 0 38l114 114c10.5 10.5 27.6 10.5 38 0s10.5-27.6 0-38l-19-19 .1-.1 69.2-69.2z" /><path fill="var(--colorNeutralForegroundDisabled)" d="M565.9 205.9L419.5 352.3c-13 13-13 34.4 0 47.4l90.4 90.4c63.9-46 153.5-40.3 211 17.2l73.2-73.2c13-13 13-34.4 0-47.4L613.3 205.9c-13-13.1-34.4-13.1-47.4 0zm-94 322.3l-53.4-53.4c-12.5-12.5-33-12.5-45.5 0L184.7 663.2c-12.5 12.5-12.5 33 0 45.5l106.7 106.7c12.5 12.5 33 12.5 45.5 0L458 694.1c-25.6-52.9-21-116.8 13.9-165.9z" /></svg>;
 
 interface OtTraceSchema {
     traceId: string;
@@ -62,7 +52,7 @@ const parseOtTraceParent = (parent: string = ""): OtTraceSchema => {
 };
 
 interface MessageBarContent {
-    type: MessageBarType;
+    type: MessageBarIntent;
     message: string;
 }
 
@@ -152,13 +142,13 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
             }
         },
         {
-            key: "copyOtel", text: nlsHPCC.CopyOpenTelemetry, iconProps: { iconName: otTraceParent === "" ? "open-telemetry-disabled" : "open-telemetry", className: otIconStyle },
+            key: "copyOtel", text: nlsHPCC.CopyOpenTelemetry, iconElement: otTraceParent === "" ? OT_ICON_DISABLED : OT_ICON_COLORED,
             disabled: otTraceParent === "",
             onClick: () => {
                 navigator?.clipboard?.writeText(JSON.stringify(parseOtTraceParent(otTraceParent)));
             }
         },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider },
         {
             key: "save", text: nlsHPCC.Save, iconProps: { iconName: "Save" }, disabled: !canSave,
             onClick: () => {
@@ -167,7 +157,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
                     Description: description,
                     Protected: wuProtected
                 }).then(_ => {
-                    showMessageBar({ type: MessageBarType.success, message: nlsHPCC.SuccessfullySaved });
+                    showMessageBar({ type: "success", message: nlsHPCC.SuccessfullySaved });
                 }).catch(err => logger.error(err));
             }
         },
@@ -180,7 +170,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
             onClick: () => workunit?.restore().catch(err => logger.error(err))
 
         },
-        { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_2", itemType: ContextualMenuItemType.Divider },
         {
             key: "reschedule", text: nlsHPCC.Reschedule, disabled: !canReschedule,
             onClick: () => workunit?.reschedule().catch(err => logger.error(err))
@@ -189,7 +179,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
             key: "deschedule", text: nlsHPCC.Deschedule, disabled: !canDeschedule,
             onClick: () => workunit?.deschedule().catch(err => logger.error(err))
         },
-        { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_3", itemType: ContextualMenuItemType.Divider },
         {
             key: "setToFailed", text: nlsHPCC.SetToFailed, disabled: workunit?.Archived || workunit?.isComplete() || workunit?.isDeleted(),
             onClick: () => workunit?.setToFailed().catch(err => logger.error(err))
@@ -198,7 +188,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
             key: "abort", text: nlsHPCC.Abort, disabled: workunit?.Archived || workunit?.isComplete() || workunit?.isDeleted(),
             onClick: () => workunit?.abort().catch(err => logger.error(err))
         },
-        { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_4", itemType: ContextualMenuItemType.Divider },
         {
             key: "recover", text: nlsHPCC.Recover, disabled: workunit?.Archived || !workunit?.isComplete() || workunit?.isDeleted(),
             onClick: () => workunit?.resubmit().catch(err => logger.error(err))
@@ -217,17 +207,17 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
                 }).catch(err => logger.error(err));
             }
         },
-        { key: "divider_5", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_5", itemType: ContextualMenuItemType.Divider },
         {
             key: "publish", text: nlsHPCC.Publish, disabled: !canDelete,
             onClick: () => setShowPublishForm(true)
         },
-        { key: "divider_6", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_6", itemType: ContextualMenuItemType.Divider },
         {
             key: "zap", text: nlsHPCC.ZAP, disabled: !canDelete,
             onClick: () => setShowZapForm(true)
         },
-        { key: "divider_7", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_7", itemType: ContextualMenuItemType.Divider },
         {
             key: "slaveLogs", text: nlsHPCC.SlaveLogs, disabled: !workunit?.ThorLogList,
             onClick: () => setShowThorSlaveLogs(true)
@@ -285,8 +275,9 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
         header={<>
             <CommandBar items={buttons} />
             {messageBarContent &&
-                <MessageBar messageBarType={messageBarContent.type} dismissButtonAriaLabel={nlsHPCC.Close} onDismiss={dismissMessageBar} >
-                    {messageBarContent.message}
+                <MessageBar intent={messageBarContent.type}>
+                    <MessageBarBody>{messageBarContent.message}</MessageBarBody>
+                    <MessageBarActions containerAction={<Button onClick={dismissMessageBar} aria-label={nlsHPCC.Close} appearance="transparent" icon={<DismissRegular />} />} />
                 </MessageBar>
             }
         </>}

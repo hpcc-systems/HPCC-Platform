@@ -128,7 +128,7 @@ export function useECLWatchLogger(): { id: string, log: Readonly<LogEntry[]>, la
                         intent = "warning";
                     }
 
-                    dispatchToast(CustomToaster({
+                    dispatchToast(React.createElement(CustomToaster, {
                         id: msg.id,
                         level: msg.level,
                         message: msg.message,

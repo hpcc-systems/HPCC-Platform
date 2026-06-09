@@ -2,7 +2,7 @@ import * as React from "react";
 import { Badge, Field, Label, makeStyles, ProgressBar, Toolbar, ToolbarButton, ToolbarGroup, tokens } from "@fluentui/react-components";
 import { ArrowClockwiseRegular, ArrowRightFilled, ArrowResetFilled } from "@fluentui/react-icons";
 import { DatePicker } from "@fluentui/react-datepicker-compat";
-import { SelectionMode } from "@fluentui/react";
+import { SelectionMode } from "./controls/Grid";
 import { timeFormat, timeParse } from "@hpcc-js/common";
 import { SMCService, WsSMC } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";

@@ -1,6 +1,6 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, IDropdownOption, mergeStyleSets, PrimaryButton, Spinner, TextField, } from "@fluentui/react";
-import { StackShim } from "@fluentui/react-migration-v8-v9";
+import { IDropdownOption } from "./Fields";
+import { Button, Checkbox, Field, Input, Spinner } from "@fluentui/react-components";
 import { useForm, Controller } from "react-hook-form";
 import { FileSpray, FileSprayService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
@@ -120,14 +120,7 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
         )();
     }, [closeForm, handleSubmit, isContainer, logicalFiles, pathSep, refreshGrid, reset]);
 
-    const componentStyles = mergeStyleSets(
-        FormStyles.componentStyles,
-        {
-            container: {
-                minWidth: 440,
-            }
-        }
-    );
+    const componentStyles = FormStyles.useComponentStyles();
 
     React.useEffect(() => {
         if (logicalFiles.length === 1) {
@@ -145,11 +138,11 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
 
     return <MessageBox title={nlsHPCC.Despray} show={showForm} setShow={closeForm}
         footer={<>
-            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
-            <PrimaryButton text={nlsHPCC.Despray} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
-            <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="after" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <Button appearance="primary" disabled={submitDisabled} onClick={handleSubmit(onSubmit)}>{nlsHPCC.Despray}</Button>
+            <Button onClick={() => closeForm()}>{nlsHPCC.Cancel}</Button>
         </>}>
-        <StackShim>
+        <div style={{ display: "flex", flexDirection: "column" }}>
             <Controller
                 control={control} name="destGroup"
                 render={({
@@ -239,14 +232,13 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                     render={({
                         field: { onChange, name: fieldName, value },
                         fieldState: { error }
-                    }) => <TextField
-                            name={fieldName}
-                            onChange={onChange}
-                            required={true}
-                            label={nlsHPCC.TargetName}
-                            value={value}
-                            errorMessage={error && error.message}
-                        />}
+                    }) => <Field label={nlsHPCC.TargetName} required validationMessage={error?.message}>
+                            <Input
+                                name={fieldName}
+                                value={value}
+                                onChange={(_, data) => onChange(data.value)}
+                            />
+                        </Field>}
                     rules={{
                         required: nlsHPCC.ValidationErrorRequired
                     }}
@@ -269,12 +261,13 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                                         render={({
                                             field: { onChange, name: fieldName, value: file },
                                             fieldState: { error }
-                                        }) => <TextField
-                                                name={fieldName}
-                                                onChange={onChange}
-                                                value={file}
-                                                errorMessage={error && error?.message}
-                                            />}
+                                        }) => <Field validationMessage={error?.message}>
+                                                <Input
+                                                    name={fieldName}
+                                                    value={file}
+                                                    onChange={(_, data) => onChange(data.value)}
+                                                />
+                                            </Field>}
                                         rules={{
                                             required: nlsHPCC.ValidationErrorTargetNameRequired
                                         }}
@@ -289,28 +282,29 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                 control={control} name="splitprefix"
                 render={({
                     field: { onChange, name: fieldName, value }
-                }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
-                        label={nlsHPCC.SplitPrefix}
-                        value={value}
-                    />}
+                }) => <Field label={nlsHPCC.SplitPrefix}>
+                        <Input
+                            name={fieldName}
+                            value={value}
+                            onChange={(_, data) => onChange(data.value)}
+                        />
+                    </Field>}
             />
-        </StackShim>
-        <StackShim>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column" }}>
             <table className={componentStyles.twoColumnTable}>
                 <tbody><tr>
                     <td><Controller
                         control={control} name="overwrite"
                         render={({
                             field: { onChange, name: fieldName, value }
-                        }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.Overwrite} />}
+                        }) => <Checkbox name={fieldName} checked={value} onChange={(_, data) => onChange(data.checked)} label={nlsHPCC.Overwrite} />}
                     /></td>
                     <td><Controller
                         control={control} name="SingleConnection"
                         render={({
                             field: { onChange, name: fieldName, value }
-                        }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.UseSingleConnection} />}
+                        }) => <Checkbox name={fieldName} checked={value} onChange={(_, data) => onChange(data.checked)} label={nlsHPCC.UseSingleConnection} />}
                     /></td>
                 </tr>
                     <tr>
@@ -318,10 +312,10 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                             control={control} name="wrap"
                             render={({
                                 field: { onChange, name: fieldName, value }
-                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.PreserveParts} />}
+                            }) => <Checkbox name={fieldName} checked={value} onChange={(_, data) => onChange(data.checked)} label={nlsHPCC.PreserveParts} />}
                         /></td>
                     </tr></tbody>
             </table>
-        </StackShim>
+        </div>
     </MessageBox>;
 };

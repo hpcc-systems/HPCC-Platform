@@ -1,6 +1,7 @@
 import * as React from "react";
-import { CommandBar, ICommandBarItemProps, Label, CommandBarButton, useTheme } from "@fluentui/react";
-import { StackShim } from "@fluentui/react-migration-v8-v9";
+import { Button, Label, tokens } from "@fluentui/react-components";
+import { Filter20Regular, Filter20Filled, ArrowClockwise20Regular } from "@fluentui/react-icons";
+import { CommandBar, ICommandBarItemProps } from "./CommandBarV9";
 import nlsHPCC from "src/nlsHPCC";
 import { DateTimeInput } from "./forms/Fields";
 
@@ -25,41 +26,37 @@ export const LogsHeader: React.FunctionComponent<LogsHeaderProps> = ({
     hasFilter,
     copyButtons
 }) => {
-    const theme = useTheme();
-
-    return <StackShim horizontal verticalAlign="center" styles={{ root: { padding: "0px 6px", borderBottom: `1px solid ${theme.palette.neutralLight}` } }}>
-        <StackShim horizontal tokens={{ childrenGap: 16 }} styles={{ root: { flex: 1, alignItems: "center" } }}>
-            <CommandBarButton
-                text={nlsHPCC.Filter}
-                style={{ padding: 8 }}
-                iconProps={{ iconName: hasFilter ? "FilterSolid" : "Filter" }}
+    return <div style={{ display: "flex", flexDirection: "row", alignItems: "center", padding: "0px 6px", borderBottom: `1px solid ${tokens.colorNeutralStroke2}` }}>
+        <div style={{ display: "flex", flexDirection: "row", gap: "16px", flex: 1, alignItems: "center" }}>
+            <Button
+                appearance="subtle"
+                icon={hasFilter ? <Filter20Filled /> : <Filter20Regular />}
                 onClick={onShowFilter}
-            />
-            <StackShim horizontal tokens={{ childrenGap: 8 }} verticalAlign="center">
+            >{nlsHPCC.Filter}</Button>
+            <div style={{ display: "flex", flexDirection: "row", gap: "8px", alignItems: "center" }}>
                 <Label>{nlsHPCC.FromDate}:</Label>
                 <DateTimeInput
                     value={startDate}
                     onChange={onStartDateChange}
-                    style={{ padding: "4px 8px", border: `1px solid ${theme.palette.neutralTertiary}`, borderRadius: "2px" }}
+                    style={{ padding: "4px 8px", border: `1px solid ${tokens.colorNeutralStroke1}`, borderRadius: "2px" }}
                 />
-            </StackShim>
-            <StackShim horizontal tokens={{ childrenGap: 8 }} verticalAlign="center">
+            </div>
+            <div style={{ display: "flex", flexDirection: "row", gap: "8px", alignItems: "center" }}>
                 <Label>{nlsHPCC.ToDate}:</Label>
                 <DateTimeInput
                     value={endDate}
                     onChange={onEndDateChange}
-                    style={{ padding: "4px 8px", border: `1px solid ${theme.palette.neutralTertiary}`, borderRadius: "2px" }}
+                    style={{ padding: "4px 8px", border: `1px solid ${tokens.colorNeutralStroke1}`, borderRadius: "2px" }}
                 />
-            </StackShim>
-            <CommandBarButton
-                text={nlsHPCC.Refresh}
-                style={{ padding: 8 }}
-                iconProps={{ iconName: "Refresh" }}
+            </div>
+            <Button
+                appearance="subtle"
+                icon={<ArrowClockwise20Regular />}
                 onClick={onRefresh}
-            />
-        </StackShim>
+            >{nlsHPCC.Refresh}</Button>
+        </div>
         <div>
             <CommandBar items={[]} farItems={copyButtons} />
         </div>
-    </StackShim>;
+    </div>;
 };

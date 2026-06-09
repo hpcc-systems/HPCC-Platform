@@ -1,7 +1,8 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, DefaultButton, Dropdown, ICommandBarItemProps, IDropdownOption, IStackTokens, Label, Link, mergeStyleSets, MessageBar, MessageBarType } from "@fluentui/react";
-import { SelectTabData, SelectTabEvent, Tab, TabList, makeStyles } from "@fluentui/react-components";
-import { StackShim } from "@fluentui/react-migration-v8-v9";
+import { IDropdownOption } from "./forms/Fields";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
+import { Button, Dropdown, Label, Link, MessageBar, MessageBarActions, MessageBarBody, Option, makeStyles, SelectTabData, SelectTabEvent, Tab, TabList } from "@fluentui/react-components";
+import { DismissRegular } from "@fluentui/react-icons";
 import { scopedLogger } from "@hpcc-js/util";
 import { PackageProcessService } from "@hpcc-js/comms";
 import { SizeMe } from "../layouts/SizeMe";
@@ -12,7 +13,6 @@ import { pushParams, pushUrl } from "../util/history";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { ReflexContainer, ReflexElement, ReflexSplitter } from "../layouts/react-reflex";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
-import { ShortVerticalDivider } from "./Common";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
 import { AddPackageMap } from "./forms/AddPackageMap";
@@ -46,13 +46,15 @@ interface PackageMapsProps {
     tab?: string;
 }
 
-const validateMapStackTokens: IStackTokens = {
-    childrenGap: 10,
+const validateMapStackStyle: React.CSSProperties = {
+    display: "flex",
+    flexDirection: "row",
+    gap: "10px",
     padding: "5px 0"
 };
 
-const validateMapStyles = mergeStyleSets({
-    dropdown: { minWidth: 140, marginLeft: 20 },
+const useValidateMapStyles = makeStyles({
+    dropdown: { minWidth: "140px", marginLeft: "20px" },
     displayNone: { display: "none" }
 });
 
@@ -97,6 +99,7 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
 }) => {
 
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
+    const validateMapStyles = useValidateMapStyles();
 
     const [targets, setTargets] = React.useState<TypedDropdownOption[]>();
     const [processes, setProcesses] = React.useState<TypedDropdownOption[]>();
@@ -122,18 +125,18 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
         setTotal,
         refreshTable } = useFluentStoreState({});
 
-    const changeActiveMapTarget = React.useCallback((evt, option) => {
-        setActiveMapTarget(option.key.toString());
+    const changeActiveMapTarget = React.useCallback((_evt, data) => {
+        setActiveMapTarget(String(data.optionValue));
     }, [setActiveMapTarget]);
-    const changeActiveMapProcess = React.useCallback((evt, option) => {
-        setActiveMapProcess(option.key.toString());
+    const changeActiveMapProcess = React.useCallback((_evt, data) => {
+        setActiveMapProcess(String(data.optionValue));
     }, [setActiveMapProcess]);
 
-    const changeContentsTarget = React.useCallback((evt, option) => {
-        setContentsTarget(option.key.toString());
+    const changeContentsTarget = React.useCallback((_evt, data) => {
+        setContentsTarget(String(data.optionValue));
     }, [setContentsTarget]);
-    const changeContentsProcess = React.useCallback((evt, option) => {
-        setContentsProcess(option.key.toString());
+    const changeContentsProcess = React.useCallback((_evt, data) => {
+        setContentsProcess(String(data.optionValue));
     }, [setContentsProcess]);
 
     const handleFileSelect = React.useCallback((evt) => {
@@ -277,7 +280,7 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => refreshData()
         },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider },
         {
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection,
             onClick: () => {
@@ -298,7 +301,7 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
             key: "delete", text: nlsHPCC.Delete, disabled: !uiState.hasSelection,
             onClick: () => setShowDeleteConfirm(true)
         },
-        { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_2", itemType: ContextualMenuItemType.Divider },
         {
             key: "activate", text: nlsHPCC.Activate, disabled: selection.length !== 1,
             onClick: () => {
@@ -338,7 +341,7 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
                     });
             }
         },
-        { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_3", itemType: ContextualMenuItemType.Divider },
         {
             key: "filter", text: nlsHPCC.Filter, disabled: !!store, iconProps: { iconName: hasFilter ? "FilterSolid" : "Filter" },
             onClick: () => {
@@ -420,8 +423,9 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
 
     return <>
         {showError &&
-            <MessageBar messageBarType={MessageBarType.error} isMultiline={false} onDismiss={() => setShowError(false)} dismissButtonAriaLabel="Close">
-                {errorMessage}
+            <MessageBar intent="error">
+                <MessageBarBody>{errorMessage}</MessageBarBody>
+                <MessageBarActions containerAction={<Button onClick={() => setShowError(false)} aria-label="Close" appearance="transparent" icon={<DismissRegular />} />} />
             </MessageBar>
         }
         <SizeMe>{({ size }) =>
@@ -452,27 +456,35 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
                     <div style={pivotItemStyle(size, 0)}>
                         <HolyGrail
                             header={
-                                <StackShim horizontal tokens={validateMapStackTokens}>
-                                    <StackShim horizontal tokens={validateMapStackTokens}>
+                                <div style={validateMapStackStyle}>
+                                    <div style={validateMapStackStyle}>
                                         <Label>{nlsHPCC.Target}</Label>
                                         <Dropdown
                                             id="activeMapTarget" className={validateMapStyles.dropdown}
-                                            options={targets} placeholder={nlsHPCC.SelectEllipsis}
-                                            onChange={changeActiveMapTarget}
-                                        />
-                                    </StackShim>
-                                    <StackShim horizontal tokens={validateMapStackTokens}>
+                                            placeholder={nlsHPCC.SelectEllipsis}
+                                            onOptionSelect={changeActiveMapTarget}
+                                        >
+                                            {targets?.map(opt => (
+                                                <Option key={String(opt.key)} text={opt.text} value={String(opt.key)}>{opt.text}</Option>
+                                            ))}
+                                        </Dropdown>
+                                    </div>
+                                    <div style={validateMapStackStyle}>
                                         <Label>{nlsHPCC.Process}</Label>
                                         <Dropdown
                                             id="activeMapProcess" className={validateMapStyles.dropdown}
-                                            options={processes} placeholder={nlsHPCC.SelectEllipsis}
-                                            onChange={changeActiveMapProcess}
-                                        />
-                                    </StackShim>
-                                    <StackShim horizontal tokens={validateMapStackTokens}>
-                                        <DefaultButton id="validateMap" text={nlsHPCC.Validate} onClick={validateActiveMap} />
-                                    </StackShim>
-                                </StackShim>
+                                            placeholder={nlsHPCC.SelectEllipsis}
+                                            onOptionSelect={changeActiveMapProcess}
+                                        >
+                                            {processes?.map(opt => (
+                                                <Option key={String(opt.key)} text={opt.text} value={String(opt.key)}>{opt.text}</Option>
+                                            ))}
+                                        </Dropdown>
+                                    </div>
+                                    <div style={validateMapStackStyle}>
+                                        <Button id="validateMap" onClick={validateActiveMap}>{nlsHPCC.Validate}</Button>
+                                    </div>
+                                </div>
                             }
                             main={
                                 <ReflexContainer orientation="vertical">
@@ -492,32 +504,39 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
                     <div style={pivotItemStyle(size, 0)}>
                         <HolyGrail
                             header={
-                                <StackShim horizontal tokens={validateMapStackTokens}>
-                                    <StackShim horizontal tokens={validateMapStackTokens}>
+                                <div style={validateMapStackStyle}>
+                                    <div style={validateMapStackStyle}>
                                         <Label>{nlsHPCC.Target}</Label>
                                         <Dropdown
                                             id="contentsTarget" className={validateMapStyles.dropdown}
-                                            options={targets} selectedKey={contentsTarget} placeholder={nlsHPCC.SelectEllipsis}
-                                            onChange={changeContentsTarget}
-                                        />
-                                    </StackShim>
-                                    <StackShim horizontal tokens={validateMapStackTokens}>
+                                            selectedOptions={contentsTarget ? [contentsTarget] : []}
+                                            placeholder={nlsHPCC.SelectEllipsis}
+                                            onOptionSelect={changeContentsTarget}
+                                        >
+                                            {targets?.map(opt => (
+                                                <Option key={String(opt.key)} text={opt.text} value={String(opt.key)}>{opt.text}</Option>
+                                            ))}
+                                        </Dropdown>
+                                    </div>
+                                    <div style={validateMapStackStyle}>
                                         <Label>{nlsHPCC.Process}</Label>
                                         <Dropdown
                                             id="contentsProcess" className={validateMapStyles.dropdown}
-                                            options={processes} selectedKey={contentsProcess} placeholder={nlsHPCC.SelectEllipsis}
-                                            onChange={changeContentsProcess}
-                                        />
-                                    </StackShim>
-                                    <StackShim horizontal tokens={validateMapStackTokens}>
+                                            selectedOptions={contentsProcess ? [contentsProcess] : []}
+                                            placeholder={nlsHPCC.SelectEllipsis}
+                                            onOptionSelect={changeContentsProcess}
+                                        >
+                                            {processes?.map(opt => (
+                                                <Option key={String(opt.key)} text={opt.text} value={String(opt.key)}>{opt.text}</Option>
+                                            ))}
+                                        </Dropdown>
+                                    </div>
+                                    <div style={validateMapStackStyle}>
                                         <input id="uploadMapFromFile" type="file" className={validateMapStyles.displayNone} accept="*.xml" onChange={handleFileSelect} />
-                                        <DefaultButton
-                                            id="loadMapFromFile" text={nlsHPCC.LoadPackageFromFile}
-                                            onClick={handleLoadMapFromFileClick}
-                                        />
-                                        <DefaultButton id="validateMap" text={nlsHPCC.Validate} onClick={validateContents} />
-                                    </StackShim>
-                                </StackShim>
+                                        <Button id="loadMapFromFile" onClick={handleLoadMapFromFileClick}>{nlsHPCC.LoadPackageFromFile}</Button>
+                                        <Button id="validateMap" onClick={validateContents}>{nlsHPCC.Validate}</Button>
+                                    </div>
+                                </div>
                             }
                             main={
                                 <ReflexContainer orientation="vertical">

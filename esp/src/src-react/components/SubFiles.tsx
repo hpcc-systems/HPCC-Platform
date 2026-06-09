@@ -1,5 +1,7 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, FontIcon, ICommandBarItemProps, Link } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
+import { FolderZipRegular, KeyRegular, FolderRegular } from "@fluentui/react-icons";
+import { Link } from "@fluentui/react-components";
 import * as ESPLogicalFile from "src/ESPLogicalFile";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
@@ -8,7 +10,6 @@ import { useConfirm } from "../hooks/confirm";
 import { useFile, useSubfiles } from "../hooks/file";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
-import { ShortVerticalDivider } from "./Common";
 import { pushUrl } from "../util/history";
 
 const defaultUIState = {
@@ -45,33 +46,33 @@ export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
             sel: { width: 27, selectorType: "checkbox" },
             IsCompressed: {
                 width: 25, sortable: false,
-                headerIcon: "ZipFolder",
+                headerIconElement: <FolderZipRegular aria-label={nlsHPCC.Compressed} />,
                 headerTooltip: nlsHPCC.Compressed,
                 formatter: (compressed) => {
                     if (compressed === true) {
-                        return <FontIcon iconName="zipFolder" />;
+                        return <FolderZipRegular />;
                     }
                     return <></>;
                 }
             },
             IsKeyFile: {
                 width: 25, sortable: false,
-                headerIcon: "Permissions",
+                headerIconElement: <KeyRegular aria-label={nlsHPCC.Index} />,
                 headerTooltip: nlsHPCC.Index,
                 formatter: (keyfile, row) => {
                     if (row.ContentType === "key") {
-                        return <FontIcon iconName="Permissions" />;
+                        return <KeyRegular />;
                     }
                     return <></>;
                 }
             },
             isSuperfile: {
                 width: 25, sortable: false,
-                headerIcon: "Folder",
+                headerIconElement: <FolderRegular aria-label={nlsHPCC.Superfile} />,
                 headerTooltip: nlsHPCC.Superfile,
                 formatter: (superfile) => {
                     if (superfile === true) {
-                        return <FontIcon iconName="Folder" />;
+                        return <FolderRegular />;
                     }
                     return <></>;
                 }
@@ -141,7 +142,7 @@ export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
                 }
             }
         },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider },
         {
             key: "delete", text: nlsHPCC.RemoveSubfiles, iconProps: { iconName: "Delete" }, disabled: !uiState.hasSelection,
             onClick: () => setShowDeleteSubfilesConfirm(true)

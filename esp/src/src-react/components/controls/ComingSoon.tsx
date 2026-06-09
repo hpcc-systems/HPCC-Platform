@@ -1,6 +1,5 @@
 import * as React from "react";
-import { IStyle, Toggle } from "@fluentui/react";
-import nlsHPCC from "src/nlsHPCC";
+import { Switch, SwitchOnChangeData } from "@fluentui/react-components";
 import { useBuildInfo, useModernMode } from "../../hooks/platform";
 
 const legacyIndex = {};
@@ -62,7 +61,7 @@ export function switchTechPreview(checked: boolean, opsCategory: string) {
 
 interface ComingSoon {
     defaultValue: boolean;
-    style?: IStyle;
+    style?: React.CSSProperties;
     value?: boolean;
 }
 
@@ -82,10 +81,10 @@ export const ComingSoon: React.FunctionComponent<ComingSoon> = ({
         }
     }, [opsCategory, setModernMode, value]);
 
-    const onChangeCallback = React.useCallback((ev: React.MouseEvent<HTMLElement>, checked: boolean) => {
-        setModernMode(checked ? String(true) : String(false));
-        switchTechPreview(checked, opsCategory);
+    const onChangeCallback = React.useCallback((ev: React.ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => {
+        setModernMode(data.checked ? String(true) : String(false));
+        switchTechPreview(data.checked, opsCategory);
     }, [opsCategory, setModernMode]);
 
-    return <Toggle label="ECL Watch v9" checked={(modernMode ?? String(defaultValue)) !== String(false)} onText={nlsHPCC.On} offText={nlsHPCC.Off} onChange={onChangeCallback} styles={{ label: style }} />;
+    return <Switch label="ECL Watch v9" checked={(modernMode ?? String(defaultValue)) !== String(false)} onChange={onChangeCallback} style={style} />;
 };

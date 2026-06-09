@@ -23,8 +23,6 @@ import { Queries } from "./Queries";
 import { IndexFileSummary } from "./IndexFileSummary";
 import { DelayLoadedPanel, OverflowTabList, TabInfo } from "./controls/TabbedPanes/index";
 
-import "react-reflex/styles.css";
-
 const useStyles = makeStyles({
     root: { height: "100%" }
 });

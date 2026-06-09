@@ -1,6 +1,5 @@
 import * as React from "react";
-import { PrimaryButton, Shimmer, ShimmerElementType, TooltipHost } from "@fluentui/react";
-import { mergeStyleSets } from "@fluentui/style-utilities";
+import { Button, makeStyles, Skeleton, SkeletonItem, Tooltip } from "@fluentui/react-components";
 import nlsHPCC from "../nlsHPCC";
 import { useGet } from "./hooks/useWsStore";
 
@@ -10,39 +9,33 @@ interface RecentFilterProps {
     filter: object;
 }
 
-const recentFilterStyles = mergeStyleSets({
+const useRecentFilterStyles = makeStyles({
     root: {
         width: "100%",
         margin: "0 0 10px 0",
-        "thead": {
+        "& thead": {
             fontWeight: "bold"
         },
-        "td": {
+        "& td": {
             padding: "8px 24px 8px 16px",
             borderBottom: "1px solid #e0e0e0"
         }
     },
     placeholder: {
-        margin: "0 0 10px 0",
-        ".ms-Shimmer-shimmerWrapper": {
-            marginBottom: "6px"
-        }
+        margin: "0 0 10px 0"
     }
 });
 
 export const RecentFilters: React.FunctionComponent<RecentFilterProps> = ({
     ws_key, widget, filter
 }) => {
+    const recentFilterStyles = useRecentFilterStyles();
     const { data, loading } = useGet(ws_key, filter);
 
     const handleClick = (e) => {
         const tempObj = JSON.parse(decodeURIComponent(e.currentTarget.value));
         widget.NewPage.onClick(e, tempObj);
     };
-
-    const shimmerElements = React.useMemo(() => [
-        { type: ShimmerElementType.line, height: 48 }
-    ], []);
 
     const cleanUpFilter = (value: string) => {
         const result = value.replace(/[{}'"]+/g, "");
@@ -53,7 +46,7 @@ export const RecentFilters: React.FunctionComponent<RecentFilterProps> = ({
         <>
             <h4>{nlsHPCC.RecentFilters}</h4>
             {loading ? (
-                <div className={recentFilterStyles.placeholder}><Shimmer shimmerElements={shimmerElements} /></div>
+                <div className={recentFilterStyles.placeholder}><Skeleton><SkeletonItem size={48} /></Skeleton></div>
             ) : (data ?
                 <table aria-label={nlsHPCC.RecentFiltersTable} className={recentFilterStyles.root}>
                     <thead>
@@ -66,11 +59,11 @@ export const RecentFilters: React.FunctionComponent<RecentFilterProps> = ({
                         {data.map((row, idx) => (
                             <tr key={idx}>
                                 <td align="left">
-                                    <TooltipHost content={cleanUpFilter(JSON.stringify(row))}>
+                                    <Tooltip content={cleanUpFilter(JSON.stringify(row))} relationship="label">
                                         <span>{cleanUpFilter(JSON.stringify(row))}</span>
-                                    </TooltipHost>
+                                    </Tooltip>
                                 </td>
-                                <td align="center"><PrimaryButton value={encodeURIComponent(JSON.stringify(row))} onClick={handleClick}>Open</PrimaryButton></td>
+                                <td align="center"><Button appearance="primary" value={encodeURIComponent(JSON.stringify(row))} onClick={handleClick}>Open</Button></td>
                             </tr>
                         ))}
                     </tbody>

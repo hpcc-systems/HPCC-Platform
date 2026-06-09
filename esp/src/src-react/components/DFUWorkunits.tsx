@@ -1,5 +1,7 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Image, Link } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
+import { LockClosedFilled } from "@fluentui/react-icons";
+import { Link } from "@fluentui/react-components";
 import { SizeMe } from "../layouts/SizeMe";
 import * as ESPDFUWorkunit from "src/ESPDFUWorkunit";
 import * as FileSpray from "src/FileSpray";
@@ -14,7 +16,6 @@ import { pushParams } from "../util/history";
 import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { Filter } from "./forms/Filter";
 import { Fields } from "./forms/Fields";
-import { ShortVerticalDivider } from "./Common";
 import { selector } from "./DojoGrid";
 import { SashaService, WsSasha } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
@@ -101,12 +102,12 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
                 selectorType: "checkbox"
             }),
             isProtected: {
-                headerIcon: "LockSolid",
+                headerIconElement: <LockClosedFilled aria-label={nlsHPCC.Protected} />,
                 width: 18,
                 sortable: false,
                 formatter: (_protected) => {
                     if (_protected === true) {
-                        return <Icon iconName="LockSolid" />;
+                        return <LockClosedFilled />;
                     }
                     return "";
                 }
@@ -117,7 +118,7 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
                 formatter: (ID, idx) => {
                     const wu = ESPDFUWorkunit.Get(ID);
                     return <>
-                        <Image src={wu.getStateImage()} styles={{ root: { minWidth: "16px" } }} />
+                        <img src={wu.getStateImage()} alt="" style={{ minWidth: "16px" }} />
                         &nbsp;
                         <Link href={`#/dfuworkunits/${ID}`}>{ID}</Link>
                     </>;
@@ -196,7 +197,7 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => refreshTable.call()
         },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider },
         {
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
             onClick: () => {
@@ -213,12 +214,12 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
             key: "delete", text: nlsHPCC.Delete, disabled: !uiState.hasNotProtected, iconProps: { iconName: "Delete" },
             onClick: () => setShowDeleteConfirm(true)
         },
-        { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_2", itemType: ContextualMenuItemType.Divider },
         {
             key: "setFailed", text: nlsHPCC.SetToFailed, disabled: !uiState.hasNotProtected,
             onClick: () => { FileSpray.DFUWorkunitsAction(selection, "SetToFailed"); }
         },
-        { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_3", itemType: ContextualMenuItemType.Divider },
         {
             key: "restore", text: nlsHPCC.Restore, disabled: !uiState.hasSelection,
             onClick: () => {
@@ -243,7 +244,7 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
             key: "unprotect", text: nlsHPCC.Unprotect, disabled: !uiState.hasProtected,
             onClick: () => { FileSpray.DFUWorkunitsAction(selection, "Unprotect").then(() => refreshTable.call()); }
         },
-        { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_4", itemType: ContextualMenuItemType.Divider },
         {
             key: "filter", text: nlsHPCC.Filter, disabled: !!store, iconProps: { iconName: hasFilter ? "FilterSolid" : "Filter" },
             onClick: () => {

@@ -1,5 +1,7 @@
 import * as React from "react";
-import { Checkbox, CommandBar, ICommandBarItemProps, Link, SelectionMode } from "@fluentui/react";
+import { SelectionMode } from "./controls/Grid";
+import { CommandBar, ICommandBarItemProps } from "./CommandBarV9";
+import { Checkbox, Link } from "@fluentui/react-components";
 import { SizeMe } from "../layouts/SizeMe";
 import { formatCost, formatTwoDigits } from "src/Session";
 import nlsHPCC from "src/nlsHPCC";
@@ -56,11 +58,11 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
-        { key: "errors", onRender: () => <Checkbox defaultChecked label={`${filterCounts.error || 0} ${nlsHPCC.Errors}`} onChange={(ev, value) => setErrorChecked(value)} styles={{ root: { paddingTop: 8, paddingRight: 8 } }} /> },
-        { key: "costs", onRender: () => <Checkbox defaultChecked label={`${filterCounts.cost || 0} ${nlsHPCC.Costs}`} onChange={(ev, value) => setCostChecked(value)} styles={{ root: { paddingTop: 8, paddingRight: 8 } }} /> },
-        { key: "warnings", onRender: () => <Checkbox defaultChecked label={`${filterCounts.warning || 0} ${nlsHPCC.Warnings}`} onChange={(ev, value) => setWarningChecked(value)} styles={{ root: { paddingTop: 8, paddingRight: 8 } }} /> },
-        { key: "infos", onRender: () => <Checkbox checked={infoChecked} label={`${filterCounts.info || 0} ${nlsHPCC.Infos}`} onChange={(ev, value) => setInfoChecked(value)} styles={{ root: { paddingTop: 8, paddingRight: 8 } }} /> },
-        { key: "others", onRender: () => <Checkbox defaultChecked label={`${filterCounts.other || 0} ${nlsHPCC.Others}`} onChange={(ev, value) => setOtherChecked(value)} styles={{ root: { paddingTop: 8, paddingRight: 8 } }} /> }
+        { key: "errors", onRender: () => <Checkbox defaultChecked label={`${filterCounts.error || 0} ${nlsHPCC.Errors}`} onChange={(_, data) => setErrorChecked(!!data.checked)} style={{ paddingTop: 8, paddingRight: 8 }} /> },
+        { key: "costs", onRender: () => <Checkbox defaultChecked label={`${filterCounts.cost || 0} ${nlsHPCC.Costs}`} onChange={(_, data) => setCostChecked(!!data.checked)} style={{ paddingTop: 8, paddingRight: 8 }} /> },
+        { key: "warnings", onRender: () => <Checkbox defaultChecked label={`${filterCounts.warning || 0} ${nlsHPCC.Warnings}`} onChange={(_, data) => setWarningChecked(!!data.checked)} style={{ paddingTop: 8, paddingRight: 8 }} /> },
+        { key: "infos", onRender: () => <Checkbox checked={infoChecked} label={`${filterCounts.info || 0} ${nlsHPCC.Infos}`} onChange={(_, data) => setInfoChecked(!!data.checked)} style={{ paddingTop: 8, paddingRight: 8 }} /> },
+        { key: "others", onRender: () => <Checkbox defaultChecked label={`${filterCounts.other || 0} ${nlsHPCC.Others}`} onChange={(_, data) => setOtherChecked(!!data.checked)} style={{ paddingTop: 8, paddingRight: 8 }} /> }
     ], [infoChecked, filterCounts.cost, filterCounts.error, filterCounts.info, filterCounts.other, filterCounts.warning]);
 
     React.useEffect(() => {
@@ -254,7 +256,7 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
                 setSelection={_ => { }}
                 setTotal={setTotal}
                 refresh={refreshTable}
-                height={`${size.height - (44 + 8 + 45 + 12)}px`}
+                height={`${size.height - (44 + 4)}px`}
                 selectionMode={SelectionMode.none}
             ></FluentGrid>
         }</SizeMe>

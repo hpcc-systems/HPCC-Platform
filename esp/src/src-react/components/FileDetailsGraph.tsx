@@ -1,12 +1,12 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Image, Link } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
+import { Link } from "@fluentui/react-components";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
 import { useFile } from "../hooks/file";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
-import { ShortVerticalDivider } from "./Common";
 
 function getStateImageName(row) {
     if (row.Complete) {
@@ -56,7 +56,7 @@ export const FileDetailsGraph: React.FunctionComponent<FileDetailsGraphProps> = 
                 label: nlsHPCC.Name, sortable: true,
                 formatter: (Name, row) => {
                     return <>
-                        <Image src={Utility.getImageURL(getStateImageName(row))} />
+                        <img src={Utility.getImageURL(getStateImageName(row))} alt="" />
                         &nbsp;
                         <Link href={`#/workunits/${row?.Wuid}/metrics/${Name}`}>{Name}</Link>
                     </>;
@@ -71,7 +71,7 @@ export const FileDetailsGraph: React.FunctionComponent<FileDetailsGraphProps> = 
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => refreshData()
         },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider },
         {
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
             onClick: () => {

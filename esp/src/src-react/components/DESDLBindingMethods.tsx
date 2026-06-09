@@ -1,5 +1,8 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, MessageBar, MessageBarType, ScrollablePane, ScrollbarVisibility, Sticky, StickyPositionType } from "@fluentui/react";
+import { ScrollablePane, ScrollbarVisibility, Sticky, StickyPositionType } from "./controls/ScrollablePane";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
+import { Button, MessageBar, MessageBarActions, MessageBarBody, MessageBarIntent } from "@fluentui/react-components";
+import { DismissRegular } from "@fluentui/react-icons";
 import { useConst } from "@fluentui/react-hooks";
 import { scopedLogger } from "@hpcc-js/util";
 import { Observable } from "src-dojo/index";
@@ -7,7 +10,6 @@ import { MemoryTreeStore } from "src/store/Tree";
 import nlsHPCC from "src/nlsHPCC";
 import * as WsESDLConfig from "src/WsESDLConfig";
 import { useGrid } from "../hooks/grid";
-import { ShortVerticalDivider } from "./Common";
 import { editor, tree } from "./DojoGrid";
 
 const logger = scopedLogger("src-react/components/ESDLBindingMethods.tsx");
@@ -23,7 +25,7 @@ export const DESDLBindingMethods: React.FunctionComponent<DESDLBindingMethodsPro
     const [binding, setBinding] = React.useState<any>();
     const [showError, setShowError] = React.useState(false);
     const [errorMessage, setErrorMessage] = React.useState("");
-    const [messageBarType, setMessageBarType] = React.useState<MessageBarType>();
+    const [messageBarType, setMessageBarType] = React.useState<MessageBarIntent>();
 
     //  Grid ---
     const store = useConst(() => new Observable(new MemoryTreeStore("__hpcc_id", "__hpcc_parentName", { Name: true })));
@@ -115,9 +117,9 @@ export const DESDLBindingMethods: React.FunctionComponent<DESDLBindingMethodsPro
                 setErrorMessage(PublishESDLBindingResponse?.status?.Description);
                 setShowError(true);
                 if (PublishESDLBindingResponse?.status.Code === 0) {
-                    setMessageBarType(MessageBarType.success);
+                    setMessageBarType("success");
                 } else {
-                    setMessageBarType(MessageBarType.error);
+                    setMessageBarType("error");
                 }
                 refreshGrid();
             });
@@ -129,7 +131,7 @@ export const DESDLBindingMethods: React.FunctionComponent<DESDLBindingMethodsPro
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => refreshGrid()
         },
-        { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_4", itemType: ContextualMenuItemType.Divider },
         {
             key: "save", text: nlsHPCC.Save,
             onClick: () => saveConfiguration()
@@ -143,8 +145,9 @@ export const DESDLBindingMethods: React.FunctionComponent<DESDLBindingMethodsPro
     return <>
         <ScrollablePane scrollbarVisibility={ScrollbarVisibility.auto}>
             {showError &&
-                <MessageBar messageBarType={messageBarType} isMultiline={true} onDismiss={() => setShowError(false)} dismissButtonAriaLabel="Close">
-                    {errorMessage}
+                <MessageBar intent={messageBarType}>
+                    <MessageBarBody>{errorMessage}</MessageBarBody>
+                    <MessageBarActions containerAction={<Button onClick={() => setShowError(false)} aria-label="Close" appearance="transparent" icon={<DismissRegular />} />} />
                 </MessageBar>
             }
             <Sticky stickyPosition={StickyPositionType.Header}>

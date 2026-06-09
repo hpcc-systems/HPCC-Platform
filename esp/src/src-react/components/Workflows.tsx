@@ -1,11 +1,10 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
 import { useWorkunitWorkflows } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
-import { ShortVerticalDivider } from "./Common";
 
 interface WorkflowsProps {
     wuid: string;
@@ -69,7 +68,7 @@ export const Workflows: React.FunctionComponent<WorkflowsProps> = ({
                 refreshWorkflow();
             }
         },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider },
     ], [refreshWorkflow]);
 
     const copyButtons = useCopyButtons(columns, selection, "workflows");

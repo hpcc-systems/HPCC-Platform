@@ -15,7 +15,7 @@ import { useContainerNames, usePodNames } from "../../hooks/cloud";
 
 const logger = scopedLogger("src-react/components/forms/Fields.tsx");
 
-interface IDropdownOption {
+export interface IDropdownOption {
     key: string | number;
     text: string;
 }

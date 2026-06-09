@@ -88,7 +88,13 @@ module.exports = function (env) {
                 import: "./lib/src-dojo/index",
             },
             "src-lib": {
-                import: "./lib/src/index",
+                // @griffel/core is listed first so it lands in src-lib and is
+                // fully initialized before index.eclwatch.js runs. Without this,
+                // webpack places @griffel/core inside index.eclwatch.js where a
+                // circular CJS require chain causes its __styles export to be
+                // undefined (TDZ) when useFluentProviderStyles.styles.js calls
+                // it at module init time.
+                import: ["@griffel/core", "./lib/src/index"],
                 dependOn: ["src-dojo"],
             },
             stub: {
@@ -98,13 +104,15 @@ module.exports = function (env) {
             index: {
                 import: "./lib/src-react/index",
                 dependOn: ["src-lib", "src-dojo"],
-            },
+            }
         },
         output: {
             filename: "[name].eclwatch.js",
             path: outputPath,
             publicPath: distPublicPath,
-            pathinfo: true
+            // pathinfo adds module path comments; disable in production to avoid
+            // interfering with terser's source-map-aware minimization pass.
+            pathinfo: !isProduction
         },
         module: {
             rules: [
@@ -151,6 +159,19 @@ module.exports = function (env) {
         target: "web",
         mode: isProduction ? "production" : "development",
         devtool: isProduction ? undefined : "source-map",
+
+        // Production optimizations tuned to avoid CJS circular-dep init failures
+        // in @fluentui/tokens and @griffel/core:
+        //
+        //   concatenateModules: false  — disable ESM scope hoisting so module
+        //     factories run in the correct order (fixes statusColorMapping TDZ).
+        //
+        //   usedExports: false  — skip "mark used exports" analysis so terser
+        //     keeps all exported variables (e.g. statusColorMapping) even when
+        //     they aren't statically imported by name in an ESM context. Without
+        //     this, webpack marks statusColorMapping as unused and terser removes
+        //     its var assignment, making the CJS getter return undefined.
+        optimization: isProduction ? { concatenateModules: false, usedExports: false } : undefined,
 
         watchOptions: isProduction ? undefined : {
             aggregateTimeout: 600

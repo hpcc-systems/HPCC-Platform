@@ -1,20 +1,18 @@
 import * as React from "react";
-import { ContextualMenuItemType, DefaultButton, IconButton, IContextualMenuItem, IIconProps, IPersonaSharedProps, Link, mergeStyleSets, Persona, PersonaSize, Text } from "@fluentui/react";
-import { StackShim, StackItemShim } from "@fluentui/react-migration-v8-v9";
-import { Button, ButtonProps, CounterBadgeProps, CounterBadge, SearchBox, Toaster } from "@fluentui/react-components";
-import { WindowNewRegular } from "@fluentui/react-icons";
+import { Button, ButtonProps, CounterBadgeProps, CounterBadge, Link, Menu, MenuDivider, MenuItem, MenuList, MenuPopover, MenuTrigger, Persona, SearchBox, Text, Toaster, makeStyles, tokens } from "@fluentui/react-components";
+import { Alert24Filled, Alert24Regular, CheckmarkRegular, GridDotsRegular, Navigation24Regular, WindowNewRegular } from "@fluentui/react-icons";
 import { Level, scopedLogger } from "@hpcc-js/util";
 import { cookie } from "src-dojo/index";
 
 import nlsHPCC from "src/nlsHPCC";
 import * as Utility from "src/Utility";
 
-import { useUserTheme } from "../hooks/theme";
 import { useBanner } from "../hooks/banner";
 import { useConfirm } from "../hooks/confirm";
 import { replaceUrl } from "../util/history";
 import { useECLWatchLogger } from "../hooks/logging";
 import { useBuildInfo, useModernMode, useCheckFeatures } from "../hooks/platform";
+import { cmake_build_type } from "src/BuildInfo";
 import { useGlobalStore } from "../hooks/store";
 import { PasswordStatus, useMyAccount, useUserSession } from "../hooks/user";
 
@@ -23,6 +21,7 @@ import { switchTechPreview } from "./controls/ComingSoon";
 import { About } from "./About";
 import { MyAccount } from "./MyAccount";
 import { LogViewerDialog } from "./LogViewerDialog";
+import { ColorTokens } from "./ColorTokens";
 import { debounce } from "../util/throttle";
 
 const logger = scopedLogger("src-react/components/Title.tsx");
@@ -36,17 +35,24 @@ const NewTabButton: React.FunctionComponent<ButtonProps> = (props) => {
     />;
 };
 
-const collapseMenuIcon: IIconProps = { iconName: "CollapseMenu" };
-
-const waffleIcon: IIconProps = { iconName: "WaffleOffice365" };
-
-const personaStyles = {
-    root: {
+const useStyles = makeStyles({
+    personaWrapper: {
         display: "flex",
         alignItems: "center",
-        "&:hover": { cursor: "pointer" }
-    }
-};
+        "& span": {
+            lineHeight: tokens.lineHeightBase600
+        }
+    },
+});
+
+const useBtnStyles = makeStyles({
+    errorsWarnings: {
+        border: "none",
+        background: "transparent",
+        minWidth: "48px",
+        padding: "0 10px 0 4px",
+    },
+});
 
 const DAY = 1000 * 60 * 60 * 24;
 
@@ -61,7 +67,6 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
 }) => {
 
     const [, { opsCategory }] = useBuildInfo();
-    const { theme } = useUserTheme();
     const { userSession, setUserSession, deleteUserSession } = useUserSession();
     const [logIconColor, setLogIconColor] = React.useState<CounterBadgeProps["color"]>();
 
@@ -72,12 +77,15 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     const { currentUser, isAdmin } = useMyAccount();
 
     const [showTitlebarConfig, setShowTitlebarConfig] = React.useState(false);
+    const [showColourTokens, setShowColourTokens] = React.useState(false);
     const [showEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Active", false, true);
     const [environmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Text", undefined, true);
     const [titlebarColor] = useGlobalStore("HPCCPlatformWidget_Toolbar_Color", undefined, true);
 
     const [showBannerConfig, setShowBannerConfig] = React.useState(false);
     const [BannerMessageBar, BannerConfig] = useBanner({ showForm: showBannerConfig, setShowForm: setShowBannerConfig });
+
+    const styles = useStyles();
 
     const [PasswordExpiredConfirm, setPasswordExpiredConfirm] = useConfirm({
         title: nlsHPCC.PasswordExpiration,
@@ -107,14 +115,14 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     }, [searchValue]);
 
     const titlebarColorSet = React.useMemo(() => {
-        return titlebarColor && titlebarColor !== theme.palette.themeLight;
-    }, [theme.palette, titlebarColor]);
+        return !!titlebarColor;
+    }, [titlebarColor]);
 
-    const personaProps: IPersonaSharedProps = React.useMemo(() => {
+    const personaProps = React.useMemo(() => {
         return {
-            text: (currentUser?.firstName && currentUser?.lastName) ? currentUser.firstName + " " + currentUser.lastName : currentUser?.username,
+            name: (currentUser?.firstName && currentUser?.lastName) ? currentUser.firstName + " " + currentUser.lastName : currentUser?.username,
             secondaryText: currentUser?.accountType,
-            size: PersonaSize.size32
+            size: "medium" as const
         };
     }, [currentUser]);
 
@@ -122,7 +130,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
 
     const { setModernMode } = useModernMode();
     const onTechPreviewClick = React.useCallback(
-        (ev?: React.MouseEvent<HTMLButtonElement>, item?: IContextualMenuItem): void => {
+        (): void => {
             setModernMode(String(false));
             switchTechPreview(false, opsCategory);
         },
@@ -159,85 +167,30 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
         setLogIconColor(color);
     }, [log, logLastUpdated]);
 
-    const advMenuProps = React.useMemo(() => {
-        return {
-            items: [
-                { key: "banner", text: nlsHPCC.SetBanner, disabled: currentUser?.username !== "" && !isAdmin, onClick: () => setShowBannerConfig(true) },
-                { key: "toolbar", text: nlsHPCC.SetToolbar, disabled: currentUser?.username !== "" && !isAdmin, onClick: () => setShowTitlebarConfig(true) },
-                { key: "divider_1", itemType: ContextualMenuItemType.Divider },
-                { key: "docs", href: "https://hpccsystems.com/training/documentation/", text: nlsHPCC.Documentation, target: "_blank" },
-                { key: "downloads", href: "https://hpccsystems.com/download", text: nlsHPCC.Downloads, target: "_blank" },
-                { key: "releaseNotes", href: "https://hpccsystems.com/download/release-notes", text: nlsHPCC.ReleaseNotes, target: "_blank" },
-                {
-                    key: "additionalResources", text: nlsHPCC.AdditionalResources, subMenuProps: {
-                        items: [
-                            { key: "redBook", href: "https://hpcc-systems.github.io/HPCC-Platform/devdoc/red_book/HPCC-Systems-Red-Book.html", text: nlsHPCC.RedBook, target: "_blank" },
-                            { key: "forums", href: "https://hpccsystems.com/bb/", text: nlsHPCC.Forums, target: "_blank" },
-                            { key: "issues", href: "https://hpccsystems.atlassian.net/issues/", text: nlsHPCC.IssueReporting, target: "_blank" },
-                        ]
-                    }
-                },
-                { key: "divider_2", itemType: ContextualMenuItemType.Divider },
-                {
-                    key: "lock", text: nlsHPCC.Lock, disabled: !currentUser?.username, onClick: () => {
-                        fetch("/esp/lock", {
-                            method: "post"
-                        }).then(() => {
-                            setUserSession({ ...userSession });
-                            replaceUrl("/login", true);
-                        });
-                    }
-                },
-                {
-                    key: "logout", text: nlsHPCC.Logout, disabled: !currentUser?.username, onClick: () => {
-                        fetch("/esp/logout", {
-                            method: "post"
-                        }).then(data => {
-                            if (data) {
-                                deleteUserSession().then(() => {
-                                    Utility.deleteCookie("ECLWatchUser");
-                                    Utility.deleteCookie("ESPSessionID");
-                                    Utility.deleteCookie("Status");
-                                    Utility.deleteCookie("User");
-                                    Utility.deleteCookie("ESPSessionState");
-                                    window.location.reload();
-                                });
-                            }
-                        });
-                    }
-                },
-                { key: "divider_3", itemType: ContextualMenuItemType.Divider },
-                { key: "config", href: "#/topology/configuration", text: nlsHPCC.Configuration },
-                {
-                    key: "eclwatchv9", text: "ECL Watch v9",
-                    canCheck: true,
-                    isChecked: true,
-                    onClick: onTechPreviewClick
-                },
-                { key: "divider_4", itemType: ContextualMenuItemType.Divider },
-                {
-                    key: "reset",
-                    href: "/esp/files/index.html#/reset",
-                    text: nlsHPCC.ResetUserSettings
-                },
-                { key: "about", text: nlsHPCC.About, onClick: () => setShowAbout(true) }
-            ],
-            directionalHintFixed: true
-        };
-    }, [currentUser?.username, deleteUserSession, isAdmin, onTechPreviewClick, setUserSession, userSession]);
+    const onLockClick = React.useCallback(() => {
+        fetch("/esp/lock", { method: "post" }).then(() => {
+            setUserSession({ ...userSession });
+            replaceUrl("/login", true);
+        });
+    }, [setUserSession, userSession]);
 
-    const btnStyles = React.useMemo(() => mergeStyleSets({
-        errorsWarnings: {
-            border: "none",
-            background: "transparent",
-            minWidth: 48,
-            padding: "0 10px 0 4px",
-            color: titlebarColor ? Utility.textColor(titlebarColor) : theme.semanticColors.link
-        },
-        errorsWarningsCount: {
-            margin: "-3px 0 0 -3px"
-        }
-    }), [theme.semanticColors.link, titlebarColor]);
+    const onLogoutClick = React.useCallback(() => {
+        fetch("/esp/logout", { method: "post" }).then(data => {
+            if (data) {
+                deleteUserSession().then(() => {
+                    Utility.deleteCookie("ECLWatchUser");
+                    Utility.deleteCookie("ESPSessionID");
+                    Utility.deleteCookie("Status");
+                    Utility.deleteCookie("User");
+                    Utility.deleteCookie("ESPSessionState");
+                    window.location.reload();
+                });
+            }
+        });
+    }, [deleteUserSession]);
+
+    const btnStyles = useBtnStyles();
+    const btnColor = titlebarColor ? Utility.textColor(titlebarColor) : tokens.colorBrandForegroundLink;
 
     React.useEffect(() => {
         switch (log.reduce((prev, cur) => Math.max(prev, cur.level), Level.debug)) {
@@ -259,7 +212,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                 setLogIconColor("informative");
                 break;
         }
-    }, [log, logLastUpdated, theme]);
+    }, [log, logLastUpdated]);
 
     const features = useCheckFeatures();
 
@@ -313,48 +266,89 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
         }
     }, [currentUser, setPasswordExpiredConfirm]);
 
-    return <div style={{ backgroundColor: titlebarColorSet ? titlebarColor : theme.palette.themeLight }}>
+    return <div style={{ backgroundColor: titlebarColorSet ? titlebarColor : tokens.colorBrandBackground2Hover }}>
         <BannerMessageBar />
-        <StackShim horizontal verticalAlign="center" horizontalAlign="space-between">
-            <StackItemShim align="center">
-                <StackShim horizontal>
-                    <StackItemShim>
-                        <IconButton iconProps={waffleIcon} onClick={() => setNavWideMode(!navWideMode)} style={{ width: 48, height: 48, color: titlebarColorSet ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }} />
-                    </StackItemShim>
-                    <StackItemShim align="center">
+        <div style={{ display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ alignSelf: "center" }}>
+                <div style={{ display: "flex", flexDirection: "row" }}>
+                    <div style={{ width: 48, height: 48, display: "flex", justifyContent: "center", alignItems: "center" }}>
+                        <Button appearance="transparent" icon={<GridDotsRegular />} onClick={() => setNavWideMode(!navWideMode)} style={{ color: titlebarColorSet ? Utility.textColor(titlebarColor) : tokens.colorBrandForeground2 }} />
+                    </div>
+                    <div style={{ alignSelf: "center" }}>
                         <Link href="#/activities">
-                            <Text variant="large" nowrap block >
-                                <b title="ECL Watch" style={{ paddingLeft: "8px", color: titlebarColorSet ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }}>
+                            <Text size={400} block truncate wrap={false}>
+                                <b title="ECL Watch" style={{ paddingLeft: "8px", color: titlebarColorSet ? Utility.textColor(titlebarColor) : tokens.colorBrandForeground2 }}>
                                     {(showEnvironmentTitle && environmentTitle) ? environmentTitle : "ECL Watch"}
                                 </b>
                             </Text>
                         </Link>
-                    </StackItemShim>
-                </StackShim>
-            </StackItemShim>
-            <StackItemShim align="center">
+                    </div>
+                </div>
+            </div>
+            <div style={{ alignSelf: "center" }}>
                 <SearchBox onKeyUp={onSearchKeyUp} contentAfter={<NewTabButton onClick={onSearchNewTabClick} />} placeholder={nlsHPCC.PlaceholderFindText} style={{ minWidth: 320 }} />
-            </StackItemShim>
-            <StackItemShim align="center" >
-                <StackShim horizontal>
+            </div>
+            <div style={{ alignSelf: "center" }}>
+                <div style={{ display: "flex", flexDirection: "row" }}>
                     {currentUser?.username &&
-                        <StackItemShim styles={personaStyles}>
-                            <Persona {...personaProps} onClick={() => setShowMyAccount(true)} />
-                        </StackItemShim>
+                        <div className={styles.personaWrapper}>
+                            <div onClick={() => setShowMyAccount(true)} style={{ cursor: "pointer" }}>
+                                <Persona {...personaProps} />
+                            </div>
+                        </div>
                     }
-                    <StackItemShim align="center">
-                        <DefaultButton onClick={() => setShowLogViewer(true)} title={nlsHPCC.ErrorWarnings} iconProps={{ iconName: logCount > 0 ? "RingerSolid" : "Ringer" }} className={btnStyles.errorsWarnings}>
+                    <div style={{ alignSelf: "center" }}>
+                        <Button size="small" appearance="transparent" onClick={() => setShowLogViewer(true)} title={nlsHPCC.ErrorWarnings} icon={logCount > 0 ? <Alert24Filled /> : <Alert24Regular />} className={btnStyles.errorsWarnings} style={{ color: btnColor }}>
                             <CounterBadge appearance="filled" size="small" color={logIconColor} count={logCount} />
-                        </DefaultButton>
-                    </StackItemShim>
-                    <StackItemShim align="center">
-                        <IconButton title={nlsHPCC.Advanced} iconProps={collapseMenuIcon} menuProps={advMenuProps} style={{ color: titlebarColorSet ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }} />
-                    </StackItemShim>
-                </StackShim>
+                        </Button>
+                    </div>
+                    {/* <div style={{ alignSelf: "center" }}> */}
+                    <div style={{ width: 40, height: 48, display: "flex", justifyContent: "center", alignItems: "center" }}>
+                        <Menu>
+                            <MenuTrigger disableButtonEnhancement>
+                                <Button appearance="transparent" icon={<Navigation24Regular />} title={nlsHPCC.Advanced} style={{ color: titlebarColorSet ? Utility.textColor(titlebarColor) : tokens.colorBrandForeground2 }} />
+                            </MenuTrigger>
+                            <MenuPopover>
+                                <MenuList>
+                                    <MenuItem disabled={currentUser?.username !== "" && !isAdmin} onClick={() => setShowBannerConfig(true)}>{nlsHPCC.SetBanner}</MenuItem>
+                                    <MenuItem disabled={currentUser?.username !== "" && !isAdmin} onClick={() => setShowTitlebarConfig(true)}>{nlsHPCC.SetToolbar}</MenuItem>
+                                    <MenuDivider />
+                                    <MenuItem onClick={() => window.open("https://hpccsystems.com/training/documentation/", "_blank", "noopener")}>{nlsHPCC.Documentation}</MenuItem>
+                                    <MenuItem onClick={() => window.open("https://hpccsystems.com/download", "_blank", "noopener")}>{nlsHPCC.Downloads}</MenuItem>
+                                    <MenuItem onClick={() => window.open("https://hpccsystems.com/download/release-notes", "_blank", "noopener")}>{nlsHPCC.ReleaseNotes}</MenuItem>
+                                    <Menu>
+                                        <MenuTrigger disableButtonEnhancement>
+                                            <MenuItem>{nlsHPCC.AdditionalResources}</MenuItem>
+                                        </MenuTrigger>
+                                        <MenuPopover>
+                                            <MenuList>
+                                                <MenuItem onClick={() => window.open("https://hpcc-systems.github.io/HPCC-Platform/devdoc/red_book/HPCC-Systems-Red-Book.html", "_blank", "noopener")}>{nlsHPCC.RedBook}</MenuItem>
+                                                <MenuItem onClick={() => window.open("https://hpccsystems.com/bb/", "_blank", "noopener")}>{nlsHPCC.Forums}</MenuItem>
+                                                <MenuItem onClick={() => window.open("https://hpccsystems.atlassian.net/issues/", "_blank", "noopener")}>{nlsHPCC.IssueReporting}</MenuItem>
+                                            </MenuList>
+                                        </MenuPopover>
+                                    </Menu>
+                                    <MenuDivider />
+                                    <MenuItem disabled={!currentUser?.username} onClick={onLockClick}>{nlsHPCC.Lock}</MenuItem>
+                                    <MenuItem disabled={!currentUser?.username} onClick={onLogoutClick}>{nlsHPCC.Logout}</MenuItem>
+                                    <MenuDivider />
+                                    <MenuItem onClick={() => { window.location.href = "#/topology/configuration"; }}>{nlsHPCC.Configuration}</MenuItem>
+                                    <MenuItem icon={<CheckmarkRegular />} onClick={onTechPreviewClick}>ECL Watch v9</MenuItem>
+                                    <MenuDivider />
+                                    <MenuItem onClick={() => { window.location.href = "/esp/files/index.html#/reset"; }}>{nlsHPCC.ResetUserSettings}</MenuItem>
+                                    <MenuItem onClick={() => setShowAbout(true)}>{nlsHPCC.About}</MenuItem>
+                                    {cmake_build_type === "Debug" && <MenuDivider />}
+                                    {cmake_build_type === "Debug" && <MenuItem onClick={() => setShowColourTokens(true)}>{nlsHPCC.ColorTokens}</MenuItem>}
+                                </MenuList>
+                            </MenuPopover>
+                        </Menu>
+                    </div>
+                </div>
                 <Toaster toasterId={toasterId} position={"top-end"} pauseOnHover />
-            </StackItemShim>
-        </StackShim>
+            </div>
+        </div>
         <About eclwatchVersion="9" show={showAbout} onClose={() => setShowAbout(false)} ></About>
+        <ColorTokens show={showColourTokens} onClose={() => setShowColourTokens(false)} />
         <MyAccount currentUser={currentUser} show={showMyAccount} onClose={() => setShowMyAccount(false)}></MyAccount>
         <LogViewerDialog show={showLogViewer} onClose={() => setShowLogViewer(false)} />
         <TitlebarConfig showForm={showTitlebarConfig} setShowForm={setShowTitlebarConfig} />

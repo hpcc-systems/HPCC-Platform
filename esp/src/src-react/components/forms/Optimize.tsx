@@ -1,5 +1,6 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, IDropdownOption, PrimaryButton, TextField, } from "@fluentui/react";
+import { Button, Checkbox, Field, Input } from "@fluentui/react-components";
+import { IDropdownOption } from "./Fields";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
 import { DPWorkunit } from "src/DataPatterns/DPWorkunit";
@@ -58,8 +59,8 @@ export const Optimize: React.FunctionComponent<OptimizeProps> = ({
 
     return <MessageBox show={showForm} setShow={closeForm} title={nlsHPCC.Optimize}
         footer={<>
-            <PrimaryButton text={nlsHPCC.Optimize} onClick={handleSubmit(onSubmit)} />
-            <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
+            <Button appearance="primary" onClick={handleSubmit(onSubmit)}>{nlsHPCC.Optimize}</Button>
+            <Button onClick={() => closeForm()}>{nlsHPCC.Cancel}</Button>
         </>}>
         <Controller control={control} name="target" render={({
             field: { onChange, name: fieldName, value },
@@ -84,14 +85,13 @@ export const Optimize: React.FunctionComponent<OptimizeProps> = ({
             render={({
                 field: { onChange, name: fieldName, value },
                 fieldState: { error }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    label={nlsHPCC.Name}
-                    value={value}
-                    errorMessage={error && error?.message}
-                    styles={{ root: { minWidth: 320 } }}
-                />}
+            }) => <Field label={nlsHPCC.Name} validationMessage={error?.message} style={{ minWidth: 320 }}>
+                    <Input
+                        name={fieldName}
+                        value={value}
+                        onChange={(_, data) => onChange(data.value)}
+                    />
+                </Field>}
             rules={{
                 required: nlsHPCC.ValidationErrorRequired
             }}
@@ -101,7 +101,7 @@ export const Optimize: React.FunctionComponent<OptimizeProps> = ({
                 control={control} name="overwrite"
                 render={({
                     field: { onChange, name: fieldName, value }
-                }) => <Checkbox label={nlsHPCC.Overwrite} name={fieldName} checked={value} onChange={onChange} />}
+                }) => <Checkbox label={nlsHPCC.Overwrite} name={fieldName} checked={value} onChange={(_, data) => onChange(data.checked)} />}
             />
         </div>
     </MessageBox>;

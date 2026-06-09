@@ -1,10 +1,25 @@
-import { Breadcrumb, FontSizes, IBreadcrumbItem, IBreadcrumbStyleProps, IBreadcrumbStyles, IStyleFunctionOrObject } from "@fluentui/react";
 import * as React from "react";
+import { Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem, makeStyles, tokens } from "@fluentui/react-components";
 
-const breadCrumbStyles: IStyleFunctionOrObject<IBreadcrumbStyleProps, IBreadcrumbStyles> = {
-    root: { margin: 0 },
-    itemLink: { fontSize: FontSizes.size10, lineHeight: 20, paddingLeft: 2, paddingRight: 2 },
-};
+const useStyles = makeStyles({
+    breadcrumb: {
+        margin: 0,
+    },
+    button: {
+        fontSize: tokens.fontSizeBase100,
+        lineHeight: "20px",
+        paddingLeft: "2px",
+        paddingRight: "2px",
+        minHeight: "unset",
+        height: "auto",
+    },
+});
+
+interface Crumb {
+    key: string;
+    text: string;
+    href?: string;
+}
 
 interface BreadcrumbsProps {
     hashPath: string;
@@ -15,17 +30,33 @@ export const Breadcrumbs: React.FunctionComponent<BreadcrumbsProps> = ({
     hashPath,
     ignoreN = 0
 }) => {
+    const styles = useStyles();
 
-    const crumbs = React.useMemo(() => {
+    const crumbs = React.useMemo<Crumb[]>(() => {
         const paths = decodeURI(hashPath).split("/").filter(path => !!path);
 
         return [{ text: "", key: "home", href: "#/" },
         ...paths.map((path, idx) => {
             const href = idx < (paths.length - 1) ? `#/${paths.slice(0, idx + 1).join("/")}` : undefined;
-            const style = { fontSize: 10, lineHeight: "10px" };
-            return { text: path.toUpperCase(), key: "" + idx, href, style } as IBreadcrumbItem;
+            return { text: path.toUpperCase(), key: "" + idx, href };
         }).filter((row, idx) => idx >= ignoreN)];
     }, [hashPath, ignoreN]);
 
-    return <Breadcrumb items={crumbs} styles={breadCrumbStyles} />;
+    return <Breadcrumb className={styles.breadcrumb} size="small">
+        {crumbs.map((crumb, idx) => {
+            const isLast = idx === crumbs.length - 1;
+            return <React.Fragment key={crumb.key}>
+                <BreadcrumbItem>
+                    <BreadcrumbButton
+                        className={styles.button}
+                        href={crumb.href}
+                        current={isLast}
+                    >
+                        {crumb.text}
+                    </BreadcrumbButton>
+                </BreadcrumbItem>
+                {!isLast && <BreadcrumbDivider />}
+            </React.Fragment>;
+        })}
+    </Breadcrumb>;
 };

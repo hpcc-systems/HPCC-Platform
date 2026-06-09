@@ -1,5 +1,6 @@
 import * as React from "react";
-import { ComboBox, DefaultButton, IDropdownOption, MessageBar, MessageBarType, PrimaryButton, TextField } from "@fluentui/react";
+import { Button, Combobox, Field, Input, MessageBar, MessageBarActions, MessageBarBody, Option } from "@fluentui/react-components";
+import { DismissRegular } from "@fluentui/react-icons";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, useWatch, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
@@ -36,8 +37,8 @@ export const CheckPermissionsForm: React.FunctionComponent<CheckPermissionsFormP
 
     const [showError, setShowError] = React.useState(false);
     const [errorMessage, setErrorMessage] = React.useState("");
-    const [userOptions, setUserOptions] = React.useState<IDropdownOption[]>([]);
-    const [groupOptions, setGroupOptions] = React.useState<IDropdownOption[]>([]);
+    const [userOptions, setUserOptions] = React.useState<{ key: string; text: string }[]>([]);
+    const [groupOptions, setGroupOptions] = React.useState<{ key: string; text: string }[]>([]);
     const [filePermissionResponse, setFilePermissionResponse] = React.useState<string>("");
 
     const userName = useWatch({ control, name: "UserName" });
@@ -94,58 +95,61 @@ export const CheckPermissionsForm: React.FunctionComponent<CheckPermissionsFormP
     return (
         <MessageBox show={showForm} setShow={closeForm} title={nlsHPCC.CheckFilePermissions} minWidth={500}
             footer={<>
-                <PrimaryButton text={nlsHPCC.Submit} onClick={handleSubmit(onSubmit)} />
-                <DefaultButton text={nlsHPCC.Cancel} onClick={closeForm} />
+                <Button appearance="primary" onClick={handleSubmit(onSubmit)}>{nlsHPCC.Submit}</Button>
+                <Button onClick={closeForm}>{nlsHPCC.Cancel}</Button>
             </>}>
             <Controller
                 control={control} name="FileName"
                 render={({
                     field: { onChange, name: fieldName, value },
                     fieldState: { error }
-                }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
-                        label={nlsHPCC.Scope}
-                        value={value}
-                        errorMessage={error && error?.message}
-                    />}
+                }) => <Field label={nlsHPCC.Scope} validationMessage={error?.message}>
+                        <Input
+                            name={fieldName}
+                            value={value}
+                            onChange={(_, data) => onChange(data.value)}
+                        />
+                    </Field>}
                 rules={{
                     required: nlsHPCC.ValidationErrorRequired
                 }}
             />
-            <ComboBox
-                label={nlsHPCC.Users}
-                autoComplete="on"
-                options={userOptions}
-                selectedKey={userName}
-                onChange={(ev, option) => {
-                    setValue("UserName", option?.key.toString() || "");
-                    setValue("GroupName", "");
-                }}
-            />
-            <ComboBox
-                label={nlsHPCC.Groups}
-                autoComplete="on"
-                options={groupOptions}
-                selectedKey={groupName}
-                onChange={(ev, option) => {
-                    setValue("GroupName", option?.key.toString() || "");
-                    setValue("UserName", "");
-                }}
-            />
+            <Field label={nlsHPCC.Users}>
+                <Combobox
+                    autoComplete="on"
+                    value={userOptions.find(o => o.key === userName)?.text ?? userName ?? ""}
+                    selectedOptions={userName ? [userName] : []}
+                    onOptionSelect={(_, data) => {
+                        setValue("UserName", data.optionValue ?? "");
+                        setValue("GroupName", "");
+                    }}
+                >
+                    {userOptions.map(o => <Option key={o.key} value={o.key}>{o.text}</Option>)}
+                </Combobox>
+            </Field>
+            <Field label={nlsHPCC.Groups}>
+                <Combobox
+                    autoComplete="on"
+                    value={groupOptions.find(o => o.key === groupName)?.text ?? groupName ?? ""}
+                    selectedOptions={groupName ? [groupName] : []}
+                    onOptionSelect={(_, data) => {
+                        setValue("GroupName", data.optionValue ?? "");
+                        setValue("UserName", "");
+                    }}
+                >
+                    {groupOptions.map(o => <Option key={o.key} value={o.key}>{o.text}</Option>)}
+                </Combobox>
+            </Field>
             {filePermissionResponse && (
-                <TextField
-                    label={nlsHPCC.FilePermission}
-                    value={filePermissionResponse}
-                    readOnly={true}
-                />
+                <Field label={nlsHPCC.FilePermission}>
+                    <Input value={filePermissionResponse} readOnly />
+                </Field>
             )}
             {showError &&
                 <div style={{ marginTop: 16 }}>
-                    <MessageBar
-                        messageBarType={MessageBarType.error} isMultiline={true}
-                        onDismiss={() => setShowError(false)} dismissButtonAriaLabel="Close">
-                        {errorMessage}
+                    <MessageBar intent="error">
+                        <MessageBarBody>{errorMessage}</MessageBarBody>
+                        <MessageBarActions containerAction={<Button onClick={() => setShowError(false)} aria-label="Close" appearance="transparent" icon={<DismissRegular />} />} />
                     </MessageBar>
                 </div>
             }

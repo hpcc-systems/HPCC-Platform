@@ -1,5 +1,5 @@
 import * as React from "react";
-import { DefaultButton, PrimaryButton, Spinner, TextField, } from "@fluentui/react";
+import { Button, Field, Input, Spinner } from "@fluentui/react-components";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
@@ -64,23 +64,22 @@ export const AddGroupForm: React.FunctionComponent<AddGroupFormProps> = ({
 
     return <MessageBox show={showForm} setShow={closeForm} title={nlsHPCC.AddGroup} minWidth={400}
         footer={<>
-            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
-            <PrimaryButton text={nlsHPCC.Add} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
-            <DefaultButton text={nlsHPCC.Cancel} onClick={() => { reset(defaultValues); closeForm(); }} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="after" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <Button appearance="primary" disabled={submitDisabled} onClick={handleSubmit(onSubmit)}>{nlsHPCC.Add}</Button>
+            <Button onClick={() => { reset(defaultValues); closeForm(); }}>{nlsHPCC.Cancel}</Button>
         </>}>
         <Controller
             control={control} name="groupname"
             render={({
                 field: { onChange, name: fieldName, value },
                 fieldState: { error }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    required={true}
-                    label={nlsHPCC.GroupName}
-                    value={value}
-                    errorMessage={error && error?.message}
-                />}
+            }) => <Field label={nlsHPCC.GroupName} required validationMessage={error?.message}>
+                    <Input
+                        name={fieldName}
+                        value={value}
+                        onChange={(_, data) => onChange(data.value)}
+                    />
+                </Field>}
             rules={{
                 required: nlsHPCC.ValidationErrorRequired
             }}
@@ -90,15 +89,14 @@ export const AddGroupForm: React.FunctionComponent<AddGroupFormProps> = ({
             render={({
                 field: { onChange, name: fieldName, value },
                 fieldState: { error }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    required={true}
-                    label={nlsHPCC.ManagedBy}
-                    value={value}
-                    placeholder={nlsHPCC.ManagedByPlaceholder}
-                    errorMessage={error && error?.message}
-                />}
+            }) => <Field label={nlsHPCC.ManagedBy} required validationMessage={error?.message}>
+                    <Input
+                        name={fieldName}
+                        value={value}
+                        placeholder={nlsHPCC.ManagedByPlaceholder}
+                        onChange={(_, data) => onChange(data.value)}
+                    />
+                </Field>}
             rules={{
                 required: nlsHPCC.ValidationErrorRequired
             }}
@@ -108,14 +106,13 @@ export const AddGroupForm: React.FunctionComponent<AddGroupFormProps> = ({
             render={({
                 field: { onChange, name: fieldName, value },
                 fieldState: { error }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    required={true}
-                    label={nlsHPCC.Description}
-                    value={value}
-                    errorMessage={error && error?.message}
-                />}
+            }) => <Field label={nlsHPCC.Description} required validationMessage={error?.message}>
+                    <Input
+                        name={fieldName}
+                        value={value}
+                        onChange={(_, data) => onChange(data.value)}
+                    />
+                </Field>}
             rules={{
                 required: nlsHPCC.ValidationErrorRequired
             }}

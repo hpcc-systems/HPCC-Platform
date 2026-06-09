@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
 import { TreeItemValue } from "@fluentui/react-components";
 import { scopedLogger } from "@hpcc-js/util";
 import { convertedSize } from "src/Utility";
@@ -9,7 +9,6 @@ import { HolyGrail } from "../layouts/HolyGrail";
 import { DockPanel, DockPanelItem, ResetableDockPanel } from "../layouts/DockPanel";
 import { getESPBaseURL } from "../util/espUrl";
 import { pushUrl } from "../util/history";
-import { ShortVerticalDivider } from "./Common";
 import { FlatTreeItem, FlatTreeEx } from "./controls/FlatTreeEx";
 import { FetchEditor } from "./SourceEditor";
 
@@ -217,7 +216,7 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
                 refreshData();
             }
         },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider },
         {
             key: "selectAll", text: checkedItems.length === treeItemLeafNodes.length ? nlsHPCC.DeselectAll : nlsHPCC.SelectAll, iconProps: { iconName: checkedItems.length === treeItemLeafNodes.length ? "Checkbox" : "CheckboxComposite" },
             onClick: () => {

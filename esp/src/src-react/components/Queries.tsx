@@ -1,5 +1,7 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Link } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
+import { PauseRegular, WarningRegular, DismissCircleRegular, CheckmarkCircleRegular, ErrorCircleRegular, Filter16Regular, Filter16Filled } from "@fluentui/react-icons";
+import { Link, tokens } from "@fluentui/react-components";
 import * as WsWorkunits from "src/WsWorkunits";
 import * as ESPQuery from "src/ESPQuery";
 import nlsHPCC from "src/nlsHPCC";
@@ -11,7 +13,6 @@ import { pushParams } from "../util/history";
 import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
-import { ShortVerticalDivider } from "./Common";
 import { SizeMe } from "../layouts/SizeMe";
 
 const FilterFields: Fields = {
@@ -92,51 +93,51 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                 selectorType: "checkbox"
             },
             Suspended: {
-                headerIcon: "Pause",
+                headerIconElement: <PauseRegular aria-label={nlsHPCC.Suspended} />,
                 headerTooltip: nlsHPCC.Suspended,
                 width: 16,
                 sortable: false,
                 formatter: (suspended) => {
                     if (suspended === true) {
-                        return <Icon iconName="Pause" />;
+                        return <PauseRegular />;
                     }
                     return "";
                 },
                 field: nlsHPCC.Suspended,
             },
             ErrorCount: {
-                headerIcon: "Warning",
+                headerIconElement: <WarningRegular aria-label={nlsHPCC.ErrorWarnings} />,
                 headerTooltip: nlsHPCC.ErrorWarnings,
                 width: 16,
                 sortable: false,
                 formatter: (error, row) => {
                     if (row.ErrorCount > 0) {
-                        return <Icon iconName="Warning" />;
+                        return <WarningRegular />;
                     }
                     return "";
                 },
                 field: nlsHPCC.ErrorWarnings,
             },
             MixedNodeStates: {
-                headerIcon: "Error",
+                headerIconElement: <ErrorCircleRegular aria-label={nlsHPCC.Protected} />,
                 headerTooltip: nlsHPCC.MixedNodeStates,
                 width: 16,
                 sortable: false,
                 formatter: (mixed, row) => {
                     const mixedStates = row?.Clusters?.ClusterQueryState[0]?.MixedNodeStates ?? false;
                     if (mixedStates === true) {
-                        return <Icon iconName="Error" />;
+                        return <DismissCircleRegular />;
                     }
                     return "";
                 },
             },
             Activated: {
-                headerIcon: "SkypeCircleCheck",
+                headerIconElement: <CheckmarkCircleRegular aria-label={nlsHPCC.Active} />,
                 headerTooltip: nlsHPCC.Active,
                 width: 16,
                 formatter: (activated, row) => {
                     if (row.Activated === true) {
-                        return <Icon iconName="SkypeCircleCheck" />;
+                        return <CheckmarkCircleRegular />;
                     }
                     return "";
                 },
@@ -186,7 +187,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => refreshTable.call()
         },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider },
         {
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
             onClick: () => {
@@ -203,7 +204,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
             key: "delete", text: nlsHPCC.Delete, disabled: !uiState.hasSelection, iconProps: { iconName: "Delete" },
             onClick: () => setShowDeleteConfirm(true)
         },
-        { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_2", itemType: ContextualMenuItemType.Divider },
         {
             key: "Suspend", text: nlsHPCC.Suspend, disabled: !uiState.isSuspended,
             onClick: () => {
@@ -228,9 +229,9 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                 WsWorkunits.WUQuerysetQueryAction(selection, "Deactivate").then(() => refreshTable.call());
             }
         },
-        { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_3", itemType: ContextualMenuItemType.Divider },
         {
-            key: "filter", text: nlsHPCC.Filter, disabled: store !== undefined || wuid !== undefined, iconProps: { iconName: hasFilter ? "FilterSolid" : "Filter" },
+            key: "filter", text: nlsHPCC.Filter, disabled: store !== undefined || wuid !== undefined, iconElement: hasFilter ? <Filter16Filled style={{ color: tokens.colorBrandForeground1 }} /> : <Filter16Regular />,
             onClick: () => {
                 setShowFilter(true);
             }

@@ -1,6 +1,7 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Link } from "@fluentui/react";
-import { makeStyles } from "@fluentui/react-components";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
+import { LockClosedFilled, FolderZipRegular, FolderRegular } from "@fluentui/react-icons";
+import { Link, makeStyles, tokens } from "@fluentui/react-components";
 import { DFUService } from "@hpcc-js/comms";
 import { SizeMe } from "../layouts/SizeMe";
 import * as WsDfu from "src/WsDfu";
@@ -8,7 +9,6 @@ import { formatCost } from "src/Session";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
-import { useUserTheme } from "../hooks/theme";
 import { useMyAccount } from "../hooks/user";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushUrl } from "../util/history";
@@ -20,7 +20,6 @@ import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
 import { RemoteCopy } from "./forms/RemoteCopy";
 import { RenameFile } from "./forms/RenameFile";
-import { ShortVerticalDivider } from "./Common";
 
 const useStyles = makeStyles({
     outerWrapper: {
@@ -171,23 +170,23 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
                 selectorType: "checkbox"
             },
             IsProtected: {
-                headerIcon: "LockSolid",
+                headerIconElement: <LockClosedFilled aria-label={nlsHPCC.Protected} />,
                 width: 25,
                 sortable: false,
                 formatter: (_protected) => {
                     if (_protected === true) {
-                        return <Icon iconName="LockSolid" />;
+                        return <LockClosedFilled />;
                     }
                     return "";
                 }
             },
             IsCompressed: {
-                headerIcon: "ZipFolder",
+                headerIconElement: <FolderZipRegular aria-label={nlsHPCC.Compressed} />,
                 width: 25,
                 sortable: false,
                 formatter: (compressed) => {
                     if (compressed === true) {
-                        return <Icon iconName="ZipFolder" />;
+                        return <FolderZipRegular />;
                     }
                     return "";
                 }
@@ -203,7 +202,7 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
                         path = (path.startsWith("::")) ? path.substring(2) : path;
                         url = "#/scopes/" + path;
                         return <div className={styles.folderContainer}>
-                            <Icon iconName={"FabricFolder"} className={styles.folderIcon} />
+                            <FolderRegular className={styles.folderIcon} />
                             <Link data-selection-disabled={true} href={url}>{name}</Link>
                         </div>;
                     }
@@ -270,7 +269,7 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => refreshData()
         },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider },
         {
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
             onClick: () => {
@@ -288,12 +287,12 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
             key: "delete", text: nlsHPCC.Delete, disabled: !uiState.hasSelection, iconProps: { iconName: "Delete" },
             onClick: () => setShowDeleteConfirm(true)
         },
-        { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_2", itemType: ContextualMenuItemType.Divider },
         {
             key: "remoteCopy", text: nlsHPCC.RemoteCopy,
             onClick: () => setShowRemoteCopy(true)
         },
-        { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_3", itemType: ContextualMenuItemType.Divider },
         {
             key: "copy", text: nlsHPCC.Copy, disabled: !uiState.hasSelection,
             onClick: () => setShowCopy(true)
@@ -310,7 +309,7 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
             key: "despray", text: nlsHPCC.Despray, disabled: !uiState.hasSelection,
             onClick: () => setShowDesprayFile(true)
         },
-        { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_4", itemType: ContextualMenuItemType.Divider },
         {
             key: "filter", text: nlsHPCC.Filter, disabled: !data, iconProps: { iconName: hasFilter ? "FilterSolid" : "Filter" },
             onClick: () => setShowFilter(true)
@@ -322,7 +321,7 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
                 window.location.href = "#/files";
             }
         },
-        { key: "divider_5", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_5", itemType: ContextualMenuItemType.Divider },
         {
             key: "mine", text: nlsHPCC.Mine, disabled: !currentUser?.username || !data.length, iconProps: { iconName: "Contact" }, canCheck: true, checked: filter.Owner === currentUser.username,
             onClick: () => {
@@ -403,7 +402,6 @@ export const ScopesBreadcrumb: React.FunctionComponent<ScopesBreadcrumbProps> = 
     scope
 }) => {
 
-    const { theme } = useUserTheme();
     const styles = useStyles();
 
     const [scopePath, setScopePath] = React.useState([]);
@@ -412,7 +410,7 @@ export const ScopesBreadcrumb: React.FunctionComponent<ScopesBreadcrumbProps> = 
         setScopePath(scope.split("::"));
     }, [scope]);
 
-    return <div className={styles.breadcrumbWrapper} style={{ borderTopColor: theme.palette.neutralLight, borderBottomColor: theme.palette.neutralLight }}>
+    return <div className={styles.breadcrumbWrapper} style={{ borderTopColor: tokens.colorNeutralStroke2, borderBottomColor: tokens.colorNeutralStroke2 }}>
         <Link href="#/scopes">Root Scope</Link>
         {(scope !== ".") &&
             <>

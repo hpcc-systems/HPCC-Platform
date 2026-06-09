@@ -1,6 +1,5 @@
 import * as React from "react";
-import { ChoiceGroup, DefaultButton, mergeStyleSets, PrimaryButton, Spinner, TextField, } from "@fluentui/react";
-import { StackShim } from "@fluentui/react-migration-v8-v9";
+import { Button, Field, Input, Radio, RadioGroup, Spinner } from "@fluentui/react-components";
 import { useForm, Controller } from "react-hook-form";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
@@ -23,14 +22,7 @@ const defaultValues: AddToSuperfileFormValues = {
     existingFile: 0
 };
 
-const componentStyles = mergeStyleSets(
-    FormStyles.componentStyles,
-    {
-        container: {
-            minWidth: 440,
-        }
-    }
-);
+
 
 interface AddToSuperfileProps {
     logicalFiles: string[];
@@ -48,6 +40,7 @@ export const AddToSuperfile: React.FunctionComponent<AddToSuperfileProps> = ({
     refreshGrid
 }) => {
 
+    const componentStyles = FormStyles.useComponentStyles();
     const { handleSubmit, control, reset } = useForm<AddToSuperfileFormValues>({ defaultValues });
     const [submitDisabled, setSubmitDisabled] = React.useState(false);
     const [spinnerHidden, setSpinnerHidden] = React.useState(true);
@@ -90,23 +83,23 @@ export const AddToSuperfile: React.FunctionComponent<AddToSuperfileProps> = ({
 
     return <MessageBox title={nlsHPCC.AddToSuperfile} show={showForm} setShow={closeForm}
         footer={<>
-            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
-            <PrimaryButton text={nlsHPCC.Add} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
-            <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="after" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <Button appearance="primary" disabled={submitDisabled} onClick={handleSubmit(onSubmit)}>{nlsHPCC.Add}</Button>
+            <Button onClick={() => closeForm()}>{nlsHPCC.Cancel}</Button>
         </>}>
-        <StackShim>
+        <div style={{ display: "flex", flexDirection: "column" }}>
             <Controller
                 control={control} name="superFile"
                 render={({
                     field: { onChange, name: fieldName, value },
                     fieldState: { error }
-                }) => <TextField
-                        name={fieldName}
-                        label={nlsHPCC.SuperFile}
-                        onChange={onChange}
-                        value={value}
-                        errorMessage={error && error?.message}
-                    />}
+                }) => <Field label={nlsHPCC.SuperFile} validationMessage={error?.message}>
+                        <Input
+                            name={fieldName}
+                            value={value}
+                            onChange={(_, data) => onChange(data.value)}
+                        />
+                    </Field>}
                 rules={{
                     required: nlsHPCC.ValidationErrorRequired
                 }}
@@ -116,18 +109,17 @@ export const AddToSuperfile: React.FunctionComponent<AddToSuperfileProps> = ({
                 render={({
                     field: { onChange, name: fieldName, value },
                     fieldState: { error }
-                }) => <ChoiceGroup
-                        name={fieldName}
-                        onChange={(evt, option) => onChange(option.key)}
-                        defaultSelectedKey="0"
-                        options={[
-                            { key: "0", text: nlsHPCC.CreateANewFile },
-                            { key: "1", text: nlsHPCC.AddToExistingSuperfile }
-                        ]}
-                    />}
+                }) => <RadioGroup
+                    name={fieldName}
+                    onChange={(_evt, data) => onChange(Number(data.value))}
+                    defaultValue="0"
+                >
+                        <Radio value="0" label={nlsHPCC.CreateANewFile} />
+                        <Radio value="1" label={nlsHPCC.AddToExistingSuperfile} />
+                    </RadioGroup>}
             />
             {logicalFiles?.length > 0 &&
-                <StackShim>
+                <div style={{ display: "flex", flexDirection: "column" }}>
                     <table className={`${componentStyles.twoColumnTable} ${componentStyles.selectionTable}`}>
                         <thead>
                             <tr>
@@ -143,20 +135,22 @@ export const AddToSuperfile: React.FunctionComponent<AddToSuperfileProps> = ({
                                             render={({
                                                 field: { onChange, name: fieldName },
                                                 fieldState: { error }
-                                            }) => <TextField
-                                                    name={fieldName}
-                                                    onChange={onChange}
-                                                    value={file}
-                                                    readOnly={true}
-                                                />}
+                                            }) => <Field validationMessage={error?.message}>
+                                                    <Input
+                                                        name={fieldName}
+                                                        value={file}
+                                                        readOnly
+                                                        onChange={(_, data) => onChange(data.value)}
+                                                    />
+                                                </Field>}
                                         />
                                     </td>
                                 </tr>;
                             })}
                         </tbody>
                     </table>
-                </StackShim>
+                </div>
             }
-        </StackShim>
+        </div>
     </MessageBox>;
 };

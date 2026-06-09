@@ -1,6 +1,6 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, Dropdown, IDropdownOption, PrimaryButton, Spinner, TextField, } from "@fluentui/react";
-import { StackShim } from "@fluentui/react-migration-v8-v9";
+import { IDropdownOption } from "./Fields";
+import { Button, Checkbox, Dropdown, Field, Input, Option, Spinner, Textarea } from "@fluentui/react-components";
 import { useForm, Controller } from "react-hook-form";
 import { FileSprayService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
@@ -108,26 +108,24 @@ export const AddPackageMap: React.FunctionComponent<AddPackageMapProps> = ({
 
     return <MessageBox title={nlsHPCC.AddProcessMap} show={showForm} setShow={closeForm} minWidth={500}
         footer={<>
-            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
-            <PrimaryButton text={nlsHPCC.Submit} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
-            <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="after" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <Button appearance="primary" disabled={submitDisabled} onClick={handleSubmit(onSubmit)}>{nlsHPCC.Submit}</Button>
+            <Button onClick={() => closeForm()}>{nlsHPCC.Cancel}</Button>
         </>}>
-        <StackShim>
+        <div style={{ display: "flex", flexDirection: "column" }}>
             <Controller
                 control={control} name="Info"
                 render={({
                     field: { onChange, name: fieldName, value },
                     fieldState: { error }
-                }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
-                        required={true}
-                        label={nlsHPCC.PackageContent}
-                        value={value}
-                        multiline={true}
-                        rows={16}
-                        errorMessage={error && error?.message}
-                    />}
+                }) => <Field label={nlsHPCC.PackageContent} required validationMessage={error?.message}>
+                        <Textarea
+                            name={fieldName}
+                            value={value}
+                            rows={16}
+                            onChange={(_, data) => onChange(data.value)}
+                        />
+                    </Field>}
                 rules={{
                     required: nlsHPCC.ValidationErrorRequired
                 }}
@@ -137,14 +135,13 @@ export const AddPackageMap: React.FunctionComponent<AddPackageMapProps> = ({
                 render={({
                     field: { onChange, name: fieldName, value },
                     fieldState: { error }
-                }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
-                        required={true}
-                        label={nlsHPCC.ID}
-                        value={value}
-                        errorMessage={error && error?.message}
-                    />}
+                }) => <Field label={nlsHPCC.ID} required validationMessage={error?.message}>
+                        <Input
+                            name={fieldName}
+                            value={value}
+                            onChange={(_, data) => onChange(data.value)}
+                        />
+                    </Field>}
                 rules={{
                     required: nlsHPCC.ValidationErrorRequired
                 }}
@@ -152,66 +149,76 @@ export const AddPackageMap: React.FunctionComponent<AddPackageMapProps> = ({
             <Controller
                 control={control} name="Target"
                 render={({
-                    field: { onChange, name: fieldName, value },
-                    fieldState: { error }
-                }) => <Dropdown
-                        key={fieldName}
-                        label={nlsHPCC.Target}
-                        options={targets}
-                        selectedKey={value}
-                        onChange={(evt, option) => {
-                            onChange(option.key);
-                        }}
-                    />}
+                    field: { onChange, name: fieldName, value }
+                }) => <Field label={nlsHPCC.Target}>
+                        <Dropdown
+                            key={fieldName}
+                            selectedOptions={value ? [String(value)] : []}
+                            onOptionSelect={(_evt, data) => {
+                                onChange(data.optionValue);
+                            }}
+                        >
+                            {targets?.map(opt => (
+                                <Option key={String(opt.key)} text={opt.text} value={String(opt.key)}>{opt.text}</Option>
+                            ))}
+                        </Dropdown>
+                    </Field>}
             />
             <Controller
                 control={control} name="Process"
                 render={({
-                    field: { onChange, name: fieldName, value },
-                    fieldState: { error }
-                }) => <Dropdown
-                        key={fieldName}
-                        label={nlsHPCC.ProcessFilter}
-                        options={processes}
-                        selectedKey={value}
-                        onChange={(evt, option) => {
-                            onChange(option.key);
-                        }}
-                    />}
+                    field: { onChange, name: fieldName, value }
+                }) => <Field label={nlsHPCC.ProcessFilter}>
+                        <Dropdown
+                            key={fieldName}
+                            selectedOptions={value ? [String(value)] : []}
+                            onOptionSelect={(_evt, data) => {
+                                onChange(data.optionValue);
+                            }}
+                        >
+                            {processes?.map(opt => (
+                                <Option key={String(opt.key)} text={opt.text} value={String(opt.key)}>{opt.text}</Option>
+                            ))}
+                        </Dropdown>
+                    </Field>}
             />
             <Controller
                 control={control} name="DaliIp"
                 render={({
                     field: { onChange, name: fieldName, value },
                     fieldState: { error }
-                }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
-                        label={nlsHPCC.RemoteDaliIP}
-                        value={value}
-                    />}
+                }) => <Field label={nlsHPCC.RemoteDaliIP}>
+                        <Input
+                            name={fieldName}
+                            value={value}
+                            onChange={(_, data) => onChange(data.value)}
+                        />
+                    </Field>}
             />
             <Controller
                 control={control} name="RemoteStorage"
                 render={({
-                    field: { onChange, name: fieldName, value },
-                    fieldState: { error }
-                }) => <Dropdown
-                        key={fieldName}
-                        label={nlsHPCC.RemoteStorage}
-                        options={remoteTargets}
-                        selectedKey={value}
-                        onChange={(evt, option) => {
-                            onChange(option.key);
-                        }}
-                    />}
+                    field: { onChange, name: fieldName, value }
+                }) => <Field label={nlsHPCC.RemoteStorage}>
+                        <Dropdown
+                            key={fieldName}
+                            selectedOptions={value ? [String(value)] : []}
+                            onOptionSelect={(_evt, data) => {
+                                onChange(data.optionValue);
+                            }}
+                        >
+                            {remoteTargets?.map(opt => (
+                                <Option key={String(opt.key)} text={opt.text} value={String(opt.key)}>{opt.text}</Option>
+                            ))}
+                        </Dropdown>
+                    </Field>}
             />
             <div style={{ paddingTop: "15px" }}>
                 <Controller
                     control={control} name="Activate"
                     render={({
                         field: { onChange, name: fieldName, value }
-                    }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.Activate} />}
+                    }) => <Checkbox name={fieldName} checked={value} onChange={(_, data) => onChange(data.checked)} label={nlsHPCC.Activate} />}
                 />
             </div>
             <div style={{ paddingTop: "10px" }}>
@@ -219,9 +226,9 @@ export const AddPackageMap: React.FunctionComponent<AddPackageMapProps> = ({
                     control={control} name="OverWrite"
                     render={({
                         field: { onChange, name: fieldName, value }
-                    }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.Overwrite} />}
+                    }) => <Checkbox name={fieldName} checked={value} onChange={(_, data) => onChange(data.checked)} label={nlsHPCC.Overwrite} />}
                 />
             </div>
-        </StackShim>
+        </div>
     </MessageBox>;
 };

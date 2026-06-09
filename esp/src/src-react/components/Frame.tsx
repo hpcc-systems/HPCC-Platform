@@ -1,6 +1,5 @@
 import * as React from "react";
 import { topic } from "src-dojo/index";
-import { ThemeProvider } from "@fluentui/react";
 import { FluentProvider } from "@fluentui/react-components";
 import { select as d3Select } from "@hpcc-js/common";
 import { scopedLogger } from "@hpcc-js/util";
@@ -12,6 +11,7 @@ import { MainNavigation, SubNavigation } from "./Menu";
 import { CookieConsent } from "./forms/CookieConsent";
 import { userKeyValStore } from "src/KeyValStore";
 import { fireIdle, initSession, lock, unlock } from "src/Session";
+import { PortalRenderer } from "src/react/portalStore";
 import { useGlobalStore } from "../hooks/store";
 import { useNavWide, useUserTheme } from "../hooks/theme";
 import { useGlobalWorkunitNotes } from "../hooks/workunit";
@@ -35,7 +35,7 @@ export const Frame: React.FunctionComponent<FrameProps> = () => {
     const { userSession, setUserSession } = useUserSession();
     const [locationPathname, setLocationPathname] = React.useState<string>(window.location.hash.split("#").join(""));
     const [body, setBody] = React.useState(<h1>...loading...</h1>);
-    const { theme, themeV9, isDark } = useUserTheme();
+    const { themeV9, isDark } = useUserTheme();
     const { navWide, setNavWide } = useNavWide();
     const [showEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Active", false, true);
     const [environmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Text", "", true);
@@ -108,18 +108,17 @@ export const Frame: React.FunctionComponent<FrameProps> = () => {
     }, [isDark]);
 
     return <FluentProvider theme={themeV9} style={{ height: "100%" }}>
-        <ThemeProvider theme={theme} style={{ height: "100%" }}>
-            <HolyGrail
-                header={<DevTitle setNavWideMode={setNavWide} navWideMode={navWide} />}
-                left={<MainNavigation hashPath={locationPathname} navWideMode={navWide} />}
-                main={<HolyGrail
-                    header={<SubNavigation hashPath={locationPathname} />}
-                    main={body}
-                />}
-            />
-            <CookieConsent showCookieConsent={showCookieConsent} onApply={(n: boolean) => {
-                userKeyValStore().set(USER_COOKIE_CONSENT, n ? "1" : "0");
-            }} />
-        </ThemeProvider >
+        <HolyGrail
+            header={<DevTitle setNavWideMode={setNavWide} navWideMode={navWide} />}
+            left={<MainNavigation hashPath={locationPathname} navWideMode={navWide} />}
+            main={<HolyGrail
+                header={<SubNavigation hashPath={locationPathname} />}
+                main={body}
+            />}
+        />
+        <CookieConsent showCookieConsent={showCookieConsent} onApply={(n: boolean) => {
+            userKeyValStore().set(USER_COOKIE_CONSENT, n ? "1" : "0");
+        }} />
+        <PortalRenderer />
     </FluentProvider >;
 };

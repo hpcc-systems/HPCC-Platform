@@ -1,8 +1,13 @@
 import * as React from "react";
 import { CallbackFunction, Observable } from "@hpcc-js/util";
 import { userKeyValStore } from "src/KeyValStore";
-import { IContextualMenuItem } from "@fluentui/react";
 import { hashHistory } from "../util/history";
+
+export interface HistoryItem {
+    name: string;
+    href: string;
+    key: string;
+}
 
 const STORE_FAVORITES_ID = "favorites";
 const STORE_CACHE_TIMEOUT = 10000;
@@ -116,13 +121,13 @@ export function useFavorites(): [UrlMap] {
     return [all];
 }
 
-export function useHistory(): [IContextualMenuItem[]] {
+export function useHistory(): [HistoryItem[]] {
 
-    const [history, setHistory] = React.useState<IContextualMenuItem[]>([]);
+    const [history, setHistory] = React.useState<HistoryItem[]>([]);
 
     React.useEffect(() => {
         return hashHistory.listen((location, action) => {
-            setHistory(hashHistory.recent().map((row): IContextualMenuItem => {
+            setHistory(hashHistory.recent().map((row): HistoryItem => {
                 const url = `#${row.pathname + row.search}`;
                 return {
                     name: decodeURI(row.pathname),

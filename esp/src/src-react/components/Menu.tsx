@@ -1,8 +1,6 @@
 import * as React from "react";
-import { IconButton, IContextualMenuItem, Link, mergeStyleSets } from "@fluentui/react";
-import { ToggleButton, makeStyles, tokens } from "@fluentui/react-components";
-import { StackShim, StackItemShim } from "@fluentui/react-migration-v8-v9";
-import { NavDrawer, NavDrawerBody, NavDrawerFooter, NavItem } from "@fluentui/react-nav-preview";
+import { Button, Link, Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, SplitButton, ToggleButton, makeStyles, mergeClasses, tokens } from "@fluentui/react-components";
+import { NavDrawer, NavDrawerBody, NavDrawerFooter, NavItem } from "@fluentui/react-nav";
 import {
     Home20Filled, Home20Regular, TextGrammarLightning20Filled, TextGrammarLightning20Regular,
     DatabaseWindow20Filled, DatabaseWindow20Regular,
@@ -10,13 +8,16 @@ import {
     Organization20Filled, Organization20Regular,
     ShieldBadge20Filled, ShieldBadge20Regular,
     WeatherSunnyRegular, WeatherMoonRegular,
-    bundleIcon, FluentIcon
+    History20Regular, Star20Filled, Star20Regular,
+    bundleIcon, FluentIcon,
+    ArrowCircleDownRegular,
+    ArrowCircleUpRegular
 } from "@fluentui/react-icons";
 import nlsHPCC from "src/nlsHPCC";
 import { containerized, bare_metal } from "src/BuildInfo";
 import { navCategory } from "../util/history";
 import { MainNav, routes } from "../routes";
-import { useFavorite, useFavorites, useHistory } from "../hooks/favorite";
+import { useFavorite, useFavorites, useHistory, HistoryItem } from "../hooks/favorite";
 import { useLogAccessInfo } from "../hooks/platform";
 import { useSessionStore } from "../hooks/store";
 import { useUserTheme } from "../hooks/theme";
@@ -330,7 +331,10 @@ export const MainNavigation: React.FunctionComponent<MainNavigationProps> = ({
                                                     background: "none",
                                                     textDecoration: "none",
                                                     cursor: isDisabled ? "not-allowed" : "pointer",
-                                                    opacity: isDisabled ? 0.6 : 1
+                                                    opacity: isDisabled ? 0.6 : 1,
+                                                    whiteSpace: "nowrap",
+                                                    overflow: "hidden",
+                                                    textOverflow: "ellipsis"
                                                 }}
                                             >
                                                 {sub.headerText}
@@ -361,6 +365,57 @@ export const MainNavigation: React.FunctionComponent<MainNavigationProps> = ({
 
 //  Second Level Nav  ---
 
+const useSubNavStyles = makeStyles({
+    wrapper: {
+        marginLeft: "4px",
+        display: "flex",
+        alignItems: "center",
+    },
+    link: {
+        backgroundColor: tokens.colorNeutralBackground1,
+        color: tokens.colorNeutralForeground1,
+        display: "inline-block",
+        margin: "2px",
+        padding: "0 10px",
+        fontSize: "14px",
+        textDecorationLine: "none",
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        maxWidth: "160px",
+        ":hover": {
+            backgroundColor: tokens.colorBrandBackground,
+            color: tokens.colorNeutralBackground1,
+            textDecorationLine: "none",
+        },
+        ":focus": {
+            color: tokens.colorNeutralForeground1,
+        },
+        ":active": {
+            color: tokens.colorNeutralForeground1,
+            textDecorationLine: "none",
+        },
+        ":focus:hover": {
+            color: tokens.colorNeutralBackground1,
+        },
+        ":active:hover": {
+            color: tokens.colorNeutralBackground1,
+            textDecorationLine: "none",
+        },
+    },
+    active: {
+        backgroundColor: tokens.colorBrandBackground,
+        color: tokens.colorNeutralForegroundOnBrand,
+        ":focus": {
+            color: tokens.colorNeutralForegroundOnBrand,
+        },
+    },
+    disabled: {
+        backgroundColor: tokens.colorNeutralBackgroundDisabled,
+        color: tokens.colorNeutralForegroundDisabled,
+    },
+});
+
 interface SubNavigationProps {
     hashPath: string;
 }
@@ -369,7 +424,6 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
     hashPath
 }) => {
 
-    const { theme, themeV9 } = useUserTheme();
     const { isAdmin } = useMyAccount();
     const envHasAuth = useCheckEnvAuthType();
 
@@ -392,61 +446,12 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
         return subNavSelectedKey(hashPath);
     }, [hashPath]);
 
-    const navStyles = React.useMemo(() => mergeStyleSets({
-        wrapper: {
-            marginLeft: 4,
-        },
-        link: {
-            background: theme.semanticColors.buttonBackground,
-            color: theme.semanticColors.buttonText,
-            display: "inline-block",
-            margin: 2,
-            padding: "0 10px",
-            fontSize: 14,
-            textDecoration: "none",
-            selectors: {
-                ":hover": {
-                    background: theme.palette.themePrimary,
-                    color: theme.palette.white,
-                    textDecoration: "none",
-                },
-                ":focus": {
-                    color: theme.semanticColors.buttonText
-                },
-                ":active": {
-                    color: theme.semanticColors.buttonText,
-                    textDecoration: "none"
-                },
-                ":focus:hover": {
-                    color: theme.palette.white,
-                },
-                ":active:hover": {
-                    color: theme.palette.white,
-                    textDecoration: "none"
-                }
-            }
-        },
-        active: {
-            background: theme.palette.themePrimary,
-            color: theme.palette.white,
-            selectors: {
-                ":focus": {
-                    color: theme.palette.white
-                }
-            }
-        }
-    }), [theme]);
+    const navStyles = useSubNavStyles();
 
     const { logsEnabled, logsStatusMessage } = useLogAccessInfo();
-    const linkStyle = React.useCallback((disabled) => {
-        return disabled ? {
-            background: themeV9.colorNeutralBackgroundDisabled,
-            color: themeV9.colorNeutralForegroundDisabled
-        } : {};
-    }, [themeV9]);
 
-    const favoriteMenu: IContextualMenuItem[] = React.useMemo(() => {
-        const retVal: IContextualMenuItem[] = [];
+    const favoriteMenu: HistoryItem[] = React.useMemo(() => {
+        const retVal: HistoryItem[] = [];
         for (const key in favorites) {
             retVal.push({
                 name: decodeURI(key),
@@ -457,11 +462,19 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
         return retVal;
     }, [favorites]);
 
-    return <div style={{ backgroundColor: theme.palette.themeLighter }}>
-        <StackShim horizontal horizontalAlign="space-between">
-            <StackItemShim align="center" grow={1}>
-                <StackShim horizontal>
-                    <StackItemShim grow={0} className={navStyles.wrapper}>
+    const onToggleFavorite = React.useCallback(() => {
+        if (isFavorite) {
+            removeFavorite();
+        } else {
+            addFavorite();
+        }
+    }, [isFavorite, addFavorite, removeFavorite]);
+
+    return <div style={{ backgroundColor: tokens.colorBrandBackground2 }}>
+        <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between" }}>
+            <div style={{ alignSelf: "center", flexGrow: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", flexDirection: "row" }}>
+                    <div className={navStyles.wrapper}>
                         {subMenuItems[mainNav]?.map((row, idx) => {
                             const restrictedRoutes = ["security"];
                             if (envHasAuth) {
@@ -473,47 +486,71 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
                                 title={row.itemKey === "/topology/logs" && !logsEnabled ? logsStatusMessage : ""}
                                 key={`MenuLink_${idx}`}
                                 href={`#${row.itemKey}`}
-                                className={[
+                                className={mergeClasses(
                                     navStyles.link,
-                                    row.itemKey === subNav ? navStyles.active : "",
-                                    !subNav && row.itemKey === "/topology/configuration" ? navStyles.active : ""
-                                ].join(" ")}
-                                style={linkStyle(linkDisabled)}
+                                    (row.itemKey === subNav || (!subNav && row.itemKey === "/topology/configuration")) ? navStyles.active : undefined,
+                                    linkDisabled ? navStyles.disabled : undefined
+                                )}
                             >
                                 {row.headerText}
                             </Link>;
                         })}
-                    </StackItemShim>
+                    </div>
                     {!!subNav &&
-                        <StackItemShim grow={1} style={{ lineHeight: "24px" }}>
+                        <div style={{ flexGrow: 1, lineHeight: "24px" }}>
                             {hashPath.includes("/files/")
                                 ? <Breadcrumbs hashPath={hashPath} ignoreN={2} />
                                 : <Breadcrumbs hashPath={hashPath} ignoreN={1} />
                             }
-                        </StackItemShim>
+                        </div>
                     }
-                </StackShim>
-            </StackItemShim>
-            <StackItemShim align="center" grow={0}>
-                {nextPrev?.next && <IconButton title={nlsHPCC.NextWorkunit} iconProps={{ iconName: "Movers" }} onClick={() => nextPrev.next()} />}
-                {nextPrev?.previous && <IconButton title={nlsHPCC.PreviousWorkunit} iconProps={{ iconName: "Sell" }} onClick={() => nextPrev.previous()} />}
-                <IconButton title={nlsHPCC.History} iconProps={{ iconName: "History" }} menuProps={{ items: history }} />
-                <IconButton
-                    title={isFavorite ? nlsHPCC.RemoveFromFavorites : nlsHPCC.AddToFavorites}
-                    iconProps={{ iconName: isFavorite ? "FavoriteStarFill" : "FavoriteStar" }}
-                    menuProps={favoriteCount ? { items: favoriteMenu } : null}
-                    split={favoriteCount > 0}
-                    splitButtonAriaLabel={nlsHPCC.Favorites}
-                    onClick={() => {
-                        if (isFavorite) {
-                            removeFavorite();
-                        } else {
-                            addFavorite();
-                        }
-                    }}
-                    styles={{ splitButtonMenuButton: { backgroundColor: theme.palette.themeLighter, border: "none" } }}
-                />
-            </StackItemShim>
-        </StackShim>
+                </div>
+            </div>
+            <div style={{ alignSelf: "center", flexShrink: 0 }}>
+                {nextPrev?.next && <Button appearance="transparent" title={nlsHPCC.NextWorkunit} icon={<ArrowCircleUpRegular />} onClick={() => nextPrev.next()} />}
+                {nextPrev?.previous && <Button appearance="transparent" title={nlsHPCC.PreviousWorkunit} icon={<ArrowCircleDownRegular />} onClick={() => nextPrev.previous()} />}
+                <Menu>
+                    <MenuTrigger>
+                        <MenuButton appearance="transparent" title={nlsHPCC.History} icon={<History20Regular />} />
+                    </MenuTrigger>
+                    <MenuPopover>
+                        <MenuList>
+                            {history.map(item => (
+                                <MenuItem key={item.key} onClick={() => { window.location.href = item.href; }}>{item.name}</MenuItem>
+                            ))}
+                        </MenuList>
+                    </MenuPopover>
+                </Menu>
+                {favoriteCount > 0 ? (
+                    <Menu>
+                        <MenuTrigger disableButtonEnhancement>
+                            {(triggerProps: any) => (
+                                <SplitButton
+                                    appearance="transparent"
+                                    title={isFavorite ? nlsHPCC.RemoveFromFavorites : nlsHPCC.AddToFavorites}
+                                    icon={isFavorite ? <Star20Filled /> : <Star20Regular />}
+                                    menuButton={triggerProps}
+                                    primaryActionButton={{ onClick: onToggleFavorite, "aria-label": nlsHPCC.Favorites }}
+                                />
+                            )}
+                        </MenuTrigger>
+                        <MenuPopover>
+                            <MenuList>
+                                {favoriteMenu.map(item => (
+                                    <MenuItem key={item.key} onClick={() => { window.location.href = item.href; }}>{item.name}</MenuItem>
+                                ))}
+                            </MenuList>
+                        </MenuPopover>
+                    </Menu>
+                ) : (
+                    <Button
+                        appearance="transparent"
+                        title={isFavorite ? nlsHPCC.RemoveFromFavorites : nlsHPCC.AddToFavorites}
+                        icon={isFavorite ? <Star20Filled /> : <Star20Regular />}
+                        onClick={onToggleFavorite}
+                    />
+                )}
+            </div>
+        </div>
     </div>;
 };

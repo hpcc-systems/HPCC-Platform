@@ -1,8 +1,6 @@
-﻿import { getTheme } from "@fluentui/react";
-import { format as d3Format, Palette } from "@hpcc-js/common";
+﻿import { format as d3Format, Palette } from "@hpcc-js/common";
 import { Level, join } from "@hpcc-js/util";
 import { arrayUtil, domConstruct } from "src-dojo/index";
-import { darkTheme } from "../src-react/themes";
 import nlsHPCC from "./nlsHPCC";
 
 declare const dojoConfig;
@@ -1282,9 +1280,6 @@ export function formatDateString(dateStr: string): string {
     return dateStr;
 }
 
-const theme = getTheme();
-const { semanticColors } = theme;
-
 export function logColor(level: Level): { background: string, foreground: string } {
     const colors = {
         background: "transparent",
@@ -1293,25 +1288,25 @@ export function logColor(level: Level): { background: string, foreground: string
 
     switch (level) {
         case Level.debug:
-            colors.background = semanticColors.successBackground;
-            colors.foreground = semanticColors.successIcon;
+            colors.background = "var(--colorStatusSuccessBackground1)";
+            colors.foreground = "var(--colorStatusSuccessForeground1)";
             break;
         case Level.info:
         case Level.notice:
             break;
         case Level.warning:
-            colors.background = semanticColors.warningBackground;
-            colors.foreground = semanticColors.warningIcon;
+            colors.background = "var(--colorStatusWarningBackground1)";
+            colors.foreground = "var(--colorStatusWarningForeground1)";
             break;
         case Level.error:
-            colors.background = semanticColors.errorBackground;
-            colors.foreground = semanticColors.errorIcon;
+            colors.background = "var(--colorStatusDangerBackground1)";
+            colors.foreground = "var(--colorStatusDangerForeground1)";
             break;
         case Level.critical:
         case Level.alert:
         case Level.emergency:
-            colors.background = semanticColors.severeWarningBackground;
-            colors.foreground = semanticColors.severeWarningIcon;
+            colors.background = "var(--colorStatusDangerBackground2)";
+            colors.foreground = "var(--colorStatusDangerForeground2)";
             break;
     }
 
@@ -1319,7 +1314,8 @@ export function logColor(level: Level): { background: string, foreground: string
 }
 
 export function themeIsDark() {
-    return theme.semanticColors.link === darkTheme.palette.themePrimary;
+    if (typeof window === "undefined" || typeof document === "undefined") return false;
+    return document.body.classList.contains("flat-dark");
 }
 
 export function wrapStringWithTag(string, tag = "span") {

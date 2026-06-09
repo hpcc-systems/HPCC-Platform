@@ -1,5 +1,6 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, mergeStyleSets } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
+import { makeStyles } from "@fluentui/react-components";
 import { useOnEvent } from "@fluentui/react-hooks";
 import { FileSprayService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
@@ -15,7 +16,6 @@ import { useLandingZoneStore } from "../hooks/useLandingZoneStore";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { getESPBaseURL } from "../util/espUrl";
 import { pushParams } from "../util/history";
-import { ShortVerticalDivider } from "./Common";
 import { LandingZoneTreeTable } from "./controls/LandingZoneTreeTable";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
@@ -44,12 +44,45 @@ interface LandingZoneProps {
     filter?: LandingZoneFilter;
 }
 
-const buttonStyles = mergeStyleSets({
+const useButtonStyles = makeStyles({
     labelOnly: {
         ":hover": {
             background: "initial",
             cursor: "initial"
         }
+    }
+});
+
+const useDropStyles = makeStyles({
+    dzWrapper: {
+        position: "absolute",
+        top: "118px",
+        bottom: "0",
+        background: "rgba(0, 0, 0, 0.12)",
+        left: "240px",
+        right: "0",
+        zIndex: 1,
+    },
+    dzInner: {
+        position: "absolute",
+        background: "white",
+        top: "20px",
+        left: "30px",
+        right: "40px",
+        height: "80px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        borderTopWidth: "1px", borderRightWidth: "1px", borderBottomWidth: "1px", borderLeftWidth: "1px",
+        borderTopStyle: "solid", borderRightStyle: "solid", borderBottomStyle: "solid", borderLeftStyle: "solid",
+        borderTopColor: "#aaa", borderRightColor: "#aaa", borderBottomColor: "#aaa", borderLeftColor: "#aaa",
+        "& p": {
+            fontSize: "1.333rem",
+            color: "#aaa"
+        }
+    },
+    displayNone: {
+        display: "none"
     }
 });
 
@@ -64,6 +97,8 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
 }) => {
 
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
+    const buttonStyles = useButtonStyles();
+    const dropStyles = useDropStyles();
 
     const [showFilter, setShowFilter] = React.useState(false);
     const [showAddFile, setShowAddFile] = React.useState(false);
@@ -520,16 +555,16 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => refreshTable()
         },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider },
         {
-            key: "preview", text: nlsHPCC.Preview, disabled: !selection.length, iconProps: { iconName: "ComplianceAudit" },
+            key: "preview", text: nlsHPCC.Preview, disabled: !selection.length, iconProps: { iconName: "DocumentText" },
             onClick: () => {
                 if (selection.length === 1) {
                     window.location.href = `#/landingzone/preview/${selection[0].getLogicalFile()}`;
                 }
             }
         },
-        { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_2", itemType: ContextualMenuItemType.Divider },
         {
             key: "upload", text: nlsHPCC.Upload, iconProps: { iconName: "Upload" },
             onClick: () => {
@@ -551,17 +586,17 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
             key: "delete", text: nlsHPCC.Delete, disabled: !selection.length, iconProps: { iconName: "Delete" },
             onClick: () => setShowDeleteConfirm(true)
         },
-        { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_3", itemType: ContextualMenuItemType.Divider },
         {
             key: "filter", text: nlsHPCC.Filter, iconProps: { iconName: hasFilter ? "FilterSolid" : "Filter" },
             onClick: () => setShowFilter(true)
         },
-        { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_4", itemType: ContextualMenuItemType.Divider },
         {
             key: "addFile", text: nlsHPCC.AddFile,
             onClick: () => setShowAddFile(true)
         },
-        { key: "divider_5", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_5", itemType: ContextualMenuItemType.Divider },
         { key: "importLabel", text: `${nlsHPCC.Import}: `, className: buttonStyles.labelOnly },
         {
             key: "fixed", text: nlsHPCC.Fixed, disabled: !selection.length,
@@ -587,48 +622,14 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
             key: "blob", text: nlsHPCC.Blob, disabled: !selection.length,
             onClick: () => setShowBlob(true)
         },
-        { key: "divider_6", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> }
-    ], [hasFilter, refreshTable, selection, setShowDeleteConfirm]);
+        { key: "divider_6", itemType: ContextualMenuItemType.Divider }
+    ], [buttonStyles.labelOnly, hasFilter, refreshTable, selection, setShowDeleteConfirm]);
 
     //  Filter  ---
     const filterFields: Fields = {};
     for (const field in FilterFields) {
         filterFields[field] = { ...FilterFields[field], value: filter[field] };
     }
-
-    const dropStyles = React.useMemo(() => mergeStyleSets({
-        dzWrapper: {
-            position: "absolute",
-            top: "118px",
-            bottom: 0,
-            background: "rgba(0, 0, 0, 0.12)",
-            left: "240px",
-            right: 0,
-            display: showDropZone ? "block" : "none",
-            zIndex: 1,
-        },
-        dzInner: {
-            position: "absolute",
-            background: "white",
-            top: "20px",
-            left: "30px",
-            right: "40px",
-            height: "80px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            border: "1px solid #aaa",
-            selectors: {
-                p: {
-                    fontSize: "1.333rem",
-                    color: "#aaa"
-                }
-            }
-        },
-        displayNone: {
-            display: "none"
-        }
-    }), [showDropZone]);
 
     const handleFileDragEnter = React.useCallback((evt) => {
         evt.preventDefault();
@@ -670,7 +671,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
                     id="uploaderBtn" type="file" accept=".txt,.csv,.json,.xml"
                     className={dropStyles.displayNone} onChange={handleFileSelect} multiple={true}
                 />
-                <div className={dropStyles.dzWrapper} onDragOver={handleFileDragOver} onDrop={handleFileDrop}>
+                <div className={dropStyles.dzWrapper} style={{ display: showDropZone ? "block" : "none" }} onDragOver={handleFileDragOver} onDrop={handleFileDrop}>
                     <div className={dropStyles.dzInner}>
                         <p>Drop file(s) to upload.</p>
                     </div>

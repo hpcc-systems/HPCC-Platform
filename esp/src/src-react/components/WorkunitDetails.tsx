@@ -1,5 +1,6 @@
 import * as React from "react";
-import { Icon, Shimmer } from "@fluentui/react";
+import { SkeletonItem } from "@fluentui/react-components";
+import { SearchRegular } from "@fluentui/react-icons";
 import { WsWorkunits, WorkunitsService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import { SizeMe } from "../layouts/SizeMe";
@@ -187,7 +188,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
         }, {
             id: "queries",
             label: nlsHPCC.Queries,
-            icon: <Icon iconName="Search"></Icon>,
+            icon: <SearchRegular />,
             disabled: workunit?.Archived,
         }, {
             id: "resources",
@@ -244,10 +245,10 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                 <DelayLoadedPanel visible={tab === "metrics"} size={size}>
                     <React.Suspense fallback={
                         <>
-                            <Shimmer />
-                            <Shimmer />
-                            <Shimmer />
-                            <Shimmer />
+                            <SkeletonItem />
+                            <SkeletonItem />
+                            <SkeletonItem />
+                            <SkeletonItem />
                         </>
                     }>
                         <Metrics wuid={wuid} targetsRoxie={targetsRoxie} parentUrl={`${parentUrl}/${routeWuid}/metrics`} viewSelection={state?.metrics?.view} lineageSelection={state?.metrics?.lineageSelection} selection={state?.metrics?.selection} />
@@ -282,10 +283,10 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                 <DelayLoadedPanel visible={tab === "logicalgraph"} size={size}>
                     <React.Suspense fallback={
                         <>
-                            <Shimmer />
-                            <Shimmer />
-                            <Shimmer />
-                            <Shimmer />
+                            <SkeletonItem />
+                            <SkeletonItem />
+                            <SkeletonItem />
+                            <SkeletonItem />
                         </>
                     }>
                         <Metrics wuid={wuid} logicalGraph={true} parentUrl={`${parentUrl}/${routeWuid}/logicalgraph`} lineageSelection={state?.logicalgraph?.lineageSelection} selection={state?.logicalgraph?.selection} />

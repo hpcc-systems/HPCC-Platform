@@ -1,6 +1,7 @@
 import * as React from "react";
-import { CommandBar, ICommandBarItemProps, CommandBarButton, useTheme } from "@fluentui/react";
-import { StackShim } from "@fluentui/react-migration-v8-v9";
+import { Button, tokens } from "@fluentui/react-components";
+import { Filter20Regular, Filter20Filled } from "@fluentui/react-icons";
+import { CommandBar, ICommandBarItemProps } from "./CommandBarV9";
 import nlsHPCC from "src/nlsHPCC";
 import { SuperDatePicker, DateRange } from "./forms/Fields";
 
@@ -31,16 +32,13 @@ export const LogsHeaderWithSuperDatePicker: React.FunctionComponent<LogsHeaderWi
     autoRefreshInterval = 0,
     onAutoRefreshIntervalChange
 }) => {
-    const theme = useTheme();
-
-    return <StackShim horizontal verticalAlign="center" styles={{ root: { padding: "0px 6px", borderBottom: `1px solid ${theme.palette.neutralLight}` } }}>
-        <StackShim horizontal tokens={{ childrenGap: 16 }} styles={{ root: { flex: 1, alignItems: "center" } }}>
-            <CommandBarButton
-                text={nlsHPCC.Filter}
-                style={{ padding: 8 }}
-                iconProps={{ iconName: hasFilter ? "FilterSolid" : "Filter" }}
+    return <div style={{ display: "flex", flexDirection: "row", alignItems: "center", padding: "0px 6px", borderBottom: `1px solid ${tokens.colorNeutralStroke2}` }}>
+        <div style={{ display: "flex", flexDirection: "row", gap: "16px", flex: 1, alignItems: "center" }}>
+            <Button
+                appearance="subtle"
+                icon={hasFilter ? <Filter20Filled /> : <Filter20Regular />}
                 onClick={onShowFilter}
-            />
+            >{nlsHPCC.Filter}</Button>
             <SuperDatePicker
                 startDate={startDate}
                 endDate={endDate}
@@ -52,9 +50,9 @@ export const LogsHeaderWithSuperDatePicker: React.FunctionComponent<LogsHeaderWi
                 autoRefreshInterval={autoRefreshInterval}
                 onAutoRefreshIntervalChange={onAutoRefreshIntervalChange}
             />
-        </StackShim>
+        </div>
         <div>
             <CommandBar items={[]} farItems={copyButtons} />
         </div>
-    </StackShim>;
+    </div>;
 };

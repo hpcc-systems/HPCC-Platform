@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CommandBar, ICommandBarItemProps } from "@fluentui/react";
+import { CommandBar, ICommandBarItemProps } from "./CommandBarV9";
 import { Query } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";

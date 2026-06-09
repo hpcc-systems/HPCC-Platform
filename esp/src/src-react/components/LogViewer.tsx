@@ -1,10 +1,12 @@
 import * as React from "react";
-import { Checkbox, CommandBar, ICommandBarItemProps } from "@fluentui/react";
+import { CommandBar, ICommandBarItemProps } from "./CommandBarV9";
+import { Checkbox } from "@fluentui/react-components";
 import { Level } from "@hpcc-js/util";
 import { logColor } from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
 import { HolyGrail } from "../layouts/HolyGrail";
+import { SizeMe } from "../layouts/SizeMe";
 import { useECLWatchLogger } from "../hooks/logging";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 
@@ -32,10 +34,10 @@ export const LogViewer: React.FunctionComponent<LogViewerProps> = ({
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
-        { key: "errors", onRender: () => <Checkbox defaultChecked label={`${filterCounts.error || 0} ${nlsHPCC.Errors}`} onChange={(ev, value) => setErrorChecked(value)} styles={{ root: { paddingTop: 8, paddingRight: 8 } }} /> },
-        { key: "warnings", onRender: () => <Checkbox defaultChecked label={`${filterCounts.warning || 0} ${nlsHPCC.Warnings}`} onChange={(ev, value) => setWarningChecked(value)} styles={{ root: { paddingTop: 8, paddingRight: 8 } }} /> },
-        { key: "infos", onRender: () => <Checkbox defaultChecked label={`${filterCounts.info || 0} ${nlsHPCC.Infos}`} onChange={(ev, value) => setInfoChecked(value)} styles={{ root: { paddingTop: 8, paddingRight: 8 } }} /> },
-        { key: "others", onRender: () => <Checkbox defaultChecked label={`${filterCounts.other || 0} ${nlsHPCC.Others}`} onChange={(ev, value) => setOtherChecked(value)} styles={{ root: { paddingTop: 8, paddingRight: 8 } }} /> }
+        { key: "errors", onRender: () => <Checkbox defaultChecked label={`${filterCounts.error || 0} ${nlsHPCC.Errors}`} onChange={(_, data) => setErrorChecked(!!data.checked)} style={{ paddingTop: 8, paddingRight: 8 }} /> },
+        { key: "warnings", onRender: () => <Checkbox defaultChecked label={`${filterCounts.warning || 0} ${nlsHPCC.Warnings}`} onChange={(_, data) => setWarningChecked(!!data.checked)} style={{ paddingTop: 8, paddingRight: 8 }} /> },
+        { key: "infos", onRender: () => <Checkbox defaultChecked label={`${filterCounts.info || 0} ${nlsHPCC.Infos}`} onChange={(_, data) => setInfoChecked(!!data.checked)} style={{ paddingTop: 8, paddingRight: 8 }} /> },
+        { key: "others", onRender: () => <Checkbox defaultChecked label={`${filterCounts.other || 0} ${nlsHPCC.Others}`} onChange={(_, data) => setOtherChecked(!!data.checked)} style={{ paddingTop: 8, paddingRight: 8 }} /> }
     ], [filterCounts.error, filterCounts.info, filterCounts.other, filterCounts.warning]);
 
     //  Grid ---
@@ -104,15 +106,22 @@ export const LogViewer: React.FunctionComponent<LogViewerProps> = ({
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
-            <FluentGrid
-                data={data}
-                primaryID={"dateTime"}
-                sort={sort}
-                columns={columns}
-                setSelection={setSelection}
-                setTotal={setTotal}
-                refresh={refreshTable}
-            ></FluentGrid>
+            <SizeMe>{({ size }) =>
+                <div style={{ width: "100%", height: "100%" }}>
+                    <div style={{ position: "absolute", width: "100%", height: `${size.height}px` }}>
+                        <FluentGrid
+                            data={data}
+                            primaryID={"dateTime"}
+                            sort={sort}
+                            columns={columns}
+                            height={`${size.height}px`}
+                            setSelection={setSelection}
+                            setTotal={setTotal}
+                            refresh={refreshTable}
+                        ></FluentGrid>
+                    </div>
+                </div>
+            }</SizeMe>
         }
     />;
 };

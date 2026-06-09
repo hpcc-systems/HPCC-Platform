@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, PrimaryButton, Spinner, TextField, } from "@fluentui/react";
+import { Button, Checkbox, Field, Input, Spinner } from "@fluentui/react-components";
 import { AccessService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
@@ -79,23 +79,22 @@ export const AddGroupResourceForm: React.FunctionComponent<AddGroupResourceFormP
 
     return <MessageBox show={showForm} setShow={closeForm} title={nlsHPCC.AddGroup} minWidth={400}
         footer={<>
-            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
-            <PrimaryButton text={nlsHPCC.Add} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
-            <DefaultButton text={nlsHPCC.Cancel} onClick={() => { reset(defaultValues); closeForm(); }} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="after" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <Button appearance="primary" disabled={submitDisabled} onClick={handleSubmit(onSubmit)}>{nlsHPCC.Add}</Button>
+            <Button onClick={() => { reset(defaultValues); closeForm(); }}>{nlsHPCC.Cancel}</Button>
         </>}>
         <Controller
             control={control} name="account_name"
             render={({
                 field: { onChange, name: fieldName, value },
                 fieldState: { error }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    required={true}
-                    label={nlsHPCC.GroupName}
-                    value={value}
-                    errorMessage={error && error?.message}
-                />}
+            }) => <Field label={nlsHPCC.GroupName} required validationMessage={error?.message}>
+                    <Input
+                        name={fieldName}
+                        value={value}
+                        onChange={(_, data) => onChange(data.value)}
+                    />
+                </Field>}
             rules={{
                 required: nlsHPCC.ValidationErrorRequired
             }}
@@ -105,7 +104,7 @@ export const AddGroupResourceForm: React.FunctionComponent<AddGroupResourceFormP
                 control={control} name="allow_access"
                 render={({
                     field: { onChange, name: fieldName, value }
-                }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.AllowAccess} />}
+                }) => <Checkbox name={fieldName} checked={value} onChange={(_, data) => onChange(data.checked)} label={nlsHPCC.AllowAccess} />}
             />
         </div>
         <div style={{ paddingTop: "15px" }}>
@@ -113,7 +112,7 @@ export const AddGroupResourceForm: React.FunctionComponent<AddGroupResourceFormP
                 control={control} name="allow_read"
                 render={({
                     field: { onChange, name: fieldName, value }
-                }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.AllowRead} />}
+                }) => <Checkbox name={fieldName} checked={value} onChange={(_, data) => onChange(data.checked)} label={nlsHPCC.AllowRead} />}
             />
         </div>
         <div style={{ paddingTop: "15px" }}>
@@ -121,7 +120,7 @@ export const AddGroupResourceForm: React.FunctionComponent<AddGroupResourceFormP
                 control={control} name="allow_write"
                 render={({
                     field: { onChange, name: fieldName, value }
-                }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.AllowWrite} />}
+                }) => <Checkbox name={fieldName} checked={value} onChange={(_, data) => onChange(data.checked)} label={nlsHPCC.AllowWrite} />}
             />
         </div>
         <div style={{ paddingTop: "15px" }}>
@@ -129,7 +128,7 @@ export const AddGroupResourceForm: React.FunctionComponent<AddGroupResourceFormP
                 control={control} name="allow_full"
                 render={({
                     field: { onChange, name: fieldName, value }
-                }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.AllowFull} />}
+                }) => <Checkbox name={fieldName} checked={value} onChange={(_, data) => onChange(data.checked)} label={nlsHPCC.AllowFull} />}
             />
         </div>
     </MessageBox>;

@@ -1,6 +1,5 @@
 import * as React from "react";
-import { Dropdown, TextField, PrimaryButton, Checkbox } from "@fluentui/react";
-import { StackShim } from "@fluentui/react-migration-v8-v9";
+import { Button, Checkbox, Dropdown, Field, Input, Option } from "@fluentui/react-components";
 import nlsHPCC from "src/nlsHPCC";
 import { scopedLogger } from "@hpcc-js/util";
 import { SashaService, WsSasha } from "@hpcc-js/comms";
@@ -30,8 +29,8 @@ export const Sasha: React.FunctionComponent<SashaProps> = () => {
 
   const sashaService = new SashaService({ baseUrl: "" });
 
-  const handleOptionChange = (event: React.FormEvent<HTMLDivElement>, option: any) => {
-    setSelectedOption(option.key);
+  const handleOptionChange = (_event, data) => {
+    setSelectedOption(String(data.optionValue ?? ""));
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -151,121 +150,87 @@ export const Sasha: React.FunctionComponent<SashaProps> = () => {
       <form onSubmit={handleSubmit}>
         <Dropdown
           placeholder={nlsHPCC.SelectAnOption}
-          selectedKey={selectedOption}
-          onChange={handleOptionChange}
-          options={[
-            { key: "", text: nlsHPCC.SelectAnOption },
-            { key: "getVersion", text: nlsHPCC.GetVersion },
-            { key: "getLastServerMessage", text: nlsHPCC.GetLastServerMessage },
-            { key: "restoreECLWorkUnit", text: nlsHPCC.RestoreECLWorkunit },
-            { key: "restoreDFUWorkUnit", text: nlsHPCC.RestoreDFUWorkunit },
-            { key: "archiveECLWorkUnit", text: nlsHPCC.ArchiveECLWorkunit },
-            { key: "archiveDFUWorkUnit", text: nlsHPCC.ArchiveDFUWorkunit },
-            { key: "listECLWorkunit", text: nlsHPCC.ListECLWorkunit },
-            { key: "listDFUWorkunit", text: nlsHPCC.ListDFUWorkunit }
-          ]}
-          styles={{ dropdown: { width: 400 } }}
-        />
+          selectedOptions={selectedOption ? [selectedOption] : []}
+          onOptionSelect={handleOptionChange}
+          style={{ width: 400 }}
+        >
+          <Option key="" text={nlsHPCC.SelectAnOption} value="">{nlsHPCC.SelectAnOption}</Option>
+          <Option key="getVersion" text={nlsHPCC.GetVersion} value="getVersion">{nlsHPCC.GetVersion}</Option>
+          <Option key="getLastServerMessage" text={nlsHPCC.GetLastServerMessage} value="getLastServerMessage">{nlsHPCC.GetLastServerMessage}</Option>
+          <Option key="restoreECLWorkUnit" text={nlsHPCC.RestoreECLWorkunit} value="restoreECLWorkUnit">{nlsHPCC.RestoreECLWorkunit}</Option>
+          <Option key="restoreDFUWorkUnit" text={nlsHPCC.RestoreDFUWorkunit} value="restoreDFUWorkUnit">{nlsHPCC.RestoreDFUWorkunit}</Option>
+          <Option key="archiveECLWorkUnit" text={nlsHPCC.ArchiveECLWorkunit} value="archiveECLWorkUnit">{nlsHPCC.ArchiveECLWorkunit}</Option>
+          <Option key="archiveDFUWorkUnit" text={nlsHPCC.ArchiveDFUWorkunit} value="archiveDFUWorkUnit">{nlsHPCC.ArchiveDFUWorkunit}</Option>
+          <Option key="listECLWorkunit" text={nlsHPCC.ListECLWorkunit} value="listECLWorkunit">{nlsHPCC.ListECLWorkunit}</Option>
+          <Option key="listDFUWorkunit" text={nlsHPCC.ListDFUWorkunit} value="listDFUWorkunit">{nlsHPCC.ListDFUWorkunit}</Option>
+        </Dropdown>
 
         {["listECLWorkunit", "listDFUWorkunit"].includes(selectedOption) ? (
-          <StackShim tokens={{ childrenGap: 10 }}>
-            <TextField
-              label={nlsHPCC.WUID}
-              value={wuid}
-              onChange={(event, newValue?: string) => setWuid(newValue ?? "")}
-              styles={{ fieldGroup: { width: 400 } }}
-            />
-            <TextField
-              label="Cluster"
-              value={cluster}
-              onChange={(event, newValue?: string) => setCluster(newValue ?? "")}
-              styles={{ fieldGroup: { width: 400 } }}
-            />
-            <TextField
-              label="Owner"
-              value={owner}
-              onChange={(event, newValue?: string) => setOwner(newValue ?? "")}
-              styles={{ fieldGroup: { width: 400 } }}
-            />
-            <TextField
-              label="Job Name"
-              value={jobName}
-              onChange={(event, newValue?: string) => setJobName(newValue ?? "")}
-              styles={{ fieldGroup: { width: 400 } }}
-            />
-            <TextField
-              label="State"
-              value={stateFilter}
-              onChange={(event, newValue?: string) => setStateFilter(newValue ?? "")}
-              styles={{ fieldGroup: { width: 400 } }}
-            />
-            <TextField
-              label="From Date"
-              value={fromDate}
-              onChange={(event, newValue?: string) => setFromDate(newValue ?? "")}
-              styles={{ fieldGroup: { width: 400 } }}
-            />
-            <TextField
-              label="To Date"
-              value={toDate}
-              onChange={(event, newValue?: string) => setToDate(newValue ?? "")}
-              styles={{ fieldGroup: { width: 400 } }}
-            />
-            <TextField
-              label="Before WU"
-              value={beforeWU}
-              onChange={(event, newValue?: string) => setBeforeWU(newValue ?? "")}
-              styles={{ fieldGroup: { width: 400 } }}
-            />
-            <TextField
-              label="After WU"
-              value={afterWU}
-              onChange={(event, newValue?: string) => setAfterWU(newValue ?? "")}
-              styles={{ fieldGroup: { width: 400 } }}
-            />
-            <TextField
-              label="Output Fields"
-              value={outputFields}
-              onChange={(event, newValue?: string) => setOutputFields(newValue ?? "")}
-              styles={{ fieldGroup: { width: 400 } }}
-            />
-            <StackShim horizontal tokens={{ childrenGap: 20 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <Field label={nlsHPCC.WUID}>
+              <Input value={wuid} onChange={(_, data) => setWuid(data.value ?? "")} style={{ width: 400 }} />
+            </Field>
+            <Field label="Cluster">
+              <Input value={cluster} onChange={(_, data) => setCluster(data.value ?? "")} style={{ width: 400 }} />
+            </Field>
+            <Field label="Owner">
+              <Input value={owner} onChange={(_, data) => setOwner(data.value ?? "")} style={{ width: 400 }} />
+            </Field>
+            <Field label="Job Name">
+              <Input value={jobName} onChange={(_, data) => setJobName(data.value ?? "")} style={{ width: 400 }} />
+            </Field>
+            <Field label="State">
+              <Input value={stateFilter} onChange={(_, data) => setStateFilter(data.value ?? "")} style={{ width: 400 }} />
+            </Field>
+            <Field label="From Date">
+              <Input value={fromDate} onChange={(_, data) => setFromDate(data.value ?? "")} style={{ width: 400 }} />
+            </Field>
+            <Field label="To Date">
+              <Input value={toDate} onChange={(_, data) => setToDate(data.value ?? "")} style={{ width: 400 }} />
+            </Field>
+            <Field label="Before WU">
+              <Input value={beforeWU} onChange={(_, data) => setBeforeWU(data.value ?? "")} style={{ width: 400 }} />
+            </Field>
+            <Field label="After WU">
+              <Input value={afterWU} onChange={(_, data) => setAfterWU(data.value ?? "")} style={{ width: 400 }} />
+            </Field>
+            <Field label="Output Fields">
+              <Input value={outputFields} onChange={(_, data) => setOutputFields(data.value ?? "")} style={{ width: 400 }} />
+            </Field>
+            <div style={{ display: "flex", flexDirection: "row", gap: "20px" }}>
               <Checkbox
                 label="Archived"
                 checked={archived}
-                onChange={(e, checked) => setArchived(!!checked)}
+                onChange={(_, data) => setArchived(!!data.checked)}
               />
               <Checkbox
                 label="Online"
                 checked={online}
-                onChange={(e, checked) => setOnline(!!checked)}
+                onChange={(_, data) => setOnline(!!data.checked)}
               />
               <Checkbox
                 label="Include DT"
                 checked={includeDT}
-                onChange={(e, checked) => setIncludeDT(!!checked)}
+                onChange={(_, data) => setIncludeDT(!!data.checked)}
               />
               <Checkbox
                 label="Descending"
                 checked={descending}
-                onChange={(e, checked) => setDescending(!!checked)}
+                onChange={(_, data) => setDescending(!!data.checked)}
               />
-            </StackShim>
-          </StackShim>
+            </div>
+          </div>
         ) : (
           (["restoreECLWorkUnit", "restoreDFUWorkUnit", "archiveECLWorkUnit", "archiveDFUWorkUnit"].includes(selectedOption)) && (
-            <TextField
-              label={nlsHPCC.WUID}
-              value={wuid}
-              onChange={(event, newValue?: string) => setWuid(newValue ?? "")}
-              styles={{ fieldGroup: { width: 400 } }}
-            />
+            <Field label={nlsHPCC.WUID}>
+              <Input value={wuid} onChange={(_, data) => setWuid(data.value ?? "")} style={{ width: 400 }} />
+            </Field>
           )
         )}
 
-        <PrimaryButton type="submit" style={{ marginTop: 10, width: 150 }}>
+        <Button appearance="primary" type="submit" style={{ marginTop: 10, width: 150 }}>
           {nlsHPCC.Submit}
-        </PrimaryButton>
+        </Button>
         {defaultValue}
         {result && <div>{nlsHPCC.Results}: {result}</div>}
       </form>

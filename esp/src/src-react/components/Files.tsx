@@ -1,5 +1,7 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Link } from "@fluentui/react";
+import { DocumentDismissRegular, DocumentRegular, FolderZipRegular, InfoRegular, ListRegular, LockClosedFilled } from "@fluentui/react-icons";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
+import { Link, makeStyles } from "@fluentui/react-components";
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsDfu from "src/WsDfu";
 import { CreateDFUQueryStore, Get } from "src/ESPLogicalFile";
@@ -19,10 +21,35 @@ import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
 import { RemoteCopy } from "./forms/RemoteCopy";
 import { RenameFile } from "./forms/RenameFile";
-import { ShortVerticalDivider } from "./Common";
 import { SizeMe } from "../layouts/SizeMe";
 
 const logger = scopedLogger("src-react/components/Files.tsx");
+
+const useStyles = makeStyles({
+    fileNameWrapper: {
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "4px"
+    },
+    fileNameIcon: {
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "16px",
+        height: "16px",
+        fontSize: "16px",
+        lineHeight: 1,
+        flexShrink: 0
+    }
+});
+
+const FILE_STATE_ICONS: Record<string, React.ReactElement> = {
+    "Page": <DocumentRegular />,
+    "Info2": <InfoRegular />,
+    "PageList": <ListRegular />,
+    "RemoveFromShoppingList": <DocumentDismissRegular />,
+    "PageRemove": <DocumentDismissRegular />,
+};
 
 const FilterFields: Fields = {
     "LogicalName": { type: "string", label: nlsHPCC.Name, placeholder: nlsHPCC.somefile },
@@ -105,6 +132,8 @@ export const Files: React.FunctionComponent<FilesProps> = ({
 
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
 
+    const styles = useStyles();
+
     const [showFilter, setShowFilter] = React.useState(false);
     const [showRemoteCopy, setShowRemoteCopy] = React.useState(false);
     const [showCopy, setShowCopy] = React.useState(false);
@@ -157,26 +186,26 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 selectorType: "checkbox"
             },
             IsProtected: {
-                headerIcon: "LockSolid",
+                headerIconElement: <LockClosedFilled aria-label={nlsHPCC.Protected} />,
                 headerTooltip: nlsHPCC.Protected,
                 width: 16,
                 sortable: false,
                 formatter: (_protected, row) => {
                     if (row.IsProtected === true) {
-                        return <Icon iconName="LockSolid" />;
+                        return <LockClosedFilled />;
                     }
                     return "";
                 },
                 field: nlsHPCC.Protected,
             },
             IsCompressed: {
-                headerIcon: "ZipFolder",
+                headerIconElement: <FolderZipRegular aria-label={nlsHPCC.Compressed} />,
                 headerTooltip: nlsHPCC.Compressed,
                 width: 16,
                 sortable: false,
                 formatter: (_compressed, row) => {
                     if (row.IsCompressed === true) {
-                        return <Icon iconName="ZipFolder" />;
+                        return <FolderZipRegular />;
                     }
                     return "";
                 },
@@ -191,11 +220,11 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                         return name;
                     }
                     const url = "#/files/" + (row.NodeGroup ? row.NodeGroup + "/" : "") + name;
-                    return <>
-                        <Icon iconName={file.getStateIcon ? file.getStateIcon() : ""} />
-                        &nbsp;
+                    const stateIconName = file.getStateIcon ? file.getStateIcon() : "";
+                    return <span className={styles.fileNameWrapper}>
+                        <span className={styles.fileNameIcon}>{FILE_STATE_ICONS[stateIconName] ?? null}</span>
                         <Link href={url}>{name}</Link>
-                    </>;
+                    </span>;
                 },
             },
             Owner: { label: nlsHPCC.Owner },
@@ -254,7 +283,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 },
             }
         };
-    }, [uiState.isUTC, currentTime]);
+    }, [uiState.isUTC, currentTime, styles.fileNameIcon, styles.fileNameWrapper]);
 
     const copyButtons = useCopyButtons(columns, selection, "files");
 
@@ -279,7 +308,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => refreshTable.call()
         },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider },
         {
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
             onClick: () => {
@@ -296,12 +325,12 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             key: "delete", text: nlsHPCC.Delete, disabled: !uiState.hasSelection, iconProps: { iconName: "Delete" },
             onClick: () => setShowDeleteConfirm(true)
         },
-        { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_2", itemType: ContextualMenuItemType.Divider },
         {
             key: "remoteCopy", text: nlsHPCC.RemoteCopy,
             onClick: () => setShowRemoteCopy(true)
         },
-        { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_3", itemType: ContextualMenuItemType.Divider },
         {
             key: "copy", text: nlsHPCC.Copy, disabled: !uiState.hasSelection,
             onClick: () => setShowCopy(true)
@@ -318,7 +347,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             key: "despray", text: nlsHPCC.Despray, disabled: !uiState.hasSelection,
             onClick: () => setShowDesprayFile(true)
         },
-        { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_4", itemType: ContextualMenuItemType.Divider },
         {
             key: "filter", text: nlsHPCC.Filter, disabled: !!store, iconProps: { iconName: hasFilter ? "FilterSolid" : "Filter" },
             onClick: () => {
@@ -332,7 +361,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 window.location.href = "#/scopes";
             }
         },
-        { key: "divider_5", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_5", itemType: ContextualMenuItemType.Divider },
         {
             key: "mine", text: nlsHPCC.Mine, disabled: !currentUser?.username, iconProps: { iconName: "Contact" }, canCheck: true, checked: filter["Owner"] === currentUser.username,
             onClick: () => {
@@ -344,7 +373,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 pushParams(filter);
             }
         },
-        { key: "divider_6", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_6", itemType: ContextualMenuItemType.Divider },
         {
             key: "toggleTimezone",
             text: uiState.isUTC ? nlsHPCC.SwitchToLocalTime : nlsHPCC.SwitchToUTCTime,

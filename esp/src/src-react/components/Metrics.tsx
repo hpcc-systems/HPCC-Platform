@@ -1,9 +1,8 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, TooltipHost } from "@fluentui/react";
-import { makeStyles, SearchBox, SearchBoxChangeEvent, ToggleButton } from "@fluentui/react-components";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
+import { makeStyles, SearchBox, SearchBoxChangeEvent, ToggleButton, Tooltip } from "@fluentui/react-components";
 import { useConst } from "@fluentui/react-hooks";
 import { TextCaseTitleRegular, TextCaseTitleFilled, BranchForkHintRegular, BranchForkFilled, TextWholeWordFilled, TextWholeWordRegular, FilterRegular } from "@fluentui/react-icons";
-import { StackShim, StackItemShim } from "@fluentui/react-migration-v8-v9";
 import { WorkunitsServiceEx, IScope } from "@hpcc-js/comms";
 import { Table } from "@hpcc-js/dgrid";
 import { scopedLogger } from "@hpcc-js/util";
@@ -18,7 +17,6 @@ import { DockPanel, DockPanelItem, ResetableDockPanel } from "../layouts/DockPan
 import { pushUrl, replaceUrl } from "../util/history";
 import { debounce } from "../util/throttle";
 import { ErrorBoundary } from "../util/errorBoundary";
-import { ShortVerticalDivider } from "./Common";
 import { MetricsOptions } from "./MetricsOptions";
 import { MetricsPropertiesTables } from "./MetricsPropertiesTables";
 import { MetricsSQL } from "./MetricsSQL";
@@ -356,7 +354,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
             key: "hotspot", text: nlsHPCC.Hotspots, hidden: logicalGraph, iconProps: { iconName: "SpeedHigh" },
             disabled: !hotspots, onClick: () => onHotspot()
         },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider },
         {
             key: "views", text: viewId, hidden: logicalGraph, iconProps: { iconName: "View" },
             subMenuProps: {
@@ -461,16 +459,16 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                 <DockPanel layout={view?.layout} onCreate={setDockpanel}>
                     <DockPanelItem key="scopesTable" title={nlsHPCC.Metrics}>
                         <HolyGrail
-                            header={<StackShim horizontal tokens={{ childrenGap: 4 }}>
+                            header={<div style={{ display: "flex", flexDirection: "row", gap: "4px" }}>
                                 <ToggleButton appearance="subtle" icon={includePendingItems ? <BranchForkFilled /> : <BranchForkHintRegular />} title={nlsHPCC.IncludePendingItems} checked={includePendingItems} onClick={() => { setIncludePendingItems(!includePendingItems); }} />
-                                <StackItemShim grow>
-                                    <TooltipHost content={nlsHPCC.FilterMetricsTooltip}>
+                                <div style={{ flexGrow: 1 }}>
+                                    <Tooltip content={nlsHPCC.FilterMetricsTooltip} relationship="label">
                                         <SearchBox key={scopeFilterVersion} defaultValue={scopeFilter} onChange={onChangeScopeFilter} placeholder={nlsHPCC.Filter} contentBefore={filterIcon} className={styles.searchBox} />
-                                    </TooltipHost>
-                                </StackItemShim>
+                                    </Tooltip>
+                                </div>
                                 <ToggleButton appearance="subtle" icon={matchCase ? <TextCaseTitleFilled /> : <TextCaseTitleRegular />} title={nlsHPCC.MatchCase} checked={matchCase} onClick={() => { setMatchCase(!matchCase); }} />
                                 <ToggleButton appearance="subtle" icon={matchWholeWord ? <TextWholeWordFilled /> : <TextWholeWordRegular />} title={nlsHPCC.MatchWholeWord} checked={matchWholeWord} onClick={() => { setMatchWholeWord(!matchWholeWord); }} />
-                            </StackShim>}
+                            </div>}
                             main={<AutosizeHpccJSComponent widget={scopesTable} ></AutosizeHpccJSComponent>}
                         />
                     </DockPanelItem>

@@ -1,6 +1,6 @@
 import * as React from "react";
-import { CommandBarButton, Callout, DirectionalHint, Text, DefaultButton, PrimaryButton, Separator, IButtonStyles, FontWeights, useTheme, Icon } from "@fluentui/react";
-import { StackShim } from "@fluentui/react-migration-v8-v9";
+import { Divider, Popover, PopoverTrigger, PopoverSurface, Button, Text, tokens } from "@fluentui/react-components";
+import { ArrowClockwise20Regular, Play20Regular, Pause20Regular, ChevronDown16Regular } from "@fluentui/react-icons";
 import nlsHPCC from "src/nlsHPCC";
 import { DateTimeInput } from "./Fields";
 
@@ -97,11 +97,9 @@ export const SuperDatePicker: React.FunctionComponent<SuperDatePickerProps> = ({
     showRefreshButton = true,
     disabled = false
 }) => {
-    const theme = useTheme();
     const [isCalloutVisible, setIsCalloutVisible] = React.useState(false);
     const [tempStartDate, setTempStartDate] = React.useState<string>("");
     const [tempEndDate, setTempEndDate] = React.useState<string>("");
-    const datePickerButtonRef = React.useRef<HTMLDivElement>(null);
 
     // handles auto-refresh
     React.useEffect(() => {
@@ -135,7 +133,6 @@ export const SuperDatePicker: React.FunctionComponent<SuperDatePickerProps> = ({
         // initialize temp dates with current values
         setTempStartDate(startDate ? (typeof startDate === "string" ? startDate : startDate.toISOString().slice(0, 16)) : "");
         setTempEndDate(endDate ? (typeof endDate === "string" ? endDate : endDate.toISOString().slice(0, 16)) : "");
-        setIsCalloutVisible(true);
     }, [startDate, endDate]);
 
     const handleAutoRefreshToggle = React.useCallback(() => {
@@ -172,183 +169,151 @@ export const SuperDatePicker: React.FunctionComponent<SuperDatePickerProps> = ({
         return nlsHPCC.SelectDateRange;
     }, [startDate, endDate]);
 
-    const buttonStyles: IButtonStyles = {
-        root: {
-            height: "32px",
-            minWidth: "auto",
-            padding: "0 8px"
-        }
+    const buttonStyle: React.CSSProperties = {
+        height: 32,
+        minWidth: "auto",
+        padding: "0 8px"
     };
 
-    return <StackShim horizontal verticalAlign="center" tokens={{ childrenGap: 8 }}>
-        <div ref={datePickerButtonRef}>
-            <button
-                disabled={disabled}
-                type="button"
-                style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "4px 8px",
-                    border: `1px solid ${theme.palette.neutralTertiary}`,
-                    borderRadius: "2px",
-                    backgroundColor: theme.palette.white,
-                    cursor: disabled ? "not-allowed" : "pointer",
-                    opacity: disabled ? 0.6 : 1,
-                    minWidth: "200px"
-                }}
-                onClick={handleShowCallout}
-            >
-                <Text
-                    styles={{
-                        root: {
-                            fontSize: "14px",
-                            color: disabled ? theme.palette.neutralTertiary : theme.palette.neutralPrimary,
-                            fontWeight: FontWeights.regular,
+    return <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "8px" }}>
+        <Popover
+            open={isCalloutVisible}
+            onOpenChange={(_, data) => {
+                if (data.open) {
+                    handleShowCallout();
+                }
+                setIsCalloutVisible(data.open);
+            }}
+            positioning="below-start"
+            withArrow
+        >
+            <PopoverTrigger disableButtonEnhancement>
+                <button
+                    disabled={disabled}
+                    type="button"
+                    style={{
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "4px 8px",
+                        border: `1px solid ${tokens.colorNeutralStroke1}`,
+                        borderRadius: "2px",
+                        backgroundColor: tokens.colorNeutralBackground1,
+                        cursor: disabled ? "not-allowed" : "pointer",
+                        opacity: disabled ? 0.6 : 1,
+                        minWidth: "200px"
+                    }}
+                >
+                    <Text
+                        size={300}
+                        weight="regular"
+                        style={{
+                            color: disabled ? tokens.colorNeutralForeground3 : tokens.colorNeutralForeground1,
                             flex: 1,
                             marginRight: 4,
                             textOverflow: "ellipsis",
                             overflow: "hidden",
                             whiteSpace: "nowrap"
-                        }
-                    }}
-                >
-                    {currentDisplayText}
-                </Text>
-                <Icon
-                    iconName="ChevronDown"
-                    styles={{
-                        root: {
-                            fontSize: "12px",
-                            color: disabled ? theme.palette.neutralTertiary : theme.palette.neutralSecondary
-                        }
-                    }}
-                />
-            </button>
-        </div>
-
-        {showRefreshButton && (
-            <CommandBarButton text={nlsHPCC.Refresh} iconProps={{ iconName: "Refresh" }} onClick={onRefresh} disabled={disabled} styles={buttonStyles} />
-        )}
-
-        {showAutoRefresh && (
-            <StackShim horizontal verticalAlign="center" tokens={{ childrenGap: 4 }}>
-                <CommandBarButton
-                    text={autoRefresh ? `${nlsHPCC.AutoRefresh}: ${nlsHPCC.On.toUpperCase()}` : `${nlsHPCC.AutoRefresh}: ${nlsHPCC.Off.toUpperCase()}`}
-                    iconProps={{ iconName: autoRefresh ? "Play" : "Pause" }}
-                    onClick={handleAutoRefreshToggle}
-                    disabled={disabled}
-                    styles={{
-                        root: {
-                            height: "32px",
-                            minWidth: "auto",
-                            padding: "0 8px",
-                            backgroundColor: autoRefresh ? theme.palette.themeLighterAlt : undefined
-                        }
-                    }}
-                />
-            </StackShim>
-        )}
-
-        <Callout
-            target={datePickerButtonRef}
-            isBeakVisible
-            directionalHint={DirectionalHint.bottomLeftEdge}
-            hidden={!isCalloutVisible}
-            onDismiss={() => setIsCalloutVisible(false)}
-            styles={{
-                root: {
-                    padding: 0
-                },
-                calloutMain: {
-                    padding: "16px",
-                    minWidth: "400px",
-                    maxWidth: "500px"
-                }
-            }}
-        >
-            <StackShim tokens={{ childrenGap: 12 }}>
-                <StackShim tokens={{ childrenGap: 8 }}>
-                    <Text styles={{ root: { fontWeight: FontWeights.semibold, fontSize: "14px" } }}>
-                        {nlsHPCC.QuickSelect}
+                        }}
+                    >
+                        {currentDisplayText}
                     </Text>
-                    <StackShim horizontal wrap tokens={{ childrenGap: 8 }}>
-                        {defaultQuickOptions.map((option) => (
-                            <DefaultButton
-                                key={option.value}
-                                text={option.label}
-                                onClick={() => handleQuickSelect(option)}
-                                styles={{
-                                    root: {
-                                        fontSize: "12px",
-                                        height: "28px",
-                                        minWidth: "auto",
-                                        padding: "0 12px"
-                                    }
-                                }}
-                            />
-                        ))}
-                    </StackShim>
-                </StackShim>
+                    <ChevronDown16Regular
+                        style={{
+                            color: disabled ? tokens.colorNeutralForeground3 : tokens.colorNeutralForeground2
+                        }}
+                    />
+                </button>
+            </PopoverTrigger>
+            <PopoverSurface style={{ padding: "16px", minWidth: "400px", maxWidth: "500px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                        <Text size={300} weight="semibold">
+                            {nlsHPCC.QuickSelect}
+                        </Text>
+                        <div style={{ display: "flex", flexDirection: "row", flexWrap: "wrap", gap: "8px" }}>
+                            {defaultQuickOptions.map((option) => (
+                                <Button
+                                    key={option.value}
+                                    onClick={() => handleQuickSelect(option)}
+                                    style={{ fontSize: "12px", height: "28px", minWidth: "auto", padding: "0 12px" }}
+                                >{option.label}</Button>
+                            ))}
+                        </div>
+                    </div>
 
-                <Separator />
+                    <Divider />
 
-                <StackShim tokens={{ childrenGap: 8 }}>
-                    <Text styles={{ root: { fontWeight: FontWeights.semibold, fontSize: "14px" } }}>
-                        {nlsHPCC.CustomRange}
-                    </Text>
-                    <StackShim horizontal tokens={{ childrenGap: 12 }} verticalAlign="end">
-                        <StackShim tokens={{ childrenGap: 4 }} styles={{ root: { flex: 1 } }}>
-                            <Text styles={{ root: { fontSize: "12px", fontWeight: FontWeights.regular } }}>
-                                {nlsHPCC.FromDate}
-                            </Text>
-                            <DateTimeInput value={tempStartDate} onChange={setTempStartDate} style={{ width: "100%" }} />
-                        </StackShim>
-                        <StackShim tokens={{ childrenGap: 4 }} styles={{ root: { flex: 1 } }}>
-                            <Text styles={{ root: { fontSize: "12px", fontWeight: FontWeights.regular } }}>
-                                {nlsHPCC.ToDate}
-                            </Text>
-                            <DateTimeInput value={tempEndDate} onChange={setTempEndDate} style={{ width: "100%" }} />
-                        </StackShim>
-                    </StackShim>
-                </StackShim>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                        <Text size={300} weight="semibold">
+                            {nlsHPCC.CustomRange}
+                        </Text>
+                        <div style={{ display: "flex", flexDirection: "row", gap: "12px", alignItems: "flex-end" }}>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "4px", flex: 1 }}>
+                                <Text size={200} weight="regular">
+                                    {nlsHPCC.FromDate}
+                                </Text>
+                                <DateTimeInput value={tempStartDate} onChange={setTempStartDate} style={{ width: "100%" }} />
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "4px", flex: 1 }}>
+                                <Text size={200} weight="regular">
+                                    {nlsHPCC.ToDate}
+                                </Text>
+                                <DateTimeInput value={tempEndDate} onChange={setTempEndDate} style={{ width: "100%" }} />
+                            </div>
+                        </div>
+                    </div>
 
-                {showAutoRefresh && (
-                    <>
-                        <Separator />
-                        <StackShim tokens={{ childrenGap: 8 }}>
-                            <Text styles={{ root: { fontWeight: FontWeights.semibold, fontSize: "14px" } }}>
-                                {nlsHPCC.AutoRefresh}
-                            </Text>
-                            <StackShim horizontal wrap tokens={{ childrenGap: 8 }}>
-                                {autoRefreshOptions.map((option) => (
-                                    <DefaultButton
-                                        key={option.value}
-                                        text={option.label}
-                                        onClick={() => handleAutoRefreshIntervalChange(option.value)}
-                                        styles={{
-                                            root: {
+                    {showAutoRefresh && (
+                        <>
+                            <Divider />
+                            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                                <Text size={300} weight="semibold">
+                                    {nlsHPCC.AutoRefresh}
+                                </Text>
+                                <div style={{ display: "flex", flexDirection: "row", flexWrap: "wrap", gap: "8px" }}>
+                                    {autoRefreshOptions.map((option) => (
+                                        <Button
+                                            key={option.value}
+                                            onClick={() => handleAutoRefreshIntervalChange(option.value)}
+                                            style={{
                                                 fontSize: "12px",
                                                 height: "28px",
                                                 minWidth: "auto",
                                                 padding: "0 12px",
-                                                backgroundColor: autoRefreshInterval === option.value ? theme.palette.themeLighter : undefined,
-                                                borderColor: autoRefreshInterval === option.value ? theme.palette.themePrimary : undefined
-                                            }
-                                        }}
-                                    />
-                                ))}
-                            </StackShim>
-                        </StackShim>
-                    </>
-                )}
+                                                backgroundColor: autoRefreshInterval === option.value ? tokens.colorBrandBackground2 : undefined,
+                                                borderColor: autoRefreshInterval === option.value ? tokens.colorBrandBackground : undefined
+                                            }}
+                                        >{option.label}</Button>
+                                    ))}
+                                </div>
+                            </div>
+                        </>
+                    )}
 
-                <StackShim horizontal horizontalAlign="end" tokens={{ childrenGap: 8 }}>
-                    <DefaultButton text={nlsHPCC.Cancel} onClick={() => setIsCalloutVisible(false)} />
-                    <PrimaryButton text={nlsHPCC.Apply} onClick={handleCustomDateApply} />
-                </StackShim>
-            </StackShim>
-        </Callout>
-    </StackShim>;
+                    <div style={{ display: "flex", flexDirection: "row", justifyContent: "flex-end", gap: "8px" }}>
+                        <Button onClick={() => setIsCalloutVisible(false)}>{nlsHPCC.Cancel}</Button>
+                        <Button appearance="primary" onClick={handleCustomDateApply}>{nlsHPCC.Apply}</Button>
+                    </div>
+                </div>
+            </PopoverSurface>
+        </Popover>
+
+        {showRefreshButton && (
+            <Button appearance="subtle" icon={<ArrowClockwise20Regular />} onClick={onRefresh} disabled={disabled} style={buttonStyle}>{nlsHPCC.Refresh}</Button>
+        )}
+
+        {showAutoRefresh && (
+            <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "4px" }}>
+                <Button
+                    appearance="subtle"
+                    icon={autoRefresh ? <Play20Regular /> : <Pause20Regular />}
+                    onClick={handleAutoRefreshToggle}
+                    disabled={disabled}
+                    style={{ ...buttonStyle, backgroundColor: autoRefresh ? tokens.colorBrandBackground2 : undefined }}
+                >{autoRefresh ? `${nlsHPCC.AutoRefresh}: ${nlsHPCC.On.toUpperCase()}` : `${nlsHPCC.AutoRefresh}: ${nlsHPCC.Off.toUpperCase()}`}</Button>
+            </div>
+        )}
+    </div>;
 };

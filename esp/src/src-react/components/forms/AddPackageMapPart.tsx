@@ -1,6 +1,5 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, PrimaryButton, Spinner, TextField, } from "@fluentui/react";
-import { StackShim } from "@fluentui/react-migration-v8-v9";
+import { Button, Checkbox, Field, Input, Spinner, Textarea } from "@fluentui/react-components";
 import { useForm, Controller } from "react-hook-form";
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsPackageMaps from "src/WsPackageMaps";
@@ -91,25 +90,24 @@ export const AddPackageMapPart: React.FunctionComponent<AddPackageMapPartProps> 
 
     return <MessageBox title={nlsHPCC.AddProcessMap} show={showForm} setShow={closeForm}
         footer={<>
-            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
-            <PrimaryButton text={nlsHPCC.Submit} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
-            <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="after" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <Button appearance="primary" disabled={submitDisabled} onClick={handleSubmit(onSubmit)}>{nlsHPCC.Submit}</Button>
+            <Button onClick={() => closeForm()}>{nlsHPCC.Cancel}</Button>
         </>}>
-        <StackShim>
+        <div style={{ display: "flex", flexDirection: "column" }}>
             <Controller
                 control={control} name="PartName"
                 render={({
                     field: { onChange, name: fieldName, value },
                     fieldState: { error }
-                }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
-                        placeholder={nlsHPCC.PartName}
-                        required={true}
-                        label={nlsHPCC.PartName}
-                        value={value}
-                        errorMessage={error && error?.message}
-                    />}
+                }) => <Field label={nlsHPCC.PartName} required validationMessage={error?.message}>
+                        <Input
+                            name={fieldName}
+                            value={value}
+                            placeholder={nlsHPCC.PartName}
+                            onChange={(_, data) => onChange(data.value)}
+                        />
+                    </Field>}
                 rules={{
                     required: nlsHPCC.ValidationErrorRequired
                 }}
@@ -119,16 +117,14 @@ export const AddPackageMapPart: React.FunctionComponent<AddPackageMapPartProps> 
                 render={({
                     field: { onChange, name: fieldName, value },
                     fieldState: { error }
-                }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
-                        required={true}
-                        label={nlsHPCC.Content}
-                        value={value}
-                        multiline={true}
-                        rows={16}
-                        errorMessage={error && error?.message}
-                    />}
+                }) => <Field label={nlsHPCC.Content} required validationMessage={error?.message}>
+                        <Textarea
+                            name={fieldName}
+                            value={value}
+                            rows={16}
+                            onChange={(_, data) => onChange(data.value)}
+                        />
+                    </Field>}
                 rules={{
                     required: nlsHPCC.ValidationErrorRequired
                 }}
@@ -138,33 +134,35 @@ export const AddPackageMapPart: React.FunctionComponent<AddPackageMapPartProps> 
                 render={({
                     field: { onChange, name: fieldName, value },
                     fieldState: { error }
-                }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
-                        placeholder={nlsHPCC.DaliIP}
-                        label={nlsHPCC.DaliIP}
-                        value={value}
-                    />}
+                }) => <Field label={nlsHPCC.DaliIP}>
+                        <Input
+                            name={fieldName}
+                            value={value}
+                            placeholder={nlsHPCC.DaliIP}
+                            onChange={(_, data) => onChange(data.value)}
+                        />
+                    </Field>}
             />
             <Controller
                 control={control} name="SourceProcess"
                 render={({
                     field: { onChange, name: fieldName, value },
                     fieldState: { error }
-                }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
-                        placeholder={nlsHPCC.SourceProcess}
-                        label={nlsHPCC.SourceProcess}
-                        value={value}
-                    />}
+                }) => <Field label={nlsHPCC.SourceProcess}>
+                        <Input
+                            name={fieldName}
+                            value={value}
+                            placeholder={nlsHPCC.SourceProcess}
+                            onChange={(_, data) => onChange(data.value)}
+                        />
+                    </Field>}
             />
             <div style={{ paddingTop: "15px" }}>
                 <Controller
                     control={control} name="DeletePrevious"
                     render={({
                         field: { onChange, name: fieldName, value }
-                    }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.DeletePrevious} />}
+                    }) => <Checkbox name={fieldName} checked={value} onChange={(_, data) => onChange(data.checked)} label={nlsHPCC.DeletePrevious} />}
                 />
             </div>
             <div style={{ paddingTop: "10px" }}>
@@ -172,7 +170,7 @@ export const AddPackageMapPart: React.FunctionComponent<AddPackageMapPartProps> 
                     control={control} name="AllowForeignFiles"
                     render={({
                         field: { onChange, name: fieldName, value }
-                    }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.AllowForeignFiles} />}
+                    }) => <Checkbox name={fieldName} checked={value} onChange={(_, data) => onChange(data.checked)} label={nlsHPCC.AllowForeignFiles} />}
                 />
             </div>
             <div style={{ paddingTop: "10px" }}>
@@ -180,7 +178,7 @@ export const AddPackageMapPart: React.FunctionComponent<AddPackageMapPartProps> 
                     control={control} name="PreloadAllPackages"
                     render={({
                         field: { onChange, name: fieldName, value }
-                    }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.PreloadAllPackages} />}
+                    }) => <Checkbox name={fieldName} checked={value} onChange={(_, data) => onChange(data.checked)} label={nlsHPCC.PreloadAllPackages} />}
                 />
             </div>
             <div style={{ paddingTop: "10px" }}>
@@ -188,7 +186,7 @@ export const AddPackageMapPart: React.FunctionComponent<AddPackageMapPartProps> 
                     control={control} name="UpdateSuperFiles"
                     render={({
                         field: { onChange, name: fieldName, value }
-                    }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.UpdateSuperFiles} />}
+                    }) => <Checkbox name={fieldName} checked={value} onChange={(_, data) => onChange(data.checked)} label={nlsHPCC.UpdateSuperFiles} />}
                 />
             </div>
             <div style={{ paddingTop: "10px" }}>
@@ -196,7 +194,7 @@ export const AddPackageMapPart: React.FunctionComponent<AddPackageMapPartProps> 
                     control={control} name="UpdateCloneFrom"
                     render={({
                         field: { onChange, name: fieldName, value }
-                    }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.UpdateCloneFrom} />}
+                    }) => <Checkbox name={fieldName} checked={value} onChange={(_, data) => onChange(data.checked)} label={nlsHPCC.UpdateCloneFrom} />}
                 />
             </div>
             <div style={{ paddingTop: "10px" }}>
@@ -204,9 +202,9 @@ export const AddPackageMapPart: React.FunctionComponent<AddPackageMapPartProps> 
                     control={control} name="AppendCluster"
                     render={({
                         field: { onChange, name: fieldName, value }
-                    }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.AppendCluster} />}
+                    }) => <Checkbox name={fieldName} checked={value} onChange={(_, data) => onChange(data.checked)} label={nlsHPCC.AppendCluster} />}
                 />
             </div>
-        </StackShim>
+        </div>
     </MessageBox>;
 };

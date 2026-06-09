@@ -1,6 +1,5 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, mergeStyleSets, PrimaryButton, Spinner, TextField, } from "@fluentui/react";
-import { StackShim } from "@fluentui/react-migration-v8-v9";
+import { Button, Checkbox, Field, Input, Spinner } from "@fluentui/react-components";
 import { useConst } from "@fluentui/react-hooks";
 import { useForm, Controller } from "react-hook-form";
 import { FileSprayService, FileSprayStates } from "@hpcc-js/comms";
@@ -103,14 +102,7 @@ export const RenameFile: React.FunctionComponent<RenameFileProps> = ({
         )();
     }, [closeForm, handleSubmit, logicalFiles, refreshGrid, service]);
 
-    const componentStyles = mergeStyleSets(
-        FormStyles.componentStyles,
-        {
-            container: {
-                minWidth: 440,
-            }
-        }
-    );
+    const componentStyles = FormStyles.useComponentStyles();
 
     React.useEffect(() => {
         const _files = [];
@@ -123,32 +115,31 @@ export const RenameFile: React.FunctionComponent<RenameFileProps> = ({
 
     return <MessageBox title={nlsHPCC.Rename} show={showForm} setShow={closeForm}
         footer={<>
-            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
-            <PrimaryButton text={nlsHPCC.Rename} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
-            <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="after" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <Button appearance="primary" disabled={submitDisabled} onClick={handleSubmit(onSubmit)}>{nlsHPCC.Rename}</Button>
+            <Button onClick={() => closeForm()}>{nlsHPCC.Cancel}</Button>
         </>}>
-        <StackShim>
+        <div style={{ display: "flex", flexDirection: "column" }}>
             {logicalFiles?.length === 1 &&
                 <Controller
                     control={control} name="targetRenameFile.0.name"
                     render={({
                         field: { onChange, name: fieldName, value },
                         fieldState: { error }
-                    }) => <TextField
-                            name={fieldName}
-                            onChange={onChange}
-                            required={true}
-                            label={nlsHPCC.TargetName}
-                            value={value}
-                            errorMessage={error && error.message}
-                        />}
+                    }) => <Field label={nlsHPCC.TargetName} required validationMessage={error?.message}>
+                            <Input
+                                name={fieldName}
+                                value={value}
+                                onChange={(_, data) => onChange(data.value)}
+                            />
+                        </Field>}
                     rules={{
                         required: nlsHPCC.ValidationErrorRequired
                     }}
                 />
             }
             {logicalFiles?.length > 1 &&
-                <StackShim>
+                <div style={{ display: "flex", flexDirection: "column" }}>
                     <table className={`${componentStyles.twoColumnTable} ${componentStyles.selectionTable}`}>
                         <thead>
                             <tr>
@@ -164,12 +155,13 @@ export const RenameFile: React.FunctionComponent<RenameFileProps> = ({
                                             render={({
                                                 field: { onChange, name: fieldName, value: file },
                                                 fieldState: { error }
-                                            }) => <TextField
-                                                    name={fieldName}
-                                                    onChange={onChange}
-                                                    value={file}
-                                                    errorMessage={error && error?.message}
-                                                />}
+                                            }) => <Field validationMessage={error?.message}>
+                                                    <Input
+                                                        name={fieldName}
+                                                        value={file}
+                                                        onChange={(_, data) => onChange(data.value)}
+                                                    />
+                                                </Field>}
                                             rules={{
                                                 required: nlsHPCC.ValidationErrorTargetNameRequired
                                             }}
@@ -179,16 +171,16 @@ export const RenameFile: React.FunctionComponent<RenameFileProps> = ({
                             })}
                         </tbody>
                     </table>
-                </StackShim>
+                </div>
             }
             <div style={{ paddingTop: "15px" }}>
                 <Controller
                     control={control} name="overwrite"
                     render={({
                         field: { onChange, name: fieldName, value }
-                    }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.Overwrite} />}
+                    }) => <Checkbox name={fieldName} checked={value} onChange={(_, data) => onChange(data.checked)} label={nlsHPCC.Overwrite} />}
                 />
             </div>
-        </StackShim>
+        </div>
     </MessageBox>;
 };

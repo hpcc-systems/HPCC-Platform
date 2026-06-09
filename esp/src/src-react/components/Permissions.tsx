@@ -1,11 +1,10 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
 import { useConst } from "@fluentui/react-hooks";
 import { tokens } from "@fluentui/react-components";
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsAccess from "src/ws_access";
 import nlsHPCC from "src/nlsHPCC";
-import { ShortVerticalDivider } from "./Common";
 import { useConfirm } from "../hooks/confirm";
 import { useBuildInfo } from "../hooks/platform";
 import { DojoGrid, selector, tree } from "./DojoGrid";
@@ -177,7 +176,7 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => refreshTable()
         },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider },
         {
             key: "add", text: nlsHPCC.Add,
             onClick: () => setShowAddPermission(true)
@@ -186,7 +185,7 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
             key: "delete", text: nlsHPCC.Delete, disabled: !uiState.canDelete,
             onClick: () => setShowDeleteConfirm(true)
         },
-        { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_2", itemType: ContextualMenuItemType.Divider },
         {
             key: "clearPermissions", text: nlsHPCC.ClearPermissionsCache,
             onClick: () => setShowClearPermissionsConfirm(true)
@@ -223,7 +222,7 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
 
     return <>
         <HolyGrail
-            header={<CommandBar items={buttons} overflowButtonProps={{}} />}
+            header={<CommandBar items={buttons} />}
             main={<DojoGrid store={gridStore} query={gridQuery} sort={gridSort} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} overrides={{ selectionMode: "none" }} />}
         />
         <DeleteConfirm />

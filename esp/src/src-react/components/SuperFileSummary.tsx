@@ -1,12 +1,12 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, ScrollablePane, ScrollbarVisibility, Sticky, StickyPositionType } from "@fluentui/react";
+import { Sticky, StickyPositionType } from "./controls/ScrollablePane";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
 import { DFUService, WsDfu } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import * as Utility from "src/Utility";
 import { useConfirm } from "../hooks/confirm";
 import { useFile } from "../hooks/file";
-import { ShortVerticalDivider } from "./Common";
 import { TableGroup } from "./forms/Groups";
 import { CopyFile } from "./forms/CopyFile";
 import { replaceUrl } from "../util/history";
@@ -68,7 +68,7 @@ export const SuperFileSummary: React.FunctionComponent<SuperFileSummaryProps> = 
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => refreshData()
         },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider },
         {
             key: "save", text: nlsHPCC.Save, iconProps: { iconName: "Save" }, disabled: !canSave,
             onClick: () => {
@@ -86,7 +86,7 @@ export const SuperFileSummary: React.FunctionComponent<SuperFileSummaryProps> = 
             key: "delete", text: nlsHPCC.DeleteSuperfile, iconProps: { iconName: "Delete" }, disabled: !file,
             onClick: () => setShowDeleteConfirm(true)
         },
-        { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_2", itemType: ContextualMenuItemType.Divider },
         {
             key: "copyFile", text: nlsHPCC.Copy, disabled: !file,
             onClick: () => setShowCopyFile(true)
@@ -97,39 +97,35 @@ export const SuperFileSummary: React.FunctionComponent<SuperFileSummaryProps> = 
     const compressedImage = file?.IsCompressed ? Utility.getImageURL("compressed.png") : "";
 
     return <>
-        <ScrollablePane scrollbarVisibility={ScrollbarVisibility.auto}>
-            <Sticky stickyPosition={StickyPositionType.Header}>
-                <CommandBar items={buttons} />
-            </Sticky>
-            <Sticky stickyPosition={StickyPositionType.Header}>
-                <div style={{ display: "inline-block" }}>
-                    <h2>
-                        <img src={compressedImage} />&nbsp;
-                        <img src={protectedImage} />&nbsp;
-                        {file?.Name}
-                    </h2>
-                </div>
-            </Sticky>
-            <TableGroup fields={{
-                "Description": { label: nlsHPCC.Description, type: "string", value: description, multiline: true },
-                "Filesize": { label: nlsHPCC.FileSize, type: "string", value: file?.Filesize, readonly: true },
-                "isProtected": { label: nlsHPCC.Protected, type: "checkbox", value: _protected },
-                "IsCompressed": { label: nlsHPCC.IsCompressed, type: "checkbox", value: file?.IsCompressed, readonly: true },
-                "PercentCompressed": { label: nlsHPCC.PercentCompressed, type: "string", value: file?.PercentCompressed, readonly: true },
-            }} onChange={(id, value) => {
-                switch (id) {
-                    case "Description":
-                        setDescription(value);
-                        break;
-                    case "isProtected":
-                        setProtected(value);
-                        file?.update({
-                            Protect: value ? WsDfu.DFUChangeProtection.Protect : WsDfu.DFUChangeProtection.Unprotect,
-                        }).catch(err => logger.error(err));
-                        break;
-                }
-            }} />
-        </ScrollablePane>
+        <Sticky stickyPosition={StickyPositionType.Header}>
+            <CommandBar items={buttons} />
+            <div style={{ display: "inline-block" }}>
+                <h2>
+                    <img src={compressedImage} />&nbsp;
+                    <img src={protectedImage} />&nbsp;
+                    {file?.Name}
+                </h2>
+            </div>
+        </Sticky>
+        <TableGroup fields={{
+            "Description": { label: nlsHPCC.Description, type: "string", value: description, multiline: true },
+            "Filesize": { label: nlsHPCC.FileSize, type: "string", value: file?.Filesize, readonly: true },
+            "isProtected": { label: nlsHPCC.Protected, type: "checkbox", value: _protected },
+            "IsCompressed": { label: nlsHPCC.IsCompressed, type: "checkbox", value: file?.IsCompressed, readonly: true },
+            "PercentCompressed": { label: nlsHPCC.PercentCompressed, type: "string", value: file?.PercentCompressed, readonly: true },
+        }} onChange={(id, value) => {
+            switch (id) {
+                case "Description":
+                    setDescription(value);
+                    break;
+                case "isProtected":
+                    setProtected(value);
+                    file?.update({
+                        Protect: value ? WsDfu.DFUChangeProtection.Protect : WsDfu.DFUChangeProtection.Unprotect,
+                    }).catch(err => logger.error(err));
+                    break;
+            }
+        }} />
         <CopyFile logicalFiles={[logicalFile]} showForm={showCopyFile} setShowForm={setShowCopyFile} />
         <DeleteConfirm />
     </>;

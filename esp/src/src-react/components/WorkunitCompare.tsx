@@ -1,12 +1,11 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
 import { Input, Label, makeStyles } from "@fluentui/react-components";
 import nlsHPCC from "src/nlsHPCC";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { ReflexContainer, ReflexElement, ReflexSplitter } from "../layouts/react-reflex";
+import { DockPanel, DockPanelItem } from "../layouts/DockPanel";
 import { hashHistory, pushUrl } from "../util/history";
 import { WorkunitDetails } from "./WorkunitDetails";
-import { ShortVerticalDivider } from "./Common";
 
 const useStyles = makeStyles({
     wuidInput: {
@@ -80,7 +79,7 @@ export const WorkunitCompare: React.FunctionComponent<WorkunitCompareProps> = ({
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => handleLoad()
         },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider },
         ...localWuids.map((wuid, index) => ({
             key: `wuid${index}`,
             onRender: () => <span className={styles.wuidField}>
@@ -99,10 +98,9 @@ export const WorkunitCompare: React.FunctionComponent<WorkunitCompareProps> = ({
     return <HolyGrail
         header={<CommandBar items={toolbar} />}
         main={
-            <ReflexContainer orientation="vertical">
-                {wuids.flatMap((wuid, index) => {
-                    const key = `${wuid}-${index}`;
-                    const pane = <ReflexElement key={key}>
+            <DockPanel hideSingleTabs={true}>
+                {wuids.map((wuid, index) => (
+                    <DockPanelItem key={`wu-${index}`} title={wuid || nlsHPCC.WUID} location={index > 0 ? "split-right" : undefined} relativeTo={index > 0 ? `wu-${index - 1}` : undefined}>
                         <WorkunitDetails
                             wuid={wuid}
                             urlWuid={urlWuid}
@@ -112,10 +110,9 @@ export const WorkunitCompare: React.FunctionComponent<WorkunitCompareProps> = ({
                             state={state}
                             queryParams={queryParams}
                         />
-                    </ReflexElement>;
-                    return index > 0 ? [<ReflexSplitter key={`splitter-${key}`} />, pane] : [pane];
-                })}
-            </ReflexContainer>
+                    </DockPanelItem>
+                ))}
+            </DockPanel>
         }
     />;
 };

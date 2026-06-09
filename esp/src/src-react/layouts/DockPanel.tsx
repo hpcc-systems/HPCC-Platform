@@ -1,13 +1,9 @@
 import * as React from "react";
-import { Theme } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
-import { Theme as ThemeV9 } from "@fluentui/react-components";
 import { HTMLWidget, Widget, Utility } from "@hpcc-js/common";
 import { DockPanel as HPCCDockPanel, IClosable, WidgetAdapter } from "@hpcc-js/phosphor";
 import { compare2 } from "@hpcc-js/util";
-import { ReactRoot } from "src/react/render";
-import { lightTheme, lightThemeV9 } from "../themes";
-import { useUserTheme } from "../hooks/theme";
+import { addPortal, removePortal, updatePortal } from "src/react/portalStore";
 import { AutosizeHpccJSComponent } from "./HpccJSAdapter";
 
 export interface PlaceholderProps {
@@ -22,31 +18,12 @@ export const Placeholder: React.FunctionComponent<PlaceholderProps> = ({
 
 export class ReactWidget extends HTMLWidget {
 
-    protected _theme: Theme = lightTheme;
-    protected _themeV9: ThemeV9 = lightThemeV9;
     protected _children = <div></div>;
 
     protected _div;
-    protected _root: ReactRoot;
 
     constructor() {
         super();
-    }
-
-    theme(): Theme;
-    theme(_: Theme): this;
-    theme(_?: Theme): this | Theme {
-        if (arguments.length === 0) return this._theme;
-        this._theme = _;
-        return this;
-    }
-
-    themeV9(): ThemeV9;
-    themeV9(_: ThemeV9): this;
-    themeV9(_?: ThemeV9): this | ThemeV9 {
-        if (arguments.length === 0) return this._themeV9;
-        this._themeV9 = _;
-        return this;
     }
 
     children(): React.JSX.Element;
@@ -60,7 +37,7 @@ export class ReactWidget extends HTMLWidget {
     enter(domNode, element) {
         super.enter(domNode, element);
         this._div = element.append("div");
-        this._root = ReactRoot.create(this._div.node());
+        addPortal(this.id(), this._div.node());
     }
 
     update(domNode, element) {
@@ -69,11 +46,11 @@ export class ReactWidget extends HTMLWidget {
             .style("width", `${this.width()}px`)
             .style("height", `${this.height()}px`)
             ;
-        this._root?.themedRender(Placeholder, { children: this._children });
+        updatePortal(this.id(), <Placeholder>{this._children}</Placeholder>);
     }
 
     exit(domNode, element) {
-        this._root?.dispose();
+        removePortal(this.id());
         super.exit(domNode, element);
     }
 
@@ -103,6 +80,11 @@ export class ResetableDockPanel extends HPCCDockPanel {
     protected _origLayout: DockPanelLayout | undefined;
     protected _lastLayout: DockPanelLayout | undefined;
     protected _visibility: { [id: string]: boolean };
+    protected _disposed = false;
+
+    markDisposed() {
+        this._disposed = true;
+    }
 
     resetLayout() {
         if (this._origLayout) {
@@ -164,7 +146,9 @@ export class ResetableDockPanel extends HPCCDockPanel {
 
     //  Exposed Events  ---
     private _lazyVisibilityChanged = Utility.debounce(async () => {
-        this.visibilityChanged(this._visibility);
+        if (!this._disposed) {
+            this.visibilityChanged(this._visibility);
+        }
     }, 60);
 
     visibilityChanged(visibility: { [id: string]: boolean }) {
@@ -207,21 +191,34 @@ export const DockPanel: React.FunctionComponent<DockPanelProps> = ({
         return (Array.isArray(children) ? children : [children]).filter(item => !!item);
     }, [children]);
     const [prevItems, setPrevItems] = React.useState<React.ReactElement<DockPanelItemProps>[]>([]);
-    const { theme, themeV9 } = useUserTheme();
     const idx = useConst(() => new Map<string, ReactWidget>());
+
+    // Keep refs to the latest callbacks to avoid stale closures
+    const onDockPanelCreateRef = React.useRef(onDockPanelCreate);
+    onDockPanelCreateRef.current = onDockPanelCreate;
+
+    const onDockPanelVisibilityChangedRef = React.useRef(onDockPanelVisibilityChanged);
+    onDockPanelVisibilityChangedRef.current = onDockPanelVisibilityChanged;
 
     const dockPanel = useConst(() => {
         const retVal = new ResetableDockPanel();
-        if (onDockPanelCreate) {
-            setTimeout(() => {
-                onDockPanelCreate(retVal);
-            }, 0);
-        }
-        if (onDockPanelVisibilityChanged) {
-            retVal.on("visibilityChanged", visibility => onDockPanelVisibilityChanged(visibility), true);
-        }
+        retVal.on("visibilityChanged", visibility => onDockPanelVisibilityChangedRef.current?.(visibility), true);
         return retVal;
     });
+
+    // Call onCreate once after mount, with cleanup for the pending timeout and disposal on unmount
+    React.useEffect(() => {
+        let timeoutId: ReturnType<typeof setTimeout> | undefined;
+        if (onDockPanelCreateRef.current) {
+            timeoutId = setTimeout(() => {
+                onDockPanelCreateRef.current?.(dockPanel);
+            }, 0);
+        }
+        return () => {
+            if (timeoutId !== undefined) clearTimeout(timeoutId);
+            dockPanel.markDisposed();
+        };
+    }, [dockPanel]);
 
     React.useEffect(() => {
         dockPanel?.hideSingleTabs(hideSingleTabs);
@@ -230,13 +227,12 @@ export const DockPanel: React.FunctionComponent<DockPanelProps> = ({
     React.useEffect(() => {
         const diffs = compare2(prevItems, items, item => item.key);
         diffs.exit.forEach(item => {
+            const reactWidget = idx.get(item.key);
             idx.delete(item.key);
-            dockPanel.removeWidget(idx.get(item.key));
+            dockPanel.removeWidget(reactWidget);
         });
         diffs.enter.forEach(item => {
-            const reactWidget = new ReactWidget()
-                .id(item.key)
-                ;
+            const reactWidget = new ReactWidget();
             dockPanel.addWidget(reactWidget, item.props.title, item.props.location, idx.get(item.props.relativeTo), item.props.closable, item.props.padding);
             idx.set(item.key, reactWidget);
         });
@@ -244,15 +240,13 @@ export const DockPanel: React.FunctionComponent<DockPanelProps> = ({
             const reactWidget = idx.get(item.key);
             if (reactWidget) {
                 reactWidget
-                    .theme(theme)
-                    .themeV9(themeV9)
                     .children(item.props.children)
                     ;
             }
         });
         dockPanel.render();
         setPrevItems(items);
-    }, [prevItems, dockPanel, idx, items, theme, themeV9]);
+    }, [prevItems, dockPanel, idx, items]);
 
     React.useEffect(() => {
         if (layout === undefined) {

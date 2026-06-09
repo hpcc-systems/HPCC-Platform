@@ -1,5 +1,6 @@
 import * as React from "react";
-import { DefaultButton, MessageBar, MessageBarType, PrimaryButton, Spinner, TextField, } from "@fluentui/react";
+import { Button, Field, Input, MessageBar, MessageBarActions, MessageBarBody, Spinner } from "@fluentui/react-components";
+import { DismissRegular } from "@fluentui/react-icons";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, useWatch, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
@@ -86,23 +87,22 @@ export const AddUserForm: React.FunctionComponent<AddUserFormProps> = ({
 
     return <MessageBox show={showForm} setShow={closeForm} title={nlsHPCC.AddUser} minWidth={400}
         footer={<>
-            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
-            <PrimaryButton text={nlsHPCC.Add} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
-            <DefaultButton text={nlsHPCC.Cancel} onClick={() => { reset(defaultValues); closeForm(); }} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="after" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <Button appearance="primary" disabled={submitDisabled} onClick={handleSubmit(onSubmit)}>{nlsHPCC.Add}</Button>
+            <Button onClick={() => { reset(defaultValues); closeForm(); }}>{nlsHPCC.Cancel}</Button>
         </>}>
         <Controller
             control={control} name="username"
             render={({
                 field: { onChange, name: fieldName, value },
                 fieldState: { error }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    required={true}
-                    label={nlsHPCC.UserID}
-                    value={value}
-                    errorMessage={error && error?.message}
-                />}
+            }) => <Field label={nlsHPCC.UserID} required validationMessage={error?.message}>
+                    <Input
+                        name={fieldName}
+                        value={value}
+                        onChange={(_, data) => onChange(data.value)}
+                    />
+                </Field>}
             rules={{
                 required: nlsHPCC.ValidationErrorRequired
             }}
@@ -112,72 +112,69 @@ export const AddUserForm: React.FunctionComponent<AddUserFormProps> = ({
             render={({
                 field: { onChange, name: fieldName, value },
                 fieldState: { error }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    label={nlsHPCC.EmployeeID}
-                    value={value}
-                    errorMessage={error && error?.message}
-                />}
+            }) => <Field label={nlsHPCC.EmployeeID} validationMessage={error?.message}>
+                    <Input
+                        name={fieldName}
+                        value={value}
+                        onChange={(_, data) => onChange(data.value)}
+                    />
+                </Field>}
         />
         <Controller
             control={control} name="employeeNumber"
             render={({
                 field: { onChange, name: fieldName, value },
                 fieldState: { error }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    label={nlsHPCC.EmployeeNumber}
-                    value={value}
-                    errorMessage={error && error?.message}
-                />}
+            }) => <Field label={nlsHPCC.EmployeeNumber} validationMessage={error?.message}>
+                    <Input
+                        name={fieldName}
+                        value={value}
+                        onChange={(_, data) => onChange(data.value)}
+                    />
+                </Field>}
         />
         <Controller
             control={control} name="firstname"
             render={({
                 field: { onChange, name: fieldName, value },
                 fieldState: { error }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    label={nlsHPCC.FirstName}
-                    value={value}
-                    placeholder={nlsHPCC.PlaceholderFirstName}
-                    errorMessage={error && error?.message}
-                />}
+            }) => <Field label={nlsHPCC.FirstName} validationMessage={error?.message}>
+                    <Input
+                        name={fieldName}
+                        value={value}
+                        placeholder={nlsHPCC.PlaceholderFirstName}
+                        onChange={(_, data) => onChange(data.value)}
+                    />
+                </Field>}
         />
         <Controller
             control={control} name="lastname"
             render={({
                 field: { onChange, name: fieldName, value },
                 fieldState: { error }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    label={nlsHPCC.LastName}
-                    value={value}
-                    placeholder={nlsHPCC.PlaceholderLastName}
-                    errorMessage={error && error?.message}
-                />}
+            }) => <Field label={nlsHPCC.LastName} validationMessage={error?.message}>
+                    <Input
+                        name={fieldName}
+                        value={value}
+                        placeholder={nlsHPCC.PlaceholderLastName}
+                        onChange={(_, data) => onChange(data.value)}
+                    />
+                </Field>}
         />
         <Controller
             control={control} name="password1"
             render={({
                 field: { onChange, name: fieldName, value },
                 fieldState: { error }
-            }) => <TextField
-                    name={fieldName}
-                    type="password"
-                    autoComplete="off"
-                    onChange={onChange}
-                    required={true}
-                    label={nlsHPCC.Password}
-                    value={value}
-                    canRevealPassword
-                    revealPasswordAriaLabel={nlsHPCC.ShowPassword}
-                    errorMessage={error && error?.message}
-                />}
+            }) => <Field label={nlsHPCC.Password} required validationMessage={error?.message}>
+                    <Input
+                        name={fieldName}
+                        type="password"
+                        autoComplete="off"
+                        value={value}
+                        onChange={(_, data) => onChange(data.value)}
+                    />
+                </Field>}
             rules={{
                 required: nlsHPCC.ValidationErrorRequired
             }}
@@ -187,19 +184,15 @@ export const AddUserForm: React.FunctionComponent<AddUserFormProps> = ({
             render={({
                 field: { onChange, name: fieldName, value },
                 fieldState: { error }
-            }) => <TextField
-                    name={fieldName}
-                    type="password"
-                    autoComplete="off"
-                    onChange={onChange}
-                    required={true}
-                    label={nlsHPCC.RetypePassword}
-                    value={value}
-                    canRevealPassword
-                    revealPasswordAriaLabel={nlsHPCC.ShowPassword}
-                    errorMessage={error && error?.message}
-
-                />}
+            }) => <Field label={nlsHPCC.RetypePassword} required validationMessage={error?.message}>
+                    <Input
+                        name={fieldName}
+                        type="password"
+                        autoComplete="off"
+                        value={value}
+                        onChange={(_, data) => onChange(data.value)}
+                    />
+                </Field>}
             rules={{
                 required: nlsHPCC.ValidationErrorRequired,
                 validate: value => value === pwd1 || nlsHPCC.PasswordsDoNotMatch
@@ -207,10 +200,9 @@ export const AddUserForm: React.FunctionComponent<AddUserFormProps> = ({
         />
         {showError &&
             <div style={{ marginTop: 16 }}>
-                <MessageBar
-                    messageBarType={MessageBarType.error} isMultiline={true}
-                    onDismiss={() => setShowError(false)} dismissButtonAriaLabel="Close">
-                    {errorMessage}
+                <MessageBar intent="error">
+                    <MessageBarBody>{errorMessage}</MessageBarBody>
+                    <MessageBarActions containerAction={<Button onClick={() => setShowError(false)} aria-label="Close" appearance="transparent" icon={<DismissRegular />} />} />
                 </MessageBar>
             </div>
         }

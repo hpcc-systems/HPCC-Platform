@@ -1,8 +1,7 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, IIconProps, SearchBox } from "@fluentui/react";
-import { ToggleButton } from "@fluentui/react-components";
-import { TextCaseTitleRegular, TextCaseTitleFilled } from "@fluentui/react-icons";
-import { StackShim, StackItemShim } from "@fluentui/react-migration-v8-v9";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
+import { SearchBox, SearchBoxChangeEvent, ToggleButton } from "@fluentui/react-components";
+import { FilterRegular, TextCaseTitleRegular, TextCaseTitleFilled } from "@fluentui/react-icons";
 import { Workunit, WsWorkunits, IScope } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
@@ -12,14 +11,13 @@ import { HolyGrail } from "../layouts/HolyGrail";
 import { DockPanel, DockPanelItem, ResetableDockPanel } from "../layouts/DockPanel";
 import { AutosizeComponent } from "../layouts/HpccJSAdapter";
 import { pushUrl } from "../util/history";
-import { ShortVerticalDivider } from "./Common";
 import { ECLArchiveTree } from "./ECLArchiveTree";
 import { ECLArchiveEditor } from "./ECLArchiveEditor";
 import { MetricsPropertiesTables } from "./MetricsPropertiesTables";
 
 const logger = scopedLogger("src-react/components/ECLArchive.tsx");
 
-const filterIcon: IIconProps = { iconName: "Filter" };
+const filterIcon = <FilterRegular />;
 
 const scopeFilterDefault: Partial<WsWorkunits.ScopeFilter> = {
     MaxDepth: 999999,
@@ -82,8 +80,8 @@ export const ECLArchive: React.FunctionComponent<ECLArchiveProps> = ({
         pushUrl(`${parentUrl}/${selId}`);
     }, [parentUrl]);
 
-    const onChangeTreeFilter = React.useCallback((event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
-        setTreeFilter(newValue ?? "");
+    const onChangeTreeFilter = React.useCallback((event: SearchBoxChangeEvent, data: { value: string }) => {
+        setTreeFilter(data.value ?? "");
     }, []);
 
     React.useEffect(() => {
@@ -107,7 +105,7 @@ export const ECLArchive: React.FunctionComponent<ECLArchiveProps> = ({
                 pushUrl(`${parentUrl}`);
             }
         },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider },
     ], [parentUrl, refreshArchive, refreshMetrics]);
 
     const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
@@ -130,12 +128,12 @@ export const ECLArchive: React.FunctionComponent<ECLArchiveProps> = ({
                     {   //  Only render after archive is loaded (to ensure it "defaults to open") ---
                         archive?.modAttrs.length &&
                         <HolyGrail
-                            header={<StackShim horizontal>
-                                <StackItemShim grow>
-                                    <SearchBox value={treeFilter} onChange={onChangeTreeFilter} iconProps={filterIcon} placeholder={nlsHPCC.Filter} />
-                                </StackItemShim>
+                            header={<div style={{ display: "flex", flexDirection: "row" }}>
+                                <div style={{ flexGrow: 1 }}>
+                                    <SearchBox value={treeFilter} onChange={onChangeTreeFilter} contentBefore={filterIcon} placeholder={nlsHPCC.Filter} />
+                                </div>
                                 <ToggleButton appearance="subtle" icon={matchCase ? <TextCaseTitleFilled /> : <TextCaseTitleRegular />} title={nlsHPCC.MatchCase} checked={matchCase} onClick={() => { setMatchCase(!matchCase); }} />
-                            </StackShim>}
+                            </div>}
                             main={<AutosizeComponent>
                                 <ECLArchiveTree archive={archive} filter={treeFilter} matchCase={matchCase} selectedAttrIDs={selection ? [selection] : []} setSelectedItem={setSelectedItem} />
                             </AutosizeComponent>}

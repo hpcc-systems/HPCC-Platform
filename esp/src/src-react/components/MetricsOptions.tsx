@@ -1,9 +1,8 @@
 import * as React from "react";
-import { DefaultButton, PrimaryButton, Checkbox, TextField, SelectionMode, Selection } from "@fluentui/react";
+import { SelectionMode, Selection } from "./controls/Grid";
 import { useConst, useForceUpdate } from "@fluentui/react-hooks";
-import { Button, Dropdown, Option, SelectTabData, SelectTabEvent, Tab, TabList, makeStyles } from "@fluentui/react-components";
+import { Button, Checkbox, Dropdown, Field, Input, Option, SelectTabData, SelectTabEvent, Tab, TabList, Textarea, makeStyles } from "@fluentui/react-components";
 import { BookmarkAddRegular, DeleteRegular, RenameRegular } from "@fluentui/react-icons";
-import { StackShim, StackItemShim } from "@fluentui/react-migration-v8-v9";
 import nlsHPCC from "src/nlsHPCC";
 import { MetricsView, clone, useMetricMeta, useMetricsViews } from "../hooks/metrics";
 import { MessageBox } from "../layouts/MessageBox";
@@ -142,28 +141,27 @@ export const AddLabel: React.FunctionComponent<AddLabelProps> = ({
         }
     }, [defaultLabel, show]);
 
-    const onChangeAddLabel = React.useCallback((event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
-        setLabel(newValue ?? "");
+    const onChangeAddLabel = React.useCallback((_: unknown, data: { value: string }) => {
+        setLabel(data.value ?? "");
     }, [],);
 
     return <MessageBox title={title} show={show} setShow={setShow} minWidth={width}
         footer={<>
-            <PrimaryButton text={nlsHPCC.OK} disabled={!label} onClick={() => {
+            <Button appearance="primary" disabled={!label} onClick={() => {
                 onOk(label);
                 setShow(false);
             }}
-            />
-            <DefaultButton
-                text={nlsHPCC.Cancel}
+            >{nlsHPCC.OK}</Button>
+            <Button
                 onClick={() => {
                     setLabel("");
                     setShow(false);
                 }}
-            />
+            >{nlsHPCC.Cancel}</Button>
         </>}>
-        <TextField label={nlsHPCC.Label} value={label}
-            onChange={onChangeAddLabel}
-        />
+        <Field label={nlsHPCC.Label}>
+            <Input value={label} onChange={onChangeAddLabel} />
+        </Field>
     </MessageBox>;
 
 };
@@ -223,35 +221,33 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
     return <>
         <MessageBox title={nlsHPCC.Options} show={show && !showAdd && !showRename && !showDeleteConfirm} setShow={setShow} minWidth={width}
             footer={<>
-                <PrimaryButton
-                    text={nlsHPCC.OK}
+                <Button
+                    appearance="primary"
                     onClick={() => {
                         updateView(dirtyView);
                         save();
                         closeOptions();
                     }}
-                />
-                <DefaultButton
-                    text={nlsHPCC.Cancel}
+                >{nlsHPCC.OK}</Button>
+                <Button
                     onClick={() => {
                         setDirtyView(clone(view));
                         closeOptions();
                     }}
-                />
-                <DefaultButton
-                    text={nlsHPCC.Reset}
+                >{nlsHPCC.Cancel}</Button>
+                <Button
                     onClick={() => {
                         resetView(true);
                     }}
-                />
+                >{nlsHPCC.Reset}</Button>
             </>}>
             <>
-                <StackShim horizontal>
-                    <StackItemShim grow>
+                <div style={{ display: "flex", flexDirection: "row" }}>
+                    <div style={{ flexGrow: 1 }}>
                         <Dropdown value={viewId} selectedOptions={[viewId]} onOptionSelect={onDropdownChange}>
                             {viewIds.map(id => <Option key={id} value={id}>{id}</Option>)}
                         </Dropdown>
-                    </StackItemShim>
+                    </div>
                     <Button appearance="subtle" icon={<BookmarkAddRegular />} title={nlsHPCC.Add} onClick={() => {
                         setShowAdd(true);
                     }} />
@@ -261,7 +257,7 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
                     <Button appearance="subtle" icon={<DeleteRegular />} title={nlsHPCC.Delete} disabled={isDefaultView(viewId)} onClick={() => {
                         setShowDeleteConfirm(true);
                     }} />
-                </StackShim>
+                </div>
                 <TabList selectedValue={selectedTab} onTabSelect={onTabSelect} size="medium">
                     <Tab value="metrics">{nlsHPCC.Metrics}</Tab>
                     <Tab value="sql">{nlsHPCC.SQL}</Tab>
@@ -271,8 +267,8 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
                 </TabList>
                 {selectedTab === "metrics" &&
                     <div className={styles.metricsPanel} style={{ height: innerHeight }}>
-                        <StackShim horizontal>
-                            <StackItemShim grow={1}>
+                        <div style={{ display: "flex", flexDirection: "row" }}>
+                            <div style={{ flexGrow: 1 }}>
                                 <GridOptions
                                     label={nlsHPCC.ScopeTypes}
                                     strArray={globalScopeTypes}
@@ -281,8 +277,8 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
                                         setDirtyView(prev => ({ ...prev, scopeTypes: [...scopeTypes] }));
                                     }}
                                 ></GridOptions>
-                            </StackItemShim>
-                            <StackItemShim grow={1}>
+                            </div>
+                            <div style={{ flexGrow: 1 }}>
                                 <GridOptions
                                     label={nlsHPCC.ScopeColumns}
                                     strArray={globalProperties}
@@ -291,8 +287,8 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
                                         setDirtyView(prev => ({ ...prev, properties: [...properties] }));
                                     }}
                                 ></GridOptions>
-                            </StackItemShim>
-                        </StackShim>
+                            </div>
+                        </div>
                     </div>
                 }
                 {selectedTab === "sql" &&
@@ -304,24 +300,30 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
                 }
                 {selectedTab === "graph" &&
                     <div className={styles.graphPanel} style={{ height: innerHeight }}>
-                        <Checkbox label={nlsHPCC.IgnoreGlobalStoreOutEdges} checked={dirtyView.ignoreGlobalStoreOutEdges} onChange={(ev, checked) => {
-                            setDirtyView(prev => ({ ...prev, ignoreGlobalStoreOutEdges: checked }));
+                        <Checkbox label={nlsHPCC.IgnoreGlobalStoreOutEdges} checked={dirtyView.ignoreGlobalStoreOutEdges} onChange={(_, data) => {
+                            setDirtyView(prev => ({ ...prev, ignoreGlobalStoreOutEdges: !!data.checked }));
                         }} />
-                        <TextField label={nlsHPCC.SubgraphLabel} value={dirtyView.subgraphTpl} multiline autoAdjustHeight onChange={(evt, newValue) => {
-                            setDirtyView(prev => ({ ...prev, subgraphTpl: newValue }));
-                        }} />
-                        <TextField label={nlsHPCC.ActivityLabel} value={dirtyView.activityTpl} multiline autoAdjustHeight onChange={(evt, newValue) => {
-                            setDirtyView(prev => ({ ...prev, activityTpl: newValue }));
-                        }} />
-                        <TextField label={nlsHPCC.EdgeLabel} value={dirtyView.edgeTpl} multiline autoAdjustHeight onChange={(evt, newValue) => {
-                            setDirtyView(prev => ({ ...prev, edgeTpl: newValue }));
-                        }} />
+                        <Field label={nlsHPCC.SubgraphLabel}>
+                            <Textarea value={dirtyView.subgraphTpl} onChange={(_, data) => {
+                                setDirtyView(prev => ({ ...prev, subgraphTpl: data.value }));
+                            }} />
+                        </Field>
+                        <Field label={nlsHPCC.ActivityLabel}>
+                            <Textarea value={dirtyView.activityTpl} onChange={(_, data) => {
+                                setDirtyView(prev => ({ ...prev, activityTpl: data.value }));
+                            }} />
+                        </Field>
+                        <Field label={nlsHPCC.EdgeLabel}>
+                            <Textarea value={dirtyView.edgeTpl} onChange={(_, data) => {
+                                setDirtyView(prev => ({ ...prev, edgeTpl: data.value }));
+                            }} />
+                        </Field>
                     </div>
                 }
                 {selectedTab === "layout" &&
                     <div className={styles.layoutPanel} style={{ height: innerHeight }}>
-                        <Checkbox label={nlsHPCC.Timeline} checked={dirtyView.showTimeline} onChange={(ev, checked) => {
-                            setDirtyView(prev => ({ ...prev, showTimeline: checked }));
+                        <Checkbox label={nlsHPCC.Timeline} checked={dirtyView.showTimeline} onChange={(_, data) => {
+                            setDirtyView(prev => ({ ...prev, showTimeline: !!data.checked }));
                         }} />
                         <JSONSourceEditor json={dirtyView.layout} toolbar={false} onChange={obj => {
                             if (obj) {
@@ -346,13 +348,13 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
         <AddLabel show={showRename} setShow={setShowRename} defaultLabel={viewId} title={nlsHPCC.Rename} onOk={onRenameLabel} />
         <MessageBox title={nlsHPCC.Delete} show={showDeleteConfirm} setShow={setShowDeleteConfirm} minWidth={width}
             footer={<>
-                <PrimaryButton text={nlsHPCC.Delete} onClick={() => {
+                <Button appearance="primary" onClick={() => {
                     deleteView(viewId);
                     setShowDeleteConfirm(false);
-                }} />
-                <DefaultButton text={nlsHPCC.Cancel} onClick={() => {
+                }}>{nlsHPCC.Delete}</Button>
+                <Button onClick={() => {
                     setShowDeleteConfirm(false);
-                }} />
+                }}>{nlsHPCC.Cancel}</Button>
             </>}>
             {nlsHPCC.ConfirmRemoval}
         </MessageBox>

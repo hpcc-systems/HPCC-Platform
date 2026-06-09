@@ -6,12 +6,14 @@ import { Gauge } from "@hpcc-js/chart";
 import { ClusterGauge as ClusterGaugeWidget } from "src/DiskUsage";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
-import { useUserTheme } from "../../hooks/theme";
 import { AutosizeHpccJSComponent } from "../../layouts/HpccJSAdapter";
 import { pushUrl } from "../../util/history";
 import { useAllClustersDiskUsage, useClusterDiskUsage, useTargetClusterUsageEx } from "../../hooks/diskUsage";
 import { GenericCard } from "./GenericCard";
 import { CardGroup } from "./CardGroup";
+
+//  v8 Office365 neutralLight — hpcc-js Gauge.emptyColor needs a parseable color string
+const GAUGE_EMPTY_COLOR = "#edebe9";
 
 const useStyles = makeStyles({
     content: {
@@ -73,7 +75,6 @@ const DiskUsageCard: React.FunctionComponent<DiskUsageCardProps> = ({
     className,
     style
 }) => {
-    const { theme } = useUserTheme();
     const styles = useStyles();
     const [minimized, setMinimized] = React.useState<boolean>(defaultMinimized);
     const [metrics, setMetrics] = React.useState<{ percentUsed: number; machines: number; disks: number; inUseStr: string; totalStr: string } | undefined>(() => {
@@ -98,12 +99,12 @@ const DiskUsageCard: React.FunctionComponent<DiskUsageCardProps> = ({
 
     React.useEffect(() => {
         gauge
-            .emptyColor(theme.palette.neutralLight)
+            .emptyColor(GAUGE_EMPTY_COLOR)
             .tickColor(tokens.colorNeutralForeground1)
             .titleClickColor(tokens.colorBrandForeground1)
             .lazyRender()
             ;
-    }, [gauge, theme.palette.neutralLight]);
+    }, [gauge]);
 
     React.useEffect(() => {
         if (!cluster) return;
@@ -240,7 +241,6 @@ const FolderDiskUsageCard: React.FunctionComponent<FolderDiskUsageCardProps> = (
     defaultMinimized = true,
     expandInGrid = false
 }) => {
-    const { theme } = useUserTheme();
     const styles = useStyles();
     const [minimized, setMinimized] = React.useState<boolean>(defaultMinimized);
 
@@ -258,11 +258,11 @@ const FolderDiskUsageCard: React.FunctionComponent<FolderDiskUsageCardProps> = (
             .title(folder)
             .value(percent / 100)
             .valueDescription(`${percent}%`)
-            .emptyColor(theme.palette.neutralLight)
+            .emptyColor(GAUGE_EMPTY_COLOR)
             .titleColor(tokens.colorNeutralForeground1)
             .lazyRender()
             ;
-    }, [folder, gauge, percent, theme.palette.neutralLight]);
+    }, [folder, gauge, percent]);
 
     return <GenericCard
         className={className}

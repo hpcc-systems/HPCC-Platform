@@ -1,5 +1,6 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Image, Link } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
+import { Link } from "@fluentui/react-components";
 import * as Utility from "src/Utility";
 import { QuerySortItem } from "src/store/Store";
 import nlsHPCC from "src/nlsHPCC";
@@ -9,7 +10,6 @@ import { HolyGrail } from "../layouts/HolyGrail";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
-import { ShortVerticalDivider } from "./Common";
 
 const FilterFields: Fields = {
     "Name": { type: "string", label: nlsHPCC.Name, placeholder: nlsHPCC.TargetNamePlaceholder },
@@ -60,7 +60,7 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
                         fileUrl = `#/files/${row.FileCluster}/${Name}`;
                     }
                     return <>
-                        <Image src={Utility.getImageURL(row.IsSuperFile ? "folder_table.png" : "file.png")} />
+                        <img src={Utility.getImageURL(row.IsSuperFile ? "folder_table.png" : "file.png")} alt="" />
                         &nbsp;
                         <Link href={fileUrl}>{Name}</Link>
                     </>;
@@ -83,7 +83,7 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => refreshData()
         },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider },
         {
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
             onClick: () => {

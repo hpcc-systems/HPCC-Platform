@@ -1,6 +1,7 @@
 import * as React from "react";
-import { Checkbox, CommandBar, ContextualMenuItemType, DefaultButton, Dialog, DialogFooter, DialogType, ICommandBarItemProps, MessageBar, MessageBarType, PrimaryButton, SpinButton, Spinner } from "@fluentui/react";
-import { StackShim } from "@fluentui/react-migration-v8-v9";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
+import { Button, Checkbox, Dialog, DialogActions, DialogBody, DialogContent, DialogOpenChangeData, DialogOpenChangeEvent, DialogSurface, DialogTitle, Field, MessageBar, MessageBarActions, MessageBarBody, MessageBarIntent, SpinButton, SpinButtonChangeEvent, SpinButtonOnChangeData, Spinner } from "@fluentui/react-components";
+import { DismissRegular } from "@fluentui/react-icons";
 import { useConst } from "@fluentui/react-hooks";
 import { Result as CommsResult, XSDXMLNode } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
@@ -13,7 +14,6 @@ import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 import { pushParams, replaceUrl } from "../util/history";
 import { getESPBaseURL } from "../util/espUrl";
-import { ShortVerticalDivider } from "./Common";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
 
@@ -87,26 +87,24 @@ const DownloadDialog: React.FunctionComponent<DownloadDialogProps> = ({
     column = false,
     onClose,
 }) => {
-    const dialogContentProps = {
-        type: DialogType.largeHeader,
-        title: "Download Results",
-        subText: `Confirm total number of rows to download(max ${totalRows} rows).`,
-    };
-    const stackTokens = { childrenGap: 10 };
+    const stackStyle: React.CSSProperties = { display: "flex", flexDirection: "column", gap: "10px" };
 
-    const [hideDialog, setHideDialog] = React.useState(false);
+    const [open, setOpen] = React.useState(true);
     const handleOk = () => {
-        setHideDialog(true);
+        setOpen(false);
         onClose(downloadTotal, dedup);
     };
     const handleCancel = () => {
-        setHideDialog(true);
+        setOpen(false);
         onClose(0, dedup);
+    };
+    const onOpenChange = (_: DialogOpenChangeEvent, data: DialogOpenChangeData) => {
+        if (!data.open) handleCancel();
     };
 
     const [downloadTotal, setDownloadTotal] = React.useState(totalRows);
-    const onDownloadTotalValidate = (value: string) => {
-        let v: number = parseInt(value);
+    const onDownloadTotalChange = (_ev: SpinButtonChangeEvent, data: SpinButtonOnChangeData) => {
+        let v: number = data.value ?? parseInt(data.displayValue ?? "", 10);
         if (isNaN(v)) {
             v = totalRows;
         } else if (v < 0) {
@@ -115,37 +113,41 @@ const DownloadDialog: React.FunctionComponent<DownloadDialogProps> = ({
             v = totalRows;
         }
         setDownloadTotal(v);
-        return String(v);
     };
 
     const [dedup] = React.useState(true);
-    const onDedup = (ev: React.FormEvent<HTMLElement>, isChecked: boolean) => {
+    const onDedup = (ev: React.ChangeEvent<HTMLInputElement>, data: { checked: boolean | "mixed" }) => {
     };
 
-    return <Dialog
-        hidden={hideDialog}
-        onDismiss={handleCancel}
-        dialogContentProps={dialogContentProps}
-    >
-        <StackShim tokens={stackTokens}>
-            <SpinButton
-                defaultValue={`${totalRows} `}
-                label={"Download:"}
-                min={0}
-                max={totalRows}
-                step={1}
-                incrementButtonAriaLabel={"Increase value by 1"}
-                decrementButtonAriaLabel={"Decrease value by 1"}
-                onValidate={onDownloadTotalValidate}
-            />
-            {column ?
-                <Checkbox label="De-duplicate" boxSide="end" defaultChecked onChange={onDedup} /> :
-                undefined}
-        </StackShim>
-        <DialogFooter>
-            <PrimaryButton onClick={handleOk} text="Ok" />
-            <DefaultButton onClick={handleCancel} text="Cancel" />
-        </DialogFooter>
+    return <Dialog open={open} modalType="modal" onOpenChange={onOpenChange}>
+        <DialogSurface>
+            <DialogBody>
+                <DialogTitle>Download Results</DialogTitle>
+                <DialogContent>
+                    <p>{`Confirm total number of rows to download(max ${totalRows} rows).`}</p>
+                    <div style={stackStyle}>
+                        <Field label="Download:">
+                            <SpinButton
+                                defaultValue={totalRows}
+                                min={0}
+                                max={totalRows}
+                                step={1}
+                                incrementButton={{ "aria-label": "Increase value by 1" }}
+                                decrementButton={{ "aria-label": "Decrease value by 1" }}
+                                onChange={onDownloadTotalChange}
+                            />
+                        </Field>
+                        {column ?
+                            <Checkbox label="De-duplicate" defaultChecked onChange={onDedup} /> :
+                            undefined}
+                    </div>
+                </DialogContent>
+                <DialogActions>
+                    <Button appearance="primary" onClick={handleOk}>Ok</Button>
+                    <Button onClick={handleCancel}>Cancel</Button>
+                </DialogActions>
+            </DialogBody>
+        </DialogSurface>
     </Dialog>;
 };
 
@@ -223,7 +225,7 @@ function doDownload(opts: doDownloadOpts) {
 }
 
 interface MessageBarContent {
-    type: MessageBarType;
+    type: MessageBarIntent;
     message: string;
 }
 
@@ -299,7 +301,7 @@ export const Result: React.FunctionComponent<ResultProps> = ({
         }).catch(err => {
             logger.error(err);
             setEspReturnedError(true);
-            setMessageBarContent({ type: MessageBarType.error, message: `${nlsHPCC.Error} ${nlsHPCC.fetchingresults}` });
+            setMessageBarContent({ type: "error", message: `${nlsHPCC.Error} ${nlsHPCC.fetchingresults}` });
             setLoading(false);
             if (err.message.indexOf("Cannot open the workunit result") > -1) {
                 replaceUrl(`/workunits/${wuid}/outputs/`);
@@ -323,9 +325,9 @@ export const Result: React.FunctionComponent<ResultProps> = ({
     React.useEffect(() => {
         if (logicalFile) {
             if (hasEcl === false) {
-                setMessageBarContent({ type: MessageBarType.warning, message: nlsHPCC.ECLLayoutNotAvailable });
+                setMessageBarContent({ type: "warning", message: nlsHPCC.ECLLayoutNotAvailable });
             } else {
-                if (messageBarContent?.type === MessageBarType.warning && messageBarContent?.message === nlsHPCC.ECLLayoutNotAvailable) {
+                if (messageBarContent?.type === "warning" && messageBarContent?.message === nlsHPCC.ECLLayoutNotAvailable) {
                     setMessageBarContent(undefined);
                 }
             }
@@ -357,14 +359,14 @@ export const Result: React.FunctionComponent<ResultProps> = ({
                 }
             }
         },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider },
         {
             key: "filter", text: nlsHPCC.Filter, iconProps: { iconName: hasFilter ? "FilterSolid" : "Filter" },
             onClick: () => {
                 setShowFilter(true);
             }
         },
-        { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_2", itemType: ContextualMenuItemType.Divider },
         {
             key: "html", text: nlsHPCC.HTML, iconProps: { iconName: "FileHTML" }, canCheck: true, checked: renderHTML, disabled: !hasHtml,
             onClick: (ev, item) => {
@@ -408,8 +410,9 @@ export const Result: React.FunctionComponent<ResultProps> = ({
         header={<>
             <CommandBar items={buttons} farItems={rightButtons} />
             {messageBarContent &&
-                <MessageBar messageBarType={messageBarContent.type} dismissButtonAriaLabel={nlsHPCC.Close} onDismiss={dismissMessageBar} >
-                    {messageBarContent.message}
+                <MessageBar intent={messageBarContent.type}>
+                    <MessageBarBody>{messageBarContent.message}</MessageBarBody>
+                    <MessageBarActions containerAction={<Button onClick={dismissMessageBar} aria-label={nlsHPCC.Close} appearance="transparent" icon={<DismissRegular />} />} />
                 </MessageBar>
             }
         </>}

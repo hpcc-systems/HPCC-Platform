@@ -1,5 +1,6 @@
 import * as React from "react";
-import { DefaultButton, IDropdownOption, PrimaryButton, Spinner, TextField, } from "@fluentui/react";
+import { IDropdownOption } from "./Fields";
+import { Button, Field, Input, Spinner } from "@fluentui/react-components";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
 import { EsdlDefinitionsTextField, EsdlEspProcessesTextField } from "./Fields";
@@ -73,9 +74,9 @@ export const AddBindingForm: React.FunctionComponent<AddBindingFormProps> = ({
     return <MessageBox show={showForm} setShow={closeForm} title={nlsHPCC.AddBinding}
         minWidth={minWidth}
         footer={<>
-            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
-            <PrimaryButton text={nlsHPCC.Add} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
-            <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="after" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <Button appearance="primary" disabled={submitDisabled} onClick={handleSubmit(onSubmit)}>{nlsHPCC.Add}</Button>
+            <Button onClick={() => closeForm()}>{nlsHPCC.Cancel}</Button>
         </>}>
         <Controller
             control={control} name="EspProcName"
@@ -101,13 +102,13 @@ export const AddBindingForm: React.FunctionComponent<AddBindingFormProps> = ({
             render={({
                 field: { onChange, name: fieldName, value },
                 fieldState: { error }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    label={nlsHPCC.Port}
-                    value={value}
-                    errorMessage={error && error?.message}
-                />}
+            }) => <Field label={nlsHPCC.Port} validationMessage={error?.message}>
+                    <Input
+                        name={fieldName}
+                        value={value}
+                        onChange={(_, data) => onChange(data.value)}
+                    />
+                </Field>}
         />
         <Controller
             control={control} name="EsdlDefinitionID"
@@ -130,13 +131,13 @@ export const AddBindingForm: React.FunctionComponent<AddBindingFormProps> = ({
             render={({
                 field: { onChange, name: fieldName, value },
                 fieldState: { error }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    label={nlsHPCC.ServiceName}
-                    value={value}
-                    errorMessage={error && error?.message}
-                />}
+            }) => <Field label={nlsHPCC.ServiceName} validationMessage={error?.message}>
+                    <Input
+                        name={fieldName}
+                        value={value}
+                        onChange={(_, data) => onChange(data.value)}
+                    />
+                </Field>}
         />
     </MessageBox>;
 };

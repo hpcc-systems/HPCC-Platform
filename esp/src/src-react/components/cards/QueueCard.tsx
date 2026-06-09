@@ -25,19 +25,17 @@ const useStyles = makeStyles({
         "@media (prefers-color-scheme: dark)": {
             scrollbarColor: `${tokens.colorNeutralStroke1} ${tokens.colorNeutralBackground2}`,
             scrollbarWidth: "thin",
-            selectors: {
-                "::-webkit-scrollbar": {
-                    width: "8px",
-                    height: "8px"
-                },
-                "::-webkit-scrollbar-track": {
-                    backgroundColor: tokens.colorNeutralBackground2
-                },
-                "::-webkit-scrollbar-thumb": {
-                    backgroundColor: tokens.colorNeutralStroke1,
-                    border: `2px solid ${tokens.colorNeutralBackground2}`,
-                    borderRadius: "8px"
-                }
+            "&::-webkit-scrollbar": {
+                width: "8px",
+                height: "8px"
+            },
+            "&::-webkit-scrollbar-track": {
+                backgroundColor: tokens.colorNeutralBackground2
+            },
+            "&::-webkit-scrollbar-thumb": {
+                backgroundColor: tokens.colorNeutralStroke1,
+                border: `2px solid ${tokens.colorNeutralBackground2}`,
+                borderRadius: "8px"
             }
         }
     },
@@ -636,7 +634,7 @@ export const QueueCards: React.FunctionComponent<QueueCardsProps> = ({
     const { queues, refresh, pause, resume, clear, setPriority, moveTop, moveUp, moveDown, moveBottom, wuPause, wuResume } = useServerJobQueues();
 
     // Prevent continuous re-renders  ---
-    const refreshRef = React.useRef<typeof refresh>();
+    const refreshRef = React.useRef<typeof refresh | undefined>(undefined);
     React.useEffect(() => {
         refreshRef.current = refresh;
     }, [refresh]);

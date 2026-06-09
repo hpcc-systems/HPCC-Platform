@@ -1,5 +1,8 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, DetailsRow, ICommandBarItemProps, IDetailsRowProps, Icon, Image, Link, TooltipHost } from "@fluentui/react";
+import { DetailsRow, IDetailsRowProps } from "./controls/Grid";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
+import { LockClosedFilled } from "@fluentui/react-icons";
+import { Link, Tooltip } from "@fluentui/react-components";
 import { hsl as d3Hsl } from "@hpcc-js/common";
 import { Workunit } from "@hpcc-js/comms";
 import { SizeMe } from "../layouts/SizeMe";
@@ -20,7 +23,6 @@ import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
 import { ZAPImport } from "./forms/ZAPImport";
-import { ShortVerticalDivider } from "./Common";
 import { SashaService, WsSasha } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 
@@ -109,30 +111,30 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                 selectorType: "checkbox"
             },
             Protected: {
-                headerIcon: "LockSolid",
+                headerIconElement: <LockClosedFilled aria-label={nlsHPCC.Protected} />,
                 headerTooltip: nlsHPCC.Protected,
                 width: 16,
                 sortable: true,
                 formatter: (_protected) => {
                     if (_protected === true) {
-                        return <Icon iconName="LockSolid" />;
+                        return <LockClosedFilled aria-label="Protected" />;
                     }
                     return "";
                 },
                 field: nlsHPCC.Protected,
             },
             Wuid: {
-                label: nlsHPCC.WUID, width: 120,
+                label: nlsHPCC.WUID, width: 180,
                 sortable: true,
                 formatter: (Wuid: string, wu: Workunit) => {
                     const search = calcSearch(filter);
                     return <>
                         {wu?.FailureDesc ?
-                            <TooltipHost content={wu?.FailureDesc}>
-                                <Image src={getStateImage(wu.StateID, wu.isComplete(), wu.Archived)} styles={{ root: { minWidth: "16px" } }} />
-                            </TooltipHost>
+                            <Tooltip content={wu?.FailureDesc ?? ""} relationship="description">
+                                <img src={getStateImage(wu.StateID, wu.isComplete(), wu.Archived)} alt="" style={{ width: "16px", height: "16px" }} />
+                            </Tooltip>
                             :
-                            <Image src={getStateImage(wu.StateID, wu.isComplete(), wu.Archived)} styles={{ root: { minWidth: "16px" } }} />
+                            <img src={getStateImage(wu.StateID, wu.isComplete(), wu.Archived)} alt="" style={{ width: "16px", height: "16px" }} />
                         }
                         &nbsp;
                         <Link href={search ? `#/workunits!${calcSearch(filter)}/${Wuid}` : `#/workunits/${Wuid}`}>{Wuid}</Link >
@@ -148,7 +150,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                 width: 60,
                 formatter: (state, wu) => {
                     if (wu?.FailureDesc) {
-                        return <TooltipHost content={wu?.FailureDesc}>{state}</TooltipHost>;
+                        return <Tooltip content={wu?.FailureDesc ?? ""} relationship="description"><span>{state}</span></Tooltip>;
                     } else {
                         return state;
                     }
@@ -216,7 +218,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => refreshTable.call()
         },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider },
         {
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
             onClick: () => {
@@ -240,7 +242,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             key: "delete", text: nlsHPCC.Delete, disabled: !uiState.hasNotProtected, iconProps: { iconName: "Delete" },
             onClick: () => setShowDeleteConfirm(true)
         },
-        { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_2", itemType: ContextualMenuItemType.Divider },
         {
             key: "setFailed", text: nlsHPCC.SetToFailed, disabled: !uiState.hasNotProtected,
             onClick: () => { WsWorkunits.WUAction(selection, "SetToFailed").then(() => refreshTable.call()); }
@@ -249,7 +251,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             key: "abort", text: nlsHPCC.Abort, disabled: !uiState.hasNotCompleted,
             onClick: () => setShowAbortConfirm(true)
         },
-        { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_3", itemType: ContextualMenuItemType.Divider },
         {
             key: "restore", text: nlsHPCC.Restore, disabled: !(filter.Type === true && uiState.hasSelection),
             onClick: () => {
@@ -276,7 +278,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                 WsWorkunits.WUAction(selection, "Unprotect").then(() => refreshTable.call());
             }
         },
-        { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_4", itemType: ContextualMenuItemType.Divider },
         {
             key: "filter", text: nlsHPCC.Filter, disabled: !!store, iconProps: { iconName: hasFilter ? "FilterSolid" : "Filter" },
             onClick: () => { setShowFilter(true); }
@@ -292,7 +294,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                 pushParams(filter);
             }
         },
-        { key: "divider_5", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_5", itemType: ContextualMenuItemType.Divider },
         {
             key: "timeline", text: nlsHPCC.Timeline, canCheck: true, checked: showTimeline, iconProps: { iconName: "TimelineProgress" },
             onClick: () => {
@@ -335,7 +337,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         setUIState(state);
     }, [selection]);
 
-    const renderRowTimings = React.useCallback((props: IDetailsRowProps, size: { readonly width: number; readonly height: number; }) => {
+    const renderRowTimings = React.useCallback((props: IDetailsRowProps) => {
         if (showTimeline && props?.item?.__timeline_timings) {
             const total = props.item.__timeline_timings.page.end - props.item.__timeline_timings.page.start;
             const startPct = 100 - (props.item.__timeline_timings.start - props.item.__timeline_timings.page.start) / total * 100;
@@ -343,8 +345,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             const backgroundColor = palette(props.item.Cluster);
             const borderColor = d3Hsl(backgroundColor).darker().toString();
 
-            return <div style={{ position: "relative", width: `${size.width - 4}px` }}>
-                <DetailsRow {...props} />
+            return <DetailsRow {...props} overlayElement={
                 <div style={{
                     position: "absolute",
                     top: 4,
@@ -358,7 +359,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                     opacity: .33,
                     pointerEvents: "none"
                 }} />
-            </div>;
+            } />;
         }
         return <DetailsRow {...props} />;
     }, [palette, showTimeline]);
@@ -382,7 +383,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                                 setSelection={setSelection}
                                 setTotal={setTotal}
                                 refresh={refreshTable}
-                                onRenderRow={showTimeline ? props => renderRowTimings(props, size) : undefined}
+                                onRenderRow={showTimeline ? renderRowTimings : undefined}
                             ></FluentPagedGrid>
                         </div>
                     </div>

@@ -1,12 +1,12 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link, TextField } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
+import { Input, Link } from "@fluentui/react-components";
 import { scopedLogger } from "@hpcc-js/util";
 import { HolyGrail } from "../layouts/HolyGrail";
 import nlsHPCC from "src/nlsHPCC";
 import * as WsDFUXref from "src/WsDFUXref";
 import { useConfirm } from "../hooks/confirm";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
-import { ShortVerticalDivider } from "./Common";
 import { pushUrl } from "../util/history";
 
 const logger = scopedLogger("src-react/components/Xrefs.tsx");
@@ -137,7 +137,7 @@ export const Xrefs: React.FunctionComponent<XrefsProps> = ({
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => refreshData()
         },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider },
         {
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection,
             onClick: () => {
@@ -150,25 +150,25 @@ export const Xrefs: React.FunctionComponent<XrefsProps> = ({
                 }
             }
         },
-        { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_2", itemType: ContextualMenuItemType.Divider },
         {
             key: "cancelAll", text: nlsHPCC.CancelAll,
             onClick: () => setShowCancelConfirm(true)
         },
-        { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_3", itemType: ContextualMenuItemType.Divider },
         {
             key: "generate", text: nlsHPCC.Generate, disabled: !selection.length,
             onClick: () => setShowGenerateConfirm(true)
         },
-        { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_4", itemType: ContextualMenuItemType.Divider },
         {
             key: "filterScopes",
             onRender: () => (
-                <TextField
-                    styles={{ root: { width: 250, marginLeft: 8, marginRight: 8, marginTop: 6 } }}
+                <Input
+                    style={{ width: 250, marginLeft: 8, marginRight: 8, marginTop: 6 }}
                     placeholder={nlsHPCC.ExampleScopePlaceholder}
                     value={filterScopes}
-                    onChange={(_, newValue) => handleFilterScopesChange(newValue || "")}
+                    onChange={(_, data) => handleFilterScopesChange(data.value || "")}
                 />
             )
         }

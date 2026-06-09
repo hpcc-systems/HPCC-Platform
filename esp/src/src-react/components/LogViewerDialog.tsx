@@ -7,16 +7,13 @@ import { LogViewer, defaultSort } from "./LogViewer";
 const useStyles = makeStyles({
     dialogSurface: {
         maxWidth: "90vw",
-        maxHeight: "90vh",
         width: "1200px",
-        height: "800px",
     },
     dialogContent: {
         display: "flex",
         flexDirection: "column",
         flex: "1",
         overflow: "hidden",
-        padding: "0",
         height: "600px",
     },
 });

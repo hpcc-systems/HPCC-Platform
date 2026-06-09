@@ -32,7 +32,7 @@ export const QueryDetails: React.FunctionComponent<QueryDetailsProps> = ({
     state = {},
     queryParams = {}
 }) => {
-    const effectiveState = React.useMemo(() => ({ ...state, testTab: state.testTab ?? "Form" }), [state]);
+    const effectiveState = React.useMemo(() => ({ ...state, testTab: state.testTab ?? "form" }), [state]);
 
     const [query, setQuery] = React.useState<any>();
     const [wuid, setWuid] = React.useState<string>("");

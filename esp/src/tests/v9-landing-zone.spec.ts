@@ -5,6 +5,7 @@ test.describe("V9 Landing Zone", () => {
     test.beforeEach(async ({ page }) => {
         await page.goto("index.html#/landingzone");
         await page.waitForLoadState("networkidle");
+        await page.locator(".fui-NavDrawerBody").waitFor({ state: "visible", timeout: 15000 });
     });
 
     test("Should display the Landing Zone page with expected toolbar and components", async ({ page }) => {

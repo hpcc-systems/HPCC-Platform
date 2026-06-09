@@ -1,6 +1,8 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, MessageBar, MessageBarType, Sticky, StickyPositionType } from "@fluentui/react";
-import { SelectTabData, SelectTabEvent, Tab, TabList, makeStyles } from "@fluentui/react-components";
+import { Sticky, StickyPositionType } from "./controls/ScrollablePane";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
+import { Button, MessageBar, MessageBarActions, MessageBarBody, SelectTabData, SelectTabEvent, Tab, TabList, makeStyles } from "@fluentui/react-components";
+import { DismissRegular } from "@fluentui/react-icons";
 import { scopedLogger } from "@hpcc-js/util";
 import { SizeMe } from "../layouts/SizeMe";
 import nlsHPCC from "src/nlsHPCC";
@@ -10,7 +12,6 @@ import { useConfirm } from "../hooks/confirm";
 import { useDfuWorkunit } from "../hooks/workunit";
 import { pivotItemStyle } from "../layouts/pivot";
 import { pushUrl, replaceUrl } from "../util/history";
-import { ShortVerticalDivider } from "./Common";
 import { Fields } from "./forms/Fields";
 import { TableGroup } from "./forms/Groups";
 import { XMLSourceEditor } from "./SourceEditor";
@@ -180,7 +181,7 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
             key: "copy", text: nlsHPCC.CopyWUID, iconProps: { iconName: "Copy" },
             onClick: () => { navigator?.clipboard?.writeText(wuid); }
         },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider },
         {
             key: "save", text: nlsHPCC.Save, iconProps: { iconName: "Save" }, disabled: !canSave,
             onClick: saveWorkunit
@@ -189,7 +190,7 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
             key: "delete", text: nlsHPCC.Delete, iconProps: { iconName: "Delete" }, disabled: canDelete,
             onClick: () => setShowDeleteConfirm(true)
         },
-        { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_2", itemType: ContextualMenuItemType.Divider },
         {
             key: "restore", text: nlsHPCC.Restore,
             onClick: () => {
@@ -233,12 +234,9 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
                         <Sticky stickyPosition={StickyPositionType.Header}>
                             <CommandBar items={buttons} />
                             {showMessageBar &&
-                                <MessageBar
-                                    messageBarType={MessageBarType.success}
-                                    dismissButtonAriaLabel={nlsHPCC.Close}
-                                    onDismiss={dismissMessageBar}
-                                >
-                                    {nlsHPCC.SuccessfullySaved}
+                                <MessageBar intent="success">
+                                    <MessageBarBody>{nlsHPCC.SuccessfullySaved}</MessageBarBody>
+                                    <MessageBarActions containerAction={<Button onClick={dismissMessageBar} aria-label={nlsHPCC.Close} appearance="transparent" icon={<DismissRegular />} />} />
                                 </MessageBar>
                             }
                         </Sticky>

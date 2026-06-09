@@ -1,6 +1,6 @@
 import * as React from "react";
-import { DefaultButton, IDropdownOption, PrimaryButton, Spinner, TextField, } from "@fluentui/react";
-import { StackShim } from "@fluentui/react-migration-v8-v9";
+import { IDropdownOption } from "./Fields";
+import { Button, Field, Input, Spinner } from "@fluentui/react-components";
 import { useForm, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
 import * as FileSpray from "src/FileSpray";
@@ -71,24 +71,23 @@ export const ReplicateFile: React.FunctionComponent<ReplicateFileProps> = ({
 
     return <MessageBox title={nlsHPCC.Rename} show={showForm} setShow={closeForm}
         footer={<>
-            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
-            <PrimaryButton text={nlsHPCC.Replicate} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
-            <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="after" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <Button appearance="primary" disabled={submitDisabled} onClick={handleSubmit(onSubmit)}>{nlsHPCC.Replicate}</Button>
+            <Button onClick={() => closeForm()}>{nlsHPCC.Cancel}</Button>
         </>}>
-        <StackShim>
+        <div style={{ display: "flex", flexDirection: "column" }}>
             <Controller
                 control={control} name="sourceLogicalName"
                 render={({
                     field: { onChange, name: fieldName, value },
                     fieldState: { error }
-                }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
-                        required={true}
-                        label={nlsHPCC.SourceLogicalFile}
-                        value={value}
-                        errorMessage={error && error.message}
-                    />}
+                }) => <Field label={nlsHPCC.SourceLogicalFile} required validationMessage={error?.message}>
+                        <Input
+                            name={fieldName}
+                            value={value}
+                            onChange={(_, data) => onChange(data.value)}
+                        />
+                    </Field>}
                 rules={{
                     required: nlsHPCC.ValidationErrorRequired
                 }}
@@ -98,13 +97,13 @@ export const ReplicateFile: React.FunctionComponent<ReplicateFileProps> = ({
                 render={({
                     field: { onChange, name: fieldName, value },
                     fieldState: { error }
-                }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
-                        label={nlsHPCC.ReplicateOffset}
-                        value={value}
-                        errorMessage={error && error.message}
-                    />}
+                }) => <Field label={nlsHPCC.ReplicateOffset} validationMessage={error?.message}>
+                        <Input
+                            name={fieldName}
+                            value={value}
+                            onChange={(_, data) => onChange(data.value)}
+                        />
+                    </Field>}
                 rules={{
                     pattern: {
                         value: /^[0-9]+$/i,
@@ -132,6 +131,6 @@ export const ReplicateFile: React.FunctionComponent<ReplicateFileProps> = ({
                     required: `${nlsHPCC.SelectA} ${nlsHPCC.Cluster}`
                 }}
             />
-        </StackShim>
+        </div>
     </MessageBox>;
 };

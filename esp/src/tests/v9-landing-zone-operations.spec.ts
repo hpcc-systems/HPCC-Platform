@@ -4,7 +4,7 @@ test.describe("V9 Landing Zone - File Operations", () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/esp/files/index.html#/landingzone');
         await page.waitForLoadState('networkidle');
-        await page.waitForTimeout(2000);
+        await page.locator(".fui-NavDrawerBody").waitFor({ state: "visible", timeout: 15000 });
     });
 
     test.describe("Tree Expansion and State Management", () => {

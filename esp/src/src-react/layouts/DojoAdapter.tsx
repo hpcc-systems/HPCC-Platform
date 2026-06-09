@@ -26,7 +26,7 @@ export const DojoAdapter: React.FunctionComponent<DojoAdapterProps> = ({
     onWidgetMount
 }) => {
 
-    const myRef = React.useRef<HTMLDivElement>();
+    const myRef = React.useRef<HTMLDivElement | null>(null);
     const uid = useId("");
     const Wuid = params && params["Wuid"] ? params["Wuid"] : null;
     const [widget, setWidget] = React.useState<any>();

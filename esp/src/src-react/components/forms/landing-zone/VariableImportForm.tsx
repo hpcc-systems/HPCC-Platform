@@ -1,6 +1,6 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, Dropdown, IDropdownOption, mergeStyleSets, PrimaryButton, Spinner, TextField, TooltipHost } from "@fluentui/react";
-import { StackShim } from "@fluentui/react-migration-v8-v9";
+import { IDropdownOption } from "../Fields";
+import { Button, Checkbox, Dropdown, Field, Input, Option, Spinner, Tooltip } from "@fluentui/react-components";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
 import * as FileSpray from "src/FileSpray";
@@ -135,14 +135,7 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
         )();
     }, [closeForm, handleSubmit, isContainer]);
 
-    const componentStyles = mergeStyleSets(
-        FormStyles.componentStyles,
-        {
-            container: {
-                minWidth: formMinWidth ? formMinWidth : 300,
-            }
-        }
-    );
+    const componentStyles = FormStyles.useComponentStyles();
 
     React.useEffect(() => {
         if (selection) {
@@ -163,11 +156,11 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
 
     return <MessageBox title={nlsHPCC.Import} show={showForm} setShow={closeForm}
         footer={<>
-            <Spinner label={nlsHPCC.Loading} labelPosition="right" style={{ display: spinnerHidden ? "none" : "inherit" }} />
-            <PrimaryButton text={nlsHPCC.Import} disabled={submitDisabled} onClick={handleSubmit(onSubmit)} />
-            <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
+            <Spinner label={nlsHPCC.Loading} labelPosition="after" style={{ display: spinnerHidden ? "none" : "inherit" }} />
+            <Button appearance="primary" disabled={submitDisabled} onClick={handleSubmit(onSubmit)}>{nlsHPCC.Import}</Button>
+            <Button onClick={() => closeForm()}>{nlsHPCC.Cancel}</Button>
         </>}>
-        <StackShim>
+        <div style={{ display: "flex", flexDirection: "column" }}>
             <Controller
                 control={control} name="destGroup"
                 render={({
@@ -213,14 +206,14 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
                 render={({
                     field: { onChange, name: fieldName, value },
                     fieldState: { error }
-                }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
-                        label={nlsHPCC.TargetScope}
-                        value={value}
-                        placeholder={nlsHPCC.NamePrefixPlaceholder}
-                        errorMessage={error && error?.message}
-                    />}
+                }) => <Field label={nlsHPCC.TargetScope} validationMessage={error?.message}>
+                        <Input
+                            name={fieldName}
+                            value={value}
+                            placeholder={nlsHPCC.NamePrefixPlaceholder}
+                            onChange={(_, data) => onChange(data.value)}
+                        />
+                    </Field>}
                 rules={{
                     pattern: {
                         value: /^[_a-z0-9]+(::[_a-z0-9]+)*(?:::)?$/i,
@@ -228,8 +221,8 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
                     }
                 }}
             />
-        </StackShim>
-        <StackShim>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column" }}>
             <table className={`${componentStyles.twoColumnTable} ${componentStyles.selectionTable}`}>
                 <thead>
                     <tr>
@@ -246,12 +239,13 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
                                     render={({
                                         field: { onChange, name: fieldName, value },
                                         fieldState: { error }
-                                    }) => <TextField
-                                            name={fieldName}
-                                            onChange={onChange}
-                                            value={value}
-                                            errorMessage={error && error?.message}
-                                        />}
+                                    }) => <Field validationMessage={error?.message}>
+                                            <Input
+                                                name={fieldName}
+                                                value={value}
+                                                onChange={(_, data) => onChange(data.value)}
+                                            />
+                                        </Field>}
                                     rules={{
                                         required: nlsHPCC.ValidationErrorTargetNameRequired,
                                         pattern: {
@@ -267,12 +261,13 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
                                     render={({
                                         field: { onChange, name: fieldName, value },
                                         fieldState: { error }
-                                    }) => <TextField
-                                            name={fieldName}
-                                            onChange={onChange}
-                                            value={value}
-                                            errorMessage={error && error?.message}
-                                        />}
+                                    }) => <Field validationMessage={error?.message}>
+                                            <Input
+                                                name={fieldName}
+                                                value={value}
+                                                onChange={(_, data) => onChange(data.value)}
+                                            />
+                                        </Field>}
                                     rules={{
                                         pattern: {
                                             value: /^[0-9]+$/i,
@@ -287,47 +282,46 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
                     })}
                 </tbody>
             </table>
-        </StackShim>
-        <StackShim>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column" }}>
             <Controller
                 control={control} name="sourceFormat"
                 render={({
                     field: { onChange, name: fieldName, value },
                     fieldState: { error }
-                }) => <Dropdown
-                        key={fieldName}
-                        label={nlsHPCC.Format}
-                        options={[
-                            { key: "recfmv", text: "recfmv" },
-                            { key: "recfmvb", text: "recfmvb" },
-                            { key: "variable", text: nlsHPCC.Variable },
-                            { key: "variablebigendian", text: nlsHPCC.VariableBigendian },
-                        ]}
-                        selectedKey={value}
-                        onChange={(evt, option) => onChange(option.key)}
-                        errorMessage={error && error?.message}
-                    />}
+                }) => <Field label={nlsHPCC.Format} validationMessage={error?.message}>
+                        <Dropdown
+                            key={fieldName}
+                            selectedOptions={value ? [value] : []}
+                            onOptionSelect={(_evt, data) => onChange(data.optionValue)}
+                        >
+                            <Option key="recfmv" text="recfmv" value="recfmv">recfmv</Option>
+                            <Option key="recfmvb" text="recfmvb" value="recfmvb">recfmvb</Option>
+                            <Option key="variable" text={nlsHPCC.Variable} value="variable">{nlsHPCC.Variable}</Option>
+                            <Option key="variablebigendian" text={nlsHPCC.VariableBigendian} value="variablebigendian">{nlsHPCC.VariableBigendian}</Option>
+                        </Dropdown>
+                    </Field>}
                 rules={{
                     required: `${nlsHPCC.SelectA} ${nlsHPCC.Format}`
                 }}
             />
-        </StackShim>
-        <StackShim>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column" }}>
             <table className={componentStyles.twoColumnTable}>
                 <tbody><tr>
                     <td><Controller
                         control={control} name="overwrite"
                         render={({
                             field: { onChange, name: fieldName, value }
-                        }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.Overwrite} />}
+                        }) => <Checkbox name={fieldName} checked={value} onChange={(_, data) => onChange(data.checked)} label={nlsHPCC.Overwrite} />}
                     /></td>
                     <td><Controller
                         control={control} name="replicate"
                         render={({
                             field: { onChange, name: fieldName, value }
-                        }) => <TooltipHost content={nlsHPCC.ReplicateTooltip}>
-                                <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.Replicate} />
-                            </TooltipHost>}
+                        }) => <Tooltip content={nlsHPCC.ReplicateTooltip} relationship="label">
+                                <Checkbox name={fieldName} checked={value} onChange={(_, data) => onChange(data.checked)} label={nlsHPCC.Replicate} />
+                            </Tooltip>}
                     /></td>
                 </tr>
                     <tr>
@@ -335,13 +329,13 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
                             control={control} name="nosplit"
                             render={({
                                 field: { onChange, name: fieldName, value }
-                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.NoSplit} disabled={true} />}
+                            }) => <Checkbox name={fieldName} checked={value} onChange={(_, data) => onChange(data.checked)} label={nlsHPCC.NoSplit} disabled={true} />}
                         /></td>
                         <td><Controller
                             control={control} name="noCommon"
                             render={({
                                 field: { onChange, name: fieldName, value }
-                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.NoCommon} />}
+                            }) => <Checkbox name={fieldName} checked={value} onChange={(_, data) => onChange(data.checked)} label={nlsHPCC.NoCommon} />}
                         /></td>
                     </tr>
                     <tr>
@@ -349,13 +343,13 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
                             control={control} name="compress"
                             render={({
                                 field: { onChange, name: fieldName, value }
-                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.Compress} />}
+                            }) => <Checkbox name={fieldName} checked={value} onChange={(_, data) => onChange(data.checked)} label={nlsHPCC.Compress} />}
                         /></td>
                         <td><Controller
                             control={control} name="failIfNoSourceFile"
                             render={({
                                 field: { onChange, name: fieldName, value }
-                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.FailIfNoSourceFile} />}
+                            }) => <Checkbox name={fieldName} checked={value} onChange={(_, data) => onChange(data.checked)} label={nlsHPCC.FailIfNoSourceFile} />}
                         /></td>
                     </tr>
                     <tr>
@@ -364,13 +358,13 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
                             render={({
                                 field: { onChange, name: fieldName, value },
                                 fieldState: { error }
-                            }) => <TextField
-                                    name={fieldName}
-                                    onChange={onChange}
-                                    label={nlsHPCC.ExpireDays}
-                                    value={value}
-                                    errorMessage={error && error?.message}
-                                />}
+                            }) => <Field label={nlsHPCC.ExpireDays} validationMessage={error?.message}>
+                                    <Input
+                                        name={fieldName}
+                                        value={value}
+                                        onChange={(_, data) => onChange(data.value)}
+                                    />
+                                </Field>}
                             rules={{
                                 min: {
                                     value: 1,
@@ -381,6 +375,6 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
                         <td></td>
                     </tr></tbody>
             </table>
-        </StackShim>
+        </div>
     </MessageBox>;
 };

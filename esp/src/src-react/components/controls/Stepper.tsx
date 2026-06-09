@@ -1,5 +1,51 @@
 import * as React from "react";
-import { mergeStyleSets, useTheme } from "@fluentui/react";
+import { makeStyles, tokens } from "@fluentui/react-components";
+
+const useStepStyles = makeStyles({
+    wrapper: {
+        display: "flex",
+        flexDirection: "column",
+        position: "relative",
+        alignItems: "center",
+        padding: "0 8px",
+        minWidth: "100px",
+    },
+    svg: {
+        color: tokens.colorNeutralForeground1,
+        fill: "currentColor",
+        width: "1em",
+        height: "1em",
+        fontSize: "1.5rem",
+        "& text": { color: tokens.colorNeutralBackground1 }
+    },
+    failed: { color: `${tokens.colorPaletteRedForeground1} !important` },
+    completed: {
+        color: tokens.colorBrandBackground,
+        "& circle": { color: tokens.colorNeutralBackground1 }
+    },
+    label: {
+        margin: "16px 0 0 0",
+        fontSize: "0.875rem",
+        fontWeight: 500,
+        fontFamily: "'Segoe UI', 'Segoe UI Web (West European)', 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif",
+    },
+    connector: {
+        top: "12px",
+        left: "calc(-50% + 20px)",
+        right: "calc(50% + 20px)",
+        position: "absolute",
+        borderTopStyle: "solid",
+        borderTopWidth: "1px"
+    }
+});
+
+const useStepperStyles = makeStyles({
+    wrapper: {
+        display: "flex",
+        flexDirection: "row",
+        padding: "8px"
+    },
+});
 
 export interface StepProps {
     label?: string;
@@ -17,51 +63,7 @@ const Step: React.FunctionComponent<StepProps> = ({
     showConnector = false
 }) => {
 
-    const theme = useTheme();
-
-    const stepStyles = React.useMemo(() => mergeStyleSets({
-        wrapper: {
-            display: "flex",
-            flexDirection: "column",
-            position: "relative",
-            alignItems: "center",
-            padding: "0 8px",
-            minWidth: "100px",
-        },
-        svg: {
-            color: theme.palette.neutralPrimary,
-            fill: "currentColor",
-            width: "1em",
-            height: "1em",
-            fontSize: "1.5rem",
-            text: {
-                color: theme.palette.white
-            }
-        },
-        failed: {
-            color: `${theme.palette.red} !important`
-        },
-        completed: {
-            color: theme.palette.themePrimary,
-            circle: {
-                color: theme.palette.white
-            }
-        },
-        label: {
-            margin: "16px 0 0 0",
-            fontSize: "0.875rem",
-            fontWeight: 500,
-            fontFamily: "'Segoe UI', 'Segoe UI Web (West European)', 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif",
-        },
-        connector: {
-            top: "12px",
-            left: "calc(-50% + 20px)",
-            right: "calc(50% + 20px)",
-            position: "absolute",
-            borderTopStyle: "solid",
-            borderTopWidth: "1px"
-        }
-    }), [theme]);
+    const stepStyles = useStepStyles();
 
     return <div className={stepStyles.wrapper}>
         {showConnector ? <div className={stepStyles.connector}></div> : ""}
@@ -95,19 +97,12 @@ interface StepperProps {
     orientation?: Orientation;
 }
 
-const stepperStyles = mergeStyleSets({
-    wrapper: {
-        display: "flex",
-        flexDirection: "row",
-        padding: "8px"
-    },
-});
-
 export const Stepper: React.FunctionComponent<StepperProps> = ({
     activeStep = 0,
     steps,
     orientation = "horizontal",
 }) => {
+    const stepperStyles = useStepperStyles();
 
     return <div className={stepperStyles.wrapper}>
         {steps && steps.map((props, i) => {

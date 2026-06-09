@@ -1,5 +1,6 @@
 import * as React from "react";
-import { DefaultButton, PrimaryButton } from "@fluentui/react";
+
+import { Button } from "@fluentui/react-components";
 import nlsHPCC from "src/nlsHPCC";
 import { MessageBox } from "../../layouts/MessageBox";
 
@@ -16,13 +17,8 @@ export const CookieConsent: React.FunctionComponent<CookieConsentProps> = ({
 }) => {
     return <MessageBox title={nlsHPCC.PleaseEnableCookies} show={showCookieConsent} setShow={setShowCookieConsent}
         footer={<>
-            <DefaultButton text={nlsHPCC.CookiesNoticeLinkText} onClick={() => {
-                window.open("https://risk.lexisnexis.com/cookie-policy", "_blank");
-            }} />
-            <PrimaryButton text={nlsHPCC.CookiesAcceptButtonText} onClick={() => {
-                onApply(true);
-                setShowCookieConsent(false);
-            }} />
+            <Button onClick={() => { window.open("https://risk.lexisnexis.com/cookie-policy", "_blank"); }}>{nlsHPCC.CookiesNoticeLinkText}</Button>
+            <Button appearance="primary" onClick={() => { onApply(true); setShowCookieConsent(false); }}>{nlsHPCC.CookiesAcceptButtonText}</Button>
         </>}>
     </MessageBox>;
 };

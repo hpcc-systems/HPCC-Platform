@@ -1,7 +1,6 @@
 import * as React from "react";
-import { SelectTabData, SelectTabEvent, Tab, TabList } from "@fluentui/react-components";
+import { makeStyles, SelectTabData, SelectTabEvent, Tab, TabList } from "@fluentui/react-components";
 import { scopedLogger } from "@hpcc-js/util";
-import { makeStyles } from "@fluentui/react-components";
 import { SizeMe } from "../layouts/SizeMe";
 import { pivotItemStyle } from "../layouts/pivot";
 import { useBuildInfo } from "../hooks/platform";

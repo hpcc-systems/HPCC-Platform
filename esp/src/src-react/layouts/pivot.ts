@@ -1,4 +1,4 @@
-import { useUserTheme } from "../hooks/theme";
+import { tokens } from "@fluentui/react-components";
 
 export interface Size {
     width?: number | null
@@ -21,13 +21,11 @@ interface usePivotItemDisableResponse {
 }
 
 export function usePivotItemDisable(disable: boolean): usePivotItemDisableResponse {
-    const { themeV9 } = useUserTheme();
-
     return disable ? {
         disabled: true,
         style: {
-            background: themeV9.colorNeutralBackgroundDisabled,
-            color: themeV9.colorNeutralForegroundDisabled
+            background: tokens.colorNeutralBackgroundDisabled,
+            color: tokens.colorNeutralForegroundDisabled
         }
     } : {
     };

@@ -1,5 +1,8 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, MessageBar, MessageBarType, ScrollablePane, ScrollbarVisibility, Sticky, StickyPositionType } from "@fluentui/react";
+import { Sticky, StickyPositionType } from "./controls/ScrollablePane";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
+import { Button, MessageBar, MessageBarActions, MessageBarBody } from "@fluentui/react-components";
+import { DismissRegular } from "@fluentui/react-icons";
 import { DFUService, WsDfu } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
@@ -9,7 +12,6 @@ import { getStateImageName, IFile } from "src/ESPLogicalFile";
 import { useConfirm } from "../hooks/confirm";
 import { useFile } from "../hooks/file";
 import { useMyAccount } from "../hooks/user";
-import { ShortVerticalDivider } from "./Common";
 import { TableGroup } from "./forms/Groups";
 import { CopyFile } from "./forms/CopyFile";
 import { DesprayFile } from "./forms/DesprayFile";
@@ -18,8 +20,6 @@ import { ReplicateFile } from "./forms/ReplicateFile";
 import { replaceUrl } from "../util/history";
 
 const logger = scopedLogger("src-react/components/LogicalFileSummary.tsx");
-
-import "react-reflex/styles.css";
 
 const dfuService = new DFUService({ baseUrl: "" });
 
@@ -112,7 +112,7 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
             key: "copyFilename", text: nlsHPCC.CopyLogicalFilename, iconProps: { iconName: "Copy" },
             onClick: () => navigator?.clipboard?.writeText(logicalFile)
         },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider },
         {
             key: "save", text: nlsHPCC.Save, iconProps: { iconName: "Save" }, disabled: !canSave,
             onClick: () => {
@@ -134,7 +134,7 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
             key: "delete", text: nlsHPCC.Delete, iconProps: { iconName: "Delete" }, disabled: !file,
             onClick: () => setShowDeleteConfirm(true)
         },
-        { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_2", itemType: ContextualMenuItemType.Divider },
         {
             key: "protect", text: nlsHPCC.Protect, iconProps: { iconName: "Lock" }, disabled: protectedByCurrentUser,
             onClick: () => {
@@ -157,7 +157,7 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
                     .catch(err => logger.error(err));
             }
         },
-        { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_3", itemType: ContextualMenuItemType.Divider },
         {
             key: "copyFile", text: nlsHPCC.Copy, disabled: !file,
             onClick: () => setShowCopyFile(true)
@@ -170,7 +170,7 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
             key: "despray", text: nlsHPCC.Despray, disabled: !file,
             onClick: () => setShowDesprayFile(true)
         },
-        { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_4", itemType: ContextualMenuItemType.Divider },
         {
             key: "replicate", text: nlsHPCC.Replicate, disabled: !canReplicateFlag || !replicateFlag,
             onClick: () => setShowReplicateFile(true)
@@ -182,82 +182,75 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
     const compressedImage = file?.IsCompressed ? Utility.getImageURL("compressed.png") : "";
 
     return <>
-        <ScrollablePane scrollbarVisibility={ScrollbarVisibility.auto}>
-            <Sticky stickyPosition={StickyPositionType.Header}>
-                <CommandBar items={buttons} />
-                {showMessageBar &&
-                    <MessageBar
-                        messageBarType={MessageBarType.success}
-                        dismissButtonAriaLabel={nlsHPCC.Close}
-                        onDismiss={dismissMessageBar}
-                    >
-                        {nlsHPCC.SuccessfullySaved}
-                    </MessageBar>
-                }
-            </Sticky>
-            <Sticky stickyPosition={StickyPositionType.Header}>
-                <div style={{ display: "inline-block" }}>
-                    <h2>
-                        <img src={compressedImage} />&nbsp;
-                        <img src={protectedImage} />&nbsp;
-                        <img src={stateImage} />&nbsp;
-                        {file?.Name}
-                    </h2>
-                </div>
-            </Sticky>
-            <TableGroup fields={{
-                "Wuid": { label: nlsHPCC.Workunit, type: "link", value: file?.Wuid, href: `#/${isDFUWorkunit ? "dfu" : ""}workunits/${file?.Wuid}`, readonly: true, },
-                "Owner": { label: nlsHPCC.Owner, type: "string", value: file?.Owner, readonly: true },
-                "SuperOwner": { label: nlsHPCC.SuperFile, type: "links", links: superfiles?.map(row => ({ label: "", type: "link", value: row.Name, href: `#/files/${row.NodeGroup !== null ? row.NodeGroup : undefined}/${row.Name}` })) },
-                "NodeGroup": { label: nlsHPCC.ClusterName, type: "string", value: file?.NodeGroup, readonly: true },
-                "Description": { label: nlsHPCC.Description, type: "string", value: description },
-                "JobName": { label: nlsHPCC.JobName, type: "string", value: file?.JobName, readonly: true },
-                "AccessCost": { label: nlsHPCC.FileAccessCost, type: "string", value: `${formatCost(file?.AccessCost)}`, readonly: true },
-                "AtRestCost": { label: nlsHPCC.FileCostAtRest, type: "string", value: `${formatCost(file?.AtRestCost)}`, readonly: true },
-                "isRestricted": { label: nlsHPCC.Restricted, type: "checkbox", value: restricted },
-                "ContentType": { label: nlsHPCC.ContentType, type: "string", value: file?.ContentType, readonly: true },
-                "KeyType": { label: nlsHPCC.KeyType, type: "string", value: file?.KeyType, readonly: true },
-                "Format": { label: nlsHPCC.Format, type: "string", value: file?.Format, readonly: true },
-                "IsCompressed": { label: nlsHPCC.IsCompressed, type: "checkbox", value: file?.IsCompressed, readonly: true },
-                "CompressedFileSizeString": { label: nlsHPCC.CompressedFileSize, type: "string", value: file?.CompressedFileSize ? Utility.safeFormatNum(file?.CompressedFileSize) : "", readonly: true },
-                "CompressionType": { label: nlsHPCC.CompressionType, type: "string", value: file?.CompressionType, readonly: true },
-                "Filesize": { label: nlsHPCC.FileSize, type: "string", value: file?.Filesize, readonly: true },
-                "PercentCompressed": { label: nlsHPCC.PercentCompressed, type: "string", value: file?.PercentCompressed, readonly: true },
-                "Modified": { label: nlsHPCC.Modified, type: "string", value: file?.Modified, readonly: true },
-                "ExpirationDate": { label: nlsHPCC.ExpirationDate, type: "string", value: file?.ExpirationDate, readonly: true },
-                "ExpireDays": { label: nlsHPCC.ExpireDays, type: "string", value: file?.ExpireDays ? file?.ExpireDays.toString() : "", readonly: true },
-                "Directory": { label: nlsHPCC.Directory, type: "string", value: file?.Dir, readonly: true },
-                "PathMask": { label: nlsHPCC.PathMask, type: "string", value: file?.PathMask, readonly: true },
-                "RecordSize": { label: nlsHPCC.RecordSize, type: "string", value: file?.RecordSize, readonly: true },
-                "RecordCount": { label: nlsHPCC.RecordCount, type: "string", value: file?.RecordCount, readonly: true },
-                "IsReplicated": { label: nlsHPCC.IsReplicated, type: "checkbox", value: (file?.filePartsOnCluster() ?? []).length > 0, readonly: true },
-                "NumParts": { label: nlsHPCC.FileParts, type: "number", value: file?.NumParts, readonly: true },
-                "MinSkew": { label: nlsHPCC.MinSkew, type: "string", value: file?.Stat?.MinSkew ? `${file.Stat.MinSkew}%` : "", readonly: true },
-                "MaxSkew": { label: nlsHPCC.MaxSkew, type: "string", value: file?.Stat?.MaxSkew ? `${file.Stat.MaxSkew}%` : "", readonly: true },
-                "MinSkewPart": { label: nlsHPCC.MinSkewPart, type: "string", value: file?.Stat?.MinSkewPart === undefined ? "" : file?.Stat?.MinSkewPart?.toString(), readonly: true },
-                "MaxSkewPart": { label: nlsHPCC.MaxSkewPart, type: "string", value: file?.Stat?.MaxSkewPart === undefined ? "" : file?.Stat?.MaxSkewPart?.toString(), readonly: true },
-            }} onChange={(id, value) => {
-                switch (id) {
-                    case "Description":
-                        setDescription(value);
-                        break;
-                    case "isProtected":
-                        setProtected(value);
-                        file?.update({
-                            Protect: value ? WsDfu.DFUChangeProtection.Protect : WsDfu.DFUChangeProtection.Unprotect,
-                        }).then(() => {
-                            refreshData();
-                        }).catch(err => logger.error(err));
-                        break;
-                    case "isRestricted":
-                        setRestricted(value);
-                        file?.update({
-                            Restrict: value ? WsDfu.DFUChangeRestriction.Restrict : WsDfu.DFUChangeRestriction.Unrestricted,
-                        }).catch(err => logger.error(err));
-                        break;
-                }
-            }} />
-        </ScrollablePane>
+        <Sticky stickyPosition={StickyPositionType.Header}>
+            <CommandBar items={buttons} />
+            {showMessageBar &&
+                <MessageBar intent="success">
+                    <MessageBarBody>{nlsHPCC.SuccessfullySaved}</MessageBarBody>
+                    <MessageBarActions containerAction={<Button onClick={dismissMessageBar} aria-label={nlsHPCC.Close} appearance="transparent" icon={<DismissRegular />} />} />
+                </MessageBar>
+            }
+            <div style={{ display: "inline-block" }}>
+                <h2>
+                    <img src={compressedImage} />&nbsp;
+                    <img src={protectedImage} />&nbsp;
+                    <img src={stateImage} />&nbsp;
+                    {file?.Name}
+                </h2>
+            </div>
+        </Sticky>
+        <TableGroup fields={{
+            "Wuid": { label: nlsHPCC.Workunit, type: "link", value: file?.Wuid, href: `#/${isDFUWorkunit ? "dfu" : ""}workunits/${file?.Wuid}`, readonly: true, },
+            "Owner": { label: nlsHPCC.Owner, type: "string", value: file?.Owner, readonly: true },
+            "SuperOwner": { label: nlsHPCC.SuperFile, type: "links", links: superfiles?.map(row => ({ label: "", type: "link", value: row.Name, href: `#/files/${row.NodeGroup !== null ? row.NodeGroup : undefined}/${row.Name}` })) },
+            "NodeGroup": { label: nlsHPCC.ClusterName, type: "string", value: file?.NodeGroup, readonly: true },
+            "Description": { label: nlsHPCC.Description, type: "string", value: description },
+            "JobName": { label: nlsHPCC.JobName, type: "string", value: file?.JobName, readonly: true },
+            "AccessCost": { label: nlsHPCC.FileAccessCost, type: "string", value: `${formatCost(file?.AccessCost)}`, readonly: true },
+            "AtRestCost": { label: nlsHPCC.FileCostAtRest, type: "string", value: `${formatCost(file?.AtRestCost)}`, readonly: true },
+            "isRestricted": { label: nlsHPCC.Restricted, type: "checkbox", value: restricted },
+            "ContentType": { label: nlsHPCC.ContentType, type: "string", value: file?.ContentType, readonly: true },
+            "KeyType": { label: nlsHPCC.KeyType, type: "string", value: file?.KeyType, readonly: true },
+            "Format": { label: nlsHPCC.Format, type: "string", value: file?.Format, readonly: true },
+            "IsCompressed": { label: nlsHPCC.IsCompressed, type: "checkbox", value: file?.IsCompressed, readonly: true },
+            "CompressedFileSizeString": { label: nlsHPCC.CompressedFileSize, type: "string", value: file?.CompressedFileSize ? Utility.safeFormatNum(file?.CompressedFileSize) : "", readonly: true },
+            "CompressionType": { label: nlsHPCC.CompressionType, type: "string", value: file?.CompressionType, readonly: true },
+            "Filesize": { label: nlsHPCC.FileSize, type: "string", value: file?.Filesize, readonly: true },
+            "PercentCompressed": { label: nlsHPCC.PercentCompressed, type: "string", value: file?.PercentCompressed, readonly: true },
+            "Modified": { label: nlsHPCC.Modified, type: "string", value: file?.Modified, readonly: true },
+            "ExpirationDate": { label: nlsHPCC.ExpirationDate, type: "string", value: file?.ExpirationDate, readonly: true },
+            "ExpireDays": { label: nlsHPCC.ExpireDays, type: "string", value: file?.ExpireDays ? file?.ExpireDays.toString() : "", readonly: true },
+            "Directory": { label: nlsHPCC.Directory, type: "string", value: file?.Dir, readonly: true },
+            "PathMask": { label: nlsHPCC.PathMask, type: "string", value: file?.PathMask, readonly: true },
+            "RecordSize": { label: nlsHPCC.RecordSize, type: "string", value: file?.RecordSize, readonly: true },
+            "RecordCount": { label: nlsHPCC.RecordCount, type: "string", value: file?.RecordCount, readonly: true },
+            "IsReplicated": { label: nlsHPCC.IsReplicated, type: "checkbox", value: (file?.filePartsOnCluster() ?? []).length > 0, readonly: true },
+            "NumParts": { label: nlsHPCC.FileParts, type: "number", value: file?.NumParts, readonly: true },
+            "MinSkew": { label: nlsHPCC.MinSkew, type: "string", value: file?.Stat?.MinSkew ? `${file.Stat.MinSkew}%` : "", readonly: true },
+            "MaxSkew": { label: nlsHPCC.MaxSkew, type: "string", value: file?.Stat?.MaxSkew ? `${file.Stat.MaxSkew}%` : "", readonly: true },
+            "MinSkewPart": { label: nlsHPCC.MinSkewPart, type: "string", value: file?.Stat?.MinSkewPart === undefined ? "" : file?.Stat?.MinSkewPart?.toString(), readonly: true },
+            "MaxSkewPart": { label: nlsHPCC.MaxSkewPart, type: "string", value: file?.Stat?.MaxSkewPart === undefined ? "" : file?.Stat?.MaxSkewPart?.toString(), readonly: true },
+        }} onChange={(id, value) => {
+            switch (id) {
+                case "Description":
+                    setDescription(value);
+                    break;
+                case "isProtected":
+                    setProtected(value);
+                    file?.update({
+                        Protect: value ? WsDfu.DFUChangeProtection.Protect : WsDfu.DFUChangeProtection.Unprotect,
+                    }).then(() => {
+                        refreshData();
+                    }).catch(err => logger.error(err));
+                    break;
+                case "isRestricted":
+                    setRestricted(value);
+                    file?.update({
+                        Restrict: value ? WsDfu.DFUChangeRestriction.Restrict : WsDfu.DFUChangeRestriction.Unrestricted,
+                    }).catch(err => logger.error(err));
+                    break;
+            }
+        }} />
         <CopyFile logicalFiles={[logicalFile]} showForm={showCopyFile} setShowForm={setShowCopyFile} />
         <DesprayFile logicalFiles={[logicalFile]} showForm={showDesprayFile} setShowForm={setShowDesprayFile} />
         <RenameFile logicalFiles={[logicalFile]} showForm={showRenameFile} setShowForm={setShowRenameFile} />

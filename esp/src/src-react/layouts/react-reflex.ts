@@ -1,29 +1,50 @@
-import { mergeStyleSets } from "@fluentui/react";
+import { makeStyles } from "@fluentui/react-components";
 export { ReflexContainer, ReflexElement, ReflexSplitter } from "react-reflex";
 
 import "react-reflex/styles.css";
 
-export const classNames = mergeStyleSets({
+export const useReflexClassNames = makeStyles({
     reflexScrollPane: {
-        borderWidth: 1,
-        borderStyle: "solid",
-        borderColor: "darkgray"
+        borderTopWidth: "1px",
+        borderRightWidth: "1px",
+        borderBottomWidth: "1px",
+        borderLeftWidth: "1px",
+        borderTopStyle: "solid",
+        borderRightStyle: "solid",
+        borderBottomStyle: "solid",
+        borderLeftStyle: "solid",
+        borderTopColor: "darkgray",
+        borderRightColor: "darkgray",
+        borderBottomColor: "darkgray",
+        borderLeftColor: "darkgray",
     },
     reflexPane: {
-        borderWidth: 1,
-        borderStyle: "solid",
-        borderColor: "darkgray",
+        borderTopWidth: "1px",
+        borderRightWidth: "1px",
+        borderBottomWidth: "1px",
+        borderLeftWidth: "1px",
+        borderTopStyle: "solid",
+        borderRightStyle: "solid",
+        borderBottomStyle: "solid",
+        borderLeftStyle: "solid",
+        borderTopColor: "darkgray",
+        borderRightColor: "darkgray",
+        borderBottomColor: "darkgray",
+        borderLeftColor: "darkgray",
         overflow: "hidden"
     },
     reflexSplitter: {
         position: "relative",
         height: "5px",
         backgroundColor: "transparent",
-        borderStyle: "none"
+        borderTopStyle: "none",
+        borderRightStyle: "none",
+        borderBottomStyle: "none",
+        borderLeftStyle: "none",
     },
     reflexSplitterDiv: {
-        fontFamily: "Lucida Sans,Lucida Grande,Arial !important",
-        fontSize: "13px !important",
+        fontFamily: "Lucida Sans,Lucida Grande,Arial",
+        fontSize: "13px",
         cursor: "row-resize",
         position: "absolute",
         left: "49%",

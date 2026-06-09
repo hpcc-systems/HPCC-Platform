@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ICommandBarItemProps } from "@fluentui/react";
+import { ICommandBarItemProps } from "../components/CommandBarV9";
 import { useConst } from "@fluentui/react-hooks";
 import { QueryRequest, QuerySortItem } from "src/store/Memory";
 import { createCopyDownloadSelection } from "../components/Common";

@@ -1,14 +1,13 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
 import { useConst } from "@fluentui/react-hooks";
 import * as ESPActivity from "src/ESPActivity";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { useGrid } from "../hooks/grid";
 import { useBuildInfo } from "../hooks/platform";
-import { ReflexContainer, ReflexElement, ReflexSplitter, classNames, styles } from "../layouts/react-reflex";
+import { ReflexContainer, ReflexElement, ReflexSplitter, useReflexClassNames, styles } from "../layouts/react-reflex";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { ShortVerticalDivider } from "./Common";
 import { selector, tree } from "./DojoGrid";
 import { Summary } from "./DiskUsage";
 
@@ -60,6 +59,7 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
 }) => {
 
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
+    const classNames = useReflexClassNames();
 
     const [, { isContainer }] = useBuildInfo();
 
@@ -180,7 +180,7 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => activity.refresh()
         },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider },
         {
             key: "open", text: nlsHPCC.Open, disabled: !uiState.wuSelected && !uiState.thorClusterSelected, iconProps: { iconName: "WindowEdit" },
             onClick: () => {
@@ -203,7 +203,7 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
                 }
             }
         },
-        { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_2", itemType: ContextualMenuItemType.Divider },
         {
             key: "pause", text: nlsHPCC.Pause, disabled: !uiState.clusterNotPausedSelected,
             onClick: () => {
@@ -240,7 +240,7 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
                 promises.refresh();
             }
         },
-        { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_3", itemType: ContextualMenuItemType.Divider },
         {
             key: "wu-pause", text: nlsHPCC.Pause, disabled: !uiState.wuSelected,
             onClick: () => {
@@ -289,7 +289,7 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
                 promises.refresh();
             }
         },
-        { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_4", itemType: ContextualMenuItemType.Divider },
         {
             key: "wu-high", text: nlsHPCC.High, disabled: !uiState.wuCanHigh,
             onClick: () => wuPriority("high")
@@ -302,7 +302,7 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
             key: "wu-low", text: nlsHPCC.Low, disabled: !uiState.wuCanLow,
             onClick: () => wuPriority("low")
         },
-        { key: "divider_5", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_5", itemType: ContextualMenuItemType.Divider },
         {
             key: "wu-top", text: nlsHPCC.Top, disabled: !uiState.wuCanUp,
             onClick: () => {

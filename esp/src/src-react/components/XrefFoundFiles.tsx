@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { formatNum } from "src/Utility";
@@ -7,7 +7,6 @@ import * as WsDFUXref from "src/WsDFUXref";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { useConfirm } from "../hooks/confirm";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
-import { ShortVerticalDivider } from "./Common";
 
 const logger = scopedLogger("src-react/components/XrefFoundFiles.tsx");
 
@@ -108,7 +107,7 @@ export const XrefFoundFiles: React.FunctionComponent<XrefFoundFilesProps> = ({
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => refreshData()
         },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider },
         {
             key: "attach", text: nlsHPCC.Attach, disabled: !uiState.hasSelection,
             onClick: () => setShowAttachConfirm(true)
@@ -117,7 +116,7 @@ export const XrefFoundFiles: React.FunctionComponent<XrefFoundFilesProps> = ({
             key: "delete", text: nlsHPCC.Delete, disabled: !uiState.hasSelection,
             onClick: () => setShowDeleteConfirm(true)
         },
-        { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_2", itemType: ContextualMenuItemType.Divider },
     ], [refreshData, setShowAttachConfirm, setShowDeleteConfirm, uiState]);
 
     const copyButtons = useCopyButtons(columns, selection, "xrefsFoundFiles");
