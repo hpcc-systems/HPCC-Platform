@@ -184,7 +184,7 @@ export const DetailsRow: React.FunctionComponent<IDetailsRowProps> = ({ item, it
             <TableSelectionCell type="radio" checked={isSelected} style={{ width: 32, minWidth: 32, maxWidth: 32, borderRight: "1px solid var(--colorNeutralBackground5)" }} onClick={e => { e.stopPropagation(); onToggle(); }} />
         )}
         {columns.map(col => (
-            <TableCell key={col.key} className={styles.cell} style={{ width: (col.data?.width !== undefined || col.maxWidth !== undefined) ? col.minWidth ?? 70 : undefined, minWidth: col.minWidth ?? 70, maxWidth: col.maxWidth, flexGrow: col.flexGrow ?? 0 }}>
+            <TableCell key={col.key} className={styles.cell} style={{ width: col.minWidth ?? 70, minWidth: col.minWidth ?? 70, maxWidth: col.maxWidth, flexGrow: col.flexGrow ?? 0 }}>
                 {col.onRender ? col.onRender(item, itemIndex, col) : <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{String(item[col.fieldName ?? col.key] ?? "")}</span>}
             </TableCell>
         ))}
@@ -274,18 +274,19 @@ function columnsAdapter(columns: FluentColumns, columnWidths: Map<string, any>):
         const width = persistedWidth ?? column.width;
         if (column?.selectorType === undefined && column?.hidden !== true) {
             if (column?.fluentColumn) {
+                const fluentColumn = column.fluentColumn;
                 retVal.push({
                     key,
                     name: column.label ?? key,
                     fieldName: column.field ?? key,
                     isIconOnly: !!column.headerIconElement,
-                    minWidth: width ?? 70,
-                    maxWidth: persistedWidth,
+                    minWidth: width ?? fluentColumn.minWidth ?? 70,
+                    maxWidth: persistedWidth ?? fluentColumn.maxWidth,
+                    ...fluentColumn,
                     data: column,
                     onRender: (item: any, index: number, col: IColumn) => {
                         return tooltipItemRenderer(item, index, col);
                     },
-                    ...column.fluentColumn
                 } as IColumn);
             } else {
                 retVal.push({
@@ -571,8 +572,8 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
         return selectionCellWidth + fluentColumns.reduce((sum, col) => sum + (col.minWidth ?? 70), 0);
     }, [fluentColumns, selectionMode]);
 
-    return <div style={{ position: "relative", height, overflow: "auto" }}>
-        <Table style={{ tableLayout: "fixed", minWidth: totalMinWidth }} size="small">
+    return <div style={{ position: "relative", height, overflowX: "auto", overflowY: "auto" }}>
+        <Table style={{ tableLayout: "fixed", width: "max-content", minWidth: totalMinWidth }} size="small">
             <TableHeader className={styles.header}>
                 <TableRow>
                     {selectionMode === SelectionMode.multiple && (
@@ -590,7 +591,7 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
                         <TableHeaderCell
                             key={col.key}
                             className={styles.headerCell}
-                            style={{ width: (col.data?.width !== undefined || col.maxWidth !== undefined) ? col.minWidth ?? 70 : undefined, minWidth: col.minWidth ?? 70, maxWidth: col.maxWidth, flexGrow: col.flexGrow ?? 0, borderRight: "1px solid var(--colorNeutralBackground5)" }}
+                            style={{ width: col.minWidth ?? 70, minWidth: col.minWidth ?? 70, maxWidth: col.maxWidth, flexGrow: col.flexGrow ?? 0, borderRight: "1px solid var(--colorNeutralBackground5)" }}
                             onClick={() => onColumnClick(col)}
                             sortDirection={col.isSorted ? (col.isSortedDescending ? "descending" : "ascending") : undefined}
                             data-column-key={col.key}
@@ -625,7 +626,7 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
                                 </TableCell>
                             )}
                             {fluentColumns.map(col => (
-                                <TableCell key={col.key} className={styles.cell} style={{ width: (col.data?.width !== undefined || col.maxWidth !== undefined) ? col.minWidth ?? 70 : undefined, minWidth: col.minWidth ?? 70 }}>
+                                <TableCell key={col.key} className={styles.cell} style={{ width: col.minWidth ?? 70, minWidth: col.minWidth ?? 70 }}>
                                     <SkeletonItem style={{ height: "12px" }} />
                                 </TableCell>
                             ))}
