@@ -47,6 +47,12 @@
 #define LEGACY_GLOBAL_SCOPE "workunit"
 #define GLOBAL_SCOPE ""
 
+constexpr const char * targetArchitectureX86_64Linux = "x86_64-linux";
+constexpr const char * defaultTargetArchitecture = targetArchitectureX86_64Linux;
+constexpr const char * targetArchitectureArm64Linux = "arm64-linux";
+constexpr const char * targetArchitectureArm64MacOS = "arm64-macos";
+constexpr const char * targetArchitectureDebugValue = "targetArchitecture";
+
 #define CHEAP_UCHAR_DEF
 #ifdef _WIN32
 typedef char16_t UChar;
@@ -1655,6 +1661,10 @@ extern WORKUNIT_API StringBuffer &formatGraphTimerScope(StringBuffer &str, unsig
 extern WORKUNIT_API bool parseGraphTimerLabel(const char *label, StringAttr &graphName, unsigned & graphNum, unsigned &subGraphNum, unsigned &subId);
 extern WORKUNIT_API bool parseGraphScope(const char *scope, StringAttr &graphName, unsigned & graphNum, unsigned &subGraphId);
 extern WORKUNIT_API void addExceptionToWorkunit(IWorkUnit * wu, ErrorSeverity severity, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, unsigned activity);
+extern WORKUNIT_API StringBuffer & normalizeTargetArchitecture(StringBuffer & targetArchitecture, const char * architecture);
+extern WORKUNIT_API StringBuffer & getWorkUnitTargetArchitecture(StringBuffer & targetArchitecture, const IConstWorkUnit * wu);
+extern WORKUNIT_API void setWorkUnitTargetArchitecture(IWorkUnit * wu, const char * architecture);
+extern WORKUNIT_API StringBuffer & getProcessTargetArchitecture(StringBuffer & targetArchitecture, const IPropertyTree * process);
 extern WORKUNIT_API void setWorkUnitFactory(IWorkUnitFactory *_factory);
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory();
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory(ISecManager *secmgr, ISecUser *secuser);

@@ -7115,6 +7115,61 @@ static StringBuffer &getDebugPropName(StringBuffer &result, const char *propName
     return result;
 }
 
+StringBuffer & normalizeTargetArchitecture(StringBuffer & targetArchitecture, const char * architecture)
+{
+    targetArchitecture.clear();
+    StringBuffer normalized;
+    if (architecture)
+        normalized.append(architecture);
+    normalized.trim().toLowerCase();
+    if (normalized.isEmpty())
+        return targetArchitecture.append(defaultTargetArchitecture);
+
+    const char * value = normalized.str();
+    if (strisame(value, "x86_64") || strisame(value, "x86-64") || strisame(value, "amd64") ||
+        strisame(value, "x86_64-linux") || strisame(value, "amd64-linux"))
+        return targetArchitecture.append(targetArchitectureX86_64Linux);
+    if (strisame(value, "arm64") || strisame(value, "aarch64") ||
+        strisame(value, "arm64-linux") || strisame(value, "aarch64-linux"))
+        return targetArchitecture.append(targetArchitectureArm64Linux);
+    if (strisame(value, "arm64-macos") || strisame(value, "arm64-darwin") ||
+        strisame(value, "aarch64-macos") || strisame(value, "aarch64-darwin"))
+        return targetArchitecture.append(targetArchitectureArm64MacOS);
+    return targetArchitecture.append(normalized.str());
+}
+
+StringBuffer & getWorkUnitTargetArchitecture(StringBuffer & targetArchitecture, const IConstWorkUnit * wu)
+{
+    SCMStringBuffer architecture;
+    if (wu)
+        wu->getDebugValue(targetArchitectureDebugValue, architecture);
+    return normalizeTargetArchitecture(targetArchitecture, architecture.str());
+}
+
+void setWorkUnitTargetArchitecture(IWorkUnit * wu, const char * architecture)
+{
+    assertex(wu);
+    StringBuffer supplied;
+    if (architecture)
+        supplied.append(architecture);
+    supplied.trim();
+    if (supplied.isEmpty())
+    {
+        wu->setDebugValue(targetArchitectureDebugValue, nullptr, true);
+        return;
+    }
+
+    StringBuffer normalized;
+    normalizeTargetArchitecture(normalized, supplied.str());
+    wu->setDebugValue(targetArchitectureDebugValue, normalized.str(), true);
+}
+
+StringBuffer & getProcessTargetArchitecture(StringBuffer & targetArchitecture, const IPropertyTree * process)
+{
+    const char * architecture = process ? process->queryProp("@architecture") : nullptr;
+    return normalizeTargetArchitecture(targetArchitecture, architecture);
+}
+
 CLocalWorkUnit::CLocalWorkUnit(ISecManager *secmgr, ISecUser *secuser)
 {
     clearCached(false);

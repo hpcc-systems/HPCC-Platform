@@ -25,6 +25,9 @@ class wuTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testLooksLikeAWuid);
         CPPUNIT_TEST(testLooksLikeAPublishWuid);
         CPPUNIT_TEST(testWuidPattern);
+        CPPUNIT_TEST(testTargetArchitectureNormalization);
+        CPPUNIT_TEST(testTargetArchitectureDefaults);
+        CPPUNIT_TEST(testWorkUnitTargetArchitecturePersistence);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -111,6 +114,45 @@ public:
     void testWuidPattern()
     {
         CPPUNIT_ASSERT_MESSAGE("wuidPattern should pass", looksLikeAWuid(WuidPattern(" \t\rw12345678-123456 \t\r"), 'W'));
+    }
+
+    void testTargetArchitectureNormalization()
+    {
+        StringBuffer normalized;
+        CPPUNIT_ASSERT_EQUAL_STR(targetArchitectureX86_64Linux, normalizeTargetArchitecture(normalized, nullptr).str());
+        CPPUNIT_ASSERT_EQUAL_STR(targetArchitectureX86_64Linux, normalizeTargetArchitecture(normalized, "").str());
+        CPPUNIT_ASSERT_EQUAL_STR(targetArchitectureX86_64Linux, normalizeTargetArchitecture(normalized, " AMD64 ").str());
+        CPPUNIT_ASSERT_EQUAL_STR(targetArchitectureX86_64Linux, normalizeTargetArchitecture(normalized, "x86-64").str());
+        CPPUNIT_ASSERT_EQUAL_STR(targetArchitectureArm64Linux, normalizeTargetArchitecture(normalized, "aarch64").str());
+        CPPUNIT_ASSERT_EQUAL_STR(targetArchitectureArm64Linux, normalizeTargetArchitecture(normalized, " AARCH64-LINUX ").str());
+        CPPUNIT_ASSERT_EQUAL_STR(targetArchitectureArm64MacOS, normalizeTargetArchitecture(normalized, "arm64-darwin").str());
+        CPPUNIT_ASSERT_EQUAL_STR("riscv64-linux", normalizeTargetArchitecture(normalized, " RiscV64-Linux ").str());
+    }
+
+    void testTargetArchitectureDefaults()
+    {
+        StringBuffer targetArchitecture;
+        CPPUNIT_ASSERT_EQUAL_STR(defaultTargetArchitecture, getWorkUnitTargetArchitecture(targetArchitecture, nullptr).str());
+        CPPUNIT_ASSERT_EQUAL_STR(defaultTargetArchitecture, getProcessTargetArchitecture(targetArchitecture, nullptr).str());
+
+        Owned<IPropertyTree> process = createPTree("Process");
+        CPPUNIT_ASSERT_EQUAL_STR(defaultTargetArchitecture, getProcessTargetArchitecture(targetArchitecture, process).str());
+        process->setProp("@architecture", "arm64");
+        CPPUNIT_ASSERT_EQUAL_STR(targetArchitectureArm64Linux, getProcessTargetArchitecture(targetArchitecture, process).str());
+    }
+
+    void testWorkUnitTargetArchitecturePersistence()
+    {
+        Owned<ILocalWorkUnit> wu = createLocalWorkUnit();
+        StringBuffer targetArchitecture;
+        CPPUNIT_ASSERT_EQUAL_STR(defaultTargetArchitecture, getWorkUnitTargetArchitecture(targetArchitecture, wu).str());
+
+        setWorkUnitTargetArchitecture(wu, "aarch64");
+        CPPUNIT_ASSERT_EQUAL_STR(targetArchitectureArm64Linux, getWorkUnitTargetArchitecture(targetArchitecture, wu).str());
+
+        SCMStringBuffer rawValue;
+        wu->getDebugValue(targetArchitectureDebugValue, rawValue);
+        CPPUNIT_ASSERT_EQUAL_STR(targetArchitectureArm64Linux, rawValue.str());
     }
 };
 
