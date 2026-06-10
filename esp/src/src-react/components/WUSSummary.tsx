@@ -188,6 +188,7 @@ export const WUSSummary: React.FunctionComponent<WUSSummaryProps> = ({
                         setExceptions((prev) => {
                             const retVal = { ...prev };
                             exceptions.forEach(exception => {
+                                if (exception.Message?.startsWith("While expanding macro")) return;
                                 if (!retVal[exception.Code]) {
                                     retVal[exception.Code] = { severity: exception.Severity, messageSummary: exception.Message, errors: [] };
                                 } else {
