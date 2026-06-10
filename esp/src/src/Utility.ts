@@ -301,7 +301,7 @@ export function downloadToCSV(grid, rows, fileName) {
     container.push(headerNames);
 
     arrayUtil.forEach(rows, function (cells, idx) {
-        container.push(cells);
+        container.push(cells.map(cell => csvEncode(cell ?? "")));
     });
 
     arrayUtil.forEach(container, function (header, idx) {
