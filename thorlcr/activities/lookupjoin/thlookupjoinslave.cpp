@@ -1532,6 +1532,7 @@ public:
         {
             gotRHS = false;
             rhsTableLen = 0;
+            gatheredRHSNodeStreams.kill();
         }
     }
     virtual void start() override
@@ -2862,6 +2863,14 @@ public:
                 {
                     failedOverToLocal = false;
                     rhsCollated = rhsCompacted = false;
+                }
+
+                {
+                    CriticalBlock b(critOverflowWriteFileIO);
+                    overflowWriteFile.clear();
+                    overflowWriteFileIO.clear();
+                    overflowWriteStream.clear();
+                    overflowWriteCount = 0;
                 }
             }
             failedOverToStandard = false;
