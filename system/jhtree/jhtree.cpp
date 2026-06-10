@@ -73,7 +73,7 @@
 constexpr __uint64 defaultFetchThresholdNs = 20000; // Assume anything < 20us comes from the page cache, everything above probably went to disk
 
 static std::atomic<CKeyStore *> keyStore(nullptr);
-static unsigned defaultKeyIndexLimit = 200;
+
 static CNodeCache *nodeCache = NULL;
 static CriticalSection *initCrit = NULL;
 static cycle_t fetchThresholdCycles = 0;
@@ -1067,12 +1067,9 @@ inline CKeyStore *queryKeyStore()
     return keyStore;
 }
 
-unsigned setKeyIndexCacheSize(unsigned limit)
-{
-    return queryKeyStore()->setKeyCacheLimit(limit);
-}
 
-CKeyStore::CKeyStore() : keyIndexCache(defaultKeyIndexLimit)
+
+CKeyStore::CKeyStore()
 {
 #if 0
     mm.setown(createSharedMemoryManager("RichardsSharedMemManager", 0x100000));
@@ -1112,11 +1109,7 @@ unsigned CKeyStore::getUniqId(unsigned useId, const char * filename)
     return id;
 }
 
-unsigned CKeyStore::setKeyCacheLimit(unsigned limit)
-{
-    synchronized block(mutex);
-    return keyIndexCache.setCacheLimit(limit);
-}
+
 
 IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile *part, IFileIO *iFileIO, unsigned fileIdx, IMemoryMappedFile *iMappedFile, bool isTLK, size32_t blockedIOSize)
 {
@@ -1128,7 +1121,8 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
     {
         //This mutex is now only held when the object is being created - any load will happen outside.
         synchronized block(mutex);
-        keyIndex = keyIndexCache.query(fname);
+        auto it = keyIndexCache.find(fname.str());
+        keyIndex = (it != keyIndexCache.end()) ? it->second.get() : nullptr;
         if (NULL == keyIndex)
         {
             if (iMappedFile)
@@ -1159,7 +1153,7 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
                 else
                     throw MakeStringException(0, "Failed to open index file %s", fileName);
             }
-            keyIndexCache.replace(fname, *LINK(keyIndex));
+            keyIndexCache.emplace(fname.str(), LINK(keyIndex));
         }
         else
         {
@@ -1197,12 +1191,10 @@ StringBuffer &CKeyStore::getMetrics(StringBuffer &xml)
     xml.append(" <IndexMetrics>\n");
 
     synchronized block(mutex);
-    Owned<CKeyIndexMRUCache::CMRUIterator> iter = keyIndexCache.getIterator();
-    ForEach(*iter)
-    {           
-        CKeyIndexMapping &mapping = iter->query();
-        IKeyIndex &index = mapping.query();
-        const char *name = mapping.queryFindString();
+    for (const auto &entry : keyIndexCache)
+    {
+        IKeyIndex &index = *entry.second;
+        const char *name = entry.first.c_str();
         xml.appendf(" <Index name=\"%s\" scans=\"%d\" seeks=\"%d\"/>\n", name, index.queryScans(), index.querySeeks());
     }
     xml.append(" </IndexMetrics>\n");
@@ -1226,11 +1218,9 @@ void CKeyStore::recordEventIndexInformation()
     }
 
     synchronized block(mutex);
-    Owned<CKeyIndexMRUCache::CMRUIterator> iter = keyIndexCache.getIterator();
-    ForEach(*iter)
+    for (const auto &entry : keyIndexCache)
     {
-        CKeyIndexMapping &mapping = iter->query();
-        IKeyIndex &index = mapping.query();
+        IKeyIndex &index = *entry.second;
         unsigned id = index.queryId();
         const char *name = index.queryFileName();
         const IFileIO * io = index.queryFileIO();
@@ -1249,11 +1239,9 @@ void CKeyStore::resetMetrics()
 {
     synchronized block(mutex);
 
-    Owned<CKeyIndexMRUCache::CMRUIterator> iter = keyIndexCache.getIterator();
-    ForEach(*iter)
-    {           
-        CKeyIndexMapping &mapping = iter->query();
-        IKeyIndex &index = mapping.query();
+    for (const auto &entry : keyIndexCache)
+    {
+        IKeyIndex &index = *entry.second;
         index.resetCounts();
     }
 }
@@ -1265,25 +1253,20 @@ void CKeyStore::clearCache(bool killAll)
     if (killAll)
     {
         clearNodeCache(); // no point in keeping old nodes cached if key store cache has been cleared
-        keyIndexCache.kill();
+        keyIndexCache.clear();
     }
     else
     {
         StringArray goers;
-        Owned<CKeyIndexMRUCache::CMRUIterator> iter = keyIndexCache.getIterator();
-        ForEach(*iter)
-        {           
-            CKeyIndexMapping &mapping = iter->query();
-            IKeyIndex &index = mapping.query();
+        for (const auto &entry : keyIndexCache)
+        {
+            IKeyIndex &index = *entry.second;
             if (!index.IsShared())
-            {
-                const char *name = mapping.queryFindString();
-                goers.append(name);
-            }
+                goers.append(entry.first.c_str());
         }
         ForEachItemIn(idx, goers)
         {
-            keyIndexCache.remove(goers.item(idx));
+            keyIndexCache.erase(goers.item(idx));
         }
     }
 }
@@ -1294,45 +1277,41 @@ void CKeyStore::clearCacheEntry(const char *keyName)
         return;  // nothing to do
 
     synchronized block(mutex);
-    Owned<CKeyIndexMRUCache::CMRUIterator> iter = keyIndexCache.getIterator();
 
     StringArray goers;
-    ForEach(*iter)
-    {           
-        CKeyIndexMapping &mapping = iter->query();
-        IKeyIndex &index = mapping.query();
+    for (const auto &entry : keyIndexCache)
+    {
+        IKeyIndex &index = *entry.second;
         if (!index.IsShared())
         {
-            const char *name = mapping.queryFindString();
+            const char *name = entry.first.c_str();
             if (strstr(name, keyName) != 0)  // keyName doesn't have drive or part number associated with it
                 goers.append(name);
         }
     }
     ForEachItemIn(idx, goers)
     {
-        keyIndexCache.remove(goers.item(idx));
+        keyIndexCache.erase(goers.item(idx));
     }
 }
 
 void CKeyStore::clearCacheEntry(const IFileIO *io)
 {
     synchronized block(mutex);
-    Owned<CKeyIndexMRUCache::CMRUIterator> iter = keyIndexCache.getIterator();
 
     StringArray goers;
-    ForEach(*iter)
+    for (const auto &entry : keyIndexCache)
     {
-        CKeyIndexMapping &mapping = iter->query();
-        IKeyIndex &index = mapping.query();
+        IKeyIndex &index = *entry.second;
         if (!index.IsShared())
         {
             if (index.queryFileIO()==io)
-                goers.append(mapping.queryFindString());
+                goers.append(entry.first.c_str());
         }
     }
     ForEachItemIn(idx, goers)
     {
-        keyIndexCache.remove(goers.item(idx));
+        keyIndexCache.erase(goers.item(idx));
     }
 }
 

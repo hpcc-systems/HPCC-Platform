@@ -143,7 +143,6 @@ interface ICacheInfoRecorder
 extern jhtree_decl void clearKeyStoreCache(bool killAll);
 extern jhtree_decl void clearKeyStoreCacheEntry(const char *name);
 extern jhtree_decl void clearKeyStoreCacheEntry(const IFileIO *io);
-extern jhtree_decl unsigned setKeyIndexCacheSize(unsigned limit);
 extern jhtree_decl void clearNodeCache();
 extern jhtree_decl void logCacheState();
 // these methods return previous values

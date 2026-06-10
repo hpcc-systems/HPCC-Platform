@@ -19,6 +19,8 @@
 #define _JHTREEI_INCL
 
 #include <memory>
+#include <string>
+#include <unordered_map>
 
 #include "jmutex.hpp"
 #include "jhutil.hpp"
@@ -29,27 +31,13 @@
 #include "jhtree.hpp"
 #include "bloom.hpp"
 
-class CKeyIndexMapping : public OwningStringHTMapping<IKeyIndex>
-{
-public:
-    CKeyIndexMapping(const char *fp, IKeyIndex &et) : OwningStringHTMapping<IKeyIndex>(fp, et) { }
-
-//The following pointers are used to maintain the position in the LRU cache
-    CKeyIndexMapping * prev = nullptr;
-    CKeyIndexMapping * next = nullptr;
-};
-
-
-typedef OwningStringSuperHashTableOf<CKeyIndexMapping> CKeyIndexTable;
-typedef CMRUCacheMaxCountOf<const char *, IKeyIndex, CKeyIndexMapping, CKeyIndexTable> CKeyIndexMRUCache;
-
-typedef class MapStringToMyClass<IKeyIndex> KeyCache;
+typedef std::unordered_map<std::string, Owned<IKeyIndex>> CKeyIndexCache;
 
 class CKeyStore
 {
 private:
     Mutex mutex;
-    CKeyIndexMRUCache keyIndexCache;
+    CKeyIndexCache keyIndexCache;
     std::atomic<unsigned> nextId { 0x80000000 };
 
     unsigned getUniqId(unsigned useId, const char * filename);
@@ -63,7 +51,6 @@ public:
     void clearCache(bool killAll);
     void clearCacheEntry(const char *name);
     void clearCacheEntry(const IFileIO *io);
-    unsigned setKeyCacheLimit(unsigned limit);
     StringBuffer &getMetrics(StringBuffer &xml);
     void recordEventIndexInformation();
     void resetMetrics();

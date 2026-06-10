@@ -2848,12 +2848,6 @@ void CJobBase::startJob()
     setBlobCacheMem(keyBlobCacheBytes);
     DBGLOG("Key node caching setting: node=%u MB, leaf=%u MB, blob=%u MB", keyNodeCacheMB, keyLeafCacheMB, keyBlobCacheMB);
 
-    unsigned keyFileCacheLimit = (unsigned)getWorkUnitValueInt("keyFileCacheLimit", 0);
-    if (!keyFileCacheLimit)
-        keyFileCacheLimit = (querySlaves()+1)*2;
-    setKeyIndexCacheSize(keyFileCacheLimit);
-    DBGLOG("Key file cache size set to: %d", keyFileCacheLimit);
-
     // NB: these defaults match defaults in jfile rename retry mechanism
     constexpr unsigned defaultNumRenameRetries = 4;
     constexpr bool defaultManualRenameChk = true;

@@ -1368,7 +1368,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         simpleLocalKeyedJoins = topology->getPropBool("@simpleLocalKeyedJoins", true);
         inMemoryKeysEnabled = topology->getPropBool("@inMemoryKeysEnabled", true);
 
-        setKeyIndexCacheSize((unsigned)-1); // unbound
         nodeCacheMB = topology->getPropInt("@nodeCacheMem", 100); 
         setNodeCacheMem(nodeCacheMB * 0x100000ULL);
         leafCacheMB = topology->getPropInt("@leafCacheMem", 50);
