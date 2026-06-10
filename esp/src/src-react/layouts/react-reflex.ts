@@ -1,5 +1,6 @@
-import { makeStyles } from "@fluentui/react-components";
+import type { CSSProperties } from "react";
 export { ReflexContainer, ReflexElement, ReflexSplitter } from "react-reflex";
+import { makeStyles } from "@fluentui/react-components";
 
 import "react-reflex/styles.css";
 
@@ -56,5 +57,5 @@ export const useReflexClassNames = makeStyles({
 });
 
 export const styles = {
-    reflexSplitter: { height: 5, position: "relative" } as React.CSSProperties
+    reflexSplitter: { height: 5, position: "relative" } as CSSProperties
 };

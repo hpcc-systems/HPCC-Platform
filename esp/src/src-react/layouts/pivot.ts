@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { tokens } from "@fluentui/react-components";
 
 export interface Size {
@@ -7,9 +8,9 @@ export interface Size {
 
 export const pivotItemStyle = (size: Size, padding: number = 4) => {
     if (isNaN(size.width)) {
-        return { position: "absolute", padding: `${padding}px`, overflow: "auto", zIndex: 0 } as React.CSSProperties;
+        return { position: "absolute", padding: `${padding}px`, overflow: "auto", zIndex: 0 } as CSSProperties;
     }
-    return { position: "absolute", padding: `${padding}px`, overflow: "auto", zIndex: 0, width: size.width - padding * 2, height: size.height - 45 - padding * 2 } as React.CSSProperties;
+    return { position: "absolute", padding: `${padding}px`, overflow: "auto", zIndex: 0, width: size.width - padding * 2, height: size.height - 45 - padding * 2 } as CSSProperties;
 };
 
 interface usePivotItemDisableResponse {
