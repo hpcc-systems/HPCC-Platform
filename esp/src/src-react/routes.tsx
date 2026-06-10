@@ -61,7 +61,7 @@ function redirectToWorkunits(params: Record<string, unknown>, search?: string): 
 }
 
 function redirectToWUSummary(search?: string): false {
-    replaceUrl(`/workunits/wu-summary${search ?? ""}`);
+    replaceUrl(`/workunits/errors${search ?? ""}`);
     return false;
 }
 
@@ -231,9 +231,13 @@ export const routes: RoutesEx = [
     //  ECL  ---
     {
         mainNav: ["workunits"],
-        path: "/workunits/wu-summary", action: (ctx) => import("./components/WUSSummary").then(_ => {
+        path: "/workunits/wu-summary", action: (ctx) => redirectToWUSummary(ctx.search)
+    },
+    {
+        mainNav: ["workunits"],
+        path: "/workunits/errors", action: (ctx) => import("./components/WUSSummary").then(_ => {
             const filter = parseSearch(ctx.search) as any;
-            return <_.WUSSummary from={filter?.from} to={filter?.to} />;
+            return <_.WUSSummary from={filter?.from} to={filter?.to} filter={String(filter?.filter ?? "")} />;
         })
     },
     {

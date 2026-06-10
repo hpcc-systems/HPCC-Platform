@@ -1,6 +1,6 @@
 import * as React from "react";
-import { Accordion, AccordionHeader, AccordionItem, AccordionPanel, Badge, Field, makeStyles, ProgressBar, Label, Link, Text, Toolbar, ToolbarButton, tokens, ToolbarGroup } from "@fluentui/react-components";
-import { ArrowClockwiseRegular, ArrowRightFilled, ArrowResetFilled, DismissCircleRegular, WarningRegular, InfoRegular } from "@fluentui/react-icons";
+import { Accordion, AccordionHeader, AccordionItem, AccordionPanel, Badge, Field, makeStyles, ProgressBar, Label, Link, SearchBox, SearchBoxChangeEvent, Text, Toolbar, ToolbarButton, tokens, ToolbarGroup, ToolbarDivider } from "@fluentui/react-components";
+import { ArrowClockwiseRegular, ArrowResetFilled, ArrowRightFilled, DismissCircleRegular, FilterRegular, WarningRegular, InfoRegular } from "@fluentui/react-icons";
 import { DatePicker } from "@fluentui/react-datepicker-compat";
 import { timeFormat, timeParse } from "@hpcc-js/common";
 import { Workunit } from "@hpcc-js/comms";
@@ -20,7 +20,8 @@ const useStyles = makeStyles({
     toolbar: {
         justifyContent: "space-between",
     },
-    label: { marginLeft: tokens.spacingHorizontalM, marginRight: tokens.spacingHorizontalXS }
+    label: { marginLeft: tokens.spacingHorizontalM, marginRight: tokens.spacingHorizontalXS },
+    searchBox: { width: "220px" }
 });
 
 const dateFormatter = timeFormat("%Y-%m-%d");
@@ -108,11 +109,13 @@ interface Exceptions {
 export interface WUSSummaryProps {
     from?: string;
     to?: string;
+    filter?: string;
 }
 
 export const WUSSummary: React.FunctionComponent<WUSSummaryProps> = ({
     to = dateFormatter(new Date()),
-    from = dateFormatter(new Date(new Date().setDate(new Date().getDate() - 7)))
+    from = dateFormatter(new Date(new Date().setDate(new Date().getDate() - 7))),
+    filter = ""
 }) => {
     const end = dateParser(to);
     const start = dateParser(from);
@@ -123,6 +126,11 @@ export const WUSSummary: React.FunctionComponent<WUSSummaryProps> = ({
     const [other, setOther] = React.useState<Workunit[]>([]);
     const [exceptions, setExceptions] = React.useState<Exceptions>({});
     const [fetched, setFetched] = React.useState(0);
+    const [searchBoxValue, setSearchBoxValue] = React.useState(filter);
+
+    React.useEffect(() => {
+        setSearchBoxValue(filter);
+    }, [filter]);
 
     const fetchData = React.useCallback((start: Date, end: Date) => {
         let cancelled = false;
@@ -239,6 +247,35 @@ export const WUSSummary: React.FunctionComponent<WUSSummaryProps> = ({
         }
     }, []);
 
+    const filterTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    React.useEffect(() => {
+        return () => {
+            if (filterTimerRef.current) clearTimeout(filterTimerRef.current);
+        };
+    }, []);
+
+    const onFilterChange = React.useCallback((_evt: SearchBoxChangeEvent, data: { value: string }) => {
+        const value = data?.value ?? "";
+        setSearchBoxValue(value);
+        if (filterTimerRef.current) clearTimeout(filterTimerRef.current);
+        filterTimerRef.current = setTimeout(() => {
+            pushParams({ filter: value || undefined });
+        }, 500);
+    }, []);
+
+    const filteredExceptions = React.useMemo(() => {
+        if (!filter) return exceptions;
+        const lc = filter.toLowerCase();
+        return Object.fromEntries(
+            Object.entries(exceptions).filter(([code, entry]) =>
+                code.toLowerCase().includes(lc) ||
+                entry.messageSummary.toLowerCase().includes(lc) ||
+                entry.errors.some(e => e.message.toLowerCase().includes(lc) || e.workunit.Wuid?.toLowerCase().includes(lc))
+            )
+        );
+    }, [exceptions, filter]);
+
     return <>
         <HolyGrail
             header={<Toolbar className={styles.toolbar}>
@@ -247,8 +284,13 @@ export const WUSSummary: React.FunctionComponent<WUSSummaryProps> = ({
                     <DatePicker value={start} onSelectDate={onFromChange} placeholder={nlsHPCC.FromDate} className={styles.root} />
                     <ArrowRightFilled />
                     <DatePicker value={end} onSelectDate={onToChange} showCloseButton={true} placeholder={nlsHPCC.ToDate} className={styles.root} />
-                    <ToolbarButton icon={<ArrowResetFilled title={nlsHPCC.Reset} />} onClick={() => { pushParams({ from: undefined, to: undefined }); }} title={nlsHPCC.Reset}></ToolbarButton>
+                    <ToolbarButton icon={<ArrowResetFilled title={nlsHPCC.Reset} />} onClick={() => { pushParams({ from: undefined, to: undefined, filter: undefined }); setSearchBoxValue(""); }} title={nlsHPCC.Reset}></ToolbarButton>
                 </ToolbarGroup>
+                <ToolbarDivider />
+                <ToolbarGroup>
+                    <SearchBox value={searchBoxValue} onChange={onFilterChange} placeholder={nlsHPCC.Filter} contentBefore={<FilterRegular />} className={styles.searchBox} />
+                </ToolbarGroup>
+                <ToolbarDivider />
                 <ToolbarGroup>
                     <Label style={{ color: tokens.colorStatusSuccessForeground1 }} className={styles.label}>{nlsHPCC.Completed}:</Label><Badge appearance="tint" color="success">{completed.length}</Badge>
                     <Label style={{ color: tokens.colorStatusDangerForeground1 }} className={styles.label}>{nlsHPCC.Failed}:</Label><Badge appearance="tint" color="danger">{failed.length}</Badge>
@@ -264,11 +306,11 @@ export const WUSSummary: React.FunctionComponent<WUSSummaryProps> = ({
                                 <ProgressBar max={failed.length + 1} value={fetched + 1} />
                             </Field>
                             <Accordion multiple>
-                                {Object.keys(exceptions).map(code => {
+                                {Object.keys(filteredExceptions).map(code => {
                                     return <AccordionItem key={code} value={code}>
-                                        <AccordionHeader icon={severityIcon(exceptions[code].severity)} style={{ margin: 4, borderStyle: "solid", borderWidth: 1, borderColor: severityBorderColor(exceptions[code].severity), background: severityBackgroundColor(exceptions[code].severity) }}>{code} ({exceptions[code].errors.length}):  {exceptions[code].messageSummary}</AccordionHeader>
+                                        <AccordionHeader icon={severityIcon(filteredExceptions[code].severity)} style={{ margin: 4, borderStyle: "solid", borderWidth: 1, borderColor: severityBorderColor(filteredExceptions[code].severity), background: severityBackgroundColor(filteredExceptions[code].severity) }}>{code} ({filteredExceptions[code].errors.length}):  {filteredExceptions[code].messageSummary}</AccordionHeader>
                                         <AccordionPanel>
-                                            {exceptions[code].errors.map((err, idx) => {
+                                            {filteredExceptions[code].errors.map((err, idx) => {
                                                 return <div key={idx}>
                                                     <Link href={`#/workunits/${err.workunit.Wuid}`}>{err.workunit.Wuid}</Link> - {severityIcon(err.severity, true)}
                                                     <Text style={{ color: severityForegroundColor(err.severity) }}>
