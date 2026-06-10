@@ -18,7 +18,6 @@
 #include <string>
 #include <map>
 #include <unordered_map>
-#include <queue>
 #include <algorithm>
 
 #include "jthread.hpp"
@@ -77,31 +76,15 @@ using roxiemem::IRowManager;
 
 class CTcpReceiveManager : implements IReceiveManager, public CInterface
 {
-    queue_t              *input_queue;
     const int             data_port;
 
     std::atomic<bool> running = { false };
     bool encrypted = false;
-    const bool collateDirectly = true;
 
     typedef std::unordered_map<ruid_t, CMessageCollator*> uid_map;
     uid_map         collators;
     CriticalSection collatorsLock; // protects access to collators map
     roxiemem::IDataBufferManager * udpBufferManager;
-
-    class CTcpPacketCollator : public Thread
-    {
-        CTcpReceiveManager &parent;
-    public:
-        CTcpPacketCollator(CTcpReceiveManager &_parent) : Thread("CTcpPacketCollator"), parent(_parent) {}
-
-        virtual int run()
-        {
-            DBGLOG("TcpReceiver: CPacketCollator::run");
-            parent.collatePackets();
-            return 0;
-        }
-    } collatorThread;
 
     class PacketListener : public CSocketConnectionListener
     {
@@ -143,13 +126,10 @@ public:
     IMPLEMENT_IINTERFACE;
     CTcpReceiveManager(int server_flow_port, int d_port, int client_flow_port, int queue_size, bool _encrypted)
         : data_port(d_port), encrypted(_encrypted),
-          collatorThread(*this), listener(*this)
+          listener(*this)
     {
         running = true;
-        input_queue = new queue_t(queue_size);
         udpBufferManager = bufferManager; // ugly global variable...
-        if (!collateDirectly)
-            collatorThread.start(false);
         listener.startPort(data_port);
     }
 
@@ -157,10 +137,6 @@ public:
     {
         running = false;
         listener.stop();
-        input_queue->interrupt();
-        if (!collateDirectly)
-            collatorThread.join();
-        delete input_queue;
     }
 
     virtual void detachCollator(const IMessageCollator *msgColl)
@@ -171,29 +147,6 @@ public:
             collators.erase(ruid);
         }
         msgColl->Release();
-    }
-
-    void collatePackets()
-    {
-        TcpReadTracker timeTracker("collatePackets", 60);
-        while(running)
-        {
-            try
-            {
-                TcpReadTracker::TimeDivision d(timeTracker, TcpReadTracker::waiting);
-                DataBuffer *dataBuff = input_queue->pop(true);
-                d.switchState(TcpReadTracker::processing);
-                dataBuff->changeState(roxiemem::DBState::queued, roxiemem::DBState::unowned, __func__);
-                collatePacket(dataBuff);
-            }
-            catch (IException * e)
-            {
-                //An interrupted semaphore exception is expected at closedown - anything else should be reported
-                if (!dynamic_cast<InterruptedSemaphoreException *>(e))
-                    EXCLOG(e);
-                e->Release();
-            }
-        }
     }
 
     void collatePacket(DataBuffer *dataBuff)
@@ -257,10 +210,9 @@ public:
 
         DataBuffer * buffer = udpBufferManager->allocate();
         memcpy(buffer->data, header, packetLength);
-        if (collateDirectly)
-            collatePacket(buffer);
-        else
-            input_queue->pushOwn(buffer);
+        // The tcp collator collates packets directly, because packet order is
+        // guaranteed, so it always executes the fast path in the packet sequencer.
+        collatePacket(buffer);
     }
 
 };
