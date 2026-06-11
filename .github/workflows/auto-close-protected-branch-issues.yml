@@ -62,35 +62,57 @@ jobs:
               print("Pull request body is empty, nothing to close.")
               sys.exit(0)
 
+          def filter_directive_text(text):
+              # Strip HTML comments (including multi-line) so hidden directives are ignored
+              text = re.sub(r"<!--.*?-->", "", text, flags=re.DOTALL)
+
+              filtered_lines = []
+              in_fence = False
+
+              for line in text.splitlines():
+                  trimmed = line.lstrip()
+
+                  if trimmed.startswith("```") or trimmed.startswith("~~~"):
+                      in_fence = not in_fence
+                      continue
+
+                  if in_fence:
+                      continue
+
+                  if trimmed.startswith(">"):
+                      continue
+
+                  filtered_lines.append(line)
+
+              return "\n".join(filtered_lines)
+
+          filtered_pr_body = filter_directive_text(pr_body)
+
           current_repo = os.environ["GITHUB_REPOSITORY"]
+          # Require issue-closing directives to occupy their own line.
+          # Allow exactly one issue reference per directive line.
+          # Examples:
+          #   Fixes #123
+          #   Resolves: #456
           clause_pattern = re.compile(
-              r"(?im)\b(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\b\s*:?\s*(?P<refs>(?:(?:[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)?#\d+)(?:\s*(?:,|and)\s*(?:(?:[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)?#\d+))*)"
+              r"(?im)^(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\b\s*:?\s*#(?P<number>\d+)\s*$"
           )
-          ref_pattern = re.compile(r"(?:(?P<repo>[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+))?#(?P<number>\d+)")
 
           referenced_issues = []
           seen = set()
-          for clause in clause_pattern.finditer(pr_body):
-              refs = clause.group("refs")
-              for ref_match in ref_pattern.finditer(refs):
-                  repo_name = ref_match.group("repo") or current_repo
-                  issue_number = int(ref_match.group("number"))
-                  key = (repo_name.lower(), issue_number)
-                  if key in seen:
-                      continue
-                  seen.add(key)
-                  referenced_issues.append((repo_name, issue_number))
+          for clause in clause_pattern.finditer(filtered_pr_body):
+              issue_number = int(clause.group("number"))
+              if issue_number in seen:
+                  continue
+              seen.add(issue_number)
+              referenced_issues.append(issue_number)
 
           if not referenced_issues:
-              print("No issue-closing keywords found for supported issue references.")
+              print("No supported issue-closing directive found in the PR body (for example: 'Fixes #123').")
               sys.exit(0)
 
-          for repo_name, issue_number in referenced_issues:
-              if repo_name.lower() != current_repo.lower():
-                  print(f"Skipping cross-repository reference {repo_name}#{issue_number}.")
-                  continue
-
-              issue_path = f"/repos/{repo_name}/issues/{issue_number}"
+          for issue_number in referenced_issues:
+              issue_path = f"/repos/{current_repo}/issues/{issue_number}"
               try:
                   issue = request("GET", issue_path)
               except urllib.error.HTTPError as error:

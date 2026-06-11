@@ -6,10 +6,10 @@ We welcome submissions to the platform especially in the form of pull requests i
 There are a few things that should be considered when creating a PR to increase the likelihood that they can be accepted quickly.
 
 * Write a good commit message\
-  The format should be HPCC-XXXXX (where XXXXX is the bug number) followed by a description of the issue.  The text should make sense in a change log by itself - without reference to the jira or the contents of the PR.  We should aim to increase the information that is included as part of the commit message - not rely on on the jira.
+  Use a Conventional Commits subject line (e.g. `fix(esp): ...`), then include one standalone directive line (`Fixes #<n>`, `Closes #<n>`, `Resolves #<n>`, or `NoIssue`) and one or more `Impacts: <component>` lines to satisfy repository metadata checks.
 * Ensure the reviewer has enough information to review the change.\
-  The code reviewer only has the JIRA and the PR to go on.  The JIRA (or associated documentation) should contain enough details to review the PR - e.g. the purpose, main aim, why the change was made etc.. If the scope of the jira has changed then the jira should be updated to reflect that.\
-  If the submission requires changes to the documentation then the JIRA should contain all the details needed to document it, and the PR should either contain the documentation changes, or a documentation JIRA should be created.
+  The code reviewer only has the linked GitHub issue(s) and the PR to go on.  The issue (or associated documentation) should contain enough details to review the PR - e.g. the purpose, main aim, why the change was made etc.. If the scope of the issue has changed then the issue should be updated to reflect that.\
+  If the submission requires changes to the documentation then the linked issue should contain all the details needed to document it, and the PR should either contain the documentation changes, or a documentation GitHub issue should be created.
 * Fill in the checklist\
   The check boxes are there to remind you to consider different aspects of the PR.  Not all of them apply to every submission, but if you tick a box and have not really thought about the item then prepare to be embarrassed!
 * Prefer small submissions\

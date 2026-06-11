@@ -1,0 +1,263 @@
+# PR Metadata Validation
+# ======================
+# Ensures pull request and commit metadata follow repository compliance rules
+#
+name: PR metadata check
+
+on:
+  pull_request_target:
+    types: [opened, edited, reopened, synchronize]
+    branches:
+      - "master"
+      - "candidate-*"
+
+concurrency:
+  group: ${{ github.workflow }}-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  VALID_TYPES: "build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test|deps|release|hotfix|security"
+  ISSUE_CLOSE_DIRECTIVE_REGEX: '^(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\s*:?\s*#[0-9]+\s*$'
+  NO_ISSUE_DIRECTIVE_REGEX: '^NoIssue\s*$'
+  IMPACTS_CONFIG_FILE: '.github/impact-components.yml'
+
+jobs:
+  validate-metadata:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout trusted base code
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Detect validator availability
+        id: validator_files
+        run: |
+          if [[ -f ".github/scripts/check_directive_compliance.py" && -f "$IMPACTS_CONFIG_FILE" ]]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "Validator script/config not present at base SHA; skipping metadata checks for this PR."
+          fi
+
+      - name: Check PR title format
+        if: steps.validator_files.outputs.available == 'true'
+        id: pr_title_check
+        continue-on-error: true
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          log_file="$RUNNER_TEMP/pr_title_check.log"
+
+          set +e
+          {
+            echo "Checking PR title: $PR_TITLE"
+
+            # Check if title follows Conventional Commits format
+            if echo "$PR_TITLE" | grep -qE "^(${VALID_TYPES})(\([a-zA-Z0-9_.-]+\))?!?: .+"; then
+              echo "✓ PR title is valid: follows Conventional Commits format"
+            else
+              echo "✗ PR title is invalid"
+              echo ""
+              echo "PR titles must follow the Conventional Commits specification."
+              echo "Format: <type>(<optional scope>)<!>: <description>"
+              echo "Valid types: ${VALID_TYPES//|/, }"
+              echo "Examples:"
+              echo "  ✓ fix(dfu): resolve memory leak in thor"
+              echo "  ✓ feat: add a new logging feature"
+              echo "  ✓ refactor!: breaking change API redesign"
+              echo "  ✗ HPCC-12345 Update documentation"
+              echo "  ✗ Fix memory leak"
+              exit 1
+            fi
+          } 2>&1 | tee "$log_file"
+          exit_code=${PIPESTATUS[0]}
+          exit "$exit_code"
+
+      - name: Check PR description directive compliance
+        if: steps.validator_files.outputs.available == 'true'
+        id: pr_body_check
+        continue-on-error: true
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          log_file="$RUNNER_TEMP/pr_body_check.log"
+
+          set +e
+          printf '%s\n' "$PR_BODY" | python3 .github/scripts/check_directive_compliance.py \
+            "PR description" \
+            "$ISSUE_CLOSE_DIRECTIVE_REGEX" \
+            "$NO_ISSUE_DIRECTIVE_REGEX" \
+            "$IMPACTS_CONFIG_FILE" 2>&1 | tee "$log_file"
+          exit_code=${PIPESTATUS[1]}
+          exit "$exit_code"
+
+      - name: Get first PR commit metadata
+        if: steps.validator_files.outputs.available == 'true'
+        id: first_commit
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const pull_number = context.payload.pull_request.number;
+
+            const response = await github.rest.pulls.listCommits({
+              owner,
+              repo,
+              pull_number,
+              per_page: 1
+            });
+            const commits = response.data;
+
+            if (!commits.length) {
+              core.setFailed('Could not determine first PR-introduced commit');
+              return;
+            }
+
+            const firstCommitMessage = commits[0].commit.message || '';
+            const firstCommitSubject = firstCommitMessage.split('\n')[0] || '';
+
+            core.setOutput('subject', firstCommitSubject);
+            core.setOutput('message', firstCommitMessage);
+
+      - name: Check first commit message format
+        if: steps.validator_files.outputs.available == 'true'
+        id: first_commit_check
+        continue-on-error: true
+        env:
+          COMMIT_MSG: ${{ steps.first_commit.outputs.subject }}
+          FULL_COMMIT_MSG: ${{ steps.first_commit.outputs.message }}
+        run: |
+          log_file="$RUNNER_TEMP/first_commit_check.log"
+          failed=0
+
+          set +e
+          {
+            echo "First commit message: $COMMIT_MSG"
+
+            if [ -z "$COMMIT_MSG" ]; then
+              echo "✗ Could not determine first PR-introduced commit subject"
+              failed=1
+            elif echo "$COMMIT_MSG" | grep -qE "^(${VALID_TYPES})(\([a-zA-Z0-9_.-]+\))?!?: .+"; then
+              echo "✓ First commit message is valid: follows Conventional Commits format"
+            else
+              echo "✗ First commit message is invalid"
+              echo ""
+              echo "The first commit message must follow the Conventional Commits specification."
+              echo "Format: <type>(<optional scope>)<!>: <description>"
+              echo "Valid types: ${VALID_TYPES//|/, }"
+              echo "Examples:"
+              echo "  ✓ fix(dfu): resolve memory leak in thor"
+              echo "  ✓ docs: update documentation"
+              echo "  ✓ refactor!: breaking change API redesign"
+              echo "  ✗ Fix memory leak"
+              failed=1
+            fi
+
+            if ! printf '%s\n' "$FULL_COMMIT_MSG" | python3 .github/scripts/check_directive_compliance.py \
+              "First commit message" \
+              "$ISSUE_CLOSE_DIRECTIVE_REGEX" \
+              "$NO_ISSUE_DIRECTIVE_REGEX" \
+              "$IMPACTS_CONFIG_FILE"; then
+              failed=1
+            fi
+
+            exit "$failed"
+          } 2>&1 | tee "$log_file"
+          exit_code=${PIPESTATUS[0]}
+          exit "$exit_code"
+
+      - name: Fail if any metadata checks failed
+        if: steps.validator_files.outputs.available == 'true'
+        run: |
+          failed=0
+          summary_file="$RUNNER_TEMP/metadata_validation_report.txt"
+
+          : > "$summary_file"
+
+          append_report() {
+            local heading="$1"
+            local file_path="$2"
+
+            if [ -f "$file_path" ]; then
+              {
+                echo "=== $heading ==="
+                awk '
+                  /^✗ / {
+                    print
+                    next
+                  }
+                  /^Add one directive line in one of these formats:/ {
+                    print "  Example: Fixes #123"
+                    next
+                  }
+                  /^Add one line that starts with:/ {
+                    print "  Example: Impacts: None"
+                    next
+                  }
+                  /^If '\''None'\'' is used, it must be the only Impacts entry\./ {
+                    print "  Fix: use either Impacts: None or list real components, not both"
+                    next
+                  }
+                  /^Allowed components:/ {
+                    print "  Fix: choose one or more allowed components from .github/impact-components.yml"
+                    next
+                  }
+                ' "$file_path"
+                echo ""
+              } >> "$summary_file"
+            fi
+          }
+
+          for step_name in pr_title_check pr_body_check first_commit_check; do
+            step_outcome="${{ steps.pr_title_check.outcome }}"
+            case "$step_name" in
+              pr_body_check) step_outcome="${{ steps.pr_body_check.outcome }}" ;;
+              first_commit_check) step_outcome="${{ steps.first_commit_check.outcome }}" ;;
+            esac
+
+            if [ "$step_outcome" = "failure" ]; then
+              failed=1
+            fi
+          done
+
+          if [ "$failed" -ne 0 ]; then
+            if [ "${{ steps.pr_title_check.outcome }}" = "failure" ]; then
+              append_report "PR title validation" "$RUNNER_TEMP/pr_title_check.log"
+            fi
+
+            if [ "${{ steps.pr_body_check.outcome }}" = "failure" ]; then
+              append_report "PR description validation" "$RUNNER_TEMP/pr_body_check.log"
+            fi
+
+            if [ "${{ steps.first_commit_check.outcome }}" = "failure" ]; then
+              append_report "First commit validation" "$RUNNER_TEMP/first_commit_check.log"
+            fi
+
+            echo "Metadata validation report:"
+            echo ""
+            cat "$summary_file"
+
+            {
+              echo "## Metadata Validation Report"
+              echo
+              echo '```text'
+              cat "$summary_file"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+
+            echo "Metadata validation failed. Review the full report above for all non-compliant items."
+            exit 1
+          fi
+
+          echo "All metadata checks passed."
+
+      - name: Metadata checks skipped
+        if: steps.validator_files.outputs.available != 'true'
+        run: echo "Skipping metadata validation because validator files are not present at the target base SHA."
