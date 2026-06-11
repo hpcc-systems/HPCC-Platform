@@ -17,8 +17,8 @@
   },
   "author": "",
   "devDependencies": {
-    "@hpcc-js/common": "3.7.9",
-    "@hpcc-js/codemirror": "3.7.8",
+    "@hpcc-js/common": "3.8.2",
+    "@hpcc-js/codemirror": "3.8.2",
     "esbuild": "0.28.0",
     "rimraf": "6.1.3"
   }
