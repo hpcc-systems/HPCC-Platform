@@ -6521,9 +6521,40 @@ public:
         bool first = true;
         Owned<IPropertyTree> at = getEmptyAttr();
         Owned<IDistributedFileIterator> fiter = getSubFileIterator(true);
+        // Set groupName from the first detected plane name so lookups based on
+        // getClusterLabel/getGroupName resolve plane settings correctly.
+        // Without this, containerized files may end up with endpoint-derived
+        // labels (for example "localhost"); mismatches warn but do not fail.
+        bool firstClusterName = true;
+        bool warnedClusterNameMismatch = false;
+        StringAttr singleClusterName; // if not host based (e.g. azure api based), only 1 plane per super file is supported
         ForEach(*fiter)
         {
             IDistributedFile &file = fiter->query();
+            if (!logicalName.isForeign())
+            {
+                for (unsigned c = 0; c < file.numClusters(); c++)
+                {
+                    StringBuffer clusterName;
+                    file.getClusterGroupName(c, clusterName);
+                    if (firstClusterName)
+                    {
+                        singleClusterName.set(clusterName);
+                        firstClusterName = false;
+                    }
+                    else
+                    {
+                        if (!streq(singleClusterName.str(), clusterName.str()))
+                        {
+                            if (!warnedClusterNameMismatch)
+                            {
+                                WARNLOG("getFileDescriptor: SuperFile %s has subfiles with different plane names (%s and %s); continuing and defaulting to first plane name", logicalName.get(), singleClusterName.str(), clusterName.str());
+                                warnedClusterNameMismatch = true;
+                            }
+                        }
+                    }
+                }
+            }
             if (first)
             {
                 first = false;
@@ -6605,6 +6636,8 @@ public:
         }
         mspec.interleave = numSubFiles(true);
         fdesc->endCluster(mspec);
+        if (singleClusterName.length() && fdesc->numClusters())
+            fdesc->setClusterGroupName(0, singleClusterName);
         if (mixedwidth) { // bleah - have to add replicate node numbers
             Owned<IGroup> group = fdesc->getGroup();
             unsigned gw = group->ordinality();

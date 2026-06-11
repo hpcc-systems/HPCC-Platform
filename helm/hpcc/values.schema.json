@@ -969,7 +969,12 @@
           "required": [
             "name",
             "service"
-          ]
+          ],
+          "not": {
+            "required": [
+              "useDafilesrv"
+            ]
+          }
         },
         {
           "required": [

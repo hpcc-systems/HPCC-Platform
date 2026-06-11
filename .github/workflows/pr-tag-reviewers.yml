@@ -208,8 +208,8 @@ jobs:
                 return failures;
               }
 
-              // Gate only on review-readiness: not draft, no merge conflicts.
-              if (pr.isDraft || pr.mergeable !== 'MERGEABLE') {
+              // Gate only on review-readiness: not draft, clean merge state.
+              if (pr.isDraft || pr.mergeStateStatus !== 'CLEAN') {
                 core.info(
                   `PR #${pr.number} is not review-ready yet: draft=${pr.isDraft}, mergeable=${pr.mergeable}, mergeStateStatus=${pr.mergeStateStatus}`
                 );

@@ -3531,6 +3531,27 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
                 return expr->clone(args);
             }
         }
+
+        //Local self joins are worth splitting the sort out separately, because they will tend to generate a large
+        //amount of data, and splitting them allows the spill to occur before the self-join rather than after.
+        if (op == no_selfjoin)
+        {
+            HqlExprArray args;
+            IHqlExpression * noSortAttr = expr->queryAttribute(noSortAtom);
+            if (!userPreventsSort(noSortAttr, no_left) && !userPreventsSort(noSortAttr, no_right))
+            {
+                OwnedHqlExpr sortlist = createValueSafe(no_sortlist, makeSortListType(NULL), joinInfo.queryLeftSort());
+                OwnedHqlExpr mappedSortlist = replaceSelector(sortlist, queryActiveTableSelector(), leftDs);
+                OwnedHqlExpr sortedInput = ensureSortedForGroup(leftDs, mappedSortlist, true, !translator.targetThor(), options.implicitGroupSubSort);
+                args.append(*LINK(sortedInput));
+            }
+            else
+                args.append(*LINK(leftDs));  // If sort disabled, still append the lightweight attribute
+
+            unwindChildren(args, expr, 1);
+            args.append(*createAttribute(_lightweight_Atom));
+            return expr->clone(args);
+        }
     }
 
     if (!isThorCluster(targetClusterType) && !expr->hasAttribute(_normalized_Atom))

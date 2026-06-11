@@ -30,6 +30,7 @@
 #include "thorcommon.ipp"
 
 #include "dadfs.hpp"
+#include "dautils.hpp"
 
 #include "jhtree.hpp"
 
@@ -1577,8 +1578,9 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 // which the remote side needs to access the index part.
                 StringBuffer fname;
                 rfn.getPath(fname);
+                size32_t blockedIOSize = activity.queryIndexBlockedIOSize(part);
 
-                msg.append(activity.queryId()).append(fname).append(crc); // lookup key
+                msg.append(activity.queryId()).append(fname).append(crc).append(blockedIOSize); // lookup key
                 // serialize onCreate context
                 DelayedSizeMarker sizeMark(msg);
                 activity.queryHelper()->serializeCreateContext(msg);
@@ -2244,6 +2246,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 
     IHThorKeyedJoinArg *helper = nullptr;
     StringAttr indexName;
+    size32_t foreignBlockedIOSize = (size32_t)-1;
     size32_t fixedRecordSize = 0;
     bool initialized = false;
     bool preserveGroups = false, preserveOrder = false;
@@ -2385,6 +2388,15 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         }
         return partIO;
     }
+    size32_t queryIndexBlockedIOSize(IPartDescriptor &filePart) const
+    {
+        if (foreignBlockedIOSize != (size32_t)-1)
+            return foreignBlockedIOSize;
+
+        StringBuffer planeName;
+        filePart.queryOwner().getClusterLabel(0, planeName);
+        return getIndexBlockedIOSize(planeName, true);
+    }
     unsigned queryMaxHandlers(HandlerType hType)
     {
         switch (hType)
@@ -2477,7 +2489,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             * The underlying IFileIO can later be closed by fhe file caching mechanism.
             */
         Owned<IFileIO> lazyIFileIO = queryThor().queryFileCache().lookupIFileIO(*this, indexName, filePart, nullptr);
-        size32_t blockedIOSize = getBlockedRandomIO(filename.str(), 0);
+        size32_t blockedIOSize = queryIndexBlockedIOSize(filePart);
         return createKeyIndex(filename, crc, *lazyIFileIO, (unsigned)-1, false, blockedIOSize);
     }
     IKeyManager *createPartKeyManager(unsigned partNo, unsigned copy, IContextLogger *ctx)
@@ -3072,6 +3084,9 @@ public:
         }
         // decode data from master. NB: can be resent and differ if in global loop
         data.read(indexName);
+        CDfsLogicalFileName dlfn;
+        dlfn.set(indexName);
+        foreignBlockedIOSize = dlfn.isForeign() ? getForeignBlockedIOSize(true) : (size32_t)-1;
         data.read(totalIndexParts);
         if (totalIndexParts)
         {
