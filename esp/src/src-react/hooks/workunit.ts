@@ -42,13 +42,14 @@ export function useWorkunit(wuid: string, full: boolean = false): useWorkunitRes
             setLastUpdate(Date.now());
             const wuInfoRequest: Partial<WsWorkunits.WUInfo> = {
                 ...(request ?? {}),
-                IncludeTotalClusterTime: true
+                IncludeTotalClusterTime: true,
+                ...(full ? { IncludeFileSummaries: true, IncludeProcesses: true } : {})
             };
             return doRefresh(full, wuInfoRequest);
         });
 
         if (full) {
-            doRefresh(full, { IncludeTotalClusterTime: true }).catch(err => logger.error(err));
+            doRefresh(full, { IncludeTotalClusterTime: true, IncludeFileSummaries: true, IncludeProcesses: true }).catch(err => logger.error(err));
         }
 
         let cancelled = false;
@@ -244,6 +245,26 @@ export function useWorkunitProcesses(wuid: string): [WsWorkunits.ECLWUProcess[],
     }, [workunit, state, count]);
 
     return [processes, workunit, increment];
+}
+
+export function useWorkunitFileSummaries(wuid: string): [WsWorkunits.ECLWUFileSummary[], Workunit, () => void] {
+
+    const { workunit, state } = useWorkunit(wuid);
+    const [fileSummaries, setFileSummaries] = React.useState<WsWorkunits.ECLWUFileSummary[]>([]);
+    const [count, increment] = useCounter();
+
+    React.useEffect(() => {
+        if (workunit) {
+            const fetchInfo = singletonDebounce(workunit, "fetchInfo");
+            fetchInfo({
+                IncludeFileSummaries: true
+            }).then(response => {
+                setFileSummaries(response?.Workunit?.FileSummaries?.ECLWUFileSummary || []);
+            }).catch(err => logger.error(err));
+        }
+    }, [workunit, state, count]);
+
+    return [fileSummaries, workunit, increment];
 }
 
 export function useWorkunitXML(wuid: string): [string] {

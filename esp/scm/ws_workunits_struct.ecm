@@ -355,6 +355,14 @@ ESPStruct [nil_remove] ECLWUProcess
     int    Max(1);            //bare metal only
 };
 
+ESPStruct [nil_remove] ECLWUFileSummary
+{
+    [min_ver("2.09")] string Name;
+    [min_ver("2.09")] string Type;
+    [min_ver("2.09")] bool IsOpt(false);
+    [min_ver("2.09")] bool IsSigned(false);
+};
+
 ESPStruct [nil_remove] ECLWorkunitLW
 {
     string Wuid;
@@ -462,6 +470,7 @@ ESPStruct [nil_remove] ECLWorkunit
     [min_ver("1.91")] bool NoAccess(false);
     [min_ver("1.98")] ESParray<ESPstruct ECLWUProcess> ECLWUProcessList;
     [min_ver("2.08")] string FailureDesc;
+    [min_ver("2.09")] ESParray<ESPstruct ECLWUFileSummary> FileSummaries;
 };
 
 ESPStruct [nil_remove] WUECLAttribute

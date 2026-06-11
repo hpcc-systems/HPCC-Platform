@@ -1304,6 +1304,42 @@ void WsWuInfo::getECLWUProcesses(IEspECLWorkunit &info, unsigned long flags)
     info.setECLWUProcessList(processList);
 }
 
+void WsWuInfo::getFileSummaries(IEspECLWorkunit &info, unsigned long flags)
+{
+    if (!(flags & WUINFO_IncludeFileSummaries))
+        return;
+
+    static const struct { SummaryType type; const char *name; } summaryTypeInfo[] = {
+        { SummaryType::ReadFile,    "ReadFile"    },
+        { SummaryType::ReadIndex,   "ReadIndex"   },
+        { SummaryType::WriteFile,   "WriteFile"   },
+        { SummaryType::WriteIndex,  "WriteIndex"  },
+        { SummaryType::PersistFile, "PersistFile" },
+        { SummaryType::SpillFile,   "SpillFile"   },
+        { SummaryType::JobTemp,     "JobTemp"     },
+        { SummaryType::Service,     "Service"     },
+    };
+
+    IArrayOf<IEspECLWUFileSummary> summaryList;
+    for (const auto &typeEntry : summaryTypeInfo)
+    {
+        SummaryMap entries;
+        if (cw->getSummary(typeEntry.type, entries))
+        {
+            for (const auto &[name, entryFlags] : entries)
+            {
+                Owned<IEspECLWUFileSummary> item = createECLWUFileSummary();
+                item->setName(name.c_str());
+                item->setType(typeEntry.name);
+                item->setIsOpt((entryFlags & SummaryFlags::IsOpt) != 0);
+                item->setIsSigned((entryFlags & SummaryFlags::IsSigned) != 0);
+                summaryList.append(*item.getClear());
+            }
+        }
+    }
+    info.setFileSummaries(summaryList);
+}
+
 void WsWuInfo::getEventScheduleFlag(IEspECLWorkunit &info)
 {
     info.setEventSchedule(0);
@@ -1478,6 +1514,8 @@ void WsWuInfo::getInfo(IEspECLWorkunit &info, unsigned long flags)
     getServiceNames(info, flags);
     if (version>=1.98)
         getECLWUProcesses(info, flags);
+    if (version >= 2.09)
+        getFileSummaries(info, flags);
 }
 
 #ifndef _CONTAINERIZED

@@ -248,6 +248,7 @@ test.describe("V9 Workunits", () => {
                 "variables",
                 "outputs",
                 "inputs",
+                "summaries",
                 "metrics",
                 "workflows",
                 "queries",

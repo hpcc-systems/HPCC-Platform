@@ -1613,6 +1613,8 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
                     flags|=WUINFO_IncludeServiceNames;
                 if (req.getIncludeProcesses())
                     flags|=WUINFO_IncludeProcesses;
+                if (req.getIncludeFileSummaries())
+                    flags|=WUINFO_IncludeFileSummaries;
 
                 PROGLOG("WUInfo: %s %lx", wuid.str(), flags);
 

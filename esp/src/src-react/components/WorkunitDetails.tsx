@@ -25,6 +25,7 @@ import { Results } from "./Results";
 import { WUXMLSourceEditor } from "./SourceEditor";
 import { SourceFiles } from "./SourceFiles";
 import { Variables } from "./Variables";
+import { WUFilesSummary } from "./WUFilesSummary";
 import { Workflows } from "./Workflows";
 import { WorkunitSummary } from "./WorkunitSummary";
 import { TabInfo, DelayLoadedPanel, OverflowTabList } from "./controls/TabbedPanes/index";
@@ -171,6 +172,11 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
             disabled: workunit?.Archived,
             count: workunit?.SourceFileCount
         }, {
+            id: "summaries",
+            label: nlsHPCC.FileSummaries,
+            disabled: workunit?.Archived,
+            count: workunit?.FileSummaries?.ECLWUFileSummary?.length
+        }, {
             id: "metrics",
             label: nlsHPCC.Metrics,
             disabled: workunit?.Archived,
@@ -217,7 +223,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
             id: "xml",
             label: nlsHPCC.XML
         }];
-    }, [logCount, logsEnabled, logsStatusMessage, workunit?.Archived, workunit?.ApplicationValueCount, workunit?.DebugValueCount, workunit?.DebugValues?.DebugValue, workunit?.GraphCount, workunit?.HelpersCount, workunit?.ResourceURLCount, workunit?.ResultCount, workunit?.SourceFileCount, workunit?.VariableCount, workunit?.WorkflowCount, workunit?.ECLWUProcessList?.ECLWUProcess?.length, wuid]);
+    }, [logCount, logsEnabled, logsStatusMessage, workunit?.Archived, workunit?.ApplicationValueCount, workunit?.DebugValueCount, workunit?.DebugValues?.DebugValue, workunit?.GraphCount, workunit?.HelpersCount, workunit?.ResourceURLCount, workunit?.ResultCount, workunit?.SourceFileCount, workunit?.VariableCount, workunit?.WorkflowCount, workunit?.FileSummaries?.ECLWUFileSummary?.length, workunit?.ECLWUProcessList?.ECLWUProcess?.length, wuid]);
 
     return <FullscreenFrame fullscreen={fullscreen}>
         <SizeMe>{({ size }) =>
@@ -241,6 +247,9 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "inputs"} size={size}>
                     <SourceFiles wuid={wuid} filter={queryParams.inputs} />
+                </DelayLoadedPanel>
+                <DelayLoadedPanel visible={tab === "summaries"} size={size}>
+                    <WUFilesSummary wuid={wuid} />
                 </DelayLoadedPanel>
                 <DelayLoadedPanel visible={tab === "metrics"} size={size}>
                     <React.Suspense fallback={

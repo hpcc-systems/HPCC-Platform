@@ -76,6 +76,7 @@ test.describe("V9 Workunit Details", () => {
             "Resources",
             "Helpers",
             "ECL",
+            "Logs",
             "Logical Graph",
             "XML"
         ];
@@ -90,21 +91,6 @@ test.describe("V9 Workunit Details", () => {
                 const overflowButton = page.locator("button[aria-haspopup='menu']").last();
                 await expect(overflowButton).toBeVisible();
             }
-        }
-
-        // Check logs tab exists but may be disabled or overflowed
-        const logsTab = page.getByRole("tab").filter({ hasText: /logs/i });
-        if (await logsTab.count() > 0) {
-            await expect(logsTab.first()).toBeVisible();
-        } else {
-            const overflowButton = page.getByRole("button").filter({ hasText: /more|overflow/i }).or(
-                page.locator("button[aria-label*='overflow']")
-            ).or(
-                page.locator("button[aria-haspopup='menu']").last()
-            );
-            await expect(overflowButton).toBeVisible();
-            await overflowButton.click();
-            await expect(page.getByRole("menuitem", { name: /logs/i })).toBeVisible();
         }
     });
 
