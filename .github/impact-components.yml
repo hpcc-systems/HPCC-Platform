@@ -1,0 +1,16 @@
+components:
+  - build
+  - ci
+  - config
+  - dali
+  - dfuserver
+  - documentation
+  - eclccserver
+  - eclwatch
+  - esp
+  - hthor
+  - roxie
+  - sasha
+  - testing
+  - thor
+  - xref
