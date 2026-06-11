@@ -2,18 +2,18 @@
 
  PLEASE READ the following before proceeding.
 
- This project only accepts pull requests related to open JIRA issues.
- If suggesting a new feature or change, please discuss it in a JIRA issue first.
+ This project expects pull requests to be linked to a relevant GitHub issue when applicable.
+ If suggesting a new feature or change, please open or reference a GitHub issue first.
  If fixing a bug, there should be an issue describing it with steps to reproduce.
- The title line of the pull request (and of each commit within it) should refer to the
- associated issue using the format:
+ The pull request title (and first commit title) should follow Conventional Commits format:
 
- HPCC-nnnnn Short description of issue
+ <type>(<optional scope>)<!>: <description>
 
- This will allow the Jira ticket to be automatically updated to refer to this pull request,
- and will ensure that the automatically-generated changelog is properly formatted.
- Where a pull request contains a single commit the pull request title will be set automatically,
- assuming that the commit has followed the proper guidelines.
+ The pull request body and first commit message should include one standalone directive line:
+ Fixes #<n>, Closes #<n>, Resolves #<n>, or NoIssue
+
+ The pull request body and first commit message should also include one or more Impacts lines:
+ Impacts: <component>[, <component> ...]
 
  Please go over all the following points, and put an `x` in all the boxes that apply. You may find
  it easier to press the 'Create' button first then click on the checkboxes to edit the comment.
@@ -35,7 +35,7 @@
   - [ ] The commit is signed.
 - [ ] My change requires a change to the documentation.
   - [ ] I have updated the documentation accordingly, or...
-  - [ ] I have created a JIRA ticket to update the documentation.
+  - [ ] I have created a GitHub issue to update the documentation.
   - [ ] Any new interfaces or exported functions are appropriately commented.
 - [ ] I have read the CONTRIBUTORS document.
 - [ ] The change has been fully tested:
@@ -55,7 +55,7 @@
   - [ ] The target branch of this pull request is appropriate for such a change.
 - [ ] There are no similar instances of the same problem that should be addressed
   - [ ] I have addressed them here
-  - [ ] I have raised JIRA issues to address them separately
+  - [ ] I have raised GitHub issues to address them separately
 - [ ] This is a user interface / front-end modification
   - [ ] I have tested my changes in multiple modern browsers
   - [ ] The component(s) render as expected
