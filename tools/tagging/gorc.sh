@@ -18,6 +18,11 @@ if [[ -z $gitroot ]]; then
    exit 2
 fi
 
+if ! command -v helm >/dev/null 2>&1; then
+   echo "helm command could not be found 'apt, snap, brew, etc. may be used to install helm'"
+   exit 1
+fi
+
 major_minor=$(echo "$1" | grep -oE '^[0-9]+\.[0-9]+')
 if [[ -z $major_minor ]]; then
    echo "Invalid version format. Expected N.N.x"

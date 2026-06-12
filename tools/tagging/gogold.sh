@@ -18,8 +18,8 @@ if [[ -z $gitroot ]]; then
    exit 2
 fi
 
-if [[ ! $(command -v helm) ]]; then
-   echo "helm command could not be found 'sudo snap install helm --classic'"
+if ! command -v helm >/dev/null 2>&1; then
+   echo "helm command could not be found 'apt, snap, brew, etc. may be used to install helm'"
    exit 1
 fi
 

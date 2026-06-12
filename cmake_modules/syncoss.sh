@@ -3,6 +3,13 @@
 # Stop on errors
 set -e
 
+# NOTE: Do NOT use Bash associative arrays (declare -A) in this script.
+# macOS ships with Bash 3.2 by default, which does not support associative
+# arrays. Requiring Bash 4+ would break portability for users on macOS and
+# some other systems where an older /bin/bash is the default. To keep this
+# script widely usable we rely on temporary files, awk and grep for mappings
+# and lookups instead of in-memory associative arrays.
+
 # Default values
 DRY_RUN=0
 ORIGIN_USER=""
@@ -18,6 +25,7 @@ require_value() {
         exit 1
     fi
 }
+
 
 # Parse arguments
 while [[ "$#" -gt 0 ]]; do
@@ -56,21 +64,34 @@ git fetch oss
 
 # Fetch all remote refs locally for faster comparisons
 echo "Gathering remote refs..."
-declare -A ORIGIN_REFS
-declare -A ORIGIN_BRANCH_SHAS
+ORIGIN_REFS_FILE=$(mktemp "${TMPDIR:-/tmp}/syncoss-origin-refs.XXXXXX")
+OSS_REFS_FILE=$(mktemp "${TMPDIR:-/tmp}/syncoss-oss-refs.XXXXXX")
+ORIGIN_BRANCH_SHAS_FILE=$(mktemp "${TMPDIR:-/tmp}/syncoss-origin-branch-shas.XXXXXX")
+trap 'rm -f "$ORIGIN_REFS_FILE" "$OSS_REFS_FILE" "$ORIGIN_BRANCH_SHAS_FILE"' EXIT
+
+git ls-remote origin > "$ORIGIN_REFS_FILE"
+git ls-remote oss > "$OSS_REFS_FILE"
+
+# Precompute a merged refs file with columns: origin_sha <tab> oss_sha <tab> ref
+# This lets us iterate once over origin refs and have the corresponding OSS sha
+# available without rescanning the full OSS refs file on every lookup.
+MERGED_REFS_FILE=$(mktemp "${TMPDIR:-/tmp}/syncoss-merged-refs.XXXXXX")
+TAG_ACTIONS_FILE=$(mktemp "${TMPDIR:-/tmp}/syncoss-tag-actions.XXXXXX")
+trap 'rm -f "$ORIGIN_REFS_FILE" "$OSS_REFS_FILE" "$ORIGIN_BRANCH_SHAS_FILE" "$MERGED_REFS_FILE" "$TAG_ACTIONS_FILE"' EXIT
+
+# Build merged refs: read OSS refs into a map, then print origin entries with the
+# matching oss sha (empty if missing). Using awk keeps this O(N).
+awk 'NR==FNR { oss[$2]=$1; next } { printf "%s\t%s\t%s\n", $1, ( $2 in oss ? oss[$2] : "" ), $2 }' "$OSS_REFS_FILE" "$ORIGIN_REFS_FILE" > "$MERGED_REFS_FILE"
+
+# Build set of branch SHAs from origin (unchanged)
 while read -r sha ref; do
-    ORIGIN_REFS["$ref"]="$sha"
     if [[ "$ref" == refs/heads/* ]]; then
-        ORIGIN_BRANCH_SHAS["$sha"]=1
+        branch="${ref#refs/heads/}"
+        if [[ "$branch" == "main" || "$branch" == "master" || "$branch" == candidate-* ]]; then
+            echo "$sha" >> "$ORIGIN_BRANCH_SHAS_FILE"
+        fi
     fi
-done < <(git ls-remote origin)
-
-declare -A OSS_REFS
-while read -r sha ref; do
-    OSS_REFS["$ref"]="$sha"
-done < <(git ls-remote oss)
-
-
+done < "$ORIGIN_REFS_FILE"
 push_to_oss() {
     local src_ref=$1
     local dest_ref=$2
@@ -85,18 +106,16 @@ push_to_oss() {
 }
 
 echo "Synchronizing branches..."
-for ref in "${!ORIGIN_REFS[@]}"; do
+# Read merged refs: origin_sha <tab> oss_sha <tab> ref
+while IFS=$'\t' read -r origin_sha oss_sha ref; do
     if [[ "$ref" == refs/heads/* ]]; then
         branch="${ref#refs/heads/}"
-        
+
         # Only synchronize specific branches: main, master, or ones starting with candidate-
         if [[ "$branch" == "main" || "$branch" == "master" || "$branch" == candidate-* ]]; then
-            origin_sha="${ORIGIN_REFS[$ref]}"
-            oss_sha="${OSS_REFS[$ref]}"
-
             # Proceed only if the branch on oss is out of sync with origin
             if [[ "$origin_sha" != "$oss_sha" ]]; then
-                
+
                 # Check if the branch is new to oss, or if oss can be fast-forwarded from origin
                 if [[ -z "$oss_sha" ]] || git merge-base --is-ancestor "$oss_sha" "$origin_sha" 2>/dev/null; then
                     push_to_oss "$origin_sha" "$ref" "Branch $branch"
@@ -106,25 +125,36 @@ for ref in "${!ORIGIN_REFS[@]}"; do
             fi
         fi
     fi
-done
+done < "$MERGED_REFS_FILE"
 
 echo "Synchronizing tags..."
-for ref in "${!ORIGIN_REFS[@]}"; do
-    # Only process tags, and exclude dereferenced annotated tags (ending with ^{})
-    if [[ "$ref" == refs/tags/* && ! "$ref" == *^{} ]]; then
-        tag="${ref#refs/tags/}"
-        origin_sha="${ORIGIN_REFS[$ref]}"
-        peel_ref="${ref}^{}"
-        commit_sha="${ORIGIN_REFS[$peel_ref]:-$origin_sha}"
-        oss_sha="${OSS_REFS[$ref]}"
+# Precompute tag push actions in one AWK pass over the merged refs and the
+# origin branch SHAs. Output lines: origin_sha <tab> ref
+awk -F"\t" -v branches_file="$ORIGIN_BRANCH_SHAS_FILE" '
+    BEGIN { while ((getline < branches_file) > 0) branch_shas[$1]=1 }
+    {
+        origin=$1; oss=$2; ref=$3
+        refs[ref]=origin
+        ossmap[ref]=oss
+        order[++n]=ref
+    }
+    END {
+        for (i=1;i<=n;i++) {
+            ref=order[i]
+            if (ref ~ /^refs\/tags\// && ref !~ /\^\{\}$/) {
+                peel = ref "^{}"
+                commit = (peel in refs) ? refs[peel] : refs[ref]
+                if (commit != "" && (commit in branch_shas)) {
+                    if (refs[ref] != ossmap[ref]) print refs[ref] "\t" ref
+                }
+            }
+        }
+    }' "$MERGED_REFS_FILE" > "$TAG_ACTIONS_FILE"
 
-        # Only push the tag if it corresponds to an existing branch SHA we care about,
-        # and if the tag doesn't already exist with the same SHA on oss.
-        # For annotated tags, use the peeled commit SHA (^{}) to check branch membership.
-        if [[ -n "${ORIGIN_BRANCH_SHAS[$commit_sha]}" && "$origin_sha" != "$oss_sha" ]]; then
-            push_to_oss "$origin_sha" "$ref" "Tag $tag"
-        fi
-    fi
-done
+# Now perform the tag pushes
+while read -r origin_sha ref; do
+    tag="${ref#refs/tags/}"
+    push_to_oss "$origin_sha" "$ref" "Tag $tag"
+done < "$TAG_ACTIONS_FILE"
 
 echo "Synchronization complete."

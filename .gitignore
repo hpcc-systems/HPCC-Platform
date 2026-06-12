@@ -21,3 +21,4 @@ dockerfiles/platform-build-incremental/hpcc.gitpatch
 /vcpkg.json
 /CMakeUserPresets.json
 *.xml~ 
+tools/tagging/env.sh
