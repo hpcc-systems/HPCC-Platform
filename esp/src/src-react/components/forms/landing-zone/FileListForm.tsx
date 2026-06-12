@@ -278,7 +278,7 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                         <th>#</th>
                         <th>{nlsHPCC.Type}</th>
                         <th>{nlsHPCC.FileName}</th>
-                        <th>{nlsHPCC.Size}</th>
+                        <th>{nlsHPCC.FileSize}</th>
                     </tr>
                 </thead>
                 <tbody>

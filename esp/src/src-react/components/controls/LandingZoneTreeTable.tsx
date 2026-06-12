@@ -331,7 +331,7 @@ export const LandingZoneTreeTable: React.FunctionComponent<LandingZoneTreeTableP
                             <div className={styles.resizeHandle} onMouseDown={handleResizeMouseDown("name")} />
                         </TableHeaderCell>
                         <TableHeaderCell className={mergeClasses(styles.resizableHeaderCell, styles.tableCell)} style={{ width: `${columnWidths.size}px` }}>
-                            {nlsHPCC.Size}
+                            {nlsHPCC.FileSize}
                             <div className={styles.resizeHandle} onMouseDown={handleResizeMouseDown("size")} />
                         </TableHeaderCell>
                         <TableHeaderCell className={mergeClasses(styles.resizableHeaderCell, styles.tableCell)} style={{ width: `${columnWidths.modified}px` }}>

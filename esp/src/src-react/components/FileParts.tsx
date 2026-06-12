@@ -42,7 +42,7 @@ export const FileParts: React.FunctionComponent<FilePartsProps> = ({
                 }
             },
             CompressedSize: {
-                label: nlsHPCC.CompressedSize, sortable: true, width: 120,
+                label: nlsHPCC.FileSize, sortable: true, width: 120,
                 formatter: (value, row) => {
                     return Utility.safeFormatNum(value);
                 }

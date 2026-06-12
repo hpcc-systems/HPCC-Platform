@@ -319,7 +319,7 @@ export class ComponentDetails extends Table {
         super();
         this
             .sortable(true)
-            .columns([nlsHPCC.Folder, nlsHPCC.Files, nlsHPCC.Size, nlsHPCC.MaxNode, nlsHPCC.MaxSize, nlsHPCC.MinNode, nlsHPCC.MinSize, nlsHPCC.SkewPositive])
+            .columns([nlsHPCC.Folder, nlsHPCC.Files, nlsHPCC.FileSize, nlsHPCC.MaxNode, nlsHPCC.MaxSize, nlsHPCC.MinNode, nlsHPCC.MinSize, nlsHPCC.SkewPositive])
             ;
     }
 

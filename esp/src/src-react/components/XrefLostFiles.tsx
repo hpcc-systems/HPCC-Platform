@@ -36,7 +36,7 @@ export const XrefLostFiles: React.FunctionComponent<XrefLostFilesProps> = ({
             Name: { width: 360, label: nlsHPCC.Name },
             modified: { width: 80, label: nlsHPCC.Modified },
             numParts: { width: 80, label: nlsHPCC.TotalParts, formatter: (value) => formatNum(value) },
-            size: { width: 80, label: nlsHPCC.Size, formatter: (value) => formatNum(value) },
+            size: { width: 80, label: nlsHPCC.FileSize, formatter: (value) => formatNum(value) },
             partsLost: { width: 80, label: nlsHPCC.PartsLost, formatter: (value) => formatNum(value) },
             primarylost: { width: 80, label: nlsHPCC.PrimaryLost, formatter: (value) => formatNum(value) },
             replicatedlost: { width: 80, label: nlsHPCC.ReplicatedLost, formatter: (value) => formatNum(value) }

@@ -233,7 +233,7 @@ export const IndexFileSummary: React.FunctionComponent<IndexFileSummaryProps> = 
 
         <MultiColumnTableGroup
             label="Details"
-            columns={[nlsHPCC.NumberOfNodes, nlsHPCC.SizeOnDisk, nlsHPCC.SizeEstimateInMemory]}
+            columns={[nlsHPCC.NumberOfNodes, nlsHPCC.FileSize, nlsHPCC.SizeEstimateInMemory]}
             rows={[
                 {
                     label: nlsHPCC.Branches,
@@ -258,7 +258,7 @@ export const IndexFileSummary: React.FunctionComponent<IndexFileSummaryProps> = 
 
         <MultiColumnTableGroup
             label="Compression"
-            columns={[nlsHPCC.OriginalSize, nlsHPCC.SizeOnDisk, nlsHPCC.PercentCompression, nlsHPCC.MemorySize]}
+            columns={[nlsHPCC.Size, nlsHPCC.FileSize, nlsHPCC.PercentCompression, nlsHPCC.MemorySize]}
             rows={[
                 {
                     label: nlsHPCC.File,

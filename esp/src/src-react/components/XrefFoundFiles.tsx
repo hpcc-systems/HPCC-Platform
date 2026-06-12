@@ -36,7 +36,7 @@ export const XrefFoundFiles: React.FunctionComponent<XrefFoundFilesProps> = ({
             Name: { width: 360, label: nlsHPCC.Name },
             modified: { width: 80, label: nlsHPCC.Modified },
             parts: { width: 80, label: nlsHPCC.Parts, formatter: (value) => formatNum(value) },
-            size: { width: 80, label: nlsHPCC.Size, formatter: (value) => formatNum(value) }
+            size: { width: 80, label: nlsHPCC.FileSize, formatter: (value) => formatNum(value) }
         };
     }, []);
 
