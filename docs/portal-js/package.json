@@ -19,7 +19,7 @@
   "devDependencies": {
     "@hpcc-js/common": "3.8.2",
     "@hpcc-js/codemirror": "3.8.2",
-    "esbuild": "0.28.0",
+    "esbuild": "0.28.1",
     "rimraf": "6.1.3"
   }
 }
