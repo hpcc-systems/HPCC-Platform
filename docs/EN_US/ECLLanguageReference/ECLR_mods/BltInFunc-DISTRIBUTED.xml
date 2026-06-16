@@ -10,13 +10,14 @@
       <primary>DISTRIBUTED function</primary>
     </indexterm>(</emphasis><emphasis>recordset </emphasis><emphasis
   role="bold">[</emphasis><emphasis>, expression </emphasis><emphasis
-  role="bold">] )</emphasis></para>
+  role="bold">[</emphasis><emphasis>, ASSERT</emphasis><emphasis role="bold">]
+  ] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="79.75pt" />
+        <colspec colwidth="79.75pt"/>
 
-        <colspec colwidth="309.05pt" />
+        <colspec colwidth="309.05pt"/>
 
         <tbody>
           <row>
@@ -30,6 +31,14 @@
 
             <entry>Optional. An expression that specifies how the recordset is
             distributed.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>ASSERT</emphasis></entry>
+
+            <entry>Optional. Creates a light-weight activity that ensures the
+            dataset really is distributed as expected; if not, the workunit
+            fails with an exception.</entry>
           </row>
 
           <row>
@@ -52,10 +61,16 @@
   suppresses a warning that is sometimes generated that the
   <emphasis>recordset</emphasis> hasn't been distributed</para>
 
+  <para>If <emphasis role="bold">ASSERT</emphasis> is specified, the compiler
+  creates a light-weight activity that validates that the data is distributed
+  as claimed by the <emphasis>expression</emphasis> and fails the workunit if
+  it is not.</para>
+
   <para>Example:</para>
 
-  <programlisting lang="ECL">MySet := DISTRIBUTED(Person,HASH32(Person.per_ssn));
-        //all people with the same SSN are already on the same node</programlisting>
+  <programlisting lang="ECL">MySet := DISTRIBUTED(Person,HASH32(Person.per_ssn),ASSERT);
+        //all people with the same SSN are already on the same node
+        //and ASSERT verifies the claimed distribution</programlisting>
 
   <para>See Also: <link linkend="HASH32">HASH32</link>, <link
   linkend="DISTRIBUTE">DISTRIBUTE</link></para>
