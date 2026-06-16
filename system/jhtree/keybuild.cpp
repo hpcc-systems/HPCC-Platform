@@ -453,6 +453,9 @@ protected:
                 CWriteNodeBase &pending = pendingNodes.item(0);
                 if (!prevLeafNode || pending.getFpos() > prevLeafNode->getFpos())
                     break;
+                // In trailing-header mode we must not skip over an unwritten active blob node.
+                if (activeBlobNode && pending.getFpos() > activeBlobNode->getFpos())
+                    break;
                 writeNode(&pending, pending.getFpos());
                 pendingNodes.remove(0);
             }
