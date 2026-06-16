@@ -148,16 +148,25 @@ void testEventVisitationLinks(const char* testData, unsigned flags)
     IPropertyTree* expectTree = testTree->queryBranch("expect");
     CPPUNIT_ASSERT_MESSAGE("missing expected results section", expectTree != nullptr);
     Owned<IPropertyTreeIterator> links = testTree->getElements("link");
-    testEventVisitationLinks(*inputTree, *expectTree, *links, flags);
+    bool disablePreScan = testTree->hasProp("noPreScan");
+    testEventVisitationLinks(*inputTree, *expectTree, *links, flags, disablePreScan);
     END_TEST
 }
 
-void testEventVisitationLinks(const IPropertyTree& inputTree, const IPropertyTree& expectTree, IPropertyTreeIterator& visitationLinks, unsigned flags)
+void testEventVisitationLinks(const IPropertyTree& inputTree, const IPropertyTree& expectTree, IPropertyTreeIterator& visitationLinks, unsigned flags, bool disablePreScan)
 {
     class TestOp : public CEventConsumingOp
     {
-    public: // CEventConsumingOp
-        virtual bool doOp() override
+    public:
+        virtual unsigned getNumSources() const override
+        {
+            Owned<IPropertyTreeIterator> sourcesIter = inputTree.getElements("source");
+            unsigned count = 0;
+            ForEach(*sourcesIter) count++;
+            return count <= 1 ? 1 : count;
+        }
+
+        virtual Owned<IEventIterator> createInputIterator() override
         {
             Owned<IEventIterator> input;
             Owned<IPropertyTreeIterator> sourcesIter = inputTree.getElements("source");
@@ -174,16 +183,23 @@ void testEventVisitationLinks(const IPropertyTree& inputTree, const IPropertyTre
                 break;
             default:
                 {
-                    Owned<IEventMultiplexer> multiplexer = createChronologicalEventMultiplexer(*metaState);
+                    Owned<IEventMultiplexer> multiplexer = createChronologicalEventMultiplexer(*metaState, preScanCompleted);
                     for (auto& s : sources)
-                        multiplexer->addSource(*s.getClear());
+                        multiplexer->addSource(*s);
                     input.setown(multiplexer.getClear());
                 }
                 break;
             }
+            return input;
+        }
+
+        virtual bool doOp() override
+        {
             Owned<IEventIterator> expect = createPropertyTreeEvents(expectTree, flags);
             Owned<IEventVisitor> visitor = new CEventVisitationLinkTester(*expect);
             Owned<IEventVisitor> currentVisitor = LINK(visitor);
+
+            bool needsPreScan = false;
 
             // Build the visitation chain from the links
             ForEach(visitationLinks)
@@ -202,10 +218,20 @@ void testEventVisitationLinks(const IPropertyTree& inputTree, const IPropertyTre
                 if (!link)
                     return false; // failed to create link
 
+                if (link->preScanRequired())
+                    needsPreScan = true;
+
                 link->setNextLink(*currentVisitor);
                 currentVisitor.setown(link.getClear());
             }
 
+            if (needsPreScan && !disablePreScan)
+            {
+                preScanEvents();
+                preScanCompleted = true;
+            }
+
+            Owned<IEventIterator> input = createInputIterator();
             // Always include the meta information parser as the first link in the chain
             Owned<IEventVisitationLink> metaCollector = metaState->getCollector();
             metaCollector->setNextLink(*currentVisitor);
@@ -214,11 +240,12 @@ void testEventVisitationLinks(const IPropertyTree& inputTree, const IPropertyTre
         }
 
     public:
-        TestOp(const IPropertyTree& _inputTree, const IPropertyTree& _expectTree, IPropertyTreeIterator& _visitationLinks, unsigned _flags)
+        TestOp(const IPropertyTree& _inputTree, const IPropertyTree& _expectTree, IPropertyTreeIterator& _visitationLinks, unsigned _flags, bool _disablePreScan)
             : inputTree(_inputTree)
             , expectTree(_expectTree)
             , visitationLinks(_visitationLinks)
             , flags(_flags)
+            , disablePreScan(_disablePreScan)
         {
         }
 
@@ -227,10 +254,11 @@ void testEventVisitationLinks(const IPropertyTree& inputTree, const IPropertyTre
         const IPropertyTree& expectTree;
         IPropertyTreeIterator& visitationLinks;
         unsigned flags;
+        bool disablePreScan;
     };
 
     START_TEST
-    TestOp op(inputTree, expectTree, visitationLinks, flags);
+    TestOp op(inputTree, expectTree, visitationLinks, flags, disablePreScan);
     CPPUNIT_ASSERT_MESSAGE("failed to process visitation links", op.doOp());
     END_TEST
 }

@@ -103,12 +103,8 @@ std::string GroupAttributeExtractor::formatValue(const GroupAttribute& groupAttr
         try
         {
             __uint64 val = std::stoull(rawValue);
-            CDateTime dt;
-            dt.setTimeStampNs(val);
             StringBuffer text;
-            dt.getString(text);
-            if (val % 1000000000ULL)
-                text.appendf("%03llu", val % 1000ULL);
+            formatTimestampNsText(text, val);
             return text.str();
         }
         catch (...)

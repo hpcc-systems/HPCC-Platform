@@ -19,7 +19,9 @@
 #include "eventindex.hpp"
 #include "eventmetaparser.hpp"
 #include "jregexp.hpp"
+#include "jtrace.hpp"
 #include "jutil.hpp"
+#include <functional>
 #include <map>
 #include <set>
 #include <unordered_map>
@@ -49,38 +51,65 @@ public:
 protected:
     class StringMatchHelper
     {
+    public:
+        // Now public so external pre-scan predicates can see the data.
+        struct PatternInfo
+        {
+            std::string pattern;
+            FilterTermComparison comparison;
+            bool wildcard{false};
+
+            PatternInfo(std::string _pattern, FilterTermComparison _comparison)
+                : pattern(std::move(_pattern))
+                , comparison(_comparison)
+            {
+                // Check once for a wildcard pattern when accepted, to avoid checking for each event.
+                if (FilterTermComparison::Wildcard == comparison || FilterTermComparison::Default == comparison)
+                    wildcard = (pattern.find_first_of("*?") != std::string::npos);
+            }
+
+            bool operator < (const PatternInfo& other) const
+            {
+                int cmp = pattern.compare(other.pattern);
+                if (cmp)
+                    return cmp < 0;
+                return comparison < other.comparison;
+            }
+        };
+        using PreScanPredicate = std::function<bool(const PatternInfo& pattern)>;
+
     private:
-        std::set<std::pair<std::string, FilterTermComparison>> patterns;
+        std::set<PatternInfo> patterns;
 
     public:
         bool matches(const char* value) const
         {
             bool match = false;
-            for (const std::pair<std::string, FilterTermComparison>& pattern : patterns)
+            for (const PatternInfo& pattern : patterns)
             {
-                switch (pattern.second)
+                switch (pattern.comparison)
                 {
                 case FilterTermComparison::Default:
                 case FilterTermComparison::Wildcard:
-                    match = WildMatch(value, pattern.first.c_str(), false);
+                    match = WildMatch(value, pattern.pattern.c_str(), false);
                     break;
                 case FilterTermComparison::Equal:
-                    match = strieq(value, pattern.first.c_str());
+                    match = strieq(value, pattern.pattern.c_str());
                     break;
                 case FilterTermComparison::NotEqual:
-                    match = !strieq(value, pattern.first.c_str());
+                    match = !strieq(value, pattern.pattern.c_str());
                     break;
                 case FilterTermComparison::LessThan:
-                    match = stricmp(value, pattern.first.c_str()) < 0;
+                    match = stricmp(value, pattern.pattern.c_str()) < 0;
                     break;
                 case FilterTermComparison::LessThanOrEqual:
-                    match = stricmp(value, pattern.first.c_str()) <= 0;
+                    match = stricmp(value, pattern.pattern.c_str()) <= 0;
                     break;
                 case FilterTermComparison::GreaterThanOrEqual:
-                    match = stricmp(value, pattern.first.c_str()) >= 0;
+                    match = stricmp(value, pattern.pattern.c_str()) >= 0;
                     break;
                 case FilterTermComparison::GreaterThan:
-                    match = stricmp(value, pattern.first.c_str()) > 0;
+                    match = stricmp(value, pattern.pattern.c_str()) > 0;
                     break;
                 default:
                     match = false;
@@ -96,6 +125,19 @@ protected:
         {
             (void)patterns.emplace(token, comp);
             return true;
+        }
+
+        bool preScanRequired(PreScanPredicate predicate) const
+        {
+            // Pre-scan is not required by default. If no predicate is provided,
+            // no pre-scan is required by the defined patterns.
+            if (!predicate)
+                return false;
+            // Use the predicate to check if any pattern triggers a pre-scan.
+            for (const auto& p : patterns)
+                if (predicate(p))
+                    return true;
+            return false;
         }
     };
 
@@ -120,6 +162,7 @@ protected:
             return true;
         }
         virtual bool acceptToken(const char* token, FilterTermComparison comp) = 0;
+        virtual bool preScanRequired() const { return false; }
     protected:
         CMetaInfoState& metaInfoState;
     };
@@ -367,6 +410,22 @@ protected:
     struct TraceIdFilterTerm : public StringFilterTerm
     {
         using StringFilterTerm::StringFilterTerm;
+
+        virtual bool preScanRequired() const override
+        {
+            return helper.preScanRequired([](const StringMatchHelper::PatternInfo& entry) {
+                if (entry.wildcard) // a wildcard could match a service name
+                    return true;
+                if (entry.pattern.length() != lenTraceId) // trace id length mismatch may match a service name
+                    return true;
+                for (char c : entry.pattern) // non-hex digit could match a service name
+                {
+                    if (!isxdigit((unsigned char)c))
+                        return true;
+                }
+                return false;
+            });
+        }
 
         // Override of the base class method to accept the corresponding service name, which is
         // not required to exist, as a match. The base method cannot be used because it cannot
@@ -638,6 +697,16 @@ public: // IEventFilter
         return true;
     }
 
+    virtual bool preScanRequired() const override
+    {
+        for (unsigned termIdx = EvAttrNone + 1; termIdx < EvAttrMax; termIdx++)
+        {
+            if (terms[termIdx] && terms[termIdx]->preScanRequired())
+                return true;
+        }
+        return false;
+    }
+
     virtual bool acceptAttribute(EventAttr id, const char* values) override
     {
         switch (id)
@@ -792,12 +861,45 @@ class EventFilterTests : public CppUnit::TestFixture
     CPPUNIT_TEST(testFilterByAttributeByTimestamp1);
     CPPUNIT_TEST(testFilterByAttributeByTimestamp2);
     CPPUNIT_TEST(testFilterByAttributeByTimestamp3);
+    CPPUNIT_TEST(testFilterByAttributeByTraceIdPreScan);
+    CPPUNIT_TEST(testFilterByAttributeByTraceIdNoPreScan);
     CPPUNIT_TEST(testFilterByAttributeByTraceId);
+    CPPUNIT_TEST(testFilterByAttributeByTraceIdPreScanDecisions);
     CPPUNIT_TEST(testFilterByAttributeByFileIdNumericPathMatch);
     CPPUNIT_TEST(testFilterByAttributeByFileIdPlaneMatch);
     CPPUNIT_TEST_SUITE_END();
 
+    class EventFilterProbe : public CEventFilter
+    {
+    public:
+        EventFilterProbe(CMetaInfoState& _metaState) : CEventFilter(_metaState) {}
+
+        static bool helperPreScanRequiredWithNullPredicate(const char* token, FilterTermComparison comp)
+        {
+            StringMatchHelper helper;
+            helper.acceptToken(token, comp);
+            return helper.preScanRequired(nullptr);
+        }
+
+        static bool helperPreScanRequiredWithWildcardPredicate(const char* token, FilterTermComparison comp)
+        {
+            StringMatchHelper helper;
+            helper.acceptToken(token, comp);
+            return helper.preScanRequired([](const StringMatchHelper::PatternInfo& entry) {
+                return entry.wildcard;
+            });
+        }
+    };
+
 public:
+    bool queryTraceIdPreScanRequired(const char* values)
+    {
+        CMetaInfoState metaInfoState;
+        Owned<IEventFilter> filter = createEventFilter(metaInfoState);
+        CPPUNIT_ASSERT(filter->acceptAttribute(EvAttrEventTraceId, values));
+        return filter->preScanRequired();
+    }
+
     void testFilterByAttributeByFileIdPlaneMatch()
     {
         constexpr const char* testData = R"!!!(
@@ -1667,6 +1769,53 @@ public:
         testEventVisitationLinks(testData, PTEFlenientParsing);
     }
 
+    void testFilterByAttributeByTraceIdPreScan()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link kind="event-filter">
+                    <attribute id="EventTraceId" values="trace-001,dali*"/>
+                </link>
+                <input>
+                    <event type="IndexCacheHit" EventTraceId="trace-003"/>
+                    <event type="IndexCacheHit" EventTraceId="trace-001"/>
+                    <event type="QueryStart" EventTraceId="trace-003" ServiceName="dali-backend"/>
+                    <event type="QueryStart" EventTraceId="trace-001" ServiceName="roxie-service"/>
+                </input>
+                <expect>
+                    <event type="IndexCacheHit" EventTraceId="trace-003"/>
+                    <event type="IndexCacheHit" EventTraceId="trace-001"/>
+                    <event type="QueryStart" EventTraceId="trace-003" ServiceName="dali-backend"/>
+                    <event type="QueryStart" EventTraceId="trace-001" ServiceName="roxie-service"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData, PTEFlenientParsing);
+    }
+
+    void testFilterByAttributeByTraceIdNoPreScan()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <noPreScan/>
+                <link kind="event-filter">
+                    <attribute id="EventTraceId" values="trace-001,dali*"/>
+                </link>
+                <input>
+                    <event type="IndexCacheHit" EventTraceId="trace-003"/>
+                    <event type="IndexCacheHit" EventTraceId="trace-001"/>
+                    <event type="QueryStart" EventTraceId="trace-003" ServiceName="dali-backend"/>
+                    <event type="QueryStart" EventTraceId="trace-001" ServiceName="roxie-service"/>
+                </input>
+                <expect>
+                    <event type="IndexCacheHit" EventTraceId="trace-001"/>
+                    <event type="QueryStart" EventTraceId="trace-001" ServiceName="roxie-service"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData, PTEFlenientParsing);
+    }
+
     void testFilterByAttributeByTraceId()
     {
         constexpr const char* testData = R"!!!(
@@ -1693,6 +1842,31 @@ public:
             </test>
         )!!!";
         testEventVisitationLinks(testData, PTEFlenientParsing);
+    }
+
+    void testFilterByAttributeByTraceIdPreScanDecisions()
+    {
+        START_TEST
+
+        // (1) null predicate path must be safe and return false.
+        CPPUNIT_ASSERT(!EventFilterProbe::helperPreScanRequiredWithNullPredicate("dali*", FilterTermComparison::Default));
+
+        // (2) wildcard/default patterns with and without '*'/'?' should precompute wildcard correctly.
+        CPPUNIT_ASSERT(EventFilterProbe::helperPreScanRequiredWithWildcardPredicate("dali*", FilterTermComparison::Default));
+        CPPUNIT_ASSERT(EventFilterProbe::helperPreScanRequiredWithWildcardPredicate("dali?backend", FilterTermComparison::Default));
+        CPPUNIT_ASSERT(EventFilterProbe::helperPreScanRequiredWithWildcardPredicate("dali*", FilterTermComparison::Wildcard));
+        CPPUNIT_ASSERT(EventFilterProbe::helperPreScanRequiredWithWildcardPredicate("dali?backend", FilterTermComparison::Wildcard));
+        CPPUNIT_ASSERT(!EventFilterProbe::helperPreScanRequiredWithWildcardPredicate("00112233445566778899aabbccddeeff", FilterTermComparison::Default));
+        CPPUNIT_ASSERT(!EventFilterProbe::helperPreScanRequiredWithWildcardPredicate("00112233445566778899aabbccddeeff", FilterTermComparison::Wildcard));
+
+        // (3) 32-hex versus non-hex/length mismatch patterns.
+        CPPUNIT_ASSERT(!queryTraceIdPreScanRequired("00112233445566778899aabbccddeeff"));   // exact 32-hex trace id
+        CPPUNIT_ASSERT(queryTraceIdPreScanRequired("00112233445566778899aabbccddee"));      // length mismatch (short)
+        CPPUNIT_ASSERT(queryTraceIdPreScanRequired("00112233445566778899aabbccddeeff00"));  // length mismatch (long)
+        CPPUNIT_ASSERT(queryTraceIdPreScanRequired("00112233445566778899aabbccddeefg"));    // non-hex char
+        CPPUNIT_ASSERT(queryTraceIdPreScanRequired("*service*"));                           // wildcard pattern
+
+        END_TEST
     }
 };
 

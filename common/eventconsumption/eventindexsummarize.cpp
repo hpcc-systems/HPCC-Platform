@@ -18,6 +18,7 @@
 #include "eventindexsummarize.h"
 #include "eventgrouping.hpp"
 #include "eventiterator.h"
+#include "eventutility.hpp"
 #include <functional>
 
 enum ReadBucket
@@ -901,17 +902,9 @@ protected:
             // Format timestamps using CDateTime (empty if no valid timestamps were found)
             StringBuffer earliestTsStr, latestTsStr;
             if (traceStats.firstTimestamp != UINT64_MAX)
-            {
-                CDateTime earliestDt;
-                earliestDt.setTimeStampNs(traceStats.firstTimestamp);
-                earliestDt.getString(earliestTsStr);
-            }
+                formatTimestampNsText(earliestTsStr, traceStats.firstTimestamp);
             if (traceStats.lastTimestamp > 0)
-            {
-                CDateTime latestDt;
-                latestDt.setTimeStampNs(traceStats.lastTimestamp);
-                latestDt.getString(latestTsStr);
-            }
+                formatTimestampNsText(latestTsStr, traceStats.lastTimestamp);
 
             appendCSVColumns(line, key.traceId.str(), serviceName, earliestTsStr.str(), latestTsStr.str(), traceStats.uniqueFileIds.size());
 
@@ -1012,17 +1005,9 @@ protected:
             // Format timestamps using CDateTime (empty if no valid timestamps were found)
             StringBuffer firstTsStr, lastTsStr;
             if (serviceStatsEntry.firstTimestamp != UINT64_MAX)
-            {
-                CDateTime firstDt;
-                firstDt.setTimeStampNs(serviceStatsEntry.firstTimestamp);
-                firstDt.getString(firstTsStr);
-            }
+                formatTimestampNsText(firstTsStr, serviceStatsEntry.firstTimestamp);
             if (serviceStatsEntry.lastTimestamp > 0)
-            {
-                CDateTime lastDt;
-                lastDt.setTimeStampNs(serviceStatsEntry.lastTimestamp);
-                lastDt.getString(lastTsStr);
-            }
+                formatTimestampNsText(lastTsStr, serviceStatsEntry.lastTimestamp);
 
             const char* displayServiceName = serviceName.empty() ? "<no service>" : serviceName.c_str();
             appendCSVColumns(line, displayServiceName, serviceStatsEntry.traceCount, firstTsStr.str(), lastTsStr.str(), serviceStatsEntry.uniqueFileIds.size());
@@ -1138,17 +1123,9 @@ class CCsvGroupFormatter : public IGroupFormatter<EventSummaryMetrics>
         // Format timestamps using CDateTime
         StringBuffer earliestTsStr, latestTsStr;
         if (metrics.firstTimestamp != 0 && metrics.firstTimestamp != UINT64_MAX)
-        {
-            CDateTime earliestDt;
-            earliestDt.setTimeStampNs(metrics.firstTimestamp);
-            earliestDt.getString(earliestTsStr);
-        }
+            formatTimestampNsText(earliestTsStr, metrics.firstTimestamp);
         if (metrics.lastTimestamp > 0)
-        {
-            CDateTime latestDt;
-            latestDt.setTimeStampNs(metrics.lastTimestamp);
-            latestDt.getString(latestTsStr);
-        }
+            formatTimestampNsText(latestTsStr, metrics.lastTimestamp);
 
         if (numColumns > 0)
             buf.append(",");
@@ -1190,7 +1167,7 @@ public:
                 buf.append(col.c_str());
             }
         }
-        if (!buf.isEmpty())
+        if (numColumns > 0)
             buf.append(",");
         buf.append("FirstTimestamp,LastTimestamp,Hits,Misses,Loads,Payloads,Evictions,NodeCount");
         appendStat(buf, "MemorySize", false);
@@ -1313,6 +1290,32 @@ public:
         formatter.endReport();
     }
 };
+
+bool CIndexFileSummary::preScanRequired() const
+{
+    // Check base condition (filter)
+    if (CEventConsumingOp::preScanRequired())
+        return true;
+
+    // Check specific grouping columns
+    for (const auto& groupIds : groupAttributeIds)
+    {
+        for (auto& id : groupIds)
+        {
+            // Grouping by ServiceName requires a pre-scan to ensure the first occurrence of
+            // EventTraceId in each input file can be mapped to a ServiceName found in at-most
+            // one input file. No iteration strategy can guarantee correct mapping in a single
+            // traversal of all files.
+            if (id.attrId == EvAttrServiceName)
+                return true;
+            // Note that grouping each input file is assured to see all PlaneInformation events
+            // prior to any FileInformation events, and all FileInformation events prior to any
+            // other event referencing the FileId. Any mapping from FileId that fails in one
+            // iteration will fail in all iterations. No pre-scan is required.
+        }
+    }
+    return false;
+}
 
 bool CIndexFileSummary::doOp()
 {

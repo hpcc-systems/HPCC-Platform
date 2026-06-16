@@ -36,10 +36,11 @@ interface IEventVisitationLink : extends IEventVisitor
 {
     virtual void configure(const IPropertyTree& config) = 0;
     virtual void setNextLink(IEventVisitor& visitor) = 0;
+    virtual bool preScanRequired() const = 0;
 };
 
 // Shortcut to standard implementations of visitFile and departFile in a visitation link
-// implementation. All implementations must still implement visitEvent.
+// implementation. All implementations must still implement both visitEvent and preScanRequired.
 #define IMPLEMENT_IEVENTVISITATIONLINK \
 protected: \
     Linked<IEventVisitor> nextLink; \

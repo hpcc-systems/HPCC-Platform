@@ -18,6 +18,7 @@
 #pragma warning(disable:4786)
 #include "platform.h"
 #include "aci.ipp"
+#include "ldapsanitization.hpp"
 #include "ldapsecurity.ipp"
 
 /****************************************************************
@@ -683,7 +684,9 @@ public:
 
                 //check if this aci is applicable to this user
                 StringBuffer userdn;
-                userdn.append("uid=").append(user.getName()).append(",").append(ldapconfig->getUserBasedn());
+                userdn.append("uid=");
+                escapeLdapDistinguishedName(user.getName(), userdn);
+                userdn.append(",").append(ldapconfig->getUserBasedn());
                 ForEachItemIn(z, aci.userdns())
                 {
                     const char* onedn = aci.userdns().item(z);
@@ -1143,7 +1146,8 @@ CSecurityDescriptor* CIPlanetAciProcessor::createDefaultSD(ISecUser * const user
         StringBuffer default_sd;
         default_sd.append("(targetattr = \"*\") (version 3.0;acl \"default_aci\";allow (").append(defaultperm.str()).append(")");
         default_sd.append("(userdn = \"ldap:///");
-        default_sd.append("uid=").append(user->getName());
+        default_sd.append("uid=");
+        escapeLdapDistinguishedName(user->getName(), default_sd);
         default_sd.append(",").append(userbasedn).append("\");)");
         csd->appendDescriptor(default_sd.length(), (void*)default_sd.str());
     }
@@ -1232,8 +1236,10 @@ CSecurityDescriptor* COpenLdapAciProcessor::createDefaultSD(ISecUser * const use
     {
         StringBuffer defaultperm;
         sec2aci(DEFAULT_OWNER_PERMISSION, defaultperm);
+        StringBuffer escapedName;
+        escapeLdapDistinguishedName(user->getName(), escapedName);
         StringBuffer default_sd;
-        default_sd.appendf("default_aci#entry#grant;%s;[all]#access-id#uid=%s,%s", defaultperm.str(), user->getName(), userbasedn);
+        default_sd.appendf("default_aci#entry#grant;%s;[all]#access-id#uid=%s,%s", defaultperm.str(), escapedName.str(), userbasedn);
         csd->appendDescriptor(default_sd.length(), (void*)default_sd.str());
     }
     return csd;

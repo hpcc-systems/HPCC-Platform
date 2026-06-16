@@ -88,7 +88,8 @@ public:
     virtual bool doOp() override;
 
 protected:
-    virtual IEventMultiplexer* createMultiplexer(CMetaInfoState& metaState) override;
+    virtual bool preScanRequired() const override;
+    virtual IEventMultiplexer* createMultiplexer(CMetaInfoState& metaState, bool bypassMetaCollector) override;
 
     OutputFormat format = OutputFormat::text;
     DumpMetaFlag metaFlags = DumpMetaFlag::None;

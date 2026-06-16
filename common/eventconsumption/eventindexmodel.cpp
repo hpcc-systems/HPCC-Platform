@@ -94,6 +94,7 @@ public:
 
 public: // IEventVisitationLink
     IMPLEMENT_IEVENTVISITATIONLINK;
+    virtual bool preScanRequired() const override { return false; }
 
     virtual void configure(const IPropertyTree& config) override
     {

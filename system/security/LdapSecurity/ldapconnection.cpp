@@ -4264,7 +4264,9 @@ public:
         }
 
         StringBuffer dn;
-        dn.append("cn=").append(groupname).append(",").append(basedn);
+        dn.append("cn=");
+        escapeLdapDistinguishedName(groupname, dn);
+        dn.append(",").append(basedn);
 
         char* oc_name;
         if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
@@ -4883,7 +4885,11 @@ private:
             if(stricmp(username, "anyone") == 0)
                 userdn.append(username);
             else
-                userdn.append("uid=").append(username).append(",").append(m_ldapconfig->getUserBasedn());
+            {
+                userdn.append("uid=");
+                escapeLdapDistinguishedName(username, userdn);
+                userdn.append(",").append(m_ldapconfig->getUserBasedn());
+            }
         }
 
     }
@@ -4942,7 +4948,9 @@ private:
             return;
 
         LdapServerType stype = m_ldapconfig->getServerType();
-        groupdn.append("cn=").append(groupname).append(",");
+        groupdn.append("cn=");
+        escapeLdapDistinguishedName(groupname, groupdn);
+        groupdn.append(",");
         if(stype == ACTIVE_DIRECTORY && stricmp(groupname, "Administrators") == 0)
         {
             groupdn.append("cn=Builtin,").append(m_ldapconfig->getBasedn());
@@ -5620,6 +5628,7 @@ private:
     virtual void name2dn(SecResourceType rtype, const char* resourcename, const char* basedn, StringBuffer& ldapname)
     {
         StringBuffer namebuf;
+        static constexpr const char* ldapDnReservedChars = ",\\\"+;<>";
 
         const char* bptr = resourcename;
         const char* sep = strstr(resourcename, "::");
@@ -5628,7 +5637,11 @@ private:
             if(sep > bptr)
             {
                 StringBuffer onebuf;
-                onebuf.append("ou=").append(sep-bptr, bptr).append(",");
+                StringBuffer segbuf;
+                segbuf.append(sep-bptr, bptr);
+                if (const char* bad = strpbrk(segbuf.str(), ldapDnReservedChars))
+                    throw MakeStringException(-1, "Resource name '%s' contains reserved character '%c'", segbuf.str(), *bad);
+                onebuf.append("ou=").append(segbuf).append(",");
                 namebuf.insert(0, onebuf.str());
             }
 
@@ -5642,6 +5655,8 @@ private:
                 onebuf.append("cn");
             else
                 onebuf.append("ou");
+            if (const char* bad = strpbrk(bptr, ldapDnReservedChars))
+                throw MakeStringException(-1, "Resource name '%s' contains reserved character '%c'", bptr, *bad);
             onebuf.append("=").append(bptr).append(",");
             namebuf.insert(0, onebuf.str());
         }
@@ -5668,7 +5683,11 @@ private:
             nextptr = strstr(prevptr, "::");
         }
         if(*prevptr != '\0')
-            ldapname.append(prevptr);
+        {
+            StringBuffer escapedSeg;
+            escapeLdapDistinguishedName(prevptr, escapedSeg);
+            ldapname.append(escapedSeg);
+        }
     }
 
     virtual bool addResource(SecResourceType rtype, ISecUser& user, ISecResource* resource, SecPermissionType ptype, const char* basedn)
@@ -5759,7 +5778,9 @@ private:
             oc_name = "OrganizationalUnit";
         }
 
-        dn.append(fieldname).append("=").append(resourcename).append(",");
+        StringBuffer escapedResourceName;
+        escapeLdapDistinguishedName(resourcename, escapedResourceName);
+        dn.append(fieldname).append("=").append(escapedResourceName).append(",");
         dn.append(rbasedn);
 
         char *cn_values[] = {resourcename, NULL };
@@ -6069,11 +6090,15 @@ private:
         StringBuffer dn;
         if(serverType == ACTIVE_DIRECTORY)
         {
-            dn.append("cn=").append(fullname).append(",");
+            dn.append("cn=");
+            escapeLdapDistinguishedName(fullname, dn);
+            dn.append(",");
         }
         else
         {
-            dn.append("uid=").append(user.getName()).append(",");
+            dn.append("uid=");
+            escapeLdapDistinguishedName(user.getName(), dn);
+            dn.append(",");
         }
         dn.append(basedn);
 

@@ -435,6 +435,7 @@ bool CIndexPlotOp::doXAxis(LinkChanges& linkChanges, size_t yAxisIdx)
             // generate the visitor chain to produce one plot value
             Owned<IEventVisitor> chain;
             chain.set(this);
+            iterationRequiresPreScan = false;
             for (auto it = links.rbegin(); it != links.rend(); ++it)
             {
                 const LinkSpec& linkSpec = *it;
@@ -445,6 +446,10 @@ bool CIndexPlotOp::doXAxis(LinkChanges& linkChanges, size_t yAxisIdx)
                     link.setown(createEventFilter(linkTree, *metaState));
                 else
                     link.setown(createEventModel(linkTree, *metaState));
+
+                if (link->preScanRequired())
+                    iterationRequiresPreScan = true;
+
                 link->setNextLink(*chain);
                 chain.setown(link.getClear());
             }

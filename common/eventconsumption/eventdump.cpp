@@ -22,6 +22,15 @@ void CDumpEventsOp::setFormat(OutputFormat _format)
     format = _format;
 }
 
+bool CDumpEventsOp::preScanRequired() const
+{
+    // ServiceName metadata is derived from EventTraceId -> ServiceName mappings that
+    // may be observed later across input files due to clock skew, so request a pre-scan.
+    if (hasMetaFlag(metaFlags, DumpMetaFlag::ServiceName))
+        return true;
+    return CEventConsumingOp::preScanRequired();
+}
+
 bool CDumpEventsOp::doOp()
 {
     Owned<IEventVisitor> visitor;
@@ -61,9 +70,9 @@ bool CDumpEventsOp::doOp()
     return traverseEvents(*visitor);
 }
 
-IEventMultiplexer* CDumpEventsOp::createMultiplexer(CMetaInfoState& metaState)
+IEventMultiplexer* CDumpEventsOp::createMultiplexer(CMetaInfoState& metaState, bool bypassMetaCollector)
 {
-    return createChronologicalEventMultiplexer(metaState);
+    return createChronologicalEventMultiplexer(metaState, bypassMetaCollector);
 }
 
 void CDumpEventsOp::setMetaFlags(const char* value)

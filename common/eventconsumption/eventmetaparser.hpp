@@ -19,6 +19,7 @@
 
 #include "eventvisitor.h"
 #include "jstring.hpp"
+#include <functional>
 #include <map>
 #include <unordered_map>
 #include <set>
@@ -74,6 +75,7 @@ private:
     public: // IEventVisitationLink
         virtual void setNextLink(IEventVisitor& visitor) override;
         virtual void configure(const IPropertyTree& config) override;
+        virtual bool preScanRequired() const override { return false; }
     public:
         CCollector(CMetaInfoState& _metaState);
     private:
@@ -104,25 +106,60 @@ public:
     // Clear all mappings
     void clearAll();
 
+    // Remap source-scoped FileId to runtime FileId when multi-source mappings exist.
+    // Returns true if the event FileId was updated.
+    bool tryRemapFileId(CEvent& event);
+
 private:
+    struct SourceFileKey
+    {
+        uint64_t instanceId{0};
+        uint32_t sourceFileId{0};
+        uint8_t  channelId{0};
+        uint8_t  replicaId{0};
+        bool operator==(const SourceFileKey& o) const noexcept
+        {
+            return instanceId == o.instanceId && sourceFileId == o.sourceFileId
+                && channelId == o.channelId && replicaId == o.replicaId;
+        }
+    };
+    struct SourceFileKeyHash
+    {
+        size_t operator()(const SourceFileKey& k) const noexcept
+        {
+            size_t h = 0;
+            auto combine = [&h](size_t value)
+            {
+                constexpr size_t golden = (sizeof(size_t) >= 8) ? 0x9e3779b97f4a7c15ULL : 0x9e3779b9U;
+                h ^= value + golden + (h << 6) + (h >> 2);
+            };
+
+            combine(std::hash<uint64_t>{}(k.instanceId));
+            combine(std::hash<uint32_t>{}(k.sourceFileId));
+            combine(std::hash<uint8_t>{}(k.channelId));
+            combine(std::hash<uint8_t>{}(k.replicaId));
+            return h;
+        }
+    };
     void onFile(const char* filename, uint32_t version);
     void onEvent(CEvent& event);
-    uint32_t generateSourceFileId(const CEvent& event);
+    static SourceFileKey makeSourceFileKey(const CEvent& event);
     uint32_t generateRuntimeFileId(const CEvent& event);
     const PlaneInformation* findBestPlaneMatch(const char* path) const;
     const char* deriveLogicalFileName(const char* path, const PlaneInformation* plane);
 
 private:
-
-
     size_t sourceCount{0};
+    SourceFileKey lastRemapInput;
+    uint32_t lastRuntimeFileId{0};
+    bool haveLastRemap{false};
 
     // File ID to path mappings (from MetaFileInformation events)
     // Note: fileIdToPath stores pointers to the string buffers owned by indexFiles.
     // This is safe because std::set is a node-based container which guarantees
     // memory stability; element pointers are never invalidated when the set grows.
     std::set<IndexFileProperties, std::less<>> indexFiles;
-    std::unordered_map<size_t, const IndexFileProperties*> sourceToProps;
+    std::unordered_map<SourceFileKey, const IndexFileProperties*, SourceFileKeyHash> sourceToProps;
     std::unordered_map<__uint64, const char*> fileIdToPath;
 
     // Trace ID to service name mappings (from EventQueryStart events)
