@@ -48,9 +48,15 @@
 #define GLOBAL_SCOPE ""
 
 constexpr const char * targetArchitectureX86_64Linux = "x86_64-linux";
-constexpr const char * defaultTargetArchitecture = targetArchitectureX86_64Linux;
 constexpr const char * targetArchitectureArm64Linux = "arm64-linux";
 constexpr const char * targetArchitectureArm64MacOS = "arm64-macos";
+#if defined(_ARCH_ARM64_) && defined(__APPLE__)
+constexpr const char * defaultTargetArchitecture = targetArchitectureArm64MacOS;
+#elif defined(_ARCH_ARM64_)
+constexpr const char * defaultTargetArchitecture = targetArchitectureArm64Linux;
+#else
+constexpr const char * defaultTargetArchitecture = targetArchitectureX86_64Linux;
+#endif
 constexpr const char * targetArchitectureDebugValue = "targetArchitecture";
 
 #define CHEAP_UCHAR_DEF

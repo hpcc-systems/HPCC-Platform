@@ -119,8 +119,8 @@ public:
     void testTargetArchitectureNormalization()
     {
         StringBuffer normalized;
-        CPPUNIT_ASSERT_EQUAL_STR(targetArchitectureX86_64Linux, normalizeTargetArchitecture(normalized, nullptr).str());
-        CPPUNIT_ASSERT_EQUAL_STR(targetArchitectureX86_64Linux, normalizeTargetArchitecture(normalized, "").str());
+        CPPUNIT_ASSERT_EQUAL_STR(defaultTargetArchitecture, normalizeTargetArchitecture(normalized, nullptr).str());
+        CPPUNIT_ASSERT_EQUAL_STR(defaultTargetArchitecture, normalizeTargetArchitecture(normalized, "").str());
         CPPUNIT_ASSERT_EQUAL_STR(targetArchitectureX86_64Linux, normalizeTargetArchitecture(normalized, " AMD64 ").str());
         CPPUNIT_ASSERT_EQUAL_STR(targetArchitectureX86_64Linux, normalizeTargetArchitecture(normalized, "x86-64").str());
         CPPUNIT_ASSERT_EQUAL_STR(targetArchitectureArm64Linux, normalizeTargetArchitecture(normalized, "aarch64").str());
