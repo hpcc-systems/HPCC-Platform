@@ -470,7 +470,7 @@ ecl deploy roxie - --job-name=FindPersonService
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt"/>
+              <colspec align="left" colwidth="140.55pt"/>
 
               <colspec/>
 
@@ -646,6 +646,20 @@ ecl deploy roxie - --job-name=FindPersonService
                 </row>
 
                 <row>
+                  <entry>--cleanrepos</entry>
+
+                  <entry>This option unconditionally deletes any cached
+                  repositories associated with dependencies</entry>
+                </row>
+
+                <row>
+                  <entry>--cleaninvalidrepos</entry>
+
+                  <entry>This option deletes any incomplete cached
+                  repositories associated with dependencies</entry>
+                </row>
+
+                <row>
                   <entry>-R&lt;repo&gt;[#version]=&lt;path&gt;</entry>
 
                   <entry>This option resolves repository references specified
@@ -761,11 +775,11 @@ ecl deploy roxie - --job-name=FindPersonService
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -809,7 +823,7 @@ ecl publish roxie ArchiveQuery.xml --query-name=FindPersonService --no-activate
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt"/>
+              <colspec align="left" colwidth="140.55pt"/>
 
               <colspec/>
 
@@ -1189,6 +1203,20 @@ ecl publish roxie ArchiveQuery.xml --query-name=FindPersonService --no-activate
                 </row>
 
                 <row>
+                  <entry>--cleanrepos</entry>
+
+                  <entry>This option unconditionally deletes any cached
+                  repositories associated with dependencies</entry>
+                </row>
+
+                <row>
+                  <entry>--cleaninvalidrepos</entry>
+
+                  <entry>This option deletes any incomplete cached
+                  repositories associated with dependencies</entry>
+                </row>
+
+                <row>
                   <entry>-R&lt;repo&gt;[#version]=&lt;path&gt;</entry>
 
                   <entry>This option resolves repository references specified
@@ -1311,11 +1339,11 @@ ecl publish roxie ArchiveQuery.xml --query-name=FindPersonService --no-activate
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -1487,11 +1515,11 @@ ecl unpublish roxie "FindpersonService*"
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -1538,7 +1566,7 @@ ecl run thor findperson.ecl -I C:\MyECL\
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt"/>
+              <colspec align="left" colwidth="140.55pt"/>
 
               <colspec/>
 
@@ -1761,6 +1789,20 @@ ecl run thor findperson.ecl -I C:\MyECL\
                 </row>
 
                 <row>
+                  <entry>--cleanrepos</entry>
+
+                  <entry>This option unconditionally deletes any cached
+                  repositories associated with dependencies</entry>
+                </row>
+
+                <row>
+                  <entry>--cleaninvalidrepos</entry>
+
+                  <entry>This option deletes any incomplete cached
+                  repositories associated with dependencies</entry>
+                </row>
+
+                <row>
                   <entry>-R&lt;repo&gt;[#version]=&lt;path&gt;</entry>
 
                   <entry>This option resolves repository references specified
@@ -1870,11 +1912,11 @@ ecl run thor findperson.ecl -I C:\MyECL\
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -2039,11 +2081,11 @@ ecl results W20170519-142920 --noroot --exception-level=error
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -2191,11 +2233,11 @@ ecl results W20170519-142920 --noroot --exception-level=error
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -2342,11 +2384,11 @@ ecl results W20170519-142920 --noroot --exception-level=error
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -2543,11 +2585,11 @@ ecl queries list roxie --target=roxie --show=A </programlisting>
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -2706,11 +2748,11 @@ SuperFiles used:
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -3077,11 +3119,11 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -3382,11 +3424,11 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -3592,11 +3634,11 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -3964,11 +4006,11 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -4263,11 +4305,11 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -4442,11 +4484,11 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -4742,11 +4784,11 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -4911,11 +4953,11 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -5069,11 +5111,11 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -5226,11 +5268,11 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -5379,11 +5421,11 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -5533,11 +5575,11 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -5830,11 +5872,11 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -6007,11 +6049,11 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -6183,11 +6225,11 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
               </row>
 
               <row>
-                <entry>--noKeepAlive </entry>
+                <entry>--noKeepAlive</entry>
 
                 <entry>Disable TCP keepalives with the server. If omitted, the
                 default is FALSE, meaning connections to the server remain
-                open. </entry>
+                open.</entry>
               </row>
             </tbody>
           </tgroup>
@@ -6427,11 +6469,11 @@ ecl packagemap validate roxie mypackagemap.pkg --ignore-queries='findPerson*, fi
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -6709,11 +6751,11 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -6862,11 +6904,11 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -7003,11 +7045,11 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -7144,11 +7186,11 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -7285,11 +7327,11 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -7469,11 +7511,11 @@ ecl roxie xref myroxie --queryids=myquery.1,myotherquery.1</programlisting>
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -8128,11 +8170,11 @@ ecl bundle list myb*
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -8281,11 +8323,11 @@ ecl abort -n MyJob</programlisting>
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -8432,11 +8474,11 @@ ecl status -n MyJob</programlisting>
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -8582,11 +8624,11 @@ ecl getwuid -n MyCommonJobName --limit=100</programlisting>
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -8734,11 +8776,11 @@ ecl getname -wu W201407*
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -8908,11 +8950,11 @@ ecl zapgen W20171018-091399 --path ~ --inc-thor-slave-logs --description "Unexpe
                 </row>
 
                 <row>
-                  <entry>--noKeepAlive </entry>
+                  <entry>--noKeepAlive</entry>
 
                   <entry>Disable TCP keepalives with the server. If omitted,
                   the default is FALSE, meaning connections to the server
-                  remain open. </entry>
+                  remain open.</entry>
                 </row>
               </tbody>
             </tgroup>
