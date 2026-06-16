@@ -72,6 +72,7 @@ jobs:
             import time
             import sys
             import json
+            import traceback
 
             def extractVersion(versionStr):
                 parts = versionStr.split('.')
@@ -175,18 +176,262 @@ jobs:
 
                 return versions
 
-            def get_merge_conflict(head, target):
-                cmd = [
-                    "git", "merge-tree", "--name-only", head, target
-                ]
-                result = subprocess.run(cmd, capture_output=True, text=True)
-                output = result.stdout
+            def runGit(args):
+                return subprocess.run(["git"] + args, capture_output=True, text=True)
 
-                # Check exit code of the merge-tree command
+            def getFileLines(ref, filePath):
+                result = runGit(["show", f"{ref}:{filePath}"])
                 if result.returncode != 0:
-                    return result.stdout
+                    return None
+                return result.stdout.splitlines()
+
+            def findLineRange(fileLines, snippetLines):
+                if not fileLines or not snippetLines:
+                    return None
+
+                lastStart = len(fileLines) - len(snippetLines)
+                for start in range(lastStart + 1):
+                    if fileLines[start:start + len(snippetLines)] == snippetLines:
+                        return (start + 1, start + len(snippetLines))
+                return None
+
+            def getCommitSummariesForRange(ref, filePath, lineRange):
+                if lineRange is None:
+                    return []
+
+                start, end = lineRange
+                blameResult = runGit(["blame", "--line-porcelain", f"-L{start},{end}", ref, "--", filePath])
+                if blameResult.returncode != 0:
+                    return []
+
+                commitIds = []
+                for line in blameResult.stdout.splitlines():
+                    if re.match(r'^[0-9a-f]{40}\s', line):
+                        commitId = line.split()[0]
+                        if commitId not in commitIds:
+                            commitIds.append(commitId)
+
+                summaries = []
+                for commitId in commitIds[:5]:
+                    showResult = runGit(["show", "-s", "--format=%h %s", commitId])
+                    if showResult.returncode == 0:
+                        summaries.append(showResult.stdout.strip())
+                    else:
+                        summaries.append(commitId[:12])
+
+                return summaries
+
+            def getRecentFileCommits(ref, filePath, maxCount=5):
+                logResult = runGit(["log", f"-n{maxCount}", "--format=%h %s", ref, "--", filePath])
+                if logResult.returncode != 0:
+                    return []
+                return [line for line in logResult.stdout.splitlines() if line.strip()]
+
+            def getDeletionCommit(ref, filePath):
+                logResult = runGit(["log", "--diff-filter=D", "-n1", "--format=%h %s", ref, "--", filePath])
+                if logResult.returncode != 0:
+                    return None
+                deletionCommit = logResult.stdout.strip()
+                return deletionCommit if deletionCommit else None
+
+            def getLastTouchPatch(ref, filePath):
+                showResult = runGit(["log", "-n1", "--format=", "-p", ref, "--", filePath])
+                if showResult.returncode != 0:
+                    return []
+
+                patchLines = [line for line in showResult.stdout.splitlines() if line.strip()]
+                trimmed = patchLines[:40]
+                if len(patchLines) > 40:
+                    trimmed.append("...")
+                return trimmed
+
+            def formatSideDetails(label, ref, filePath, snippetLines):
+                if not snippetLines:
+                    return [f"    {label} lines: (empty)"]
+
+                fileLines = getFileLines(ref, filePath)
+                lineRange = findLineRange(fileLines, snippetLines) if fileLines is not None else None
+
+                details = []
+                if lineRange is not None:
+                    details.append(f"    {label} lines: {lineRange[0]}-{lineRange[1]}")
                 else:
+                    details.append(f"    {label} lines: unable to determine")
+
+                commitSummaries = getCommitSummariesForRange(ref, filePath, lineRange)
+                if commitSummaries:
+                    details.append(f"    {label} commits:")
+                    for summary in commitSummaries:
+                        details.append(f"      - {summary}")
+                else:
+                    details.append(f"    {label} commits: unable to determine")
+
+                details.append(f"    {label} snippet:")
+                for snippetLine in snippetLines[:20]:
+                    details.append(f"      {snippetLine}")
+                if len(snippetLines) > 20:
+                    details.append("      ...")
+
+                return details
+
+            def extractConflictBlocks(filePath):
+                try:
+                    with open(filePath, 'r', errors='replace') as f:
+                        mergedLines = f.read().splitlines()
+                except OSError:
+                    return []
+
+                conflicts = []
+                idx = 0
+                while idx < len(mergedLines):
+                    if not mergedLines[idx].startswith('<<<<<<< '):
+                        idx += 1
+                        continue
+
+                    mergedStart = idx + 1
+                    idx += 1
+                    ours = []
+                    while idx < len(mergedLines) and not mergedLines[idx].startswith('======='):
+                        ours.append(mergedLines[idx])
+                        idx += 1
+
+                    if idx >= len(mergedLines):
+                        break
+
+                    idx += 1
+                    theirs = []
+                    while idx < len(mergedLines) and not mergedLines[idx].startswith('>>>>>>> '):
+                        theirs.append(mergedLines[idx])
+                        idx += 1
+
+                    mergedEnd = idx + 1 if idx < len(mergedLines) else len(mergedLines)
+                    conflicts.append({
+                        "mergedStart": mergedStart,
+                        "mergedEnd": mergedEnd,
+                        "ours": ours,
+                        "theirs": theirs,
+                    })
+                    idx += 1
+
+                return conflicts
+
+            def describeNonContentConflict(filePath, sourceRef, targetRef):
+                details = ["  Conflict type: non-content conflict (no inline markers)"]
+
+                lsFilesResult = runGit(["ls-files", "-u", "--", filePath])
+                if lsFilesResult.returncode == 0:
+                    stages = []
+                    for line in lsFilesResult.stdout.splitlines():
+                        parts = line.split()
+                        if len(parts) >= 4:
+                            stages.append(parts[2])
+                    if stages:
+                        details.append(f"  Unmerged stages present: {', '.join(sorted(set(stages)))}")
+
+                sourceLines = getFileLines(sourceRef, filePath)
+                targetLines = getFileLines(targetRef, filePath)
+
+                sourceExists = sourceLines is not None
+                targetExists = targetLines is not None
+
+                if sourceExists:
+                    details.append("  Source state: file exists")
+                    sourceCommits = getRecentFileCommits(sourceRef, filePath)
+                else:
+                    details.append("  Source state: file deleted")
+                    sourceCommits = []
+                    deletionCommit = getDeletionCommit(sourceRef, filePath)
+                    if deletionCommit:
+                        sourceCommits.append(deletionCommit + " [deletion]")
+
+                if targetExists:
+                    details.append("  Target state: file exists")
+                    targetCommits = getRecentFileCommits(targetRef, filePath)
+                else:
+                    details.append("  Target state: file deleted")
+                    targetCommits = []
+                    deletionCommit = getDeletionCommit(targetRef, filePath)
+                    if deletionCommit:
+                        targetCommits.append(deletionCommit + " [deletion]")
+
+                if sourceCommits:
+                    details.append("  Source commits touching this path:")
+                    for summary in sourceCommits[:5]:
+                        details.append(f"    - {summary}")
+                else:
+                    details.append("  Source commits touching this path: unable to determine")
+
+                if targetCommits:
+                    details.append("  Target commits touching this path:")
+                    for summary in targetCommits[:5]:
+                        details.append(f"    - {summary}")
+                else:
+                    details.append("  Target commits touching this path: unable to determine")
+
+                sourcePatch = getLastTouchPatch(sourceRef, filePath) if sourceExists else []
+                if sourcePatch:
+                    details.append("  Source last-touch patch:")
+                    for line in sourcePatch:
+                        details.append(f"    {line}")
+
+                targetPatch = getLastTouchPatch(targetRef, filePath) if targetExists else []
+                if targetPatch:
+                    details.append("  Target last-touch patch:")
+                    for line in targetPatch:
+                        details.append(f"    {line}")
+
+                return details
+
+            def getMergeConflictDetails(sourceRef, targetRef, targetBranch):
+                mergeResult = runGit(["merge", "--no-commit", "--no-ff", targetRef])
+                if mergeResult.returncode == 0:
+                    abortResult = runGit(["merge", "--abort"])
+                    if abortResult.returncode != 0 and "There is no merge to abort" not in abortResult.stderr:
+                        print(f"Warning: git merge --abort failed: {abortResult.stderr}")
                     return ""
+
+                conflictFilesResult = runGit(["diff", "--name-only", "--diff-filter=U"])
+                conflictFiles = [line for line in conflictFilesResult.stdout.splitlines() if line.strip()]
+
+                details = [f"Target branch: {targetBranch}"]
+                targetCommitResult = runGit(["rev-parse", targetRef])
+                if targetCommitResult.returncode == 0:
+                    details.append(f"Target commit: {targetCommitResult.stdout.strip()}")
+                details.append(f"Source commit: {sourceRef}")
+
+                if mergeResult.stdout.strip():
+                    details.append("git merge stdout:")
+                    details.extend(mergeResult.stdout.strip().splitlines())
+                if mergeResult.stderr.strip():
+                    details.append("git merge stderr:")
+                    details.extend(mergeResult.stderr.strip().splitlines())
+
+                maxConflictFiles = 20
+                for filePath in conflictFiles[:maxConflictFiles]:
+                    details.append("")
+                    details.append(f"File: {filePath}")
+                    conflictBlocks = extractConflictBlocks(filePath)
+
+                    if not conflictBlocks:
+                        details.extend(describeNonContentConflict(filePath, sourceRef, targetRef))
+                        continue
+
+                    for conflictIndex, conflictBlock in enumerate(conflictBlocks[:5], start=1):
+                        details.append(f"  Conflict {conflictIndex} (merged file lines {conflictBlock['mergedStart']}-{conflictBlock['mergedEnd']}):")
+                        details.extend(formatSideDetails("source", sourceRef, filePath, conflictBlock["ours"]))
+                        details.extend(formatSideDetails("target", targetRef, filePath, conflictBlock["theirs"]))
+
+                    if len(conflictBlocks) > 5:
+                        details.append(f"  ... {len(conflictBlocks) - 5} more conflict hunks omitted")
+
+                if len(conflictFiles) > maxConflictFiles:
+                    details.append("")
+                    details.append(f"... {len(conflictFiles) - maxConflictFiles} more conflicting files omitted")
+                abortResult = runGit(["merge", "--abort"])
+                if abortResult.returncode != 0 and "There is no merge to abort" not in abortResult.stderr:
+                    details.append(f"Warning: git merge --abort failed: {abortResult.stderr.strip()}")
+
+                return "\n".join(details)
 
             def getTargetVersionCmake(targetBranch):
                 """Read version.cmake from upstream branch and return parsed version fields."""
@@ -357,8 +602,14 @@ jobs:
                     else:
                         print(f"Skipping version file sync for {targetBranch} (version.cmake not found or unreadable)")
 
+                    source_ref_result = subprocess.run(
+                        ["git", "rev-parse", "HEAD"],
+                        capture_output=True, text=True
+                    )
+                    source_ref = source_ref_result.stdout.strip() if source_ref_result.returncode == 0 else current_head
+
                     # Check if there is a merge conflict
-                    merge_conflict = get_merge_conflict("HEAD", f"upstream/{targetBranch}")
+                    merge_conflict = getMergeConflictDetails(source_ref, f"upstream/{targetBranch}", targetBranch)
 
                     if merge_conflict != "":
                         print(f"Upmerge to {targetBranch} would cause a conflict.")
@@ -382,6 +633,7 @@ jobs:
                 except Exception as e:
                     error_msg = f"Error during test: {str(e)}"
                     print(f"Error testing {targetBranch}: {error_msg}")
+                    print(traceback.format_exc())
                     sys.exit(1)
 
                 test_results["branches_tested"].append(branch_result)
@@ -429,19 +681,22 @@ jobs:
             import sys
             import os
 
+            # Read and output the summary file
+            summary_file = 'upmerge-test-summary.txt'
+            if os.path.exists(summary_file):
+                with open(summary_file, 'r') as f:
+                    print(f.read())
+            else:
+                print(f"Summary file {summary_file} not found.")
+
+            # Check results JSON to determine exit code
             results_file = 'upmerge-test-results.json'
-
-            if not os.path.exists(results_file):
+            if os.path.exists(results_file):
+                with open(results_file, 'r') as f:
+                    test_results = json.load(f)
+                conflicts = test_results.get('conflicts', [])
+                if len(conflicts) > 0:
+                    sys.exit(1)
+            else:
                 print(f"Results file {results_file} not found.")
-                sys.exit(1)
-            with open(results_file, 'r') as f:
-                test_results = json.load(f)
-
-            conflicts = test_results.get('conflicts', [])
-            if not isinstance(conflicts, list):
-                print("Error: 'conflicts' in results file is not a list.")
-                sys.exit(1)
-
-            print(test_results["summary"])
-            if len(conflicts) > 0:
                 sys.exit(1)
