@@ -4264,7 +4264,9 @@ public:
         }
 
         StringBuffer dn;
-        dn.append("cn=").append(groupname).append(",").append(basedn);
+        dn.append("cn=");
+        escapeLdapDistinguishedName(groupname, dn);
+        dn.append(",").append(basedn);
 
         char* oc_name;
         if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
@@ -4883,7 +4885,11 @@ private:
             if(stricmp(username, "anyone") == 0)
                 userdn.append(username);
             else
-                userdn.append("uid=").append(username).append(",").append(m_ldapconfig->getUserBasedn());
+            {
+                userdn.append("uid=");
+                escapeLdapDistinguishedName(username, userdn);
+                userdn.append(",").append(m_ldapconfig->getUserBasedn());
+            }
         }
 
     }
@@ -4942,7 +4948,9 @@ private:
             return;
 
         LdapServerType stype = m_ldapconfig->getServerType();
-        groupdn.append("cn=").append(groupname).append(",");
+        groupdn.append("cn=");
+        escapeLdapDistinguishedName(groupname, groupdn);
+        groupdn.append(",");
         if(stype == ACTIVE_DIRECTORY && stricmp(groupname, "Administrators") == 0)
         {
             groupdn.append("cn=Builtin,").append(m_ldapconfig->getBasedn());
@@ -6082,11 +6090,15 @@ private:
         StringBuffer dn;
         if(serverType == ACTIVE_DIRECTORY)
         {
-            dn.append("cn=").append(fullname).append(",");
+            dn.append("cn=");
+            escapeLdapDistinguishedName(fullname, dn);
+            dn.append(",");
         }
         else
         {
-            dn.append("uid=").append(user.getName()).append(",");
+            dn.append("uid=");
+            escapeLdapDistinguishedName(user.getName(), dn);
+            dn.append(",");
         }
         dn.append(basedn);
 
