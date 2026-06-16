@@ -11,7 +11,6 @@ export * from "./Clippy";
 export * from "./ECLArchiveWidget";
 export * from "./Graph7Widget";
 export * from "./GraphTree7Widget";
-export * from "./GraphTreeWidget";
 export * from "./DataPatternsWidget";
 
 // Data Patterns

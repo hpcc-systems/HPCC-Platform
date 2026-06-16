@@ -131,14 +131,14 @@ define([
                     Name: tree({
                         formatter: function (_name, row) {
                             var img = "";
-                            var name = _name;
+                            var name = `<span>${Utility.encodeHTML(_name)}</span>`;
                             if (row.type === "port") {
                                 img = Utility.getImageHTML("machine.png") + context.i18n.Port + ":";
                             } else if (row.type === "binding") {
                                 img = Utility.getImageHTML("sync.png");
-                                name = "<a href='#' onClick='return false;' class='dgrid-row-url'>" + _name + "</a>";
+                                name = `<a href="#" onClick="return false;" class="dgrid-row-url">${Utility.encodeHTML(_name)}</a>`;
                             }
-                            return img + "&nbsp;" + name;
+                            return `${img}&nbsp;${name}`;
                         },
                         collapseOnRefresh: false,
                         label: this.i18n.Process,

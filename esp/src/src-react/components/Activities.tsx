@@ -105,13 +105,13 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
                     const img = row.getStateImage();
                     if (activity.isInstanceOfQueue(row)) {
                         if (row.ClusterType === 3 && !isContainer) {
-                            return `<img src='${img}'/>&nbsp;<a href='#/operations/clusters/${row.ClusterName}' class='dgrid-row-url'>${_name}</a>`;
+                            return `<img src="${img}"/>&nbsp;<a href="#/operations/clusters/${encodeURIComponent(row.ClusterName)}" class="dgrid-row-url">${Utility.encodeHTML(_name)}</a>`;
                         } else {
-                            return `<img src='${img}'/>&nbsp;${_name}`;
+                            return `<img src="${img}"/>&nbsp;<span>${Utility.encodeHTML(_name)}</span>`;
                         }
                     }
                     const route = isDFUWorkunit(row.Wuid) ? "dfuworkunits" : "workunits";
-                    return `<img src='${img}'/>&nbsp;<a href='#/${route}/${row.Wuid}' class='dgrid-row-url'>${row.Wuid}</a>`;
+                    return `<img src="${img}"/>&nbsp;<a href="#/${route}/${encodeURIComponent(row.Wuid)}" class="dgrid-row-url">${Utility.encodeHTML(row.Wuid)}</a>`;
                 }
             }),
             GID: {
@@ -119,7 +119,7 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
                 formatter: React.useCallback(function (_gid, row) {
                     if (activity.isInstanceOfWorkunit(row)) {
                         if (row.GraphName) {
-                            return `<a href='#/workunits/${row.Wuid}/metrics/${row.GraphName}'>${row.GraphName}-${row.GID}</a>`;
+                            return `<a href="#/workunits/${encodeURIComponent(row.Wuid)}/metrics/${encodeURIComponent(row.GraphName)}">${Utility.encodeHTML(row.GraphName + "-" + row.GID)}</a>`;
                         }
                     }
                     return "";

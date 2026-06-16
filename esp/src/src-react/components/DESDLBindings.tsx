@@ -66,14 +66,14 @@ export const DESDLBindings: React.FunctionComponent<ESDLBindingProps> = ({
             Name: tree({
                 formatter: function (_name, row) {
                     let img = "";
-                    let name = _name;
+                    let name = `<span>${Utility.encodeHTML(_name)}</span>`;
                     if (row.type === "port") {
                         img = Utility.getImageHTML("machine.png") + nlsHPCC.Port + ":";
                     } else if (row.type === "binding") {
                         img = Utility.getImageHTML("sync.png");
-                        name = `<a href="#/desdl/bindings/${name}" style="${linkStyle}">${name}</a>`;
+                        name = `<a href="#/desdl/bindings/${encodeURIComponent(_name)}" style="${linkStyle}">${name}</a>`;
                     }
-                    return img + "&nbsp;" + name;
+                    return `${img}&nbsp;${name}`;
                 },
                 collapseOnRefresh: false,
                 label: nlsHPCC.Process,

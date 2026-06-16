@@ -75,7 +75,6 @@ set ( SRCS
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/Graph7Widget.html
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/GraphPageWidget.html
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/GraphTree7Widget.html
-    ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/GraphTreeWidget.html
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/GraphWidget.html
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/GridDetailsWidget.html
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/GroupDetailsWidget.html
@@ -303,7 +302,6 @@ set ( SRCS
     ${CMAKE_CURRENT_BINARY_DIR}/src/Graph7Widget.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/GraphStore.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/GraphTree7Widget.ts
-    ${CMAKE_CURRENT_BINARY_DIR}/src/GraphTreeWidget.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/KeyValStore.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/nlsHPCC.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/Pagination.ts

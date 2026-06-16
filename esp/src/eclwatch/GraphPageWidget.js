@@ -145,7 +145,7 @@ define([
             };
 
             this.main = registry.byId(this.id + "MainGraphWidget");
-            this.main._persistID = "";  //  Share with GraphTreeWidget
+            this.main._persistID = "";
             this.main.onSelectionChanged = function (items) {
                 context.syncSelectionFrom(context.main);
             };

@@ -168,7 +168,7 @@ define([
                 this.infoGrid.on(".dgrid-row-url:click", function (evt) {
                     var item = context.infoGrid.row(evt).data;
                     var info = context.extractGraphInfo(item.Message);
-                    window.open("/?Widget=GraphTreeWidget&Wuid=" + context.wu.Wuid + "&GraphName=" + info.graphID + "&SubGraphId=" + info.subgraphID + "&ActivityId=" + info.activityID, "_blank");
+                    window.open(`/?Widget=GraphTree7Widget&Wuid=${encodeURIComponent(context.wu.Wuid)}&GraphName=${encodeURIComponent(info.graphID)}&SubGraphId=sg${encodeURIComponent(info.subgraphID)}&ActivityId=${encodeURIComponent(info.activityID)}`, "_blank");
                 });
                 this.infoGrid.startup();
 

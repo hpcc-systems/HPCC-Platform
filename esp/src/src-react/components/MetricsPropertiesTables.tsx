@@ -198,7 +198,7 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
                 const activityLink = (v) => {
                     const splitName = v.name.split(":");
                     const lastNode = splitName.pop();
-                    const label = v.Label ? `${v.id} (${encodeHTML(v.Label)})` : v.id;
+                    const label = encodeHTML(v.Label ? `${v.id} (${v.Label})` : v.id);
                     if (wuid) {
                         return `<a href="#/workunits/${encodeURIComponent(wuid)}/metrics/${splitName.map(encodeURIComponent).join(":")}/${encodeURIComponent(lastNode)}" style="${linkStyle}">${label}</a>`;
                     } else if (querySet && queryId) {

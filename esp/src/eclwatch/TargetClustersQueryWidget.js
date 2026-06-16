@@ -145,11 +145,11 @@ define([
                     Name: tree({
                         formatter: function (_name, row) {
                             var img = "";
-                            var name = _name;
+                            var name = Utility.encodeHTML(_name);
                             if (row.type === "targetClusterComponent") {
-                                name = "<a href='#' onClick='return false;' class='dgrid-row-url'>" + row.Netaddress + " - " + _name + "</a>";
+                                name = `<a href="#" onClick="return false;" class="dgrid-row-url">${Utility.encodeHTML(row.Netaddress + "-" + _name)}</a>`;
                             }
-                            return img + "&nbsp;" + name;
+                            return `${img}&nbsp;${name}`;
                         },
                         expand: true,
                         label: this.i18n.Name,

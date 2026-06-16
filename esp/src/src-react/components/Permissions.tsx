@@ -4,6 +4,7 @@ import { useConst } from "@fluentui/react-hooks";
 import { tokens } from "@fluentui/react-components";
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsAccess from "src/ws_access";
+import { encodeHTML } from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
 import { useBuildInfo } from "../hooks/platform";
@@ -64,9 +65,10 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
             label: nlsHPCC.Name,
             formatter: function (_name, idx) {
                 if (idx.__hpcc_parent) {
-                    return `<a href="#/${opsCategory}/security/permissions/${_name}/${idx.__hpcc_parent.name}" style="${linkStyle}">${_name}</a>`;
+                    const url = `#/${encodeURIComponent(opsCategory)}/security/permissions/${encodeURIComponent(_name)}/${encodeURIComponent(idx.__hpcc_parent.name)}`;
+                    return `<a href="${url}" style="${linkStyle}">${encodeHTML(_name)}</a>`;
                 } else {
-                    return _name;
+                    return encodeHTML(_name);
                 }
             }
         }),
@@ -210,7 +212,7 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
                     { key: "workunitScopeDefaults", text: nlsHPCC.WorkUnitScopeDefaultPermissions, onClick: (evt, item) => pushUrl(`/${opsCategory}/security/permissions/_/Workunit%20Scopes`), disabled: !uiState.workunitScope },
                     { key: "physicalFiles", text: nlsHPCC.PhysicalFiles, onClick: (evt, item) => pushUrl(`/${opsCategory}/security/permissions/file/File%20Scopes`), disabled: !uiState.fileScope },
                     { key: "checkFilePermissions", text: nlsHPCC.CheckFilePermissions, onClick: () => setShowCheckFilePermissions(true), disabled: !uiState.fileScope },
-                    { key: "codeGenerator", text: nlsHPCC.CodeGenerator, onClick: (evt, item) => pushUrl(`/${opsCategory}/security/permissions/_/${modulesDn}`), disabled: !uiState.repositoryModule },
+                    { key: "codeGenerator", text: nlsHPCC.CodeGenerator, onClick: (evt, item) => pushUrl(`/${opsCategory}/security/permissions/_/${encodeURIComponent(modulesDn)}`), disabled: !uiState.repositoryModule },
                 ],
             },
         },

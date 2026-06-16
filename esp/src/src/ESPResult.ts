@@ -72,7 +72,7 @@ class RowFormatter {
             const rowArr = row instanceof Array ? row : [row];
             for (let colIdx = 0; colIdx < rowArr.length; ++colIdx) {
                 const r = rowArr[colIdx];
-                maxChildLen = Math.max(maxChildLen, context.formatCell(column, column.isRawHTML ? r[column.leafID] : safeEncode(r[column.leafID]), rowIdx));
+                maxChildLen = Math.max(maxChildLen, context.formatCell(column, safeEncode(r[column.leafID]), rowIdx));
             }
         });
         arrayUtil.forEach(columns, function (column) {
@@ -375,7 +375,7 @@ class Result {
                                         const td = domConstruct.create("td", null, tr);
                                         this.rowToTable(cell[i][key], cell[i], td);
                                     } else if (key.indexOf("__html", key.length - "__html".length) !== -1) {
-                                        domConstruct.create("td", { innerHTML: cell[i][key] }, tr);
+                                        domConstruct.create("td", { innerHTML: safeEncode(cell[i][key]) }, tr);
                                     } else if (key.indexOf("__javascript", key.length - "__javascript".length) !== -1) {
                                         const td = domConstruct.create("td", null, tr);
                                         this.injectJavascript(cell[i][key], cell[i], td);
@@ -394,19 +394,10 @@ class Result {
     }
 
     injectJavascript(__cellContent, __row, __cell) {
-        //  Add paragraph so cells can valign  ---
-        domConstruct.create("p", {
-            style: {
-                height: "1px"
-            },
-            innerHTML: "&nbsp;"
+        // Never execute script content from result payloads; render as inert text.
+        domConstruct.create("pre", {
+            textContent: __cellContent == null ? "" : String(__cellContent)
         }, __cell);
-        try {
-            // tslint:disable-next-line: no-eval
-            eval(__cellContent);
-        } catch (e) {
-            __cell.innerHTML = "<b>Error:</b>&nbsp;&nbsp;" + safeEncode(e.message) + "<br>" + safeEncode(__cellContent);
-        }
     }
 
     parseName(nameObj) {
@@ -510,7 +501,7 @@ class Result {
                     column.sortable = false;
                     column.width += keyed ? 16 : 0;
                     column.renderHeaderCell = function (node) {
-                        node.innerHTML = this.label + (this.__hpcc_keyed ? Utility.getImageHTML("index.png", context.i18n.Index) : "");
+                        node.innerHTML = safeEncode(this.label) + (this.__hpcc_keyed ? Utility.getImageHTML("index.png", context.i18n.Index) : "");
                     };
                     if (children) {
                         column.children = children;
@@ -701,7 +692,7 @@ class Result {
 
     getLoadingMessage() {
         if (lang.exists("wu.state", this)) {
-            return "<span class='dojoxGridWating'>[" + this.wu.state + "]</span>";
+            return "<span class='dojoxGridWating'>[" + safeEncode(this.wu.state) + "]</span>";
         }
         return "<span class='dojoxGridWating'>[unknown]</span>";
     }

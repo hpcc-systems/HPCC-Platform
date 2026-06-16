@@ -9,7 +9,7 @@ import { useWorkunitExceptions } from "../hooks/workunit";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 
 function extractGraphInfo(msg) {
-    const regex = /^([a-zA-Z0-9 :]+: )(graph graph(\d+)\[(\d+)\], )(([a-zA-Z]+)\[(\d+)\]: )?(.*)$/gmi;
+    const regex = /^([-a-zA-Z0-9 :]+: )(graph graph(\d+)\[(\d+)\], )(([a-zA-Z]+)\[(\d+)\]: )?(.*)$/gmi;
     const matches = [...msg.matchAll(regex)];
     const retVal: { prefix?: string, graphID?: string, subgraphID?: string, activityID?: string, activityName?: string, message?: string } = {};
     if (matches.length > 0) {

@@ -48,14 +48,6 @@ define([
 
         createGrid: function (domID) {
             var context = this;
-            this.openLegacyMode = new Button({
-                label: this.i18n.OpenLegacyMode,
-                onClick: function (event) {
-                    context._onOpen(event, {
-                        legacyMode: true
-                    });
-                }
-            }).placeAt(this.widget.Open.domNode, "after");
             var retVal = new declare([ESPUtil.Grid(false, true)])({
                 store: this.store,
                 columns: this.createGridColumns()
@@ -101,11 +93,6 @@ define([
             if (params && params.SubGraphId) {
                 title = params.SubGraphId + " - " + title;
             }
-            if (params && params.legacyMode) {
-                delayWidget = "GraphTreeWidget";
-                title += " (L)";
-                delayProps = {};
-            }
             return new DelayLoadWidget({
                 id: _id,
                 title: title,
@@ -125,8 +112,6 @@ define([
 
         refreshActionState: function (selection) {
             this.inherited(arguments);
-
-            this.openLegacyMode.set("disabled", !selection.length);
         },
 
         syncSelectionFrom: function (sourceControl) {

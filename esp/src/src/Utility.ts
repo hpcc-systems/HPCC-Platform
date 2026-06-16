@@ -711,9 +711,6 @@ export function resolve(hpccWidget, callback) {
         case "GraphsLFWidget":
             require(["hpcc/GraphsLFWidget"], doLoad);
             break;
-        case "GraphTreeWidget":
-            require(["src/GraphTreeWidget"], doLoad);
-            break;
         case "GraphTree7Widget":
             require(["src/GraphTree7Widget"], doLoad);
             break;
