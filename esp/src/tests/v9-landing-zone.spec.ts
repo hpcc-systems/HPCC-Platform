@@ -36,7 +36,7 @@ test.describe("V9 Landing Zone", () => {
 
         // Check for table headers
         await expect(page.getByText("Name", { exact: true })).toBeVisible();
-        await expect(page.getByText("Size", { exact: true })).toBeVisible();
+        await expect(page.getByText("File Size", { exact: true })).toBeVisible();
         await expect(page.getByText("Date", { exact: true })).toBeVisible();
 
         // Check that the table container is present (FluentUI Table doesn't use role="table")
