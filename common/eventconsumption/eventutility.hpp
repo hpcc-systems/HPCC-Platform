@@ -17,8 +17,25 @@
 
 #pragma once
 
+#include "jstring.hpp"
+#include "jtime.hpp"
+
 #include <cmath>
 #include <limits>
+
+inline const char* formatTimestampNsText(StringBuffer& out, __uint64 timestampNs)
+{
+    CDateTime dt;
+    dt.setTimeStampNs(timestampNs);
+    dt.getString(out);
+
+    // CDateTime::getString() includes microseconds for all fractional seconds.
+    // Ensure all nanoseconds are represented.
+    if (timestampNs % 1000000000ULL)
+        out.appendf("%03llu", timestampNs % 1000ULL);
+
+    return out.str();
+}
 
 // Flags for strToBytes behavior control
 enum class StrToBytesFlags : unsigned
