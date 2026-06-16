@@ -1190,7 +1190,7 @@ public:
                 buf.append(col.c_str());
             }
         }
-        if (!buf.isEmpty())
+        if (numColumns > 0)
             buf.append(",");
         buf.append("FirstTimestamp,LastTimestamp,Hits,Misses,Loads,Payloads,Evictions,NodeCount");
         appendStat(buf, "MemorySize", false);
@@ -1313,6 +1313,32 @@ public:
         formatter.endReport();
     }
 };
+
+bool CIndexFileSummary::preScanRequired() const
+{
+    // Check base condition (filter)
+    if (CEventConsumingOp::preScanRequired())
+        return true;
+
+    // Check specific grouping columns
+    for (const auto& groupIds : groupAttributeIds)
+    {
+        for (auto& id : groupIds)
+        {
+            // Grouping by ServiceName requires a pre-scan to ensure the first occurrence of
+            // EventTraceId in each input file can be mapped to a ServiceName found in at-most
+            // one input file. No iteration strategy can guarantee correct mapping in a single
+            // traversal of all files.
+            if (id.attrId == EvAttrServiceName)
+                return true;
+            // Note that grouping each input file is assured to see all PlaneInformation events
+            // prior to any FileInformation events, and all FileInformation events prior to any
+            // other event referencing the FileId. Any mapping from FileId that fails in one
+            // iteration will fail in all iterations. No pre-scan is required.
+        }
+    }
+    return false;
+}
 
 bool CIndexFileSummary::doOp()
 {

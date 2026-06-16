@@ -51,6 +51,15 @@ bool CEventConsumingOp::acceptAttribute(EventAttr attr, const char* values)
     return ensureFilter()->acceptAttribute(attr, values);
 }
 
+bool CEventConsumingOp::preScanRequired() const
+{
+    if (filter && filter->preScanRequired())
+        return true;
+    if (model && model->preScanRequired())
+        return true;
+    return false;
+}
+
 bool CEventConsumingOp::acceptModel(const IPropertyTree& config)
 {
     if (model)
@@ -66,35 +75,44 @@ IEventFilter* CEventConsumingOp::ensureFilter()
     return filter;
 }
 
+unsigned CEventConsumingOp::getNumSources() const
+{
+    return inputPaths.size();
+}
+
+Owned<IEventIterator> CEventConsumingOp::createInputIterator()
+{
+    Owned<IEventIterator> input;
+    switch (getNumSources())
+    {
+    case 0:
+        throw makeStringExceptionV(0, "No input files specified");
+    case 1:
+        input.setown(createEventFileIterator(inputPaths.begin()->c_str()));
+        if (!input)
+            throw makeStringExceptionV(0, "Failed to open event file: %s", inputPaths.begin()->c_str());
+        break;
+    default:
+        {
+            Owned<IEventMultiplexer> multiplexer = createMultiplexer(*metaState, preScanCompleted);
+            for (const std::string& path : inputPaths)
+            {
+                Owned<IEventIterator> child = createEventFileIterator(path.c_str());
+                if (!child)
+                    throw makeStringExceptionV(0, "Failed to open event file: %s", path.c_str());
+                multiplexer->addSource(*child);
+            }
+            input.setown(multiplexer.getClear());
+        }
+        break;
+    }
+    return input;
+}
+
 const EventFileProperties& CEventConsumingOp::queryIteratorProperties()
 {
     if (!cachedSource)
-    {
-        // Lazy initialization - create the iterator on first access
-        switch (inputPaths.size())
-        {
-        case 0:
-            throw makeStringExceptionV(0, "No input files specified");
-        case 1:
-            cachedSource.setown(createEventFileIterator(inputPaths.begin()->c_str()));
-            if (!cachedSource)
-                throw makeStringExceptionV(0, "Failed to open event file: %s", inputPaths.begin()->c_str());
-            break;
-        default:
-            {
-                Owned<IEventMultiplexer> multiplexer = createMultiplexer(*metaState);
-                cachedSource.set(multiplexer.get());
-                for (const std::string& path : inputPaths)
-                {
-                    Owned<IEventIterator> input = createEventFileIterator(path.c_str());
-                    if (!input)
-                        throw makeStringExceptionV(0, "Failed to open event file: %s", path.c_str());
-                    multiplexer->addSource(*input);
-                }
-            }
-            break;
-        }
-    }
+        cachedSource.setown(createInputIterator().getClear());
     return cachedSource->queryFileProperties();
 }
 
@@ -102,10 +120,52 @@ void CEventConsumingOp::postTraversalReset()
 {
     metaState->clearAll();
     cachedSource.clear();
+    preScanCompleted = false;
+}
+
+bool CEventConsumingOp::preScanEvents(IEventVisitor* visitor)
+{
+    (void)queryIteratorProperties();
+
+    IEventVisitor* visitationHead = visitor;
+
+    Owned<IEventVisitationLink> metaCollector;
+    if (getNumSources() == 1)
+    {
+        metaCollector.setown(metaState->getCollector());
+        if (visitationHead)
+            metaCollector->setNextLink(*visitationHead);
+        visitationHead = metaCollector.get();
+    }
+
+    if (visitationHead)
+    {
+        visitIterableEvents(*cachedSource, *visitationHead);
+    }
+    else
+    {
+        // No explicit visitor provided and getNumSources() > 1.
+        // The multiplexer intrinsically triggers the metaState collector internally per event.
+        // We can simply drain the iterator without any virtual visitation dispatch overhead.
+        CEvent event;
+        while (cachedSource->nextEvent(event))
+        {
+        }
+    }
+
+    cachedSource.clear();
+
+    return true;
 }
 
 bool CEventConsumingOp::traverseEvents(IEventVisitor& visitor)
 {
+    if (preScanRequired())
+    {
+        preScanEvents(getPreScanVisitor());
+        preScanCompleted = true;
+    }
+
     // Ensure iterator is created and cached
     (void)queryIteratorProperties();
 
@@ -124,7 +184,7 @@ bool CEventConsumingOp::traverseEvents(IEventVisitor& visitor)
 
     // Add meta collector for single-source case
     Owned<IEventVisitationLink> metaCollector;
-    if (inputPaths.size() == 1)
+    if (!preScanCompleted && getNumSources() == 1)
     {
         metaCollector.setown(metaState->getCollector());
         metaCollector->setNextLink(*visitationHead);
@@ -135,7 +195,7 @@ bool CEventConsumingOp::traverseEvents(IEventVisitor& visitor)
     return true;
 }
 
-IEventMultiplexer* CEventConsumingOp::createMultiplexer(CMetaInfoState& metaState)
+IEventMultiplexer* CEventConsumingOp::createMultiplexer(CMetaInfoState& metaState, bool bypassMetaCollector)
 {
-    return createSerialEventMultiplexer(metaState);
+    return createSerialEventMultiplexer(metaState, bypassMetaCollector);
 }

@@ -55,7 +55,8 @@ inline void testEventVisitationLinks(const char* testData) { testEventVisitation
 //
 // Multiple links may be configured. Within the iteration, the first link is closest to the tester
 // and the last link receives the input events.
-extern void testEventVisitationLinks(const IPropertyTree& input, const IPropertyTree& expect, IPropertyTreeIterator& links, unsigned flags);
+extern void testEventVisitationLinks(const IPropertyTree& input, const IPropertyTree& expect, IPropertyTreeIterator& links, unsigned flags, bool disablePreScan);
+inline void testEventVisitationLinks(const IPropertyTree& input, const IPropertyTree& expect, IPropertyTreeIterator& links, unsigned flags) { testEventVisitationLinks(input, expect, links, flags, false); }
 
 extern IPropertyTree* createTestConfiguration(const char* configText);
 

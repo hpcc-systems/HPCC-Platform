@@ -69,9 +69,9 @@ bool CEventSavingOp::doOp()
     return true;
 }
 
-IEventMultiplexer* CEventSavingOp::createMultiplexer(CMetaInfoState& metaState)
+IEventMultiplexer* CEventSavingOp::createMultiplexer(CMetaInfoState& metaState, bool bypassMetaCollector)
 {
-    return createChronologicalEventMultiplexer(metaState);
+    return createChronologicalEventMultiplexer(metaState, bypassMetaCollector);
 }
 
 void CEventSavingOp::setOutputPath(const char* path)

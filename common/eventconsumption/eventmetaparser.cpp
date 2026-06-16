@@ -148,6 +148,9 @@ void CMetaInfoState::clearAll()
     sourceToProps.clear();
     indexFiles.clear();
     traceIdToService.clear();
+    haveLastRemap = false;
+    lastRemapInput = {};
+    lastRuntimeFileId = 0;
 
     // Cleared last as other containers hold pointers to plane string buffers.
     planes.clear();
@@ -185,7 +188,7 @@ void CMetaInfoState::onEvent(CEvent& event)
 
                 if (sourceCount > 1)
                 {
-                    sourceToProps.emplace(generateSourceFileId(event), &(*indexIt));
+                    sourceToProps.emplace(makeSourceFileKey(event), &(*indexIt));
                     event.setValue(EvAttrFileId, targetFileId);
                 }
 
@@ -214,30 +217,84 @@ void CMetaInfoState::onEvent(CEvent& event)
         }
         break;
     default:
-        if (event.hasAttribute(EvAttrFileId) && sourceCount > 1)
-        {
-            auto sourcePropsIt = sourceToProps.find(generateSourceFileId(event));
-            if (sourcePropsIt != sourceToProps.end())
-            {
-                event.setValue(EvAttrFileId, sourcePropsIt->second->id);
-            }
-        }
+        tryRemapFileId(event);
         break;
     }
 }
 
-uint32_t CMetaInfoState::generateSourceFileId(const CEvent& event)
+bool CMetaInfoState::tryRemapFileId(CEvent& event)
 {
-    __uint64 parts[4] = {0,};
-    if (event.hasAttribute(EvAttrChannelId))
-        parts[0] = event.queryNumericValue(EvAttrChannelId);
-    if (event.hasAttribute(EvAttrReplicaId))
-        parts[1] = event.queryNumericValue(EvAttrReplicaId);
-    if (event.hasAttribute(EvAttrInstanceId))
-        parts[2] = event.queryNumericValue(EvAttrInstanceId);
-    if (event.hasAttribute(EvAttrFileId))
-        parts[3] = event.queryNumericValue(EvAttrFileId);
-    return hashc_fnv1a(reinterpret_cast<const byte *>(&parts), sizeof(parts), fnvInitialHash32);
+    // MORE: Excluding single input files from remapping is one reason why a FileId reported by
+    // one operation might be unusable in a subsequent operation. The issue cannot be resolved
+    // simply by removing this check of sourceCount since the generated ids rely on the order
+    // events are processed. Correction is deferred to issue #36836.
+    if (sourceCount <= 1 || !event.hasAttribute(EvAttrFileId))
+        return false;
+
+    SourceFileKey key = makeSourceFileKey(event);
+    if (haveLastRemap && key == lastRemapInput)
+    {
+        event.setValue(EvAttrFileId, lastRuntimeFileId);
+        return true;
+    }
+
+    // MORE: If sourceToProps does not contain an entry for this event the remap fails and the
+    // original FileId is unchanged. This can lead to collisions between mapped and unmapped ids.
+    // If the expectation that a FileInformation event will be the first occurrence of a FileId is
+    // satisfied then this will not happen.
+    //
+    // Legacy files do exist for which the expectation is not satisfied. The evtool sim command
+    // can create new files for which the expectation is not satisfied. Refactoring to remap all
+    // ids, even without FileInformation events, is deferred to a future issue (perhaps #36836, or
+    // another issue).
+    auto sourcePropsIt = sourceToProps.find(key);
+    if (sourcePropsIt == sourceToProps.end())
+        return false;
+
+    lastRemapInput = key;
+    lastRuntimeFileId = sourcePropsIt->second->id;
+    haveLastRemap = true;
+    event.setValue(EvAttrFileId, lastRuntimeFileId);
+    return true;
+}
+
+CMetaInfoState::SourceFileKey CMetaInfoState::makeSourceFileKey(const CEvent& event)
+{
+    // One-time check that each attribute's declared wire type still matches its SourceFileKey
+    // field width. Switching on the actual EventAttrType (rather than hardcoding size
+    // assumptions) ensures a schema change to any of these attributes is caught immediately,
+    // regardless of what the new type is.
+    [[maybe_unused]] static bool validated = []()
+    {
+        auto check = [](EventAttr attr, EventAttrType expected)
+        {
+            EventAttrType actual = queryEventAttributeType(attr);
+            switch (actual)
+            {
+            case EATu1: case EATu4: case EATu8: break;
+            default:
+                throwStringExceptionV(0, "SourceFileKey: attribute %d has unhandled type %d"
+                                         " - update SourceFileKey and makeSourceFileKey",
+                                         int(attr), int(actual));
+            }
+            if (actual != expected)
+                throwStringExceptionV(0, "SourceFileKey: attribute %d type changed from %d to %d"
+                                         " - update SourceFileKey and makeSourceFileKey",
+                                         int(attr), int(expected), int(actual));
+        };
+        check(EvAttrInstanceId, EATu8);
+        check(EvAttrFileId,     EATu4);
+        check(EvAttrChannelId,  EATu1);
+        check(EvAttrReplicaId,  EATu1);
+        return true;
+    }();
+
+    return {
+        event.hasAttribute(EvAttrInstanceId) ? event.queryNumericValue(EvAttrInstanceId) : 0,
+        event.hasAttribute(EvAttrFileId)     ? (uint32_t)event.queryNumericValue(EvAttrFileId)     : 0,
+        event.hasAttribute(EvAttrChannelId)  ? (uint8_t)event.queryNumericValue(EvAttrChannelId)  : uint8_t{0},
+        event.hasAttribute(EvAttrReplicaId)  ? (uint8_t)event.queryNumericValue(EvAttrReplicaId)  : uint8_t{0},
+    };
 }
 
 uint32_t CMetaInfoState::generateRuntimeFileId(const CEvent& event)

@@ -67,11 +67,16 @@ interface IEventMultiplexer : extends IEventIterator
 // All sources must be added before any event consumption. The meta state depends on the
 // total number of sources from which it will receive events. Processing an event
 // before all sources are known can yield incorrect results.
-extern event_decl IEventMultiplexer* createChronologicalEventMultiplexer(CMetaInfoState& metaState);
+//
+// Event processing that requires a pre-scan of events will pass all events to the meta state
+// during the pre-scan. The second iteration, using a second multiplexer, should not pass events
+// to the meta state. The meta collector is not bypassed for the first iteration and is bypassed
+// for the second iteration.
+extern event_decl IEventMultiplexer* createChronologicalEventMultiplexer(CMetaInfoState& metaState, bool bypassMetaCollector);
 
 // Creates an IEventMultiplexer that iterates one source at a time. This can be a better choice
 // than the chronological multiplexer when operations do not need to retain event order.
-extern event_decl IEventMultiplexer* createSerialEventMultiplexer(CMetaInfoState& metaState);
+extern event_decl IEventMultiplexer* createSerialEventMultiplexer(CMetaInfoState& metaState, bool bypassMetaCollector);
 
 // Dispatch the contents of an event iterator to an event visitor.
 extern event_decl void visitIterableEvents(IEventIterator& iter, IEventVisitor& visitor);

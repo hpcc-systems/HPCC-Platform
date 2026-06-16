@@ -205,7 +205,7 @@ public:
     virtual void addSource(IEventIterator& source) override;
 
 public:
-    CEventMultiplexer(CMetaInfoState& _metaState);
+    CEventMultiplexer(CMetaInfoState& _metaState, bool bypassMetaCollector);
     // Tests if a subclass source collection references the specified iterator.
     virtual bool contains(IEventIterator& source) const = 0;
 
@@ -225,6 +225,7 @@ protected:
     Owned<IEventVisitor> metaStateCollector;
     EventFileProperties properties;
     bool acceptSources{true};
+    bool bypassMetaCollector{false};
 };
 
 const EventFileProperties& CEventMultiplexer::queryFileProperties() const
@@ -285,13 +286,16 @@ void CEventMultiplexer::addSource(IEventIterator& source)
     else
         return; // Reject instances that are duplicates or already contained
     onAddSource(source);
-    metaStateCollector->visitFile(sourceProps.path.str(), sourceProps.version);
+    if (metaStateCollector)
+        metaStateCollector->visitFile(sourceProps.path.str(), sourceProps.version);
 }
 
-CEventMultiplexer::CEventMultiplexer(CMetaInfoState& _metaState)
+CEventMultiplexer::CEventMultiplexer(CMetaInfoState& _metaState, bool _bypassMetaCollector)
     : metaState(_metaState)
+    , bypassMetaCollector(_bypassMetaCollector)
 {
-    metaStateCollector.setown(metaState.getCollector());
+    if (!bypassMetaCollector)
+        metaStateCollector.setown(metaState.getCollector());
     properties.path.set("multiplexed");
 }
 
@@ -362,7 +366,10 @@ bool CChronologicalEventMultiplexer::nextEvent(CEvent& event)
     if (best != sources.end())
     {
         event = best->second;
-        (void)metaStateCollector->visitEvent(event);
+        if (metaStateCollector)
+            (void)metaStateCollector->visitEvent(event);
+        else if (bypassMetaCollector)
+            (void)metaState.tryRemapFileId(event);
         properties.eventsRead++;
         acceptSources = false;
 
@@ -402,9 +409,9 @@ void CChronologicalEventMultiplexer::onAddSource(IEventIterator& source)
     sources.emplace_back(Linked<IEventIterator>(&source), firstEvent);
 }
 
-IEventMultiplexer* createChronologicalEventMultiplexer(CMetaInfoState& metaState)
+IEventMultiplexer* createChronologicalEventMultiplexer(CMetaInfoState& metaState, bool bypassMetaCollector)
 {
-    return new CChronologicalEventMultiplexer(metaState);
+    return new CChronologicalEventMultiplexer(metaState, bypassMetaCollector);
 }
 
 // Concrete extension of CEventMultiplexer that distributes events from each source sequentially.
@@ -433,7 +440,10 @@ bool CSerialEventMultiplexer::nextEvent(CEvent& event)
         IEventIterator* source = sources[currentSourceIndex].get();
         if (source->nextEvent(event))
         {
-            (void)metaStateCollector->visitEvent(event);
+            if (metaStateCollector)
+                (void)metaStateCollector->visitEvent(event);
+            else if (bypassMetaCollector)
+                (void)metaState.tryRemapFileId(event);
             properties.eventsRead++;
             acceptSources = false;
             return true;
@@ -468,9 +478,9 @@ void CSerialEventMultiplexer::onAddSource(IEventIterator& source)
     sources.emplace_back(&source);
 }
 
-IEventMultiplexer* createSerialEventMultiplexer(CMetaInfoState& metaState)
+IEventMultiplexer* createSerialEventMultiplexer(CMetaInfoState& metaState, bool bypassMetaCollector)
 {
-    return new CSerialEventMultiplexer(metaState);
+    return new CSerialEventMultiplexer(metaState, bypassMetaCollector);
 }
 
 void visitIterableEvents(IEventIterator& iter, IEventVisitor& visitor)
@@ -501,6 +511,9 @@ class EventIteratorTests : public CppUnit::TestFixture
     CPPUNIT_TEST(testMultiplexerSingleSource);
     CPPUNIT_TEST(testMultiplexerSingleSourceWithSiblings);
     CPPUNIT_TEST(testMultiplexerMultipleSources);
+    CPPUNIT_TEST(testMultiplexerMetaCollectorEnabled);
+    CPPUNIT_TEST(testMultiplexerMetaCollectorBypassed);
+    CPPUNIT_TEST(testMultiplexerBypassedRemapsFileId);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -974,6 +987,168 @@ expect:
 
 )!!!";
         testEventVisitationLinks(testData, PTEFlenientParsing);
+    }
+
+    void testMultiplexerMetaCollectorEnabled()
+    {
+        START_TEST
+        Owned<IPropertyTree> sourceConfig = createTestConfiguration(R"!!!(
+source:
+  - event:
+    - type: QueryStart
+      EventTimestamp: '2025-01-03T10:00:00.000000100'
+      EventTraceId: trace-123
+      ServiceName: dali-service
+  - event:
+    - type: IndexCacheMiss
+      EventTimestamp: '2025-01-03T10:00:00.000000200'
+      EventTraceId: trace-123
+)!!!");
+
+        CMetaInfoState metaState;
+        const IPropertyTree* source1Tree = sourceConfig->queryPropTree("source[1]");
+        const IPropertyTree* source2Tree = sourceConfig->queryPropTree("source[2]");
+        CPPUNIT_ASSERT(source1Tree != nullptr && source2Tree != nullptr);
+        Owned<IEventIterator> source1 = createPropertyTreeEvents(*source1Tree, PTEFlenientParsing);
+        Owned<IEventIterator> source2 = createPropertyTreeEvents(*source2Tree, PTEFlenientParsing);
+        Owned<IEventMultiplexer> mux = createChronologicalEventMultiplexer(metaState, false);
+        mux->addSource(*source1);
+        mux->addSource(*source2);
+
+        CEvent event;
+        while (mux->nextEvent(event))
+        {
+        }
+
+        const char* serviceName = metaState.queryServiceName("trace-123");
+        CPPUNIT_ASSERT(serviceName != nullptr && streq(serviceName, "dali-service"));
+        END_TEST
+    }
+
+    void testMultiplexerMetaCollectorBypassed()
+    {
+        START_TEST
+        Owned<IPropertyTree> sourceConfig = createTestConfiguration(R"!!!(
+source:
+  - event:
+    - type: QueryStart
+      EventTimestamp: '2025-01-03T10:00:00.000000100'
+      EventTraceId: trace-123
+      ServiceName: dali-service
+  - event:
+    - type: IndexCacheMiss
+      EventTimestamp: '2025-01-03T10:00:00.000000200'
+      EventTraceId: trace-123
+)!!!");
+
+        CMetaInfoState metaState;
+        const IPropertyTree* source1Tree = sourceConfig->queryPropTree("source[1]");
+        const IPropertyTree* source2Tree = sourceConfig->queryPropTree("source[2]");
+        CPPUNIT_ASSERT(source1Tree != nullptr && source2Tree != nullptr);
+        Owned<IEventIterator> source1 = createPropertyTreeEvents(*source1Tree, PTEFlenientParsing);
+        Owned<IEventIterator> source2 = createPropertyTreeEvents(*source2Tree, PTEFlenientParsing);
+        Owned<IEventMultiplexer> mux = createChronologicalEventMultiplexer(metaState, true);
+        mux->addSource(*source1);
+        mux->addSource(*source2);
+
+        CEvent event;
+        unsigned count = 0;
+        while (mux->nextEvent(event))
+            count++;
+
+        CPPUNIT_ASSERT_EQUAL(2u, count);
+        const char* serviceName = metaState.queryServiceName("trace-123");
+        CPPUNIT_ASSERT(isEmptyString(serviceName));
+        END_TEST
+    }
+
+    // Verify that FileId remapping still occurs when the collector is bypassed, i.e. the
+    // multiplexer applies tryRemapFileId() directly on emitted events in bypass mode.
+    // This exercises the structural path introduced to recover second-pass performance.
+    void testMultiplexerBypassedRemapsFileId()
+    {
+        START_TEST
+        // Two sources each referencing the same physical file under different source-local FileIds.
+        // Source 1: ChannelId=1, FileId=10 -> /shared/index.idx
+        // Source 2: ChannelId=2, FileId=99 -> /shared/index.idx
+        // After pre-scan metadata build, bypassMetaCollector=true is used for the main pass.
+        // Both sources' index events must arrive with the unified runtime FileId (1).
+        Owned<IPropertyTree> sourceConfig = createTestConfiguration(R"!!!(
+source:
+  - event:
+    - type: RecordingSource
+      ProcessDescriptor: testproc
+      ChannelId: 1
+      ReplicaId: 0
+      InstanceId: 42
+    - type: FileInformation
+      FileId: 10
+      Path: /shared/index.idx
+    - type: IndexCacheMiss
+      EventTimestamp: '2025-01-03T10:00:00.000000100'
+      FileId: 10
+      FileOffset: 0
+      NodeKind: 0
+  - event:
+    - type: RecordingSource
+      ProcessDescriptor: testproc
+      ChannelId: 2
+      ReplicaId: 0
+      InstanceId: 42
+    - type: FileInformation
+      FileId: 99
+      Path: /shared/index.idx
+    - type: IndexCacheHit
+      EventTimestamp: '2025-01-03T10:00:00.000000200'
+      FileId: 99
+      FileOffset: 0
+      NodeKind: 0
+      InMemorySize: 4096
+      ExpandTime: 10
+)!!!");
+
+        // Pre-scan pass: collector active, builds sourceToProps mapping
+        CMetaInfoState metaState;
+        {
+            const IPropertyTree* s1 = sourceConfig->queryPropTree("source[1]");
+            const IPropertyTree* s2 = sourceConfig->queryPropTree("source[2]");
+            CPPUNIT_ASSERT(s1 != nullptr && s2 != nullptr);
+            Owned<IEventIterator> src1 = createPropertyTreeEvents(*s1, PTEFlenientParsing);
+            Owned<IEventIterator> src2 = createPropertyTreeEvents(*s2, PTEFlenientParsing);
+            Owned<IEventMultiplexer> preScanMux = createChronologicalEventMultiplexer(metaState, false);
+            preScanMux->addSource(*src1);
+            preScanMux->addSource(*src2);
+            CEvent e;
+            while (preScanMux->nextEvent(e))
+            {
+            }
+        }
+
+        // Main pass: collector bypassed, remap must still work
+        const IPropertyTree* s1 = sourceConfig->queryPropTree("source[1]");
+        const IPropertyTree* s2 = sourceConfig->queryPropTree("source[2]");
+        CPPUNIT_ASSERT(s1 != nullptr && s2 != nullptr);
+        Owned<IEventIterator> src1 = createPropertyTreeEvents(*s1, PTEFlenientParsing);
+        Owned<IEventIterator> src2 = createPropertyTreeEvents(*s2, PTEFlenientParsing);
+        Owned<IEventMultiplexer> mainMux = createChronologicalEventMultiplexer(metaState, true);
+        mainMux->addSource(*src1);
+        mainMux->addSource(*src2);
+
+        CEvent event;
+        unsigned indexEventCount = 0;
+        while (mainMux->nextEvent(event))
+        {
+            EventType t = event.queryType();
+            if (t == EventIndexCacheMiss || t == EventIndexCacheHit)
+            {
+                // Both index events must carry the unified runtime FileId (1) not their
+                // source-local values (10 or 99).
+                CPPUNIT_ASSERT_EQUAL(1u, unsigned(event.queryNumericValue(EvAttrFileId)));
+                indexEventCount++;
+            }
+        }
+        CPPUNIT_ASSERT_EQUAL(2u, indexEventCount);
+        END_TEST
     }
 };
 

@@ -41,6 +41,8 @@ class event_decl CIndexFileSummary : public CEventConsumingOp
 {
 public: // CEventConsumingOp
     virtual bool doOp() override;
+protected:
+    virtual bool preScanRequired() const override;
 public:
     void setSummarization(IndexSummarization value) { summarization = value; }
     void addGroupAttribute(const std::vector<std::string>& attrs)

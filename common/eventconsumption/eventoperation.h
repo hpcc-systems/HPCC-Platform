@@ -44,12 +44,30 @@ public:
     bool acceptEvents(const char* eventNames);
     bool acceptAttribute(EventAttr attr, const char* values);
     bool acceptModel(const IPropertyTree& config);
+
+    // Determine whether a pre-scan iteration is required to gather metadata.
+    // Operations with custom grouping or index configurations can override this.
+    virtual bool preScanRequired() const;
+
+    // Optional override for operations that provide an alternate terminal endpoint
+    // during a pre-scan.
+    virtual IEventVisitor* getPreScanVisitor() { return nullptr; }
+
+
+    // Returns the number of sources to be processed. Determines multiplexing requirement.
+    virtual unsigned getNumSources() const;
+
+    // Creates and returns the iterator to be used for traversing events.
+    virtual Owned<IEventIterator> createInputIterator();
+
 protected:
     IEventFilter* ensureFilter();
     bool traverseEvents(IEventVisitor& visitor);
+    bool preScanEvents(IEventVisitor* visitor);
+    bool preScanEvents() { return preScanEvents(nullptr); }
 
     // Operation implementations may choose which multiplexing strategy to use.
-    virtual IEventMultiplexer* createMultiplexer(CMetaInfoState& metaState);
+    virtual IEventMultiplexer* createMultiplexer(CMetaInfoState& metaState, bool bypassMetaCollector);
 
     // Query the EventFileProperties from the iterator that will be used for traversal.
     // This method is only valid during doOp() execution, after input paths are set.
@@ -65,6 +83,7 @@ protected:
     Owned<CMetaInfoState> metaState;
     std::set<std::string> inputPaths;
     Linked<IBufferedSerialOutputStream> out;
+    bool preScanCompleted{false};
 private:
     Owned<IEventFilter> filter;
     Owned<IEventModel> model;

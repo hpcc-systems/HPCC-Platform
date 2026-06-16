@@ -33,7 +33,7 @@ public:
     const char* queryOptions() const { return options; }
     StringBuffer& getResults(StringBuffer& results) const;
 protected:
-    virtual IEventMultiplexer* createMultiplexer(CMetaInfoState& metaState) override;
+    virtual IEventMultiplexer* createMultiplexer(CMetaInfoState& metaState, bool bypassMetaCollector) override;
 
     StringBuffer outputPath;
     StringBuffer options;

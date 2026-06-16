@@ -88,6 +88,12 @@ protected:
     // 3. X-axis iterations
     using LinkChanges = std::vector<const Iteration*>;
 
+protected:
+    bool iterationRequiresPreScan = false;
+    // Override to ignore unused inherited filter and model members, relying instead on this
+    // operation's configured visitation links.
+    virtual bool preScanRequired() const override { return iterationRequiresPreScan; }
+
 public:
     virtual bool ready() const override;
     virtual bool doOp() override;
