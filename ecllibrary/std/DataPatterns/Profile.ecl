@@ -14,12 +14,12 @@
  *                              was provided with a value less than 100
  *      fill_count              The number of rec_count records containing
  *                              non-nil values; a 'nil value' is an empty
- *                              string, a numeric zero, or an empty SET; note
- *                              that BOOLEAN attributes are always counted as
- *                              filled, regardless of their value; also,
- *                              fixed-length DATA attributes (e.g. DATA10) are
- *                              also counted as filled, given their typical
- *                              function of holding data blobs
+ *                              string, a numeric zero (see 'allowZero' argument),
+ *                              or an empty SET; note that BOOLEAN attributes
+ *                              are always counted as filled, regardless of
+ *                              their value; also, fixed-length DATA attributes
+ *                              (e.g. DATA10) are also counted as filled, given
+ *                              their typical function of holding data blobs
  *      fill_rate               The percentage of rec_count records containing
  *                              non-nil values; this is basically
  *                              fill_count / rec_count * 100
@@ -181,6 +181,10 @@
  *                          parameter will be ignored if cardinality_breakdown
  *                          is not included in the features argument; OPTIONAL,
  *                          defaults to 64
+ * @param   allowZero       A boolean that tells the profiling code to consider
+ *                          the number zero as a valid value (TRUE) or to consider
+ *                          it as a missing value (FALSE); OPTIONAL, defaults
+ *                          to FALSE.
  */
 EXPORT Profile(inFile,
                fieldListStr = '\'\'',
@@ -188,7 +192,8 @@ EXPORT Profile(inFile,
                maxPatternLen = 100,
                features = '\'fill_rate,best_ecl_types,cardinality,cardinality_breakdown,modes,lengths,patterns,min_max,mean,std_dev,quartiles,correlations\'',
                sampleSize = 100,
-               lcbLimit = 64) := FUNCTIONMACRO
+               lcbLimit = 64,
+               allowZero = FALSE) := FUNCTIONMACRO
     LOADXML('<xml/>');
 
     #UNIQUENAME(temp);                      // Ubiquitous "contains random things"
@@ -431,7 +436,7 @@ EXPORT Profile(inFile,
         %NumericStat_t%                 numeric_lower_quartile;
         %NumericStat_t%                 numeric_median;
         %NumericStat_t%                 numeric_upper_quartile;
-        DATASET(CorrelationRec)         correlations {MAXCOUNT(%fieldCount%)};
+        DATASET(CorrelationRec)         correlations {MAXCOUNT(%fieldCount%), MAXLENGTH(64 * %fieldCount%)};
     END;
 
     // Define the record layout that will be returned to the caller; note
@@ -506,6 +511,7 @@ EXPORT Profile(inFile,
                          _maxPatternLen,
                          _lcbLimit,
                          _maxModes,
+                         _allowZero,
                          _resultLayout,
                          _attrNamePrefix,
                          _sortPrefix) := FUNCTIONMACRO
@@ -833,7 +839,8 @@ EXPORT Profile(inFile,
                                                                             #ELSEIF(%'@type'% = 'boolean')
                                                                                 TRUE
                                                                             #ELSE
-                                                                                _inFile.#EXPAND(%'namePrefix'% + %'@name'%) != 0
+                                                                                // Numeric datatype
+                                                                                _allowZero OR (_inFile.#EXPAND(%'namePrefix'% + %'@name'%) != 0)
                                                                             #END,
                                                     BOOLEAN             is_number :=
                                                                             #IF(%_IsSetType%(%'@type'%))
@@ -1673,6 +1680,7 @@ EXPORT Profile(inFile,
                     maxPatternLen,
                     %lowCardinalityThreshold%,
                     %MAX_MODES%,
+                    allowZero,
                     OutputLayout,
                     '',
                     ''
@@ -1719,6 +1727,7 @@ EXPORT Profile(inFile,
                         maxPatternLen,
                         %lowCardinalityThreshold%,
                         %MAX_MODES%,
+                        allowZero,
                         OutputLayout,
                         %'nameValue'% + '.',
                         INTFORMAT(%numValue%, 5, 1) + '.'

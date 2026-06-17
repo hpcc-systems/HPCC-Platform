@@ -113,6 +113,38 @@ EXPORT TestDataPatterns := MODULE
         ];
 
     //--------------------------------------------------------------------------
+    // Numeric zero handling test
+    //--------------------------------------------------------------------------
+
+    SHARED Numeric_Zero := DATASET
+        (
+            [
+                0, 10
+            ],
+            {INTEGER n}
+        );
+
+    SHARED Numeric_Zero_Profile := Std.DataPatterns.Profile(NOFOLD(Numeric_Zero), features := 'fill_rate,cardinality,min_max,mean');
+    SHARED Numeric_Zero_Allowed_Profile := Std.DataPatterns.Profile(NOFOLD(Numeric_Zero), features := 'fill_rate,cardinality,min_max,mean', allowZero := TRUE);
+
+    EXPORT Test_Numeric_Zero_Profile :=
+        [
+            ASSERT(Numeric_Zero_Profile[1].rec_count = 2),
+            ASSERT(Numeric_Zero_Profile[1].fill_rate = 50),
+            ASSERT(Numeric_Zero_Profile[1].fill_count = 1),
+            ASSERT(Numeric_Zero_Profile[1].cardinality = 1),
+            ASSERT(Numeric_Zero_Profile[1].numeric_min = 10),
+            ASSERT(Numeric_Zero_Profile[1].numeric_mean = 10),
+            ASSERT(Numeric_Zero_Allowed_Profile[1].rec_count = 2),
+            ASSERT(Numeric_Zero_Allowed_Profile[1].fill_rate = 100),
+            ASSERT(Numeric_Zero_Allowed_Profile[1].fill_count = 2),
+            ASSERT(Numeric_Zero_Allowed_Profile[1].cardinality = 2),
+            ASSERT(Numeric_Zero_Allowed_Profile[1].numeric_min = 0),
+            ASSERT(Numeric_Zero_Allowed_Profile[1].numeric_mean = 5),
+            ASSERT(TRUE)
+        ];
+
+    //--------------------------------------------------------------------------
     // Empty data detection
     //--------------------------------------------------------------------------
 
@@ -584,6 +616,7 @@ EXPORT TestDataPatterns := MODULE
     EXPORT Main := [
         EVALUATE(Test_Basic_String_Profile), 
         EVALUATE(Test_Basic_Numeric_Profile),
+        EVALUATE(Test_Numeric_Zero_Profile),
         EVALUATE(Test_Empty_Data_Profile),
         EVALUATE(Test_Pattern_Unicode_Profile),
         EVALUATE(Test_Pattern_Punctuation_Profile),
