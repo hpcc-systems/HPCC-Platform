@@ -83,7 +83,7 @@ bool useTcpTransport = false;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
-    bufferManager = roxiemem::createDataBufferManager(roxiemem::DATA_ALIGNMENT_SIZE);
+    bufferManager = roxiemem::createDataBufferManager();
     return true;
 }
 

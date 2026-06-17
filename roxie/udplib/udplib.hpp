@@ -82,7 +82,7 @@ public:
 };
 
 extern UDPLIB_API ServerIdentifier myNode;
-extern UDPLIB_API roxiemem::IDataBufferManager *bufferManager;
+extern UDPLIB_API roxiemem::IDataBufferManager *bufferManager; // now only used for sending
 
 interface IMessagePacker : extends IInterface
 {

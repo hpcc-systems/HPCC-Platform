@@ -227,7 +227,7 @@ void initOptions(int argc, const char **argv)
 
     isUdpTestMode = true;
     roxiemem::setTotalMemoryLimit(false, true, false, false, 20*1024*1024, 0, NULL, NULL);
-    dbm.setown(roxiemem::createDataBufferManager(roxiemem::DATA_ALIGNMENT_SIZE));
+    dbm.setown(roxiemem::createDataBufferManager());
 
     if (options->getPropBool("sanityCheckUdpSettings", true))
     {

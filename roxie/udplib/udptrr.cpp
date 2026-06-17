@@ -1381,7 +1381,7 @@ class CUdpReceiveManager : implements IReceiveManager, public CInterface
             unsigned lastPacketsOOO = 0;
             unsigned lastUnwantedDiscarded = 0;
             unsigned timeout = 5000;
-            roxiemem::IDataBufferManager * udpBufferManager = bufferManager;
+            roxiemem::IDataBufferManager * udpBufferManager = parent.udpBufferManager;
             DataBuffer *b = udpBufferManager->allocate();
             while (running) 
             {
@@ -1536,6 +1536,7 @@ class CUdpReceiveManager : implements IReceiveManager, public CInterface
     std::atomic<bool> running = { false };
     bool encrypted = false;
 
+    Owned<roxiemem::IDataBufferManager> udpBufferManager;
     typedef std::unordered_map<ruid_t, CMessageCollator*> uid_map;
     uid_map         collators;
     CriticalSection collatorsLock; // protects access to collators map
@@ -1554,6 +1555,7 @@ public:
         assertex(data_port != receive_flow_port);
         input_queue = new queue_t(queue_size);
         data = new receive_data(*this);
+        udpBufferManager.setown(roxiemem::createDataBufferManager());
 
         //NOTE: If all slots are allocated to a single client, then if that server goes down it will prevent any data being received from
         //any other sender for the udpPermitTimeout period

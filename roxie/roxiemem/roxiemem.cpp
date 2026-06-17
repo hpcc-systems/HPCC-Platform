@@ -6676,9 +6676,8 @@ class CDataBufferManager : implements IDataBufferManager, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    CDataBufferManager(size32_t size) : freePending(false)
+    CDataBufferManager() : freePending(false)
     {
-        assertex(size==DATA_ALIGNMENT_SIZE);
         curBlock = NULL;
         freeChain = NULL;
     }
@@ -6985,9 +6984,9 @@ extern unsigned getDataBuffersActive()
    return dataBuffersActive.load(std::memory_order_relaxed);
 }
 
-extern IDataBufferManager *createDataBufferManager(size32_t size)
+extern IDataBufferManager *createDataBufferManager()
 {
-    return new CDataBufferManager(size);
+    return new CDataBufferManager();
 }
 
 extern void setDataAlignmentSize(unsigned size)
@@ -7487,7 +7486,7 @@ protected:
 
     void testDatamanager()
     {
-        CDataBufferManager dm(DATA_ALIGNMENT_SIZE);
+        CDataBufferManager dm;
         int i;
 
         DataBuffer *pages[3000];
@@ -9465,7 +9464,7 @@ protected:
 
     void testDatamanagerThreading()
     {
-        CDataBufferManager dm(DATA_ALIGNMENT_SIZE);
+        CDataBufferManager dm;
 
         class casyncfor: public CAsyncFor
         {

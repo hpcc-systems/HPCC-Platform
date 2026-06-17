@@ -81,10 +81,10 @@ class CTcpReceiveManager : implements IReceiveManager, public CInterface
     std::atomic<bool> running = { false };
     bool encrypted = false;
 
+    Owned<roxiemem::IDataBufferManager> udpBufferManager;
     typedef std::unordered_map<ruid_t, CMessageCollator*> uid_map;
     uid_map         collators;
     CriticalSection collatorsLock; // protects access to collators map
-    roxiemem::IDataBufferManager * udpBufferManager;
 
     class PacketListener : public CSocketConnectionListener
     {
@@ -129,7 +129,7 @@ public:
           listener(*this)
     {
         running = true;
-        udpBufferManager = bufferManager; // ugly global variable...
+        udpBufferManager.setown(roxiemem::createDataBufferManager());
         listener.startPort(data_port);
     }
 

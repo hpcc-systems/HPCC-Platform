@@ -578,7 +578,7 @@ interface IDataBufferManager : extends IInterface
     virtual void poolStats(StringBuffer &memStats) = 0;
 };
 
-extern roxiemem_decl IDataBufferManager *createDataBufferManager(size32_t size);
+extern roxiemem_decl IDataBufferManager *createDataBufferManager();
 extern roxiemem_decl void setMemoryStatsInterval(unsigned secs);
 extern roxiemem_decl void setTotalMemoryLimit(bool allowHugePages, bool allowTransparentHugePages, bool retainMemory, bool lockMemory, memsize_t max, memsize_t largeBlockSize, const unsigned * allocSizes, ILargeMemCallback * largeBlockCallback);
 extern roxiemem_decl void setMemoryOptions(IPropertyTree * options);
