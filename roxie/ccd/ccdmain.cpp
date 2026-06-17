@@ -1066,6 +1066,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         perChannelFlowLimit = topology->getPropInt("@perChannelFlowLimit", 10);
         copyResources = (!oneShotRoxie) && topology->getPropBool("@copyResources", true);
         useRemoteResources = oneShotRoxie || topology->getPropBool("@useRemoteResources", !isContainerized());
+        setCheckIndexCrcs(topology->getPropBool("@checkIndexCrcs", false));
         checkFileDate = topology->getPropBool("@checkFileDate", true);
         const char *lazyOpenMode = topology->queryProp("@lazyOpen");
         if (!lazyOpenMode || stricmp(lazyOpenMode, "smart")==0)

@@ -594,6 +594,13 @@ void CBloomFilterWriteNode::put8(__int64 val)
 
 //=========================================================================================================
 
+static std::atomic<bool> verifyIndexCrcs{true};
+void setCheckIndexCrcs(bool check)
+{
+    //This is only called at startup, and it is fine if updates are delayed
+    verifyIndexCrcs.store(check, std::memory_order_relaxed);
+}
+
 void CJHTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _fpos, bool needCopy)
 {
     CNodeBase::init(_keyHdr, _fpos);
@@ -613,7 +620,9 @@ void CJHTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _fpos, bo
         throw MakeStringException(0, "Htree: Corrupt key node detected");
     }
     const char *data = ((const char *) rawData) + sizeof(hdr);
-    if (hdr.crc32)
+
+    // relaxed is fine here (see comment on definition above)
+    if (hdr.crc32 && verifyIndexCrcs.load(std::memory_order_relaxed))
     {
         unsigned crc = crc32(data, hdr.keyBytes, 0);
         if (hdr.crc32 != crc)
