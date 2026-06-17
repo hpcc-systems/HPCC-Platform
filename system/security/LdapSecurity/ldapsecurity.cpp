@@ -1412,6 +1412,7 @@ void CLdapSecManager::getGroups(const char* username, StringArray & groups)
 void CLdapSecManager::changeUserGroup(const char* action, const char* username, const char* groupname)
 {
     m_ldap_client->changeUserGroup(action, username, groupname);
+    m_permissionsCache->removePermissions(username);
 }
 
 void CLdapSecManager::changeGroupMember(const char* action, const char* groupdn, const char* userdn)

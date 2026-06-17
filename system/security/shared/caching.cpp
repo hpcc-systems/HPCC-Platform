@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include "caching.hpp"
+#include "jstring.hpp"
 #include "jtime.hpp"
 #include "digisign.hpp"
 
@@ -26,6 +27,7 @@ using namespace cryptohelper;
 typedef map<string, CPermissionsCache*> MapCache;
 static CriticalSection mapCacheCS;//guards modifications to the cache map
 static MapCache g_mapCache;
+static CriticalSection syncDefaultScopePermissions;//for cached default file scope permissions
 
 /**********************************************************
  *     CResPermissionsCache                               *
@@ -296,14 +298,31 @@ void CPermissionsCache::add( ISecUser& sec_user, IArrayOf<ISecResource>& resourc
 
 void CPermissionsCache::removePermissions( ISecUser& sec_user)
 {
-    const char* user = sec_user.getName();
-    if(user != NULL && *user != '\0')
+    removePermissions(sec_user.getName());
+}
+
+void CPermissionsCache::removePermissions( const char* username)
+{
+    if (!isCacheEnabled())
+        return;
+    if(!isEmptyString(username))
     {
 #ifdef _DEBUG
-        DBGLOG("CACHE: CPermissionsCache Removing permissions for user %s", user);
+        DBGLOG("CACHE: CPermissionsCache Removing permissions for user %s", username);
 #endif
-        WriteLockBlock writeLock(m_resPermCacheRWLock);
-        m_resPermissionsMap.erase(user); 
+        {
+            WriteLockBlock writeLock(m_resPermCacheRWLock);
+            MapResPermissionsCache::iterator it = m_resPermissionsMap.find(username);
+            if (it != m_resPermissionsMap.end())
+            {
+                delete it->second;
+                m_resPermissionsMap.erase(it);
+            }
+        }
+        {
+            CriticalBlock defaultScopePermissionBlock(syncDefaultScopePermissions);
+            m_userDefaultFileScopePermissions.erase(username);
+        }
     }
 }
 
@@ -635,7 +654,6 @@ bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const cha
 }
 
 
-static CriticalSection syncDefaultScopePermissions;//for cached default file scope permissions
 void CPermissionsCache::managedFileScopesCacheFillThread()
 {
     DBGLOG("CACHE: CPermissionsCache managedFileScopesCacheFillThread starting");
