@@ -168,7 +168,22 @@ void CReadSocketHandler::processPendingMessages()
         size32_t msgSize = processor.getMessageSize(target + offset);
         if (msgSize > readSoFar - offset)
             break;
-        processor.processMessage(target + offset, msgSize);
+        try
+        {
+           processor.processMessage(target + offset, msgSize);
+        }
+        catch (IException * e)
+        {
+            // Log the exception, but keep processing any remaining messages
+            VStringBuffer msg("Exception caught processing message from %s", peerEndpointText.str());
+            EXCLOG(e, msg.str());
+            e->Release();
+        }
+        catch (...)
+        {
+            ERRLOG("Unknown exception caught processing message from %s", peerEndpointText.str());
+        }
+
         offset += msgSize;
         numMessages++;
     }

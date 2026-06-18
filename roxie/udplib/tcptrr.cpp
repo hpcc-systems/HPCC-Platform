@@ -208,11 +208,20 @@ public:
         unsigned packetLength = header->length;
         dbgassertex(packetLength <= roxiemem::DATA_ALIGNMENT_SIZE);
 
-        DataBuffer * buffer = udpBufferManager->allocate();
-        memcpy(buffer->data, header, packetLength);
-        // The tcp collator collates packets directly, because packet order is
-        // guaranteed, so it always executes the fast path in the packet sequencer.
-        collatePacket(buffer);
+        try
+        {
+            DataBuffer * buffer = udpBufferManager->allocate();
+            memcpy(buffer->data, header, packetLength);
+            // The tcp collator collates packets directly, because packet order is
+            // guaranteed, so it always executes the fast path in the packet sequencer.
+            collatePacket(buffer);
+        }
+        catch (IException * e)
+        {
+            //If we fail to allocate a buffer, drop the packet, and continue - otherwise roxie will not recover
+            EXCLOG(e);
+            e->Release();
+        }
     }
 
 };
