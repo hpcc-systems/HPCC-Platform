@@ -174,10 +174,15 @@ class EventDumpTests : public CppUnit::TestFixture
         stream->flush();
 
         const char* resultEmpty = out.str();
-        CPPUNIT_ASSERT(strstr(resultEmpty, "\"meta.ServiceName\"") == nullptr);
-        CPPUNIT_ASSERT(strstr(resultEmpty, "\"meta.Plane\"") == nullptr);
-        CPPUNIT_ASSERT(strstr(resultEmpty, "\"meta.Path\"") == nullptr);
-        CPPUNIT_ASSERT(strstr(resultEmpty, "\"meta.LogicalFileName\"") == nullptr);
+        VStringBuffer quotedMetaServiceName("\"%s\"", EVENT_META_SERVICE_NAME);
+        VStringBuffer quotedMetaPlane("\"%s\"", EVENT_META_PLANE);
+        VStringBuffer quotedMetaPath("\"%s\"", EVENT_META_PATH);
+        VStringBuffer quotedMetaLogicalFileName("\"%s\"", EVENT_META_LOGICAL_FILE_NAME);
+
+        CPPUNIT_ASSERT(strstr(resultEmpty, quotedMetaServiceName.str()) == nullptr);
+        CPPUNIT_ASSERT(strstr(resultEmpty, quotedMetaPlane.str()) == nullptr);
+        CPPUNIT_ASSERT(strstr(resultEmpty, quotedMetaPath.str()) == nullptr);
+        CPPUNIT_ASSERT(strstr(resultEmpty, quotedMetaLogicalFileName.str()) == nullptr);
 
         out.clear();
 
@@ -191,13 +196,13 @@ class EventDumpTests : public CppUnit::TestFixture
         stream->flush();
 
         const char* resultPopulated = out.str();
-        CPPUNIT_ASSERT(strstr(resultPopulated, "\"meta.ServiceName\"") != nullptr);
+        CPPUNIT_ASSERT(strstr(resultPopulated, quotedMetaServiceName.str()) != nullptr);
         CPPUNIT_ASSERT(strstr(resultPopulated, "\"myservice\"") != nullptr);
-        CPPUNIT_ASSERT(strstr(resultPopulated, "\"meta.Plane\"") != nullptr);
+        CPPUNIT_ASSERT(strstr(resultPopulated, quotedMetaPlane.str()) != nullptr);
         CPPUNIT_ASSERT(strstr(resultPopulated, "\"myplane\"") != nullptr);
-        CPPUNIT_ASSERT(strstr(resultPopulated, "\"meta.Path\"") != nullptr);
+        CPPUNIT_ASSERT(strstr(resultPopulated, quotedMetaPath.str()) != nullptr);
         CPPUNIT_ASSERT(strstr(resultPopulated, "\"/var/lib/myplane/somefile.dat\"") != nullptr);
-        CPPUNIT_ASSERT(strstr(resultPopulated, "\"meta.LogicalFileName\"") != nullptr);
+        CPPUNIT_ASSERT(strstr(resultPopulated, quotedMetaLogicalFileName.str()) != nullptr);
         END_TEST
     }
 };

@@ -51,6 +51,11 @@ bool CEventConsumingOp::acceptAttribute(EventAttr attr, const char* values)
     return ensureFilter()->acceptAttribute(attr, values);
 }
 
+bool CEventConsumingOp::acceptMetaAttribute(const char* name, const char* values)
+{
+    return ensureFilter()->acceptMetaAttribute(name, values);
+}
+
 bool CEventConsumingOp::preScanRequired() const
 {
     if (filter && filter->preScanRequired())

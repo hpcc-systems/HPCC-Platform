@@ -72,10 +72,20 @@ interface IEventFilter : extends IEventVisitationLink
     //
     // Supported special cases include:
     // - Timestamps may be given using a standard date/time format, such as "2025-01-01T00:00:00".
-    // - A filter for the integral EvAttrFileId may include string tokens that will be applied to
-    //   a corresponding EvAttrPath or EvAttrPlane attribute previously observed in a FileInformation
-    //   or PlaneInformation event.
+    // - A filter for the integral EvAttrFileId accepts numeric file IDs only. The derived path,
+    //   plane, and logical file name for a file ID may be filtered independently using the
+    //   special attribute names "meta.Path", "meta.Plane", and "meta.LogicalFileName".
+    // - A filter for the string EvAttrEventTraceId accepts trace ID patterns only. The derived
+    //   service name for a trace ID may be filtered independently using the special attribute
+    //   name "meta.ServiceName".
     virtual bool acceptAttribute(EventAttr attr, const char* values) = 0;
+    // Filter on a comma-delimited list of value tokens for a named meta attribute derived from
+    // another event attribute. Recognized names (and the attribute they derive from):
+    //   "meta.Path"            - file path derived from EvAttrFileId
+    //   "meta.Plane"           - storage plane derived from EvAttrFileId
+    //   "meta.LogicalFileName" - logical file name derived from EvAttrFileId
+    //   "meta.ServiceName"     - service name derived from EvAttrEventTraceId
+    virtual bool acceptMetaAttribute(const char* name, const char* values) = 0;
 };
 
 // Obtain a new instance of a standard event filter.

@@ -43,6 +43,7 @@ public:
     void setOutput(IBufferedSerialOutputStream& _out);
     bool acceptEvents(const char* eventNames);
     bool acceptAttribute(EventAttr attr, const char* values);
+    bool acceptMetaAttribute(const char* name, const char* values);
     bool acceptModel(const IPropertyTree& config);
 
     // Determine whether a pre-scan iteration is required to gather metadata.

@@ -108,9 +108,12 @@ protected:
 //   an existing event data file or another file needed by the operation
 // - `void setOutput(IBufferedSerialOutputStream& out)`: sets the operation's output stream
 // - `bool acceptEvents(const char* events)`: adds an event type filter to the operation
-// - `bool acceptAttributes(EventAttr attr, const char* values)`: adds an attribute filter to the
+// - `bool acceptAttribute(EventAttr attr, const char* values)`: adds an attribute filter to the
 //   operation, where `attr` is any event-specific attribute and `values` is a comma-delimited list
-//   of values appropriate for the attrribute
+//   of values appropriate for the attribute
+// - `bool acceptMetaAttribute(const char* name, const char* values)`: adds a meta-derived
+//   attribute filter to the operation, where `name` is one of meta.Path, meta.Plane,
+//   meta.LogicalFileName, or meta.ServiceName
 template <typename event_consuming_op_t>
 class TEventConsumingCommand : public TEvtCLIConnector<event_consuming_op_t>
 {
@@ -130,6 +133,8 @@ protected:
         if (strncmp(key, "attribute:", 10) == 0)
         {
             const char* attrName = key + 10;
+            if (strncmp(attrName, EVENT_META_PREFIX, sizeof(EVENT_META_PREFIX) - 1) == 0)
+                return op.acceptMetaAttribute(attrName, value);
             EventAttr attr = queryEventAttribute(attrName);
             switch (attr)
             {
@@ -257,15 +262,10 @@ Filters:
                                         only on the upper end
                                 - String: a case-sensitive match or a wildcard
                                   pattern
-                              Choices for <attr> are derived from the EventAttr
-                              enumeration:
-                                - FileId: numeric, but a string token joins the
-                                    current event with preceding occurrences
-                                    of FileInformation, enabling filter by
-                                    physical file path, or PlaneInformation,
-                                    enabling filter by plane. Logical file
-                                    name filtering requires FileInformation
-                                    in combination with PlaneInformation
+                              Choices for <attr> include EventAttr enumeration
+                              names and the special meta-derived names listed
+                              below:
+                                - FileId: numeric only
                                 - FileOffset: numeric
                                 - NodeKind: numeric (0, 1, or 2) or text
                                     equivalent (branch, leaf, or blob)
@@ -279,8 +279,7 @@ Filters:
                                 - EventTimestamp: numeric or fully formed time-
                                     stamp strings as recognized by the
                                     CDateTime::setString method.
-                                - EventTraceId: string matching either a recorded
-                                    trace ID or an associated query service name
+                                - EventTraceId: trace ID pattern only
                                 - EventThreadId: numeric
                                 - EventStackTrace: string
                                 - DataSize: numeric
@@ -294,6 +293,12 @@ Filters:
                                 - OpenTime: numeric
                                 - Plane: string
                                 - IsStriped: Boolean
+                                - meta.Path: path derived from FileId
+                                - meta.Plane: plane derived from FileId
+                                - meta.LogicalFileName: logical file name
+                                    derived from FileId
+                                - meta.ServiceName: service name derived from
+                                    EventTraceId
 )!!!";
         size32_t usageStrLength = size32_t(strlen(usageStr));
         out.put(usageStrLength, usageStr);

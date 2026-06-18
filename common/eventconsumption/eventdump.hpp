@@ -80,28 +80,28 @@ public:
             const char* val = nullptr;
             if (event && event->hasAttribute(EvAttrEventTraceId))
                 val = metaState->queryServiceName(event->queryTextValue(EvAttrEventTraceId));
-            f("meta.ServiceName", val);
+            f(EVENT_META_SERVICE_NAME, val);
         }
         if (hasMetaFlag(metaFlags, DumpMetaFlag::LogicalFileName))
         {
             const char* val = nullptr;
             if (event)
                 val = metaState->queryLogicalFileName(*event);
-            f("meta.LogicalFileName", val);
+            f(EVENT_META_LOGICAL_FILE_NAME, val);
         }
         if (hasMetaFlag(metaFlags, DumpMetaFlag::Path))
         {
             const char* val = nullptr;
             if (event && event->hasAttribute(EvAttrFileId))
                 val = metaState->queryFilePath(event->queryNumericValue(EvAttrFileId));
-            f("meta.Path", val);
+            f(EVENT_META_PATH, val);
         }
         if (hasMetaFlag(metaFlags, DumpMetaFlag::Plane))
         {
             const char* val = nullptr;
             if (event)
                 val = metaState->queryPlane(*event);
-            f("meta.Plane", val);
+            f(EVENT_META_PLANE, val);
         }
     }
 
