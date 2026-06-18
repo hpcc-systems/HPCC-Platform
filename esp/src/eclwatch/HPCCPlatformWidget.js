@@ -8,7 +8,6 @@ define([
     "dojo/dom-class",
     "dojo/dom-form",
     "dojo/dom-style",
-    "dojo/dom-geometry",
     "dojo/cookie",
     "dojo/query",
     "dojo/topic",
@@ -72,7 +71,7 @@ define([
     "hpcc/TableContainer",
     "hpcc/InfoGridWidget"
 
-], function (declare, lang, nlsHPCCMod, arrayUtil, dom, domConstruct, domClass, domForm, domStyle, domGeo, cookie, query, topic, xhr,
+], function (declare, lang, nlsHPCCMod, arrayUtil, dom, domConstruct, domClass, domForm, domStyle, cookie, query, topic, xhr,
     registry, Tooltip,
     UpgradeBar, ColorPicker,
     CodeMirror, srcReact, AboutModule, ComingSoonModule, platformModule,
@@ -166,7 +165,7 @@ define([
             /* */
             var teaserNode = dom.byId(this.id + "teaser");
             this.comingSoonRoot = srcReact.ReactRoot.create(teaserNode);
-            this.comingSoonRoot.render(ComingSoonModule.ComingSoon, { style: { color: "white" } }, teaserNode);
+            this.comingSoonRoot.render(ComingSoonModule.ComingSoon, {});
 
             const DAY = 1000 * 60 * 60 * 24;
             platformModule.fetchCheckFeatures().then(function (features) {
@@ -573,7 +572,7 @@ define([
         },
 
         _onECLWatchV9: function (evt) {
-            this.comingSoonRoot.render(ComingSoonModule.ComingSoon, { style: { color: "white" }, value: true });
+            this.comingSoonRoot.render(ComingSoonModule.ComingSoon, { value: true });
         },
 
         _onAboutLoaded: false,

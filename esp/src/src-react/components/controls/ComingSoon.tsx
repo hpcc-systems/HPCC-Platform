@@ -1,6 +1,26 @@
 import * as React from "react";
-import { Switch, SwitchOnChangeData } from "@fluentui/react-components";
+import { FluentProvider, makeStyles, Switch, SwitchOnChangeData } from "@fluentui/react-components";
 import { useBuildInfo, useModernMode } from "../../hooks/platform";
+import { useUserTheme } from "../../hooks/theme";
+
+const useEmbeddedStyles = makeStyles({
+    provider: {
+        backgroundColor: "transparent",
+        color: "inherit"
+    },
+    switch: {
+        color: "inherit",
+        alignItems: "center",
+        "& .fui-Switch__label": {
+            color: "inherit !important",
+            padding: 0
+        },
+        "& .fui-Switch__indicator": {
+            marginLeft: 0,
+            color: "inherit !important"
+        }
+    }
+});
 
 const legacyIndex = {};
 const modernIndex = {};
@@ -60,17 +80,16 @@ export function switchTechPreview(checked: boolean, opsCategory: string) {
 }
 
 interface ComingSoon {
-    defaultValue: boolean;
-    style?: React.CSSProperties;
+    defaultValue?: boolean;
     value?: boolean;
 }
 
 export const ComingSoon: React.FunctionComponent<ComingSoon> = ({
     defaultValue = false,
-    style,
     value
 }) => {
-
+    const styles = useEmbeddedStyles();
+    const { themeV9 } = useUserTheme();
     const [, { opsCategory }] = useBuildInfo();
     const { modernMode, setModernMode } = useModernMode();
 
@@ -86,5 +105,7 @@ export const ComingSoon: React.FunctionComponent<ComingSoon> = ({
         switchTechPreview(data.checked, opsCategory);
     }, [opsCategory, setModernMode]);
 
-    return <Switch label="ECL Watch v9" checked={(modernMode ?? String(defaultValue)) !== String(false)} onChange={onChangeCallback} style={style} />;
+    return <FluentProvider theme={themeV9} className={styles.provider} style={{ color: "white" }}>
+        <Switch className={styles.switch} label="ECL Watch v9" checked={(modernMode ?? String(defaultValue)) !== String(false)} onChange={onChangeCallback} />
+    </FluentProvider>;
 };

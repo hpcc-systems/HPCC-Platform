@@ -380,7 +380,7 @@ h2 img:first-of-type {
 
 #search-form {
     padding: 0;
-    margin: 10px 10px 0 0;
+    margin: 0 8px 0 0;
     min-width: 230px;
 }
 
@@ -399,10 +399,7 @@ h2 img:first-of-type {
 }
 
 #userAccount {
-    float: left;
     text-align: right;
-    padding: 5px 5px 0 0;
-    padding-top: 10px;
     color: rgb(164, 220, 245);
 }
 
@@ -751,11 +748,7 @@ table.miniSelect span {
 .seperator {
     width: 1px;
     height: 32px;
-    float: left;
-    margin-left: 4px;
-    margin-top: 9px;
-    margin-right: 12px;
-    margin-bottom: 9px;
+    margin: 0 12px;
 }
 
 .titleLowLite {
@@ -871,6 +864,7 @@ table.miniSelect span {
 
 .searchUserMoreComponents {
     display: flex;
+    align-items: center;
 }
 
 .navBarLoggedin {
