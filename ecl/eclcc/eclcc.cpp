@@ -485,7 +485,7 @@ protected:
     bool optShared = false;
     bool optOnlyCompile = false;
     bool optSaveQueryText = false;
-    bool optSaveQueryArchive = false;
+    bool optSaveQueryArchive = true;
     bool optSyntax = false;
     bool optLegacyImport = false;
     bool optLegacyWhen = false;

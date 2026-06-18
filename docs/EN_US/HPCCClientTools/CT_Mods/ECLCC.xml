@@ -87,7 +87,9 @@
             </row>
           </tbody>
         </tgroup>
-      </informaltable><!--  ***this whole thing should be a comment!
+      </informaltable></para>
+
+      <!--
       /sect2 id="configuration-manager"/
         <title>Dependencies and packages</title>
 
@@ -114,7 +116,7 @@
               </listitem>
             </itemizedlist>
       //sect2/
-         ***END OF COMMENT***   --></para>
+        ***END OF COMMENT***   -->
 
     <sect1 id="Stand-Alone-ECL-Compiler">
       <title>Using the ECL Compiler as a Stand Alone option</title>
@@ -283,7 +285,8 @@
               <row>
                 <entry>-qa</entry>
 
-                <entry>Save ECL query archive as part of workunit</entry>
+                <entry>Save ECL query archive as part of workunit
+                (default). Use -qa=0 to disable.</entry>
               </row>
 
               <row>

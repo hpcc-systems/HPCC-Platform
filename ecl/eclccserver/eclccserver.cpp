@@ -756,6 +756,8 @@ class EclccCompiler : implements IErrorReporter
 
         if (workunit->getDebugValueBool("createQueryArchive", config->getPropBool("@createQueryArchive", true)))
             eclccCmd.appendf(" -q -qa");
+        else
+            eclccCmd.appendf(" -qa=0");
 
         Owned<IStringIterator> debugValues = &workunit->getDebugValues();
         ForEach (*debugValues)
