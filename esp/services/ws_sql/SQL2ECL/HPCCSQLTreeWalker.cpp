@@ -1126,9 +1126,10 @@ void HPCCSQLTreeWalker::assignParameterIndexes()
     parameterizedCount = paramIndex - 1;
 }
 
-HPCCSQLTreeWalker::HPCCSQLTreeWalker() :  sqlType(SQLTypeUnknown), parameterizeStaticValues(true), limit(-1)
+HPCCSQLTreeWalker::HPCCSQLTreeWalker() :  sqlType(SQLTypeUnknown), limit(-1)
                                          ,offset(-1), selectDistinct(false)
                                          ,overwrite(true), sourceDataType(""), parameterizedCount(-1)
+                                         ,parameterizeStaticValues(true)
 {
     normalizedSQL.clear();
 }

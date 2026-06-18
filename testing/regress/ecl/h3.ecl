@@ -21,6 +21,16 @@ IMPORT lib_h3;
 
 h3 := lib_h3.h3;
 
+h3_point4_t := RECORD
+  DECIMAL10_7 lat;
+  DECIMAL10_7 lon;
+END;
+
+h3_point4_t RoundTo(h3_point_t pt, INTEGER decimals = 7) := TRANSFORM
+  SELF.lat := ROUND(pt.lat, decimals);
+  SELF.lon := ROUND(pt.lon, decimals);
+END;
+
 res := 10;
 lat := 40.689167;
 lng := -74.044444;
@@ -28,8 +38,9 @@ lng := -74.044444;
 //  Indexing  ---
 h3Idx := h3.index(lat, lng, res);
 h3Idx;
-h3.center(h3Idx);
-h3.boundary(h3Idx);
+// Round to avoid arm / x64 floating point differences
+PROJECT(h3.center(h3Idx), RoundTo(LEFT));
+PROJECT(h3.boundary(h3Idx), RoundTo(LEFT));
 
 //  Introspection  ---
 h3.resolution(h3Idx);

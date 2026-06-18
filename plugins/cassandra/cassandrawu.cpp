@@ -1504,7 +1504,7 @@ class PostFilter : public CInterfaceOf<IPostFilter>
 {
 public:
     PostFilter(WUSortField _field, const char *_value, bool _wild)
-      : field(_field), xpath(queryFilterXPath(_field)), wild(_wild)
+      : xpath(queryFilterXPath(_field)), pattern(), value(), field(_field), wild(_wild)
     {
         setValue(_value);
     }
@@ -2189,7 +2189,7 @@ class CCassandraWorkUnit : public CPersistedWorkUnit
 {
 public:
     CCassandraWorkUnit(ICassandraSession *_sessionCache, IPTree *wuXML, ISecManager *secmgr, ISecUser *secuser, IRemoteConnection *_daliLock, bool _allDirty)
-        : sessionCache(_sessionCache), CPersistedWorkUnit(secmgr, secuser), daliLock(_daliLock), allDirty(_allDirty)
+        : CPersistedWorkUnit(secmgr, secuser), sessionCache(_sessionCache), allDirty(_allDirty), daliLock(_daliLock)
     {
         CPersistedWorkUnit::loadPTree(wuXML);
         memset(childLoaded, 0, sizeof(childLoaded));
@@ -3226,7 +3226,7 @@ class CCasssandraWorkUnitFactory : public CWorkUnitFactory, implements ICassandr
 {
     IMPLEMENT_IINTERFACE;
 public:
-    CCasssandraWorkUnitFactory(const SharedObject *_dll, const IPropertyTree *props) : cluster(cass_cluster_new()), randomizeSuffix(0), randState((unsigned) get_cycles_now()), cacheRetirer(*this)
+    CCasssandraWorkUnitFactory(const SharedObject *_dll, const IPropertyTree *props) : cacheRetirer(*this), randomizeSuffix(0), randState((unsigned) get_cycles_now()), cluster(cass_cluster_new())
     {
         StringArray options;
         options.append("write_bytes_high_water_mark=1000000");  // Set the default HWM - workunits get big. This can be overridden by supplied options

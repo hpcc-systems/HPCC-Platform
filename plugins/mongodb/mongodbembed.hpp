@@ -515,9 +515,8 @@ namespace mongodbembed
     {
     public:
         MongoDBRecordBinder(const IContextLogger &_logctx, const RtlTypeInfo *_typeInfo, std::shared_ptr<MongoDBQuery> _query, int _firstParam)
-         : logctx(_logctx), typeInfo(_typeInfo), firstParam(_firstParam), dummyField("<row>", NULL, typeInfo), thisParam(_firstParam)
+         : typeInfo(_typeInfo), logctx(_logctx), query(_query), firstParam(_firstParam), dummyField("<row>", NULL, typeInfo), thisParam(_firstParam)
         {
-            query = _query;
         }
 
         int numFields();
@@ -591,7 +590,7 @@ namespace mongodbembed
          * @param _firstParam Index of the first param.
          */
         MongoDBDatasetBinder(const IContextLogger &_logctx, IRowStream * _input, const RtlTypeInfo *_typeInfo, std::shared_ptr<MongoDBQuery> _query, int _firstParam)
-          : input(_input), MongoDBRecordBinder(_logctx, _typeInfo, _query, _firstParam)
+          : MongoDBRecordBinder(_logctx, _typeInfo, _query, _firstParam), input(_input)
         {
         }
 

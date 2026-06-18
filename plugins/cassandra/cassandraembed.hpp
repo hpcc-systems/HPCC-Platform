@@ -47,7 +47,7 @@ class CASSANDRAEMBED_API CassandraPrepared : public CInterfaceOf<IInterface>
 {
 public:
     inline CassandraPrepared(const CassPrepared *_prepared, const char *_queryString)
-    : prepared(_prepared), queryString(_queryString)
+    : queryString(_queryString), prepared(_prepared)
     {
     }
     inline ~CassandraPrepared()

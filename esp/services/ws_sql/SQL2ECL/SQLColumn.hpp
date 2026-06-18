@@ -134,12 +134,12 @@ public:
         return new HPCCColumnMetaData(name);
     }
 
-    HPCCColumnMetaData() : keyedField(false), decimalDigits(0), index(-1)
+    HPCCColumnMetaData() : index(-1), decimalDigits(0), keyedField(false)
     {
         columnName.clear();
     }
 
-    HPCCColumnMetaData(const char * colname) : keyedField(false), decimalDigits(0), index(-1)
+    HPCCColumnMetaData(const char * colname) : index(-1), decimalDigits(0), keyedField(false)
     {
         columnName.set(colname);
     }

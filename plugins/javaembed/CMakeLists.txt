@@ -28,6 +28,19 @@ project(javaembed)
 if(JAVAEMBED AND USE_JAVA)
     ADD_PLUGIN(javaembed)
     if(MAKE_JAVAEMBED)
+        # On macOS with Homebrew openjdk, the JDK is installed under libexec and
+        # CMake's FindJNI does not search there by default. Provide a hint so
+        # both find_package(Java) and find_package(JNI) can locate the headers.
+        if(APPLE AND NOT DEFINED ENV{JAVA_HOME})
+            execute_process(
+                COMMAND brew --prefix openjdk
+                OUTPUT_VARIABLE HOMEBREW_OPENJDK_PREFIX
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+                ERROR_QUIET)
+            if(HOMEBREW_OPENJDK_PREFIX)
+                set(ENV{JAVA_HOME} "${HOMEBREW_OPENJDK_PREFIX}/libexec/openjdk.jdk/Contents/Home")
+            endif()
+        endif()
         find_package(Java 1.8 COMPONENTS Development)
         find_package(JNI)
         set(

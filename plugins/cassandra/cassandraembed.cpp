@@ -428,7 +428,7 @@ void CassandraSession::set(CassSession *_session)
 //----------------------
 
 CassandraRetryingFuture::CassandraRetryingFuture(CassSession *_session, CassStatement *_statement, Semaphore *_limiter, unsigned _retries)
-: session(_session), statement(_statement), retries(_retries), limiter(_limiter), future(NULL)
+: future(NULL), session(_session), statement(_statement), retries(_retries), limiter(_limiter)
 {
     execute();
 }
@@ -493,13 +493,12 @@ void CassandraRetryingFuture::signaller(CassFuture *future, void *data)
 //----------------------
 
 CassandraStatementInfo::CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, OptionalCassBatchType _batchMode, unsigned pageSize, Semaphore *_semaphore, unsigned _maxRetries)
-    : session(_session), prepared(_prepared), numBindings(_numBindings), batchMode(_batchMode), semaphore(_semaphore), maxRetries(_maxRetries)
+    : session(_session), prepared(_prepared), numBindings(_numBindings), semaphore(_semaphore), maxRetries(_maxRetries), inBatch(false), batchMode(_batchMode)
 {
     assertex(prepared && *prepared);
     statement.setown(new CassandraStatement(cass_prepared_bind(*prepared)));
     if (pageSize)
         cass_statement_set_paging_size(*statement, pageSize);
-    inBatch = false;
 }
 CassandraStatementInfo::~CassandraStatementInfo()
 {
@@ -1019,7 +1018,7 @@ class CassandraRecordBinder : public CInterfaceOf<IFieldProcessor>
 {
 public:
     CassandraRecordBinder(const IContextLogger &_logctx, const RtlTypeInfo *_typeInfo, const CassandraStatementInfo *_stmtInfo, int _firstParam)
-      : logctx(_logctx), typeInfo(_typeInfo), stmtInfo(_stmtInfo), firstParam(_firstParam), dummyField("<row>", NULL, typeInfo), thisParam(_firstParam)
+      : typeInfo(_typeInfo), stmtInfo(_stmtInfo), collection(), logctx(_logctx), firstParam(_firstParam), dummyField("<row>", NULL, typeInfo), thisParam(_firstParam)
     {
     }
     int numFields()
@@ -1214,7 +1213,7 @@ class CassandraDatasetBinder : public CassandraRecordBinder
 {
 public:
     CassandraDatasetBinder(const IContextLogger &_logctx, IRowStream * _input, const RtlTypeInfo *_typeInfo, const CassandraStatementInfo *_stmt, int _firstParam)
-      : input(_input), CassandraRecordBinder(_logctx, _typeInfo, _stmt, _firstParam)
+      : CassandraRecordBinder(_logctx, _typeInfo, _stmt, _firstParam), input(_input)
     {
     }
     bool bindNext()

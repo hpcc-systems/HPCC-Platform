@@ -2166,7 +2166,7 @@ class JavaObjectXmlWriter : public CInterface
 {
 public:
     JavaObjectXmlWriter(CheckedJNIEnv *_JNIenv, jobject _obj, const char *_reqType, IEsdlDefinition &_esdl, const char *_esdlService, IXmlWriter &_writer)
-    : JNIenv(_JNIenv), obj(_obj), writer(_writer), esdl(_esdl), esdlService(_esdlService), reqType(_reqType)
+    : JNIenv(_JNIenv), javaClasses(), Class(nullptr), obj(_obj), writer(_writer), esdl(_esdl), reqType(_reqType), esdlService(_esdlService)
     {
         Class = (jclass) JNIenv->NewGlobalRef(JNIenv->GetObjectClass(obj), "class");
     }
@@ -2826,7 +2826,7 @@ public:
     class DefStackEntry : public CInterface
     {
     public:
-        DefStackEntry(const char *fieldname, IEsdlDefObject *_defType, IEsdlDefObject *_defObj) : name(fieldname), defType(_defType), defObj(_defObj), Class(0), obj(0), constructor(0), append(0), fieldId(0)
+        DefStackEntry(const char *fieldname, IEsdlDefObject *_defType, IEsdlDefObject *_defObj) : defType(_defType), defObj(_defObj), name(fieldname), Class(0), constructor(0), append(0), fieldId(0), obj(0)
         {
         }
         ~DefStackEntry()
@@ -3286,7 +3286,7 @@ class JavaEmbedImportContext : public CInterfaceOf<IJavaEmbedFunctionContext>
 {
 public:
     JavaEmbedImportContext(ICodeContext *codeCtx, JavaThreadContext *_sharedCtx, jobject _instance, unsigned _flags, const char *options, const IThorActivityContext *_activityContext)
-    : sharedCtx(_sharedCtx), JNIenv(sharedCtx->JNIenv), instance(_instance), flags(_flags), activityContext(_activityContext)
+    : sharedCtx(_sharedCtx), JNIenv(sharedCtx->JNIenv), instance(_instance), activityContext(_activityContext), flags(_flags)
     {
         argcount = 0;
         argsig = NULL;
@@ -4779,7 +4779,7 @@ class JavaEmbedServiceContext : public CInterfaceOf<IEmbedServiceContext>
 {
 public:
     JavaEmbedServiceContext(JavaThreadContext *_sharedCtx, const char *service, const char *_options)
-    : sharedCtx(_sharedCtx), Class(0), options(_options), className(service), object(0)
+    : sharedCtx(_sharedCtx), className(service), Class(0), object(0), options(_options)
     {
         StringArray opts;
         opts.appendList(options, ",");

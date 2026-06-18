@@ -53,32 +53,37 @@ IF(MONGODBEMBED)
             TARGETS mongodbembed
             DESTINATION plugins CALC_DEPS)
 
-        install(
-            FILES ${LIBMONGOCXX_LIB_REAL}
-            DESTINATION ${LIB_DIR}
-            PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
-            COMPONENT Runtime)
+        if(NOT APPLE)
+            install(
+                FILES ${LIBMONGOCXX_LIB_REAL}
+                DESTINATION ${LIB_DIR}
+                PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
+                COMPONENT Runtime)
 
-        install(
-            FILES ${LIBMONGOCXX_LIB} ${LIBMONGOCXX_LIB_ABI}
-            DESTINATION ${LIB_DIR}
-            COMPONENT Runtime)
+            install(
+                FILES ${LIBMONGOCXX_LIB} ${LIBMONGOCXX_LIB_ABI}
+                DESTINATION ${LIB_DIR}
+                COMPONENT Runtime)
 
-        install(
-            FILES ${LIBBSONCXX_LIB_REAL}
-            DESTINATION ${LIB_DIR}
-            PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
-            COMPONENT Runtime)
+            install(
+                FILES ${LIBBSONCXX_LIB_REAL}
+                DESTINATION ${LIB_DIR}
+                PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
+                COMPONENT Runtime)
 
-        install(
-            FILES ${LIBBSONCXX_LIB} ${LIBBSONCXX_LIB_ABI}
-            DESTINATION ${LIB_DIR}
-            COMPONENT Runtime)
+            install(
+                FILES ${LIBBSONCXX_LIB} ${LIBBSONCXX_LIB_ABI}
+                DESTINATION ${LIB_DIR}
+                COMPONENT Runtime)
+        endif()
+
+        set(MONGO_BSONCXX_TARGET $<IF:$<TARGET_EXISTS:mongo::bsoncxx_static>,mongo::bsoncxx_static,mongo::bsoncxx_shared>)
+        set(MONGO_MONGOCXX_TARGET $<IF:$<TARGET_EXISTS:mongo::mongocxx_static>,mongo::mongocxx_static,mongo::mongocxx_shared>)
 
         target_link_libraries(
             mongodbembed
-            PRIVATE mongo::bsoncxx_shared
-            PRIVATE mongo::mongocxx_shared
+            PRIVATE ${MONGO_BSONCXX_TARGET}
+            PRIVATE ${MONGO_MONGOCXX_TARGET}
             eclrtl
             jlib
         )
