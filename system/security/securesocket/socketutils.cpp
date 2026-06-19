@@ -971,7 +971,9 @@ ISocket * CSocketTarget::querySocket()
 
 size32_t CSocketTarget::writeSync(const void * data, size32_t len)
 {
-    Owned<ISocket> target = getSocket();
+    // Only one thread can write to the socket at a time - otherwise data can be interleaved (and other problems!)
+    CriticalBlock b(crit);
+    ISocket * target = querySocket();
     if (!target)
         return 0;
 
@@ -982,7 +984,6 @@ size32_t CSocketTarget::writeSync(const void * data, size32_t len)
     catch (IException * e)
     {
         //Force a reconnect next time - could add retry loop and logic...
-        CriticalBlock b(crit);
         socket.clear();
         throw;
     }
