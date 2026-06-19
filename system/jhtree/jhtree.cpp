@@ -81,7 +81,6 @@ static CriticalSection *initCrit = NULL;
 static cycle_t fetchThresholdCycles = 0;
 
 bool useMemoryMappedIndexes = false;
-bool linuxYield = false;
 bool flushJHtreeCacheOnOOM = true;
 std::atomic<unsigned __int64> branchSearchCycles{0};
 std::atomic<unsigned __int64> leafSearchCycles{0};
@@ -2705,10 +2704,6 @@ bool CKeyCursor::_lookup(bool exact, unsigned lastSeg, bool unfiltered, IContext
                 ret = true;
                 break;
             }
-#ifdef  __linux__
-            if (linuxYield)
-                sched_yield();
-#endif
             eof = !filter->incrementKey(i, recordBuffer);
             if (!exact)
             {

@@ -2711,11 +2711,6 @@
           "maximum": 9000,
           "description": "Set higher than 1400 for networks with a larger MTU."
         },
-        "linuxYield": {
-          "type": "boolean",
-          "default": false,
-          "description": "Yield to scheduler in some tight loops. May help latency on uniprocessor machines"
-        },
         "maxBlockSize": {
           "type": "integer",
           "default": 10000000,

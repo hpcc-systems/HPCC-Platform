@@ -1406,13 +1406,6 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="linuxYield" type="xs:boolean" use="optional" default="false">
-      <xs:annotation>
-        <xs:appinfo>
-          <tooltip>Yield to scheduler in some tight loops. May help latency on uniprocessor machines</tooltip>
-        </xs:appinfo>
-      </xs:annotation>
-    </xs:attribute>
     <xs:attribute name="maxBlockSize" type="xs:nonNegativeInteger" use="optional" default="10000000">
       <xs:annotation>
         <xs:appinfo>

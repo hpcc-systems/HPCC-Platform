@@ -172,7 +172,6 @@ extern std::atomic<unsigned __int64> branchSearchCycles;
 extern std::atomic<unsigned __int64> leafSearchCycles;
 
 
-extern jhtree_decl bool linuxYield;
 extern jhtree_decl bool flushJHtreeCacheOnOOM;
 extern jhtree_decl bool useMemoryMappedIndexes;
 extern jhtree_decl void logNodeCacheStats(const char *prefix);

@@ -1132,7 +1132,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             backgroundCopyPrio = 0;
         }
 #endif
-        linuxYield = topology->getPropBool("@linuxYield", false);
         traceStrands = topology->getPropBool("@traceStrands", false);
 
         useMemoryMappedIndexes = topology->getPropBool("@useMemoryMappedIndexes", false);
