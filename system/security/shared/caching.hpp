@@ -165,6 +165,7 @@ public:
     //
     virtual void add   ( ISecUser& sec_user, IArrayOf<ISecResource>& resources );
     virtual void removePermissions( ISecUser& sec_user);
+    virtual void removePermissions( const char* username);
     virtual void remove   (SecResourceType rtype, const char* resourcename);
 
     virtual bool lookup( ISecUser& sec_user);

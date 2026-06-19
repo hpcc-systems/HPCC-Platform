@@ -21,7 +21,6 @@
 #include "jregexp.hpp"
 #include "jtrace.hpp"
 #include "jutil.hpp"
-#include <functional>
 #include <map>
 #include <set>
 #include <unordered_map>
@@ -52,31 +51,7 @@ protected:
     class StringMatchHelper
     {
     public:
-        // Now public so external pre-scan predicates can see the data.
-        struct PatternInfo
-        {
-            std::string pattern;
-            FilterTermComparison comparison;
-            bool wildcard{false};
-
-            PatternInfo(std::string _pattern, FilterTermComparison _comparison)
-                : pattern(std::move(_pattern))
-                , comparison(_comparison)
-            {
-                // Check once for a wildcard pattern when accepted, to avoid checking for each event.
-                if (FilterTermComparison::Wildcard == comparison || FilterTermComparison::Default == comparison)
-                    wildcard = (pattern.find_first_of("*?") != std::string::npos);
-            }
-
-            bool operator < (const PatternInfo& other) const
-            {
-                int cmp = pattern.compare(other.pattern);
-                if (cmp)
-                    return cmp < 0;
-                return comparison < other.comparison;
-            }
-        };
-        using PreScanPredicate = std::function<bool(const PatternInfo& pattern)>;
+        using PatternInfo = std::pair<std::string, FilterTermComparison>;
 
     private:
         std::set<PatternInfo> patterns;
@@ -87,29 +62,29 @@ protected:
             bool match = false;
             for (const PatternInfo& pattern : patterns)
             {
-                switch (pattern.comparison)
+                switch (pattern.second)
                 {
                 case FilterTermComparison::Default:
                 case FilterTermComparison::Wildcard:
-                    match = WildMatch(value, pattern.pattern.c_str(), false);
+                    match = WildMatch(value, pattern.first.c_str(), false);
                     break;
                 case FilterTermComparison::Equal:
-                    match = strieq(value, pattern.pattern.c_str());
+                    match = strieq(value, pattern.first.c_str());
                     break;
                 case FilterTermComparison::NotEqual:
-                    match = !strieq(value, pattern.pattern.c_str());
+                    match = !strieq(value, pattern.first.c_str());
                     break;
                 case FilterTermComparison::LessThan:
-                    match = stricmp(value, pattern.pattern.c_str()) < 0;
+                    match = stricmp(value, pattern.first.c_str()) < 0;
                     break;
                 case FilterTermComparison::LessThanOrEqual:
-                    match = stricmp(value, pattern.pattern.c_str()) <= 0;
+                    match = stricmp(value, pattern.first.c_str()) <= 0;
                     break;
                 case FilterTermComparison::GreaterThanOrEqual:
-                    match = stricmp(value, pattern.pattern.c_str()) >= 0;
+                    match = stricmp(value, pattern.first.c_str()) >= 0;
                     break;
                 case FilterTermComparison::GreaterThan:
-                    match = stricmp(value, pattern.pattern.c_str()) > 0;
+                    match = stricmp(value, pattern.first.c_str()) > 0;
                     break;
                 default:
                     match = false;
@@ -127,19 +102,28 @@ protected:
             return true;
         }
 
-        bool preScanRequired(PreScanPredicate predicate) const
-        {
-            // Pre-scan is not required by default. If no predicate is provided,
-            // no pre-scan is required by the defined patterns.
-            if (!predicate)
-                return false;
-            // Use the predicate to check if any pattern triggers a pre-scan.
-            for (const auto& p : patterns)
-                if (predicate(p))
-                    return true;
-            return false;
-        }
+        bool empty() const { return patterns.empty(); }
     };
+
+    static bool acceptStringMatchValues(StringMatchHelper& helper, const char* values)
+    {
+        unsigned accepted = 0;
+        StringArray tokens;
+        tokens.appendList(values, ",", true);
+        ForEachItemIn(i, tokens)
+        {
+            const char* token = tokens.item(i);
+            if (isEmptyString(token))
+                continue;
+            FilterTermComparison comp = CEventFilter::extractComparison(token);
+            if (!helper.acceptToken(token, comp))
+                return false;
+            accepted++;
+        }
+        if (!accepted)
+            return false;
+        return true;
+    }
 
     struct FilterTerm : public CInterface
     {
@@ -349,15 +333,19 @@ protected:
 
         virtual void observe(const CEvent& event) const override
         {
-            if (MetaFileInformation == event.queryType())
-            {
-                __uint64 fileId = event.queryNumericValue(EvAttrFileId);
-                if (!observeMatchedText(event.queryTextValue(EvAttrPath), fileId))
-                {
-                    if (!observeMatchedText(metaInfoState.queryLogicalFileName(event), fileId))
-                        (void)observeMatchedText(metaInfoState.queryPlane(event), fileId);
-                }
-            }
+            // 2 of 3 values derived from FileId depend on PlaneInformation.
+            // 3 of 3 values derived from FileId depend on MetaFileInformation.
+            // PlaneInformation must precede FileInformation, which must precede any other event
+            // containing FileId. We observe all dependencies using MetaFileInformation events.
+            if (MetaFileInformation != event.queryType())
+                return;
+            __uint64 fileId = event.queryNumericValue(EvAttrFileId);
+            if (!pathHelper.empty())
+                observeMatchedText(pathHelper, event.queryTextValue(EvAttrPath), fileId);
+            if (!planeHelper.empty())
+                observeMatchedText(planeHelper, metaInfoState.queryPlane(event), fileId);
+            if (!logicalNameHelper.empty())
+                observeMatchedText(logicalNameHelper, metaInfoState.queryLogicalFileName(event), fileId);
         }
 
         bool matches(const CEvent& event, const CEventAttribute& attribute) const override
@@ -365,46 +353,45 @@ protected:
 #if defined(_DEBUG)
             assertex(attribute.queryId() == EvAttrFileId);
 #endif
-            return matchedPaths.count(attribute.queryNumericValue()) || UnsignedFilterTerm::matches(event, attribute);
+            return matchedDerivations.count(attribute.queryNumericValue()) || UnsignedFilterTerm::matches(event, attribute);
         }
 
         bool acceptToken(const char* token, FilterTermComparison comp) override
         {
-            if (UnsignedFilterTerm::acceptToken(token, comp))
-                return true;
-            return helper.acceptToken(token, comp);
+            return UnsignedFilterTerm::acceptToken(token, comp);
         }
 
-        // Returns true when the supplied text value is present and matches the
-        // string criteria accepted by this filter term.
-        // text: Candidate text considered for matching.
-        // return: True if text is non-empty and matches helper; otherwise false.
-        bool checkMatchedText(const char* text) const
+        bool acceptMetaPath(const char* values)
         {
-            return !isEmptyString(text) && helper.matches(text);
+            return acceptMetaValues(pathHelper, values);
         }
 
-        // Applies text matching for the supplied file and records the file id in
-        // matchedPaths when the text matches, allowing later file-id based matches.
-        // text: Candidate text considered for matching.
-        // fileId: File identifier associated with the candidate text.
-        // return: True if the text matched and fileId was recorded; otherwise false.
-        //
-        // The method is const because it is called from the const observe() method.
-        // Concurrent access to the mutable matchedPaths is not possible and no
-        // synchronization is required.
-        bool observeMatchedText(const char* text, __uint64 fileId) const
+        bool acceptMetaPlane(const char* values)
         {
-            if (checkMatchedText(text))
-            {
-                matchedPaths.insert(fileId);
-                return true;
-            }
-            return false;
+            return acceptMetaValues(planeHelper, values);
         }
 
-        StringMatchHelper helper;
-        mutable std::set<__uint64> matchedPaths;
+        bool acceptMetaLogicalFileName(const char* values)
+        {
+            return acceptMetaValues(logicalNameHelper, values);
+        }
+
+    private:
+        bool acceptMetaValues(StringMatchHelper& helper, const char* values)
+        {
+            return acceptStringMatchValues(helper, values);
+        }
+
+        void observeMatchedText(const StringMatchHelper& helper, const char* text, __uint64 fileId) const
+        {
+            if (!isEmptyString(text) && helper.matches(text))
+                matchedDerivations.insert(fileId);
+        }
+
+        StringMatchHelper pathHelper;
+        StringMatchHelper planeHelper;
+        StringMatchHelper logicalNameHelper;
+        mutable std::set<__uint64> matchedDerivations;
     };
 
     struct TraceIdFilterTerm : public StringFilterTerm
@@ -413,18 +400,12 @@ protected:
 
         virtual bool preScanRequired() const override
         {
-            return helper.preScanRequired([](const StringMatchHelper::PatternInfo& entry) {
-                if (entry.wildcard) // a wildcard could match a service name
-                    return true;
-                if (entry.pattern.length() != lenTraceId) // trace id length mismatch may match a service name
-                    return true;
-                for (char c : entry.pattern) // non-hex digit could match a service name
-                {
-                    if (!isxdigit((unsigned char)c))
-                        return true;
-                }
-                return false;
-            });
+            return !serviceNameHelper.empty();
+        }
+
+        bool acceptServiceName(const char* values)
+        {
+            return acceptStringMatchValues(serviceNameHelper, values);
         }
 
         // Override of the base class method to accept the corresponding service name, which is
@@ -451,11 +432,13 @@ protected:
             {
                 if (helper.matches(traceId.c_str()))
                     match = true;
-                else
+                else if (!serviceNameHelper.empty())
                 {
                     const char* serviceName = metaInfoState.queryServiceName(traceId.c_str());
-                    match = (!isEmptyString(serviceName) && helper.matches(serviceName));
+                    match = (!isEmptyString(serviceName) && serviceNameHelper.matches(serviceName));
                 }
+                else
+                    match = false;
                 // Only cache the result if this is not a QueryStop event, since QueryStop events
                 // trigger cache cleanup rather than cache population.
                 if (EventQueryStop != event.queryType())
@@ -463,6 +446,9 @@ protected:
             }
             return match;
         }
+
+    private:
+        StringMatchHelper serviceNameHelper;
     };
 
     struct TimestampFilterTerm : public UnsignedFilterTerm
@@ -581,16 +567,27 @@ public: // IEventFilter
             const char* termName = termNode.queryName();
             if (streq(termName, "attribute"))
             {
-                EventAttr id = queryEventAttribute(termNode.queryProp("@id"));
+                const char* idName = termNode.queryProp("@id");
                 const char* values = termNode.queryProp("@values");
-                if (EvAttrNone == id && isEmptyString(values))
+                if (isEmptyString(idName) && isEmptyString(values))
                     throw makeStringException(-1, "missing event attribute filter id and values");
-                if (EvAttrNone == id)
+                if (isEmptyString(idName))
                     throw makeStringExceptionV(-1, "missing event attribute filter id for values '%s'", values);
                 if (isEmptyString(values))
-                    throw makeStringExceptionV(-1, "missing event attribute filter values for id %s", queryEventAttributeName(id));
-                if (!acceptAttribute(id, values))
-                    throw makeStringExceptionV(-1, "event filter attribute %s term '%s' not accepted", queryEventAttributeName(id), values);
+                    throw makeStringExceptionV(-1, "missing event attribute filter values for id '%s'", idName);
+                if (strncmp(idName, EVENT_META_PREFIX, sizeof(EVENT_META_PREFIX) - 1) == 0)
+                {
+                    if (!acceptMetaAttribute(idName, values))
+                        throw makeStringExceptionV(-1, "event filter meta attribute '%s' term '%s' unsupported", idName, values);
+                }
+                else
+                {
+                    EventAttr id = queryEventAttribute(idName);
+                    if (EvAttrNone == id)
+                        throw makeStringExceptionV(-1, "unknown event attribute filter id '%s' (use meta.* names for derived attributes)", idName);
+                    if (!acceptAttribute(id, values))
+                        throw makeStringExceptionV(-1, "event filter attribute '%s' term '%s' not accepted", queryEventAttributeName(id), values);
+                }
             }
             else if (streq(termName, "event"))
             {
@@ -745,9 +742,22 @@ public: // IEventFilter
         // The preceding switch statements must return or throw for all cases.
     }
 
+    virtual bool acceptMetaAttribute(const char* name, const char* values) override
+    {
+        if (streq(name, EVENT_META_PATH))
+            return ensureTerm<FileIdFilterTerm>(EvAttrFileId)->acceptMetaPath(values);
+        if (streq(name, EVENT_META_PLANE))
+            return ensureTerm<FileIdFilterTerm>(EvAttrFileId)->acceptMetaPlane(values);
+        if (streq(name, EVENT_META_LOGICAL_FILE_NAME))
+            return ensureTerm<FileIdFilterTerm>(EvAttrFileId)->acceptMetaLogicalFileName(values);
+        if (streq(name, EVENT_META_SERVICE_NAME))
+            return ensureTerm<TraceIdFilterTerm>(EvAttrEventTraceId)->acceptServiceName(values);
+        return false;
+    }
+
 protected:
     template <typename term_type_t>
-    FilterTerm* ensureTerm(EventAttr id)
+    term_type_t* ensureTerm(EventAttr id)
     {
         if (id <= EvAttrNone || id >= EvAttrMax)
             throw makeStringExceptionV(-1, "event attribute id %d out of range", int(id));
@@ -757,7 +767,7 @@ protected:
         else if (dynamic_cast<term_type_t*>(terms[id].get()) == nullptr)
             throw makeStringExceptionV(-1, "event attribute id %d has a different type of filter term", int(id));
 #endif
-        return terms[id].get();
+        return static_cast<term_type_t*>(terms[id].get());
     }
 
     // Examines the given token string for an optional comparison designation at thestart of the
@@ -865,30 +875,18 @@ class EventFilterTests : public CppUnit::TestFixture
     CPPUNIT_TEST(testFilterByAttributeByTraceIdNoPreScan);
     CPPUNIT_TEST(testFilterByAttributeByTraceId);
     CPPUNIT_TEST(testFilterByAttributeByTraceIdPreScanDecisions);
+    CPPUNIT_TEST(testAcceptMetaAttributeRejectsUnsupportedNames);
+    CPPUNIT_TEST(testConfigureRejectsUnknownMetaAttributeName);
+    CPPUNIT_TEST(testConfigureRejectsEmptyMetaAttributeId);
     CPPUNIT_TEST(testFilterByAttributeByFileIdNumericPathMatch);
     CPPUNIT_TEST(testFilterByAttributeByFileIdPlaneMatch);
+    CPPUNIT_TEST(testFilterByAttributeByFileIdMetaPathPlaneOrMatch);
     CPPUNIT_TEST_SUITE_END();
 
     class EventFilterProbe : public CEventFilter
     {
     public:
         EventFilterProbe(CMetaInfoState& _metaState) : CEventFilter(_metaState) {}
-
-        static bool helperPreScanRequiredWithNullPredicate(const char* token, FilterTermComparison comp)
-        {
-            StringMatchHelper helper;
-            helper.acceptToken(token, comp);
-            return helper.preScanRequired(nullptr);
-        }
-
-        static bool helperPreScanRequiredWithWildcardPredicate(const char* token, FilterTermComparison comp)
-        {
-            StringMatchHelper helper;
-            helper.acceptToken(token, comp);
-            return helper.preScanRequired([](const StringMatchHelper::PatternInfo& entry) {
-                return entry.wildcard;
-            });
-        }
     };
 
 public:
@@ -900,12 +898,20 @@ public:
         return filter->preScanRequired();
     }
 
+    bool queryServiceNamePreScanRequired(const char* values)
+    {
+        CMetaInfoState metaInfoState;
+        Owned<IEventFilter> filter = createEventFilter(metaInfoState);
+        CPPUNIT_ASSERT(filter->acceptMetaAttribute(EVENT_META_SERVICE_NAME, values));
+        return filter->preScanRequired();
+    }
+
     void testFilterByAttributeByFileIdPlaneMatch()
     {
         constexpr const char* testData = R"!!!(
             <test>
                 <link kind="event-filter">
-                    <attribute id="fileId" values="[eq]myplane"/>
+                    <attribute id="meta.Plane" values="[eq]myplane"/>
                 </link>
                 <input>
                     <event type="PlaneInformation" Plane="myplane" Path="/path/to/file/" IsStriped="0" />
@@ -950,6 +956,38 @@ public:
         )!!!";
         testEventVisitationLinks(testData, PTEFlenientParsing);
     }
+
+    void testFilterByAttributeByFileIdMetaPathPlaneOrMatch()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link kind="event-filter">
+                    <attribute id="meta.Path" values="*path/to/file/*"/>
+                    <attribute id="meta.Plane" values="[eq]otherplane"/>
+                </link>
+                <input>
+                    <event type="PlaneInformation" Plane="myplane" Path="/path/to/file/" IsStriped="0" />
+                    <event type="PlaneInformation" Plane="otherplane" Path="/other/to/file/" IsStriped="0" />
+                    <event type="FileInformation" FileId="1" Path="/path/to/file/some/logical/file::1"/>
+                    <event type="FileInformation" FileId="2" Path="/other/to/file/some/logical/file::2"/>
+                    <event type="FileInformation" FileId="3" Path="/neither/to/file/some/logical/file::3"/>
+                    <event type="IndexCacheMiss" FileId="1"/>
+                    <event type="IndexCacheMiss" FileId="2"/>
+                    <event type="IndexCacheMiss" FileId="3"/>
+                </input>
+                <expect>
+                    <event type="PlaneInformation" Plane="myplane" Path="/path/to/file/" IsStriped="0" />
+                    <event type="PlaneInformation" Plane="otherplane" Path="/other/to/file/" IsStriped="0" />
+                    <event type="FileInformation" FileId="1" Path="/path/to/file/some/logical/file::1"/>
+                    <event type="FileInformation" FileId="2" Path="/other/to/file/some/logical/file::2"/>
+                    <event type="IndexCacheMiss" FileId="1"/>
+                    <event type="IndexCacheMiss" FileId="2"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData, PTEFlenientParsing);
+    }
+
     void testFilterByEventsUnfiltered()
     {
         EventType foo;
@@ -1321,7 +1359,8 @@ public:
         constexpr const char* testData = R"!!!(
             <test>
                 <link kind="event-filter">
-                    <attribute id="fileId" values="[lte]1,3-4,*6*,[gt]7"/>
+                    <attribute id="fileId" values="[lte]1,3-4,[gt]7"/>
+                    <attribute id="meta.Path" values="*6*"/>
                     <event list="[neq]FileInformation"/>
                 </link>
                 <input>
@@ -1359,7 +1398,7 @@ public:
         constexpr const char* testData = R"!!!(
             <test>
                 <link kind="event-filter">
-                    <attribute id="fileId" values="[eq]some::logical::file::1,[gte]some::logical::file::7,*4*"/>
+                    <attribute id="meta.LogicalFileName" values="[eq]some::logical::file::1,[gte]some::logical::file::7,*4*"/>
                     <event list="[neq]FileInformation"/>
                 </link>
                 <input>
@@ -1398,7 +1437,7 @@ public:
         constexpr const char* testData = R"!!!(
             <test>
                 <link kind="event-filter">
-                    <attribute id="fileId" values="[eq]some::logical::file::1,[gte]some::logical::file::7,*4*"/>
+                    <attribute id="meta.LogicalFileName" values="[eq]some::logical::file::1,[gte]some::logical::file::7,*4*"/>
                 </link>
                 <input>
                     <event type="PlaneInformation" Plane="myplane" Path="/path/to/file/" IsStriped="0" />
@@ -1774,7 +1813,8 @@ public:
         constexpr const char* testData = R"!!!(
             <test>
                 <link kind="event-filter">
-                    <attribute id="EventTraceId" values="trace-001,dali*"/>
+                    <attribute id="EventTraceId" values="trace-001"/>
+                    <attribute id="meta.ServiceName" values="dali*"/>
                 </link>
                 <input>
                     <event type="IndexCacheHit" EventTraceId="trace-003"/>
@@ -1799,7 +1839,8 @@ public:
             <test>
                 <noPreScan/>
                 <link kind="event-filter">
-                    <attribute id="EventTraceId" values="trace-001,dali*"/>
+                    <attribute id="EventTraceId" values="trace-001"/>
+                    <attribute id="meta.ServiceName" values="dali*"/>
                 </link>
                 <input>
                     <event type="IndexCacheHit" EventTraceId="trace-003"/>
@@ -1821,7 +1862,8 @@ public:
         constexpr const char* testData = R"!!!(
             <test>
                 <link kind="event-filter">
-                    <attribute id="EventTraceId" values="trace-001,dali*"/>
+                    <attribute id="EventTraceId" values="trace-001"/>
+                    <attribute id="meta.ServiceName" values="dali*"/>
                 </link>
                 <input>
                     <event type="QueryStart" EventTraceId="trace-001" ServiceName="roxie-service"/>
@@ -1848,25 +1890,53 @@ public:
     {
         START_TEST
 
-        // (1) null predicate path must be safe and return false.
-        CPPUNIT_ASSERT(!EventFilterProbe::helperPreScanRequiredWithNullPredicate("dali*", FilterTermComparison::Default));
+        // TraceId filtering alone never requires pre-scan.
+        CPPUNIT_ASSERT(!queryTraceIdPreScanRequired("00112233445566778899aabbccddeeff"));
+        CPPUNIT_ASSERT(!queryTraceIdPreScanRequired("00112233445566778899aabbccddee"));
+        CPPUNIT_ASSERT(!queryTraceIdPreScanRequired("00112233445566778899aabbccddeeff00"));
+        CPPUNIT_ASSERT(!queryTraceIdPreScanRequired("00112233445566778899aabbccddeefg"));
+        CPPUNIT_ASSERT(!queryTraceIdPreScanRequired("*service*"));
 
-        // (2) wildcard/default patterns with and without '*'/'?' should precompute wildcard correctly.
-        CPPUNIT_ASSERT(EventFilterProbe::helperPreScanRequiredWithWildcardPredicate("dali*", FilterTermComparison::Default));
-        CPPUNIT_ASSERT(EventFilterProbe::helperPreScanRequiredWithWildcardPredicate("dali?backend", FilterTermComparison::Default));
-        CPPUNIT_ASSERT(EventFilterProbe::helperPreScanRequiredWithWildcardPredicate("dali*", FilterTermComparison::Wildcard));
-        CPPUNIT_ASSERT(EventFilterProbe::helperPreScanRequiredWithWildcardPredicate("dali?backend", FilterTermComparison::Wildcard));
-        CPPUNIT_ASSERT(!EventFilterProbe::helperPreScanRequiredWithWildcardPredicate("00112233445566778899aabbccddeeff", FilterTermComparison::Default));
-        CPPUNIT_ASSERT(!EventFilterProbe::helperPreScanRequiredWithWildcardPredicate("00112233445566778899aabbccddeeff", FilterTermComparison::Wildcard));
-
-        // (3) 32-hex versus non-hex/length mismatch patterns.
-        CPPUNIT_ASSERT(!queryTraceIdPreScanRequired("00112233445566778899aabbccddeeff"));   // exact 32-hex trace id
-        CPPUNIT_ASSERT(queryTraceIdPreScanRequired("00112233445566778899aabbccddee"));      // length mismatch (short)
-        CPPUNIT_ASSERT(queryTraceIdPreScanRequired("00112233445566778899aabbccddeeff00"));  // length mismatch (long)
-        CPPUNIT_ASSERT(queryTraceIdPreScanRequired("00112233445566778899aabbccddeefg"));    // non-hex char
-        CPPUNIT_ASSERT(queryTraceIdPreScanRequired("*service*"));                           // wildcard pattern
+        // ServiceName meta filtering requires pre-scan.
+        CPPUNIT_ASSERT(queryServiceNamePreScanRequired("dali*"));
+        CPPUNIT_ASSERT(queryServiceNamePreScanRequired("dali?backend"));
+        CPPUNIT_ASSERT(queryServiceNamePreScanRequired("roxie-service"));
 
         END_TEST
+    }
+
+    void testAcceptMetaAttributeRejectsUnsupportedNames()
+    {
+        CMetaInfoState metaInfoState;
+        Owned<IEventFilter> filter = createEventFilter(metaInfoState);
+
+        CPPUNIT_ASSERT(!filter->acceptMetaAttribute("meta.Unknown", "foo"));
+        CPPUNIT_ASSERT(!filter->acceptMetaAttribute("meta.serviceName", "foo"));
+        CPPUNIT_ASSERT(!filter->acceptMetaAttribute("meta.Pathx", "foo"));
+    }
+
+    void testConfigureRejectsUnknownMetaAttributeName()
+    {
+        Owned<IPropertyTree> config = createPTree("operation");
+        IPropertyTree* term = config->addPropTree("attribute", createPTree("attribute"));
+        term->setProp("@id", "meta.Unknown");
+        term->setProp("@values", "foo");
+
+        CMetaInfoState metaInfoState;
+        Owned<IEventFilter> filter = createEventFilter(metaInfoState);
+        CPPUNIT_ASSERT_THROWS_IEXCEPTION(filter->configure(*config), "expected exception for unsupported meta attribute name");
+    }
+
+    void testConfigureRejectsEmptyMetaAttributeId()
+    {
+        Owned<IPropertyTree> config = createPTree("operation");
+        IPropertyTree* term = config->addPropTree("attribute", createPTree("attribute"));
+        term->setProp("@id", "");
+        term->setProp("@values", "foo");
+
+        CMetaInfoState metaInfoState;
+        Owned<IEventFilter> filter = createEventFilter(metaInfoState);
+        CPPUNIT_ASSERT_THROWS_IEXCEPTION(filter->configure(*config), "expected exception for empty attribute id");
     }
 };
 

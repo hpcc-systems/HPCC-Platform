@@ -25,6 +25,12 @@
 #include <set>
 #include <string>
 
+constexpr char EVENT_META_PREFIX[] = "meta.";
+constexpr char EVENT_META_SERVICE_NAME[] = "meta.ServiceName";
+constexpr char EVENT_META_LOGICAL_FILE_NAME[] = "meta.LogicalFileName";
+constexpr char EVENT_META_PATH[] = "meta.Path";
+constexpr char EVENT_META_PLANE[] = "meta.Plane";
+
 // Visitor that parses and caches file ID to path mappings and trace ID to service name mappings
 class event_decl CMetaInfoState : public CInterface
 {
