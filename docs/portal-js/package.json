@@ -11,13 +11,15 @@
     "build": "esbuild ./src/index.ts --format=iife --bundle --minify --tree-shaking=true --outfile=./dist/index.js",
     "watch": "esbuild ./src/index.ts --format=iife --bundle --sourcemap=inline --watch --outfile=./dist/index.js",
     "serve": "npx -y http-server --port=8888",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "update": "npx npm-check-updates -u -t minor",
+    "update-major": "npx npm-check-updates -u"
   },
   "author": "",
   "devDependencies": {
-    "@hpcc-js/common": "2.71.16",
-    "@hpcc-js/codemirror": "2.61.3",
-    "esbuild": "0.20.2",
-    "rimraf": "5.0.5"
+    "@hpcc-js/common": "2.73.6",
+    "@hpcc-js/codemirror": "2.66.5",
+    "esbuild": "0.28.1",
+    "rimraf": "5.0.10"
   }
 }
