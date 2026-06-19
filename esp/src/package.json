@@ -115,8 +115,12 @@
     "typescript-eslint": "8.44.1",
     "url-loader": "4.1.1",
     "webpack": "5.101.0",
-    "webpack-cli": "6.0.1",
-    "webpack-dev-server": "5.2.2"
+    "webpack-cli": "6.0.1"
+  },
+  "overrides": {
+    "@xmldom/xmldom": "0.9.10",
+    "undici": "7.28.0",
+    "tmp": "0.2.7"
   },
   "author": "HPCC Systems",
   "license": "Apache-2.0",
