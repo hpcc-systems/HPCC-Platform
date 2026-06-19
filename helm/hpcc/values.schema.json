@@ -1736,6 +1736,10 @@
           "type": "string",
           "description": "The name of the eclccserver process"
         },
+        "architecture": {
+          "type": "string",
+          "description": "CPU architecture for this eclccserver process. Used to bind eclccserver instances to matching target queues in mixed-architecture deployments."
+        },
         "maxActive": {
           "type": "integer",
           "minimum": 1,
@@ -1961,6 +1965,10 @@
         "replicas": {
           "type": "integer"
         },
+        "architecture": {
+          "type": "string",
+          "description": "CPU architecture for this eclagent target. Used to bind eclccserver instances to matching target queues in mixed-architecture deployments."
+        },
         "maxActive": {
           "type": "integer",
           "minimum": 1,
@@ -2072,6 +2080,10 @@
         "name": {
           "type": "string",
           "description": "The name of the roxie process"
+        },
+        "architecture": {
+          "type": "string",
+          "description": "CPU architecture for this Roxie target. Used to bind eclccserver instances to matching target queues in mixed-architecture deployments."
         },
         "prefix": {
           "type": "string",
@@ -2913,6 +2925,10 @@
         "name": {
           "type": "string",
           "description": "The name of the thor process"
+        },
+        "architecture": {
+          "type": "string",
+          "description": "CPU architecture for this Thor target. Used to bind eclccserver instances to matching target queues in mixed-architecture deployments."
         },
         "prefix": {
           "type": "string",

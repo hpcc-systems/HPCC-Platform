@@ -7138,6 +7138,15 @@ StringBuffer & normalizeTargetArchitecture(StringBuffer & targetArchitecture, co
     return targetArchitecture.append(normalized.str());
 }
 
+bool targetArchitecturesMatch(const char * left, const char * right)
+{
+    StringBuffer normalizedLeft;
+    StringBuffer normalizedRight;
+    normalizeTargetArchitecture(normalizedLeft, left);
+    normalizeTargetArchitecture(normalizedRight, right);
+    return strsame(normalizedLeft, normalizedRight);
+}
+
 StringBuffer & getWorkUnitTargetArchitecture(StringBuffer & targetArchitecture, const IConstWorkUnit * wu)
 {
     SCMStringBuffer architecture;

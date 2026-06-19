@@ -1668,6 +1668,7 @@ extern WORKUNIT_API bool parseGraphTimerLabel(const char *label, StringAttr &gra
 extern WORKUNIT_API bool parseGraphScope(const char *scope, StringAttr &graphName, unsigned & graphNum, unsigned &subGraphId);
 extern WORKUNIT_API void addExceptionToWorkunit(IWorkUnit * wu, ErrorSeverity severity, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, unsigned activity);
 extern WORKUNIT_API StringBuffer & normalizeTargetArchitecture(StringBuffer & targetArchitecture, const char * architecture);
+extern WORKUNIT_API bool targetArchitecturesMatch(const char * left, const char * right);
 extern WORKUNIT_API StringBuffer & getWorkUnitTargetArchitecture(StringBuffer & targetArchitecture, const IConstWorkUnit * wu);
 extern WORKUNIT_API void setWorkUnitTargetArchitecture(IWorkUnit * wu, const char * architecture);
 extern WORKUNIT_API StringBuffer & getProcessTargetArchitecture(StringBuffer & targetArchitecture, const IPropertyTree * process);

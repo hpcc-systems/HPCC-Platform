@@ -26,6 +26,7 @@ class wuTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testLooksLikeAPublishWuid);
         CPPUNIT_TEST(testWuidPattern);
         CPPUNIT_TEST(testTargetArchitectureNormalization);
+        CPPUNIT_TEST(testTargetArchitectureMatch);
         CPPUNIT_TEST(testTargetArchitectureDefaults);
         CPPUNIT_TEST(testWorkUnitTargetArchitecturePersistence);
     CPPUNIT_TEST_SUITE_END();
@@ -127,6 +128,15 @@ public:
         CPPUNIT_ASSERT_EQUAL_STR(targetArchitectureArm64Linux, normalizeTargetArchitecture(normalized, " AARCH64-LINUX ").str());
         CPPUNIT_ASSERT_EQUAL_STR(targetArchitectureArm64MacOS, normalizeTargetArchitecture(normalized, "arm64-darwin").str());
         CPPUNIT_ASSERT_EQUAL_STR("riscv64-linux", normalizeTargetArchitecture(normalized, " RiscV64-Linux ").str());
+    }
+
+    void testTargetArchitectureMatch()
+    {
+        CPPUNIT_ASSERT(targetArchitecturesMatch(" AMD64 ", "x86_64-linux"));
+        CPPUNIT_ASSERT(targetArchitecturesMatch("aarch64", "arm64-linux"));
+        CPPUNIT_ASSERT(targetArchitecturesMatch(nullptr, ""));
+        CPPUNIT_ASSERT(!targetArchitecturesMatch("arm64-linux", "x86_64-linux"));
+        CPPUNIT_ASSERT(!targetArchitecturesMatch("arm64-macos", "arm64-linux"));
     }
 
     void testTargetArchitectureDefaults()

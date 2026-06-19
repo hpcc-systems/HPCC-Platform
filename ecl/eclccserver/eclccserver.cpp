@@ -226,6 +226,88 @@ public:
 
 static bool guardGitUpdates = false;
 static StringBuffer gitLockKey;
+
+static bool architectureMismatchAllowed(const IPropertyTree *config)
+{
+    return config && config->getPropBool("@allowTargetArchitectureMismatch", false);
+}
+
+static bool includeQueueForArchitecture(const char *targetName, const char *serverArchitecture, const char *targetArchitecture, bool allowMismatch)
+{
+    if (targetArchitecturesMatch(serverArchitecture, targetArchitecture))
+        return true;
+
+    VStringBuffer message("Target '%s' architecture '%s' does not match eclccserver architecture '%s'", targetName, targetArchitecture, serverArchitecture);
+    if (!allowMismatch)
+        throwStringExceptionV(0, "%s", message.str());
+    UWARNLOG("%s; skipping queue", message.str());
+    return false;
+}
+
+static void appendTargetQueue(StringBuffer &queueNames, const char *targetName)
+{
+    if (queueNames.length())
+        queueNames.append(',');
+    getClusterEclCCServerQueueName(queueNames, targetName);
+}
+
+#ifndef _CONTAINERIZED
+static IPropertyTree *queryNamedProcess(IPropertyTree &root, const char *processType, const char *processName)
+{
+    if (isEmptyString(processName))
+        return nullptr;
+    VStringBuffer xpath("Software/%s[@name=\"%s\"]", processType, processName);
+    return root.queryPropTree(xpath.str());
+}
+
+static StringBuffer &getTargetArchitecture(StringBuffer &processArchitecture, const char *processType, const char *processName, IPropertyTree &root)
+{
+    IPropertyTree *process = queryNamedProcess(root, processType, processName);
+    processArchitecture.clear();
+    getProcessTargetArchitecture(processArchitecture, process);
+    return processArchitecture;
+}
+
+static void checkConsistentTargetArchitecture(StringBuffer &targetArchitecture, const char *targetName, const char *processType, const char *processName, const char *processArchitecture)
+{
+    if (targetArchitecture.isEmpty())
+    {
+        targetArchitecture.set(processArchitecture);
+        return;
+    }
+    if (!targetArchitecturesMatch(targetArchitecture.str(), processArchitecture))
+        throwStringExceptionV(0, "Target '%s' references mixed target architectures '%s' and '%s' from %s process '%s'",
+                              targetName, targetArchitecture.str(), processArchitecture, processType, processName);
+}
+
+static StringBuffer &getTargetRuntimeArchitecture(StringBuffer &targetArchitecture, IPropertyTree &root, IPropertyTree &target)
+{
+    targetArchitecture.clear();
+    const char *targetName = target.queryProp("@name");
+
+    Owned<IPropertyTreeIterator> thorClusters = target.getElements("ThorCluster");
+    ForEach(*thorClusters)
+    {
+        const char *thorName = thorClusters->query().queryProp("@process");
+        StringBuffer processArchitecture;
+        getTargetArchitecture(processArchitecture, "ThorCluster", thorName, root);
+        checkConsistentTargetArchitecture(targetArchitecture, targetName, "ThorCluster", thorName, processArchitecture.str());
+    }
+
+    const char *roxieName = target.queryProp("RoxieCluster/@process");
+    if (!isEmptyString(roxieName))
+    {
+        StringBuffer processArchitecture;
+        getTargetArchitecture(processArchitecture, "RoxieCluster", roxieName, root);
+        checkConsistentTargetArchitecture(targetArchitecture, targetName, "RoxieCluster", roxieName, processArchitecture.str());
+    }
+
+    if (targetArchitecture.isEmpty())
+        normalizeTargetArchitecture(targetArchitecture, nullptr);
+    return targetArchitecture;
+}
+#endif
+
 static void configGitLock()
 {
     Owned<IPropertyTree> config = getComponentConfig();
@@ -269,6 +351,9 @@ static StringBuffer &getQueues(StringBuffer &queueNames, bool isLingeringServer)
 {
     Owned<IPropertyTree> config = getComponentConfig();
     const char * processName = config->queryProp("@name");
+    StringBuffer serverArchitecture;
+    getProcessTargetArchitecture(serverArchitecture, config);
+    bool allowMismatch = architectureMismatchAllowed(config);
 #ifdef _CONTAINERIZED
     bool filtered = false;
     std::unordered_map<std::string, bool> listenQueues;
@@ -287,23 +372,46 @@ static StringBuffer &getQueues(StringBuffer &queueNames, bool isLingeringServer)
     {
         IPTree &queue = queues->query();
         const char *qname = queue.queryProp("@name");
-        if (!filtered || listenQueues.count(qname))
+        if (!isEmptyString(qname) && (!filtered || listenQueues.count(qname)))
         {
-            if (queueNames.length())
-                queueNames.append(",");
-            getClusterEclCCServerQueueName(queueNames, qname);
+            StringBuffer targetArchitecture;
+            getProcessTargetArchitecture(targetArchitecture, &queue);
+            if (includeQueueForArchitecture(qname, serverArchitecture.str(), targetArchitecture.str(), allowMismatch))
+                appendTargetQueue(queueNames, qname);
         }
     }
     if (isLingeringServer)
     {
-        queueNames.append(",");
-        getClusterEclCCServerCompileQueueName(queueNames, processName);
+        if (queueNames.length())
+        {
+            queueNames.append(",");
+            getClusterEclCCServerCompileQueueName(queueNames, processName);
+        }
     }
 #else
-    SCMStringBuffer scmQueueNames;
-    getEclCCServerQueueNames(scmQueueNames, processName);
-    queueNames.append(scmQueueNames.str());
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    Owned<IPropertyTree> root = &env->getPTree();
+    IPropertyTree *serverProcess = queryNamedProcess(*root, "EclCCServerProcess", processName);
+    if (serverProcess)
+        getProcessTargetArchitecture(serverArchitecture, serverProcess);
+
+    VStringBuffer xpath("EclCCServerProcess[@process=\"%s\"]", processName);
+    Owned<IPropertyTreeIterator> targets = root->getElements("Software/Topology/Cluster");
+    ForEach(*targets)
+    {
+        IPropertyTree &target = targets->query();
+        const char *targetName = target.queryProp("@name");
+        if (!isEmptyString(targetName) && target.hasProp(xpath.str()))
+        {
+            StringBuffer targetArchitecture;
+            getTargetRuntimeArchitecture(targetArchitecture, *root, target);
+            if (includeQueueForArchitecture(targetName, serverArchitecture.str(), targetArchitecture.str(), allowMismatch))
+                appendTargetQueue(queueNames, targetName);
+        }
+    }
 #endif
+    PROGLOG("eclccserver '%s' architecture '%s' listening queue(s): %s", processName, serverArchitecture.str(), queueNames.str());
     return queueNames;
 }
 
@@ -1240,6 +1348,8 @@ public:
         //should exit and then eclccseverver will start new instances with the updated queues.
         StringBuffer queueNames;
         getQueues(queueNames, true);
+        if (!queueNames.length())
+            throw MakeStringException(0, "No queues found to listen on");
         queue.setown(createJobQueue(queueNames));
         queue->connect(true);
     }

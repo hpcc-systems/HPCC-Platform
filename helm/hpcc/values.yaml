@@ -601,6 +601,8 @@ dfuserver:
 
 eclagent:
 - name: hthor
+  ## architecture identifies the CPU architecture used by this target. Set this when deploying mixed-architecture clusters.
+  #architecture: x86_64-linux
   ## replicas indicates how many eclagent pods should be started
   replicas: 1
   ## maxActive controls how many workunits may be active at once (per replica)
@@ -630,6 +632,8 @@ eclagent:
 
 eclccserver:
 - name: myeclccserver
+  ## architecture identifies the CPU architecture of this eclccserver. Set this when deploying mixed-architecture clusters.
+  #architecture: x86_64-linux
   replicas: 1
   ## Set to false if you want to launch each workunit compile in its own container, true to run as child processes in eclccserver pod.
   useChildProcesses: false
@@ -882,6 +886,8 @@ roxie:
 # - commonName: bcd.example.com
 
   ## replicas indicates the number of replicas per channel
+  ## architecture identifies the CPU architecture used by this Roxie target. Set this when deploying mixed-architecture clusters.
+  #architecture: x86_64-linux
   replicas: 2
   numChannels: 2
   ## Set singleNode to true for a scalable cluster of "single-node" roxie servers, each implementing all channels locally
@@ -929,6 +935,8 @@ roxie:
 ## [worker/manager]Memory.thirdParty.
 thor:
 - name: thor
+  ## architecture identifies the CPU architecture used by this Thor target. Set this when deploying mixed-architecture clusters.
+  #architecture: x86_64-linux
   #hold: true # (for developers, can be used on any component). Component will enter a hold loop at config load time.
   #holdSlave: 0 # (for developers). Similar to hold, but 0 = master, 1-N = worker #.
   #holdAgent: true # (for developers). Similar to hold, but for this Thor's eclagent.

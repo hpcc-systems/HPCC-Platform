@@ -1306,10 +1306,14 @@ Validate the Thors associated with two aux queues match
 {{- $incoming := .incoming -}}
 {{- $currentPrefix := get $current "prefix" -}}
 {{- $incomingPrefix := get $incoming "prefix" -}}
+{{- $currentArchitecture := get $current "architecture" -}}
+{{- $incomingArchitecture := get $incoming "architecture" -}}
 {{- if not (eq $currentPrefix $incomingPrefix) -}}
  {{- $_ := fail (printf "Thor '%s' defines additional queue '%s' with different prefix to existing Thor using same aux queue" $incoming.name $current.name) -}}
 {{- else if not (eq $current.width $incoming.width) -}}
  {{- $_ := fail (printf "Thor '%s' defines additional queue '%s' with different width to existing Thor using same aux queue" $incoming.name $current.name) -}}
+{{- else if not (eq $currentArchitecture $incomingArchitecture) -}}
+ {{- $_ := fail (printf "Thor '%s' defines additional queue '%s' with different architecture to existing Thor using same aux queue" $incoming.name $current.name) -}}
 {{- end -}}
 {{- end -}}
 
@@ -1322,6 +1326,9 @@ Generate instance queue names
  {{- if not .disabled -}}
 - name: {{ .name }}
   type: {{ .type | default "hthor" }}
+  {{- if hasKey . "architecture" }}
+  architecture: {{ .architecture }}
+  {{- end }}
   {{- if hasKey . "prefix" }}
   prefix: {{ .prefix }}
   {{- end }}
@@ -1331,6 +1338,9 @@ Generate instance queue names
  {{- if not .disabled -}}
 - name: {{ .name }}
   type: roxie
+  {{- if hasKey . "architecture" }}
+  architecture: {{ .architecture }}
+  {{- end }}
   {{- if hasKey . "prefix" }}
   prefix: {{ .prefix }}
   {{- end }}
@@ -1347,6 +1357,9 @@ Generate instance queue names
 {{- range $.Values.thor -}}
  {{- if not .disabled -}}
   {{- $queueItem := dict "name" .name "type" "thor" -}}
+  {{- if hasKey . "architecture" -}}
+   {{- $_ := set $queueItem "architecture" .architecture -}}
+  {{- end -}}
   {{- if hasKey . "prefix" -}}
    {{- $_ := set $queueItem "prefix" .prefix -}}
   {{- end -}}
