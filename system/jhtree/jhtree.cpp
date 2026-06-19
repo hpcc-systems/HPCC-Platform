@@ -885,9 +885,9 @@ public:
     }
 };
 
-// Maximum cost/benefit seen for 16 buckets, which does not skew the LRU list too much
-// See HPCC-35152 for a discussion of the tradeoffs
-static constexpr unsigned cacheBits = 4;
+// See HPCC-35152 for a discussion of the tradeoffs over the number of bits
+// Increased to 32 since optimizations elsewhere have increased this as a potential bottleneck
+static constexpr unsigned cacheBits = 5;
 static constexpr unsigned cacheBuckets = 1U << cacheBits;
 
 class CNodeMRUCache
