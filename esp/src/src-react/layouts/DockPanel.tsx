@@ -75,6 +75,27 @@ function formatLayout(layout?: any): DockPanelLayout | undefined {
     return undefined;
 }
 
+// Extract every widget __id from a phosphor layout tree so we can validate
+// whether a saved layout still matches the currently-mounted widget instances.
+function extractLayoutWidgetIds(layout: any): string[] {
+    if (!layout) return [];
+    if (layout.type === "tab-area") {
+        return (layout.widgets ?? [])
+            .map((w: any) => {
+                if (typeof w === "string") return w;
+                return w?.__id ?? w?.id;
+            })
+            .filter((id: any): id is string => typeof id === "string" && id.length > 0);
+    }
+    if (layout.type === "split-area") {
+        return (layout.children ?? []).flatMap(extractLayoutWidgetIds);
+    }
+    if (layout.main) {
+        return extractLayoutWidgetIds(layout.main);
+    }
+    return [];
+}
+
 export class ResetableDockPanel extends HPCCDockPanel {
 
     protected _origLayout: DockPanelLayout | undefined;
@@ -82,8 +103,8 @@ export class ResetableDockPanel extends HPCCDockPanel {
     protected _visibility: { [id: string]: boolean };
     protected _disposed = false;
 
-    markDisposed() {
-        this._disposed = true;
+    markDisposed(disposed: boolean = true) {
+        this._disposed = disposed;
     }
 
     resetLayout() {
@@ -99,7 +120,15 @@ export class ResetableDockPanel extends HPCCDockPanel {
         if (this._origLayout === undefined) {
             this._origLayout = formatLayout(this.layout());
         }
-        this.layout(layout);
+        // Only restore if every saved widget ID exists in the current dock panel.
+        // Stale IDs (from a previous mount or session) cause phosphor to create
+        // empty dummy WidgetAdapters that replace the real ReactWidget adapters,
+        // leaving every panel blank after back-navigation.
+        const currentIds = new Set(this.widgets().map(w => w.id()));
+        const savedIds = extractLayoutWidgetIds(layout);
+        if (savedIds.length > 0 && savedIds.every(id => currentIds.has(id))) {
+            this.layout(layout);
+        }
         return this;
     }
 
@@ -206,7 +235,7 @@ export const DockPanel: React.FunctionComponent<DockPanelProps> = ({
         return retVal;
     });
 
-    // Call onCreate once after mount, with cleanup for the pending timeout and disposal on unmount
+    // Call onCreate once after mount; mark disposed and clean up on unmount.
     React.useEffect(() => {
         let timeoutId: ReturnType<typeof setTimeout> | undefined;
         if (onDockPanelCreateRef.current) {

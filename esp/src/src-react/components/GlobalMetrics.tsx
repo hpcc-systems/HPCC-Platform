@@ -213,14 +213,14 @@ export const GlobalMetrics: React.FunctionComponent<GlobalMetricsProps> = ({
         <HolyGrail
             header={<Toolbar className={styles.toolbar}>
                 <ToolbarGroup>
-                    <ToolbarButton icon={<ArrowClockwiseRegular />} onClick={() => { fetchData(dateParser(from), dateParser(to)); }}>{nlsHPCC.Refresh}</ToolbarButton>
-                    <DatePicker value={start} onSelectDate={onFromChange} placeholder={nlsHPCC.FromDate} className={styles.root} />
-                    <ArrowRightFilled />
-                    <DatePicker value={end} onSelectDate={onToChange} showCloseButton={true} placeholder={nlsHPCC.ToDate} className={styles.root} />
-                    <ToolbarButton icon={<ArrowResetFilled title={nlsHPCC.Reset} />} onClick={() => { pushParams({ from: undefined, to: undefined }); }} title={nlsHPCC.Reset}></ToolbarButton>
+                    <ToolbarButton key="refresh" icon={<ArrowClockwiseRegular />} onClick={() => { fetchData(dateParser(from), dateParser(to)); }}>{nlsHPCC.Refresh}</ToolbarButton>
+                    <DatePicker key="from" value={start} onSelectDate={onFromChange} placeholder={nlsHPCC.FromDate} className={styles.root} />
+                    <ArrowRightFilled key="date-range-separator" />
+                    <DatePicker key="to" value={end} onSelectDate={onToChange} showCloseButton={true} placeholder={nlsHPCC.ToDate} className={styles.root} />
+                    <ToolbarButton key="reset" icon={<ArrowResetFilled title={nlsHPCC.Reset} />} onClick={() => { pushParams({ from: undefined, to: undefined }); }} title={nlsHPCC.Reset}></ToolbarButton>
                 </ToolbarGroup>
                 <ToolbarGroup>
-                    <Label style={{ color: tokens.colorBrandForeground1 }} className={styles.label}>{nlsHPCC.Total}:</Label><Badge appearance="tint" color="brand">{data.length}</Badge>
+                    <Label key="total-label" style={{ color: tokens.colorBrandForeground1 }} className={styles.label}>{nlsHPCC.Total}:</Label><Badge key="total-value" appearance="tint" color="brand">{data.length}</Badge>
                 </ToolbarGroup>
             </Toolbar>}
             main={

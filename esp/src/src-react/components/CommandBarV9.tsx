@@ -160,7 +160,7 @@ function renderItem(item: ICommandBarItemProps, buttonClassName?: string): React
         return <React.Fragment key={item.key}>{item.onRender(item as any, () => undefined) as any}</React.Fragment>;
     }
     if (item.itemType === ContextualMenuItemType.Divider) {
-        return <ToolbarDivider />;
+        return <ToolbarDivider key={item.key} />;
     }
     const icon = renderIcon(item.iconProps?.iconName, item.iconElement);
     const title = item.iconOnly ? item.text : undefined;
@@ -287,7 +287,7 @@ export const CommandBar: React.FunctionComponent<CommandBarV9Props> = ({ items, 
                         </OverflowItem>
                     );
                 })}
-                <ToolbarOverflowMenu items={items} />
+                <ToolbarOverflowMenu key="overflow-menu" items={items} />
             </ToolbarGroup>
         </Overflow>
         <ToolbarGroup role="presentation" className={styles.farItemsGroup}>

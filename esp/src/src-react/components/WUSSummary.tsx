@@ -281,22 +281,22 @@ export const WUSSummary: React.FunctionComponent<WUSSummaryProps> = ({
         <HolyGrail
             header={<Toolbar className={styles.toolbar}>
                 <ToolbarGroup>
-                    <ToolbarButton icon={<ArrowClockwiseRegular />} onClick={() => { fetchData(dateParser(from), dateParser(to)); }}>Refresh</ToolbarButton>
-                    <DatePicker value={start} onSelectDate={onFromChange} placeholder={nlsHPCC.FromDate} className={styles.root} />
-                    <ArrowRightFilled />
-                    <DatePicker value={end} onSelectDate={onToChange} showCloseButton={true} placeholder={nlsHPCC.ToDate} className={styles.root} />
-                    <ToolbarButton icon={<ArrowResetFilled title={nlsHPCC.Reset} />} onClick={() => { pushParams({ from: undefined, to: undefined, filter: undefined }); setSearchBoxValue(""); }} title={nlsHPCC.Reset}></ToolbarButton>
+                    <ToolbarButton key="refresh" icon={<ArrowClockwiseRegular />} onClick={() => { fetchData(dateParser(from), dateParser(to)); }}>Refresh</ToolbarButton>
+                    <DatePicker key="from" value={start} onSelectDate={onFromChange} placeholder={nlsHPCC.FromDate} className={styles.root} />
+                    <ArrowRightFilled key="date-range-separator" />
+                    <DatePicker key="to" value={end} onSelectDate={onToChange} showCloseButton={true} placeholder={nlsHPCC.ToDate} className={styles.root} />
+                    <ToolbarButton key="reset" icon={<ArrowResetFilled title={nlsHPCC.Reset} />} onClick={() => { pushParams({ from: undefined, to: undefined, filter: undefined }); setSearchBoxValue(""); }} title={nlsHPCC.Reset}></ToolbarButton>
                 </ToolbarGroup>
                 <ToolbarDivider />
                 <ToolbarGroup>
-                    <SearchBox value={searchBoxValue} onChange={onFilterChange} placeholder={nlsHPCC.Filter} contentBefore={<FilterRegular />} className={styles.searchBox} />
+                    <SearchBox key="filter" value={searchBoxValue} onChange={onFilterChange} placeholder={nlsHPCC.Filter} contentBefore={<FilterRegular />} className={styles.searchBox} />
                 </ToolbarGroup>
                 <ToolbarDivider />
                 <ToolbarGroup>
-                    <Label style={{ color: tokens.colorStatusSuccessForeground1 }} className={styles.label}>{nlsHPCC.Completed}:</Label><Badge appearance="tint" color="success">{completed.length}</Badge>
-                    <Label style={{ color: tokens.colorStatusDangerForeground1 }} className={styles.label}>{nlsHPCC.Failed}:</Label><Badge appearance="tint" color="danger">{failed.length}</Badge>
-                    <Label style={{ color: tokens.colorBrandForeground1 }} className={styles.label}>{nlsHPCC.Total}:</Label><Badge appearance="tint" color="brand">{workunits.length}</Badge>
-                    <Label className={styles.label}>{nlsHPCC.Other}:</Label><Badge appearance="tint" color="informative">{other.length}</Badge>
+                    <Label key="completed-label" style={{ color: tokens.colorStatusSuccessForeground1 }} className={styles.label}>{nlsHPCC.Completed}:</Label><Badge key="completed-value" appearance="tint" color="success">{completed.length}</Badge>
+                    <Label key="failed-label" style={{ color: tokens.colorStatusDangerForeground1 }} className={styles.label}>{nlsHPCC.Failed}:</Label><Badge key="failed-value" appearance="tint" color="danger">{failed.length}</Badge>
+                    <Label key="total-label" style={{ color: tokens.colorBrandForeground1 }} className={styles.label}>{nlsHPCC.Total}:</Label><Badge key="total-value" appearance="tint" color="brand">{workunits.length}</Badge>
+                    <Label key="other-label" className={styles.label}>{nlsHPCC.Other}:</Label><Badge key="other-value" appearance="tint" color="informative">{other.length}</Badge>
                 </ToolbarGroup>
             </Toolbar>}
             main={
