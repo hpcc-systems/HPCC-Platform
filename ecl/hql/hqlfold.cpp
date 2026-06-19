@@ -4474,6 +4474,32 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
         if (foldOptions & (HFOfoldimpure|HFOforcefold))
             return createConstant(expr->queryType()->castFrom(true, (__int64)rtlRandom()));
         break;
+    case no_getenv:
+        if (foldOptions & HFOforcefold)
+        {
+            IValue * nameValue = expr->queryChild(0)->queryValue();
+            if (nameValue)
+            {
+                StringBuffer nameText;
+                nameValue->getUTF8Value(nameText);
+
+                const char * envValue = getenv(nameText.str());
+                OwnedHqlExpr result;
+                if (envValue)
+                    result.setown(createConstant(envValue));
+                else
+                {
+                    IHqlExpression * defaultValue = expr->queryChild(1);
+                    if (defaultValue)
+                        result.set(defaultValue);
+                    else
+                        result.setown(createBlankString());
+                }
+                //Ensure the result is a varstring...
+                return ensureExprType(result, expr->queryType());
+            }
+        }
+        break;
     case no_catch:
         if (expr->isConstant())
         {
