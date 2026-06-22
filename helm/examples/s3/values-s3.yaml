@@ -1,0 +1,49 @@
+# Minimal S3 storage plane example for HPCC
+#
+# The smallest set of values needed to add an S3-backed data plane to an
+# otherwise standard install: the system planes use ordinary PVCs and only the
+# 's3data' plane is cloud-backed. For a complete cloud deployment example
+# (custom image, engine sizing, FSx system planes, S3 Express) see
+# values-s3-eks.yaml.
+#
+# Authentication uses IAM Roles for Service Accounts (IRSA):
+#   1. Create an S3 bucket
+#   2. Create an IAM role with an S3 access policy for that bucket
+#   3. Associate the role with the HPCC service account via IRSA
+#
+# Usage:
+#   helm install myhpcc hpcc/hpcc -f values-s3.yaml
+
+storage:
+  planes:
+  - name: dali
+    storageClass: ""
+    storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/dalistorage"
+    category: dali
+  - name: sasha
+    storageClass: ""
+    storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/sashastorage"
+    category: sasha
+  - name: dll
+    storageClass: ""
+    storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/queries"
+    category: dll
+  - name: s3data
+    prefix: "s3:s3data"
+    category: data
+    blockedSequentialIO: 4194304   # 4MB — batches compressed block reads for cloud I/O
+    blockedRandomIO: 65536         # 64KB — for index node reads
+    storageapi:
+      type: s3
+      region: us-east-1
+      buckets:
+      - name: my-hpcc-data-bucket
+  - name: mydropzone
+    prefix: "/var/lib/HPCCSystems/mydropzone"
+    category: lz
+  - name: spill
+    prefix: "/var/lib/HPCCSystems/hpcc-spill"
+    category: spill

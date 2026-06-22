@@ -835,7 +835,7 @@
           }
         },
         "storageapi": {
-          "description": "Configuration for cloud storage API integration (Azure Blob Storage, Azure Files, etc.)",
+          "description": "Configuration for cloud storage API integration (Azure Blob/Files, S3)",
           "type": "object",
           "properties": {
             "type": {
@@ -844,20 +844,28 @@
               "enum": ["azurefile", "azureblob", "s3"]
             },
             "managed": {
-              "description": "Use managed identity for authentication",
+              "description": "Use managed identity for authentication (Azure)",
               "type": "boolean"
             },
             "account": {
-              "description": "Default storage account name (used by containers if not specified at container level)",
+              "description": "Default storage account name (Azure)",
               "type": "string"
             },
             "secret": {
-              "description": "Default secret name for credentials (used by containers if not specified at container level)",
+              "description": "Default secret name for credentials",
+              "type": "string"
+            },
+            "region": {
+              "description": "AWS region for S3 (e.g. us-east-1)",
+              "type": "string"
+            },
+            "endpoint": {
+              "description": "Custom S3 endpoint URL (for MinIO, etc.)",
               "type": "string"
             },
             "containers": {
               "type": "array",
-              "description": "List of containers",
+              "description": "List of Azure containers",
               "items": {
                 "description": "Storage container or file share configuration for a single device",
                 "type": "object",
@@ -877,10 +885,29 @@
                 },
                 "additionalProperties": false
               }
+            },
+            "buckets": {
+              "type": "array",
+              "description": "List of S3 buckets",
+              "items": {
+                "description": "S3 bucket configuration for a single device",
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "description": "S3 bucket name",
+                    "type": "string"
+                  },
+                  "secret": {
+                    "description": "Secret name for AWS credentials (optional - uses IAM roles if not specified)",
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
             }
           },
           "additionalProperties": false,
-          "required": [ "type", "containers" ]
+          "required": [ "type" ]
         },
         "components": {
           "description": "Restrict storage plane mounting to only the specified components",

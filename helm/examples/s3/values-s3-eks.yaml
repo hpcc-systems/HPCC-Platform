@@ -1,0 +1,78 @@
+# S3 storage plane example for HPCC on EKS
+# Edit the <PLACEHOLDERS> below before use.
+#
+# Usage:
+#   helm upgrade myhpcc /tmp/hpcc-chart/hpcc -f values-s3-eks.yaml
+
+global:
+  image:
+    root: "<ACCOUNT>.dkr.ecr.us-east-1.amazonaws.com"
+    name: "hpcc-s3-dev"
+    version: "<IMAGE_TAG>"          # tag of your built HPCC image
+  visibilities:
+    local:
+      type: ClusterIP
+
+thor:
+- name: thor
+  numWorkers: 3
+  maxJobs: 1
+  maxGraphs: 2
+  workerResources:
+    cpu: "4"
+    memory: 24G
+
+roxie:
+- name: roxie
+  numChannels: 2
+  replicas: 2
+  localAgent: false
+  services:
+  - name: roxie
+    servicePort: 9876
+    visibility: local
+    numThreads: 30
+    listenQueue: 200
+
+storage:
+  planes:
+  - name: dali
+    hostPath: /mnt/fsx/dalistorage
+    prefix: /mnt/fsx/dalistorage
+    category: dali
+  - name: dll
+    hostPath: /mnt/fsx/queries
+    prefix: /mnt/fsx/queries
+    category: dll
+  - name: sasha
+    hostPath: /mnt/fsx/sashastorage
+    prefix: /mnt/fsx/sashastorage
+    category: sasha
+  - name: data
+    hostPath: /mnt/fsx/hpcc-data
+    prefix: /mnt/fsx/hpcc-data
+    category: data
+  - name: s3data
+    prefix: "s3:s3data"
+    category: data
+    blockedSequentialIO: 4194304
+    blockedRandomIO: 65536
+    storageapi:
+      type: s3
+      region: us-east-1                    # e.g. us-east-1
+      buckets:
+      - name: hpcc-data-<ACCOUNT>                    # e.g. hpcc-data-123456789012
+  - name: mydropzone
+    hostPath: /mnt/fsx/mydropzone
+    prefix: /mnt/fsx/mydropzone
+    category: lz
+  - name: s3express
+    prefix: "s3:s3express"
+    category: data
+    blockedSequentialIO: 4194304
+    blockedRandomIO: 65536
+    storageapi:
+      type: s3
+      region: us-east-1
+      buckets:
+      - name: <BUCKET>--use1-az4--x-s3   # S3 Express One Zone directory bucket
