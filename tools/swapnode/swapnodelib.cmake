@@ -45,6 +45,7 @@ set_target_properties(swapnodelib PROPERTIES
 install ( TARGETS swapnodelib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( swapnodelib
          jlib
+         mp
          remote
          dafsclient
          dalibase

@@ -79,7 +79,6 @@ target_link_libraries ( esdl_svc_engine
          xmllib
          esphttp
          mp
-         hrpc
          nbcd
          eclrtl
          deftype
@@ -89,7 +88,6 @@ target_link_libraries ( esdl_svc_engine
          esdllib
          esdlscriptlib
          dllserver
-         dalibase
          ${COMMON_ESP_SERVICE_LIBS}
     )
 

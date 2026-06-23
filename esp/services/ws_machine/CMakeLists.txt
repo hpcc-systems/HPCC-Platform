@@ -70,7 +70,6 @@ target_link_libraries ( ws_machine
          xmllib
          esphttp
          mp
-         hrpc
          remote
          dalibase
          environment

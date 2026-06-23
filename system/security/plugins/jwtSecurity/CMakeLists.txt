@@ -60,3 +60,7 @@ install(TARGETS jwtSecurity
 target_link_libraries(jwtSecurity
                       PRIVATE jlib dalibase
                       PRIVATE CURL::libcurl)
+
+IF (USE_OPENSSL)
+    target_link_libraries(jwtSecurity PRIVATE ${OPENSSL_LIBRARIES})
+ENDIF (USE_OPENSSL)

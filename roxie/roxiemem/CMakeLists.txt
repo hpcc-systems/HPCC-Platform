@@ -53,10 +53,10 @@ if (NOT PLUGIN)
 endif()
 
 if(USE_TBB)
-    target_link_libraries(roxiemem TBB::tbb)
+    target_link_libraries(roxiemem PRIVATE TBB::tbb)
 endif()
 
-target_link_libraries ( roxiemem
+target_link_libraries ( roxiemem PRIVATE
          jlib
          ${CppUnit_LIBRARIES}
     )

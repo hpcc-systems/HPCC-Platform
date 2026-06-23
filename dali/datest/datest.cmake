@@ -45,7 +45,6 @@ set_target_properties (datest PROPERTIES COMPILE_FLAGS -D_CONSOLE)
 target_link_libraries ( datest 
          jlib
          mp 
-         hrpc 
          dafsclient
          dafsstream
          eclrtl

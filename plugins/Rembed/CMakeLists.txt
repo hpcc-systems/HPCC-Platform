@@ -58,6 +58,7 @@ if(REMBED)
             Rembed
             ${R_LIBRARIES}
             eclrtl
+            nbcd
             jlib)
 
         install(

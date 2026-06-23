@@ -121,37 +121,50 @@ ADD_DEFINITIONS( -DTHORHELPER_EXPORTS -D_USRDLL )
 
 HPCC_ADD_LIBRARY( thorhelper SHARED ${SRCS} )
 install ( TARGETS thorhelper RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} CALC_DEPS )
-target_link_libraries ( thorhelper 
-         jlib 
-         nbcd 
-         hql
-         eclrtl 
-         roxiemem
-         deftype 
-         dalibase
+target_link_libraries ( thorhelper PRIVATE
+        jlib 
+        nbcd 
+        hql
+        eclrtl 
+        roxiemem
+        deftype 
+        dalibase
+        dafsclient
+        jhtree
+        ${CppUnit_LIBRARIES}
     )
 
 if (USE_PARQUET)
-    target_link_libraries( thorhelper parquetembed )
+    find_package(Arrow CONFIG REQUIRED)
+    find_package(Parquet CONFIG REQUIRED)
+    target_link_libraries( thorhelper PRIVATE
+         parquetembed
+         "$<IF:$<BOOL:${ARROW_BUILD_STATIC}>,Arrow::arrow_static,Arrow::arrow_shared>"
+         "$<IF:$<BOOL:${ARROW_BUILD_STATIC}>,Parquet::parquet_static,Parquet::parquet_shared>"
+    )
+endif()
+
+if (USE_ICU)
+    target_link_libraries (thorhelper PRIVATE ${ICU_LIBRARIES})
 endif()
 
 if (USE_NUMA)
- target_link_libraries ( thorhelper ${NUMA_LIBRARIES} )
+    target_link_libraries ( thorhelper PRIVATE ${NUMA_LIBRARIES} )
 endif ()
 
 if (USE_TBB)
-   target_link_libraries ( thorhelper TBB::tbb )
+    target_link_libraries ( thorhelper PRIVATE TBB::tbb )
 endif()
 
 
 IF (USE_OPENSSL)
-    target_link_libraries ( thorhelper 
-    	securesocket
+    target_link_libraries ( thorhelper PRIVATE
+        securesocket
     )
 ENDIF()
 
 IF (USE_ZLIB)
-    target_link_libraries ( thorhelper
+    target_link_libraries ( thorhelper PRIVATE
         ${ZLIB_LIBRARIES}
         zcrypt
     )

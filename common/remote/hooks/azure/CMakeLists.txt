@@ -69,9 +69,8 @@ endif()
 HPCC_ADD_LIBRARY( azurefile SHARED ${SRCS}  )
 install ( TARGETS azurefile DESTINATION filehooks CALC_DEPS)
 
-target_link_libraries ( azurefile
+target_link_libraries ( azurefile PRIVATE
         jlib
-        CURL::libcurl
         Azure::azure-storage-common
         Azure::azure-storage-blobs
         Azure::azure-storage-files-shares

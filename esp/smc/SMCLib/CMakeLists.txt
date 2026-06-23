@@ -74,7 +74,7 @@ ADD_DEFINITIONS( -D_USRDLL -DSMCLIB_EXPORTS -DWSWU_API_LOCAL -DWsResources_API_L
 HPCC_ADD_LIBRARY( SMCLib SHARED ${SRCS} )
 add_dependencies(SMCLib espscm)
 install ( TARGETS SMCLib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( SMCLib
+target_link_libraries ( SMCLib PRIVATE
          jlib
          remote 
          xmllib 
@@ -88,5 +88,9 @@ target_link_libraries ( SMCLib
     )
 
 if (NOT CONTAINERIZED)
-    target_link_libraries ( SMCLib environment )
+    target_link_libraries ( SMCLib PRIVATE environment )
 endif()
+
+IF (USE_OPENSSL)
+    target_link_libraries ( SMCLib PRIVATE securesocket )
+ENDIF()

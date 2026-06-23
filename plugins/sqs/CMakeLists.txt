@@ -41,7 +41,7 @@ if(SQS AND USE_AWS)
         )
 
         target_link_libraries(
-            sqs
+            sqs PRIVATE
             aws-cpp-sdk-sqs
             aws-cpp-sdk-core
             eclrtl

@@ -53,6 +53,7 @@ install ( TARGETS dafilesrv RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( dafilesrv
          jlib
          remote
+         dafsclient
          dalibase
          dafsserver
     )

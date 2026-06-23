@@ -113,10 +113,11 @@ if(JAVAEMBED AND USE_JAVA)
         endif()
 
         target_link_libraries(
-            javaembed
+            javaembed PRIVATE
             #${JSIG_LIBRARY}
             ${JAVA_JVM_LIBRARY}
             eclrtl
+            nbcd
             roxiemem
             jlib)
     endif()

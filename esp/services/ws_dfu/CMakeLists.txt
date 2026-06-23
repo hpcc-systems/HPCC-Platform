@@ -90,8 +90,6 @@ install ( TARGETS ws_dfu RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${L
 target_link_libraries ( ws_dfu
          jlib
          mp
-         hrpc
-         dafsclient
          dafsclient
          nbcd
          eclrtl

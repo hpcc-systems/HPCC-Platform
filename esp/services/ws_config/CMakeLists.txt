@@ -63,7 +63,6 @@ add_dependencies (ws_config espscm)
 target_link_libraries ( ws_config
          jlib
          mp
-         hrpc
          remote
          dalibase
          environment

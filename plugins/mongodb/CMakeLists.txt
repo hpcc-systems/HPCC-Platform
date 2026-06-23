@@ -82,10 +82,11 @@ IF(MONGODBEMBED)
 
         target_link_libraries(
             mongodbembed
-            PRIVATE ${MONGO_BSONCXX_TARGET}
             PRIVATE ${MONGO_MONGOCXX_TARGET}
-            eclrtl
-            jlib
+            PRIVATE eclrtl
+            PRIVATE nbcd
+            PRIVATE roxiemem
+            PRIVATE jlib
         )
     endif()
 endif()

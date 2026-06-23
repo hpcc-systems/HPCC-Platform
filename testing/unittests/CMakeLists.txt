@@ -151,6 +151,7 @@ target_link_libraries ( unittests
          dalibase
          deftype
          libbase58
+         hql
          thorhelper
          esphttp
          esdllib
@@ -158,6 +159,7 @@ target_link_libraries ( unittests
          workunit
          eventconsumption
          dmetaphone
+         securesocket
          ${CppUnit_LIBRARIES}
     )
 

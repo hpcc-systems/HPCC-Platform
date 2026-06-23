@@ -49,7 +49,6 @@ install ( TARGETS dfuxref RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( dfuxref 
          jlib
          mp 
-         hrpc 
          dafsclient
          dalibase 
          dfuXRefLib 

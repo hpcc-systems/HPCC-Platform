@@ -68,12 +68,10 @@ if(KAFKA)
             DESTINATION ${LIB_DIR}
             COMPONENT Runtime)
 
-        target_link_libraries(kafka
+        target_link_libraries(kafka PRIVATE
             eclrtl
             jlib
-            RdKafka::rdkafka 
-            RdKafka::rdkafka++
-            ${ZLIB_LIBRARIES})
+            RdKafka::rdkafka++)
     endif()
 endif()
 
