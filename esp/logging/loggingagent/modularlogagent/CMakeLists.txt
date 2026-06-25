@@ -63,7 +63,6 @@ add_dependencies( modularlogagent espscm )
 install ( TARGETS modularlogagent RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 
 target_link_libraries ( modularlogagent
-    ${XALAN_LIBRARIES} ${XERCES_LIBRARIES}
     jlib
     xmllib
     logginglib

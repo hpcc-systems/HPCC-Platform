@@ -44,7 +44,6 @@ target_link_libraries ( ftslave
          dalibase 
          dalift 
          ftslavelib
-         hrpc 
          jlib
          mp 
          remote 

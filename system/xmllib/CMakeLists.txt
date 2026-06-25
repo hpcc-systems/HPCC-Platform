@@ -35,6 +35,7 @@ if ( USE_XALAN )
 elseif (USE_LIBXSLT)
     set(LIB_INCLUDE_DIR ${LIBXSLT_INCLUDE_DIR} ${LIBXSLT_EXSLT_INCLUDE_DIR} ${LIBXML2_INCLUDE_DIR})
     set(LIB_LIBRARIES ${LIBXSLT_LIBRARIES} ${LIBEXSLT_LIBRARIES} ${LIBXSLT_EXSLT_LIBRARIES} ${LIBXML2_LIBRARIES})
+    list(REMOVE_DUPLICATES LIB_LIBRARIES)
     set (SRCS
         xsdparser.cpp
         xslcache.cpp
@@ -66,16 +67,12 @@ ADD_DEFINITIONS( -D_USRDLL -DXMLLIB_EXPORTS )
 
 HPCC_ADD_LIBRARY( xmllib SHARED ${SRCS} )
 install ( TARGETS xmllib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} CALC_DEPS)
-target_link_libraries ( xmllib
+target_link_libraries ( xmllib PRIVATE
          ${LIB_LIBRARIES}
          eclrtl
          jlib
     )
 
 IF (USE_CPPUNIT)
-  target_link_libraries (xmllib ${CppUnit_LIBRARIES})
-ENDIF()
-
-IF (APPLE AND USE_LIBXSLT)
-  target_link_libraries (xmllib iconv)
+    target_link_libraries (xmllib PRIVATE ${CppUnit_LIBRARIES})
 ENDIF()

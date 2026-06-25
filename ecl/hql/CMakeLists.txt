@@ -186,7 +186,7 @@ if (EMSCRIPTEN)
     set_target_properties(hql PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS} -Wno-error=nontrivial-memcall -Wno-error=unused-variable")
 endif ()
 install ( TARGETS hql RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( hql
+target_link_libraries ( hql PRIVATE
          jlib
          nbcd
          eclrtl
@@ -195,8 +195,7 @@ target_link_libraries ( hql
     )
 
 IF (USE_ZLIB)
-    target_link_libraries ( hql
-        ${ZLIB_LIBRARIES}
+    target_link_libraries ( hql PRIVATE
         zcrypt
     )
 ENDIF()

@@ -51,6 +51,11 @@ target_link_libraries ( soapplus
          jlib
          xmllib 
     )
+
+if (WIN32)
+    target_link_libraries ( soapplus ws2_32 )
+endif()
+
 IF (USE_OPENSSL)
     target_link_libraries ( soapplus 
          securesocket 

@@ -56,9 +56,11 @@ IF ( COUCHBASEEMBED )
             CALC_DEPS)
 
         target_link_libraries(
-            couchbaseembed
+            couchbaseembed PRIVATE
             ${LIBCOUCHBASE_LIB}
             eclrtl
+            nbcd
+            roxiemem
             jlib)
     endif()
 endif()

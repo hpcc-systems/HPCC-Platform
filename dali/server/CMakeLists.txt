@@ -59,7 +59,6 @@ install ( TARGETS daserver RUNTIME DESTINATION ${EXEC_DIR})
 target_link_libraries ( daserver 
          jlib
          mp 
-         hrpc 
          dafsclient 
          dalibase 
     )

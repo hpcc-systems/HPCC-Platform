@@ -50,3 +50,7 @@ target_link_libraries (
         jlib
         ${ZLIB_LIBRARIES}
     )
+
+IF (USE_OPENSSL)
+    target_link_libraries (cryptolib ${OPENSSL_LIBRARIES})
+ENDIF (USE_OPENSSL)

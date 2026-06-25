@@ -66,7 +66,6 @@ target_link_libraries ( ws_ecl
          xmllib
          esphttp
          mp
-         hrpc
          remote
          dalibase
          dllserver

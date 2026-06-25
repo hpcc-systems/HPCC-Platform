@@ -51,8 +51,15 @@ install ( TARGETS eclccserver RUNTIME DESTINATION ${EXEC_DIR} )
 
 target_link_libraries ( eclccserver 
          jlib
+         mp
+         dalibase
+         dllserver
          workunit
     )
+
+if (NOT CONTAINERIZED)
+    target_link_libraries ( eclccserver environment )
+endif()
 
 HPCC_ADD_SUBDIRECTORY (vchooks "PLATFORM")
 

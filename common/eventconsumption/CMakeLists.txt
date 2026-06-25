@@ -48,4 +48,4 @@ ADD_DEFINITIONS( -D_USRDLL -DEVENTCONSUMPTION_EXPORTS )
 
 HPCC_ADD_LIBRARY(eventconsumption SHARED ${SRCS})
 install ( TARGETS eventconsumption RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( eventconsumption jlib ${CppUnit_LIBRARIES})
+target_link_libraries ( eventconsumption PRIVATE jlib ${CppUnit_LIBRARIES})

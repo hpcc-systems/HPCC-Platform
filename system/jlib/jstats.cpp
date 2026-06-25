@@ -1030,6 +1030,8 @@ static const constexpr StatisticMeta statsMetaData[] = {
     { COSTSTAT(SavingPotential), "The potential cost savings from optimizations" },
     { COSTSTAT(Failed), "The cost associated with failed jobs" },
     { SIZESTAT(OffsetRoot), "The offset of the root branch in an index" },
+    { TIMESTAT(FilePrepare), "The time spent preparing and opening a file or index" },
+    { CYCLESTAT(FilePrepare) },
 };
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);
@@ -1417,7 +1419,8 @@ const StatisticsMapping jhtreeCacheStatistics({ StNumIndexSeeks, StNumIndexScans
                                                 StCycleBlobLoadCycles, StCycleNodeReadCycles, StCycleLeafReadCycles, StCycleBlobReadCycles, StNumNodeDiskFetches, StNumLeafDiskFetches, StNumBlobDiskFetches,
                                                 StCycleNodeFetchCycles, StCycleLeafFetchCycles, StCycleBlobFetchCycles, StCycleIndexCacheBlockedCycles, StNumIndexMergeCompares, StNumIndexMerges, StNumIndexSkips,
                                                 StNumBloomAccepts, StNumBloomRejects, StNumBloomSkips,
-                                                StNumIndexNullSkips, StTimeLeafLoad, StTimeLeafRead, StTimeLeafFetch, StTimeIndexCacheBlocked, StTimeNodeFetch, StTimeNodeLoad, StTimeNodeRead});
+                                                StNumIndexNullSkips, StTimeLeafLoad, StTimeLeafRead, StTimeLeafFetch, StTimeIndexCacheBlocked, StTimeNodeFetch, StTimeNodeLoad, StTimeNodeRead,
+                                                StTimeFilePrepare, StCycleFilePrepareCycles });
 
 const StatisticsMapping allStatistics(StKindAll);
 const StatisticsMapping heapStatistics({StNumAllocations, StNumAllocationScans});

@@ -50,6 +50,7 @@ target_link_libraries ( agentexec
          jlib 
          dalibase 
          eclrtl 
+         mp
          workunit
     )
 

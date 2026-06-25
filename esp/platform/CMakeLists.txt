@@ -59,7 +59,6 @@ target_link_libraries ( esp
          ${XALAN_LIBRARIES} ${XERCES_LIBRARIES}
          xmllib 
          esphttp 
-         hrpc 
          remote 
          dalibase 
          workunit

@@ -29,6 +29,7 @@ if(PHONENUMBER)
     ADD_PLUGIN(PHONENUMBER)
     if(MAKE_PHONENUMBER)
         find_package(libphonenumber CONFIG REQUIRED)
+        find_package(absl CONFIG REQUIRED)
         find_package(Boost REQUIRED COMPONENTS date_time system thread)
 
         set(SRCS
@@ -62,6 +63,7 @@ if(PHONENUMBER)
                 eclrtl
                 jlib
                 libphonenumber::phonenumber
+                absl::log_internal_check_op
         )
     endif()
 endif()

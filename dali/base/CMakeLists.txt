@@ -88,7 +88,7 @@ if(NOT PLUGIN)
         LIBRARY DESTINATION ${LIB_DIR}
     )
     target_link_libraries(
-        dalibase 
+        dalibase PRIVATE
         jlib
         mp 
         hrpc 

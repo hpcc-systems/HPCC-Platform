@@ -42,9 +42,13 @@ ADD_DEFINITIONS( -D_USRDLL -DSECURESOCKET_EXPORTS )
 
 HPCC_ADD_LIBRARY( securesocket SHARED ${SRCS} )
 install ( TARGETS securesocket RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} CALC_DEPS)
-target_link_libraries ( securesocket
+target_link_libraries ( securesocket PRIVATE
          jlib
          ${OPENSSL_LIBRARIES} 
     )
+
+if (WIN32)
+     target_link_libraries ( securesocket PRIVATE ws2_32 )
+endif()
 
 

@@ -69,7 +69,7 @@ SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STRICT_CXX_FLAGS}")
 
 HPCC_ADD_LIBRARY( jhtree SHARED ${SRCS} ${INCLUDES} )
 install ( TARGETS jhtree RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( jhtree 
+target_link_libraries ( jhtree PRIVATE
          eclrtl
          zcrypt
          jlib

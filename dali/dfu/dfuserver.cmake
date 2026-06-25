@@ -57,7 +57,6 @@ install ( TARGETS dfuserver RUNTIME DESTINATION ${EXEC_DIR})
 target_link_libraries ( dfuserver 
          jlib
          mp 
-         hrpc 
          dafsclient 
          dalibase 
          dllserver 

@@ -3646,7 +3646,7 @@ IHqlExpression * HqlGram::implementInterfaceFromModule(const attribute & modpos,
                 IHqlExpression & cur = selectedFields.item(i);
                 assertex(cur.getOperator() == no_id);
                 IIdAtom * id = cur.queryId();
-                OwnedHqlExpr match = base->lookupSymbol(id, LSFpublic, lookupCtx);
+                OwnedHqlExpr match = base->lookupSymbol(id, LSFpublic|LSFfromderived, lookupCtx);
                 if (match)
                     syms.append(*match.getClear());
                 else
@@ -10371,6 +10371,10 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
     }
     else
     {
+        IHqlExpression * localScopeExpr = queryExpression(activeScope.localScope);
+        if (!localScopeExpr || !(localScopeExpr->hasAttribute(virtualAtom) || localScopeExpr->hasAttribute(interfaceAtom)))
+            reportWarning(CategoryConfuse, ERR_PURE_NON_VIRTUAL, nameattr.pos, "Pure definitions are only valid in virtual modules or interfaces");
+
         expr.setown(createPureVirtual(type));
         defineid->scope |= VIRTUAL_FLAG;
 

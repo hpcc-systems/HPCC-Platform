@@ -67,6 +67,7 @@ if(CASSANDRAEMBED OR USE_CASSANDRA)
 
     target_link_libraries(
       cassandraembed
+      nbcd
       eclrtl
       roxiemem
       dalibase

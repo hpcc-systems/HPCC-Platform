@@ -87,19 +87,20 @@ endif ()
 HPCC_ADD_LIBRARY( eclrtl SHARED ${SRCS} )
 
 find_package(pcre2 CONFIG REQUIRED)
-target_link_libraries( eclrtl PCRE2::8BIT )
+target_link_libraries( eclrtl PRIVATE PCRE2::8BIT )
 
-target_link_libraries ( eclrtl 
+target_link_libraries ( eclrtl PRIVATE
       jlib
       nbcd
       roxiemem
+      ${CppUnit_LIBRARIES}
     )
 
 if (USE_ICU)
     include_directories (
          ${ICU_INCLUDE_DIR}
         )
-    target_link_libraries ( eclrtl
+    target_link_libraries ( eclrtl PRIVATE
           ${ICU_LIBRARIES}
           PCRE2::16BIT
         )

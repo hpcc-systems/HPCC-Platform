@@ -73,6 +73,10 @@ IF(NLP)
             workunit
         )
 
+        if (USE_ICU)
+            target_link_libraries(nlp PRIVATE ${ICU_LIBRARIES})
+        endif()
+
         if(PLATFORM)
             install(
                 DIRECTORY ${nlp-engine_DIR}/analyzers

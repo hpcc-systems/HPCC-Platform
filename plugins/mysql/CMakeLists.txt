@@ -57,8 +57,9 @@ if(MYSQLEMBED)
             DESTINATION plugins
             CALC_DEPS)
         target_link_libraries(
-            mysqlembed
+            mysqlembed PRIVATE
             eclrtl
+            nbcd
             roxiemem
             jlib
             unofficial::libmysql::libmysql

@@ -53,7 +53,7 @@ ADD_DEFINITIONS( -D_USRDLL -DDEFTYPE_EXPORTS )
 
 HPCC_ADD_LIBRARY( deftype SHARED ${SRCS} )
 install ( TARGETS deftype RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( deftype 
+target_link_libraries ( deftype PRIVATE
          jlib 
          nbcd
          eclrtl 

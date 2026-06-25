@@ -24,6 +24,7 @@
 #include "jexcept.hpp"
 #include "jptree.hpp"
 #include "jlzw.hpp"
+#include "jplane.hpp"
 #include "dafdesc.hpp"
 #include "rmtclient.hpp"
 #include "dautils.hpp"
@@ -35,7 +36,9 @@
 #include "jsecrets.hpp"
 #include "rmtfile.hpp"
 
+#include <cstdint>
 #include <memory>
+#include <vector>
 
 #define INCLUDE_1_OF_1    // whether to use 1_of_1 for single part files
 
@@ -1667,11 +1670,117 @@ public:
             if (_interleaved)
                 *_interleaved = interleaved;
         }
+        noteWriteSyncVisibility();
     }
 
     void ensureRequiredStructuresExist()
     {
         if (!attr) attr.setown(createPTree("Attr"));
+    }
+
+    // Record each part in the jfile write-sync visibility cache if this file carries a modified time and lives
+    // on a plane with a write-sync margin. Called from both descriptor constructors so that manager lookups
+    // (tree) and worker deserialization (MemoryBuffer) each populate their process cache. Each part copy is keyed
+    // by its full physical path (the path a reader will open), and the part's published on-disk size is recorded
+    // alongside, so the reader's retry can wait for the part both to exist and to reach its expected size (the
+    // cross-AZ blobnfs scenario this targets).
+    void noteWriteSyncVisibility()
+    {
+        // For now this cache is only needed in containerized/cloud deployments where cross-AZ
+        // storage propagation lag can make newly published parts briefly invisible or stale.
+        // Bare-metal deployments are not susceptible to this class of issue.
+        if (!isContainerized())
+            return;
+
+        const char *modifiedStr = attr ? attr->queryProp("@modified") : nullptr;
+        if (isEmptyString(modifiedStr))
+            return;
+
+        // Resolve write-sync margin from plane metadata.
+        unsigned marginMs = 0;
+        if (remoteStoragePlane)
+            marginMs = (unsigned)remoteStoragePlane->getAttribute(WriteSyncMarginMs, 0);
+        else
+        {
+            // Most files are expected to have a single cluster/group/plane,
+            // but where multiple clusters exist use the largest configured margin as a
+            // conservative deadline.
+            ForEachItemIn(ci, clusters)
+            {
+                const char *planeName = clusters.item(ci).queryGroupName();
+                if (isEmptyString(planeName))
+                    continue;
+                Owned<const IStoragePlane> plane = getDataStoragePlane(planeName, false);
+                if (!plane)
+                    continue;
+                unsigned planeMarginMs = (unsigned)plane->getAttribute(WriteSyncMarginMs, 0);
+                if (planeMarginMs > marginMs)
+                    marginMs = planeMarginMs;
+            }
+        }
+        if (0 == marginMs) // NB: margin adjustment (below) only applies if plane writeSyncMarginMs is non-zero.
+            return;
+
+        int marginDeltaMs = 0;
+        bool hasMarginDelta = getWriteSyncMarginDeltaMs(marginDeltaMs);
+        if (hasMarginDelta)
+        {
+            int64_t adjustedMarginMs = static_cast<int64_t>(marginMs) + static_cast<int64_t>(marginDeltaMs);
+            if (adjustedMarginMs <= 0)
+                marginMs = 0;
+            else if (static_cast<uint64_t>(adjustedMarginMs) > static_cast<uint64_t>((unsigned)-1))
+                marginMs = (unsigned)-1; // max
+        }
+
+        // The file-level @modified time is used as a single baseline for every part's retry threshold. Each
+        // part can carry its own @modified, which would give a tighter per-part deadline, but the file-level
+        // value is a good enough lower bound for the propagation margin - and per-part @modified is not always
+        // present, so relying on it would complicate this for little benefit.
+        CDateTime modified;
+        modified.setString(modifiedStr);
+        time_t modifiedTime = modified.getSimple();
+        if (0 == modifiedTime)
+            return;
+
+        // A part modified at modifiedTime should have propagated to all readers by modifiedTime + margin.
+        time_t deadline = modifiedTime + (time_t)(((uint64_t)marginMs + 999) / 1000);
+        if (time(nullptr) >= deadline) // already past the visibility margin - nothing to track
+            return;
+
+        // Compression is a file-level property; resolve it once so the reader can apply the same empty-part
+        // size tolerance that doesPhysicalMatchMeta uses (an empty compressed part may legitimately be 0 bytes
+        // or a small header rather than the published @compressedSize).
+        bool compressed = ::isCompressed(queryAttributes());
+        std::vector<WriteSyncFileInfo> files;
+        unsigned n = numParts();
+        files.reserve(n);
+        for (unsigned i=0; i<n; i++)
+        {
+            // Only register parts whose descriptor is actually present. On workers a subset of parts are
+            // deserialized and the remainder are NULL placeholders
+            if (!parts.item(i))
+                continue;
+
+            IPartDescriptor *pd = queryPart(i);
+            // The published on-disk size (compressed size for compressed parts) lets the reader's write-sync
+            // retry also wait until the part's physical size matches the meta size, not just until it exists.
+            // This is a meta-only lookup (no physical access); -1 means unknown / do not validate size.
+            offset_t expectedSize = pd->getDiskSize(false, false);
+            // Register every copy's physical path: a reader may open any copy.
+            // In the containerized/cloud target scenario there is normally a single copy (storage redundancy
+            // is provided by the plane), so this is usually 1 pass.
+            unsigned numcopies = numCopies(i);
+            for (unsigned copy=0; copy<numcopies; copy++)
+            {
+                StringBuffer fullPath;
+                pd->getPath(fullPath, copy);
+                if (fullPath.length())
+                    files.push_back({fullPath.str(), expectedSize, compressed});
+            }
+        }
+        // Record the whole file's parts in a single locked batch (one mutex acquisition, one prune pass).
+        if (!files.empty())
+            noteWriteSyncFiles(files, deadline);
     }
 
     CFileDescriptor(IPropertyTree *tree, INamedGroupStore *resolver, unsigned flags)
@@ -1756,6 +1865,17 @@ public:
             attr.setown(createPTreeFromIPT(at));
         else
             attr.setown(createPTree("Attr"));
+        // @modified is a file-level property held on the file root, not under <Attr>, so it would not normally
+        // be carried into the serialized descriptor (and would therefore be unavailable on the slaves). Copy it
+        // into <Attr> so it survives serialization and is readable via queryProperties() for write-sync.
+        // The hasProp guard is belt-and-braces: <Attr> is not expected to already carry @modified, but if a
+        // future caller has set it we must not overwrite that value.
+        if (!attr->hasProp("@modified"))
+        {
+            const char *modified = pt.queryProp("@modified");
+            if (!isEmptyString(modified))
+                attr->setProp("@modified", modified);
+        }
         if (flags & IFDSF_FOREIGN_GROUP)
             setFlags(static_cast<FileDescriptorFlags>(fileFlags | FileDescriptorFlags::foreign));
         if (attr->hasProp("@lfnHash")) // potentially missing for meta coming from a legacy Dali
@@ -1786,6 +1906,10 @@ public:
             clusters.item(0).applyPlane(remoteStoragePlane);
             mapSecrets();
         }
+
+        // Track this file for write-sync visibility, so physical access to a freshly published file (e.g. one
+        // written in another AZ) can transparently wait out propagation lag rather than failing.
+        noteWriteSyncVisibility();
     }
 
     void serializePart(MemoryBuffer &mb,unsigned partidx)

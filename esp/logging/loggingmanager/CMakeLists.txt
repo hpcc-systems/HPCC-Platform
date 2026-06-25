@@ -65,7 +65,6 @@ add_dependencies( loggingmanager espscm )
 install ( TARGETS loggingmanager RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 
 target_link_libraries ( loggingmanager
-    ${XALAN_LIBRARIES} ${XERCES_LIBRARIES}
     jlib
     xmllib
     logginglib

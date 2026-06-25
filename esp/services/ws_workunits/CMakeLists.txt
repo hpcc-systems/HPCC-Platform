@@ -112,7 +112,6 @@ install ( TARGETS ws_workunits RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATI
 target_link_libraries ( ws_workunits
          jlib
          mp
-         hrpc
          remote
          dafsclient
          xmllib
@@ -150,7 +149,6 @@ IF (USE_OPENSSL)
 ENDIF()
 IF (USE_ZLIB)
   target_link_libraries ( ws_workunits
-      ${ZLIB_LIBRARIES}
       zcrypt
       )
 ENDIF()

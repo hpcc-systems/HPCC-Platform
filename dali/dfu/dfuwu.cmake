@@ -51,7 +51,6 @@ target_link_libraries ( dfuwu
          workunit
          jlib
          mp 
-         hrpc 
          remote 
          dalibase 
          ws_dfsclient
