@@ -2,9 +2,10 @@ import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
 import { LockClosedFilled } from "@fluentui/react-icons";
 import { Link } from "@fluentui/react-components";
+import { FileSpray, FileSprayService, SashaService, WsSasha } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
 import { SizeMe } from "../layouts/SizeMe";
 import * as ESPDFUWorkunit from "src/ESPDFUWorkunit";
-import * as FileSpray from "src/FileSpray";
 import { formatCost } from "src/Session";
 import * as Utility from "src/Utility";
 import { QuerySortItem } from "src/store/Store";
@@ -17,16 +18,15 @@ import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState
 import { Filter } from "./forms/Filter";
 import { Fields } from "./forms/Fields";
 import { selector } from "./DojoGrid";
-import { SashaService, WsSasha } from "@hpcc-js/comms";
-import { scopedLogger } from "@hpcc-js/util";
 
 const logger = scopedLogger("src-react/components/DFUWorkunits.tsx");
 
 const FilterFields: Fields = {
-    "Type": { type: "checkbox", label: nlsHPCC.ArchivedOnly },
+    "Archived": { type: "checkbox", label: nlsHPCC.ArchivedOnly },
     "Wuid": { type: "string", label: nlsHPCC.WUID, placeholder: "D20201203-171723" },
     "Owner": { type: "string", label: nlsHPCC.Owner, placeholder: nlsHPCC.jsmi },
     "Jobname": { type: "string", label: nlsHPCC.Jobname, placeholder: nlsHPCC.log_analysis_1 },
+    "Command": { type: "dropdown", options: Object.entries(FileSpray.DFUCommand).map(([text, key]) => ({ key, text })), label: nlsHPCC.Type },
     "Cluster": { type: "target-cluster", label: nlsHPCC.Cluster, placeholder: nlsHPCC.Owner },
     "StateReq": { type: "dfuworkunit-state", label: nlsHPCC.State, placeholder: nlsHPCC.Created },
 };
@@ -37,13 +37,7 @@ function formatQuery(_filter): { [id: string]: any } {
         filter.StartDate = new Date(filter.StartDate).toISOString();
     }
     if (filter.EndDate) {
-        filter.EndDate = new Date(filter.StartDate).toISOString();
-    }
-    if (filter.Type === true) {
-        filter.Type = "archived workunits";
-    }
-    if (filter.Type === true) {
-        filter.Type = "archived workunits";
+        filter.EndDate = new Date(filter.EndDate).toISOString();
     }
     return filter;
 }
@@ -55,6 +49,9 @@ const defaultUIState = {
     hasFailed: false,
     hasNotFailed: false
 };
+
+const sashaService = new SashaService({ baseUrl: "" });
+const fileSprayService = new FileSprayService({ baseUrl: "" });
 
 interface DFUWorkunitsProps {
     filter?: { [id: string]: any };
@@ -76,7 +73,6 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
 
     const [showFilter, setShowFilter] = React.useState(false);
-    const sashaService = React.useMemo(() => new SashaService({ baseUrl: "" }), []);
     const { currentUser } = useMyAccount();
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const {
@@ -128,10 +124,8 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
                 label: nlsHPCC.Type,
                 width: 110,
                 formatter: (_type, row) => {
-                    if (row.Command in FileSpray.CommandMessages) {
-                        return FileSpray.CommandMessages[row.Command];
-                    }
-                    return "Unknown";
+                    const message = row?.CommandMessage || "unknown";
+                    return message[0].toUpperCase() + message.slice(1);
                 }
             },
             Owner: {
@@ -187,7 +181,8 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
         message: nlsHPCC.DeleteSelectedWorkunits,
         items: selection.map(s => s?.Wuid).filter(wuid => wuid !== undefined),
         onSubmit: React.useCallback(() => {
-            FileSpray.DFUWorkunitsAction(selection, nlsHPCC.Delete).then(() => refreshTable.call(true));
+            const wuids = selection.map(s => s?.Wuid).filter(wuid => wuid !== undefined);
+            fileSprayService.DFUWorkunitsAction({ wuids: { Item: wuids }, Type: FileSpray.DFUWUActions.Delete }).then(() => refreshTable.call(true));
         }, [refreshTable, selection])
     });
 
@@ -202,10 +197,10 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
             onClick: () => {
                 if (selection.length === 1) {
-                    window.location.href = `#/dfuworkunits/${selection[0].ID}`;
+                    window.location.href = `#/dfuworkunits/${selection[0].Wuid}`;
                 } else {
                     for (let i = selection.length - 1; i >= 0; --i) {
-                        window.open(`#/dfuworkunits/${selection[i].ID}`, "_blank");
+                        window.open(`#/dfuworkunits/${selection[i].Wuid}`, "_blank");
                     }
                 }
             }
@@ -217,13 +212,16 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
         { key: "divider_2", itemType: ContextualMenuItemType.Divider },
         {
             key: "setFailed", text: nlsHPCC.SetToFailed, disabled: !uiState.hasNotProtected,
-            onClick: () => { FileSpray.DFUWorkunitsAction(selection, "SetToFailed"); }
+            onClick: () => {
+                const wuids = selection.map(s => s?.Wuid).filter(wuid => wuid !== undefined);
+                fileSprayService.DFUWorkunitsAction({ wuids: { Item: wuids }, Type: FileSpray.DFUWUActions.SetToFailed });
+            }
         },
         { key: "divider_3", itemType: ContextualMenuItemType.Divider },
         {
             key: "restore", text: nlsHPCC.Restore, disabled: !uiState.hasSelection,
             onClick: () => {
-                const wuids = selection.map(item => item?.Wuid || item.ID).filter(wuid => wuid !== undefined);
+                const wuids = selection.map(s => s?.Wuid).filter(wuid => wuid !== undefined);
                 Promise.all(wuids.map(wuid =>
                     sashaService.RestoreWU({
                         Wuid: wuid,
@@ -238,11 +236,17 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
         },
         {
             key: "protect", text: nlsHPCC.Protect, disabled: !uiState.hasNotProtected,
-            onClick: () => { FileSpray.DFUWorkunitsAction(selection, "Protect").then(() => refreshTable.call()); }
+            onClick: () => {
+                const wuids = selection.map(s => s?.Wuid).filter(wuid => wuid !== undefined);
+                fileSprayService.DFUWorkunitsAction({ wuids: { Item: wuids }, Type: FileSpray.DFUWUActions.Protect }).then(() => refreshTable.call());
+            }
         },
         {
             key: "unprotect", text: nlsHPCC.Unprotect, disabled: !uiState.hasProtected,
-            onClick: () => { FileSpray.DFUWorkunitsAction(selection, "Unprotect").then(() => refreshTable.call()); }
+            onClick: () => {
+                const wuids = selection.map(s => s?.Wuid).filter(wuid => wuid !== undefined);
+                fileSprayService.DFUWorkunitsAction({ wuids: { Item: wuids }, Type: FileSpray.DFUWUActions.Unprotect }).then(() => refreshTable.call());
+            }
         },
         { key: "divider_4", itemType: ContextualMenuItemType.Divider },
         {
@@ -262,7 +266,7 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
                 pushParams(filter);
             }
         },
-    ], [currentUser, filter, hasFilter, refreshTable, sashaService, selection, setShowDeleteConfirm, store, total, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
+    ], [currentUser, filter, hasFilter, refreshTable, selection, setShowDeleteConfirm, store, total, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
 
     const copyButtons = useCopyButtons(columns, selection, "dfuworkunits");
 
