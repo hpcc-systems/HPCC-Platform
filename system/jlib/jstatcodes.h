@@ -366,6 +366,8 @@ enum StatisticKind
     StCostSavingPotential,
     StCostFailed,
     StSizeOffsetRoot,
+    StTimeFilePrepare,
+    StCycleFilePrepareCycles,
     StMax,
 
     //For any quantity there is potentially the following variants.
