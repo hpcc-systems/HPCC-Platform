@@ -97,6 +97,7 @@
 #define JLIBERR_InvalidDirNameInputSortedDirIterator 6068
 #define JLIBERR_FileEventWatcherAddInvalidEmpty     6069
 #define JLIBERR_ReentrantCallCBlockedFileIORead     6070
+#define JLIBERR_FileWriteSyncPhysicalSizeMismatch   6071
 
 #define JLIBERR_CompressClzwcompressorTargetBufferTooSmall 6100
 #define JLIBERR_CompressCorruptRleFormat                   6101

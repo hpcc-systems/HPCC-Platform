@@ -33,6 +33,7 @@
 class jlib_decl CFile : implements IFile, public CInterface
 {
     HANDLE openHandle(IFOmode mode, IFSHmode share, bool async, int stdh=-1);
+    HANDLE openHandleOnce(IFOmode mode, IFSHmode share, bool async, int stdh);
 public:
     CFile(const char * _filename);
     IMPLEMENT_IINTERFACE
