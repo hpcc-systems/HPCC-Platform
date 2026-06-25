@@ -17,6 +17,7 @@
 #include "platform.h"
 
 #include <atomic>
+#include <functional>
 #include <unordered_set>
 #include <unordered_map>
 
@@ -224,7 +225,34 @@ enum class SafeStatBehaviour : unsigned {
 };
 static constexpr SafeStatBehaviour defaultSafeStatBehaviour{SafeStatBehaviour::Standard};
 static std::atomic<SafeStatBehaviour> safeStatBehaviour{defaultSafeStatBehaviour};
-static bool safeStat(const char *filename, struct stat &info)
+
+// If a physical file access fails because the file is not yet visible, and the file was recently published
+// on a storage plane that has a write-sync margin configured (e.g. cross-AZ blobnfs propagation lag), retry
+// the access until the file's write-sync deadline. This is a no-op (returns false immediately) when the file
+// is not being tracked as recently published, so genuinely missing files still fail fast.
+static bool waitForWriteSync(const char *filename, unsigned remainingMs, const std::function<bool()> &tryOp)
+{
+    int unusedMarginDeltaMs;
+    // Only used as a logging gate here
+    bool hasMarginDelta = getWriteSyncMarginDeltaMs(unusedMarginDeltaMs);
+    if (hasMarginDelta)
+        WARNLOG("'%s' not yet visible/settled, waiting up to %ums for write sync", filename, remainingMs);
+    unsigned start = msTick();
+    unsigned totalMs = remainingMs;
+    for (;;)
+    {
+        unsigned napMs = remainingMs < 200 ? remainingMs : 200;
+        MilliSleep(napMs);
+        if (tryOp())
+            return true;
+        unsigned elapsed = msTick() - start; // unsigned subtraction is robust across msTick() wrap
+        if (elapsed >= totalMs)
+            return false;
+        remainingMs = totalMs - elapsed;
+    }
+}
+
+static bool safeStatOnce(const char *filename, struct stat &info)
 {
     if (stat(filename, &info) == 0)
         return true;
@@ -247,6 +275,66 @@ static bool safeStat(const char *filename, struct stat &info)
     throw makeErrnoExceptionV(errno, "CFile::checkFileExists %s", filename);
 }
 
+// Size of an empty compressed file written pre-9.10: a header with no payload (later empty compressed files
+// may legitimately be 0 bytes). Mirrors the value used by doesPhysicalMatchMeta (see HPCC-33064/HPCC-33113).
+static constexpr offset_t emptyCompressedFileSize = 56;
+
+// Does the physical size in 'info' satisfy the published size for a tracked write-sync part?
+//   expectedSize == (offset_t)-1 : published size unknown, so existence alone is sufficient.
+//   compressed && expectedSize == 0 : an empty compressed part - its @compressedSize may be a buggy 0, so
+//                                     accept either a 0-byte file or the empty-compressed header size.
+//   otherwise : the physical size must match the published size exactly.
+static inline bool physicalSizeMatchesMeta(const struct stat &info, offset_t expectedSize, bool compressed)
+{
+    if ((offset_t)-1 == expectedSize)
+        return true;
+    if (compressed && (0 == expectedSize))
+        return (0 == (offset_t)info.st_size) || (emptyCompressedFileSize == (offset_t)info.st_size);
+    return (offset_t)info.st_size == expectedSize;
+}
+
+// checkSize: if true, also validate physical size against the published size for write-sync tracked
+//            parts - needed by callers that will read file content (size(), getInfo(), etc.).
+//            if false, skip size validation; the write-sync cache is still consulted when the file does not
+//            exist (so callers that only need metadata still wait for a part to appear), but if the file
+//            already exists the cache lookup is skipped entirely, avoiding the lock on the hot path.
+static bool safeStat(const char *filename, struct stat &info, bool checkSize)
+{
+    bool exists = safeStatOnce(filename, info); // a single stat establishes both existence and size
+    if (exists && !checkSize)
+        return true; // file exists and caller only needs metadata - skip write-sync cache check entirely
+
+    offset_t expectedSize = (offset_t)-1;
+    bool compressed = false;
+    // Lock-free fast path when nothing is being tracked, so this adds negligible cost to the common stat.
+    unsigned remainingMs = getPathWriteSyncDelayRemainingMs(filename, expectedSize, compressed);
+    if (0 == remainingMs)
+        return exists; // not a recently published part - normal behaviour (single stat)
+
+    // The part is being tracked for write-sync visibility. As well as waiting for it to appear, wait for its
+    // on-disk size to reach the published size - cross-AZ propagation can briefly expose a partial file. Each
+    // attempt is a single stat yielding both existence and size, so this adds no extra file operations.
+    auto settled = [&]() -> bool
+    {
+        exists = safeStatOnce(filename, info);
+        return exists && physicalSizeMatchesMeta(info, expectedSize, compressed);
+    };
+
+    if (!(exists && physicalSizeMatchesMeta(info, expectedSize, compressed)))
+        waitForWriteSync(filename, remainingMs, settled);
+
+    // After the wait, if the part exists but its physical size still does not match the published size, the
+    // part has not fully/correctly propagated within its write-sync margin. Mirror doesPhysicalMatchMeta and
+    // treat this as a hard error rather than letting a reader consume a truncated/stale part. A part that is
+    // simply still missing is reported as not-found (return false), never as a size mismatch.
+    if (exists && !physicalSizeMatchesMeta(info, expectedSize, compressed))
+        throw makeStringExceptionV(JLIBERR_FileWriteSyncPhysicalSizeMismatch, "File '%s' physical size (%" I64F "u) does not match the published size (%" I64F "u) after waiting for write sync", filename, (offset_t)info.st_size, expectedSize);
+
+    // Report the true current existence regardless: a missing file must remain not-found, and size() and
+    // friends must still return the real size at/after the deadline.
+    return exists;
+}
+
 bool checkFileExists(const char * filename)
 {
 #ifdef _WIN32
@@ -262,7 +350,7 @@ bool checkFileExists(const char * filename)
     return false;
 #else
     struct stat info;
-    return safeStat(filename, info);
+    return safeStat(filename, info, false);
 #endif
 }
 
@@ -273,7 +361,7 @@ bool checkDirExists(const char * filename)
     return (attr != (DWORD)-1)&&(attr & FILE_ATTRIBUTE_DIRECTORY);
 #else
     struct stat info;
-    if (!safeStat(filename, info))
+    if (!safeStat(filename, info, false))
         return false;
     return S_ISDIR(info.st_mode);
 #endif
@@ -499,7 +587,7 @@ bool CFile::getTime(CDateTime * createTime, CDateTime * modifiedTime, CDateTime 
     FILETIMEtoIDateTime(accessedTime, timeAccessed);
 #else
     struct stat info;
-    if (!safeStat(filename, info))
+    if (!safeStat(filename, info, false))
         return false;
     timetToIDateTime(accessedTime,  info.st_atime);
     timetToIDateTime(createTime,    info.st_ctime);
@@ -532,7 +620,7 @@ bool CFile::setTime(const CDateTime * createTime, const CDateTime * modifiedTime
     struct utimbuf am;
     if (!accessedTime||!modifiedTime) {
         struct stat info;
-        if (!safeStat(filename, info))
+        if (!safeStat(filename, info, false))
             return false;
         am.actime = info.st_atime;
         am.modtime = info.st_mtime;
@@ -556,7 +644,7 @@ fileBool CFile::isDirectory()
     return ( attr & FILE_ATTRIBUTE_DIRECTORY) ? fileBool::foundYes : fileBool::foundNo;
 #else
     struct stat info;
-    if (!safeStat(filename, info))
+    if (!safeStat(filename, info, false))
         return fileBool::notFound;
     return S_ISDIR(info.st_mode) ? fileBool::foundYes : fileBool::foundNo;
 #endif
@@ -573,7 +661,7 @@ fileBool CFile::isFile()
     return ( attr & FILE_ATTRIBUTE_DIRECTORY) ? fileBool::foundNo : fileBool::foundYes;
 #else
     struct stat info;
-    if (!safeStat(filename, info))
+    if (!safeStat(filename, info, false))
         return fileBool::notFound;
     return S_ISREG(info.st_mode) ? fileBool::foundYes : fileBool::foundNo;
 #endif
@@ -588,7 +676,7 @@ fileBool CFile::isReadOnly()
     return ( attr & FILE_ATTRIBUTE_READONLY) ? fileBool::foundYes : fileBool::foundNo;
 #else
     struct stat info;
-    if (!safeStat(filename, info))
+    if (!safeStat(filename, info, false))
         return fileBool::notFound;
     //MORE: I think this is correct, but someone with better unix knowledge should check!
     return (info.st_mode & (S_IWUSR|S_IWGRP|S_IWOTH)) ? fileBool::foundNo : fileBool::foundYes;
@@ -622,6 +710,28 @@ static bool setShareLock(int fd,IFSHmode share)
 #endif
 
 HANDLE CFile::openHandle(IFOmode mode, IFSHmode sharemode, bool async, int stdh)
+{
+    // For a read open of a part that is being tracked for write-sync visibility, wait for the part both to
+    // appear and to reach its published on-disk size before opening it. Otherwise a part that is still
+    // propagating (e.g. cross-AZ blobnfs lag) could be opened while truncated and the reader would consume a
+    // partial part - retrying only on a missing file (NULLFILE) does not guard against this. safeStat(checkSize
+    // =true) performs the bounded retry and throws if the size never settles within the margin. The
+    // getPathWriteSyncDelayRemainingMs() gate is a lock-free atomic check, so a normal open of an untracked
+    // file pays only that and no extra stat.
+    if ((IFOread == mode) && (stdh < 0))
+    {
+        offset_t expectedSize = (offset_t)-1;
+        bool compressed = false;
+        if (getPathWriteSyncDelayRemainingMs(filename, expectedSize, compressed))
+        {
+            struct stat info;
+            safeStat(filename, info, true);
+        }
+    }
+    return openHandleOnce(mode, sharemode, async, stdh);
+}
+
+HANDLE CFile::openHandleOnce(IFOmode mode, IFSHmode sharemode, bool async, int stdh)
 {
     HANDLE handle = NULLFILE;
 #ifdef _WIN32
@@ -1127,7 +1237,7 @@ offset_t CFile::size()
     }
 #else
     struct stat info;
-    if (safeStat(filename, info))
+    if (safeStat(filename, info, true))
         return info.st_size;
 #endif
 #if 0
@@ -4109,7 +4219,7 @@ IDirectoryIterator *CFile::directoryFiles(const char *mask,bool sub,bool include
 bool CFile::getInfo(bool &isdir,offset_t &size,CDateTime &modtime)
 {
     struct stat info;
-    if (safeStat(filename, info)) {
+    if (safeStat(filename, info, true)) {
         size = (offset_t)info.st_size;
         isdir = S_ISDIR(info.st_mode);
         timetToIDateTime(&modtime,  info.st_mtime);

@@ -10882,6 +10882,50 @@ CLocalWUQuery::CLocalWUQuery(IPropertyTree *props) : p(props)
     associatedCached = false;
 }
 
+static IPropertyTree * createArchiveTreeFromQueryBin(IPropertyTree *query)
+{
+    if (!query->isBinary("Text"))
+        return nullptr;
+
+    MemoryBuffer serialized;
+    if (!query->getPropBin("Text", serialized) || !serialized.length())
+        return nullptr;
+    try
+    {
+        return createPTree(serialized, ipt_caseInsensitive|ipt_lowmem);
+    }
+    catch (IException *e)
+    {
+        e->Release();
+        return nullptr;
+    }
+}
+
+static bool getQueryTextFromTree(IPropertyTree *query, StringBuffer &text)
+{
+    text.clear();
+    if (query->isBinary("Text"))
+    {
+        Owned<IPropertyTree> archive = createArchiveTreeFromQueryBin(query);
+        if (archive)
+        {
+            toXML(archive, text);
+            return true;
+        }
+        return false;
+    }
+
+    const char *storedText = query->queryProp("Text");
+    if (!storedText)
+        storedText = query->queryProp("ShortText");
+    if (storedText)
+    {
+        text.append(storedText);
+        return true;
+    }
+    return false;
+}
+
 EnumMapping queryTypes[] = {
    { QueryTypeUnknown, "unknown" },
    { QueryTypeEcl, "ECL" },
@@ -10903,10 +10947,11 @@ void CLocalWUQuery::setQueryType(WUQueryType qt)
 
 IStringVal& CLocalWUQuery::getQueryText(IStringVal &str) const
 {
-    const char *text = p->queryProp("Text");
-    if (!text)
-        text = p->queryProp("ShortText");
-    str.set(text);
+    StringBuffer text;
+    if (getQueryTextFromTree(p, text))
+        str.set(text.str());
+    else
+        str.clear();
     return str;
 }
 
@@ -10917,10 +10962,21 @@ IStringVal& CLocalWUQuery::getQueryShortText(IStringVal &str) const
         str.set(text);
     else
     {
-        text = p->queryProp("Text");
-        if (isArchiveQuery(text))
+        Owned<IPropertyTree> xml = createArchiveTreeFromQueryBin(p);
+        StringBuffer queryText;
+        if (!xml)
         {
-            Owned<IPropertyTree> xml = createPTreeFromXMLString(text, ipt_caseInsensitive|ipt_lowmem);
+            if (getQueryTextFromTree(p, queryText))
+            {
+                text = queryText.str();
+                if (isArchiveQuery(text))
+                    xml.setown(createPTreeFromXMLString(text, ipt_caseInsensitive|ipt_lowmem));
+            }
+            else
+                text = nullptr;
+        }
+        if (xml)
+        {
             const char * path = xml->queryProp("Query/@attributePath");
             if (path)
             {
@@ -10932,7 +10988,12 @@ IStringVal& CLocalWUQuery::getQueryShortText(IStringVal &str) const
                 str.set(xml->queryProp("Query"));
         }
         else
-            str.set(text);
+        {
+            if (text)
+                str.set(text);
+            else
+                str.clear();
+        }
     }
     return str;
 }
@@ -10941,8 +11002,13 @@ bool CLocalWUQuery::isArchive() const
 {
     if (p->hasProp("@isArchive"))
         return p->getPropBool("@isArchive");
-    const char *text = p->queryProp("Text");
-    return isArchiveQuery(text);
+    if (p->isBinary("Text"))
+    {
+        Owned<IPropertyTree> archive = createArchiveTreeFromQueryBin(p);
+        return archive.get() != nullptr;
+    }
+    StringBuffer text;
+    return getQueryTextFromTree(p, text) && isArchiveQuery(text);
 }
 
 IStringVal& CLocalWUQuery::getQueryName(IStringVal &str) const
