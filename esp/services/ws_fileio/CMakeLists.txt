@@ -69,7 +69,6 @@ add_dependencies (ws_fileio espscm)
 target_link_libraries ( ws_fileio
          jlib
          mp
-         hrpc
          remote
          dalibase
          ${XALAN_LIBRARIES} ${XERCES_LIBRARIES}

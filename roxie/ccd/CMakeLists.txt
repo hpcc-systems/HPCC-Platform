@@ -122,6 +122,7 @@ endif ()
 install ( TARGETS ccd RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} ARCHIVE DESTINATION componentfiles/cl/lib )
 
 target_link_libraries ( ccd 
+         ${CppUnit_LIBRARIES}
          dafsclient 
          dalibase 
          deftype 

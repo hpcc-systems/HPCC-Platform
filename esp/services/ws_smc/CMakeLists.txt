@@ -76,7 +76,6 @@ target_link_libraries ( ws_smc
          xmllib
          esphttp
          mp
-         hrpc
          remote
          dalibase
          dllserver

@@ -88,6 +88,7 @@ target_link_libraries ( sashalib
          eclrtl 
          deftype 
          workunit 
+         ${CppUnit_LIBRARIES}
     )
 
 if (NOT CONTAINERIZED)

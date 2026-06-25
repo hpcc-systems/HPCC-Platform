@@ -74,7 +74,10 @@ void HqlCppLibrary::extractOutputs()
         if (isExported(&cur))
         {
             IIdAtom * id = cur.queryId();
-            OwnedHqlExpr value = scope->lookupSymbol(id, LSFpublic, dummyctx);
+
+            // We are only interested in the type of the resolved symbol, not an expression to access it.
+            // Therefore pass LSFfromderived.
+            OwnedHqlExpr value = scope->lookupSymbol(id, LSFpublic|LSFfromderived, dummyctx);
 
             if (value && !value->isFunction())
             {

@@ -82,7 +82,6 @@ endif()
 
 IF (USE_ZLIB)
     target_link_libraries ( eclcc
-        ${ZLIB_LIBRARIES}
         zcrypt
     )
 ENDIF()

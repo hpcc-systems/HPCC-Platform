@@ -39,10 +39,6 @@ on:
         type: string
         description: 'Clienttools Community Asset name'
         required: true
-      clienttools-internal-asset-name:
-        type: string
-        description: 'Clienttools Internal Asset name'
-        required: true
       documentation-asset-name:
         type: string
         description: 'Documentation Asset name'
@@ -123,12 +119,6 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: ${{ inputs.clienttools-community-asset-name }}
-          merge-multiple: true
-
-      - name: Fetch clienttools internal artifacts
-        uses: actions/download-artifact@v8
-        with:
-          name: ${{ inputs.clienttools-internal-asset-name }}
           merge-multiple: true
 
       - name: "Create EN_US CHM file"
@@ -216,18 +206,6 @@ jobs:
           SM_CLIENT_CERT_FILE: ${{ env.SM_CLIENT_CERT_FILE }}
           SM_CLIENT_CERT_PASSWORD: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
 
-      - name: Build Internal ECLIDE
-        shell: "bash"
-        run: |
-          rm -rf ./ECLIDE/${{ inputs.build-dir }}/CMakeCache.txt ./ECLIDE/${{ inputs.build-dir }}/CMakeFiles
-          cd ECLIDE
-          cmake --preset ${{ inputs.configure-preset }} -DHPCC_AUDIENCE=internal -DDIGICERT_KEYPAIR_ALIAS=RIS_Data_Services_HPCC_Systems
-          cmake --build --preset ${{ inputs.build-preset }} --target SIGN
-        env:
-          SM_HOST: https://clientauth.one.digicert.com
-          SM_API_KEY: ${{ secrets.DIGICERT_API_KEY }}
-          SM_CLIENT_CERT_FILE: ${{ env.SM_CLIENT_CERT_FILE }}
-          SM_CLIENT_CERT_PASSWORD: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
 
       - name: Upload Assets
         uses: ncipollo/release-action@v1
@@ -238,16 +216,6 @@ jobs:
           makeLatest: ${{ inputs.make-latest }}
           artifacts: "./ECLIDE/${{ inputs.build-dir }}/hpccsystems-eclide-community_*.exe"
       
-      - name: Upload Assets to Jfrog
-        if: ${{ github.repository_owner == 'hpcc-systems' }}
-        shell: bash
-        run: |
-          cd ./ECLIDE/${{ inputs.build-dir }}
-          packages=($(ls -1 hpccsystems-eclide-internal_*.exe ))
-          for _package in ${packages[@]}; do
-            curl -u${{ secrets.JFROG_USERNAME }}:${{ secrets.JFROG_PASSWORD }} "https://${{ secrets.JFROG_REGISTRY }}/hpccpl-windows-local/LN/windows/${{ contains(inputs.configure-preset, '-x64') && 'x86_64' || 'i386' }}/${_package}" -T ${_package}
-          done
-
       - name: Upload Error Logs
         if: ${{ failure() || cancelled() }}
         uses: actions/upload-artifact@v7

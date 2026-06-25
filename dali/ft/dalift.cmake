@@ -68,6 +68,8 @@ target_link_libraries ( dalift
          hrpc 
          dafsclient
          dalibase 
+         remote
+         ${CppUnit_LIBRARIES}
     )
 
 if (NOT CONTAINERIZED)

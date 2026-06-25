@@ -51,6 +51,7 @@ if(PARQUETEMBED OR USE_PARQUET)
         add_definitions(-D_USRDLL -DPARQUETEMBED_PLUGIN_EXPORTS)
 
         HPCC_ADD_LIBRARY(parquetembed SHARED ${SRCS})
+        target_compile_features(parquetembed PRIVATE cxx_std_20)
 
         install(
             TARGETS parquetembed
@@ -65,8 +66,10 @@ if(PARQUETEMBED OR USE_PARQUET)
         )
 
         target_link_libraries(
-            parquetembed
+            parquetembed PRIVATE
             eclrtl
+            nbcd
+            roxiemem
             jlib
             "$<IF:$<BOOL:${ARROW_BUILD_STATIC}>,Arrow::arrow_static,Arrow::arrow_shared>"
             "$<IF:$<BOOL:${ARROW_BUILD_STATIC}>,Parquet::parquet_static,Parquet::parquet_shared>"

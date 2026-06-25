@@ -59,45 +59,74 @@ protected:
     public:
         bool matches(const char* value) const
         {
-            bool match = false;
+            bool positiveMatch = false;
+            bool hasPositive = false;
+            bool hasNegative = false;
             for (const PatternInfo& pattern : patterns)
             {
                 switch (pattern.second)
                 {
                 case FilterTermComparison::Default:
                 case FilterTermComparison::Wildcard:
-                    match = WildMatch(value, pattern.first.c_str(), false);
+                    hasPositive = true;
+                    positiveMatch = positiveMatch || WildMatch(value, pattern.first.c_str(), false);
                     break;
                 case FilterTermComparison::Equal:
-                    match = strieq(value, pattern.first.c_str());
+                    hasPositive = true;
+                    positiveMatch = positiveMatch || strieq(value, pattern.first.c_str());
                     break;
                 case FilterTermComparison::NotEqual:
-                    match = !strieq(value, pattern.first.c_str());
+                    hasNegative = true;
+                    if (strieq(value, pattern.first.c_str()))
+                        return false;
                     break;
                 case FilterTermComparison::LessThan:
-                    match = stricmp(value, pattern.first.c_str()) < 0;
+                    hasPositive = true;
+                    positiveMatch = positiveMatch || (stricmp(value, pattern.first.c_str()) < 0);
                     break;
                 case FilterTermComparison::LessThanOrEqual:
-                    match = stricmp(value, pattern.first.c_str()) <= 0;
+                    hasPositive = true;
+                    positiveMatch = positiveMatch || (stricmp(value, pattern.first.c_str()) <= 0);
                     break;
                 case FilterTermComparison::GreaterThanOrEqual:
-                    match = stricmp(value, pattern.first.c_str()) >= 0;
+                    hasPositive = true;
+                    positiveMatch = positiveMatch || (stricmp(value, pattern.first.c_str()) >= 0);
                     break;
                 case FilterTermComparison::GreaterThan:
-                    match = stricmp(value, pattern.first.c_str()) > 0;
+                    hasPositive = true;
+                    positiveMatch = positiveMatch || (stricmp(value, pattern.first.c_str()) > 0);
                     break;
                 default:
-                    match = false;
-                    break;
+                    throwUnexpected();
                 }
-                if (match)
-                    return true;
             }
+
+            // Negations act as a deny-list: any matched negation already returned false above.
+            // If positive terms exist, the value must match at least one; otherwise any
+            // non-denied value is accepted.
+            if (hasPositive)
+                return positiveMatch;
+            if (hasNegative)
+                return true;
             return false;
         }
 
         bool acceptToken(const char* token, FilterTermComparison comp)
         {
+            switch (comp)
+            {
+            case FilterTermComparison::Default:
+            case FilterTermComparison::Wildcard:
+            case FilterTermComparison::Equal:
+            case FilterTermComparison::NotEqual:
+            case FilterTermComparison::LessThan:
+            case FilterTermComparison::LessThanOrEqual:
+            case FilterTermComparison::GreaterThanOrEqual:
+            case FilterTermComparison::GreaterThan:
+                break;
+            default:
+                return false;
+            }
             (void)patterns.emplace(token, comp);
             return true;
         }
@@ -116,6 +145,8 @@ protected:
             if (isEmptyString(token))
                 continue;
             FilterTermComparison comp = CEventFilter::extractComparison(token);
+            if (isEmptyString(token))
+                return false;
             if (!helper.acceptToken(token, comp))
                 return false;
             accepted++;
@@ -140,6 +171,8 @@ protected:
                 if (isEmptyString(token))
                     continue;
                 FilterTermComparison comp = CEventFilter::extractComparison(token);
+                if (isEmptyString(token))
+                    return false;
                 if (!acceptToken(token, comp))
                     return false;
             }
@@ -213,42 +246,60 @@ protected:
         bool matches(const CEvent&, const CEventAttribute& attribute) const override
         {
             __uint64 value = attribute.queryNumericValue();
-            bool match = false;
+            bool positiveMatch = false;
+            bool hasPositive = false;
+            bool hasNegative = false;
             for (const std::pair<std::pair<__uint64, __uint64>, FilterTermComparison>& range : accepted)
             {
                 switch (range.second)
                 {
                 case FilterTermComparison::Default:
                 case FilterTermComparison::ElementOf:
-                    match = (range.first.first <= value && value <= range.first.second);
+                    hasPositive = true;
+                    positiveMatch = positiveMatch || (range.first.first <= value && value <= range.first.second);
                     break;
                 case FilterTermComparison::NotElementOf:
-                    match = (value < range.first.first || range.first.second < value);
+                    hasNegative = true;
+                    if (range.first.first <= value && value <= range.first.second)
+                        return false;
                     break;
                 case FilterTermComparison::Equal:
-                    match = (range.first.first == value);
+                    hasPositive = true;
+                    positiveMatch = positiveMatch || (range.first.first == value);
                     break;
                 case FilterTermComparison::NotEqual:
-                    match = (range.first.first != value);
+                    hasNegative = true;
+                    if (range.first.first == value)
+                        return false;
                     break;
                 case FilterTermComparison::LessThan:
-                    match = (value < range.first.first);
+                    hasPositive = true;
+                    positiveMatch = positiveMatch || (value < range.first.first);
                     break;
                 case FilterTermComparison::LessThanOrEqual:
-                    match = (value <= range.first.first);
+                    hasPositive = true;
+                    positiveMatch = positiveMatch || (value <= range.first.first);
                     break;
                 case FilterTermComparison::GreaterThanOrEqual:
-                    match = (range.first.second <= value);
+                    hasPositive = true;
+                    positiveMatch = positiveMatch || (range.first.second <= value);
                     break;
                 case FilterTermComparison::GreaterThan:
-                    match = (range.first.second < value);
+                    hasPositive = true;
+                    positiveMatch = positiveMatch || (range.first.second < value);
                     break;
                 default:
-                    break;
+                    throwUnexpected();
                 }
-                if (match)
-                    return true;
             }
+
+            // Negations act as a deny-list: any matched negation already returned false above.
+            // If positive terms exist, the value must match at least one; otherwise any
+            // non-denied value is accepted.
+            if (hasPositive)
+                return positiveMatch;
+            if (hasNegative)
+                return true;
             return false;
         }
 
@@ -289,13 +340,21 @@ protected:
         {
             switch (comp)
             {
+            case FilterTermComparison::Default:
+            case FilterTermComparison::ElementOf:
+            case FilterTermComparison::NotElementOf:
+            case FilterTermComparison::LessThan:
+            case FilterTermComparison::LessThanOrEqual:
+            case FilterTermComparison::GreaterThanOrEqual:
+            case FilterTermComparison::GreaterThan:
+                break;
             case FilterTermComparison::Equal:
             case FilterTermComparison::NotEqual:
                 if (first != last)
                     return false;
                 break;
             default:
-                break;
+                return false;
             }
             if (first <= last)
                 return accepted.insert({{first, last}, comp}).second;
@@ -354,11 +413,6 @@ protected:
             assertex(attribute.queryId() == EvAttrFileId);
 #endif
             return matchedDerivations.count(attribute.queryNumericValue()) || UnsignedFilterTerm::matches(event, attribute);
-        }
-
-        bool acceptToken(const char* token, FilterTermComparison comp) override
-        {
-            return UnsignedFilterTerm::acceptToken(token, comp);
         }
 
         bool acceptMetaPath(const char* values)
@@ -878,6 +932,14 @@ class EventFilterTests : public CppUnit::TestFixture
     CPPUNIT_TEST(testAcceptMetaAttributeRejectsUnsupportedNames);
     CPPUNIT_TEST(testConfigureRejectsUnknownMetaAttributeName);
     CPPUNIT_TEST(testConfigureRejectsEmptyMetaAttributeId);
+    CPPUNIT_TEST(testFilterByAttributeByStringNeq);
+    CPPUNIT_TEST(testFilterByAttributeByStringMultiNeq);
+    CPPUNIT_TEST(testFilterByAttributeByNumericMultiNeq);
+    CPPUNIT_TEST(testFilterByAttributeByNumericMultiOut);
+    CPPUNIT_TEST(testFilterByAttributeByNumericPositiveWithNegative);
+    CPPUNIT_TEST(testFilterByAttributeRejectsEmptyPostSelectorToken);
+    CPPUNIT_TEST(testFilterByAttributeByStringInRejected);
+    CPPUNIT_TEST(testFilterByAttributeByStringOutRejected);
     CPPUNIT_TEST(testFilterByAttributeByFileIdNumericPathMatch);
     CPPUNIT_TEST(testFilterByAttributeByFileIdPlaneMatch);
     CPPUNIT_TEST(testFilterByAttributeByFileIdMetaPathPlaneOrMatch);
@@ -1937,6 +1999,161 @@ public:
         CMetaInfoState metaInfoState;
         Owned<IEventFilter> filter = createEventFilter(metaInfoState);
         CPPUNIT_ASSERT_THROWS_IEXCEPTION(filter->configure(*config), "expected exception for empty attribute id");
+    }
+
+    void testFilterByAttributeByStringNeq()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link kind="event-filter">
+                    <attribute id="EventTraceId" values="[neq]trace-002"/>
+                </link>
+                <input>
+                    <event type="QueryStart" EventTraceId="trace-001"/>
+                    <event type="QueryStart" EventTraceId="trace-002"/>
+                    <event type="QueryStart" EventTraceId="trace-003"/>
+                    <event type="QueryStart" EventTraceId="trace-004"/>
+                    <event type="QueryStart" EventTraceId="trace-005"/>
+                </input>
+                <expect>
+                    <event type="QueryStart" EventTraceId="trace-001"/>
+                    <event type="QueryStart" EventTraceId="trace-003"/>
+                    <event type="QueryStart" EventTraceId="trace-004"/>
+                    <event type="QueryStart" EventTraceId="trace-005"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData, PTEFlenientParsing);
+    }
+
+    void testFilterByAttributeByStringMultiNeq()
+    {
+        // Regression: with multiple [neq] terms the old code short-circuited on the first
+        // non-matching negation and incorrectly passed the excluded value.
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link kind="event-filter">
+                    <attribute id="EventTraceId" values="[neq]trace-002,[neq]trace-004"/>
+                </link>
+                <input>
+                    <event type="QueryStart" EventTraceId="trace-001"/>
+                    <event type="QueryStart" EventTraceId="trace-002"/>
+                    <event type="QueryStart" EventTraceId="trace-003"/>
+                    <event type="QueryStart" EventTraceId="trace-004"/>
+                    <event type="QueryStart" EventTraceId="trace-005"/>
+                </input>
+                <expect>
+                    <event type="QueryStart" EventTraceId="trace-001"/>
+                    <event type="QueryStart" EventTraceId="trace-003"/>
+                    <event type="QueryStart" EventTraceId="trace-005"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData, PTEFlenientParsing);
+    }
+
+    void testFilterByAttributeByNumericMultiNeq()
+    {
+        // Regression: same multi-negation bug in UnsignedFilterTerm.
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link kind="event-filter">
+                    <attribute id="NodeKind" values="[neq]branch,[neq]blob"/>
+                </link>
+                <input>
+                    <event type="IndexCacheMiss" NodeKind="branch"/>
+                    <event type="IndexCacheMiss" NodeKind="leaf"/>
+                    <event type="IndexCacheMiss" NodeKind="blob"/>
+                </input>
+                <expect>
+                    <event type="IndexCacheMiss" NodeKind="leaf"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData, PTEFlenientParsing);
+    }
+
+    void testFilterByAttributeByNumericMultiOut()
+    {
+        // Regression: multiple [out] ranges are deny-list terms and should be ANDed.
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link kind="event-filter">
+                    <attribute id="EventTimestamp" values="[out]2-4,[out]6-8"/>
+                </link>
+                <input>
+                    <event type="RecordingActive" EventTimestamp="1"/>
+                    <event type="RecordingActive" EventTimestamp="2"/>
+                    <event type="RecordingActive" EventTimestamp="3"/>
+                    <event type="RecordingActive" EventTimestamp="4"/>
+                    <event type="RecordingActive" EventTimestamp="5"/>
+                    <event type="RecordingActive" EventTimestamp="6"/>
+                    <event type="RecordingActive" EventTimestamp="7"/>
+                    <event type="RecordingActive" EventTimestamp="8"/>
+                    <event type="RecordingActive" EventTimestamp="9"/>
+                </input>
+                <expect>
+                    <event type="RecordingActive" EventTimestamp="1"/>
+                    <event type="RecordingActive" EventTimestamp="5"/>
+                    <event type="RecordingActive" EventTimestamp="9"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData, PTEFlenientParsing);
+    }
+
+    void testFilterByAttributeByNumericPositiveWithNegative()
+    {
+        // Mixed semantics: apply deny-list first, then require a positive match.
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link kind="event-filter">
+                    <attribute id="EventTimestamp" values="2-8,[out]4-6"/>
+                </link>
+                <input>
+                    <event type="RecordingActive" EventTimestamp="1"/>
+                    <event type="RecordingActive" EventTimestamp="2"/>
+                    <event type="RecordingActive" EventTimestamp="3"/>
+                    <event type="RecordingActive" EventTimestamp="4"/>
+                    <event type="RecordingActive" EventTimestamp="5"/>
+                    <event type="RecordingActive" EventTimestamp="6"/>
+                    <event type="RecordingActive" EventTimestamp="7"/>
+                    <event type="RecordingActive" EventTimestamp="8"/>
+                    <event type="RecordingActive" EventTimestamp="9"/>
+                </input>
+                <expect>
+                    <event type="RecordingActive" EventTimestamp="2"/>
+                    <event type="RecordingActive" EventTimestamp="3"/>
+                    <event type="RecordingActive" EventTimestamp="7"/>
+                    <event type="RecordingActive" EventTimestamp="8"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData, PTEFlenientParsing);
+    }
+
+    void testFilterByAttributeRejectsEmptyPostSelectorToken()
+    {
+        CMetaInfoState metaInfoState;
+        Owned<IEventFilter> filter = createEventFilter(metaInfoState);
+        CPPUNIT_ASSERT(!filter->acceptAttribute(EvAttrEventTraceId, "[neq]"));
+        CPPUNIT_ASSERT(!filter->acceptAttribute(EvAttrEventTraceId, "[eq]   "));
+        CPPUNIT_ASSERT(!filter->acceptAttribute(EvAttrEventTimestamp, "[out]"));
+        CPPUNIT_ASSERT(!filter->acceptAttribute(EvAttrEventTimestamp, "[gte]   "));
+    }
+
+    void testFilterByAttributeByStringInRejected()
+    {
+        CMetaInfoState metaInfoState;
+        Owned<IEventFilter> filter = createEventFilter(metaInfoState);
+        CPPUNIT_ASSERT(!filter->acceptAttribute(EvAttrEventTraceId, "[in]trace-001,[in]trace-003"));
+    }
+
+    void testFilterByAttributeByStringOutRejected()
+    {
+        CMetaInfoState metaInfoState;
+        Owned<IEventFilter> filter = createEventFilter(metaInfoState);
+        CPPUNIT_ASSERT(!filter->acceptAttribute(EvAttrEventTraceId, "[out]trace-003,[out]trace-005"));
     }
 };
 

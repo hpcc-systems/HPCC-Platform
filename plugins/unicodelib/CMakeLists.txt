@@ -40,7 +40,7 @@ if (USE_ICU)
 
     HPCC_ADD_LIBRARY( unicodelib SHARED ${SRCS} )
     install ( TARGETS unicodelib DESTINATION plugins CALC_DEPS)
-    target_link_libraries ( unicodelib
+    target_link_libraries ( unicodelib PRIVATE
         jlib
         ${ICU_LIBRARIES}
         )

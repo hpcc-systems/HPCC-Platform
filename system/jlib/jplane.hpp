@@ -22,6 +22,10 @@
 #include "jlib.hpp"
 #include "jstring.hpp"
 
+#include <time.h>
+#include <string>
+#include <vector>
+
 //---- Storage plane related functions ----------------------------------------------------
 
 interface IPropertyTree;
@@ -55,6 +59,31 @@ extern jlib_decl size32_t getBlockedRandomIOSize(const char *planeName, size32_t
 extern jlib_decl size32_t getForeignBlockedIOSize(bool isFiltered);
 extern jlib_decl size32_t getIndexBlockedIOSize(const char *planeName, bool isFiltered);
 extern jlib_decl bool getRenameSupportedFromPath(const char *filePath);
+extern jlib_decl void setWriteSyncMarginDeltaMs(int deltaMs); // A value of std::numeric_limits<int>::min() means "not set".
+extern jlib_decl bool getWriteSyncMarginDeltaMs(int &deltaMs); // Returns true if a delta is set, and fills deltaMs with its value (which may be 0).
+
+// Write-sync visibility cache: tracks recently published file parts that may not yet be visible
+// due to eventual consistency. See jplane.cpp for full semantics, reasoning, and concurrency design.
+//
+// noteWriteSyncFiles is called with all of a file's part copies - each pairing the physical path a reader will
+// open with that part's published on-disk size ((offset_t)-1 means unknown/do-not-validate) and whether the
+// part is compressed - and a single precomputed visibility deadline, when a file's descriptor is created
+// (master lookup or slave deserialization); the whole batch is recorded under one lock.
+//
+// getPathWriteSyncDelayRemainingMs is consulted by jfile, with the same physical path, returning the remaining
+// margin and (via expectedSize/compressed) the published size to validate against ((offset_t)-1 if none) and
+// whether it is a compressed part (which affects how an empty part is validated).
+struct WriteSyncFileInfo
+{
+    std::string path;                     // full physical path the reader will open
+    offset_t expectedSize = (offset_t)-1; // published on-disk size, or (offset_t)-1 if unknown / do not validate
+    bool compressed = false;              // part is compressed - affects how an empty (size 0) part is validated
+};
+extern jlib_decl void noteWriteSyncFiles(const std::vector<WriteSyncFileInfo> &files, time_t deadline);
+extern jlib_decl unsigned getPathWriteSyncDelayRemainingMs(const char *physicalPath, offset_t &expectedSize, bool &compressed);
+#ifdef _USE_CPPUNIT
+extern jlib_decl void resetWriteSyncStateForTest();
+#endif
 
 //---------------------------------------------------------------------------------------------
 

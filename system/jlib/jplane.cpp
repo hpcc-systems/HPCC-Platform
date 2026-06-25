@@ -17,6 +17,7 @@
 
 #include "platform.h"
 #include <array>
+#include <limits>
 #include <string>
 #include <unordered_map>
 
@@ -718,6 +719,240 @@ size32_t getIndexBlockedIOSize(const char *planeName, bool isFiltered)
             blockedIOSize = 0; // caller should interpret as use default
     }
     return blockedIOSize;
+}
+
+//------------------------------------------------------------------------------------------------------------
+// Write-sync visibility cache (see jplane.hpp)
+//
+// The write-sync visibility cache tracks recently published file parts that may not yet be visible
+// to all nodes in the cluster due to eventual consistency in the underlying storage plane.
+// Keyed by the part's full physical path, it records a visibility deadline (publish @modified + margin),
+// published on-disk size, and compression state. This lets jfile transparently retry physical access
+// to a part that is not yet visible (e.g., cross-AZ blobnfs propagation lag), and also wait for its
+// physical size to reach the published size (cross-AZ propagation can briefly expose a partial file),
+// without delaying access to parts that are not being tracked.
+//
+// Reader concurrency design:
+// This cache is on the hot path of physical file access (every safeStat / open of a part). The vast
+// majority of these are for paths that are not tracked here at all, so it is designed to stay as
+// close to lock-free as possible:
+//  - The common case (cache empty) returns immediately on a single relaxed-acquire atomic load, taking no
+//    lock whatsoever - so unrelated, non-plane file accesses pay almost nothing.
+//  - When entries do exist, the only lock taken is the briefest possible: a single Link() of the current
+//    immutable snapshot. All actual work (hash probe and checks) then runs lock-free on this thread's
+//    private snapshot reference, never contending with other readers or with a writer.
+//
+// The snapshot (copy-on-publish) design enables this: readers never mutate shared state during a lookup
+// (with one exception: an opportunistic, guarded clear of an entirely-expired snapshot to restore the
+// lock-free fast path). Rebuilding the map on each write is deliberately pushed entirely onto the (rare) writer.
+//
+// Ordering guarantee:
+// When a part IS tracked here, the writer (noteWriteSyncFiles) will have fully committed and published
+// the snapshot well before any reader looks the part up. The write happens when the IFileDescriptor is
+// created (typically on Dali lookup or worker deserialization), and reads happen later when something
+// opens the part. There is no race where a just-written part is missed by a reader; it is already
+// in the published snapshot.
+//
+// Cache pruning / eviction:
+// Entries are given a visibility deadline. To prevent unbounded growth, the writer (noteWriteSyncFiles)
+// performs a sweep on every write, purging any entries from the canonical map that have passed their
+// deadline. This bounds the cache to only those parts recently published and still within their margin.
+// Additionally, if the cache becomes quiet, the first reader to notice that the entirely published snapshot
+// has expired will opportunistically clear it, aggressively returning the system to the lock-free fast path.
+
+
+// The set/get methods below provide a global tuning and debugging aide to adjust
+// the plane's write-sync margin, allowing operators to extend delays or force tracing
+// without changing the plane configuration.
+static constexpr int noWriteSyncMarginDeltaMs = std::numeric_limits<int>::min();
+static std::atomic<int> writeSyncMarginDeltaMs{noWriteSyncMarginDeltaMs};
+
+void setWriteSyncMarginDeltaMs(int deltaMs)
+{
+    writeSyncMarginDeltaMs = deltaMs;
+}
+
+// Returns true if a write-sync margin delta has been explicitly configured,
+// even if that value is zero. If configured, it triggers tracing regardless
+// of the margin delta value.
+bool getWriteSyncMarginDeltaMs(int &deltaMs)
+{
+    int value = writeSyncMarginDeltaMs;
+    if (noWriteSyncMarginDeltaMs == value)
+    {
+        deltaMs = 0;
+        return false;
+    }
+    deltaMs = value;
+    return true;
+}
+
+// {part physical path -> visibility deadline + published on-disk size for a recently published file part}.
+// The full path the reader will open is stored, so lookups are a direct hash match with no key derivation.
+struct WriteSyncEntry
+{
+    time_t deadline = 0;                 // epoch secs by which the part should be visible to all readers
+    offset_t expectedSize = (offset_t)-1; // published on-disk size to validate against ((offset_t)-1 => unknown / do not validate)
+    bool compressed = false;             // part is compressed - affects how an empty (size 0) part is validated
+};
+
+class CWriteSyncSnapshot : public CInterfaceOf<IInterface>
+{
+public:
+    CWriteSyncSnapshot(const std::unordered_map<std::string, WriteSyncEntry> &sourceMap)
+    {
+        entries.reserve(sourceMap.size());
+        for (const auto &entry : sourceMap)
+        {
+            entries.emplace(entry.first, entry.second);
+            if (entry.second.deadline > latestDeadline)
+                latestDeadline = entry.second.deadline;
+        }
+    }
+
+    inline bool isExpired(time_t now) const
+    {
+        return now >= latestDeadline;
+    }
+
+    unsigned getDelayRemainingMs(const char *physicalPath, time_t now, offset_t &expectedSize, bool &compressed) const
+    {
+        auto it = entries.find(physicalPath);
+        if (it == entries.end())
+            return 0;
+        if (now >= it->second.deadline) // expired - the part should now be visible
+            return 0;
+        expectedSize = it->second.expectedSize;
+        compressed = it->second.compressed;
+        unsigned __int64 remainingMs = (unsigned __int64)(it->second.deadline - now) * 1000;
+        if (remainingMs > 0xFFFFFFFFU)
+            remainingMs = 0xFFFFFFFFU;
+        return (unsigned)remainingMs;
+    }
+
+    inline size_t size() const
+    {
+        return entries.size();
+    }
+
+    std::unordered_map<std::string, WriteSyncEntry> entries;
+    time_t latestDeadline = 0; // latest deadline across the snapshot; if expired, every entry is expired
+};
+
+// Canonical mutable map. Only ever accessed by writers while holding writeSyncWriteCrit; readers never touch it.
+static std::unordered_map<std::string, WriteSyncEntry> writeSyncDeadlineMap;
+
+static CriticalSection writeSyncWriteCrit; // serializes writers and guards writeSyncDeadlineMap + the snapshot build
+
+// Published immutable snapshot. Swapping this pointer is the only thing that contends with readers, so
+// writeSyncDeadlineCrit is held for the minimum possible time - just the swap, never the rebuild.
+static Owned<const CWriteSyncSnapshot> writeSyncDeadlineSnapshot;
+static CriticalSection writeSyncDeadlineCrit;
+
+// Lock-free fast path: the cache is almost always empty, so readers can skip taking the lock entirely.
+static std::atomic<size_t> writeSyncDeadlineCount{0};
+
+// Called while holding writeSyncWriteCrit. Builds the new snapshot from the canonical map outside the reader
+// lock, then takes writeSyncDeadlineCrit only to swap in the new pointer - readers are never blocked while the
+// (potentially large) snapshot is copied, only for the single pointer swap.
+static void publishWriteSyncSnapshot()
+{
+    Owned<CWriteSyncSnapshot> nextSnapshot;
+    size_t count = 0;
+    if (!writeSyncDeadlineMap.empty())
+    {
+        nextSnapshot.setown(new CWriteSyncSnapshot(writeSyncDeadlineMap));
+        count = nextSnapshot->size();
+    }
+
+    // Minimal critical section: swap the published pointer and update the lock-free count together.
+    CriticalBlock b(writeSyncDeadlineCrit);
+    writeSyncDeadlineSnapshot.setown(nextSnapshot.getClear());
+    writeSyncDeadlineCount.store(count, std::memory_order_release);
+}
+
+#ifdef _USE_CPPUNIT
+void resetWriteSyncStateForTest()
+{
+    CriticalBlock b(writeSyncWriteCrit);
+    writeSyncDeadlineMap.clear();
+    publishWriteSyncSnapshot();
+    writeSyncMarginDeltaMs = noWriteSyncMarginDeltaMs;
+}
+#endif
+
+void noteWriteSyncFiles(const std::vector<WriteSyncFileInfo> &files, time_t deadline)
+{
+    time_t now = time(nullptr);
+    if (now >= deadline) // already past the visibility margin - nothing to track
+        return;
+
+    int marginDeltaMs = 0;
+    bool forceTrace = getWriteSyncMarginDeltaMs(marginDeltaMs);
+
+    CriticalBlock b(writeSyncWriteCrit); // serialize writers; readers are unaffected by this lock
+
+    // prune entries that have passed their deadline once for the whole batch, keeping the map bounded to
+    // recently published parts
+    for (auto it = writeSyncDeadlineMap.begin(); it != writeSyncDeadlineMap.end(); )
+    {
+        if (it->second.deadline <= now)
+            it = writeSyncDeadlineMap.erase(it);
+        else
+            ++it;
+    }
+
+    for (const WriteSyncFileInfo &file : files)
+    {
+        auto [it, isNewEntry] = writeSyncDeadlineMap.try_emplace(file.path);
+        WriteSyncEntry &existing = it->second;
+        existing.deadline = deadline;
+        // (offset_t)-1 means the published on-disk size is unknown (no meta size) and is carried through as-is
+        // so the reader skips size validation; any other value (including 0) is a real size to validate against.
+        existing.expectedSize = file.expectedSize;
+        existing.compressed = file.compressed;
+        if (forceTrace)
+        {
+            WARNLOG("noteWriteSyncFiles: %s write-sync entry (marginDeltaMs=%d): path=%s, deadline=%lld, expectedSize=%lld, compressed=%s",
+                isNewEntry ? "added" : "updated", marginDeltaMs, file.path.c_str(), (long long)deadline, (long long)file.expectedSize, file.compressed ? "true" : "false");
+        }
+    }
+    publishWriteSyncSnapshot();
+}
+
+unsigned getPathWriteSyncDelayRemainingMs(const char *physicalPath, offset_t &expectedSize, bool &compressed)
+{
+    expectedSize = (offset_t)-1; // unknown / do not validate unless a tracked entry says otherwise
+    compressed = false;
+    if (0 == writeSyncDeadlineCount.load(std::memory_order_acquire)) // common case - nothing being tracked (no lock)
+        return 0;
+    if (isEmptyString(physicalPath))
+        return 0;
+
+    // Take a linked reference to the current snapshot under the lock - this is only held for the
+    // duration of a single link (refcount bump), the map probe below runs lock-free on our private copy.
+    Owned<const CWriteSyncSnapshot> snapshot;
+    time_t now = time(nullptr);
+    {
+        CriticalBlock b(writeSyncDeadlineCrit);
+        snapshot.set(writeSyncDeadlineSnapshot);
+        if (!snapshot)
+            return 0;
+        if (snapshot->isExpired(now)) // every entry in the published snapshot has expired
+        {
+            // All tracked parts have expired. Opportunistically clear the published snapshot so subsequent
+            // readers return on the lock-free fast path again, rather than continuing to take writeSyncDeadlineCrit
+            // until the next writer prunes and republishes. Guarded so we never discard a newer snapshot a writer
+            // may have just swapped in: only clear if the currently published snapshot is still this expired one.
+            if (writeSyncDeadlineSnapshot.get() == snapshot.get())
+            {
+                writeSyncDeadlineSnapshot.clear();
+                writeSyncDeadlineCount.store(0, std::memory_order_release);
+            }
+            return 0;
+        }
+    }
+    return snapshot->getDelayRemainingMs(physicalPath, now, expectedSize, compressed);
 }
 
 static std::atomic<int> avoidRename{-1};

@@ -60,10 +60,9 @@ set_target_properties(wuanalysis PROPERTIES
 
 install ( TARGETS wuanalysis RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 
-target_link_libraries ( wuanalysis
+target_link_libraries ( wuanalysis PRIVATE
          jlib
          mp
-         hrpc
          workunit
          thorhelper
     )

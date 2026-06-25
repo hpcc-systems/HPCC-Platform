@@ -56,12 +56,13 @@ if(SQLITE3EMBED)
             CALC_DEPS
         )
         target_link_libraries(
-            sqlite3embed
+            sqlite3embed PRIVATE
             unofficial::sqlite3::sqlite3
         )
         target_link_libraries(
-            sqlite3embed
+            sqlite3embed PRIVATE
             eclrtl
+            nbcd
             jlib)
     endif()
 endif()

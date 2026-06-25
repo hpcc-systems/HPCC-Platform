@@ -70,7 +70,7 @@ if(NOT PLUGIN)
         RUNTIME DESTINATION ${EXEC_DIR}
         LIBRARY DESTINATION ${LIB_DIR})
     target_link_libraries(
-        workunit 
+        workunit PRIVATE
         jlib 
         dalibase 
         dllserver 
@@ -79,9 +79,9 @@ if(NOT PLUGIN)
         deftype
         )
     if (USE_OPENSSL)
-        target_link_libraries(workunit securesocket)
+        target_link_libraries(workunit PRIVATE securesocket)
     endif()
     if (NOT CONTAINERIZED)
-        target_link_libraries(workunit environment)
+        target_link_libraries(workunit PRIVATE environment)
     endif()
 endif()

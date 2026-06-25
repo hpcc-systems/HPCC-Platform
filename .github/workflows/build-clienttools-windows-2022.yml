@@ -21,11 +21,6 @@ on:
         type: string
         description: 'community_[semver]'
         required: true
-      ln-ref:
-        type: string
-        description: 'internal_[semver]'
-        required: false
-        default: ''
       cmake-config-options:
         type: string
         description: 'CMake config options'
@@ -58,16 +53,6 @@ jobs:
           ref: ${{ inputs.community-ref }}
           submodules: recursive
           path: ./HPCC-Platform
-
-      - name: Checkout LN
-        if: ${{ inputs.ln-ref != '' }}
-        uses: actions/checkout@v6
-        with:
-          repository: ${{ github.repository_owner }}/LN
-          ref: ${{ inputs.ln-ref }}
-          token: ${{ secrets.LNB_TOKEN }}
-          submodules: recursive
-          path: ./LN
 
       - name: Setup Certificate File
         shell: "pwsh"
@@ -115,13 +100,8 @@ jobs:
         id: setup_source
         shell: "bash"
         run: |
-          if [ -d ./LN ]; then
-            echo "LN directory exists; building internal clienttools"
-            echo "source_dir=./LN" >> $GITHUB_OUTPUT
-          else
-            echo "LN directory does not exist; building community clienttools"
-            echo "source_dir=./HPCC-Platform" >> $GITHUB_OUTPUT
-          fi
+          echo "Building community clienttools"
+          echo "source_dir=./HPCC-Platform" >> $GITHUB_OUTPUT
 
       - name: Build Clienttools
         id: build_clienttools
@@ -141,7 +121,6 @@ jobs:
           SM_CLIENT_CERT_PASSWORD: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
 
       - name: Release Community Clienttools
-        if: ${{ inputs.ln-ref == '' }}
         uses: ncipollo/release-action@v1
         with:
           allowUpdates: true
@@ -149,16 +128,6 @@ jobs:
           prerelease: ${{ contains(github.ref, '-rc') }}
           makeLatest: ${{ inputs.make-latest }}
           artifacts: "./build/hpccsystems-clienttools-community*.exe"
-
-      - name: Release Internal Clienttools to JFrog Repository
-        if: ${{ inputs.ln-ref != '' && github.repository_owner == 'hpcc-systems' }}
-        shell: "bash"
-        run: |
-          cd ./build
-          packages=($(ls -1 hpccsystems-clienttools-internal*.exe ))
-          for _package in ${packages[@]}; do
-            curl -u${{ secrets.JFROG_USERNAME }}:${{ secrets.JFROG_PASSWORD }} "https://${{ secrets.JFROG_REGISTRY }}/hpccpl-windows-local/LN/windows/x86_64/${_package}" -T ${_package}
-          done
 
       - name: Share Asset for ECLIDE build
         if: ${{ inputs.upload-package }}

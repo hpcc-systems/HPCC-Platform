@@ -108,8 +108,9 @@ install(
 endif()
 
 target_link_libraries(
-    py3embed
+    py3embed PRIVATE
     eclrtl
+    nbcd
     roxiemem
     jlib
     ${Python3_LIBRARIES}

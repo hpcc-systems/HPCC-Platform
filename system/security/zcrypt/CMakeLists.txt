@@ -47,7 +47,7 @@ ADD_DEFINITIONS ( -D_USRDLL -DZCRYPT_EXPORTS )
 
 HPCC_ADD_LIBRARY( zcrypt SHARED ${SRCS} )
 install ( TARGETS zcrypt RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} CALC_DEPS )
-target_link_libraries ( zcrypt
+target_link_libraries ( zcrypt PRIVATE
          jlib
          ${OPENSSL_LIBRARIES} 
          unofficial::minizip::minizip

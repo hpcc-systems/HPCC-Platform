@@ -52,4 +52,5 @@ target_link_libraries ( environment
          mp 
          remote 
          dalibase 
+         dafsclient
     )

@@ -247,7 +247,7 @@ ADD_DEFINITIONS( -DCPPHTTPLIB_USE_POLL )
 ADD_DEFINITIONS( -D_USRDLL -DJLIB_EXPORTS )
 HPCC_ADD_LIBRARY( jlib SHARED ${SRCS} ${INCLUDES} )
 
-target_link_libraries ( jlib
+target_link_libraries ( jlib PRIVATE
         lzma
         lz4::lz4
         libbase58
@@ -255,24 +255,23 @@ target_link_libraries ( jlib
        )
 
 if (NOT WIN32 AND NOT WIN64 AND NOT APPLE AND NOT EMSCRIPTEN)
-    target_link_libraries ( jlib PkgConfig::liburing )
+    target_link_libraries ( jlib PRIVATE PkgConfig::liburing )
 endif ()
 
 if ( ${HAVE_LIBDL} )
-target_link_libraries ( jlib dl)
+    target_link_libraries ( jlib PRIVATE dl)
 endif ( ${HAVE_LIBDL} )
 
 if ( ${HAVE_LIBCRYPT} )
-target_link_libraries ( jlib crypt)
+    target_link_libraries ( jlib PRIVATE crypt)
 endif ( ${HAVE_LIBCRYPT} )
 
-target_link_libraries ( jlib
+target_link_libraries ( jlib PRIVATE
         
         opentelemetry-cpp::ostream_span_exporter
         opentelemetry-cpp::api #                               - Imported target of opentelemetry-cpp::api
         opentelemetry-cpp::sdk #                              - Imported target of opentelemetry-cpp::sdk
         opentelemetry-cpp::ext #                              - Imported target of opentelemetry-cpp::ext
-        opentelemetry-cpp::logs #                             - Imported target of opentelemetry-cpp::logs
         opentelemetry-cpp::in_memory_span_exporter #          - Imported target of opentelemetry-cpp::in_memory_span_exporter
         opentelemetry-cpp::ostream_log_record_exporter #      - Imported target of opentelemetry-cpp::ostream_log_record_exporter
         ###These Otel import targets are not trivial to find, developers can save time by uncommenting as needed
@@ -297,27 +296,26 @@ target_link_libraries ( jlib
         )
 
 IF (USE_OPENSSL)
-target_link_libraries ( jlib ${OPENSSL_LIBRARIES})
+    target_link_libraries ( jlib PRIVATE ${OPENSSL_LIBRARIES})
 endif (USE_OPENSSL)
 
 IF (WIN32 AND USE_ZLIB)
-target_link_libraries ( jlib ZLIB::ZLIB )
+    target_link_libraries ( jlib PRIVATE ZLIB::ZLIB )
 endif (WIN32 AND USE_ZLIB)
 
 if (USE_OPENTEL_GRPC)
-    target_link_libraries ( jlib 
-        opentelemetry-cpp::otlp_grpc_client #                 - Imported target of opentelemetry-cpp::otlp_grpc_client
+    target_link_libraries ( jlib PRIVATE
         opentelemetry-cpp::otlp_grpc_exporter #               - Imported target of opentelemetry-cpp::otlp_grpc_exporter
     )
 endif ()
 if (WIN32)
- target_link_libraries ( jlib ws2_32 mpr.lib Winmm.lib psapi.lib )
+    target_link_libraries ( jlib PRIVATE ws2_32 mpr.lib Winmm.lib psapi.lib )
 elseif (("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin" ))
 else ()
- target_link_libraries ( jlib rt )
+    target_link_libraries ( jlib PRIVATE rt )
 endif ()
 
-target_link_libraries(jlib zstd::libzstd)
+target_link_libraries(jlib PRIVATE zstd::libzstd)
 
 if (NOT PLUGIN)
     if (WIN32)

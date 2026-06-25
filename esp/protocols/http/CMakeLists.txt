@@ -85,12 +85,16 @@ target_link_libraries(
     ${XALAN_LIBRARIES}
     ${XERCES_LIBRARIES}
     jlib
-    xmllib
     dalibase
     thorhelper      # this should not be dependent on the engine helper dll
     workunit        # neither should it be dependent on the wokunit dll
     esdllib
+    ${CppUnit_LIBRARIES}
     )
+
+IF (USE_OPENSSL)
+    target_link_libraries (esphttp ${OPENSSL_LIBRARIES})
+ENDIF()
 
 if(LIBMEMCACHED_FOUND)
     if(MEMCACHED_USE_EXTERNAL_LIBRARY)
@@ -108,7 +112,7 @@ endif(USE_OPENLDAP)
 
 IF (USE_ZLIB)
     target_link_libraries ( esphttp
-        ${ZLIB_LIBRARIES}
         zcrypt
     )
 ENDIF()
+

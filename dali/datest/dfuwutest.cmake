@@ -47,7 +47,6 @@ target_link_libraries ( dfuwutest
          workunit
          jlib
          mp 
-         hrpc 
          dafsclient 
          dalibase 
          dfuwu 

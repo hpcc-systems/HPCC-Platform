@@ -6132,6 +6132,13 @@ void CWsDfuEx::getFilePartsInfo(IEspContext &context, const char *dafilesrvHost,
         if (version > 1.55)
             filePart->setTopLevelKey(isTLKPart);
 
+        if (version >= 1.69)
+        {
+            __int64 recordCount = part.queryProperties().getPropInt64("@recordCount", -1);
+            if (recordCount != -1)
+                filePart->setRecordCount(recordCount);
+        }
+
         dfuParts.append(*filePart.getClear());
     }
 

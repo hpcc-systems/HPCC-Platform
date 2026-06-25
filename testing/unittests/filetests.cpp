@@ -25,9 +25,11 @@
 #include <chrono>
 #include <algorithm>
 #include <random>
+#include <thread>
 
 #include "jsem.hpp"
 #include "jfile.hpp"
+#include "jplane.hpp"
 #include "jdebug.hpp"
 #include "jset.hpp"
 #include "rmtfile.hpp"
@@ -298,6 +300,171 @@ public:
 CPPUNIT_TEST_SUITE_REGISTRATION( JlibFileTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibFileTest, "JlibFileTest" );
 
+class JlibWriteSyncCacheTest : public CppUnit::TestFixture
+{
+public:
+    CPPUNIT_TEST_SUITE(JlibWriteSyncCacheTest);
+        CPPUNIT_TEST(testSnapshotExpiryAndRepublish);
+        CPPUNIT_TEST(testMultiEntrySelectiveExpiry);
+        CPPUNIT_TEST(testConcurrentStress);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    // Deadlines are second-granularity wall-clock. 'short' entries are the ones we deliberately let
+    // expire (large enough that the immediate "live" read cannot race a second rollover); 'long' entries
+    // must stay live for the whole test. The wide gap keeps both robust on slow single-core containers,
+    // and waitUntilExpired only ever waits, so it cannot report a premature expiry.
+    static constexpr unsigned shortMarginSecs = 3;
+    static constexpr unsigned longMarginSecs = 600;
+
+    void setUp() { resetWriteSyncStateForTest(); }
+    void tearDown() { resetWriteSyncStateForTest(); }
+
+    // Note a single part, returning its deadline.
+    time_t note(const char * path, offset_t size, bool compressed, unsigned marginSecs)
+    {
+        time_t deadline = time(nullptr) + marginSecs;
+        noteWriteSyncFiles({ WriteSyncFileInfo{path, size, compressed} }, deadline);
+        return deadline;
+    }
+
+    // Assert a part is live and reports exactly the metadata it was noted with.
+    void assertLive(const char * path, offset_t size, bool compressed)
+    {
+        offset_t gotSize = (offset_t)-1;
+        bool gotCompressed = false;
+        CPPUNIT_ASSERT(getPathWriteSyncDelayRemainingMs(path, gotSize, gotCompressed) > 0);
+        CPPUNIT_ASSERT_EQUAL(size, gotSize);
+        CPPUNIT_ASSERT_EQUAL(compressed, gotCompressed);
+    }
+
+    // Assert a part reports no remaining delay (expired or absent).
+    void assertNoDelay(const char * path)
+    {
+        offset_t gotSize = (offset_t)-1;
+        bool gotCompressed = false;
+        CPPUNIT_ASSERT_EQUAL(0U, getPathWriteSyncDelayRemainingMs(path, gotSize, gotCompressed));
+    }
+
+    void waitUntilExpired(time_t deadline)
+    {
+        while (time(nullptr) < deadline)
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    }
+
+    // A noted part is live and carries its metadata; once its deadline passes it reports no delay;
+    // re-noting publishes a fresh snapshot carrying the new metadata.
+    void testSnapshotExpiryAndRepublish()
+    {
+        static constexpr const char * path = "/var/lib/HPCCSystems/test/writeSync/single";
+        time_t deadline = note(path, 1234, true, shortMarginSecs);
+        assertLive(path, 1234, true);
+
+        waitUntilExpired(deadline);
+        assertNoDelay(path);
+
+        note(path, 4321, false, shortMarginSecs);
+        assertLive(path, 4321, false);
+    }
+
+    // With several keys in the snapshot, each is looked up independently and expires on its own per-entry
+    // deadline: the short entry expires while the long entry (which also sets the snapshot-wide
+    // latestDeadline, still in the future) stays live - proving neither gate short-circuits the other.
+    void testMultiEntrySelectiveExpiry()
+    {
+        static constexpr const char * shortPath = "/var/lib/HPCCSystems/test/writeSync/multiShort";
+        static constexpr const char * longPath = "/var/lib/HPCCSystems/test/writeSync/multiLong";
+        time_t shortDeadline = note(shortPath, 100, false, shortMarginSecs);
+        note(longPath, 200, true, longMarginSecs);
+
+        assertLive(shortPath, 100, false);
+        assertLive(longPath, 200, true);
+
+        waitUntilExpired(shortDeadline);
+        assertNoDelay(shortPath);
+        assertLive(longPath, 200, true);
+    }
+
+    // Stress test. Many readers hammer the lock-free read path while several writers
+    // concurrently note/update entries, expire-prune, and swap in fresh snapshots. Each path has a fixed
+    // (size, compressed) identity that every writer always reproduces, so any read that reports a live entry
+    // MUST observe exactly that identity - so a torn/inconsistent snapshot swap, a partially published entry,
+    // or a use-after-free of a retired snapshot shows up as a mismatch (run under TSAN/UBSAN for full value).
+    void testConcurrentStress()
+    {
+        static constexpr unsigned numPaths = 64;
+        static constexpr unsigned numReaders = 8;
+        static constexpr unsigned numWriters = 3;
+        static constexpr unsigned runMs = 1500;
+
+        std::vector<std::string> paths;
+        paths.reserve(numPaths);
+        for (unsigned i = 0; i < numPaths; i++)
+            paths.push_back(std::string("/var/lib/HPCCSystems/test/writeSync/stress/") + std::to_string(i));
+
+        auto sizeFor = [](unsigned i) -> offset_t { return (offset_t)(1000 + i); };
+        auto compressedFor = [](unsigned i) -> bool { return (i & 1) != 0; };
+
+        std::atomic<bool> stop{false};
+        std::atomic<bool> failed{false};
+
+        auto reader = [&]()
+        {
+            std::mt19937 rng(std::random_device{}());
+            while (!stop.load(std::memory_order_relaxed))
+            {
+                unsigned i = rng() % numPaths;
+                offset_t gotSize = (offset_t)-1;
+                bool gotCompressed = false;
+                if (getPathWriteSyncDelayRemainingMs(paths[i].c_str(), gotSize, gotCompressed) > 0)
+                {
+                    if (gotSize != sizeFor(i) || gotCompressed != compressedFor(i))
+                    {
+                        failed.store(true, std::memory_order_relaxed);
+                        stop.store(true, std::memory_order_relaxed);
+                    }
+                }
+            }
+        };
+
+        auto writer = [&](unsigned seed)
+        {
+            std::mt19937 rng(seed);
+            while (!stop.load(std::memory_order_relaxed))
+            {
+                std::vector<WriteSyncFileInfo> batch;
+                unsigned batchSize = 1 + (rng() % 8);
+                for (unsigned n = 0; n < batchSize; n++)
+                {
+                    unsigned i = rng() % numPaths;
+                    batch.push_back(WriteSyncFileInfo{paths[i], sizeFor(i), compressedFor(i)});
+                }
+                // Mix short deadlines (which expire and get pruned mid-run) with longer-lived ones.
+                unsigned marginSecs = (0 == (rng() % 4)) ? 1 : 30;
+                noteWriteSyncFiles(batch, time(nullptr) + marginSecs);
+                // Brief yield so the writer does not busy-spin and inflate CPU/log churn on shared CI runners,
+                // while still exercising concurrent publish/read against the (hammered) lock-free reader.
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            }
+        };
+
+        std::vector<std::thread> threads;
+        for (unsigned r = 0; r < numReaders; r++)
+            threads.emplace_back(reader);
+        for (unsigned w = 0; w < numWriters; w++)
+            threads.emplace_back(writer, 1 + w);
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(runMs));
+        stop.store(true, std::memory_order_relaxed);
+        for (auto &t : threads)
+            t.join();
+
+        CPPUNIT_ASSERT_MESSAGE("write-sync read observed an inconsistent snapshot entry", !failed.load());
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( JlibWriteSyncCacheTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibWriteSyncCacheTest, "JlibWriteSyncCacheTest" );
 
 
 // This atomic is incremented to allow the writing thread to perform work in parallel with disk output

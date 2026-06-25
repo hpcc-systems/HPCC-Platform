@@ -86,7 +86,6 @@ target_link_libraries ( hthorlib
          dllserver
          eclrtl
          deftype
-         hrpc
          jhtree
          jlib
          mp

@@ -58,4 +58,5 @@ target_link_libraries ( udplib
          jlib
          roxiemem
          securesocket
+         ${CppUnit_LIBRARIES}
     )

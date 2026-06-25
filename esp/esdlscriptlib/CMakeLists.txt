@@ -69,4 +69,5 @@ IF (USE_LIBXSLT)
     include_directories (
          ${LIBXML2_INCLUDE_DIR}
     )
+    target_link_libraries (esdlscriptlib ${LIBXML2_LIBRARIES})
 ENDIF()

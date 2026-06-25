@@ -140,17 +140,21 @@ ADD_DEFINITIONS( -DHQLCPP_EXPORTS -D_USRDLL )
 
 HPCC_ADD_LIBRARY( hqlcpp SHARED ${SRCS} )
 install ( TARGETS hqlcpp RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( hqlcpp
+target_link_libraries ( hqlcpp PRIVATE
          jlib
          nbcd 
          eclrtl 
          deftype 
+         dllserver
          thorhelper 
          hql 
          workunit
     )
+if (USE_ICU)
+  target_link_libraries ( hqlcpp PRIVATE ${ICU_LIBRARIES})
+endif()
 if (NOT WIN32)
-  target_link_libraries ( hqlcpp ${BINUTILS_LIBRARIES})
+  target_link_libraries ( hqlcpp PRIVATE ${BINUTILS_LIBRARIES})
 endif()
 
 

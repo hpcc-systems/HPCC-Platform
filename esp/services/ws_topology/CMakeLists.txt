@@ -93,7 +93,6 @@ ENDIF()
 
 IF (USE_ZLIB)
   target_link_libraries ( ws_topology
-      ${ZLIB_LIBRARIES}
       zcrypt
       )
 ENDIF()
