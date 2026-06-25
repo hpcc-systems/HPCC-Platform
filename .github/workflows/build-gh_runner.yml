@@ -12,11 +12,6 @@ on:
         description: 'Operating System'
         required: false
         default: 'ubuntu-22.04'
-      ln:
-        type: boolean
-        description: 'Internal Build'
-        required: false
-        default: false
       single-package:
         type: boolean
         description: 'Single Package'
@@ -144,16 +139,6 @@ jobs:
           submodules: recursive
           path: ${{ github.workspace }}/HPCC-Platform
 
-      - name: Checkout LN
-        if: ${{ inputs.ln == true }}
-        uses: actions/checkout@v6
-        with:
-          repository: ${{ github.repository_owner }}/LN
-          token: ${{ secrets.LNB_TOKEN }}
-          ref: ${{ github.base_ref }}
-          submodules: recursive
-          path: ${{ github.workspace }}/LN
-
       - name: "vcpkg Bootstrap"
         shell: "bash"
         run: |
@@ -202,7 +187,7 @@ jobs:
       - uses: hendrikmuhs/ccache-action@v1.2.23
         with:
           save: ${{ inputs.update-cache == true }}
-          key: gh-runner-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}
+          key: gh-runner-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-HPCC-Platform
           restore-keys: |
             gh-runner-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-
             gh-runner-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-
@@ -212,14 +197,13 @@ jobs:
       - name: CMake Configure and Build
         shell: "bash"
         run: |
-          mkdir -p ${{ github.workspace }}/LN
           mkdir -p ${{ github.workspace }}/build
           declare -a plugins
           plugins=(${{ inputs.single-package == true && '"PLATFORM"' || '"PLATFORM" "CASSANDRAEMBED" "COUCHBASEEMBED" "ECLBLAS" "H3" "JAVAEMBED" "KAFKA" "MEMCACHED" "MONGODBEMBED" "MYSQLEMBED" "NLP" "PARQUETEMBED" "REDIS" "REMBED" "SQLITE3EMBED" "SQS" "WASMEMBED"' }})
           for plugin in "${plugins[@]}"; do
             rm -f ./build/CMakeCache.txt
             rm -rf ./build/CMakeFiles
-            cmake ${{ !contains(inputs.os, 'windows') && '-G Ninja' || '' }} -S ./${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }} -B ./build -DCMAKE_BUILD_TYPE=${{ inputs.build-type }} -DTESTING=ON -DCONTAINERIZED=${{ inputs.containerized == true && 'ON' || 'OFF' }} -DCPACK_STRIP_FILES=${{ inputs.strip-files == true && 'ON' || 'OFF' }} ${{ inputs.single-package == true && '-DINCLUDE_PLUGINS=ON' || '-D$plugin=ON' }} ${{ inputs.cmake-configuration }} ${{ inputs.cmake-configuration-ex }}
+            cmake ${{ !contains(inputs.os, 'windows') && '-G Ninja' || '' }} -S ./HPCC-Platform -B ./build -DCMAKE_BUILD_TYPE=${{ inputs.build-type }} -DTESTING=ON -DCONTAINERIZED=${{ inputs.containerized == true && 'ON' || 'OFF' }} -DCPACK_STRIP_FILES=${{ inputs.strip-files == true && 'ON' || 'OFF' }} ${{ inputs.single-package == true && '-DINCLUDE_PLUGINS=ON' || '-D$plugin=ON' }} ${{ inputs.cmake-configuration }} ${{ inputs.cmake-configuration-ex }}
             cmake --build ./build ${{ contains(inputs.os, 'windows') && '--config RelWithDebInfo' || ''}} --parallel ${{ inputs.upload-package == true && '--target package' || ''}}
           done
 
@@ -256,5 +240,5 @@ jobs:
         if: ${{ failure() || cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ inputs.os }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}-gh-runner-logs
+          name: ${{ inputs.os }}-HPCC-Platform-gh-runner-logs
           path: ${{ github.workspace }}/build/**/*.log

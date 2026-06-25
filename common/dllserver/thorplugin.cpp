@@ -24,6 +24,7 @@
 #include "jregexp.hpp"
 #include "jlzw.hpp"
 #include "eclrtl.hpp"
+#include <ctype.h>
 #if defined(__APPLE__)
 #include <mach-o/getsect.h>
 #include <sys/mman.h>
@@ -689,6 +690,75 @@ extern DLLSERVER_API bool decompressResource(size32_t len, const void *data, Str
     return true;
 }
 
+static const char *skipArchiveResourceWhitespace(MemoryBuffer &archive, const char *&archiveEnd)
+{
+    if (!archive.length())
+    {
+        archiveEnd = nullptr;
+        return nullptr;
+    }
+    const char *archiveText = static_cast<const char *>(archive.toByteArray());
+    archiveEnd = archiveText + archive.length();
+    while (archiveText != archiveEnd && isspace(static_cast<unsigned char>(*archiveText)))
+        archiveText++;
+    return archiveText;
+}
+
+static IPropertyTree *createArchiveResourcePTree(MemoryBuffer &archive)
+{
+    const char *archiveEnd = nullptr;
+    const char *archiveText = skipArchiveResourceWhitespace(archive, archiveEnd);
+    try
+    {
+        if (archiveText != archiveEnd && *archiveText == '<')
+        {
+            size32_t textOffset = archiveText - static_cast<const char *>(archive.toByteArray());
+            archive.append((char)0);
+            return createPTreeFromXMLString(static_cast<const char *>(archive.toByteArray()) + textOffset, ipt_caseInsensitive|ipt_lowmem);
+        }
+        return createPTree(archive, ipt_caseInsensitive|ipt_lowmem);
+    }
+    catch (IException *e)
+    {
+        e->Release();
+        return nullptr;
+    }
+}
+
+static IPropertyTree *decompressArchiveResourcePTree(size32_t len, const void *data)
+{
+    MemoryBuffer archive;
+    if (!decompressResource(len, data, archive))
+        return nullptr;
+    return createArchiveResourcePTree(archive);
+}
+
+static bool decompressArchiveResourceXML(size32_t len, const void *data, StringBuffer &xml)
+{
+    MemoryBuffer archive;
+    if (!decompressResource(len, data, archive))
+        return false;
+
+    xml.clear();
+    // Archive resources may be stored as XML text or serialized binary PTree data. Prefer the
+    // text path when the decompressed bytes look like XML; otherwise assume binary and parse it.
+    const char *archiveEnd = nullptr;
+    const char *archiveText = skipArchiveResourceWhitespace(archive, archiveEnd);
+    if (archiveText != archiveEnd && *archiveText == '<')
+        xml.append(archive.length(), static_cast<const char *>(archive.toByteArray()));
+    else
+    {
+        Owned<IPropertyTree> archiveTree = createArchiveResourcePTree(archive);
+        if (!archiveTree)
+        {
+            xml.clear();
+            return false;
+        }
+        toXML(archiveTree, xml);
+    }
+    return true;
+}
+
 extern DLLSERVER_API void appendResource(MemoryBuffer & mb, size32_t len, const void *data, bool compress)
 {
     mb.append((byte)0x80).append(resourceHeaderVersion);
@@ -733,7 +803,20 @@ extern DLLSERVER_API bool getEmbeddedArchiveXML(ILoadedDllEntry *dll, StringBuff
     const void * data = NULL;
     if (!dll->getResource(len, data, "ARCHIVE", 1000))
         return false;
-    return decompressResource(len, data, xml);
+    return decompressArchiveResourceXML(len, data, xml);
+}
+
+extern DLLSERVER_API IPropertyTree *getEmbeddedArchivePTree(ILoadedDllEntry *dll)
+{
+    size32_t len = 0;
+    const void * data = NULL;
+    if (!dll->getResource(len, data, "ARCHIVE", 1000))
+        return createPTree();
+
+    Owned<IPropertyTree> archiveTree = decompressArchiveResourcePTree(len, data);
+    if (!archiveTree)
+        return createPTree();
+    return archiveTree.getClear();
 }
 
 extern DLLSERVER_API IPropertyTree *getEmbeddedManifestPTree(const ILoadedDllEntry *dll)
@@ -765,7 +848,10 @@ extern DLLSERVER_API bool getWorkunitXMLFromFile(const char *filename, StringBuf
 
 extern DLLSERVER_API bool getArchiveXMLFromFile(const char *filename, StringBuffer &xml)
 {
-    return getResourceXMLFromFile(filename, "ARCHIVE", 1000, xml);
+    MemoryBuffer data;
+    if (!getResourceFromFile(filename, data, "ARCHIVE", 1000))
+        return false;
+    return decompressArchiveResourceXML(data.length(), data.toByteArray(), xml);
 }
 
 extern DLLSERVER_API bool getManifestXMLFromFile(const char *filename, StringBuffer &xml)

@@ -8,11 +8,6 @@ on:
         description: 'Operating System'
         required: false
         default: 'ubuntu-22.04'
-      ln:
-        type: boolean
-        description: 'Internal Build'
-        required: false
-        default: false
       single-package:
         type: boolean
         description: 'Single Package'
@@ -100,16 +95,6 @@ jobs:
           submodules: recursive
           path: ${{ github.workspace }}/HPCC-Platform
 
-      - name: Checkout LN
-        if: ${{ inputs.ln == true }}
-        uses: actions/checkout@v6
-        with:
-          repository: ${{ github.repository_owner }}/LN
-          token: ${{ secrets.LNB_TOKEN }}
-          ref: ${{ github.base_ref }}
-          submodules: recursive
-          path: ${{ github.workspace }}/LN
-
       - name: Calculate vars
         id: vars
         working-directory: ${{ github.workspace }}/HPCC-Platform/vcpkg
@@ -148,7 +133,7 @@ jobs:
       - uses: hendrikmuhs/ccache-action@v1.2.23
         with:
           save: ${{ inputs.update-cache == true }}
-          key: docker${{ inputs.tag_postfix }}-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}
+          key: docker${{ inputs.tag_postfix }}-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-HPCC-Platform
           restore-keys: |
             docker${{ inputs.tag_postfix }}-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-${{ inputs.containerized == true && 'k8s' || 'bare-metal' }}-
             docker${{ inputs.tag_postfix }}-${{ inputs.os }}-${{ inputs.build-type }}-${{ steps.vars.outputs.branch_label }}-
@@ -175,7 +160,6 @@ jobs:
       - name: CMake Configure and Build
         shell: "bash"
         run: |
-          mkdir -p ${{ github.workspace }}/LN
           mkdir -p ${{ github.workspace }}/build
           mkdir -p ${{ github.workspace }}/.ccache
           declare -a plugins
@@ -185,11 +169,10 @@ jobs:
             sudo rm -rf ${{ github.workspace }}/build/CMakeFiles
             docker run --rm \
               --mount source="${{ github.workspace }}/HPCC-Platform",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=delegated \
-              --mount source="${{ github.workspace }}/LN",target=/hpcc-dev/LN,type=bind,consistency=delegated \
               --mount source="${{ github.workspace }}/build",target=/hpcc-dev/build,type=bind,consistency=delegated \
               --mount source="${{ github.workspace }}/.ccache",target=/root/.ccache,type=bind,consistency=delegated \
               ${{ steps.vars.outputs.docker_tag }} "\
-              cmake -G Ninja -S /hpcc-dev/${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }} -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform -DCMAKE_BUILD_TYPE=${{ inputs.build-type }} -DCONTAINERIZED=${{ inputs.containerized == true && 'ON' || 'OFF' }} -DCPACK_STRIP_FILES=${{ inputs.strip-files == true && 'ON' || 'OFF' }} ${{ inputs.single-package == true && '-DINCLUDE_PLUGINS=ON' || '-D$plugin=ON' }} ${{ inputs.cmake-configuration }} ${{ inputs.cmake-configuration-ex }} && \
+              cmake -G Ninja -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform -DCMAKE_BUILD_TYPE=${{ inputs.build-type }} -DCONTAINERIZED=${{ inputs.containerized == true && 'ON' || 'OFF' }} -DCPACK_STRIP_FILES=${{ inputs.strip-files == true && 'ON' || 'OFF' }} ${{ inputs.single-package == true && '-DINCLUDE_PLUGINS=ON' || '-D$plugin=ON' }} ${{ inputs.cmake-configuration }} ${{ inputs.cmake-configuration-ex }} && \
               cmake --build /hpcc-dev/build --parallel ${{ inputs.upload-package == true && '--target package' || ''}}" 
           done
 
@@ -217,5 +200,5 @@ jobs:
         if: ${{ failure() || cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ inputs.os }}-${{ inputs.ln == true && 'LN' || 'HPCC-Platform' }}-docker-logs
+          name: ${{ inputs.os }}-HPCC-Platform-docker-logs
           path: ${{ github.workspace }}/build/**/*.log

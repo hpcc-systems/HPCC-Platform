@@ -34,10 +34,8 @@ jobs:
       folder_build: ${{ steps.vars.outputs.folder_build }}
       mount_build: ${{ steps.vars.outputs.mount_build }}
       community_ref: ${{ steps.vars.outputs.community_ref }}
-      internal_ref: ${{ steps.vars.outputs.internal_ref }}
       eclide_ref: ${{ steps.vars.outputs.eclide_ref }}
       community_tag: ${{ steps.vars.outputs.community_tag }}
-      internal_tag: ${{ steps.vars.outputs.internal_tag }}
       hpcc_version: ${{ steps.vars.outputs.hpcc_version }}
       hpcc_version_full: ${{ steps.vars.outputs.hpcc_version_full }}
       candidate_base_branch: ${{ steps.vars.outputs.candidate_base_branch }}
@@ -70,11 +68,9 @@ jobs:
           echo 'mount_build=source="${{ github.workspace }}/build",target=/hpcc-dev/build,type=bind,consistency=cached' >> $GITHUB_OUTPUT
           community_ref=${{ github.ref }}
           echo "community_ref=$community_ref" >> $GITHUB_OUTPUT
-          echo "internal_ref=$(echo $community_ref | sed 's/community/internal/')" >> $GITHUB_OUTPUT
           echo "eclide_ref=$(echo $community_ref | sed 's/community/eclide/')" >> $GITHUB_OUTPUT
           community_tag=$(echo $community_ref | cut -d'/' -f3)
           echo "community_tag=$community_tag" >> $GITHUB_OUTPUT
-          echo "internal_tag=$(echo $community_tag | sed 's/community/internal/')" >> $GITHUB_OUTPUT
           echo "hpcc_version=$(echo $community_tag | sed 's/community_//' | sed 's/-[0-9]$//')" >> $GITHUB_OUTPUT
           echo "hpcc_version_full=$(echo $community_tag | sed 's/community_//')" >> $GITHUB_OUTPUT
           community_base_ref=${{ github.event.base_ref || github.ref }}
@@ -133,60 +129,6 @@ jobs:
       community_ref: ${{ needs.preamble.outputs.community_ref }}
     secrets: inherit
 
-  build-docker-internal:
-    name: Build Docker Internal
-    needs: preamble
-    permissions:
-      contents: read
-      actions: write
-    strategy:
-      matrix:
-        os: [ ubuntu-24.04, ubuntu-22.04, ubuntu-20.04, rockylinux-8, centos-7 ]
-        container: [ true, false ]
-        build-docker-image: [ false ]
-        architecture: [ "", "-arm" ]
-        include:
-          - os: ubuntu-22.04
-            container: true
-            build-docker-image: true
-        exclude:
-          - os: centos-7
-            container: true
-          - os: rockylinux-8
-            container: true
-          - os: rockylinux-8
-            architecture: "-arm"
-          - os: ubuntu-20.04
-            architecture: "-arm"
-          - os: centos-7
-            architecture: "-arm"
-      fail-fast: false
-    uses: ./.github/workflows/build-docker-internal.yml
-    with:
-      os: ${{ matrix.os }}
-      container: ${{ matrix.container }}
-      architecture: ${{ matrix.architecture }}
-      community_ref: ${{ needs.preamble.outputs.community_ref }}
-      build-docker-image: ${{ matrix.build-docker-image }}
-    secrets: inherit
-
-  build-docker-enterprise:
-    name: Build Docker Enterprise
-    needs: preamble
-    permissions:
-      contents: read
-      actions: write
-    strategy:
-      matrix:
-        os: [ ubuntu-24.04, ubuntu-22.04 ]
-        architecture: [ "", "-arm" ]
-      fail-fast: false
-    uses: ./.github/workflows/build-docker-enterprise.yml
-    with:
-      os: ${{ matrix.os }}
-      community_ref: ${{ needs.preamble.outputs.community_ref }}
-    secrets: inherit
-
   build-documentation:
     needs: preamble
     permissions:
@@ -221,24 +163,6 @@ jobs:
       cmake-config-options: ${{ matrix.cmake-config-options }}
     secrets: inherit
 
-  build-clienttools-internal-macos:
-    needs: preamble
-    permissions:
-      contents: write
-      actions: write
-      packages: read
-    strategy:
-      matrix:
-        cmake-config-options: [ "-DCMAKE_OSX_ARCHITECTURES=x86_64 -DCPACK_SYSTEM_NAME=Darwin-x86_64 -DUSE_PYTHON3=OFF", "" ]
-      fail-fast: false
-    uses: ./.github/workflows/build-clienttools-macos-14.yml
-    with:
-      community-ref: ${{ needs.preamble.outputs.community_ref }}
-      ln-ref: ${{ needs.preamble.outputs.internal_ref }}
-      make-latest: ${{ needs.preamble.outputs.is_latest != 'false' }}
-      cmake-config-options: ${{ matrix.cmake-config-options }}
-    secrets: inherit
-
   build-clienttools-community-windows:
     needs: preamble
     permissions:
@@ -253,23 +177,8 @@ jobs:
       make-latest: ${{ needs.preamble.outputs.is_latest != 'false' }}
     secrets: inherit
 
-  build-clienttools-internal-windows:
-    needs: preamble
-    permissions:
-      contents: write
-      actions: write
-      packages: read
-    uses: ./.github/workflows/build-clienttools-windows-2022.yml
-    with:
-      community-ref: ${{ needs.preamble.outputs.community_ref }}
-      ln-ref: ${{ needs.preamble.outputs.internal_ref }}
-      upload-package: true
-      asset-name: 'clienttools-internal-for-eclide'
-      make-latest: ${{ needs.preamble.outputs.is_latest != 'false' }}
-    secrets: inherit
-
   build-bare-metal-eclide:
-    needs: [ preamble, build-clienttools-community-windows, build-clienttools-internal-windows, build-documentation ]
+    needs: [ preamble, build-clienttools-community-windows, build-documentation ]
     permissions:
       contents: write
       actions: write
@@ -279,7 +188,6 @@ jobs:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
       eclide-ref: ${{ needs.preamble.outputs.eclide_ref }}
       clienttools-community-asset-name: 'clienttools-community-for-eclide'
-      clienttools-internal-asset-name: 'clienttools-internal-for-eclide'
       documentation-asset-name: 'html-help-documents'
       make-latest: ${{ needs.preamble.outputs.is_latest != 'false' }}
     secrets: inherit
