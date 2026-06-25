@@ -43,6 +43,7 @@ extern DLLSERVER_API bool getEmbeddedManifestXML(const ILoadedDllEntry *dll, Str
 extern DLLSERVER_API bool getEmbeddedArchiveXML(ILoadedDllEntry *dll, StringBuffer &xml);
 
 
+extern DLLSERVER_API IPropertyTree *getEmbeddedArchivePTree(ILoadedDllEntry *dll);
 extern DLLSERVER_API IPropertyTree *getEmbeddedManifestPTree(const ILoadedDllEntry *dll);
 
 extern DLLSERVER_API bool containsEmbeddedWorkUnit(ILoadedDllEntry *dll);
