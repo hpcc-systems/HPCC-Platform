@@ -228,13 +228,12 @@ jobs:
       build-preset: 'VS-17-RelWithDebInfo'
       build-dir: 'build'
       clienttools-community-asset-name: 'clienttools-community-for-eclide'
-      clienttools-internal-asset-name: 'clienttools-internal-for-eclide'
       documentation-asset-name: 'html-help-documents'
       make-latest: ${{ needs.preamble.outputs.is_latest != 'false' }}
     secrets: inherit
 
   build-bare-metal-eclide-x64:
-    needs: [ preamble, build-clienttools-community-windows, build-clienttools-internal-windows, build-documentation ]
+    needs: [ preamble, build-clienttools-community-windows, build-documentation ]
     permissions:
       contents: write
       actions: write
