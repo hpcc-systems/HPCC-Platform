@@ -4611,6 +4611,7 @@ void ScopedTransformer::suspendAllScopes(ScopeSuspendInfo & info)
 
 void ScopedTransformer::suspendScope()
 {
+    assertHasScope();
     assertex(innerScope->isEmpty());
     savedStack.append(*LINK(innerScope));
     popScope();

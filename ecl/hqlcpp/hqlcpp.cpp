@@ -3764,6 +3764,11 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
         }
     case NO_AGGREGATEGROUP:
         throwError1(HQLERR_OutsideGroupAggregate, getOpString(op));
+    case no_delayedselect:
+        {
+            IIdAtom * searchName = expr->queryChild(3)->queryId();
+            throwError1(HQLERR_SelectFromAbstractModule, str(searchName));
+        }
     default:
         break;
     }
