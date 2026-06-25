@@ -324,7 +324,12 @@ protected:
     RecordTranslationMode allowFieldTranslation;
     Owned<const IResolvedFile> varFileInfo;
 
-    virtual void setPartNo(bool filechanged) = 0;
+    inline void timeSetPartNo(bool filechanged)
+    {
+        CCycleTimer filePrepareTimer;
+        setPartNo(filechanged);
+        logctx.noteStatistic(StCycleFilePrepareCycles, filePrepareTimer.elapsedCycles());
+    }
 
     inline void checkPartChanged(PartNoType &newPart)
     {
@@ -333,7 +338,7 @@ protected:
             lastPartNo.partNo = newPart.partNo;
             bool filechanged = lastPartNo.fileNo != newPart.fileNo;
             lastPartNo.fileNo = newPart.fileNo;
-            setPartNo(filechanged);
+            timeSetPartNo(filechanged);
         }
     }
 
@@ -661,6 +666,8 @@ public:
         return queryContext->queryCodeContext()->getElapsedMs();
     }
 
+private:
+    virtual void setPartNo(bool filechanged) = 0;
 };
 
 //================================================================================================
@@ -2764,7 +2771,7 @@ public:
         resentInfo.read(keyprocessed);
         resentInfo.read(lastPartNo.partNo);
         resentInfo.read(lastPartNo.fileNo);
-        setPartNo(true);  
+        timeSetPartNo(true);  
         tlk->deserializeCursorPos(resentInfo);
         assertex(resentInfo.remaining() == 0);
     }
@@ -4179,7 +4186,7 @@ class CRoxieKeyedJoinIndexActivity : public CRoxieKeyedActivity
         resentInfo.read(keepCount);
         resentInfo.read(lastPartNo.partNo);
         resentInfo.read(lastPartNo.fileNo);
-        setPartNo(true);
+        timeSetPartNo(true);
         tlk->deserializeCursorPos(resentInfo);
         assertex(resentInfo.remaining() == 0);
     }

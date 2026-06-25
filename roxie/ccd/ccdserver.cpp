@@ -479,6 +479,7 @@ static const StatisticsMapping keyedJoinStatistics({ StNumServerCacheHits, StNum
                                                     StTimeBlobLoad, StCycleBlobLoadCycles, StTimeLeafLoad, StCycleLeafLoadCycles, StTimeNodeLoad, StCycleNodeLoadCycles,
                                                     StCycleBlobReadCycles, StCycleLeafReadCycles, StCycleNodeReadCycles, StTimeBlobRead, StTimeLeafRead, StTimeNodeRead,
                                                     StCycleBlobFetchCycles, StCycleLeafFetchCycles, StCycleNodeFetchCycles, StTimeBlobFetch, StTimeLeafFetch, StTimeNodeFetch,
+                                                    StTimeFilePrepare, StCycleFilePrepareCycles,
                                                     StNumBloomAccepts, StNumBloomRejects, StNumBloomSkips,
                                                     StCycleIndexCacheBlockedCycles, StTimeIndexCacheBlocked,
                                                     StNumNodeDiskFetches, StNumLeafDiskFetches, StNumBlobDiskFetches,
@@ -492,6 +493,7 @@ static const StatisticsMapping indexStatistics({StNumServerCacheHits, StNumIndex
                                                 StTimeBlobLoad, StCycleBlobLoadCycles, StTimeLeafLoad, StCycleLeafLoadCycles, StTimeNodeLoad, StCycleNodeLoadCycles,
                                                 StCycleBlobReadCycles, StCycleLeafReadCycles, StCycleNodeReadCycles, StTimeBlobRead, StTimeLeafRead, StTimeNodeRead,
                                                 StCycleBlobFetchCycles, StCycleLeafFetchCycles, StCycleNodeFetchCycles, StTimeBlobFetch, StTimeLeafFetch, StTimeNodeFetch,
+                                                StTimeFilePrepare, StCycleFilePrepareCycles,
                                                 StNumBloomAccepts, StNumBloomRejects, StNumBloomSkips,
                                                 StCycleIndexCacheBlockedCycles, StTimeIndexCacheBlocked,
                                                 StNumNodeDiskFetches, StNumLeafDiskFetches, StNumBlobDiskFetches,
@@ -520,6 +522,7 @@ extern const StatisticsMapping accumulatedStatistics({StWhenFirstRow, StTimeLoca
                                                       StTimeBlobLoad, StCycleBlobLoadCycles, StTimeLeafLoad, StCycleLeafLoadCycles, StTimeNodeLoad, StCycleNodeLoadCycles,  // If time and cycles are not included they are not serialized from agents
                                                       StCycleBlobReadCycles, StCycleLeafReadCycles, StCycleNodeReadCycles, StTimeBlobRead, StTimeLeafRead, StTimeNodeRead,
                                                       StCycleBlobFetchCycles, StCycleLeafFetchCycles, StCycleNodeFetchCycles, StTimeBlobFetch, StTimeLeafFetch, StTimeNodeFetch,
+                                                      StTimeFilePrepare, StCycleFilePrepareCycles,
                                                       StNumBloomAccepts, StNumBloomRejects, StNumBloomSkips,
                                                       StNumNodeDiskFetches, StNumLeafDiskFetches, StNumBlobDiskFetches,
                                                       StNumDiskRejected, StSizeAgentReply, StTimeAgentWait,
